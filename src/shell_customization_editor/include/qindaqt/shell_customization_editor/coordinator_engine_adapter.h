@@ -44,6 +44,8 @@ public:
     committedProfile() const override;
     [[nodiscard]] QindaQt::ShellCustomization::LayoutEditingStatus status() const override;
     [[nodiscard]] bool hasPreview() const override;
+    [[nodiscard]] QVector<QindaQt::ShellCustomization::EscrowedPanel>
+    escrowedPanels() const override;
 
     // Compatibility spelling for presentation consumers. This is exactly the
     // EditingEngine readiness contract, not a separate lease probe.

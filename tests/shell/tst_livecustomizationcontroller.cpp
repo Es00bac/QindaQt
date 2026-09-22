@@ -93,6 +93,7 @@ private Q_SLOTS:
     void editModeDragsResolveAndPersist();
     void chordDefaultsAndModifiers();
     void modelArithmetic();
+    void survivesAPinnedDisplayGoingAway();
 
 private:
     Applets::ManifestCatalog m_catalog;
@@ -217,6 +218,67 @@ void LiveCustomizationControllerTest::adoptionKeepsHistoryForOwnWritesAndRebuild
     QVERIFY(!controller.canUndo());
     QVERIFY(controller.removeApplet(QStringLiteral("bar"), QStringLiteral("clock-1")));
     QVERIFY(controller.available());
+}
+
+void LiveCustomizationControllerTest::survivesAPinnedDisplayGoingAway()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+
+    // The live shape this regressed in: a panel pinned to one display (the
+    // r10 dock is pinned to the built-in output) while that display is
+    // unplugged or being reconfigured.
+    Profiles::LayoutProfile profile = fixtureProfile();
+    profile.panels[1].output = QStringLiteral("OUT-2");
+
+    bool pinnedDisplayPresent = true;
+    auto outputs = [&pinnedDisplayPresent] {
+        QVector<ShellLayout::LogicalOutput> result = fixtureOutputs();
+        if (pinnedDisplayPresent) {
+            result.append({QStringLiteral("OUT-2"), QRect(1920, 0, 1920, 1080), 1.0});
+        }
+        return result;
+    };
+
+    LiveCustomizationController controller(m_catalog.manifests(), directory.path(),
+                                           outputs, nullptr, nullptr);
+    controller.adoptProfile(profile);
+    QVERIFY(controller.available());
+
+    // Unplug it. available() is what gates every chord entry point, so a
+    // false here is the whole defect: no panel menu, no applet menu, no
+    // desktop menu, until something happens to rebuild the editor host.
+    pinnedDisplayPresent = false;
+    controller.outputGenerationChanged();
+    QVERIFY2(controller.available(), qPrintable(controller.statusText()));
+
+    // The absent display's panel is not editable - it has nowhere to be.
+    QVERIFY(controller.panelIds().contains(QStringLiteral("bar")));
+    QVERIFY(!controller.panelIds().contains(QStringLiteral("tray")));
+
+    // Customization still works on the display that is actually there.
+    QVERIFY2(controller.removeApplet(QStringLiteral("bar"), QStringLiteral("clock-1")),
+             qPrintable(controller.statusText()));
+
+    // ...and applying that edit did not erase the absent display's panel.
+    // The stored profile is the only record that the user configured it.
+    const auto written = readWritten(directory.path(), QStringLiteral("live-fixture"));
+    QCOMPARE(appletIds(written, QStringLiteral("bar")),
+             (QStringList{QStringLiteral("launcher-1"), QStringLiteral("status-1")}));
+    QVERIFY2(Model::findPanel(written, QStringLiteral("tray")) != nullptr,
+             "the panel pinned to the unplugged display was erased by Apply");
+    QCOMPARE(appletIds(written, QStringLiteral("tray")),
+             QStringList{QStringLiteral("tasks-1")});
+    // Stored panel order survives the round trip.
+    QCOMPARE(written.panels.size(), 2);
+    QCOMPARE(written.panels.at(1).id, QStringLiteral("tray"));
+
+    // Plugging it back in brings the panel back into the editor.
+    pinnedDisplayPresent = true;
+    controller.adoptProfile(written);
+    controller.outputGenerationChanged();
+    QVERIFY2(controller.available(), qPrintable(controller.statusText()));
+    QVERIFY(controller.panelIds().contains(QStringLiteral("tray")));
 }
 
 void LiveCustomizationControllerTest::paletteAndSettingRowsFollowTheManifests()

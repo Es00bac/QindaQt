@@ -122,6 +122,8 @@ private Q_SLOTS:
     void appliesOneUndoStepPerMenuActionAndPersists();
     void producesTheSameBytesAsTheSettingsRouteComposition();
     void rebuildKeepsManifestsAndStoreButDropsHistory();
+    void staysReadyWhenAPinnedOutputIsAbsent();
+    void keepsAbsentOutputPanelsWhenApplying();
 };
 
 void LiveEditorHostTest::composesReadyHostOverTheFixture()
@@ -328,6 +330,75 @@ void LiveEditorHostTest::rebuildKeepsManifestsAndStoreButDropsHistory()
     QCOMPARE(host.userProfileDirectory(), directory.path());
     QCOMPARE(appletIds(*host.profile(), QStringLiteral("bar")),
              (QStringList{QStringLiteral("launcher-instance"), QStringLiteral("clock-instance")}));
+}
+
+// The fixture's outputs minus "primary", which the "dock" panel is pinned to.
+// This is the live shape of a laptop whose built-in display is off, or any
+// display being reconfigured mid-session.
+static QVector<ShellLayout::LogicalOutput> outputsWithoutPrimary()
+{
+    QVector<ShellLayout::LogicalOutput> result;
+    for (const auto &output : outputs()) {
+        if (output.id != QStringLiteral("primary")) {
+            result.append(output);
+        }
+    }
+    return result;
+}
+
+void LiveEditorHostTest::staysReadyWhenAPinnedOutputIsAbsent()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    // A panel pinned to an absent output must not disable the whole editor:
+    // every chord entry point is gated on ready(), so a false here is what
+    // silently kills Meta+right-click for the rest of the session.
+    LiveEditorHost host(profile(), outputsWithoutPrimary(), manifests(), directory.path());
+    QVERIFY2(host.ready(), qPrintable(host.unavailableReason()));
+    QVERIFY(host.unavailableReason().isEmpty());
+
+    // The absent panel has nowhere to be this generation, so it is not
+    // editable and not laid out; the surviving panel still is.
+    QVERIFY(host.profile() != nullptr);
+    QVERIFY(panel(*host.profile(), QStringLiteral("bar")) != nullptr);
+    QVERIFY(panel(*host.profile(), QStringLiteral("dock")) == nullptr);
+
+    // Moving a panel onto an output that is genuinely absent stays refused.
+    const auto outcome = host.applyGesture(
+        configureIntent(QStringLiteral("bar"),
+                        PanelConfiguration{Profiles::Layer::Overlay,
+                                           Profiles::HideMode::Intelligent, 1, 56, 0.6}),
+        target(QStringLiteral("bar"), QStringLiteral("start")));
+    QVERIFY2(outcome.ok, qPrintable(outcome.message));
+}
+
+void LiveEditorHostTest::keepsAbsentOutputPanelsWhenApplying()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    LiveEditorHost host(profile(), outputsWithoutPrimary(), manifests(), directory.path());
+    QVERIFY2(host.ready(), qPrintable(host.unavailableReason()));
+
+    // Customizing a panel on the surviving display must not erase the user's
+    // panel on the absent one. That profile is the only record of it.
+    const auto outcome = host.applyGesture(
+        removeIntent(QStringLiteral("bar"), QStringLiteral("clock-instance")),
+        target(QStringLiteral("bar"), QStringLiteral("start")));
+    QVERIFY2(outcome.ok, qPrintable(outcome.message));
+    const auto applied = host.apply();
+    QVERIFY2(applied.ok, qPrintable(applied.message));
+
+    const QByteArray bytes = readProfileBytes(directory.path(), QStringLiteral("editor-fixture"));
+    QVERIFY(!bytes.isEmpty());
+    const auto loaded = Profiles::ProfileLoader::fromJson(bytes, QStringLiteral("test"));
+    QVERIFY2(loaded.ok, qPrintable(loaded.error.message));
+    QCOMPARE(appletIds(loaded.profile, QStringLiteral("bar")),
+             QStringList{QStringLiteral("launcher-instance")});
+    const Profiles::PanelSpec *dock = panel(loaded.profile, QStringLiteral("dock"));
+    QVERIFY2(dock != nullptr, "the panel pinned to the absent output was erased by Apply");
+    QCOMPARE(dock->output, QStringLiteral("primary"));
+    QCOMPARE(appletIds(loaded.profile, QStringLiteral("dock")),
+             QStringList{QStringLiteral("tasks-instance")});
 }
 
 QTEST_GUILESS_MAIN(LiveEditorHostTest)

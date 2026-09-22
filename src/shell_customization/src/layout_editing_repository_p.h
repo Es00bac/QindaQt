@@ -28,6 +28,10 @@ struct LayoutEditingRepository::SessionState final {
     }
 
     AppletPlacementValidator placementValidator;
+    // Panels parked because their output is absent this generation. Fixed at
+    // construction: candidate validation must keep rejecting an edit that
+    // names a disconnected display, so nothing may be added here later.
+    QVector<EscrowedPanel> escrowed;
     std::shared_ptr<const LayoutEditingSnapshot> snapshot;
     EditingError initializationError;
     std::shared_ptr<const Profiles::LayoutProfile> committedProfile;
