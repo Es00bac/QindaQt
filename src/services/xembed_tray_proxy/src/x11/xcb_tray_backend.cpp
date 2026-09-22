@@ -392,6 +392,20 @@ QString XcbTrayBackend::readWindowTitle(quint32 window) const
 
 void XcbTrayBackend::drainEvents()
 {
+    // AGENT-GUARD: a dead X server (XWayland exits with its session) leaves
+    // this descriptor readable at EOF forever. xcb_poll_for_event() then
+    // returns nullptr immediately, so the drain below consumes nothing and the
+    // still-enabled notifier refires on every event-loop pass - a permanent
+    // 100% CPU spin. Orphans were observed burning a full core for hours after
+    // their session ended. Disable the notifier and let main() exit; the
+    // process cannot proxy anything without a display.
+    if (m_connection == nullptr || xcb_connection_has_error(m_connection) != 0) {
+        if (m_notifier != nullptr) {
+            m_notifier->setEnabled(false);
+        }
+        Q_EMIT displayLost();
+        return;
+    }
     xcb_generic_event_t *event;
     while ((event = xcb_poll_for_event(m_connection)) != nullptr) {
         // Strip the "sent by SendEvent" marker bit (what xcb-util's

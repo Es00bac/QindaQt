@@ -81,6 +81,10 @@ Q_SIGNALS:
     void selectionLost();
     // The previous owner released the selection: a claim may succeed now.
     void selectionFreed();
+    // The X connection is unusable and will never recover. The proxy has no
+    // reason to live without its display; main() terminates the process, the
+    // same way a lost constructing bus does.
+    void displayLost();
 };
 
 } // namespace QindaQt::XEmbedTray

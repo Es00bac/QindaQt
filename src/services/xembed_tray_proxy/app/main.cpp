@@ -98,6 +98,16 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // The session's X server dies with the session while the user bus lives
+    // on, so the constructing-bus guard above cannot catch that case. Without
+    // this the orphan spins on a dead descriptor forever.
+    QObject::connect(&backend, &XEmbedTrayBackend::displayLost, &application,
+                     [] {
+                         qCritical("XEmbed tray proxy: the X display is gone;"
+                                   " exiting");
+                         QCoreApplication::quit();
+                     });
+
     QObject::connect(&application, &QCoreApplication::aboutToQuit, &coordinator,
                      &TrayProxyCoordinator::stop);
     return QCoreApplication::exec();
