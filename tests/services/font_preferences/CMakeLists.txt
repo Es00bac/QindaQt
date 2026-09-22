@@ -94,3 +94,18 @@ add_test(
         -P "${CMAKE_CURRENT_SOURCE_DIR}/run_installed_font_preferences_consumer.cmake"
 )
 set_tests_properties(qindaqt.font-preferences-installed-consumer PROPERTIES LABELS "service;fonts;installed")
+
+# AGENT-GUARD: these rows construct a QGuiApplication, so they must name a
+# platform. Without this they default to xcb and abort before their first
+# assertion on any machine with no display -- a headless runner, or a
+# developer on a VT -- which reads as a real failure and is not one. Every
+# one of them passes under offscreen. Keep this list in step with the rows
+# above; a new GUI row added without it fails the same way.
+set_tests_properties(
+    qindaqt.font-bootstrap
+    qindaqt.font-catalog
+    qindaqt.font-preferences
+    qindaqt.font-preferences-codec
+    qindaqt.font-preferences-coordinator
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

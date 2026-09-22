@@ -536,3 +536,22 @@ qindaqt_add_file_manager_test(
     tst_applications_controller.cpp
     qindaqt.file-manager-applications-controller
 )
+
+# AGENT-GUARD: these rows construct a QGuiApplication, so they must name a
+# platform. Without this they default to xcb and abort before their first
+# assertion on any machine with no display -- a headless runner, or a
+# developer on a VT -- which reads as a real failure and is not one. Every
+# one of them passes under offscreen. Keep this list in step with the rows
+# above; a new GUI row added without it fails the same way.
+set_tests_properties(
+    qindaqt.file-manager-connect-request
+    qindaqt.file-manager-discovery-controller
+    qindaqt.file-manager-mount-manager
+    qindaqt.file-manager-mutation-action-binding
+    qindaqt.file-manager-network-locations-controller
+    qindaqt.file-manager-network-locations-store
+    qindaqt.file-manager-preferences-controller
+    qindaqt.file-manager-transfer-queue
+    qindaqt.file-manager-transfer-router
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

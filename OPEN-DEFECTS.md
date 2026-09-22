@@ -448,10 +448,28 @@ max channel delta 15"*. Deliberately untouched: regenerating baselines would
 make the rows green whether or not something really shifted under Qt 6.11.1,
 and telling those apart needs a look at the diffs, not a refresh.
 
-**Newly found and fixed, not previously listed:** `compositor.pointer-corner`,
-`compositor.chrome-appearance-palette` and `compositor.hybrid-chrome-plan-builder`
-construct a `QGuiApplication` without naming a platform, so they defaulted to
-`xcb` and aborted on a headless runner. Now pinned to `offscreen`.
+**Newly found and fixed, not previously listed: 28 rows that only ever passed
+because a display happened to exist.** A full `ctest` run on a headless shell
+gave 41 failures out of 1016. Only 14 of them were this item's baseline drift:
+
+| rows | cause |
+| --- | --- |
+| 14 | `controls-visual-125/-150-*` baseline drift — genuine, still open |
+| 28 | construct a `QGuiApplication` without naming a platform, so they default to `xcb` and abort before their first assertion |
+| 2 | `obs-bridge-*` — no libobs in this environment |
+
+The 28 were `compositor.pointer-corner`,
+`compositor.chrome-appearance-palette`, `compositor.hybrid-chrome-plan-builder`,
+and 25 more across `file_manager` (9), `clipboard_applet` (5),
+`font_preferences` (5), `system_monitor/view` (3), `audio_applet`,
+`smart_lights_applet` and `voice_applet`. Every one passes under `offscreen` —
+verified before and after — so none of them was ever testing what its failure
+suggested. All are now pinned, with an `AGENT-GUARD` in each file saying why a
+new GUI row needs the same treatment.
+
+This is why a "pre-existing failures" item is worth keeping honest: 28 of the
+41 were environmental, and they were loud enough to make the 14 real ones look
+like part of the same noise.
 
 ---
 
