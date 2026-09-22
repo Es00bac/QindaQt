@@ -8,6 +8,7 @@ target_sources(
     PRIVATE
         src/output_inventory_matcher.cpp
         src/panel_interaction_store.cpp
+        src/panel_profile_output_filter.cpp
         src/panel_runtime_plan_assembler.cpp
         src/panel_visibility_inventory_assembler.cpp
     PUBLIC
@@ -16,6 +17,7 @@ target_sources(
         FILES
             include/qindaqt/shell_orchestration/output_inventory_matcher.h
             include/qindaqt/shell_orchestration/panel_interaction_store.h
+            include/qindaqt/shell_orchestration/panel_profile_output_filter.h
             include/qindaqt/shell_orchestration/panel_runtime_plan_assembler.h
             include/qindaqt/shell_orchestration/panel_visibility_inventory_assembler.h
 )

@@ -55,3 +55,17 @@ add_test(
     NAME qindaqt.shell-orchestration-output-match
     COMMAND qindaqt_output_inventory_matcher_tests
 )
+
+qt_add_executable(
+    qindaqt_panel_profile_output_filter_tests
+    tst_panel_profile_output_filter.cpp
+)
+target_link_libraries(
+    qindaqt_panel_profile_output_filter_tests
+    PRIVATE QindaQt::ShellOrchestration Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_panel_profile_output_filter_tests)
+add_test(
+    NAME qindaqt.shell-orchestration-profile-output-occupancy
+    COMMAND qindaqt_panel_profile_output_filter_tests
+)
