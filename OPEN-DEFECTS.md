@@ -321,12 +321,37 @@ under Housekeeping.
 
 ---
 
-## 10. `Hybrid interaction failed: container move has no active baseline` — OPEN
+## 10. `Hybrid interaction failed: container move has no active baseline` — OPEN, now diagnosed
 
 **128 occurrences** in the current session log, from
 `hybridcontainerplacement.cpp:213` and `:272` (a third site at `:331` covers
-resize). Logged while dragging windows; the interaction appears to continue
-working. Still not investigated.
+resize).
+
+**Mechanism: it is what dragging a *maximized* window sounds like.** The log
+gives the sequence directly:
+
+```
+775: QindaQt Hybrid interaction failed: restore a maximized container before moving it
+776: QindaQt Hybrid interaction failed: container move has no active baseline
+777: QindaQt Hybrid interaction failed: container move has no active baseline
+778: QindaQt Hybrid interaction failed: container move has no active baseline
+```
+
+`Begin` is refused for a maximized container, so nothing is inserted into
+`m_moveDrags`. The interaction controller then sends `Update` for the rest of
+the gesture, and every one of them fails the `m_moveDrags.find()` lookup and
+logs. The 128 lines are the echo of a handful of refused drags, one per pointer
+motion event.
+
+Nothing is broken — the window correctly does not move, which is why it "appears
+to continue working". It is pure log noise, and it drowns the same channel that
+would carry a real interaction failure.
+
+**Fix:** decide whether a refused `Begin` should suppress the remainder of that
+gesture rather than re-reporting per motion event. That is an interaction
+contract question, not a patch: the rejection result is still the honest answer
+for each intent, so the change belongs at the point that decides a gesture is
+over, not at the log site.
 
 ---
 
