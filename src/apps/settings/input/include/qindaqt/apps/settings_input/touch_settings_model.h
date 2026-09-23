@@ -14,9 +14,10 @@ namespace QindaQt::Apps::SettingsInput {
 
 // Settings → Input → Touch (ADR-0205). Truth is the purpose-scoped Settings1
 // snapshot of input.touch.*. A retained snapshot supplies last-known values
-// while authority is unavailable; only a current Ready snapshot admits edits.
-// Successful writes reconcile through a post-commit snapshot before another
-// write, and uncertain commits are never replayed.
+// while authority is unavailable; only a current Ready snapshot admits a new
+// write. A same-key slider gesture may continue in memory through its Applied
+// readback. Successful writes reconcile through a post-commit snapshot before
+// another write, and uncertain commits are never replayed.
 class TouchSettingsModel final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool available READ available NOTIFY changed)

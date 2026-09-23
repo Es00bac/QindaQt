@@ -110,8 +110,10 @@ controls; if Settings1 later becomes unavailable or degraded, the last-known
 values remain visible but disabled and the notice identifies their stale
 authority. All new edits require a current Ready snapshot and no unrelated
 write in progress. A hold-time slider gesture may replace its own pending
-final value; it sends at most one additional write after the first success
-has been confirmed by a fresh snapshot at or beyond the result revision.
+final value even while an Applied reply is awaiting its confirming read; that
+same-owner, same-epoch movement is queued only in memory. It sends at most one
+additional write after the first success has been confirmed by a fresh
+snapshot at or beyond the result revision.
 A rejected, conflicted, uncertain, or interrupted write drops that pending
 value without replay. Refusal and uncertainty messages survive unchanged
 refreshes and external edits until the user begins a new accepted edit.
