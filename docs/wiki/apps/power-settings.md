@@ -93,12 +93,23 @@ route's own scoped client: `-1` (and any value at or below zero) means the
 display never turns off, positive values are clamped to 1–240 minutes, and
 the documented default is ten. The resident
 [`qindaqt-desktop-controls`](../architecture/desktop-controls.md) process
-enforces the policy through KIdleTime and org-kde-kwin-dpms; the route never
-dispatches DPMS itself and never locks the session. Writes are optimistic
-with busy suppression while a commit is in flight, a confirmed non-applied or
-uncertain outcome surfaces as visible error text with one explicit retry, and
-the timeout selector stays disabled until idle display-off is enabled. The
-section shares no storage or authority with the screen-lock preference above.
+may use that fallback while Settings1 is absent. Settings does not present the
+fallback as the user's confirmed policy: before a current-owner snapshot it
+shows an unavailable message and hides the unconfirmed switch and timeout;
+after owner loss it labels any retained value as last confirmed and disables
+edits. The route never dispatches DPMS itself and never locks the session.
+
+The switch and timeout accept a write only when the scoped SettingsClient
+admits that key. The visible value remains the last confirmed snapshot while
+a write is pending. An Applied reply starts a bounded wait for an accepted
+same-owner, same-epoch snapshot at or above the reply revision; only a matching
+value confirms the save. A stale snapshot keeps the request pending, a
+mismatch reports conflict, and refusal, lost reply, owner replacement, or
+expired readback reports an error or uncertainty without replay. Diagnostics
+survive an unchanged refresh. **Refresh display preference** reads authority
+only; it never repeats a write. The timeout selector stays disabled while
+idle display-off is off or authority is unavailable. The section shares no
+storage or authority with the screen-lock preference above.
 
 ## Exact admission and operation lifetime
 

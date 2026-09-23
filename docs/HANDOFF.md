@@ -17,6 +17,11 @@ Applications. Input then passed a combined build and 14/14 Input/route rows.
 Touch passed independent exact-commit review including immediate owner
 replacement and post-Applied final-slider probes. Its merged-source build,
 17/17 affected client/Input rows and broad Settings 126/126 rows pass.
+Idle Display now separates runtime fallback from confirmed Settings1 policy,
+fences Applied readback by owner and revision, and keeps refusal/conflict/
+uncertainty visible without replay. Independent exact review accepted real
+mouse and keyboard refusal probes. The merged Power set passes 10/10 and broad
+Settings 131/131; physical blanking remains to qualify.
 Notifications now withdraw DND and schedule editability while a same-owner
 Settings1 read occupies the client, restore confirmed Switch values after
 interaction, and retain the initiating refusal through unchanged readback.
