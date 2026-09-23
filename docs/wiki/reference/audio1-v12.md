@@ -36,7 +36,11 @@ definitions with no source/output cannot be activated.
 Audio1 observed connected PipeWire links on the selected local graph path
 (Paused or Active link state). A sender needs the exact bus target-to-capture
 edge; a receiver needs both the VBAN source-to-loopback capture edge and
-the loopback playback-to-selected physical output edge. Neither value confirms remote
-delivery, authenticity, or audible physical speaker output. See
+the loopback playback-to-selected physical output edge. A changed or re-enabled
+route remains inactive until link evidence for its fresh internal activation
+token arrives; delayed evidence from the previous route is ignored. The token
+is backend-internal and does not change the schema-12 D-Bus tuple. Neither
+value confirms remote delivery, authenticity, or audible physical speaker
+output. See
 [Audio VBAN streams](audio-vban-streams.md) and
 [ADR-0246](../adr/0246-configure-manual-audio-peers-through-audio1.md).

@@ -44,7 +44,12 @@ receiver halves also pin their targets against WirePlumber's default-target
 metadata rewriting. `active` now means the selected local capture or
 receive-to-speaker **links** were observed in PipeWire at a connected
 (Paused or Active) state, not merely that their nodes were registered. It
-does not claim remote packet delivery or audible playback.
+does not claim remote packet delivery or audible playback. The coordinator
+assigns a fresh backend-only activation token when a declaration changes or
+is removed and later re-enabled; the worker returns that token with exact
+connected-link evidence. A delayed old-name report therefore cannot assert
+`active` for a retargeted or reactivated route. Audio1 wire schema 12 is
+unchanged by this internal evidence contract.
 
 Settings Audio has Devices, Mixer, and Other computers tabs. The peer tab
 offers manual host/port entry, exact receiver authorization, physical speaker

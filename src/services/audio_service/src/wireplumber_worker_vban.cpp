@@ -112,7 +112,7 @@ void WirePlumberWorker::applyVbanOnWorker(const QList<BackendVbanStream> &stream
 
 void WirePlumberWorker::publishVbanRunning()
 {
-    QStringList running;
+    QList<BackendVbanStream> running;
     if (m_manager != nullptr) {
         for (const auto &[name, run] : m_vbanRuns) {
             const QString streamName = QString::fromStdString(name);
@@ -125,7 +125,7 @@ void WirePlumberWorker::publishVbanRunning()
                     m_manager, QStringLiteral("qindaqt.vban.send.") + streamName);
                 if (run.sender && run.sender->running() && capture.has_value()
                     && connectedEdge(m_manager, target->boundId, capture->boundId))
-                    running.append(streamName);
+                    running.append(run.declared);
             } else {
                 const auto source = WirePlumberGraph::findNodeByName(
                     m_manager, vbanSourceNodeName(streamName));
@@ -138,11 +138,14 @@ void WirePlumberWorker::publishVbanRunning()
                     && routeCapture.has_value() && routePlayback.has_value()
                     && connectedEdge(m_manager, source->boundId, routeCapture->boundId)
                     && connectedEdge(m_manager, routePlayback->boundId, target->boundId))
-                    running.append(streamName);
+                    running.append(run.declared);
             }
         }
     }
-    running.sort();
+    std::sort(running.begin(), running.end(),
+              [](const BackendVbanStream &a, const BackendVbanStream &b) {
+                  return a.name < b.name;
+              });
     if (running == m_reportedVbanRunning) return;
     m_reportedVbanRunning = running;
     if (m_vbanRunningCallback) m_vbanRunningCallback(running);

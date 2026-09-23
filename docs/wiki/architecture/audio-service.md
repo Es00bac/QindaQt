@@ -63,8 +63,12 @@ An incoming definition grants one exact source IPv4, UDP port, and physical
 speaker. The receiver checks the datagram's actual source before decoding.
 The worker sends received audio through a dedicated exact-target loopback
 with fallback disabled, separate from console mixer routes. A disappeared
-speaker withdraws the path. Backend-observed local source and route nodes
-drive `active`; network delivery and acoustic output are not observed.
+speaker withdraws the path. Backend-observed connected links on the selected capture or speaker path
+drive `active`. The coordinator gives each continuous backend declaration a
+nonzero activation token and accepts link evidence only for that exact
+declaration. Retargeting, disabling, or re-enabling mints a new token, so
+a delayed report from an old route cannot make a new route active. Network
+delivery and acoustic output are not observed.
 [ADR-0246](../adr/0246-configure-manual-audio-peers-through-audio1.md)
 records the decision and [Audio VBAN streams](../reference/audio-vban-streams.md)
 gives the manual setup steps.

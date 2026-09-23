@@ -38,7 +38,7 @@ public:
     using OutcomeCallback = std::function<void(quint64, BackendOperationOutcome)>;
     using LevelsCallback = std::function<void(QList<LevelReading>)>;
     using RecordingFailedCallback = std::function<void(QString)>;
-    using VbanRunningCallback = std::function<void(QStringList)>;
+    using VbanRunningCallback = std::function<void(QList<BackendVbanStream>)>;
 
     WirePlumberWorker(quint64 initialEpoch, SnapshotCallback snapshotCallback,
                       OutcomeCallback outcomeCallback, LevelsCallback levelsCallback,
@@ -180,7 +180,7 @@ private:
     LevelsCallback m_levelsCallback;
     RecordingFailedCallback m_recordingFailedCallback;
     VbanRunningCallback m_vbanRunningCallback;
-    QStringList m_reportedVbanRunning;
+    QList<BackendVbanStream> m_reportedVbanRunning;
     BackendRecording m_declaredRecording;
     Recorder m_recorder;
     QList<BackendVbanStream> m_declaredVban;

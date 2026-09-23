@@ -94,15 +94,15 @@ WirePlumberAudioBackend::WirePlumberAudioBackend(QObject *parent)
                 },
                 Qt::QueuedConnection);
         },
-        [this](QStringList names) {
+        [this](QList<BackendVbanStream> running) {
             const quint64 generation = m_runGeneration.load(std::memory_order_acquire);
             if (!m_running.load(std::memory_order_acquire)) return;
             QMetaObject::invokeMethod(
                 this,
-                [this, generation, names = std::move(names)] {
+                [this, generation, running = std::move(running)] {
                     if (!m_running.load(std::memory_order_acquire)
                         || generation != m_runGeneration.load(std::memory_order_acquire)) return;
-                    Q_EMIT vbanRunningChanged(generation, names);
+                    Q_EMIT vbanRunningChanged(generation, running);
                 },
                 Qt::QueuedConnection);
         });
