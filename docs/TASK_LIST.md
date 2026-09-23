@@ -25,8 +25,14 @@ Voice Off policy and draft apply are also integrated in source (`6a2d9e2d`,
 `58ca80c7`), after a rejected first candidate was repaired and independently
 accepted. The combined Voice build and 9/9 focused, route and private-bus
 interop rows and the broad Settings suite (123/123) pass. Physical microphone and nested-shell behavior remain to
-qualify. Startup, Streaming, asynchronous reporting, service capabilities and
-route coverage remain open. The Audio Settings tab layout,
+qualify. Startup is integrated in source (`1d5de5e3`, `79a037c8`): Settings and
+the session share XDG autostart eligibility, eligible entries run once per
+login under session ownership, and private-session tests suppress ambient
+user autostarts. A rejected desktop-entry escape bug was repaired and
+independently accepted. The combined build and 15/15 affected Settings,
+session and wrapper rows pass; nested live login remains to qualify.
+Streaming, asynchronous reporting, service capabilities and route coverage
+remain open. The Audio Settings tab layout,
 manual LAN audio route and Settings/applet wheel behavior are separate active
 slices. The audit and acceptance plan are staged on qinda under
 `/tmp/qindaqt-settings-audit-2026-09-23/`.

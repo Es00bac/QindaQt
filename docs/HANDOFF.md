@@ -20,7 +20,17 @@ the 375-page link validator passed. The original
 review correctly found that a conflicting Off write could restart listening
 from a stale snapshot; the model now holds local withdrawal through conflict
 or uncertainty until sufficiently fresh owner-pinned readback. Physical
-microphone and nested-shell qualification remain open. Manual network
+microphone and nested-shell qualification remain open. Startup is integrated in source at `1d5de5e3` and `79a037c8` after
+independent rereview of a desktop-entry escape repair. Settings and session
+now share XDG eligibility; the session owns one login launch batch and
+teardown, while private-session harnesses pass `--no-autostart`. The combined
+Settings/session build, 9/9 core Startup/route/supervisor rows, 6/6
+navigation/private-wrapper rows, strict MkDocs and the 377-page link
+validator pass. This has not been installed into a live login; a disposable
+nested session still needs once-only and logout qualification. A03 Streaming
+login should use one generated entry through this contract.
+
+Manual network
 audio, tabbed Audio Settings and audio-wheel controls are active independent
 slices; synchronized multichannel playback is a later milestone that needs
 latency and channel-mapping proof. See the current
