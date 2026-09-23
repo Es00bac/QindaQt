@@ -81,6 +81,16 @@ add_test(
     COMMAND qindaqt_panel_visibility_producer_tests reducedMotion
 )
 add_test(
+    NAME qindaqt.shell-visibility-producer-saved-delay
+    COMMAND qindaqt_panel_visibility_producer_tests
+            savedDelayChangesPointerLeaveTimingAcrossProfileSwitch
+)
+set_tests_properties(
+    qindaqt.shell-visibility-producer-saved-delay PROPERTIES
+    LABELS "shell;visibility;producer;settings"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+add_test(
     NAME qindaqt.shell-visibility-producer-foreground
     COMMAND qindaqt_panel_visibility_producer_tests foregroundTransitions
 )

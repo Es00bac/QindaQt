@@ -8,6 +8,9 @@
 
 #include <QObject>
 #include <QVariantList>
+#include <QTimer>
+
+#include <optional>
 
 #include <functional>
 #include <memory>
@@ -20,6 +23,7 @@ struct CommitOutcome;
 namespace QindaQt::Apps::SettingsCustomize {
 
 inline constexpr QLatin1StringView LayoutProfileSettingsKey("panels.layoutProfile");
+inline constexpr QLatin1StringView PanelHideDelaySettingsKey("panels.autoHideDelayMs");
 
 using EditorHostFactory = std::function<std::unique_ptr<CustomizeEditorHost>(
     const Profiles::LayoutProfile &profile,
@@ -60,6 +64,11 @@ class CustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QString selectedAppletId READ selectedAppletId NOTIFY selectionChanged)
     Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties NOTIFY selectionChanged)
     Q_PROPERTY(QString appletSettingError READ appletSettingError NOTIFY selectionChanged)
+    Q_PROPERTY(bool panelHideDelayAvailable READ panelHideDelayAvailable NOTIFY stateChanged)
+    Q_PROPERTY(bool panelHideDelayEditable READ panelHideDelayEditable NOTIFY stateChanged)
+    Q_PROPERTY(bool panelHideDelayPending READ panelHideDelayPending NOTIFY stateChanged)
+    Q_PROPERTY(int panelHideDelayMs READ panelHideDelayMs NOTIFY stateChanged)
+    Q_PROPERTY(QString panelHideDelayStatus READ panelHideDelayStatus NOTIFY stateChanged)
     Q_PROPERTY(QObject *wallpaperPreview READ wallpaperPreview CONSTANT)
     Q_PROPERTY(QObject *windowPreview READ windowPreview CONSTANT)
 
@@ -114,6 +123,11 @@ public:
     [[nodiscard]] QString selectedAppletId() const { return m_selectedAppletId; }
     [[nodiscard]] QVariantMap selectedProperties() const;
     [[nodiscard]] QString appletSettingError() const { return m_appletSettingError; }
+    [[nodiscard]] bool panelHideDelayAvailable() const noexcept;
+    [[nodiscard]] bool panelHideDelayEditable() const noexcept;
+    [[nodiscard]] bool panelHideDelayPending() const noexcept;
+    [[nodiscard]] int panelHideDelayMs() const noexcept;
+    [[nodiscard]] QString panelHideDelayStatus() const;
     [[nodiscard]] QObject *wallpaperPreview() const { return &m_wallpaperPreview; }
     [[nodiscard]] QObject *windowPreview() const { return &m_windowPreview; }
 
@@ -138,6 +152,10 @@ public:
     Q_INVOKABLE bool configureSelectedPanel(const QString &field,
                                             const QVariant &value);
     Q_INVOKABLE bool configureAppletSetting(const QString &key, const QVariant &value);
+    // AGENT-CONTRACT: This writes only the existing global Settings1 delay.
+    // False means no write was admitted; success still requires same-owner,
+    // same-epoch readback at the commit's observed revision.
+    Q_INVOKABLE bool setPanelHideDelayMs(int milliseconds);
     Q_INVOKABLE bool undo();
     Q_INVOKABLE bool redo();
     Q_INVOKABLE bool apply();
@@ -156,6 +174,12 @@ private:
     void handleCommit(const Services::SettingsClient::CommitOutcome &outcome);
     void handleUncertain(const QString &message);
     void handleOutputSnapshotChanged();
+    void handleDelaySnapshot();
+    void handleDelayClientState();
+    void handleDelayCommit(const Services::SettingsClient::CommitOutcome &outcome);
+    void handleDelayUncertain(const QString &message);
+    void finishDelayUncertain(const QString &message);
+    void clearDelayPending();
     [[nodiscard]] const Profiles::LayoutProfile *findProfile(const QString &id) const;
     [[nodiscard]] const Applets::AppletManifest *findManifest(const QString &id) const;
     [[nodiscard]] bool rebuild(const Profiles::LayoutProfile &profile);
@@ -203,6 +227,22 @@ private:
     bool m_lastDropAccepted = false;
     bool m_editorUnavailable = false;
     bool m_outputTruthStale = false;
+    struct PendingDelay final {
+        int requestedMs = 0;
+        QString owner;
+        QString epoch;
+        quint64 initiatingRevision = 0;
+        quint64 readbackFloor = 0;
+        bool awaitingReadback = false;
+    };
+    std::optional<PendingDelay> m_pendingDelay;
+    QTimer m_delayReadbackRetry;
+    QTimer m_delayReadbackDeadline;
+    int m_confirmedDelayMs = 250;
+    bool m_delayHasBaseline = false;
+    QString m_delayOwner;
+    QString m_delayEpoch;
+    QString m_delayError;
 };
 
 } // namespace QindaQt::Apps::SettingsCustomize

@@ -35,8 +35,24 @@ CustomizeSettingsModel::CustomizeSettingsModel(
     , m_startupError(std::move(startupError))
 {
     Q_ASSERT(m_client.thread() == thread());
+    m_delayReadbackRetry.setInterval(200);
+    connect(&m_delayReadbackRetry, &QTimer::timeout, this, [this] {
+        if (m_pendingDelay && m_pendingDelay->awaitingReadback) {
+            m_client.refresh();
+        }
+    });
+    m_delayReadbackDeadline.setSingleShot(true);
+    connect(&m_delayReadbackDeadline, &QTimer::timeout, this, [this] {
+        finishDelayUncertain(QStringLiteral(
+            "The saved hide delay could not be confirmed. Refresh to check its value."));
+        m_client.refresh();
+    });
     connect(&m_client, &Services::SettingsClient::SettingsClient::stateChanged,
             this, &CustomizeSettingsModel::handleClientState);
+    connect(&m_client, &Services::SettingsClient::SettingsClient::ownerChanged,
+            this, &CustomizeSettingsModel::handleDelayClientState);
+    connect(&m_client, &Services::SettingsClient::SettingsClient::writeAdmissionChanged,
+            this, &CustomizeSettingsModel::stateChanged);
     connect(&m_client, &Services::SettingsClient::SettingsClient::snapshotChanged,
             this, &CustomizeSettingsModel::handleSnapshot);
     connect(&m_client, &Services::SettingsClient::SettingsClient::commitFinished,
@@ -83,7 +99,7 @@ bool CustomizeSettingsModel::unavailable() const noexcept
 bool CustomizeSettingsModel::canEdit() const noexcept
 {
     return (ready() || conflict()) && m_editor && m_editor->ready()
-        && m_client.state() == ClientState::Ready;
+        && m_client.state() == ClientState::Ready && !m_pendingDelay;
 }
 
 bool CustomizeSettingsModel::dirty() const noexcept
@@ -284,6 +300,7 @@ void CustomizeSettingsModel::handleOutputSnapshotChanged()
 
 void CustomizeSettingsModel::handleClientState()
 {
+    handleDelayClientState();
     if (!m_startupError.isEmpty()) {
         setState(State::Unavailable, m_startupError);
         return;
@@ -292,7 +309,7 @@ void CustomizeSettingsModel::handleClientState()
     case ClientState::Ready:
         break;
     case ClientState::Authenticating:
-        if (!m_waitingForCommitSnapshot && !conflict()) {
+        if (!m_waitingForCommitSnapshot && !m_pendingDelay && !conflict()) {
             setState(m_hasBaseline ? State::Unavailable : State::Loading,
                      m_client.lastError());
         }
@@ -314,6 +331,7 @@ void CustomizeSettingsModel::handleSnapshot()
     if (!snapshot) {
         return;
     }
+    handleDelaySnapshot();
     const QVariant selected = snapshot->values.value(LayoutProfileSettingsKey);
     if (selected.metaType().id() != QMetaType::QString
         || selected.toString().trimmed().isEmpty()) {
@@ -384,6 +402,10 @@ void CustomizeSettingsModel::handleSnapshot()
 
 void CustomizeSettingsModel::handleCommit(const CommitOutcome &outcome)
 {
+    if (m_pendingDelay) {
+        handleDelayCommit(outcome);
+        return;
+    }
     if (!saving()) {
         return;
     }
@@ -402,6 +424,10 @@ void CustomizeSettingsModel::handleCommit(const CommitOutcome &outcome)
 
 void CustomizeSettingsModel::handleUncertain(const QString &message)
 {
+    if (m_pendingDelay) {
+        handleDelayUncertain(message);
+        return;
+    }
     if (!saving()) {
         return;
     }

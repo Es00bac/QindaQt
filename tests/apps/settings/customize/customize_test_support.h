@@ -189,6 +189,23 @@ inline QVariantMap snapshotWire(const QString &profileId,
             {QLatin1StringView(WireContract::FieldMessage), QString{}}};
 }
 
+inline QVariantMap panelDelaySnapshotWire(
+    const QString &profileId, qint64 delayMs,
+    const QString &epoch = QStringLiteral("epoch-a"),
+    quint64 revision = 7)
+{
+    using Services::SettingsProtocol::WireContract;
+    QVariantMap wire = snapshotWire(profileId, epoch, revision);
+    QVariantMap values = wire.value(QLatin1StringView(WireContract::FieldValues)).toMap();
+    QVariantMap sources = wire.value(QLatin1StringView(WireContract::FieldSourceLayers)).toMap();
+    values.insert(QString(PanelHideDelaySettingsKey), delayMs);
+    sources.insert(QString(PanelHideDelaySettingsKey),
+                   QStringLiteral("user-overrides"));
+    wire.insert(QLatin1StringView(WireContract::FieldValues), values);
+    wire.insert(QLatin1StringView(WireContract::FieldSourceLayers), sources);
+    return wire;
+}
+
 inline QVariantMap wallpaperSnapshotWire(
     const QString &wallpaper,
     const QString &mode,
@@ -254,10 +271,15 @@ inline std::unique_ptr<QTemporaryDir> temporaryStore(const QString &name)
 
 class ModelHarness final {
 public:
-    ModelHarness()
-        : store(temporaryStore(QStringLiteral("customize-model")))
+    explicit ModelHarness(bool enablePanelDelay = false)
+        : includePanelDelay(enablePanelDelay)
+        , store(temporaryStore(QStringLiteral("customize-model")))
         , wallpaperStore(temporaryStore(QStringLiteral("customize-wallpapers")))
-        , client(transport, {QString(LayoutProfileSettingsKey)},
+        , client(transport,
+                 enablePanelDelay
+                     ? QStringList{QString(LayoutProfileSettingsKey),
+                                   QString(PanelHideDelaySettingsKey)}
+                     : QStringList{QString(LayoutProfileSettingsKey)},
                  {.requestTimeoutMilliseconds = 100,
                   .debounceMilliseconds = 0,
                   .retryMilliseconds = {10}})
@@ -283,7 +305,8 @@ public:
 
     bool establish(const QString &profileId = QStringLiteral("fixture"),
                    const QString &wallpaper = {},
-                   const QString &wallpaperMode = QStringLiteral("scaled"))
+                   const QString &wallpaperMode = QStringLiteral("scaled"),
+                   qint64 panelDelayMs = 250)
     {
         if (!store->isValid() || !wallpaperStore->isValid() || !client.start()
             || !wallpaperClient.start()) {
@@ -307,8 +330,11 @@ public:
             return false;
         }
         const auto request = transport.snapshots.takeFirst();
-        Q_EMIT transport.snapshotReceived(request.token, request.owner,
-                                          snapshotWire(profileId));
+        Q_EMIT transport.snapshotReceived(
+            request.token, request.owner,
+            includePanelDelay
+                ? panelDelaySnapshotWire(profileId, panelDelayMs)
+                : snapshotWire(profileId));
         const auto wallpaperRequest = wallpaperTransport.snapshots.takeFirst();
         Q_EMIT wallpaperTransport.snapshotReceived(
             wallpaperRequest.token, wallpaperRequest.owner,
@@ -376,6 +402,7 @@ public:
         return windowPreviewTransports.updateChromePreferences(chromeOverrides, revision);
     }
 
+    bool includePanelDelay = false;
     std::unique_ptr<QTemporaryDir> store;
     std::unique_ptr<QTemporaryDir> wallpaperStore;
     SequenceTransport transport;
