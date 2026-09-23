@@ -142,7 +142,9 @@ private slots:
     void offRouteCanSaveWhileProviderStopped();
     void sequentialApplyWaitsForFreshRevision();
     void conflictStopsSecondKeyWithoutReplay();
-    void pendingOffWithdrawsRouteBeforeCommit();
+    void conflictThenExternalOffKeepsRouteWithdrawn();
+    void conflictThenExternalOnReopensAfterReadback();
+    void uncertainOffWaitsForConfirmedReadback();
     void uncertainFirstWritePreservesDraftWithoutReplay();
     void ownerReplacementDuringWriteRevokesDraftWithoutReplay();
 #ifdef QINDAQT_HAVE_VOICE_CONSOLE
@@ -309,7 +311,7 @@ void VoiceSettingsTests::conflictStopsSecondKeyWithoutReplay()
     transport.answer(2, true, true);
     QCOMPARE(transport.writes.size(), 2);
     transport.answerCommit(SettingsWireStatus::Conflict, 3, true);
-    QVERIFY(model.preferenceReady());
+    QVERIFY(model.preferenceLoading());
     QVERIFY(!model.canEditPreference());
     QVERIFY(!model.preferenceErrorText().isEmpty());
     QCOMPARE(transport.writes.size(), 2);
@@ -320,7 +322,7 @@ void VoiceSettingsTests::conflictStopsSecondKeyWithoutReplay()
 }
 
 
-void VoiceSettingsTests::pendingOffWithdrawsRouteBeforeCommit()
+void VoiceSettingsTests::conflictThenExternalOffKeepsRouteWithdrawn()
 {
     FakeSettingsTransport transport;
     SettingsClient::SettingsClient settings(transport, {inputKey, transcriptKey},
@@ -330,9 +332,86 @@ void VoiceSettingsTests::pendingOffWithdrawsRouteBeforeCommit()
     Voice::VoiceClient voice(&voiceTransport);
     VoiceSettingsModel model(settings, voice);
     auto sync = [&] {
-        const bool pendingOff = model.preferenceSaving()
-                                && !model.draftVoiceInputEnabled();
-        if (gate.allowed() && !pendingOff) voice.start();
+        if (gate.allowed() && !model.voiceUseWithdrawn()) voice.start();
+        else voice.stop();
+    };
+    QObject::connect(&gate, &VoicePreferences::VoiceInputPreferenceGate::allowedChanged,
+                     &model, sync);
+    QObject::connect(&model, &VoiceSettingsModel::viewChanged, &model, sync);
+    startAndAnswer(transport, settings, true, true);
+    QCOMPARE(voiceTransport.starts, 1);
+    QVERIFY(model.setDraftVoiceInputEnabled(false));
+    QVERIFY(model.applyPreferences());
+    QVERIFY(model.voiceUseWithdrawn());
+    QCOMPARE(voice.state(), Voice::ClientState::Stopped);
+    QCOMPARE(transport.writes.size(), 1);
+    // Another writer committed Off at revision 2. The conflicting reply is
+    // not authority for the route, and the old On gate must not restart it.
+    transport.answerCommit(SettingsWireStatus::Conflict, 2, false);
+    QVERIFY(model.preferenceLoading());
+    QVERIFY(model.voiceUseWithdrawn());
+    QCOMPARE(voiceTransport.starts, 1);
+    QTRY_COMPARE(transport.reads.size(), 1);
+    // A stale same-owner read cannot release the local Off withdrawal.
+    transport.answer(1, true, true);
+    QVERIFY(model.voiceUseWithdrawn());
+    QCOMPARE(voiceTransport.starts, 1);
+    QTRY_COMPARE(transport.reads.size(), 1);
+    transport.answer(2, false, true);
+    QVERIFY(model.preferenceReady());
+    QVERIFY(!model.voiceUseWithdrawn());
+    QVERIFY(!gate.allowed());
+    QCOMPARE(voiceTransport.starts, 1);
+    QCOMPARE(transport.writes.size(), 1);
+}
+
+void VoiceSettingsTests::conflictThenExternalOnReopensAfterReadback()
+{
+    FakeSettingsTransport transport;
+    SettingsClient::SettingsClient settings(transport, {inputKey, transcriptKey},
+                                             timing());
+    VoicePreferences::VoiceInputPreferenceGate gate(settings);
+    FakeVoiceTransport voiceTransport;
+    Voice::VoiceClient voice(&voiceTransport);
+    VoiceSettingsModel model(settings, voice);
+    auto sync = [&] {
+        if (gate.allowed() && !model.voiceUseWithdrawn()) voice.start();
+        else voice.stop();
+    };
+    QObject::connect(&gate, &VoicePreferences::VoiceInputPreferenceGate::allowedChanged,
+                     &model, sync);
+    QObject::connect(&model, &VoiceSettingsModel::viewChanged, &model, sync);
+    startAndAnswer(transport, settings, true, true);
+    QCOMPARE(voiceTransport.starts, 1);
+    QVERIFY(model.setDraftVoiceInputEnabled(false));
+    QVERIFY(model.applyPreferences());
+    QVERIFY(model.voiceUseWithdrawn());
+    QCOMPARE(voice.state(), Voice::ClientState::Stopped);
+    // Another writer advanced the revision but kept Voice On.
+    transport.answerCommit(SettingsWireStatus::Conflict, 2, true);
+    QVERIFY(model.voiceUseWithdrawn());
+    QCOMPARE(voiceTransport.starts, 1);
+    QTRY_COMPARE(transport.reads.size(), 1);
+    transport.answer(2, true, true);
+    QVERIFY(model.preferenceReady());
+    QVERIFY(!model.voiceUseWithdrawn());
+    QVERIFY(gate.allowed());
+    QCOMPARE(voiceTransport.starts, 2);
+    QVERIFY(model.preferenceDirty());
+    QCOMPARE(transport.writes.size(), 1);
+}
+
+void VoiceSettingsTests::uncertainOffWaitsForConfirmedReadback()
+{
+    FakeSettingsTransport transport;
+    SettingsClient::SettingsClient settings(transport, {inputKey, transcriptKey},
+                                             timing());
+    VoicePreferences::VoiceInputPreferenceGate gate(settings);
+    FakeVoiceTransport voiceTransport;
+    Voice::VoiceClient voice(&voiceTransport);
+    VoiceSettingsModel model(settings, voice);
+    auto sync = [&] {
+        if (gate.allowed() && !model.voiceUseWithdrawn()) voice.start();
         else voice.stop();
     };
     QObject::connect(&gate, &VoicePreferences::VoiceInputPreferenceGate::allowedChanged,
@@ -343,11 +422,19 @@ void VoiceSettingsTests::pendingOffWithdrawsRouteBeforeCommit()
     QVERIFY(model.setDraftVoiceInputEnabled(false));
     QVERIFY(model.applyPreferences());
     QCOMPARE(voice.state(), Voice::ClientState::Stopped);
-    QCOMPARE(transport.writes.size(), 1);
-    transport.answerCommit(SettingsWireStatus::Conflict, 2, true);
-    QVERIFY(model.preferenceReady());
+    const auto write = transport.writes.constLast();
+    Q_EMIT transport.requestFailed(write.token, write.owner,
+                                   QStringLiteral("transport-error"),
+                                   QStringLiteral("lost reply"));
+    QVERIFY(model.voiceUseWithdrawn());
+    QCOMPARE(voiceTransport.starts, 1);
+    QTRY_COMPARE(transport.reads.size(), 1);
+    // The old confirmed On must not leak through Ready before snapshotChanged.
+    transport.answer(2, true, true);
+    QVERIFY(!model.voiceUseWithdrawn());
     QCOMPARE(voiceTransport.starts, 2);
     QCOMPARE(transport.writes.size(), 1);
+    QVERIFY(model.preferenceDirty());
 }
 
 void VoiceSettingsTests::uncertainFirstWritePreservesDraftWithoutReplay()

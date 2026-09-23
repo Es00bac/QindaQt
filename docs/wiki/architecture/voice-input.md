@@ -189,7 +189,9 @@ Default Off, an unavailable baseline, owner loss, or degraded Settings1
 authority withdraws desktop actions and provider projections. A
 same-owner refresh preserves confirmed On while the separate panel
 transcript preference is saved. Applying Off in Settings withdraws that
-route's actions before its asynchronous commit completes. Desktop Off
+route's actions before its asynchronous commit completes and keeps them
+withdrawn through conflict or uncertain readback until a fresh snapshot
+confirms On. Desktop Off
 does not terminate an independently running provider or change its own
 shortcut-armed state; that is the separate Voice1 enabled field.
 
@@ -220,7 +222,7 @@ activation file is `share/dbus-1/services/org.qindaqt.Voice1.service`.
 | --- | --- |
 | `qindaqt.voice-protocol` | Bounds, the codec, validation, and payloads captured verbatim from a live provider. |
 | `qindaqt.voice-client` | Owner attribution, revision ordering, single-intent accounting, uncertainty. |
-| `qindaqt.settings-voice` | Default-off baseline, live opt-in, owner replacement, clean external drafts, sequential two-key apply and conflict. |
+| `qindaqt.settings-voice` | Default-off baseline, live opt-in, owner replacement, clean external drafts, sequential two-key apply, and conflict/uncertain Off readback. |
 | `qindaqt.voice-applet` | The projection, request admission, and the controller. |
 | `qindaqt.voice-applet-composition` | Real shell composition stays inactive through missing or Off Settings1 baselines and owner changes; confirmed On alone starts the Voice client. |
 | `session.voice-interop` | The production client against a real provider on a private bus. Skips (77) with no provider checkout present. |

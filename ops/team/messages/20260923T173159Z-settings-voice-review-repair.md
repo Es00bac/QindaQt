@@ -1,0 +1,3 @@
+# A01 Voice review repair
+
+Independent review rejected 78f32389064f8e9ff91a1a202636a1e5042f608d for a privacy-relevant Off conflict race. I reproduced the transition in the focused fixture: commitFinished(Conflict) emits the model view before SettingsClient issues readback, and the Settings route restarts Voice1 from stale On. I own the repair in the same isolated Voice worktree. The route will keep an explicit Off withdrawal until a fresh current-owner snapshot resolves it; conflict-then-Off and conflict-then-On tests will guard the boundary. I will also correct the stale Voice applet wiki opening and rerun build, focused and docs gates.

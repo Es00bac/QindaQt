@@ -96,6 +96,9 @@ public:
     }
     [[nodiscard]] bool preferenceDirty() const noexcept;
     [[nodiscard]] bool applyAvailable() const noexcept;
+    // The route's local Off intent remains binding until Settings1 readback
+    // resolves the write, including conflict and uncertain outcomes.
+    [[nodiscard]] bool voiceUseWithdrawn() const noexcept { return m_voiceUseWithdrawn; }
     [[nodiscard]] QString preferenceStatusText() const;
     [[nodiscard]] QString preferenceErrorText() const { return m_preferenceError; }
 
@@ -178,6 +181,9 @@ private:
     bool m_requestedPanelTranscript = true;
     bool m_waitingForCommittedSnapshot = false;
     bool m_preserveDraftOnResync = false;
+    bool m_voiceUseWithdrawn = false;
+    QString m_offWithdrawalOwner;
+    quint64 m_offWithdrawalMinRevision = 0;
     quint64 m_committedRevision = 0;
 
     Services::Voice::Snapshot m_snapshot;

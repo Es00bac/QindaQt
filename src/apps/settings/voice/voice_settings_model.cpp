@@ -137,6 +137,18 @@ void VoiceSettingsModel::handleSettingsSnapshot()
     if (!snapshot.has_value()) {
         return;
     }
+    // AGENT-GUARD: commitFinished precedes the authoritative readback. An
+    // explicit Off must continue to close this route through a conflict or
+    // uncertain outcome; a stale same-owner read below the commit's known
+    // revision cannot reopen Voice1.
+    if (m_voiceUseWithdrawn) {
+        if (snapshot->owner == m_offWithdrawalOwner
+            && snapshot->revision < m_offWithdrawalMinRevision) {
+            m_settingsClient.refresh();
+            return;
+        }
+        m_voiceUseWithdrawn = false;
+    }
     const bool wasDirty = preferenceDirty();
     const bool lineageChanged =
         snapshot->owner != m_settingsOwner || snapshot->epoch != m_settingsEpoch;
@@ -219,13 +231,23 @@ bool VoiceSettingsModel::applyPreferences()
     m_requestedPanelTranscript = m_draftPanelTranscript;
     m_pendingVoiceInput = m_requestedVoiceInput != m_voiceInput;
     m_pendingPanelTranscript = m_requestedPanelTranscript != m_panelTranscript;
+    if (m_pendingVoiceInput && !m_requestedVoiceInput) {
+        m_voiceUseWithdrawn = true;
+        m_offWithdrawalOwner = m_settingsOwner;
+        m_offWithdrawalMinRevision = m_settingsClient.snapshot()->revision;
+    }
     m_preferenceState = PreferenceState::Saving;
     // Withdraw this route's use immediately when Apply includes Off,
     // before the asynchronous Settings1 commit is sent.
     Q_EMIT viewChanged();
     if (!commitNextDraftKey()) {
-        // Nothing left to write is not a failure; the draft simply matched.
-        m_preferenceState = PreferenceState::Ready;
+        // If an Off write could not even be submitted, keep this route
+        // withdrawn until a readback resolves the still-confirmed value.
+        m_preferenceState =
+            m_voiceUseWithdrawn ? PreferenceState::Loading : PreferenceState::Ready;
+        if (m_voiceUseWithdrawn) {
+            m_settingsClient.refresh();
+        }
         Q_EMIT viewChanged();
         return false;
     }
@@ -271,7 +293,11 @@ void VoiceSettingsModel::handleSettingsCommit(const CommitOutcome &outcome)
         m_committingPanelTranscript = false;
         m_pendingVoiceInput = false;
         m_pendingPanelTranscript = false;
-        setPreferenceState(PreferenceState::Ready,
+        if (m_voiceUseWithdrawn) {
+            m_offWithdrawalMinRevision =
+                qMax(m_offWithdrawalMinRevision, outcome.revisionAfter);
+        }
+        setPreferenceState(PreferenceState::Loading,
                            outcome.message.isEmpty()
                                ? tr("The voice preference could not be saved.")
                                : outcome.message);
@@ -288,6 +314,10 @@ void VoiceSettingsModel::handleSettingsCommit(const CommitOutcome &outcome)
     // authoritative next revision. The second key must wait for that snapshot,
     // and no requested value may be manufactured as a confirmed value.
     m_committedRevision = outcome.revisionAfter;
+    if (m_voiceUseWithdrawn) {
+        m_offWithdrawalMinRevision =
+            qMax(m_offWithdrawalMinRevision, outcome.revisionAfter);
+    }
     m_waitingForCommittedSnapshot = true;
     Q_EMIT viewChanged();
 }
