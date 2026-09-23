@@ -149,14 +149,20 @@ KWin plugin reserves `ElectricTopLeft` for the pointer through
 `(edge, action)` pair a touch swipe makes, so the shell's existing dispatch
 reaches the gather overview with no new plumbing.
 
+KWin invokes reserved pointer callbacks as `bool(ElectricBorder)`. The
+KWin-only reserver adapts that signature to Gather's pure, zero-argument
+gesture; registering the gesture directly made the corner silent. Each re-arm
+first releases the previous reservation because KWin counts duplicate
+`reserve()` calls even when it retains only one callback key
+([ADR-0242](../adr/0242-adapt-and-balance-the-kwin-pointer-corner.md)).
+
 This is separate from the touch edges next door on purpose: KWin's
 `reserveTouch` is touch-only, and a corner is not one of its four edges. The
-reservation re-arms on `outputsChanged` for the same reason the touch edges
-do — KWin rebuilds its edge objects with the outputs and carries over only
-what the old edges held — and unreserves on destruction, because an
-unbalanced reserve/unreserve leaves the edge permanently active or permanently
-dead. `compositor.pointer-corner` pins all of that over a recording reserver,
-including that the announced action string still matches the shell's dispatch.
+reservation re-arms on `outputsChanged` after KWin rebuilds its edge objects,
+and unreserves on destruction. `compositor.pointer-corner` checks the balance
+and action string over a recording reserver;
+`compositor.kwin-pointer-corner-reserver` checks the actual reflective
+callback signature.
 
 A plugin change, so it takes effect at the next login rather than on a shell
 restart.

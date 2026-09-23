@@ -8,6 +8,8 @@
 
 The `QSettings` encoding of the empty edge list in this decision was corrected
 by [ADR-0240](0240-encode-the-kwin-overview-edge-with-kconfig-semantics.md).
+The reserved callback shape and re-arm balance were corrected by
+[ADR-0242](0242-adapt-and-balance-the-kwin-pointer-corner.md).
 
 ## Context
 
