@@ -1,8 +1,8 @@
 # Settings Date & time route
 
-The `datetime` route is QindaQt Settings' clock and region page. It is the
-thirteenth built-in route and is registered **last**, so no existing route's
-index moves — shortcut and traversal order depend on that.
+The `datetime` route is QindaQt Settings' clock and region page. It was
+appended after Streaming without moving earlier route indices or digit
+shortcuts; later routes followed it in the stable registry order.
 
 Its platform boundary is [ADR-0211](../adr/0211-the-clock-and-region-page-acts-on-the-platforms-own-services.md); [ADR-0249](../adr/0249-confirm-week-start-writes-against-settings1.md) defines the week-start outcome contract.
 
