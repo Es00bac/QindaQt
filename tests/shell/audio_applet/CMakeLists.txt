@@ -98,6 +98,42 @@ add_dependencies(
 qindaqt_enable_warnings(qindaqt_audio_applet_qml_tests)
 qt_import_qml_plugins(qindaqt_audio_applet_qml_tests)
 
+# Wheel event delivery has its own fixture so the established accessibility
+# and drag QML suite stays below the source-shape ceiling.
+qt_add_executable(qindaqt_audio_applet_wheel_tests tst_audio_applet_wheel.cpp)
+target_include_directories(
+    qindaqt_audio_applet_wheel_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../services/audio_client"
+)
+target_link_libraries(
+    qindaqt_audio_applet_wheel_tests
+    PRIVATE
+        QindaQt::ShellAudioAppletRuntime
+        QindaQt::TokensQml
+        QindaQt::ShellIcons
+        qindaqt_shell_iconsplugin
+        qindaqt_shell_audio_applet_runtimeplugin
+        qindaqt_themes
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_audio_applet_wheel_tests
+    PRIVATE
+        QINDAQT_AUDIO_APPLET_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+        QINDAQT_APPLET_ICON_FIXTURE_ROOT="${CMAKE_CURRENT_BINARY_DIR}/icon-resolution"
+        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+add_dependencies(
+    qindaqt_audio_applet_wheel_tests
+    qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_audio_applet_wheel_tests)
+qt_import_qml_plugins(qindaqt_audio_applet_wheel_tests)
+
 # The capture probe (O6). Not an add_test: it produces review artifacts, not a
 # pass/fail row, and the redesign is judged by a human looking at two pictures.
 qt_add_executable(qindaqt_audio_applet_visual_probe visual_probe.cpp)
@@ -140,6 +176,17 @@ set_tests_properties(
     qindaqt.audio-applet-offscreen
     PROPERTIES
         LABELS "shell;audio;runtime;offscreen;accessibility"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+)
+
+add_test(
+    NAME qindaqt.audio-applet-wheel
+    COMMAND qindaqt_audio_applet_wheel_tests
+)
+set_tests_properties(
+    qindaqt.audio-applet-wheel
+    PROPERTIES
+        LABELS "shell;audio;runtime;offscreen;wheel"
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 

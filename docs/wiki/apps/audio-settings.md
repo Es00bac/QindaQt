@@ -96,9 +96,14 @@ Pending state is per target, not a single page-wide flag (mirrors
 applet, which named the same bug in the applet's own layer first): while one
 row's request is in flight, availability keeps reading true for every row,
 including that row's own, and a `pending` field on the row is presentation
-only, never a gate. A second dispatch for the *same* target while it is still
-pending is refused locally ("Another audio change is still in progress.");
-a dispatch for a *different* target is accepted, even though the client's own
+only, never a gate. A second *volume* gesture for the same device or
+stream replaces one bounded latest target instead of sending a concurrent
+write. The model waits for the first write to succeed and for a newer
+accepted snapshot in the same owner/epoch before dispatching that latest
+target. A refusal, uncertain result, lost target/capability, or owner/epoch
+replacement discards it without replay. Other same-target intents remain
+fenced while pending ("Another audio change is still in progress."); a
+dispatch for a *different* target is accepted, even though the client's own
 transport still serializes at the wire (a genuinely overlapping request there
 resolves as `OperationStatus::Busy`/"the audio service is busy", surfaced the
 same way a real refusal is, never silently dropped and never blocking the
@@ -167,15 +172,21 @@ dispatches on every move, pointer drag included — not release-only — and a
 pressed slider owns its displayed value (a `Binding { when: !pressed }`, not
 a plain reactive property), so a reprojection mid-drag, including the one the
 row's own dispatch triggers, cannot pull the handle out from under the
-pointer; keyboard steps (`pressed` is already `false`) resume the
-authoritative binding immediately after each one, same as before. Wheel
-adjustment uses one 1% step per 120 angle units or 40 trackpad pixels;
+pointer. The slider binds to `volumeDisplayPercent`: the latest admitted
+transient target while a write/readback is outstanding, then authoritative
+truth. `volumePercent` and the visible percent label always report the service
+snapshot. Keyboard, drag, and wheel changes share this same bounded intent
+path; completion alone never confirms a write. Wheel adjustment uses one 1%
+step per 120 angle units or 40 trackpad pixels;
 sub-detent motion accumulates on one row, and multiple detents keep their
 magnitude. Zero, horizontal-dominant, modified, disabled, and outward-at-bound
 wheel events do not change volume. An enabled control at its bound leaves the
-vertical event to the page scroller. A wheel burst uses the same projected
-intent/readback binding as pointer and keyboard changes, so an external or
-refused authoritative value replaces the local handle.
+vertical event to the page scroller. A wheel burst replaces one queued
+latest target per serial while the first write is in flight. A newer snapshot
+confirms each accepted write before the next leaves the model; external or
+refused authoritative truth replaces the local handle. If a successful reply
+never produces a newer snapshot, the transient display expires after a bounded
+wait instead of parking on an unconfirmed value.
 
 The console's rotary knobs use one-fortieth of their range per detent and
 vertical faders use 0.02 of their position. They share the same angle/pixel
@@ -258,7 +269,9 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
 - `qindaqt.settings-audio-wheel` sends real offscreen wheel events through
   the production page: angle/pixel and multi-detent accumulation, horizontal
   and zero admission, disabled/bound behavior, page-scroll pass-through,
-  console knob/fader dispatch, and authoritative readback restoration; and
+  console knob/fader dispatch, plus real AudioClient transport-backed device
+  and stream pending bursts, latest-snapshot flush, refusal/uncertainty and
+  authority-loss no-replay, and authoritative readback restoration; and
 - the Settings Center navigation row additionally proves Ctrl+6 selection,
   the Audio route tab's accessible name/role, and Tab entry plus Escape
   return in both the wide (720×520) and compact (440×360) host layouts.
