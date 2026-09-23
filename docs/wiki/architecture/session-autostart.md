@@ -34,7 +34,10 @@ an ineligibility line explains why a configured entry will not execute.
 Re-enabling clears both recognized disable flags. A03's OBS start-at-login
 owner writes one ordinary user desktop entry with Type=Application, Name,
 Exec, and OnlyShowIn=QindaQt; as appropriate. It does not add a second
-launcher.
+launcher. The [OBS login helper](../adr/0248-confirm-streaming-preferences-before-obs-consumption.md)
+is one stable system entry through this same runner. A user Hidden override
+can mask it; its Settings1-gated helper replaces its own PID with OBS only
+after a confirmed enabled baseline.
 
 The supervisor owns only direct processes it spawned. It does not kill an
 ambient instance with the same executable name, adopt daemonized descendants,

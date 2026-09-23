@@ -60,6 +60,10 @@ pure functions and the socket behind a seam.**
   published in the snapshot, never logged, and never reaches the applet
   controller or any QML file.
 
+[ADR-0248](0248-confirm-streaming-preferences-before-obs-consumption.md)
+adds a shared confirmed Settings1 preference gate for those two client
+instances; it does not change this common protocol implementation.
+
 ## Revisit when
 
 - obs-websocket publishes statistics as events, which would remove the one

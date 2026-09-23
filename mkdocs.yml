@@ -397,3 +397,4 @@ nav:
       - "ADR-0244: Gate desktop Voice use on confirmed Settings1 opt-in": adr/0244-gate-desktop-voice-use-on-confirmed-settings.md
       - "ADR-0245: Write only supported default-application associations": adr/0245-write-only-supported-default-application-associations.md
       - "ADR-0247: Run XDG autostart in the session supervisor": adr/0247-run-xdg-autostart-in-the-session-supervisor.md
+      - "ADR-0248: Confirm Streaming preferences before OBS consumption": adr/0248-confirm-streaming-preferences-before-obs-consumption.md
