@@ -52,6 +52,7 @@ private Q_SLOTS:
   void initTestCase();
   void rendersTruthAndSecretBoundaryAccessibly();
   void routesScanConnectDisconnectAndReloadIntents();
+  void radioKeyboardRefusalAndConfirmedReadback();
   void showsStaleTruthReadOnlyAndOwnerLossEmpty();
   void keepsCompactFocusVisibleWithoutAPageCloseAction();
   void supportsDocumentPagingKeys();
@@ -129,6 +130,20 @@ void NetworkPageTest::rendersTruthAndSecretBoundaryAccessibly() {
   QVERIFY(disconnect != nullptr);
   QVERIFY(visibleConnect != nullptr);
   QVERIFY(visiblePrompt != nullptr);
+  auto *wifiRadio = findItem(page, QStringLiteral("networkRadioWifi"));
+  auto *mobileRadio = findItem(page, QStringLiteral("networkRadioMobile"));
+  QVERIFY(wifiRadio != nullptr);
+  QVERIFY(mobileRadio != nullptr);
+  QVERIFY(wifiRadio->isEnabled());
+  QVERIFY(mobileRadio->isEnabled());
+  QCOMPARE(wifiRadio->property("checked").toBool(), true);
+  QCOMPARE(mobileRadio->property("checked").toBool(), false);
+  auto *wifiAccessible = QAccessible::queryAccessibleInterface(wifiRadio);
+  auto *mobileAccessible = QAccessible::queryAccessibleInterface(mobileRadio);
+  QVERIFY(wifiAccessible != nullptr);
+  QVERIFY(mobileAccessible != nullptr);
+  QVERIFY(wifiAccessible->text(QAccessible::Name).contains(QStringLiteral("Wi-Fi")));
+  QVERIFY(mobileAccessible->text(QAccessible::Name).contains(QStringLiteral("Mobile")));
   QVERIFY(scan->isEnabled());
   QVERIFY(connect->isEnabled());
   QVERIFY(disconnect->isEnabled());
@@ -175,6 +190,46 @@ void NetworkPageTest::routesScanConnectDisconnectAndReloadIntents() {
   QCOMPARE(m_model->connectedNetwork, QString(64, u'b'));
   QCOMPARE(m_model->disconnectedDevice, QStringLiteral("wlan0"));
   QCOMPARE(m_model->connectedAccessPoint, QString(64, u'c'));
+}
+
+void NetworkPageTest::radioKeyboardRefusalAndConfirmedReadback() {
+  auto [guard, page] = createPage(QSize(900, 760));
+  QVERIFY(page != nullptr);
+  auto *radio = findItem(page, QStringLiteral("networkRadioWifi"));
+  QVERIFY(radio != nullptr);
+  QVERIFY(radio->isEnabled());
+  QCOMPARE(radio->property("checked").toBool(), true);
+
+  m_model->admitRadio = false;
+  radio->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), radio);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTRY_COMPARE(m_model->radioSetCount, 1);
+  QCOMPARE(m_model->lastRadioKind, 0u);
+  QCOMPARE(m_model->lastRadioEnabled, false);
+  QTRY_COMPARE(radio->property("checked").toBool(), true);
+
+  m_model->admitRadio = true;
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTRY_COMPARE(m_model->radioSetCount, 2);
+  QCOMPARE(m_model->lastRadioEnabled, false);
+  QTRY_COMPARE(radio->property("checked").toBool(), true);
+  QVariantMap row = m_model->radios[0].toMap();
+  row[QStringLiteral("softwareEnabled")] = false;
+  row[QStringLiteral("statusText")] = QStringLiteral("Off");
+  m_model->radios[0] = row;
+  Q_EMIT m_model->viewChanged();
+  QTRY_VERIFY(findItem(page, QStringLiteral("networkRadioWifi")) != nullptr);
+  radio = findItem(page, QStringLiteral("networkRadioWifi"));
+  QTRY_COMPARE(radio->property("checked").toBool(), false);
+  row[QStringLiteral("controlAvailable")] = false;
+  row[QStringLiteral("detailText")] = QStringLiteral("A hardware switch is blocking this radio.");
+  m_model->radios[0] = row;
+  Q_EMIT m_model->viewChanged();
+  QTRY_VERIFY(findItem(page, QStringLiteral("networkRadioWifi")) != nullptr);
+  radio = findItem(page, QStringLiteral("networkRadioWifi"));
+  QTRY_VERIFY(!radio->isEnabled());
+  QCOMPARE(radio->property("checked").toBool(), false);
 }
 
 void NetworkPageTest::showsStaleTruthReadOnlyAndOwnerLossEmpty() {

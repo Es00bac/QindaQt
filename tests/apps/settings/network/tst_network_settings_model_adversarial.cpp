@@ -38,7 +38,7 @@ private Q_SLOTS:
   void ignoresExactSameOwnerDuplicateWithoutMutatingTruth();
   void treatsMismatchedOperationLineageAsUncertainWithoutReplay();
   void redactsTransportDiagnosticsAndPublishesNoSecretRoles();
-  void exposesNoRadioOrCredentialMutationSurface();
+  void exposesTypedRadioButNoCredentialMutationSurface();
 };
 
 void NetworkSettingsModelAdversarialTest::rejectsRetiredAbaLineageAndClearsTruth() {
@@ -125,7 +125,7 @@ void NetworkSettingsModelAdversarialTest::redactsTransportDiagnosticsAndPublishe
   assertNoSecretKeys(fixture.model.knownNetworks());
 }
 
-void NetworkSettingsModelAdversarialTest::exposesNoRadioOrCredentialMutationSurface() {
+void NetworkSettingsModelAdversarialTest::exposesTypedRadioButNoCredentialMutationSurface() {
   Fixture fixture;
   const QMetaObject *meta = fixture.model.metaObject();
   QVERIFY(meta->indexOfMethod("reload()") >= 0);
@@ -134,7 +134,8 @@ void NetworkSettingsModelAdversarialTest::exposesNoRadioOrCredentialMutationSurf
   QVERIFY(meta->indexOfMethod("connectVisibleNetwork(QString)") >= 0);
   QVERIFY(meta->indexOfMethod("connectVisibleNetwork(QString,QString)") < 0);
   QVERIFY(meta->indexOfMethod("disconnectDevice(QString)") >= 0);
-  QVERIFY(meta->indexOfMethod("setRadio(uint,bool)") < 0);
+  QVERIFY(meta->indexOfMethod("setRadio(uint,bool)") >= 0);
+  QVERIFY(meta->indexOfMethod("setRadio(QString,QVariantMap)") < 0);
   QVERIFY(meta->indexOfMethod("setPassword(QString)") < 0);
   QVERIFY(meta->indexOfMethod("provideSecret(QString)") < 0);
   QCOMPARE(meta->property(meta->indexOfProperty("credentialEntrySupported"))

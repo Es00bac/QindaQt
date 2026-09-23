@@ -33,6 +33,10 @@ bool NetworkSettingsModel::reload() {
 }
 
 bool NetworkSettingsModel::requestScan() {
+  if (m_pendingRadio) {
+    rejectAction(QStringLiteral("operation-in-flight"));
+    return false;
+  }
   QString error;
   if (!m_client.requestScan(kScanDeadlineMilliseconds, &error)) {
     rejectAction(error);
@@ -44,6 +48,10 @@ bool NetworkSettingsModel::requestScan() {
 
 bool NetworkSettingsModel::connectKnownNetwork(
     const QString &knownNetworkId) {
+  if (m_pendingRadio) {
+    rejectAction(QStringLiteral("operation-in-flight"));
+    return false;
+  }
   QString error;
   if (!m_client.connectKnownNetwork(knownNetworkId, &error)) {
     rejectAction(error);
@@ -55,6 +63,10 @@ bool NetworkSettingsModel::connectKnownNetwork(
 
 bool NetworkSettingsModel::connectVisibleNetwork(
     const QString &accessPointId) {
+  if (m_pendingRadio) {
+    rejectAction(QStringLiteral("operation-in-flight"));
+    return false;
+  }
   const QVariantList points = accessPoints();
   const auto projected = std::find_if(
       points.cbegin(), points.cend(), [&accessPointId](const QVariant &entry) {
@@ -86,6 +98,10 @@ bool NetworkSettingsModel::connectVisibleNetwork(
 }
 
 bool NetworkSettingsModel::disconnectDevice(const QString &deviceInterface) {
+  if (m_pendingRadio) {
+    rejectAction(QStringLiteral("operation-in-flight"));
+    return false;
+  }
   QString error;
   if (!m_client.disconnectDevice(deviceInterface, &error)) {
     rejectAction(error);
@@ -97,6 +113,10 @@ bool NetworkSettingsModel::disconnectDevice(const QString &deviceInterface) {
 
 void NetworkSettingsModel::handleOperationFinished(
     const QindaQt::Network::OperationResult &result) {
+  if (result.kind == OperationKind::SetRadio) {
+    finishRadioOperation(result);
+    return;
+  }
   if (result.status == OperationStatus::Succeeded) {
     m_localError.clear();
     switch (result.kind) {
@@ -127,6 +147,11 @@ void NetworkSettingsModel::handleOperationFinished(
 }
 
 void NetworkSettingsModel::handleOperationUncertain(const QString &message) {
+  if (m_pendingRadio) {
+    Q_UNUSED(message);
+    finishRadioUncertain(tr("The radio change outcome is uncertain. Refresh to check its state."));
+    return;
+  }
   Q_UNUSED(message);
   m_operationStatusText.clear();
   m_localError = tr("The network could not confirm that change. Its outcome "
@@ -164,6 +189,21 @@ void NetworkSettingsModel::rejectAction(const QString &reason) {
 }
 
 QString NetworkSettingsModel::actionFailureText(const QString &reason) const {
+  if (reason == QStringLiteral("radio-control-unsupported")) {
+    return tr("Changing this radio is not permitted by the network service.");
+  }
+  if (reason == QStringLiteral("radio-absent")) {
+    return tr("This radio is not present.");
+  }
+  if (reason == QStringLiteral("radio-hardware-disabled")) {
+    return tr("A hardware switch is blocking this radio.");
+  }
+  if (reason == QStringLiteral("radio-already-in-state")) {
+    return tr("The radio is already in that state.");
+  }
+  if (reason == QStringLiteral("radio-kind-invalid")) {
+    return tr("That radio is not recognized.");
+  }
   if (reason == QStringLiteral("scan-unsupported")) {
     return tr("Scanning is not permitted by the network service.");
   }

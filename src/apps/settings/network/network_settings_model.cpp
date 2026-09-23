@@ -9,6 +9,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QVariantMap>
+#include <QtCore/QStringList>
 
 #include <algorithm>
 
@@ -99,10 +100,6 @@ QString securityText(const SecuritySuite suite) {
   return tr("Unknown security");
 }
 
-QString radioKindText(const RadioKind kind) {
-  return kind == RadioKind::Wifi ? tr("Wi-Fi") : tr("Mobile broadband");
-}
-
 const KnownNetwork *findKnownNetwork(const ModelState &state,
                                      const QString &id) {
   const auto found = std::find_if(
@@ -151,10 +148,16 @@ NetworkSettingsModel::NetworkSettingsModel(
           std::make_unique<NetworkSecretAgentPresence>(presenceConnection)) {
   connect(&m_client,
           &QindaQt::Network::Client::NetworkClient::stateChanged, this,
-          &NetworkSettingsModel::viewChanged);
+          [this] {
+            handleRadioClientState();
+            Q_EMIT viewChanged();
+          });
   connect(&m_client,
           &QindaQt::Network::Client::NetworkClient::snapshotChanged, this,
-          &NetworkSettingsModel::viewChanged);
+          [this] {
+            handleRadioSnapshot();
+            Q_EMIT viewChanged();
+          });
   connect(&m_client,
           &QindaQt::Network::Client::NetworkClient::operationInFlightChanged,
           this, &NetworkSettingsModel::viewChanged);
@@ -170,6 +173,20 @@ NetworkSettingsModel::NetworkSettingsModel(
   connect(m_secretAgentPresence.get(),
           &NetworkSecretAgentPresence::registeredChanged, this,
           &NetworkSettingsModel::viewChanged);
+  m_radioReadbackRetry.setSingleShot(true);
+  connect(&m_radioReadbackRetry, &QTimer::timeout, this, [this] {
+    if (m_pendingRadio && m_pendingRadio->awaitingReadback) {
+      // AGENT-GUARD: NetworkClient suppresses duplicate snapshotChanged;
+      // retry must continue even when a same-revision read returns quietly.
+      m_client.refresh();
+      m_radioReadbackRetry.start(200);
+    }
+  });
+  m_radioReadbackDeadline.setSingleShot(true);
+  connect(&m_radioReadbackDeadline, &QTimer::timeout, this, [this] {
+    if (m_pendingRadio && m_pendingRadio->awaitingReadback)
+      finishRadioUncertain(tr("The radio change could not be confirmed in time."));
+  });
 }
 
 NetworkSettingsModel::~NetworkSettingsModel() = default;
@@ -201,7 +218,7 @@ bool NetworkSettingsModel::busy() const noexcept {
 bool NetworkSettingsModel::reloadAvailable() const noexcept { return !busy(); }
 
 bool NetworkSettingsModel::scanAvailable() const {
-  if (!m_client.operationAdmissionReady()) {
+  if (m_pendingRadio || !m_client.operationAdmissionReady()) {
     return false;
   }
   return m_client.model()
@@ -238,10 +255,12 @@ QString NetworkSettingsModel::statusText() const {
 }
 
 QString NetworkSettingsModel::errorText() const {
-  if (!m_localError.isEmpty()) {
-    return m_localError;
-  }
-  return m_client.lastError();
+  QStringList errors;
+  if (!m_localError.isEmpty()) errors.append(m_localError);
+  if (!m_radioError.isEmpty()) errors.append(m_radioError);
+  if (errors.isEmpty() && !m_client.lastError().isEmpty())
+    errors.append(m_client.lastError());
+  return errors.join(QLatin1Char('\n'));
 }
 
 QString NetworkSettingsModel::serviceOwner() const {
@@ -277,33 +296,6 @@ QString NetworkSettingsModel::scanStatusText() const {
   return tr("Scan results can be refreshed.");
 }
 
-QVariantList NetworkSettingsModel::radios() const {
-  QVariantList rows;
-  const ModelState state = m_client.projection();
-  rows.reserve(state.radios.size());
-  for (const auto &radio : state.radios) {
-    QString status;
-    if (!radio.present) {
-      status = tr("Not present");
-    } else if (!radio.hardwareEnabled) {
-      status = tr("Disabled by hardware");
-    } else if (!radio.softwareEnabled) {
-      status = tr("Off");
-    } else {
-      status = tr("On");
-    }
-    rows.append(QVariantMap{
-        {QStringLiteral("kind"), static_cast<quint32>(radio.kind)},
-        {QStringLiteral("name"), radioKindText(radio.kind)},
-        {QStringLiteral("present"), radio.present},
-        {QStringLiteral("hardwareEnabled"), radio.hardwareEnabled},
-        {QStringLiteral("softwareEnabled"), radio.softwareEnabled},
-        {QStringLiteral("statusText"), status},
-    });
-  }
-  return rows;
-}
-
 QVariantList NetworkSettingsModel::devices() const {
   QVariantList rows;
   const ModelState state = m_client.projection();
@@ -326,7 +318,7 @@ QVariantList NetworkSettingsModel::devices() const {
         {QStringLiteral("activeNetworkName"),
          network == nullptr ? QString() : displayName(*network)},
         {QStringLiteral("disconnectAvailable"),
-         m_client.operationAdmissionReady() && verdict.allowed},
+         !m_pendingRadio && m_client.operationAdmissionReady() && verdict.allowed},
         {QStringLiteral("disconnectBlockedReason"), verdict.reasonCode},
     });
   }
@@ -372,8 +364,8 @@ QVariantList NetworkSettingsModel::accessPoints() const {
         {QStringLiteral("secured"), secured},
         {QStringLiteral("connectSupported"), supportedKind},
         {QStringLiteral("connectAvailable"),
-         !saved && promptAvailable && m_client.operationAdmissionReady()
-             && verdict.allowed},
+         !saved && promptAvailable && !m_pendingRadio
+             && m_client.operationAdmissionReady() && verdict.allowed},
         {QStringLiteral("connectBlockedReason"), blockedReason},
         {QStringLiteral("promptStatusText"),
          !supportedKind
@@ -409,7 +401,7 @@ QVariantList NetworkSettingsModel::knownNetworks() const {
         {QStringLiteral("activeDeviceInterface"),
          active == nullptr ? QString() : active->deviceInterface},
         {QStringLiteral("connectAvailable"),
-         m_client.operationAdmissionReady() && verdict.allowed},
+         !m_pendingRadio && m_client.operationAdmissionReady() && verdict.allowed},
         {QStringLiteral("connectBlockedReason"), verdict.reasonCode},
         {QStringLiteral("mayRequireExternalCredentials"),
          network.security != SecuritySuite::Open},
