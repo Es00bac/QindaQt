@@ -50,6 +50,23 @@ or launched. Since ADR-0226 the schema no longer enumerates savers in
 settings service must be restarted once after that schema relaxation, or it
 keeps refusing the new tokens with its old in-memory schema.
 
+The settings page does not treat the desktop controller's safe runtime
+fallback (`none`, five minutes) as a confirmed user choice. Before the first
+valid Settings1 snapshot it shows no selected saver or delay and disables both
+selectors, and hides Preview. A first snapshot equal to that fallback
+still establishes authority. The page keeps the last confirmed choice visible, labeled as such,
+when Settings1 becomes unavailable; editing remains disabled until the current
+owner's snapshot and write lane are ready.
+
+A saver or delay choice is admitted only while both scoped keys are writable.
+The page shows the confirmed selection during a pending commit and waits for a
+same-owner, same-epoch snapshot at or after the Applied revision before claiming
+success. A refusal, conflict, lost reply, owner change, or readback mismatch
+leaves the authoritative choice visible with a distinct diagnostic. An
+unchanged or external refresh does not erase that diagnostic. **Try again**
+only refreshes Settings1; it never repeats the write. Keyboard activation of
+either selector returns to the confirmed value if the write is refused.
+
 Only a confirmed snapshot is mirrored into the greeter's
 `kscreenlockerrc` `[Greeter]` wallpaper configuration (the
 `studio.qinda.screensaver` plugin id, its `Saver` key, and the recorded
@@ -80,7 +97,9 @@ except the explicitly requested preview.
 - `qindaqt.settings-screensaver-model`: persisted truth for the pair, an
   unrecognized token reading back as no saver, an invalid saver or
   out-of-range delay refused before any commit, applied/rejected/uncertain
-  outcomes, busy write suppression, retry without replaying, the built-in
+  outcomes, first-baseline availability, occupied read-lane admission,
+  same-lineage Applied readback, unchanged-refresh diagnostic retention,
+  owner replacement, busy write suppression, retry without replaying, the built-in
   choices and discovered sort order, and the mirror rules (confirmed saver
   reaches the lock screen, a refused commit never does, a saver with no
   scene hands the wallpaper back, a mirror failure is its own error).
@@ -92,8 +111,8 @@ except the explicitly requested preview.
   nothing-to-preview and never-stack refusals, and the process boundary
   itself.
 - `qindaqt.settings-screensaver-page`: the selector reflects truth and
-  writes tokens, the delay row disables for the built-ins, the preview
-  button follows availability, and the lock section writes the lock model
-  only.
+  writes tokens, restores confirmed keyboard choices after refusal, shows
+  no false selection before a baseline, disables delay for the built-ins,
+  follows Preview availability, and writes the separate lock model only.
 - The navigation rows pin the route appended after Startup applications
   ([ADR-0128](../adr/0128-accessibility-settings-route.md)).
