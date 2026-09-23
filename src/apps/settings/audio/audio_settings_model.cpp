@@ -82,6 +82,7 @@ AudioSettingsModel::AudioSettingsModel(AudioClient &client, QObject *parent)
     Q_EMIT viewChanged();
   });
   connect(&m_client, &AudioClient::snapshotChanged, this, [this] {
+    ++m_volumeSnapshotSequence;
     reconcileVolumeIntents();
     Q_EMIT viewChanged();
   });

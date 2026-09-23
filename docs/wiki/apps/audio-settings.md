@@ -99,8 +99,9 @@ including that row's own, and a `pending` field on the row is presentation
 only, never a gate. A second *volume* gesture for the same device or
 stream replaces one bounded latest target instead of sending a concurrent
 write. The model waits for the first write to succeed and for a newer
-accepted snapshot in the same owner/epoch before dispatching that latest
-target. A refusal, uncertain result, lost target/capability, or owner/epoch
+accepted snapshot received after the successful completion, in the same
+owner/epoch and at or above the result's observed revision, before dispatching
+that latest target. A refusal, uncertain result, lost target/capability, or owner/epoch
 replacement discards it without replay. Other same-target intents remain
 fenced while pending ("Another audio change is still in progress."); a
 dispatch for a *different* target is accepted, even though the client's own
@@ -182,8 +183,9 @@ sub-detent motion accumulates on one row, and multiple detents keep their
 magnitude. Zero, horizontal-dominant, modified, disabled, and outward-at-bound
 wheel events do not change volume. An enabled control at its bound leaves the
 vertical event to the page scroller. A wheel burst replaces one queued
-latest target per serial while the first write is in flight. A newer snapshot
-confirms each accepted write before the next leaves the model; external or
+latest target per serial while the first write is in flight. A post-completion
+snapshot at or above the result's observed revision confirms each accepted
+write before the next leaves the model; external or
 refused authoritative truth replaces the local handle. If a successful reply
 never produces a newer snapshot, the transient display expires after a bounded
 wait instead of parking on an unconfirmed value.
@@ -270,8 +272,9 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   the production page: angle/pixel and multi-detent accumulation, horizontal
   and zero admission, disabled/bound behavior, page-scroll pass-through,
   console knob/fader dispatch, plus real AudioClient transport-backed device
-  and stream pending bursts, latest-snapshot flush, refusal/uncertainty and
-  authority-loss no-replay, and authoritative readback restoration; and
+  and stream pending bursts, pre-success unrelated revision versus post-success
+  observed-revision flush, refusal/uncertainty and authority-loss no-replay,
+  and authoritative readback restoration; and
 - the Settings Center navigation row additionally proves Ctrl+6 selection,
   the Audio route tab's accessible name/role, and Tab entry plus Escape
   return in both the wide (720×520) and compact (440×360) host layouts.
