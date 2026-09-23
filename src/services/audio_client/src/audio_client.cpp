@@ -477,12 +477,23 @@ void AudioClient::acceptOperationReply(const QString &owner, const quint64 reque
     m_operationTimer.stop();
 
     const ValidationResult validation = validateOperationResult(result);
-    const bool exactInitiator = result.kind == pending.request.kind
+    // AGENT-CONTRACT: Audio1 can advance its revision between a client's
+    // snapshot and admission of a name-based peer request. There is no target
+    // handle to tie these requests to the older revision;
+    // accept only a non-regressing service revision from the same owner/epoch.
+    // Handle-targeting requests retain their exact initiating revision fence.
+    const bool peerOperation = pending.request.kind == OperationKind::SetVbanEnabled
+        || pending.request.kind == OperationKind::UpsertVbanStream
+        || pending.request.kind == OperationKind::DeleteVbanStream;
+    const bool validInitiator = result.kind == pending.request.kind
         && result.initiatingEpoch == pending.epoch
-        && result.initiatingRevision == pending.revision;
+        && (peerOperation ? result.initiatingRevision >= pending.revision
+                           : result.initiatingRevision == pending.revision)
+        && (!peerOperation || (result.observedEpoch == pending.epoch
+                                && result.observedRevision >= result.initiatingRevision));
     const bool currentSuccessLineage = result.status != OperationStatus::Succeeded
         || (m_snapshot.has_value() && result.observedEpoch == m_snapshot->epoch);
-    if (!transportSuccess || !validation.accepted || !exactInitiator
+    if (!transportSuccess || !validation.accepted || !validInitiator
         || !currentSuccessLineage) {
         queueOperationCompletion(
             requestId,

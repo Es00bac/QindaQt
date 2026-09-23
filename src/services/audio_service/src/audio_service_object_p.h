@@ -21,7 +21,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
     Q_CLASSINFO(
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Audio1\">"
-        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubb)))\" "
+        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs)))\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetDefault\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
@@ -58,6 +58,8 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "<method name=\"SetBusTarget\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetStripSource\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetVbanEnabled\"><arg name=\"name\" type=\"s\" direction=\"in\"/><arg name=\"enabled\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"UpsertVbanStream\"><arg name=\"definition\" type=\"(sbssubbs)\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
+        "<method name=\"DeleteVbanStream\"><arg name=\"name\" type=\"s\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"StartRecording\"><arg name=\"bus\" type=\"s\" direction=\"in\"/><arg name=\"format\" type=\"s\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"StopRecording\"><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"RunMacro\"><arg name=\"name\" type=\"s\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
@@ -126,6 +128,8 @@ public Q_SLOTS:
     Q_SCRIPTABLE void StopRecording();
     // VBAN (ADR-0185).
     Q_SCRIPTABLE void SetVbanEnabled(const QString &name, bool enabled);
+    Q_SCRIPTABLE void UpsertVbanStream(const QindaQt::Audio::VbanStream &definition);
+    Q_SCRIPTABLE void DeleteVbanStream(const QString &name);
 
 Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);

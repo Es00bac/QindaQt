@@ -4,13 +4,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QindaTK as Tk
 
-// The console's preset, macro, and VBAN bar. One line holds the preset
-// picker and its save/delete actions; macros and VBAN toggles flow beneath,
-// wrapping with the window instead of overflowing it.
-//
-// AGENT-GUARD: no text entry. The Audio route's intent surface is closed and
-// its boundary gate refuses any text field; a new preset takes the first free
-// "Preset N" name instead.
+// The console's preset and macro bar. Manual network streams live in the
+// separate Other computers tab (ADR-0246), so this dense mixer remains focused.
+// A new preset takes the first free "Preset N" name, without text entry.
 Tk.Flex {
     id: bar
 
@@ -71,15 +67,12 @@ Tk.Flex {
     Tk.Caption {
         objectName: "consoleMacroCaption"
         visible: (bar.model.consoleMacros?.length ?? 0) > 0
-                 || (bar.model.consoleVban?.length ?? 0) > 0
-        text: qsTr("Macros and network streams")
+        text: qsTr("Macros")
         Accessible.role: Accessible.StaticText
         Accessible.name: text
     }
 
-    // Macro buttons (ADR-0183) and VBAN toggles (ADR-0185) share one wrapping
-    // line: both are "press and the desk reacts" controls, and either list
-    // can grow without bound in the user's document.
+    // Macro buttons (ADR-0183) wrap with the window instead of overflowing.
     Tk.Flex {
         wrap: Tk.Flex.Wrap
         gap: Tk.Theme.space.xs
@@ -94,21 +87,6 @@ Tk.Flex {
                 available: bar.enabledControls
                 onClicked: bar.model.runMacro(modelData)
                 Accessible.name: qsTr("Run macro %1").arg(modelData)
-            }
-        }
-        Repeater {
-            model: bar.model.consoleVban ?? []
-            delegate: AudioConsolePad {
-                id: vbanPad
-                required property var modelData
-                implicitHeight: 20
-                objectName: "consoleVban_" + modelData.name
-                text: (modelData.outgoing ? qsTr("Send %1") : qsTr("Receive %1")).arg(modelData.name)
-                checkable: true
-                available: bar.enabledControls
-                Binding on checked { value: vbanPad.modelData.enabled === true; when: !vbanPad.down }
-                onToggled: bar.model.setVbanEnabled(modelData.name, checked)
-                Accessible.name: text
             }
         }
     }

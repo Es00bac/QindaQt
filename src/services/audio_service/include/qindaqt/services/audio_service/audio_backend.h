@@ -132,7 +132,8 @@ struct BackendRecording {
 struct BackendVbanStream {
     QString name;
     bool outgoing = true;
-    // Outgoing: the bus's device, read from its monitor. Incoming: unused.
+    // Outgoing: bus device monitor. Incoming: exact selected physical output.
+    // The graph worker resolves this handle only in its current epoch.
     Handle target;
     QString host;
     quint32 port = 6980;
@@ -218,6 +219,9 @@ Q_SIGNALS:
     // The recording stopped on its own (a write error, the file system full);
     // the console must withdraw it rather than show a recording that is not.
     void recordingFailed(quint64 generation, const QString &reasonCode);
+    // Names whose local PipeWire capture/receive route is observed, not proof
+    // that the remote peer hears sound (ADR-0246).
+    void vbanRunningChanged(quint64 generation, const QStringList &names);
 };
 
 } // namespace QindaQt::Audio

@@ -89,12 +89,14 @@ WirePlumberWorker::WirePlumberWorker(const quint64 initialEpoch,
                                      OutcomeCallback outcomeCallback,
                                      LevelsCallback levelsCallback,
                                      WirePlumberWorkerLifecycleHooks lifecycleHooks,
-                                     RecordingFailedCallback recordingFailedCallback)
+                                     RecordingFailedCallback recordingFailedCallback,
+                                     VbanRunningCallback vbanRunningCallback)
     : m_epoch(initialEpoch == 0 ? 1 : initialEpoch)
     , m_snapshotCallback(std::move(snapshotCallback))
     , m_outcomeCallback(std::move(outcomeCallback))
     , m_levelsCallback(std::move(levelsCallback))
     , m_recordingFailedCallback(std::move(recordingFailedCallback))
+    , m_vbanRunningCallback(std::move(vbanRunningCallback))
     , m_lifecycleHooks(std::move(lifecycleHooks))
 {
 }

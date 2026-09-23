@@ -234,8 +234,9 @@ bool VbanSender::start(pw_context *const context, const QString &nodeName,
     pw_properties *const properties = pw_properties_new(
         PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Capture", PW_KEY_MEDIA_ROLE,
         "Production", PW_KEY_NODE_NAME, name.constData(), PW_KEY_TARGET_OBJECT, target.constData(),
-        PW_KEY_STREAM_CAPTURE_SINK, "true", PW_KEY_NODE_VIRTUAL, "true", PW_KEY_NODE_PASSIVE,
-        "false", "node.dont-fallback", "true", nullptr);
+        PW_KEY_STREAM_CAPTURE_SINK, "true", PW_KEY_NODE_PASSIVE,
+        "false", PW_KEY_NODE_DONT_RECONNECT, "true", "node.dont-move", "true",
+        "node.dont-fallback", "true", nullptr);
     m_impl->stream = connectStream(context, name, properties, &kSenderEvents, m_impl.get(),
                                    PW_DIRECTION_INPUT);
     if (m_impl->stream == nullptr) {
@@ -274,6 +275,7 @@ struct VbanReceiver::Impl {
     Ring ring;
     int socket = -1;
     QByteArray streamName;
+    in_addr allowedSource{};
     std::atomic_bool stopping{false};
     std::thread worker;
     // Silence until a quarter of a packet's worth of margin has arrived, so a
@@ -289,8 +291,15 @@ struct VbanReceiver::Impl {
             if (::poll(&descriptor, 1, 50) <= 0) {
                 continue;
             }
-            const ssize_t received = ::recv(socket, datagram.data(), datagram.size(), 0);
-            if (received <= 0) {
+            sockaddr_in source{};
+            socklen_t sourceSize = sizeof(source);
+            const ssize_t received = ::recvfrom(socket, datagram.data(), datagram.size(), 0,
+                                                reinterpret_cast<sockaddr *>(&source),
+                                                &sourceSize);
+            // AGENT-GUARD: VBAN carries no authentication. A receiver may put
+            // packets into the local speaker path only from the exact IPv4
+            // source the user authorized, even when stream name/port match.
+            if (received <= 0 || !vbanSourceAllowed(source, sourceSize, allowedSource)) {
                 continue;
             }
             const QByteArray packet = QByteArray::fromRawData(datagram.data(), static_cast<qsizetype>(received));
@@ -381,9 +390,12 @@ VbanReceiver::~VbanReceiver()
     stop();
 }
 
-bool VbanReceiver::start(pw_context *const context, const QString &streamName, const quint16 port)
+bool VbanReceiver::start(pw_context *const context, const QString &streamName,
+                         const quint16 port, const QString &allowedSourceIpv4)
 {
-    if (m_running.load() || context == nullptr || streamName.isEmpty()) {
+    if (m_running.load() || context == nullptr || streamName.isEmpty()
+        || ::inet_pton(AF_INET, allowedSourceIpv4.toLatin1().constData(),
+                       &m_impl->allowedSource) != 1) {
         return false;
     }
     m_impl->socket = openUdpSocket();
@@ -447,9 +459,49 @@ void VbanReceiver::stop()
     }
 }
 
+bool vbanSourceAllowed(const sockaddr_in &source, const socklen_t sourceSize,
+                       const in_addr &allowed) noexcept
+{
+    return sourceSize >= sizeof(sockaddr_in) && source.sin_family == AF_INET
+        && source.sin_addr.s_addr == allowed.s_addr;
+}
+
 QString vbanSourceNodeName(const QString &streamName)
 {
     return QLatin1String(kReceiverPrefix) + streamName;
+}
+
+QString vbanRouteNodeName(const QString &streamName)
+{
+    return QStringLiteral("qindaqt.vban.route.") + streamName;
+}
+
+QByteArray vbanRouteArguments(const QString &streamName, const QString &outputNodeName)
+{
+    const auto safe = [](const QString &name) {
+        if (name.isEmpty() || name.toUtf8().size() > 253) return false;
+        for (const QChar character : name) {
+            const ushort code = character.unicode();
+            if (code <= 0x1f || code == 0x7f || character == QLatin1Char('"')
+                || character == QLatin1Char('\\')) return false;
+        }
+        return true;
+    };
+    const QString source = vbanSourceNodeName(streamName);
+    const QString route = vbanRouteNodeName(streamName);
+    if (!safe(source) || !safe(route) || !safe(outputNodeName)) return {};
+    // AGENT-GUARD: both target.object names are exact and dont-fallback is
+    // set on both halves. A missing authorized speaker must never redirect
+    // received audio to the default output or capture an unrelated source.
+    return QStringLiteral(
+        "{ node.name = \"%1\" node.description = \"VBAN %2 to speakers\""
+        " capture.props = { node.name = \"%1.capture\" target.object = \"%3\""
+        " node.dont-fallback = true node.dont-reconnect = true node.dont-move = true }"
+        " playback.props = { node.name = \"%1\" target.object = \"%4\""
+        " node.dont-fallback = true node.dont-reconnect = true node.dont-move = true"
+        " audio.position = [ FL FR ] }"
+        " target.object = \"%4\" }")
+        .arg(route, streamName, source, outputNodeName).toUtf8();
 }
 
 } // namespace QindaQt::Audio

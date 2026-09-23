@@ -70,6 +70,15 @@ public:
     {
         recording = declared;
     }
+    void publishVbanRunning(const QStringList &names)
+    {
+        Q_EMIT vbanRunningChanged(generation, names);
+    }
+    void publishVbanRunningForGeneration(quint64 runGeneration,
+                                         const QStringList &names)
+    {
+        Q_EMIT vbanRunningChanged(runGeneration, names);
+    }
     void failRecording(const QString &reason)
     {
         Q_EMIT recordingFailed(generation, reason);
@@ -133,7 +142,8 @@ inline Audio::Capabilities consoleCapabilityBits()
 {
     return Audio::Capabilities{} | Audio::Capability::Console
         | Audio::Capability::SetConsoleGain | Audio::Capability::SetConsoleRouting
-        | Audio::Capability::ConsoleMeters;
+        | Audio::Capability::ConsoleMeters
+        | Audio::Capability::ManageVbanStreams;
 }
 
 inline Audio::Snapshot audioSnapshot(const quint64 epoch = 7,

@@ -106,6 +106,18 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
     // real console document.
     QTemporaryDir consoleDir;
     QVERIFY(consoleDir.isValid());
+    // A real D-Bus CRUD round trip must not touch the developer's VBAN file.
+    struct RestoreVbanPath {
+        bool wasSet;
+        QByteArray previous;
+        ~RestoreVbanPath() {
+            if (wasSet) qputenv("QINDAQT_AUDIO_VBAN_PATH", previous);
+            else qunsetenv("QINDAQT_AUDIO_VBAN_PATH");
+        }
+    } restoreVbanPath{qEnvironmentVariableIsSet("QINDAQT_AUDIO_VBAN_PATH"),
+                      qgetenv("QINDAQT_AUDIO_VBAN_PATH")};
+    qputenv("QINDAQT_AUDIO_VBAN_PATH",
+            consoleDir.filePath(QStringLiteral("audio-vban.json")).toUtf8());
     const QString consolePath = consoleDir.filePath(QStringLiteral("audio-console.json"));
     auto firstBackend = std::make_unique<FakeAudioBackend>();
     FakeAudioBackend *firstBackendPtr = firstBackend.get();
@@ -131,6 +143,9 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
         QStringLiteral("type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(uuttttss)\"")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"ad\" direction=\"in\"")));
+    QVERIFY(introspection.contains(QStringLiteral("name=\"UpsertVbanStream\"")));
+    QVERIFY(introspection.contains(QStringLiteral("name=\"DeleteVbanStream\"")));
+    QVERIFY(introspection.contains(QStringLiteral("type=\"(sbssubbs)\" direction=\"in\"")));
 
     QtAudioTransport transport(bus.connection, serviceName);
     AudioClient client(&transport);
@@ -182,6 +197,32 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
                              .reasonCode = QStringLiteral("ok"),
                              .diagnostic = {}});
     QTRY_COMPARE(completed.count(), 3);
+
+    VbanStream receiver;
+    receiver.name = QStringLiteral("Desk");
+    receiver.outgoing = false;
+    receiver.host = QStringLiteral("192.0.2.10");
+    receiver.outputNodeName =
+        QStringLiteral("alsa_output.pci-0000_00_1f.3.analog-stereo");
+    receiver.port = 6980;
+    const quint64 upsertId = client.upsertVbanStream(receiver);
+    QVERIFY(upsertId != 0);
+    QTRY_COMPARE(completed.count(), 4);
+    QCOMPARE(completed[3][0].toULongLong(), upsertId);
+    QCOMPARE(completed[3][1].value<OperationResult>().status,
+             OperationStatus::Succeeded);
+    QTRY_COMPARE(client.snapshot().console.vban.size(), 1);
+    QCOMPARE(client.snapshot().console.vban.first().outputNodeName,
+             receiver.outputNodeName);
+    QVERIFY(!client.snapshot().console.vban.first().enabled);
+
+    const quint64 deleteId = client.deleteVbanStream(receiver.name);
+    QVERIFY(deleteId != 0);
+    QTRY_COMPARE(completed.count(), 5);
+    QCOMPARE(completed[4][0].toULongLong(), deleteId);
+    QCOMPARE(completed[4][1].value<OperationResult>().status,
+             OperationStatus::Succeeded);
+    QTRY_VERIFY(client.snapshot().console.vban.isEmpty());
 
     const QString firstOwner = client.owner();
     firstHost->stop();

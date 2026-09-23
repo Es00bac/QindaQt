@@ -45,6 +45,7 @@ enum class Capability : quint32 {
     SetConsoleGain = 1U << 7U,
     SetConsoleRouting = 1U << 8U,
     ConsoleMeters = 1U << 9U,
+    ManageVbanStreams = 1U << 10U,
 };
 Q_DECLARE_FLAGS(Capabilities, Capability)
 
@@ -91,6 +92,9 @@ enum class OperationKind : quint32 {
     StopRecording = 26,
     // Switches a VBAN stream on or off (ADR-0185); name in displayName.
     SetVbanEnabled = 27,
+    // Schema 12 (ADR-0246): atomically edit Audio1-owned manual-peer definitions.
+    UpsertVbanStream = 28,
+    DeleteVbanStream = 29,
 };
 
 enum class OperationStatus : quint32 {
@@ -234,6 +238,9 @@ struct OperationRequest {
     StripProcessing processing = {};
     // SetBusProcessing: the bus rack to apply.
     BusProcessing busProcessing = {};
+    // UpsertVbanStream: only definition fields are accepted; status bits are
+    // derived by Audio1 and may not be supplied by a client.
+    VbanStream vbanDefinition = {};
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };

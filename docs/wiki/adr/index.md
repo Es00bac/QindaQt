@@ -245,3 +245,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0240: Encode the KWin overview edge with KConfig semantics](0240-encode-the-kwin-overview-edge-with-kconfig-semantics.md)
 - [ADR-0241: Capture Gather window previews through KWin's restricted interface](0241-capture-gather-window-previews-through-kwin.md)
 - [ADR-0242: Adapt and balance KWin's pointer-corner callback](0242-adapt-and-balance-the-kwin-pointer-corner.md)
+
+- [ADR-0246: Configure manual audio peers through Audio1](0246-configure-manual-audio-peers-through-audio1.md)

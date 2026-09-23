@@ -27,7 +27,8 @@ namespace
 [[nodiscard]] Capabilities consoleCapabilities()
 {
     return Capabilities{} | Capability::Console | Capability::SetConsoleGain
-        | Capability::SetConsoleRouting | Capability::ConsoleMeters;
+        | Capability::SetConsoleRouting | Capability::ConsoleMeters
+        | Capability::ManageVbanStreams;
 }
 
 
@@ -91,6 +92,8 @@ AudioOperationCoordinator::AudioOperationCoordinator(AudioBackend *backend, QObj
             &AudioOperationCoordinator::acceptLevels);
     connect(m_backend, &AudioBackend::recordingFailed, this,
             &AudioOperationCoordinator::acceptRecordingFailure);
+    connect(m_backend, &AudioBackend::vbanRunningChanged, this,
+            &AudioOperationCoordinator::acceptVbanRunning);
 }
 
 const Snapshot &AudioOperationCoordinator::snapshot() const noexcept
@@ -108,6 +111,7 @@ void AudioOperationCoordinator::start()
         return;
     }
     m_backendGeneration = generation;
+    m_runningVban.clear();
     m_running = true;
     // The virtual endpoints are declared from the first moment the backend
     // runs, not from the first snapshot: they are what the console is made of,
@@ -126,6 +130,7 @@ void AudioOperationCoordinator::stop()
     }
     m_running = false;
     m_backendGeneration = 0;
+    m_runningVban.clear();
     m_backend->stop();
     makePendingUncertain(m_snapshot, QStringLiteral("service-stopped"));
 }
@@ -209,7 +214,31 @@ OperationSubmission AudioOperationCoordinator::submit(const OperationRequest &re
             }
         }
         QString reasonCode;
-        if (request.kind == OperationKind::SetVbanEnabled) {
+        if (request.kind == OperationKind::UpsertVbanStream) {
+            const VbanStream &definition = request.vbanDefinition;
+            bool busKnown = !definition.outgoing;
+            if (definition.outgoing) {
+                for (const Bus &bus : m_console.console().buses)
+                    busKnown = busKnown || bus.id == definition.busId;
+            }
+            if (!busKnown || !m_vban.upsert(definition, &reasonCode)) {
+                return {.pending = false, .operationId = 0,
+                        .immediateResult = immediate(
+                            request, OperationStatus::Rejected,
+                            busKnown ? reasonCode : QStringLiteral("unknown-bus"))};
+            }
+            // An edit may replace the authorized source, port or speaker. It
+            // always returns to disabled so saving a definition cannot quietly
+            // open or retarget a live receive path.
+            m_console.setVbanEnabled(definition.name, false);
+        } else if (request.kind == OperationKind::DeleteVbanStream) {
+            if (!m_vban.remove(request.displayName, &reasonCode)) {
+                return {.pending = false, .operationId = 0,
+                        .immediateResult = immediate(request, OperationStatus::Rejected,
+                                                     reasonCode)};
+            }
+            m_console.setVbanEnabled(request.displayName, false);
+        } else if (request.kind == OperationKind::SetVbanEnabled) {
             const QString name = request.displayName.trimmed();
             bool known = false;
             for (const VbanStream &stream : m_vban.load()) {
@@ -363,6 +392,11 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
         // The console survives a malformed backend payload: it is the user's
         // own configuration, not a projection of the graph, and blanking it
         // would lose their routing because a daemon hiccuped.
+        m_runningVban.clear();
+        if (!m_publishedVban.isEmpty()) {
+            m_publishedVban.clear();
+            m_backend->applyVban({});
+        }
         unavailable.console = m_console.console();
         unavailable.console.presets = m_presets.names();
         unavailable.console.macros = MacroStore::names(m_macros.load());
@@ -379,7 +413,11 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
 
     if (m_hasBackendSnapshot && snapshot.epoch != m_snapshot.epoch) {
         makePendingUncertain(snapshot, QStringLiteral("authority-replaced"));
+        m_runningVban.clear();
     }
+    if (snapshot.availability != Availability::Ready
+        && snapshot.availability != Availability::Degraded)
+        m_runningVban.clear();
     m_snapshot = snapshot;
     // Follow the graph with the console's endpoints BEFORE folding the console
     // in, so this publication already carries the bindings this snapshot made
@@ -393,7 +431,6 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     m_snapshot.console.presets = m_presets.names();
     m_snapshot.console.macros = MacroStore::names(m_macros.load());
     m_snapshot.console.recording = m_recording;
-    m_snapshot.console.vban = vbanStreams();
     m_snapshot.capabilities |= consoleCapabilities();
     // A new graph generation can make an endpoint resolvable that was not
     // before, so the routing is re-derived against every accepted snapshot
@@ -405,6 +442,7 @@ void AudioOperationCoordinator::acceptSnapshot(const quint64 generation,
     publishMetering();
     publishRecording();
     publishVban();
+    m_snapshot.console.vban = vbanStreams();
     m_hasBackendSnapshot = true;
     m_minimumRestartEpoch = 0;
     Q_EMIT snapshotChanged(m_snapshot);
