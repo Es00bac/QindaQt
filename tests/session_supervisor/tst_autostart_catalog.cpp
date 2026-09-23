@@ -43,6 +43,8 @@ private Q_SLOTS:
     void disabledWinnerMasksSystemAndDoesNotLaunch();
     void desktopTryExecAndUnsupportedLaunchFormsExplainIneligibility();
     void boundedExecExpansionProducesArgvWithoutShell();
+    void escapedScalarValuesDecodeBeforeFieldCodeAndTryExec();
+    void malformedScalarEscapeExplainsIneligibility();
     void terminalAndWorkingDirectoryFollowThePublicPlan();
     void environmentResolvesXdgRootsWithoutAmbientFallback();
 };
@@ -123,6 +125,57 @@ void AutostartCatalogTest::boundedExecExpansionProducesArgvWithoutShell()
     // Whatever string the desktop parser admits remains one argv item; the
     // autostart catalog never invokes a shell for expansion.
     QVERIFY(entry.arguments.join(QLatin1Char(' ')).contains(QStringLiteral("touch")));
+}
+
+void AutostartCatalogTest::escapedScalarValuesDecodeBeforeFieldCodeAndTryExec()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    auto config = options(root);
+    QVERIFY(QDir().mkpath(config.userDirectory));
+    QVERIFY(QDir().mkpath(config.executableDirectories.constFirst()));
+    executable(root, QStringLiteral("app"));
+    executable(root, QStringLiteral("helper app"));
+    writeFile(QDir(config.userDirectory).filePath(QStringLiteral("escaped.desktop")),
+              QStringLiteral("[Desktop Entry]\nType=Application\nName=Hello\\sWorld\n"
+                             "Comment=Line\\nTwo\\\\Backslash\nIcon=folder\\sicon\n"
+                             "TryExec=helper\\sapp\nExec=app %c %i\n"));
+    const auto entries = scan(config);
+    QCOMPARE(entries.size(), 1);
+    const auto &entry = entries.constFirst();
+    QVERIFY(entry.eligible);
+    QCOMPARE(entry.name, QStringLiteral("Hello World"));
+    QCOMPARE(entry.comment, QStringLiteral("Line\nTwo\\Backslash"));
+    QCOMPARE(entry.iconName, QStringLiteral("folder icon"));
+    QCOMPARE(entry.program, root.filePath(QStringLiteral("bin/app")));
+    QCOMPARE(entry.arguments,
+             QStringList({QStringLiteral("Hello World"), QStringLiteral("--icon"),
+                          QStringLiteral("folder icon")}));
+}
+
+void AutostartCatalogTest::malformedScalarEscapeExplainsIneligibility()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    auto config = options(root);
+    QVERIFY(QDir().mkpath(config.userDirectory));
+    QVERIFY(QDir().mkpath(config.executableDirectories.constFirst()));
+    executable(root, QStringLiteral("app"));
+    const auto put = [&config](const QString &id, const QString &key) {
+        writeFile(QDir(config.userDirectory).filePath(id + QStringLiteral(".desktop")),
+                  QStringLiteral("[Desktop Entry]\nType=Application\nName=Visible\n"
+                                 "Exec=app\n%1=bad\\q\n").arg(key));
+    };
+    put(QStringLiteral("name"), QStringLiteral("Name"));
+    put(QStringLiteral("comment"), QStringLiteral("Comment"));
+    put(QStringLiteral("icon"), QStringLiteral("Icon"));
+    put(QStringLiteral("tryexec"), QStringLiteral("TryExec"));
+    const auto entries = scan(config);
+    QCOMPARE(entries.size(), 4);
+    for (const auto &entry : entries) {
+        QVERIFY2(!entry.eligible, qPrintable(entry.id));
+        QCOMPARE(entry.ineligibilityReason, QStringLiteral("Invalid desktop entry string escape"));
+    }
 }
 
 void AutostartCatalogTest::terminalAndWorkingDirectoryFollowThePublicPlan()

@@ -30,6 +30,7 @@ struct Fields final {
     bool gnomeDisabled = false;
     bool custom = false;
     bool invalidBoolean = false;
+    bool invalidString = false;
     bool hasOnlyShowIn = false;
     bool hasNotShowIn = false;
 };
@@ -44,9 +45,46 @@ QStringList splitDesktopList(const QString &value)
     return result;
 }
 
+// Decode only scalar string/localestring/iconstring keys owned by this
+// catalog. Exec and Path remain raw for LaunchExecutionParser, which owns
+// their separate quoting and escape rules; decoding them here changes argv.
+bool decodeDesktopString(const QString &raw, QString *decoded)
+{
+    QString value;
+    value.reserve(raw.size());
+    for (qsizetype index = 0; index < raw.size(); ++index) {
+        const QChar character = raw.at(index);
+        if (character != QLatin1Char('\\')) {
+            value.append(character);
+            continue;
+        }
+        if (++index >= raw.size())
+            return false;
+        switch (raw.at(index).unicode()) {
+        case 's': value.append(QLatin1Char(' ')); break;
+        case 'n': value.append(QLatin1Char('\n')); break;
+        case 't': value.append(QLatin1Char('\t')); break;
+        case 'r': value.append(QLatin1Char('\r')); break;
+        case '\\': value.append(QLatin1Char('\\')); break;
+        default: return false;
+        }
+    }
+    *decoded = std::move(value);
+    return true;
+}
+
 Fields parseFields(const QString &document)
 {
     Fields fields;
+    const auto scalar = [&fields](const QString &raw, QString *target) {
+        QString decoded;
+        if (!decodeDesktopString(raw, &decoded)) {
+            fields.invalidString = true;
+            *target = raw; // Keep a visible row even when one value is malformed.
+        } else {
+            *target = std::move(decoded);
+        }
+    };
     bool inEntry = false;
     for (const QString &line : document.split(QLatin1Char('\n'))) {
         const QString trimmed = line.trimmed();
@@ -62,11 +100,11 @@ Fields parseFields(const QString &document)
         const QString key = line.left(separator).trimmed();
         const QString value = line.mid(separator + 1).trimmed();
         if (key == QLatin1String("Type")) fields.type = value;
-        else if (key == QLatin1String("Name")) fields.name = value;
-        else if (key == QLatin1String("Comment")) fields.comment = value;
-        else if (key == QLatin1String("Icon")) fields.icon = value;
+        else if (key == QLatin1String("Name")) scalar(value, &fields.name);
+        else if (key == QLatin1String("Comment")) scalar(value, &fields.comment);
+        else if (key == QLatin1String("Icon")) scalar(value, &fields.icon);
         else if (key == QLatin1String("Exec")) fields.exec = value;
-        else if (key == QLatin1String("TryExec")) fields.tryExec = value;
+        else if (key == QLatin1String("TryExec")) scalar(value, &fields.tryExec);
         else if (key == QLatin1String("OnlyShowIn")) {
             fields.hasOnlyShowIn = true;
             fields.onlyShowIn = splitDesktopList(value);
@@ -204,7 +242,9 @@ QList<Entry> scan(const ScanOptions &options, QString *error)
         entry.exec = fields.exec;
         entry.custom = fields.custom;
         entry.enabled = !fields.hidden && !fields.gnomeDisabled;
-        if (fields.invalidBoolean) {
+        if (fields.invalidString) {
+            markIneligible(entry, QStringLiteral("Invalid desktop entry string escape"));
+        } else if (fields.invalidBoolean) {
             markIneligible(entry, QStringLiteral("Invalid desktop autostart flag"));
         } else if (fields.hasOnlyShowIn && fields.hasNotShowIn) {
             markIneligible(entry, QStringLiteral("Conflicting desktop conditions"));
