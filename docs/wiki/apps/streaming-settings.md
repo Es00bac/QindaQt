@@ -114,7 +114,9 @@ non-loopback address (ADR-0201).
 makes these values authoritative only after a Settings1 snapshot confirms
 them. While one save is pending, the controls wait; a rejection leaves the
 previous value on screen with the server message, and an uncertain timeout or
-owner change asks for a fresh read instead of replaying. The page waits for
+owner change asks for a fresh read instead of replaying. A same-lineage
+stale snapshot cannot settle an accepted save: the client waits for at least
+the commit revision, then reports uncertainty if fresh readback never arrives. The page waits for
 the first baseline before connecting, setting OBS up, or saving. A selected
 new port changes the address QindaQt will use after confirmation, but OBS's
 active port changes only after **Repair OBS setup** and an OBS restart.
@@ -147,7 +149,7 @@ installed entry elsewhere.
 | `qindaqt.services-obs-transport` | A real QWebSocket round trip against a miniature obs-websocket server on a private loopback port, and the loopback-only guard |
 | `qindaqt.services-obs-provisioning` | The generated password, obs-websocket's own key names, the three files and nothing else, refusals that would leave the server unusable, what a check names as missing, and that reading settings never returns the password |
 | `qindaqt.services-obs-secret-store` | The scoped attributes as `a{ss}`, replace-on-store, an absent secret as the first-run state, and an unreachable keyring as an error rather than an empty password |
-| `qindaqt.services-streaming-preferences` | Rejected writes retaining confirmed values, serialized pending save, readback timeout, owner loss without replay |
+| `qindaqt.services-streaming-preferences` | Rejected writes retaining confirmed values, serialized pending save, revision-ordered readback, permanently stale timeout, owner replacement without replay |
 | `qindaqt.services-obs-login-helper` | Private Settings1 and fake OBS, true/false fresh login, external edit with Settings closed, cancellation and no-owner timeout |
 | `qindaqt.shell-obs-applet-connection` | No early connection, confirmed auto-connect and active-port gate, one start per stable state, disable/port replacement |
 | `qindaqt.settings-streaming-model` | The loopback address, connecting without a stored password, an unreadable keyring, set-up generating and storing once, elapsed text, the dropped-frame threshold, the three bridge sentences, toggles while disconnected, delayed baseline/selected port, the effective login mask, and the bus table from the vendor payload |

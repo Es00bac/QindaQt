@@ -4,6 +4,8 @@
 #include <qindaqt/services/streaming_preferences/streaming_preferences.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 
+#include <QElapsedTimer>
+#include <QTimer>
 #include <QVariant>
 
 namespace QindaQt::Services::StreamingPreferences {
@@ -34,6 +36,7 @@ private:
     void onCommitFinished(const SettingsClient::CommitOutcome &outcome);
     void onCommitUncertain(const QString &message);
     void setWriteStatus(const QString &status);
+    void clearPending();
 
     SettingsClient::SettingsClient &m_client;
     int m_port = 4455;
@@ -43,6 +46,11 @@ private:
     bool m_awaitingReadback = false;
     QString m_pendingKey;
     QVariant m_pendingValue;
+    QString m_pendingOwner;
+    QString m_pendingEpoch;
+    quint64 m_pendingRevisionFloor = 0;
+    QElapsedTimer m_readbackAge;
+    QTimer m_readbackTimer;
     QString m_writeStatus;
 };
 

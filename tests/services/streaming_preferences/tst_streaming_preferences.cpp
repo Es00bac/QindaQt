@@ -3,6 +3,7 @@
 #include <qindaqt/services/settings_client/settings_transport.h>
 #include <qindaqt/services/settings_protocol/settings_wire_contract.h>
 
+#include <QElapsedTimer>
 #include <QSignalSpy>
 #include <QtTest>
 
@@ -88,6 +89,9 @@ private Q_SLOTS:
     void appliedWriteWaitsForAuthoritativeReadback();
     void ownerLossIsUncertainAndDoesNotReplay();
     void failedReadbackReleasesPendingWithoutReplay();
+    void staleReadbackWaitsForAppliedRevision();
+    void permanentStaleReadbackBecomesUncertainWithoutReplay();
+    void ownerReplacementWhileAwaitingReadbackIsUncertain();
 };
 
 void StreamingPreferencesTest::rejectedWritesNeverPublishRequestedValues() {
@@ -189,6 +193,93 @@ void StreamingPreferencesTest::failedReadbackReleasesPendingWithoutReplay() {
     QVERIFY(!preferences.isLoaded());
     QVERIFY(!preferences.startObsAtLogin());
     QVERIFY(preferences.writeStatusText().contains(QStringLiteral("not confirmed")));
+    QCOMPARE(transport.commits.size(), 0);
+}
+
+void StreamingPreferencesTest::staleReadbackWaitsForAppliedRevision() {
+    FakeTransport transport;
+    SettingsClientType client(transport, Settings1StreamingPreferences::scopedKeys(),
+                          {.requestTimeoutMilliseconds = 300, .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    Settings1StreamingPreferences preferences(client);
+    baseline(transport, client);
+    QVERIFY(preferences.setWebSocketPort(4466));
+    const auto commit = transport.commits.takeFirst();
+    Q_EMIT transport.commitReceived(commit.token, commit.owner,
+                                    commitWire(SettingsWireStatus::Applied, QLatin1String(Port), 4466));
+    QTRY_COMPARE(transport.snapshots.size(), 1);
+    const auto oldRead = transport.snapshots.takeFirst();
+    Q_EMIT transport.snapshotReceived(oldRead.token, oldRead.owner,
+                                      snapshotWire(1, values()));
+    QCOMPARE(client.state(), SettingsClient::ClientState::Ready);
+    QVERIFY(preferences.writePending());
+    QCOMPARE(preferences.webSocketPort(), 4455);
+    QVERIFY(!preferences.writeStatusText().contains(QStringLiteral("did not match")));
+    // A new read in the same lineage reaches Applied revisionAfter=2.
+    QTRY_VERIFY(!transport.snapshots.isEmpty());
+    const auto freshRead = transport.snapshots.takeFirst();
+    Q_EMIT transport.snapshotReceived(freshRead.token, freshRead.owner,
+                                      snapshotWire(2, values(4466)));
+    QVERIFY(!preferences.writePending());
+    QCOMPARE(preferences.webSocketPort(), 4466);
+    QCOMPARE(preferences.writeStatusText(), QStringLiteral("Saved."));
+    QCOMPARE(transport.commits.size(), 0);
+}
+
+void StreamingPreferencesTest::permanentStaleReadbackBecomesUncertainWithoutReplay() {
+    FakeTransport transport;
+    SettingsClientType client(transport, Settings1StreamingPreferences::scopedKeys(),
+                          {.requestTimeoutMilliseconds = 300, .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    Settings1StreamingPreferences preferences(client);
+    baseline(transport, client);
+    QVERIFY(preferences.setStartObsAtLogin(true));
+    const auto commit = transport.commits.takeFirst();
+    Q_EMIT transport.commitReceived(commit.token, commit.owner,
+                                    commitWire(SettingsWireStatus::Applied, QLatin1String(Login), true));
+    QElapsedTimer elapsed;
+    elapsed.start();
+    int staleReplies = 0;
+    while (preferences.writePending() && elapsed.elapsed() < 5'000) {
+        QCoreApplication::processEvents();
+        while (!transport.snapshots.isEmpty()) {
+            const auto stale = transport.snapshots.takeFirst();
+            Q_EMIT transport.snapshotReceived(stale.token, stale.owner,
+                                              snapshotWire(1, values()));
+            ++staleReplies;
+        }
+        QTest::qWait(20);
+    }
+    QVERIFY2(!preferences.writePending(), "stale readback never reached its bounded uncertain result");
+    QVERIFY(staleReplies >= 2); // the adapter actually refetched
+    QVERIFY(preferences.writeStatusText().contains(QStringLiteral("not confirmed")));
+    QVERIFY(!preferences.startObsAtLogin());
+    QCOMPARE(transport.commits.size(), 0);
+}
+
+void StreamingPreferencesTest::ownerReplacementWhileAwaitingReadbackIsUncertain() {
+    FakeTransport transport;
+    SettingsClientType client(transport, Settings1StreamingPreferences::scopedKeys(),
+                          {.requestTimeoutMilliseconds = 300, .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    Settings1StreamingPreferences preferences(client);
+    baseline(transport, client);
+    QVERIFY(preferences.setStartObsAtLogin(true));
+    const auto commit = transport.commits.takeFirst();
+    Q_EMIT transport.commitReceived(commit.token, commit.owner,
+                                    commitWire(SettingsWireStatus::Applied, QLatin1String(Login), true));
+    QTRY_COMPARE(transport.snapshots.size(), 1);
+    transport.snapshots.takeFirst(); // old owner's in-flight readback
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.41"));
+    QTRY_VERIFY(!preferences.writePending());
+    QVERIFY(!preferences.isLoaded());
+    QVERIFY(preferences.writeStatusText().contains(QStringLiteral("not confirmed")));
+    QTRY_COMPARE(transport.snapshots.size(), 1);
+    const auto replacement = transport.snapshots.takeFirst();
+    Q_EMIT transport.snapshotReceived(replacement.token, replacement.owner,
+                                      snapshotWire(0, values()));
+    QTRY_VERIFY(preferences.isLoaded());
+    QVERIFY(!preferences.startObsAtLogin());
     QCOMPARE(transport.commits.size(), 0);
 }
 
