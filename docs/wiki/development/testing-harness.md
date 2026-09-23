@@ -1800,13 +1800,15 @@ and 440×360 compact presentation, exactly one active route Loader, real
 scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
 Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
 The existing rows add Notifications behavior, multiple hostile CLI intent
-forms, desktop identity, all ten route roots under private-bus loss,
+forms, desktop identity, all 21 registered route roots under private session/system-bus loss with
+active-Loader witnesses,
 one missing-theme poison that requires pre-QML exit 3, and a relocated install
 staged with only `SettingsAppearanceRuntime`. The installed row also withholds
 its required Appearance QML module while the developer tree remains present,
 requires root-construction failure, repeats the poison for Network and Audio,
-reinstalls the runtime component, and only then proves all ten complete
-routes from the sanitized stage.
+reinstalls the runtime component, and only then proves all 21 complete
+routes from the sanitized stage. A resident fake route with no Loader witness
+is rejected independently.
 
 Every route now requires one complete QST-1 generation because navigation is
 token-styled. Settings1 route models use independent transports, while Network,

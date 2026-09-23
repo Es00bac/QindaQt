@@ -240,6 +240,7 @@ execute_process(
             QT_QUICK_BACKEND=software
             QML_DISABLE_DISK_CACHE=1
             DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            DBUS_SYSTEM_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-system-bus
             XDG_CONFIG_HOME=${poison_sandbox}/config
             XDG_DATA_HOME=${poison_sandbox}/data
             XDG_DATA_DIRS=${poison_sandbox}/system-data
@@ -279,6 +280,7 @@ execute_process(
             QT_QUICK_BACKEND=software
             QML_DISABLE_DISK_CACHE=1
             DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            DBUS_SYSTEM_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-system-bus
             XDG_CONFIG_HOME=${poison_sandbox}/config
             XDG_DATA_HOME=${poison_sandbox}/data
             XDG_DATA_DIRS=${poison_sandbox}/system-data
@@ -329,6 +331,7 @@ execute_process(
             QT_QUICK_BACKEND=software
             QML_DISABLE_DISK_CACHE=1
             DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            DBUS_SYSTEM_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-system-bus
             XDG_CONFIG_HOME=${poison_sandbox}/config
             XDG_DATA_HOME=${poison_sandbox}/data
             XDG_DATA_DIRS=${poison_sandbox}/system-data
@@ -379,6 +382,7 @@ execute_process(
             QT_QUICK_BACKEND=software
             QML_DISABLE_DISK_CACHE=1
             DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            DBUS_SYSTEM_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-system-bus
             XDG_CONFIG_HOME=${poison_sandbox}/config
             XDG_DATA_HOME=${poison_sandbox}/data
             XDG_DATA_DIRS=${poison_sandbox}/system-data
@@ -429,6 +433,7 @@ execute_process(
             QT_QUICK_BACKEND=software
             QML_DISABLE_DISK_CACHE=1
             DBUS_SESSION_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-session-bus
+            DBUS_SYSTEM_BUS_ADDRESS=unix:path=${poison_sandbox}/absent-system-bus
             XDG_CONFIG_HOME=${poison_sandbox}/config
             XDG_DATA_HOME=${poison_sandbox}/data
             XDG_DATA_DIRS=${poison_sandbox}/system-data
