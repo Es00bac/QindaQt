@@ -28,6 +28,7 @@
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell/icons/icon_runtime.h"
+#include "settings_route_construction_probe.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -41,6 +42,7 @@
 
 #include <cstdio>
 #include <memory>
+
 namespace {
 
 // AGENT-CONTRACT: Installed-theme discovery contract: standard data
@@ -213,6 +215,8 @@ struct LaunchArguments {
   QString destination;
   QString selection;
   QString themeDirectory;
+  bool listRoutes = false;
+  bool routeConstructionProbe = false;
 };
 
 // AGENT-CONTRACT: `--destination` names a tab within the page and `--select`
@@ -244,6 +248,14 @@ LaunchArguments parseLaunchArguments(const QCoreApplication &application) {
       QStringLiteral("Select this device or item within the destination"),
       QStringLiteral("id"));
   parser.addOption(selectOption);
+  const QCommandLineOption listRoutesOption(
+      QStringLiteral("list-routes"),
+      QStringLiteral("List registered route IDs for package verification"));
+  const QCommandLineOption routeProbeOption(
+      QStringLiteral("route-construction-probe"),
+      QStringLiteral("Exit after the requested route Loader resolves"));
+  parser.addOption(listRoutesOption);
+  parser.addOption(routeProbeOption);
   parser.process(application);
 
   return LaunchArguments{
@@ -251,6 +263,8 @@ LaunchArguments parseLaunchArguments(const QCoreApplication &application) {
       parser.value(destinationOption).left(64),
       parser.value(selectOption).left(256),
       parser.value(themeDirectoryOption),
+      parser.isSet(listRoutesOption),
+      parser.isSet(routeProbeOption),
   };
 }
 
@@ -306,6 +320,12 @@ int main(int argc, char **argv) {
   const QString &page = arguments.page;
   const auto registry =
       QindaQt::Apps::SettingsCenter::SettingsRouteRegistry::createDefault();
+  if (arguments.listRoutes) {
+    for (const auto &route : registry.routes()) {
+      std::fprintf(stdout, "%s\n", qPrintable(route.id));
+    }
+    return 0;
+  }
   if (!registry.hasRoute(page)) {
     std::fprintf(stderr, "qindaqt-settings: unknown page: %s\n",
                  qPrintable(page));
@@ -444,5 +464,9 @@ int main(int argc, char **argv) {
     return 3;
   }
 
+  if (arguments.routeConstructionProbe) {
+    return QindaQt::Apps::SettingsCenter::runRouteConstructionProbe(
+        application, engine, page, registry.route(page)->available);
+  }
   return application.exec();
 }

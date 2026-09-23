@@ -1,32 +1,33 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. It contains thirteen real routes: **Notifications**,
-**Appearance**, **Display**, **Network**, **Customize**, **Audio**, and
-**Bluetooth**, followed by **Power**, **Clipboard**, **Color**,
-**Accessibility**, **Input**, and **Streaming**. The shell owns route identity,
-selection, responsive
-**Accessibility**, **Input**, and **Windows & workspaces**. The shell owns route identity, selection, responsive
-presentation, and navigation accessibility. Each route continues to own its
-domain model, service scope, page state, and mutations.
+modular settings routes. Its registry currently contains **21 routes**, in
+stable order: Notifications, Appearance, Display, Network, Customize, Audio,
+Bluetooth, Power, Clipboard, Color, Accessibility, Input, Streaming,
+Date & time, Windows & workspaces, Default applications, About this computer,
+Startup applications, Screen saver, Login screen, and Voice. The shell owns
+route identity, selection, responsive presentation, and navigation
+accessibility. Each route owns its domain model, service scope, page state,
+and mutations. Appending a route must preserve existing indices and digit
+shortcuts.
 
 The durable ownership choice is [ADR-0048](../adr/0048-settings-center-navigation-and-route-ownership.md).
-Appearance behavior remains documented on the
-[Appearance route](appearance-settings.md); Display behavior is documented on
-the [Display route](display-settings.md); Network behavior is documented on
-the [Network route](network-settings.md); Customize behavior is documented on
-the [Customize route](customize-settings.md); Audio behavior is documented on
-the [Audio route](audio-settings.md); Bluetooth behavior is documented on the
-[Bluetooth route](bluetooth-settings.md); Power behavior is documented on the
-[Power route](power-settings.md); Clipboard behavior is documented on the
-[Clipboard route](clipboard-settings.md); Color behavior is documented on the
-[Color route](color-settings.md); Accessibility behavior is documented on the
-[Accessibility route](accessibility-settings.md); Input behavior is documented on the
-[Input route](input-settings.md); Windows & workspaces behavior is documented on
-the [Windows & workspaces route](windows-settings.md); notification quieting and its live
-settings transaction remain documented under
-[notification presentation](../shell/notification-presentation.md). Login screen behavior
-is documented on the [Login screen route](login-screen-settings.md).
+The all-route construction witness and its limits are [ADR-0250](../adr/0250-require-active-loader-witness-for-every-settings-route.md).
+Route behavior is documented in the corresponding [Appearance](appearance-settings.md),
+[Display](display-settings.md), [Network](network-settings.md),
+[Customize](customize-settings.md), [Audio](audio-settings.md),
+[Bluetooth](bluetooth-settings.md), [Power](power-settings.md),
+[Clipboard](clipboard-settings.md), [Color](color-settings.md),
+[Accessibility](accessibility-settings.md), [Input](input-settings.md),
+[Streaming](streaming-settings.md), [Date & time](datetime-settings.md),
+[Windows & workspaces](windows-settings.md),
+[Default applications](default-applications.md),
+[About this computer](about-this-computer.md),
+[Startup applications](startup-settings.md),
+[Screen saver](screensaver-settings.md),
+[Login screen](login-screen-settings.md), and [Voice](voice-settings.md) pages.
+Notification quieting is documented under
+[notification presentation](../shell/notification-presentation.md).
 
 ## Route boundary
 
@@ -43,20 +44,17 @@ Route IDs are 1–64 lowercase ASCII alphanumeric, hyphen, or underscore
 characters and must begin with an alphanumeric character. Titles, descriptions,
 icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
-must not hide one. The closed component kind is mapped to the compiled
-Notifications, Appearance, Display, Network, Customize, Audio, Bluetooth, Power,
-Clipboard, Color, Accessibility, Input, or Windows
-component. It is not a QML URL, plugin path, or service locator.
+must not hide one. The closed component kind maps to one of the 21
+compiled route components, from Notifications through Voice. It is not a QML
+URL, plugin path, or service locator.
 
-The public command accepts `--page notifications`, `--page appearance`,
-`--page display`, `--page network`, `--page customize`, `--page audio`, and
-`--page bluetooth`, `--page power`, `--page clipboard`, `--page color`,
-`--page accessibility`, `--page input`, and `--page windows`. The installed `org.qindaqt.Settings.desktop` entry
-declares two freedesktop desktop actions, `appearance` and `display`, whose
-`Exec` lines launch `qindaqt-settings --page appearance` and
-`qindaqt-settings --page display`; the Desktop context menu reuses them, so
-its settings-labeled entries open the route their labels promise instead of
-the primary launch.
+The public command accepts `--page <id>` for any ID in the default
+registry. `--list-routes` emits those IDs in registry order for package
+verification; it does not instantiate route QML. The private
+`--route-construction-probe` exits after the requested active route Loader
+reports a real page or an intentional unavailable diagnostic. The installed
+`org.qindaqt.Settings.desktop` entry declares `appearance` and `display`
+desktop actions whose `Exec` lines open those exact routes.
 Unknown, noncanonical, path-like, or otherwise hostile values exit 2 before any
 settings transport, route model, or QML root is constructed. Registry lookup
 also rejects unknown runtime selection without changing the active or previous
@@ -261,20 +259,27 @@ ctest --test-dir build/dev --output-on-failure \
   as an explicit source so AUTOMOC generates its Qt meta-object; without
   that registration the target fails to link. The child-process construction
   and installed rows deliberately tolerate `main()`'s absent-bus
-  client-unavailability warnings and are not registered as fatal;
+  client-unavailability warnings while rejecting QML/Loader warnings;
 - the CLI row rejects ordinary unknown, uppercase, parent-path, and nested-path
   startup intents with exit 2 and the exact diagnostic;
 - the missing-theme poison removes every generic data directory and requires
   exit 3 before QML construction instead of token-less presentation;
-- construction starts all twelve route intents against an absent private bus
-  and requires each complete root to remain resident;
-- the installed row stages only `SettingsAppearanceRuntime`, removes host
+- construction takes the route inventory from `--list-routes`, checks the
+  current count of 21 and unique canonical IDs, and launches every registered
+  intent under absent private **session and system buses**. Each run must exit
+  after its active Loader reaches Ready with a real item, or shows the
+  registry-declared unavailable diagnostic. A timeout, exit without an exact
+  route-ID witness, or unexpected QML/Loader warning fails. A fake executable
+  checks both residence without a witness and a ready witness accompanied by
+  a QML warning as focused negative controls;
+- the installed row stages only `SettingsAppearanceRuntime` after its
+  Login Screen helper build prerequisite, removes host
   display/Wayland/QML/library overrides, withholds its required Appearance QML
   module while the developer tree remains present and requires exit 3, then
   repeats that poison for the Network, Audio, and Accessibility modules, then
-  reinstalls and proves all twelve routes, including the Customize catalogs and
-  the Bluetooth, Power, Clipboard, Color, and Accessibility modules, from only
-  the complete relocated prefix; and
+  reinstalls and proves all 21 routes, including the Customize catalogs and
+  later Date & time, Windows, Startup, Screen saver, Login screen, and Voice
+  modules, from only the complete relocated prefix; and
 - the same no-borrowing contract is enforced at startup, not only by the
   test: before any engine work the executable preflights its own QML root for
   every directory-resolved route module (the Customize and `*Backend` modules

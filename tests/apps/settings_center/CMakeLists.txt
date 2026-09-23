@@ -236,8 +236,43 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-route-construction PROPERTIES
-    LABELS "offscreen;settings;appearance;customize;audio;power;clipboard;color;startup" RUN_SERIAL TRUE TIMEOUT 60
+    LABELS "offscreen;settings;navigation;construction" RUN_SERIAL TRUE TIMEOUT 240
 )
+
+# A fake route stays resident without an active Loader witness; residence
+# alone must not pass the same script used by build and installed stages.
+add_test(
+    NAME qindaqt.settings-app-route-construction-rejects-missing-witness
+    COMMAND "${CMAKE_COMMAND}"
+            -DROUTE_CHECK=${CMAKE_CURRENT_SOURCE_DIR}/check_route_construction.cmake
+            -DFAKE_EXECUTABLE=${CMAKE_CURRENT_SOURCE_DIR}/fake_route_probe.sh
+            -DTHEME_DIRECTORY=${PROJECT_SOURCE_DIR}/data/themes
+            -DSANDBOX_ROOT=${CMAKE_CURRENT_BINARY_DIR}/route-construction-regression
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_route_construction_regression.cmake"
+)
+set_tests_properties(
+    qindaqt.settings-app-route-construction-rejects-missing-witness PROPERTIES
+    LABELS "offscreen;settings;navigation;construction;poison" TIMEOUT 10
+)
+
+# The ready diagnostic Loader must never count as a page for an available
+# registry route. This QML test drives the witness with both Loader identities.
+add_test(
+    NAME qindaqt.settings-app-route-witness-fallback
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+            -input "${CMAKE_CURRENT_SOURCE_DIR}/tst_route_construction_witness.qml"
+)
+set_tests_properties(
+    qindaqt.settings-app-route-witness-fallback PROPERTIES
+    LABELS "offscreen;settings;navigation;construction;poison"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QML_DISABLE_DISK_CACHE=1"
+    TIMEOUT 10
+)
+
+# AGENT-CONTRACT: SettingsAppearanceRuntime installs the LoginScreen helper
+# alongside Settings. A clean build of the executable must also make this
+# staged-package prerequisite available before the installed route CTest.
+add_dependencies(qindaqt-settings qindaqt-sddm-config-helper)
 
 # 8. Installed staged package test
 add_test(
@@ -255,7 +290,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-installed-routes PROPERTIES
-    LABELS "offscreen;settings;appearance;clipboard;color;startup;package" RUN_SERIAL TRUE TIMEOUT 90
+    LABELS "offscreen;settings;navigation;construction;package" RUN_SERIAL TRUE TIMEOUT 300
 )
 
 # Scoped Notifications schedule and DND share one serial Settings1 write lane.

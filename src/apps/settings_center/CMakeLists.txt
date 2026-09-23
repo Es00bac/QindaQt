@@ -27,7 +27,9 @@ set_target_properties(
 )
 qindaqt_enable_warnings(qindaqt_settings_navigation)
 
-qt_add_executable(qindaqt-settings main.cpp)
+qt_add_executable(qindaqt-settings main.cpp
+    settings_route_construction_probe.h
+    settings_route_construction_probe.cpp)
 qt_add_qml_module(
     qindaqt-settings
     URI QindaQt.SettingsApp
@@ -41,6 +43,8 @@ qt_add_qml_module(
         SettingsCompactHeader.qml
         SettingsNavButton.qml
         SettingsRouteHost.qml
+        SettingsRouteConstructionWitness.qml
+        SettingsRouteSupplementalLoaders.qml
         SettingsRouteShortcuts.qml
         AddedRouteComponents.qml
         SettingsUnavailableRoute.qml
