@@ -46,6 +46,14 @@ qindaqt_enable_warnings(qindaqt_audio_vban_packet_tests)
 add_test(NAME qindaqt.audio-vban-packet COMMAND qindaqt_audio_vban_packet_tests)
 set_tests_properties(qindaqt.audio-vban-packet PROPERTIES LABELS "audio;service;pure")
 
+qt_add_executable(qindaqt_audio_vban_store_tests tst_vban_store.cpp)
+target_link_libraries(
+    qindaqt_audio_vban_store_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_vban_store_tests)
+add_test(NAME qindaqt.audio-vban-store COMMAND qindaqt_audio_vban_store_tests)
+set_tests_properties(qindaqt.audio-vban-store PROPERTIES LABELS "audio;service;pure")
+
 qt_add_executable(qindaqt_audio_macro_store_tests tst_macro_store.cpp)
 target_link_libraries(
     qindaqt_audio_macro_store_tests PRIVATE QindaQt::AudioService Qt6::Test
@@ -173,3 +181,50 @@ set_tests_properties(
         TIMEOUT 45
         RUN_SERIAL TRUE
 )
+
+# A10a: two independently managed audio adapters in a private PipeWire graph.
+find_program(QINDAQT_PW_LINK_EXECUTABLE NAMES pw-link REQUIRED)
+find_program(QINDAQT_PW_METADATA_EXECUTABLE NAMES pw-metadata REQUIRED)
+qt_add_executable(qindaqt_audio_vban_peer_runtime_tests tst_vban_peer_runtime.cpp)
+target_link_libraries(
+    qindaqt_audio_vban_peer_runtime_tests
+    PRIVATE QindaQt::AudioService Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_audio_vban_peer_runtime_tests
+    PRIVATE
+        QINDAQT_PIPEWIRE_EXECUTABLE="${QINDAQT_PIPEWIRE_EXECUTABLE}"
+        QINDAQT_WIREPLUMBER_EXECUTABLE="${QINDAQT_WIREPLUMBER_EXECUTABLE}"
+        QINDAQT_PW_CLI_EXECUTABLE="${QINDAQT_PW_CLI_EXECUTABLE}"
+        QINDAQT_PW_LINK_EXECUTABLE="${QINDAQT_PW_LINK_EXECUTABLE}"
+        QINDAQT_PW_METADATA_EXECUTABLE="${QINDAQT_PW_METADATA_EXECUTABLE}"
+        QINDAQT_PW_CAT_EXECUTABLE="${QINDAQT_PW_CAT_EXECUTABLE}"
+        QINDAQT_PIPEWIRE_TEST_CONFIG="${QINDAQT_PIPEWIRE_TEST_CONFIG}"
+)
+qindaqt_enable_warnings(qindaqt_audio_vban_peer_runtime_tests)
+add_test(NAME qindaqt.audio-vban-peer-runtime COMMAND qindaqt_audio_vban_peer_runtime_tests)
+set_tests_properties(
+    qindaqt.audio-vban-peer-runtime
+    PROPERTIES LABELS "service;audio;wireplumber;isolated-runtime"
+               TIMEOUT 60 RUN_SERIAL TRUE
+)
+
+qt_add_executable(qindaqt_audio_vban_operations_tests tst_vban_operations.cpp)
+target_link_libraries(
+    qindaqt_audio_vban_operations_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_vban_operations_tests)
+add_test(NAME qindaqt.audio-vban-operations COMMAND qindaqt_audio_vban_operations_tests)
+set_tests_properties(qindaqt.audio-vban-operations PROPERTIES LABELS "audio;service;pure")
+
+# Manual two-machine private graph/PCM harness. Not a CTest: it needs a second host.
+qt_add_executable(qindaqt_audio_vban_peer_crosshost_smoke tst_vban_peer_crosshost.cpp)
+target_link_libraries(qindaqt_audio_vban_peer_crosshost_smoke PRIVATE QindaQt::AudioService)
+target_compile_definitions(qindaqt_audio_vban_peer_crosshost_smoke PRIVATE
+    QINDAQT_PIPEWIRE_EXECUTABLE="${QINDAQT_PIPEWIRE_EXECUTABLE}"
+    QINDAQT_WIREPLUMBER_EXECUTABLE="${QINDAQT_WIREPLUMBER_EXECUTABLE}"
+    QINDAQT_PW_CLI_EXECUTABLE="${QINDAQT_PW_CLI_EXECUTABLE}"
+    QINDAQT_PW_LINK_EXECUTABLE="${QINDAQT_PW_LINK_EXECUTABLE}"
+    QINDAQT_PW_CAT_EXECUTABLE="${QINDAQT_PW_CAT_EXECUTABLE}"
+    QINDAQT_PIPEWIRE_TEST_CONFIG="${QINDAQT_PIPEWIRE_TEST_CONFIG}")
+qindaqt_enable_warnings(qindaqt_audio_vban_peer_crosshost_smoke)

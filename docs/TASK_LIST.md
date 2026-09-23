@@ -38,6 +38,16 @@ integrated in the qinda source tree, not installed into a live session:
   Independent review accepted the repaired readback-ordering candidate; the
   combined Settings/shell/helper build, 13/13 affected rows, strict docs and
   staged install boundary pass. A real OBS login/reconnect remains to qualify.
+- Manual LAN audio and tabbed Audio Settings (`c99ef063`, integration
+  test `4abb0306`): Audio1 stores typed send/receive peers and routes only
+  through the selected output. Settings uses QindaTK tabs for devices, mixer
+  and other computers, with a clear trusted-LAN warning. The original
+  stale-active route report was rejected and repaired; independent review
+  accepted the exact repair and tab-aware wheel test. Combined build, 36/36
+  Audio/Settings rows, installed applet and Settings-route checks, and strict
+  docs pass. Private runtimes carried nonzero stereo PCM in both directions
+  between qinda and qinda-top; physical speakers were not tested. Discovery,
+  pairing and synchronized multichannel playback remain later work.
 - Audio wheel controls (`35392d6b`, `40768275`, `8f384cb4`): Settings and
   applet controls handle partial/multiple detents, pixel input and boundaries
   while preserving confirmed volume. Two review-found pending/readback races
@@ -45,8 +55,9 @@ integrated in the qinda source tree, not installed into a live session:
   device wheel use remains to qualify.
 
 Other asynchronous reporting, service capabilities and route coverage
-remain open. The tabbed Audio Settings and manual LAN audio route are active
-slices. The audit and acceptance plan are staged on qinda under
+remain open. Network audio discovery and measured synchronized multichannel
+playback remain future slices. The audit and acceptance plan are staged on
+qinda under
 `/tmp/qindaqt-settings-audit-2026-09-23/`.
 
 ## September 21 — voice input is a first-class desktop feature

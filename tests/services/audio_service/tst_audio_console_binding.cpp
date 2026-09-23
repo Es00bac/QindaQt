@@ -535,8 +535,8 @@ void AudioConsoleBindingTests::aRecordingIsOneBusToOneFileAndWithdrawsOnFailure(
     qunsetenv("QINDAQT_AUDIO_RECORDING_DIR");
 }
 
-// ADR-0185. Streams come from the user's document; the console only switches
-// them, and only an enabled stream that can run reaches the graph.
+// ADR-0246. Definitions come from Audio1; only an enabled stream with a
+// resolved physical path is declared, and worker observation sets active.
 void AudioConsoleBindingTests::vbanStreamsAreSwitchedAndDeclaredOnlyWhenTheyCanRun()
 {
     QTemporaryDir dir;
@@ -547,7 +547,10 @@ void AudioConsoleBindingTests::vbanStreamsAreSwitchedAndDeclaredOnlyWhenTheyCanR
         file.write(R"({"outgoing":[
             {"name":"Desk","bus":"bus.a1","host":"192.0.2.10","port":6980},
             {"name":"Nowhere","bus":"bus.a5","host":"192.0.2.11"}],
-          "incoming":[{"name":"Laptop","port":6981},{"name":"bad name with spaces and more than sixteen","port":1}]})");
+          "incoming":[{"name":"Laptop","sourceHost":"192.0.2.12",
+                       "outputNodeName":"alsa_output.pci-0000_00_1f.3.analog-stereo",
+                       "port":6981},
+                      {"name":"bad name with spaces and more than sixteen","port":1}]})");
     }
     FakeAudioBackend backend;
     AudioOperationCoordinator coordinator(&backend, nullptr, dir.filePath(QStringLiteral("p")),
@@ -578,6 +581,13 @@ void AudioConsoleBindingTests::vbanStreamsAreSwitchedAndDeclaredOnlyWhenTheyCanR
     on.displayName = QStringLiteral("Laptop");
     QCOMPARE(coordinator.submit(on).immediateResult.status, OperationStatus::Succeeded);
     QCOMPARE(backend.vban.size(), 2);
+    QCOMPARE(backend.vban.at(1).target.serial, 10u);
+    QCOMPARE(backend.vban.at(1).host, QStringLiteral("192.0.2.12"));
+    // Declaration and even successful local activation intent do not make a
+    // stream active until the worker observes its graph path.
+    for (const VbanStream &stream : coordinator.snapshot().console.vban)
+        QVERIFY(!stream.active);
+    backend.publishVbanRunning({QStringLiteral("Desk"), QStringLiteral("Laptop")});
     bool desk = false, nowhere = false, laptop = false;
     for (const VbanStream &stream : coordinator.snapshot().console.vban) {
         if (stream.name == QStringLiteral("Desk")) desk = stream.enabled && stream.active;

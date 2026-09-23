@@ -11,6 +11,7 @@ target_sources(
         src/audio_dbus.cpp
         src/audio_gain.cpp
         src/audio_validation.cpp
+        src/audio_validation_vban.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include

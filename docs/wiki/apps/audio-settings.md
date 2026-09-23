@@ -43,9 +43,32 @@ the Audio1 wire contract is in the [Audio1 reference](../reference/audio1-v2.md)
 and the [Audio service architecture](../architecture/audio-service.md) owns the
 resident service boundary.
 
+## Audio tabs and manual peers
+
+The outer Audio page has three QindaTK tabs: **Devices** contains physical
+and virtual device rows plus application streams; **Mixer** contains the
+QindaTK console; **Other computers** contains manual network audio setup.
+The route keeps the console instantiated when switching tabs, so ongoing
+meters and control state survive navigation. The selected tab supplies the
+host's first and last focus targets. At 420×320, the tab strip uses its
+compact type scale and the shared form viewport scrolls focused fields into
+view; Left/Right switch tabs with keyboard focus on the tab strip.
+
+Other computers projects only physical output nodes and public mixer buses
+from the current Audio1 snapshot. The sender form saves a destination host,
+UDP port, stream name, and bus. The receiver form requires an exact source
+IPv4, physical speaker, port, and stream name. A save leaves the stream
+disabled; Enable is a distinct action. Enabled/active readback and errors
+come only from Audio1, not from local QML guesses. The page explains
+open-LAN UDP and that a local active route is not proof of remote audibility.
+The public typed [Audio1 schema-12 contract](../reference/audio1-v12.md),
+[stream guide](../reference/audio-vban-streams.md), and
+[ADR-0246](../adr/0246-configure-manual-audio-peers-through-audio1.md)
+own the cross-process behavior.
+
 ## Truth shown by the route
 
-The route presents the current public snapshot in three groups:
+The Devices tab presents the current public snapshot in three groups:
 
 | Group | Public truth | Interaction |
 | --- | --- | --- |

@@ -92,6 +92,8 @@ public:
     [[nodiscard]] quint64 stopRecording();
     // VBAN (ADR-0185): streams are in snapshot().console.vban.
     [[nodiscard]] quint64 setVbanEnabled(const QString &name, bool enabled);
+    [[nodiscard]] quint64 upsertVbanStream(const VbanStream &definition);
+    [[nodiscard]] quint64 deleteVbanStream(const QString &name);
 
 Q_SIGNALS:
     void stateChanged(QindaQt::Audio::ClientState state, const QString &reasonCode);

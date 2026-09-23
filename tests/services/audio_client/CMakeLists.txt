@@ -13,6 +13,19 @@ add_test(NAME qindaqt.audio-client COMMAND qindaqt_audio_client_tests)
 set_tests_properties(qindaqt.audio-client PROPERTIES TIMEOUT 20 LABELS "service;audio")
 
 qt_add_executable(
+    qindaqt_audio_client_peer_tests
+    tst_audio_client_peer.cpp
+    support/fake_audio_transport.h
+)
+target_link_libraries(
+    qindaqt_audio_client_peer_tests PRIVATE QindaQt::AudioClient Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_client_peer_tests)
+add_test(NAME qindaqt.audio-client-peer COMMAND qindaqt_audio_client_peer_tests)
+set_tests_properties(qindaqt.audio-client-peer PROPERTIES TIMEOUT 20 LABELS "service;audio")
+
+
+qt_add_executable(
     qindaqt_audio_qt_transport_tests
     tst_qt_audio_transport.cpp
     ../audio_service/support/fake_audio_backend.h

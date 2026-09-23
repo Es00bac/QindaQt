@@ -334,6 +334,7 @@ QVariantList AudioSettingsModel::consoleVban() const
                                 {QStringLiteral("busId"), stream.busId},
                                 {QStringLiteral("host"), stream.host},
                                 {QStringLiteral("port"), stream.port},
+                                {QStringLiteral("outputNodeName"), stream.outputNodeName},
                                 {QStringLiteral("enabled"), stream.enabled},
                                 {QStringLiteral("active"), stream.active}});
     }
@@ -342,8 +343,7 @@ QVariantList AudioSettingsModel::consoleVban() const
 
 bool AudioSettingsModel::setVbanEnabled(QString name, const bool enabled)
 {
-    if (!consoleAvailable()
-        || !m_client.snapshot().capabilities.testFlag(Capability::SetConsoleRouting)) {
+    if (!canManagePeerStreams()) {
         rejectAction(QStringLiteral("unsupported"));
         return false;
     }
