@@ -100,8 +100,13 @@ reporting outstanding intent rather than service truth. The intent is released
 once the object has nothing in flight or queued *and* either a snapshot newer
 than the request's own has arrived or the request resolved as anything other
 than success, so a clamped, refused or unconfirmed value returns to truth
-rather than parking the handle. The percent readout follows the control rather than the snapshot. Steps
-are 1 %, and wheel scrolling over a slider is enabled. A
+rather than parking the handle. The percent readout follows the control rather than the snapshot. Keyboard
+steps remain 1 %. Wheel input uses one 1% step per 120 angle units or 40
+trackpad pixels, retaining partial motion for the same device or stream and
+preserving multi-detent magnitude. Zero, horizontal-dominant, modified,
+disabled, and outward-at-bound wheel events never dispatch volume. Wheel
+changes share the controller's pending latest-wins intent and authoritative
+readback, so a refused or external value replaces the handle. A
 `volumeKnown`/`muteKnown` false value is shown as unknown and disables the
 corresponding control; a missing description falls back to the short name,
 then to "Unknown device"/"Unknown stream".
@@ -261,7 +266,7 @@ ctest --test-dir build/dev -R '^qindaqt\.audio-applet-' --output-on-failure
 | --- | --- |
 | `qindaqt.audio-applet-model` | Clamping, missing/invalid-wire fail-closed behavior, ordering, label fallbacks, unknown levels, bounds and overflow, default labels beyond the window, pending marking, and degraded retention. |
 | `qindaqt.audio-applet-controller` | Public-client projection, read/control grant separation, clamp-before-dispatch, local refusals, pending serialization, rejected/uncertain/success feedback, stale-prune with ignored late replies, degraded/unavailable phases, and exact-owner replacement clearing truth and pending work without replay, including a stale old-owner reply dropped after replacement. |
-| `qindaqt.audio-applet-offscreen` | Compiled module loading, Return-opened summary, the exact muted/low/medium/high icon names from four fake-transport snapshots, keyboard slider steps, accessible grouping/slider/switch roles with complete names and descriptions, and real controller dispatch through a fake transport. Two drag rows carry the ADR-0191 contract end to end: a keyboard drag (the item survives its own dispatch, keeps focus, advances 1 % per step, coalesces, and holds the requested value until the service echoes it) and a pointer drag (the item stays the window's mouse grabber across three moves inside one press, and the value the finger stopped on is what reaches the service). |
+| `qindaqt.audio-applet-offscreen` | Compiled module loading, Return-opened summary, the exact muted/low/medium/high icon names from four fake-transport snapshots, keyboard slider steps, accessible grouping/slider/switch roles with complete names and descriptions, and real controller dispatch through a fake transport. Two drag rows carry the ADR-0191 contract end to end: a keyboard drag (the item survives its own dispatch, keeps focus, advances 1 % per step, coalesces, and holds the requested value until the service echoes it) and a pointer drag (the item stays the window's mouse grabber across three moves inside one press, and the value the finger stopped on is what reaches the service). A real popup-window wheel row covers stream/device accumulation, pixel-only input, zero/horizontal/modifier admission, pending coalescing, and disabled no-mutation. |
 | `qindaqt.audio-applet-boundary` | Static policy gate rejecting transport, QML, platform, and service-implementation tokens outside the declared include roots in the pure projection and its focused test; four independent poison mutations (D-Bus transport include, service-internal include, QML include, QObject derivation) must each be rejected. |
 | `qindaqt.audio-applet-runtime-boundary` | Runtime source-policy gate rejecting service internals, WirePlumber/PipeWire/GLib surfaces, process/file access, and D-Bus in the controller/QML; the shell composition root may construct the public Qt transport. Includes a poison negative control. |
 | `qindaqt.audio-applet-installed-package` | Relocated shell/data, exact staged KF6 and Controls/Tokens loader-path resolution through relative RUNPATH, compiled QML evidence, and installed manifest discovery under source-path poison. |
