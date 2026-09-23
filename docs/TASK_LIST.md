@@ -34,6 +34,13 @@ integrated in the qinda source tree, not installed into a live session:
   accepted the exact candidate, including an actual-page keyboard/refusal
   probe. The merged build, focused 5/5 and broad Settings 127/127 pass; live
   locale/calendar use remains to qualify.
+- Idle Display (`1ea1ed98`): the Power control now distinguishes the
+  runtime fallback from confirmed Settings1 policy. It keeps edits unavailable
+  without current authority, fences owner/revision readback after Applied,
+  preserves refusal/conflict/uncertainty, and restores the confirmed value
+  after refused mouse and keyboard input. Independent exact review accepted
+  the candidate; the merged Power set passes 10/10 and broad Settings 131/131.
+  Live screen blanking and physical input remain to qualify.
 - Notifications schedule and Do Not Disturb (`3785d58f`): controls
   now reflect exact Settings1 write admission even while a same-owner refresh
   occupies the client. Pending, refusal and uncertainty stay attached to
