@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 qt_add_executable(qindaqt_screensaver_settings_model_tests
-    tst_screensaver_settings_model.cpp)
+    tst_screensaver_settings_model.cpp
+    screensaver_model_test_support.h)
 target_link_libraries(qindaqt_screensaver_settings_model_tests
     PRIVATE qindaqt_settings_screensaver Qt6::Test)
 qindaqt_enable_warnings(qindaqt_screensaver_settings_model_tests)

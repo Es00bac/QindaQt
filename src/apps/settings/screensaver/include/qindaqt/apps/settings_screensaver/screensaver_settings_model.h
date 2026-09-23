@@ -9,7 +9,10 @@
 #include <qindaqt/session/desktop_controls/settings1_screensaver_preferences.h>
 
 #include <QObject>
+#include <optional>
 #include <QString>
+#include <QTimer>
+#include <QVariant>
 #include <QVariantList>
 
 namespace QindaQt::Session::DesktopControls {
@@ -20,8 +23,9 @@ namespace QindaQt::Apps::SettingsScreensaver {
 
 // Screen saver route model (ADR-0226). Truth comes from the purpose-scoped
 // Settings1 pair `power.screensaver` / `power.screensaverMinutes` through the
-// shared provider; writes go through the same purpose-scoped client, so an
-// uncertain commit never fabricates success and the next confirmed snapshot
+// purpose-scoped client. The desktop-controls provider has a runtime safety
+// fallback, so the page reads client snapshots directly for UI authority.
+// An uncertain commit never fabricates success; only a same-lineage readback
 // reconciles the route.
 //
 // The saver list is discovered from the installed desktop entries through the
@@ -39,7 +43,12 @@ class ScreensaverSettingsModel final : public QObject {
   Q_PROPERTY(QString saver READ saver NOTIFY changed)
   Q_PROPERTY(bool delayEnabled READ delayEnabled NOTIFY changed)
   Q_PROPERTY(int minutes READ minutes NOTIFY changed)
+  Q_PROPERTY(bool hasConfirmed READ hasConfirmed NOTIFY changed)
+  Q_PROPERTY(bool available READ available NOTIFY changed)
+  Q_PROPERTY(bool canEdit READ canEdit NOTIFY changed)
   Q_PROPERTY(bool busy READ busy NOTIFY changed)
+  Q_PROPERTY(bool conflict READ conflict NOTIFY changed)
+  Q_PROPERTY(bool uncertain READ uncertain NOTIFY changed)
   Q_PROPERTY(QString statusText READ statusText NOTIFY changed)
   Q_PROPERTY(QString errorText READ errorText NOTIFY changed)
   Q_PROPERTY(bool previewAvailable READ previewAvailable NOTIFY changed)
@@ -66,9 +75,14 @@ public:
   // so not for "none" or "blank".
   [[nodiscard]] bool delayEnabled() const;
   [[nodiscard]] int minutes() const;
+  [[nodiscard]] bool hasConfirmed() const noexcept;
+  [[nodiscard]] bool available() const noexcept;
+  [[nodiscard]] bool canEdit() const;
   [[nodiscard]] bool busy() const noexcept;
+  [[nodiscard]] bool conflict() const noexcept;
+  [[nodiscard]] bool uncertain() const noexcept;
   [[nodiscard]] const QString &statusText() const noexcept;
-  [[nodiscard]] const QString &errorText() const noexcept;
+  [[nodiscard]] QString errorText() const;
   [[nodiscard]] bool previewAvailable() const;
   [[nodiscard]] bool previewRunning() const;
   [[nodiscard]] const QString &previewSummary() const noexcept;
@@ -88,6 +102,12 @@ Q_SIGNALS:
 private:
   void publishStatus();
   void publishPreviewSummary();
+  void handleSnapshot();
+  void handleClientState();
+  void handleCommit(const Services::SettingsClient::CommitOutcome &outcome);
+  void handleUncertain(const QString &message);
+  void retirePending(const QString &message);
+  void clearPending();
   // Mirrors confirmed truth into the greeter. A failure here is reported as
   // its own error: the preference itself is persisted either way.
   void mirrorToLockScreen(const QString &saver);
@@ -99,10 +119,24 @@ private:
   const Session::DesktopControls::ScreensaverCatalog &m_catalog;
   LockScreenSaverStore &m_lockScreenSaver;
   ScreensaverPreview &m_preview;
+  std::optional<Session::DesktopControls::ScreensaverPreferences> m_confirmed;
   QString m_statusText;
-  QString m_errorText;
+  QString m_localError;
+  QString m_mirrorError;
+  QString m_schemaError;
   QString m_previewSummary;
-  bool m_busy = false;
+  QString m_writeOwner;
+  QString m_writeEpoch;
+  QString m_writeKey;
+  QVariant m_requestedValue;
+  QTimer m_readbackRetryTimer;
+  QTimer m_readbackDeadlineTimer;
+  quint64 m_readbackRevision = 0;
+  bool m_available = false;
+  bool m_pending = false;
+  bool m_waitingForReadback = false;
+  bool m_conflict = false;
+  bool m_uncertain = false;
 };
 
 } // namespace QindaQt::Apps::SettingsScreensaver

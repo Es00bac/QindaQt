@@ -12,6 +12,8 @@
 
 #include <QtTest>
 
+#include "screensaver_model_test_support.h"
+
 #include <memory>
 
 using namespace QindaQt::Apps::SettingsScreensaver;
@@ -19,244 +21,12 @@ using namespace QindaQt::Session::DesktopControls;
 using namespace QindaQt::Services::SettingsClient;
 using QindaQt::Services::SettingsProtocol::SettingsWireStatus;
 using QindaQt::Services::SettingsProtocol::WireContract;
-
-namespace {
-
-constexpr auto kSaverKey = "power.screensaver";
-constexpr auto kMinutesKey = "power.screensaverMinutes";
-
-// The installed saver set, fixed for the test: two savers the locker's
-// wallpaper plugin can draw and one it cannot, which is the split the
-// mirror and the status line must be honest about.
-class FakeScreensaverCatalog final : public ScreensaverCatalog {
-public:
-    [[nodiscard]] QList<ScreensaverCatalogEntry> entries() const override
-    {
-        return {
-            {QStringLiteral("qinda-patrol"), QStringLiteral("Qinda Patrol"),
-             QStringLiteral("A patrol on every output"), QStringLiteral("qinda-patrol"),
-             {QStringLiteral("--screensaver"), QStringLiteral("--no-metrics")}, true},
-            {QStringLiteral("circuit-reef"), QStringLiteral("Circuit Reef"),
-             QStringLiteral("A reef circuit"), QStringLiteral("circuit-reef"),
-             {QStringLiteral("--screensaver"), QStringLiteral("--private")}, true},
-            {QStringLiteral("prism-brawl"), QStringLiteral("Prism Brawl"),
-             QStringLiteral("A brawl of prisms"), QStringLiteral("prism-brawl"),
-             {QStringLiteral("--screensaver"), QStringLiteral("--mute")}, false},
-        };
-    }
-};
-
-// The preview, recorded rather than launched: the process boundary has its own
-// row (qindaqt.settings-screensaver-preview).
-class FakeScreensaverPreview final : public ScreensaverPreview {
-public:
-    using ScreensaverPreview::ScreensaverPreview;
-
-    [[nodiscard]] Kind kindFor(const QString &token) const override
-    {
-        if (unavailable) return Kind::Unavailable;
-        if (token == ScreensaverPreferences::blankToken()) return Kind::TestingGreeter;
-        if (token == QStringLiteral("qinda-patrol")
-            || token == QStringLiteral("circuit-reef")) {
-            return Kind::TestingGreeter;
-        }
-        if (token == QStringLiteral("prism-brawl")) return Kind::SaverProgram;
-        return Kind::Unavailable;
-    }
-
-    [[nodiscard]] bool start(const QString &token, QString *error) override
-    {
-        // Same refusal as the process boundary: an unavailable kind has
-        // nothing to launch.
-        if (kindFor(token) == Kind::Unavailable) {
-            if (error != nullptr) *error = QStringLiteral("nothing to preview");
-            return false;
-        }
-        if (!startOk) {
-            if (error != nullptr) *error = QStringLiteral("preview refused");
-            return false;
-        }
-        ++starts;
-        lastToken = token;
-        return true;
-    }
-
-    [[nodiscard]] bool running() const override { return false; }
-
-    bool unavailable = false;
-    bool startOk = true;
-    int starts = 0;
-    QString lastToken;
-};
-
-// AGENT-NOTE: the screensaver route owns a two-key scope, so this fake keeps a
-// value map rather than the single value the idle display fake carries. An
-// applied commit writes its own operation back into that map, which is how the
-// route's "only a confirmed snapshot reconciles the rows" contract is proven.
-class FakeSettingsTransport final : public SettingsTransport {
-    Q_OBJECT
-
-public:
-    bool start(QString *error) override
-    {
-        if (error != nullptr) {
-            error->clear();
-        }
-        return true;
-    }
-    void stop() override {}
-
-    void requestSnapshot(quint64 token, const QString &owner, const QStringList &) override
-    {
-        QMetaObject::invokeMethod(
-            this,
-            [this, token, owner] {
-                Q_EMIT snapshotReceived(token, owner, snapshotWire(++m_revision));
-            },
-            Qt::QueuedConnection);
-    }
-
-    struct CommitRequest {
-        quint64 token = 0;
-        QString owner;
-        QString epoch;
-        quint64 baseRevision = 0;
-    };
-
-    void commit(quint64 token, const QString &owner, const QString &epoch,
-                quint64 baseRevision, const QVariantList &operations) override
-    {
-        for (const QVariant &operation : operations) {
-            m_committedOperations.append(operation.toMap());
-        }
-        m_commits.append(CommitRequest{token, owner, epoch, baseRevision});
-    }
-
-    void requestActivation() override {}
-
-    // Answers the pending commit synchronously: the model sees exactly one
-    // deterministic reply per write, and an applied one becomes new truth.
-    void replyToLastCommit(SettingsWireStatus status)
-    {
-        QVERIFY(!m_commits.isEmpty());
-        QVERIFY(!m_committedOperations.isEmpty());
-        const CommitRequest request = m_commits.takeLast();
-        const QVariantMap operation = m_committedOperations.constLast();
-        m_revision = request.baseRevision + 1;
-        const quint64 after =
-            status == SettingsWireStatus::Applied ? m_revision : request.baseRevision;
-        m_commitStatus = status;
-        QStringList changed;
-        if (status == SettingsWireStatus::Applied) {
-            const QString key = operation.value(QStringLiteral("key")).toString();
-            m_values.insert(key, operation.value(QStringLiteral("value")));
-            changed.append(key);
-        }
-        Q_EMIT commitReceived(request.token, request.owner,
-                              commitWire(request.baseRevision, after, changed));
-    }
-
-    [[nodiscard]] int pendingCommitCount() const noexcept
-    {
-        return static_cast<int>(m_commits.size());
-    }
-
-    void announceOwner()
-    {
-        QMetaObject::invokeMethod(
-            this, [this] { Q_EMIT ownerChanged(QStringLiteral(":1.11")); },
-            Qt::QueuedConnection);
-    }
-
-    void setValue(const char *key, const QVariant &value)
-    {
-        m_values.insert(QString::fromLatin1(key), value);
-    }
-
-    [[nodiscard]] const QList<QVariantMap> &committedOperations() const noexcept
-    {
-        return m_committedOperations;
-    }
-
-    [[nodiscard]] QVariantMap snapshotWire(quint64 revision) const
-    {
-        return {{QLatin1StringView(WireContract::FieldStatus),
-                 quint32(SettingsWireStatus::Applied)},
-                {QLatin1StringView(WireContract::FieldWireSchemaVersion),
-                 WireContract::WireSchemaVersion},
-                {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
-                {QLatin1StringView(WireContract::FieldEpoch), m_epoch},
-                {QLatin1StringView(WireContract::FieldRevision), revision},
-                {QLatin1StringView(WireContract::FieldValues), m_values},
-                {QLatin1StringView(WireContract::FieldSourceLayers), sourceLayers()},
-                {QLatin1StringView(WireContract::FieldMessage), QString{}}};
-    }
-
-private:
-    [[nodiscard]] QVariantMap sourceLayers() const
-    {
-        QVariantMap layers;
-        for (auto it = m_values.constBegin(); it != m_values.constEnd(); ++it) {
-            layers.insert(it.key(), QStringLiteral("user-overrides"));
-        }
-        return layers;
-    }
-
-    [[nodiscard]] QVariantMap commitWire(quint64 before, quint64 after,
-                                         const QStringList &changed) const
-    {
-        return {{QLatin1StringView(WireContract::FieldStatus), quint32(m_commitStatus)},
-                {QLatin1StringView(WireContract::FieldWireSchemaVersion),
-                 WireContract::WireSchemaVersion},
-                {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
-                {QLatin1StringView(WireContract::FieldEpoch), m_epoch},
-                {QLatin1StringView(WireContract::FieldRevisionBefore), before},
-                {QLatin1StringView(WireContract::FieldRevisionAfter), after},
-                {QLatin1StringView(WireContract::FieldValues), m_values},
-                {QLatin1StringView(WireContract::FieldSourceLayers), sourceLayers()},
-                {QLatin1StringView(WireContract::FieldChangedKeys), changed},
-                {QLatin1StringView(WireContract::FieldMessage), QString{}}};
-    }
-
-    QString m_epoch = QStringLiteral("epoch-11");
-    quint64 m_revision = 0;
-    QVariantMap m_values{{QString::fromLatin1(kSaverKey), QStringLiteral("none")},
-                         {QString::fromLatin1(kMinutesKey),
-                          QVariant::fromValue<qint64>(5)}};
-    SettingsWireStatus m_commitStatus = SettingsWireStatus::Applied;
-    QList<QVariantMap> m_committedOperations;
-    QList<CommitRequest> m_commits;
-};
-
-// The greeter mirror, recorded rather than written: a route test must never
-// depend on a real kscreenlockerrc, and the mirror's own file format has its
-// own row (qindaqt.settings-screensaver-lock-screen-saver-store).
-class FakeLockScreenSaverStore final : public LockScreenSaverStore {
-public:
-    [[nodiscard]] bool save(const QString &saverToken, QString *error) override
-    {
-        ++m_saves;
-        if (m_failure.isEmpty()) {
-            m_current = saverToken;
-            if (error != nullptr) error->clear();
-            return true;
-        }
-        if (error != nullptr) *error = m_failure;
-        return false;
-    }
-
-    [[nodiscard]] QString currentSaver() const override { return m_current; }
-
-    void failWith(const QString &message) { m_failure = message; }
-    [[nodiscard]] int saves() const noexcept { return m_saves; }
-
-private:
-    QString m_current = QStringLiteral("none");
-    QString m_failure;
-    int m_saves = 0;
-};
-
-} // namespace
+using ScreensaverTestSupport::FakeScreensaverCatalog;
+using ScreensaverTestSupport::FakeScreensaverPreview;
+using ScreensaverTestSupport::FakeLockScreenSaverStore;
+using ScreensaverTestSupport::FakeSettingsTransport;
+using ScreensaverTestSupport::kSaverKey;
+using ScreensaverTestSupport::kMinutesKey;
 
 class ScreensaverSettingsModelTest final : public QObject {
     Q_OBJECT
@@ -270,7 +40,7 @@ private Q_SLOTS:
     void appliedSaverCommitReconcilesStatus();
     void rejectedCommitReportsTheFailure();
     void busyModelRejectsFurtherWrites();
-    void retryClearsErrorAndNeverWrites();
+    void retryNeverReplaysOrErasesRefusal();
     void confirmedSaverReachesTheLockScreen();
     void refusedCommitNeverReachesTheLockScreen();
     void lockScreenFailureIsItsOwnError();
@@ -278,6 +48,15 @@ private Q_SLOTS:
     void blankIsItsOwnChoice();
     void saverOptionsListTheBuiltInsThenTheDiscovered();
     void previewStartsWithPersistedTruth();
+    void defaultValuedFirstSnapshotEstablishesAuthority();
+    void occupiedReadLaneRefusesWritesAndRecovers();
+    void appliedWaitsForSameLineageReadback();
+    void staleReadbackDeadlineBecomesUncertainWithoutReplay();
+    void unchangedRefreshRetainsRefusal();
+    void lostReplyAndOwnerReplacementNeverReplay();
+    void appliedMismatchIsConflict();
+    void conflictAndExternalUpdateRetainDiagnostic();
+    void ownerReplacementDuringAppliedReadbackCannotConfirm();
 
 private:
     std::unique_ptr<FakeSettingsTransport> m_transport;
@@ -326,6 +105,12 @@ void ScreensaverSettingsModelTest::unknownPersistedTokenReadsAsNoSaver() {
     QCOMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
     QVERIFY(!m_model->delayEnabled());
     QVERIFY(!m_model->statusText().contains(QStringLiteral("xscreensaver")));
+    // The UI-normalized None is not yet the raw persisted value. Selecting
+    // None must repair the unknown token rather than claiming a no-op.
+    QVERIFY(m_model->setSaver(ScreensaverPreferences::noneToken()));
+    QCOMPARE(m_transport->committedOperations().size(), 1);
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_VERIFY(!m_model->busy());
 }
 
 void ScreensaverSettingsModelTest::unknownSaverIsRejectedBeforeWriting() {
@@ -398,7 +183,7 @@ void ScreensaverSettingsModelTest::busyModelRejectsFurtherWrites() {
     QCOMPARE(m_transport->pendingCommitCount(), 1);
 }
 
-void ScreensaverSettingsModelTest::retryClearsErrorAndNeverWrites() {
+void ScreensaverSettingsModelTest::retryNeverReplaysOrErasesRefusal() {
     m_transport->announceOwner();
     QTRY_VERIFY(m_client->snapshot().has_value());
     QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
@@ -407,7 +192,8 @@ void ScreensaverSettingsModelTest::retryClearsErrorAndNeverWrites() {
     const int writes = static_cast<int>(m_transport->committedOperations().size());
 
     QVERIFY(m_model->retry());
-    QVERIFY(m_model->errorText().isEmpty());
+    QTRY_VERIFY(m_model->canEdit());
+    QVERIFY(!m_model->errorText().isEmpty());
     // Retry only re-reads: it must never replay the write that failed.
     QCOMPARE(static_cast<int>(m_transport->committedOperations().size()), writes);
 }
@@ -529,6 +315,176 @@ void ScreensaverSettingsModelTest::previewStartsWithPersistedTruth() {
     QVERIFY(!m_model->previewAvailable());
     QVERIFY(!m_model->preview());
     QCOMPARE(m_preview->starts, 1);
+}
+
+void ScreensaverSettingsModelTest::defaultValuedFirstSnapshotEstablishesAuthority() {
+    QCOMPARE(m_model->saver(), QString{});
+    QCOMPARE(m_model->minutes(), 0);
+    QVERIFY(!m_model->hasConfirmed());
+    QVERIFY(!m_model->available());
+    QVERIFY(!m_model->canEdit());
+    QVERIFY(!m_model->statusText().contains(QStringLiteral("No screensaver starts")));
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->hasConfirmed());
+    QCOMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
+    QCOMPARE(m_model->minutes(), 5);
+    QVERIFY(m_model->available());
+    QVERIFY(m_model->canEdit());
+}
+
+void ScreensaverSettingsModelTest::occupiedReadLaneRefusesWritesAndRecovers() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    m_transport->autoSnapshots = false;
+    m_client->refresh();
+    QTRY_COMPARE(m_transport->pendingSnapshotCount(), 1);
+    QVERIFY(!m_model->canEdit());
+    QVERIFY(!m_model->setSaver(QStringLiteral("qinda-patrol")));
+    QCOMPARE(m_transport->committedOperations().size(), 0);
+    QVERIFY(!m_model->errorText().isEmpty());
+    m_transport->replyToLastSnapshot();
+    QTRY_VERIFY(m_model->canEdit());
+    QVERIFY(!m_model->errorText().isEmpty());
+}
+
+void ScreensaverSettingsModelTest::appliedWaitsForSameLineageReadback() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    m_transport->autoSnapshots = false;
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_transport->pendingSnapshotCount(), 1);
+    QVERIFY(m_model->busy());
+    QCOMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
+    // A stale read at the previous revision cannot confirm the Applied reply.
+    m_transport->setValue(kSaverKey, QStringLiteral("none"));
+    m_transport->replyToLastSnapshot(m_client->snapshot()->revision);
+    QVERIFY(m_model->busy());
+    QVERIFY(!m_model->canEdit());
+    // The model itself must request the follow-up. A manual client refresh
+    // here would mask a permanently disabled route after accepted stale truth.
+    QTRY_COMPARE_WITH_TIMEOUT(m_transport->pendingSnapshotCount(), 1, 1'500);
+    m_transport->setValue(kSaverKey, QStringLiteral("qinda-patrol"));
+    m_transport->replyToLastSnapshot(m_client->snapshot()->revision + 1);
+    QTRY_VERIFY(!m_model->busy());
+    QCOMPARE(m_model->saver(), QStringLiteral("qinda-patrol"));
+    QVERIFY(m_model->canEdit());
+    QVERIFY(m_model->errorText().isEmpty());
+}
+
+void ScreensaverSettingsModelTest::staleReadbackDeadlineBecomesUncertainWithoutReplay() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    m_transport->autoSnapshots = false;
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    const qsizetype writes = m_transport->committedOperations().size();
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_transport->pendingSnapshotCount(), 1);
+    m_transport->setValue(kSaverKey, QStringLiteral("none"));
+    m_transport->replyToLastSnapshot(m_client->snapshot()->revision);
+    QTRY_COMPARE_WITH_TIMEOUT(m_transport->pendingSnapshotCount(), 1, 1'500);
+    m_transport->replyToLastSnapshot(m_client->snapshot()->revision);
+    QTRY_COMPARE_WITH_TIMEOUT(m_transport->pendingSnapshotCount(), 1, 1'500);
+    QVERIFY(m_model->busy());
+    // The service may never answer the next fetch. A bounded deadline must
+    // retire the UI wait as uncertain; it must not resend the original write.
+    QTRY_VERIFY_WITH_TIMEOUT(!m_model->busy(), 5'500);
+    QVERIFY(m_model->uncertain());
+    QVERIFY(m_model->errorText().contains(QStringLiteral("could not be confirmed")));
+    QCOMPARE(m_transport->committedOperations().size(), writes);
+    QCOMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
+}
+
+void ScreensaverSettingsModelTest::unchangedRefreshRetainsRefusal() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    m_transport->replyToLastCommit(SettingsWireStatus::PersistenceFailed);
+    QTRY_VERIFY(m_model->available());
+    QVERIFY(!m_model->errorText().isEmpty());
+    const QString refused = m_model->errorText();
+    m_client->refresh();
+    QTRY_VERIFY(m_model->canEdit());
+    QCOMPARE(m_model->errorText(), refused);
+    QCOMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
+}
+
+void ScreensaverSettingsModelTest::lostReplyAndOwnerReplacementNeverReplay() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    m_transport->failLastCommit();
+    QTRY_VERIFY(!m_model->busy());
+    QVERIFY(m_model->uncertain());
+    QVERIFY(!m_model->errorText().isEmpty());
+    const qsizetype writes = m_transport->committedOperations().size();
+    QVERIFY(m_model->retry());
+    QTRY_VERIFY(m_model->canEdit());
+    QVERIFY(m_model->uncertain());
+    QVERIFY(!m_model->errorText().isEmpty());
+    QCOMPARE(m_transport->committedOperations().size(), writes);
+    QVERIFY(m_model->setSaver(QStringLiteral("circuit-reef")));
+    m_transport->announceOwner(QStringLiteral(":1.12"));
+    QTRY_VERIFY(!m_model->busy());
+    QVERIFY(m_model->uncertain());
+    QTRY_VERIFY(m_model->available());
+    QCOMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
+    QCOMPARE(m_transport->committedOperations().size(), writes + 1);
+}
+
+void ScreensaverSettingsModelTest::appliedMismatchIsConflict() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    m_transport->autoSnapshots = false;
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_transport->pendingSnapshotCount(), 1);
+    m_transport->setValue(kSaverKey, QStringLiteral("circuit-reef"));
+    m_transport->replyToLastSnapshot();
+    QTRY_VERIFY(!m_model->busy());
+    QVERIFY(m_model->conflict());
+    QCOMPARE(m_model->saver(), QStringLiteral("circuit-reef"));
+    QVERIFY(m_model->errorText().contains(QStringLiteral("differs")));
+    QCOMPARE(m_lockScreen->currentSaver(), QStringLiteral("circuit-reef"));
+}
+
+void ScreensaverSettingsModelTest::conflictAndExternalUpdateRetainDiagnostic() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    m_transport->replyToLastCommit(SettingsWireStatus::Conflict);
+    QTRY_VERIFY(m_model->canEdit());
+    QVERIFY(m_model->conflict());
+    QVERIFY(!m_model->errorText().isEmpty());
+    const QString failure = m_model->errorText();
+    m_transport->setValue(kSaverKey, QStringLiteral("circuit-reef"));
+    m_client->refresh();
+    QTRY_COMPARE(m_model->saver(), QStringLiteral("circuit-reef"));
+    QCOMPARE(m_model->errorText(), failure);
+    QVERIFY(m_model->conflict());
+}
+
+void ScreensaverSettingsModelTest::ownerReplacementDuringAppliedReadbackCannotConfirm() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    m_transport->autoSnapshots = false;
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_transport->pendingSnapshotCount(), 1);
+    QVERIFY(m_model->busy());
+    m_transport->announceOwner(QStringLiteral(":1.12"));
+    QTRY_VERIFY(!m_model->busy());
+    QVERIFY(m_model->uncertain());
+    QTRY_COMPARE(m_transport->pendingSnapshotCount(), 2);
+    m_transport->replyToLastSnapshot();
+    QTRY_VERIFY(m_model->available());
+    QCOMPARE(m_model->saver(), QStringLiteral("qinda-patrol"));
+    QVERIFY(m_model->uncertain());
+    QVERIFY(!m_model->errorText().isEmpty());
+    // The old owner's queued reply is ignored even though its value matches.
+    m_transport->replyToLastSnapshot();
+    QVERIFY(m_model->uncertain());
+    QCOMPARE(m_transport->committedOperations().size(), 1);
 }
 
 QTEST_MAIN(ScreensaverSettingsModelTest)

@@ -22,6 +22,12 @@ fences Applied readback by owner and revision, and keeps refusal/conflict/
 uncertainty visible without replay. Independent exact review accepted real
 mouse and keyboard refusal probes. The merged Power set passes 10/10 and broad
 Settings 131/131; physical blanking remains to qualify.
+Screen saver Settings now separates runtime fallback from confirmed policy
+and reports admission, refusal, conflict, and uncertainty on its own saver
+and delay controls. The first candidate stalled after a stale post-Applied
+readback; the same independent reviewer accepted its bounded refetch/deadline
+repair using the original no-manual-refresh reproduction. Merged affected
+rows pass 8/8 and broad Settings 131/131; live activation remains to qualify.
 Notifications now withdraw DND and schedule editability while a same-owner
 Settings1 read occupies the client, restore confirmed Switch values after
 interaction, and retain the initiating refusal through unchanged readback.
