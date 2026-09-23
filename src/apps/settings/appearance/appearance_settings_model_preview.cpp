@@ -97,6 +97,11 @@ QVariantList AppearanceSettingsModel::bundledWallpapers() const
     return m_bundledWallpapers;
 }
 
+QStringList AppearanceSettingsModel::installedMonospaceFamilies() const
+{
+    return m_installedMonospaceFamilies;
+}
+
 QString AppearanceSettingsModel::resolvedThemeId() const
 {
     if (m_resolution.themeIndex < 0
@@ -273,7 +278,8 @@ QSet<QString> AppearanceSettingsModel::installedThemeIds() const
 
 void AppearanceSettingsModel::refreshValidationAndPreview()
 {
-    m_validation = validateAppearanceDraft(m_draft, installedThemeIds());
+    m_validation = validateAppearanceDraft(m_draft, installedThemeIds(),
+                                           m_installedMonospaceFamilies);
     m_resolution = m_preview.resolve(m_draft, m_platformScheme);
     publishPreviewTokens();
     // AGENT-NOTE: applyAvailable is a composite of state, draft dirt, and

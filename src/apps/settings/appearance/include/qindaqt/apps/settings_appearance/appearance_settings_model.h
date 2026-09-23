@@ -41,6 +41,7 @@ class AppearanceSettingsModel final : public QObject {
     Q_PROPERTY(bool saving READ saving NOTIFY stateChanged)
     Q_PROPERTY(bool conflict READ conflict NOTIFY stateChanged)
     Q_PROPERTY(bool unavailable READ unavailable NOTIFY stateChanged)
+    Q_PROPERTY(bool hasConfirmed READ hasConfirmed NOTIFY stateChanged)
     Q_PROPERTY(bool canEdit READ canEdit NOTIFY stateChanged)
     Q_PROPERTY(bool draftDirty READ draftDirty NOTIFY draftChanged)
     Q_PROPERTY(bool draftValid READ draftValid NOTIFY draftChanged)
@@ -53,9 +54,12 @@ class AppearanceSettingsModel final : public QObject {
     Q_PROPERTY(bool saveResultsHaveFailure READ saveResultsHaveFailure
                    NOTIFY saveResultsChanged)
     Q_PROPERTY(QVariantMap draft READ draft NOTIFY draftChanged)
+    Q_PROPERTY(QString confirmedMonospaceFamily READ confirmedMonospaceFamily
+                   NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap fieldErrors READ fieldErrors NOTIFY draftChanged)
     Q_PROPERTY(QVariantList installedThemes READ installedThemes CONSTANT)
     Q_PROPERTY(QVariantList bundledWallpapers READ bundledWallpapers CONSTANT)
+    Q_PROPERTY(QStringList installedMonospaceFamilies READ installedMonospaceFamilies CONSTANT)
     Q_PROPERTY(QString resolvedThemeId READ resolvedThemeId NOTIFY previewChanged)
     Q_PROPERTY(bool configuredThemeInstalled READ configuredThemeInstalled
                    NOTIFY previewChanged)
@@ -110,6 +114,7 @@ public:
     [[nodiscard]] bool saving() const noexcept;
     [[nodiscard]] bool conflict() const noexcept;
     [[nodiscard]] bool unavailable() const noexcept;
+    [[nodiscard]] bool hasConfirmed() const noexcept;
     [[nodiscard]] bool canEdit() const noexcept;
     [[nodiscard]] bool draftDirty() const noexcept;
     [[nodiscard]] bool draftValid() const noexcept;
@@ -120,9 +125,11 @@ public:
     [[nodiscard]] QString saveResultsText() const;
     [[nodiscard]] bool saveResultsHaveFailure() const noexcept;
     [[nodiscard]] QVariantMap draft() const;
+    [[nodiscard]] QString confirmedMonospaceFamily() const;
     [[nodiscard]] QVariantMap fieldErrors() const;
     [[nodiscard]] QVariantList installedThemes() const;
     [[nodiscard]] QVariantList bundledWallpapers() const;
+    [[nodiscard]] QStringList installedMonospaceFamilies() const;
     [[nodiscard]] QString resolvedThemeId() const;
     [[nodiscard]] bool configuredThemeInstalled() const;
     [[nodiscard]] QString fallbackNotice() const;
@@ -205,6 +212,7 @@ private:
     QVector<Themes::DecorationThemeSpec> m_decorations;
     Qt::ColorScheme m_platformScheme;
     QVariantList m_bundledWallpapers;
+    QStringList m_installedMonospaceFamilies;
     QPointer<DesignTokens::TokenFacade> m_previewFacade;
 
     State m_state = State::Loading;
