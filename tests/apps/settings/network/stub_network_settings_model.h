@@ -8,6 +8,25 @@
 
 namespace QindaQt::Apps::SettingsNetwork::TestSupport {
 
+inline QVariantList stubRadioRows() {
+  return {
+      QVariantMap{{QStringLiteral("kind"), 0u},
+                  {QStringLiteral("name"), QStringLiteral("Wi-Fi")},
+                  {QStringLiteral("softwareEnabled"), true},
+                  {QStringLiteral("controlAvailable"), true},
+                  {QStringLiteral("pending"), false},
+                  {QStringLiteral("statusText"), QStringLiteral("On")},
+                  {QStringLiteral("detailText"), QString()}},
+      QVariantMap{{QStringLiteral("kind"), 1u},
+                  {QStringLiteral("name"), QStringLiteral("Mobile broadband")},
+                  {QStringLiteral("softwareEnabled"), false},
+                  {QStringLiteral("controlAvailable"), true},
+                  {QStringLiteral("pending"), false},
+                  {QStringLiteral("statusText"), QStringLiteral("Off")},
+                  {QStringLiteral("detailText"), QString()}},
+  };
+}
+
 class StubNetworkSettingsModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading MEMBER loading NOTIFY viewChanged)
@@ -68,13 +87,14 @@ public:
   QString connectedNetwork;
   QString connectedAccessPoint;
   QString disconnectedDevice;
+  quint32 lastRadioKind = 99;
+  bool lastRadioEnabled = false;
+  int radioSetCount = 0;
+  bool admitRadio = true;
 
   explicit StubNetworkSettingsModel(QObject *parent = nullptr)
       : QObject(parent) {
-    radios = {
-        QVariantMap{{QStringLiteral("name"), QStringLiteral("Wi-Fi")},
-                    {QStringLiteral("statusText"), QStringLiteral("On")}},
-    };
+    radios = stubRadioRows();
     devices = {
         QVariantMap{
             {QStringLiteral("interfaceName"), QStringLiteral("wlan0")},
@@ -145,6 +165,12 @@ public:
   Q_INVOKABLE bool connectVisibleNetwork(const QString &id) {
     connectedAccessPoint = id;
     return true;
+  }
+  Q_INVOKABLE bool setRadio(quint32 kind, bool enabled) {
+    ++radioSetCount;
+    lastRadioKind = kind;
+    lastRadioEnabled = enabled;
+    return admitRadio;
   }
   Q_INVOKABLE bool disconnectDevice(const QString &interfaceName) {
     disconnectedDevice = interfaceName;

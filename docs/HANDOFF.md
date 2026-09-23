@@ -42,6 +42,16 @@ rejecting silent fallthrough, missing witnesses, and QML warnings under
 poisoned-bus and relocated-install probes. The independent reviewer accepted
 the exact docs-repaired candidate; merged focused 11/11 and broad Settings
 133/133 pass. This is construction coverage, not live hardware qualification.
+Network radio Settings now keys switch state and outcome text to Network1
+admission and observed owner/revision. A first candidate gave a false "Wi-Fi
+is off" success after an external On and owner replacement; independent
+review rejected it, then accepted exact repaired `05612ac3` with the stale
+banner regression and ADR-0055 supersession pointer. On the staged integrated
+tree, combined build, focused Network/navigation 9/9, and strict docs/383
+pass. Broad Settings passed 132/133 under parallel load; its one 12-second
+route-construction timeout passed alone on rerun (1/1, 35.69 seconds).
+No live radio operation or install
+has occurred during phone tethering.
 The Date & Time Week Start control now reads confirmed Settings1 state
 through a shared exact write-admission preview and retains refusal/conflict/
 uncertainty. Independent exact-commit review exercised the actual QML picker
