@@ -102,10 +102,19 @@ class StubCustomizeSettingsModel final : public QObject {
     Q_PROPERTY(QString selectedAppletId READ emptyString CONSTANT)
     Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties NOTIFY contentChanged)
     Q_PROPERTY(QString appletSettingError READ appletSettingError NOTIFY contentChanged)
+    Q_PROPERTY(bool panelHideDelayAvailable READ panelHideDelayAvailable NOTIFY contentChanged)
+    Q_PROPERTY(bool panelHideDelayEditable READ panelHideDelayEditable NOTIFY contentChanged)
+    Q_PROPERTY(bool panelHideDelayPending READ panelHideDelayPending NOTIFY contentChanged)
+    Q_PROPERTY(int panelHideDelayMs READ panelHideDelayMs NOTIFY contentChanged)
+    Q_PROPERTY(QString panelHideDelayStatus READ panelHideDelayStatus NOTIFY contentChanged)
     Q_PROPERTY(QObject *wallpaperPreview READ wallpaperPreview CONSTANT)
     Q_PROPERTY(QObject *windowPreview READ windowPreview CONSTANT)
 
 public:
+    int delaySetCount = 0;
+    int lastDelayMs = -1;
+    bool admitDelay = true;
+
     explicit StubCustomizeSettingsModel(QObject *parent = nullptr)
         : QObject(parent)
     {
@@ -115,6 +124,20 @@ public:
     [[nodiscard]] bool trueValue() const { return true; }
     [[nodiscard]] bool dirty() const { return m_dirty; }
     [[nodiscard]] QString emptyString() const { return {}; }
+    [[nodiscard]] bool panelHideDelayAvailable() const { return m_delayAvailable; }
+    [[nodiscard]] bool panelHideDelayEditable() const { return m_delayEditable; }
+    [[nodiscard]] bool panelHideDelayPending() const { return m_delayPending; }
+    [[nodiscard]] int panelHideDelayMs() const { return m_delayMs; }
+    [[nodiscard]] QString panelHideDelayStatus() const { return m_delayStatus; }
+    void setDelayState(bool available, bool editable, bool pending, int value,
+                       QString status) {
+        m_delayAvailable = available;
+        m_delayEditable = editable;
+        m_delayPending = pending;
+        m_delayMs = value;
+        m_delayStatus = std::move(status);
+        Q_EMIT contentChanged();
+    }
     [[nodiscard]] bool primaryDisplayAvailable() const
     {
         return m_primaryDisplayAvailable;
@@ -328,6 +351,11 @@ public:
     }
     Q_INVOKABLE bool undo() { return true; }
     Q_INVOKABLE bool redo() { return true; }
+    Q_INVOKABLE bool setPanelHideDelayMs(int milliseconds) {
+        ++delaySetCount;
+        lastDelayMs = milliseconds;
+        return admitDelay;
+    }
     Q_INVOKABLE bool apply() { return true; }
     Q_INVOKABLE bool discard() { return true; }
     Q_INVOKABLE void retry() {}
@@ -369,6 +397,11 @@ public:
     QVariant lastConfiguredAppletValue;
 
 private:
+    bool m_delayAvailable = true;
+    bool m_delayEditable = true;
+    bool m_delayPending = false;
+    int m_delayMs = 250;
+    QString m_delayStatus = QStringLiteral("Saved for auto-hiding panels in every layout profile.");
     bool m_dirty = false;
     bool m_primaryDisplayAvailable = true;
     QString m_selectedKind = QStringLiteral("panel");

@@ -11,6 +11,7 @@ target_sources(
         customize_settings_actions.cpp
         customize_settings_insertion.cpp
         customize_settings_model.cpp
+    customize_settings_panel_delay.cpp
         customize_settings_projection.cpp
         customize_wallpaper_preview.cpp
         customize_window_preview.cpp
