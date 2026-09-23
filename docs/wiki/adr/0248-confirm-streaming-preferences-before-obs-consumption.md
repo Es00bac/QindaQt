@@ -21,8 +21,10 @@ now gives QindaQt one XDG autostart runner.
 boundary shared by Settings and shell. It scopes its Settings1 client to the
 three OBS keys. It publishes values only from an exact-owner confirmed
 snapshot. A setter accepts one pending asynchronous request, with no
-optimistic value change. A confirmed commit awaits authoritative readback;
-rejection leaves the previous values and exposes its message. Timeout or
+optimistic value change. A confirmed commit awaits authoritative same-owner/epoch readback at or
+above the commit reply revision; a legal stale snapshot triggers bounded
+refetch and then an explicitly unconfirmed result without replay. Rejection
+leaves the previous values and exposes its message. Timeout or
 owner replacement is uncertain, never replayed. Additional writes while one
 is pending are refused rather than queued.
 

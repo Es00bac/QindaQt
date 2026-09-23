@@ -8,6 +8,8 @@ namespace {
 constexpr auto kPortKey = "services.obsWebSocketPort";
 constexpr auto kAutoConnectKey = "services.obsAutoConnect";
 constexpr auto kStartAtLoginKey = "services.obsStartAtLogin";
+constexpr int kReadbackPollMilliseconds = 100;
+constexpr int kReadbackDeadlineMilliseconds = 3'000;
 } // namespace
 
 const QStringList &Settings1StreamingPreferences::scopedKeys() {
@@ -29,6 +31,30 @@ Settings1StreamingPreferences::Settings1StreamingPreferences(
             &Settings1StreamingPreferences::onCommitFinished);
     connect(&m_client, &SettingsClient::SettingsClient::commitUncertain, this,
             &Settings1StreamingPreferences::onCommitUncertain);
+    m_readbackTimer.setInterval(kReadbackPollMilliseconds);
+    connect(&m_readbackTimer, &QTimer::timeout, this, [this] {
+        if (!m_awaitingReadback) return;
+        // SettingsClient may replace an owner while already Authenticating;
+        // that state-to-same-state transition emits no stateChanged signal.
+        if (m_client.currentOwner() != m_pendingOwner) {
+            clearPending();
+            setWriteStatus(QStringLiteral("The change was not confirmed after the settings service changed."));
+            if (m_loaded) {
+                m_loaded = false;
+                Q_EMIT preferencesChanged();
+            }
+            return;
+        }
+        if (m_readbackAge.elapsed() >= kReadbackDeadlineMilliseconds) {
+            clearPending();
+            setWriteStatus(QStringLiteral("The change was accepted but its saved value was not confirmed. Check the current value before retrying."));
+            return;
+        }
+        // A legal same-revision snapshot may predate the Applied reply's
+        // revision. Refetch only, never replay the write.
+        if (m_client.state() == SettingsClient::ClientState::Ready)
+            m_client.refresh();
+    });
     onSnapshotChanged();
 }
 
@@ -43,6 +69,16 @@ bool Settings1StreamingPreferences::isLoaded() const {
            && snapshot->owner == m_client.currentOwner();
 }
 
+void Settings1StreamingPreferences::clearPending() {
+    m_readbackTimer.stop();
+    m_awaitingReadback = false;
+    m_pendingKey.clear();
+    m_pendingValue.clear();
+    m_pendingOwner.clear();
+    m_pendingEpoch.clear();
+    m_pendingRevisionFloor = 0;
+}
+
 void Settings1StreamingPreferences::setWriteStatus(const QString &status) {
     if (m_writeStatus == status) return;
     m_writeStatus = status;
@@ -54,9 +90,7 @@ void Settings1StreamingPreferences::onStateChanged() {
     if (!loaded && m_awaitingReadback) {
         // An applied commit is not a confirmed preference until its snapshot
         // arrives. A failed readback must release the write slot without replay.
-        m_awaitingReadback = false;
-        m_pendingKey.clear();
-        m_pendingValue.clear();
+        clearPending();
         setWriteStatus(QStringLiteral("The change was accepted but its saved value was not confirmed. Check the current value before retrying."));
     }
     if (!loaded && m_loaded) {
@@ -86,10 +120,17 @@ void Settings1StreamingPreferences::onSnapshotChanged() {
     m_startAtLogin = nextStartAtLogin;
     if (changed) Q_EMIT preferencesChanged();
     if (m_awaitingReadback) {
+        // AGENT-GUARD: SettingsClient accepts an unchanged old revision while
+        // waiting for the service to expose an Applied commit. Only the
+        // original owner/epoch at or beyond revisionAfter can settle it.
+        if (snapshot->owner != m_pendingOwner || snapshot->epoch != m_pendingEpoch) {
+            clearPending();
+            setWriteStatus(QStringLiteral("The change was not confirmed after the settings service changed."));
+            return;
+        }
+        if (snapshot->revision < m_pendingRevisionFloor) return;
         const bool matched = snapshot->values.value(m_pendingKey) == m_pendingValue;
-        m_awaitingReadback = false;
-        m_pendingKey.clear();
-        m_pendingValue.clear();
+        clearPending();
         setWriteStatus(matched ? QStringLiteral("Saved.")
                                : QStringLiteral("The saved setting did not match the request. Check its current value."));
     }
@@ -98,21 +139,28 @@ void Settings1StreamingPreferences::onSnapshotChanged() {
 void Settings1StreamingPreferences::onCommitFinished(const SettingsClient::CommitOutcome &outcome) {
     if (m_pendingKey.isEmpty()) return;
     if (outcome.status == SettingsProtocol::SettingsWireStatus::Applied) {
+        const auto &baseline = m_client.snapshot();
+        if (!baseline || baseline->owner != m_pendingOwner
+            || baseline->epoch != m_pendingEpoch) {
+            clearPending();
+            setWriteStatus(QStringLiteral("The change was accepted but its settings service lineage was not confirmed."));
+            return;
+        }
+        m_pendingRevisionFloor = outcome.revisionAfter;
         m_awaitingReadback = true;
+        m_readbackAge.start();
+        m_readbackTimer.start();
         setWriteStatus(QStringLiteral("Checking the saved setting…"));
         return;
     }
-    m_pendingKey.clear();
-    m_pendingValue.clear();
+    clearPending();
     setWriteStatus(outcome.message.isEmpty() ? QStringLiteral("Settings rejected the change.")
                                              : outcome.message);
 }
 
 void Settings1StreamingPreferences::onCommitUncertain(const QString &message) {
     if (m_pendingKey.isEmpty()) return;
-    m_pendingKey.clear();
-    m_pendingValue.clear();
-    m_awaitingReadback = false;
+    clearPending();
     setWriteStatus(message.isEmpty() ? QStringLiteral("The change was not confirmed. Check the current value before retrying.")
                                       : QStringLiteral("The change was not confirmed: %1").arg(message));
 }
@@ -129,6 +177,10 @@ bool Settings1StreamingPreferences::request(const QString &key, const QVariant &
     }
     m_pendingKey = key;
     m_pendingValue = value;
+    const auto &baseline = m_client.snapshot();
+    m_pendingOwner = m_client.currentOwner();
+    m_pendingEpoch = baseline ? baseline->epoch : QString{};
+    m_pendingRevisionFloor = 0;
     m_awaitingReadback = false;
     setWriteStatus(QStringLiteral("Saving setting…"));
     return true;
