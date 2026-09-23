@@ -34,6 +34,15 @@ integrated in the qinda source tree, not installed into a live session:
   accepted the exact candidate, including an actual-page keyboard/refusal
   probe. The merged build, focused 5/5 and broad Settings 127/127 pass; live
   locale/calendar use remains to qualify.
+- Notifications schedule and Do Not Disturb (`3785d58f`): controls
+  now reflect exact Settings1 write admission even while a same-owner refresh
+  occupies the client. Pending, refusal and uncertainty stay attached to
+  their initiating choice, and a refused switch returns to confirmed Off.
+  The first candidate was rejected by an actual-page false-On reproduction;
+  the same reviewer accepted the repaired route and its regression. Customize
+  fixture descendants c91209e4 and 865fb40d passed independent exact review.
+  The merged lifecycle test passes, broad Settings 131/131 and strict docs/381
+  pass. Live interruption and overnight schedule use remain to qualify.
 - Appearance monospace font (`fdbc50f4`): the font picker now edits
   `fonts.monospaceFamily` separately from the UI family and keeps the
   confirmed value visible. A qinda Qt metadata false-negative excluded the

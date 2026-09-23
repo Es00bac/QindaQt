@@ -107,7 +107,8 @@ void DoNotDisturbControllerTests::ownerLossDominatesAcceptedSaveAndConflict()
         commit.token, commit.owner,
         commitWire(SettingsWireStatus::Applied, 3, 4, true,
                    QStringLiteral("epoch-a")));
-    QVERIFY(controller.unavailable());
+    QVERIFY(controller.saving());
+    QVERIFY(!controller.canToggle());
     QVERIFY(!controller.enabled());
     Q_EMIT transport.ownerChanged(QString{});
     QVERIFY(controller.unavailable());
@@ -122,7 +123,8 @@ void DoNotDisturbControllerTests::ownerLossDominatesAcceptedSaveAndConflict()
         commit.token, commit.owner,
         commitWire(SettingsWireStatus::Conflict, 1, 1, true,
                    QStringLiteral("epoch-b")));
-    QVERIFY(controller.unavailable());
+    QVERIFY(controller.loading());
+    QVERIFY(!controller.canToggle());
     Q_EMIT transport.ownerChanged(QString{});
     QVERIFY(controller.unavailable());
     QVERIFY(!controller.applyMyChoice());
@@ -172,7 +174,8 @@ void DoNotDisturbControllerTests::retainsConfirmedFailures()
         commit.token, commit.owner,
         commitWire(SettingsWireStatus(status), revision, revision, false,
                    QStringLiteral("epoch"), message));
-    QVERIFY(controller.unavailable());
+    QVERIFY(controller.loading());
+    QVERIFY(!controller.canToggle());
     QCOMPARE(controller.errorText(), message);
 
     QTRY_COMPARE(transport.snapshots.size(), 1);

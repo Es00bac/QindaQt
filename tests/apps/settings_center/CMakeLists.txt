@@ -257,3 +257,39 @@ set_tests_properties(
     qindaqt.settings-app-installed-routes PROPERTIES
     LABELS "offscreen;settings;appearance;clipboard;color;startup;package" RUN_SERIAL TRUE TIMEOUT 90
 )
+
+# Scoped Notifications schedule and DND share one serial Settings1 write lane.
+qt_add_executable(qindaqt_notification_schedule_outcomes_test
+    tst_notification_schedule_outcomes.cpp)
+target_include_directories(qindaqt_notification_schedule_outcomes_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(qindaqt_notification_schedule_outcomes_test PRIVATE
+    qindaqt_settings_notifications QindaQt::SettingsClient Qt6::Core Qt6::Test)
+qindaqt_enable_warnings(qindaqt_notification_schedule_outcomes_test)
+add_test(NAME qindaqt.settings-notification-schedule-outcomes
+         COMMAND qindaqt_notification_schedule_outcomes_test)
+set_tests_properties(qindaqt.settings-notification-schedule-outcomes PROPERTIES
+    LABELS "settings;notifications;service"
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")
+
+# Actual Notifications route with production controllers and a private
+# Settings1 fake: same-owner refresh and refusal must never appear as a save.
+qt_add_executable(qindaqt_notification_page_admission_test
+    tst_notification_page_admission.cpp)
+target_include_directories(qindaqt_notification_page_admission_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(qindaqt_notification_page_admission_test PRIVATE
+    qindaqt_settings_notifications QindaQt::SettingsClient
+    qindaqt_settings_appearance qindaqt_themes qindaqt_design_tokens
+    qindaqt_controls_qml qindaqt_tokens_qml
+    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test)
+target_compile_definitions(qindaqt_notification_page_admission_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_SETTINGS_SOURCE_DIR="${PROJECT_SOURCE_DIR}/src/apps/settings_center")
+add_dependencies(qindaqt_notification_page_admission_test
+    qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin)
+qindaqt_enable_warnings(qindaqt_notification_page_admission_test)
+add_test(NAME qindaqt.settings-notification-page-admission
+         COMMAND qindaqt_notification_page_admission_test)
+set_tests_properties(qindaqt.settings-notification-page-admission PROPERTIES
+    LABELS "offscreen;settings;notifications;service"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")

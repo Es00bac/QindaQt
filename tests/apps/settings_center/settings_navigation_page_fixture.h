@@ -71,6 +71,10 @@ Q_SIGNALS:
 class StubQuietingScheduleModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool available MEMBER available NOTIFY viewChanged)
+  Q_PROPERTY(bool canEdit MEMBER canEdit NOTIFY viewChanged)
+  Q_PROPERTY(bool pending MEMBER pending NOTIFY viewChanged)
+  Q_PROPERTY(bool conflict MEMBER conflict NOTIFY viewChanged)
+  Q_PROPERTY(bool uncertain MEMBER uncertain NOTIFY viewChanged)
   Q_PROPERTY(bool scheduleEnabled MEMBER scheduleEnabled NOTIFY viewChanged)
   Q_PROPERTY(int startMinutes MEMBER startMinutes NOTIFY viewChanged)
   Q_PROPERTY(int endMinutes MEMBER endMinutes NOTIFY viewChanged)
@@ -78,9 +82,14 @@ class StubQuietingScheduleModel final : public QObject {
   Q_PROPERTY(QString endText MEMBER endText NOTIFY viewChanged)
   Q_PROPERTY(QString summaryText MEMBER summaryText NOTIFY viewChanged)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY viewChanged)
+  Q_PROPERTY(QString statusText MEMBER statusText NOTIFY viewChanged)
 
 public:
   bool available = true;
+  bool canEdit = true;
+  bool pending = false;
+  bool conflict = false;
+  bool uncertain = false;
   bool scheduleEnabled = false;
   int startMinutes = 22 * 60;
   int endMinutes = 7 * 60;
@@ -88,6 +97,7 @@ public:
   QString endText = QStringLiteral("07:00");
   QString summaryText;
   QString errorText;
+  QString statusText;
   int enabledCount = 0;
   int startCount = 0;
   int endCount = 0;
