@@ -6,6 +6,8 @@ target_sources(
     qindaqt_settings_audio
     PRIVATE
         audio_settings_model.cpp
+        audio_settings_completion.cpp
+        audio_settings_stream_route.cpp
         audio_settings_volume.cpp
         audio_console_projection.cpp
         audio_peer_projection.cpp
@@ -56,6 +58,7 @@ qt_add_qml_module(
         qml/AudioPage.qml
         qml/AudioPeerSection.qml
         qml/AudioStreamSection.qml
+        qml/AudioStreamTargetPicker.qml
         qml/AudioVirtualDeviceSection.qml
 )
 target_link_libraries(
@@ -102,6 +105,7 @@ install(
         qml/AudioPage.qml
         qml/AudioPeerSection.qml
         qml/AudioStreamSection.qml
+        qml/AudioStreamTargetPicker.qml
         qml/AudioVirtualDeviceSection.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio"
     COMPONENT SettingsAppearanceRuntime

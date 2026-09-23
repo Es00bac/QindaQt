@@ -6,9 +6,9 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// Per-application stream inventory with volume and mute intents. Moving a
-// stream between devices is intentionally not part of this route slice even
-// when the service advertises the capability.
+// Per-application stream inventory. A device choice names one live output for
+// playback or one live input for recording; only Audio1 readback changes the
+// displayed selected target.
 ColumnLayout {
     id: root
 
@@ -17,7 +17,7 @@ ColumnLayout {
 
     // Same focus registration contract as AudioDeviceSection: the target is
     // always an enabled, admitted control in traversal order (mute switch,
-    // then volume row, inside each stream row), never one the projection
+    // device picker, then volume row), never one the projection
     // disabled. See AudioDeviceSection for the host-entry AGENT-GUARD.
     property Item firstActionTarget: null
     property Item lastActionTarget: null
@@ -57,7 +57,7 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Application streams")
-        description: qsTr("Playback and recording levels for open applications")
+        description: qsTr("Levels and devices for open applications")
     }
 
     // AGENT-GUARD (mirrors ADR-0191, shell audio applet): index-stable rows,
@@ -83,15 +83,16 @@ ColumnLayout {
                        .arg(streamRow.modelData.volumePercent)
                      : qsTr("volume unknown"))
 
-            // Traversal order inside a stream row is the mute switch, then
-            // the volume row; the enabled flag folds in the projection's
-            // can-set fences.
+            // Traversal order follows the visible controls and never hands
+            // the Settings host a disabled or hidden focus target.
             readonly property Item firstEnabledAction:
                 muteSwitch.enabled ? muteSwitch
+                : targetPicker.entryControl.enabled ? targetPicker.entryControl
                 : levelRow.entryControl.enabled ? levelRow.entryControl
                 : null
             readonly property Item lastEnabledAction:
                 levelRow.entryControl.enabled ? levelRow.entryControl
+                : targetPicker.entryControl.enabled ? targetPicker.entryControl
                 : muteSwitch.enabled ? muteSwitch : null
 
             onFirstEnabledActionChanged:
@@ -155,6 +156,13 @@ ColumnLayout {
                             && root.audioSettings.setStreamMuted(
                                    streamRow.modelData.serial, checked)
                     }
+                }
+
+                AudioStreamTargetPicker {
+                    id: targetPicker
+                    Layout.fillWidth: true
+                    targetRow: streamRow.modelData
+                    audioSettings: root.audioSettings
                 }
 
                 AudioLevelRow {
