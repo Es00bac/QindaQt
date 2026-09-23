@@ -52,11 +52,29 @@ Item {
         ? knob.formatValue(knob.liveValue)
         : Number(knob.liveValue).toFixed(knob.decimals) + knob.unit
 
-    // The drag edits this, not `value`: the projected binding must stay
-    // intact so a model republish during a drag cannot fight the pointer.
+    // Drag and wheel edit this presentation value, not authoritative `value`.
+    // A model republish during a drag must not fight the pointer; wheel intent
+    // reconciles when truth changes or its bounded echo wait expires.
     property real liveValue: knob.value
     property real _dragStartValue: 0.0
+    property real _wheelRemainder: 0.0
     property real _dragStartY: 0.0
+
+    // A successful echo replaces local wheel intent. If an unchanged
+    // authority rejects it, return to the last known value after a bounded
+    // wait instead of leaving the knob at a false setting indefinitely.
+    onValueChanged: {
+        if (!dragHandler.pressed) {
+            reconcileTimer.stop()
+            liveValue = value
+            _wheelRemainder = 0
+        }
+    }
+    Timer {
+        id: reconcileTimer
+        interval: 800
+        onTriggered: if (!dragHandler.pressed) knob.liveValue = knob.value
+    }
 
     opacity: knob.enabledControl ? 1.0 : Tk.Theme.opacity.disabled
     Accessible.role: Accessible.Slider
@@ -70,9 +88,15 @@ Item {
     }
     function stepBy(deltaSteps) {
         const step = knob.range / 40.0
-        knob.liveValue = clamped(knob.liveValue + deltaSteps * step)
-        knob.committed(knob.liveValue)
+        const next = clamped(knob.liveValue + deltaSteps * step)
+        if (next === knob.liveValue)
+            return false
+        knob.liveValue = next
+        reconcileTimer.restart()
+        knob.committed(next)
+        return true
     }
+    onEnabledControlChanged: if (!enabledControl) _wheelRemainder = 0
 
     Column {
         anchors.fill: parent
@@ -223,8 +247,33 @@ Item {
         }
         onDoubleClicked: knob.committed(knob.defaultValue)
         onWheel: wheel => {
-            wheel.accepted = true
-            knob.stepBy(wheel.angleDelta.y > 0 ? 1 : -1)
+            const angle = wheel.angleDelta
+            const pixel = wheel.pixelDelta
+            const hasAngle = angle.x !== 0 || angle.y !== 0
+            const dx = hasAngle ? angle.x : pixel.x
+            const dy = hasAngle ? angle.y : pixel.y
+            if (wheel.modifiers !== Qt.NoModifier || dy === 0
+                    || Math.abs(dx) > Math.abs(dy)
+                    || (dy > 0 && knob.liveValue >= knob.to)
+                    || (dy < 0 && knob.liveValue <= knob.from)) {
+                knob._wheelRemainder = 0
+                wheel.accepted = false
+                return
+            }
+            // AGENT-GUARD: consume a partial vertical wheel only while the
+            // dial can change; pass zero/horizontal/bound events upward so
+            // the page can scroll. Angle is 120 units per detent, while
+            // pixel-only trackpads use 40 pixels per detent.
+            knob._wheelRemainder += dy / (hasAngle ? 120 : 40)
+            const steps = Math.trunc(knob._wheelRemainder)
+            if (steps === 0) {
+                wheel.accepted = true
+                return
+            }
+            knob._wheelRemainder -= steps
+            wheel.accepted = knob.stepBy(steps)
+            if (knob.liveValue === knob.from || knob.liveValue === knob.to)
+                knob._wheelRemainder = 0
         }
     }
 

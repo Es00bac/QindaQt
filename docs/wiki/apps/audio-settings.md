@@ -168,7 +168,20 @@ pressed slider owns its displayed value (a `Binding { when: !pressed }`, not
 a plain reactive property), so a reprojection mid-drag, including the one the
 row's own dispatch triggers, cannot pull the handle out from under the
 pointer; keyboard steps (`pressed` is already `false`) resume the
-authoritative binding immediately after each one, same as before.
+authoritative binding immediately after each one, same as before. Wheel
+adjustment uses one 1% step per 120 angle units or 40 trackpad pixels;
+sub-detent motion accumulates on one row, and multiple detents keep their
+magnitude. Zero, horizontal-dominant, modified, disabled, and outward-at-bound
+wheel events do not change volume. An enabled control at its bound leaves the
+vertical event to the page scroller. A wheel burst uses the same projected
+intent/readback binding as pointer and keyboard changes, so an external or
+refused authoritative value replaces the local handle.
+
+The console's rotary knobs use one-fortieth of their range per detent and
+vertical faders use 0.02 of their position. They share the same angle/pixel
+accumulation and admission rules. Fader bursts coalesce behind an in-flight
+authority request; a knob returns to authoritative truth on an echo or after
+a bounded wait if no echo arrives.
 
 ## The console grid
 
@@ -242,6 +255,10 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   control where a valid snapshot leaves the default output with no admitted
   control and host entry must fall through to the first admitted action
   elsewhere, and safe focus fallback when Retry is visible and hidden; and
+- `qindaqt.settings-audio-wheel` sends real offscreen wheel events through
+  the production page: angle/pixel and multi-detent accumulation, horizontal
+  and zero admission, disabled/bound behavior, page-scroll pass-through,
+  console knob/fader dispatch, and authoritative readback restoration; and
 - the Settings Center navigation row additionally proves Ctrl+6 selection,
   the Audio route tab's accessible name/role, and Tab entry plus Escape
   return in both the wide (720×520) and compact (440×360) host layouts.

@@ -70,7 +70,7 @@ RowLayout {
         from: 0.0
         to: 1.0
         stepSize: 0.01
-        wheelEnabled: true
+        wheelEnabled: false
         enabled: adjustable
         accessibleName: qsTr("Volume for %1").arg(root.streamName)
         accessibleDescription: root.pending
@@ -80,6 +80,57 @@ RowLayout {
                   : (root.row?.canSetVolume ?? false)
                         ? qsTr("Sets the volume from 0 to 100 percent")
                         : qsTr("This application stream does not allow volume changes")
+
+        MouseArea {
+            id: volumeWheel
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            enabled: volumeSlider.enabled && volumeSlider.visible
+            property real remainder: 0
+            property int targetSerial: Number(root.row?.serial ?? 0)
+            onTargetSerialChanged: remainder = 0
+            onEnabledChanged: if (!enabled) remainder = 0
+
+            onWheel: wheel => {
+                const angle = wheel.angleDelta
+                const pixel = wheel.pixelDelta
+                const hasAngle = angle.x !== 0 || angle.y !== 0
+                const dx = hasAngle ? angle.x : pixel.x
+                const dy = hasAngle ? angle.y : pixel.y
+                const current = volumeSlider.value
+                if (wheel.modifiers !== Qt.NoModifier || dy === 0
+                        || Math.abs(dx) > Math.abs(dy)
+                        || (dy > 0 && current >= volumeSlider.to - 1e-9)
+                        || (dy < 0 && current <= volumeSlider.from + 1e-9)) {
+                    remainder = 0
+                    wheel.accepted = false
+                    return
+                }
+                // AGENT-GUARD: retain sub-detent motion on this target only;
+                // leave zero, horizontal, modified, and bound events to the
+                // parent scroller. Pending does not disable adjustment.
+                remainder += dy / (hasAngle ? 120 : 40)
+                const steps = Math.trunc(remainder)
+                if (steps === 0) {
+                    wheel.accepted = true
+                    return
+                }
+                remainder -= steps
+                const next = Math.max(volumeSlider.from,
+                    Math.min(volumeSlider.to,
+                        current + steps * volumeSlider.stepSize))
+                if (next === current) {
+                    remainder = 0
+                    wheel.accepted = false
+                    return
+                }
+                if (next === volumeSlider.from || next === volumeSlider.to)
+                    remainder = 0
+                volumeSlider.value = next
+                root.controller.requestVolume(root.row.serial, true, next)
+                wheel.accepted = true
+            }
+        }
 
         // The only binding on `value`: a pressed control owns what it shows,
         // and `level` is the user's outstanding intent until the service

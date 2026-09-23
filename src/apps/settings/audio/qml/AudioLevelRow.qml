@@ -37,7 +37,7 @@ RowLayout {
         from: 0.0
         to: 1.0
         stepSize: 0.01
-        wheelEnabled: true
+        wheelEnabled: false
         enabled: root.targetRow?.volumeAvailable ?? false
         accessibleName: qsTr("%1 volume").arg(root.targetName)
         accessibleDescription: (root.targetRow?.pending ?? false)
@@ -45,6 +45,58 @@ RowLayout {
             : (root.targetRow?.volumeKnown ?? false)
                 ? qsTr("%1 percent").arg(root.targetRow.volumePercent)
                 : qsTr("Volume unknown")
+
+        MouseArea {
+            id: volumeWheel
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            enabled: volumeSlider.enabled && volumeSlider.visible
+            property real remainder: 0
+            property int targetSerial: Number(root.targetRow?.serial ?? 0)
+            onTargetSerialChanged: remainder = 0
+            onEnabledChanged: if (!enabled) remainder = 0
+
+            onWheel: wheel => {
+                const angle = wheel.angleDelta
+                const pixel = wheel.pixelDelta
+                const hasAngle = angle.x !== 0 || angle.y !== 0
+                const dx = hasAngle ? angle.x : pixel.x
+                const dy = hasAngle ? angle.y : pixel.y
+                const current = volumeSlider.value
+                const minimum = Math.min(volumeSlider.from, volumeSlider.to)
+                const maximum = Math.max(volumeSlider.from, volumeSlider.to)
+                if (wheel.modifiers !== Qt.NoModifier || dy === 0
+                        || Math.abs(dx) > Math.abs(dy)
+                        || (dy > 0 && current >= maximum - 1e-9)
+                        || (dy < 0 && current <= minimum + 1e-9)) {
+                    remainder = 0
+                    wheel.accepted = false
+                    return
+                }
+                // AGENT-GUARD: a wheel burst is one-percent detents. Partial
+                // deltas accumulate; zero/horizontal/bound events pass to
+                // the enclosing Flickable instead of swallowing scrolling.
+                remainder += dy / (hasAngle ? 120 : 40)
+                const steps = Math.trunc(remainder)
+                if (steps === 0) {
+                    wheel.accepted = true
+                    return
+                }
+                remainder -= steps
+                const next = Math.max(minimum, Math.min(maximum,
+                    current + steps * volumeSlider.stepSize))
+                if (next === current) {
+                    remainder = 0
+                    wheel.accepted = false
+                    return
+                }
+                if (next === minimum || next === maximum)
+                    remainder = 0
+                volumeSlider.value = next
+                root.commit(next)
+                wheel.accepted = true
+            }
+        }
 
         // AGENT-CONTRACT (mirrors ADR-0191, shell audio applet): a pressed
         // control owns its value. Truth only rebinds while the handle is not

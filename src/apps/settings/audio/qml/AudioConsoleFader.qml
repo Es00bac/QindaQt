@@ -76,6 +76,7 @@ Item {
         if (!enabledControl) {
             commitTimer.stop()
             commitPending = false
+            _wheelRemainder = 0
         }
     }
     Timer {
@@ -105,6 +106,7 @@ Item {
         requestPosition(fader.livePosition + steps * 0.02)
     }
 
+    property real _wheelRemainder: 0
     property real _startY: 0
     property real _startPosition: 0
 
@@ -218,8 +220,34 @@ Item {
             fader.requestPosition(fader.model.unityFaderPosition())
         }
         onWheel: wheel => {
-            wheel.accepted = true
-            fader.nudge(wheel.angleDelta.y > 0 ? 1 : -1)
+            const angle = wheel.angleDelta
+            const pixel = wheel.pixelDelta
+            const hasAngle = angle.x !== 0 || angle.y !== 0
+            const dx = hasAngle ? angle.x : pixel.x
+            const dy = hasAngle ? angle.y : pixel.y
+            if (wheel.modifiers !== Qt.NoModifier || dy === 0
+                    || Math.abs(dx) > Math.abs(dy)
+                    || (dy > 0 && fader.livePosition >= 1)
+                    || (dy < 0 && fader.livePosition <= 0)) {
+                fader._wheelRemainder = 0
+                wheel.accepted = false
+                return
+            }
+            // AGENT-GUARD: partial wheel motion belongs to this fader only
+            // while another detent could move it. At a bound, let the page
+            // Flickable receive the wheel instead of trapping scrolling.
+            fader._wheelRemainder += dy / (hasAngle ? 120 : 40)
+            const steps = Math.trunc(fader._wheelRemainder)
+            if (steps === 0) {
+                wheel.accepted = true
+                return
+            }
+            fader._wheelRemainder -= steps
+            const before = fader.livePosition
+            fader.nudge(steps)
+            wheel.accepted = fader.livePosition !== before
+            if (fader.livePosition === 0 || fader.livePosition === 1)
+                fader._wheelRemainder = 0
         }
     }
 
