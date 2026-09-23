@@ -203,6 +203,8 @@ private:
     QString owner;
     quint64 epoch = 0;
     quint64 requestRevision = 0;
+    quint64 observedRevisionFloor = 0;
+    quint64 requiredSnapshotSequence = 0;
     quint64 generation = 0;
     bool isStream = false;
     bool awaitingSnapshot = false;
@@ -264,6 +266,7 @@ private:
   QHash<quint64, PendingIntent> m_pendingBySerial;
   QHash<quint64, quint64> m_serialByRequestId;
   QHash<quint64, VolumeIntent> m_volumeBySerial;
+  quint64 m_volumeSnapshotSequence = 0;
   quint64 m_nextVolumeGeneration = 1;
   QSet<quint64> m_consoleRequestIds;
 };

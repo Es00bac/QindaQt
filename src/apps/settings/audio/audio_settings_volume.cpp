@@ -117,6 +117,8 @@ bool AudioSettingsModel::requestVolume(const quint64 serial,
                    .owner = m_client.owner(),
                    .epoch = snapshot.epoch,
                    .requestRevision = snapshot.revision,
+                   .observedRevisionFloor = 0,
+                   .requiredSnapshotSequence = 0,
                    .generation = m_nextVolumeGeneration++,
                    .isStream = isStream,
                    .awaitingSnapshot = false});
@@ -130,12 +132,19 @@ void AudioSettingsModel::completeVolumeRequest(
   if (intent != Intent::DeviceVolume && intent != Intent::StreamVolume) return;
   auto outstanding = m_volumeBySerial.find(serial);
   if (outstanding == m_volumeBySerial.end()) return;
-  if (result.status != OperationStatus::Succeeded) {
+  if (result.status != OperationStatus::Succeeded
+      || result.observedEpoch != outstanding->epoch) {
     m_volumeBySerial.erase(outstanding);
     Q_EMIT viewChanged();
     return;
   }
+  // AGENT-GUARD: an unrelated snapshot can advance revision while this
+  // write is still pending. The successor requires a snapshot delivered
+  // after this success and at least the result's observed revision; cached
+  // pre-reply truth must never release it.
   outstanding->awaitingSnapshot = true;
+  outstanding->observedRevisionFloor = result.observedRevision;
+  outstanding->requiredSnapshotSequence = m_volumeSnapshotSequence + 1;
   outstanding->generation = m_nextVolumeGeneration++;
   const quint64 generation = outstanding->generation;
   // A successful reply is not a snapshot. A missing/duplicate readback must
@@ -143,7 +152,6 @@ void AudioSettingsModel::completeVolumeRequest(
   QTimer::singleShot(2'500, this, [this, serial, generation] {
     expireVolumeIntent(serial, generation);
   });
-  reconcileVolumeIntents();
   Q_EMIT viewChanged();
 }
 
@@ -182,6 +190,8 @@ void AudioSettingsModel::reconcileVolumeIntents() {
       continue;
     }
     if (!outstanding->awaitingSnapshot || serialPending(serial)
+        || m_volumeSnapshotSequence < outstanding->requiredSnapshotSequence
+        || snapshot.revision < outstanding->observedRevisionFloor
         || snapshot.revision <= outstanding->requestRevision) continue;
     if (!outstanding->queuedLevel) {
       m_volumeBySerial.erase(outstanding);
@@ -192,6 +202,8 @@ void AudioSettingsModel::reconcileVolumeIntents() {
     outstanding->queuedLevel.reset();
     outstanding->awaitingSnapshot = false;
     outstanding->requestRevision = snapshot.revision;
+    outstanding->observedRevisionFloor = 0;
+    outstanding->requiredSnapshotSequence = 0;
     const bool dispatched = isStream
         ? dispatchStreamIntent(serial, Intent::StreamVolume, latest, false)
         : dispatchDeviceIntent(serial, Intent::DeviceVolume, latest, false);

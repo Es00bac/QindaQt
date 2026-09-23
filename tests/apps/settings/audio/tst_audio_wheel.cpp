@@ -249,13 +249,17 @@ void AudioWheelTest::consoleKnobAndFaderAccumulateDetents()
 void AudioWheelTest::realModelPendingWheelKeepsLatest_data()
 {
     QTest::addColumn<bool>("stream");
-    QTest::newRow("output-device") << false;
-    QTest::newRow("application-stream") << true;
+    QTest::addColumn<bool>("unrelatedSnapshotBeforeSuccess");
+    QTest::newRow("output-device") << false << false;
+    QTest::newRow("application-stream") << true << false;
+    QTest::newRow("output-device-pre-success-revision") << false << true;
+    QTest::newRow("application-stream-pre-success-revision") << true << true;
 }
 
 void AudioWheelTest::realModelPendingWheelKeepsLatest()
 {
     QFETCH(bool, stream);
+    QFETCH(bool, unrelatedSnapshotBeforeSuccess);
     FakeAudioTransport transport;
     AudioClient client(&transport);
     AudioSettingsModel model(client);
@@ -298,17 +302,34 @@ void AudioWheelTest::realModelPendingWheelKeepsLatest()
     QCOMPARE(pendingRow.value(QStringLiteral("volumeDisplayPercent")).toInt(),
              int(initial * 100 + 4));
 
-    transport.finish(transport.operations.constFirst(),
-        audioResult(OperationKind::SetVolume, OperationStatus::Succeeded,
-                    11, 2));
-    QTRY_COMPARE(transport.fetches.size(), 2);
+    if (unrelatedSnapshotBeforeSuccess) {
+        // Reviewer event order: unrelated revision 3 arrives while the first
+        // write is still pending. It reports the old volume and cannot ever
+        // confirm the later success result, which observes revision 4.
+        transport.invalidate(QStringLiteral(":1.7"), 11, 3);
+        QTRY_COMPARE(transport.fetches.size(), 2);
+        transport.reply(transport.fetches.constLast(),
+                        readyAudioSnapshot(11, 3));
+        QVERIFY(near(slider->property("value").toDouble(), initial + 0.04));
+        QCOMPARE(transport.operations.size(), 1);
+    }
+    auto firstResult = audioResult(OperationKind::SetVolume,
+                                   OperationStatus::Succeeded, 11, 2);
+    if (unrelatedSnapshotBeforeSuccess) firstResult.observedRevision = 4;
+    transport.finish(transport.operations.constFirst(), firstResult);
+    QTRY_COMPARE(transport.fetches.size(),
+                 unrelatedSnapshotBeforeSuccess ? 3 : 2);
+    QCoreApplication::processEvents();
+    QCOMPARE(transport.operations.size(), 1);
     // A further detent after success but before its authoritative readback
     // still replaces the queued latest; it must not dispatch against stale
     // snapshot truth.
     sendWheel(slider, {}, QPoint(0, 120));
     QCOMPARE(transport.operations.size(), 1);
     QVERIFY(near(slider->property("value").toDouble(), initial + 0.05));
-    Snapshot firstEcho = readyAudioSnapshot(11, 3);
+    const quint64 firstEchoRevision =
+        unrelatedSnapshotBeforeSuccess ? 4 : 3;
+    Snapshot firstEcho = readyAudioSnapshot(11, firstEchoRevision);
     if (stream) {
         firstEcho.streams[0].volume = initial + 0.01;
         firstEcho.streams[0].channelVolumes = {initial + 0.01,
@@ -326,9 +347,11 @@ void AudioWheelTest::realModelPendingWheelKeepsLatest()
 
     transport.finish(transport.operations.constLast(),
         audioResult(OperationKind::SetVolume, OperationStatus::Succeeded,
-                    11, 3));
-    QTRY_COMPARE(transport.fetches.size(), 3);
-    Snapshot finalEcho = readyAudioSnapshot(11, 4);
+                    11, firstEchoRevision));
+    QTRY_COMPARE(transport.fetches.size(),
+                 unrelatedSnapshotBeforeSuccess ? 4 : 3);
+    QCoreApplication::processEvents();
+    Snapshot finalEcho = readyAudioSnapshot(11, firstEchoRevision + 1);
     if (stream) {
         finalEcho.streams[0].volume = initial + 0.05;
         finalEcho.streams[0].channelVolumes = {initial + 0.05,
