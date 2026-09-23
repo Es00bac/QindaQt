@@ -127,16 +127,23 @@ T.Page {
                             Layout.fillWidth: true
                             status: root.voiceSettings.serviceAvailable
                                     ? StateCard.Success : StateCard.Error
-                            title: root.voiceSettings.serviceAvailable
-                                   ? qsTr("Voice provider connected")
-                                   : qsTr("No voice provider")
+                            title: root.voiceSettings.preferenceSaving
+                                   && !root.voiceSettings.draftVoiceInputEnabled
+                                   ? qsTr("Turning voice input off")
+                                   : !root.voiceSettings.preferenceReady
+                                     ? qsTr("Voice preferences unavailable")
+                                   : !root.voiceSettings.voiceInputEnabled
+                                     ? qsTr("Voice input off")
+                                     : root.voiceSettings.serviceAvailable
+                                       ? qsTr("Voice provider connected")
+                                       : qsTr("No voice provider")
                             message: root.voiceSettings.serviceAvailable
                                      ? qsTr("%1 · %2")
                                         .arg(root.voiceSettings.providerLabel)
                                         .arg(root.voiceSettings.sessionStateText)
                                      : root.voiceSettings.serviceStatusText
-                            actionText: root.voiceSettings.serviceAvailable
-                                        ? "" : qsTr("Retry")
+                            actionText: root.voiceSettings.canRetryProvider
+                                        ? qsTr("Retry") : ""
                             onActionTriggered: root.voiceSettings.retryProvider()
                         }
                     }
@@ -156,7 +163,7 @@ T.Page {
                                   ? qsTr("On") : qsTr("Off")
                             checked: root.voiceSettings.draftVoiceInputEnabled
                             enabled: root.voiceSettings.canEditPreference
-                            accessibleDescription: qsTr("When on, the panel applet connects to a speech provider and the dictation shortcuts work in every window.")
+                            accessibleDescription: qsTr("When on, QindaQt connects to a speech provider and permits desktop voice controls.")
                             onToggled: {
                                 if (root.voiceSettings.setDraftVoiceInputEnabled(checked))
                                     root.voiceSettings.applyPreferences()

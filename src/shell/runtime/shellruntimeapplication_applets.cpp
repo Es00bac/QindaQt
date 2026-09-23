@@ -58,6 +58,8 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
                            QStringLiteral("services.clipboardHistory"),
                            QString::fromLatin1(
                                Services::Voice::kVoicePanelTranscriptSettingsKey),
+                           QString::fromLatin1(
+                               Services::Voice::kVoiceInputSettingsKey),
                            Launcher::LauncherPersistenceController::pinnedKey(),
                            Launcher::LauncherPersistenceController::recentKey()};
     // The appearance bridge and token publisher consume the confirmed

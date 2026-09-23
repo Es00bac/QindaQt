@@ -12,6 +12,8 @@ namespace QindaQt::Shell::VoiceApplet {
 // AGENT-CONTRACT: this class is the only place the applet stack names
 // Services::Voice::VoiceClient. It forwards and translates; it holds no state
 // of its own, so there is nothing here that can disagree with the client.
+// Activation belongs only to VoiceAppletComposition's Settings1 gate; opening
+// the popup must never start a client that desktop Voice input has stopped.
 class VoiceServiceClientAdapter final : public VoiceClientInterface {
     Q_OBJECT
 public:

@@ -44,10 +44,10 @@ quint32 VoiceServiceClientAdapter::levelPercent() const noexcept
 
 void VoiceServiceClientAdapter::refresh()
 {
-    // The client refetches on every invalidation already; starting it again is
-    // the only refresh authority this seam legitimately has, and it is a no-op
-    // once the client is running.
-    m_client->start();
+    // AGENT-GUARD: expanding the popup is not permission to activate Voice1.
+    // The client already refetches on owner/invalidation signals while
+    // running; only VoiceAppletComposition's confirmed Settings1 gate starts
+    // a stopped client.
 }
 
 quint64 VoiceServiceClientAdapter::submit(const OperationKind kind,

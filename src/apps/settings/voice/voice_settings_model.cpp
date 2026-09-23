@@ -59,7 +59,9 @@ bool VoiceSettingsModel::preferenceUnavailable() const noexcept
 
 bool VoiceSettingsModel::canEditPreference() const noexcept
 {
-    return m_preferenceState == PreferenceState::Ready && m_hasPreferenceBaseline;
+    return m_preferenceState == PreferenceState::Ready && m_hasPreferenceBaseline
+           && m_settingsClient.state() == ClientState::Ready
+           && m_settingsClient.currentOwner() == m_settingsOwner;
 }
 
 bool VoiceSettingsModel::preferenceDirty() const noexcept
@@ -109,7 +111,18 @@ void VoiceSettingsModel::handleSettingsState()
         // A lost settings owner invalidates the baseline the draft was taken
         // against; keeping the draft would let Apply write a value the user
         // composed against a different lineage.
+        // A same-owner lost reply has an unknown outcome. Keep the user's
+        // requested draft for review after readback, but never submit it again.
+        m_preserveDraftOnResync =
+            m_settingsClient.state() == ClientState::Degraded
+            && m_settingsClient.currentOwner() == m_settingsOwner
+            && m_preferenceState == PreferenceState::Saving;
         m_hasPreferenceBaseline = false;
+        m_committingVoiceInput = false;
+        m_committingPanelTranscript = false;
+        m_pendingVoiceInput = false;
+        m_pendingPanelTranscript = false;
+        m_waitingForCommittedSnapshot = false;
         setPreferenceState(PreferenceState::Unavailable, m_settingsClient.lastError());
         return;
     case ClientState::Authenticating:
@@ -124,8 +137,11 @@ void VoiceSettingsModel::handleSettingsSnapshot()
     if (!snapshot.has_value()) {
         return;
     }
+    const bool wasDirty = preferenceDirty();
     const bool lineageChanged =
         snapshot->owner != m_settingsOwner || snapshot->epoch != m_settingsEpoch;
+    const bool preserveDraft = m_preserveDraftOnResync && !lineageChanged;
+    m_preserveDraftOnResync = false;
     m_settingsOwner = snapshot->owner;
     m_settingsEpoch = snapshot->epoch;
     m_voiceInput = snapshot->values
@@ -135,12 +151,27 @@ void VoiceSettingsModel::handleSettingsSnapshot()
         snapshot->values.value(QString::fromLatin1(VoicePanelTranscriptSettingsKey), true)
             .toBool();
     // A draft survives an unrelated revision, but never a new owner or epoch.
-    if (!m_hasPreferenceBaseline || lineageChanged || !preferenceDirty()) {
+    if (lineageChanged || (!preserveDraft && (!m_hasPreferenceBaseline || !wasDirty))) {
         m_draftVoiceInput = m_voiceInput;
         m_draftPanelTranscript = m_panelTranscript;
     }
     m_hasPreferenceBaseline = true;
-    if (m_preferenceState == PreferenceState::Loading) {
+    if (lineageChanged && m_preferenceState == PreferenceState::Saving) {
+        m_committingVoiceInput = false;
+        m_committingPanelTranscript = false;
+        m_pendingVoiceInput = false;
+        m_pendingPanelTranscript = false;
+        m_waitingForCommittedSnapshot = false;
+        m_preferenceError = tr("The settings service changed while saving. Review the new values.");
+        m_preferenceState = PreferenceState::Ready;
+    } else if (m_waitingForCommittedSnapshot
+               && snapshot->revision >= m_committedRevision) {
+        m_waitingForCommittedSnapshot = false;
+        if (!commitNextDraftKey()) {
+            m_preferenceState = PreferenceState::Ready;
+        }
+    } else if (m_preferenceState == PreferenceState::Loading
+               || m_preferenceState == PreferenceState::Unavailable) {
         m_preferenceState = PreferenceState::Ready;
     }
     Q_EMIT viewChanged();
@@ -184,7 +215,14 @@ bool VoiceSettingsModel::applyPreferences()
         return false;
     }
     m_preferenceError.clear();
+    m_requestedVoiceInput = m_draftVoiceInput;
+    m_requestedPanelTranscript = m_draftPanelTranscript;
+    m_pendingVoiceInput = m_requestedVoiceInput != m_voiceInput;
+    m_pendingPanelTranscript = m_requestedPanelTranscript != m_panelTranscript;
     m_preferenceState = PreferenceState::Saving;
+    // Withdraw this route's use immediately when Apply includes Off,
+    // before the asynchronous Settings1 commit is sent.
+    Q_EMIT viewChanged();
     if (!commitNextDraftKey()) {
         // Nothing left to write is not a failure; the draft simply matched.
         m_preferenceState = PreferenceState::Ready;
@@ -200,19 +238,19 @@ bool VoiceSettingsModel::commitNextDraftKey()
     m_committingVoiceInput = false;
     m_committingPanelTranscript = false;
     QString error;
-    if (m_draftVoiceInput != m_voiceInput) {
+    if (m_pendingVoiceInput) {
         if (!m_settingsClient.setUserValue(QString::fromLatin1(VoiceInputSettingsKey),
-                                           m_draftVoiceInput, &error)) {
+                                           m_requestedVoiceInput, &error)) {
             setPreferenceState(PreferenceState::Ready, error);
             return false;
         }
         m_committingVoiceInput = true;
         return true;
     }
-    if (m_draftPanelTranscript != m_panelTranscript) {
+    if (m_pendingPanelTranscript) {
         if (!m_settingsClient.setUserValue(
                 QString::fromLatin1(VoicePanelTranscriptSettingsKey),
-                m_draftPanelTranscript, &error)) {
+                m_requestedPanelTranscript, &error)) {
             setPreferenceState(PreferenceState::Ready, error);
             return false;
         }
@@ -228,8 +266,11 @@ void VoiceSettingsModel::handleSettingsCommit(const CommitOutcome &outcome)
         return;
     }
     if (outcome.status != SettingsWireStatus::Applied) {
-        // The other key, if it was already written, stays written. Reporting
-        // the failure and stopping is the only honest outcome available.
+        // Earlier keys remain committed; never infer the rejected key's value.
+        m_committingVoiceInput = false;
+        m_committingPanelTranscript = false;
+        m_pendingVoiceInput = false;
+        m_pendingPanelTranscript = false;
         setPreferenceState(PreferenceState::Ready,
                            outcome.message.isEmpty()
                                ? tr("The voice preference could not be saved.")
@@ -237,17 +278,17 @@ void VoiceSettingsModel::handleSettingsCommit(const CommitOutcome &outcome)
         return;
     }
     if (m_committingVoiceInput) {
-        m_voiceInput = m_draftVoiceInput;
+        m_pendingVoiceInput = false;
     } else {
-        m_panelTranscript = m_draftPanelTranscript;
+        m_pendingPanelTranscript = false;
     }
-    if (commitNextDraftKey()) {
-        Q_EMIT viewChanged();
-        return;
-    }
-    if (m_preferenceState == PreferenceState::Saving) {
-        m_preferenceState = PreferenceState::Ready;
-    }
+    m_committingVoiceInput = false;
+    m_committingPanelTranscript = false;
+    // AGENT-GUARD: SettingsClient emits commitFinished before fetching the
+    // authoritative next revision. The second key must wait for that snapshot,
+    // and no requested value may be manufactured as a confirmed value.
+    m_committedRevision = outcome.revisionAfter;
+    m_waitingForCommittedSnapshot = true;
     Q_EMIT viewChanged();
 }
 
@@ -258,6 +299,9 @@ void VoiceSettingsModel::handleSettingsUncertain(const QString &message)
     }
     m_committingVoiceInput = false;
     m_committingPanelTranscript = false;
+    m_pendingVoiceInput = false;
+    m_pendingPanelTranscript = false;
+    m_waitingForCommittedSnapshot = false;
     // AGENT-GUARD: never replay an uncertain settings write. The next snapshot
     // is what tells the user which value actually landed.
     setPreferenceState(PreferenceState::Ready,

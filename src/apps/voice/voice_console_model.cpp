@@ -75,6 +75,9 @@ QString VoiceConsoleModel::statusText() const
     if (m_ready) {
         return {};
     }
+    if (m_client.state() == ClientState::Stopped) {
+        return tr("Voice input is off in Settings or its preferences are unavailable.");
+    }
     if (m_client.state() == ClientState::Starting) {
         return tr("Connecting to the voice provider…");
     }
@@ -319,10 +322,18 @@ void VoiceConsoleModel::dismissFeedback()
     Q_EMIT viewChanged();
 }
 
+bool VoiceConsoleModel::canRetryConnection() const noexcept
+{
+    return m_client.state() == ClientState::Unavailable;
+}
+
 void VoiceConsoleModel::retryConnection()
 {
+    if (!canRetryConnection()) {
+        return;
+    }
     publishFeedback({}, QStringLiteral("info"));
-    m_client.start();
+    Q_EMIT connectionRetryRequested();
     Q_EMIT viewChanged();
 }
 

@@ -104,8 +104,10 @@ void SettingsClientTests::bindsSnapshotsAndFencesOwnerReplacement()
                           {.requestTimeoutMilliseconds = 100, .debounceMilliseconds = 0,
                            .retryMilliseconds = {10}});
     QVERIFY(client.start());
+    QVERIFY(client.currentOwner().isEmpty());
     QCOMPARE(transport.activations, 1);
     Q_EMIT transport.ownerChanged(QStringLiteral(":1.10"));
+    QCOMPARE(client.currentOwner(), QStringLiteral(":1.10"));
     QTRY_COMPARE(transport.snapshots.size(), 1);
     const auto first = transport.snapshots.takeFirst();
     Q_EMIT transport.snapshotReceived(first.token, first.owner,
@@ -114,8 +116,10 @@ void SettingsClientTests::bindsSnapshotsAndFencesOwnerReplacement()
     QCOMPARE(client.snapshot()->values.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
 
     Q_EMIT transport.ownerChanged(QStringLiteral(":1.11"));
+    QCOMPARE(client.currentOwner(), QStringLiteral(":1.11"));
     QCOMPARE(client.state(), ClientState::Authenticating);
     QVERIFY(client.snapshot().has_value()); // last confirmed value is retained
+    QCOMPARE(client.snapshot()->owner, QStringLiteral(":1.10"));
     QTRY_COMPARE(transport.snapshots.size(), 1);
     Q_EMIT transport.snapshotReceived(first.token, QStringLiteral(":1.10"),
                                       snapshotWire(QStringLiteral("epoch-a"), 99, false));

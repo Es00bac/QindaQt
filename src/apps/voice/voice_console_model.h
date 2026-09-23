@@ -29,6 +29,7 @@ class VoiceConsoleModel final : public QObject {
 
     Q_PROPERTY(QString phase READ phase NOTIFY viewChanged)
     Q_PROPERTY(bool serviceAvailable READ serviceAvailable NOTIFY viewChanged)
+    Q_PROPERTY(bool canRetryConnection READ canRetryConnection NOTIFY viewChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY viewChanged)
     Q_PROPERTY(QString stateLabel READ stateLabel NOTIFY viewChanged)
     Q_PROPERTY(QString stateVariant READ stateVariant NOTIFY viewChanged)
@@ -66,6 +67,7 @@ public:
 
     [[nodiscard]] QString phase() const;
     [[nodiscard]] bool serviceAvailable() const noexcept { return m_ready; }
+    [[nodiscard]] bool canRetryConnection() const noexcept;
     [[nodiscard]] QString statusText() const;
     [[nodiscard]] QString stateLabel() const;
     [[nodiscard]] QString stateVariant() const;
@@ -121,6 +123,7 @@ Q_SIGNALS:
     void viewChanged();
     void levelChanged();
     void historyChanged();
+    void connectionRetryRequested();
 
 private:
     struct HistoryEntry {

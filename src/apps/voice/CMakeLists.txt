@@ -21,6 +21,7 @@ qt_add_qml_module(qindaqt-voice
     URI QindaQt.VoiceConsole VERSION 1.0 RESOURCE_PREFIX /qt/qml
     QML_FILES qml/Main.qml)
 target_link_libraries(qindaqt-voice PRIVATE qindaqt_voice_console_support
+    QindaQt::SettingsClient QindaQt::VoicePreferences
     QindaTK::qindatk Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::DBus)
 qindaqt_enable_warnings(qindaqt-voice)
 

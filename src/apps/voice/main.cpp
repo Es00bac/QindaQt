@@ -3,6 +3,10 @@
 
 #include <qindaqt/services/voice_client/qt_voice_transport.h>
 #include <qindaqt/services/voice_client/voice_client.h>
+#include <qindaqt/services/settings_client/qt_settings_transport.h>
+#include <qindaqt/services/settings_client/settings_client.h>
+#include <qindaqt/services/voice_preferences/voice_input_preference_gate.h>
+#include <qindaqt/services/voice_protocol/voice_settings_keys.h>
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -34,6 +38,13 @@ int main(int argc, char **argv)
 
     // AGENT-CONTRACT: the transport is the only D-Bus in this process. The
     // model and QML see the client's bounded projection and nothing else.
+    QindaQt::Services::SettingsClient::QtSettingsTransport preferenceTransport(
+        QDBusConnection::sessionBus());
+    QindaQt::Services::SettingsClient::SettingsClient preferenceClient(
+        preferenceTransport,
+        {QString::fromLatin1(QindaQt::Services::Voice::kVoiceInputSettingsKey)});
+    QindaQt::Services::VoicePreferences::VoiceInputPreferenceGate inputGate(
+        preferenceClient);
     QindaQt::Services::Voice::QtVoiceTransport transport(QDBusConnection::sessionBus());
     QindaQt::Services::Voice::VoiceClient client(&transport);
     QindaQt::Apps::Voice::VoiceConsoleModel model(client);
@@ -52,6 +63,29 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    client.start();
+    QObject::connect(&inputGate,
+                     &QindaQt::Services::VoicePreferences::VoiceInputPreferenceGate::allowedChanged,
+                     &application, [&client](bool allowed) {
+                         if (allowed) {
+                             client.start();
+                         } else {
+                             client.stop();
+                         }
+                     });
+    QObject::connect(&model, &QindaQt::Apps::Voice::VoiceConsoleModel::connectionRetryRequested,
+                     &application, [&client, &inputGate] {
+                         if (inputGate.allowed()) {
+                             client.stop();
+                             client.start();
+                         }
+                     });
+    QString settingsError;
+    if (!preferenceClient.start(&settingsError)) {
+        std::fprintf(stderr, "qindaqt-voice: voice preferences unavailable: %s\n",
+                     qPrintable(settingsError));
+    }
+    if (inputGate.allowed()) {
+        client.start();
+    }
     return application.exec();
 }

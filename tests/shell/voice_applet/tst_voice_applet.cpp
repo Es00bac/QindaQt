@@ -8,6 +8,9 @@
 #include <qindaqt/shell/voice_applet/voice_applet_controller.h>
 #include <qindaqt/shell/voice_applet/voice_applet_presentation.h>
 #include <qindaqt/shell/voice_applet/voice_request_state.h>
+#include <qindaqt/shell/voice_applet/voice_service_client_adapter.h>
+#include <qindaqt/services/voice_client/voice_client.h>
+#include <qindaqt/services/voice_client/voice_transport.h>
 
 #include <QtTest/QtTest>
 
@@ -118,6 +121,19 @@ public:
     QList<OperationRequest> submissions;
 };
 
+class ActivationCountingTransport final : public VoiceTransport {
+    Q_OBJECT
+public:
+    void start() override { ++starts; }
+    void stop() override { ++stops; }
+    void fetchSnapshot(const QString &, quint64) override {}
+    void submitOperation(const QString &, quint64,
+                         const OperationRequest &) override {}
+
+    int starts = 0;
+    int stops = 0;
+};
+
 } // namespace
 
 class VoiceAppletTest : public QObject {
@@ -146,6 +162,7 @@ private Q_SLOTS:
     void controllerResolvesAPendingIntentWhenTheProviderGoesAway();
     void controllerReportsAnUncertainResult();
     void controllerRefreshesWhenExpanded();
+    void adapterExpansionCannotActivateStoppedClient();
     void controllerRoutesAreUnavailableWithoutALauncher();
     void controllerOpensTheRoutesItWasGiven();
     void controllerAppliesTheTranscriptPreference();
@@ -419,6 +436,19 @@ void VoiceAppletTest::controllerRefreshesWhenExpanded()
     QCOMPARE(client.refreshes, 1);
     controller.setExpanded(false);
     QCOMPARE(client.refreshes, 1);
+}
+
+void VoiceAppletTest::adapterExpansionCannotActivateStoppedClient()
+{
+    ActivationCountingTransport transport;
+    VoiceClient client(&transport);
+    VoiceServiceClientAdapter adapter(&client);
+    VoiceAppletController controller(&adapter, true, true);
+    QCOMPARE(transport.starts, 0);
+    adapter.refresh();
+    controller.setExpanded(true);
+    QCOMPARE(transport.starts, 0);
+    QCOMPARE(client.state(), ClientState::Stopped);
 }
 
 void VoiceAppletTest::controllerRoutesAreUnavailableWithoutALauncher()

@@ -56,10 +56,12 @@ client and the projection zero it.
 destruction order. It evaluates the manifest, the built-in registry and the
 capability policy once, independently of panel-window reconstruction.
 
-**The client is only started when `voice.read` is granted.** Without it nothing
-is asked of the provider at all — no snapshot fetch, no signal subscription, no
-activation attempt — so a denied policy means the panel never starts a voice
-provider.
+**The client is started only when voice.read is granted and Settings1 has
+confirmed services.voiceInput On for its current owner.** Default Off, a
+missing baseline, and owner loss leave the provider untouched and the panel's
+actions unavailable. A confirmed Off stops the client and clears the projected
+transcript. The separate panel-transcript preference still controls whether a
+live partial is shown while Voice input is On.
 
 The two route launchers are attached later, from `ShellRuntimeApplication`,
 because the Settings route launcher is built after the service applets. A
