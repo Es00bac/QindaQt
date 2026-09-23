@@ -3,7 +3,7 @@
 ## September 23 — Settings repair integration on qinda
 
 The qinda source branch integrates Default Applications (`e02cd663`), Input
-(`5bb5fb73`, `0c41a5e3`), Touch (`e3602974`), Appearance monospace (`fdbc50f4`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
+(`5bb5fb73`, `0c41a5e3`), Touch (`e3602974`), first-day-of-week (`2b885b6c`), Appearance monospace (`fdbc50f4`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
 (`1d5de5e3`, `79a037c8`), audio wheel controls (`35392d6b`,
 `40768275`, `8f384cb4`), Streaming (`351a497f`), and manual LAN/tabbed
 audio (`c99ef063` plus reviewed tab-aware wheel test `4abb0306`).
@@ -17,6 +17,12 @@ Applications. Input then passed a combined build and 14/14 Input/route rows.
 Touch passed independent exact-commit review including immediate owner
 replacement and post-Applied final-slider probes. Its merged-source build,
 17/17 affected client/Input rows and broad Settings 126/126 rows pass.
+The Date & Time Week Start control now reads confirmed Settings1 state
+through a shared exact write-admission preview and retains refusal/conflict/
+uncertainty. Independent exact-commit review exercised the actual QML picker
+under a refused keyboard write; it returned to the confirmed value. Retry
+refreshes without replay. The merged build, focused 5/5 client/DateTime
+rows and broad Settings 127/127 rows pass.
 The Appearance monospace picker now validates the installed fixed-width
 family separately from the UI family; its rejected first candidate omitted
 the shipped Noto Sans Mono on qinda Qt 6.11. Independent review accepted the

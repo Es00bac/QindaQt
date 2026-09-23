@@ -27,6 +27,13 @@ integrated in the qinda source tree, not installed into a live session:
   revisions received independent review before the final one was accepted.
   The combined build, focused 17/17 and broad Settings 126/126 pass; physical
   touchscreen use remains to qualify.
+- First day of week (`2b885b6c`): the Date & Time picker shows the
+  confirmed Settings1 choice and reports pending, refusal, conflict and
+  uncertainty. Retry refreshes without replay. Shared write-admission state
+  disables actions while another request owns the client. Independent review
+  accepted the exact candidate, including an actual-page keyboard/refusal
+  probe. The merged build, focused 5/5 and broad Settings 127/127 pass; live
+  locale/calendar use remains to qualify.
 - Appearance monospace font (`fdbc50f4`): the font picker now edits
   `fonts.monospaceFamily` separately from the UI family and keeps the
   confirmed value visible. A qinda Qt metadata false-negative excluded the

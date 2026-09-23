@@ -85,6 +85,7 @@ class SettingsClientTests final : public QObject {
 private slots:
     void bindsSnapshotsAndFencesOwnerReplacement();
     void ownerNotificationsDoNotDependOnStateChanges();
+    void admissionPreviewTracksSnapshotRequestAndOwner();
     void rejectsUnsupportedWireVersions();
     void rejectsOverAggregateSnapshots();
     void startFailurePublishesUnavailableAndRetryRecovers();
@@ -165,6 +166,38 @@ void SettingsClientTests::ownerNotificationsDoNotDependOnStateChanges()
     Q_EMIT transport.busDisconnected();
     QVERIFY(client.currentOwner().isEmpty());
     QCOMPARE(owners.size(), 5);
+}
+
+void SettingsClientTests::admissionPreviewTracksSnapshotRequestAndOwner()
+{
+    FakeTransport transport;
+    SettingsClient client(transport, {QStringLiteral("services.doNotDisturb")},
+                          {.requestTimeoutMilliseconds = 100, .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    QSignalSpy admission(&client, &SettingsClient::writeAdmissionChanged);
+    const QString key = QStringLiteral("services.doNotDisturb");
+    QVERIFY(!client.canSetUserValue(key));
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.10"));
+    QTRY_COMPARE(transport.snapshots.size(), 1);
+    QVERIFY(!client.canSetUserValue(key));
+    auto request = transport.snapshots.takeFirst();
+    Q_EMIT transport.snapshotReceived(request.token, request.owner,
+                                      snapshotWire(QStringLiteral("epoch"), 1, false));
+    QVERIFY(client.canSetUserValue(key));
+    QVERIFY(!client.canSetUserValue(QStringLiteral("other.key")));
+    client.refresh();
+    QTRY_COMPARE(transport.snapshots.size(), 1);
+    QVERIFY(!client.canSetUserValue(key));
+    request = transport.snapshots.takeFirst();
+    Q_EMIT transport.snapshotReceived(request.token, request.owner,
+                                      snapshotWire(QStringLiteral("epoch"), 1, false));
+    QVERIFY(client.canSetUserValue(key));
+    QVERIFY(client.setUserValue(key, true));
+    QVERIFY(!client.canSetUserValue(key));
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.11"));
+    QVERIFY(!client.canSetUserValue(key));
+    QVERIFY(admission.count() >= 4);
 }
 
 void SettingsClientTests::rejectsUnsupportedWireVersions()
