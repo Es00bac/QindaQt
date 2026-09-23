@@ -9,8 +9,11 @@
 
 #include <QCoreApplication>
 #include <QFontDatabase>
+#include <QFontInfo>
+#include <QFontMetricsF>
 #include <QGuiApplication>
 
+#include <cmath>
 #include <utility>
 
 namespace QindaQt::Apps::SettingsAppearance {
@@ -22,6 +25,43 @@ using Services::SettingsProtocol::SettingsWireStatus;
 
 namespace {
 constexpr int MaximumDiagnosticLength = 512;
+
+// AGENT-GUARD: Qt's fixed-pitch metadata is false for the shipped Noto Sans
+// Mono on Qt 6.11. Accept measured fixed advances only when the requested
+// family actually resolves; otherwise font fallback could admit a missing
+// family and make a saved value appear selectable.
+[[nodiscard]] bool hasMeasuredFixedAdvances(const QString &family)
+{
+    const QStringList styles = QFontDatabase::styles(family);
+    if (styles.isEmpty()) {
+        return false;
+    }
+    constexpr QChar samples[] = {QLatin1Char('i'), QLatin1Char('W'),
+                                 QLatin1Char('m'), QLatin1Char('0'),
+                                 QLatin1Char('.'), QLatin1Char(' ')};
+    for (const QString &style : styles) {
+        QFont font = QFontDatabase::font(family, style, 12);
+        font.setStyleStrategy(QFont::NoFontMerging);
+        if (QFontInfo(font).family().compare(family, Qt::CaseInsensitive) != 0) {
+            return false;
+        }
+        const QFontMetricsF metrics(font);
+        if (!metrics.inFont(samples[0])) {
+            return false;
+        }
+        const qreal advance = metrics.horizontalAdvance(samples[0]);
+        if (advance <= 0) {
+            return false;
+        }
+        for (const QChar sample : samples) {
+            if (!metrics.inFont(sample)
+                || std::abs(metrics.horizontalAdvance(sample) - advance) > 0.02) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 [[nodiscard]] QString statusFailureMessage(SettingsWireStatus status)
 {
@@ -48,7 +88,8 @@ AppearanceSettingsModel::AppearanceSettingsModel(
     // function still covers missing names with an injected catalog.
     if (qobject_cast<QGuiApplication *>(QCoreApplication::instance()) != nullptr) {
         for (const QString &family : QFontDatabase::families()) {
-            if (QFontDatabase::isFixedPitch(family)) {
+            if (QFontDatabase::isFixedPitch(family)
+                || hasMeasuredFixedAdvances(family)) {
                 m_installedMonospaceFamilies.append(family);
             }
         }

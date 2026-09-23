@@ -173,7 +173,11 @@ page receives only its own model even though both models share the process.
   a confirmed snapshot, the production shell adopts appearance preferences.
 - Font families are listed from the local Qt font database for selection. The
   monospace catalog filters to fixed-width families and checks typed draft
-  names against that catalog. The persisted values remain separate validated
+  names against that catalog. Where Qt reports an installed family as variable
+  pitch, the catalog accepts it only if its styles resolve to that family and
+  representative glyph advances are equal. This admits the shipped Noto Sans
+  Mono default on Qt 6.11 without offering proportional Noto Sans or a missing
+  saved family as a new choice. The persisted values remain separate validated
   strings: `fonts.family` changes interface text; `fonts.monospaceFamily`
   flows through FontSettingsBridge and the Qt platform theme's `FixedFont`.
   First-party session bootstrap applies the confirmed preferences before
@@ -212,6 +216,9 @@ ctest --test-dir build/dev \
   navigation, theme click selection/gating, installed-font and wallpaper
   selection wiring, tokenized font selectors and checked-only hinting emphasis,
   one shared Settings1 action row, per-key result truth, and accessible roles.
+- `qindaqt.appearance-monospace-catalog` — a real offscreen GUI font
+  inventory, shipped default validation and Apply, proportional-font rejection,
+  and visible invalid readback for a missing saved family.
 - `qindaqt.appearance-monospace-page` — real keyboard editing of the installed
   monospace picker at 420×320, typed unknown-family forwarding, independent
   interface draft, sample, and confirmed-versus-draft readout.
