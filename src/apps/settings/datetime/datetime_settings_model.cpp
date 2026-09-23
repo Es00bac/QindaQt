@@ -59,6 +59,32 @@ bool DateTimeSettingsModel::weekStartEditable() const {
   return m_weekStart != nullptr && m_weekStart->editable();
 }
 
+bool DateTimeSettingsModel::weekStartPending() const {
+  return m_weekStart && m_weekStart->writeState() == WeekStartWriteState::Pending;
+}
+
+bool DateTimeSettingsModel::weekStartUncertain() const {
+  return m_weekStart && m_weekStart->writeState() == WeekStartWriteState::Uncertain;
+}
+
+bool DateTimeSettingsModel::weekStartConflict() const {
+  return m_weekStart && m_weekStart->writeState() == WeekStartWriteState::Conflict;
+}
+
+QString DateTimeSettingsModel::weekStartStatusText() const {
+  if (!m_weekStart) {
+    return tr("The calendar preference is unavailable.");
+  }
+  if (weekStartPending()) {
+    return tr("Waiting for Settings to confirm the first day of the week…");
+  }
+  return m_weekStart->availabilityText();
+}
+
+QString DateTimeSettingsModel::weekStartErrorText() const {
+  return m_weekStart ? m_weekStart->diagnostic() : QString{};
+}
+
 QString DateTimeSettingsModel::statusText() const {
   if (!m_snapshot.available) {
     return tr("The system clock service is unavailable, so the date and time "
@@ -124,7 +150,13 @@ void DateTimeSettingsModel::requestWeekStart(const QString &weekStart) {
       weekStart == m_weekStart->weekStart()) {
     return;
   }
-  m_weekStart->setWeekStart(weekStart);
+  (void)m_weekStart->setWeekStart(weekStart);
+}
+
+void DateTimeSettingsModel::retryWeekStart() {
+  if (m_weekStart && !weekStartPending()) {
+    m_weekStart->refresh();
+  }
 }
 
 void DateTimeSettingsModel::refresh() {
