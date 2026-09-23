@@ -11,12 +11,17 @@ import QindaQt.Tokens 1.0
 // own beyond the pick — everything else is a projection of the controller's
 // bounded device list, and a reprojection replaces the whole row object.
 //
-// AGENT-CONTRACT: the picker chooses which device THIS BAND controls. It does
-// not change the system default, and it must not appear to: the applet's
-// intent surface is closed to requestVolume/requestMute/requestStripFader/
-// requestStripMute/clearFeedback, and docs/wiki/shell/audio-applet.md states
-// that "this applet never sets defaults or moves streams". Changing the
-// default is Settings' job.
+// AGENT-CONTRACT (ADR-0238): picking a device here makes it the system
+// default AND points this band at it. Those were two ideas and are now one,
+// because they were never two to a user: a list of output devices at the top
+// of an audio applet is read as "send sound here" by everyone who sees it.
+//
+// The previous contract said the picker "does not change the system default,
+// and it must not appear to". The second half was false in practice - a user
+// picked a connected Bluetooth speaker, the picker showed it, and sound kept
+// coming out of the laptop with nothing anywhere explaining why. The applet's
+// intent surface now includes requestDefault for exactly this reason; it
+// remains closed to everything else.
 ColumnLayout {
     id: root
 
@@ -112,11 +117,19 @@ ColumnLayout {
             // its display text and offers no accessibleName property, so the
             // identity is set directly here rather than through one.
             Accessible.name: root.outputs
-                ? qsTr("Output device this panel controls")
-                : qsTr("Input device this panel controls")
+                ? qsTr("Output device")
+                : qsTr("Input device")
             accessibleDescription: qsTr(
-                "Chooses which device these controls adjust; the system default is set in Settings")
-            onActivated: index => root.devicePicked(entries[index].serial)
+                "Chooses the device sound plays through, and the device these controls adjust")
+            // Band pick first so the controls follow immediately, then the
+            // routing request. requestDefault() is a no-op when the device is
+            // already the default, so re-picking the current entry costs
+            // nothing and never reports a failure.
+            onActivated: index => {
+                const picked = entries[index].serial
+                root.devicePicked(picked)
+                root.controller.requestDefault(picked)
+            }
 
             // AGENT-GUARD: same defect as the console picker — the shared
             // ComboBox draws its closed face with a read-only TextField, which
