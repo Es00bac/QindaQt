@@ -7,6 +7,7 @@
 #include <qindaqt/apps/settings_input/pointer_devices_model.h>
 #include <qindaqt/apps/settings_input/shortcut_port.h>
 #include <qindaqt/apps/settings_input/shortcuts_model.h>
+#include <qindaqt/apps/settings_input/touch_settings_model.h>
 #include <qindaqt/apps/settings_appearance/appearance_qml_composition.h>
 #include <qindaqt/themes/theme_loader.h>
 
@@ -20,6 +21,7 @@
 #include <QTest>
 
 #include "support/fake_ports.h"
+#include "support/fake_settings_transport.h"
 
 namespace QindaQt::Apps::SettingsInput {
 
@@ -83,6 +85,7 @@ class TestInputFacade final : public QObject {
     Q_PROPERTY(QObject *keyboard READ keyboard CONSTANT)
     Q_PROPERTY(QObject *layouts READ layouts CONSTANT)
     Q_PROPERTY(QObject *shortcuts READ shortcuts CONSTANT)
+    Q_PROPERTY(QObject *touch READ touch CONSTANT)
 
 public:
     explicit TestInputFacade(QObject *parent = nullptr)
@@ -90,7 +93,9 @@ public:
           pointerModel(m_pointerPort),
           keyboardModel(m_configPort),
           layoutsModel(m_layoutPort),
-          shortcutsModel(m_shortcutPort) {}
+          shortcutsModel(m_shortcutPort),
+          touchClient(m_touchTransport, TouchSettingsModel::settingsKeys()),
+          touchModel(touchClient) {}
 
     FakePointerPort m_pointerPort;
     FakeKeyboardConfigPort m_configPort;
@@ -100,11 +105,15 @@ public:
     KeyboardSettingsModel keyboardModel;
     KeyboardLayoutsModel layoutsModel;
     ShortcutsModel shortcutsModel;
+    FakeSettingsTransport m_touchTransport;
+    Services::SettingsClient::SettingsClient touchClient;
+    TouchSettingsModel touchModel;
 
     QObject *pointerDevices() { return &pointerModel; }
     QObject *keyboard() { return &keyboardModel; }
     QObject *layouts() { return &layoutsModel; }
     QObject *shortcuts() { return &shortcutsModel; }
+    QObject *touch() { return &touchModel; }
 };
 
 class InputPageTest final : public QObject {
@@ -121,6 +130,7 @@ private Q_SLOTS:
     void keyboardNavigationReachesTabsAndControls();
     void degradedSectionsWhenAuthorityAbsent();
     void rejectedPointerEditRestoresControl();
+    void touchDestinationLoadsAndMouseClickEdits();
 
 private:
     [[nodiscard]] QObject *findObject(const QString &objectName) const;
@@ -404,7 +414,8 @@ void InputPageTest::keyboardNavigationReachesTabsAndControls() {
     QVERIFY(search != nullptr);
     QCOMPARE(page->property("firstFocusTarget").value<QQuickItem *>(), search);
 
-    // Tab from the destination bar walks into the section content.
+    // Tab from this destination button advances focus through the tab strip
+    // toward the selected section's controls.
     auto *tab = qobject_cast<QQuickItem *>(
         findObject(QStringLiteral("inputDestination_shortcuts")));
     QVERIFY(tab != nullptr);
@@ -426,6 +437,35 @@ void InputPageTest::degradedSectionsWhenAuthorityAbsent() {
 
     QVERIFY(selectDestination(QStringLiteral("pointers")));
     QTRY_VERIFY(isShown(QStringLiteral("inputPointerDegraded")));
+}
+
+void InputPageTest::touchDestinationLoadsAndMouseClickEdits()
+{
+    auto *tab = qobject_cast<QQuickItem *>(findObject(QStringLiteral("inputDestination_touch")));
+    QVERIFY(tab != nullptr);
+    QTRY_VERIFY(tab->isVisible());
+    const QPoint tabScene = tab->mapToScene(QPointF(tab->width() / 2.0,
+                                                   tab->height() / 2.0)).toPoint();
+    QTest::mouseClick(window.get(), Qt::LeftButton, Qt::NoModifier, tabScene);
+    QTRY_VERIFY(findObject(QStringLiteral("inputDestinationPage_touch")) != nullptr);
+    QTRY_VERIFY(isShown(QStringLiteral("inputTouchDegraded")));
+    QCOMPARE(facade->m_touchTransport.starts, 1);
+    Q_EMIT facade->m_touchTransport.ownerChanged(QStringLiteral(":1.55"));
+    QVERIFY(QTest::qWaitFor([&] { return !facade->m_touchTransport.snapshots.isEmpty(); }, 2000));
+    Q_EMIT facade->m_touchTransport.snapshotReceived(
+        facade->m_touchTransport.snapshots.constLast().token, QStringLiteral(":1.55"),
+        fakeSnapshotWire(1, withTouchDefaults({})));
+    QTRY_VERIFY(isShown(QStringLiteral("inputTouchEnabledRow")));
+    auto *toggle = qobject_cast<QQuickItem *>(findObject(QStringLiteral("inputTouchEnabledSwitch")));
+    QVERIFY(toggle != nullptr);
+    QVERIFY(toggle->isEnabled());
+    QTRY_VERIFY(toggle->parentItem()->width() >= 600);
+    const QPoint scene = toggle->mapToScene(QPointF(toggle->width() / 2.0,
+                                                     toggle->height() / 2.0)).toPoint();
+    QTest::mouseClick(window.get(), Qt::LeftButton, Qt::NoModifier, scene);
+    QTRY_COMPARE(facade->m_touchTransport.commits.size(), 1);
+    QCOMPARE(facade->m_touchTransport.commits.constFirst().operations.constFirst().toMap()
+                 .value(QStringLiteral("key")).toString(), QStringLiteral("input.touch.enabled"));
 }
 
 } // namespace QindaQt::Apps::SettingsInput

@@ -8,17 +8,24 @@
 #include <QStringList>
 #include <QVariantList>
 
+#include <optional>
+
 namespace QindaQt::Apps::SettingsInput {
 
 // Settings → Input → Touch (ADR-0205). Truth is the purpose-scoped Settings1
-// snapshot of `input.touch.*`; every edit is one user-value write through
-// the same client, and the next confirmed snapshot reconciles the rows, so an
-// uncertain commit never pretends to have applied.
+// snapshot of input.touch.*. A retained snapshot supplies last-known values
+// while authority is unavailable; only a current Ready snapshot admits edits.
+// Successful writes reconcile through a post-commit snapshot before another
+// write, and uncertain commits are never replayed.
 class TouchSettingsModel final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool available READ available NOTIFY changed)
+    Q_PROPERTY(bool hasLastKnown READ hasLastKnown NOTIFY changed)
+    Q_PROPERTY(bool editable READ editable NOTIFY changed)
+    Q_PROPERTY(bool longPressQueueable READ longPressQueueable NOTIFY changed)
     Q_PROPERTY(bool touchscreenEnabled READ touchscreenEnabled NOTIFY changed)
     Q_PROPERTY(int longPressMs READ longPressMs NOTIFY changed)
+    Q_PROPERTY(int longPressDisplayMs READ longPressDisplayMs NOTIFY changed)
     Q_PROPERTY(QString onScreenKeyboard READ onScreenKeyboard NOTIFY changed)
     Q_PROPERTY(QString edgeLeft READ edgeLeft NOTIFY changed)
     Q_PROPERTY(QString edgeTop READ edgeTop NOTIFY changed)
@@ -38,8 +45,12 @@ public:
     [[nodiscard]] static QStringList edgeNames();
 
     [[nodiscard]] bool available() const;
+    [[nodiscard]] bool hasLastKnown() const;
+    [[nodiscard]] bool editable() const;
+    [[nodiscard]] bool longPressQueueable() const;
     [[nodiscard]] bool touchscreenEnabled() const;
     [[nodiscard]] int longPressMs() const;
+    [[nodiscard]] int longPressDisplayMs() const;
     [[nodiscard]] QString onScreenKeyboard() const;
     [[nodiscard]] QString edgeLeft() const { return edgeAction(QStringLiteral("left")); }
     [[nodiscard]] QString edgeTop() const { return edgeAction(QStringLiteral("top")); }
@@ -68,6 +79,9 @@ Q_SIGNALS:
 private:
     [[nodiscard]] QVariant value(const QString &key) const;
     [[nodiscard]] bool submit(const QString &key, const QVariant &value);
+    void handleSnapshot();
+    void handleAuthorityChange();
+    void abandonWrite(const QString &message);
     void publishStatus();
 
     Services::SettingsClient::SettingsClient &m_client;
@@ -75,6 +89,13 @@ private:
     QString m_errorText;
     bool m_started = false;
     bool m_busy = false;
+    bool m_awaitingSnapshot = false;
+    QString m_writeKey;
+    QString m_writeOwner;
+    QString m_writeEpoch;
+    QVariant m_writeValue;
+    quint64 m_resultRevision = 0;
+    std::optional<int> m_queuedLongPress;
 };
 
 } // namespace QindaQt::Apps::SettingsInput

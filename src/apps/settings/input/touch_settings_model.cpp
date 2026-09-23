@@ -49,31 +49,30 @@ const QStringList &edgeActions()
 TouchSettingsModel::TouchSettingsModel(Services::SettingsClient::SettingsClient &client, QObject *parent)
     : QObject(parent), m_client(client)
 {
-    connect(&m_client, &Services::SettingsClient::SettingsClient::snapshotChanged, this, [this] {
-        m_busy = false;
-        m_errorText.clear();
-        publishStatus();
-    });
-    connect(&m_client, &Services::SettingsClient::SettingsClient::stateChanged, this, [this] { publishStatus(); });
+    connect(&m_client, &Services::SettingsClient::SettingsClient::snapshotChanged,
+            this, &TouchSettingsModel::handleSnapshot);
+    connect(&m_client, &Services::SettingsClient::SettingsClient::stateChanged,
+            this, &TouchSettingsModel::handleAuthorityChange);
     connect(&m_client, &Services::SettingsClient::SettingsClient::commitFinished, this,
             [this](const Services::SettingsClient::CommitOutcome &outcome) {
-                if (!m_busy) return;
-                m_busy = false;
-                if (outcome.status == Services::SettingsProtocol::SettingsWireStatus::Applied) {
-                    m_errorText.clear();
-                } else {
-                    m_errorText = tr("The touch preference could not be applied: %1")
-                                      .arg(outcome.message.isEmpty() ? tr("unknown reason") : outcome.message);
+                if (!m_busy || m_awaitingSnapshot) return;
+                if (outcome.status != Services::SettingsProtocol::SettingsWireStatus::Applied) {
+                    abandonWrite(tr("The touch preference could not be applied: %1")
+                                     .arg(outcome.message.isEmpty() ? tr("request refused") : outcome.message));
+                    return;
                 }
+                // AGENT-GUARD: SettingsClient emits this before it rereads authority.
+                // A cached pre-reply snapshot cannot be the base for queued input.
+                m_awaitingSnapshot = true;
+                m_resultRevision = outcome.revisionAfter;
                 publishStatus();
             });
-    connect(&m_client, &Services::SettingsClient::SettingsClient::commitUncertain, this, [this](const QString &message) {
-        if (!m_busy) return;
-        m_busy = false;
-        m_errorText = tr("The touch preference may not have been applied: %1")
-                          .arg(message.isEmpty() ? tr("unknown reason") : message);
-        publishStatus();
-    });
+    connect(&m_client, &Services::SettingsClient::SettingsClient::commitUncertain, this,
+            [this](const QString &message) {
+                if (!m_busy) return;
+                abandonWrite(tr("The touch preference may not have been applied: %1")
+                                 .arg(message.isEmpty() ? tr("unknown reason") : message));
+            });
     publishStatus();
 }
 
@@ -105,7 +104,25 @@ QVariant TouchSettingsModel::value(const QString &key) const
 
 bool TouchSettingsModel::available() const
 {
+    const auto &snapshot = m_client.snapshot();
+    return m_client.state() == Services::SettingsClient::ClientState::Ready
+           && snapshot && snapshot->owner == m_client.currentOwner();
+}
+
+bool TouchSettingsModel::hasLastKnown() const
+{
     return m_client.snapshot().has_value();
+}
+
+bool TouchSettingsModel::editable() const
+{
+    return available() && !m_busy && !m_client.writeInFlight();
+}
+
+bool TouchSettingsModel::longPressQueueable() const
+{
+    return available() && m_busy && !m_awaitingSnapshot
+           && m_writeKey == QLatin1String(LongPressKey);
 }
 
 bool TouchSettingsModel::touchscreenEnabled() const
@@ -120,6 +137,14 @@ int TouchSettingsModel::longPressMs() const
     bool ok = false;
     const int milliseconds = v.toInt(&ok);
     return ok ? std::clamp(milliseconds, MinimumLongPressMs, MaximumLongPressMs) : 500;
+}
+
+int TouchSettingsModel::longPressDisplayMs() const
+{
+    if (m_busy && m_writeKey == QLatin1String(LongPressKey)) {
+        return m_queuedLongPress.value_or(m_writeValue.toInt());
+    }
+    return longPressMs();
 }
 
 QString TouchSettingsModel::onScreenKeyboard() const
@@ -170,6 +195,9 @@ void TouchSettingsModel::refresh()
             m_errorText = error.isEmpty() ? tr("Touch preferences are unavailable right now.") : error;
         }
     }
+    if (m_started) {
+        m_client.refresh();
+    }
     publishStatus();
 }
 
@@ -184,6 +212,13 @@ bool TouchSettingsModel::setLongPressMs(int milliseconds)
         m_errorText = tr("Choose a hold time between %1 and %2 ms.").arg(MinimumLongPressMs).arg(MaximumLongPressMs);
         Q_EMIT changed();
         return false;
+    }
+    if (longPressQueueable()) {
+        // A gesture can replace its own in-flight final value, but it never
+        // creates a second write until the first is confirmed by a fresh read.
+        m_queuedLongPress = milliseconds;
+        publishStatus();
+        return true;
     }
     return submit(QString::fromLatin1(LongPressKey), static_cast<qint64>(milliseconds));
 }
@@ -206,25 +241,103 @@ bool TouchSettingsModel::setEdgeAction(const QString &edge, const QString &actio
 
 bool TouchSettingsModel::submit(const QString &key, const QVariant &value)
 {
-    if (m_busy) {
+    if (!editable()) {
+        if (m_errorText.isEmpty() && !m_busy) {
+            m_errorText = tr("Touch preferences are unavailable or still refreshing.");
+            publishStatus();
+        }
         return false;
     }
+    const auto &snapshot = *m_client.snapshot();
     QString error;
     if (!m_client.setUserValue(key, value, &error)) {
         m_errorText = error.isEmpty() ? tr("Could not save the touch preference.") : error;
-        Q_EMIT changed();
+        publishStatus();
         return false;
     }
     m_busy = true;
+    m_awaitingSnapshot = false;
+    m_writeKey = key;
+    m_writeOwner = snapshot.owner;
+    m_writeEpoch = snapshot.epoch;
+    m_writeValue = value;
+    m_resultRevision = 0;
+    m_queuedLongPress.reset();
     m_errorText.clear();
     publishStatus();
     return true;
 }
 
+void TouchSettingsModel::abandonWrite(const QString &message)
+{
+    m_busy = false;
+    m_awaitingSnapshot = false;
+    m_queuedLongPress.reset();
+    m_writeKey.clear();
+    m_writeOwner.clear();
+    m_writeEpoch.clear();
+    m_writeValue.clear();
+    m_resultRevision = 0;
+    m_errorText = message;
+    publishStatus();
+}
+
+void TouchSettingsModel::handleAuthorityChange()
+{
+    if (m_busy && (m_client.currentOwner() != m_writeOwner
+                   || m_client.state() == Services::SettingsClient::ClientState::Unavailable
+                   || m_client.state() == Services::SettingsClient::ClientState::Degraded)) {
+        abandonWrite(tr("The touch preference may not have been applied because settings authority changed."));
+        return;
+    }
+    publishStatus();
+}
+
+void TouchSettingsModel::handleSnapshot()
+{
+    if (!m_busy || !m_awaitingSnapshot) {
+        // An unrelated refresh must not erase a refusal or finish a write.
+        publishStatus();
+        return;
+    }
+    const auto &snapshot = m_client.snapshot();
+    if (!available() || !snapshot || snapshot->owner != m_writeOwner
+        || snapshot->epoch != m_writeEpoch) {
+        abandonWrite(tr("The touch preference may not have been applied because settings authority changed."));
+        return;
+    }
+    if (snapshot->revision < m_resultRevision || snapshot->values.value(m_writeKey) != m_writeValue) {
+        abandonWrite(tr("The touch preference could not be confirmed by the refreshed settings."));
+        return;
+    }
+    const auto queued = m_queuedLongPress;
+    m_busy = false;
+    m_awaitingSnapshot = false;
+    m_queuedLongPress.reset();
+    m_writeKey.clear();
+    m_writeOwner.clear();
+    m_writeEpoch.clear();
+    m_writeValue.clear();
+    m_resultRevision = 0;
+    m_errorText.clear();
+    publishStatus();
+    if (queued && *queued != longPressMs()) {
+        // This call uses the just-received authoritative revision, not the
+        // commit reply or a snapshot retained from before completion.
+        (void)submit(QString::fromLatin1(LongPressKey), static_cast<qint64>(*queued));
+    }
+}
+
 void TouchSettingsModel::publishStatus()
 {
-    if (!available()) {
+    if (m_busy && m_writeKey == QLatin1String(LongPressKey)) {
+        m_statusText = tr("Saving hold time; last confirmed value is %1 ms.").arg(longPressMs());
+    } else if (m_busy) {
+        m_statusText = tr("Confirming the touch preference.");
+    } else if (!hasLastKnown()) {
         m_statusText = tr("Touch preferences are not available yet.");
+    } else if (!available()) {
+        m_statusText = tr("Touch preferences are unavailable; showing last-known values.");
     } else if (!touchscreenEnabled()) {
         m_statusText = tr("The touchscreen is off.");
     } else {

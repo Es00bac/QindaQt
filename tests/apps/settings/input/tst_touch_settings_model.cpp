@@ -20,6 +20,7 @@ struct Harness {
     SettingsClient client{transport, TouchSettingsModel::settingsKeys()};
     TouchSettingsModel model{client};
     const QString owner = QStringLiteral(":1.7");
+    qsizetype answeredSnapshots = 0;
 
     // The client asks for its snapshot on the next event-loop turn after the
     // owner appears; the reply then makes the model available.
@@ -29,6 +30,7 @@ struct Harness {
         if (!QTest::qWaitFor([this] { return !transport.snapshots.isEmpty(); }, 2000)) {
             return false;
         }
+        answeredSnapshots = transport.snapshots.size();
         Q_EMIT transport.snapshotReceived(transport.snapshots.constLast().token, owner,
                                           fakeSnapshotWire(revision, withTouchDefaults(values)));
         return QTest::qWaitFor([this] { return model.available(); }, 2000);
@@ -38,13 +40,15 @@ struct Harness {
     // is allowed only once that snapshot has arrived.
     [[nodiscard]] bool answerRefresh(quint64 revision, const QVariantMap &values)
     {
-        const qsizetype before = transport.snapshots.size();
-        if (!QTest::qWaitFor([this, before] { return transport.snapshots.size() > before; }, 2000)) {
+        if (!QTest::qWaitFor([this] { return transport.snapshots.size() > answeredSnapshots; }, 2000)) {
             return false;
         }
+        answeredSnapshots = transport.snapshots.size();
         Q_EMIT transport.snapshotReceived(transport.snapshots.constLast().token, owner,
                                           fakeSnapshotWire(revision, withTouchDefaults(values)));
-        return QTest::qWaitFor([this] { return !model.busy() && model.available(); }, 2000);
+        return QTest::qWaitFor([this, revision] {
+            return model.available() && client.snapshot() && client.snapshot()->revision == revision;
+        }, 2000);
     }
 };
 
@@ -60,6 +64,13 @@ private slots:
     void editsWriteOneUserValueAndReconcile();
     void invalidEditsAreRefusedWithoutAWrite();
     void rejectedCommitReportsAndClearsBusy();
+    void retainedSnapshotIsUnavailableAndEditsAreRefused();
+    void successfulLongPressWaitsForFreshReadThenWritesLatest();
+    void refusedAndUncertainLongPressNeverReplays();
+    void externalRefreshDoesNotClearDiagnostic();
+    void ownerReplacementDropsQueuedLongPress();
+    void preResultSnapshotIsIgnoredAndResultFloorIsRequired();
+    void epochChangeAfterSuccessDropsQueuedValue();
 };
 
 void TouchSettingsModelTests::defaultsBeforeAnySnapshot()
@@ -132,9 +143,10 @@ void TouchSettingsModelTests::editsWriteOneUserValueAndReconcile()
     Q_EMIT harness.transport.commitReceived(
         harness.transport.commits.constFirst().token, harness.owner,
         fakeCommitWire(SettingsWireStatus::Applied, 1, 2, {{QStringLiteral("input.touch.longPressMs"), 900}}));
+    QVERIFY(harness.model.busy());
+    QVERIFY(harness.answerRefresh(2, {{QStringLiteral("input.touch.longPressMs"), 900}}));
     QTRY_VERIFY(!harness.model.busy());
     QVERIFY(harness.model.errorText().isEmpty());
-    QVERIFY(harness.answerRefresh(2, {{QStringLiteral("input.touch.longPressMs"), 900}}));
     QCOMPARE(harness.model.longPressMs(), 900);
     QVERIFY(harness.model.setEdgeAction(QStringLiteral("left"), QStringLiteral("none")));
     QCOMPARE(harness.transport.commits.size(), 2);
@@ -165,15 +177,15 @@ void TouchSettingsModelTests::rejectedCommitReportsAndClearsBusy()
     QVERIFY(harness.model.setTouchscreenEnabled(false));
     Q_EMIT harness.transport.commitReceived(
         harness.transport.commits.constFirst().token, harness.owner,
-        fakeCommitWire(SettingsWireStatus::ValidationFailed, 1, 1, {}));
+        fakeCommitWire(SettingsWireStatus::ValidationFailed, 1, 1,
+                       {{QStringLiteral("input.touch.enabled"), true}}));
     QTRY_VERIFY(!harness.model.busy());
     // A rejected commit leaves the error on the row and the value unchanged.
     QVERIFY(!harness.model.errorText().isEmpty());
     QVERIFY(harness.model.touchscreenEnabled());
-    // The client re-reads its scope after the commit; that confirmed snapshot
-    // reconciles the row and clears the error.
+    // A later unchanged refresh cannot erase the refusal.
     QVERIFY(harness.answerRefresh(1, {}));
-    QVERIFY(harness.model.errorText().isEmpty());
+    QVERIFY(!harness.model.errorText().isEmpty());
     // A lost reply is different: the client reports an uncertain commit and the
     // row says "may not have been applied" instead of pretending.
     QVERIFY(harness.model.setTouchscreenEnabled(false));
@@ -183,6 +195,190 @@ void TouchSettingsModelTests::rejectedCommitReportsAndClearsBusy()
                                            QStringLiteral("owner vanished"));
     QTRY_VERIFY(!harness.model.busy());
     QVERIFY(harness.model.errorText().contains(QStringLiteral("may not have been applied")));
+}
+
+void TouchSettingsModelTests::retainedSnapshotIsUnavailableAndEditsAreRefused()
+{
+    Harness harness;
+    harness.model.refresh();
+    QVERIFY(!harness.model.available());
+    QVERIFY(!harness.model.hasLastKnown());
+    QVERIFY(!harness.model.editable());
+    QVERIFY(!harness.model.setTouchscreenEnabled(false));
+    QVERIFY(harness.transport.commits.isEmpty());
+    QVERIFY(harness.deliverSnapshot(1, {}));
+    QVERIFY(harness.model.hasLastKnown());
+    QVERIFY(harness.model.editable());
+    Q_EMIT harness.transport.ownerChanged(QString{});
+    QTRY_VERIFY(!harness.model.available());
+    QVERIFY(harness.model.hasLastKnown());
+    QVERIFY(!harness.model.editable());
+    QVERIFY(harness.model.statusText().contains(QStringLiteral("last-known")));
+    QVERIFY(!harness.model.setLongPressMs(900));
+    QVERIFY(!harness.model.setOnScreenKeyboard(QStringLiteral("off")));
+    QVERIFY(!harness.model.setEdgeAction(QStringLiteral("left"), QStringLiteral("none")));
+    QVERIFY(harness.transport.commits.isEmpty());
+}
+
+void TouchSettingsModelTests::successfulLongPressWaitsForFreshReadThenWritesLatest()
+{
+    Harness harness;
+    harness.model.refresh();
+    QVERIFY(harness.deliverSnapshot(2, {}));
+    QVERIFY(harness.model.setLongPressMs(550));
+    QVERIFY(harness.model.setLongPressMs(600));
+    QVERIFY(harness.model.setLongPressMs(700));
+    QCOMPARE(harness.model.longPressMs(), 500);
+    QCOMPARE(harness.model.longPressDisplayMs(), 700);
+    QCOMPARE(harness.transport.commits.size(), 1);
+    QVERIFY(!harness.model.setOnScreenKeyboard(QStringLiteral("off")));
+    Q_EMIT harness.transport.commitReceived(
+        harness.transport.commits.constFirst().token, harness.owner,
+        fakeCommitWire(SettingsWireStatus::Applied, 2, 3,
+                       {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    QVERIFY(harness.model.busy());
+    QCOMPARE(harness.transport.commits.size(), 1);
+    QVERIFY(harness.answerRefresh(3, {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    QTRY_COMPARE(harness.transport.commits.size(), 2);
+    QCOMPARE(harness.transport.commits.constLast().revision, quint64(3));
+    QCOMPARE(harness.transport.commits.constLast().operations.constFirst().toMap()
+                 .value(QStringLiteral("value")).toInt(), 700);
+    QCOMPARE(harness.model.longPressMs(), 550);
+    Q_EMIT harness.transport.commitReceived(
+        harness.transport.commits.constLast().token, harness.owner,
+        fakeCommitWire(SettingsWireStatus::Applied, 3, 4,
+                       {{QStringLiteral("input.touch.longPressMs"), 700}}));
+    QVERIFY(harness.answerRefresh(4, {{QStringLiteral("input.touch.longPressMs"), 700}}));
+    QTRY_VERIFY(!harness.model.busy());
+    QCOMPARE(harness.model.longPressMs(), 700);
+    QCOMPARE(harness.model.longPressDisplayMs(), 700);
+}
+
+void TouchSettingsModelTests::refusedAndUncertainLongPressNeverReplays()
+{
+    for (int scenario = 0; scenario < 4; ++scenario) {
+        Harness harness;
+        harness.model.refresh();
+        QVERIFY(harness.deliverSnapshot(1, {}));
+        QVERIFY(harness.model.setLongPressMs(550));
+        QVERIFY(harness.model.setLongPressMs(900));
+        if (scenario == 2) {
+            Q_EMIT harness.transport.requestFailed(
+                harness.transport.commits.constFirst().token, harness.owner,
+                QStringLiteral("org.freedesktop.DBus.Error.NoReply"), QStringLiteral("lost reply"));
+        } else {
+            const auto status = scenario == 0 ? SettingsWireStatus::Conflict
+                                : scenario == 1 ? SettingsWireStatus::ReadOnlyLayer
+                                                : SettingsWireStatus::PersistenceFailed;
+            const quint64 revision = scenario == 0 ? 2 : 1;
+            Q_EMIT harness.transport.commitReceived(
+                harness.transport.commits.constFirst().token, harness.owner,
+                fakeCommitWire(status, revision, revision,
+                               {{QStringLiteral("input.touch.longPressMs"), 500}}));
+        }
+        QTRY_VERIFY(!harness.model.busy());
+        QVERIFY(!harness.model.errorText().isEmpty());
+        QCOMPARE(harness.model.longPressDisplayMs(), 500);
+        QVERIFY(harness.answerRefresh(scenario == 0 ? 2 : 1, {}));
+        QCOMPARE(harness.transport.commits.size(), 1);
+        QVERIFY(!harness.model.errorText().isEmpty());
+    }
+}
+
+void TouchSettingsModelTests::externalRefreshDoesNotClearDiagnostic()
+{
+    Harness harness;
+    harness.model.refresh();
+    QVERIFY(harness.deliverSnapshot(1, {}));
+    QVERIFY(harness.model.setTouchscreenEnabled(false));
+    Q_EMIT harness.transport.commitReceived(
+        harness.transport.commits.constFirst().token, harness.owner,
+        fakeCommitWire(SettingsWireStatus::ValidationFailed, 1, 1,
+                       {{QStringLiteral("input.touch.enabled"), true}}));
+    QTRY_VERIFY(!harness.model.busy());
+    const QString error = harness.model.errorText();
+    QVERIFY(harness.answerRefresh(1, {}));
+    QCOMPARE(harness.model.errorText(), error);
+    harness.model.refresh();
+    QVERIFY(harness.answerRefresh(2, {{QStringLiteral("input.touch.longPressMs"), 800}}));
+    QCOMPARE(harness.model.longPressMs(), 800);
+    QCOMPARE(harness.model.errorText(), error);
+}
+
+void TouchSettingsModelTests::ownerReplacementDropsQueuedLongPress()
+{
+    Harness harness;
+    harness.model.refresh();
+    QVERIFY(harness.deliverSnapshot(1, {}));
+    QVERIFY(harness.model.setLongPressMs(550));
+    QVERIFY(harness.model.setLongPressMs(850));
+    Q_EMIT harness.transport.ownerChanged(QStringLiteral(":1.8"));
+    QTRY_VERIFY(!harness.model.busy());
+    QVERIFY(!harness.model.available());
+    QVERIFY(harness.model.hasLastKnown());
+    QVERIFY(harness.model.errorText().contains(QStringLiteral("may not have been applied")));
+    QCOMPARE(harness.transport.commits.size(), 1);
+    QVERIFY(QTest::qWaitFor([&] { return harness.transport.snapshots.size() >= 2; }, 2000));
+    Q_EMIT harness.transport.snapshotReceived(harness.transport.snapshots.constLast().token,
+                                              QStringLiteral(":1.8"),
+                                              fakeSnapshotWire(1, withTouchDefaults({})));
+    QTRY_VERIFY(harness.model.available());
+    QCOMPARE(harness.transport.commits.size(), 1);
+    QVERIFY(!harness.model.errorText().isEmpty());
+}
+
+void TouchSettingsModelTests::preResultSnapshotIsIgnoredAndResultFloorIsRequired()
+{
+    Harness harness;
+    harness.model.refresh();
+    QVERIFY(harness.deliverSnapshot(2, {}));
+    QVERIFY(harness.model.setLongPressMs(550));
+    QVERIFY(harness.model.setLongPressMs(750));
+    // An unrelated revision during the commit invalidates the base, but
+    // SettingsClient cannot accept a second snapshot request concurrently.
+    Q_EMIT harness.transport.settingsChanged(harness.owner, QStringLiteral("epoch"), 3,
+                                             {QStringLiteral("unrelated.key")});
+    Q_EMIT harness.transport.snapshotReceived(
+        harness.transport.snapshots.constLast().token, harness.owner,
+        fakeSnapshotWire(3, withTouchDefaults({{QStringLiteral("input.touch.longPressMs"), 600}})));
+    QCOMPARE(harness.model.longPressMs(), 500);
+    QCOMPARE(harness.transport.commits.size(), 1);
+    Q_EMIT harness.transport.commitReceived(
+        harness.transport.commits.constFirst().token, harness.owner,
+        fakeCommitWire(SettingsWireStatus::Applied, 2, 3,
+                       {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    QCOMPARE(harness.transport.commits.size(), 1);
+    // Same owner and epoch are insufficient: a post-result read below rev3
+    // cannot authorize the queued 750 ms value.
+    QVERIFY(harness.answerRefresh(2, {}));
+    QTRY_VERIFY(!harness.model.busy());
+    QCOMPARE(harness.transport.commits.size(), 1);
+    QVERIFY(harness.model.errorText().contains(QStringLiteral("could not be confirmed")));
+}
+
+void TouchSettingsModelTests::epochChangeAfterSuccessDropsQueuedValue()
+{
+    Harness harness;
+    harness.model.refresh();
+    QVERIFY(harness.deliverSnapshot(1, {}));
+    QVERIFY(harness.model.setLongPressMs(550));
+    QVERIFY(harness.model.setLongPressMs(800));
+    Q_EMIT harness.transport.commitReceived(
+        harness.transport.commits.constFirst().token, harness.owner,
+        fakeCommitWire(SettingsWireStatus::Applied, 1, 2,
+                       {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    QVERIFY(QTest::qWaitFor([&] { return harness.transport.snapshots.size() > harness.answeredSnapshots; },
+                            2000));
+    QVariantMap changedEpoch = fakeSnapshotWire(2, withTouchDefaults(
+        {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    changedEpoch.insert(QStringLiteral("epoch"), QStringLiteral("new-epoch"));
+    Q_EMIT harness.transport.snapshotReceived(harness.transport.snapshots.constLast().token,
+                                              harness.owner, changedEpoch);
+    QTRY_VERIFY(!harness.model.busy());
+    QVERIFY(!harness.model.available());
+    QVERIFY(harness.model.hasLastKnown());
+    QCOMPARE(harness.transport.commits.size(), 1);
+    QVERIFY(!harness.model.errorText().isEmpty());
 }
 
 } // namespace QindaQt::Apps::SettingsInput
