@@ -111,7 +111,9 @@ decoding could have aborted Settings. None of that shipped.
 - Pointer readback is authoritative. The route keeps a selected device by
   identity, invalidates it on owner loss or removal, and uses asynchronous
   authority requests with a visible-tab refresh loop to avoid blocking
-  navigation on a slow KWin reply. This tightens the existing direct KWin
+  navigation on a slow KWin reply. Each request pins the initial unique bus
+  owner through reads, writes, rollback, and readback so replacement KWin
+  processes cannot receive stale edits. This tightens the existing direct KWin
   authority decision without adding a Settings1 copy of device values.
 - The development machine has no touchpad or touch screen; touchpad rows are
   proven with fakes only.
