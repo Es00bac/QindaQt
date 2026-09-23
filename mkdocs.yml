@@ -391,3 +391,4 @@ nav:
       - "ADR-0239: Publish fullscreen in the shell visibility snapshot": adr/0239-publish-fullscreen-in-shell-visibility.md
       - "ADR-0240: Encode the KWin overview edge with KConfig semantics": adr/0240-encode-the-kwin-overview-edge-with-kconfig-semantics.md
       - "ADR-0241: Capture Gather window previews through KWin's restricted interface": adr/0241-capture-gather-window-previews-through-kwin.md
+      - "ADR-0242: Adapt and balance KWin's pointer-corner callback": adr/0242-adapt-and-balance-the-kwin-pointer-corner.md

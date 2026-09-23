@@ -24,6 +24,12 @@ PointerCornerGesture::~PointerCornerGesture()
 
 void PointerCornerGesture::rearm()
 {
+    // AGENT-GUARD (ADR-0242): KWin increments a reservation counter even if
+    // the same QObject is already in its callback map. Re-arm by balancing
+    // the previous reservation first, or output changes and the startup
+    // singleShot leave the edge permanently reserved after plugin unload.
+    if (m_reserved)
+        m_reserver.unreserve(this);
     m_reserver.reserve(this, "cornerTriggered");
     m_reserved = true;
 }
