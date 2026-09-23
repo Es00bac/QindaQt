@@ -11,6 +11,7 @@
 #include <QObject>
 #include <optional>
 #include <QString>
+#include <QTimer>
 #include <QVariant>
 #include <QVariantList>
 
@@ -128,6 +129,8 @@ private:
   QString m_writeEpoch;
   QString m_writeKey;
   QVariant m_requestedValue;
+  QTimer m_readbackRetryTimer;
+  QTimer m_readbackDeadlineTimer;
   quint64 m_readbackRevision = 0;
   bool m_available = false;
   bool m_pending = false;

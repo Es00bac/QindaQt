@@ -16,6 +16,8 @@ using Session::DesktopControls::ScreensaverPreferences;
 
 const QString SaverKey = QStringLiteral("power.screensaver");
 const QString MinutesKey = QStringLiteral("power.screensaverMinutes");
+constexpr int ReadbackRetryMilliseconds = 200;
+constexpr int ReadbackDeadlineMilliseconds = 4'000;
 
 bool exactMinutes(const QVariant &value, int *minutes) {
   const int type = value.metaType().id();
@@ -66,6 +68,19 @@ ScreensaverSettingsModel::ScreensaverSettingsModel(
           this, &ScreensaverSettingsModel::handleUncertain);
   connect(&m_preview, &ScreensaverPreview::finished, this,
           &ScreensaverSettingsModel::publishStatus);
+  m_readbackRetryTimer.setSingleShot(true);
+  connect(&m_readbackRetryTimer, &QTimer::timeout, this, [this] {
+    if (m_pending && m_waitingForReadback) m_client.refresh();
+  });
+  m_readbackDeadlineTimer.setSingleShot(true);
+  connect(&m_readbackDeadlineTimer, &QTimer::timeout, this, [this] {
+    if (!m_pending || !m_waitingForReadback) return;
+    // AGENT-GUARD: a valid but pre-commit snapshot can leave SettingsClient
+    // Ready with no automatic follow-up. End the pending UI without replaying
+    // the write when the service never supplies the Applied revision.
+    retirePending(tr("The saved screen saver choice could not be confirmed in time."));
+    publishStatus();
+  });
   if (m_client.state() == ClientState::Ready && m_client.snapshot())
     handleSnapshot();
   else
@@ -266,6 +281,8 @@ bool ScreensaverSettingsModel::submit(const QString &key, const QVariant &value)
 }
 
 void ScreensaverSettingsModel::clearPending() {
+  m_readbackRetryTimer.stop();
+  m_readbackDeadlineTimer.stop();
   m_pending = false;
   m_waitingForReadback = false;
   m_writeOwner.clear();
@@ -302,6 +319,14 @@ void ScreensaverSettingsModel::handleSnapshot() {
   }
   const ScreensaverPreferences next = ScreensaverPreferences::fromPersisted(
       saverValue.toString(), nextMinutes, m_catalog);
+  if (m_pending && m_waitingForReadback
+      && snapshot->owner == m_writeOwner
+      && snapshot->epoch == m_writeEpoch
+      && snapshot->revision < m_readbackRevision) {
+    // SettingsClient accepts an unchanged old revision as Ready; the
+    // post-commit fetch alone is not evidence of the Applied write.
+    m_readbackRetryTimer.start(ReadbackRetryMilliseconds);
+  }
   if (m_pending && m_waitingForReadback
       && snapshot->owner == m_writeOwner
       && snapshot->epoch == m_writeEpoch
@@ -345,6 +370,7 @@ void ScreensaverSettingsModel::handleCommit(
   if (outcome.status == SettingsWireStatus::Applied) {
     m_waitingForReadback = true;
     m_readbackRevision = outcome.revisionAfter;
+    m_readbackDeadlineTimer.start(ReadbackDeadlineMilliseconds);
   } else {
     clearPending();
     m_conflict = outcome.status == SettingsWireStatus::Conflict;
