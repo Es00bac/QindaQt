@@ -65,7 +65,11 @@ Handle outputHandle(const Snapshot &snapshot, const QString &nodeName) {
 
 bool hasRunning(const QSignalSpy &spy, const QString &name) {
     if (spy.isEmpty()) return false;
-    return spy.constLast().at(1).toStringList().contains(name);
+    const auto running = spy.constLast().at(1).value<QList<BackendVbanStream>>();
+    return std::any_of(running.cbegin(), running.cend(),
+                       [&name](const BackendVbanStream &stream) {
+                           return stream.name == name;
+                       });
 }
 
 } // namespace

@@ -166,11 +166,11 @@ int main(int argc, char **argv) {
     }
     WirePlumberAudioBackend backend;
     Snapshot snapshot;
-    QStringList running;
+    QList<BackendVbanStream> running;
     QObject::connect(&backend, &AudioBackend::snapshotReady, &app,
                      [&](quint64, const Snapshot &value) { snapshot = value; });
     QObject::connect(&backend, &AudioBackend::vbanRunningChanged, &app,
-                     [&](quint64, const QStringList &value) { running = value; });
+                     [&](quint64, const QList<BackendVbanStream> &value) { running = value; });
     if (backend.start() == 0) return 6;
     if (!waitUntil([&] { return snapshot.availability == Availability::Ready
                               && findOutput(snapshot, QLatin1String(sinkName)).isValid(); },
@@ -196,7 +196,10 @@ int main(int argc, char **argv) {
                                         .target = target,
                                         .host = peer,
                                         .port = static_cast<quint32>(port)}});
-    if (!waitUntil([&] { return running.contains(QStringLiteral("Peer")); }, 10000)) {
+    if (!waitUntil([&] { return std::any_of(running.cbegin(), running.cend(),
+                                 [](const BackendVbanStream &stream) {
+                                     return stream.name == QStringLiteral("Peer");
+                                 }); }, 10000)) {
         qCritical() << "local route did not activate";
         return 7;
     }

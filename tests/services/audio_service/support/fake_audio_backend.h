@@ -70,14 +70,25 @@ public:
     {
         recording = declared;
     }
+    QList<Audio::BackendVbanStream> declarationsForNames(const QStringList &names) const
+    {
+        QList<Audio::BackendVbanStream> observed;
+        for (const Audio::BackendVbanStream &declared : vban)
+            if (names.contains(declared.name)) observed.append(declared);
+        return observed;
+    }
     void publishVbanRunning(const QStringList &names)
     {
-        Q_EMIT vbanRunningChanged(generation, names);
+        Q_EMIT vbanRunningChanged(generation, declarationsForNames(names));
     }
     void publishVbanRunningForGeneration(quint64 runGeneration,
                                          const QStringList &names)
     {
-        Q_EMIT vbanRunningChanged(runGeneration, names);
+        Q_EMIT vbanRunningChanged(runGeneration, declarationsForNames(names));
+    }
+    void publishVbanRunningDeclarations(const QList<Audio::BackendVbanStream> &observed)
+    {
+        Q_EMIT vbanRunningChanged(generation, observed);
     }
     void failRecording(const QString &reason)
     {

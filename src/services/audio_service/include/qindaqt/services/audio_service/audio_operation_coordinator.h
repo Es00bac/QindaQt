@@ -62,7 +62,8 @@ private Q_SLOTS:
     void acceptLevels(quint64 generation,
                       const QList<QindaQt::Audio::LevelReading> &levels);
     void acceptRecordingFailure(quint64 generation, const QString &reasonCode);
-    void acceptVbanRunning(quint64 generation, const QStringList &names);
+    void acceptVbanRunning(quint64 generation,
+                           const QList<QindaQt::Audio::BackendVbanStream> &running);
 
 private:
     struct PendingOperation {
@@ -121,7 +122,8 @@ private:
     MacroStore m_macros;
     VbanStore m_vban;
     QList<BackendVbanStream> m_publishedVban;
-    QStringList m_runningVban;
+    QList<BackendVbanStream> m_runningVban;
+    quint64 m_nextVbanActivationToken = 1;
     Recording m_recording;
     BackendRecording m_publishedRecording;
     QList<BackendRoutingEdge> m_publishedRouting;

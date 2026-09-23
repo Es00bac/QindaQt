@@ -13,14 +13,14 @@ QList<VbanStream> AudioOperationCoordinator::vbanStreams() const
     const QStringList enabled = m_console.enabledVbanStreams();
     for (VbanStream &stream : streams) {
         stream.enabled = enabled.contains(stream.name);
-        bool declared = false;
+        bool connectedDeclaration = false;
         for (const BackendVbanStream &published : m_publishedVban)
-            declared = declared || published.name == stream.name;
+            connectedDeclaration = connectedDeclaration
+                || (published.name == stream.name && m_runningVban.contains(published));
         // Worker evidence requires the local sender capture or authorized
         // receiver source+speaker route to appear in PipeWire. It does not
         // prove remote packet delivery or that a human hears audio.
-        stream.active = stream.enabled && declared
-            && m_runningVban.contains(stream.name);
+        stream.active = stream.enabled && connectedDeclaration;
     }
     return streams;
 }
@@ -62,23 +62,44 @@ void AudioOperationCoordinator::publishVban()
             // path down; it must never route to the default or virtual sink.
             if (!bound) continue;
         }
+        // Preserve the token only for the same continuously declared route.
+        // Retargeting or re-enabling after removal gets a fresh identity, so
+        // delayed worker evidence for an older route cannot become active.
+        for (const BackendVbanStream &previous : m_publishedVban) {
+            BackendVbanStream sameRoute = declared;
+            sameRoute.activationToken = previous.activationToken;
+            if (sameRoute == previous) {
+                declared.activationToken = previous.activationToken;
+                break;
+            }
+        }
+        if (declared.activationToken == 0) {
+            if (m_nextVbanActivationToken == 0) continue; // exhausted: fail closed
+            declared.activationToken = m_nextVbanActivationToken++;
+        }
         wanted.append(declared);
     }
     if (wanted == m_publishedVban) {
         return;
     }
+    // Retire evidence for a replaced or removed declaration before this
+    // snapshot can claim it active. Delayed old reports are also harmless:
+    // vbanStreams compares the full declaration, not just its name.
+    m_runningVban.removeIf([&wanted](const BackendVbanStream &running) {
+        return !wanted.contains(running);
+    });
     m_publishedVban = wanted;
     if (m_backend != nullptr && m_running) {
         m_backend->applyVban(m_publishedVban);
     }
 }
 
-void AudioOperationCoordinator::acceptVbanRunning(const quint64 generation,
-                                                   const QStringList &names)
+void AudioOperationCoordinator::acceptVbanRunning(
+    const quint64 generation, const QList<BackendVbanStream> &running)
 {
     if (!m_running || generation != m_backendGeneration) return;
-    if (m_runningVban == names) return;
-    m_runningVban = names;
+    if (m_runningVban == running) return;
+    m_runningVban = running;
     republishConsole();
 }
 
