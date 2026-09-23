@@ -8,6 +8,7 @@ target_sources(
         audio_settings_model.cpp
         audio_settings_volume.cpp
         audio_console_projection.cpp
+        audio_peer_projection.cpp
         audio_settings_projection.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -53,6 +54,7 @@ qt_add_qml_module(
         qml/AudioIconButton.qml
         qml/AudioLevelRow.qml
         qml/AudioPage.qml
+        qml/AudioPeerSection.qml
         qml/AudioStreamSection.qml
         qml/AudioVirtualDeviceSection.qml
 )
@@ -98,6 +100,7 @@ install(
         qml/AudioIconButton.qml
         qml/AudioLevelRow.qml
         qml/AudioPage.qml
+        qml/AudioPeerSection.qml
         qml/AudioStreamSection.qml
         qml/AudioVirtualDeviceSection.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio"

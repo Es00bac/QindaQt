@@ -181,6 +181,8 @@ bool operationTargetsHandle(const OperationKind kind) noexcept
     case OperationKind::StartRecording:
     case OperationKind::StopRecording:
     case OperationKind::SetVbanEnabled:
+    case OperationKind::UpsertVbanStream:
+    case OperationKind::DeleteVbanStream:
         return false;
     // SetBusTarget and SetStripSource name a console element AND the device it
     // should follow, so a valid handle is checked like any other; an INVALID
@@ -381,13 +383,14 @@ ValidationResult validateConsole(const Console &console)
     if (console.vban.size() > kMaxVbanStreams) {
         return rejected(QStringLiteral("oversized-payload"));
     }
+    QSet<QString> vbanNames;
     for (const VbanStream &stream : console.vban) {
-        if (stream.name.isEmpty() || !isBoundedText(stream.name, kMaxVbanNameUtf8Bytes)
-            || !isBoundedText(stream.busId, kMaxConsoleIdUtf8Bytes)
-            || !isBoundedText(stream.host, kMaxVbanHostUtf8Bytes) || stream.port == 0
-            || stream.port > 65535 || (stream.outgoing && stream.busId.isEmpty())) {
+        const ValidationResult definition = validateVbanDefinition(stream);
+        if (!definition.accepted || vbanNames.contains(stream.name)
+            || (stream.active && !stream.enabled)) {
             return rejected(QStringLiteral("invalid-vban-stream"));
         }
+        vbanNames.insert(stream.name);
     }
     if (console.soloActive != anySolo) {
         return rejected(QStringLiteral("inconsistent-solo"));
@@ -415,7 +418,8 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
         | static_cast<quint32>(Capability::Console)
         | static_cast<quint32>(Capability::SetConsoleGain)
         | static_cast<quint32>(Capability::SetConsoleRouting)
-        | static_cast<quint32>(Capability::ConsoleMeters);
+        | static_cast<quint32>(Capability::ConsoleMeters)
+        | static_cast<quint32>(Capability::ManageVbanStreams);
     if ((static_cast<quint32>(snapshot.capabilities.toInt()) & ~knownCapabilities) != 0) {
         return rejected(QStringLiteral("invalid-capabilities"));
     }
@@ -546,7 +550,7 @@ ValidationResult validateOperationResult(const OperationResult &result)
     }
     const auto kind = static_cast<quint32>(result.kind);
     const auto status = static_cast<quint32>(result.status);
-    if (kind > static_cast<quint32>(OperationKind::RemoveVirtualDevice)
+    if (kind > static_cast<quint32>(OperationKind::DeleteVbanStream)
         || status > static_cast<quint32>(OperationStatus::Busy)) {
         return rejected(QStringLiteral("malformed-result"));
     }

@@ -102,6 +102,7 @@ nav:
       - Settings portal backend version 1: reference/portal-settings-backend-v1.md
       - Display1 version 1: reference/display1-v1.md
       - Audio1 version 2: reference/audio1-v2.md
+      - Audio1 schema 12: reference/audio1-v12.md
       - "VoiceMeeter Potato parity target": reference/voicemeeter-potato-parity.md
       - "Request checklist: audio, OBS, file manager, tray, roll-up, Wine": reference/qindaqt-request-checklist.md
       - "Audio macro buttons": reference/audio-macro-buttons.md
@@ -396,4 +397,5 @@ nav:
       - "ADR-0243: Keep Gather previews by window identity": adr/0243-keep-gather-previews-by-window-identity.md
       - "ADR-0244: Gate desktop Voice use on confirmed Settings1 opt-in": adr/0244-gate-desktop-voice-use-on-confirmed-settings.md
       - "ADR-0245: Write only supported default-application associations": adr/0245-write-only-supported-default-application-associations.md
+      - "ADR-0246: Configure manual audio peers through Audio1": adr/0246-configure-manual-audio-peers-through-audio1.md
       - "ADR-0247: Run XDG autostart in the session supervisor": adr/0247-run-xdg-autostart-in-the-session-supervisor.md

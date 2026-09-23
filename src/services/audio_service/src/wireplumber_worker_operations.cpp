@@ -234,6 +234,8 @@ void WirePlumberWorker::submitOnWorker(const quint64 operationId,
     case OperationKind::StartRecording:
     case OperationKind::StopRecording:
     case OperationKind::SetVbanEnabled:
+    case OperationKind::UpsertVbanStream:
+    case OperationKind::DeleteVbanStream:
         rejectConsoleOperation(operationId);
         return;
     case OperationKind::SetDefault: {

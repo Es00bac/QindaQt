@@ -458,7 +458,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const VbanStream &value)
 {
     argument.beginStructure();
     argument << value.name << value.outgoing << value.busId << value.host << value.port
-             << value.enabled << value.active;
+             << value.enabled << value.active << value.outputNodeName;
     argument.endStructure();
     return argument;
 }
@@ -467,7 +467,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, VbanStream &value
 {
     argument.beginStructure();
     argument >> value.name >> value.outgoing >> value.busId >> value.host >> value.port
-        >> value.enabled >> value.active;
+        >> value.enabled >> value.active >> value.outputNodeName;
     argument.endStructure();
     return argument;
 }
