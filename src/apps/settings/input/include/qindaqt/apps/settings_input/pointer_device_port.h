@@ -97,7 +97,12 @@ Q_SIGNALS:
 class KWinPointerDevicePort final : public PointerDevicePort {
     Q_OBJECT
 public:
-    explicit KWinPointerDevicePort(QDBusConnection bus);
+    // `destination` is the captured unique bus owner for a transaction.
+    // Production composition omits it and observes the well-known service;
+    // worker requests pin it so a replacement process cannot receive a Set.
+    explicit KWinPointerDevicePort(
+        QDBusConnection bus,
+        QString destination = QStringLiteral("org.kde.KWin"));
 
     [[nodiscard]] QList<PointerDeviceSnapshot>
     devices(QString *error) const override;
@@ -117,6 +122,7 @@ private Q_SLOTS:
 
 private:
     QDBusConnection m_bus;
+    QString m_destination;
     QDBusServiceWatcher *m_serviceWatcher = nullptr;
     bool m_propertiesObserved = false;
 };

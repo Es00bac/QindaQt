@@ -2,10 +2,12 @@
 #include <qindaqt/apps/settings_input/pointer_device_port.h>
 
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusInterface>
 #include <QtDBus/QDBusReply>
 #include <QTest>
 #include <QElapsedTimer>
+#include <QtConcurrent>
 #include <QSignalSpy>
 
 #include "support/fake_kwin_input.h"
@@ -44,6 +46,7 @@ private Q_SLOTS:
     void asyncRequestsReadBackWithoutBlockingCaller();
     void ownerLossEmitsInvalidation();
     void propertySignalEmitsInventoryRefresh();
+    void pinnedOwnerNeverWritesToReplacement();
 
 private:
     QVariantMap mouseSpec(const QString &id) const
@@ -307,6 +310,66 @@ void PointerDevicePortTest::propertySignalEmitsInventoryRefresh()
                          QStringList{}});
     QVERIFY(bus.connection.send(signal));
     QTRY_VERIFY_WITH_TIMEOUT(spy.count() > 0, 5000);
+}
+
+void PointerDevicePortTest::pinnedOwnerNeverWritesToReplacement()
+{
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    FakeKWinInput first;
+    first.addDevice(mouseSpec(QStringLiteral("event5")));
+    QVERIFY(first.publish(bus.connection));
+    const QString firstOwner = bus.connection.baseService();
+    QVERIFY(firstOwner.startsWith(QLatin1Char(':')));
+
+    const QString clientName = QStringLiteral("pointer-pinned-client");
+    const QDBusConnection client = QDBusConnection::connectToBus(
+        bus.address, clientName);
+    QVERIFY(client.isConnected());
+    const QString replacementName = QStringLiteral("pointer-replacement");
+    const QDBusConnection replacement = QDBusConnection::connectToBus(
+        bus.address, replacementName);
+    QVERIFY(replacement.isConnected());
+    FakeKWinInput second;
+    auto *secondDevice = second.addDevice(mouseSpec(QStringLiteral("event5")));
+
+    // The first owner releases its well-known name, while a new KWin with
+    // the same device ID acquires it. A stale transaction addressed to that
+    // name would silently mutate the second owner.
+    QVERIFY(bus.connection.unregisterService(QStringLiteral("org.kde.KWin")));
+    QVERIFY(second.publish(replacement));
+    QCOMPARE(client.interface()->serviceOwner(QStringLiteral("org.kde.KWin"))
+                 .value(),
+             replacement.baseService());
+    KWinPointerDevicePort pinned(client, firstOwner);
+    // Dispatch from a worker so this thread can service both fake owners.
+    // If the port uses the well-known destination, B receives the Set and
+    // the assertions below fail even though the reply looks successful.
+    auto write = QtConcurrent::run([&] {
+        QString error;
+        const bool applied = pinned.writeProperty(
+            QStringLiteral("event5"), QStringLiteral("naturalScroll"), true,
+            &error);
+        return qMakePair(applied, error);
+    });
+    QTRY_VERIFY_WITH_TIMEOUT(write.isFinished(), 5000);
+    const auto written = write.result();
+    QVERIFY2(written.first, qPrintable(written.second));
+    QCOMPARE(first.deviceAt(0)->writes.size(), 1);
+    QCOMPARE(secondDevice->writes.size(), 0);
+
+    auto inventory = QtConcurrent::run([&] {
+        QString error;
+        const auto snapshots = pinned.devices(&error);
+        return qMakePair(snapshots, error);
+    });
+    QTRY_VERIFY_WITH_TIMEOUT(inventory.isFinished(), 5000);
+    const auto read = inventory.result();
+    QCOMPARE(read.second, QString());
+    QCOMPARE(read.first.size(), 1);
+    QCOMPARE(secondDevice->writes.size(), 0);
+    QDBusConnection::disconnectFromBus(replacementName);
+    QDBusConnection::disconnectFromBus(clientName);
 }
 
 QTEST_MAIN(PointerDevicePortTest)

@@ -30,7 +30,9 @@ external edits appear without reopening Settings. D-Bus reads and writes run
 off the UI thread. A control stays disabled while a write is pending, and its
 shown value comes from KWin readback, including after refusal; a failed
 multi-property profile or scroll-method write restores earlier writes before
-readback. Late replies from a previous selection or KWin owner cannot repaint
+readback. Each D-Bus transaction addresses the captured unique KWin owner for every
+read, write, rollback, and readback, so a replacement KWin cannot receive a
+stale edit. Late replies from a previous selection or owner cannot repaint
 the current device.
 
 Tap-to-click and tap-and-drag availability come from KWin's `tapFingerCount`

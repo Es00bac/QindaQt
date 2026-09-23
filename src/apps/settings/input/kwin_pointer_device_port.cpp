@@ -117,9 +117,11 @@ void PointerDevicePort::requestWrite(
             ++completed;
         }
     }
-    if (!result.applied && original) {
-        // AGENT-GUARD: Profile and scroll-method choices span two KWin
-        // properties. Restore earlier writes if the later Set is refused.
+    const auto rollback = [&] {
+        if (!original) return;
+        // AGENT-GUARD: A multi-property choice may fail by Set refusal OR
+        // successful Set with ineffective readback. Reverse every accepted
+        // write on either path, then read the final authority state again.
         for (int i = completed - 1; i >= 0; --i) {
             const auto &change = changes.at(i);
             if (original->properties.contains(change.first)) {
@@ -128,31 +130,39 @@ void PointerDevicePort::requestWrite(
                               nullptr);
             }
         }
-    }
-    QString readError;
-    const auto snapshots = devices(&readError);
-    if (readError.isEmpty()) {
-        for (const auto &snapshot : snapshots) {
-            if (snapshot.deviceId == deviceId) {
-                result.snapshot = snapshot;
-                break;
+    };
+    const auto readback = [&] {
+        result.snapshot.reset();
+        QString readError;
+        const auto snapshots = devices(&readError);
+        if (readError.isEmpty()) {
+            for (const auto &snapshot : snapshots) {
+                if (snapshot.deviceId == deviceId) {
+                    result.snapshot = snapshot;
+                    break;
+                }
             }
         }
-    }
-    if (!result.snapshot) {
-        result.applied = false;
-        if (result.error.isEmpty()) {
-            result.error = readError.isEmpty()
-                               ? QStringLiteral("Device disappeared before readback")
-                               : readError;
+        if (!result.snapshot) {
+            result.applied = false;
+            if (result.error.isEmpty()) {
+                result.error = readError.isEmpty()
+                    ? QStringLiteral("Device disappeared before readback")
+                    : readError;
+            }
         }
-    } else if (result.applied) {
+    };
+    if (!result.applied) rollback();
+    readback();
+    if (result.applied && result.snapshot) {
         for (const auto &change : changes) {
             if (result.snapshot->properties.value(change.first) !=
                 change.second) {
                 result.applied = false;
                 result.error = QStringLiteral(
                     "Input authority did not retain %1").arg(change.first);
+                rollback();
+                readback();
                 break;
             }
         }
@@ -160,8 +170,9 @@ void PointerDevicePort::requestWrite(
     reply(std::move(result));
 }
 
-KWinPointerDevicePort::KWinPointerDevicePort(QDBusConnection bus)
-    : m_bus(std::move(bus)) {}
+KWinPointerDevicePort::KWinPointerDevicePort(QDBusConnection bus,
+                                             QString destination)
+    : m_bus(std::move(bus)), m_destination(std::move(destination)) {}
 
 void KWinPointerDevicePort::setObserving(bool active) {
     m_propertiesObserved = active;
@@ -205,8 +216,13 @@ void KWinPointerDevicePort::requestDevices(QObject *receiver,
         const auto ownerBefore = bus.interface()
             ? bus.interface()->serviceOwner(QLatin1String(KWinService)).value()
             : QString();
+        if (ownerBefore.isEmpty()) {
+            return Result{{}, QStringLiteral("Input authority is unavailable")};
+        }
         QString error;
-        KWinPointerDevicePort probe(bus);
+        // AGENT-GUARD: ListPointers and every GetAll must address the same
+        // captured unique owner; a replacement cannot supply mixed truth.
+        KWinPointerDevicePort probe(bus, ownerBefore);
         auto snapshots = probe.devices(&error);
         const auto ownerAfter = bus.interface()
             ? bus.interface()->serviceOwner(QLatin1String(KWinService)).value()
@@ -234,7 +250,15 @@ void KWinPointerDevicePort::requestWrite(
         const auto ownerBefore = bus.interface()
             ? bus.interface()->serviceOwner(QLatin1String(KWinService)).value()
             : QString();
-        KWinPointerDevicePort probe(bus);
+        if (ownerBefore.isEmpty()) {
+            WriteResult missing;
+            missing.error = QStringLiteral("Input authority is unavailable");
+            return missing;
+        }
+        // AGENT-GUARD: Pin every Set, rollback and readback to one unique
+        // owner. An owner-after check alone is too late: B may already have
+        // applied A's stale request if the destination stays well-known.
+        KWinPointerDevicePort probe(bus, ownerBefore);
         WriteResult result;
         probe.PointerDevicePort::requestWrite(
             nullptr, deviceId, changes,
@@ -260,7 +284,7 @@ KWinPointerDevicePort::devices(QString *error) const {
         }
         return {};
     }
-    const QDBusMessage reply = call(m_bus, QLatin1String(KWinService),
+    const QDBusMessage reply = call(m_bus, m_destination,
                                     QLatin1String(ManagerPath),
                                     QLatin1String(ManagerInterface),
                                     QStringLiteral("ListPointers"));
@@ -298,7 +322,7 @@ KWinPointerDevicePort::devices(QString *error) const {
         const QString path =
             QStringLiteral("/org/kde/KWin/InputDevice/%1").arg(sysName);
         const QDBusMessage deviceReply =
-            call(m_bus, QLatin1String(KWinService), path,
+            call(m_bus, m_destination, path,
                  QLatin1String(PropertiesInterface), QStringLiteral("GetAll"),
                  {QLatin1String(DeviceInterface)});
         // AGENT-NOTE: The reply container may arrive as a demarshalled
@@ -451,7 +475,7 @@ bool KWinPointerDevicePort::writeProperty(const QString &deviceId,
     const QString path =
         QStringLiteral("/org/kde/KWin/InputDevice/%1").arg(deviceId);
     const QDBusMessage reply =
-        call(m_bus, QLatin1String(KWinService), path,
+        call(m_bus, m_destination, path,
              QLatin1String(PropertiesInterface), QStringLiteral("Set"),
              {QLatin1String(DeviceInterface), property,
               QVariant::fromValue(QDBusVariant(value))});

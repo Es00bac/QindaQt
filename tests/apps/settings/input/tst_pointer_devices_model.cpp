@@ -26,6 +26,7 @@ public:
     QString nextWriteFailure;
     QString failProperty;
     bool ignoreWrites = false;
+    QString ignoreProperty;
     QList<QPair<QString, QString>> writtenProperties;
     void notifyInventory() { Q_EMIT inventoryChanged(); }
     void notifyOwnerChange() { Q_EMIT authorityChanged(); }
@@ -54,7 +55,8 @@ public:
         }
         for (auto &snapshot : scripted) {
             if (snapshot.deviceId != deviceId) continue;
-            if (!ignoreWrites) snapshot.properties.insert(property, value);
+            if (!ignoreWrites && ignoreProperty != property)
+                snapshot.properties.insert(property, value);
             mutableWritten().append({deviceId, property});
             return true;
         }
@@ -161,6 +163,7 @@ private Q_SLOTS:
     void lateReplyNeverPaintsDifferentSelectionOrOwner();
     void constructionIsLazyAndHiddenTabDoesNotPoll();
     void rejectedSecondPropertyRestoresFirst();
+    void ignoredSecondPropertyRestoresFirst();
 
 private:
     FakePointerPort m_port;
@@ -453,6 +456,25 @@ void PointerDevicesModelTest::rejectedSecondPropertyRestoresFirst()
     QVERIFY(!model.selection()->flatProfile());
     QVERIFY(model.selection()->statusText().contains(
         QStringLiteral("refused")));
+    const auto &properties = port.scripted.first().properties;
+    QCOMPARE(properties.value(QStringLiteral(
+                 "pointerAccelerationProfileFlat")).toBool(), false);
+    QCOMPARE(properties.value(QStringLiteral(
+                 "pointerAccelerationProfileAdaptive")).toBool(), true);
+}
+
+void PointerDevicesModelTest::ignoredSecondPropertyRestoresFirst()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot()};
+    port.ignoreProperty = QStringLiteral(
+        "pointerAccelerationProfileAdaptive");
+    PointerDevicesModel model(port);
+    model.refresh();
+    model.selection()->setFlatProfile(true);
+    QVERIFY(!model.selection()->flatProfile());
+    QVERIFY(model.selection()->statusText().contains(
+        QStringLiteral("did not retain")));
     const auto &properties = port.scripted.first().properties;
     QCOMPARE(properties.value(QStringLiteral(
                  "pointerAccelerationProfileFlat")).toBool(), false);
