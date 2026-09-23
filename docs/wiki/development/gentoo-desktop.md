@@ -5,6 +5,16 @@ desktop. It builds the native KWin plugin, KDecoration, production shell,
 session launcher, services, bundled applications, desktop entries, and shared
 QML runtime plugins from one immutable source commit.
 
+The September 22 package revision carries the IBus startup repair: the
+session supervisor names the installed `ibus-dconf` helper explicitly because
+the implicit lookup exits on qinda. The QindaQt profile also installs
+`x11-misc/dotool`, Gabbee's first focused-window typing route, and the
+`x11-themes/qinda-seven` appearance pack from its own pinned repository.
+An already running session may start IBus with that helper for immediate use;
+the package's supervised launch takes effect at the next login. The seven
+theme documents and their paired decorations are installed as data and appear
+in Settings → Appearance after the shell reloads its catalog.
+
 The current checkpoint is `0.1.0_pre20260920`, pinned to
 `4fd1372e897ae34d33f11155d4a30a1d7ef3526f`. Regenerate the package Manifest
 whenever the immutable source pin changes. The ebuild uses `RESTRICT=fetch`;
