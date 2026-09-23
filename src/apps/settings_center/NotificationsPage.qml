@@ -63,8 +63,16 @@ T.Page {
             Accessible.description: qsTr(
                 "Low and normal notification banners are hidden; critical banners remain visible only when privacy permits")
             Accessible.checked: checked
-            onClicked: root.quietingSettings.requestSet(
-                           !root.quietingSettings.enabled)
+            onClicked: {
+                root.quietingSettings.requestSet(
+                    !root.quietingSettings.enabled)
+                // Qt's Switch writes checked before clicked, detaching the
+                // truth binding even when the request is refused immediately.
+                Qt.callLater(() => {
+                    doNotDisturbSwitch.checked = Qt.binding(
+                        () => root.quietingSettings.enabled)
+                })
+            }
         }
 
         QuietHoursSection {

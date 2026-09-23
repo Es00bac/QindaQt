@@ -23,6 +23,8 @@ DoNotDisturbController::DoNotDisturbController(SettingsClient &client, QObject *
             this, &DoNotDisturbController::handleCommit);
     connect(&m_client, &SettingsClient::writeInFlightChanged,
             this, &DoNotDisturbController::stateChanged);
+    connect(&m_client, &SettingsClient::writeAdmissionChanged,
+            this, &DoNotDisturbController::stateChanged);
     connect(&m_client, &SettingsClient::commitUncertain, this, [this](const QString &message) {
         if (!m_commitInFlight) return;
         m_commitInFlight = false;
@@ -35,7 +37,7 @@ DoNotDisturbController::DoNotDisturbController(SettingsClient &client, QObject *
 
 bool DoNotDisturbController::canToggle() const noexcept
 {
-    return ready() && m_client.state() == ClientState::Ready && !m_client.writeInFlight();
+    return ready() && m_client.canSetUserValue(DoNotDisturbKey);
 }
 
 QString DoNotDisturbController::errorText() const
@@ -77,7 +79,10 @@ bool DoNotDisturbController::requestSet(bool enabled)
     if (!m_client.setUserValue(DoNotDisturbKey, enabled, &error)) {
         m_commitInFlight = false;
         m_hasRequestedValue = false;
-        setState(State::Ready, error.left(512));
+        // An admission failure is a user-visible result, not transient
+        // refresh state; an unchanged snapshot must not erase its reason.
+        m_confirmedError = error.left(512);
+        setState(State::Ready, m_confirmedError);
         return false;
     }
     m_confirmedError.clear();
@@ -87,8 +92,8 @@ bool DoNotDisturbController::requestSet(bool enabled)
 
 bool DoNotDisturbController::applyMyChoice()
 {
-    if (!conflict() || !m_hasRequestedValue || m_client.state() != ClientState::Ready
-        || m_client.writeInFlight()) {
+    if (!conflict() || !m_hasRequestedValue
+        || !m_client.canSetUserValue(DoNotDisturbKey)) {
         return false;
     }
     const bool requested = m_requestedValue;
@@ -141,9 +146,12 @@ void DoNotDisturbController::handleClientState()
     case ClientState::Unavailable:
     case ClientState::Degraded:
         // A successful commit without confirmable readback is not an active
-        // save. Later recovery may display authority but cannot replay intent.
+        // save. Preserve a separate conflict choice across owner recovery,
+        // but never replay a save that was only awaiting readback.
+        if (m_waitingForCommitSnapshot) {
+            m_hasRequestedValue = false;
+        }
         m_waitingForCommitSnapshot = false;
-        m_hasRequestedValue = false;
         m_readbackRevision = 0;
         setState(State::Unavailable, m_client.lastError());
         break;

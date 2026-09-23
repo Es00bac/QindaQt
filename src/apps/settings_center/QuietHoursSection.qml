@@ -34,8 +34,15 @@ ColumnLayout {
         Accessible.name: qsTr("Quiet notifications on a schedule")
         Accessible.description: section.schedule.summaryText
         Accessible.checked: checked
-        onClicked: section.schedule.setScheduleEnabled(
-                       !section.schedule.scheduleEnabled)
+        onClicked: {
+            section.schedule.setScheduleEnabled(
+                !section.schedule.scheduleEnabled)
+            // Preserve confirmed schedule truth across refusal and readback.
+            Qt.callLater(() => {
+                scheduleSwitch.checked = Qt.binding(
+                    () => section.schedule.scheduleEnabled)
+            })
+        }
     }
 
     RowLayout {

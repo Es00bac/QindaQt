@@ -78,8 +78,12 @@ their QObject projections and never imports transport or Settings1 authority. Th
 scoped client: the Do Not Disturb controller and the quiet-hours schedule.
 Both are purpose-scoped to the same four `services.doNotDisturb*` keys, so a
 schedule edit and a Do Not Disturb edit share one owner and one token
-sequence rather than racing two (ADR-0212). The controls serialize that shared
-write lane and consume only their own commit outcomes. A schedule edit stays
+sequence rather than racing two (ADR-0212). The controls follow the scoped
+client's write-admission signal as well as its write-in-flight state: a
+same-owner refresh temporarily disables DND and schedule controls even while
+the retained client state says Ready. Each Switch restores its confirmed-value
+binding after activation, so an unadmitted or refused click cannot remain
+visually On. The controls consume only their own commit outcomes. A schedule edit stays
 on its last confirmed value while saving; after an Applied reply it waits for
 an exact-owner, same-epoch read at or above the result revision. A refused,
 conflicting, uncertain, or unconfirmable result is shown beside quiet hours
@@ -90,7 +94,11 @@ other control save result. Both DND and the schedule are popup-interruption
 reasons: low and normal banners are held, while critical presentation still
 requires the independent privacy gate to allow it. Neither is the separate
 notification-service disable-all policy, and neither changes lock-screen
-privacy or rewrites the manual DND key on a schedule.
+privacy or rewrites the manual DND key on a schedule. The focused
+`qindaqt.settings-notification-page-admission` offscreen test loads this
+actual route with production controllers and a private Settings1 transport;
+it covers a same-owner refresh, keyboard activation, refusal, and unchanged
+readback without touching live user settings.
 
 Network owns one public Qt Network transport, `NetworkClient`, and
 `NetworkSettingsModel` for the process lifetime. It does not share the

@@ -168,7 +168,10 @@ revision-exhaustion diagnostics survive automatic authoritative refresh;
 only a new explicit write dismisses them. None of these paths replays a write.
 The Notifications schedule and DND controller share one serial scoped client,
 so each records whether it admitted the current write before consuming the
-client commit signal. Their controls disable during the other write. The
+client commit signal. Their controls follow the public
+`canSetUserValue`/`writeAdmissionChanged` boundary and disable during either
+the other write or a same-owner snapshot request occupying the serial lane;
+QML Switches restore confirmed-value bindings after activation. The
 schedule requires exact-owner, same-epoch, post-result revision and value
 confirmation before claiming a save; DND also checks its own confirming read.
 An exact owner transition is signaled synchronously even when the generic

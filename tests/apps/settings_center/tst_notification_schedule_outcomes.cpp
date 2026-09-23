@@ -144,15 +144,19 @@ void NotificationScheduleOutcomeTests::admissionAndConfirmedReadbackStayOnSchedu
     QVERIFY(h.schedule.canEdit());
     h.client.refresh();
     QTRY_VERIFY(!h.transport.snapshots.isEmpty());
-    // A same-owner refresh can hold the serial request lane while Ready stays
-    // projected. Local refusal must keep both controls and values truthful.
+    // A same-owner refresh occupies the serial lane while the client remains
+    // Ready; both controls must lose admission before an attempted edit.
+    QVERIFY(!h.schedule.canEdit());
+    QVERIFY(!h.dnd.canToggle());
     h.schedule.setEnd(8, 15);
+    QVERIFY(!h.dnd.requestSet(true));
     QVERIFY(h.transport.commits.isEmpty());
     QVERIFY(!h.schedule.pending());
-    QVERIFY(!h.schedule.errorText().isEmpty());
-    QVERIFY(!h.dnd.requestSet(true));
+    QVERIFY(h.schedule.errorText().isEmpty());
     QVERIFY(h.answer(OwnerA, EpochA, 1, settingsValues()));
     QCOMPARE(h.schedule.endMinutes(), 420);
+    QVERIFY(h.schedule.canEdit());
+    QVERIFY(h.dnd.canToggle());
     h.schedule.setStart(21, 30);
     QCOMPARE(h.transport.commits.size(), 1);
     QCOMPARE(h.transport.commits.constLast().operations.constFirst().toMap()
