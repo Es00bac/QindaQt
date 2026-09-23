@@ -26,8 +26,13 @@ Route behavior is documented in the corresponding [Appearance](appearance-settin
 [Startup applications](startup-settings.md),
 [Screen saver](screensaver-settings.md),
 [Login screen](login-screen-settings.md), and [Voice](voice-settings.md) pages.
-Notification quieting is documented under
-[notification presentation](../shell/notification-presentation.md).
+Notifications includes Do Not Disturb and Quiet Hours; its shell policy is
+documented under [notification presentation](../shell/notification-presentation.md).
+The [21-route completeness inventory](../reference/settings-completeness.md)
+separates registered pages from effective controls and outstanding gaps.
+Route construction or installed-package success does not establish physical
+Bluetooth pairing, battery/lid behavior, color calibration, network radio
+state, or remote audio audibility on a particular host.
 
 ## Route boundary
 
@@ -220,9 +225,9 @@ The interaction contract is:
   sixth position, and Ctrl+7 selects Bluetooth in its appended seventh
   position; Ctrl+8 selects Power in its appended eighth position, and Ctrl+9
   selects Clipboard in its appended ninth position; Ctrl+0 selects Color in
-  its appended tenth position; Accessibility, Input and Streaming, appended
-  eleventh, twelfth and thirteenth, have no digit shortcut and are reached
-  from the sidebar or compact tab list;
+  its appended tenth position; all later routes, from Accessibility (11)
+  through Voice (21), have no digit shortcut and are reached from the sidebar
+  or compact tab list;
 - Alt+Left selects the immediately previous route; and
 - the platform Quit shortcut closes the ordinary application window unless
   Bluetooth must first release a discovery lease or Customize owns a dirty
