@@ -46,6 +46,7 @@ private Q_SLOTS:
   void clearsOnOwnerReplacementAndShowsExternalState();
   void lostReplyDoesNotReplay();
   void ownerReplacementDuringReadbackRetiresIntent();
+  void settledSuccessExpiresOnExternalTruthOrOwnerChange();
 };
 
 void NetworkRadioOutcomesTest::dispatchesTypedWifiAndMobileChanges() {
@@ -224,6 +225,47 @@ void NetworkRadioOutcomesTest::ownerReplacementDuringReadbackRetiresIntent() {
   QVERIFY(!f.radio(0).value(QStringLiteral("pending")).toBool());
   QVERIFY(!f.model.errorText().isEmpty());
   QCOMPARE(f.transport.operations.size(), 1);
+}
+
+void NetworkRadioOutcomesTest::settledSuccessExpiresOnExternalTruthOrOwnerChange() {
+  {
+    Fixture f;
+    QTRY_VERIFY(f.model.ready());
+    QVERIFY(f.model.setRadio(0, false));
+    Snapshot off = Fixture::radioSnapshot(2);
+    off.radios[0].softwareEnabled = false;
+    f.transport.setSnapshot(off);
+    f.transport.finishLast(operationResult(OperationKind::SetRadio, OperationStatus::Succeeded));
+    QTRY_VERIFY(!f.radio(0).value(QStringLiteral("pending")).toBool());
+    QVERIFY(f.model.operationStatusText().contains(QStringLiteral("off")));
+    Snapshot external = Fixture::radioSnapshot(3);
+    f.transport.setSnapshot(external);
+    f.transport.invalidate();
+    QTRY_COMPARE(f.model.serviceRevision(), qulonglong(3));
+    QCOMPARE(f.radio(0).value(QStringLiteral("softwareEnabled")).toBool(), true);
+    QVERIFY(f.model.operationStatusText().isEmpty());
+    QCOMPARE(f.transport.operations.size(), 1);
+  }
+  {
+    Fixture f;
+    QTRY_VERIFY(f.model.ready());
+    QVERIFY(f.model.setRadio(0, false));
+    Snapshot off = Fixture::radioSnapshot(2);
+    off.radios[0].softwareEnabled = false;
+    f.transport.setSnapshot(off);
+    f.transport.finishLast(operationResult(OperationKind::SetRadio, OperationStatus::Succeeded));
+    QTRY_VERIFY(!f.radio(0).value(QStringLiteral("pending")).toBool());
+    QVERIFY(f.model.operationStatusText().contains(QStringLiteral("off")));
+    Snapshot replacement = Fixture::radioSnapshot(1);
+    replacement.owner = QStringLiteral(":1.21");
+    replacement.epoch = 21;
+    f.transport.setSnapshot(replacement);
+    f.transport.announceOwner(replacement.owner);
+    QTRY_COMPARE(f.model.serviceOwner(), replacement.owner);
+    QVERIFY(f.model.operationStatusText().isEmpty());
+    QCOMPARE(f.radio(0).value(QStringLiteral("softwareEnabled")).toBool(), true);
+    QCOMPARE(f.transport.operations.size(), 1);
+  }
 }
 
 QTEST_MAIN(NetworkRadioOutcomesTest)

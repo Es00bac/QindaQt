@@ -130,6 +130,8 @@ private:
   std::optional<PendingRadio> m_pendingRadio;
   std::optional<QindaQt::Network::RadioKind> m_radioErrorKind;
   QString m_radioError;
+  QString m_radioSuccessOwner;
+  bool m_radioSuccessShown = false;
   QTimer m_radioReadbackRetry;
   QTimer m_radioReadbackDeadline;
 };

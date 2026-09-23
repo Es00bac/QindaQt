@@ -26,6 +26,8 @@ bool NetworkSettingsModel::reload() {
     return false;
   }
   m_localError.clear();
+  m_radioSuccessShown = false;
+  m_radioSuccessOwner.clear();
   m_operationStatusText = tr("Refreshing network information…");
   m_client.refresh();
   Q_EMIT viewChanged();
@@ -160,6 +162,8 @@ void NetworkSettingsModel::handleOperationUncertain(const QString &message) {
 }
 
 void NetworkSettingsModel::beginOperationMessage(const OperationKind kind) {
+  m_radioSuccessShown = false;
+  m_radioSuccessOwner.clear();
   m_localError.clear();
   switch (kind) {
   case OperationKind::RequestScan:
@@ -182,6 +186,8 @@ void NetworkSettingsModel::beginOperationMessage(const OperationKind kind) {
 }
 
 void NetworkSettingsModel::rejectAction(const QString &reason) {
+  m_radioSuccessShown = false;
+  m_radioSuccessOwner.clear();
   m_operationStatusText.clear();
   m_localError = actionFailureText(reason);
   Q_EMIT actionRejected(reason);
