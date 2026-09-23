@@ -1,5 +1,26 @@
 # Integration handoff
 
+## September 23 — Settings repair integration on qinda
+
+The qinda source branch integrates Default Applications at `e02cd663` and
+Input at `5bb5fb73` plus `0c41a5e3`. Both had independent candidate review;
+the first Input candidate was rejected for a KWin owner race and partial-write
+rollback, then repaired and re-reviewed. The combined Settings build and
+122/122 focused Settings rows passed after Default Applications. The Input
+build on the integrated tree and 14/14 combined Input and route tests passed. Strict MkDocs and the repository link validator passed
+for the Default Applications integration. None of this has been deployed to a
+live desktop; physical KWin hotplug and live file-open/watcher timing are still
+unqualified.
+
+A Voice policy candidate was rejected because an Off conflict could briefly
+restart listening from a stale snapshot. The same worker is repairing it and
+must obtain a second independent review before integration. Manual network
+audio, tabbed Audio Settings and audio-wheel controls are active independent
+slices; synchronized multichannel playback is a later milestone that needs
+latency and channel-mapping proof. See the current
+[task list](TASK_LIST.md) and `ops/team/queues/first-party.md` for exact
+status.
+
 ## September 21 — voice input reviewed in source, not yet installed
 
 The voice slice is complete in source and unbuilt on either host. Nothing in

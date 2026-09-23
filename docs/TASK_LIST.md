@@ -5,6 +5,28 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 23 — Settings repair in progress on qinda
+
+The September 23 audit is being repaired in independent slices. These are
+integrated in the qinda source tree, not installed into a live session:
+
+- Default Applications (`e02cd663`): per-MIME eligibility and effective
+  associations, mixed aggregate defaults, partial-write reporting, reset
+  across user-precedence layers, and catalog/watcher refresh. Independent
+  review accepted the candidate; the combined Settings suite passed 122/122.
+  Live file opening and watcher timing remain to qualify.
+- Input (`5bb5fb73`, `0c41a5e3`): live per-device state, unplug clearing,
+  owner-pinned KWin writes, readback and partial-write rollback. Independent
+  review accepted the repaired candidate. The integrated Input gates are
+  recorded in [Handoff](HANDOFF.md); a real KWin hotplug session remains to
+  qualify.
+
+Voice Off policy, Startup, Streaming, asynchronous reporting, service
+capabilities and route coverage remain open. The Audio Settings tab layout,
+manual LAN audio route and Settings/applet wheel behavior are separate active
+slices. The audit and acceptance plan are staged on qinda under
+`/tmp/qindaqt-settings-audit-2026-09-23/`.
+
 ## September 21 — voice input is a first-class desktop feature
 
 The desktop now owns a voice contract and consumes it from three surfaces. It
