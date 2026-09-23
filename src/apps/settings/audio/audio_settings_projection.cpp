@@ -180,6 +180,8 @@ QVariantMap AudioSettingsModel::projectStreamRow(
        stream.direction == StreamDirection::Playback
            ? translateAudio("Output device") : translateAudio("Input device")},
       {QStringLiteral("moveAvailable"), moveAdmitted},
+      {QStringLiteral("routeErrorText"),
+       m_moveFailures.value(stream.handle.serial)},
       {QStringLiteral("volumePercent"),
        percentFor(stream.volume, stream.volumeKnown)},
       {QStringLiteral("volumeDisplayPercent"),
@@ -217,7 +219,15 @@ QString AudioSettingsModel::statusText() const {
   return translateAudio("The audio service is unavailable.");
 }
 
-QString AudioSettingsModel::errorText() const { return m_localError; }
+QString AudioSettingsModel::errorText() const {
+  if (m_moveFailures.isEmpty()) return m_localError;
+  const QString moveError = m_moveFailures.size() == 1
+      ? m_moveFailures.constBegin().value()
+      : QCoreApplication::translate("AudioSettings",
+            "%1 application device changes could not be confirmed. See affected rows.")
+            .arg(m_moveFailures.size());
+  return m_localError.isEmpty() ? moveError : moveError + QLatin1Char('\n') + m_localError;
+}
 
 QString AudioSettingsModel::defaultOutputName() const {
   if (!m_client.hasSnapshot()) {

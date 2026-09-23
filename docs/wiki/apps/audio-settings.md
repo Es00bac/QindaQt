@@ -98,7 +98,11 @@ accepted same-owner/epoch snapshot published after dispatch, at or above the
 result's observed revision, confirms the selected target. AudioClient starts
 the readback fetch before delivering its queued completion, so the route also
 accepts a qualifying snapshot that arrived just before that callback. A refusal, missing device, owner replacement, or readback mismatch keeps
-the prior authoritative selection and provides feedback. A wheel over the chooser scrolls the compact
+the prior authoritative selection and provides feedback. Failures are retained
+per application stream and shown beside that stream's chooser; a successful
+move on another stream cannot erase them. The page error summarizes multiple
+failed moves, while a deliberate retry retires only the retried stream's
+previous failure. A wheel over the chooser scrolls the compact
 Devices page; route changes require an intentional click or keyboard choice.
 The independent volume-wheel controls retain their own detent behavior.
 

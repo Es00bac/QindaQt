@@ -65,4 +65,15 @@ ColumnLayout {
             Qt.callLater(targetPicker.restoreAuthoritativeSelection)
         }
     }
+
+    Label {
+        objectName: "audioStreamTargetError_" + (root.targetRow?.serial ?? 0)
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: root.targetRow?.routeErrorText ?? ""
+        color: Tokens.danger.default
+        wrapMode: Text.WordWrap
+        Accessible.role: Accessible.AlertMessage
+        Accessible.name: text
+    }
 }

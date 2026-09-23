@@ -76,6 +76,10 @@ bool AudioSettingsModel::snapshotAdmitsOperation(
 AudioSettingsModel::AudioSettingsModel(AudioClient &client, QObject *parent)
     : QObject(parent), m_client(client) {
   connect(&m_client, &AudioClient::stateChanged, this, [this] {
+    if (!m_moveFailures.isEmpty() && m_moveFailureOwner != m_client.owner()) {
+      m_moveFailures.clear();
+      m_moveFailureOwner.clear();
+    }
     reconcileVolumeIntents();
     reconcileMoveReadbacks();
     Q_EMIT viewChanged();

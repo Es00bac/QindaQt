@@ -60,11 +60,13 @@ void AudioSettingsModel::handleOperationCompleted(
           if (it == m_moveReadbacks.constEnd() || it->generation != generation) {
             return;
           }
+          const QString owner = it->owner;
           m_moveReadbacks.remove(serial);
-          m_operationStatusText.clear();
-          m_localError = translateAudio(
+          m_moveFailureOwner = owner;
+          m_moveFailures.insert(serial, translateAudio(
               "The selected device could not be confirmed. Refresh the audio "
-              "device list before trying again.");
+              "device list before trying again."));
+          m_operationStatusText.clear();
           Q_EMIT viewChanged();
         });
         // AudioClient queues operationCompleted yet starts its readback
@@ -84,12 +86,17 @@ void AudioSettingsModel::handleOperationCompleted(
     }
   } else {
     m_operationStatusText.clear();
-    if (result.status == OperationStatus::Uncertain) {
-      m_localError = translateAudio(
-          "The audio change could not be confirmed. Refreshing audio "
-          "information before you try again.");
+    const QString failure = result.status == OperationStatus::Uncertain
+        ? translateAudio(
+              "The audio change could not be confirmed. Refreshing audio "
+              "information before you try again.")
+        : actionFailureText(result.reasonCode);
+    if (completed.has_value() && completed->second.intent == Intent::MoveStream) {
+      m_moveFailureOwner = completed->second.owner;
+      m_moveFailures.insert(completed->first, failure);
+      m_localError.clear();
     } else {
-      m_localError = actionFailureText(result.reasonCode);
+      m_localError = failure;
     }
   }
   Q_EMIT viewChanged();

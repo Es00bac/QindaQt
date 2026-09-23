@@ -83,6 +83,8 @@ bool AudioSettingsModel::moveStream(quint64 streamSerial, quint64 deviceSerial) 
     rejectAction(QString());
     return false;
   }
+  // A deliberate retry retires only this stream's earlier readback failure.
+  m_moveFailures.remove(streamSerial);
   trackPending(requestId, streamSerial, Intent::MoveStream, deviceSerial);
   beginIntentMessage(Intent::MoveStream);
   return true;
@@ -99,8 +101,11 @@ void AudioSettingsModel::reconcileMoveReadbacks() {
     return;
   }
   const Snapshot snapshot = m_client.snapshot();
+  bool confirmedAny = false;
+  bool resolvedAny = false;
   for (auto it = m_moveReadbacks.begin(); it != m_moveReadbacks.end();) {
     const MoveReadback expected = it.value();
+    const quint64 streamSerial = it.key();
     if (m_client.owner() != expected.owner || snapshot.epoch != expected.epoch) {
       it = m_moveReadbacks.erase(it);
       m_operationStatusText.clear();
@@ -116,21 +121,32 @@ void AudioSettingsModel::reconcileMoveReadbacks() {
       ++it;
       continue;
     }
-    const Stream *stream = findRouteStream(snapshot, it.key());
+    const Stream *stream = findRouteStream(snapshot, streamSerial);
     const bool confirmed = stream != nullptr && stream->targetKnown
                            && stream->target.epoch == expected.epoch
                            && stream->target.serial == expected.targetSerial;
     it = m_moveReadbacks.erase(it);
-    m_operationStatusText.clear();
-    if (stream == nullptr) {
-      m_localError = routeText("That application stream is no longer available.");
-    } else if (confirmed) {
-      m_localError.clear();
-      m_operationStatusText = routeText("Application device changed.");
+    resolvedAny = true;
+    if (confirmed) {
+      m_moveFailures.remove(streamSerial);
+      confirmedAny = true;
     } else {
-      m_localError = routeText(
-          "The selected device did not take effect. Refresh the audio "
-          "device list before trying again.");
+      m_moveFailureOwner = expected.owner;
+      m_moveFailures.insert(streamSerial,
+          stream == nullptr
+              ? routeText("That application stream is no longer available.")
+              : routeText("The selected device did not take effect. Refresh the audio "
+                          "device list before trying again."));
+    }
+  }
+  // AGENT-GUARD: one accepted snapshot may resolve several stream moves.
+  // Apply feedback after the entire batch, and keep earlier failed streams
+  // visible when a different stream confirms in a later snapshot.
+  if (resolvedAny) {
+    if (!m_moveFailures.isEmpty()) {
+      m_operationStatusText.clear();
+    } else if (confirmedAny) {
+      m_operationStatusText = routeText("Application device changed.");
     }
   }
 }
