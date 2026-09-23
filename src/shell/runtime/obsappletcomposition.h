@@ -15,6 +15,14 @@ namespace QindaQt::Applets {
 class ManifestCatalog;
 }
 
+namespace QindaQt::Services::SettingsClient {
+class SettingsClient;
+class QtSettingsTransport;
+}
+namespace QindaQt::Services::StreamingPreferences {
+class Settings1StreamingPreferences;
+}
+
 namespace QindaQt::Obs {
 class ObsClient;
 class QtObsTransport;
@@ -26,6 +34,7 @@ class ObsAppletController;
 }
 
 namespace QindaQt::Shell {
+class ObsAppletConnection;
 
 // Shell-private ownership boundary for the obs-websocket client and the
 // built-in OBS facade. The audited manifest/registry/policy gates are
@@ -41,9 +50,9 @@ namespace QindaQt::Shell {
 // Settings -> Streaming, so at construction there is no config and no secret.
 // Reading them once meant the applet stayed dead until the next login, which
 // is exactly what the 2026-09-18 end-to-end check saw: obs-websocket logged no
-// client for the whole session. The watch costs one stat of OBS's own config
-// file per tick and touches the keyring only once that file says OBS is set
-// up, so a desktop with no OBS never talks to the Secret Service at all.
+// client for the whole session. The watch remains active after startup for
+// confirmed preference/active-port changes; it touches the keyring only when
+// a confirmed baseline enables connection and OBS config matches its port.
 //
 // AGENT-GUARD: the password reaches the client and nothing else. It is never
 // held by the controller, never published into QML, and never logged.
@@ -59,16 +68,15 @@ public:
     [[nodiscard]] ObsApplet::ObsAppletController *access() const noexcept;
 
 private:
-    // Returns true once the client has been started; false while OBS is not
-    // set up yet. Safe to call repeatedly — it starts the client at most once.
-    [[nodiscard]] bool tryStart();
-
     bool m_readGranted = false;
-    bool m_started = false;
     QTimer m_provisioningWatch;
     std::unique_ptr<Obs::QtObsTransport> m_transport;
     std::unique_ptr<Obs::ObsClient> m_client;
     std::unique_ptr<Obs::SecretServiceObsStore> m_secrets;
+    std::unique_ptr<Services::SettingsClient::QtSettingsTransport> m_settingsTransport;
+    std::unique_ptr<Services::SettingsClient::SettingsClient> m_settingsClient;
+    std::unique_ptr<Services::StreamingPreferences::Settings1StreamingPreferences> m_preferences;
+    std::unique_ptr<ObsAppletConnection> m_connection;
     std::unique_ptr<ObsApplet::ObsAppletController> m_access;
 };
 

@@ -4,35 +4,16 @@
 #include <qindaqt/services/obs_client/obs_client.h>
 #include <qindaqt/services/obs_client/obs_provisioning.h>
 #include <qindaqt/services/obs_client/obs_secret_store.h>
+#include <qindaqt/services/streaming_preferences/streaming_preferences.h>
+#include <qindaqt/session_autostart/autostart_catalog.h>
 
 #include <QObject>
 #include <QVariantList>
+#include <optional>
 
 namespace QindaQt::Apps::SettingsStreaming {
 
-// Where the route's connection preferences live, as a seam so a row does not
-// need a Settings1 owner.
-//
-// AGENT-CONTRACT: Three keys, all under `services.obs*`. The host is NOT one
-// of them: obs-websocket has no transport security, so the address is fixed
-// at loopback and only the port is a preference.
-class StreamingPreferences : public QObject {
-    Q_OBJECT
-public:
-    explicit StreamingPreferences(QObject *parent = nullptr) : QObject(parent) {}
-    ~StreamingPreferences() override = default;
-
-    [[nodiscard]] virtual bool isLoaded() const = 0;
-    [[nodiscard]] virtual int webSocketPort() const = 0;
-    [[nodiscard]] virtual bool autoConnect() const = 0;
-    [[nodiscard]] virtual bool startObsAtLogin() const = 0;
-    virtual bool setWebSocketPort(int port) = 0;
-    virtual bool setAutoConnect(bool enabled) = 0;
-    virtual bool setStartObsAtLogin(bool enabled) = 0;
-
-Q_SIGNALS:
-    void preferencesChanged();
-};
+using StreamingPreferences = Services::StreamingPreferences::StreamingPreferences;
 
 // The Settings → Streaming route.
 //
@@ -56,6 +37,10 @@ class StreamingSettingsModel final : public QObject {
     Q_PROPERTY(int webSocketPort READ webSocketPort NOTIFY preferencesChanged)
     Q_PROPERTY(bool autoConnect READ autoConnect NOTIFY preferencesChanged)
     Q_PROPERTY(bool startObsAtLogin READ startObsAtLogin NOTIFY preferencesChanged)
+    Q_PROPERTY(bool preferencesReady READ preferencesReady NOTIFY preferencesChanged)
+    Q_PROPERTY(bool preferenceWritePending READ preferenceWritePending NOTIFY preferencesChanged)
+    Q_PROPERTY(QString preferenceStatusText READ preferenceStatusText NOTIFY preferencesChanged)
+    Q_PROPERTY(QString loginPolicyStatus READ loginPolicyStatus NOTIFY preferencesChanged)
     // The address is fixed; the route states it rather than offering a field
     // that would let a user point the password somewhere else.
     Q_PROPERTY(QString address READ address NOTIFY preferencesChanged)
@@ -87,7 +72,8 @@ class StreamingSettingsModel final : public QObject {
 public:
     StreamingSettingsModel(Obs::ObsClient &client, Obs::ObsSecretStore &secrets,
                            StreamingPreferences &preferences,
-                           QString obsConfigRoot, QObject *parent = nullptr);
+                           QString obsConfigRoot, QObject *parent = nullptr,
+                           std::optional<SessionAutostart::ScanOptions> loginScanOptions = std::nullopt);
 
     [[nodiscard]] QString connectionState() const;
     [[nodiscard]] QString connectionDescription() const;
@@ -98,6 +84,10 @@ public:
     [[nodiscard]] int webSocketPort() const;
     [[nodiscard]] bool autoConnect() const;
     [[nodiscard]] bool startObsAtLogin() const;
+    [[nodiscard]] bool preferencesReady() const;
+    [[nodiscard]] bool preferenceWritePending() const;
+    [[nodiscard]] QString preferenceStatusText() const;
+    [[nodiscard]] QString loginPolicyStatus() const;
     [[nodiscard]] QString address() const;
     [[nodiscard]] bool passwordStored() const { return m_passwordStored; }
     [[nodiscard]] QString keyringProblem() const { return m_keyringProblem; }
@@ -156,10 +146,14 @@ private:
     Obs::ObsSecretStore &m_secrets;
     StreamingPreferences &m_preferences;
     QString m_obsConfigRoot;
+    SessionAutostart::ScanOptions m_loginScanOptions;
     QString m_statusText;
     QString m_keyringProblem;
     Obs::ProvisioningState m_defaults;
     bool m_passwordStored = false;
+    bool m_refreshPending = false;
+    int m_lastConfirmedPort = 4455;
+    bool m_lastConfirmedAutoConnect = true;
     quint64 m_outputRequestId = 0;
 };
 
