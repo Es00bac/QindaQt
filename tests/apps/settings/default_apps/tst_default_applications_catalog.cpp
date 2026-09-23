@@ -20,6 +20,7 @@ private Q_SLOTS:
   void ignoresAMimeTypeLikeKeyOutsideDesktopEntry();
   void filtersCandidatesByAnyCategoryMimeType();
   void pdfAndImageCategoriesAreIndependent();
+  void effectiveAssociationProjectionControlsCandidatesAndScope();
 };
 
 void DefaultApplicationsCatalogTest::
@@ -100,6 +101,28 @@ void DefaultApplicationsCatalogTest::pdfAndImageCategoriesAreIndependent() {
   QCOMPARE(pdfs.first().id, QStringLiteral("pdf.desktop"));
   QCOMPARE(viewers.size(), 1);
   QCOMPARE(viewers.first().id, QStringLiteral("images.desktop"));
+}
+
+void DefaultApplicationsCatalogTest::
+    effectiveAssociationProjectionControlsCandidatesAndScope() {
+  DirectoryScan scan;
+  ScannedApplication added;
+  added.entry.id = QStringLiteral("added");
+  added.entry.name = QStringLiteral("Added");
+  added.documentText = QStringLiteral("[Desktop Entry]\nMimeType=text/plain;\n");
+  ScannedApplication removed;
+  removed.entry.id = QStringLiteral("removed");
+  removed.documentText = QStringLiteral("[Desktop Entry]\nMimeType=image/jpeg;\n");
+  scan.applications = {added, removed};
+  const QMap<QString, QStringList> associated{
+      {QStringLiteral("added.desktop"), {QStringLiteral("text/plain"),
+                                          QStringLiteral("image/png")}},
+      {QStringLiteral("removed.desktop"), {}}};
+  const auto candidates = candidateApplicationsForCategory(
+      scan, DefaultApplicationCategory::ImageViewer, &associated);
+  QCOMPARE(candidates.size(), 1);
+  QCOMPARE(candidates.first().id, QStringLiteral("added.desktop"));
+  QCOMPARE(candidates.first().supportedMimeTypes, QStringList{QStringLiteral("image/png")});
 }
 
 QTEST_GUILESS_MAIN(DefaultApplicationsCatalogTest)

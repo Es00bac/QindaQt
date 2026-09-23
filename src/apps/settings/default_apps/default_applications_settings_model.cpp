@@ -41,25 +41,43 @@ QVariantList DefaultApplicationsSettingsModel::rows() const {
   QVariantList result;
   for (const DefaultApplicationCategory category : kDefaultApplicationCategories) {
     const QVector<CandidateApplication> candidates =
-        candidateApplicationsForCategory(m_scan, category);
+        candidateApplicationsForCategory(
+            m_scan, category, m_preferences.associationProjectionAvailable
+                ? &m_preferences.supportedMimeTypesByDesktopId : nullptr);
     const QString currentId = m_preferences.category(category);
+    const bool mixed = m_preferences.isMixed(category);
+    const qsizetype categoryMimeCount = defaultApplicationCategoryMimeTypes(category).size();
     QVariantList options;
     for (const CandidateApplication &candidate : candidates) {
       options.append(QVariantMap{
           {QStringLiteral("id"), candidate.id},
           {QStringLiteral("name"), candidate.name},
           {QStringLiteral("iconName"), candidate.iconName},
+          {QStringLiteral("supportedMimeTypes"), candidate.supportedMimeTypes},
+          {QStringLiteral("displayName"),
+           candidate.supportedMimeTypes.size() == categoryMimeCount
+               ? candidate.name
+               : QStringLiteral("%1 (%2 of %3 MIME types: %4)")
+                     .arg(candidate.name)
+                     .arg(candidate.supportedMimeTypes.size())
+                     .arg(categoryMimeCount)
+                     .arg(candidate.supportedMimeTypes.join(QStringLiteral(", ")))},
       });
     }
     result.append(QVariantMap{
         {QStringLiteral("id"), defaultApplicationCategoryId(category)},
         {QStringLiteral("label"), defaultApplicationCategoryLabel(category)},
         {QStringLiteral("currentId"), currentId},
+        {QStringLiteral("mixed"), mixed},
         {QStringLiteral("currentName"),
-         currentId.isEmpty() ? QString() : candidateName(candidates, currentId)},
+         mixed ? QStringLiteral("Mixed defaults")
+               : currentId.isEmpty() ? QString() : candidateName(candidates, currentId)},
         {QStringLiteral("options"), options},
         {QStringLiteral("accessibleDescription"),
-         currentId.isEmpty()
+         mixed
+             ? QStringLiteral("%1: mixed defaults across MIME types")
+                   .arg(defaultApplicationCategoryLabel(category))
+             : currentId.isEmpty()
              ? QStringLiteral("%1: no default set")
                    .arg(defaultApplicationCategoryLabel(category))
              : QStringLiteral("%1: %2")
@@ -97,6 +115,28 @@ bool DefaultApplicationsSettingsModel::setDefaultApplication(
   reload();
   Q_EMIT changed();
   return !m_loadFailed;
+}
+
+void DefaultApplicationsSettingsModel::setApplications(
+    QindaQt::ApplicationCatalog::DirectoryScan scan) {
+  const QVariantList previousRows = rows();
+  const bool previousFailure = m_loadFailed;
+  const QString previousError = m_errorText;
+  auto previousScan = std::move(m_scan);
+  m_scan = std::move(scan);
+  m_store->setApplications(m_scan);
+  reload();
+  if (m_loadFailed) {
+    // Preserve the last confirmed candidate projection alongside the last
+    // confirmed MIME preferences while the external files are unreadable.
+    m_scan = std::move(previousScan);
+    m_store->setApplications(m_scan);
+  }
+  // A periodic fallback scan must not reconstruct focused ComboBoxes when
+  // neither desktop entries nor MIME policy changed.
+  if (rows() != previousRows || m_loadFailed != previousFailure
+      || m_errorText != previousError)
+    Q_EMIT changed();
 }
 
 bool DefaultApplicationsSettingsModel::retry() {

@@ -245,3 +245,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0240: Encode the KWin overview edge with KConfig semantics](0240-encode-the-kwin-overview-edge-with-kconfig-semantics.md)
 - [ADR-0241: Capture Gather window previews through KWin's restricted interface](0241-capture-gather-window-previews-through-kwin.md)
 - [ADR-0242: Adapt and balance KWin's pointer-corner callback](0242-adapt-and-balance-the-kwin-pointer-corner.md)
+- [ADR-0245: Write only supported default-application associations](0245-write-only-supported-default-application-associations.md)

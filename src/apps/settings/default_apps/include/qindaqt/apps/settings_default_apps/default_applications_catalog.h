@@ -4,6 +4,7 @@
 
 #include <qindaqt/apps/settings_default_apps/default_applications_store.h>
 
+#include <QtCore/QMap>
 #include <QtCore/QString>
 #include <QtCore/QVector>
 
@@ -18,6 +19,7 @@ struct CandidateApplication final {
   QString id;
   QString name;
   QString iconName;
+  QStringList supportedMimeTypes;
 
   friend bool operator==(const CandidateApplication &,
                          const CandidateApplication &) = default;
@@ -27,11 +29,13 @@ struct CandidateApplication final {
 // raw document text; never touches the filesystem itself (the composition
 // root owns the one scanApplicationDirectories() call, mirroring
 // ApplicationsController's ADR-0164 split of resolution from scanning). A
-// desktop entry is a candidate for a category when its raw MimeType= line
-// lists any one of that category's mimetypes.
+// desktop entry is a candidate for a category when it effectively supports
+// at least one MIME type. Optional associationProjection includes XDG Added
+// and Removed Associations; absent it, raw MimeType= is used for pure tests.
 [[nodiscard]] QVector<CandidateApplication> candidateApplicationsForCategory(
     const QindaQt::ApplicationCatalog::DirectoryScan &scan,
-    DefaultApplicationCategory category);
+    DefaultApplicationCategory category,
+    const QMap<QString, QStringList> *associationProjection = nullptr);
 
 // The set of MimeType= values a single desktop-entry document declares, as
 // literal strings (a semicolon-separated list per the Desktop Entry Spec,

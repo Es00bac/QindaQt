@@ -23,7 +23,8 @@ DirectoryScan installedApplications() {
         "[Desktop Entry]\nMimeType=text/html;x-scheme-handler/http;"
         "x-scheme-handler/https;x-scheme-handler/mailto;inode/directory;text/plain;application/pdf;"
         "image/jpeg;image/png;image/gif;image/webp;image/bmp;image/tiff;"
-        "image/svg+xml;video/mp4;audio/mpeg;\n");
+        "image/svg+xml;video/mp4;video/x-matroska;video/webm;video/mpeg;"
+        "video/x-msvideo;audio/mpeg;audio/flac;audio/ogg;\n");
     scan.applications.append(app);
   }
   return scan;
@@ -49,7 +50,11 @@ private Q_SLOTS:
   void clearRevealsInheritedDefault();
   void categoryWriteUpdatesEveryMimeType_data();
   void categoryWriteUpdatesEveryMimeType();
-  void loadReadsRepresentativeMimeType();
+  void loadReportsMixedMimeTypes();
+  void pngOnlyChoiceWritesOnlyPngAndLeavesJpeg();
+  void addedAndRemovedAssociationsControlCandidateScope();
+  void refreshScanDropsRemovedHandler();
+  void clearRemovesSplitUserOverridesAndRevealsInherited();
   void orderedFallbackSkipsUninstalledAndRemovedApplications();
   void addedAssociationCanSupplyAnInheritedDefault();
   void lowerPriorityAssociationCannotRemoveUserDesktopEntry();
@@ -153,7 +158,7 @@ void DefaultApplicationsStoreTest::categoryWriteUpdatesEveryMimeType() {
     QVERIFY(!cleared.contains(mimeType + QLatin1Char('=')));
 }
 
-void DefaultApplicationsStoreTest::loadReadsRepresentativeMimeType() {
+void DefaultApplicationsStoreTest::loadReportsMixedMimeTypes() {
   QTemporaryDir directory;
   const QString path = directory.filePath(QStringLiteral("mimeapps.list"));
   QVERIFY(writeFile(path, "[Default Applications]\ntext/html=browser.desktop;\n"
@@ -162,7 +167,12 @@ void DefaultApplicationsStoreTest::loadReadsRepresentativeMimeType() {
   DefaultApplicationPreferences preferences;
   QString error;
   QVERIFY(store.load(&preferences, &error));
-  QCOMPARE(preferences.browser, QStringLiteral("browser.desktop"));
+  QVERIFY(preferences.browser.isEmpty());
+  QVERIFY(preferences.isMixed(DefaultApplicationCategory::Browser));
+  QCOMPARE(preferences.effectiveByMimeType.value(QStringLiteral("text/html")),
+           QStringLiteral("browser.desktop"));
+  QCOMPARE(preferences.effectiveByMimeType.value(QStringLiteral("x-scheme-handler/http")),
+           QStringLiteral("other.desktop"));
 }
 
 void DefaultApplicationsStoreTest::orderedFallbackSkipsUninstalledAndRemovedApplications() {
@@ -232,7 +242,8 @@ void DefaultApplicationsStoreTest::writesExistingDesktopSpecificUserOverride() {
   QVERIFY(readFile(desktop).contains(QStringLiteral("image/jpeg=viewer.desktop;")));
   QVERIFY(store.saveCategory(DefaultApplicationCategory::PdfViewer, {}, &error));
   QVERIFY(store.load(&preferences, &error));
-  QCOMPARE(preferences.pdfViewer, QStringLiteral("browser.desktop"));
+  QVERIFY(preferences.pdfViewer.isEmpty());
+  QVERIFY(!readFile(generic).contains(QStringLiteral("application/pdf=")));
 }
 
 void DefaultApplicationsStoreTest::buildsFreedesktopLookupOrder() {
@@ -317,7 +328,9 @@ void DefaultApplicationsStoreTest::noDisplayHandlerRemainsTheConfiguredDefault()
   DefaultApplicationPreferences preferences;
   QString error;
   QVERIFY2(store.load(&preferences, &error), qPrintable(error));
-  QCOMPARE(preferences.browser, QStringLiteral("nodisplay.desktop"));
+  QVERIFY(preferences.isMixed(DefaultApplicationCategory::Browser));
+  QCOMPARE(preferences.effectiveByMimeType.value(QStringLiteral("text/html")),
+           QStringLiteral("nodisplay.desktop"));
   QVERIFY2(store.saveCategory(DefaultApplicationCategory::Browser,
                              QStringLiteral("nodisplay.desktop"), &error), qPrintable(error));
   QVERIFY(store.load(&preferences, &error));
@@ -340,7 +353,9 @@ void DefaultApplicationsStoreTest::legacySuffixFreeValueIsReadAndReportedCanonic
   QVERIFY2(store.load(&preferences, &error), qPrintable(error));
   QCOMPARE(preferences.textEditor, QStringLiteral("other.desktop"));
   // The correctly spelled neighbour is untouched.
-  QCOMPARE(preferences.browser, QStringLiteral("browser.desktop"));
+  QCOMPARE(preferences.effectiveByMimeType.value(QStringLiteral("text/html")),
+           QStringLiteral("browser.desktop"));
+  QVERIFY(preferences.isMixed(DefaultApplicationCategory::Browser));
 }
 
 void DefaultApplicationsStoreTest::aSuffixFreeChoiceIsWrittenWithTheSuffix() {
@@ -385,7 +400,114 @@ void DefaultApplicationsStoreTest::repairingOneCategoryLeavesOtherLegacyValuesRe
   DefaultApplicationPreferences preferences;
   QVERIFY2(store.load(&preferences, &error), qPrintable(error));
   QCOMPARE(preferences.textEditor, QStringLiteral("browser.desktop"));
-  QCOMPARE(preferences.imageViewer, QStringLiteral("viewer.desktop"));
+  QCOMPARE(preferences.effectiveByMimeType.value(QStringLiteral("image/jpeg")),
+           QStringLiteral("viewer.desktop"));
+  QVERIFY(preferences.isMixed(DefaultApplicationCategory::ImageViewer));
+}
+
+void DefaultApplicationsStoreTest::pngOnlyChoiceWritesOnlyPngAndLeavesJpeg() {
+  QTemporaryDir directory;
+  const QString path = directory.filePath(QStringLiteral("mimeapps.list"));
+  QVERIFY(writeFile(path, "[Default Applications]\nimage/jpeg=viewer.desktop;\n"));
+  auto scan = installedApplications();
+  ScannedApplication png;
+  png.entry.id = QStringLiteral("png-only");
+  png.entry.name = QStringLiteral("PNG only");
+  png.documentText = QStringLiteral("[Desktop Entry]\nMimeType=image/png;\n");
+  scan.applications.append(png);
+  MimeAppsDefaultApplicationsStore store(path, {path}, scan);
+  DefaultApplicationPreferences before;
+  QString error;
+  QVERIFY2(store.load(&before, &error), qPrintable(error));
+  QCOMPARE(before.supportedMimeTypesByDesktopId.value(QStringLiteral("png-only.desktop")),
+           QStringList{QStringLiteral("image/png")});
+  QVERIFY2(store.saveCategory(DefaultApplicationCategory::ImageViewer,
+                              QStringLiteral("png-only.desktop"), &error), qPrintable(error));
+  const QString contents = readFile(path);
+  QVERIFY(contents.contains(QStringLiteral("image/png=png-only.desktop;")));
+  QVERIFY(contents.contains(QStringLiteral("image/jpeg=viewer.desktop;")));
+  QVERIFY(!contents.contains(QStringLiteral("image/gif=png-only.desktop;")));
+  DefaultApplicationPreferences after;
+  QVERIFY2(store.load(&after, &error), qPrintable(error));
+  QVERIFY(after.isMixed(DefaultApplicationCategory::ImageViewer));
+  QCOMPARE(after.effectiveByMimeType.value(QStringLiteral("image/png")),
+           QStringLiteral("png-only.desktop"));
+  QCOMPARE(after.effectiveByMimeType.value(QStringLiteral("image/jpeg")),
+           QStringLiteral("viewer.desktop"));
+}
+
+void DefaultApplicationsStoreTest::addedAndRemovedAssociationsControlCandidateScope() {
+  QTemporaryDir directory;
+  const QString path = directory.filePath(QStringLiteral("mimeapps.list"));
+  QVERIFY(writeFile(path, "[Added Associations]\nimage/png=added.desktop;\n"
+                          "[Removed Associations]\nimage/jpeg=removed.desktop;\n"));
+  auto scan = installedApplications();
+  ScannedApplication added;
+  added.entry.id = QStringLiteral("added");
+  added.documentText = QStringLiteral("[Desktop Entry]\nMimeType=text/plain;\n");
+  ScannedApplication removed;
+  removed.entry.id = QStringLiteral("removed");
+  removed.documentText = QStringLiteral("[Desktop Entry]\nMimeType=image/jpeg;\n");
+  scan.applications.append(added);
+  scan.applications.append(removed);
+  MimeAppsDefaultApplicationsStore store(path, {path}, scan);
+  DefaultApplicationPreferences preferences;
+  QString error;
+  QVERIFY2(store.load(&preferences, &error), qPrintable(error));
+  QCOMPARE(preferences.supportedMimeTypesByDesktopId.value(QStringLiteral("added.desktop")),
+           QStringList({QStringLiteral("text/plain"), QStringLiteral("image/png")}));
+  QVERIFY(preferences.supportedMimeTypesByDesktopId.value(
+      QStringLiteral("removed.desktop")).isEmpty());
+  QVERIFY2(store.saveCategory(DefaultApplicationCategory::ImageViewer,
+                              QStringLiteral("added.desktop"), &error), qPrintable(error));
+  QVERIFY(readFile(path).contains(QStringLiteral("image/png=added.desktop;")));
+  QVERIFY(!store.saveCategory(DefaultApplicationCategory::ImageViewer,
+                              QStringLiteral("removed.desktop"), &error));
+}
+
+void DefaultApplicationsStoreTest::refreshScanDropsRemovedHandler() {
+  QTemporaryDir directory;
+  const QString path = directory.filePath(QStringLiteral("mimeapps.list"));
+  QVERIFY(writeFile(path, "[Default Applications]\napplication/pdf=viewer.desktop;\n"));
+  MimeAppsDefaultApplicationsStore store(path, {path}, installedApplications());
+  DefaultApplicationPreferences preferences;
+  QString error;
+  QVERIFY2(store.load(&preferences, &error), qPrintable(error));
+  QCOMPARE(preferences.pdfViewer, QStringLiteral("viewer.desktop"));
+  DirectoryScan emptyScan;
+  store.setApplications(emptyScan);
+  QVERIFY2(store.load(&preferences, &error), qPrintable(error));
+  QVERIFY(preferences.pdfViewer.isEmpty());
+  QVERIFY(!store.saveCategory(DefaultApplicationCategory::PdfViewer,
+                              QStringLiteral("viewer.desktop"), &error));
+}
+
+void DefaultApplicationsStoreTest::
+    clearRemovesSplitUserOverridesAndRevealsInherited() {
+  QTemporaryDir directory;
+  const QString desktop = directory.filePath(QStringLiteral("qindaqt-mimeapps.list"));
+  const QString generic = directory.filePath(QStringLiteral("mimeapps.list"));
+  const QString packaged = directory.filePath(QStringLiteral("system-mimeapps.list"));
+  QVERIFY(writeFile(desktop, "[Default Applications]\nimage/jpeg=viewer.desktop;\n"));
+  QVERIFY(writeFile(generic, "[Default Applications]\nimage/png=other.desktop;\n"));
+  QVERIFY(writeFile(packaged, "[Default Applications]\n"
+                             "image/jpeg=browser.desktop;\nimage/png=browser.desktop;\n"));
+  MimeAppsDefaultApplicationsStore store(generic, {desktop, generic, packaged},
+                                         installedApplications(), {desktop});
+  DefaultApplicationPreferences before;
+  QString error;
+  QVERIFY2(store.load(&before, &error), qPrintable(error));
+  QVERIFY(before.isMixed(DefaultApplicationCategory::ImageViewer));
+  QVERIFY2(store.saveCategory(DefaultApplicationCategory::ImageViewer, {}, &error),
+           qPrintable(error));
+  QVERIFY(!readFile(desktop).contains(QStringLiteral("image/jpeg=")));
+  QVERIFY(!readFile(generic).contains(QStringLiteral("image/png=")));
+  DefaultApplicationPreferences after;
+  QVERIFY2(store.load(&after, &error), qPrintable(error));
+  QCOMPARE(after.effectiveByMimeType.value(QStringLiteral("image/jpeg")),
+           QStringLiteral("browser.desktop"));
+  QCOMPARE(after.effectiveByMimeType.value(QStringLiteral("image/png")),
+           QStringLiteral("browser.desktop"));
 }
 
 QTEST_GUILESS_MAIN(DefaultApplicationsStoreTest)

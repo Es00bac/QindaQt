@@ -65,6 +65,7 @@ private Q_SLOTS:
   void initTestCase();
   void rendersOneRowPerCategoryWithCurrentSelection();
   void selectingAnOptionCallsSetDefaultApplication();
+  void mixedImageCategoryShowsMixedChoiceAndPartialScope();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -131,7 +132,7 @@ void DefaultApplicationsPageTest::rendersOneRowPerCategoryWithCurrentSelection()
   QVERIFY(findItem(page, QStringLiteral("defaultApplicationSelector_pdf-viewer")) != nullptr);
   QCOMPARE(m_model->rows().size(), 8);
   QCOMPARE(browserSelector->property("currentText").toString(),
-           QStringLiteral("QindaFox"));
+           QStringLiteral("QindaFox (1 of 3 MIME types: text/html)"));
   QCOMPARE(fileManagerSelector->property("currentText").toString(),
            QStringLiteral("Use inherited default"));
 }
@@ -152,6 +153,33 @@ void DefaultApplicationsPageTest::selectingAnOptionCallsSetDefaultApplication() 
   QTest::keyClick(m_view.get(), Qt::Key_Return);
   QTRY_COMPARE(m_store->saves.size(), 1);
   QCOMPARE(m_store->saves.constFirst().browser, QString());
+}
+
+void DefaultApplicationsPageTest::mixedImageCategoryShowsMixedChoiceAndPartialScope() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  ScannedApplication png;
+  png.entry.id = QStringLiteral("png-only");
+  png.entry.name = QStringLiteral("PNG only");
+  png.documentText = QStringLiteral("[Desktop Entry]\nMimeType=image/png;\n");
+  DirectoryScan scan = makeScan();
+  scan.applications.append(png);
+  m_store->preferences.associationProjectionAvailable = true;
+  m_store->preferences.supportedMimeTypesByDesktopId.insert(
+      QStringLiteral("png-only.desktop"), {QStringLiteral("image/png")});
+  m_store->preferences.effectiveByMimeType.insert(
+      QStringLiteral("image/jpeg"), QStringLiteral("jpeg.desktop"));
+  m_store->preferences.effectiveByMimeType.insert(
+      QStringLiteral("image/png"), QStringLiteral("png-only.desktop"));
+  m_model->setApplications(scan);
+  QCoreApplication::processEvents();
+  auto *selector = findItem(page, QStringLiteral("defaultApplicationSelector_image-viewer"));
+  QVERIFY(selector != nullptr);
+  QCOMPARE(selector->property("currentText").toString(), QStringLiteral("Mixed defaults"));
+  const QVariantList options = selector->property("options").toList();
+  QCOMPARE(options.size(), 3);
+  QVERIFY(options.last().toMap().value(QStringLiteral("label"))
+              .toString().contains(QStringLiteral("image/png")));
 }
 
 QTEST_MAIN(DefaultApplicationsPageTest)

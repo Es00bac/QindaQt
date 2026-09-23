@@ -121,9 +121,12 @@ T.Page {
                                 objectName: "defaultApplicationSelector_" + categoryRow.modelData.id
                                 Layout.fillWidth: true
                                 readonly property var options: {
-                                    const opts = [{ "value": "", "label": qsTr("Use inherited default") }]
+                                    const opts = []
+                                    if (categoryRow.modelData.mixed)
+                                        opts.push({ "value": "__mixed__", "label": qsTr("Mixed defaults") })
+                                    opts.push({ "value": "", "label": qsTr("Use inherited default") })
                                     for (const option of categoryRow.modelData.options)
-                                        opts.push({ "value": option.id, "label": option.name })
+                                        opts.push({ "value": option.id, "label": option.displayName })
                                     if (categoryRow.modelData.currentId.length > 0
                                             && opts.findIndex(function(option) {
                                                 return option.value === categoryRow.modelData.currentId }) < 0)
@@ -136,11 +139,13 @@ T.Page {
                                 textRole: "label"
                                 valueRole: "value"
                                 currentIndex: options.findIndex(function(option) {
-                                    return option.value === categoryRow.modelData.currentId
+                                    return option.value === (categoryRow.modelData.mixed
+                                                            ? "__mixed__" : categoryRow.modelData.currentId)
                                 })
                                 accessibleDescription: categoryRow.modelData.accessibleDescription
                                 onActivated: index => {
-                                    if (index >= 0 && index < options.length)
+                                    if (index >= 0 && index < options.length
+                                            && options[index].value !== "__mixed__")
                                         root.defaultApplicationsSettings.setDefaultApplication(
                                             categoryRow.modelData.id, options[index].value)
                                 }

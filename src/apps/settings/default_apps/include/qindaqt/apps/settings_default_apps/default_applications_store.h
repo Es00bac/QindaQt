@@ -4,6 +4,7 @@
 
 #include <qindaqt/application_catalog/application_directory_scan.h>
 
+#include <QtCore/QMap>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 
@@ -39,9 +40,8 @@ inline constexpr std::array kDefaultApplicationCategories{
 
 // The MIME type sets managed by this Settings route.
 // AGENT-CONTRACT: this is the complete, closed write set for its category;
-// growing it needs a docs update, since every listed mimetype is written
-// together on one choice (matching xdg-settings' own default-web-browser,
-// which sets text/html plus both http(s) scheme handlers as one unit).
+// growing it needs a docs update. A choice changes only MIME types the
+// selected application effectively supports; other keys retain their values.
 [[nodiscard]] QStringList defaultApplicationCategoryMimeTypes(
     DefaultApplicationCategory category);
 [[nodiscard]] QString defaultApplicationCategoryId(
@@ -50,10 +50,9 @@ inline constexpr std::array kDefaultApplicationCategories{
     DefaultApplicationCategory category);
 
 struct DefaultApplicationPreferences final {
-  // Desktop-entry id (e.g. "org.qindaqt.FileManager.desktop") or empty when
-  // no default is configured for that category. Keyed by the category's
-  // first (representative) mimetype on load; written to every mimetype in
-  // the category's set on save.
+  // Desktop-entry id (e.g. "org.qindaqt.FileManager.desktop") when every
+  // MIME type in a category resolves to the same handler. Empty also covers
+  // a mixed category; isMixed() distinguishes it from no default.
   QString browser;
   QString mail;
   QString fileManager;
@@ -62,7 +61,13 @@ struct DefaultApplicationPreferences final {
   QString pdfViewer;
   QString videoPlayer;
   QString musicPlayer;
+  // Effective per-MIME truth and current association eligibility from one
+  // lookup snapshot. Stubs may leave these empty to exercise aggregate values.
+  QMap<QString, QString> effectiveByMimeType;
+  QMap<QString, QStringList> supportedMimeTypesByDesktopId;
+  bool associationProjectionAvailable = false;
 
+  [[nodiscard]] bool isMixed(DefaultApplicationCategory category) const;
   [[nodiscard]] QString category(DefaultApplicationCategory category) const;
   void setCategory(DefaultApplicationCategory category, const QString &desktopId);
 };
@@ -86,6 +91,11 @@ public:
   [[nodiscard]] virtual bool saveCategory(DefaultApplicationCategory category,
                                          const QString &desktopId,
                                          QString *error) = 0;
+  // A refreshed public installed-application scan replaces the store's
+  // previously copied snapshot. The default is a no-op for injected stubs.
+  virtual void setApplications(QindaQt::ApplicationCatalog::DirectoryScan applications) {
+    Q_UNUSED(applications);
+  }
 };
 
 class MimeAppsDefaultApplicationsStore final : public DefaultApplicationsStore {
@@ -104,6 +114,7 @@ public:
   [[nodiscard]] bool saveCategory(DefaultApplicationCategory category,
                                   const QString &desktopId,
                                   QString *error) override;
+  void setApplications(QindaQt::ApplicationCatalog::DirectoryScan applications) override;
 
 private:
   QString m_filePath;

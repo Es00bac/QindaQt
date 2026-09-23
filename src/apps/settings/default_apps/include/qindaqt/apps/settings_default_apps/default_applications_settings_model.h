@@ -38,6 +38,7 @@ public:
   Q_INVOKABLE bool setDefaultApplication(const QString &categoryId,
                                          const QString &desktopId);
   Q_INVOKABLE bool retry();
+  void setApplications(QindaQt::ApplicationCatalog::DirectoryScan scan);
 
 Q_SIGNALS:
   void changed();

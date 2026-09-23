@@ -4,6 +4,8 @@
 
 #include <qindaqt/application_catalog/application_directory_scan.h>
 
+#include <QtCore/QFile>
+#include <QtCore/QTemporaryDir>
 #include <QtTest>
 
 using QindaQt::ApplicationCatalog::DirectoryScan;
@@ -68,6 +70,11 @@ private Q_SLOTS:
   void loadFailureIsReportedAndRetryClearsIt();
   void pdfChoiceDoesNotRewriteStaleImagePreference();
   void failedSaveKeepsConfirmedSelection();
+  void mixedCategoryAndPartialScopeAreTruthful();
+  void refreshedScanUpdatesChoices();
+  void unchangedRefreshDoesNotResetFocusedPresentation();
+  void removedInstalledHandlerDisappearsFromEffectiveStateAndChoices();
+  void failedRefreshPreservesConfirmedChoices();
 };
 
 void DefaultApplicationsSettingsModelTest::rowsReflectStoredPreferencesAndCandidates() {
@@ -165,6 +172,102 @@ void DefaultApplicationsSettingsModelTest::failedSaveKeepsConfirmedSelection() {
   QCOMPARE(model.rows().first().toMap().value(QStringLiteral("currentId")).toString(),
            QStringLiteral("browser.desktop"));
   QCOMPARE(model.errorText(), QStringLiteral("stub-save-failed"));
+}
+
+void DefaultApplicationsSettingsModelTest::
+    mixedCategoryAndPartialScopeAreTruthful() {
+  DirectoryScan scan;
+  ScannedApplication png;
+  png.entry.id = QStringLiteral("png-only");
+  png.entry.name = QStringLiteral("PNG only");
+  png.documentText = QStringLiteral("[Desktop Entry]\nMimeType=image/png;\n");
+  scan.applications = {png};
+  auto store = std::make_unique<StubStore>();
+  store->preferences.associationProjectionAvailable = true;
+  store->preferences.supportedMimeTypesByDesktopId.insert(
+      QStringLiteral("png-only.desktop"), {QStringLiteral("image/png")});
+  store->preferences.effectiveByMimeType.insert(
+      QStringLiteral("image/jpeg"), QStringLiteral("jpeg.desktop"));
+  store->preferences.effectiveByMimeType.insert(
+      QStringLiteral("image/png"), QStringLiteral("png-only.desktop"));
+  DefaultApplicationsSettingsModel model(std::move(store), scan);
+  QVariantMap image;
+  for (const QVariant &row : model.rows())
+    if (row.toMap().value(QStringLiteral("id")) == QStringLiteral("image-viewer"))
+      image = row.toMap();
+  QCOMPARE(image.value(QStringLiteral("mixed")).toBool(), true);
+  QCOMPARE(image.value(QStringLiteral("currentId")).toString(), QString());
+  QCOMPARE(image.value(QStringLiteral("currentName")).toString(),
+           QStringLiteral("Mixed defaults"));
+  const QVariantList options = image.value(QStringLiteral("options")).toList();
+  QCOMPARE(options.size(), 1);
+  QVERIFY(options.first().toMap().value(QStringLiteral("displayName"))
+              .toString().contains(QStringLiteral("image/png")));
+  QVERIFY(image.value(QStringLiteral("accessibleDescription"))
+              .toString().contains(QStringLiteral("mixed defaults")));
+}
+
+void DefaultApplicationsSettingsModelTest::refreshedScanUpdatesChoices() {
+  auto store = std::make_unique<StubStore>();
+  DefaultApplicationsSettingsModel model(std::move(store), makeScan());
+  QCOMPARE(model.rows().first().toMap().value(QStringLiteral("options")).toList().size(), 1);
+  QSignalSpy changedSpy(&model, &DefaultApplicationsSettingsModel::changed);
+  model.setApplications({});
+  QCOMPARE(changedSpy.size(), 1);
+  QCOMPARE(model.rows().first().toMap().value(QStringLiteral("options")).toList().size(), 0);
+}
+
+void DefaultApplicationsSettingsModelTest::
+    unchangedRefreshDoesNotResetFocusedPresentation() {
+  auto store = std::make_unique<StubStore>();
+  DefaultApplicationsSettingsModel model(std::move(store), makeScan());
+  QSignalSpy changedSpy(&model, &DefaultApplicationsSettingsModel::changed);
+  model.setApplications(makeScan());
+  QCOMPARE(changedSpy.size(), 0);
+}
+
+void DefaultApplicationsSettingsModelTest::
+    removedInstalledHandlerDisappearsFromEffectiveStateAndChoices() {
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+  const QString path = directory.filePath(QStringLiteral("mimeapps.list"));
+  QFile file(path);
+  QVERIFY(file.open(QIODevice::WriteOnly));
+  QVERIFY(file.write("[Default Applications]\napplication/pdf=pdf.desktop;\n") > 0);
+  file.close();
+  DirectoryScan scan;
+  ScannedApplication pdf;
+  pdf.entry.id = QStringLiteral("pdf");
+  pdf.entry.name = QStringLiteral("PDF");
+  pdf.documentText = QStringLiteral("[Desktop Entry]\nMimeType=application/pdf;\n");
+  scan.applications = {pdf};
+  auto store = std::make_unique<QindaQt::Apps::SettingsDefaultApps::
+      MimeAppsDefaultApplicationsStore>(path, QStringList{path}, scan);
+  DefaultApplicationsSettingsModel model(std::move(store), scan);
+  const auto pdfRow = [&model] {
+    for (const QVariant &row : model.rows())
+      if (row.toMap().value(QStringLiteral("id")) == QStringLiteral("pdf-viewer"))
+        return row.toMap();
+    return QVariantMap{};
+  };
+  QCOMPARE(pdfRow().value(QStringLiteral("currentId")).toString(),
+           QStringLiteral("pdf.desktop"));
+  QCOMPARE(pdfRow().value(QStringLiteral("options")).toList().size(), 1);
+  QSignalSpy changedSpy(&model, &DefaultApplicationsSettingsModel::changed);
+  model.setApplications({});
+  QCOMPARE(changedSpy.size(), 1);
+  QVERIFY(pdfRow().value(QStringLiteral("currentId")).toString().isEmpty());
+  QVERIFY(pdfRow().value(QStringLiteral("options")).toList().isEmpty());
+}
+
+void DefaultApplicationsSettingsModelTest::failedRefreshPreservesConfirmedChoices() {
+  auto storeOwned = std::make_unique<StubStore>();
+  StubStore *store = storeOwned.get();
+  DefaultApplicationsSettingsModel model(std::move(storeOwned), makeScan());
+  store->loadFails = true;
+  model.setApplications({});
+  QVERIFY(model.loadFailed());
+  QCOMPARE(model.rows().first().toMap().value(QStringLiteral("options")).toList().size(), 1);
 }
 
 QTEST_GUILESS_MAIN(DefaultApplicationsSettingsModelTest)
