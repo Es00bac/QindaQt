@@ -63,7 +63,10 @@ The second write waits for the fresh Settings1 snapshot and revision after
 the first write; a confirmed commit reply alone is not a new baseline.
 A clean draft follows external changes, while a dirty draft keeps its
 requested values for review. An uncertain commit is never replayed.
-The next snapshot tells the user which value actually landed.
+The next snapshot tells the user which value actually landed. An explicit
+Apply of Off also keeps this route's Voice1 use withdrawn through a conflict
+or lost reply; only a fresh current-owner readback can reopen it when the
+confirmed value is On.
 
 ## Actions deliberately absent
 

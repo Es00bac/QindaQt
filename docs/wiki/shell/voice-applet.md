@@ -4,9 +4,9 @@ The Voice applet is the panel's microphone: a chip that says whether voice
 input is armed, shows that the microphone is open and what it is hearing, and
 opens a popup with the last dictation and what can be done about it.
 
-It consumes [`org.qindaqt.Voice1`](../architecture/voice-input.md) and nothing
-else. It never speaks to a speech provider, never touches a microphone, and
-never learns the provider's process identity.
+It consumes [`org.qindaqt.Voice1`](../architecture/voice-input.md) only after Settings1 confirms the desktop's voice-input preference On.
+It never speaks to a speech provider, touches a microphone, or learns the
+provider's process identity.
 
 ## The chip
 

@@ -37,9 +37,7 @@ public:
                          &model, [this] { syncVoiceAdmission(); });
         QObject::connect(&model, &VoiceSettingsModel::providerRetryRequested,
                          &model, [this] {
-                             const bool pendingOff = model.preferenceSaving()
-                                                     && !model.draftVoiceInputEnabled();
-                             if (inputGate.allowed() && !pendingOff) {
+                             if (inputGate.allowed() && !model.voiceUseWithdrawn()) {
                                  voiceClient.stop();
                                  voiceClient.start();
                              }
@@ -49,12 +47,9 @@ public:
 
     void syncVoiceAdmission()
     {
-        // An explicit Apply of Off withdraws this route's actions before
-        // Settings1 confirms the write. A rejected write may resume use
-        // from the still-confirmed On baseline; no capture is replayed.
-        const bool pendingOff = model.preferenceSaving()
-                                && !model.draftVoiceInputEnabled();
-        if (inputGate.allowed() && !pendingOff) {
+        // An explicit Apply of Off withdraws this route until authoritative
+        // readback, even when Settings1 rejects or loses the write reply.
+        if (inputGate.allowed() && !model.voiceUseWithdrawn()) {
             voiceClient.start();
         } else {
             voiceClient.stop();
