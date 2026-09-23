@@ -36,6 +36,12 @@ reviewer accepted the exact descendant with that probe. Two independently
 reviewed fixture-only descendants (c91209e4, 865fb40d) supply the complete
 Customize schedule model; merged lifecycle 1/1, broad Settings 131/131, and
 strict documentation/381 pass.
+The Settings Center now requires a Loader witness for all 21 registry
+routes, accepting a constructed page or explicit unavailable diagnostic and
+rejecting silent fallthrough, missing witnesses, and QML warnings under
+poisoned-bus and relocated-install probes. The independent reviewer accepted
+the exact docs-repaired candidate; merged focused 11/11 and broad Settings
+133/133 pass. This is construction coverage, not live hardware qualification.
 The Date & Time Week Start control now reads confirmed Settings1 state
 through a shared exact write-admission preview and retains refusal/conflict/
 uncertainty. Independent exact-commit review exercised the actual QML picker

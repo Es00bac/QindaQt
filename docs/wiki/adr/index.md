@@ -251,3 +251,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0247: Run XDG autostart in the session supervisor](0247-run-xdg-autostart-in-the-session-supervisor.md)
 - [ADR-0248: Confirm Streaming preferences before OBS consumption](0248-confirm-streaming-preferences-before-obs-consumption.md)
 - [ADR-0249: Confirm week-start writes against Settings1](0249-confirm-week-start-writes-against-settings1.md)
+- [ADR-0250: Require an active Loader witness for every Settings route](0250-require-active-loader-witness-for-every-settings-route.md)

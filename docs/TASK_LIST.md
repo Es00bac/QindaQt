@@ -58,6 +58,13 @@ integrated in the qinda source tree, not installed into a live session:
   fixture descendants c91209e4 and 865fb40d passed independent exact review.
   The merged lifecycle test passes, broad Settings 131/131 and strict docs/381
   pass. Live interruption and overnight schedule use remain to qualify.
+- All-route Settings construction (`aa238517`): a registry-derived
+  witness now requires every one of the 21 Settings route Loaders to either
+  construct its page or produce an explicit unavailable diagnostic. Offscreen,
+  poisoned-bus, missing-witness and relocated-install checks reject silent
+  fallthrough and QML warnings. Independent exact review accepted the repaired
+  documentation and 11/11 focused rows; merged broad Settings 133/133 passes.
+  Live desktop navigation and hardware routes remain to qualify.
 - Appearance monospace font (`fdbc50f4`): the font picker now edits
   `fonts.monospaceFamily` separately from the UI family and keeps the
   confirmed value visible. A qinda Qt metadata false-negative excluded the
