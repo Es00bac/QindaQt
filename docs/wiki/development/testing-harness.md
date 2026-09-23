@@ -1640,8 +1640,9 @@ stages the real runtime, requires failure while the installed Bluetooth module
 is withheld despite the developer tree, then launches the relocated route after
 restoration.
 
-The Settings Center selector adds deterministic ten-route order, canonical
-startup, Ctrl+7, PageTab accessibility, Escape/Tab focus, responsive Loader
+The Settings Center selector adds deterministic registry-derived order of
+all 21 routes, canonical startup, Ctrl+7, PageTab accessibility, Escape/Tab
+focus, responsive Loader
 exclusivity, route-departure lifetime signaling, and the common relocated
 package. Neither selector contacts a host bus, BlueZ, or radio. Pairing/trust/
 remove behavior, physical Bluetooth qualification, live AT-SPI, and nested
@@ -1678,8 +1679,9 @@ and direct platform-action authority outside `session_actions`. The installed ro
 the staged Power module while the developer module remains present, then proves
 the restored relocated route with both host buses unavailable.
 
-The Settings Center selector adds deterministic ten-route order, Ctrl+8,
-Power PageTab accessibility, Escape/Tab entry, exclusive wide/compact Loaders,
+The Settings Center selector adds deterministic registry-derived order of
+all 21 routes, Ctrl+8, Power PageTab accessibility, Escape/Tab entry, exclusive
+wide/compact Loaders,
 canonical construction, and the common relocated package. No selector contacts
 UPower, power-profiles-daemon, login1, ScreenSaver, sysfs, Wayland, a host bus,
 or hardware. Live session actions, internal-display mutation, live AT-SPI, and
@@ -1722,8 +1724,9 @@ The installed row stages the real runtime and launches `--page clipboard` from
 the relocated prefix with host display and bus authority unavailable while the
 developer QML tree remains present.
 
-The Settings Center selector additionally proves ten-route order, canonical
-startup, `Ctrl+9`, PageTab accessibility, Escape/Tab entry in both layouts,
+The Settings Center selector additionally proves registry-derived order
+of all 21 routes, canonical startup, `Ctrl+9`, PageTab accessibility,
+Escape/Tab entry in both layouts,
 Loader exclusivity, construction under authority loss, and the common relocated
 package. The pre-existing Customize and Bluetooth lifecycle rows construct the
 same root in-process and link the static Clipboard module/plugin, preventing an
@@ -1781,9 +1784,10 @@ composition root. The installed row stages the real runtime, requires failure
 while the installed Color module is withheld despite the developer tree, then
 launches the relocated route after restoration.
 
-The Settings Center registry/controller rows add deterministic ten-route
-order, canonical construction, and the common relocated package. No
-selector contacts a host bus, a host display, a real ICC directory, Wayland,
+The Settings Center registry/controller rows verify deterministic
+registry-derived order of all 21 routes; construction and installed rows
+verify canonical route roots and the relocated package. No selector contacts
+a host bus, a host display, a real ICC directory, Wayland,
 or hardware. Compositor/display profile application, colord integration,
 HDR/WCG runtime behavior, live AT-SPI, and nested desktop screenshots remain
 outside this proof.
