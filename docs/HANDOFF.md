@@ -15,7 +15,8 @@ unqualified.
 Voice is integrated at `6a2d9e2d` and `58ca80c7` after independent
 re-review accepted the repaired Off-conflict behavior. The combined shell,
 Settings and console build passed, as did 9/9 focused, route and private-bus
-interop tests, strict MkDocs and the 375-page link validator. The original
+interop tests and the broader Settings suite (123/123). Strict MkDocs and
+the 375-page link validator passed. The original
 review correctly found that a conflicting Off write could restart listening
 from a stale snapshot; the model now holds local withdrawal through conflict
 or uncertainty until sufficiently fresh owner-pinned readback. Physical
