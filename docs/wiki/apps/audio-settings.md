@@ -74,7 +74,7 @@ computer. There, save a **Send to a computer** stream with its mixer bus,
 the copied destination address, a name, and a port. Then choose that saved send
 stream and one of the sending computer's listed local addresses.
 If the other computer reaches it through a different network or VPN, enter that
-IPv4 address instead. Use **Refresh addresses** after changing networks. Select **Make connection code**, then **Copy code**.
+IPv4 address instead. Use **Refresh addresses** after changing networks. Select **Make connection code**, then **Copy code**. A generated code stays available across harmless audio refreshes, but a changed or removed saved send stream or a replaced Audio1 service revokes it; make a new code after either change.
 
 On the second computer, paste the code and select **Review connection**. Check
 the sender address, name, and port, choose the exact physical speakers to use,

@@ -25,6 +25,13 @@ foreign-version, oversized, noncanonical, and Audio1-invalid values. The
 format carries no destination, credential, permission, device identity, or
 claim of peer authentication.
 
+A generated code is tied in Settings to the exact Audio1 owner and epoch
+and saved outgoing name, bus, destination host, and port. A snapshot refresh
+that preserves those fields keeps the code copyable. A changed or removed
+sender or replaced service revokes it, even when the code's transfer tuple
+would still decode. This identity is local UI state and never enters the
+transfer format.
+
 The receiving Settings page reviews the tuple against the current Audio1
 snapshot and refuses an existing name or occupied receive port. The user
 chooses a current exact physical output and acknowledges the trusted-network

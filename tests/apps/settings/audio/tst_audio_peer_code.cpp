@@ -15,6 +15,7 @@ class AudioPeerCodeTest final : public QObject {
   Q_OBJECT
 private Q_SLOTS:
   void connectionCodeRoundTripAndAdmission();
+  void sharedCodeIdentityIgnoresRevisionButTracksSavedSender();
 private:
   struct Fixture final {
     FakeAudioTransport transport;
@@ -149,6 +150,47 @@ void AudioPeerCodeTest::connectionCodeRoundTripAndAdmission() {
   QVERIFY(!fixture.model.saveImportedPeer(fresh, QStringLiteral("alsa_output.desk")));
   QCOMPARE(fixture.transport.operations.size(), 1);
 
+}
+
+void AudioPeerCodeTest::sharedCodeIdentityIgnoresRevisionButTracksSavedSender() {
+  Fixture fixture;
+  Snapshot snapshot = readyAudioSnapshot(11, 3);
+  snapshot.capabilities |= Capability::Console | Capability::ManageVbanStreams;
+  VbanStream sender;
+  sender.name = QStringLiteral("Stream1");
+  sender.outgoing = true;
+  sender.busId = QStringLiteral("bus.a1");
+  sender.host = QStringLiteral("192.0.2.20");
+  sender.port = 6981;
+  Bus bus;
+  bus.id = sender.busId;
+  bus.label = QStringLiteral("Bus A1");
+  snapshot.console.buses.append(bus);
+  snapshot.console.vban.append(sender);
+  QVERIFY(validateSnapshot(snapshot).accepted);
+  const auto publish = [&](qulonglong revision) {
+    snapshot.revision = revision;
+    fixture.transport.invalidate(QStringLiteral(":1.7"), 11, revision);
+    QTRY_VERIFY_WITH_TIMEOUT(!fixture.transport.fetches.isEmpty(), 1000);
+    fixture.transport.reply(fixture.transport.fetches.constLast(), snapshot);
+    QTRY_COMPARE_WITH_TIMEOUT(fixture.model.serviceRevision(), revision, 1000);
+  };
+  publish(3);
+  const auto identity = [&] {
+    return fixture.model.sharePeerCode(sender.name, QStringLiteral("192.0.2.10"))
+        .value(QStringLiteral("fingerprint")).toString();
+  };
+  const QString first = identity();
+  QVERIFY(!first.isEmpty());
+  publish(4);
+  QCOMPARE(identity(), first);
+  snapshot.console.vban[0].host = QStringLiteral("192.0.2.42");
+  publish(5);
+  QVERIFY(identity() != first);
+  snapshot.console.vban.clear();
+  publish(6);
+  QVERIFY(!fixture.model.sharePeerCode(sender.name, QStringLiteral("192.0.2.10"))
+               .value(QStringLiteral("valid")).toBool());
 }
 
 QTEST_MAIN(AudioPeerCodeTest)
