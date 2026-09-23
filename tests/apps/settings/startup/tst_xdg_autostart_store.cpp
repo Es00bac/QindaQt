@@ -26,6 +26,7 @@ class XdgAutostartStoreTest final : public QObject {
 
 private Q_SLOTS:
   void listsUserAndSystemEntriesMerged();
+  void displaysDecodedDesktopStrings();
   void userEntryShadowsSystemEntryOfTheSameId();
   void disablingASystemEntryWritesAUserOverrideWithoutTouchingTheSystemFile();
   void enablingASystemEntryAfterOverrideRestoresIt();
@@ -64,6 +65,25 @@ void XdgAutostartStoreTest::listsUserAndSystemEntriesMerged() {
   QVERIFY(entries.at(0).enabled);
   QVERIFY(entries.at(1).enabled);
   QVERIFY(!entries.at(0).custom);
+}
+
+void XdgAutostartStoreTest::displaysDecodedDesktopStrings() {
+  QTemporaryDir root;
+  QVERIFY(root.isValid());
+  const QString userDir = root.filePath(QStringLiteral("user/autostart"));
+  QVERIFY(QDir().mkpath(userDir));
+  writeDesktopFile(QDir(userDir).filePath(QStringLiteral("escaped.desktop")),
+                   QStringLiteral("[Desktop Entry]\nType=Application\n"
+                                  "Name=Hello\\sWorld\nComment=Line\\nTwo\n"
+                                  "Icon=folder\\sicon\nExec=app %c %i\n"));
+  XdgAutostartStore store(userDir, {});
+  QString error;
+  const auto entries = store.list(&error);
+  QCOMPARE(error, QString());
+  QCOMPARE(entries.size(), 1);
+  QCOMPARE(entries.constFirst().name, QStringLiteral("Hello World"));
+  QCOMPARE(entries.constFirst().comment, QStringLiteral("Line\nTwo"));
+  QCOMPARE(entries.constFirst().iconName, QStringLiteral("folder icon"));
 }
 
 void XdgAutostartStoreTest::userEntryShadowsSystemEntryOfTheSameId() {

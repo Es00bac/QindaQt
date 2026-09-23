@@ -20,7 +20,10 @@ A user file shadows the same basename in every system directory, even when
 hidden or malformed. An Application entry with a Name and bounded valid Exec
 is eligible only when Hidden and X-GNOME-Autostart-enabled allow it,
 OnlyShowIn/NotShowIn match, TryExec and the command resolve, and any Path
-exists. The public launcher parser expands Exec to argv without a shell.
+exists. The catalog decodes desktop-entry scalar escapes in Name, Comment,
+Icon, and TryExec before display or field-code expansion; malformed values
+remain visible as ineligible. The public launcher parser alone decodes Exec
+and Path and expands Exec to argv without a shell.
 Terminal=true uses qqterm -e. Unsupported D-Bus activation and
 non-Application GNOME startup phases remain visible in Settings with reasons
 and do not launch.

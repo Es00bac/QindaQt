@@ -19,7 +19,9 @@ cannot run, and a Remove action only for an entry this route created.
 A file that has no `[Desktop Entry]` group, or never declares
 `Type=Application`, is not shown — this route does not guess. The same
 [shared catalog](../architecture/session-autostart.md) decides Settings
-eligibility and what the session launches.
+eligibility and what the session launches. Scalar desktop-entry escapes in
+`Name=`, `Comment=`, and `Icon=` are decoded for display; malformed escapes
+leave a visible but ineligible row.
 
 ## Authority and write boundary
 
