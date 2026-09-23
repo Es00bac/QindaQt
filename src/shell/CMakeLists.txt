@@ -239,6 +239,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/wallpapercontroller.h
         runtime/gatheroverviewcomposition.cpp
         runtime/gatheroverviewcomposition.h
+        runtime/kwinscreenshotpreviewport.cpp
+        runtime/kwinscreenshotpreviewport.h
         runtime/tasklistappletcomposition.cpp
         runtime/taskorderpersistence.cpp
         runtime/panelquickconfig.cpp
@@ -398,6 +400,18 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     install(
         TARGETS qindaqt-shell
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT QindaQt
+    )
+    # KWin grants ScreenShot2 to the exact executable path named by this
+    # service entry. The shell still gates captures on audited task-list facts.
+    configure_file(
+        "${PROJECT_SOURCE_DIR}/data/session/org.qindaqt.Shell.desktop.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Shell.desktop"
+        @ONLY
+    )
+    install(
+        FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Shell.desktop"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
         COMPONENT QindaQt
     )
     install(DIRECTORY "${PROJECT_SOURCE_DIR}/data/wallpapers/"

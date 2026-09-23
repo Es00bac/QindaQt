@@ -7,6 +7,8 @@
 
 #include "../task_list/task_list_applet_qml_theme_fixture.h"
 
+#include <QBuffer>
+#include <QImage>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
@@ -136,6 +138,7 @@ private Q_SLOTS:
     void cleanup();
 
     void everyLaneDrawsItsOwnComponentAtThePlannersFrame();
+    void aCapturedPreviewReplacesTheIconAndClearsOnDismissal();
     void originTranslatesDesktopLogicalFramesIntoTheSurface();
     void clickingATileReportsTheItemItWasProjectedFrom();
     void escapeAsksToDismiss();
@@ -253,6 +256,37 @@ void GatherOverviewSurfaceQmlTests::
     QCOMPARE(itemsNamed(surface, QStringLiteral("gatherIconChip")).size(), 1);
     QCOMPARE(itemsNamed(surface, QStringLiteral("gatherContainerCard")).size(), 1);
     QCOMPARE(itemsNamed(surface, QStringLiteral("gatherWindowTile")).size(), 1);
+}
+
+void GatherOverviewSurfaceQmlTests::
+    aCapturedPreviewReplacesTheIconAndClearsOnDismissal()
+{
+    QVariantMap window = tile(QStringLiteral("w1"), QStringLiteral("window"),
+                              QRectF(450, 90, 260, 176));
+    QQuickItem *surface = createSurface(stubProjection({window}));
+    QVERIFY(surface != nullptr);
+    QQuickItem *image = firstNamed(surface, QStringLiteral("gatherWindowTilePreview"));
+    QQuickItem *icon = firstNamed(surface, QStringLiteral("gatherWindowTileIcon"));
+    QVERIFY(image != nullptr);
+    QVERIFY(icon != nullptr);
+    QVERIFY(icon->isVisible());
+
+    QImage pixels(8, 4, QImage::Format_ARGB32_Premultiplied);
+    pixels.fill(Qt::red);
+    QByteArray png;
+    QBuffer buffer(&png);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(pixels.save(&buffer, "PNG"));
+    surface->setProperty(
+        "previewUrls",
+        QVariantMap{{QStringLiteral("w1"),
+                     QString::fromLatin1("data:image/png;base64,")
+                         + QString::fromLatin1(png.toBase64())}});
+    QTRY_COMPARE(image->property("status").toInt(), 1); // Image.Ready
+    QVERIFY(!icon->isVisible());
+
+    surface->setProperty("previewUrls", QVariantMap{});
+    QTRY_VERIFY(icon->isVisible());
 }
 
 void GatherOverviewSurfaceQmlTests::

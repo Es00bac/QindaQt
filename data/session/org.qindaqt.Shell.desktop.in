@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt Shell
+NoDisplay=true
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-shell
+# AGENT-CONTRACT (ADR-0241): KWin reads this as one exact QStringList value.
+# A trailing semicolon becomes part of the name and silently denies capture.
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2

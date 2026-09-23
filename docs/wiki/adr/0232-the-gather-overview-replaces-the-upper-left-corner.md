@@ -1,10 +1,13 @@
 # ADR-0232: The gather overview replaces KWin's upper-left corner
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-21
 - **Owners:** Shell presentation
 - **Supersedes:** None
 - **Superseded by:** None
+
+The `QSettings` encoding of the empty edge list in this decision was corrected
+by [ADR-0240](0240-encode-the-kwin-overview-edge-with-kconfig-semantics.md).
 
 ## Context
 
@@ -93,6 +96,7 @@ scope to `WindowType::Desktop`, which the wallpaper and the desktop-icon
 surface need and this one must not have: it sits above windows, not behind
 them.
 
-Window tiles draw identity, not thumbnails. The authenticated preview channel
-(ADR-0119) is the only sanctioned way to get window pixels, and the tile
-leaves a documented seam for it rather than inventing a second path.
+The initial window tiles drew identity without thumbnails. Gather now uses
+KWin's restricted `ScreenShot2` window capture as specified in
+[ADR-0241](0241-capture-gather-window-previews-through-kwin.md). The dock's
+separate preview contract remains in ADR-0119.
