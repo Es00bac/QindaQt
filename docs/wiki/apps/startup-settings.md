@@ -84,8 +84,8 @@ adopted. See [session autostart](../architecture/session-autostart.md).
   failed mutation reports `errorText` without discarding the previously
   loaded list.
 - `qindaqt.settings-route-registry` / `qindaqt.settings-navigation-controller`:
-  the `startup` route's registration, position (13th and last built-in
-  route), and keyboard/index navigation reaching it.
+  the `startup` route's registration and keyboard/index navigation
+  reaching its stable appended position.
 
 The Settings Center offscreen route-construction and staged installed-route
 checks now include Startup. A dedicated boundary-poison test remains open.

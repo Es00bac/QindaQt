@@ -164,7 +164,7 @@ first snapshot and the tab is reachable by mouse or keyboard.
 - The keyboard ports share `announceConfigChange`, which refuses file names that
   cannot form a D-Bus object path, so relocated test files never reach a real
   desktop watcher.
-- Settings Center registers `input` as the last route.
+- Settings Center registers `input` after Accessibility in the stable route order.
 
 ## Tests
 

@@ -105,8 +105,8 @@ non-loopback address (ADR-0201).
   `StreamingRouteComposition` QML singleton that
   builds the production adapters, and the QML pages. The model writes no OBS
   file itself.
-- Settings Center registers `streaming` as the last route, so no existing
-  route index or `Ctrl`+digit shortcut moves (ADR-0128).
+- Settings Center appended `streaming` after Input without moving any earlier
+  route index or `Ctrl`+digit shortcut (ADR-0128).
 
 ## Preferences
 
