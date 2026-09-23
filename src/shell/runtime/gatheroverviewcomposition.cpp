@@ -38,9 +38,7 @@ GatherOverviewComposition::GatherOverviewComposition(
     connect(m_previewPort.get(),
             &ShellTaskListApplet::TaskListAppletPreviewPort::previewFinished,
             this, [this](const ShellTaskListApplet::TaskListPreviewResult &result) {
-                if (!m_controller->isOpen() || !result.ok
-                    || result.revision != m_previewRevision
-                    || !m_requestedPreviews.contains(result.windowId)) {
+                if (!m_controller->isOpen() || !result.ok) {
                     return;
                 }
                 QByteArray png;
@@ -52,11 +50,12 @@ GatherOverviewComposition::GatherOverviewComposition(
                 // Keep previews inside the audited shell process. The data
                 // URLs disappear when Gather closes or the source changes;
                 // no window pixels are written to disk.
-                m_previewUrls.insert(
-                    result.windowId,
-                    QString::fromLatin1("data:image/png;base64,")
-                        + QString::fromLatin1(png.toBase64()));
-                publishPreviews();
+                if (m_previewLedger.accept(
+                        result.windowId,
+                        QString::fromLatin1("data:image/png;base64,")
+                            + QString::fromLatin1(png.toBase64()))) {
+                    publishPreviews();
+                }
             });
     connect(m_controller.get(),
             &ShellGatherOverview::GatherOverviewController::activationRequested,
@@ -266,13 +265,7 @@ void GatherOverviewComposition::requestVisiblePreviews()
         clearPreviews();
         return;
     }
-    const quint64 visibleRevision =
-        items.constFirst().toMap().value(QStringLiteral("generationRevision"))
-            .toULongLong();
-    if (visibleRevision == 0
-        || (m_previewRevision != 0 && m_previewRevision != visibleRevision)) {
-        clearPreviews();
-    }
+    QSet<QString> visible;
     for (const QVariant &value : items) {
         const QVariantMap item = value.toMap();
         if (item.value(QStringLiteral("lane")).toString()
@@ -289,13 +282,26 @@ void GatherOverviewComposition::requestVisiblePreviews()
             item.value(QStringLiteral("generationRevision")).toULongLong();
         if (windowId.isEmpty() || revision == 0)
             continue;
-        if (m_previewRevision != revision) {
-            clearPreviews();
-            m_previewRevision = revision;
-        }
-        if (m_requestedPreviews.contains(windowId))
+        visible.insert(windowId);
+    }
+    if (m_previewLedger.reconcile(visible)) {
+        // A new identity set invalidates queued captures, but already shown
+        // previews for surviving windows stay on screen without flashing.
+        m_previewPort->cancelAll();
+        publishPreviews();
+    }
+    for (const QVariant &value : items) {
+        const QVariantMap item = value.toMap();
+        if (item.value(QStringLiteral("lane")).toString()
+                != QLatin1StringView("window"))
             continue;
-        m_requestedPreviews.insert(windowId);
+        QString windowId = item.value(QStringLiteral("windowId")).toString();
+        if (windowId.isEmpty())
+            windowId = item.value(QStringLiteral("taskId")).toString();
+        if (!m_previewLedger.markRequested(windowId))
+            continue;
+        const quint64 revision =
+            item.value(QStringLiteral("generationRevision")).toULongLong();
         const QSize size = item.value(QStringLiteral("frame"))
                                .toRectF().size().toSize()
                                .boundedTo(QSize(1024, 1024))
@@ -308,9 +314,7 @@ void GatherOverviewComposition::clearPreviews()
 {
     if (m_previewPort)
         m_previewPort->cancelAll();
-    m_previewRevision = 0;
-    m_requestedPreviews.clear();
-    m_previewUrls.clear();
+    m_previewLedger.clear();
     publishPreviews();
 }
 
@@ -318,7 +322,7 @@ void GatherOverviewComposition::publishPreviews()
 {
     for (QQuickWindow *window : std::as_const(m_windows)) {
         if (window)
-            window->setProperty("previewUrls", m_previewUrls);
+            window->setProperty("previewUrls", m_previewLedger.urls());
     }
 }
 
@@ -341,7 +345,7 @@ void GatherOverviewComposition::createWindow(QScreen *screen)
           QVariant::fromValue(static_cast<QObject *>(m_controller.get()))},
          {QStringLiteral("workArea"),
           QVariant::fromValue(QRectF(screen->availableGeometry()))},
-         {QStringLiteral("previewUrls"), m_previewUrls}});
+         {QStringLiteral("previewUrls"), m_previewLedger.urls()}});
     auto *raw = qobject_cast<QQuickWindow *>(object);
     if (raw == nullptr) {
         qWarning().noquote()

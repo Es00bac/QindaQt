@@ -4,6 +4,7 @@
 - **Date:** 2026-09-22
 - **Owners:** Shell presentation, platform integration
 - **Refines:** [ADR-0119](0119-authenticated-window-preview-channel.md) for Gather only
+- **Preview lifetime refined by:** [ADR-0243](0243-keep-gather-previews-by-window-identity.md)
 
 ## Context
 

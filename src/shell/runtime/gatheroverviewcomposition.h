@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "gatherpreviewledger.h"
 #include "qindaqt/shell/gather_overview/gather_overview_controller.h"
 
 #include <QHash>
 #include <QObject>
 #include <QPointer>
-#include <QSet>
-#include <QVariantMap>
 
 #include <memory>
 
@@ -93,9 +92,7 @@ private:
     QPointer<ShellTaskListApplet::TaskListAppletController> m_taskList;
     std::unique_ptr<ShellGatherOverview::GatherOverviewController> m_controller;
     std::unique_ptr<KWinScreenshotPreviewPort> m_previewPort;
-    QVariantMap m_previewUrls;
-    QSet<QString> m_requestedPreviews;
-    quint64 m_previewRevision = 0;
+    GatherPreviewLedger m_previewLedger;
     QHash<QScreen *, QQuickWindow *> m_windows;
     // AGENT-CONTRACT: the overview is ONE arrangement, shown on one output.
     // There is a window per output so that whichever screen the user is on
