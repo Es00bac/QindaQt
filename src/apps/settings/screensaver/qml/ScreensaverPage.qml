@@ -27,7 +27,7 @@ T.Page {
     readonly property var delayOptions: {
         const minutes = [1, 2, 5, 10, 15, 30, 60]
         const current = root.screensaverSettings.minutes
-        if (minutes.indexOf(current) < 0) {
+        if (root.screensaverSettings.hasConfirmed && minutes.indexOf(current) < 0) {
             minutes.push(current)
             minutes.sort(function(left, right) { return left - right })
         }
@@ -110,7 +110,7 @@ T.Page {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                enabled: !root.screensaverSettings.busy
+                                enabled: root.screensaverSettings.canEdit
                                 spacing: Tokens.space["2"]
 
                                 Label {
@@ -126,9 +126,11 @@ T.Page {
                                     model: root.screensaverSettings.saverOptions
                                     textRole: "name"
                                     valueRole: "token"
-                                    currentIndex: Math.max(0, root.screensaverSettings.saverOptions.findIndex(function(option) {
-                                        return option.token === root.screensaverSettings.saver
-                                    }))
+                                    readonly property int confirmedIndex: root.screensaverSettings.hasConfirmed
+                                        ? root.screensaverSettings.saverOptions.findIndex(function(option) {
+                                            return option.token === root.screensaverSettings.saver
+                                        }) : -1
+                                    currentIndex: confirmedIndex
                                     accessibleDescription: qsTr("Choose the idle screensaver")
                                     // Only an interactive activation writes; a
                                     // confirmed snapshot refresh can never
@@ -137,6 +139,13 @@ T.Page {
                                         if (index >= 0 && index < root.screensaverSettings.saverOptions.length)
                                             root.screensaverSettings.setSaver(
                                                 root.screensaverSettings.saverOptions[index].token)
+                                        // A keyboard choice changes currentIndex locally. Restore
+                                        // the confirmed binding even if admission refuses the write.
+                                        Qt.callLater(function() {
+                                            saverSelector.currentIndex = Qt.binding(function() {
+                                                return saverSelector.confirmedIndex
+                                            })
+                                        })
                                     }
                                 }
                             }
@@ -144,7 +153,7 @@ T.Page {
                             RowLayout {
                                 Layout.fillWidth: true
                                 enabled: root.screensaverSettings.delayEnabled
-                                         && !root.screensaverSettings.busy
+                                         && root.screensaverSettings.canEdit
                                 spacing: Tokens.space["2"]
 
                                 Label {
@@ -160,14 +169,21 @@ T.Page {
                                     model: root.delayOptions
                                     textRole: "label"
                                     valueRole: "value"
-                                    currentIndex: Math.max(0, root.delayOptions.findIndex(function(option) {
-                                        return option.value === root.screensaverSettings.minutes
-                                    }))
+                                    readonly property int confirmedIndex: root.screensaverSettings.hasConfirmed
+                                        ? root.delayOptions.findIndex(function(option) {
+                                            return option.value === root.screensaverSettings.minutes
+                                        }) : -1
+                                    currentIndex: confirmedIndex
                                     accessibleDescription: qsTr("Choose how long the session waits before the screensaver starts")
                                     onActivated: index => {
                                         if (index >= 0 && index < root.delayOptions.length)
                                             root.screensaverSettings.setMinutes(
                                                 root.delayOptions[index].value)
+                                        Qt.callLater(function() {
+                                            delaySelector.currentIndex = Qt.binding(function() {
+                                                return delaySelector.confirmedIndex
+                                            })
+                                        })
                                     }
                                 }
                             }
@@ -227,7 +243,7 @@ T.Page {
                                 visible: root.screensaverSettings.errorText.length > 0
                                 text: qsTr("Try again")
                                 available: !root.screensaverSettings.busy
-                                accessibleDescription: qsTr("Retry the failed screensaver preference step")
+                                accessibleDescription: qsTr("Refresh screen saver settings without repeating a saved choice")
                                 onClicked: root.screensaverSettings.retry()
                             }
                         }

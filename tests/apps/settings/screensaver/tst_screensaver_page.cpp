@@ -30,6 +30,9 @@ class StubScreensaverSettings final : public QObject {
   Q_PROPERTY(QString saver MEMBER saver NOTIFY changed)
   Q_PROPERTY(bool delayEnabled MEMBER delayEnabled NOTIFY changed)
   Q_PROPERTY(int minutes MEMBER minutes NOTIFY changed)
+  Q_PROPERTY(bool hasConfirmed MEMBER hasConfirmed NOTIFY changed)
+  Q_PROPERTY(bool available MEMBER available NOTIFY changed)
+  Q_PROPERTY(bool canEdit MEMBER canEdit NOTIFY changed)
   Q_PROPERTY(bool busy MEMBER busy NOTIFY changed)
   Q_PROPERTY(QString statusText MEMBER statusText NOTIFY changed)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY changed)
@@ -43,6 +46,9 @@ public:
   QString saver = QStringLiteral("circuit-reef");
   bool delayEnabled = true;
   int minutes = 5;
+  bool hasConfirmed = true;
+  bool available = true;
+  bool canEdit = true;
   bool busy = false;
   QString statusText = QStringLiteral("Circuit Reef starts after 5 minutes of inactivity.");
   QString errorText;
@@ -53,6 +59,7 @@ public:
   QList<int> minutesRequests;
   int retryCalls = 0;
   int previewCalls = 0;
+  bool admitWrites = true;
 
   [[nodiscard]] QVariantList saverOptions() const {
     return {
@@ -71,6 +78,7 @@ public:
 
   Q_INVOKABLE bool setSaver(const QString &value) {
     saverRequests.append(value);
+    if (!admitWrites) return false;
     saver = value;
     delayEnabled = value != QStringLiteral("none") && value != QStringLiteral("blank");
     Q_EMIT changed();
@@ -78,6 +86,7 @@ public:
   }
   Q_INVOKABLE bool setMinutes(int value) {
     minutesRequests.append(value);
+    if (!admitWrites) return false;
     minutes = value;
     Q_EMIT changed();
     return true;
@@ -139,6 +148,8 @@ private Q_SLOTS:
   void rendersChoicesAndReflectsTruth();
   void delayRowDisablesWhenNothingRuns();
   void selectingSaverWritesTheToken();
+  void unavailableChoiceHasNoFalseSelection();
+  void keyboardRefusalRestoresConfirmedChoices();
   void lockSectionIsSeparateAndWrites();
   void errorsSurfaceWithRetry();
 
@@ -270,6 +281,7 @@ void ScreensaverPageTest::selectingSaverWritesTheToken() {
   // discovered token, not the display name.
   QCOMPARE(m_screensaver->saverRequests.size(), 1);
   QCOMPARE(m_screensaver->saverRequests.constFirst(), QStringLiteral("prism-brawl"));
+  QTRY_COMPARE(selector->property("currentIndex").toInt(), 3);
 
   auto *delay = findItem(page, QStringLiteral("screensaverDelaySelector"));
   QVERIFY(delay != nullptr);
@@ -279,6 +291,59 @@ void ScreensaverPageTest::selectingSaverWritesTheToken() {
   QTest::keyClick(m_view.get(), Qt::Key_Down);
   QTest::keyClick(m_view.get(), Qt::Key_Return);
   QCOMPARE(m_screensaver->minutesRequests.size(), 1);
+  QTRY_COMPARE(delay->property("currentIndex").toInt(), 3);
+}
+
+void ScreensaverPageTest::unavailableChoiceHasNoFalseSelection() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  m_screensaver->hasConfirmed = false;
+  m_screensaver->available = false;
+  m_screensaver->canEdit = false;
+  m_screensaver->saver.clear();
+  m_screensaver->minutes = 0;
+  m_screensaver->statusText = QStringLiteral("Waiting for confirmed screen saver settings.");
+  Q_EMIT m_screensaver->changed();
+  QCoreApplication::processEvents();
+  auto *saver = findItem(page, QStringLiteral("screensaverSaverSelector"));
+  auto *delay = findItem(page, QStringLiteral("screensaverDelaySelector"));
+  auto *status = findItem(page, QStringLiteral("screensaverStatus"));
+  QVERIFY(saver != nullptr && delay != nullptr && status != nullptr);
+  QCOMPARE(saver->property("currentIndex").toInt(), -1);
+  QVERIFY(!saver->isEnabled());
+  QVERIFY(!delay->isEnabled());
+  QVERIFY(status->property("text").toString().contains(QStringLiteral("Waiting")));
+  m_screensaver->hasConfirmed = true;
+  m_screensaver->available = true;
+  m_screensaver->canEdit = true;
+  m_screensaver->saver = QStringLiteral("none");
+  m_screensaver->minutes = 5;
+  Q_EMIT m_screensaver->changed();
+  QTRY_COMPARE(saver->property("currentIndex").toInt(), 0);
+}
+
+void ScreensaverPageTest::keyboardRefusalRestoresConfirmedChoices() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  m_screensaver->admitWrites = false;
+  auto *saver = findItem(page, QStringLiteral("screensaverSaverSelector"));
+  auto *delay = findItem(page, QStringLiteral("screensaverDelaySelector"));
+  QVERIFY(saver != nullptr && delay != nullptr);
+  QCOMPARE(saver->property("currentIndex").toInt(), 2);
+  saver->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTest::keyClick(m_view.get(), Qt::Key_Down);
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QTRY_COMPARE(m_screensaver->saverRequests.size(), 1);
+  QTRY_COMPARE(saver->property("currentIndex").toInt(), 2);
+  QCOMPARE(m_screensaver->saver, QStringLiteral("circuit-reef"));
+  delay->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTest::keyClick(m_view.get(), Qt::Key_Down);
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QTRY_COMPARE(m_screensaver->minutesRequests.size(), 1);
+  QTRY_COMPARE(delay->property("currentIndex").toInt(), 2);
+  QCOMPARE(m_screensaver->minutes, 5);
 }
 
 void ScreensaverPageTest::lockSectionIsSeparateAndWrites() {
