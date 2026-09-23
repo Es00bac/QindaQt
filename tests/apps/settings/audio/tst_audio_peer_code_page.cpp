@@ -120,10 +120,13 @@ void AudioPeerCodePageTest::guidedPeerCodeFlowAtCompactAndWideSizes() {
     QTRY_COMPARE(paste->property("text").toString(), remote);
     auto *viewport = findItem(page, QStringLiteral("audioFormViewport"));
     QVERIFY(viewport != nullptr);
-    QVERIFY(shared->mapToItem(viewport, QPointF(shared->width(), 0)).x()
-            <= viewport->width() + 1);
-    QVERIFY(paste->mapToItem(viewport, QPointF(paste->width(), 0)).x()
-            <= viewport->width() + 1);
+    QTRY_VERIFY_WITH_TIMEOUT(shared->width() > 100, 1500);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        shared->mapToItem(viewport, QPointF(shared->width(), 0)).x()
+            <= viewport->width() + 1, 1500);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        paste->mapToItem(viewport, QPointF(paste->width(), 0)).x()
+            <= viewport->width() + 1, 1500);
     QTRY_VERIFY_WITH_TIMEOUT(
         paste->mapToItem(viewport, QPointF(paste->width() / 2,
                                           paste->height() / 2)).y()
@@ -147,10 +150,26 @@ void AudioPeerCodePageTest::guidedPeerCodeFlowAtCompactAndWideSizes() {
     QTRY_VERIFY(summary->isVisible());
     QVERIFY(summary->property("text").toString().contains(QStringLiteral("192.0.2.20")));
     QVERIFY(output->isVisible());
+    QCOMPARE(output->property("currentIndex").toInt(), -1);
     QVERIFY(!save->property("available").toBool());
     trust->forceActiveFocus(Qt::TabFocusReason);
     QTest::keyClick(m_view.get(), Qt::Key_Space);
+    QVERIFY(trust->property("checked").toBool());
+    QVERIFY(!save->property("available").toBool());
+    output->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_COMPARE(m_view->activeFocusItem(), output);
+    QTest::keyClick(m_view.get(), Qt::Key_Space);
+    QTest::keyClick(m_view.get(), Qt::Key_Down);
+    QTest::keyClick(m_view.get(), Qt::Key_Return);
+    QTRY_COMPARE(output->property("currentIndex").toInt(), 0);
     QTRY_VERIFY(save->property("available").toBool());
+    m_model->peerOutputs.prepend(QVariantMap{
+        {QStringLiteral("nodeName"), QStringLiteral("alsa_output.other")},
+        {QStringLiteral("label"), QStringLiteral("Other Speakers")},
+        {QStringLiteral("serial"), qulonglong(12)}});
+    Q_EMIT m_model->viewChanged();
+    QTRY_COMPARE(output->property("currentIndex").toInt(), 1);
+    QVERIFY(save->property("available").toBool());
     save->forceActiveFocus(Qt::TabFocusReason);
     QTRY_COMPARE(m_view->activeFocusItem(), save);
     const QPointF local = save->mapToItem(viewport, QPointF(save->width() / 2,

@@ -13,6 +13,7 @@ ColumnLayout {
     id: root
     required property var audioSettings
     Layout.fillWidth: true
+    Layout.minimumWidth: 0
     spacing: Tokens.space["3"]
 
     readonly property Item firstActionTarget: connectionCard.firstActionTarget
