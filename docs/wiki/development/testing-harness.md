@@ -61,9 +61,11 @@ checks local CLI inputs and a relocated `Viewer` component installation.
 These rows use private XDG state, offscreen software rendering and unavailable
 host buses. They do not claim native compositor or physical-input coverage.
 
-`qindaqt.settings-default-apps-*` checks inherited XDG precedence, narrow
-category writes, the public installed catalog, accessible UI, module boundaries,
-the installed Settings route and packaged associations through `xdg-mime`.
+`qindaqt.settings-default-apps-*` checks inherited XDG precedence,
+supported-scope category writes, mixed per-MIME readback, Added/Removed
+Association eligibility, refreshed catalog projection, accessible UI, module
+boundaries, the installed Settings route and packaged associations through
+`xdg-mime`.
 The catalog/scanner rows distinguish valid `NoDisplay` MIME handlers from
 `Hidden` deletion markers while preserving ordinary launcher visibility.
 `session.sessiondefaults` verifies that login never seeds user MIME preferences.

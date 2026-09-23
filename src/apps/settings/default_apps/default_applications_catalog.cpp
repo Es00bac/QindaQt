@@ -4,7 +4,6 @@
 
 #include <qindaqt/application_catalog/application_directory_scan.h>
 
-#include <QtCore/QSet>
 #include <QtCore/QStringList>
 
 namespace QindaQt::Apps::SettingsDefaultApps {
@@ -36,25 +35,32 @@ QVector<QString> desktopEntryMimeTypes(const QString &documentText) {
 
 QVector<CandidateApplication> candidateApplicationsForCategory(
     const QindaQt::ApplicationCatalog::DirectoryScan &scan,
-    const DefaultApplicationCategory category) {
+    const DefaultApplicationCategory category,
+    const QMap<QString, QStringList> *associationProjection) {
   const QStringList categoryMimeTypes = defaultApplicationCategoryMimeTypes(category);
-  const QSet<QString> wanted(categoryMimeTypes.cbegin(), categoryMimeTypes.cend());
   QVector<CandidateApplication> candidates;
   for (const auto &scanned : scan.applications) {
-    bool matches = false;
-    for (const QString &mimeType : desktopEntryMimeTypes(scanned.documentText)) {
-      if (wanted.contains(mimeType)) {
-        matches = true;
-        break;
-      }
+    // AGENT-CONTRACT: the store and chooser use the same effective association
+    // projection. Raw MimeType= alone misses user Added/Removed Associations.
+    const QString desktopId = scanned.entry.id + QStringLiteral(".desktop");
+    QStringList associated;
+    if (associationProjection) {
+      associated = associationProjection->value(desktopId);
+    } else {
+      for (const QString &mimeType : desktopEntryMimeTypes(scanned.documentText))
+        associated.append(mimeType);
     }
-    if (!matches) continue;
+    QStringList supported;
+    for (const QString &mimeType : categoryMimeTypes)
+      if (associated.contains(mimeType)) supported.append(mimeType);
+    if (supported.isEmpty()) continue;
     candidates.append(CandidateApplication{
         // AGENT-CONTRACT: ApplicationCatalog ids omit the .desktop suffix;
         // freedesktop mimeapps.list values and this route's choice IDs keep it.
-        .id = scanned.entry.id + QStringLiteral(".desktop"),
+        .id = desktopId,
         .name = scanned.entry.name,
         .iconName = scanned.entry.iconName,
+        .supportedMimeTypes = supported,
     });
   }
   return candidates;

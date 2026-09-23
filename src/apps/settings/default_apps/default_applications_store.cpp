@@ -91,6 +91,16 @@ QString DefaultApplicationPreferences::category(
   return {};
 }
 
+bool DefaultApplicationPreferences::isMixed(
+    const DefaultApplicationCategory category) const {
+  const QStringList mimeTypes = defaultApplicationCategoryMimeTypes(category);
+  if (effectiveByMimeType.isEmpty() || mimeTypes.size() < 2) return false;
+  const QString first = effectiveByMimeType.value(mimeTypes.first());
+  for (const QString &mimeType : mimeTypes)
+    if (effectiveByMimeType.value(mimeType) != first) return true;
+  return false;
+}
+
 void DefaultApplicationPreferences::setCategory(
     const DefaultApplicationCategory category, const QString &desktopId) {
   switch (category) {
@@ -236,23 +246,39 @@ bool MimeAppsDefaultApplicationsStore::load(
   QList<MimeAppsFile> files;
   if (!readMimeAppsFiles(m_lookupPaths, &files, error)) return false;
   DefaultApplicationPreferences next;
-  for (const DefaultApplicationCategory category : kDefaultApplicationCategories) {
-    const QString mimeType = defaultApplicationCategoryMimeTypes(category).first();
-    QString selected;
-    for (const MimeAppsFile &file : files) {
-      for (const QString &desktopId : desktopIds(file.defaults.value(mimeType))) {
-        const auto *application = applicationForDesktopId(m_applications, desktopId);
-        if (application && isAssociated(*application, mimeType, files)) {
-          // Canonical, never the raw stored spelling: a legacy suffix-free
-          // value would otherwise reach the catalog's name lookup and render
-          // as a raw id instead of the application's name.
-          selected = canonicalDesktopId(desktopId);
-          break;
-        }
+  next.associationProjectionAvailable = true;
+  for (const auto &application : m_applications.applications) {
+    QStringList associated;
+    for (const DefaultApplicationCategory category : kDefaultApplicationCategories) {
+      for (const QString &mimeType : defaultApplicationCategoryMimeTypes(category)) {
+        if (isAssociated(application, mimeType, files) && !associated.contains(mimeType))
+          associated.append(mimeType);
       }
-      if (!selected.isEmpty()) break;
     }
-    next.setCategory(category, selected);
+    next.supportedMimeTypesByDesktopId.insert(
+        application.entry.id + QStringLiteral(".desktop"), associated);
+  }
+  for (const DefaultApplicationCategory category : kDefaultApplicationCategories) {
+    const QStringList mimeTypes = defaultApplicationCategoryMimeTypes(category);
+    for (const QString &mimeType : mimeTypes) {
+      QString selected;
+      for (const MimeAppsFile &file : files) {
+        for (const QString &desktopId : desktopIds(file.defaults.value(mimeType))) {
+          const auto *application = applicationForDesktopId(m_applications, desktopId);
+          if (application && isAssociated(*application, mimeType, files)) {
+            selected = canonicalDesktopId(desktopId);
+            break;
+          }
+        }
+        if (!selected.isEmpty()) break;
+      }
+      next.effectiveByMimeType.insert(mimeType, selected);
+    }
+    // An aggregate choice is truthful only if every managed MIME resolves
+    // identically. The page shows mixed state and lets the user choose a
+    // partial-scope handler without losing other MIME associations.
+    if (!next.isMixed(category))
+      next.setCategory(category, next.effectiveByMimeType.value(mimeTypes.first()));
   }
   *preferences = std::move(next);
   if (error) error->clear();
@@ -267,18 +293,48 @@ bool MimeAppsDefaultApplicationsStore::saveCategory(
     if (error) *error = QStringLiteral("default-applications file location is unavailable");
     return false;
   }
-  if (!desktopId.isEmpty()) {
-    const auto *application = applicationForDesktopId(m_applications, desktopId);
-    if (!application) {
-      if (error) *error = QStringLiteral("default-applications-unknown-application");
-      return false;
+  if (desktopId.isEmpty()) {
+    // "Use inherited default" clears every user-level override for these
+    // MIME types. A desktop-specific and generic user file can both own keys;
+    // clearing only the first would reveal another user override.
+    QStringList userPaths = m_userDesktopPaths;
+    userPaths.append(m_filePath);
+    userPaths.removeDuplicates();
+    QVector<KSharedConfig::Ptr> configs;
+    for (const QString &path : userPaths) {
+      if (!QFileInfo::exists(path)) continue;
+      auto config = KSharedConfig::openConfig(path, KConfig::SimpleConfig);
+      if (!config || config->accessMode() != KConfigBase::ReadWrite) {
+        if (error) *error = QStringLiteral("default-applications-not-writable");
+        return false;
+      }
+      configs.append(config);
     }
-    QList<MimeAppsFile> files;
-    if (!readMimeAppsFiles(m_lookupPaths, &files, error)) return false;
-    if (!isAssociated(*application, mimeTypes.first(), files)) {
-      if (error) *error = QStringLiteral("default-applications-unsupported-application");
-      return false;
+    for (const auto &config : configs) {
+      config->reparseConfiguration();
+      KConfigGroup group = config->group(QString::fromLatin1(DefaultApplicationsGroup));
+      for (const QString &mimeType : mimeTypes) group.deleteEntry(mimeType);
+      if (!config->sync()) {
+        if (error) *error = QStringLiteral("default-applications-sync-failed");
+        return false;
+      }
     }
+    if (error) error->clear();
+    return true;
+  }
+  QStringList writeMimeTypes;
+  const auto *application = applicationForDesktopId(m_applications, desktopId);
+  if (!application) {
+    if (error) *error = QStringLiteral("default-applications-unknown-application");
+    return false;
+  }
+  QList<MimeAppsFile> files;
+  if (!readMimeAppsFiles(m_lookupPaths, &files, error)) return false;
+  for (const QString &mimeType : mimeTypes)
+    if (isAssociated(*application, mimeType, files)) writeMimeTypes.append(mimeType);
+  if (writeMimeTypes.isEmpty()) {
+    if (error) *error = QStringLiteral("default-applications-unsupported-application");
+    return false;
   }
   QString target = m_filePath;
   for (const QString &path : m_userDesktopPaths) {
@@ -305,16 +361,19 @@ bool MimeAppsDefaultApplicationsStore::saveCategory(
   // desktop file ID. This is also the repair path for the legacy suffix-free
   // values described above - choosing anything in the page rewrites them.
   const QString canonical = canonicalDesktopId(desktopId);
-  for (const QString &mimeType : mimeTypes) {
-    if (canonical.isEmpty()) group.deleteEntry(mimeType);
-    else group.writeEntry(mimeType, canonical + QLatin1Char(';'));
-  }
+  for (const QString &mimeType : writeMimeTypes)
+    group.writeEntry(mimeType, canonical + QLatin1Char(';'));
   if (!config->sync()) {
     if (error) *error = QStringLiteral("default-applications-sync-failed");
     return false;
   }
   if (error) error->clear();
   return true;
+}
+
+void MimeAppsDefaultApplicationsStore::setApplications(
+    QindaQt::ApplicationCatalog::DirectoryScan applications) {
+  m_applications = std::move(applications);
 }
 
 } // namespace QindaQt::Apps::SettingsDefaultApps

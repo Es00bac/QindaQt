@@ -14,7 +14,7 @@ User and administrator choices keep their higher precedence. Session startup
 never creates or edits a user `mimeapps.list`; older user choices, including a
 previously seeded file-manager preference, remain user policy.
 
-| Category | Packaged default | MIME types written on an explicit choice |
+| Category | Packaged default | MIME types managed by the category |
 | --- | --- | --- |
 | Web browser | Firefox, when installed | `text/html`, `x-scheme-handler/http`, `x-scheme-handler/https` |
 | Mail client | Thunderbird, when installed | `x-scheme-handler/mailto` |
@@ -43,12 +43,21 @@ reader without changing their image viewer.
 
 ## Effective defaults and writes
 
+[ADR-0245](../adr/0245-write-only-supported-default-application-associations.md) records the supported-scope persistence contract.
+
 The composition root resolves XDG config/data roots and current-desktop names.
-The store receives those explicit ordered paths and one completed public
-application scan. It reads desktop-specific then generic files at each level:
-user config, administrator config, user data applications, and system data
-applications. Each category displays its first representative MIME type; a
-partially customized image category is not flattened merely by opening Settings.
+The store receives those explicit ordered paths and a completed public
+application scan. The composition root refreshes that scan on application
+directory, desktop-file, and MIME preference changes, with a 15-second fallback
+for roots that
+were absent when Settings opened.
+
+The store reads desktop-specific then generic files at each level: user config,
+administrator config, user data applications, and system data applications.
+It resolves each managed MIME type independently. A category displays one
+application only when every MIME type has that effective handler; otherwise it
+displays a mixed state and preserves each per-type result. Opening Settings
+does not flatten a partially customized category.
 
 Default values are [semicolon-separated desktop ID lists](https://specifications.freedesktop.org/mime-apps/latest/default.html).
 The first installed, associated handler wins. `NoDisplay=true` handlers remain valid MIME defaults even though they do not
@@ -59,17 +68,19 @@ system association cannot remove a higher-priority user desktop entry. The
 page reports configured defaults; it does not invent an application ranking
 when every preference file lacks a usable default.
 
-A selection normally writes only that category's MIME keys under `[Default
-Applications]` in `$XDG_CONFIG_HOME/mimeapps.list`. If a higher-priority
-user desktop-specific file already defines any key for that category, the
-selection updates that category there so it takes effect. It never modifies
-administrator or distribution files. The target is reparsed before writing;
-other categories, partially split MIME choices, unmanaged keys, and Added/Removed
-Associations are preserved. An installed application whose representative MIME
-association has been removed is rejected without modifying those associations.
+A selection writes only the category MIME keys the chosen application
+effectively supports under `[Default Applications]` in
+`$XDG_CONFIG_HOME/mimeapps.list`. Unsupported keys retain their values.
+If a higher-priority user desktop-specific file already defines any key for
+that category, the selection updates the supported keys there so it takes
+effect. It never modifies administrator or distribution files. The target is
+reparsed before writing; other categories, unsupported MIME choices, unmanaged
+keys, and Added/Removed Associations are preserved. A handler with no effective
+support in the category is rejected without changing the file.
 
-“Use inherited default” removes the selected category's override in its owning
-user file. The store reloads effective preferences after every successful write,
+“Use inherited default” removes that category's override across the
+desktop-specific and generic user files, revealing administrator or packaged
+choices. The store reloads effective preferences after every successful write,
 so a revealed lower-priority default is displayed immediately. Inherited values
 are never copied into user policy as a side effect of choosing another category.
 Errors leave the last confirmed projection available and are exposed to the page.
@@ -80,12 +91,17 @@ Candidates come from
 `QindaQt::ApplicationCatalog::scanApplicationDirectories()`, the same public
 installed-desktop-entry scanner used by File Manager's Open With picker
 ([ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md)).
-The composition root scans once with `ApplicationVisibility::IncludeNoDisplay`;
-other catalog consumers keep their menu-only default. The catalog’s suffix-free launcher IDs are
-converted to `.desktop` MIME IDs at this route boundary. A candidate declares at least one MIME type
-in the category in its retained `[Desktop Entry]` `MimeType=` field. The store
-checks that the representative MIME association is effective before persisting
-an explicit selection.
+The composition root scans with `ApplicationVisibility::IncludeNoDisplay`
+and repeats that scan when installed desktop entries change; other catalog
+consumers keep their menu-only default. The catalog's suffix-free launcher IDs
+are converted to `.desktop` MIME IDs at this route boundary. A candidate
+effectively supports at least one MIME type in the category, considering its
+retained `[Desktop Entry]` `MimeType=` field and applicable XDG Added/Removed
+Associations. A partial candidate is labeled with the exact MIME types and
+count it will change. The chooser and store use the same effective association
+projection; an explicit choice writes only that supported scope. When a
+category is mixed, the ComboBox shows a read-only “Mixed defaults” state until
+the user chooses a candidate or clears user overrides.
 
 The QML module owns a route-local `QML_SINGLETON` composition root. QML receives
 only the model's copied rows, with one labeled ComboBox per category, keyboard
@@ -100,14 +116,17 @@ The boundary scan rejects process and D-Bus imports.
 ctest --test-dir <build> -R '^(qindaqt\.settings-default-apps-|session\.sessiondefaults)' --output-on-failure
 ```
 
-Focused C++ coverage includes category-only writes and round trips, concurrent
-external changes to other categories, independent PDF/image choices,
-semicolon-list fallback, user/admin/package lookup order, removed and added
-associations, higher-priority desktop entries, NoDisplay defaults, Hidden/malformed root
-masking, hidden-handler fallback, and
-restoring inherited defaults. The offscreen page gate verifies eight categories,
-current selections, and keyboard choice dispatch. Session tests prove login
-preserves existing user MIME files and creates no new user MIME policy.
+Focused C++ coverage includes category-only writes and round trips,
+concurrent external changes to other categories, independent PDF/image
+choices, semicolon-list fallback, user/admin/package lookup order, removed
+and added associations, higher-priority desktop entries, NoDisplay defaults,
+Hidden/malformed root masking, hidden-handler fallback, restoring inherited
+defaults, supported-only partial writes, mixed MIME readback,
+Added/Removed Association candidate eligibility, and catalog replacement
+after an application is removed. The offscreen page gate verifies eight
+categories, mixed selections, partial-scope labels, and keyboard choice
+dispatch. Session tests prove login preserves existing user MIME files and
+creates no new user MIME policy.
 
 The packaged-defaults test stages the actual session install component, then
 queries every supported core MIME type with `xdg-mime` inside temporary XDG
