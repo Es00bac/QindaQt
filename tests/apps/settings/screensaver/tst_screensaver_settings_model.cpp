@@ -51,6 +51,7 @@ private Q_SLOTS:
     void defaultValuedFirstSnapshotEstablishesAuthority();
     void occupiedReadLaneRefusesWritesAndRecovers();
     void appliedWaitsForSameLineageReadback();
+    void staleReadbackDeadlineBecomesUncertainWithoutReplay();
     void unchangedRefreshRetainsRefusal();
     void lostReplyAndOwnerReplacementNeverReplay();
     void appliedMismatchIsConflict();
@@ -360,14 +361,38 @@ void ScreensaverSettingsModelTest::appliedWaitsForSameLineageReadback() {
     m_transport->replyToLastSnapshot(m_client->snapshot()->revision);
     QVERIFY(m_model->busy());
     QVERIFY(!m_model->canEdit());
-    m_client->refresh();
-    QTRY_COMPARE(m_transport->pendingSnapshotCount(), 1);
+    // The model itself must request the follow-up. A manual client refresh
+    // here would mask a permanently disabled route after accepted stale truth.
+    QTRY_COMPARE_WITH_TIMEOUT(m_transport->pendingSnapshotCount(), 1, 1'500);
     m_transport->setValue(kSaverKey, QStringLiteral("qinda-patrol"));
     m_transport->replyToLastSnapshot(m_client->snapshot()->revision + 1);
     QTRY_VERIFY(!m_model->busy());
     QCOMPARE(m_model->saver(), QStringLiteral("qinda-patrol"));
     QVERIFY(m_model->canEdit());
     QVERIFY(m_model->errorText().isEmpty());
+}
+
+void ScreensaverSettingsModelTest::staleReadbackDeadlineBecomesUncertainWithoutReplay() {
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_model->canEdit());
+    m_transport->autoSnapshots = false;
+    QVERIFY(m_model->setSaver(QStringLiteral("qinda-patrol")));
+    const qsizetype writes = m_transport->committedOperations().size();
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_transport->pendingSnapshotCount(), 1);
+    m_transport->setValue(kSaverKey, QStringLiteral("none"));
+    m_transport->replyToLastSnapshot(m_client->snapshot()->revision);
+    QTRY_COMPARE_WITH_TIMEOUT(m_transport->pendingSnapshotCount(), 1, 1'500);
+    m_transport->replyToLastSnapshot(m_client->snapshot()->revision);
+    QTRY_COMPARE_WITH_TIMEOUT(m_transport->pendingSnapshotCount(), 1, 1'500);
+    QVERIFY(m_model->busy());
+    // The service may never answer the next fetch. A bounded deadline must
+    // retire the UI wait as uncertain; it must not resend the original write.
+    QTRY_VERIFY_WITH_TIMEOUT(!m_model->busy(), 5'500);
+    QVERIFY(m_model->uncertain());
+    QVERIFY(m_model->errorText().contains(QStringLiteral("could not be confirmed")));
+    QCOMPARE(m_transport->committedOperations().size(), writes);
+    QCOMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
 }
 
 void ScreensaverSettingsModelTest::unchangedRefreshRetainsRefusal() {

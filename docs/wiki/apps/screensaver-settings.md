@@ -61,7 +61,9 @@ owner's snapshot and write lane are ready.
 A saver or delay choice is admitted only while both scoped keys are writable.
 The page shows the confirmed selection during a pending commit and waits for a
 same-owner, same-epoch snapshot at or after the Applied revision before claiming
-success. A refusal, conflict, lost reply, owner change, or readback mismatch
+success. A valid older snapshot triggers a bounded refetch; if no qualifying
+readback arrives within four seconds, the route ends its pending state as
+uncertain without repeating the write. A refusal, conflict, lost reply, owner change, or readback mismatch
 leaves the authoritative choice visible with a distinct diagnostic. An
 unchanged or external refresh does not erase that diagnostic. **Try again**
 only refreshes Settings1; it never repeats the write. Keyboard activation of
@@ -98,7 +100,8 @@ except the explicitly requested preview.
   unrecognized token reading back as no saver, an invalid saver or
   out-of-range delay refused before any commit, applied/rejected/uncertain
   outcomes, first-baseline availability, occupied read-lane admission,
-  same-lineage Applied readback, unchanged-refresh diagnostic retention,
+  same-lineage Applied readback, automatic stale-readback refetch and
+  timeout-to-uncertain, unchanged-refresh diagnostic retention,
   owner replacement, busy write suppression, retry without replaying, the built-in
   choices and discovered sort order, and the mirror rules (confirmed saver
   reaches the lock screen, a refused commit never does, a saver with no
