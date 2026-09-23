@@ -98,6 +98,8 @@ bool NetworkSettingsModel::setRadio(const quint32 rawKind, const bool enabled) {
   }
   QString error;
   if (!m_client.setRadio(kind, enabled, &error)) {
+    m_radioSuccessShown = false;
+    m_radioSuccessOwner.clear();
     m_radioErrorKind = kind;
     m_radioError = actionFailureText(error);
     m_operationStatusText.clear();
@@ -108,6 +110,8 @@ bool NetworkSettingsModel::setRadio(const quint32 rawKind, const bool enabled) {
   const ModelState state = m_client.projection();
   m_pendingRadio = PendingRadio{kind, enabled, state.owner, state.epoch,
                                 state.revision, false};
+  m_radioSuccessShown = false;
+  m_radioSuccessOwner.clear();
   m_radioErrorKind.reset();
   m_radioError.clear();
   m_localError.clear();
@@ -158,7 +162,16 @@ void NetworkSettingsModel::finishRadioUncertain(const QString &message) {
 }
 
 void NetworkSettingsModel::handleRadioSnapshot() {
-  if (!m_pendingRadio || !m_pendingRadio->awaitingReadback) return;
+  if (!m_pendingRadio || !m_pendingRadio->awaitingReadback) {
+    // AGENT-GUARD: A settled operation banner is about one readback, not
+    // permanent radio truth. A later accepted snapshot can reverse it.
+    if (m_radioSuccessShown) {
+      m_radioSuccessShown = false;
+      m_radioSuccessOwner.clear();
+      m_operationStatusText.clear();
+    }
+    return;
+  }
   const ModelState state = m_client.projection();
   if (state.owner != m_pendingRadio->owner
       || state.epoch != m_pendingRadio->epoch) {
@@ -185,6 +198,8 @@ void NetworkSettingsModel::handleRadioSnapshot() {
     m_operationStatusText = requested
         ? tr("%1 is on.").arg(radioName(kind))
         : tr("%1 is off.").arg(radioName(kind));
+    m_radioSuccessShown = true;
+    m_radioSuccessOwner = state.owner;
   } else {
     m_radioErrorKind = kind;
     m_radioError = tr("The radio state differs from the requested change.");
@@ -193,6 +208,14 @@ void NetworkSettingsModel::handleRadioSnapshot() {
 }
 
 void NetworkSettingsModel::handleRadioClientState() {
+  if (m_radioSuccessShown
+      && (m_client.projection().owner != m_radioSuccessOwner
+          || m_client.state() == ClientState::Unavailable
+          || m_client.state() == ClientState::Degraded)) {
+    m_radioSuccessShown = false;
+    m_radioSuccessOwner.clear();
+    m_operationStatusText.clear();
+  }
   if (!m_pendingRadio) return;
   const ModelState state = m_client.projection();
   if (state.owner != m_pendingRadio->owner

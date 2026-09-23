@@ -1,10 +1,10 @@
 # ADR-0055: Compose Network settings through Network1
 
-- **Status:** Accepted
+- **Status:** Accepted; radio-mutation clause superseded by ADR-0251
 - **Date:** 2026-08-31
 - **Owners:** First-party applications and Platform Network
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0251](0251-expose-admitted-radio-switches-through-network1.md) for radio mutation only
 
 ## Context
 
@@ -101,3 +101,13 @@ also requires the presence-only name from ADR-0069 and states whether a
 password prompt can appear. Success means only that profile creation and
 activation were dispatched; the route waits for authoritative refreshed truth
 and never manufactures connection state.
+
+
+## Amendment: admitted radio controls (2026-09-23)
+
+[ADR-0251](0251-expose-admitted-radio-switches-through-network1.md) supersedes
+this record's radio read-only clause and its radio-invokable source poison.
+The historical decision above remains the source of the credential-free,
+public-client-only route boundary and the prohibition on arbitrary profile
+parameters or secret entry. Wi-Fi and mobile radio changes now use only the
+typed public Network1 intent and require confirmed service readback.
