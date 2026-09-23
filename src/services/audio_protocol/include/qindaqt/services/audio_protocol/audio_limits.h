@@ -7,7 +7,7 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 11;
+inline constexpr quint32 kSchemaVersion = 12;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;
@@ -83,5 +83,6 @@ inline constexpr qsizetype kMaxRecordingPathUtf8Bytes = 1024;
 inline constexpr qsizetype kMaxVbanStreams = 16;
 inline constexpr qsizetype kMaxVbanNameUtf8Bytes = 16;
 inline constexpr qsizetype kMaxVbanHostUtf8Bytes = 253;
+inline constexpr qsizetype kMaxVbanOutputNodeUtf8Bytes = 253;
 
 } // namespace QindaQt::Audio

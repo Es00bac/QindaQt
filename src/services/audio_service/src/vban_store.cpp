@@ -7,9 +7,11 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QSaveFile>
 #include <QtCore/QStandardPaths>
 
 #include <utility>
@@ -20,27 +22,94 @@ namespace {
 
 constexpr qint64 kMaxDocumentBytes = 64 * 1024;
 
-[[nodiscard]] bool hostIsPlain(const QString &host)
+QList<VbanStream> parseDefinitions(const QJsonObject &document)
 {
-    // A host name or literal address: letters, digits, dots, dashes, colons.
-    // Nothing that could be read as a path or an option.
-    for (const QChar character : host) {
-        if (!(character.isLetterOrNumber() || character == QLatin1Char('.')
-              || character == QLatin1Char('-') || character == QLatin1Char(':'))) {
-            return false;
+    QList<VbanStream> streams;
+    const auto append = [&streams](const QJsonValue &entry, bool outgoing) {
+        if (!entry.isObject()) return;
+        const QJsonObject object = entry.toObject();
+        VbanStream stream;
+        stream.outgoing = outgoing;
+        stream.name = object.value(QStringLiteral("name")).toString();
+        stream.busId = outgoing ? object.value(QStringLiteral("bus")).toString() : QString();
+        stream.host = outgoing ? object.value(QStringLiteral("host")).toString()
+                               : object.value(QStringLiteral("sourceHost")).toString();
+        stream.outputNodeName = outgoing ? QString()
+            : object.value(QStringLiteral("outputNodeName")).toString();
+        const QJsonValue port = object.value(QStringLiteral("port"));
+        if (port.isUndefined()) stream.port = 6980;
+        else if (port.isDouble() && port.toInteger(-1) >= 1 && port.toInteger(-1) <= 65535)
+            stream.port = static_cast<quint32>(port.toInteger());
+        else return;
+        if (!validateVbanDefinition(stream).accepted) return;
+        for (const VbanStream &existing : streams) {
+            if (existing.name == stream.name
+                || (!stream.outgoing && !existing.outgoing && existing.port == stream.port)) return;
         }
-    }
-    return !host.isEmpty();
+        if (streams.size() < kMaxVbanStreams) streams.append(std::move(stream));
+    };
+    for (const QJsonValue &entry : document.value(QStringLiteral("outgoing")).toArray())
+        append(entry, true);
+    for (const QJsonValue &entry : document.value(QStringLiteral("incoming")).toArray())
+        append(entry, false);
+    return streams;
 }
 
-[[nodiscard]] bool nameIsPlain(const QString &name)
+bool readDocument(const QString &path, QJsonObject *document, QString *reason)
 {
-    for (const QChar character : name) {
-        if (character.unicode() < 0x20 || character.unicode() > 0x7E) {
-            return false;
+    QFile file(path);
+    if (!file.exists()) {
+        *document = {};
+        return true;
+    }
+    if (file.size() > kMaxDocumentBytes || !file.open(QIODevice::ReadOnly)) {
+        if (reason) *reason = QStringLiteral("invalid-vban-document");
+        return false;
+    }
+    QJsonParseError parseError;
+    const QJsonDocument parsed = QJsonDocument::fromJson(file.read(kMaxDocumentBytes + 1),
+                                                           &parseError);
+    if (parseError.error != QJsonParseError::NoError || !parsed.isObject()) {
+        if (reason) *reason = QStringLiteral("invalid-vban-document");
+        return false;
+    }
+    *document = parsed.object();
+    return true;
+}
+
+bool writeDefinitions(const QString &path, const QList<VbanStream> &streams,
+                      QString *reason)
+{
+    QJsonArray outgoing;
+    QJsonArray incoming;
+    for (const VbanStream &stream : streams) {
+        if (stream.outgoing) {
+            outgoing.append(QJsonObject{{QStringLiteral("name"), stream.name},
+                                        {QStringLiteral("bus"), stream.busId},
+                                        {QStringLiteral("host"), stream.host},
+                                        {QStringLiteral("port"), static_cast<int>(stream.port)}});
+        } else {
+            incoming.append(QJsonObject{{QStringLiteral("name"), stream.name},
+                                        {QStringLiteral("sourceHost"), stream.host},
+                                        {QStringLiteral("outputNodeName"), stream.outputNodeName},
+                                        {QStringLiteral("port"), static_cast<int>(stream.port)}});
         }
     }
-    return !name.isEmpty() && name.toUtf8().size() <= kMaxVbanNameUtf8Bytes;
+    const QByteArray data = QJsonDocument(QJsonObject{{QStringLiteral("outgoing"), outgoing},
+                                                      {QStringLiteral("incoming"), incoming}})
+                                .toJson(QJsonDocument::Indented);
+    if (data.size() > kMaxDocumentBytes
+        || !QDir().mkpath(QFileInfo(path).absolutePath())) {
+        if (reason) *reason = QStringLiteral("storage-failed");
+        return false;
+    }
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(data) != data.size()
+        || !file.commit()) {
+        if (reason) *reason = QStringLiteral("storage-failed");
+        return false;
+    }
+    return true;
 }
 
 } // namespace
@@ -53,63 +122,62 @@ VbanStore::VbanStore(QString path)
 QString VbanStore::defaultPath()
 {
     const QByteArray override = qgetenv("QINDAQT_AUDIO_VBAN_PATH");
-    if (!override.isEmpty()) {
-        return QString::fromUtf8(override);
-    }
+    if (!override.isEmpty()) return QString::fromUtf8(override);
     return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
         .filePath(QStringLiteral("qindaqt/audio-vban.json"));
 }
 
 QList<VbanStream> VbanStore::load() const
 {
-    QList<VbanStream> streams;
-    QFile file(m_path);
-    if (!file.exists() || file.size() > kMaxDocumentBytes || !file.open(QIODevice::ReadOnly)) {
-        return streams;
+    QJsonObject document;
+    return readDocument(m_path, &document, nullptr) ? parseDefinitions(document)
+                                                   : QList<VbanStream>{};
+}
+
+bool VbanStore::upsert(const VbanStream &definition, QString *reasonCode) const
+{
+    if (!validateVbanDefinition(definition).accepted || definition.enabled
+        || definition.active) {
+        if (reasonCode) *reasonCode = QStringLiteral("invalid-vban-stream");
+        return false;
     }
-    const QJsonDocument document = QJsonDocument::fromJson(file.read(kMaxDocumentBytes));
-    if (!document.isObject()) {
-        return streams;
+    QJsonObject document;
+    if (!readDocument(m_path, &document, reasonCode)) return false;
+    QList<VbanStream> streams = parseDefinitions(document);
+    for (const VbanStream &stream : streams) {
+        if (stream.name != definition.name && !definition.outgoing
+            && !stream.outgoing && stream.port == definition.port) {
+            if (reasonCode) *reasonCode = QStringLiteral("vban-port-in-use");
+            return false;
+        }
     }
-    const auto add = [&streams](VbanStream stream) {
-        for (const VbanStream &existing : streams) {
-            if (existing.name == stream.name) {
-                return;
-            }
+    for (VbanStream &stream : streams) {
+        if (stream.name == definition.name) {
+            stream = definition;
+            return writeDefinitions(m_path, streams, reasonCode);
         }
-        if (streams.size() < kMaxVbanStreams) {
-            streams.append(std::move(stream));
-        }
-    };
-    for (const QJsonValue &entry : document.object().value(QStringLiteral("outgoing")).toArray()) {
-        const QJsonObject object = entry.toObject();
-        VbanStream stream;
-        stream.outgoing = true;
-        stream.name = object.value(QStringLiteral("name")).toString();
-        stream.busId = object.value(QStringLiteral("bus")).toString();
-        stream.host = object.value(QStringLiteral("host")).toString();
-        const int port = object.value(QStringLiteral("port")).toInt(6980);
-        if (!nameIsPlain(stream.name) || !isBoundedText(stream.busId, kMaxConsoleIdUtf8Bytes)
-            || stream.busId.isEmpty() || !hostIsPlain(stream.host)
-            || stream.host.toUtf8().size() > kMaxVbanHostUtf8Bytes || port <= 0 || port > 65535) {
-            continue;
-        }
-        stream.port = static_cast<quint32>(port);
-        add(stream);
     }
-    for (const QJsonValue &entry : document.object().value(QStringLiteral("incoming")).toArray()) {
-        const QJsonObject object = entry.toObject();
-        VbanStream stream;
-        stream.outgoing = false;
-        stream.name = object.value(QStringLiteral("name")).toString();
-        const int port = object.value(QStringLiteral("port")).toInt(6980);
-        if (!nameIsPlain(stream.name) || port <= 0 || port > 65535) {
-            continue;
-        }
-        stream.port = static_cast<quint32>(port);
-        add(stream);
+    if (streams.size() >= kMaxVbanStreams) {
+        if (reasonCode) *reasonCode = QStringLiteral("too-many-vban-streams");
+        return false;
     }
-    return streams;
+    streams.append(definition);
+    return writeDefinitions(m_path, streams, reasonCode);
+}
+
+bool VbanStore::remove(const QString &name, QString *reasonCode) const
+{
+    QJsonObject document;
+    if (!readDocument(m_path, &document, reasonCode)) return false;
+    QList<VbanStream> streams = parseDefinitions(document);
+    for (qsizetype i = 0; i < streams.size(); ++i) {
+        if (streams.at(i).name == name) {
+            streams.removeAt(i);
+            return writeDefinitions(m_path, streams, reasonCode);
+        }
+    }
+    if (reasonCode) *reasonCode = QStringLiteral("unknown-vban-stream");
+    return false;
 }
 
 } // namespace QindaQt::Audio

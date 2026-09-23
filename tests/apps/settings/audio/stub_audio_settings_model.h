@@ -55,6 +55,9 @@ class StubAudioSettingsModel final : public QObject {
   Q_PROPERTY(QStringList consoleMacros MEMBER consoleMacros NOTIFY viewChanged)
   Q_PROPERTY(QVariantMap consoleRecording MEMBER consoleRecording NOTIFY viewChanged)
   Q_PROPERTY(QVariantList consoleVban MEMBER consoleVban NOTIFY viewChanged)
+  Q_PROPERTY(bool canManagePeerStreams MEMBER canManagePeerStreams NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList peerOutputs MEMBER peerOutputs NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList peerBuses MEMBER peerBuses NOTIFY viewChanged)
 
 public:
   bool loading = false;
@@ -100,6 +103,20 @@ public:
                                           {QStringLiteral("port"), 6980},
                                           {QStringLiteral("enabled"), false},
                                           {QStringLiteral("active"), false}}};
+  bool canManagePeerStreams = true;
+  QVariantList peerOutputs = {QVariantMap{{QStringLiteral("nodeName"), QStringLiteral("alsa_output.desk")},
+                                           {QStringLiteral("label"), QStringLiteral("Desk Speakers")},
+                                           {QStringLiteral("serial"), qulonglong(10)}}};
+  QVariantList peerBuses = {QVariantMap{{QStringLiteral("id"), QStringLiteral("bus.a2")},
+                                        {QStringLiteral("label"), QStringLiteral("Bus A2")},
+                                        {QStringLiteral("available"), true}}};
+  QString savedPeerName;
+  QString savedPeerBus;
+  QString savedPeerHost;
+  QString savedPeerOutput;
+  int savedPeerPort = 0;
+  bool savedPeerOutgoing = false;
+  QString removedPeerName;
   QString lastVbanName;
   bool lastVbanEnabled = false;
   QString lastConsoleId;
@@ -209,6 +226,26 @@ public:
   Q_INVOKABLE bool setVbanEnabled(QString name, bool enabled) {
     lastVbanName = name;
     lastVbanEnabled = enabled;
+    return true;
+  }
+  Q_INVOKABLE bool saveOutgoingPeer(QString name, QString bus, QString host, int port) {
+    savedPeerName = name;
+    savedPeerBus = bus;
+    savedPeerHost = host;
+    savedPeerPort = port;
+    savedPeerOutgoing = true;
+    return true;
+  }
+  Q_INVOKABLE bool saveIncomingPeer(QString name, QString host, QString output, int port) {
+    savedPeerName = name;
+    savedPeerHost = host;
+    savedPeerOutput = output;
+    savedPeerPort = port;
+    savedPeerOutgoing = false;
+    return true;
+  }
+  Q_INVOKABLE bool removePeer(QString name) {
+    removedPeerName = name;
     return true;
   }
   Q_INVOKABLE bool startRecording(QString busId, QString format) {

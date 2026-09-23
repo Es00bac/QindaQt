@@ -38,11 +38,13 @@ public:
     using OutcomeCallback = std::function<void(quint64, BackendOperationOutcome)>;
     using LevelsCallback = std::function<void(QList<LevelReading>)>;
     using RecordingFailedCallback = std::function<void(QString)>;
+    using VbanRunningCallback = std::function<void(QList<BackendVbanStream>)>;
 
     WirePlumberWorker(quint64 initialEpoch, SnapshotCallback snapshotCallback,
                       OutcomeCallback outcomeCallback, LevelsCallback levelsCallback,
                       WirePlumberWorkerLifecycleHooks lifecycleHooks = {},
-                      RecordingFailedCallback recordingFailedCallback = {});
+                      RecordingFailedCallback recordingFailedCallback = {},
+                      VbanRunningCallback vbanRunningCallback = {});
     ~WirePlumberWorker();
 
     void start();
@@ -68,7 +70,7 @@ public:
     // stream that could not connect). Drops the entry only if it still holds
     // THAT module - the key may already belong to its replacement. Public
     // only because the event lands in a free C callback.
-    enum class ModuleKind { Send, Chain, BusChain, Endpoint };
+    enum class ModuleKind { Send, Chain, BusChain, Endpoint, VbanRoute };
     void forgetModule(ModuleKind kind, const std::string &key, void *module);
     // Attaches the destroy listener; every loaded module goes through it.
     void watchModule(ModuleKind kind, const std::string &key, void *module);
@@ -115,6 +117,7 @@ private:
     void applyRecordingOnWorker(const BackendRecording &recording);
     void applyVbanOnWorker(const QList<BackendVbanStream> &streams);
     void stopAllVban();
+    void publishVbanRunning();
     // Where a send into a bus should play: the bus's own sink when the bus
     // has a running rack, otherwise the device. Empty when neither exists.
     [[nodiscard]] QString busWriteNode(const QString &busId, const Handle &device) const;
@@ -176,6 +179,8 @@ private:
     OutcomeCallback m_outcomeCallback;
     LevelsCallback m_levelsCallback;
     RecordingFailedCallback m_recordingFailedCallback;
+    VbanRunningCallback m_vbanRunningCallback;
+    QList<BackendVbanStream> m_reportedVbanRunning;
     BackendRecording m_declaredRecording;
     Recorder m_recorder;
     QList<BackendVbanStream> m_declaredVban;
@@ -209,6 +214,7 @@ private:
     };
     // Loopback modules this worker loaded, keyed by the send's node name.
     std::unordered_map<std::string, LoadedModule> m_routingModules;
+    std::unordered_map<std::string, LoadedModule> m_vbanRouteModules;
     QList<BackendRoutingEdge> m_declaredRouting;
     QList<BackendMeterTarget> m_declaredMetering;
     QList<BackendConsoleEndpoint> m_declaredEndpoints;

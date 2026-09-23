@@ -10,23 +10,25 @@
 namespace QindaQt::Audio
 {
 
-// VBAN streams (ADR-0185) are defined in a user-owned document, read
-// fail-closed, like macro buttons: the Audio route's closed surface has no
-// text entry for a host name, so hosts and stream names live in a file and
-// Settings switches them on and off.
-//
-//   { "outgoing": [ { "name": "Stream1", "bus": "bus.a2", "host": "192.168.1.20", "port": 6980 } ],
-//     "incoming": [ { "name": "Laptop", "port": 6980 } ] }
+// Audio1-owned manual-peer definitions (ADR-0246). Reads are value copies;
+// writes validate a complete definition and atomically replace the document.
+// An incoming definition requires an exact source IPv4 and output node name.
+// Lifetime/threading: this value store is used serially by the coordinator on
+// its Qt thread; the path is fixed at construction and no watcher is owned.
 class VbanStore final
 {
 public:
     explicit VbanStore(QString path);
     // `$XDG_CONFIG_HOME/qindaqt/audio-vban.json`, or QINDAQT_AUDIO_VBAN_PATH.
     [[nodiscard]] static QString defaultPath();
-    // The defined streams with `enabled` and `active` false; a stream whose
-    // fields do not parse is dropped, names are unique (first wins), at most
-    // kMaxVbanStreams.
+    // Invalid or legacy-open incoming entries are never admitted. Missing file
+    // means an empty definition set; malformed JSON also loads empty.
     [[nodiscard]] QList<VbanStream> load() const;
+    // Definition edits do not modify enabled intent; callers republish after
+    // success. Failure leaves the previous file intact and supplies a stable
+    // reason code suitable for Audio1 OperationResult.
+    [[nodiscard]] bool upsert(const VbanStream &definition, QString *reasonCode) const;
+    [[nodiscard]] bool remove(const QString &name, QString *reasonCode) const;
 
 private:
     QString m_path;

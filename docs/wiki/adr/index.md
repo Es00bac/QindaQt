@@ -247,3 +247,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0242: Adapt and balance KWin's pointer-corner callback](0242-adapt-and-balance-the-kwin-pointer-corner.md)
 - [ADR-0244: Gate desktop Voice use on confirmed Settings1 opt-in](0244-gate-desktop-voice-use-on-confirmed-settings.md)
 - [ADR-0245: Write only supported default-application associations](0245-write-only-supported-default-application-associations.md)
+- [ADR-0246: Configure manual audio peers through Audio1](0246-configure-manual-audio-peers-through-audio1.md)
+- [ADR-0247: Run XDG autostart in the session supervisor](0247-run-xdg-autostart-in-the-session-supervisor.md)

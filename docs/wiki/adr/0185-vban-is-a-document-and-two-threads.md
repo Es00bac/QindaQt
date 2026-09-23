@@ -1,10 +1,10 @@
 # ADR-0185: VBAN is a document and two threads
 
-- **Status:** Accepted
+- **Status:** Superseded
 - **Date:** 2026-09-16
 - **Owners:** Platform (audio service)
 - **Supersedes:** None (completes the last graph gap named in [ADR-0173](0173-the-mixing-console-slice-of-audio1.md))
-- **Superseded by:** None
+- **Superseded by:** [ADR-0246](0246-configure-manual-audio-peers-through-audio1.md)
 
 ## Context
 

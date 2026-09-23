@@ -132,10 +132,14 @@ struct BackendRecording {
 struct BackendVbanStream {
     QString name;
     bool outgoing = true;
-    // Outgoing: the bus's device, read from its monitor. Incoming: unused.
+    // Outgoing: bus device monitor. Incoming: exact selected physical output.
+    // The graph worker resolves this handle only in its current epoch.
     Handle target;
     QString host;
     quint32 port = 6980;
+    // Coordinator-minted activation token. A removed and later re-enabled
+    // identical definition must not reuse delayed old link evidence.
+    quint64 activationToken = 0;
 
     friend bool operator==(const BackendVbanStream &, const BackendVbanStream &) = default;
 };
@@ -218,8 +222,15 @@ Q_SIGNALS:
     // The recording stopped on its own (a write error, the file system full);
     // the console must withdraw it rather than show a recording that is not.
     void recordingFailed(quint64 generation, const QString &reasonCode);
+    // Exact declarations whose selected local graph links were observed.
+    // AGENT-CONTRACT: the coordinator must compare full declaration identity;
+    // a queued name-only report could falsely activate a retargeted route.
+    // This does not prove remote packet delivery (ADR-0246).
+    void vbanRunningChanged(quint64 generation,
+                            const QList<QindaQt::Audio::BackendVbanStream> &running);
 };
 
 } // namespace QindaQt::Audio
 
 Q_DECLARE_METATYPE(QindaQt::Audio::BackendOperationOutcome)
+Q_DECLARE_METATYPE(QindaQt::Audio::BackendVbanStream)

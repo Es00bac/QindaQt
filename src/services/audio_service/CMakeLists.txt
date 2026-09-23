@@ -25,6 +25,7 @@ target_sources(
         src/audio_service_object_p.h
         src/resident_audio_service.cpp
         src/audio_console_operations.cpp
+        src/audio_vban_operations.cpp
         src/console_endpoints.cpp
         src/console_endpoints_p.h
         src/console_model.cpp

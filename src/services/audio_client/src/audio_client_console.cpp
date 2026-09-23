@@ -178,4 +178,20 @@ quint64 AudioClient::setVbanEnabled(const QString &name, const bool enabled)
     return beginOperation(request);
 }
 
+quint64 AudioClient::upsertVbanStream(const VbanStream &definition)
+{
+    OperationRequest request;
+    request.kind = OperationKind::UpsertVbanStream;
+    request.vbanDefinition = definition;
+    return beginOperation(request);
+}
+
+quint64 AudioClient::deleteVbanStream(const QString &name)
+{
+    OperationRequest request;
+    request.kind = OperationKind::DeleteVbanStream;
+    request.displayName = name;
+    return beginOperation(request);
+}
+
 } // namespace QindaQt::Audio
