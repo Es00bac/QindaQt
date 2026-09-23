@@ -17,8 +17,6 @@ using QindaQt::Audio::Capability;
 using QindaQt::Audio::ClientState;
 using QindaQt::Audio::Device;
 using QindaQt::Audio::DeviceKind;
-using QindaQt::Audio::OperationResult;
-using QindaQt::Audio::OperationStatus;
 using QindaQt::Audio::Snapshot;
 using QindaQt::Audio::Stream;
 
@@ -79,11 +77,14 @@ AudioSettingsModel::AudioSettingsModel(AudioClient &client, QObject *parent)
     : QObject(parent), m_client(client) {
   connect(&m_client, &AudioClient::stateChanged, this, [this] {
     reconcileVolumeIntents();
+    reconcileMoveReadbacks();
     Q_EMIT viewChanged();
   });
   connect(&m_client, &AudioClient::snapshotChanged, this, [this] {
     ++m_volumeSnapshotSequence;
+    ++m_moveSnapshotSequence;
     reconcileVolumeIntents();
+    reconcileMoveReadbacks();
     Q_EMIT viewChanged();
   });
   connect(&m_client, &AudioClient::operationCompleted, this,
@@ -404,8 +405,13 @@ bool AudioSettingsModel::removeVirtualDevice(const quint64 serial) {
 
 void AudioSettingsModel::trackPending(const quint64 requestId,
                                       const quint64 serial,
-                                      const Intent intent) {
-  m_pendingBySerial.insert(serial, PendingIntent{requestId, intent});
+                                      const Intent intent,
+                                      const quint64 targetSerial) {
+  const Snapshot snapshot = m_client.snapshot();
+  m_pendingBySerial.insert(serial, PendingIntent{requestId, intent,
+                                                  targetSerial, m_client.owner(),
+                                                  snapshot.epoch,
+                                                  m_moveSnapshotSequence});
   m_serialByRequestId.insert(requestId, serial);
 }
 
@@ -427,6 +433,9 @@ void AudioSettingsModel::beginIntentMessage(const Intent intent) {
   case Intent::StreamMute:
     m_operationStatusText = translateAudio("Applying the application mute state…");
     break;
+  case Intent::MoveStream:
+    m_operationStatusText = translateAudio("Moving the application to its selected device…");
+    break;
   case Intent::DeviceChannelVolume:
     m_operationStatusText = translateAudio("Applying the channel volume…");
     break;
@@ -438,49 +447,6 @@ void AudioSettingsModel::beginIntentMessage(const Intent intent) {
     break;
   }
   Q_EMIT viewChanged();
-}
-
-void AudioSettingsModel::handleOperationCompleted(
-    const quint64 requestId, const OperationResult &result) {
-  // AGENT-GUARD: Only a tracked request's completion is presentation truth.
-  // Late, foreign, or superseded request IDs are dropped; reacting to them
-  // would let a retired lineage surface as fresh feedback. Lookup is by
-  // requestId -> serial, then serial removes its own pending entry only, so
-  // one target completing never touches another target's in-flight state.
-  const auto serialIt = m_serialByRequestId.constFind(requestId);
-  const bool consoleRequest = m_consoleRequestIds.remove(requestId);
-  if (serialIt == m_serialByRequestId.constEnd() && !consoleRequest) {
-    return;
-  }
-  std::optional<std::pair<quint64, Intent>> completed;
-  if (serialIt != m_serialByRequestId.constEnd()) {
-    const quint64 serial = *serialIt;
-    const auto pending = m_pendingBySerial.constFind(serial);
-    if (pending != m_pendingBySerial.constEnd() && pending->requestId == requestId) {
-      completed = std::pair{serial, pending->intent};
-      m_pendingBySerial.remove(serial);
-    }
-    m_serialByRequestId.remove(requestId);
-  }
-
-  if (result.status == OperationStatus::Succeeded) {
-    m_localError.clear();
-    m_operationStatusText = translateAudio(
-        "Change applied; refreshing audio information.");
-  } else {
-    m_operationStatusText.clear();
-    if (result.status == OperationStatus::Uncertain) {
-      m_localError = translateAudio(
-          "The audio change could not be confirmed. Refreshing audio "
-          "information before you try again.");
-    } else {
-      m_localError = actionFailureText(result.reasonCode);
-    }
-  }
-  Q_EMIT viewChanged();
-  if (completed.has_value()) {
-    completeVolumeRequest(completed->first, completed->second, result);
-  }
 }
 
 void AudioSettingsModel::rejectAction(const QString &reason) {

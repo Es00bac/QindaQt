@@ -127,6 +127,10 @@ public:
   Q_INVOKABLE bool setDeviceMuted(quint64 serial, bool muted);
   Q_INVOKABLE bool setStreamVolume(quint64 serial, double level);
   Q_INVOKABLE bool setStreamMuted(quint64 serial, bool muted);
+  // Both serials are resolved in one current Audio1 snapshot. Only a
+  // direction-compatible live device can be selected; the displayed target
+  // remains snapshot truth until a post-result readback confirms the move.
+  Q_INVOKABLE bool moveStream(quint64 streamSerial, quint64 deviceSerial);
   // Per-channel volume is expressed as one channel of the device's retained
   // layout; the full-layout vector is rebuilt from the same snapshot the
   // client's preflight validates against.
@@ -193,10 +197,9 @@ Q_SIGNALS:
   void actionRejected(const QString &reason);
 
 private:
-  // Intent kinds the route can express; MoveStream is deliberately not part
-  // of this slice's surface.
+  // Bounded graph intents exposed by the Settings route.
   enum class Intent { SetDefault, DeviceVolume, DeviceMute, StreamVolume,
-                       StreamMute, DeviceChannelVolume, CreateVirtual,
+                       StreamMute, MoveStream, DeviceChannelVolume, CreateVirtual,
                        RemoveVirtual };
 
   // Console intents (ADR-0173). Kept separate from Intent because they carry a
@@ -208,6 +211,21 @@ private:
   struct PendingIntent {
     quint64 requestId = 0;
     Intent intent = Intent::SetDefault;
+    quint64 targetSerial = 0;
+    QString owner;
+    quint64 epoch = 0;
+    quint64 snapshotSequenceAtDispatch = 0;
+  };
+  // A successful operation reply is not route truth. Hold this stream's
+  // chooser until a later accepted same-owner/epoch snapshot reports the
+  // selected target, or report a truthful readback mismatch.
+  struct MoveReadback {
+    quint64 targetSerial = 0;
+    QString owner;
+    quint64 epoch = 0;
+    quint64 revisionFloor = 0;
+    quint64 requiredSnapshotSequence = 0;
+    quint64 generation = 0;
   };
   // One displayed latest target plus at most one queued successor per serial.
   // Authoritative volumePercent never comes from this transient intent.
@@ -242,11 +260,13 @@ private:
   [[nodiscard]] bool serialPending(quint64 serial) const {
     return m_pendingBySerial.contains(serial);
   }
-  void trackPending(quint64 requestId, quint64 serial, const Intent intent);
+  void trackPending(quint64 requestId, quint64 serial, const Intent intent,
+                    quint64 targetSerial = 0);
   [[nodiscard]] bool requestVolume(quint64 serial, bool isStream, double level);
   void completeVolumeRequest(quint64 serial, Intent intent,
                              const Audio::OperationResult &result);
   void reconcileVolumeIntents();
+  void reconcileMoveReadbacks();
   void expireVolumeIntent(quint64 serial, quint64 generation);
   [[nodiscard]] std::optional<double> displayVolumeLevel(quint64 serial,
                                                           bool isStream) const;
@@ -272,7 +292,8 @@ private:
   [[nodiscard]] QVariantMap projectDeviceRow(const Audio::Device &device,
                                              bool isDefault) const;
   [[nodiscard]] QVariantMap projectStreamRow(
-      const Audio::Stream &stream, const Audio::Device *target) const;
+      const Audio::Stream &stream, const Audio::Device *target,
+      const Audio::Snapshot &snapshot) const;
 
   Audio::AudioClient &m_client;
   QString m_localError;
@@ -280,6 +301,9 @@ private:
   QHash<quint64, PendingIntent> m_pendingBySerial;
   QHash<quint64, quint64> m_serialByRequestId;
   QHash<quint64, VolumeIntent> m_volumeBySerial;
+  QHash<quint64, MoveReadback> m_moveReadbacks;
+  quint64 m_moveSnapshotSequence = 0;
+  quint64 m_nextMoveGeneration = 1;
   quint64 m_volumeSnapshotSequence = 0;
   quint64 m_nextVolumeGeneration = 1;
   QSet<quint64> m_consoleRequestIds;

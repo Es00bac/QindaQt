@@ -138,7 +138,26 @@ QVariantMap AudioSettingsModel::projectDeviceRow(const Device &device,
 }
 
 QVariantMap AudioSettingsModel::projectStreamRow(
-    const Stream &stream, const Device *target) const {
+    const Stream &stream, const Device *target,
+    const Snapshot &snapshot) const {
+  const auto &devices = stream.direction == StreamDirection::Playback
+                            ? snapshot.outputs : snapshot.inputs;
+  QVariantList targetChoices;
+  bool hasAlternative = false;
+  targetChoices.reserve(devices.size());
+  for (const Device &device : devices) {
+    targetChoices.append(QVariantMap{
+        {QStringLiteral("serial"), device.handle.serial},
+        {QStringLiteral("label"), deviceDisplayName(device)},
+    });
+    hasAlternative |= target == nullptr || device.handle != target->handle;
+  }
+  const bool moveAdmitted =
+      stream.canMove && hasAlternative
+      && snapshotAdmitsOperation(m_client, Capability::MoveStream)
+      && !serialPending(stream.handle.serial)
+      && !m_volumeBySerial.contains(stream.handle.serial)
+      && !m_moveReadbacks.contains(stream.handle.serial);
   return QVariantMap{
       {QStringLiteral("serial"), stream.handle.serial},
       {QStringLiteral("directionText"),
@@ -152,6 +171,15 @@ QVariantMap AudioSettingsModel::projectStreamRow(
       {QStringLiteral("targetName"),
        target != nullptr ? deviceDisplayName(*target)
                          : translateAudio("Unknown device")},
+      // AGENT-CONTRACT: the chooser index comes from this authoritative
+      // target serial, never from a clicked option or operation reply.
+      {QStringLiteral("targetSerial"),
+       target != nullptr ? target->handle.serial : quint64(0)},
+      {QStringLiteral("targetChoices"), targetChoices},
+      {QStringLiteral("targetKindText"),
+       stream.direction == StreamDirection::Playback
+           ? translateAudio("Output device") : translateAudio("Input device")},
+      {QStringLiteral("moveAvailable"), moveAdmitted},
       {QStringLiteral("volumePercent"),
        percentFor(stream.volume, stream.volumeKnown)},
       {QStringLiteral("volumeDisplayPercent"),
@@ -168,7 +196,8 @@ QVariantMap AudioSettingsModel::projectStreamRow(
            && snapshotAdmitsOperation(m_client, Capability::SetMute)},
       {QStringLiteral("pending"),
        serialPending(stream.handle.serial)
-           || m_volumeBySerial.contains(stream.handle.serial)},
+           || m_volumeBySerial.contains(stream.handle.serial)
+           || m_moveReadbacks.contains(stream.handle.serial)},
   };
 }
 
@@ -258,7 +287,7 @@ QVariantList AudioSettingsModel::streams() const {
         stream.targetKnown && stream.target.isValid()
             ? findDeviceBySerial(snapshot, stream.target.serial)
             : nullptr;
-    rows.append(projectStreamRow(stream, target));
+    rows.append(projectStreamRow(stream, target, snapshot));
   }
   return rows;
 }
