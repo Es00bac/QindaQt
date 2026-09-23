@@ -19,6 +19,10 @@ namespace QindaQt::Services::SettingsClient {
 class SettingsClient;
 }
 
+namespace QindaQt::Services::VoicePreferences {
+class VoiceInputPreferenceGate;
+}
+
 namespace QindaQt::Services::Voice {
 class VoiceClient;
 class VoiceTransport;
@@ -37,7 +41,8 @@ class SettingsRouteLauncher;
 // controller sees only its least-authority seam; the session bus and the
 // provider's identity stay owned here.
 //
-// AGENT-CONTRACT: the client is only started when voice.read is granted.
+// AGENT-CONTRACT: the client is only started when voice.read is granted
+// and services.voiceInput is confirmed On for the current Settings1 owner.
 // Without it nothing is asked of the provider at all — no snapshot fetch, no
 // signal subscription, and no activation attempt — so a denied policy means the
 // voice provider is never even started by the panel.
@@ -81,6 +86,7 @@ private:
     std::unique_ptr<Services::Voice::VoiceClient> m_client;
     std::unique_ptr<VoiceApplet::VoiceClientInterface> m_seam;
     std::unique_ptr<VoiceApplet::VoiceAppletController> m_access;
+    std::unique_ptr<Services::VoicePreferences::VoiceInputPreferenceGate> m_inputGate;
     // The controller borrows nothing from the settings client; this is a plain
     // lifetime anchor for the connection made in compose().
     std::unique_ptr<QObject> m_settingsBinding;

@@ -69,6 +69,7 @@ class VoiceSettingsModel final : public QObject {
     Q_PROPERTY(QVariantList providerRows READ providerRows NOTIFY viewChanged)
     Q_PROPERTY(QVariantList capabilityRows READ capabilityRows NOTIFY viewChanged)
     Q_PROPERTY(bool providerBusy READ providerBusy NOTIFY viewChanged)
+    Q_PROPERTY(bool canRetryProvider READ canRetryProvider NOTIFY viewChanged)
     Q_PROPERTY(QString providerErrorText READ providerErrorText NOTIFY viewChanged)
     Q_PROPERTY(bool canStartDictation READ canStartDictation NOTIFY viewChanged)
     Q_PROPERTY(bool canCancelDictation READ canCancelDictation NOTIFY viewChanged)
@@ -115,6 +116,7 @@ public:
     [[nodiscard]] QVariantList providerRows() const;
     [[nodiscard]] QVariantList capabilityRows() const;
     [[nodiscard]] bool providerBusy() const noexcept { return m_voiceRequestId != 0; }
+    [[nodiscard]] bool canRetryProvider() const noexcept;
     [[nodiscard]] QString providerErrorText() const { return m_voiceError; }
     [[nodiscard]] bool canStartDictation() const noexcept;
     [[nodiscard]] bool canCancelDictation() const noexcept;
@@ -137,6 +139,7 @@ public:
 
 Q_SIGNALS:
     void viewChanged();
+    void providerRetryRequested();
 
 private:
     void handleSettingsState();
@@ -169,6 +172,13 @@ private:
     // attributed and the next key started.
     bool m_committingVoiceInput = false;
     bool m_committingPanelTranscript = false;
+    bool m_pendingVoiceInput = false;
+    bool m_pendingPanelTranscript = false;
+    bool m_requestedVoiceInput = false;
+    bool m_requestedPanelTranscript = true;
+    bool m_waitingForCommittedSnapshot = false;
+    bool m_preserveDraftOnResync = false;
+    quint64 m_committedRevision = 0;
 
     Services::Voice::Snapshot m_snapshot;
     QString m_voiceOwner;

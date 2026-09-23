@@ -20,6 +20,13 @@ provider, sends that audio off the machine. The page opens with a plain
 statement of exactly that, naming the difference between a cloud and a local
 provider, and saying that QindaQt itself stores neither audio nor transcripts.
 
+The route stays open and can save either preference while Voice1 is
+disconnected. Opening it with Off or without a confirmed Settings1
+baseline does not activate an installed provider. The provider card
+distinguishes desktop opt-in from provider availability and the provider's
+own shortcut-armed state. Applying Off withdraws this route's actions
+at once; the shell and console follow the confirmed Settings1 change.
+
 The second preference exists because the panel chip shows the words as they are
 recognised. That is useful at a desk and wrong in a meeting room, so it is a
 switch rather than a decision made for the user.
@@ -52,8 +59,11 @@ the successful key applied and reports the failure; it never silently rolls the
 other key back, because the user's own next action is the only thing that can
 decide what they meant.
 
-An uncertain commit is never replayed. The next snapshot is what tells the user
-which value actually landed.
+The second write waits for the fresh Settings1 snapshot and revision after
+the first write; a confirmed commit reply alone is not a new baseline.
+A clean draft follows external changes, while a dirty draft keeps its
+requested values for review. An uncertain commit is never replayed.
+The next snapshot tells the user which value actually landed.
 
 ## Actions deliberately absent
 
@@ -67,8 +77,10 @@ provider's own interface.
 
 ## Without a provider
 
-The page renders fully. The provider card says no provider is running and
-suggests installing one and switching voice input on; the preferences still
+The page renders fully. With Voice input Off it says that the desktop has
+not connected; after a confirmed On with no provider it suggests
+installing one. The provider's availability is separate from the
+desktop preference; the preferences still
 save, because they are the desktop's, not the provider's.
 
 ## See also

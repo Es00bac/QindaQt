@@ -316,6 +316,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::NotificationPresentationPolicy
             QindaQt::SessionLockState
             QindaQt::SettingsClient
+            QindaQt::VoicePreferences
             QindaQt::ShellCustomizationEditor
             QindaQt::ShellLayout
             QindaQt::ShellOrchestration

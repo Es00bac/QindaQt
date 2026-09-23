@@ -12,6 +12,7 @@
 #include "qindaqt/services/voice_protocol/voice_settings_keys.h"
 #include "qindaqt/services/voice_client/qt_voice_transport.h"
 #include "qindaqt/services/voice_client/voice_client.h"
+#include "qindaqt/services/voice_preferences/voice_input_preference_gate.h"
 #include "qindaqt/shell/voice_applet/voice_applet_controller.h"
 #include "qindaqt/shell/voice_applet/voice_service_client_adapter.h"
 
@@ -99,9 +100,18 @@ void VoiceAppletComposition::compose(
                      [this, &settingsClient] { publishTranscriptPreference(settingsClient); });
     publishTranscriptPreference(settingsClient);
 
-    if (grants.read) {
-        // Starting the client is also what asks D-Bus to activate an installed
-        // provider, so this call is the whole "voice is available" decision.
+    m_inputGate = std::make_unique<Services::VoicePreferences::VoiceInputPreferenceGate>(
+        settingsClient);
+    QObject::connect(m_inputGate.get(),
+                     &Services::VoicePreferences::VoiceInputPreferenceGate::allowedChanged,
+                     m_settingsBinding.get(), [this, readGranted = grants.read](bool allowed) {
+                         if (allowed && readGranted) {
+                             m_client->start();
+                         } else {
+                             m_client->stop();
+                         }
+                     });
+    if (m_inputGate->allowed() && grants.read) {
         m_client->start();
     }
 }

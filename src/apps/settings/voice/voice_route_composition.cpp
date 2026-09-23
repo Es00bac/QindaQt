@@ -6,6 +6,7 @@
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/voice_client/qt_voice_transport.h>
 #include <qindaqt/services/voice_client/voice_client.h>
+#include <qindaqt/services/voice_preferences/voice_input_preference_gate.h>
 
 #include <QtDBus/QDBusConnection>
 
@@ -18,6 +19,7 @@ public:
         , settingsClient(settingsTransport,
                          {QString::fromLatin1(VoiceInputSettingsKey),
                           QString::fromLatin1(VoicePanelTranscriptSettingsKey)})
+        , inputGate(settingsClient)
         , voiceTransport(QDBusConnection::sessionBus())
         , voiceClient(&voiceTransport)
         , model(settingsClient, voiceClient)
@@ -28,11 +30,40 @@ public:
         QString ignoredError;
         const bool settingsStarted = settingsClient.start(&ignoredError);
         Q_UNUSED(settingsStarted);
-        voiceClient.start();
+        QObject::connect(&inputGate,
+                         &Services::VoicePreferences::VoiceInputPreferenceGate::allowedChanged,
+                         &model, [this] { syncVoiceAdmission(); });
+        QObject::connect(&model, &VoiceSettingsModel::viewChanged,
+                         &model, [this] { syncVoiceAdmission(); });
+        QObject::connect(&model, &VoiceSettingsModel::providerRetryRequested,
+                         &model, [this] {
+                             const bool pendingOff = model.preferenceSaving()
+                                                     && !model.draftVoiceInputEnabled();
+                             if (inputGate.allowed() && !pendingOff) {
+                                 voiceClient.stop();
+                                 voiceClient.start();
+                             }
+                         });
+        syncVoiceAdmission();
+    }
+
+    void syncVoiceAdmission()
+    {
+        // An explicit Apply of Off withdraws this route's actions before
+        // Settings1 confirms the write. A rejected write may resume use
+        // from the still-confirmed On baseline; no capture is replayed.
+        const bool pendingOff = model.preferenceSaving()
+                                && !model.draftVoiceInputEnabled();
+        if (inputGate.allowed() && !pendingOff) {
+            voiceClient.start();
+        } else {
+            voiceClient.stop();
+        }
     }
 
     Services::SettingsClient::QtSettingsTransport settingsTransport;
     Services::SettingsClient::SettingsClient settingsClient;
+    Services::VoicePreferences::VoiceInputPreferenceGate inputGate;
     Services::Voice::QtVoiceTransport voiceTransport;
     Services::Voice::VoiceClient voiceClient;
     VoiceSettingsModel model;

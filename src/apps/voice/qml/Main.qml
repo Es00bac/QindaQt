@@ -240,6 +240,7 @@ Tk.AppWindow {
 
             actions: Tk.Button {
                 text: qsTr("Try again")
+                visible: VoiceConsole.canRetryConnection
                 small: true
                 variant: "outline"
                 onClicked: VoiceConsole.retryConnection()

@@ -4,10 +4,13 @@
 shows what you have dictated in this session, what the speech provider is
 doing, and every voice action in one place.
 
-It is the second consumer of
-[`org.qindaqt.Voice1`](../architecture/voice-input.md), after the
-[panel applet](../shell/voice-applet.md), and like the applet it speaks only
-that contract.
+It consumes [org.qindaqt.Voice1](../architecture/voice-input.md), as do the
+[panel applet](../shell/voice-applet.md) and Voice Settings route. Its only
+provider connection is
+Voice1; it reads services.voiceInput through the shared desktop preference
+gate before starting that connection. Opening the console while desktop
+Voice is Off never activates the provider, and Try again cannot bypass Off.
+A confirmed On connects live without reopening.
 
 ## The window
 
@@ -61,7 +64,9 @@ the QindaTK precedent.
 
 ## Without a provider
 
-The window opens and says so: a warning notice with a Try again control and an
+With desktop Voice Off, the window reports that preference and leaves
+provider actions dimmed. With Voice On but no provider installed,
+the window opens and says so: a warning notice with a Try again control and an
 install hint, an empty state in the list, and every action dimmed. Nothing
 throws and nothing hangs — `QtVoiceTransport` reports an empty owner when D-Bus
 activation is refused, so "not installed" resolves rather than waiting forever.

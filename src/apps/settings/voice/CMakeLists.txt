@@ -42,7 +42,7 @@ target_link_libraries(
     qindaqt_settings_voice_qml
     PRIVATE
         qindaqt_settings_voice QindaQt::VoiceClient
-        QindaQt::SettingsClient QindaQt::TokensQml
+        QindaQt::SettingsClient QindaQt::VoicePreferences QindaQt::TokensQml
         Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2
 )
 set_target_properties(

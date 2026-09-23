@@ -8,11 +8,14 @@ desktop today, and nothing in QindaQt names it outside packaging.
 
 [ADR-0233](../adr/0233-own-voice-input-as-a-contract-not-an-implementation.md)
 records why the split exists and what was rejected.
+[ADR-0244](../adr/0244-gate-desktop-voice-use-on-confirmed-settings.md)
+records the desktop's default-off activation policy.
 
 ## What the user gets
 
-Hold the dictation shortcut in any window — a terminal, a browser, a chat box,
-an editor — and what you say is inserted there. The provider owns that delivery
+After switching desktop Voice input On and configuring a provider, hold its
+dictation shortcut in any window — a terminal, a browser, a chat box, an
+editor — and what you say is inserted there. The provider owns that delivery
 and picks its route; the desktop reports which route was used and never selects
 one.
 
@@ -58,6 +61,7 @@ provides a direct text route for applications with an input context.
 | --- | --- | --- |
 | `QindaQt::VoiceProtocol` | The wire contract: enums, bounds, the `a{sv}` codec, and validation. | Link a transport, a client, a provider, QML, audio, or an input method. |
 | `QindaQt::VoiceClient` | Owner tracking, snapshot ordering, one in-flight intent, timeouts. `QtVoiceTransport` is the only translation unit with a bus. | Link QML, the shell, or a provider. |
+| `QindaQt::VoicePreferences` | Confirmed current-owner desktop opt-in over a borrowed Settings1 client; no provider connection. | Activate Voice1, own a bus, or infer consent from a default. |
 | `QindaQt::ShellVoiceApplet` | The pure projection: what is shown and what may be touched. | Link a transport, a client, or QML. |
 | `QindaQt::ShellVoiceAppletRuntime` | The controller over the injected seam, and the compiled QML. | Reach a provider, a microphone, or the filesystem. |
 | `qindaqt_settings_voice` | The Settings route's model over one Settings1 client and one Voice1 client. | Own a bus; the route composition does. |
@@ -179,6 +183,16 @@ Two keys, both in the `services` domain of `data/settings/schema-v2.json`:
 | `services.voiceInput` | `false` | Whether QindaQt uses a speech provider at all. |
 | `services.voicePanelTranscript` | `true` | Whether the panel chip shows the live partial while dictating. |
 
+The shell applet, Voice Settings route and Voice console start Voice1 only
+after Settings1 confirms services.voiceInput On for its current owner.
+Default Off, an unavailable baseline, owner loss, or degraded Settings1
+authority withdraws desktop actions and provider projections. A
+same-owner refresh preserves confirmed On while the separate panel
+transcript preference is saved. Applying Off in Settings withdraws that
+route's actions before its asynchronous commit completes. Desktop Off
+does not terminate an independently running provider or change its own
+shortcut-armed state; that is the separate Voice1 enabled field.
+
 Everything else — vocabulary, corrections, command patterns, app profiles —
 belongs to the provider and is reached through its own interface. Mirroring it
 into Settings1 would create a second authority for values the provider owns.
@@ -206,7 +220,9 @@ activation file is `share/dbus-1/services/org.qindaqt.Voice1.service`.
 | --- | --- |
 | `qindaqt.voice-protocol` | Bounds, the codec, validation, and payloads captured verbatim from a live provider. |
 | `qindaqt.voice-client` | Owner attribution, revision ordering, single-intent accounting, uncertainty. |
+| `qindaqt.settings-voice` | Default-off baseline, live opt-in, owner replacement, clean external drafts, sequential two-key apply and conflict. |
 | `qindaqt.voice-applet` | The projection, request admission, and the controller. |
+| `qindaqt.voice-applet-composition` | Real shell composition stays inactive through missing or Off Settings1 baselines and owner changes; confirmed On alone starts the Voice client. |
 | `session.voice-interop` | The production client against a real provider on a private bus. Skips (77) with no provider checkout present. |
 
 The interop row is the cross-implementation gate: neither half is stubbed, so a

@@ -6,6 +6,7 @@
 #include <qindaqt/apps/settings_voice/voice_settings_model.h>
 
 #include <qindaqt/services/voice_client/voice_client.h>
+#include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/voice_protocol/voice_validation.h>
 
 #include <QtCore/QVariantMap>
@@ -56,6 +57,11 @@ QString VoiceSettingsModel::serviceStatusText() const
 {
     if (m_serviceReady) {
         return {};
+    }
+    if (m_voiceClient.state() == Services::Voice::ClientState::Stopped) {
+        return m_hasPreferenceBaseline && !m_voiceInput
+                   ? tr("Voice input is off. Switch it on to connect to a provider.")
+                   : tr("Waiting for confirmed voice preferences before connecting.");
     }
     const QString reason = m_voiceClient.reasonCode();
     if (m_voiceClient.state() == Services::Voice::ClientState::Starting) {
@@ -279,10 +285,23 @@ bool VoiceSettingsModel::cancelDictation()
     return canCancelDictation() && submit(OperationKind::Cancel, {}, false);
 }
 
+bool VoiceSettingsModel::canRetryProvider() const noexcept
+{
+    return m_hasPreferenceBaseline && m_voiceInput
+           && m_settingsClient.currentOwner() == m_settingsOwner
+           && m_preferenceState == PreferenceState::Ready
+           && m_voiceClient.state() == Services::Voice::ClientState::Unavailable;
+}
+
 void VoiceSettingsModel::retryProvider()
 {
+    if (!canRetryProvider()) {
+        return;
+    }
     m_voiceError.clear();
-    m_voiceClient.start();
+    // The route composition checks the desktop gate before rediscovery;
+    // this model never activates a provider on its own.
+    Q_EMIT providerRetryRequested();
     Q_EMIT viewChanged();
 }
 

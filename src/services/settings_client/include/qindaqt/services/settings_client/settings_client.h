@@ -61,6 +61,12 @@ public:
 
     [[nodiscard]] ClientState state() const noexcept { return m_state; }
     [[nodiscard]] const QString &lastError() const noexcept { return m_lastError; }
+    // Currently observed exact transport owner, independent of the last confirmed
+    // snapshot; this owner may not yet have a confirmed baseline. Empty after
+    // owner loss. Same-thread borrowed reference valid
+    // only while this client lives; compare it before trusting a retained
+    // snapshot during an asynchronous refresh.
+    [[nodiscard]] const QString &currentOwner() const noexcept { return m_owner; }
     [[nodiscard]] const std::optional<SettingsSnapshot> &snapshot() const noexcept { return m_snapshot; }
     [[nodiscard]] bool writeInFlight() const noexcept { return m_write.has_value(); }
 
