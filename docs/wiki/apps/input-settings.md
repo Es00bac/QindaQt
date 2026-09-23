@@ -115,8 +115,11 @@ same-owner, same-epoch movement is queued only in memory. It sends at most one
 additional write after the first success has been confirmed by a fresh
 snapshot at or beyond the result revision.
 A rejected, conflicted, uncertain, or interrupted write drops that pending
-value without replay. Refusal and uncertainty messages survive unchanged
-refreshes and external edits until the user begins a new accepted edit.
+value without replay. Exact Settings1 owner replacement retires the pending
+gesture immediately, including an Authenticating-to-Authenticating transition
+that does not change the client's state. Refusal and uncertainty messages
+survive unchanged refreshes and external edits until the user begins a new
+accepted edit.
 With the touchscreen switched off only the switch remains. The compositor plugin
 consumes the same keys live (the touchscreen switch stops every touch
 device at the seat, thresholds, edge reservations, the keyboard mode);

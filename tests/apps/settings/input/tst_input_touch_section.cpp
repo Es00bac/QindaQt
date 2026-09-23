@@ -223,6 +223,12 @@ void InputTouchSectionTest::sliderKeyboardAndDragKeepTheFinalRequestedValue()
     auto *slider = qobject_cast<QQuickItem *>(findObject(QStringLiteral("inputTouchLongPressSlider")));
     QVERIFY(slider != nullptr);
     QTRY_VERIFY(slider->isVisible());
+    // Snapshot delivery changes ColumnLayout visibility. Wait for the FormRow
+    // editor host to be placed before mapping a real drag into scene space.
+    auto *row = qobject_cast<QQuickItem *>(findObject(QStringLiteral("inputTouchLongPressRow")));
+    QVERIFY(row != nullptr);
+    QTRY_VERIFY(row->width() >= 800 && slider->parentItem()->width() >= 220
+                && slider->width() >= 200 && slider->height() > 0);
     slider->forceActiveFocus();
     QVERIFY(slider->hasActiveFocus());
     QTest::keyClick(window.get(), Qt::Key_Right);
@@ -239,8 +245,8 @@ void InputTouchSectionTest::sliderKeyboardAndDragKeepTheFinalRequestedValue()
     QTest::mousePress(window.get(), Qt::LeftButton, Qt::NoModifier, fromScene.toPoint());
     QTest::mouseMove(window.get(), toScene.toPoint(), 15);
     QTest::mouseRelease(window.get(), Qt::LeftButton, Qt::NoModifier, toScene.toPoint());
+    QTRY_VERIFY(facade->model.longPressDisplayMs() > 600);
     const int dragRequested = facade->model.longPressDisplayMs();
-    QVERIFY(dragRequested > 600);
     QCOMPARE(facade->transport.commits.size(), 1);
     Q_EMIT facade->transport.commitReceived(
         facade->transport.commits.constFirst().token, QStringLiteral(":1.9"),

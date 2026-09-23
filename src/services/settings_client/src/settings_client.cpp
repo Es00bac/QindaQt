@@ -142,7 +142,7 @@ void SettingsClient::stop()
     const bool wasWriting = m_write.has_value();
     m_write.reset();
     m_snapshot.reset();
-    m_owner.clear();
+    setOwner({});
     m_dirty = false;
     m_retryIndex = 0;
     m_activationInFlight = false;
@@ -232,6 +232,17 @@ bool SettingsClient::removeUserValue(const QString &key, QString *error)
     return true;
 }
 
+void SettingsClient::setOwner(QString owner)
+{
+    if (owner == m_owner) {
+        return;
+    }
+    m_owner = std::move(owner);
+    // AGENT-CONTRACT: consumers fence pending intent by this transition even
+    // when an Authenticating-to-Authenticating publish emits no stateChanged.
+    Q_EMIT ownerChanged();
+}
+
 void SettingsClient::handleOwnerChanged(const QString &owner)
 {
     if (!m_started || owner == m_owner) {
@@ -242,7 +253,7 @@ void SettingsClient::handleOwnerChanged(const QString &owner)
     const bool interruptedWrite = m_write.has_value();
     m_request.reset();
     m_write.reset();
-    m_owner = owner;
+    setOwner(owner);
     m_dirty = false;
     m_activationInFlight = false;
     if (owner.isEmpty()) {
@@ -383,7 +394,7 @@ void SettingsClient::handleBusDisconnected()
     m_timeout.stop();
     m_request.reset();
     m_write.reset();
-    m_owner.clear();
+    setOwner({});
     m_transportStarted = false;
     m_activationInFlight = false;
     publish(ClientState::Unavailable, QStringLiteral("session bus disconnected"));

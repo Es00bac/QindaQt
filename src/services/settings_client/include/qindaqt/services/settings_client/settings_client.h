@@ -72,6 +72,10 @@ public:
 
 Q_SIGNALS:
     void stateChanged();
+    // Emitted synchronously after the exact owner changes, even if state and
+    // error stay unchanged. currentOwner() is new; snapshot() may still be
+    // last-known authority from the old owner.
+    void ownerChanged();
     void snapshotChanged();
     void writeInFlightChanged();
     void commitFinished(const QindaQt::Services::SettingsClient::CommitOutcome &outcome);
@@ -89,6 +93,7 @@ private:
     };
     struct Write final { QString key; QVariant value; bool remove = false; };
 
+    void setOwner(QString owner);
     void handleOwnerChanged(const QString &owner);
     void handleInvalidation(const QString &owner, const QString &epoch,
                             quint64 revision, const QStringList &keys);

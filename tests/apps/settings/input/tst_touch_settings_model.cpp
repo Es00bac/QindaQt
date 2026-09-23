@@ -348,15 +348,24 @@ void TouchSettingsModelTests::ownerReplacementAfterAppliedDropsGesture()
                        {{QStringLiteral("input.touch.longPressMs"), 550}}));
     QVERIFY(harness.model.longPressQueueable());
     QVERIFY(harness.model.setLongPressMs(800));
+    QSignalSpy changed(&harness.model, &TouchSettingsModel::changed);
     Q_EMIT harness.transport.ownerChanged(QStringLiteral(":1.8"));
-    QTRY_VERIFY(!harness.model.busy());
+    // No event loop, readback, or timeout may be needed to retire old-owner
+    // intent: the replacement can keep SettingsClient Authenticating.
+    QVERIFY(!harness.model.busy());
+    QVERIFY(changed.size() >= 1);
     QVERIFY(!harness.model.longPressQueueable());
+    QCOMPARE(harness.model.longPressDisplayMs(), 500);
     QCOMPARE(harness.transport.commits.size(), 1);
     QVERIFY(!harness.model.errorText().isEmpty());
-    // Reauthentication is covered by ownerReplacementDropsQueuedLongPress;
-    // here the contract is that an already Applied write cannot replay its
-    // newer gesture against the replacement owner.
-    QCoreApplication::processEvents();
+    QVERIFY(QTest::qWaitFor([&] {
+        return !harness.transport.snapshots.isEmpty()
+               && harness.transport.snapshots.constLast().owner == QStringLiteral(":1.8");
+    }, 2000));
+    const auto replacement = harness.transport.snapshots.constLast();
+    Q_EMIT harness.transport.snapshotReceived(replacement.token, replacement.owner,
+                                              fakeSnapshotWire(1, withTouchDefaults({})));
+    QTRY_VERIFY(harness.model.available());
     QCOMPARE(harness.transport.commits.size(), 1);
 }
 
