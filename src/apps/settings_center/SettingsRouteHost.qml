@@ -44,6 +44,7 @@ Item {
     property string objectNamePrefix: "settingsRoute"
     required property bool applicationClosePending
     signal applicationCloseResolved()
+    signal routeConstructed(string routeId, string state)
     readonly property bool customizeDeparturePending:
         host.presentationActive && host.customizeSettings?.dirty
         && host.navigation?.activeRouteComponent !== "customize"
@@ -81,13 +82,26 @@ Item {
             : navigation?.activeRouteComponent === "datetime"
               ? dateTimeLoader
             : navigation?.activeRouteComponent === "windows" ? windowsLoader
-            : navigation?.activeRouteComponent === "default-apps" ? defaultApplicationsLoader
-            : navigation?.activeRouteComponent === "about-computer" ? aboutComputerLoader
-            : navigation?.activeRouteComponent === "startup" ? startupLoader
-            : navigation?.activeRouteComponent === "screensaver" ? screensaverLoader
-            : navigation?.activeRouteComponent === "login-screen" ? loginScreenLoader
-            : navigation?.activeRouteComponent === "voice" ? voiceLoader
+            : navigation?.activeRouteComponent === "default-apps" ? supplementalLoaders.defaultApplicationsLoader
+            : navigation?.activeRouteComponent === "about-computer" ? supplementalLoaders.aboutComputerLoader
+            : navigation?.activeRouteComponent === "startup" ? supplementalLoaders.startupLoader
+            : navigation?.activeRouteComponent === "screensaver" ? supplementalLoaders.screensaverLoader
+            : navigation?.activeRouteComponent === "login-screen" ? supplementalLoaders.loginScreenLoader
+            : navigation?.activeRouteComponent === "voice" ? supplementalLoaders.voiceLoader
               : unavailableLoader
+
+    SettingsRouteConstructionWitness {
+        id: constructionWitness
+        navigation: host.navigation
+        currentLoader: host.currentLoader
+        diagnosticLoader: unavailableLoader
+        presentationActive: host.presentationActive
+        onConstructed: (routeId, state) => host.routeConstructed(routeId, state)
+    }
+
+    function reportConstructionWitness() {
+        constructionWitness.report()
+    }
 
     // AGENT-CONTRACT: Exactly one host is presentation-active at a time. The
     // compact and wide shells may coexist for responsive layout, but inactive
@@ -324,81 +338,10 @@ Item {
         sourceComponent: host.dateTimeComponent
     }
 
-    Loader {
-        id: defaultApplicationsLoader
-        objectName: host.objectNamePrefix + "DefaultApplicationsLoader"
+    SettingsRouteSupplementalLoaders {
+        id: supplementalLoaders
         anchors.fill: parent
-        active: host.presentationActive
-                && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
-                && host.navigation?.activeRouteComponent === "default-apps"
-                && host.defaultApplicationsComponent !== null
-        sourceComponent: host.defaultApplicationsComponent
-    }
-
-    Loader {
-        id: aboutComputerLoader
-        objectName: host.objectNamePrefix + "AboutComputerLoader"
-        anchors.fill: parent
-        active: host.presentationActive
-                && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
-                && host.navigation?.activeRouteComponent === "about-computer"
-                && host.aboutComputerComponent !== null
-        sourceComponent: host.aboutComputerComponent
-    }
-
-    Loader {
-        id: startupLoader
-        objectName: host.objectNamePrefix + "StartupLoader"
-        anchors.fill: parent
-        active: host.presentationActive
-                && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
-                && host.navigation?.activeRouteComponent === "startup"
-                && host.startupComponent !== null
-        sourceComponent: host.startupComponent
-    }
-
-    Loader {
-        id: screensaverLoader
-        objectName: host.objectNamePrefix + "ScreensaverLoader"
-        anchors.fill: parent
-        // AGENT-NOTE: The Screen saver page takes its models from the
-        // ScreensaverRouteComposition backend singleton, which constructs
-        // without touching Settings1 or the locker configuration and
-        // presents degraded truth itself when either is unreachable
-        // (ADR-0226).
-        active: host.presentationActive
-                && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
-                && host.navigation?.activeRouteComponent === "screensaver"
-                && host.screensaverComponent !== null
-        sourceComponent: host.screensaverComponent
-    }
-
-    Loader {
-        id: loginScreenLoader
-        objectName: host.objectNamePrefix + "LoginScreenLoader"
-        anchors.fill: parent
-        active: host.presentationActive
-                && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
-                && host.navigation?.activeRouteComponent === "login-screen"
-                && host.loginScreenComponent !== null
-        sourceComponent: host.loginScreenComponent
-    }
-
-    Loader {
-        id: voiceLoader
-        objectName: host.objectNamePrefix + "VoiceLoader"
-        anchors.fill: parent
-        active: host.presentationActive
-                && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
-                && host.navigation?.activeRouteComponent === "voice"
-                && host.voiceComponent !== null
-        sourceComponent: host.voiceComponent
+        host: host
     }
 
     Loader {

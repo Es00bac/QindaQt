@@ -401,3 +401,4 @@ nav:
       - "ADR-0247: Run XDG autostart in the session supervisor": adr/0247-run-xdg-autostart-in-the-session-supervisor.md
       - "ADR-0248: Confirm Streaming preferences before OBS consumption": adr/0248-confirm-streaming-preferences-before-obs-consumption.md
       - "ADR-0249: Confirm week-start writes against Settings1": adr/0249-confirm-week-start-writes-against-settings1.md
+      - "ADR-0250: Require an active Loader witness for every Settings route": adr/0250-require-active-loader-witness-for-every-settings-route.md
