@@ -408,3 +408,9 @@ remain delegated to Qt's generic base theme, except that a D-Bus menubar is
 requested only while the AppMenu registrar has an owner
 ([ADR-0130](../adr/0130-window-attached-menus-without-a-global-menu.md)). See
 [ADR-0115](../adr/0115-share-appearance-through-qt-platform-theme.md).
+
+The shared `services/streaming_preferences` boundary owns the three scoped
+Settings1 OBS preferences and confirmed-write state. Settings Streaming and
+the shell OBS applet consume this service; neither reaches into the other's
+UI or private composition. The installed OBS login helper consumes the same
+read-only baseline and is started solely by session autostart (ADR-0248).

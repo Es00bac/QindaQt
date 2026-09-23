@@ -43,6 +43,7 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Compositor and session integration](architecture/compositor-session.md)
   records the exact KWin ABI, launcher/plugin boundary, completed Compositor
   MVP evidence, and explicit later-milestone boundaries.
+- [Streaming preference and OBS login contract](adr/0248-confirm-streaming-preferences-before-obs-consumption.md) defines confirmed Settings1 state, shared connection gating, and the single login entry.
 - [Session autostart](architecture/session-autostart.md) defines one
   supervisor-owned XDG login batch, shared Settings eligibility, and private
   test isolation.

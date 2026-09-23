@@ -31,13 +31,20 @@ integrated in the qinda source tree, not installed into a live session:
   A desktop-entry escape defect was repaired and independently accepted.
   The combined build and 15/15 affected Settings/session/wrapper rows pass;
   a disposable nested live login remains to qualify.
+- Streaming (`351a497f`): Settings and the OBS applet now consume only
+  confirmed preferences, with visible pending/refused/uncertain outcomes. One
+  system XDG autostart entry uses the existing session runner and a bounded
+  Settings1-gated helper to start OBS only when the login setting is confirmed.
+  Independent review accepted the repaired readback-ordering candidate; the
+  combined Settings/shell/helper build, 13/13 affected rows, strict docs and
+  staged install boundary pass. A real OBS login/reconnect remains to qualify.
 - Audio wheel controls (`35392d6b`, `40768275`, `8f384cb4`): Settings and
   applet controls handle partial/multiple detents, pixel input and boundaries
   while preserving confirmed volume. Two review-found pending/readback races
   were repaired. The combined build and 16/16 affected rows pass; live
   device wheel use remains to qualify.
 
-Streaming, asynchronous reporting, service capabilities and route coverage
+Other asynchronous reporting, service capabilities and route coverage
 remain open. The tabbed Audio Settings and manual LAN audio route are active
 slices. The audit and acceptance plan are staged on qinda under
 `/tmp/qindaqt-settings-audit-2026-09-23/`.

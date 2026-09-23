@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "obsappletcomposition.h"
+#include "obsappletconnection.h"
 
 #include "obs_applet_controller.h"
 
@@ -12,6 +13,8 @@
 #include "qindaqt/services/obs_client/obs_provisioning.h"
 #include "qindaqt/services/obs_client/obs_secret_store.h"
 #include "qindaqt/services/obs_client/qt_obs_transport.h"
+#include "qindaqt/services/settings_client/qt_settings_transport.h"
+#include "qindaqt/services/streaming_preferences/settings1_streaming_preferences.h"
 
 #include <QtDBus/QDBusConnection>
 
@@ -19,8 +22,8 @@ namespace QindaQt::Shell {
 namespace {
 
 // Slow on purpose: this is a "has the user set OBS up yet" watch, not a
-// connection retry. Once the client is started, ObsClient owns its own
-// reconnect backoff and this timer stops for good.
+// connection retry. ObsClient owns socket retry; this timer continues
+// watching setup and selected-port changes throughout the applet lifetime.
 constexpr int kProvisioningWatchMilliseconds = 5000;
 
 struct ObsAppletGrants {
@@ -71,17 +74,31 @@ ObsAppletComposition::ObsAppletComposition(
     m_client = std::make_unique<Obs::ObsClient>(*m_transport);
     m_secrets = std::make_unique<Obs::SecretServiceObsStore>(
         QDBusConnection::sessionBus());
-    if (m_readGranted && !tryStart()) {
-        // OBS is not set up yet. Watch for it rather than giving up until the
-        // next login: the user's very next action may be to set it up from
-        // Settings -> Streaming, and the applet should come to life then.
+    if (m_readGranted) {
+        m_settingsTransport = std::make_unique<Services::SettingsClient::QtSettingsTransport>(
+            QDBusConnection::sessionBus());
+        m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
+            *m_settingsTransport, Services::StreamingPreferences::Settings1StreamingPreferences::scopedKeys());
+        m_preferences = std::make_unique<Services::StreamingPreferences::Settings1StreamingPreferences>(
+            *m_settingsClient);
+        m_connection = std::make_unique<ObsAppletConnection>(
+            *m_client, *m_secrets, *m_preferences, []() -> std::optional<int> {
+                bool found = false;
+                const auto configured = Obs::readWebSocketSettings(
+                    Obs::defaultObsConfigRoot(), &found);
+                return Obs::obsControlUrl(configured, found).has_value()
+                           ? std::optional<int>(configured.serverPort) : std::nullopt;
+            });
+        QObject::connect(m_preferences.get(),
+                         &Services::StreamingPreferences::Settings1StreamingPreferences::preferencesChanged,
+                         &m_provisioningWatch, [this] { (void)m_connection->reconcile(); });
+        QString settingsError;
+        (void)m_settingsClient->start(&settingsError);
+        // Keep watching after connection: confirmed preference, OBS setup,
+        // and active-port changes can occur while the applet remains mounted.
         m_provisioningWatch.setInterval(kProvisioningWatchMilliseconds);
         QObject::connect(&m_provisioningWatch, &QTimer::timeout,
-                         &m_provisioningWatch, [this] {
-                             if (tryStart()) {
-                                 m_provisioningWatch.stop();
-                             }
-                         });
+                         &m_provisioningWatch, [this] { (void)m_connection->reconcile(); });
         m_provisioningWatch.start();
     }
     // Read access keeps the live indicator even when control is denied.
@@ -89,34 +106,6 @@ ObsAppletComposition::ObsAppletComposition(
         grants.read ? m_client.get() : nullptr, nullptr, grants.control);
 }
 
-bool ObsAppletComposition::tryStart() {
-    if (!m_readGranted || m_started) {
-        return m_started;
-    }
-    // AGENT-GUARD: OBS's own config file is the cheap gate, and it is checked
-    // FIRST. Until it says obs-websocket is set up there is no reason to ask
-    // the Secret Service anything, so a desktop without OBS never generates
-    // keyring traffic on this path however long it runs.
-    bool found = false;
-    const Obs::WebSocketSettings configured =
-        Obs::readWebSocketSettings(Obs::defaultObsConfigRoot(), &found);
-    const auto url = Obs::obsControlUrl(configured, found);
-    if (!url.has_value()) {
-        return false;
-    }
-    QString keyringError;
-    const auto password = m_secrets->password(&keyringError);
-    // AGENT-GUARD: no password, no connection. Connecting without one would
-    // make OBS's refusal look like a wrong password the user chose, and would
-    // retry against it forever. The Settings Streaming route is where a
-    // password is created.
-    if (!password.has_value()) {
-        return false;
-    }
-    m_client->start(*url, *password);
-    m_started = true;
-    return true;
-}
 
 ObsAppletComposition::~ObsAppletComposition() = default;
 

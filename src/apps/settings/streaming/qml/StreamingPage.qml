@@ -71,6 +71,16 @@ T.Page {
                     Accessible.name: text
                 }
 
+                Label {
+                    objectName: "streamingPreferenceStatus"
+                    Layout.fillWidth: true
+                    visible: text.length > 0
+                    text: root.streamingSettings.preferencesReady
+                          ? root.streamingSettings.preferenceStatusText
+                          : qsTr("Waiting for confirmed Streaming settings…")
+                    Accessible.name: text
+                }
+
                 SectionHeader {
                     Layout.fillWidth: true
                     title: qsTr("OBS")
@@ -91,6 +101,7 @@ T.Page {
                     Button {
                         id: connectButton
                         objectName: "streamingConnectButton"
+                        enabled: root.streamingSettings.preferencesReady
                         text: root.streamingSettings.connected
                               ? qsTr("Disconnect") : qsTr("Connect")
                         accessibleDescription: qsTr("Open or close QindaQt's connection to OBS")
@@ -103,6 +114,7 @@ T.Page {
                         id: setupButton
                         objectName: "streamingSetupButton"
                         visible: !root.streamingSettings.defaultsInstalled
+                        enabled: root.streamingSettings.preferencesReady
                         text: qsTr("Set up OBS")
                         accessibleDescription: qsTr("Write the QindaQt profile, scene collection and control-port settings into OBS")
                         onClicked: root.streamingSettings.installDefaults()
@@ -111,6 +123,7 @@ T.Page {
                     Button {
                         objectName: "streamingRepairButton"
                         visible: root.streamingSettings.defaultsInstalled
+                        enabled: root.streamingSettings.preferencesReady
                         text: qsTr("Repair OBS setup")
                         emphasized: false
                         accessibleDescription: qsTr("Write QindaQt's OBS configuration again")
@@ -138,6 +151,8 @@ T.Page {
                         id: portField
                         objectName: "streamingPortField"
                         width: 140
+                        enabled: root.streamingSettings.preferencesReady
+                                 && !root.streamingSettings.preferenceWritePending
                         inputMethodHints: Qt.ImhDigitsOnly
                         validator: IntValidator { bottom: 1; top: 65535 }
                         accessibleName: qsTr("Control port")
@@ -151,8 +166,9 @@ T.Page {
                         onEditingFinished: {
                             if (acceptableInput)
                                 root.streamingSettings.setWebSocketPort(Number(text))
-                            else
-                                text = String(root.streamingSettings.webSocketPort)
+                            text = Qt.binding(function() {
+                                return String(root.streamingSettings.webSocketPort)
+                            })
                         }
                     }
                 }
@@ -165,8 +181,13 @@ T.Page {
                     editor: Switch {
                         objectName: "streamingAutoConnectSwitch"
                         checked: root.streamingSettings.autoConnect
+                        enabled: root.streamingSettings.preferencesReady
+                                 && !root.streamingSettings.preferenceWritePending
                         accessibleDescription: qsTr("Whether QindaQt connects to OBS on its own")
-                        onToggled: root.streamingSettings.setAutoConnect(checked)
+                        onToggled: {
+                            root.streamingSettings.setAutoConnect(checked)
+                            checked = Qt.binding(function() { return root.streamingSettings.autoConnect })
+                        }
                     }
                 }
 
@@ -178,9 +199,22 @@ T.Page {
                     editor: Switch {
                         objectName: "streamingStartAtLoginSwitch"
                         checked: root.streamingSettings.startObsAtLogin
+                        enabled: root.streamingSettings.preferencesReady
+                                 && !root.streamingSettings.preferenceWritePending
                         accessibleDescription: qsTr("Whether OBS starts with the session")
-                        onToggled: root.streamingSettings.setStartObsAtLogin(checked)
+                        onToggled: {
+                            root.streamingSettings.setStartObsAtLogin(checked)
+                            checked = Qt.binding(function() { return root.streamingSettings.startObsAtLogin })
+                        }
                     }
+                }
+
+                Label {
+                    objectName: "streamingLoginPolicyStatus"
+                    Layout.fillWidth: true
+                    muted: true
+                    text: root.streamingSettings.loginPolicyStatus
+                    Accessible.name: text
                 }
 
                 StreamingOutputsSection {

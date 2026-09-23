@@ -59,9 +59,11 @@ credential OBS is already using.
 ## The first run, and the Screen source
 
 Setting OBS up does not require restarting the shell. The applet re-checks for
-OBS's control configuration on a slow watch and connects as soon as it is set
-up, because the ordinary order of events is that the desktop is already running
-when the user presses **Set up OBS** here. Until OBS's own config says the
+OBS's control configuration on a slow watch throughout the session. It
+connects after setup only when a confirmed Settings1 baseline enables
+auto-connect and the selected port matches OBS's configured active port.
+The ordinary order of events is that the desktop is already running when
+the user presses **Set up OBS** here. Until OBS's own config says the
 control server is enabled, nothing asks the keyring for the password at all, so
 a desktop without OBS never touches the Secret Service on this path.
 
@@ -97,8 +99,10 @@ non-loopback address (ADR-0201).
 - `src/services/obs_client` holds the protocol, the transport seam, the
   QWebSocket transport, the client, the provisioning documents and writer,
   and the scoped keyring store. It is shared with the OBS applet.
-- `src/apps/settings/streaming` holds the route model, its purpose-scoped
-  Settings1 preferences, the `StreamingRouteComposition` QML singleton that
+- `src/services/streaming_preferences` holds the purpose-scoped Settings1
+  preference policy and the bounded OBS login helper.
+- `src/apps/settings/streaming` holds the route model and the
+  `StreamingRouteComposition` QML singleton that
   builds the production adapters, and the QML pages. The model writes no OBS
   file itself.
 - Settings Center registers `streaming` as the last route, so no existing
@@ -106,13 +110,35 @@ non-loopback address (ADR-0201).
 
 ## Preferences
 
+[ADR-0248](../adr/0248-confirm-streaming-preferences-before-obs-consumption.md)
+makes these values authoritative only after a Settings1 snapshot confirms
+them. While one save is pending, the controls wait; a rejection leaves the
+previous value on screen with the server message, and an uncertain timeout or
+owner change asks for a fresh read instead of replaying. A same-lineage
+stale snapshot cannot settle an accepted save: the client waits for at least
+the commit revision, then reports uncertainty if fresh readback never arrives. The page waits for
+the first baseline before connecting, setting OBS up, or saving. A selected
+new port changes the address QindaQt will use after confirmation, but OBS's
+active port changes only after **Repair OBS setup** and an OBS restart.
+
+The Start OBS at login switch saves the preference; one system XDG entry
+runs `qindaqt-obs-login` through the session's normal autostart runner. The
+helper checks a confirmed Settings1 baseline and replaces itself with OBS
+only if enabled. The page reports whether that entry is installed, whether
+Startup masks it, and whether OBS is executable, so an On switch alone does
+not claim that OBS will start. No OBS password enters the login helper.
+
+
 Three Settings1 keys in the `services` domain:
 `services.obsWebSocketPort` (1–65535, default 4455),
 `services.obsAutoConnect` (default true) and
 `services.obsStartAtLogin` (default false). Settings1 rejects a whole
 snapshot on one unknown key (ADR-0126), so the route uses a client scoped to
 exactly these three and the resident settings service must know them before
-the route can save.
+the route can save. The installed login entry is system-owned and may be
+masked by a user override in Startup; the Streaming page shows that effective
+status. A custom XDG_CONFIG_DIRS that excludes /etc/xdg must include the
+installed entry elsewhere.
 
 ## Tests
 
@@ -123,4 +149,8 @@ the route can save.
 | `qindaqt.services-obs-transport` | A real QWebSocket round trip against a miniature obs-websocket server on a private loopback port, and the loopback-only guard |
 | `qindaqt.services-obs-provisioning` | The generated password, obs-websocket's own key names, the three files and nothing else, refusals that would leave the server unusable, what a check names as missing, and that reading settings never returns the password |
 | `qindaqt.services-obs-secret-store` | The scoped attributes as `a{ss}`, replace-on-store, an absent secret as the first-run state, and an unreachable keyring as an error rather than an empty password |
-| `qindaqt.settings-streaming-model` | The loopback address, connecting without a stored password, an unreadable keyring, set-up generating and storing once, elapsed text, the dropped-frame threshold, the three bridge sentences, toggles while disconnected, and the bus table from the vendor payload |
+| `qindaqt.services-streaming-preferences` | Rejected writes retaining confirmed values, serialized pending save, revision-ordered readback, permanently stale timeout, owner replacement without replay |
+| `qindaqt.services-obs-login-helper` | Private Settings1 and fake OBS, true/false fresh login, external edit with Settings closed, cancellation and no-owner timeout |
+| `qindaqt.shell-obs-applet-connection` | No early connection, confirmed auto-connect and active-port gate, one start per stable state, disable/port replacement |
+| `qindaqt.settings-streaming-model` | The loopback address, connecting without a stored password, an unreadable keyring, set-up generating and storing once, elapsed text, the dropped-frame threshold, the three bridge sentences, toggles while disconnected, delayed baseline/selected port, the effective login mask, and the bus table from the vendor payload |
+| `qindaqt.settings-streaming-page` | Mouse toggles restoring the confirmed state and showing a rejection instead of a false saved value |

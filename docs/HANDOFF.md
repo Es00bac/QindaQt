@@ -4,10 +4,11 @@
 
 The qinda source branch integrates Default Applications at `e02cd663`, Input
 at `5bb5fb73` and `0c41a5e3`, Voice at `6a2d9e2d` and `58ca80c7`, Startup
-at `1d5de5e3` and `79a037c8`, and audio-wheel controls at `35392d6b`,
-`40768275` and `8f384cb4`. Every slice had an independent exact-commit
-review; the first Input, Voice and Startup candidates and two wheel
-candidates were rejected and repaired before acceptance. None has been
+at `1d5de5e3` and `79a037c8`, audio-wheel controls at `35392d6b`, `40768275` and `8f384cb4`, and
+Streaming at the accepted product commit `351a497f`. Every slice had an
+independent exact-commit review; the first Input, Voice, Startup and
+Streaming candidates and two wheel candidates were rejected and repaired
+before acceptance. None has been
 deployed to a live desktop.
 
 The combined Settings build and 122/122 Settings rows passed after Default
@@ -17,13 +18,17 @@ route and private-bus interop rows, and the broader Settings suite (123/123).
 Startup passed the combined Settings/session build, 9/9 core
 Startup/route/supervisor rows and 6/6 navigation/private-wrapper rows. Audio
 wheel passed the combined Settings/shell build and 16/16 Audio
-Settings/applet rows, including its installed-package check. Strict MkDocs
-and the repository link validator pass for this integrated tree (377 pages).
+Settings/applet rows, including its installed-package check. Streaming
+passes a combined production Settings/shell/helper build, 13/13 affected
+Settings, OBS, SettingsClient and session-autostart rows, and a staged
+`StreamingRuntime` install containing `qindaqt-obs-login` and its single
+QindaQt-only system XDG entry. Strict MkDocs and the repository link
+validator pass for this integrated tree (378 pages).
 
 Remaining live qualifications are physical KWin hotplug, file-open/watcher
 timing, microphone and nested-shell Voice, a disposable nested once-per-login
-and logout Startup run, and real-device wheel use. Manual network audio and
-tabbed Audio Settings are active independent slices; synchronized
+and logout Startup run, real-device wheel use, and real OBS login/reconnect. Manual network audio
+and tabbed Audio Settings are active independent slices; synchronized
 multichannel playback needs later latency and channel-mapping proof. See the
 [task list](TASK_LIST.md) and `ops/team/queues/first-party.md` for current
 status.

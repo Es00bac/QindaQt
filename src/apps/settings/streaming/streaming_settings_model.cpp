@@ -2,6 +2,8 @@
 #include <qindaqt/apps/settings_streaming/streaming_settings_model.h>
 
 #include <QVariantMap>
+#include <QFileInfo>
+#include <QDir>
 
 namespace QindaQt::Apps::SettingsStreaming {
 
@@ -45,9 +47,11 @@ StreamingSettingsModel::StreamingSettingsModel(ObsClient &client,
                                                ObsSecretStore &secrets,
                                                StreamingPreferences &preferences,
                                                QString obsConfigRoot,
-                                               QObject *parent)
+                                               QObject *parent,
+                                               std::optional<SessionAutostart::ScanOptions> loginScanOptions)
     : QObject(parent), m_client(client), m_secrets(secrets),
-      m_preferences(preferences), m_obsConfigRoot(std::move(obsConfigRoot)) {
+      m_preferences(preferences), m_obsConfigRoot(std::move(obsConfigRoot)),
+      m_loginScanOptions(loginScanOptions.value_or(SessionAutostart::ScanOptions::fromEnvironment())) {
     connect(&m_client, &ObsClient::snapshotChanged, this,
             &StreamingSettingsModel::changed);
     connect(&m_client, &ObsClient::stateChanged, this,
@@ -74,7 +78,34 @@ StreamingSettingsModel::StreamingSettingsModel(ObsClient &client,
                                   : tr("OBS refused %1: %2")
                                         .arg(result.requestType, result.comment));
             });
+    m_lastConfirmedPort = m_preferences.webSocketPort();
+    m_lastConfirmedAutoConnect = m_preferences.autoConnect();
     connect(&m_preferences, &StreamingPreferences::preferencesChanged, this,
+            [this] {
+                const bool portChanged = m_lastConfirmedPort != m_preferences.webSocketPort();
+                const bool autoEnabled = !m_lastConfirmedAutoConnect && m_preferences.autoConnect();
+                const bool autoDisabled = m_lastConfirmedAutoConnect && !m_preferences.autoConnect();
+                m_lastConfirmedPort = m_preferences.webSocketPort();
+                m_lastConfirmedAutoConnect = m_preferences.autoConnect();
+                Q_EMIT preferencesChanged();
+                if (!m_preferences.isLoaded()) {
+                    m_client.stop();
+                    return;
+                }
+                if (m_refreshPending) {
+                    m_refreshPending = false;
+                    refresh();
+                } else if (autoDisabled) {
+                    m_client.stop();
+                } else if ((portChanged && m_client.state() != ConnectionState::Disconnected) || autoEnabled) {
+                    // A confirmed selected-port change replaces the connection;
+                    // OBS may still require the documented setup/restart step.
+                    connectToObs();
+                }
+                readProvisioning();
+                Q_EMIT changed();
+            });
+    connect(&m_preferences, &StreamingPreferences::writeStatusChanged, this,
             &StreamingSettingsModel::preferencesChanged);
 }
 
@@ -145,6 +176,38 @@ bool StreamingSettingsModel::autoConnect() const {
 
 bool StreamingSettingsModel::startObsAtLogin() const {
     return m_preferences.startObsAtLogin();
+}
+
+bool StreamingSettingsModel::preferencesReady() const {
+    return m_preferences.isLoaded();
+}
+
+bool StreamingSettingsModel::preferenceWritePending() const {
+    return m_preferences.writePending();
+}
+
+QString StreamingSettingsModel::preferenceStatusText() const {
+    return m_preferences.writeStatusText();
+}
+
+QString StreamingSettingsModel::loginPolicyStatus() const {
+    if (!m_preferences.isLoaded())
+        return tr("Waiting for confirmed login settings.");
+    if (!m_preferences.startObsAtLogin())
+        return tr("OBS will not start at login.");
+    const auto entries = SessionAutostart::scan(m_loginScanOptions);
+    for (const auto &entry : entries) {
+        if (entry.id != QLatin1String("qindaqt-obs-login")) continue;
+        if (!entry.eligible)
+            return tr("Startup blocks OBS login: %1").arg(entry.ineligibilityReason);
+        for (const QString &directory : m_loginScanOptions.executableDirectories) {
+            const QFileInfo obs(QDir(directory).filePath(QStringLiteral("obs")));
+            if (obs.isFile() && obs.isExecutable())
+                return tr("OBS is set to start at the next login.");
+        }
+        return tr("OBS is not installed in the session executable path.");
+    }
+    return tr("The OBS login entry is not installed or is masked by Startup.");
 }
 
 QString StreamingSettingsModel::address() const {
@@ -280,8 +343,14 @@ void StreamingSettingsModel::readProvisioning() {
 }
 
 void StreamingSettingsModel::refresh() {
+    if (!m_preferences.isLoaded()) {
+        m_refreshPending = true;
+        Q_EMIT preferencesChanged();
+        return;
+    }
     readKeyring();
     readProvisioning();
+    Q_EMIT preferencesChanged();
     Q_EMIT changed();
     if (m_preferences.autoConnect()) {
         connectToObs();
@@ -289,6 +358,10 @@ void StreamingSettingsModel::refresh() {
 }
 
 void StreamingSettingsModel::connectToObs() {
+    if (!m_preferences.isLoaded()) {
+        setStatusText(tr("Waiting for confirmed Streaming settings before connecting."));
+        return;
+    }
     QString error;
     const auto password = m_secrets.password(&error);
     if (!error.isEmpty()) {
@@ -366,6 +439,10 @@ void StreamingSettingsModel::setStartObsAtLogin(bool enabled) {
 }
 
 void StreamingSettingsModel::installDefaults() {
+    if (!m_preferences.isLoaded()) {
+        setStatusText(tr("Waiting for confirmed Streaming settings before setting up OBS."));
+        return;
+    }
     QString keyringError;
     auto password = m_secrets.password(&keyringError);
     if (!keyringError.isEmpty()) {

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/apps/settings_streaming/streaming_settings_model.h>
 
+#include <QDir>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -100,8 +102,9 @@ public:
     bool autoConnectValue = false;
     bool startAtLogin = false;
     bool refuseWrites = false;
+    bool loaded = true;
 
-    [[nodiscard]] bool isLoaded() const override { return true; }
+    [[nodiscard]] bool isLoaded() const override { return loaded; }
     [[nodiscard]] int webSocketPort() const override { return port; }
     [[nodiscard]] bool autoConnect() const override { return autoConnectValue; }
     [[nodiscard]] bool startObsAtLogin() const override { return startAtLogin; }
@@ -166,6 +169,8 @@ class StreamingSettingsModelTest final : public QObject {
 
 private Q_SLOTS:
     void theAddressIsAlwaysLoopback();
+    void delayedBaselinePreventsEarlyConnectionAndUsesConfirmedPort();
+    void loginStatusReflectsMaskedSystemEntry();
     void connectingWithoutAStoredPasswordSaysSoInsteadOfFailing();
     void anUnreadableKeyringIsNotTreatedAsNoPassword();
     void settingUpGeneratesStoresAndWritesOnce();
@@ -201,6 +206,71 @@ void StreamingSettingsModelTest::theAddressIsAlwaysLoopback() {
     model.setWebSocketPort(0);
     model.setWebSocketPort(70000);
     QCOMPARE(model.webSocketPort(), 4466);
+}
+
+void StreamingSettingsModelTest::delayedBaselinePreventsEarlyConnectionAndUsesConfirmedPort() {
+    FakeTransport transport;
+    ObsClient client(transport);
+    FakeSecrets secrets;
+    secrets.stored = QStringLiteral("private-password");
+    FakePreferences preferences;
+    preferences.loaded = false;
+    QTemporaryDir root;
+    StreamingSettingsModel model(client, secrets, preferences, root.path());
+    model.refresh();
+    QVERIFY(transport.opened.isEmpty());
+    preferences.port = 4466;
+    preferences.autoConnectValue = false;
+    preferences.loaded = true;
+    Q_EMIT preferences.preferencesChanged();
+    QVERIFY(transport.opened.isEmpty());
+    QCOMPARE(model.address(), QStringLiteral("ws://127.0.0.1:4466"));
+    preferences.autoConnectValue = true;
+    Q_EMIT preferences.preferencesChanged();
+    QCOMPARE(transport.opened, QStringList{QStringLiteral("ws://127.0.0.1:4466")});
+    preferences.loaded = false;
+    Q_EMIT preferences.preferencesChanged();
+    QCOMPARE(client.state(), ConnectionState::Disconnected);
+}
+
+void StreamingSettingsModelTest::loginStatusReflectsMaskedSystemEntry() {
+    FakeTransport transport;
+    ObsClient client(transport);
+    FakeSecrets secrets;
+    FakePreferences preferences;
+    preferences.startAtLogin = true;
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    QindaQt::SessionAutostart::ScanOptions scan;
+    scan.userDirectory = root.filePath(QStringLiteral("user/autostart"));
+    scan.systemDirectories = {root.filePath(QStringLiteral("system/autostart"))};
+    scan.executableDirectories = {root.filePath(QStringLiteral("bin"))};
+    scan.desktops = {QStringLiteral("QindaQt")};
+    QVERIFY(QDir().mkpath(scan.userDirectory));
+    QVERIFY(QDir().mkpath(scan.systemDirectories.constFirst()));
+    QVERIFY(QDir().mkpath(scan.executableDirectories.constFirst()));
+    for (const QString &name : {QStringLiteral("qindaqt-obs-login"), QStringLiteral("obs")}) {
+        QFile file(QDir(scan.executableDirectories.constFirst()).filePath(name));
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QVERIFY(file.write("#!/bin/sh\nexit 0\n") > 0);
+        file.close();
+        QVERIFY(file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner
+                                    | QFileDevice::ExeOwner));
+    }
+    QVERIFY(QFile::copy(QStringLiteral(QINDAQT_OBS_LOGIN_ENTRY),
+                        QDir(scan.systemDirectories.constFirst()).filePath(
+                            QStringLiteral("qindaqt-obs-login.desktop"))));
+    StreamingSettingsModel model(client, secrets, preferences, root.path(), nullptr, scan);
+    QVERIFY(model.loginPolicyStatus().contains(QStringLiteral("next login")));
+    QFile override(QDir(scan.userDirectory).filePath(QStringLiteral("qindaqt-obs-login.desktop")));
+    QVERIFY(override.open(QIODevice::WriteOnly));
+    QVERIFY(override.write("[Desktop Entry]\nType=Application\nName=OBS override\n"
+                           "Exec=qindaqt-obs-login\nHidden=true\n") > 0);
+    override.close();
+    QVERIFY(model.loginPolicyStatus().contains(QStringLiteral("Startup blocks")));
+    preferences.startAtLogin = false;
+    Q_EMIT preferences.preferencesChanged();
+    QVERIFY(model.loginPolicyStatus().contains(QStringLiteral("will not start")));
 }
 
 void StreamingSettingsModelTest::connectingWithoutAStoredPasswordSaysSoInsteadOfFailing() {
