@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gatheroverviewcomposition.h"
+#include "kwinscreenshotpreviewport.h"
 
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 
 #include <LayerShellQt/Window>
 
+#include <QBuffer>
 #include <QCursor>
 #include <QGuiApplication>
 #include <QQmlComponent>
@@ -24,11 +26,37 @@ GatherOverviewComposition::GatherOverviewComposition(
     : QObject(parent), m_app(app), m_engine(engine),
       m_controller(
           std::make_unique<ShellGatherOverview::GatherOverviewController>(
-              std::move(iconNameResolver)))
+              std::move(iconNameResolver))),
+      m_previewPort(std::make_unique<KWinScreenshotPreviewPort>())
 {
     connect(m_controller.get(),
             &ShellGatherOverview::GatherOverviewController::openChanged, this,
             [this] { publishOpenState(); });
+    connect(m_controller.get(),
+            &ShellGatherOverview::GatherOverviewController::projectionChanged,
+            this, &GatherOverviewComposition::requestVisiblePreviews);
+    connect(m_previewPort.get(),
+            &ShellTaskListApplet::TaskListAppletPreviewPort::previewFinished,
+            this, [this](const ShellTaskListApplet::TaskListPreviewResult &result) {
+                if (!m_controller->isOpen() || !result.ok) {
+                    return;
+                }
+                QByteArray png;
+                QBuffer buffer(&png);
+                if (!buffer.open(QIODevice::WriteOnly)
+                    || !result.image.save(&buffer, "PNG")) {
+                    return;
+                }
+                // Keep previews inside the audited shell process. The data
+                // URLs disappear when Gather closes or the source changes;
+                // no window pixels are written to disk.
+                if (m_previewLedger.accept(
+                        result.windowId,
+                        QString::fromLatin1("data:image/png;base64,")
+                            + QString::fromLatin1(png.toBase64()))) {
+                    publishPreviews();
+                }
+            });
     connect(m_controller.get(),
             &ShellGatherOverview::GatherOverviewController::activationRequested,
             this, &GatherOverviewComposition::handleActivation);
@@ -216,8 +244,85 @@ void GatherOverviewComposition::publishOpenState()
                                     QRectF(screen->availableGeometry())));
             }
         }
+        requestVisiblePreviews();
     } else {
+        clearPreviews();
         m_openScreen.clear();
+    }
+}
+
+void GatherOverviewComposition::requestVisiblePreviews()
+{
+    if (!m_controller->isOpen() || !m_previewPort)
+        return;
+    const QVariantMap projection = m_controller->projection();
+    if (!projection.value(QStringLiteral("interactive")).toBool()) {
+        clearPreviews();
+        return;
+    }
+    const QVariantList items = projection.value(QStringLiteral("items")).toList();
+    if (items.isEmpty()) {
+        clearPreviews();
+        return;
+    }
+    QSet<QString> visible;
+    for (const QVariant &value : items) {
+        const QVariantMap item = value.toMap();
+        if (item.value(QStringLiteral("lane")).toString()
+                != QLatin1StringView("window")) {
+            continue;
+        }
+        // AGENT-CONTRACT: a standalone task's taskId is its compositor window
+        // UUID; windowId is populated only for an ungrouped container member.
+        // Do not change the activation identity to make previews work.
+        QString windowId = item.value(QStringLiteral("windowId")).toString();
+        if (windowId.isEmpty())
+            windowId = item.value(QStringLiteral("taskId")).toString();
+        const quint64 revision =
+            item.value(QStringLiteral("generationRevision")).toULongLong();
+        if (windowId.isEmpty() || revision == 0)
+            continue;
+        visible.insert(windowId);
+    }
+    if (m_previewLedger.reconcile(visible)) {
+        // A new identity set invalidates queued captures, but already shown
+        // previews for surviving windows stay on screen without flashing.
+        m_previewPort->cancelAll();
+        publishPreviews();
+    }
+    for (const QVariant &value : items) {
+        const QVariantMap item = value.toMap();
+        if (item.value(QStringLiteral("lane")).toString()
+                != QLatin1StringView("window"))
+            continue;
+        QString windowId = item.value(QStringLiteral("windowId")).toString();
+        if (windowId.isEmpty())
+            windowId = item.value(QStringLiteral("taskId")).toString();
+        if (!m_previewLedger.markRequested(windowId))
+            continue;
+        const quint64 revision =
+            item.value(QStringLiteral("generationRevision")).toULongLong();
+        const QSize size = item.value(QStringLiteral("frame"))
+                               .toRectF().size().toSize()
+                               .boundedTo(QSize(1024, 1024))
+                               .expandedTo(QSize(16, 16));
+        m_previewPort->requestPreview({windowId, revision, size});
+    }
+}
+
+void GatherOverviewComposition::clearPreviews()
+{
+    if (m_previewPort)
+        m_previewPort->cancelAll();
+    m_previewLedger.clear();
+    publishPreviews();
+}
+
+void GatherOverviewComposition::publishPreviews()
+{
+    for (QQuickWindow *window : std::as_const(m_windows)) {
+        if (window)
+            window->setProperty("previewUrls", m_previewLedger.urls());
     }
 }
 
@@ -239,7 +344,8 @@ void GatherOverviewComposition::createWindow(QScreen *screen)
         {{QStringLiteral("controller"),
           QVariant::fromValue(static_cast<QObject *>(m_controller.get()))},
          {QStringLiteral("workArea"),
-          QVariant::fromValue(QRectF(screen->availableGeometry()))}});
+          QVariant::fromValue(QRectF(screen->availableGeometry()))},
+         {QStringLiteral("previewUrls"), m_previewLedger.urls()}});
     auto *raw = qobject_cast<QQuickWindow *>(object);
     if (raw == nullptr) {
         qWarning().noquote()

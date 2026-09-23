@@ -45,9 +45,9 @@ private Q_SLOTS:
     void aTriggerAnnouncesTheSameActionATouchSwipeDoes();
 };
 
-// KWin requires reserve/unreserve to balance: an unbalanced call leaves the
-// edge permanently active or permanently dead, and the corner is the one the
-// whole feature hangs on.
+    // KWin requires reserve/unreserve to balance: an unbalanced call leaves the
+    // edge permanently active or permanently dead, and the corner is the one the
+    // whole feature hangs on.
 void PointerCornerTests::reservesOnConstructionAndBalancesOnDestruction()
 {
     RecordingReserver reserver;
@@ -56,9 +56,8 @@ void PointerCornerTests::reservesOnConstructionAndBalancesOnDestruction()
         QCOMPARE(reserver.reserveCalls, 1);
         QCOMPARE(reserver.unreserveCalls, 0);
         QVERIFY(corner.reserved());
-        // The callback is invoked by NAME through QMetaObject::invokeMethod,
-        // so the string has to match a real slot or the corner silently does
-        // nothing. Assert both halves of that agreement.
+        // The KWin adapter forwards by NAME through QMetaObject::invokeMethod.
+        // The pure receiver's zero-argument slot must remain discoverable.
         QCOMPARE(reserver.lastObject, &corner);
         QCOMPARE(reserver.lastCallback, QStringLiteral("cornerTriggered"));
         QVERIFY(corner.metaObject()->indexOfSlot("cornerTriggered()") >= 0);
@@ -66,19 +65,21 @@ void PointerCornerTests::reservesOnConstructionAndBalancesOnDestruction()
     QCOMPARE(reserver.unreserveCalls, 1);
 }
 
-// KWin rebuilds its edge objects when outputs change and carries over only
-// the reservations the old edges held, so the plugin re-arms on every outputs
-// change. KWin ignores a duplicate; a spurious unreserve would not be ignored.
+// KWin counts duplicate reserves even if its callback map has one key. A
+// re-arm must balance the previous reserve before taking the new one.
 void PointerCornerTests::rearmingReservesAgainWithoutASecondUnreserve()
 {
     RecordingReserver reserver;
-    PointerCornerGesture corner(reserver);
-    QCOMPARE(reserver.reserveCalls, 1);
-    corner.rearm();
-    corner.rearm();
-    QCOMPARE(reserver.reserveCalls, 3);
-    QCOMPARE(reserver.unreserveCalls, 0);
-    QVERIFY(corner.reserved());
+    {
+        PointerCornerGesture corner(reserver);
+        QCOMPARE(reserver.reserveCalls, 1);
+        corner.rearm();
+        corner.rearm();
+        QCOMPARE(reserver.reserveCalls, 3);
+        QCOMPARE(reserver.unreserveCalls, 2);
+        QVERIFY(corner.reserved());
+    }
+    QCOMPARE(reserver.unreserveCalls, 3);
 }
 
 void PointerCornerTests::aTriggerAnnouncesTheSameActionATouchSwipeDoes()
