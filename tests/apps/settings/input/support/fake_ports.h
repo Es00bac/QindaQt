@@ -17,7 +17,7 @@ namespace QindaQt::Tests {
 
 class FakePointerPort final : public QindaQt::Apps::SettingsInput::PointerDevicePort {
 public:
-    QList<QindaQt::Apps::SettingsInput::PointerDeviceSnapshot> scripted;
+    mutable QList<QindaQt::Apps::SettingsInput::PointerDeviceSnapshot> scripted;
     bool authorityPresent = true;
     QString nextWriteFailure;
     QList<QPair<QString, QString>> writtenProperties;
@@ -46,9 +46,14 @@ public:
             }
             return false;
         }
-        m_written.append({deviceId, property});
-        Q_UNUSED(value);
-        return true;
+        for (auto &snapshot : scripted) {
+            if (snapshot.deviceId != deviceId) continue;
+            snapshot.properties.insert(property, value);
+            m_written.append({deviceId, property});
+            return true;
+        }
+        if (error) *error = QStringLiteral("device absent");
+        return false;
     }
 
     QList<QPair<QString, QString>> &written() const { return m_written; }

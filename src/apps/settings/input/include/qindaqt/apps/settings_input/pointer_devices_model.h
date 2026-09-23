@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QTimer>
 
 #include <qindaqt/apps/settings_input/pointer_device_port.h>
 #include <qindaqt/apps/settings_input/pointer_device_selection.h>
@@ -28,6 +29,7 @@ class PointerDevicesModel final : public QAbstractListModel {
     Q_PROPERTY(bool available READ available NOTIFY availableChanged)
     Q_PROPERTY(bool refreshing READ refreshing NOTIFY refreshingChanged)
     Q_PROPERTY(bool empty READ empty NOTIFY countChanged)
+    Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged)
 
 public:
     enum Roles {
@@ -36,7 +38,7 @@ public:
         IsTouchpadRole,
     };
 
-    explicit PointerDevicesModel(const PointerDevicePort &port,
+    explicit PointerDevicesModel(PointerDevicePort &port,
                                  QObject *parent = nullptr);
 
     [[nodiscard]] int rowCount(const QModelIndex &parent) const override;
@@ -49,6 +51,7 @@ public:
     [[nodiscard]] bool empty() const { return m_devices.isEmpty(); }
     [[nodiscard]] bool available() const { return m_available; }
     [[nodiscard]] bool refreshing() const { return m_refreshing; }
+    [[nodiscard]] bool active() const { return m_active; }
     [[nodiscard]] int selectedIndex() const { return m_selectedRow; }
     [[nodiscard]] PointerDeviceSelection *selection() const {
         return m_selection;
@@ -61,18 +64,25 @@ public:
     // visible, never during construction (a hung authority must not slow
     // the rest of the Settings window down).
     Q_INVOKABLE void refresh();
+    void setActive(bool active);
 
 Q_SIGNALS:
     void countChanged();
     void selectedIndexChanged();
     void availableChanged();
     void refreshingChanged();
+    void activeChanged();
 
 private:
-    const PointerDevicePort &m_port;
+    PointerDevicePort &m_port;
     PointerDeviceSelection *m_selection;
     QList<PointerDeviceSnapshot> m_devices;
+    QTimer m_poll;
+    QString m_selectedId;
     int m_selectedRow = -1;
+    quint64 m_generation = 0;
+    bool m_refreshRequested = false;
+    bool m_active = false;
     bool m_available = true;
     bool m_refreshing = false;
 };

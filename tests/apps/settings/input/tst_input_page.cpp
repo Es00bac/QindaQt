@@ -120,6 +120,7 @@ private Q_SLOTS:
     void captureFlowEscapeCancelsAndBackspaceClears();
     void keyboardNavigationReachesTabsAndControls();
     void degradedSectionsWhenAuthorityAbsent();
+    void rejectedPointerEditRestoresControl();
 
 private:
     [[nodiscard]] QObject *findObject(const QString &objectName) const;
@@ -283,6 +284,32 @@ void InputPageTest::editorsSeatInsideTheirFormRows() {
     QVERIFY(seated(slider, row));
     QVERIFY(slider->width() > 0);
     QVERIFY(seated(naturalScroll, naturalScrollRow));
+}
+
+void InputPageTest::rejectedPointerEditRestoresControl() {
+    PointerDeviceSnapshot mouse;
+    mouse.deviceId = QStringLiteral("event5");
+    mouse.name = QStringLiteral("Fake Mouse");
+    mouse.pointer = true;
+    mouse.properties = QVariantMap{
+        {QStringLiteral("supportsNaturalScroll"), true},
+        {QStringLiteral("naturalScroll"), false},
+    };
+    facade->m_pointerPort.scripted.append(mouse);
+    facade->pointerModel.refresh();
+    QObject *control = findObject(QStringLiteral(
+        "inputPointerNaturalScrollSwitch"));
+    QVERIFY(control != nullptr);
+    QTRY_VERIFY(isShown(QStringLiteral("inputPointerNaturalScrollRow")));
+    QCOMPARE(control->property("checked").toBool(), false);
+
+    // Simulate the control's local gesture state before KWin refuses it.
+    facade->m_pointerPort.nextWriteFailure = QStringLiteral("refused");
+    QVERIFY(control->setProperty("checked", true));
+    facade->pointerModel.selection()->setNaturalScroll(true);
+    QTRY_COMPARE(control->property("checked").toBool(), false);
+    QVERIFY(facade->pointerModel.selection()->statusText().contains(
+        QStringLiteral("refused")));
 }
 
 void InputPageTest::conflictCaptureNamesTheConflictingAction() {

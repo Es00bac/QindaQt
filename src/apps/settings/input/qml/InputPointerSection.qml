@@ -22,7 +22,13 @@ ColumnLayout {
                                              : noDevices.visible ? noDevices
                                              : speedRow.editor
 
-    Component.onCompleted: inputSettings.pointerDevices.refresh()
+    // Poll and receive KWin change notifications only while this tab is active.
+    Binding {
+        target: root.inputSettings.pointerDevices
+        property: "active"
+        value: root.visible
+        restoreMode: Binding.RestoreBindingOrValue
+    }
 
     spacing: Tokens.space["2"]
 
@@ -91,10 +97,10 @@ ColumnLayout {
         editor: Slider {
             objectName: "inputPointerSpeedSlider"
             id: speedSlider
+            enabled: root.selection !== null && !root.selection.busy
             from: -1.0
             to: 1.0
             stepSize: 0.05
-            value: root.selection !== null ? root.selection.speed : 0.0
             onMoved: root.selection.speed = value
             accessibleName: qsTr("Pointer speed")
         }
@@ -108,6 +114,8 @@ ColumnLayout {
         description: qsTr("Flat keeps one speed; adaptive speeds up with faster motion")
         editor: ComboBox {
             objectName: "inputPointerProfileCombo"
+            id: profileCombo
+            enabled: root.selection !== null && !root.selection.busy
             width: 220
             textRole: "label"
             model: [
@@ -115,7 +123,6 @@ ColumnLayout {
                 { label: qsTr("Flat"), value: true }
             ]
             valueRole: "value"
-            currentIndex: root.selection !== null && root.selection.flatProfile ? 1 : 0
             onActivated: index => root.selection.flatProfile =
                              currentIndex === 1
         }
@@ -129,8 +136,9 @@ ColumnLayout {
         description: qsTr("Content moves in the same direction as the fingers")
         editor: Switch {
             objectName: "inputPointerNaturalScrollSwitch"
-            checked: root.selection !== null && root.selection.naturalScroll
-            onToggled: root.selection.naturalScroll = checked
+            id: naturalScrollSwitch
+            enabled: root.selection !== null && !root.selection.busy
+            onClicked: root.selection.naturalScroll = checked
         }
     }
 
@@ -142,8 +150,9 @@ ColumnLayout {
         description: qsTr("Swap the primary and secondary mouse buttons")
         editor: Switch {
             objectName: "inputPointerLeftHandedSwitch"
-            checked: root.selection !== null && root.selection.leftHanded
-            onToggled: root.selection.leftHanded = checked
+            id: leftHandedSwitch
+            enabled: root.selection !== null && !root.selection.busy
+            onClicked: root.selection.leftHanded = checked
         }
     }
 
@@ -155,10 +164,11 @@ ColumnLayout {
         description: qsTr("How many lines one wheel step moves")
         editor: Slider {
             objectName: "inputPointerScrollSpeedSlider"
+            id: scrollSpeedSlider
+            enabled: root.selection !== null && !root.selection.busy
             from: 0.1
             to: 5.0
             stepSize: 0.1
-            value: root.selection !== null ? root.selection.scrollSpeed : 1.0
             onMoved: root.selection.scrollSpeed = value
             accessibleName: qsTr("Scroll speed")
         }
@@ -172,8 +182,9 @@ ColumnLayout {
         description: qsTr("Pressing both buttons acts as a middle click")
         editor: Switch {
             objectName: "inputPointerMiddleEmulationSwitch"
-            checked: root.selection !== null && root.selection.middleEmulation
-            onToggled: root.selection.middleEmulation = checked
+            id: middleEmulationSwitch
+            enabled: root.selection !== null && !root.selection.busy
+            onClicked: root.selection.middleEmulation = checked
         }
     }
 
@@ -192,8 +203,9 @@ ColumnLayout {
         description: qsTr("A short tap acts as a button press")
         editor: Switch {
             objectName: "inputTouchpadTapToClickSwitch"
-            checked: root.selection !== null && root.selection.tapToClick
-            onToggled: root.selection.tapToClick = checked
+            id: tapToClickSwitch
+            enabled: root.selection !== null && !root.selection.busy
+            onClicked: root.selection.tapToClick = checked
         }
     }
 
@@ -205,8 +217,9 @@ ColumnLayout {
         description: qsTr("Tap twice and hold to drag items")
         editor: Switch {
             objectName: "inputTouchpadTapAndDragSwitch"
-            checked: root.selection !== null && root.selection.tapAndDrag
-            onToggled: root.selection.tapAndDrag = checked
+            id: tapAndDragSwitch
+            enabled: root.selection !== null && !root.selection.busy
+            onClicked: root.selection.tapAndDrag = checked
         }
     }
 
@@ -218,8 +231,9 @@ ColumnLayout {
         description: qsTr("Ignores palm touches while the keyboard is in use")
         editor: Switch {
             objectName: "inputTouchpadDisableWhileTypingSwitch"
-            checked: root.selection !== null && root.selection.disableWhileTyping
-            onToggled: root.selection.disableWhileTyping = checked
+            id: disableWhileTypingSwitch
+            enabled: root.selection !== null && !root.selection.busy
+            onClicked: root.selection.disableWhileTyping = checked
         }
     }
 
@@ -231,6 +245,8 @@ ColumnLayout {
         description: qsTr("Two fingers beside each other, or one finger along the edge")
         editor: ComboBox {
             objectName: "inputTouchpadScrollMethodCombo"
+            id: scrollMethodCombo
+            enabled: root.selection !== null && !root.selection.busy
             width: 220
             textRole: "label"
             model: [
@@ -244,6 +260,20 @@ ColumnLayout {
                              currentIndex === 1 ? "edge" : "two-finger"
         }
     }
+
+
+    // AGENT-GUARD: A direct control binding can be displaced by an interactive
+    // gesture. These bindings reassert KWin readback after refusal or edits.
+    Binding { target: speedSlider; property: "value"; value: root.selection !== null ? root.selection.speed : 0.0 }
+    Binding { target: profileCombo; property: "currentIndex"; value: root.selection !== null && root.selection.flatProfile ? 1 : 0 }
+    Binding { target: naturalScrollSwitch; property: "checked"; value: root.selection !== null && root.selection.naturalScroll }
+    Binding { target: leftHandedSwitch; property: "checked"; value: root.selection !== null && root.selection.leftHanded }
+    Binding { target: scrollSpeedSlider; property: "value"; value: root.selection !== null ? root.selection.scrollSpeed : 1.0 }
+    Binding { target: middleEmulationSwitch; property: "checked"; value: root.selection !== null && root.selection.middleEmulation }
+    Binding { target: tapToClickSwitch; property: "checked"; value: root.selection !== null && root.selection.tapToClick }
+    Binding { target: tapAndDragSwitch; property: "checked"; value: root.selection !== null && root.selection.tapAndDrag }
+    Binding { target: disableWhileTypingSwitch; property: "checked"; value: root.selection !== null && root.selection.disableWhileTyping }
+    Binding { target: scrollMethodCombo; property: "currentIndex"; value: root.selection !== null && root.selection.scrollMethod === "edge" ? 1 : 0 }
 
     Item { Layout.fillHeight: true }
 }

@@ -3,6 +3,11 @@
 
 #include <QDBusConnection>
 #include <QList>
+#include <QObject>
+#include <QDBusServiceWatcher>
+#include <QPointer>
+#include <functional>
+#include <optional>
 #include <QString>
 #include <QVariantMap>
 
@@ -37,11 +42,23 @@ struct PointerDeviceSnapshot {
 // when the authority is unreachable or replies are malformed, methods report
 // an error instead of returning partial or default-looking truth.
 //
-// Lifetime/threading: borrowed by the models; methods are synchronous and
-// must be called on the thread owning `bus`.
-class PointerDevicePort {
+// Lifetime/threading: borrowed by the model. The synchronous seam is for
+// focused fakes and direct diagnostics; Settings calls the request methods.
+// Production requests finish on the receiver's thread and are cancelled by
+// receiver destruction. The port must outlive its borrowing model.
+class PointerDevicePort : public QObject {
+    Q_OBJECT
 public:
-    virtual ~PointerDevicePort();
+    using DevicesReply = std::function<void(QList<PointerDeviceSnapshot>, QString)>;
+    struct WriteResult {
+        bool applied = false;
+        QString error;
+        std::optional<PointerDeviceSnapshot> snapshot;
+    };
+    using WriteReply = std::function<void(WriteResult)>;
+
+    explicit PointerDevicePort(QObject *parent = nullptr) : QObject(parent) {}
+    ~PointerDevicePort() override;
 
     // Empty list without error means the authority answered and no pointer
     // or touchpad exists (a valid state this route must present). An error
@@ -57,6 +74,20 @@ public:
     [[nodiscard]] virtual bool
     writeProperty(const QString &deviceId, const QString &property,
                   const QVariant &value, QString *error) const = 0;
+
+    // The reply snapshot is authoritative even when a partial multi-property
+    // write is refused. Never infer applied state from a successful Set alone.
+    // Starts event observation lazily when the route becomes visible; model
+    // construction must not make D-Bus calls (InputRouteComposition contract).
+    virtual void setObserving(bool active);
+    virtual void requestDevices(QObject *receiver, DevicesReply reply) const;
+    virtual void requestWrite(QObject *receiver, const QString &deviceId,
+                              const QList<QPair<QString, QVariant>> &changes,
+                              WriteReply reply) const;
+
+Q_SIGNALS:
+    void inventoryChanged();
+    void authorityChanged();
 };
 
 // Production adapter over KWin's org.kde.KWin input D-Bus API
@@ -64,6 +95,7 @@ public:
 // org.kde.KWin.InputDevice device objects). KWin stays the live and
 // persisted authority (ADR-0134); this adapter never writes config files.
 class KWinPointerDevicePort final : public PointerDevicePort {
+    Q_OBJECT
 public:
     explicit KWinPointerDevicePort(QDBusConnection bus);
 
@@ -72,9 +104,21 @@ public:
     [[nodiscard]] bool
     writeProperty(const QString &deviceId, const QString &property,
                   const QVariant &value, QString *error) const override;
+    void setObserving(bool active) override;
+    void requestDevices(QObject *receiver, DevicesReply reply) const override;
+    void requestWrite(QObject *receiver, const QString &deviceId,
+                      const QList<QPair<QString, QVariant>> &changes,
+                      WriteReply reply) const override;
+
+private Q_SLOTS:
+    void handlePropertiesChanged(const QString &interface,
+                                 const QVariantMap &changed,
+                                 const QStringList &invalidated);
 
 private:
     QDBusConnection m_bus;
+    QDBusServiceWatcher *m_serviceWatcher = nullptr;
+    bool m_propertiesObserved = false;
 };
 
 } // namespace QindaQt::Apps::SettingsInput

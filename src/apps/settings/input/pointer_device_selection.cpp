@@ -43,6 +43,9 @@ void PointerDeviceSelection::setSnapshot(
     // Derive it only from capability truth in the snapshot; a property the
     // authority happens to echo without a supports* flag must not render a
     // control the device cannot honor.
+    ++m_generation;
+    const bool wasBusy = m_busy;
+    m_busy = false;
     m_deviceId = snapshot.deviceId;
     m_name = snapshot.name;
     m_touchpad = snapshot.touchpad;
@@ -107,175 +110,120 @@ void PointerDeviceSelection::setSnapshot(
     Q_EMIT disableWhileTypingChanged();
     Q_EMIT scrollMethodChanged();
     Q_EMIT statusTextChanged();
+    // Complete the state replacement before releasing deferred refreshes.
+    if (wasBusy) Q_EMIT busyChanged();
 }
 
-bool PointerDeviceSelection::writeBool(const QString &property, bool &member,
-                                       void (PointerDeviceSelection::*changed)(),
-                                       bool value, const QString &label) {
-    QString error;
-    if (!m_port.writeProperty(m_deviceId, property, value, &error)) {
-        m_statusText = QStringLiteral("%1: %2").arg(label, error);
-        Q_EMIT statusTextChanged();
-        return false;
-    }
-    member = value;
-    Q_EMIT statusTextChanged();
-    (this->*changed)();
-    return true;
-}
-
-bool PointerDeviceSelection::writeDouble(const QString &property,
-                                         double &member,
-                                         void (PointerDeviceSelection::*changed)(),
-                                         double value, const QString &label) {
-    QString error;
-    if (!m_port.writeProperty(m_deviceId, property, value, &error)) {
-        m_statusText = QStringLiteral("%1: %2").arg(label, error);
-        Q_EMIT statusTextChanged();
-        return false;
-    }
-    member = value;
-    Q_EMIT statusTextChanged();
-    (this->*changed)();
-    return true;
+void PointerDeviceSelection::apply(
+    const QList<QPair<QString, QVariant>> &changes,
+    const QString &failureLabel) {
+    if (m_deviceId.isEmpty() || m_busy) return;
+    m_busy = true;
+    Q_EMIT busyChanged();
+    const quint64 generation = ++m_generation;
+    const QString id = m_deviceId;
+    m_port.requestWrite(this, id, changes,
+                        [this, generation, id, failureLabel](
+                            PointerDevicePort::WriteResult result) {
+        // AGENT-GUARD: A reply for selected A must never paint B, and a
+        // reply from a removed/old-owner device must never restore controls.
+        if (generation != m_generation || id != m_deviceId) {
+            Q_EMIT refreshRequested();
+            return;
+        }
+        if (result.snapshot) {
+            Q_EMIT confirmedSnapshot(*result.snapshot);
+            setSnapshot(*result.snapshot);
+        } else {
+            m_busy = false;
+            Q_EMIT busyChanged();
+            Q_EMIT refreshRequested();
+        }
+        if (!result.applied) {
+            m_statusText = failureLabel + QStringLiteral(": ") +
+                           (result.error.isEmpty()
+                                ? tr("The input authority refused the change")
+                                : result.error);
+            Q_EMIT statusTextChanged();
+        }
+    });
 }
 
 void PointerDeviceSelection::setSpeed(double value) {
     const double clamped = qBound(MinimumSpeed, value, MaximumSpeed);
-    if (clamped == m_speed) {
-        return;
+    if (clamped != m_speed) {
+        apply({{QStringLiteral("pointerAcceleration"), clamped}},
+              tr("Pointer speed could not be changed"));
     }
-    writeDouble(QStringLiteral("pointerAcceleration"), m_speed,
-                &PointerDeviceSelection::speedChanged, clamped,
-                tr("Pointer speed could not be changed"));
 }
 
 void PointerDeviceSelection::setFlatProfile(bool value) {
-    if (value == m_flatProfile) {
-        return;
+    if (value != m_flatProfile) {
+        apply({{QStringLiteral("pointerAccelerationProfileFlat"), value},
+               {QStringLiteral("pointerAccelerationProfileAdaptive"), !value}},
+              tr("Acceleration profile could not be changed"));
     }
-    QString error;
-    if (!m_port.writeProperty(m_deviceId,
-                              QStringLiteral(
-                                  "pointerAccelerationProfileFlat"),
-                              value, &error)) {
-        m_statusText = tr("Acceleration profile could not be changed: %1")
-                           .arg(error);
-        Q_EMIT statusTextChanged();
-        return;
-    }
-    if (!m_port.writeProperty(m_deviceId,
-                              QStringLiteral(
-                                  "pointerAccelerationProfileAdaptive"),
-                              !value, &error)) {
-        // AGENT-GUARD: The two profile flags are one choice. Restore the
-        // flat flag when the adaptive write fails so the device never ends
-        // up with both or neither selected.
-        m_port.writeProperty(m_deviceId,
-                             QStringLiteral(
-                                 "pointerAccelerationProfileFlat"),
-                             m_flatProfile, nullptr);
-        m_statusText = tr("Acceleration profile could not be changed: %1")
-                           .arg(error);
-        Q_EMIT statusTextChanged();
-        return;
-    }
-    m_flatProfile = value;
-    Q_EMIT statusTextChanged();
-    Q_EMIT profileChanged();
 }
 
 void PointerDeviceSelection::setNaturalScroll(bool value) {
-    if (value == m_naturalScroll) {
-        return;
-    }
-    writeBool(QStringLiteral("naturalScroll"), m_naturalScroll,
-              &PointerDeviceSelection::naturalScrollChanged, value,
+    if (value != m_naturalScroll) {
+        apply({{QStringLiteral("naturalScroll"), value}},
               tr("Natural scrolling could not be changed"));
+    }
 }
 
 void PointerDeviceSelection::setLeftHanded(bool value) {
-    if (value == m_leftHanded) {
-        return;
-    }
-    writeBool(QStringLiteral("leftHanded"), m_leftHanded,
-              &PointerDeviceSelection::leftHandedChanged, value,
+    if (value != m_leftHanded) {
+        apply({{QStringLiteral("leftHanded"), value}},
               tr("Left-handed mode could not be changed"));
+    }
 }
 
 void PointerDeviceSelection::setScrollSpeed(double value) {
     const double clamped = qBound(MinimumScrollSpeed, value, MaximumScrollSpeed);
-    if (clamped == m_scrollSpeed) {
-        return;
+    if (clamped != m_scrollSpeed) {
+        apply({{QStringLiteral("scrollFactor"), clamped}},
+              tr("Scroll speed could not be changed"));
     }
-    writeDouble(QStringLiteral("scrollFactor"), m_scrollSpeed,
-                &PointerDeviceSelection::scrollSpeedChanged, clamped,
-                tr("Scroll speed could not be changed"));
 }
 
 void PointerDeviceSelection::setMiddleEmulation(bool value) {
-    if (value == m_middleEmulation) {
-        return;
-    }
-    writeBool(QStringLiteral("middleEmulation"), m_middleEmulation,
-              &PointerDeviceSelection::middleEmulationChanged, value,
+    if (value != m_middleEmulation) {
+        apply({{QStringLiteral("middleEmulation"), value}},
               tr("Middle-click emulation could not be changed"));
+    }
 }
 
 void PointerDeviceSelection::setTapToClick(bool value) {
-    if (value == m_tapToClick) {
-        return;
-    }
-    writeBool(QStringLiteral("tapToClick"), m_tapToClick,
-              &PointerDeviceSelection::tapToClickChanged, value,
+    if (value != m_tapToClick) {
+        apply({{QStringLiteral("tapToClick"), value}},
               tr("Tap to click could not be changed"));
+    }
 }
 
 void PointerDeviceSelection::setTapAndDrag(bool value) {
-    if (value == m_tapAndDrag) {
-        return;
-    }
-    writeBool(QStringLiteral("tapAndDrag"), m_tapAndDrag,
-              &PointerDeviceSelection::tapAndDragChanged, value,
+    if (value != m_tapAndDrag) {
+        apply({{QStringLiteral("tapAndDrag"), value}},
               tr("Tap and drag could not be changed"));
+    }
 }
 
 void PointerDeviceSelection::setDisableWhileTyping(bool value) {
-    if (value == m_disableWhileTyping) {
-        return;
-    }
-    writeBool(QStringLiteral("disableWhileTyping"), m_disableWhileTyping,
-              &PointerDeviceSelection::disableWhileTypingChanged, value,
+    if (value != m_disableWhileTyping) {
+        apply({{QStringLiteral("disableWhileTyping"), value}},
               tr("Disable while typing could not be changed"));
+    }
 }
 
 void PointerDeviceSelection::setScrollMethod(const QString &value) {
     const bool twoFinger = value != QLatin1String("edge");
     const bool currentlyTwoFinger =
         snapshotBool(m_properties, QStringLiteral("scrollTwoFinger"), true);
-    if (twoFinger == currentlyTwoFinger) {
-        return;
+    if (twoFinger != currentlyTwoFinger) {
+        apply({{QStringLiteral("scrollTwoFinger"), twoFinger},
+               {QStringLiteral("scrollEdge"), !twoFinger}},
+              tr("Scroll method could not be changed"));
     }
-    QString error;
-    if (!m_port.writeProperty(m_deviceId,
-                              QStringLiteral("scrollTwoFinger"), twoFinger,
-                              &error)) {
-        m_statusText = tr("Scroll method could not be changed: %1").arg(error);
-        Q_EMIT statusTextChanged();
-        return;
-    }
-    if (!m_port.writeProperty(m_deviceId, QStringLiteral("scrollEdge"),
-                              !twoFinger, &error)) {
-        m_port.writeProperty(m_deviceId, QStringLiteral("scrollTwoFinger"),
-                             currentlyTwoFinger, nullptr);
-        m_statusText = tr("Scroll method could not be changed: %1").arg(error);
-        Q_EMIT statusTextChanged();
-        return;
-    }
-    m_scrollMethod = twoFinger ? QStringLiteral("two-finger")
-                               : QStringLiteral("edge");
-    Q_EMIT statusTextChanged();
-    Q_EMIT scrollMethodChanged();
 }
 
 } // namespace QindaQt::Apps::SettingsInput
