@@ -121,8 +121,19 @@ bool TouchSettingsModel::editable() const
 
 bool TouchSettingsModel::longPressQueueable() const
 {
-    return available() && m_busy && !m_awaitingSnapshot
-           && m_writeKey == QLatin1String(LongPressKey);
+    if (!m_busy || m_writeKey != QLatin1String(LongPressKey)) {
+        return false;
+    }
+    const auto &snapshot = m_client.snapshot();
+    if (!snapshot || snapshot->owner != m_writeOwner || snapshot->epoch != m_writeEpoch
+        || m_client.currentOwner() != m_writeOwner) {
+        return false;
+    }
+    // AGENT-GUARD: An Applied reply makes SettingsClient Authenticating until
+    // its confirming read. Keep the same slider gesture queueable in memory
+    // through that gap; only handleSnapshot may send its latest value.
+    return available() || (m_awaitingSnapshot
+                           && m_client.state() == Services::SettingsClient::ClientState::Authenticating);
 }
 
 bool TouchSettingsModel::touchscreenEnabled() const
@@ -214,8 +225,8 @@ bool TouchSettingsModel::setLongPressMs(int milliseconds)
         return false;
     }
     if (longPressQueueable()) {
-        // A gesture can replace its own in-flight final value, but it never
-        // creates a second write until the first is confirmed by a fresh read.
+        // A gesture can replace its own final value through the confirming
+        // read, but it never sends a second write from a cached snapshot.
         m_queuedLongPress = milliseconds;
         publishStatus();
         return true;

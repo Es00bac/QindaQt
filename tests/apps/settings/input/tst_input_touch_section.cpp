@@ -239,8 +239,8 @@ void InputTouchSectionTest::sliderKeyboardAndDragKeepTheFinalRequestedValue()
     QTest::mousePress(window.get(), Qt::LeftButton, Qt::NoModifier, fromScene.toPoint());
     QTest::mouseMove(window.get(), toScene.toPoint(), 15);
     QTest::mouseRelease(window.get(), Qt::LeftButton, Qt::NoModifier, toScene.toPoint());
-    const int finalRequested = facade->model.longPressDisplayMs();
-    QVERIFY(finalRequested > 600);
+    const int dragRequested = facade->model.longPressDisplayMs();
+    QVERIFY(dragRequested > 600);
     QCOMPARE(facade->transport.commits.size(), 1);
     Q_EMIT facade->transport.commitReceived(
         facade->transport.commits.constFirst().token, QStringLiteral(":1.9"),
@@ -248,6 +248,13 @@ void InputTouchSectionTest::sliderKeyboardAndDragKeepTheFinalRequestedValue()
                        {{QStringLiteral("input.touch.longPressMs"), 550}}));
     QCOMPARE(facade->transport.commits.size(), 1);
     QTRY_VERIFY(facade->transport.snapshots.size() >= 2);
+    QVERIFY(!facade->model.available());
+    QVERIFY(slider->isEnabled());
+    slider->forceActiveFocus();
+    QTest::keyClick(window.get(), Qt::Key_Right);
+    QTRY_VERIFY(facade->model.longPressDisplayMs() > dragRequested);
+    const int finalRequested = facade->model.longPressDisplayMs();
+    QCOMPARE(facade->transport.commits.size(), 1);
     Q_EMIT facade->transport.snapshotReceived(
         facade->transport.snapshots.constLast().token, QStringLiteral(":1.9"),
         fakeSnapshotWire(2, withTouchDefaults({{QStringLiteral("input.touch.longPressMs"), 550}})));

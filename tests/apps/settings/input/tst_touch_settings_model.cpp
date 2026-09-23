@@ -69,6 +69,7 @@ private slots:
     void refusedAndUncertainLongPressNeverReplays();
     void externalRefreshDoesNotClearDiagnostic();
     void ownerReplacementDropsQueuedLongPress();
+    void ownerReplacementAfterAppliedDropsGesture();
     void preResultSnapshotIsIgnoredAndResultFloorIsRequired();
     void epochChangeAfterSuccessDropsQueuedValue();
 };
@@ -238,20 +239,28 @@ void TouchSettingsModelTests::successfulLongPressWaitsForFreshReadThenWritesLate
                        {{QStringLiteral("input.touch.longPressMs"), 550}}));
     QVERIFY(harness.model.busy());
     QCOMPARE(harness.transport.commits.size(), 1);
+    // The Applied reply starts a confirming read, temporarily leaving Ready.
+    // The live gesture must still keep its latest movement, without a write
+    // against the pre-result snapshot.
+    QVERIFY(!harness.model.available());
+    QVERIFY(harness.model.longPressQueueable());
+    QVERIFY(harness.model.setLongPressMs(800));
+    QCOMPARE(harness.model.longPressDisplayMs(), 800);
+    QCOMPARE(harness.transport.commits.size(), 1);
     QVERIFY(harness.answerRefresh(3, {{QStringLiteral("input.touch.longPressMs"), 550}}));
     QTRY_COMPARE(harness.transport.commits.size(), 2);
     QCOMPARE(harness.transport.commits.constLast().revision, quint64(3));
     QCOMPARE(harness.transport.commits.constLast().operations.constFirst().toMap()
-                 .value(QStringLiteral("value")).toInt(), 700);
+                 .value(QStringLiteral("value")).toInt(), 800);
     QCOMPARE(harness.model.longPressMs(), 550);
     Q_EMIT harness.transport.commitReceived(
         harness.transport.commits.constLast().token, harness.owner,
         fakeCommitWire(SettingsWireStatus::Applied, 3, 4,
-                       {{QStringLiteral("input.touch.longPressMs"), 700}}));
-    QVERIFY(harness.answerRefresh(4, {{QStringLiteral("input.touch.longPressMs"), 700}}));
+                       {{QStringLiteral("input.touch.longPressMs"), 800}}));
+    QVERIFY(harness.answerRefresh(4, {{QStringLiteral("input.touch.longPressMs"), 800}}));
     QTRY_VERIFY(!harness.model.busy());
-    QCOMPARE(harness.model.longPressMs(), 700);
-    QCOMPARE(harness.model.longPressDisplayMs(), 700);
+    QCOMPARE(harness.model.longPressMs(), 800);
+    QCOMPARE(harness.model.longPressDisplayMs(), 800);
 }
 
 void TouchSettingsModelTests::refusedAndUncertainLongPressNeverReplays()
@@ -327,6 +336,30 @@ void TouchSettingsModelTests::ownerReplacementDropsQueuedLongPress()
     QVERIFY(!harness.model.errorText().isEmpty());
 }
 
+void TouchSettingsModelTests::ownerReplacementAfterAppliedDropsGesture()
+{
+    Harness harness;
+    harness.model.refresh();
+    QVERIFY(harness.deliverSnapshot(1, {}));
+    QVERIFY(harness.model.setLongPressMs(550));
+    Q_EMIT harness.transport.commitReceived(
+        harness.transport.commits.constFirst().token, harness.owner,
+        fakeCommitWire(SettingsWireStatus::Applied, 1, 2,
+                       {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    QVERIFY(harness.model.longPressQueueable());
+    QVERIFY(harness.model.setLongPressMs(800));
+    Q_EMIT harness.transport.ownerChanged(QStringLiteral(":1.8"));
+    QTRY_VERIFY(!harness.model.busy());
+    QVERIFY(!harness.model.longPressQueueable());
+    QCOMPARE(harness.transport.commits.size(), 1);
+    QVERIFY(!harness.model.errorText().isEmpty());
+    // Reauthentication is covered by ownerReplacementDropsQueuedLongPress;
+    // here the contract is that an already Applied write cannot replay its
+    // newer gesture against the replacement owner.
+    QCoreApplication::processEvents();
+    QCOMPARE(harness.transport.commits.size(), 1);
+}
+
 void TouchSettingsModelTests::preResultSnapshotIsIgnoredAndResultFloorIsRequired()
 {
     Harness harness;
@@ -362,11 +395,12 @@ void TouchSettingsModelTests::epochChangeAfterSuccessDropsQueuedValue()
     harness.model.refresh();
     QVERIFY(harness.deliverSnapshot(1, {}));
     QVERIFY(harness.model.setLongPressMs(550));
-    QVERIFY(harness.model.setLongPressMs(800));
     Q_EMIT harness.transport.commitReceived(
         harness.transport.commits.constFirst().token, harness.owner,
         fakeCommitWire(SettingsWireStatus::Applied, 1, 2,
                        {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    QVERIFY(harness.model.longPressQueueable());
+    QVERIFY(harness.model.setLongPressMs(800));
     QVERIFY(QTest::qWaitFor([&] { return harness.transport.snapshots.size() > harness.answeredSnapshots; },
                             2000));
     QVariantMap changedEpoch = fakeSnapshotWire(2, withTouchDefaults(
