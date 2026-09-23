@@ -53,13 +53,12 @@ public:
         // AGENT-NOTE: O13 made `quietingSchedule` a required property of
         // Main.qml, so the component cannot be created without one, and it is
         // a SEPARATE model from `quietingSettings` — QuietHoursSection reads
-        // available, canEdit, scheduleEnabled and the two time fields off it. Handing
-        // it the settings stand-in leaves those undefined, and this harness
-        // runs with fatal warnings, so "Unable to assign [undefined] to bool"
-        // aborts the process rather than failing one row. Every key the
-        // section binds has to exist: errorText in particular is read as
-        // `errorText.length`, and undefined there is a TypeError that shows up
-        // as a failure with an empty message.
+        // availability, editability, schedule times, status, conflict, and
+        // uncertainty from it. Handing it the settings stand-in leaves those
+        // undefined, and this harness runs with fatal QML warnings. Every
+        // construction-bound key needs its real value type; errorText is also
+        // read as `errorText.length`. The mutation methods are event-only and
+        // are not called by this Customize lifecycle test.
         schedule->insert(QStringLiteral("available"), false);
         schedule->insert(QStringLiteral("canEdit"), true);
         schedule->insert(QStringLiteral("scheduleEnabled"), false);
@@ -68,6 +67,9 @@ public:
         schedule->insert(QStringLiteral("startText"), QStringLiteral("22:00"));
         schedule->insert(QStringLiteral("endText"), QStringLiteral("07:00"));
         schedule->insert(QStringLiteral("summaryText"), QString{});
+        schedule->insert(QStringLiteral("statusText"), QString{});
+        schedule->insert(QStringLiteral("conflict"), false);
+        schedule->insert(QStringLiteral("uncertain"), false);
         schedule->insert(QStringLiteral("errorText"), QString{});
         engine.addImportPath(QStringLiteral(QINDAQT_QML_IMPORT_PATH));
         QString error;
