@@ -8,6 +8,7 @@
 
 #include <QAccessible>
 #include <QDebug>
+#include <QKeyEvent>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
@@ -268,9 +269,21 @@ void CustomizePageTests::panelHideDelayCommitsFinalPointerAndKeyboardIntent()
 
     slider->forceActiveFocus(Qt::TabFocusReason);
     QTRY_VERIFY(slider->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Right);
+    QKeyEvent press(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier);
+    QCoreApplication::sendEvent(&view, &press);
+    QKeyEvent repeatPress(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier,
+                          QString(), true);
+    QCoreApplication::sendEvent(&view, &repeatPress);
+    QKeyEvent repeatRelease(QEvent::KeyRelease, Qt::Key_Right, Qt::NoModifier,
+                            QString(), true);
+    QCoreApplication::sendEvent(&view, &repeatRelease);
+    QCoreApplication::processEvents();
+    QCOMPARE(model.delaySetCount, 0);
+    QCOMPARE(slider->property("value").toInt(), 350);
+    QKeyEvent release(QEvent::KeyRelease, Qt::Key_Right, Qt::NoModifier);
+    QCoreApplication::sendEvent(&view, &release);
     QTRY_COMPARE(model.delaySetCount, 1);
-    QCOMPARE(model.lastDelayMs, 300);
+    QCOMPARE(model.lastDelayMs, 350);
     QTRY_COMPARE(slider->property("value").toInt(), 250);
 
     const QPoint start = slider->mapToScene(

@@ -98,6 +98,7 @@ FormSurface {
 
             objectName: "customizePanelHideDelaySlider"
             property bool draftActive: false
+            property bool keyboardGestureActive: false
 
             function commitDraft() {
                 if (!draftActive)
@@ -124,11 +125,24 @@ FormSurface {
             accessibleName: qsTr("Auto-hide delay for all panels")
             accessibleDescription: qsTr("Milliseconds after the pointer leaves, from 0 to 5000. Applies to every layout profile.")
             onMoved: draftActive = true
-            onPressedChanged: if (!pressed) commitDraft()
-            Keys.onReleased: event => {
+            // QQuickSlider toggles pressed for keys too, including intermediate
+            // auto-repeat releases. Only pointer release commits here.
+            onPressedChanged: if (!pressed && !keyboardGestureActive) commitDraft()
+            Keys.onPressed: event => {
                 if (event.key === Qt.Key_Left || event.key === Qt.Key_Right
                         || event.key === Qt.Key_Home || event.key === Qt.Key_End)
+                    keyboardGestureActive = true
+            }
+            Keys.onReleased: event => {
+                // AGENT-GUARD: Auto-repeat emits intermediate releases while
+                // the key is held. Writing then disables this pending slider
+                // and loses later repeats; commit only the final release.
+                if (!event.isAutoRepeat
+                        && (event.key === Qt.Key_Left || event.key === Qt.Key_Right
+                            || event.key === Qt.Key_Home || event.key === Qt.Key_End)) {
+                    keyboardGestureActive = false
                     commitDraft()
+                }
             }
         }
 
