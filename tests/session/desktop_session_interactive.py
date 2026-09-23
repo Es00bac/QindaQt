@@ -182,7 +182,7 @@ def _validate_matrix_captures(
         "sessionArguments": [
             "--profile", expected.profile_id, "--theme", expected.theme_id,
             "--no-polkit-agent", "--no-powerdevil",
-            "--no-global-shortcut-daemon",
+            "--no-global-shortcut-daemon", "--no-autostart",
         ],
         "editorArguments": ["--theme", expected.theme_id],
     }:

@@ -137,7 +137,7 @@ def _write_session_wrapper(
         "--theme",
         theme,
         "--no-polkit-agent", "--no-powerdevil",
-        "--no-global-shortcut-daemon",
+        "--no-global-shortcut-daemon", "--no-autostart",
     ]
     wrapper.write_text(
         "#!/bin/sh\nexec " + " ".join(shlex.quote(word) for word in words) + "\n",

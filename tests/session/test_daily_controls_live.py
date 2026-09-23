@@ -194,7 +194,7 @@ def _inner(arguments: argparse.Namespace) -> int:
                            + " --notification-host " + str(stage.executables["notification"])
                            + " --shell " + str(stage.executables["shell"])
                            + " --desktop-controls " + str(controls_wrapper)
-                           + " --no-polkit-agent\n", encoding="utf-8")
+                           + " --no-polkit-agent --no-autostart\n", encoding="utf-8")
         wrapper.chmod(0o700)
         scenario = Path("/opt/qindaqt-source/tests/scenarios/single-1080p.json")
         processes.append(_run([str(stage.executables["launcher"]), "--virtual", "--width", "1920", "--height", "1080",

@@ -12,7 +12,7 @@ target_sources(
         FILES
             include/qindaqt/apps/settings_startup/startup_settings_model.h
 )
-target_link_libraries(qindaqt_settings_startup PUBLIC Qt6::Core)
+target_link_libraries(qindaqt_settings_startup PUBLIC QindaQt::SessionAutostart Qt6::Core)
 target_compile_features(qindaqt_settings_startup PUBLIC cxx_std_20)
 set_target_properties(
     qindaqt_settings_startup

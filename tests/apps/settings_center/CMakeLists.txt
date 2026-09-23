@@ -236,7 +236,7 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-route-construction PROPERTIES
-    LABELS "offscreen;settings;appearance;customize;audio;power;clipboard;color" RUN_SERIAL TRUE TIMEOUT 40
+    LABELS "offscreen;settings;appearance;customize;audio;power;clipboard;color;startup" RUN_SERIAL TRUE TIMEOUT 60
 )
 
 # 8. Installed staged package test
@@ -255,5 +255,5 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-app-installed-routes PROPERTIES
-    LABELS "offscreen;settings;appearance;clipboard;color;package" RUN_SERIAL TRUE TIMEOUT 90
+    LABELS "offscreen;settings;appearance;clipboard;color;startup;package" RUN_SERIAL TRUE TIMEOUT 90
 )

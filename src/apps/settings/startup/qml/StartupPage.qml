@@ -189,12 +189,22 @@ T.Page {
                                     muted: true
                                     elide: Text.ElideRight
                                 }
+
+                                Label {
+                                    objectName: "startupIneligibility_" + (entryRow.modelData?.id ?? "")
+                                    Layout.fillWidth: true
+                                    visible: text.length > 0
+                                    text: entryRow.modelData?.ineligibilityReason ?? ""
+                                    muted: true
+                                    wrapMode: Text.Wrap
+                                    Accessible.name: text
+                                }
                             }
 
                             Switch {
                                 id: enabledSwitch
                                 objectName: "startupEnabled_" + (entryRow.modelData?.id ?? "")
-                                text: qsTr("Run at login")
+                                text: qsTr("Enabled at login")
                                 checked: entryRow.modelData?.enabled ?? false
                                 onToggled: entryRow.modelData !== null
                                     && root.startupSettings.setEnabled(

@@ -28,3 +28,22 @@ set_tests_properties(
     qindaqt.settings-startup-model PROPERTIES
     LABELS "settings;startup" TIMEOUT 60
 )
+
+qt_add_executable(qindaqt_settings_startup_page_test tst_startup_page.cpp)
+target_compile_definitions(qindaqt_settings_startup_page_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_STARTUP_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/startup/qml/StartupPage.qml")
+target_link_libraries(qindaqt_settings_startup_page_test PRIVATE
+    qindaqt_settings_startup qindaqt_settings_appearance
+    QindaQt::TokensQml qindaqt_themes
+    Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+add_dependencies(qindaqt_settings_startup_page_test
+    qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
+    qindaqt_settings_startup_qmlplugin)
+qindaqt_enable_warnings(qindaqt_settings_startup_page_test)
+add_test(NAME qindaqt.settings-startup-page
+    COMMAND qindaqt_settings_startup_page_test)
+set_tests_properties(qindaqt.settings-startup-page PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "offscreen;settings;startup;accessibility")

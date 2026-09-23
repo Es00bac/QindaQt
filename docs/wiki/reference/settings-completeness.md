@@ -27,7 +27,7 @@ a defect of the current route).
 | `color` | ICC profile catalog, Displays, Disconnected displays, Import | exists | |
 | `accessibility` | Contrast, motion, transparency, text scale | exists | Single page (`AccessibilityPage.qml`); not sectioned like the others, but covers its stated scope. |
 | `input` | Mouse & touchpad, Keyboard, Shortcuts | exists | O8 (this wave) fixed a real bug: tap-to-click/tap-and-drag rows were permanently hidden by a KWin property-name mismatch, independent of hardware. |
-| `startup` | Add a command, Startup entries | exists | New this slice; see `docs/wiki/apps/startup-settings.md`. Locale-suffixed keys, `TryExec=`, and `OnlyShowIn=`/`NotShowIn=` are not read — a documented, narrow gap, not silently wrong. |
+| `startup` | Add a command, Startup entries | exists | New this slice; see `docs/wiki/apps/startup-settings.md`. The session now consumes eligible entries once per login, with TryExec and desktop filters shared with the Settings ineligibility display; see ADR-0247. D-Bus activation and early startup phases remain diagnosed limitations. |
 | `screensaver` | Screen saver (discovered saver choice, idle delay, preview), Locking (walk-away idle lock) | exists | ADR-0226: split out of the Power route, which no longer carries a Screensaver section. Saver list is discovered from installed packages, so "None"/"Blank screen" are the only always-present choices. |
 
 ## Routes named in PLAN.md §3 that do not exist yet

@@ -42,6 +42,7 @@ nav:
       - QST-1 semantic design tokens: architecture/design-tokens.md
       - Qt platform appearance: architecture/qt-platform-theme.md
       - Compositor and session: architecture/compositor-session.md
+      - Session autostart: architecture/session-autostart.md
       - Hybrid topology: architecture/hybrid-topology.md
       - Gather overview: compositor/gather-overview.md
       - Hybrid constraints: architecture/hybrid-constraints.md
@@ -395,3 +396,4 @@ nav:
       - "ADR-0243: Keep Gather previews by window identity": adr/0243-keep-gather-previews-by-window-identity.md
       - "ADR-0244: Gate desktop Voice use on confirmed Settings1 opt-in": adr/0244-gate-desktop-voice-use-on-confirmed-settings.md
       - "ADR-0245: Write only supported default-application associations": adr/0245-write-only-supported-default-application-associations.md
+      - "ADR-0247: Run XDG autostart in the session supervisor": adr/0247-run-xdg-autostart-in-the-session-supervisor.md

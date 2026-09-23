@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/services/notification_presentation/presentation_access_token.h"
+#include "qindaqt/session_autostart/autostart_catalog.h"
 
 #include <QObject>
 #include <QProcess>
@@ -17,6 +18,7 @@ namespace QindaQt::SessionSupervisor {
 
 class FirstLaunchWelcome;
 class OptionalSessionChild;
+class SessionAutostartRunner;
 
 struct SessionProcessOptions final {
     QString notificationHostExecutable = QStringLiteral("qindaqt-notification-host");
@@ -57,6 +59,9 @@ struct SessionProcessOptions final {
     // no X display at all.
     QString xembedTrayProxyExecutable =
         QStringLiteral("qindaqt-xembed-tray-proxy");
+    // Empty roots disable general autostart in a private session. Production
+    // qindaqt-session fills this from XDG and starts one batch per login.
+    SessionAutostart::ScanOptions autostart;
     QString profileId;
     QString themeId;
     qint64 compositorProcessId = 0;
@@ -147,6 +152,7 @@ private:
     QProcess m_shell;
     QProcess m_networkSecretAgent;
     std::unique_ptr<FirstLaunchWelcome> m_welcome;
+    std::unique_ptr<SessionAutostartRunner> m_autostart;
     std::unique_ptr<OptionalSessionChild> m_desktopControls;
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;

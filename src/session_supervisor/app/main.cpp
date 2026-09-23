@@ -2,6 +2,7 @@
 #include "qindaqt/session_supervisor/direct_parent_process.h"
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
 #include "qindaqt/session_supervisor/session_service.h"
+#include "qindaqt/session_autostart/autostart_catalog.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/session/window_management/kwin_reconfigure_requester.h"
@@ -76,6 +77,8 @@ int main(int argc, char *argv[])
                         "well-known host locations exist. Private and "
                         "integration runs must pass this so a staged session "
                         "never launches host binaries.")},
+        {QStringLiteral("no-autostart"),
+         QStringLiteral("Do not launch XDG autostart entries in a private or diagnostic session.")},
         {QStringLiteral("profile"), QStringLiteral("Shell profile id."),
          QStringLiteral("id")},
         {QStringLiteral("theme"), QStringLiteral("Shell theme id."),
@@ -119,6 +122,9 @@ int main(int argc, char *argv[])
     options.polkitAgentExecutable = resolvePolkitAgentExecutable(
         parser.isSet(QStringLiteral("no-polkit-agent")),
         parser.value(QStringLiteral("polkit-agent")));
+    if (!parser.isSet(QStringLiteral("no-autostart"))) {
+        options.autostart = QindaQt::SessionAutostart::ScanOptions::fromEnvironment();
+    }
     options.profileId = parser.value(QStringLiteral("profile"));
     options.themeId = parser.value(QStringLiteral("theme"));
     options.compositorProcessId = *compositorProcessId;

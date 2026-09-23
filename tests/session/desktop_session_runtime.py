@@ -211,7 +211,7 @@ def _matrix_process_arguments(
         pids["session"], stage.executables["session"],
         ["--profile", scenario.profile_id, "--theme", scenario.theme_id,
          "--no-polkit-agent", "--no-powerdevil",
-         "--no-global-shortcut-daemon"],
+         "--no-global-shortcut-daemon", "--no-autostart"],
         "session",
     )
     editor = _read_exact_process_arguments(

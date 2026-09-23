@@ -107,7 +107,8 @@ void StartupSettingsModelTest::projectsEntriesOnConstruction() {
                      .comment = QStringLiteral("comment"),
                      .iconName = QStringLiteral("icon"),
                      .exec = QStringLiteral("a --run"), .enabled = true,
-                     .custom = false});
+                     .eligible = true,
+                     .ineligibilityReason = {}, .custom = false});
   StartupSettingsModel model(std::move(store));
   QCOMPARE(raw->listCalls, 1);
   const QVariantList entries = model.entries();
@@ -120,6 +121,8 @@ void StartupSettingsModelTest::projectsEntriesOnConstruction() {
   QCOMPARE(row.value(QStringLiteral("exec")).toString(),
            QStringLiteral("a --run"));
   QVERIFY(row.value(QStringLiteral("enabled")).toBool());
+  QVERIFY(row.value(QStringLiteral("eligible")).toBool());
+  QVERIFY(row.value(QStringLiteral("ineligibilityReason")).toString().isEmpty());
   QVERIFY(!row.value(QStringLiteral("custom")).toBool());
   QVERIFY(model.errorText().isEmpty());
 }
@@ -133,7 +136,8 @@ void StartupSettingsModelTest::setEnabledRefreshesOnSuccess() {
                                      .iconName = QString(),
                                      .exec = QString(),
                                      .enabled = true,
-                                     .custom = false});
+                                     .eligible = true,
+                     .ineligibilityReason = {}, .custom = false});
   StartupSettingsModel model(std::move(store));
   QVERIFY(model.setEnabled(QStringLiteral("a"), false));
   QCOMPARE(raw->setEnabledCalls, 1);
@@ -152,7 +156,8 @@ void StartupSettingsModelTest::
                                      .iconName = QString(),
                                      .exec = QString(),
                                      .enabled = true,
-                                     .custom = false});
+                                     .eligible = true,
+                     .ineligibilityReason = {}, .custom = false});
   StartupSettingsModel model(std::move(store));
   raw->nextError = QStringLiteral("boom");
   QVERIFY(!model.setEnabled(QStringLiteral("a"), false));
