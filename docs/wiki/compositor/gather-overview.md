@@ -174,11 +174,14 @@ Gather's production shell calls KWin's restricted
 desktop entry grants only that interface to the installed shell executable.
 The capture port checks the KWin owner, metadata and exact pipe length,
 bounds the image, and returns a small owned preview. The composition admits
-only the current task-generation result and drops previews when Gather closes
-or the source becomes unavailable. A failed or denied capture leaves the
-application icon in place. These are snapshots on open and source change, not
-a continuously updated video feed. See
-[ADR-0241](../adr/0241-capture-gather-window-previews-through-kwin.md).
+results only for UUIDs still visible in the free-window grid. It keeps their
+images across task-generation changes so a busy desktop does not flash or
+recapture unchanged windows. It drops a preview when that window leaves the
+grid, Gather closes, or the source becomes unavailable. A failed or denied
+capture leaves the application icon in place. These are snapshots on open and
+visible-window change, not a continuously updated video feed. See
+[ADR-0241](../adr/0241-capture-gather-window-previews-through-kwin.md) and
+[ADR-0243](../adr/0243-keep-gather-previews-by-window-identity.md).
 
 The separate authenticated `CompositorShell1.WindowPreview` endpoint for dock
 hover remains unimplemented; [ADR-0119](../adr/0119-authenticated-window-preview-channel.md)
@@ -270,5 +273,6 @@ cannot look like it worked.
 
 - [ADR-0119: authenticated window-preview channel](../adr/0119-authenticated-window-preview-channel.md)
 - [ADR-0241: Gather window previews](../adr/0241-capture-gather-window-previews-through-kwin.md)
+- [ADR-0243: Stable Gather previews](../adr/0243-keep-gather-previews-by-window-identity.md)
 - [Window containers](../architecture/window-containers.md)
 - [Hybrid topology](../architecture/hybrid-topology.md)
