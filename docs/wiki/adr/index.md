@@ -69,7 +69,7 @@ integration retains every accepted decision in numeric order.
 | [ADR-0052](0052-confine-networkmanager-behind-network1.md) | Accepted | Confine libnm, credentials, and upstream-owner replacement behind resident Network1 |
 | [ADR-0053](0053-compose-display1-from-authenticated-runtime-authorities.md) | Accepted | Compose Display1 from explicit journal, Wayland-peer, lock, writer, and logind authorities |
 | [ADR-0054](0054-export-appearance-through-the-standard-settings-portal.md) | Accepted | Export confirmed Settings1/QST appearance through the standard Settings portal backend |
-| [ADR-0055](0055-compose-network-settings-through-network1.md) | Accepted | Compose Network settings through public Network1 without credential authority |
+| [ADR-0055](0055-compose-network-settings-through-network1.md) | Accepted; radio clause superseded by ADR-0251 | Compose Network settings through public Network1 without credential authority |
 | [ADR-0056](0056-adopt-standard-appmenu-dbusmenu-transports.md) | Accepted | Adopt standard AppMenu/dbusmenu transports behind proof-bound ownership |
 | [ADR-0057](0057-reach-bluez-through-direct-qtdbus-behind-adapter-backend.md) | Accepted | Reach BlueZ through injected direct QtDBus while preserving BlueZ authority |
 | [ADR-0058](0058-isolate-clipboard-capture-in-a-volatile-host.md) | Accepted | Isolate clipboard capture and payloads in a volatile resident host |
@@ -252,3 +252,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0248: Confirm Streaming preferences before OBS consumption](0248-confirm-streaming-preferences-before-obs-consumption.md)
 - [ADR-0249: Confirm week-start writes against Settings1](0249-confirm-week-start-writes-against-settings1.md)
 - [ADR-0250: Require an active Loader witness for every Settings route](0250-require-active-loader-witness-for-every-settings-route.md)
+- [ADR-0251: Expose admitted radio switches through Network1](0251-expose-admitted-radio-switches-through-network1.md)

@@ -65,6 +65,16 @@ integrated in the qinda source tree, not installed into a live session:
   fallthrough and QML warnings. Independent exact review accepted the repaired
   documentation and 11/11 focused rows; merged broad Settings 133/133 passes.
   Live desktop navigation and hardware routes remain to qualify.
+- Network radio outcomes (`05612ac3`, independent exact review): Wi-Fi and
+  airplane-mode switches now report admission, pending work, refusal and
+  uncertain completion against Network1 readback. Same-owner refresh and
+  owner replacement cannot leave a stale successful Off banner after the
+  observed radio turns On. The first candidate was rejected on that exact
+  reproduction and repaired. Integrated focused Network/navigation rows
+  pass 9/9 and strict documentation validates 383 pages. Broad Settings
+  passed 132/133 under high parallel load; its one route-construction
+  timeout passed alone on rerun (1/1). Live radios were not changed while phone tethering;
+  physical Wi-Fi operation remains to qualify.
 - Appearance monospace font (`fdbc50f4`): the font picker now edits
   `fonts.monospaceFamily` separately from the UI family and keeps the
   confirmed value visible. A qinda Qt metadata false-negative excluded the

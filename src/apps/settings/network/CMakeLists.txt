@@ -8,6 +8,7 @@ target_sources(
         network_secret_agent_presence.cpp
         network_settings_actions.cpp
         network_settings_model.cpp
+        network_settings_radios.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
