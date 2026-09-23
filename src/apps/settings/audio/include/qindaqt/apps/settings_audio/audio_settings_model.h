@@ -174,6 +174,14 @@ public:
                                    QString destinationHost, int port);
   Q_INVOKABLE bool saveIncomingPeer(QString name, QString sourceIpv4,
                                    QString outputNodeName, int port);
+  // Connection codes transfer a saved sender tuple, never authorization.
+  // The receiver must still select a live physical output, save disabled,
+  // then enable on the authoritative Audio1 row.
+  Q_INVOKABLE QVariantList localPeerAddresses() const;
+  Q_INVOKABLE QVariantMap sharePeerCode(QString savedOutgoingName,
+                                       QString thisComputerIpv4) const;
+  Q_INVOKABLE QVariantMap reviewPeerCode(QString code) const;
+  Q_INVOKABLE bool saveImportedPeer(QString code, QString outputNodeName);
   Q_INVOKABLE bool removePeer(QString name);
   Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial);
   Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial);

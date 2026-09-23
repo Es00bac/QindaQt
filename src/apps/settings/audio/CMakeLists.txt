@@ -11,6 +11,8 @@ target_sources(
         audio_settings_volume.cpp
         audio_console_projection.cpp
         audio_peer_projection.cpp
+        audio_peer_code.cpp
+        audio_peer_addresses.cpp
         audio_settings_projection.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -21,6 +23,7 @@ target_sources(
 target_link_libraries(
     qindaqt_settings_audio
     PUBLIC QindaQt::AudioClient QindaQt::AudioProtocol Qt6::Core
+    PRIVATE Qt6::Network
 )
 target_compile_features(qindaqt_settings_audio PUBLIC cxx_std_20)
 set_target_properties(
@@ -56,6 +59,7 @@ qt_add_qml_module(
         qml/AudioIconButton.qml
         qml/AudioLevelRow.qml
         qml/AudioPage.qml
+        qml/AudioPeerConnectionCard.qml
         qml/AudioPeerSection.qml
         qml/AudioStreamSection.qml
         qml/AudioStreamTargetPicker.qml
@@ -103,6 +107,7 @@ install(
         qml/AudioIconButton.qml
         qml/AudioLevelRow.qml
         qml/AudioPage.qml
+        qml/AudioPeerConnectionCard.qml
         qml/AudioPeerSection.qml
         qml/AudioStreamSection.qml
         qml/AudioStreamTargetPicker.qml
