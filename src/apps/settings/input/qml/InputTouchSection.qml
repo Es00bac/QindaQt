@@ -6,15 +6,16 @@ import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
 // Touch rows (ADR-0205): the touchscreen switch, how long a finger is held
-// for the menu, touch-mode sizing, the on-screen keyboard, and what a swipe
-// from each screen edge opens. Every edit is one Settings1 write; the rows
-// follow the confirmed snapshot, so an uncertain write never looks applied.
+// for the menu, the on-screen keyboard, and what a swipe from each screen
+// edge opens. Rows retain last-known values when authority
+// is lost; edits wait for current authority and confirmed write readback.
 ColumnLayout {
     id: root
 
     required property var inputSettings
     readonly property var touch: inputSettings.touch
     readonly property bool touchUsable: touch.available
+    readonly property bool touchKnown: touch.hasLastKnown
     readonly property Item firstFocusTarget: degraded.visible ? degraded : touchSwitch
 
     Component.onCompleted: touch.refresh()
@@ -26,29 +27,31 @@ ColumnLayout {
         objectName: "inputTouchDegraded"
         Layout.fillWidth: true
         visible: !root.touchUsable
-        reason: root.touch.errorText.length > 0 ? root.touch.errorText
-                                                : qsTr("Touch settings are unavailable right now.")
+        reason: root.touch.errorText.length > 0 ? root.touch.errorText : root.touch.statusText
     }
 
     FormRow {
         objectName: "inputTouchEnabledRow"
         Layout.fillWidth: true
-        visible: root.touchUsable
+        visible: root.touchKnown
         label: qsTr("Touchscreen")
         description: qsTr("Fingers on the screen move, tap and hold")
         editor: Switch {
             id: touchSwitch
             objectName: "inputTouchEnabledSwitch"
             checked: root.touch.touchscreenEnabled
-            enabled: !root.touch.busy
-            onToggled: root.touch.setTouchscreenEnabled(checked)
+            enabled: root.touch.editable
+            onToggled: {
+                root.touch.setTouchscreenEnabled(checked)
+                checked = Qt.binding(() => root.touch.touchscreenEnabled)
+            }
         }
     }
 
     FormRow {
         objectName: "inputTouchLongPressRow"
         Layout.fillWidth: true
-        visible: root.touchUsable && root.touch.touchscreenEnabled
+        visible: root.touchKnown && root.touch.touchscreenEnabled
         label: qsTr("Hold for menu")
         description: qsTr("How long a finger stays down before the menu opens")
         editor: Slider {
@@ -56,8 +59,12 @@ ColumnLayout {
             from: 200
             to: 1500
             stepSize: 50
-            value: root.touch.longPressMs
-            onMoved: root.touch.setLongPressMs(value)
+            value: root.touch.longPressDisplayMs
+            enabled: root.touch.editable || root.touch.longPressQueueable
+            onMoved: {
+                if (!root.touch.setLongPressMs(Math.round(value)))
+                    value = Qt.binding(() => root.touch.longPressDisplayMs)
+            }
             accessibleName: qsTr("Hold time for the menu")
         }
     }
@@ -65,7 +72,7 @@ ColumnLayout {
     FormRow {
         objectName: "inputTouchKeyboardRow"
         Layout.fillWidth: true
-        visible: root.touchUsable && root.touch.touchscreenEnabled
+        visible: root.touchKnown && root.touch.touchscreenEnabled
         label: qsTr("On-screen keyboard")
         description: qsTr("Shown when a finger focuses a text field")
         editor: ComboBox {
@@ -75,19 +82,24 @@ ColumnLayout {
             valueRole: "value"
             model: root.touch.keyboardChoices
             currentIndex: root.touch.choiceIndex(root.touch.keyboardChoices, root.touch.onScreenKeyboard)
-            onActivated: index => root.touch.setOnScreenKeyboard(root.touch.keyboardChoices[index].value)
+            enabled: root.touch.editable
+            onActivated: index => {
+                root.touch.setOnScreenKeyboard(root.touch.keyboardChoices[index].value)
+                currentIndex = Qt.binding(() => root.touch.choiceIndex(
+                                              root.touch.keyboardChoices, root.touch.onScreenKeyboard))
+            }
         }
     }
 
     SectionHeader {
         objectName: "inputTouchEdgesHeader"
         Layout.fillWidth: true
-        visible: root.touchUsable && root.touch.touchscreenEnabled
+        visible: root.touchKnown && root.touch.touchscreenEnabled
         title: qsTr("Edge swipes")
     }
 
     Repeater {
-        model: root.touchUsable && root.touch.touchscreenEnabled
+        model: root.touchKnown && root.touch.touchscreenEnabled
                ? [{ edge: "left", label: qsTr("From the left") },
                   { edge: "top", label: qsTr("From the top") },
                   { edge: "right", label: qsTr("From the right") },
@@ -107,8 +119,13 @@ ColumnLayout {
                 model: root.touch.edgeActionChoices
                 currentIndex: root.touch.choiceIndex(root.touch.edgeActionChoices,
                                                      root.touch.edgeAction(modelData.edge))
-                onActivated: index => root.touch.setEdgeAction(
-                                          modelData.edge, root.touch.edgeActionChoices[index].value)
+                enabled: root.touch.editable
+                onActivated: index => {
+                    root.touch.setEdgeAction(modelData.edge, root.touch.edgeActionChoices[index].value)
+                    currentIndex = Qt.binding(() => root.touch.choiceIndex(
+                                                  root.touch.edgeActionChoices,
+                                                  root.touch.edgeAction(modelData.edge)))
+                }
             }
         }
     }

@@ -168,6 +168,7 @@ set_tests_properties(
 qt_add_executable(
     qindaqt_settings_input_page_test
     tst_input_page.cpp
+    support/fake_settings_transport.h
     support/fake_ports.h
 )
 target_include_directories(qindaqt_settings_input_page_test PRIVATE ${PROJECT_SOURCE_DIR})
