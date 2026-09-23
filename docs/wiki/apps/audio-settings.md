@@ -74,7 +74,7 @@ The Devices tab presents the current public snapshot in three groups:
 | --- | --- | --- |
 | Output devices | Bounded name/description, default badge, volume, mute | Set default when admitted; volume and mute per device |
 | Input devices | Bounded name/description, default badge, volume, mute | Set default when admitted; volume and mute per device |
-| Application streams | Application and media name, direction, current target, volume, mute | Volume and mute per stream when admitted |
+| Application streams | Application and media name, direction, confirmed target, volume, mute | Choose a live output for playback or input for recording when MoveStream is admitted; volume and mute per stream |
 
 The default output and input names are shown beside the inventory. The route
 model retains the exact owner, epoch, and revision for lineage gating and
@@ -85,10 +85,22 @@ uncertain operation. The route never exposes PipeWire object paths,
 WirePlumber properties, raw diagnostics, or per-channel level detail; unknown
 volumes are labeled as unknown rather than drawn as a handle position.
 
-Audio1 exposes a bounded stream inventory, so per-stream volume and mute are
-presented from the protocol surface. Stream *movement* between devices is an
-advertised Audio1 capability that this route slice deliberately does not
-expose; the boundary check rejects a stream-move intent surface.
+Audio1 exposes a bounded stream inventory, so per-stream volume, mute, and
+device routing are presented from the public protocol surface. Each stream's
+device chooser lists only live outputs for playback or live inputs for
+recording. The selected name and serial come from the last accepted Audio1
+snapshot; a click never optimistically changes the displayed device. A move
+is offered only when the snapshot advertises `MoveStream`, that stream has
+`canMove`, and an alternative compatible device is present. The route
+re-resolves both serials into exact current handles before calling the public
+client. A successful operation reply leaves the chooser pending until an
+accepted same-owner/epoch snapshot published after dispatch, at or above the
+result's observed revision, confirms the selected target. AudioClient starts
+the readback fetch before delivering its queued completion, so the route also
+accepts a qualifying snapshot that arrived just before that callback. A refusal, missing device, owner replacement, or readback mismatch keeps
+the prior authoritative selection and provides feedback. A wheel over the chooser scrolls the compact
+Devices page; route changes require an intentional click or keyboard choice.
+The independent volume-wheel controls retain their own detent behavior.
 
 ## Owner, lineage, and operation lifecycle
 
@@ -276,7 +288,7 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.settings-audio-(model|model-adversarial|page|boundary|boundary-poison)$'
+  -R '^qindaqt\.settings-audio-(model|model-adversarial|page|stream-routing|stream-routing-page|boundary|boundary-poison)$'
 ```
 
 - the model row proves bounded projection, exact lineage, capability and
@@ -301,9 +313,12 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
 - the Settings Center navigation row additionally proves Ctrl+6 selection,
   the Audio route tab's accessible name/role, and Tab entry plus Escape
   return in both the wide (720×520) and compact (440×360) host layouts.
+- the stream-routing model and offscreen page rows prove direction-matched
+  choices, exact-handle dispatch, pending/readback truth, refusal, removal,
+  owner replacement, keyboard selection, and compact wheel scrolling;
 - the boundary and poison rows reject private service, WirePlumber/PipeWire,
   and Qt D-Bus sources, an invokable outside the closed intent surface, text
-  entry, a stream-move surface, or a private service dependency.
+  entry, or a private service dependency.
 
 The same selector runs in strict Debug and Release builds. Settings Center's
 route and installed-package rows additionally prove canonical `--page audio`
@@ -311,10 +326,10 @@ startup, complete relocated construction, withheld-module failure, and hostile
 route rejection. Tests use the injected fake transport and never touch the
 host session bus, PipeWire, or WirePlumber.
 
-This slice does not claim stream movement, per-channel balance, profile or
-port selection, sample-rate configuration, an equalizer, persistence, a shell
-applet (owned separately), physical audio hardware qualification, or
-session-runtime integration.
+This slice does not claim profile or port selection, sample-rate
+configuration, a shell applet (owned separately), physical audio hardware
+qualification, or session-runtime integration. Stream routing is live Audio1
+graph state rather than a persistent application-device rule.
 
 ## Recovery presentation
 

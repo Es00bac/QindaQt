@@ -26,6 +26,7 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool setDeviceMuted(quint64 serial, bool muted)"
         "Q_INVOKABLE bool setStreamVolume(quint64 serial, double level)"
         "Q_INVOKABLE bool setStreamMuted(quint64 serial, bool muted)"
+        "Q_INVOKABLE bool moveStream(quint64 streamSerial, quint64 deviceSerial)"
         "Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int channelIndex, double level)"
         "Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName, int channels)"
         "Q_INVOKABLE bool removeVirtualDevice(quint64 serial)"
@@ -74,10 +75,6 @@ endforeach()
 file(GLOB_RECURSE route_qml LIST_DIRECTORIES false "${route_root}/qml/*.qml")
 foreach(source IN LISTS route_qml)
     file(READ "${source}" content)
-    if(content MATCHES "moveStream|MoveStream")
-        message(FATAL_ERROR
-            "Audio Settings QML gained an out-of-slice stream-move surface in ${source}")
-    endif()
     if(content MATCHES "TextEdit|TextArea|TextInput"
        OR (content MATCHES "TextField" AND NOT source MATCHES "/AudioPeerSection\\.qml$"))
         message(FATAL_ERROR
