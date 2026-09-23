@@ -24,9 +24,10 @@ namespace QindaQt::Apps::SettingsAudio {
 // predicate derived from the same public snapshot facts the AudioClient's
 // dispatch preflight consumes (exact retained snapshot, its availability,
 // capability bits and per-target can-set flags). Transport serialization is
-// separate from availability; console gestures coalesce until it is free.
-// An enabled control can therefore never be locally refused, and a disabled
-// one is never dispatched. Do not widen one side without the other.
+// separate from availability: graph volume keeps one latest target per serial
+// until a newer snapshot confirms the preceding write, and console gestures
+// coalesce until the client is free. Other same-target intents remain fenced
+// while pending; a disabled control is never dispatched.
 class AudioSettingsModel final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool loading READ loading NOTIFY viewChanged)
@@ -194,6 +195,18 @@ private:
     quint64 requestId = 0;
     Intent intent = Intent::SetDefault;
   };
+  // One displayed latest target plus at most one queued successor per serial.
+  // Authoritative volumePercent never comes from this transient intent.
+  struct VolumeIntent {
+    double displayLevel = 0.0;
+    std::optional<double> queuedLevel;
+    QString owner;
+    quint64 epoch = 0;
+    quint64 requestRevision = 0;
+    quint64 generation = 0;
+    bool isStream = false;
+    bool awaitingSnapshot = false;
+  };
 
   void handleOperationCompleted(quint64 requestId,
                                 const Audio::OperationResult &result);
@@ -214,6 +227,13 @@ private:
     return m_pendingBySerial.contains(serial);
   }
   void trackPending(quint64 requestId, quint64 serial, const Intent intent);
+  [[nodiscard]] bool requestVolume(quint64 serial, bool isStream, double level);
+  void completeVolumeRequest(quint64 serial, Intent intent,
+                             const Audio::OperationResult &result);
+  void reconcileVolumeIntents();
+  void expireVolumeIntent(quint64 serial, quint64 generation);
+  [[nodiscard]] std::optional<double> displayVolumeLevel(quint64 serial,
+                                                          bool isStream) const;
   [[nodiscard]] bool dispatchDeviceIntent(quint64 serial, const Intent intent,
                                           double level, bool muted);
   // One admission-and-dispatch path for every console control, so an enabled
@@ -243,6 +263,8 @@ private:
   QString m_operationStatusText;
   QHash<quint64, PendingIntent> m_pendingBySerial;
   QHash<quint64, quint64> m_serialByRequestId;
+  QHash<quint64, VolumeIntent> m_volumeBySerial;
+  quint64 m_nextVolumeGeneration = 1;
   QSet<quint64> m_consoleRequestIds;
 };
 

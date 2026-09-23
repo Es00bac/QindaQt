@@ -390,8 +390,8 @@ void AudioSettingsModelTest::availabilityEqualsClientAdmission() {
   // AGENT-CONTRACT (mirrors ADR-0191, shell audio applet): pending is
   // per-target. While device 10's volume request is in flight, every row
   // -- including device 10's own -- keeps showing available (never disabled
-  // while pending); a second dispatch for the SAME target is refused
-  // locally, but a dispatch for a DIFFERENT target is accepted. A shared
+  // while pending); a second volume request for the SAME target replaces its
+  // bounded queued latest value. Other intent kinds remain fenced. A shared
   // single "one pending intent" field made this whole page go unavailable
   // for the duration of any one row's request; that was the bug.
   QVERIFY(fixture.model.setDeviceVolume(10, 0.5));
@@ -407,10 +407,15 @@ void AudioSettingsModelTest::availabilityEqualsClientAdmission() {
   QVERIFY(rowFlag(fixture.model.outputDevices(), 0, "pending"));
   QVERIFY(!rowFlag(fixture.model.outputDevices(), 1, "pending"));
 
-  // Same target, still pending: refused locally, nothing new dispatched.
+  // Same target, still pending: latest intent is admitted but not sent before
+  // the first write has succeeded and a newer snapshot confirms its lineage.
   const qsizetype dispatched = fixture.transport.operations.size();
-  QVERIFY(!fixture.model.setDeviceVolume(10, 0.6));
+  QVERIFY(fixture.model.setDeviceVolume(10, 0.6));
   QCOMPARE(fixture.transport.operations.size(), dispatched);
+  QCOMPARE(fixture.model.outputDevices().first().toMap()
+               .value(QStringLiteral("volumeDisplayPercent")).toInt(), 60);
+  QCOMPARE(fixture.model.outputDevices().first().toMap()
+               .value(QStringLiteral("volumePercent")).toInt(), 50);
 
   // Different targets: the model accepts the dispatch (row 12's volume, the
   // stream's volume, row 14's setDefault -- three distinct serials, so none
@@ -427,13 +432,9 @@ void AudioSettingsModelTest::availabilityEqualsClientAdmission() {
       fixture.transport.operations.constLast(),
       audioResult(OperationKind::SetVolume, OperationStatus::Succeeded, 11, 2));
   QTRY_VERIFY_WITH_TIMEOUT(!fixture.model.busy(), 1'000);
-  // AGENT-NOTE: client.busy() resets synchronously in acceptOperationReply,
-  // but the model's own per-serial pending entry clears one event-loop turn
-  // later (queueOperationCompletion is always a queued invokeMethod, even on
-  // success) -- wait on the row's own pending flag, not busy(), to avoid
-  // racing it.
-  QTRY_VERIFY_WITH_TIMEOUT(
-      !rowFlag(fixture.model.outputDevices(), 0, "pending"), 1'000);
+  // The queued successor stays pending until a newer authoritative snapshot
+  // confirms the first write. Client busy() alone is not that confirmation.
+  QVERIFY(rowFlag(fixture.model.outputDevices(), 0, "pending"));
   QVERIFY(rowFlag(fixture.model.outputDevices(), 1, "setDefaultAvailable"));
 
   // An unavailable snapshot (service Starting) disables every action even
@@ -444,6 +445,8 @@ void AudioSettingsModelTest::availabilityEqualsClientAdmission() {
   QTRY_COMPARE_WITH_TIMEOUT(fixture.transport.fetches.size(), 2, 1'000);
   fixture.transport.reply(fixture.transport.fetches.constLast(), starting);
   QTRY_VERIFY_WITH_TIMEOUT(fixture.model.loading(), 1'000);
+  QTRY_VERIFY_WITH_TIMEOUT(
+      !rowFlag(fixture.model.outputDevices(), 0, "pending"), 1'000);
   QVERIFY(!rowFlag(fixture.model.outputDevices(), 1, "setDefaultAvailable"));
   QVERIFY(!rowFlag(fixture.model.streams(), 0, "volumeAvailable"));
   QVERIFY(!fixture.model.setDefaultDevice(12));

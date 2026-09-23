@@ -103,6 +103,11 @@ QVariantMap AudioSettingsModel::projectDeviceRow(const Device &device,
       {QStringLiteral("displayName"), deviceDisplayName(device)},
       {QStringLiteral("volumePercent"),
        percentFor(device.volume, device.volumeKnown)},
+      // AGENT-CONTRACT: volumePercent remains service truth for the readout;
+      // only the slider borrows pending latest intent until a fresh readback.
+      {QStringLiteral("volumeDisplayPercent"),
+       percentFor(displayVolumeLevel(device.handle.serial, false)
+                      .value_or(device.volume), device.volumeKnown)},
       {QStringLiteral("volumeKnown"), device.volumeKnown},
       {QStringLiteral("muted"), device.muteKnown && device.muted},
       {QStringLiteral("muteKnown"), device.muteKnown},
@@ -126,7 +131,9 @@ QVariantMap AudioSettingsModel::projectDeviceRow(const Device &device,
       {QStringLiteral("stateText"), state.join(QStringLiteral(" · "))},
       // Presentation-only: a subtle "applying" state, never a gate. Rows
       // stay enabled while pending (ADR-0191 in the shell audio applet).
-      {QStringLiteral("pending"), serialPending(device.handle.serial)},
+      {QStringLiteral("pending"),
+       serialPending(device.handle.serial)
+           || m_volumeBySerial.contains(device.handle.serial)},
   };
 }
 
@@ -147,6 +154,9 @@ QVariantMap AudioSettingsModel::projectStreamRow(
                          : translateAudio("Unknown device")},
       {QStringLiteral("volumePercent"),
        percentFor(stream.volume, stream.volumeKnown)},
+      {QStringLiteral("volumeDisplayPercent"),
+       percentFor(displayVolumeLevel(stream.handle.serial, true)
+                      .value_or(stream.volume), stream.volumeKnown)},
       {QStringLiteral("volumeKnown"), stream.volumeKnown},
       {QStringLiteral("muted"), stream.muteKnown && stream.muted},
       {QStringLiteral("muteKnown"), stream.muteKnown},
@@ -156,7 +166,9 @@ QVariantMap AudioSettingsModel::projectStreamRow(
       {QStringLiteral("muteAvailable"),
        stream.canSetMute
            && snapshotAdmitsOperation(m_client, Capability::SetMute)},
-      {QStringLiteral("pending"), serialPending(stream.handle.serial)},
+      {QStringLiteral("pending"),
+       serialPending(stream.handle.serial)
+           || m_volumeBySerial.contains(stream.handle.serial)},
   };
 }
 

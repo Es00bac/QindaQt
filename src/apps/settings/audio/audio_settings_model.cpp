@@ -58,7 +58,8 @@ const Stream *findStream(const Snapshot &snapshot, const quint64 serial) {
 
 // AGENT-GUARD: this is snapshot authority/capability availability, not a
 // promise that a new request will be admitted immediately. Callers combine
-// per-target can-set flags; graph setters also reject serialPending(target).
+// per-target can-set flags; non-volume graph setters reject serialPending,
+// while volume retains one latest same-target successor until readback.
 // Keep operationPending() out of presentation availability so one request
 // cannot disable every row. Console faders wait for busy() to clear; any
 // remaining dispatch race reaches AudioClient::beginOperation and gets a
@@ -76,10 +77,14 @@ bool AudioSettingsModel::snapshotAdmitsOperation(
 
 AudioSettingsModel::AudioSettingsModel(AudioClient &client, QObject *parent)
     : QObject(parent), m_client(client) {
-  connect(&m_client, &AudioClient::stateChanged, this,
-          &AudioSettingsModel::viewChanged);
-  connect(&m_client, &AudioClient::snapshotChanged, this,
-          &AudioSettingsModel::viewChanged);
+  connect(&m_client, &AudioClient::stateChanged, this, [this] {
+    reconcileVolumeIntents();
+    Q_EMIT viewChanged();
+  });
+  connect(&m_client, &AudioClient::snapshotChanged, this, [this] {
+    reconcileVolumeIntents();
+    Q_EMIT viewChanged();
+  });
   connect(&m_client, &AudioClient::operationCompleted, this,
           &AudioSettingsModel::handleOperationCompleted);
   // Meters get their own narrow notification so a level frame never rebuilds
@@ -273,26 +278,6 @@ bool AudioSettingsModel::dispatchStreamIntent(const quint64 serial,
   return true;
 }
 
-bool AudioSettingsModel::setDeviceVolume(const quint64 serial,
-                                         const double level) {
-  return dispatchDeviceIntent(serial, Intent::DeviceVolume, level, false);
-}
-
-bool AudioSettingsModel::setDeviceMuted(const quint64 serial,
-                                        const bool muted) {
-  return dispatchDeviceIntent(serial, Intent::DeviceMute, 0.0, muted);
-}
-
-bool AudioSettingsModel::setStreamVolume(const quint64 serial,
-                                         const double level) {
-  return dispatchStreamIntent(serial, Intent::StreamVolume, level, false);
-}
-
-bool AudioSettingsModel::setStreamMuted(const quint64 serial,
-                                        const bool muted) {
-  return dispatchStreamIntent(serial, Intent::StreamMute, 0.0, muted);
-}
-
 bool AudioSettingsModel::setDeviceChannelVolume(const quint64 serial,
                                                 const int channelIndex,
                                                 const double level) {
@@ -466,9 +451,14 @@ void AudioSettingsModel::handleOperationCompleted(
   if (serialIt == m_serialByRequestId.constEnd() && !consoleRequest) {
     return;
   }
+  std::optional<std::pair<quint64, Intent>> completed;
   if (serialIt != m_serialByRequestId.constEnd()) {
     const quint64 serial = *serialIt;
-    m_pendingBySerial.remove(serial);
+    const auto pending = m_pendingBySerial.constFind(serial);
+    if (pending != m_pendingBySerial.constEnd() && pending->requestId == requestId) {
+      completed = std::pair{serial, pending->intent};
+      m_pendingBySerial.remove(serial);
+    }
     m_serialByRequestId.remove(requestId);
   }
 
@@ -487,6 +477,9 @@ void AudioSettingsModel::handleOperationCompleted(
     }
   }
   Q_EMIT viewChanged();
+  if (completed.has_value()) {
+    completeVolumeRequest(completed->first, completed->second, result);
+  }
 }
 
 void AudioSettingsModel::rejectAction(const QString &reason) {

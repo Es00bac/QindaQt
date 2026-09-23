@@ -6,6 +6,7 @@ target_sources(
     qindaqt_settings_audio
     PRIVATE
         audio_settings_model.cpp
+        audio_settings_volume.cpp
         audio_console_projection.cpp
         audio_settings_projection.cpp
     PUBLIC
