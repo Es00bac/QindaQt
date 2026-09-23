@@ -113,6 +113,14 @@ public:
     Q_INVOKABLE bool requestVolume(quint64 serial, bool isStream,
                                    double volume);
     Q_INVOKABLE bool requestMute(quint64 serial, bool isStream, bool muted);
+    // Makes one device the system default (ADR-0238). This is the only applet
+    // intent that changes routing rather than levels, and it exists because
+    // the output picker is read by every user as "send sound here" - see the
+    // AGENT-CONTRACT in AudioDeviceRow.qml for why the earlier band-only
+    // reading was a defect rather than a design. One shot, no queued value:
+    // a default is idempotent, so a second request while one is pending is
+    // refused rather than stacked.
+    Q_INVOKABLE bool requestDefault(quint64 serial);
     // Console strip intents (ADR-0181), addressed by console id. Complete at
     // the service synchronously, so they carry no pending state here.
     Q_INVOKABLE bool requestStripFader(QString stripId, double position);
@@ -127,7 +135,7 @@ Q_SIGNALS:
     void feedbackChanged();
 
 private:
-    enum class RequestKind { Volume, Mute };
+    enum class RequestKind { Volume, Mute, Default };
 
     struct PendingRequest {
         quint64 requestId = 0;

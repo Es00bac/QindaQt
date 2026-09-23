@@ -128,11 +128,25 @@ Below them, one status line carries every condition that used to own a card of
 its own — loading, unavailable, degraded, and a refused change — and is shown
 only when it has something to say. The overflow counts sit beside it.
 
-**The band picker chooses which device the band controls. It does not change
-the system default**, and it must not appear to: this applet's intent surface
-is closed to `requestVolume`, `requestMute`, `requestStripFader`,
-`requestStripMute` and `clearFeedback`, exactly as the Request rules below
-state. Setting the default is the Settings Audio route's job.
+**The band picker sets the system default and points the band at it**
+(ADR-0238). Those were two ideas in the code and were never two to a user: a
+list of output devices at the top of an audio applet is read as "send sound
+here" by everyone who sees it.
+
+This page previously said the picker "does not change the system default, and
+it must not appear to". The second half did not hold. A user picked a connected
+Bluetooth speaker, the picker showed it, sound kept coming from the laptop, and
+nothing said why — the configured default named a different, absent device and
+the applet had no intent that could correct it. Recorded in
+[ADR-0238](../adr/0238-the-output-picker-sets-the-default.md).
+
+The intent surface is therefore `requestVolume`, `requestMute`,
+`requestDefault`, `requestStripFader`, `requestStripMute` and `clearFeedback`.
+`requestDefault` is the only one that changes routing rather than levels; it is
+gated on `Capability::SetDefault` and the applet's control grant, and is a
+reported-success no-op when the device is already the default. The Settings
+Audio route keeps its own default control along with per-channel volumes,
+stream moves and virtual devices, which this applet does not offer.
 
 Which bands are collapsed, and which device each band rides, live on the applet
 item rather than on the popup, because the popup destroys its contents when it

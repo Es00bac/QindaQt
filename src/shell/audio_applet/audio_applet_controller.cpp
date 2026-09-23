@@ -203,6 +203,55 @@ bool AudioAppletController::requestMute(quint64 serial, bool isStream,
     return beginRequest(serial, isStream, RequestKind::Mute, 0.0, muted);
 }
 
+bool AudioAppletController::requestDefault(quint64 serial)
+{
+    // AGENT-CONTRACT (ADR-0238): this is the applet's one routing intent. It
+    // does not go through beginRequest() because that path exists to clamp a
+    // continuous value and to replace a queued one mid-drag; a default has no
+    // value to clamp and re-sending it while the first is in flight would only
+    // race the service for the same outcome.
+    if (!m_client->hasSnapshot()) {
+        publishFeedback(QObject::tr(
+            "Audio information is not available, so the change was not sent."));
+        return false;
+    }
+    if (!m_controlGranted) {
+        publishFeedback(tr("Audio controls are not allowed for this applet."));
+        return false;
+    }
+
+    const Snapshot snapshot = m_client->snapshot();
+    if (!snapshot.capabilities.testFlag(Audio::Capability::SetDefault)) {
+        publishFeedback(
+            QObject::tr("This system does not allow changing the default device."));
+        return false;
+    }
+    const Device *device = findDevice(snapshot, serial);
+    if (device == nullptr) {
+        publishFeedback(QObject::tr("That device is no longer listed."));
+        return false;
+    }
+    // Already the default: report success without spending a request. The
+    // picker calls this on every activation, including re-picking the current
+    // device, and a no-op must not look like a failure.
+    if (device->isDefault) {
+        return true;
+    }
+    if (m_pendingBySerial.contains(serial)) {
+        return true;
+    }
+
+    const quint64 requestId = m_client->setDefault(device->handle);
+    if (requestId == 0) {
+        publishFeedback(QObject::tr("The change could not be sent."));
+        return false;
+    }
+    m_pendingBySerial.insert(serial, PendingRequest{requestId, RequestKind::Default});
+    m_serialByRequestId.insert(requestId, serial);
+    reproject();
+    return true;
+}
+
 void AudioAppletController::prunePendingAgainstSnapshot()
 {
     if (!m_client->hasSnapshot())
