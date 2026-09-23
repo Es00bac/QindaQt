@@ -42,10 +42,9 @@ public:
     PointerCornerGesture(const PointerCornerGesture &) = delete;
     PointerCornerGesture &operator=(const PointerCornerGesture &) = delete;
 
-    // KWin rebuilds its edge objects when outputs change and carries over
-    // only the reservations the old edges held, so the plugin re-arms on
-    // every outputs change exactly as it does for the touch edges. KWin
-    // ignores a duplicate reservation.
+    // KWin rebuilds edge objects when outputs change. Re-arm balances the old
+    // reservation first because KWin counts duplicate reserve calls even
+    // when its callback map contains only one QObject key.
     void rearm();
     [[nodiscard]] bool reserved() const noexcept { return m_reserved; }
 

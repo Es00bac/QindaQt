@@ -23,6 +23,7 @@ Window {
     // The output work area in desktop-logical coordinates, so a surface on a
     // secondary output draws its frames in its own coordinates.
     property rect workArea: Qt.rect(0, 0, 0, 0)
+    property var previewUrls: ({})
 
     readonly property var projection: controller ? controller.projection : null
 
@@ -42,6 +43,7 @@ Window {
         anchors.fill: parent
         projection: root.projection
         origin: Qt.point(root.workArea.x, root.workArea.y)
+        previewUrls: root.previewUrls
 
         onActivated: (item) => root.controller.activate(item)
         onScrollRequested: (delta) => root.controller.scrollBy(delta)

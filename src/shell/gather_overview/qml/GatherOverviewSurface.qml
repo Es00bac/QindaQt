@@ -29,6 +29,7 @@ Item {
 
     // The projection to draw.
     required property var projection
+    property var previewUrls: ({})
     // The desktop-logical point this item's (0,0) is at. Projection frames are
     // desktop-logical, so a frame is drawn at `frame - origin`; a surface that
     // exactly covers the work area of an output at (0,0) can leave this alone.
@@ -152,6 +153,8 @@ Item {
                 id: windowTileComponent
                 GatherWindowTile {
                     item: tileHost.modelData
+                    previewUrl: String(root.previewUrls[tileHost.modelData.windowId
+                                                        || tileHost.modelData.taskId] || "")
                     interactive: root.interactive
                     reducedMotion: root.reducedMotion
                     onActivated: root.activated(tileHost.modelData)

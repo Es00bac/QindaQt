@@ -30,6 +30,12 @@ Six themes ship with QindaQt:
 | Qinda macOS | A mist-and-sage take on the familiar Mac look |
 | QindaQt Bliss | An opt-in XP-era option: Tahoma, squared corners, XP-face surfaces, Luna blue accents, and a worn Luna title bar |
 
+The separate **Qinda Seven** package adds Saffron, Glacier, Orchid, Forge,
+Fern, Nocturne, and Signal. Each has a paired window and container decoration
+and a KDE color scheme. The Gentoo `x11-themes/qinda-seven` package installs
+them into the same appearance catalog; installation does not select one for
+you. Its source and previews live in the `QindaThemes` repository.
+
 Pick a card to preview it. The **Preferred color scheme** control on the same
 tab offers **System**, **Light**, and **Dark**. Light and Dark fix the scheme.
 System follows the desktop's current light-or-dark appearance preference and

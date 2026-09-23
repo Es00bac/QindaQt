@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(Qt6 REQUIRED COMPONENTS Test)
+find_package(KF6Config 6.0 REQUIRED CONFIG)
 find_package(Wayland REQUIRED COMPONENTS Client)
 find_program(QINDAQT_WAYLAND_SCANNER wayland-scanner REQUIRED)
 enable_language(C)
@@ -77,6 +78,7 @@ foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline se
     qindaqt_enable_warnings(tst_${test_name})
     add_test(NAME session.${test_name} COMMAND tst_${test_name})
 endforeach()
+target_link_libraries(tst_sessiondefaults PRIVATE KF6::ConfigCore)
 
 add_test(
     NAME session.window-switcher-package

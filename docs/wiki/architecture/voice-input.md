@@ -36,11 +36,21 @@ that is a session decision, not something a provider can fix later.
 their own. One user-set variable speaks for the whole decision: a session that
 half-answers with somebody else's input method would disagree with itself.
 
-With the context present, a provider can commit text into the focused field
-the way a keyboard does, which is what makes dictation work in a terminal, a
-browser and a chat box alike rather than only where an accessibility node
-happens to exist. Without it, a provider falls back to its own recovery
-routes; nothing breaks, but the most reliable path is gone.
+The session supervisor runs IBus for the lifetime of the login. On Gentoo it
+names `/usr/libexec/ibus-dconf` explicitly: IBus 1.5.33 on qinda exits 255
+with `Can not execute default config program` when left to find that helper
+implicitly, while the same executable stays running when given its installed
+path. The supervisor's child-lifetime test pins the launch arguments and
+restart behavior.
+
+Gabbee tries `dotool` first to type into the currently focused window. The
+Gentoo desktop profile installs it with Gabbee. If that route cannot deliver,
+Gabbee tries its IBus bridge, the focused accessibility node, and then its
+clipboard-paste recovery. IBus can commit into a focused input context only
+when the application started with the input-method variables and its Gabbee
+engine is active. The two routes cover different failure modes: `dotool`
+reaches windows already open before an IBus daemon was repaired, while IBus
+provides a direct text route for applications with an input context.
 
 ## Module boundaries
 

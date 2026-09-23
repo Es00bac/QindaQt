@@ -154,6 +154,39 @@ set_tests_properties(
         LABELS "unit;pure;compositor"
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+    # KWin's imported target is directory-scoped to src/compositor until this
+    # sibling test directory imports it for the callback-signature test.
+    find_package(Qt6 6.11 REQUIRED COMPONENTS Widgets)
+    find_package(KWin 6.6.6 EXACT REQUIRED CONFIG)
+if(TARGET KWin::kwin)
+    qt_add_executable(
+        qindaqt_kwin_pointer_corner_reserver_tests
+        tst_kwinpointercornerreserver.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/kwinpointercornerreserver.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/kwinpointercornerreserver.h"
+    )
+    target_include_directories(
+        qindaqt_kwin_pointer_corner_reserver_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+    )
+    target_link_libraries(
+        qindaqt_kwin_pointer_corner_reserver_tests
+        PRIVATE qindaqt_hybrid_chrome_pointer_router KWin::kwin Qt6::Test
+    )
+    set_target_properties(
+        qindaqt_kwin_pointer_corner_reserver_tests
+        PROPERTIES AUTOMOC ON CXX_EXTENSIONS OFF
+    )
+    qindaqt_enable_warnings(qindaqt_kwin_pointer_corner_reserver_tests)
+    add_test(
+        NAME compositor.kwin-pointer-corner-reserver
+        COMMAND qindaqt_kwin_pointer_corner_reserver_tests
+    )
+    set_tests_properties(
+        compositor.kwin-pointer-corner-reserver
+        PROPERTIES TIMEOUT 20 LABELS "unit;compositor;kwin"
+    )
+endif()
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/ShellVisibilityTests.cmake")

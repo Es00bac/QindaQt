@@ -49,8 +49,8 @@ struct GatherOverviewItem final {
     QString title;
     QString applicationId;
     QString applicationName;
-    // Deterministic one-letter badge from the source row: the only icon this
-    // tree can render for a task today, and the fallback once previews land.
+    // Deterministic one-letter badge from the source row: the fallback when a
+    // window preview is denied, unavailable or still loading (ADR-0241).
     QString iconText;
     // Exact "#RRGGBB" container colour, empty when the user set none.
     QString colorHex;

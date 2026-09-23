@@ -14,8 +14,9 @@ Three doors reach it — `Meta+Shift+G`, the `gather-overview` panel applet, and
 upper-left corner (and touch swipe) through the compositor's `overview` edge
 gesture. The reasoning is in
 [ADR-0232](../adr/0232-the-gather-overview-replaces-the-upper-left-corner.md).
-Live thumbnails are the one piece still outstanding; see
-[Remaining work](#remaining-work).
+Free-window tiles show bounded window previews captured by KWin when Gather
+opens. The image path is described in
+[ADR-0241](../adr/0241-capture-gather-window-previews-through-kwin.md).
 
 ## The arrangement
 
@@ -124,10 +125,9 @@ Every item carries `taskId`, the optional `windowId`, and the
 generation and stale-revision arbitration can refuse an action against a
 generation the user no longer sees.
 
-Because there is no preview renderer yet, a grid tile is handed to the planner
-with no source size, which fills its cell. When previews land, the preview's
-own size goes in that field and the planner aspect-fits it — no change to this
-policy.
+The planner still receives no source size and gives each grid tile a stable
+cell. Its preview image aspect-fits inside that cell's thumbnail area; the
+underlying window never moves or resizes.
 
 ## The hot corner
 
@@ -136,9 +136,12 @@ Two halves, and both are needed.
 **Releasing KWin's.** Its overview effect reserves the top-left corner by
 default: `BorderActivate` defaults to `ElectricTopLeft` (7), an `IntList`.
 QindaQt's session defaults seed `[Effect-overview] BorderActivate=` empty, so
-no corner is reserved and the effect keeps its own shortcut. The seed is
-**missing-only**: a user who reassigned that corner keeps their choice
-(`qindaqt.session-sessiondefaults` pins both halves).
+no KWin overview edge is reserved and the effect keeps its own shortcut. The
+entry must be a valid empty string: the former empty `QStringList` became
+`@Invalid()`, which KConfig read as edge 0 (`ElectricTop`) and made the entire
+top edge raise KWin's grid. The session repairs that malformed seed while
+preserving a valid user assignment; the regression test reads it through
+KConfig, as KWin does ([ADR-0240](../adr/0240-encode-the-kwin-overview-edge-with-kconfig-semantics.md)).
 
 **Claiming it.** Un-reserving alone just makes the corner do nothing, so the
 KWin plugin reserves `ElectricTopLeft` for the pointer through
@@ -146,33 +149,43 @@ KWin plugin reserves `ElectricTopLeft` for the pointer through
 `(edge, action)` pair a touch swipe makes, so the shell's existing dispatch
 reaches the gather overview with no new plumbing.
 
+KWin invokes reserved pointer callbacks as `bool(ElectricBorder)`. The
+KWin-only reserver adapts that signature to Gather's pure, zero-argument
+gesture; registering the gesture directly made the corner silent. Each re-arm
+first releases the previous reservation because KWin counts duplicate
+`reserve()` calls even when it retains only one callback key
+([ADR-0242](../adr/0242-adapt-and-balance-the-kwin-pointer-corner.md)).
+
 This is separate from the touch edges next door on purpose: KWin's
 `reserveTouch` is touch-only, and a corner is not one of its four edges. The
-reservation re-arms on `outputsChanged` for the same reason the touch edges
-do — KWin rebuilds its edge objects with the outputs and carries over only
-what the old edges held — and unreserves on destruction, because an
-unbalanced reserve/unreserve leaves the edge permanently active or permanently
-dead. `compositor.pointer-corner` pins all of that over a recording reserver,
-including that the announced action string still matches the shell's dispatch.
+reservation re-arms on `outputsChanged` after KWin rebuilds its edge objects,
+and unreserves on destruction. `compositor.pointer-corner` checks the balance
+and action string over a recording reserver;
+`compositor.kwin-pointer-corner-reserver` checks the actual reflective
+callback signature.
 
 A plugin change, so it takes effect at the next login rather than on a shell
 restart.
 
-## Remaining work
+## Window previews
 
-Live window previews are still unavailable: `WindowPreview` on
-`CompositorShell1` is specified and the whole shell-side pipeline is
-implemented, but the renderer behind it is not — the exported KWin 6.6 headers
-offer no supported window-texture readback, so
-[ADR-0119](../adr/0119-authenticated-window-preview-channel.md) records the
-endpoint and renderer as the bounded remaining piece. It is the same gap as the
-dock's hover thumbnails.
+Gather's production shell calls KWin's restricted
+`ScreenShot2.CaptureWindow` for projected free-window UUIDs. The shell
+desktop entry grants only that interface to the installed shell executable.
+The capture port checks the KWin owner, metadata and exact pipe length,
+bounds the image, and returns a small owned preview. The composition admits
+results only for UUIDs still visible in the free-window grid. It keeps their
+images across task-generation changes so a busy desktop does not flash or
+recapture unchanged windows. It drops a preview when that window leaves the
+grid, Gather closes, or the source becomes unavailable. A failed or denied
+capture leaves the application icon in place. These are snapshots on open and
+visible-window change, not a continuously updated video feed. See
+[ADR-0241](../adr/0241-capture-gather-window-previews-through-kwin.md) and
+[ADR-0243](../adr/0243-keep-gather-previews-by-window-identity.md).
 
-It no longer blocks gather, though. The card-and-icon variant — application icon plus title instead of a
-thumbnail — is the route being taken, exactly because it needs none of that.
-`src/shell/gather_overview` is that variant's model, and it is built so the
-preview upgrade is additive: a tile's source size is the single field that
-changes.
+The separate authenticated `CompositorShell1.WindowPreview` endpoint for dock
+hover remains unimplemented; [ADR-0119](../adr/0119-authenticated-window-preview-channel.md)
+tracks that work.
 
 Items 1 to 4 of the original list landed on 2026-09-21 (ADR-0232):
 
@@ -195,12 +208,8 @@ Items 1 to 4 of the original list landed on 2026-09-21 (ADR-0232):
    of QindaQt's own chips by convention; an existing layout adds it with
    Meta+right-click → Add applet.
 
-Remaining:
-
-5. The `WindowPreview` endpoint and renderer from ADR-0119, which upgrades the
-   grid tiles from icon-and-title to live thumbnails and also lights up the
-   dock's hover previews. Additive: a tile's source size is the single field
-   that changes.
+5. **The grid previews** are bounded `ScreenShot2` captures from the audited
+   shell. The `WindowPreview` endpoint from ADR-0119 remains for dock hover.
 
 ## The controller
 
@@ -255,13 +264,15 @@ a click that misses every tile both become `dismissRequested()`.
 
 Three visuals, one per lane: `GatherIconChip` (a round chip, identity only),
 `GatherContainerCard` (icon, title, member count, and the container's own
-colour on a leading stripe), and `GatherWindowTile` (icon and title, with the
-thumbnail area that ADR-0119 will fill). A fenced projection draws every tile
+colour on a leading stripe), and `GatherWindowTile` (title and aspect-fitted
+preview, falling back to an icon). A fenced projection draws every tile
 in the disabled role with its handlers off and shows a notice, so a click
 cannot look like it worked.
 
 ## Related
 
 - [ADR-0119: authenticated window-preview channel](../adr/0119-authenticated-window-preview-channel.md)
+- [ADR-0241: Gather window previews](../adr/0241-capture-gather-window-previews-through-kwin.md)
+- [ADR-0243: Stable Gather previews](../adr/0243-keep-gather-previews-by-window-identity.md)
 - [Window containers](../architecture/window-containers.md)
 - [Hybrid topology](../architecture/hybrid-topology.md)

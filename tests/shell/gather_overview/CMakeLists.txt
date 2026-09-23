@@ -1,5 +1,32 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# A busy desktop may republish task-list generations many times per second.
+# Preview ownership follows visible window identity, independently of that
+# activation fence, so an unchanged thumbnail stays stable.
+qt_add_executable(
+    qindaqt_gather_preview_ledger_tests tst_gather_preview_ledger.cpp
+)
+target_include_directories(
+    qindaqt_gather_preview_ledger_tests PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime"
+)
+target_link_libraries(
+    qindaqt_gather_preview_ledger_tests PRIVATE Qt6::Core Qt6::Test
+)
+set_target_properties(
+    qindaqt_gather_preview_ledger_tests
+    PROPERTIES AUTOMOC ON CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_gather_preview_ledger_tests)
+add_test(
+    NAME qindaqt.gather-preview-ledger
+    COMMAND qindaqt_gather_preview_ledger_tests
+)
+set_tests_properties(
+    qindaqt.gather-preview-ledger
+    PROPERTIES TIMEOUT 20 LABELS "unit;pure;shell"
+)
+
 # The classification policy. Pure, so it needs no display and no fixtures
 # beyond synthetic task-list projections.
 qt_add_executable(
@@ -116,6 +143,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         tst_gather_overview_composition.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime/gatheroverviewcomposition.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime/gatheroverviewcomposition.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime/kwinscreenshotpreviewport.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime/kwinscreenshotpreviewport.h"
         # AGENT-GUARD: both fakes are header-only QObjects, so AUTOMOC only
         # generates their vtables if the headers are listed as sources. Without
         # these two lines the link fails on "vtable for FakeOperationAuthority"
@@ -137,6 +166,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellTaskListProducer
             QindaQt::ShellTaskListOperations
             LayerShellQt::Interface
+            Qt6::DBus
             Qt6::Gui
             Qt6::Qml
             Qt6::Quick
