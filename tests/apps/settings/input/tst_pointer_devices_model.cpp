@@ -16,13 +16,23 @@ namespace {
 class FakePointerPort final : public PointerDevicePort
 {
 public:
-    QList<PointerDeviceSnapshot> scripted;
+    mutable QList<PointerDeviceSnapshot> scripted;
     bool authorityPresent = true;
+    mutable int reads = 0;
+    int observationStarts = 0;
+    void setObserving(bool active) override {
+        if (active) ++observationStarts;
+    }
     QString nextWriteFailure;
+    QString failProperty;
+    bool ignoreWrites = false;
     QList<QPair<QString, QString>> writtenProperties;
+    void notifyInventory() { Q_EMIT inventoryChanged(); }
+    void notifyOwnerChange() { Q_EMIT authorityChanged(); }
 
     QList<PointerDeviceSnapshot> devices(QString *error) const override
     {
+        ++reads;
         if (!authorityPresent) {
             if (error != nullptr) {
                 *error = QStringLiteral("authority absent");
@@ -35,15 +45,21 @@ public:
     bool writeProperty(const QString &deviceId, const QString &property,
                        const QVariant &value, QString *error) const override
     {
-        if (!nextWriteFailure.isEmpty()) {
+        if (!nextWriteFailure.isEmpty() &&
+            (failProperty.isEmpty() || failProperty == property)) {
             if (error != nullptr) {
                 *error = nextWriteFailure;
             }
             return false;
         }
-        mutableWritten().append({deviceId, property});
-        Q_UNUSED(value);
-        return true;
+        for (auto &snapshot : scripted) {
+            if (snapshot.deviceId != deviceId) continue;
+            if (!ignoreWrites) snapshot.properties.insert(property, value);
+            mutableWritten().append({deviceId, property});
+            return true;
+        }
+        if (error) *error = QStringLiteral("device absent");
+        return false;
     }
 
     QList<QPair<QString, QString>> &mutableWritten() const
@@ -96,6 +112,31 @@ PointerDeviceSnapshot touchpadSnapshot()
     return snapshot;
 }
 
+class DeferredWritePort final : public PointerDevicePort {
+public:
+    QList<PointerDeviceSnapshot> scripted;
+    mutable WriteReply pending;
+    QList<PointerDeviceSnapshot> devices(QString *error) const override {
+        if (error) error->clear();
+        return scripted;
+    }
+    bool writeProperty(const QString &, const QString &, const QVariant &,
+                       QString *) const override { return false; }
+    void requestWrite(QObject *, const QString &,
+                      const QList<QPair<QString, QVariant>> &,
+                      WriteReply reply) const override {
+        pending = std::move(reply);
+    }
+    void complete(const PointerDeviceSnapshot &snapshot) {
+        WriteResult result;
+        result.applied = true;
+        result.snapshot = snapshot;
+        auto reply = std::move(pending);
+        reply(std::move(result));
+    }
+    void replaceOwner() { Q_EMIT authorityChanged(); }
+};
+
 } // namespace
 
 class PointerDevicesModelTest final : public QObject
@@ -111,6 +152,15 @@ private Q_SLOTS:
     void unsupportedControlIsHiddenNotDisabled();
     void failedWriteRevertsAndReports();
     void successKeepsThePresentedValue();
+    void switchingDevicesUsesConfirmedReadback();
+    void refreshPreservesSelectedIdentityAcrossReorder();
+    void unplugClearsCapabilitiesAndSelection();
+    void externalChangeRefreshesActiveSelection();
+    void ownerReplacementFencesAndClearsSelection();
+    void acceptedButIgnoredWriteReportsAndRestores();
+    void lateReplyNeverPaintsDifferentSelectionOrOwner();
+    void constructionIsLazyAndHiddenTabDoesNotPoll();
+    void rejectedSecondPropertyRestoresFirst();
 
 private:
     FakePointerPort m_port;
@@ -258,6 +308,156 @@ void PointerDevicesModelTest::successKeepsThePresentedValue()
     const double before = selection->speed();
     selection->setSpeed(before + 0.5);
     QCOMPARE(selection->speed(), before);
+}
+
+void PointerDevicesModelTest::switchingDevicesUsesConfirmedReadback()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot(), touchpadSnapshot()};
+    PointerDevicesModel model(port);
+    model.refresh();
+    model.selection()->setSpeed(0.65);
+    QCOMPARE(model.selection()->speed(), 0.65);
+    model.select(1);
+    model.select(0);
+    QCOMPARE(model.selection()->speed(), 0.65);
+    QCOMPARE(port.scripted.at(0).properties.value(
+                 QStringLiteral("pointerAcceleration")).toDouble(), 0.65);
+}
+
+void PointerDevicesModelTest::refreshPreservesSelectedIdentityAcrossReorder()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot(), touchpadSnapshot()};
+    PointerDevicesModel model(port);
+    model.refresh();
+    model.select(1);
+    std::swap(port.scripted[0], port.scripted[1]);
+    model.refresh();
+    QCOMPARE(model.selectedIndex(), 0);
+    QVERIFY(model.selection()->tapToClickAvailable());
+}
+
+void PointerDevicesModelTest::unplugClearsCapabilitiesAndSelection()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot()};
+    PointerDevicesModel model(port);
+    model.refresh();
+    QVERIFY(model.selection()->speedAvailable());
+    port.scripted.clear();
+    model.refresh();
+    QCOMPARE(model.selectedIndex(), -1);
+    QVERIFY(!model.selection()->speedAvailable());
+    QVERIFY(!model.selection()->naturalScrollAvailable());
+}
+
+void PointerDevicesModelTest::externalChangeRefreshesActiveSelection()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot()};
+    PointerDevicesModel model(port);
+    model.setActive(true);
+    port.scripted[0].properties.insert(QStringLiteral("naturalScroll"), true);
+    port.notifyInventory();
+    QVERIFY(model.selection()->naturalScroll());
+}
+
+void PointerDevicesModelTest::ownerReplacementFencesAndClearsSelection()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot()};
+    PointerDevicesModel model(port);
+    model.refresh();
+    port.notifyOwnerChange();
+    QCOMPARE(model.selectedIndex(), -1);
+    QCOMPARE(model.count(), 0);
+    QVERIFY(!model.available());
+    QVERIFY(!model.selection()->speedAvailable());
+}
+
+void PointerDevicesModelTest::acceptedButIgnoredWriteReportsAndRestores()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot()};
+    port.ignoreWrites = true;
+    PointerDevicesModel model(port);
+    model.refresh();
+    model.selection()->setNaturalScroll(true);
+    QVERIFY(!model.selection()->naturalScroll());
+    QVERIFY(model.selection()->statusText().contains(
+        QStringLiteral("did not retain")));
+}
+
+void PointerDevicesModelTest::lateReplyNeverPaintsDifferentSelectionOrOwner()
+{
+    DeferredWritePort port;
+    port.scripted = {mouseSnapshot(), touchpadSnapshot()};
+    PointerDevicesModel model(port);
+    model.setActive(true);
+    model.selection()->setSpeed(0.65);
+    QVERIFY(model.selection()->busy());
+    model.select(1);
+    PointerDeviceSnapshot changed = mouseSnapshot();
+    changed.properties.insert(QStringLiteral("pointerAcceleration"), 0.65);
+    port.scripted[0] = changed;
+    port.complete(changed);
+    QVERIFY(model.selection()->tapToClickAvailable());
+    model.select(0);
+    QCOMPARE(model.selection()->speed(), 0.65);
+
+    model.selection()->setSpeed(0.3);
+    QVERIFY(model.selection()->busy());
+    const PointerDeviceSnapshot oldOwner = changed;
+    port.scripted = {touchpadSnapshot()};
+    port.replaceOwner();
+    QCOMPARE(model.count(), 1);
+    QVERIFY(model.selection()->tapToClickAvailable());
+    port.complete(oldOwner);
+    QCOMPARE(model.count(), 1);
+    QVERIFY(model.selection()->tapToClickAvailable());
+    QCOMPARE(model.index(0, 0).data(PointerDevicesModel::DeviceIdRole),
+             QStringLiteral("event9"));
+}
+
+void PointerDevicesModelTest::constructionIsLazyAndHiddenTabDoesNotPoll()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot()};
+    PointerDevicesModel model(port);
+    QCOMPARE(port.reads, 0);
+    QCOMPARE(port.observationStarts, 0);
+    model.setActive(true);
+    QCOMPARE(port.reads, 1);
+    QCOMPARE(port.observationStarts, 1);
+    model.setActive(false);
+    port.notifyInventory();
+    QCOMPARE(port.reads, 1);
+    port.notifyOwnerChange();
+    QCOMPARE(port.reads, 1);
+    QCOMPARE(model.count(), 0);
+    QVERIFY(!model.available());
+    QVERIFY(!model.selection()->speedAvailable());
+}
+
+void PointerDevicesModelTest::rejectedSecondPropertyRestoresFirst()
+{
+    FakePointerPort port;
+    port.scripted = {mouseSnapshot()};
+    port.nextWriteFailure = QStringLiteral("refused");
+    port.failProperty = QStringLiteral(
+        "pointerAccelerationProfileAdaptive");
+    PointerDevicesModel model(port);
+    model.refresh();
+    model.selection()->setFlatProfile(true);
+    QVERIFY(!model.selection()->flatProfile());
+    QVERIFY(model.selection()->statusText().contains(
+        QStringLiteral("refused")));
+    const auto &properties = port.scripted.first().properties;
+    QCOMPARE(properties.value(QStringLiteral(
+                 "pointerAccelerationProfileFlat")).toBool(), false);
+    QCOMPARE(properties.value(QStringLiteral(
+                 "pointerAccelerationProfileAdaptive")).toBool(), true);
 }
 
 QTEST_MAIN(PointerDevicesModelTest)

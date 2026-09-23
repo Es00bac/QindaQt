@@ -6,6 +6,10 @@
 #include <QDBusMessage>
 #include <QDBusVariant>
 #include <QHash>
+#include <QElapsedTimer>
+#include <QFutureWatcher>
+#include <QtConcurrent>
+#include <QDBusServiceWatcher>
 #include <QVariantList>
 
 namespace QindaQt::Apps::SettingsInput {
@@ -18,6 +22,7 @@ constexpr auto DeviceInterface = "org.kde.KWin.InputDevice";
 constexpr auto PropertiesInterface = "org.freedesktop.DBus.Properties";
 constexpr int CallTimeoutMs = 4000;
 constexpr int MaxDevices = 256;
+constexpr int InventoryBudgetMs = 5000;
 
 // AGENT-GUARD: The writable-property table is closed and typed. A name
 // outside it must never reach D-Bus: KWin would accept unknown booleans
@@ -68,8 +73,183 @@ bool serviceAvailable(const QDBusConnection &bus) {
 
 PointerDevicePort::~PointerDevicePort() = default;
 
+void PointerDevicePort::setObserving(bool active) { Q_UNUSED(active); }
+
+void PointerDevicePort::requestDevices(QObject *receiver,
+                                       DevicesReply reply) const {
+    Q_UNUSED(receiver);
+    QString error;
+    auto snapshots = devices(&error);
+    reply(std::move(snapshots), error);
+}
+
+void PointerDevicePort::requestWrite(
+    QObject *receiver, const QString &deviceId,
+    const QList<QPair<QString, QVariant>> &changes, WriteReply reply) const {
+    Q_UNUSED(receiver);
+    WriteResult result;
+    result.applied = true;
+    QString beforeError;
+    const auto before = devices(&beforeError);
+    std::optional<PointerDeviceSnapshot> original;
+    if (beforeError.isEmpty()) {
+        for (const auto &snapshot : before) {
+            if (snapshot.deviceId == deviceId) {
+                original = snapshot;
+                break;
+            }
+        }
+    }
+    if (!original) {
+        result.applied = false;
+        result.error = beforeError.isEmpty()
+                           ? QStringLiteral("Device disappeared before write")
+                           : beforeError;
+    }
+    int completed = 0;
+    if (result.applied) {
+        for (const auto &change : changes) {
+            if (!writeProperty(deviceId, change.first, change.second,
+                               &result.error)) {
+                result.applied = false;
+                break;
+            }
+            ++completed;
+        }
+    }
+    if (!result.applied && original) {
+        // AGENT-GUARD: Profile and scroll-method choices span two KWin
+        // properties. Restore earlier writes if the later Set is refused.
+        for (int i = completed - 1; i >= 0; --i) {
+            const auto &change = changes.at(i);
+            if (original->properties.contains(change.first)) {
+                writeProperty(deviceId, change.first,
+                              original->properties.value(change.first),
+                              nullptr);
+            }
+        }
+    }
+    QString readError;
+    const auto snapshots = devices(&readError);
+    if (readError.isEmpty()) {
+        for (const auto &snapshot : snapshots) {
+            if (snapshot.deviceId == deviceId) {
+                result.snapshot = snapshot;
+                break;
+            }
+        }
+    }
+    if (!result.snapshot) {
+        result.applied = false;
+        if (result.error.isEmpty()) {
+            result.error = readError.isEmpty()
+                               ? QStringLiteral("Device disappeared before readback")
+                               : readError;
+        }
+    } else if (result.applied) {
+        for (const auto &change : changes) {
+            if (result.snapshot->properties.value(change.first) !=
+                change.second) {
+                result.applied = false;
+                result.error = QStringLiteral(
+                    "Input authority did not retain %1").arg(change.first);
+                break;
+            }
+        }
+    }
+    reply(std::move(result));
+}
+
 KWinPointerDevicePort::KWinPointerDevicePort(QDBusConnection bus)
     : m_bus(std::move(bus)) {}
+
+void KWinPointerDevicePort::setObserving(bool active) {
+    m_propertiesObserved = active;
+    if (!active || m_serviceWatcher) return;
+    m_serviceWatcher = new QDBusServiceWatcher(
+        QLatin1String(KWinService), m_bus,
+        QDBusServiceWatcher::WatchForOwnerChange, this);
+    connect(m_serviceWatcher, &QDBusServiceWatcher::serviceOwnerChanged,
+            this, [this] { Q_EMIT authorityChanged(); });
+    // PropertiesChanged is the authority's standard external-edit feed.
+    // Polling in the model also covers manager inventory changes on KWin
+    // versions that do not emit a matching pointer-list signal.
+    m_bus.connect(QLatin1String(KWinService), QString(),
+                  QLatin1String(PropertiesInterface),
+                  QStringLiteral("PropertiesChanged"), this,
+                  SLOT(handlePropertiesChanged(QString,QVariantMap,QStringList)));
+}
+
+void KWinPointerDevicePort::handlePropertiesChanged(
+    const QString &interface, const QVariantMap &changed,
+    const QStringList &invalidated) {
+    Q_UNUSED(changed);
+    Q_UNUSED(invalidated);
+    if (m_propertiesObserved && interface == QLatin1String(DeviceInterface)) {
+        Q_EMIT inventoryChanged();
+    }
+}
+
+void KWinPointerDevicePort::requestDevices(QObject *receiver,
+                                           DevicesReply reply) const {
+    using Result = QPair<QList<PointerDeviceSnapshot>, QString>;
+    auto *watcher = new QFutureWatcher<Result>(receiver);
+    QObject::connect(watcher, &QFutureWatcher<Result>::finished, receiver,
+                     [watcher, reply = std::move(reply)]() mutable {
+                         auto result = watcher->result();
+                         watcher->deleteLater();
+                         reply(std::move(result.first), std::move(result.second));
+                     });
+    const QDBusConnection bus = m_bus;
+    watcher->setFuture(QtConcurrent::run([bus] {
+        const auto ownerBefore = bus.interface()
+            ? bus.interface()->serviceOwner(QLatin1String(KWinService)).value()
+            : QString();
+        QString error;
+        KWinPointerDevicePort probe(bus);
+        auto snapshots = probe.devices(&error);
+        const auto ownerAfter = bus.interface()
+            ? bus.interface()->serviceOwner(QLatin1String(KWinService)).value()
+            : QString();
+        if (ownerBefore != ownerAfter) {
+            error = QStringLiteral("Input authority changed during refresh");
+            snapshots.clear();
+        }
+        return Result{std::move(snapshots), std::move(error)};
+    }));
+}
+
+void KWinPointerDevicePort::requestWrite(
+    QObject *receiver, const QString &deviceId,
+    const QList<QPair<QString, QVariant>> &changes, WriteReply reply) const {
+    auto *watcher = new QFutureWatcher<WriteResult>(receiver);
+    QObject::connect(watcher, &QFutureWatcher<WriteResult>::finished, receiver,
+                     [watcher, reply = std::move(reply)]() mutable {
+                         auto result = watcher->result();
+                         watcher->deleteLater();
+                         reply(std::move(result));
+                     });
+    const QDBusConnection bus = m_bus;
+    watcher->setFuture(QtConcurrent::run([bus, deviceId, changes] {
+        const auto ownerBefore = bus.interface()
+            ? bus.interface()->serviceOwner(QLatin1String(KWinService)).value()
+            : QString();
+        KWinPointerDevicePort probe(bus);
+        WriteResult result;
+        probe.PointerDevicePort::requestWrite(
+            nullptr, deviceId, changes,
+            [&result](WriteResult completed) { result = std::move(completed); });
+        const auto ownerAfter = bus.interface()
+            ? bus.interface()->serviceOwner(QLatin1String(KWinService)).value()
+            : QString();
+        if (ownerBefore != ownerAfter) {
+            result.applied = false;
+            result.snapshot.reset();
+            result.error = QStringLiteral("Input authority changed during write");
+        }
+        return result;
+    }));
+}
 
 QList<PointerDeviceSnapshot>
 KWinPointerDevicePort::devices(QString *error) const {
@@ -100,7 +280,15 @@ KWinPointerDevicePort::devices(QString *error) const {
     }
     const QStringList sysNames = reply.arguments().at(0).toStringList();
     QList<PointerDeviceSnapshot> snapshots;
+    QElapsedTimer elapsed;
+    elapsed.start();
     for (const QString &sysName : sysNames) {
+        if (elapsed.elapsed() >= InventoryBudgetMs) {
+            if (error) {
+                *error = QStringLiteral("Pointer inventory timed out");
+            }
+            return {};
+        }
         // AGENT-GUARD: The authority is process-wide; a compromised or
         // future reply must not run this route into unbounded object reads.
         if (sysName.isEmpty() || sysName.contains(QLatin1Char('/')) ||

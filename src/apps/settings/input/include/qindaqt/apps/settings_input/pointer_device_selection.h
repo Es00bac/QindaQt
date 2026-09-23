@@ -58,6 +58,7 @@ class PointerDeviceSelection final : public QObject {
     Q_PROPERTY(bool scrollMethodAvailable READ scrollMethodAvailable NOTIFY
                    availabilityChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
 
 public:
     PointerDeviceSelection(const PointerDevicePort &port,
@@ -108,6 +109,7 @@ public:
         return m_scrollMethodAvailable;
     }
     [[nodiscard]] QString statusText() const { return m_statusText; }
+    [[nodiscard]] bool busy() const { return m_busy; }
 
     void setSpeed(double value);
     void setFlatProfile(bool value);
@@ -133,14 +135,13 @@ Q_SIGNALS:
     void scrollMethodChanged();
     void availabilityChanged();
     void statusTextChanged();
+    void busyChanged();
+    void confirmedSnapshot(const PointerDeviceSnapshot &snapshot);
+    void refreshRequested();
 
 private:
-    bool writeBool(const QString &property, bool &member,
-                   void (PointerDeviceSelection::*changed)(), bool value,
-                   const QString &label);
-    bool writeDouble(const QString &property, double &member,
-                     void (PointerDeviceSelection::*changed)(), double value,
-                     const QString &label);
+    void apply(const QList<QPair<QString, QVariant>> &changes,
+               const QString &failureLabel);
 
     const PointerDevicePort &m_port;
     QString m_deviceId;
@@ -168,6 +169,8 @@ private:
     bool m_disableWhileTypingAvailable = false;
     bool m_scrollMethodAvailable = false;
     QString m_statusText;
+    quint64 m_generation = 0;
+    bool m_busy = false;
 };
 
 } // namespace QindaQt::Apps::SettingsInput

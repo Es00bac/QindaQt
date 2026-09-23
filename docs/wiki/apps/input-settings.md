@@ -21,6 +21,18 @@ Rows a device does not support are hidden rather than disabled. When KWin or
 kglobalaccel is unreachable, the tab shows an unavailable notice instead of
 controls.
 
+The Mouse & touchpad tab keeps the selected KWin device by its ID when the
+inventory reorders. A removed device, or a replaced KWin owner, clears its
+selection and capability rows immediately; a surviving selected device keeps
+its identity. While the tab is visible, the model refreshes from KWin on its
+property-change feed and a bounded periodic inventory check so hotplug and
+external edits appear without reopening Settings. D-Bus reads and writes run
+off the UI thread. A control stays disabled while a write is pending, and its
+shown value comes from KWin readback, including after refusal; a failed
+multi-property profile or scroll-method write restores earlier writes before
+readback. Late replies from a previous selection or KWin owner cannot repaint
+the current device.
+
 Tap-to-click and tap-and-drag availability come from KWin's `tapFingerCount`
 integer property (0 = the device cannot tap), not from a boolean `supports*`
 flag: KWin's real `org.kde.KWin.InputDevice` interface has none for tapping.

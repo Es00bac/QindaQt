@@ -108,6 +108,11 @@ decoding could have aborted Settings. None of that shipped.
 
 - Pointer settings, key repeat, layouts, shortcuts, and custom commands apply
   to the running session without a logout.
+- Pointer readback is authoritative. The route keeps a selected device by
+  identity, invalidates it on owner loss or removal, and uses asynchronous
+  authority requests with a visible-tab refresh loop to avoid blocking
+  navigation on a slow KWin reply. This tightens the existing direct KWin
+  authority decision without adding a Settings1 copy of device values.
 - The development machine has no touchpad or touch screen; touchpad rows are
   proven with fakes only.
 - Pointer settings survive a login through KWin's own device configuration,

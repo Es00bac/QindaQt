@@ -5,12 +5,15 @@
 #include <QtDBus/QDBusInterface>
 #include <QtDBus/QDBusReply>
 #include <QTest>
+#include <QElapsedTimer>
+#include <QSignalSpy>
 
 #include "support/fake_kwin_input.h"
 #include "support/private_bus.h"
 
 using QindaQt::Apps::SettingsInput::KWinPointerDevicePort;
 using QindaQt::Apps::SettingsInput::PointerDeviceSnapshot;
+using QindaQt::Apps::SettingsInput::PointerDevicePort;
 using QindaQt::Tests::FakeKWinInput;
 using QindaQt::Tests::PrivateBus;
 
@@ -38,6 +41,9 @@ private Q_SLOTS:
     void rejectsUnknownNamesAndTypes();
     void rejectsAbsentDevices();
     void malformedListReplyFailsClosed();
+    void asyncRequestsReadBackWithoutBlockingCaller();
+    void ownerLossEmitsInvalidation();
+    void propertySignalEmitsInventoryRefresh();
 
 private:
     QVariantMap mouseSpec(const QString &id) const
@@ -227,6 +233,80 @@ void PointerDevicePortTest::malformedListReplyFailsClosed()
     const QList<PointerDeviceSnapshot> devices = port.devices(&error);
     QVERIFY(devices.isEmpty());
     QVERIFY(error.contains(QStringLiteral("malformed")));
+}
+
+void PointerDevicePortTest::asyncRequestsReadBackWithoutBlockingCaller()
+{
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    FakeKWinInput fake;
+    fake.addDevice(mouseSpec(QStringLiteral("event5")));
+    QVERIFY(fake.publish(bus.connection));
+    KWinPointerDevicePort port(bus.connection);
+
+    bool listed = false;
+    QElapsedTimer elapsed;
+    elapsed.start();
+    port.requestDevices(&port, [&](auto snapshots, const QString &error) {
+        QCOMPARE(error, QString());
+        QCOMPARE(snapshots.size(), 1);
+        listed = true;
+    });
+    QVERIFY2(elapsed.elapsed() < 100,
+             "Inventory request blocked the caller thread");
+    QTRY_VERIFY_WITH_TIMEOUT(listed, 10000);
+
+    bool written = false;
+    elapsed.restart();
+    port.requestWrite(
+        &port, QStringLiteral("event5"),
+        {{QStringLiteral("naturalScroll"), true}},
+        [&](PointerDevicePort::WriteResult result) {
+            QVERIFY(result.applied);
+            QVERIFY(result.snapshot.has_value());
+            QCOMPARE(result.snapshot->properties.value(
+                         QStringLiteral("naturalScroll")).toBool(), true);
+            written = true;
+        });
+    QVERIFY2(elapsed.elapsed() < 100, "Write request blocked the caller thread");
+    QTRY_VERIFY_WITH_TIMEOUT(written, 10000);
+}
+
+void PointerDevicePortTest::ownerLossEmitsInvalidation()
+{
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    FakeKWinInput fake;
+    fake.addDevice(mouseSpec(QStringLiteral("event5")));
+    QVERIFY(fake.publish(bus.connection));
+    KWinPointerDevicePort port(bus.connection);
+    port.setObserving(true);
+    QSignalSpy spy(&port, &PointerDevicePort::authorityChanged);
+    QVERIFY(spy.isValid());
+    QVERIFY(bus.connection.unregisterService(QStringLiteral("org.kde.KWin")));
+    QTRY_VERIFY_WITH_TIMEOUT(spy.count() > 0, 5000);
+}
+
+void PointerDevicePortTest::propertySignalEmitsInventoryRefresh()
+{
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    FakeKWinInput fake;
+    fake.addDevice(mouseSpec(QStringLiteral("event5")));
+    QVERIFY(fake.publish(bus.connection));
+    KWinPointerDevicePort port(bus.connection);
+    port.setObserving(true);
+    QSignalSpy spy(&port, &PointerDevicePort::inventoryChanged);
+    QVERIFY(spy.isValid());
+    auto signal = QDBusMessage::createSignal(
+        QStringLiteral("/org/kde/KWin/InputDevice/event5"),
+        QStringLiteral("org.freedesktop.DBus.Properties"),
+        QStringLiteral("PropertiesChanged"));
+    signal.setArguments({QStringLiteral("org.kde.KWin.InputDevice"),
+                         QVariantMap{{QStringLiteral("naturalScroll"), true}},
+                         QStringList{}});
+    QVERIFY(bus.connection.send(signal));
+    QTRY_VERIFY_WITH_TIMEOUT(spy.count() > 0, 5000);
 }
 
 QTEST_MAIN(PointerDevicePortTest)
