@@ -72,7 +72,14 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
       , m_inputMethodDaemon(std::make_unique<OptionalSessionChild>(
             QStringLiteral("input-method"),
             QStringList{QStringLiteral("--replace"), QStringLiteral("--xim"),
-                        QStringLiteral("--panel"), QStringLiteral("disable")}))
+                        QStringLiteral("--panel"), QStringLiteral("disable"),
+                        // AGENT-NOTE: On qinda, IBus 1.5.33 exits 255 with
+                        // "Can not execute default config program" when it
+                        // resolves this helper implicitly. The installed
+                        // Gentoo helper runs when named explicitly; without
+                        // it no input context survives session startup.
+                        QStringLiteral("--config"),
+                        QStringLiteral("/usr/libexec/ibus-dconf")}))
       , m_xembedTrayProxy(std::make_unique<OptionalSessionChild>(
             QStringLiteral("xembed-tray-proxy"), QStringList{}))
 {

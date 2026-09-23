@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
+#include <QFile>
 #include <QtTest>
 #include <csignal>
 using namespace QindaQt::SessionSupervisor;
@@ -35,6 +36,17 @@ private Q_SLOTS:
         QString error;
         QVERIFY2(supervisor.start(&error), qPrintable(error));
         QTRY_VERIFY(supervisor.inputMethodDaemonProcessId() > 1);
+
+        QFile commandLine(QStringLiteral("/proc/%1/cmdline")
+                              .arg(supervisor.inputMethodDaemonProcessId()));
+        QVERIFY(commandLine.open(QIODevice::ReadOnly));
+        const QStringList arguments = QString::fromLocal8Bit(commandLine.readAll())
+                                          .split(QLatin1Char('\0'), Qt::SkipEmptyParts);
+        QCOMPARE(arguments.mid(1),
+                 QStringList({QStringLiteral("--replace"), QStringLiteral("--xim"),
+                              QStringLiteral("--panel"), QStringLiteral("disable"),
+                              QStringLiteral("--config"),
+                              QStringLiteral("/usr/libexec/ibus-dconf")}));
 
         // It must come back if it dies mid-session, or every application
         // started afterwards comes up without an input context.
