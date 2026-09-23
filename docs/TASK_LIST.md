@@ -75,6 +75,11 @@ integrated in the qinda source tree, not installed into a live session:
   passed 132/133 under high parallel load; its one route-construction
   timeout passed alone on rerun (1/1). Live radios were not changed while phone tethering;
   physical Wi-Fi operation remains to qualify.
+- Settings catalog reconciliation (`f1b81087`, independently accepted):
+  the completeness reference and handbook now match all 21 registered routes
+  and classify all 85 Settings1 keys by actual authority/editor status. Five
+  route pages no longer claim to be the newest route. This is documentation
+  truth, not hardware qualification or a new editor for missing contracts.
 - Appearance monospace font (`fdbc50f4`): the font picker now edits
   `fonts.monospaceFamily` separately from the UI family and keeps the
   confirmed value visible. A qinda Qt metadata false-negative excluded the

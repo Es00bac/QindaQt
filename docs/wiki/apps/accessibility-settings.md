@@ -55,9 +55,8 @@ paragraphs. A live sample label scales its point size with the slider so the
 effect is visible before Apply. The action row offers Apply, Revert, and — only
 while the route is Unavailable — Retry; a `DegradedNotice` with the same Retry
 carries the unavailable reason. The first focus target is the High contrast
-switch, or Retry when editing is not admitted. The route is appended last in
-the registry, so it has no `Ctrl+digit` shortcut; keyboard users reach it from
-the sidebar or compact tab list.
+switch, or Retry when editing is not admitted. The route was appended after Color, beyond the ten digit-shortcut slots;
+keyboard users reach it from the sidebar or compact tab list.
 
 ## Verification
 
