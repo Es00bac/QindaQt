@@ -20,6 +20,13 @@ integrated in the qinda source tree, not installed into a live session:
   review accepted the repaired candidate. The integrated Input gates are
   recorded in [Handoff](HANDOFF.md); a real KWin hotplug session remains to
   qualify.
+- Touch controls (`e3602974`): the enabled state, hold-time slider and
+  touch gestures now wait for confirmed Settings1 authority, retain refusal
+  feedback, and serialize the final requested slider value. Exact owner
+  replacement retires queued gestures without replay. Three candidate
+  revisions received independent review before the final one was accepted.
+  The combined build, focused 17/17 and broad Settings 126/126 pass; physical
+  touchscreen use remains to qualify.
 - Voice (`6a2d9e2d`, `58ca80c7`): confirmed Off withdraws desktop provider
   use even through a conflicting or uncertain save. The rejected first
   candidate was repaired and independently accepted. The combined build,

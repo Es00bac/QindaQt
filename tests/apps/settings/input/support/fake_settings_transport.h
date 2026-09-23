@@ -104,7 +104,9 @@ inline QVariantMap fakeCommitWire(QindaQt::Services::SettingsProtocol::SettingsW
             {QLatin1StringView(WireContract::FieldRevisionAfter), after},
             {QLatin1StringView(WireContract::FieldValues), values},
             {QLatin1StringView(WireContract::FieldSourceLayers), layers},
-            {QLatin1StringView(WireContract::FieldChangedKeys), QStringList(values.keys())},
+            {QLatin1StringView(WireContract::FieldChangedKeys),
+             status == QindaQt::Services::SettingsProtocol::SettingsWireStatus::Applied
+                 && after > before ? QStringList(values.keys()) : QStringList{}},
             {QLatin1StringView(WireContract::FieldMessage), QString{}}};
 }
 
