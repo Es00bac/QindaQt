@@ -29,10 +29,8 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int channelIndex, double level)"
         "Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName, int channels)"
         "Q_INVOKABLE bool removeVirtualDevice(quint64 serial)"
-        # Console intents (ADR-0173). The surface stays CLOSED: each entry is
-        # one console control, addressed by console id, and there is
-        # deliberately no generic "apply this request" escape hatch through
-        # which the route could reach the rest of Audio1.
+        # Console controls and the bounded manual-peer editor (ADR-0246).
+        # No generic operation dispatch or raw D-Bus escape hatch is allowed.
         "Q_INVOKABLE bool setStripProcessing(QString stripId, QVariantMap processing)"
         "Q_INVOKABLE bool setBusProcessing(QString busId, QVariantMap processing)"
         "Q_INVOKABLE bool savePreset(QString name)"
@@ -42,6 +40,9 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool startRecording(QString busId, QString format)"
         "Q_INVOKABLE bool stopRecording()"
         "Q_INVOKABLE bool setVbanEnabled(QString name, bool enabled)"
+        "Q_INVOKABLE bool saveOutgoingPeer(QString name, QString busId, QString destinationHost, int port)"
+        "Q_INVOKABLE bool saveIncomingPeer(QString name, QString sourceIpv4, QString outputNodeName, int port)"
+        "Q_INVOKABLE bool removePeer(QString name)"
         "Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial)"
         "Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial)"
         "Q_INVOKABLE bool setStripFader(QString stripId, double position)"
@@ -73,9 +74,14 @@ endforeach()
 file(GLOB_RECURSE route_qml LIST_DIRECTORIES false "${route_root}/qml/*.qml")
 foreach(source IN LISTS route_qml)
     file(READ "${source}" content)
-    if(content MATCHES "TextField|TextInput|TextEdit|TextArea|moveStream|MoveStream")
+    if(content MATCHES "moveStream|MoveStream")
         message(FATAL_ERROR
-            "Audio Settings QML gained text entry or an out-of-slice stream-move surface in ${source}")
+            "Audio Settings QML gained an out-of-slice stream-move surface in ${source}")
+    endif()
+    if(content MATCHES "TextEdit|TextArea|TextInput"
+       OR (content MATCHES "TextField" AND NOT source MATCHES "/AudioPeerSection\\.qml$"))
+        message(FATAL_ERROR
+            "Audio Settings QML gained text entry outside the bounded peer editor in ${source}")
     endif()
 endforeach()
 

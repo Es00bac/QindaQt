@@ -118,13 +118,29 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
     case OperationKind::StartRecording:
     case OperationKind::StopRecording:
     case OperationKind::SetVbanEnabled:
+    case OperationKind::UpsertVbanStream:
+    case OperationKind::DeleteVbanStream: {
         // Console operations (ADR-0173) are admitted by the console model,
         // which owns the strip and bus identities they name. There is no
         // device or stream handle here to pre-check against the snapshot.
-        if (!hasConsoleCapability(m_snapshot.capabilities)) {
+        const bool peerOperation = request.kind == OperationKind::SetVbanEnabled
+            || request.kind == OperationKind::UpsertVbanStream
+            || request.kind == OperationKind::DeleteVbanStream;
+        if (peerOperation
+            ? !m_snapshot.capabilities.testFlag(Capability::Console)
+                  || !m_snapshot.capabilities.testFlag(Capability::ManageVbanStreams)
+            : !hasConsoleCapability(m_snapshot.capabilities))
             return QStringLiteral("unsupported");
-        }
+        if (request.kind == OperationKind::UpsertVbanStream
+            && (!validateVbanDefinition(request.vbanDefinition).accepted
+                || request.vbanDefinition.enabled || request.vbanDefinition.active))
+            return QStringLiteral("invalid-vban-stream");
+        if (request.kind == OperationKind::DeleteVbanStream
+            && (request.displayName.isEmpty()
+                || !isBoundedText(request.displayName, kMaxVbanNameUtf8Bytes)))
+            return QStringLiteral("invalid-vban-stream");
         break;
+    }
     case OperationKind::SetDefault:
         if (!hasCapability(m_snapshot.capabilities, Capability::SetDefault)) {
             return QStringLiteral("unsupported");

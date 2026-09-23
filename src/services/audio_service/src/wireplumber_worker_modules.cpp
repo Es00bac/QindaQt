@@ -59,6 +59,14 @@ void WirePlumberWorker::watchModule(const ModuleKind kind, const std::string &ke
 void WirePlumberWorker::forgetModule(const ModuleKind kind, const std::string &key,
                                      void *const module)
 {
+    if (kind == ModuleKind::VbanRoute) {
+        const auto it = m_vbanRouteModules.find(key);
+        if (it != m_vbanRouteModules.end() && it->second.module == module)
+            m_vbanRouteModules.erase(it);
+        std::erase(m_modulesPendingDestroy, module);
+        publishVbanRunning();
+        return;
+    }
     if (kind == ModuleKind::Endpoint) {
         const auto it = m_endpointModules.find(key);
         if (it != m_endpointModules.end() && it->second == module) {

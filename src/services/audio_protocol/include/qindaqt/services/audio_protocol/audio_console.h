@@ -261,6 +261,9 @@ struct VbanStream {
     quint32 port = 6980;
     bool enabled = false;
     bool active = false;
+    // Incoming only: the exact physical Audio/Output node.name to receive
+    // this stream. Empty for outgoing. Appended in schema 12 (ADR-0246).
+    QString outputNodeName;
 
     friend bool operator==(const VbanStream &, const VbanStream &) = default;
 };

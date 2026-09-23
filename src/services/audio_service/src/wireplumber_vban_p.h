@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <memory>
+#include <netinet/in.h>
 
 struct pw_context;
 
@@ -49,7 +50,8 @@ public:
     VbanReceiver(const VbanReceiver &) = delete;
     VbanReceiver &operator=(const VbanReceiver &) = delete;
 
-    [[nodiscard]] bool start(pw_context *context, const QString &streamName, quint16 port);
+    [[nodiscard]] bool start(pw_context *context, const QString &streamName, quint16 port,
+                             const QString &allowedSourceIpv4);
     void stop();
     [[nodiscard]] bool running() const noexcept { return m_running.load(); }
 
@@ -60,7 +62,16 @@ private:
     std::atomic_bool m_running{false};
 };
 
+// This predicate is the only receive admission check after recvfrom.
+[[nodiscard]] bool vbanSourceAllowed(const sockaddr_in &source, socklen_t sourceSize,
+                                     const in_addr &allowed) noexcept;
+
 // The virtual source a received stream is presented as.
 [[nodiscard]] QString vbanSourceNodeName(const QString &streamName);
+[[nodiscard]] QString vbanRouteNodeName(const QString &streamName);
+// A no-fallback loopback from the authorized receiver source to one physical
+// output; arguments are empty when a node name cannot be embedded safely.
+[[nodiscard]] QByteArray vbanRouteArguments(const QString &streamName,
+                                            const QString &outputNodeName);
 
 } // namespace QindaQt::Audio

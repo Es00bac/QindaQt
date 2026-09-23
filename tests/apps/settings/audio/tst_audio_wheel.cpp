@@ -62,6 +62,16 @@ QQuickItem *viewportFor(QQuickItem *page)
     return findItem(page, QStringLiteral("audioFormViewport"));
 }
 
+bool selectMixerTab(QQuickView &view, QQuickItem *page)
+{
+    auto *tabs = findItem(page, QStringLiteral("audioDestinationTabs"));
+    if (tabs == nullptr || !tabs->isVisible()) return false;
+    tabs->forceActiveFocus(Qt::TabFocusReason);
+    QTest::keyClick(&view, Qt::Key_Right);
+    QCoreApplication::processEvents();
+    return page->property("activeTab").toInt() == 1;
+}
+
 void reveal(QQuickItem *page, QQuickItem *item)
 {
     auto *viewport = viewportFor(page);
@@ -159,13 +169,17 @@ void AudioWheelTest::settingsVolumePassesWheelToScrollerAtBoundsAndWhenDisabled(
     QString error;
     QVERIFY2(prepareAudioPageEngine(view, &error), qPrintable(error));
     StubAudioSettingsModel model;
-    auto [guard, page] = createAudioPage(view, model, QSize(1100, 900));
+    auto [guard, page] = createAudioPage(view, model, QSize(420, 320));
     QVERIFY(page != nullptr);
     auto *slider = findItem(page, QStringLiteral("audioOutputVolume_10"));
     auto *viewport = viewportFor(page);
     QVERIFY(slider != nullptr);
     QVERIFY(viewport != nullptr);
+    QCOMPARE(page->property("activeTab").toInt(), 0);
     reveal(page, slider);
+    QVERIFY(slider->isVisible());
+    QVERIFY(viewport->property("contentHeight").toReal()
+            > viewport->height());
 
     slider->setProperty("value", 1.0);
     const qreal beforeBound = viewport->property("contentY").toReal();
@@ -198,6 +212,12 @@ void AudioWheelTest::consoleKnobAndFaderAccumulateDetents()
     auto *fader = findItem(page, QStringLiteral("consoleStripFader_strip.hw.1"));
     QVERIFY(knob != nullptr);
     QVERIFY(fader != nullptr);
+    // The console remains instantiated while hidden; target its visible
+    // Mixer tab before using real window-coordinate wheel events.
+    QVERIFY(selectMixerTab(view, page));
+    QTRY_COMPARE(page->property("activeTab").toInt(), 1);
+    QVERIFY(knob->isVisible());
+    QVERIFY(fader->isVisible());
     reveal(page, knob);
 
     sendWheel(knob, {}, {});

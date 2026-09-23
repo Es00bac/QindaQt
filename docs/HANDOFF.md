@@ -2,14 +2,14 @@
 
 ## September 23 — Settings repair integration on qinda
 
-The qinda source branch integrates Default Applications at `e02cd663`, Input
-at `5bb5fb73` and `0c41a5e3`, Voice at `6a2d9e2d` and `58ca80c7`, Startup
-at `1d5de5e3` and `79a037c8`, audio-wheel controls at `35392d6b`, `40768275` and `8f384cb4`, and
-Streaming at the accepted product commit `351a497f`. Every slice had an
-independent exact-commit review; the first Input, Voice, Startup and
-Streaming candidates and two wheel candidates were rejected and repaired
-before acceptance. None has been
-deployed to a live desktop.
+The qinda source branch integrates Default Applications (`e02cd663`), Input
+(`5bb5fb73`, `0c41a5e3`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
+(`1d5de5e3`, `79a037c8`), audio wheel controls (`35392d6b`,
+`40768275`, `8f384cb4`), Streaming (`351a497f`), and manual LAN/tabbed
+audio (`c99ef063` plus reviewed tab-aware wheel test `4abb0306`).
+Every slice had an independent exact-commit review. Initial Input, Voice,
+Startup and Streaming candidates and two wheel candidates were rejected
+and repaired before acceptance. None has been deployed to a live desktop.
 
 The combined Settings build and 122/122 Settings rows passed after Default
 Applications. Input then passed a combined build and 14/14 Input/route rows.
@@ -23,13 +23,20 @@ passes a combined production Settings/shell/helper build, 13/13 affected
 Settings, OBS, SettingsClient and session-autostart rows, and a staged
 `StreamingRuntime` install containing `qindaqt-obs-login` and its single
 QindaQt-only system XDG entry. Strict MkDocs and the repository link
-validator pass for this integrated tree (378 pages).
+validator pass for this integrated tree (378 pages after Streaming). Manual
+LAN audio passes a combined Settings/shell and affected service build, 36/36
+Audio/Settings rows, the installed audio applet package and installed
+Settings-route rows (2/2), and strict docs/link validation (380 pages).
+Private qinda/qinda-top runtimes carried nonzero stereo PCM both ways; the
+selected-route graph and stale-evidence regression pass. No live physical
+speaker playback, peer authentication, encryption, discovery, pairing or
+synchronized surround is claimed.
 
 Remaining live qualifications are physical KWin hotplug, file-open/watcher
 timing, microphone and nested-shell Voice, a disposable nested once-per-login
-and logout Startup run, real-device wheel use, and real OBS login/reconnect. Manual network audio
-and tabbed Audio Settings are active independent slices; synchronized
-multichannel playback needs later latency and channel-mapping proof. See the
+and logout Startup run, real-device wheel use, real OBS login/reconnect,
+and physical LAN-audio speaker playback. Synchronized multichannel playback needs later latency
+and channel-mapping proof. See the
 [task list](TASK_LIST.md) and `ops/team/queues/first-party.md` for current
 status.
 
