@@ -7,7 +7,6 @@ qt_add_library(qindaqt_settings_streaming STATIC)
 target_sources(
     qindaqt_settings_streaming
     PRIVATE
-        settings1_streaming_preferences.cpp
         streaming_settings_model.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -18,7 +17,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_settings_streaming
-    PUBLIC QindaQt::ObsClient QindaQt::SettingsClient Qt6::Core Qt6::Gui
+    PUBLIC QindaQt::ObsClient QindaQt::StreamingPreferences QindaQt::SessionAutostart Qt6::Core Qt6::Gui
 )
 target_compile_features(qindaqt_settings_streaming PUBLIC cxx_std_20)
 set_target_properties(

@@ -227,6 +227,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/smartlightsappletcomposition.h
         runtime/voiceappletcomposition.cpp
         runtime/voiceappletcomposition.h
+        runtime/obsappletconnection.cpp
+        runtime/obsappletconnection.h
         runtime/obsappletcomposition.cpp
         runtime/obsappletcomposition.h
         runtime/shellstartuppreferences.cpp
@@ -336,6 +338,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellSmartLightsAppletRuntime
             QindaQt::ShellVoiceAppletRuntime
             QindaQt::ShellObsAppletRuntime
+            QindaQt::StreamingPreferences
             QindaQt::WizUdpTransport
             QindaQt::ShellTaskListApplet
             QindaQt::ShellTaskListProducer

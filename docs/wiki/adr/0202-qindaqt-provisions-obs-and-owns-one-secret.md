@@ -56,7 +56,8 @@ it owns, and stores exactly one secret.**
 - Three Settings1 keys (`services.obsWebSocketPort`, `services.obsAutoConnect`,
   `services.obsStartAtLogin`) are new; Settings1 rejects a whole snapshot on
   one unknown key (ADR-0126), so the resident settings service must know them
-  before the route can save anything.
+  before the route can save anything. [ADR-0248](0248-confirm-streaming-preferences-before-obs-consumption.md)
+  defines their confirmed-only consumption and the single OBS login entry.
 - QindaQt's `first_load` setting suppresses obs-websocket's own welcome
   dialog, which would otherwise generate a second password that is not the
   one in the keyring.

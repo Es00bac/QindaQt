@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=OBS login policy
+Comment=Start OBS at login when enabled in QindaQt Streaming settings
+Exec=qindaqt-obs-login
+OnlyShowIn=QindaQt;
+Terminal=false

@@ -31,10 +31,12 @@ and do not launch.
 [Startup Settings](../apps/startup-settings.md) reads this catalog and only
 writes user overrides. Its Enabled switch describes next-login configuration;
 an ineligibility line explains why a configured entry will not execute.
-Re-enabling clears both recognized disable flags. A03's OBS start-at-login
-owner writes one ordinary user desktop entry with Type=Application, Name,
-Exec, and OnlyShowIn=QindaQt; as appropriate. It does not add a second
-launcher.
+Re-enabling clears both recognized disable flags. A03 installs one stable
+system `qindaqt-obs-login.desktop` entry with `OnlyShowIn=QindaQt;` through
+this same runner. The [OBS login helper](../adr/0248-confirm-streaming-preferences-before-obs-consumption.md)
+reads the confirmed Settings1 preference and replaces its own PID with OBS
+only when enabled. A user Hidden override in Startup can mask that system
+entry; Streaming settings reports the effective login availability.
 
 The supervisor owns only direct processes it spawned. It does not kill an
 ambient instance with the same executable name, adopt daemonized descendants,

@@ -112,9 +112,11 @@ every third-party package in `data/applet-policy/default.json`: what a user is
 recording, and the scene names they chose, are private, and starting a
 capture on their behalf is not something an unaudited applet may do.
 
-`ObsAppletComposition` owns the obs-websocket client. **It starts the client
-only when the read capability is granted and a password is already in the
-keyring** — connecting without one would make OBS's refusal look like a wrong
+`ObsAppletComposition` owns the obs-websocket client and consumes the shared
+[confirmed Streaming preferences](../adr/0248-confirm-streaming-preferences-before-obs-consumption.md).
+**It starts the client only when the read capability is granted, an exact-owner
+Settings1 baseline enables auto-connect, OBS has loaded the selected port,
+and a password is already in the keyring** — connecting without one would make OBS's refusal look like a wrong
 password the user chose, and would retry against it forever. Without the
 control grant the controller is still built, so the panel the user configured
 keeps its chip, retains granted read access to live state, and reports that
