@@ -398,8 +398,10 @@ void SettingsNavigationInteractionTest::testQuietHoursControlsOnlyFollowTheSched
       sceneItem(window->contentItem(), QStringLiteral("settingsQuietHoursSummary"));
   auto *error =
       sceneItem(window->contentItem(), QStringLiteral("settingsQuietHoursError"));
+  auto *status =
+      sceneItem(window->contentItem(), QStringLiteral("settingsQuietHoursStatus"));
   QVERIFY(scheduleSwitch != nullptr && start != nullptr && end != nullptr);
-  QVERIFY(summary != nullptr && error != nullptr);
+  QVERIFY(summary != nullptr && error != nullptr && status != nullptr);
 
   // QTest has no keyClicks() for a QWindow, so type the masked field a key at
   // a time the way the input method would.
@@ -472,8 +474,28 @@ void SettingsNavigationInteractionTest::testQuietHoursControlsOnlyFollowTheSched
   QTest::keyClick(window, Qt::Key_Tab);
   QTRY_COMPARE(window->activeFocusItem(), toggle);
 
+  // A pending schedule save leaves the confirmed switch and times visible
+  // while the controls are inert and the result state is announced.
+  m_quietingSchedule->canEdit = false;
+  m_quietingSchedule->pending = true;
+  m_quietingSchedule->statusText = QStringLiteral("Checking saved quiet hours");
+  Q_EMIT m_quietingSchedule->viewChanged();
+  QTRY_VERIFY(!scheduleSwitch->isEnabled());
+  QVERIFY(!start->isEnabled());
+  QVERIFY(!end->isEnabled());
+  QTRY_VERIFY(status->isVisible());
+  QCOMPARE(status->property("text").toString(),
+           QStringLiteral("Checking saved quiet hours"));
+  QVERIFY(scheduleSwitch->property("checked").toBool());
+  m_quietingSchedule->canEdit = true;
+  m_quietingSchedule->pending = false;
+  m_quietingSchedule->statusText.clear();
+  Q_EMIT m_quietingSchedule->viewChanged();
+  QTRY_VERIFY(scheduleSwitch->isEnabled());
+
   // A schedule the service cannot serve leaves the controls inert.
   m_quietingSchedule->available = false;
+  m_quietingSchedule->canEdit = false;
   Q_EMIT m_quietingSchedule->viewChanged();
   QTRY_VERIFY(!scheduleSwitch->isEnabled());
   QVERIFY(!start->isEnabled());

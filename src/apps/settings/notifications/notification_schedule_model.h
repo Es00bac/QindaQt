@@ -7,6 +7,7 @@
 
 namespace QindaQt::Services::SettingsClient {
 class SettingsClient;
+struct CommitOutcome;
 }
 
 namespace QindaQt::Apps::SettingsNotifications {
@@ -15,7 +16,9 @@ namespace QindaQt::Apps::SettingsNotifications {
 // it (ADR-0212). It owns no persistence: it reads the three
 // `services.doNotDisturb*` keys from the injected Settings1 client's snapshot
 // and writes through the same client, so what it publishes is always what the
-// service last confirmed.
+// service last confirmed. The borrowed client must outlive this same-thread
+// model; failed or uncertain writes keep last-confirmed values and show an
+// error rather than replaying the request.
 //
 // AGENT-GUARD: the published values never move to what the user just asked
 // for. A refused or uncommitted write leaves the controls where they are, so
@@ -28,6 +31,10 @@ class NotificationScheduleModel final : public QObject {
   Q_OBJECT
 
   Q_PROPERTY(bool available READ available NOTIFY viewChanged FINAL)
+  Q_PROPERTY(bool canEdit READ canEdit NOTIFY viewChanged FINAL)
+  Q_PROPERTY(bool pending READ pending NOTIFY viewChanged FINAL)
+  Q_PROPERTY(bool conflict READ conflict NOTIFY viewChanged FINAL)
+  Q_PROPERTY(bool uncertain READ uncertain NOTIFY viewChanged FINAL)
   Q_PROPERTY(bool scheduleEnabled READ scheduleEnabled NOTIFY viewChanged FINAL)
   Q_PROPERTY(int startMinutes READ startMinutes NOTIFY viewChanged FINAL)
   Q_PROPERTY(int endMinutes READ endMinutes NOTIFY viewChanged FINAL)
@@ -35,6 +42,7 @@ class NotificationScheduleModel final : public QObject {
   Q_PROPERTY(QString endText READ endText NOTIFY viewChanged FINAL)
   Q_PROPERTY(QString summaryText READ summaryText NOTIFY viewChanged FINAL)
   Q_PROPERTY(QString errorText READ errorText NOTIFY viewChanged FINAL)
+  Q_PROPERTY(QString statusText READ statusText NOTIFY viewChanged FINAL)
 
 public:
   static constexpr int minutesPerDay = 24 * 60;
@@ -49,6 +57,10 @@ public:
   Q_INVOKABLE void clearError();
 
   [[nodiscard]] bool available() const { return m_available; }
+  [[nodiscard]] bool canEdit() const;
+  [[nodiscard]] bool pending() const { return m_pending; }
+  [[nodiscard]] bool conflict() const { return m_conflict; }
+  [[nodiscard]] bool uncertain() const { return m_uncertain; }
   [[nodiscard]] bool scheduleEnabled() const { return m_enabled; }
   [[nodiscard]] int startMinutes() const { return m_startMinutes; }
   [[nodiscard]] int endMinutes() const { return m_endMinutes; }
@@ -56,6 +68,7 @@ public:
   [[nodiscard]] QString endText() const;
   [[nodiscard]] QString summaryText() const;
   [[nodiscard]] QString errorText() const { return m_errorText; }
+  [[nodiscard]] QString statusText() const;
 
   // "22:00" for 1320. Shared with the tests so the format cannot drift.
   [[nodiscard]] static QString formatMinutes(int minutes);
@@ -65,11 +78,23 @@ signals:
   void viewChanged();
 
 private:
-  void applySnapshot();
+  void applySnapshot(bool fresh = false);
+  void handleClientState();
+  void handleCommit(const Services::SettingsClient::CommitOutcome &outcome);
+  void handleUncertain(const QString &message);
   void write(const QString &key, const QVariant &value);
 
   Services::SettingsClient::SettingsClient &m_client;
   bool m_available = false;
+  bool m_pending = false;
+  bool m_waitingForReadback = false;
+  bool m_conflict = false;
+  bool m_uncertain = false;
+  QString m_writeOwner;
+  QString m_writeEpoch;
+  QString m_writeKey;
+  QVariant m_requestedValue;
+  quint64 m_readbackRevision = 0;
   bool m_enabled = false;
   int m_startMinutes = 22 * 60;
   int m_endMinutes = 7 * 60;
