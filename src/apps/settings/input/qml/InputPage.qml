@@ -7,8 +7,8 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// Input route page: four destinations (Mouse & touchpad, Pen & tablet,
-// Keyboard, Shortcuts) behind the same tab pattern the Appearance page uses.
+// Input route page: five destinations (Mouse & touchpad, Pen & tablet,
+// Keyboard, Shortcuts, Touch) behind the Appearance tab pattern.
 // The sections own their models; this page only hosts and navigates.
 T.Page {
     id: root
@@ -37,7 +37,9 @@ T.Page {
         { id: "keyboard", title: qsTr("Keyboard"), icon: "preferences-desktop-keyboard",
           description: qsTr("Key repeat, NumLock, and keyboard layouts") },
         { id: "shortcuts", title: qsTr("Shortcuts"), icon: "preferences-desktop-keyboard-shortcuts",
-          description: qsTr("Global shortcuts and custom command keys") }
+          description: qsTr("Global shortcuts and custom command keys") },
+        { id: "touch", title: qsTr("Touch"), icon: "input-touchpad",
+          description: qsTr("Touchscreen, hold time, keyboard and edge swipes") }
     ]
 
     title: qsTr("Input")
@@ -159,7 +161,9 @@ T.Page {
                                  : root.currentDestination === "shortcuts"
                                    ? shortcutsPage
                                    : root.currentDestination === "tablet"
-                                     ? tabletPage : pointersPage
+                                     ? tabletPage
+                                     : root.currentDestination === "touch"
+                                       ? touchPage : pointersPage
                 onLoaded: item.forceActiveFocus(Qt.TabFocusReason)
             }
         }
@@ -195,6 +199,12 @@ T.Page {
     Component {
         id: shortcutsPage
         InputShortcutsSection {
+            inputSettings: root.inputSettings
+        }
+    }
+    Component {
+        id: touchPage
+        InputTouchSection {
             inputSettings: root.inputSettings
         }
     }

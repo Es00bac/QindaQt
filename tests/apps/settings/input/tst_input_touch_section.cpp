@@ -75,6 +75,9 @@ private Q_SLOTS:
     void degradedUntilTheSnapshotArrivesThenRowsFollowIt();
     void editsGoThroughTheModelAsOneWrite();
     void aDisabledTouchscreenHidesTheOtherRows();
+    void retainedValuesAreDisabledWhenAuthorityIsLost();
+    void sliderKeyboardAndDragKeepTheFinalRequestedValue();
+    void rejectedToggleRestoresAuthorityAndKeepsDiagnostic();
 
 private:
     [[nodiscard]] QObject *findObject(const QString &objectName) const { return findInTree(section, objectName); }
@@ -175,13 +178,14 @@ void InputTouchSectionTest::editsGoThroughTheModelAsOneWrite()
     Q_EMIT facade->transport.commitReceived(
         facade->transport.commits.constFirst().token, QStringLiteral(":1.9"),
         fakeCommitWire(SettingsWireStatus::Applied, 1, 2, {{QStringLiteral("input.touch.enabled"), false}}));
-    QTRY_VERIFY(!facade->model.busy());
+    QVERIFY(facade->model.busy());
     // The client re-reads its scope after the commit; the rows follow that
     // confirmed snapshot, not the reply.
     QTRY_VERIFY(facade->transport.snapshots.size() >= 2);
     Q_EMIT facade->transport.snapshotReceived(facade->transport.snapshots.constLast().token, QStringLiteral(":1.9"),
                                               fakeSnapshotWire(2, withTouchDefaults({{QStringLiteral("input.touch.enabled"), false}})));
     QTRY_VERIFY(!isShown(QStringLiteral("inputTouchLongPressRow")));
+    QTRY_VERIFY(!facade->model.busy());
 }
 
 void InputTouchSectionTest::aDisabledTouchscreenHidesTheOtherRows()
@@ -193,6 +197,104 @@ void InputTouchSectionTest::aDisabledTouchscreenHidesTheOtherRows()
     QCOMPARE(findObject(QStringLiteral("inputTouchEnabledSwitch"))->property("checked").toBool(), false);
     QCOMPARE(findObject(QStringLiteral("inputTouchStatus"))->property("text").toString(),
              QStringLiteral("The touchscreen is off."));
+}
+
+void InputTouchSectionTest::retainedValuesAreDisabledWhenAuthorityIsLost()
+{
+    QVERIFY(facade->deliverSnapshot(1, {{QStringLiteral("input.touch.longPressMs"), 850}}));
+    QTRY_VERIFY(isShown(QStringLiteral("inputTouchLongPressRow")));
+    Q_EMIT facade->transport.ownerChanged(QString{});
+    QTRY_VERIFY(isShown(QStringLiteral("inputTouchDegraded")));
+    QVERIFY(isShown(QStringLiteral("inputTouchEnabledRow")));
+    QCOMPARE(findObject(QStringLiteral("inputTouchLongPressSlider"))->property("value").toInt(), 850);
+    for (const char *name : {"inputTouchEnabledSwitch", "inputTouchLongPressSlider",
+                             "inputTouchKeyboardCombo", "inputTouchEdgeCombo_left"}) {
+        QObject *control = findObject(QString::fromLatin1(name));
+        QVERIFY2(control != nullptr, name);
+        QVERIFY2(!control->property("enabled").toBool(), name);
+    }
+    QVERIFY(!facade->model.setLongPressMs(900));
+    QVERIFY(facade->transport.commits.isEmpty());
+}
+
+void InputTouchSectionTest::sliderKeyboardAndDragKeepTheFinalRequestedValue()
+{
+    QVERIFY(facade->deliverSnapshot(1, {}));
+    auto *slider = qobject_cast<QQuickItem *>(findObject(QStringLiteral("inputTouchLongPressSlider")));
+    QVERIFY(slider != nullptr);
+    QTRY_VERIFY(slider->isVisible());
+    slider->forceActiveFocus();
+    QVERIFY(slider->hasActiveFocus());
+    QTest::keyClick(window.get(), Qt::Key_Right);
+    QTRY_COMPARE(facade->transport.commits.size(), 1);
+    QCOMPARE(facade->model.longPressMs(), 500);
+    QCOMPARE(facade->model.longPressDisplayMs(), 550);
+    QVERIFY(slider->isEnabled());
+    QTest::keyClick(window.get(), Qt::Key_Right);
+    QTRY_COMPARE(facade->model.longPressDisplayMs(), 600);
+    QCOMPARE(facade->transport.commits.size(), 1);
+
+    const QPointF fromScene = slider->mapToScene(QPointF(slider->width() * 0.31, slider->height() / 2.0));
+    const QPointF toScene = slider->mapToScene(QPointF(slider->width() * 0.55, slider->height() / 2.0));
+    QTest::mousePress(window.get(), Qt::LeftButton, Qt::NoModifier, fromScene.toPoint());
+    QTest::mouseMove(window.get(), toScene.toPoint(), 15);
+    QTest::mouseRelease(window.get(), Qt::LeftButton, Qt::NoModifier, toScene.toPoint());
+    const int finalRequested = facade->model.longPressDisplayMs();
+    QVERIFY(finalRequested > 600);
+    QCOMPARE(facade->transport.commits.size(), 1);
+    Q_EMIT facade->transport.commitReceived(
+        facade->transport.commits.constFirst().token, QStringLiteral(":1.9"),
+        fakeCommitWire(SettingsWireStatus::Applied, 1, 2,
+                       {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    QCOMPARE(facade->transport.commits.size(), 1);
+    QTRY_VERIFY(facade->transport.snapshots.size() >= 2);
+    Q_EMIT facade->transport.snapshotReceived(
+        facade->transport.snapshots.constLast().token, QStringLiteral(":1.9"),
+        fakeSnapshotWire(2, withTouchDefaults({{QStringLiteral("input.touch.longPressMs"), 550}})));
+    QTRY_COMPARE(facade->transport.commits.size(), 2);
+    QCOMPARE(facade->transport.commits.constLast().operations.constFirst().toMap()
+                 .value(QStringLiteral("value")).toInt(), finalRequested);
+    Q_EMIT facade->transport.commitReceived(
+        facade->transport.commits.constLast().token, QStringLiteral(":1.9"),
+        fakeCommitWire(SettingsWireStatus::ValidationFailed, 2, 2,
+                       {{QStringLiteral("input.touch.longPressMs"), 550}}));
+    QTRY_VERIFY(!facade->model.busy());
+    QVERIFY(!facade->model.errorText().isEmpty());
+    QTRY_COMPARE(slider->property("value").toInt(), 550);
+}
+
+void InputTouchSectionTest::rejectedToggleRestoresAuthorityAndKeepsDiagnostic()
+{
+    QVERIFY(facade->deliverSnapshot(1, {}));
+    auto *toggle = qobject_cast<QQuickItem *>(findObject(QStringLiteral("inputTouchEnabledSwitch")));
+    QVERIFY(toggle != nullptr);
+    QTRY_VERIFY(toggle->isVisible());
+    // A snapshot changes the ColumnLayout's visible children. Wait for its
+    // polish before sending a pointer event: before polish the status label
+    // temporarily overlaps the row and wins the hit test.
+    QTRY_VERIFY(toggle->parentItem()->width() >= 600);
+    const QPoint scene = toggle->mapToScene(QPointF(toggle->width() / 2.0,
+                                                     toggle->height() / 2.0)).toPoint();
+    QTest::mouseClick(window.get(), Qt::LeftButton, Qt::NoModifier, scene);
+    QTRY_COMPARE(facade->transport.commits.size(), 1);
+    QVERIFY(facade->model.busy());
+    QVERIFY(!toggle->isEnabled());
+    QCOMPARE(toggle->property("checked").toBool(), true);
+    Q_EMIT facade->transport.commitReceived(
+        facade->transport.commits.constFirst().token, QStringLiteral(":1.9"),
+        fakeCommitWire(SettingsWireStatus::ValidationFailed, 1, 1,
+                       {{QStringLiteral("input.touch.enabled"), true}}));
+    QTRY_VERIFY(!facade->model.busy());
+    QCOMPARE(toggle->property("checked").toBool(), true);
+    QVERIFY(!facade->model.errorText().isEmpty());
+    QTRY_VERIFY(facade->transport.snapshots.size() >= 2);
+    Q_EMIT facade->transport.snapshotReceived(
+        facade->transport.snapshots.constLast().token, QStringLiteral(":1.9"),
+        fakeSnapshotWire(1, withTouchDefaults({})));
+    QTRY_VERIFY(facade->model.available());
+    QCOMPARE(toggle->property("checked").toBool(), true);
+    QVERIFY(!facade->model.errorText().isEmpty());
+    QCOMPARE(facade->transport.commits.size(), 1);
 }
 
 } // namespace QindaQt::Apps::SettingsInput

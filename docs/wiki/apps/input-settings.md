@@ -1,8 +1,8 @@
 # Settings Input route
 
 The Input route (`qindaqt-settings --page input`) changes how pointers,
-tablets, keyboards, and global shortcuts behave. KWin and kglobalaccel stay the
-authorities; [ADR-0134](../adr/0134-input-and-shortcut-settings.md) records the
+tablets, keyboards, global shortcuts, and touchscreens behave. KWin and
+kglobalaccel own device and shortcut behavior; Settings1 owns touch preferences; [ADR-0134](../adr/0134-input-and-shortcut-settings.md) records the
 decision and the verified protocols, and
 [ADR-0197](../adr/0197-pen-displays-map-themselves-and-ask-once.md) records how
 a pen display finds its own screen.
@@ -104,16 +104,24 @@ purpose-scoped Settings1 client over `input.touch.enabled`, `longPressMs`
 (200–1500 ms), `onScreenKeyboard` (`auto`, `off`) and
 `edgeLeft/Top/Right/Bottom` (`none`, `overview`, `notifications`,
 `task-switcher`); `input.touch.mode` stays unscoped and unshown until a
-consumer exists. Every edit is one user-value write; the rows follow the
-confirmed snapshot, a second edit while one is in flight is refused rather
-than queued, and an uncertain commit says "may not have been applied". Until
-the first snapshot the section shows the unavailable notice; with the
-touchscreen switched off only the switch remains. The compositor plugin
+consumer exists. Each accepted edit is one user-value write. The rows use the confirmed
+snapshot as their authoritative value. The first missing snapshot hides
+controls; if Settings1 later becomes unavailable or degraded, the last-known
+values remain visible but disabled and the notice identifies their stale
+authority. All new edits require a current Ready snapshot and no unrelated
+write in progress. A hold-time slider gesture may replace its own pending
+final value; it sends at most one additional write after the first success
+has been confirmed by a fresh snapshot at or beyond the result revision.
+A rejected, conflicted, uncertain, or interrupted write drops that pending
+value without replay. Refusal and uncertainty messages survive unchanged
+refreshes and external edits until the user begins a new accepted edit.
+With the touchscreen switched off only the switch remains. The compositor plugin
 consumes the same keys live (the touchscreen switch stops every touch
 device at the seat, thresholds, edge reservations, the keyboard mode);
 `mode` is stored ahead of its application consumers (ADR-0205,
-decision 4). The destination's entry in this page's destination list
-arrives with the pen-and-tablet lane, which owns that list.
+decision 4). The Input page's Touch destination loads this section from the same
+purpose-scoped composition; its unavailable notice is visible before the
+first snapshot and the tab is reachable by mouse or keyboard.
 
 ## Applying changes
 
@@ -162,7 +170,9 @@ arrives with the pen-and-tablet lane, which owns that list.
 | `qindaqt.settings-input-keyboard-layout-port` | `kxkbrc` round trip with `Use=true`, hostile catalogs, the announcement |
 | `qindaqt.settings-input-shortcut-port` | The kglobalaccel wire contract, read-back truth, command components, malformed replies |
 | `qindaqt.settings-input-pointer-devices-model`, `-keyboard-models`, `-shortcuts-model` | Presentation truth and write paths over fakes |
-| `qindaqt.settings-input-page` | Offscreen page: capability hiding, editors seated inside their rows, conflict capture, capture keys, keyboard navigation, unavailable notices |
+| `qindaqt.settings-input-page` | Offscreen page: capability hiding, editors seated inside their rows, conflict capture, capture keys, keyboard navigation, unavailable notices, reachable Touch tab and real mouse edit |
+| `qindaqt.settings-input-touch-model` | Ready/last-known admission, confirmed post-commit slider coalescing, refusal/conflict/uncertainty, external refresh and owner replacement over a fake Settings1 transport |
+| `qindaqt.settings-input-touch-section` | Offscreen Touch section: initial notice, control gating, real slider gestures and authoritative readback |
 | `qindaqt.settings-input-tablet-model` | Grouping a pen with its pad, selection surviving a refresh, deep-link selection, capability gating, the mapping write order, a refused write, the area helpers, reset |
 | `qindaqt.settings-input-tablet-page` | Offscreen Pen & tablet destination: every control for a capable tablet, unsupported controls hidden, the empty and degraded states, the deep link, and a proof that the loaded QML plugin is this build's and not the installed one |
 | `qindaqt.services-tablet-devices-port` | Tablet listing and hotplug against a fake KWin on a private bus: only tablets, flattened `(dd)`/`(dddd)` structs, typed writes, the closed writable table |
