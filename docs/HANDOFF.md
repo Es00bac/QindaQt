@@ -12,9 +12,14 @@ for the Default Applications integration. None of this has been deployed to a
 live desktop; physical KWin hotplug and live file-open/watcher timing are still
 unqualified.
 
-A Voice policy candidate was rejected because an Off conflict could briefly
-restart listening from a stale snapshot. The same worker is repairing it and
-must obtain a second independent review before integration. Manual network
+Voice is integrated at `6a2d9e2d` and `58ca80c7` after independent
+re-review accepted the repaired Off-conflict behavior. The combined shell,
+Settings and console build passed, as did 9/9 focused, route and private-bus
+interop tests, strict MkDocs and the 375-page link validator. The original
+review correctly found that a conflicting Off write could restart listening
+from a stale snapshot; the model now holds local withdrawal through conflict
+or uncertainty until sufficiently fresh owner-pinned readback. Physical
+microphone and nested-shell qualification remain open. Manual network
 audio, tabbed Audio Settings and audio-wheel controls are active independent
 slices; synchronized multichannel playback is a later milestone that needs
 latency and channel-mapping proof. See the current

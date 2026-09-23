@@ -21,8 +21,12 @@ integrated in the qinda source tree, not installed into a live session:
   recorded in [Handoff](HANDOFF.md); a real KWin hotplug session remains to
   qualify.
 
-Voice Off policy, Startup, Streaming, asynchronous reporting, service
-capabilities and route coverage remain open. The Audio Settings tab layout,
+Voice Off policy and draft apply are also integrated in source (`6a2d9e2d`,
+`58ca80c7`), after a rejected first candidate was repaired and independently
+accepted. The combined Voice build and 9/9 focused, route and private-bus
+interop rows pass. Physical microphone and nested-shell behavior remain to
+qualify. Startup, Streaming, asynchronous reporting, service capabilities and
+route coverage remain open. The Audio Settings tab layout,
 manual LAN audio route and Settings/applet wheel behavior are separate active
 slices. The audit and acceptance plan are staged on qinda under
 `/tmp/qindaqt-settings-audit-2026-09-23/`.
