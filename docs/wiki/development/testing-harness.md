@@ -1535,7 +1535,7 @@ ctest --test-dir build/dev \
   -R '^qindaqt\.appearance-(values|preview|settings-model|page)$' \
   --output-on-failure
 ctest --test-dir build/dev \
-  -R '^qindaqt\.settings-app-(offscreen|rejects-unknown-route|desktop-identity|route-construction|installed-routes)$' \
+  -R '^qindaqt\.settings-app-' \
   --output-on-failure
 ```
 
@@ -1552,13 +1552,17 @@ desktop-identity row is non-vacuous: it checks source and desktop-entry/install
 contracts and requires the freshly built executable to embed
 `org.qindaqt.Settings` before any window construction.
 
-Two Settings application rows close the executable/package boundary. The
-full-root row launches both routes with only the active model and an unavailable
-private bus; each must remain constructed until the bounded harness timeout.
-The installed row stages the explicit `SettingsAppearanceRuntime` component,
-removes host display/Wayland/QML/library overrides, and repeats both launches.
-It proves the installed `lib/qt6/qml` import root, relative Tokens RUNPATH,
-complete Controls/Tokens/Appearance payload, and merged built-in theme search.
+The Settings application rows close the executable/package boundary. The
+route-construction row enumerates all registered routes and launches each
+under private session and system bus loss; the active Loader must report a
+ready page or its registry-declared unavailable diagnostic before the bounded
+timeout. Separate negative rows reject a resident route without that witness
+and a diagnostic Loader impersonating an available page. The installed row
+stages the explicit `SettingsAppearanceRuntime` component, removes host
+display/Wayland/QML/library overrides, and checks the complete registered
+route inventory from the relocated prefix. It also proves the installed
+`lib/qt6/qml` import root, relative Tokens RUNPATH, complete
+Controls/Tokens/Appearance payload, and merged built-in theme search.
 
 This is private fake-transport, sanitized installed-runtime, and offscreen
 software-renderer evidence. It
@@ -1747,7 +1751,8 @@ The composition treats an unreachable session bus as an expected degraded
 state: it logs the Settings1 start failure at info level on the
 `qindaqt.settings.color.composition` category and presents unavailable
 truth through the model, so the warning-fatal in-process `Main.qml` host
-rows (`qindaqt.settings-navigation-page`,
+rows (`qindaqt.settings-navigation-layout`,
+`qindaqt.settings-navigation-interaction`,
 `qindaqt.settings-customize-window-lifecycle`, and
 `qindaqt.settings-bluetooth-window-close`) also pin both bus addresses and
 stay green with no bus reachable.
@@ -1790,19 +1795,22 @@ regressions, and component-only package boundary are selected with:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure \
-  -R '^qindaqt\.(settings-(route-registry|navigation-controller|navigation-page)|settings-app-(offscreen|rejects-(unknown-route|missing-theme)|desktop-identity|route-construction|installed-routes))$'
+  -R '^qindaqt\.settings-(route-registry|navigation-(controller|layout|interaction))$'
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.settings-app-'
 ```
 
-The three S1 rows cover bounded descriptors, invalid component/availability
-truth, duplicates and capacity, deterministic route/component projection,
+The registry, controller, layout, and interaction rows cover bounded
+descriptors, invalid component/availability truth, duplicates and capacity,
+deterministic route/component projection,
 unknown-selection preservation, previous/next/index behavior, 720×520 wide
 and 440×360 compact presentation, exactly one active route Loader, real
 scene-graph delegates, route switching, PageTabList/PageTab/selected semantics,
 Escape/Tab focus paths, fixed shortcuts, and accessible fail-closed notices.
-The existing rows add Notifications behavior, multiple hostile CLI intent
-forms, desktop identity, all 21 registered route roots under private session/system-bus loss with
-active-Loader witnesses,
-one missing-theme poison that requires pre-QML exit 3, and a relocated install
+The interaction row also covers Notifications behavior. The application
+rows cover multiple hostile CLI intent forms, desktop identity, all 21
+registered route roots under private session/system-bus loss with active-Loader
+witnesses, one missing-theme poison requiring pre-QML exit 3, and a relocated install
 staged with only `SettingsAppearanceRuntime`. The installed row also withholds
 its required Appearance QML module while the developer tree remains present,
 requires root-construction failure, repeats the poison for Network and Audio,

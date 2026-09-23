@@ -167,14 +167,14 @@ and applies per key from fresh snapshots; the reserved
 (ADR-0210).
 
 `SettingsRouteHost` instantiates exactly one active page. Wide and compact
-hosts coexist so the window can cross the responsive threshold, but the
-inactive host's twelve route Loaders are all inactive. The Accessibility
-inactive host's thirteen route Loaders are all inactive. The Accessibility
-Loader additionally requires its route model; a host composed without one
-shows the explicit unavailable notice instead of binding a page to null. The
+hosts coexist so the window can cross the responsive threshold, but every
+Loader in the inactive host stays inactive. The Accessibility Loader
+additionally requires its route model; a host composed without one shows the
+explicit unavailable notice instead of binding a page to null. The
 Windows & workspaces loader lives in its own file and, like Input, binds the
-page to the route's composition singleton inside its component. Switching layouts or routes
-cannot duplicate a page, its focus side effects, or its settings bindings.
+page to the route's composition singleton inside its component. Switching
+layouts or routes cannot duplicate a page, its focus side effects, or its
+settings bindings.
 Unknown component keys and unavailable descriptors select one explicit
 `DegradedNotice`; no route falls back to another domain page.
 
@@ -243,18 +243,20 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure \
-  -R '^qindaqt\.(settings-(route-registry|navigation-controller|navigation-page)|settings-app-(rejects-(unknown-route|missing-theme)|desktop-identity|route-construction|installed-routes))$'
+  -R '^qindaqt\.settings-(route-registry|navigation-(controller|layout|interaction))$'
+ctest --test-dir build/dev --output-on-failure \
+  -R '^qindaqt\.settings-app-'
 ```
 
 - registry/controller tests cover hostile bounds, duplicates/capacity,
   component mapping, deterministic order, unknown selection, history,
   traversal, and unavailable truth;
-- the offscreen navigation row proves 720×520 wide and 440×360 compact layout,
-  mutually exclusive page construction, route switching, shortcut and focus
-  paths, PageTab semantics, selected state, and fail-closed alerts; it is
-  registered with `QT_FATAL_WARNINGS=1`, so any QML warning emitted while
-  constructing the host or a route page aborts the row instead of passing
-  silently. The target also lists Power's Q_OBJECT screen-lock fixture
+- the offscreen navigation layout and interaction rows prove 720×520 wide
+  and 440×360 compact layout, mutually exclusive page construction, route
+  switching, shortcut and focus paths, PageTab semantics, selected state, and
+  fail-closed alerts; both use `QT_FATAL_WARNINGS=1`, so a QML warning during
+  host or route construction aborts the row. The layout target also lists
+  Power's Q_OBJECT screen-lock fixture
   header, whose stub preferences the host injects while Color is selected,
   as an explicit source so AUTOMOC generates its Qt meta-object; without
   that registration the target fails to link. The child-process construction
