@@ -4,7 +4,7 @@ The `datetime` route is QindaQt Settings' clock and region page. It is the
 thirteenth built-in route and is registered **last**, so no existing route's
 index moves — shortcut and traversal order depend on that.
 
-Its decision is [ADR-0211](../adr/0211-the-clock-and-region-page-acts-on-the-platforms-own-services.md).
+Its platform boundary is [ADR-0211](../adr/0211-the-clock-and-region-page-acts-on-the-platforms-own-services.md); [ADR-0249](../adr/0249-confirm-week-start-writes-against-settings1.md) defines the week-start outcome contract.
 
 ## What it changes, and what it only shows
 
@@ -13,7 +13,7 @@ Its decision is [ADR-0211](../adr/0211-the-clock-and-region-page-acts-on-the-pla
 | Time zone | `org.freedesktop.timedate1` `SetTimezone` | yes, from the list the platform itself provides |
 | Set automatically | `org.freedesktop.timedate1` `SetNTP` | yes, when `CanNTP` |
 | Clock synchronization | `NTP` / `NTPSynchronized` | read-only status |
-| First day of the week | Settings1 `services.calendarWeekStart` | yes |
+| First day of the week | Settings1 `services.calendarWeekStart` | only with a fresh, admissible Settings1 baseline |
 | System locale | `org.freedesktop.locale1` `Locale` | **read-only** |
 
 Two things PLAN.md grouped under "Date, time & region" are deliberately not
@@ -46,6 +46,29 @@ and a refusal comes back as a D-Bus error the page reports.
 - `PropertiesChanged` on both services is subscribed, so a change made with
   `timedatectl` or another settings application shows up here too.
 
+## First day of the week confirms before it moves
+
+The Calendar reads `services.calendarWeekStart`, and this route edits precisely
+that one Settings1 key. The picker displays the last confirmed value. It is
+disabled until the client has a fresh snapshot from its current exact owner and
+no request or write blocks admission. A retained value during owner replacement
+or a degraded/refreshing client remains visible for reference but is not
+editable. The calendar preference has its own availability card even when the
+system clock service is unavailable.
+
+A submitted change shows a pending card without moving the picker. Immediate
+admission refusal, later validation/persistence refusal, revision conflict,
+owner loss, including owner-to-owner replacement while the client remains
+Authenticating, timeout and malformed/lost replies each have a visible result.
+An Applied reply alone is not completion: the picker changes only on a new
+same-owner/epoch snapshot at or above the committed revision. An older snapshot
+keeps the request pending until a bounded readback deadline. A newer snapshot
+with a different value reports a conflict rather than success. An uncertain
+write is never automatically replayed. **Retry reading calendar preference**
+requests a fresh snapshot only, leaving the previous diagnostic visible until
+another explicit edit; the displayed choice always follows the latest
+confirmed value, including external edits.
+
 ## Unavailability is stated
 
 - A clock service that cannot be reached makes the whole page say so, rather
@@ -56,6 +79,7 @@ and a refusal comes back as a D-Bus error the page reports.
   the picker closed — an empty picker looks broken.
 - A Settings1 service that is not ready leaves the first-day-of-week control
   unavailable rather than presenting the schema default as the user's choice.
+  Its Retry action re-reads only and never repeats an uncertain write.
 
 ## Boundaries
 
@@ -84,7 +108,13 @@ only a real change and only a zone the platform offered, a refusal leaving
 every value alone, automatic time without support, the read-only picker, and
 the first-day-of-week preference including a refused write.
 
-Both bus addresses are pointed at a nonexistent socket for that row, so "no
+`qindaqt.settings-week-start-preference` exercises the production adapter
+with an injected fake SettingsTransport: initial absence, exact admission,
+pending and revision-floor readback, refusal, conflict, lost reply, owner
+replacement, external updates, and no replay. `qindaqt.settings-client` checks
+that the public admission preview follows snapshot-request and owner changes.
+
+Both bus addresses are pointed at a nonexistent socket for those rows, so "no
 bus is touched" is enforced rather than intended. **No row calls timedate1** —
 one that did would change the developer's own clock — so an actual timezone
 change through polkit has not been observed and needs an installed build.

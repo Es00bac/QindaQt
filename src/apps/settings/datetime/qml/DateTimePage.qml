@@ -19,6 +19,8 @@ T.Page {
 
     readonly property Item firstFocusTarget: timeZoneBox.enabled ? timeZoneBox
                                            : automaticTimeSwitch.enabled ? automaticTimeSwitch
+                                           : weekStartBox.enabled ? weekStartBox
+                                           : weekStartRetryButton.visible ? weekStartRetryButton
                                            : root
     readonly property bool compact: width < 560
 
@@ -161,6 +163,42 @@ T.Page {
                     SectionHeader {
                         Layout.fillWidth: true
                         title: qsTr("Region")
+                    }
+
+                    StateCard {
+                        objectName: "dateTimeWeekStartState"
+                        Layout.fillWidth: true
+                        visible: root.dateTimeSettings.weekStartStatusText.length > 0
+                        status: root.dateTimeSettings.weekStartPending
+                                ? StateCard.Busy : StateCard.Information
+                        title: root.dateTimeSettings.weekStartPending
+                               ? qsTr("Saving calendar preference")
+                               : qsTr("Calendar preference unavailable")
+                        message: root.dateTimeSettings.weekStartStatusText
+                    }
+
+                    StateCard {
+                        objectName: "dateTimeWeekStartError"
+                        Layout.fillWidth: true
+                        visible: root.dateTimeSettings.weekStartErrorText.length > 0
+                        status: StateCard.Warning
+                        title: root.dateTimeSettings.weekStartUncertain
+                               ? qsTr("The change could not be confirmed")
+                               : root.dateTimeSettings.weekStartConflict
+                                 ? qsTr("The setting changed elsewhere")
+                                 : qsTr("The change was not made")
+                        message: root.dateTimeSettings.weekStartErrorText
+                    }
+
+                    Button {
+                        id: weekStartRetryButton
+                        objectName: "dateTimeWeekStartRetryButton"
+                        visible: !root.dateTimeSettings.weekStartPending
+                                 && (!root.dateTimeSettings.weekStartEditable
+                                     || root.dateTimeSettings.weekStartErrorText.length > 0)
+                        text: qsTr("Retry reading calendar preference")
+                        accessibleDescription: qsTr("Read the current first day of the week again without repeating a change")
+                        onClicked: root.dateTimeSettings.retryWeekStart()
                     }
 
                     FormRow {

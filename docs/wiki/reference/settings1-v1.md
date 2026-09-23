@@ -73,6 +73,15 @@ with revision-before/after, the exact known-key map or UnknownKey empty-map
 shape, and its bounded, deduplicated changed keys. A contradiction is an
 uncertain write followed by resync, never a replay.
 
+The public `SettingsClient::canSetUserValue(key)` is a same-thread admission
+preview for a known-valid value. It uses the same Ready, confirmed-snapshot,
+scoped-key, no-request/no-write, and nonexhausted-token guard as
+`setUserValue()`. `writeAdmissionChanged()` invalidates this preview when
+readiness or request activity changes. Callers must still check the actual
+mutation result because value validation and later state changes may refuse it.
+It does not imply persistence or readback success. See
+[ADR-0249](../adr/0249-confirm-week-start-writes-against-settings1.md).
+
 `SettingsChanged(epoch, revision, changedKeys)` is an invalidation hint. A
 client subscribed to the exact unique sender fetches a complete scoped
 snapshot; it does not assemble authority from signals or chase a signal's

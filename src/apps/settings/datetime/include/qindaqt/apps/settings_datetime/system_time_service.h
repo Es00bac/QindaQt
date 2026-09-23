@@ -62,10 +62,13 @@ signals:
 
 using SystemTimeServicePtr = std::unique_ptr<SystemTimeService>;
 
-// AGENT-CONTRACT: the first-day-of-week preference, which is a QindaQt
-// setting rather than a system one -- `services.calendarWeekStart`, already
-// read by the Calendar's month grid. Kept behind its own seam so the model is
-// testable without a session bus.
+// AGENT-CONTRACT: a single-key Settings1 preference consumed by DateTime and
+// Calendar. The value is always the last confirmed snapshot; writeState and
+// diagnostic describe the initiating operation separately. Implementations
+// own their asynchronous work for their QObject lifetime and never replay an
+// uncertain write. All calls and signals are confined to the object's thread.
+enum class WeekStartWriteState { Idle, Pending, Refused, Conflict, Uncertain };
+
 class WeekStartPreference : public QObject {
   Q_OBJECT
 
@@ -73,10 +76,17 @@ public:
   using QObject::QObject;
   ~WeekStartPreference() override = default;
 
-  // "locale", "monday" or "sunday".
+  // "locale", "monday" or "sunday". editable() is an admission preview,
+  // not a guarantee against a later service change; setWeekStart reports
+  // synchronous refusal and completion arrives through weekStartChanged().
   [[nodiscard]] virtual QString weekStart() const = 0;
   [[nodiscard]] virtual bool editable() const = 0;
-  virtual void setWeekStart(const QString &weekStart) = 0;
+  [[nodiscard]] virtual WeekStartWriteState writeState() const = 0;
+  [[nodiscard]] virtual QString diagnostic() const = 0;
+  [[nodiscard]] virtual QString availabilityText() const = 0;
+  virtual bool setWeekStart(const QString &weekStart) = 0;
+  // Retry is read-only reconciliation, never a replay of the last write.
+  virtual void refresh() = 0;
 
 signals:
   void weekStartChanged();
