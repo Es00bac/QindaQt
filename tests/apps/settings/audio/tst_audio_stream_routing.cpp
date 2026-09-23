@@ -17,6 +17,8 @@ private Q_SLOTS:
   void playbackMoveUsesExactHandlesAndAuthoritativeReadback();
   void recordingChoicesAndCapabilityRefusals();
   void removalAndOwnerReplacementRetireOldChoices();
+  void simultaneousMoveReadbacks_data();
+  void simultaneousMoveReadbacks();
 
 private:
   struct Fixture final {
@@ -229,6 +231,65 @@ void AudioStreamRoutingTest::removalAndOwnerReplacementRetireOldChoices() {
            (Handle{12, 30}));
   QCOMPARE(f.transport.operations.constLast().request.secondary,
            (Handle{12, 14}));
+}
+
+void AudioStreamRoutingTest::simultaneousMoveReadbacks_data() {
+  QTest::addColumn<bool>("playbackMismatch");
+  QTest::newRow("playback-mismatch") << true;
+  QTest::newRow("capture-mismatch") << false;
+}
+
+void AudioStreamRoutingTest::simultaneousMoveReadbacks() {
+  QFETCH(bool, playbackMismatch);
+  Fixture f;
+  Snapshot start = readyAudioSnapshot(11, 3);
+  Device secondInput = start.inputs.first();
+  secondInput.handle.serial = 22;
+  secondInput.name = QStringLiteral("usb-mic");
+  secondInput.description = QStringLiteral("USB Microphone");
+  secondInput.isDefault = false;
+  start.inputs.append(secondInput);
+  QVERIFY(validateSnapshot(start).accepted);
+  f.publish(start);
+
+  const auto issue = [&](quint64 streamSerial, quint64 deviceSerial) {
+    if (!f.model.moveStream(streamSerial, deviceSerial)) return false;
+    const auto operation = f.transport.operations.constLast();
+    OperationResult result = audioResult(OperationKind::MoveStream,
+                                         OperationStatus::Succeeded, 11, 3);
+    result.observedRevision = 4;
+    f.transport.finish(operation, result);
+    QCoreApplication::processEvents();
+    return true;
+  };
+  if (playbackMismatch) {
+    QVERIFY(issue(30, 12));
+    QVERIFY(issue(40, 22));
+  } else {
+    QVERIFY(issue(40, 22));
+    QVERIFY(issue(30, 12));
+  }
+  QCOMPARE(f.transport.fetches.size(), 3); // initial, fixture rev3, shared readback
+  Snapshot after = start;
+  after.revision = 4;
+  const int failedIndex = playbackMismatch ? 0 : 1;
+  const int succeededIndex = 1 - failedIndex;
+  after.streams[succeededIndex].target = {
+      .epoch = 11, .serial = playbackMismatch ? quint64(22) : quint64(12)};
+  QVERIFY(validateSnapshot(after).accepted);
+  f.transport.reply(f.transport.fetches.constLast(), after);
+  QTRY_VERIFY2(f.model.errorText().contains(QStringLiteral("did not take effect")),
+               qPrintable(f.model.operationStatusText()));
+  QVERIFY(!f.model.operationStatusText().contains(QStringLiteral("device changed")));
+  const auto rows = f.model.streams();
+  QVERIFY(rows.at(failedIndex).toMap().value(QStringLiteral("routeErrorText"))
+              .toString().contains(QStringLiteral("did not take effect")));
+  QVERIFY(rows.at(succeededIndex).toMap().value(QStringLiteral("routeErrorText"))
+              .toString().isEmpty());
+  QCOMPARE(rows.at(0).toMap().value(QStringLiteral("targetSerial")).toULongLong(),
+           playbackMismatch ? 10ULL : 12ULL);
+  QCOMPARE(rows.at(1).toMap().value(QStringLiteral("targetSerial")).toULongLong(),
+           playbackMismatch ? 22ULL : 20ULL);
 }
 
 QTEST_MAIN(AudioStreamRoutingTest)

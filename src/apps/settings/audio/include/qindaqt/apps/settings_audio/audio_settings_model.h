@@ -302,6 +302,9 @@ private:
   QHash<quint64, quint64> m_serialByRequestId;
   QHash<quint64, VolumeIntent> m_volumeBySerial;
   QHash<quint64, MoveReadback> m_moveReadbacks;
+  // Readback failures are per stream: a sibling confirmation must not erase one.
+  QHash<quint64, QString> m_moveFailures;
+  QString m_moveFailureOwner;
   quint64 m_moveSnapshotSequence = 0;
   quint64 m_nextMoveGeneration = 1;
   quint64 m_volumeSnapshotSequence = 0;

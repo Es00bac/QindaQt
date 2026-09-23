@@ -106,6 +106,20 @@ void AudioStreamRoutingPageTest::compactPickerKeyboardAndWheel() {
   QCOMPARE(playback->property("displayText").toString(),
            QStringLiteral("Desk Speakers"));
   model.acceptStreamMove = true;
+  auto refusedRow = model.streams.first().toMap();
+  refusedRow.insert(QStringLiteral("routeErrorText"),
+                    QStringLiteral("Selected device did not take effect"));
+  model.streams[0] = refusedRow;
+  Q_EMIT model.viewChanged();
+  auto *routeError = findItem(page, QStringLiteral("audioStreamTargetError_30"));
+  QVERIFY(routeError != nullptr);
+  QTRY_VERIFY(routeError->isVisible());
+  QCOMPARE(routeError->property("text").toString(),
+           QStringLiteral("Selected device did not take effect"));
+  refusedRow.remove(QStringLiteral("routeErrorText"));
+  model.streams[0] = refusedRow;
+  Q_EMIT model.viewChanged();
+  QTRY_VERIFY(!routeError->isVisible());
 
   // An accepted snapshot may reorder the device list. Selection is derived
   // from the target serial, never the previously clicked list index.
