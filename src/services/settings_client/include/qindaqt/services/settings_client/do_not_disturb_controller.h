@@ -8,6 +8,10 @@ namespace QindaQt::Services::SettingsClient {
 class SettingsClient;
 struct CommitOutcome;
 
+// Borrows a same-thread SettingsClient that outlives this controller. Other
+// scoped controls may share its serial lane; only this controller consumes
+// the result of its own admitted DND write. No uncertain write is replayed,
+// and the public QML state retains the last confirmed value.
 class DoNotDisturbController final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged)
@@ -34,7 +38,7 @@ public:
     [[nodiscard]] bool saving() const noexcept { return m_state == State::Saving; }
     [[nodiscard]] bool conflict() const noexcept { return m_state == State::Conflict; }
     [[nodiscard]] bool unavailable() const noexcept { return m_state == State::Unavailable; }
-    [[nodiscard]] bool canToggle() const noexcept { return ready(); }
+    [[nodiscard]] bool canToggle() const noexcept;
     [[nodiscard]] QString statusText() const;
     [[nodiscard]] QString errorText() const;
 
@@ -62,6 +66,9 @@ private:
     bool m_hasBaseline = false;
     bool m_requestedValue = false;
     bool m_hasRequestedValue = false;
+    bool m_commitInFlight = false;
+    QString m_writeOwner;
+    quint64 m_readbackRevision = 0;
     bool m_waitingForCommitSnapshot = false;
     bool m_conflictIntent = false;
 };

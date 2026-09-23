@@ -15,16 +15,27 @@ DoNotDisturbController::DoNotDisturbController(SettingsClient &client, QObject *
 {
     connect(&m_client, &SettingsClient::stateChanged,
             this, &DoNotDisturbController::handleClientState);
+    connect(&m_client, &SettingsClient::ownerChanged,
+            this, &DoNotDisturbController::handleClientState);
     connect(&m_client, &SettingsClient::snapshotChanged,
             this, &DoNotDisturbController::handleSnapshot);
     connect(&m_client, &SettingsClient::commitFinished,
             this, &DoNotDisturbController::handleCommit);
+    connect(&m_client, &SettingsClient::writeInFlightChanged,
+            this, &DoNotDisturbController::stateChanged);
     connect(&m_client, &SettingsClient::commitUncertain, this, [this](const QString &message) {
+        if (!m_commitInFlight) return;
+        m_commitInFlight = false;
         m_waitingForCommitSnapshot = false;
         m_conflictIntent = false;
         m_hasRequestedValue = false;
         setState(State::Unavailable, message.left(512));
     });
+}
+
+bool DoNotDisturbController::canToggle() const noexcept
+{
+    return ready() && m_client.state() == ClientState::Ready && !m_client.writeInFlight();
 }
 
 QString DoNotDisturbController::errorText() const
@@ -50,34 +61,47 @@ QString DoNotDisturbController::statusText() const
 
 bool DoNotDisturbController::requestSet(bool enabled)
 {
-    if (!ready()) {
+    if (!canToggle()) {
         return false;
     }
     // A new explicit write is the dismissal contract for an earlier confirmed
     // rejection diagnostic. Automatic authority refresh never clears it.
-    m_confirmedError.clear();
     m_requestedValue = enabled;
     m_hasRequestedValue = true;
+    m_commitInFlight = true;
+    m_writeOwner = m_client.currentOwner();
+    m_readbackRevision = 0;
     m_waitingForCommitSnapshot = false;
     m_conflictIntent = false;
     QString error;
     if (!m_client.setUserValue(DoNotDisturbKey, enabled, &error)) {
+        m_commitInFlight = false;
         m_hasRequestedValue = false;
-        setState(State::Unavailable, error.left(512));
+        setState(State::Ready, error.left(512));
         return false;
     }
+    m_confirmedError.clear();
     setState(State::Saving);
     return true;
 }
 
 bool DoNotDisturbController::applyMyChoice()
 {
-    if (!conflict() || !m_hasRequestedValue || m_client.state() != ClientState::Ready) {
+    if (!conflict() || !m_hasRequestedValue || m_client.state() != ClientState::Ready
+        || m_client.writeInFlight()) {
         return false;
     }
     const bool requested = m_requestedValue;
+    const QString previousError = m_transientError;
     setState(State::Ready);
-    return requestSet(requested);
+    if (requestSet(requested)) return true;
+    // Admission can still fail while a same-owner snapshot request occupies
+    // the serial lane. Preserve the explicit conflict action and its intent.
+    m_requestedValue = requested;
+    m_hasRequestedValue = true;
+    m_conflictIntent = true;
+    setState(State::Conflict, previousError);
+    return false;
 }
 
 void DoNotDisturbController::retry()
@@ -90,6 +114,11 @@ void DoNotDisturbController::retry()
 
 void DoNotDisturbController::handleClientState()
 {
+    if (m_waitingForCommitSnapshot && m_writeOwner != m_client.currentOwner()) {
+        m_waitingForCommitSnapshot = false;
+        m_hasRequestedValue = false;
+        m_readbackRevision = 0;
+    }
     switch (m_client.state()) {
     case ClientState::Ready:
         // SettingsClient emits snapshotChanged immediately after Ready. Keep
@@ -99,13 +128,23 @@ void DoNotDisturbController::handleClientState()
         }
         break;
     case ClientState::Authenticating:
-        // A retained baseline is not current authority. Replacement/loss must
-        // hide Conflict actions and never leave a stale Saving claim visible.
-        setState(m_hasBaseline ? State::Unavailable : State::Loading,
-                 m_client.lastError());
+        // A same-owner refresh also follows a schedule commit on this client.
+        // Its refusal text belongs to that control, not to Do Not Disturb.
+        if (m_client.snapshot() &&
+            m_client.snapshot()->owner == m_client.currentOwner()) {
+            setState(m_waitingForCommitSnapshot ? State::Saving : State::Loading);
+        } else {
+            setState(m_hasBaseline ? State::Unavailable : State::Loading,
+                     m_client.lastError());
+        }
         break;
     case ClientState::Unavailable:
     case ClientState::Degraded:
+        // A successful commit without confirmable readback is not an active
+        // save. Later recovery may display authority but cannot replay intent.
+        m_waitingForCommitSnapshot = false;
+        m_hasRequestedValue = false;
+        m_readbackRevision = 0;
         setState(State::Unavailable, m_client.lastError());
         break;
     }
@@ -140,6 +179,20 @@ void DoNotDisturbController::handleSnapshot()
         m_hasRequestedValue = false;
     } else if (m_waitingForCommitSnapshot) {
         m_waitingForCommitSnapshot = false;
+        if (m_client.snapshot()->revision < m_readbackRevision) {
+            m_hasRequestedValue = false;
+            m_readbackRevision = 0;
+            setState(State::Unavailable,
+                     QStringLiteral("Do Not Disturb save could not be confirmed"));
+            return;
+        }
+        m_readbackRevision = 0;
+        if (m_enabled != m_requestedValue) {
+            m_conflictIntent = true;
+            setState(State::Conflict,
+                     QStringLiteral("Changed elsewhere; current value reloaded"));
+            return;
+        }
         m_hasRequestedValue = false;
     }
     setState(State::Ready);
@@ -147,8 +200,13 @@ void DoNotDisturbController::handleSnapshot()
 
 void DoNotDisturbController::handleCommit(const CommitOutcome &outcome)
 {
+    // AGENT-GUARD: SettingsClient's completion signal is intentionally
+    // untagged. The other Notifications control shares its serial write lane.
+    if (!m_commitInFlight) return;
+    m_commitInFlight = false;
     if (outcome.status == SettingsProtocol::SettingsWireStatus::Applied) {
         m_waitingForCommitSnapshot = true;
+        m_readbackRevision = outcome.revisionAfter;
         m_conflictIntent = false;
         setState(State::Saving);
         return;
