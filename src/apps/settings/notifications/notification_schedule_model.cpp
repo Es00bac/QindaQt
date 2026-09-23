@@ -40,6 +40,8 @@ NotificationScheduleModel::NotificationScheduleModel(
           &NotificationScheduleModel::handleClientState);
   connect(&m_client, &Services::SettingsClient::SettingsClient::writeInFlightChanged,
           this, &NotificationScheduleModel::viewChanged);
+  connect(&m_client, &Services::SettingsClient::SettingsClient::writeAdmissionChanged,
+          this, &NotificationScheduleModel::viewChanged);
   connect(&m_client, &Services::SettingsClient::SettingsClient::commitFinished,
           this, &NotificationScheduleModel::handleCommit);
   connect(&m_client, &Services::SettingsClient::SettingsClient::commitUncertain,
@@ -48,8 +50,12 @@ NotificationScheduleModel::NotificationScheduleModel(
 }
 
 bool NotificationScheduleModel::canEdit() const {
-  return m_available && m_client.state() == Services::SettingsClient::ClientState::Ready &&
-         !m_pending && !m_client.writeInFlight();
+  // The client can remain Ready while a same-owner snapshot request occupies
+  // its serial lane. All three controls need admission, not just a baseline.
+  return m_available && !m_pending &&
+         m_client.canSetUserValue(QLatin1String(ScheduleKey)) &&
+         m_client.canSetUserValue(QLatin1String(StartKey)) &&
+         m_client.canSetUserValue(QLatin1String(EndKey));
 }
 
 QString NotificationScheduleModel::statusText() const {
