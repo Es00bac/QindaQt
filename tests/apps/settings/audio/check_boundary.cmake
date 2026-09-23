@@ -43,6 +43,11 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool setVbanEnabled(QString name, bool enabled)"
         "Q_INVOKABLE bool saveOutgoingPeer(QString name, QString busId, QString destinationHost, int port)"
         "Q_INVOKABLE bool saveIncomingPeer(QString name, QString sourceIpv4, QString outputNodeName, int port)"
+        # ADR-0252 transfers one bounded sender tuple, never Audio1 authority.
+        "Q_INVOKABLE QVariantList localPeerAddresses()"
+        "Q_INVOKABLE QVariantMap sharePeerCode(QString savedOutgoingName, QString thisComputerIpv4)"
+        "Q_INVOKABLE QVariantMap reviewPeerCode(QString code)"
+        "Q_INVOKABLE bool saveImportedPeer(QString code, QString outputNodeName)"
         "Q_INVOKABLE bool removePeer(QString name)"
         "Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial)"
         "Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial)"
@@ -76,7 +81,8 @@ file(GLOB_RECURSE route_qml LIST_DIRECTORIES false "${route_root}/qml/*.qml")
 foreach(source IN LISTS route_qml)
     file(READ "${source}" content)
     if(content MATCHES "TextEdit|TextArea|TextInput"
-       OR (content MATCHES "TextField" AND NOT source MATCHES "/AudioPeerSection\\.qml$"))
+       OR (content MATCHES "TextField" AND NOT source MATCHES "/AudioPeerSection\\.qml$"
+           AND NOT source MATCHES "/AudioPeerConnectionCard\\.qml$"))
         message(FATAL_ERROR
             "Audio Settings QML gained text entry outside the bounded peer editor in ${source}")
     endif()

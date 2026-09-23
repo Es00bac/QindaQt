@@ -66,6 +66,34 @@ The public typed [Audio1 schema-12 contract](../reference/audio1-v12.md),
 [ADR-0246](../adr/0246-configure-manual-audio-peers-through-audio1.md)
 own the cross-process behavior.
 
+### Connect two computers with codes
+
+On the receiving computer, choose a listed local address in **Connect with a
+code** and select **Copy this address**. Give that address to the sending
+computer. There, save a **Send to a computer** stream with its mixer bus,
+the copied destination address, a name, and a port. Then choose that saved send
+stream and one of the sending computer's listed local addresses.
+If the other computer reaches it through a different network or VPN, enter that
+IPv4 address instead. Use **Refresh addresses** after changing networks. Select **Make connection code**, then **Copy code**. A generated code stays available across harmless audio refreshes, but a changed or removed saved send stream or a replaced Audio1 service revokes it; make a new code after either change.
+
+On the second computer, paste the code and select **Review connection**. Check
+the sender address, name, and port, choose the exact physical speakers to use,
+and acknowledge the trusted-network warning. Select **Save receive
+permission**. Wait for the disabled stream to appear, then select **Enable**
+on its row. To send audio back, save a send stream on the second computer and
+repeat the code flow in the opposite direction. The original manual fields
+remain available.
+
+A code is configuration text, not a security key or permission. VBAN audio is
+open local-network UDP without encryption or sender authentication; use this
+only on a trusted network. The receiver admits one exact sender IPv4 address
+and never substitutes another speaker if the selected output disappears.
+A local **active** label proves the selected local graph links, not that the
+other computer received packets or that speakers played audibly. Both
+computers need Audio1 schema 12 for this setup. The Settings-only transfer
+format and its validation are recorded in
+[ADR-0252](../adr/0252-transfer-manual-stereo-peers-with-connection-code.md).
+
 ## Truth shown by the route
 
 The Devices tab presents the current public snapshot in three groups:

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "stub_audio_fixture.h"
+#include "src/apps/settings/audio/audio_peer_code.h"
 
 #include <qindaqt/services/audio_protocol/audio_gain.h>
 
@@ -253,6 +254,51 @@ public:
     savedPeerPort = port;
     savedPeerOutgoing = false;
     return true;
+  }
+  Q_INVOKABLE QVariantList localPeerAddresses() const {
+    return {QVariantMap{{QStringLiteral("address"), QStringLiteral("192.0.2.10")},
+                        {QStringLiteral("label"), QStringLiteral("192.0.2.10")}}};
+  }
+  Q_INVOKABLE QVariantMap sharePeerCode(QString name, QString address) const {
+    for (const QVariant &value : consoleVban) {
+      const QVariantMap row = value.toMap();
+      if (!row.value(QStringLiteral("outgoing")).toBool()
+          || row.value(QStringLiteral("name")).toString() != name)
+        continue;
+      const QString code = encodePeerCode({name, address,
+          row.value(QStringLiteral("port")).toUInt()});
+      if (!code.isEmpty()) {
+        const QString fingerprint = serviceOwner + QStringLiteral("|")
+            + QString::number(serviceEpoch) + QStringLiteral("|")
+            + name + QStringLiteral("|")
+            + row.value(QStringLiteral("busId")).toString() + QStringLiteral("|")
+            + row.value(QStringLiteral("host")).toString() + QStringLiteral("|")
+            + row.value(QStringLiteral("port")).toString();
+        return {{QStringLiteral("valid"), true}, {QStringLiteral("code"), code},
+                {QStringLiteral("name"), name},
+                {QStringLiteral("sourceIpv4"), address},
+                {QStringLiteral("fingerprint"), fingerprint}};
+      }
+    }
+    return {{QStringLiteral("valid"), false},
+            {QStringLiteral("reason"), QStringLiteral("invalid-sender")}};
+  }
+  Q_INVOKABLE QVariantMap reviewPeerCode(QString code) const {
+    PeerCode peer;
+    QString reason;
+    if (!decodePeerCode(code.trimmed(), &peer, &reason))
+      return {{QStringLiteral("valid"), false}, {QStringLiteral("reason"), reason}};
+    return {{QStringLiteral("valid"), true},
+            {QStringLiteral("name"), peer.name},
+            {QStringLiteral("sourceIpv4"), peer.sourceIpv4},
+            {QStringLiteral("port"), peer.port}};
+  }
+  Q_INVOKABLE bool saveImportedPeer(QString code, QString output) {
+    const QVariantMap review = reviewPeerCode(code);
+    if (!review.value(QStringLiteral("valid")).toBool()) return false;
+    return saveIncomingPeer(review.value(QStringLiteral("name")).toString(),
+                            review.value(QStringLiteral("sourceIpv4")).toString(),
+                            output, review.value(QStringLiteral("port")).toInt());
   }
   Q_INVOKABLE bool removePeer(QString name) {
     removedPeerName = name;
