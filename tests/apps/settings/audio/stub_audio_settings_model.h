@@ -267,8 +267,18 @@ public:
         continue;
       const QString code = encodePeerCode({name, address,
           row.value(QStringLiteral("port")).toUInt()});
-      if (!code.isEmpty())
-        return {{QStringLiteral("valid"), true}, {QStringLiteral("code"), code}};
+      if (!code.isEmpty()) {
+        const QString fingerprint = serviceOwner + QStringLiteral("|")
+            + QString::number(serviceEpoch) + QStringLiteral("|")
+            + name + QStringLiteral("|")
+            + row.value(QStringLiteral("busId")).toString() + QStringLiteral("|")
+            + row.value(QStringLiteral("host")).toString() + QStringLiteral("|")
+            + row.value(QStringLiteral("port")).toString();
+        return {{QStringLiteral("valid"), true}, {QStringLiteral("code"), code},
+                {QStringLiteral("name"), name},
+                {QStringLiteral("sourceIpv4"), address},
+                {QStringLiteral("fingerprint"), fingerprint}};
+      }
     }
     return {{QStringLiteral("valid"), false},
             {QStringLiteral("reason"), QStringLiteral("invalid-sender")}};

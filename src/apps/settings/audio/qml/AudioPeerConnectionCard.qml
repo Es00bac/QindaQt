@@ -28,6 +28,21 @@ FormSurface {
     readonly property var senders: root.definitions.filter(row => row.outgoing)
     property var addresses: []
     Component.onCompleted: refreshAddresses()
+    Connections {
+        target: root.audioSettings
+        function onViewChanged() { root.validateSharedCode() }
+    }
+
+    function validateSharedCode() {
+        if (shared.valid !== true) return
+        const current = audioSettings.sharePeerCode(shared.name, shared.sourceIpv4)
+        // AGENT-GUARD: a refresh may reorder rows, but an edited/removed
+        // sender or a new Audio1 owner must revoke an already copied code.
+        if (current.valid !== true || current.fingerprint !== shared.fingerprint) {
+            shared = ({})
+            notice = qsTr("The saved send stream changed. Make a new code.")
+        }
+    }
 
     function refreshAddresses() {
         addresses = audioSettings.localPeerAddresses()

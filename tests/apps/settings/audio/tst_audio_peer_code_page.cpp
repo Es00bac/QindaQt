@@ -38,6 +38,7 @@ class AudioPeerCodePageTest final : public QObject {
 private Q_SLOTS:
   void initTestCase();
   void guidedPeerCodeFlowAtCompactAndWideSizes();
+  void generatedCodeTracksSavedSenderAndAudioOwner();
 private:
   std::unique_ptr<QQuickView> m_view;
   std::unique_ptr<StubAudioSettingsModel> m_model;
@@ -207,6 +208,58 @@ void AudioPeerCodePageTest::guidedPeerCodeFlowAtCompactAndWideSizes() {
 
 
   }
+}
+
+void AudioPeerCodePageTest::generatedCodeTracksSavedSenderAndAudioOwner() {
+  auto [guard, page] = createPage(QSize(420, 320));
+  QVERIFY(page != nullptr);
+  page->setProperty("activeTab", 2);
+  QTRY_COMPARE(page->property("activeTab").toInt(), 2);
+  auto *generate = findItem(page, QStringLiteral("audioPeerCodeGenerate"));
+  auto *shared = findItem(page, QStringLiteral("audioPeerCodeShare"));
+  auto *copy = findItem(page, QStringLiteral("audioPeerCodeCopy"));
+  auto *notice = findItem(page, QStringLiteral("audioPeerCodeNotice"));
+  QVERIFY(generate && shared && copy && notice);
+  const auto makeCode = [&] {
+    generate->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_COMPARE(m_view->activeFocusItem(), generate);
+    QTest::keyClick(m_view.get(), Qt::Key_Space);
+    QTRY_VERIFY(shared->isVisible());
+    QTRY_VERIFY(copy->property("available").toBool());
+  };
+  makeCode();
+  const QString initialCode = shared->property("text").toString();
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  QVERIFY(shared->isVisible());
+  QVERIFY(copy->property("available").toBool());
+  QCOMPARE(shared->property("text").toString(), initialCode);
+
+  auto sender = m_model->consoleVban[0].toMap();
+  sender.insert(QStringLiteral("host"), QStringLiteral("192.0.2.42"));
+  m_model->consoleVban[0] = sender;
+  Q_EMIT m_model->viewChanged();
+  QTRY_VERIFY(!shared->isVisible());
+  QVERIFY(!copy->property("available").toBool());
+  QVERIFY(notice->property("text").toString().contains(QStringLiteral("changed")));
+  sender.insert(QStringLiteral("host"), QStringLiteral("192.0.2.1"));
+  m_model->consoleVban[0] = sender;
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  QVERIFY(!copy->property("available").toBool()); // Revocation is permanent.
+
+  makeCode();
+  m_model->serviceOwner = QStringLiteral(":1.8");
+  ++m_model->serviceEpoch;
+  Q_EMIT m_model->viewChanged();
+  QTRY_VERIFY(!shared->isVisible());
+  QVERIFY(!copy->property("available").toBool());
+
+  makeCode();
+  m_model->consoleVban.clear();
+  Q_EMIT m_model->viewChanged();
+  QTRY_VERIFY(!shared->isVisible());
+  QVERIFY(!copy->property("available").toBool());
 }
 
 QTEST_MAIN(AudioPeerCodePageTest)

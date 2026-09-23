@@ -11,6 +11,9 @@
 
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
+#include <QtCore/QJsonArray>
+#include <QtCore/QJsonDocument>
+
 namespace QindaQt::Apps::SettingsAudio
 {
 
@@ -123,12 +126,23 @@ QVariantMap AudioSettingsModel::sharePeerCode(QString savedOutgoingName,
     for (const VbanStream &stream : m_client.snapshot().console.vban) {
         if (!stream.outgoing || stream.name != savedOutgoingName) continue;
         const QString code = encodePeerCode({stream.name, thisComputerIpv4, stream.port});
-        if (!code.isEmpty())
+        if (!code.isEmpty()) {
+            // AGENT-GUARD: this is UI-only identity, not part of the shared code.
+            // Exact owner/epoch and saved sender configuration must still match
+            // when the user copies; a snapshot revision alone is too volatile.
+            const QJsonArray identity{serviceOwner(),
+                                      QString::number(serviceEpoch()),
+                                      stream.name, stream.busId, stream.host,
+                                      static_cast<int>(stream.port)};
+            const QString fingerprint = QString::fromUtf8(
+                QJsonDocument(identity).toJson(QJsonDocument::Compact));
             return {{QStringLiteral("valid"), true},
                     {QStringLiteral("code"), code},
                     {QStringLiteral("name"), stream.name},
                     {QStringLiteral("sourceIpv4"), thisComputerIpv4},
-                    {QStringLiteral("port"), stream.port}};
+                    {QStringLiteral("port"), stream.port},
+                    {QStringLiteral("fingerprint"), fingerprint}};
+        }
         break;
     }
     return {{QStringLiteral("valid"), false},
