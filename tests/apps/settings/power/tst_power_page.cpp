@@ -409,6 +409,57 @@ void PowerPageTest::idleDisplayControlsRespectThePolicy() {
   QTRY_COMPARE(selector->property("currentText").toString(),
                QStringLiteral("15 minutes"));
   QCOMPARE(m_idleDisplay->minutesCalls, 0);
+
+  m_idleDisplay->canEdit = false;
+  m_idleDisplay->busy = true;
+  m_idleDisplay->statusText = QStringLiteral("Checking saved display-off preference");
+  Q_EMIT m_idleDisplay->changed();
+  QTRY_VERIFY(!toggle->isEnabled());
+  QTRY_VERIFY(!selector->isEnabled());
+  QCOMPARE(toggle->property("checked").toBool(), true);
+  m_idleDisplay->canEdit = true;
+  m_idleDisplay->busy = false;
+  Q_EMIT m_idleDisplay->changed();
+  QTRY_VERIFY(toggle->isEnabled());
+
+  m_idleDisplay->acceptEnabled = false;
+  QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, toggleCenter);
+  QTRY_COMPARE(m_idleDisplay->enabledCalls, 2);
+  QTRY_VERIFY(toggle->property("checked").toBool());
+  QCOMPARE(m_idleDisplay->enabled, true);
+  auto *error = findItem(page, QStringLiteral("powerIdleDisplayError"));
+  auto *retry = findItem(page, QStringLiteral("powerIdleDisplayRetry"));
+  QVERIFY(error != nullptr && retry != nullptr);
+  QTRY_VERIFY(error->isVisible());
+  QTRY_VERIFY(retry->isVisible());
+  QCOMPARE(retry->property("text").toString(),
+           QStringLiteral("Refresh display preference"));
+
+  // A refused keyboard selection must return to confirmed policy, rather
+  // than leave the ComboBox showing the transient user choice.
+  m_idleDisplay->acceptMinutes = false;
+  selector->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), selector);
+  QTest::keyClick(m_view.get(), Qt::Key_Space);
+  QTest::keyClick(m_view.get(), Qt::Key_Down);
+  QTest::keyClick(m_view.get(), Qt::Key_Return);
+  QTRY_COMPARE(m_idleDisplay->minutesCalls, 1);
+  QCOMPARE(m_idleDisplay->minutes, 15);
+  QTRY_COMPARE(selector->property("currentText").toString(),
+               QStringLiteral("15 minutes"));
+  QVERIFY(error->isVisible());
+
+  m_idleDisplay->hasConfirmed = false;
+  m_idleDisplay->available = false;
+  m_idleDisplay->canEdit = false;
+  m_idleDisplay->statusText = QStringLiteral("Display-off preference not confirmed");
+  Q_EMIT m_idleDisplay->changed();
+  QTRY_VERIFY(!toggle->isVisible());
+  QTRY_VERIFY(!selector->isVisible());
+  auto *status = findItem(page, QStringLiteral("powerIdleDisplayStatus"));
+  QVERIFY(status != nullptr);
+  QCOMPARE(status->property("text").toString(),
+           QStringLiteral("Display-off preference not confirmed"));
 }
 
 void PowerPageTest::resumeLockAndGraceRowsBindAndApply() {
