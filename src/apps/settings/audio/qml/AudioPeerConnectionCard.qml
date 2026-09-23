@@ -20,6 +20,11 @@ FormSurface {
     property var shared: ({})
     property var reviewed: ({})
     property string notice: ""
+    property string selectedOutputName: ""
+    onOutputsChanged: {
+        if (selectedOutputName.length > 0 && outputIndex(selectedOutputName) < 0)
+            selectedOutputName = ""
+    }
     readonly property var senders: root.definitions.filter(row => row.outgoing)
     property var addresses: []
     Component.onCompleted: refreshAddresses()
@@ -30,7 +35,12 @@ FormSurface {
     readonly property Item firstActionTarget: senderChoice.enabled ? senderChoice
                                               : senderAddress.enabled ? senderAddress : null
     readonly property Item lastActionTarget: importSave
-    onSendersChanged: shared = ({})
+
+    function outputIndex(nodeName) {
+        for (let i = 0; i < outputs.length; ++i)
+            if (outputs[i].nodeName === nodeName) return i
+        return -1
+    }
 
     function reasonText(reason) {
         if (reason === "foreign-code")
@@ -126,17 +136,21 @@ FormSurface {
                 root.notice = root.shared.valid ? "" : root.reasonText(root.shared.reason)
             }
         }
-        Tk.TextField {
-            id: shareCode
-            objectName: "audioPeerCodeShare"
+        Item {
             Layout.fillWidth: true
-            Layout.preferredWidth: 0
             Layout.minimumWidth: 0
+            implicitHeight: shareCode.implicitHeight
             visible: root.shared.valid === true
-            readOnly: true
-            selectByMouse: true
-            text: root.shared.code ?? ""
-            Accessible.name: qsTr("Connection code to copy to the other computer")
+            clip: true
+            Tk.TextField {
+                id: shareCode
+                objectName: "audioPeerCodeShare"
+                anchors.fill: parent
+                readOnly: true
+                selectByMouse: true
+                text: root.shared.code ?? ""
+                Accessible.name: qsTr("Connection code to copy to the other computer")
+            }
         }
         Tk.Button {
             id: copy
@@ -154,21 +168,26 @@ FormSurface {
             text: qsTr("On the receiving computer")
             font.weight: Font.DemiBold
         }
-        Tk.TextField {
-            id: pastedCode
-            objectName: "audioPeerCodePaste"
+        Item {
             Layout.fillWidth: true
-            Layout.preferredWidth: 0
             Layout.minimumWidth: 0
-            placeholderText: qsTr("Paste connection code")
-            tooltip: qsTr("The code includes the sender's name, address and port.")
-            enabled: root.audioSettings.canManagePeerStreams
-            onTextChanged: {
-                root.reviewed = ({})
-                root.notice = ""
-                trust.checked = false
+            implicitHeight: pastedCode.implicitHeight
+            clip: true
+            Tk.TextField {
+                id: pastedCode
+                objectName: "audioPeerCodePaste"
+                anchors.fill: parent
+                placeholderText: qsTr("Paste connection code")
+                tooltip: qsTr("The code includes the sender's name, address and port.")
+                enabled: root.audioSettings.canManagePeerStreams
+                onTextChanged: {
+                    root.reviewed = ({})
+                    root.notice = ""
+                    root.selectedOutputName = ""
+                    trust.checked = false
+                }
+                Accessible.name: qsTr("Connection code from the sending computer")
             }
-            Accessible.name: qsTr("Connection code from the sending computer")
         }
         Tk.Button {
             id: review
@@ -201,7 +220,8 @@ FormSurface {
             model: root.outputs
             textRole: "label"
             placeholderText: qsTr("Choose this computer's speakers")
-            currentIndex: root.outputs.length > 0 ? 0 : -1
+            currentIndex: root.outputIndex(root.selectedOutputName)
+            onActivated: index => root.selectedOutputName = root.outputs[index].nodeName
             enabled: root.audioSettings.canManagePeerStreams && root.outputs.length > 0
             Accessible.name: qsTr("Exact speakers for received audio")
         }
@@ -227,10 +247,10 @@ FormSurface {
             visible: root.reviewed.valid === true
             available: root.audioSettings.canManagePeerStreams
                        && root.reviewed.valid === true
-                       && outputChoice.currentIndex >= 0 && trust.checked
+                       && root.outputIndex(root.selectedOutputName) >= 0 && trust.checked
             onClicked: {
                 if (root.audioSettings.saveImportedPeer(
-                        pastedCode.text, root.outputs[outputChoice.currentIndex].nodeName)) {
+                        pastedCode.text, root.selectedOutputName)) {
                     root.notice = qsTr("Save requested. After the stream appears, select Enable to start receiving.")
                     trust.checked = false
                 } else {
