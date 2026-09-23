@@ -41,6 +41,14 @@ integrated in the qinda source tree, not installed into a live session:
   after refused mouse and keyboard input. Independent exact review accepted
   the candidate; the merged Power set passes 10/10 and broad Settings 131/131.
   Live screen blanking and physical input remain to qualify.
+- Screen saver (`214fe1ae`): Settings now distinguishes fallback
+  values from confirmed Settings1 policy, gates saver/delay edits on exact
+  write admission, restores confirmed selections after refusal, and keeps
+  conflict/uncertainty visible. A stale post-Applied readback hang in the
+  first candidate was reproduced and repaired with bounded refetch/deadline;
+  independent review accepted the no-manual-refresh probe. Merged affected
+  tests pass 8/8 and broad Settings 131/131. Live saver activation remains
+  to qualify.
 - Notifications schedule and Do Not Disturb (`3785d58f`): controls
   now reflect exact Settings1 write admission even while a same-owner refresh
   occupies the client. Pending, refusal and uncertainty stay attached to

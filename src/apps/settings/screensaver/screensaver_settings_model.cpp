@@ -5,14 +5,42 @@
 #include <qindaqt/session/desktop_controls/screensaver_catalog.h>
 
 #include <QVariant>
+#include <QStringList>
 
 #include <algorithm>
 
 namespace QindaQt::Apps::SettingsScreensaver {
+namespace {
+
+using Session::DesktopControls::ScreensaverPreferences;
+
+const QString SaverKey = QStringLiteral("power.screensaver");
+const QString MinutesKey = QStringLiteral("power.screensaverMinutes");
+constexpr int ReadbackRetryMilliseconds = 200;
+constexpr int ReadbackDeadlineMilliseconds = 4'000;
+
+bool exactMinutes(const QVariant &value, int *minutes) {
+  const int type = value.metaType().id();
+  if (type != QMetaType::Int && type != QMetaType::UInt
+      && type != QMetaType::LongLong && type != QMetaType::ULongLong) {
+    return false;
+  }
+  bool ok = false;
+  const qlonglong number = value.toLongLong(&ok);
+  if (!ok || number < 1
+      || number > ScreensaverPreferences::maximumTimeoutMinutes()) {
+    return false;
+  }
+  *minutes = int(number);
+  return true;
+}
+
+} // namespace
 
 using Session::DesktopControls::ScreensaverCatalogEntry;
-using Session::DesktopControls::ScreensaverPreferences;
 using Session::DesktopControls::Settings1ScreensaverPreferences;
+using Services::SettingsClient::ClientState;
+using Services::SettingsProtocol::SettingsWireStatus;
 
 ScreensaverSettingsModel::ScreensaverSettingsModel(
     Settings1ScreensaverPreferences &preferences,
@@ -23,44 +51,40 @@ ScreensaverSettingsModel::ScreensaverSettingsModel(
     : QObject(parent), m_preferences(preferences), m_client(client),
       m_catalog(catalog), m_lockScreenSaver(lockScreenSaver),
       m_preview(preview) {
-  connect(&m_preferences,
-          &Settings1ScreensaverPreferences::preferencesChanged, this,
-          [this](ScreensaverPreferences next) {
-            m_busy = false;
-            m_errorText.clear();
-            // Only a confirmed snapshot reaches the greeter, so a refused or
-            // uncertain commit never changes what a locked session shows.
-            mirrorToLockScreen(next.saver);
-            publishStatus();
-          });
+  // AGENT-CONTRACT: the provider has a safe runtime fallback, not UI proof.
+  // Even a first Settings1 snapshot equal to that fallback must establish
+  // route authority; the provider emits no preferencesChanged in that case.
+  connect(&m_client, &Services::SettingsClient::SettingsClient::snapshotChanged,
+          this, &ScreensaverSettingsModel::handleSnapshot);
+  connect(&m_client, &Services::SettingsClient::SettingsClient::stateChanged,
+          this, &ScreensaverSettingsModel::handleClientState);
+  connect(&m_client, &Services::SettingsClient::SettingsClient::ownerChanged,
+          this, &ScreensaverSettingsModel::handleClientState);
+  connect(&m_client, &Services::SettingsClient::SettingsClient::writeAdmissionChanged,
+          this, &ScreensaverSettingsModel::publishStatus);
   connect(&m_client, &Services::SettingsClient::SettingsClient::commitFinished,
-          this, [this](const Services::SettingsClient::CommitOutcome &outcome) {
-            if (!m_busy) return;
-            m_busy = false;
-            if (outcome.status
-                == QindaQt::Services::SettingsProtocol::SettingsWireStatus::Applied) {
-              m_errorText.clear();
-            } else {
-              m_errorText =
-                  tr("The screensaver preference could not be applied: %1")
-                      .arg(outcome.message.isEmpty() ? tr("unknown reason")
-                                                     : outcome.message);
-            }
-            publishStatus();
-          });
+          this, &ScreensaverSettingsModel::handleCommit);
   connect(&m_client, &Services::SettingsClient::SettingsClient::commitUncertain,
-          this, [this](const QString &message) {
-            if (!m_busy) return;
-            m_busy = false;
-            m_errorText =
-                tr("The screensaver preference may not have been applied: %1")
-                    .arg(message.isEmpty() ? tr("unknown reason") : message);
-            publishStatus();
-          });
-  connect(&m_preview, &ScreensaverPreview::finished, this, [this] {
-            publishStatus();
-          });
-  publishStatus();
+          this, &ScreensaverSettingsModel::handleUncertain);
+  connect(&m_preview, &ScreensaverPreview::finished, this,
+          &ScreensaverSettingsModel::publishStatus);
+  m_readbackRetryTimer.setSingleShot(true);
+  connect(&m_readbackRetryTimer, &QTimer::timeout, this, [this] {
+    if (m_pending && m_waitingForReadback) m_client.refresh();
+  });
+  m_readbackDeadlineTimer.setSingleShot(true);
+  connect(&m_readbackDeadlineTimer, &QTimer::timeout, this, [this] {
+    if (!m_pending || !m_waitingForReadback) return;
+    // AGENT-GUARD: a valid but pre-commit snapshot can leave SettingsClient
+    // Ready with no automatic follow-up. End the pending UI without replaying
+    // the write when the service never supplies the Applied revision.
+    retirePending(tr("The saved screen saver choice could not be confirmed in time."));
+    publishStatus();
+  });
+  if (m_client.state() == ClientState::Ready && m_client.snapshot())
+    handleSnapshot();
+  else
+    publishStatus();
 }
 
 ScreensaverSettingsModel::~ScreensaverSettingsModel() = default;
@@ -70,8 +94,7 @@ QVariantList ScreensaverSettingsModel::saverOptions() const {
   options.append(QVariantMap{
       {QStringLiteral("token"), ScreensaverPreferences::noneToken()},
       {QStringLiteral("name"), tr("None")},
-      {QStringLiteral("comment"),
-       tr("Nothing runs when the session is idle.")},
+      {QStringLiteral("comment"), tr("Nothing runs when the session is idle.")},
       {QStringLiteral("iconName"), QStringLiteral("dialog-cancel")},
       {QStringLiteral("showsOnLockScreen"), false},
   });
@@ -104,29 +127,49 @@ QVariantList ScreensaverSettingsModel::saverOptions() const {
 }
 
 QString ScreensaverSettingsModel::saver() const {
-  return m_preferences.currentPreferences().saver;
+  return m_confirmed.has_value() ? m_confirmed->saver : QString{};
 }
 
 bool ScreensaverSettingsModel::delayEnabled() const {
-  return m_preferences.currentPreferences().enabled();
+  return m_confirmed.has_value() && m_confirmed->enabled();
 }
 
 int ScreensaverSettingsModel::minutes() const {
-  return m_preferences.currentPreferences().minutes;
+  return m_confirmed.has_value() ? m_confirmed->minutes : 0;
 }
 
-bool ScreensaverSettingsModel::busy() const noexcept { return m_busy; }
+bool ScreensaverSettingsModel::hasConfirmed() const noexcept {
+  return m_confirmed.has_value();
+}
+
+bool ScreensaverSettingsModel::available() const noexcept { return m_available; }
+
+bool ScreensaverSettingsModel::canEdit() const {
+  return m_available && !m_pending
+         && m_client.canSetUserValue(SaverKey)
+         && m_client.canSetUserValue(MinutesKey);
+}
+
+bool ScreensaverSettingsModel::busy() const noexcept { return m_pending; }
+bool ScreensaverSettingsModel::conflict() const noexcept { return m_conflict; }
+bool ScreensaverSettingsModel::uncertain() const noexcept { return m_uncertain; }
 
 const QString &ScreensaverSettingsModel::statusText() const noexcept {
   return m_statusText;
 }
 
-const QString &ScreensaverSettingsModel::errorText() const noexcept {
-  return m_errorText;
+QString ScreensaverSettingsModel::errorText() const {
+  QStringList messages;
+  if (!m_localError.isEmpty()) messages.append(m_localError);
+  if (!m_mirrorError.isEmpty()) messages.append(m_mirrorError);
+  if (!m_schemaError.isEmpty()) messages.append(m_schemaError);
+  return messages.join(QLatin1Char('\n'));
 }
 
 bool ScreensaverSettingsModel::previewAvailable() const {
-  return m_preview.kindFor(saver()) != ScreensaverPreview::Kind::Unavailable;
+  return m_available && m_confirmed.has_value()
+         && m_preview.kindFor(m_confirmed->saver)
+                != ScreensaverPreview::Kind::Unavailable;
 }
 
 bool ScreensaverSettingsModel::previewRunning() const {
@@ -138,62 +181,65 @@ const QString &ScreensaverSettingsModel::previewSummary() const noexcept {
 }
 
 QString ScreensaverSettingsModel::displayName(const QString &saver) const {
-  if (saver == ScreensaverPreferences::blankToken()) {
-    return tr("Blank screen");
-  }
+  if (saver == ScreensaverPreferences::blankToken()) return tr("Blank screen");
   const std::optional<ScreensaverCatalogEntry> entry = m_catalog.entry(saver);
-  if (entry.has_value() && !entry->name.isEmpty()) {
-    return entry->name;
-  }
+  if (entry.has_value() && !entry->name.isEmpty()) return entry->name;
   return saver;
 }
 
 bool ScreensaverSettingsModel::setSaver(const QString &saver) {
-  if (m_busy) return false;
-  // Only the built-ins and a discovered saver may be written; anything else
-  // is refused here, before any commit, and can never reach persistence.
+  if (m_pending) return false;
+  // The catalog is the only path from a persisted token to a program.
   if (saver != ScreensaverPreferences::noneToken()
       && saver != ScreensaverPreferences::blankToken()
       && !m_catalog.entry(saver).has_value()) {
-    m_errorText = tr("That screensaver is not available.");
-    Q_EMIT changed();
+    m_localError = tr("That screensaver is not available.");
+    publishStatus();
     return false;
   }
-  return submit(QStringLiteral("power.screensaver"), saver);
+  // A normalized unknown token can display as None while the raw key still
+  // needs repair; compare the authoritative wire value for no-op admission.
+  if (canEdit() && m_client.snapshot()->values.value(SaverKey).toString() == saver)
+    return true;
+  return submit(SaverKey, saver);
 }
 
 bool ScreensaverSettingsModel::setMinutes(int minutes) {
-  if (m_busy) return false;
+  if (m_pending) return false;
   if (minutes < 1 || minutes > ScreensaverPreferences::maximumTimeoutMinutes()) {
-    m_errorText = tr("Choose a delay between 1 and %1 minutes.")
-                      .arg(ScreensaverPreferences::maximumTimeoutMinutes());
-    Q_EMIT changed();
+    m_localError = tr("Choose a delay between 1 and %1 minutes.")
+                       .arg(ScreensaverPreferences::maximumTimeoutMinutes());
+    publishStatus();
     return false;
   }
-  return submit(QStringLiteral("power.screensaverMinutes"),
-                QVariant::fromValue(static_cast<qint64>(minutes)));
+  if (canEdit() && m_client.snapshot()->values.value(MinutesKey).toLongLong()
+                       == minutes)
+    return true;
+  return submit(MinutesKey, QVariant::fromValue(static_cast<qint64>(minutes)));
 }
 
 bool ScreensaverSettingsModel::retry() {
-  if (m_busy) return false;
-  if (m_errorText.isEmpty()) return true;
-  m_errorText.clear();
-  publishStatus();
-  // The last accepted preference is already persisted truth; retry only
-  // refreshes the snapshot so a lost owner reconciles the route.
+  if (m_pending) return false;
+  // Retry re-reads only. An uncertain write may already have persisted and
+  // must never be sent again without a fresh explicit user selection.
+  // An unchanged refresh cannot resolve a refused or uncertain write.
+  // Keep its diagnostic until a fresh user choice earns a matching readback.
   m_preferences.refresh();
+  publishStatus();
   return true;
 }
 
 bool ScreensaverSettingsModel::preview() {
-  if (m_busy) return false;
+  if (m_pending || !previewAvailable()) {
+    m_localError = tr("Wait for confirmed screen saver settings before previewing.");
+    publishStatus();
+    return false;
+  }
   QString error;
-  // The preview always shows persisted truth, which the mirror has already
-  // handed to the greeter; a write in flight disables the button instead.
   if (!m_preview.start(saver(), &error)) {
-    m_errorText = error.isEmpty() ? tr("The preview could not be started.")
-                                  : error;
-    Q_EMIT changed();
+    m_localError = error.isEmpty() ? tr("The preview could not be started.")
+                                   : error;
+    publishStatus();
     return false;
   }
   publishStatus();
@@ -201,72 +247,213 @@ bool ScreensaverSettingsModel::preview() {
 }
 
 void ScreensaverSettingsModel::refreshSavers() {
-  // entries() scans; nothing to do beyond republishing the list.
   Q_EMIT saversChanged();
+  publishStatus();
 }
 
 bool ScreensaverSettingsModel::submit(const QString &key, const QVariant &value) {
-  QString error;
-  if (!m_client.setUserValue(key, value, &error)) {
-    m_errorText = error.isEmpty() ? tr("Could not save the screensaver preference.")
-                                  : error;
-    Q_EMIT changed();
+  if (!canEdit()) {
+    m_localError = tr("Screen saver settings are not ready for changes.");
+    publishStatus();
     return false;
   }
-  m_busy = true;
-  m_errorText.clear();
+  const auto &snapshot = m_client.snapshot();
+  m_writeOwner = m_client.currentOwner();
+  m_writeEpoch = snapshot->epoch;
+  m_writeKey = key;
+  m_requestedValue = value;
+  m_pending = true;
+  m_waitingForReadback = false;
+  m_readbackRevision = 0;
+  m_conflict = false;
+  m_uncertain = false;
+  m_localError.clear();
+  QString error;
+  if (!m_client.setUserValue(key, value, &error)) {
+    clearPending();
+    m_localError = error.isEmpty() ? tr("Could not save the screensaver preference.")
+                                   : error.left(512);
+    publishStatus();
+    return false;
+  }
   publishStatus();
   return true;
 }
 
+void ScreensaverSettingsModel::clearPending() {
+  m_readbackRetryTimer.stop();
+  m_readbackDeadlineTimer.stop();
+  m_pending = false;
+  m_waitingForReadback = false;
+  m_writeOwner.clear();
+  m_writeEpoch.clear();
+  m_writeKey.clear();
+  m_requestedValue.clear();
+  m_readbackRevision = 0;
+}
+
+void ScreensaverSettingsModel::retirePending(const QString &message) {
+  clearPending();
+  m_uncertain = true;
+  m_localError = message;
+}
+
+void ScreensaverSettingsModel::handleSnapshot() {
+  const auto &snapshot = m_client.snapshot();
+  if (!snapshot || snapshot->owner != m_client.currentOwner()
+      || m_client.state() != ClientState::Ready) {
+    handleClientState();
+    return;
+  }
+  const QVariant saverValue = snapshot->values.value(SaverKey);
+  const QVariant minutesValue = snapshot->values.value(MinutesKey);
+  int nextMinutes = 0;
+  if (saverValue.metaType().id() != QMetaType::QString
+      || !exactMinutes(minutesValue, &nextMinutes)) {
+    m_available = false;
+    m_schemaError = tr("The screen saver settings returned invalid values.");
+    if (m_pending && m_waitingForReadback)
+      retirePending(tr("The saved screen saver choice could not be confirmed."));
+    publishStatus();
+    return;
+  }
+  const ScreensaverPreferences next = ScreensaverPreferences::fromPersisted(
+      saverValue.toString(), nextMinutes, m_catalog);
+  if (m_pending && m_waitingForReadback
+      && snapshot->owner == m_writeOwner
+      && snapshot->epoch == m_writeEpoch
+      && snapshot->revision < m_readbackRevision) {
+    // SettingsClient accepts an unchanged old revision as Ready; the
+    // post-commit fetch alone is not evidence of the Applied write.
+    m_readbackRetryTimer.start(ReadbackRetryMilliseconds);
+  }
+  if (m_pending && m_waitingForReadback
+      && snapshot->owner == m_writeOwner
+      && snapshot->epoch == m_writeEpoch
+      && snapshot->revision >= m_readbackRevision) {
+    const bool confirmed = snapshot->values.value(m_writeKey) == m_requestedValue;
+    clearPending();
+    if (confirmed) {
+      m_localError.clear();
+      m_conflict = false;
+      m_uncertain = false;
+    } else {
+      m_conflict = true;
+      m_localError = tr("The saved screen saver choice differs from your selection.");
+    }
+  }
+  m_confirmed = next;
+  m_available = true;
+  m_schemaError.clear();
+  // A fresh confirmed snapshot may carry an external change. Mirroring it
+  // belongs to this route, but a prior write error is not its diagnostic.
+  mirrorToLockScreen(next.saver);
+  publishStatus();
+}
+
+void ScreensaverSettingsModel::handleClientState() {
+  if (m_pending
+      && (m_client.currentOwner() != m_writeOwner
+          || m_client.state() == ClientState::Unavailable
+          || m_client.state() == ClientState::Degraded)) {
+    retirePending(tr("The screen saver save could not be confirmed after the service changed."));
+  }
+  // Only handleSnapshot may establish editable authority, including when a
+  // new baseline equals the provider's disabled runtime fallback.
+  m_available = false;
+  publishStatus();
+}
+
+void ScreensaverSettingsModel::handleCommit(
+    const Services::SettingsClient::CommitOutcome &outcome) {
+  if (!m_pending || m_waitingForReadback) return;
+  if (outcome.status == SettingsWireStatus::Applied) {
+    m_waitingForReadback = true;
+    m_readbackRevision = outcome.revisionAfter;
+    m_readbackDeadlineTimer.start(ReadbackDeadlineMilliseconds);
+  } else {
+    clearPending();
+    m_conflict = outcome.status == SettingsWireStatus::Conflict;
+    m_localError = outcome.message.isEmpty()
+        ? tr("The screen saver change was refused (%1).")
+              .arg(Services::SettingsProtocol::settingsWireStatusName(outcome.status))
+        : outcome.message.left(512);
+  }
+  publishStatus();
+}
+
+void ScreensaverSettingsModel::handleUncertain(const QString &message) {
+  if (!m_pending) return;
+  retirePending(message.isEmpty()
+                    ? tr("The screen saver save result is unknown.")
+                    : message.left(512));
+  publishStatus();
+}
+
 void ScreensaverSettingsModel::mirrorToLockScreen(const QString &saver) {
-  // AGENT-GUARD: only a saver the greeter can actually draw may take the lock
-  // wallpaper over (ADR-0216). Pointing the greeter at a saver with no QML
-  // module would replace the user's own lock wallpaper with a blank ground,
-  // so those choices release it instead. The reserved "blank" token is the
-  // one deliberate exception: the plugin's painted ground IS the blank screen
-  // the user asked for (ADR-0226).
+  // AGENT-GUARD: only a saver the greeter can draw may take the lock
+  // wallpaper over (ADR-0216). "blank" is the deliberate painted exception.
   QString mirrored = ScreensaverPreferences::noneToken();
   if (saver == ScreensaverPreferences::blankToken()) {
     mirrored = ScreensaverPreferences::blankToken();
   } else {
     const std::optional<ScreensaverCatalogEntry> entry = m_catalog.entry(saver);
-    if (entry.has_value() && entry->showsOnLockScreen) {
-      mirrored = saver;
-    }
+    if (entry.has_value() && entry->showsOnLockScreen) mirrored = saver;
   }
-  if (m_lockScreenSaver.currentSaver() == mirrored) return;
+  if (m_lockScreenSaver.currentSaver() == mirrored) {
+    m_mirrorError.clear();
+    return;
+  }
   QString error;
   if (!m_lockScreenSaver.save(mirrored, &error)) {
-    m_errorText = tr("The screensaver was saved, but the lock screen could not "
-                     "be told about it: %1")
-                      .arg(error.isEmpty() ? tr("unknown reason") : error);
+    m_mirrorError = tr("The screen saver was saved, but the lock screen could "
+                       "not be told about it: %1")
+                        .arg(error.isEmpty() ? tr("unknown reason") : error);
+  } else {
+    m_mirrorError.clear();
   }
 }
 
 void ScreensaverSettingsModel::publishStatus() {
-  const auto preferences = m_preferences.currentPreferences();
-  if (preferences.saver == ScreensaverPreferences::blankToken()) {
-    m_statusText = tr("Nothing runs while the session is unlocked. The lock "
-                      "screen shows a plain dark screen.");
-  } else if (!preferences.enabled()) {
-    m_statusText = tr("No screensaver starts when the session is idle.");
+  if (!m_confirmed) {
+    m_statusText = m_client.currentOwner().isEmpty()
+        ? tr("Screen saver settings are unavailable; no choice has been confirmed.")
+        : tr("Waiting for confirmed screen saver settings.");
+    publishPreviewSummary();
+    Q_EMIT changed();
+    return;
+  }
+  QString confirmed;
+  if (m_confirmed->saver == ScreensaverPreferences::blankToken()) {
+    confirmed = tr("Nothing runs while the session is unlocked. The lock "
+                   "screen shows a plain dark screen.");
+  } else if (!m_confirmed->enabled()) {
+    confirmed = tr("No screensaver starts when the session is idle.");
   } else {
-    const std::optional<ScreensaverCatalogEntry> entry =
-        m_catalog.entry(preferences.saver);
-    if (entry.has_value() && entry->showsOnLockScreen) {
-      m_statusText = tr("%1 starts after %n minute(s) of inactivity, and keeps "
-                        "showing while the screen is locked.",
-                        nullptr, preferences.minutes)
-                         .arg(displayName(preferences.saver));
-    } else {
-      // Honest about the split: this saver has no scene the locker can draw,
-      // so a locked screen keeps whatever wallpaper it already had.
-      m_statusText = tr("%1 starts after %n minute(s) of inactivity. The lock "
-                        "screen keeps its own wallpaper.",
-                        nullptr, preferences.minutes)
-                         .arg(displayName(preferences.saver));
-    }
+    const auto entry = m_catalog.entry(m_confirmed->saver);
+    confirmed = entry.has_value() && entry->showsOnLockScreen
+        ? tr("%1 starts after %n minute(s) of inactivity, and keeps "
+             "showing while the screen is locked.", nullptr, m_confirmed->minutes)
+              .arg(displayName(m_confirmed->saver))
+        : tr("%1 starts after %n minute(s) of inactivity. The lock "
+             "screen keeps its own wallpaper.", nullptr, m_confirmed->minutes)
+              .arg(displayName(m_confirmed->saver));
+  }
+  if (m_pending) {
+    m_statusText = (m_waitingForReadback
+        ? tr("Checking the saved screen saver choice. Last confirmed: %1")
+        : tr("Saving the screen saver choice. Last confirmed: %1")).arg(confirmed);
+  } else if (!m_available) {
+    m_statusText = tr("Current screen saver settings are unavailable. Last confirmed: %1")
+                       .arg(confirmed);
+  } else if (m_conflict) {
+    m_statusText = tr("Screen saver settings changed elsewhere. Current choice: %1")
+                       .arg(confirmed);
+  } else if (m_uncertain) {
+    m_statusText = tr("The save result is unknown. Current confirmed choice: %1")
+                       .arg(confirmed);
+  } else {
+    m_statusText = confirmed;
   }
   publishPreviewSummary();
   Q_EMIT changed();
@@ -275,17 +462,12 @@ void ScreensaverSettingsModel::publishStatus() {
 void ScreensaverSettingsModel::publishPreviewSummary() {
   switch (m_preview.kindFor(saver())) {
   case ScreensaverPreview::Kind::TestingGreeter:
-    if (saver() == ScreensaverPreferences::blankToken()) {
-      m_previewSummary =
-          tr("Opens the lock screen in its testing mode, showing the plain "
-             "dark screen a locked session would show. The session is never "
-             "locked.");
-    } else {
-      m_previewSummary =
-          tr("Opens the lock screen in its testing mode, drawing %1 the way a "
+    m_previewSummary = saver() == ScreensaverPreferences::blankToken()
+        ? tr("Opens the lock screen in its testing mode, showing the plain "
+             "dark screen a locked session would show. The session is never locked.")
+        : tr("Opens the lock screen in its testing mode, drawing %1 the way a "
              "locked session would. The session is never locked.")
               .arg(displayName(saver()));
-    }
     break;
   case ScreensaverPreview::Kind::SaverProgram:
     m_previewSummary =
@@ -295,7 +477,7 @@ void ScreensaverSettingsModel::publishPreviewSummary() {
             .arg(displayName(saver()));
     break;
   case ScreensaverPreview::Kind::Unavailable:
-    m_previewSummary = QString();
+    m_previewSummary.clear();
     break;
   }
 }
