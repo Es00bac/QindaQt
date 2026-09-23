@@ -53,6 +53,8 @@ TouchSettingsModel::TouchSettingsModel(Services::SettingsClient::SettingsClient 
             this, &TouchSettingsModel::handleSnapshot);
     connect(&m_client, &Services::SettingsClient::SettingsClient::stateChanged,
             this, &TouchSettingsModel::handleAuthorityChange);
+    connect(&m_client, &Services::SettingsClient::SettingsClient::ownerChanged,
+            this, &TouchSettingsModel::handleAuthorityChange);
     connect(&m_client, &Services::SettingsClient::SettingsClient::commitFinished, this,
             [this](const Services::SettingsClient::CommitOutcome &outcome) {
                 if (!m_busy || m_awaitingSnapshot) return;

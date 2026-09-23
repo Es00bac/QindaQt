@@ -122,6 +122,11 @@ disconnect, subscribes to `SettingsChanged` from the exact unique owner before
 requesting its baseline, and targets that owner for every call. The service
 epoch is fresh per process; revisions compare only inside `(unique owner,
 epoch)`. Replacement and late old-owner traffic cannot update published state.
+The public client emits a synchronous exact-owner notification whenever its
+observed unique owner changes, including stop or bus loss. Consumers recheck
+the exact owner on that signal: a state transition may not fire when one owner
+replaces another during authentication, and the retained snapshot may still
+belong to the old owner.
 Activation is serialized with one in-flight request and configured bounded
 backoff. Synchronous transport-start failure publishes Unavailable truth while
 retaining a logical start, so explicit Retry can safely reattempt transport

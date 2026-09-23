@@ -84,6 +84,7 @@ class SettingsClientTests final : public QObject {
     Q_OBJECT
 private slots:
     void bindsSnapshotsAndFencesOwnerReplacement();
+    void ownerNotificationsDoNotDependOnStateChanges();
     void rejectsUnsupportedWireVersions();
     void rejectsOverAggregateSnapshots();
     void startFailurePublishesUnavailableAndRetryRecovers();
@@ -130,6 +131,40 @@ void SettingsClientTests::bindsSnapshotsAndFencesOwnerReplacement()
     QTRY_VERIFY(client.state() == ClientState::Ready);
     QCOMPARE(client.snapshot()->owner, QStringLiteral(":1.11"));
     QCOMPARE(client.snapshot()->values.value(QStringLiteral("services.doNotDisturb")).toBool(), false);
+}
+
+void SettingsClientTests::ownerNotificationsDoNotDependOnStateChanges()
+{
+    FakeTransport transport;
+    SettingsClient client(transport, {QStringLiteral("services.doNotDisturb")},
+                          {.requestTimeoutMilliseconds = 100, .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    QSignalSpy owners(&client, &SettingsClient::ownerChanged);
+    QSignalSpy states(&client, &SettingsClient::stateChanged);
+    QVERIFY(client.start());
+    QCOMPARE(client.state(), ClientState::Authenticating);
+    const auto stateCount = states.size();
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.20"));
+    QCOMPARE(client.currentOwner(), QStringLiteral(":1.20"));
+    QCOMPARE(owners.size(), 1);
+    QCOMPARE(states.size(), stateCount);
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.20"));
+    QCOMPARE(owners.size(), 1);
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.21"));
+    QCOMPARE(client.currentOwner(), QStringLiteral(":1.21"));
+    QCOMPARE(owners.size(), 2);
+    QCOMPARE(states.size(), stateCount); // Authenticating to Authenticating
+    client.stop();
+    QVERIFY(client.currentOwner().isEmpty());
+    QCOMPARE(owners.size(), 3);
+    client.stop();
+    QCOMPARE(owners.size(), 3);
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.22"));
+    QCOMPARE(owners.size(), 4);
+    Q_EMIT transport.busDisconnected();
+    QVERIFY(client.currentOwner().isEmpty());
+    QCOMPARE(owners.size(), 5);
 }
 
 void SettingsClientTests::rejectsUnsupportedWireVersions()
