@@ -52,6 +52,8 @@ function(expect_permitted_surface)
         "  Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName, int channels);\n"
         "  Q_INVOKABLE bool removeVirtualDevice(quint64 serial);\n"
         "};\n")
+    file(WRITE "${poison_root}/src/apps/settings/audio/qml/AudioPeerConnectionCard.qml"
+        "import QindaTK as Tk\nTk.TextField {}\n")
     file(WRITE "${poison_root}/src/apps/settings/audio/qml/Allowed.qml"
         "import QindaQt.Controls 1.0\nButton { text: \"Permitted\" }\n")
     execute_process(

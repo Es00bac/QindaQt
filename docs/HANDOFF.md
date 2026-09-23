@@ -84,6 +84,18 @@ validator pass for this integrated tree (378 pages after Streaming). Manual
 LAN audio passes a combined Settings/shell and affected service build, 36/36
 Audio/Settings rows, the installed audio applet package and installed
 Settings-route rows (2/2), and strict docs/link validation (380 pages).
+Guided two-computer stereo setup is merged from exact independently accepted
+Audio product `3724bb7e` and narrow navigation-test link repair `a7e203aa`.
+A versioned code carries a saved outgoing stream's name, port and selected
+local IPv4 source. The receiver explicitly chooses a physical speaker and
+acknowledges the trusted-LAN warning; Save requests a disabled incoming
+stream, and Enable remains an explicit Audio1 action. The same reviewer
+rejected compact overflow, implicit first-speaker selection and stale codes
+after sender/owner change before accepting real-model and actual-page probes.
+Integrated Audio/VBAN/navigation gates pass 17/17 and broad Settings 135/135;
+strict docs validate 384 pages. qinda-top still runs Audio1 schema 11, so this
+schema-12 source is not live. No physical speaker playback or synchronized surround is
+claimed.
 Per-application stream moves now use the live Audio1 MoveStream authority
 from the Devices tab. A rejected first candidate let one confirmed stream
 erase a sibling failed move; the same reviewer accepted the per-stream repair

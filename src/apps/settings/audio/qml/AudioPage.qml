@@ -193,6 +193,7 @@ T.Page {
             }
 
             onHeightChanged: Qt.callLater(revealActiveFocus)
+            onContentHeightChanged: Qt.callLater(revealActiveFocus)
 
             FormSurface {
                 id: formSurface

@@ -115,6 +115,18 @@ integrated in the qinda source tree, not installed into a live session:
   docs pass. Private runtimes carried nonzero stereo PCM in both directions
   between qinda and qinda-top; physical speakers were not tested. Discovery,
   pairing and synchronized multichannel playback remain later work.
+- Guided two-computer stereo setup (`a7e203aa`, independently reviewed):
+  Audio Settings creates a versioned code from a saved outgoing stream and
+  selected non-loopback local IPv4 address. The receiver reviews that code,
+  explicitly chooses a physical speaker, acknowledges the trusted-LAN warning,
+  saves reception disabled and then enables it through Audio1 readback. A
+  shared code revokes after sender edits/removal or Audio1 owner replacement.
+  Independent review rejected compact overflow, implicit speaker choice and
+  stale codes before accepting the repairs. A later integrated build found
+  two navigation test targets missing the owning Audio codec library; the
+  same reviewer accepted its narrow link repair. Integrated Audio/VBAN/
+  navigation tests pass 17/17 and broad Settings 135/135. Live physical playback,
+  discovery, authentication, encryption and synchronized surround remain open.
 - Per-application audio routing (`5c8aae4b`): playback and recording
   streams now offer direction-matched device choices in Audio Settings. The
   picker tracks confirmed Audio1 routing, handles pending/refused/stale
