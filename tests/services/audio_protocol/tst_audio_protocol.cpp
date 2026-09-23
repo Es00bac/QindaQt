@@ -224,7 +224,7 @@ void AudioProtocolTests::fixedSignatures()
     // Schema 5 appends the device pin (ADR-0178) to both structs.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Console>()),
              "(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))"
-             "a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubb))");
+             "a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs))");
     // The rack (ADR-0179): gate, compressor, equalizer, limiter, in the order
     // the graph applies them.
     // The rack (ADR-0179/0180): denoiser, gate, compressor, equalizer, limiter,
@@ -237,7 +237,7 @@ void AudioProtocolTests::fixedSignatures()
              "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)"
              "a((tt)uss(tt)bdbbbbbbadas)"
              "(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))"
-             "a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubb)))");
+             "a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs)))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }
@@ -400,8 +400,12 @@ void AudioProtocolTests::operationResultLineage()
     QVERIFY(validateOperationResult(result).accepted);
     result.kind = OperationKind::RemoveVirtualDevice;
     QVERIFY(validateOperationResult(result).accepted);
+    result.kind = OperationKind::UpsertVbanStream;
+    QVERIFY(validateOperationResult(result).accepted);
+    result.kind = OperationKind::DeleteVbanStream;
+    QVERIFY(validateOperationResult(result).accepted);
     result.kind = static_cast<OperationKind>(
-        static_cast<quint32>(OperationKind::RemoveVirtualDevice) + 1);
+        static_cast<quint32>(OperationKind::DeleteVbanStream) + 1);
     QCOMPARE(validateOperationResult(result).reasonCode,
              QStringLiteral("malformed-result"));
     result.kind = OperationKind::SetVolume;

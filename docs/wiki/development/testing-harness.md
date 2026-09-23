@@ -3930,3 +3930,31 @@ ignores a hover; after `FocusPolicy=FocusFollowsMouse` a hover activates in
 both directions; and the restored chord docks again. Focus-follows-mouse is
 judged on pointer-focus changes, so the driver always leaves for the backdrop
 before entering the window under test.
+
+## Manual audio peer regression
+
+`qindaqt.audio-vban-store` covers typed definition persistence,
+invalid/wildcard receivers, exact source-address admission, duplicate
+receive ports, and no-fallback route arguments. The isolated
+`qindaqt.audio-vban-peer-runtime` row starts private PipeWire and
+WirePlumber instances with temporary runtime/config paths, declares a
+sender and receiver with two physical-output fixtures, and checks that
+`active` follows connected selected links, not merely registered nodes.
+It changes private default-sink metadata and destroys selected nodes to
+prove no fallback or silent retargeting. It never changes the user's live
+default sink. `qindaqt.settings-audio-page` exercises the compact 420×320
+tab, keyboard, focus-scroll, and peer editor path.
+
+For two-host PCM qualification, build
+`qindaqt_audio_vban_peer_crosshost_smoke` on compatible hosts, or copy
+the built test binary to the other host. In separate terminals, run
+`qindaqt_audio_vban_peer_crosshost_smoke receive <sender-ipv4> <private-udp-port>`
+on the receiver and wait for `READY receive`; then run
+`qindaqt_audio_vban_peer_crosshost_smoke send <receiver-ipv4> <same-port>`
+on the sender. Reverse the host roles with a fresh port. Each process
+creates a private PipeWire/WirePlumber runtime, a null sink, and a bounded
+synthetic stereo signal. The receiver checks nonzero captured PCM through
+the chosen private output; neither process changes the live desktop graph
+or uses real user media. Record sender/receiver exit codes and packet/PCM
+evidence separately. This proves transport and private graph routing,
+not physical speaker audibility or a Settings UI walkthrough.

@@ -272,6 +272,22 @@ void AudioServiceObject::SetVbanEnabled(const QString &name, const bool enabled)
     beginOperation(request);
 }
 
+void AudioServiceObject::UpsertVbanStream(const VbanStream &definition)
+{
+    OperationRequest request;
+    request.kind = OperationKind::UpsertVbanStream;
+    request.vbanDefinition = definition;
+    beginOperation(request);
+}
+
+void AudioServiceObject::DeleteVbanStream(const QString &name)
+{
+    OperationRequest request;
+    request.kind = OperationKind::DeleteVbanStream;
+    request.displayName = name;
+    beginOperation(request);
+}
+
 void AudioServiceObject::beginOperation(const OperationRequest &request)
 {
     if (!calledFromDBus()) {

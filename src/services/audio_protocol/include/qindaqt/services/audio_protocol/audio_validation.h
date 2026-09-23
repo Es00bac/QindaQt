@@ -23,6 +23,13 @@ struct ValidationResult {
 // and the client's preflight so all three refuse exactly the same values.
 [[nodiscard]] bool validStripProcessing(const StripProcessing &processing);
 [[nodiscard]] bool validBusProcessing(const BusProcessing &processing);
+// Schema-12 manual-peer definition. Incoming hosts must be an exact IPv4
+// source, never a wildcard or a DNS name that could change behind consent.
+[[nodiscard]] ValidationResult validateVbanDefinition(const VbanStream &stream);
+// Shared Audio1/Settings eligibility for a manual-peer speaker. The service
+// rechecks it against the current graph before declaring a receiver route.
+[[nodiscard]] bool isPhysicalPeerOutput(const Device &device);
+
 // True when the rack needs a chain on the graph. ONE definition, used by the
 // coordinator that declares chains and the worker that builds them: the
 // coordinator once had its own copy that predated the denoiser, and a

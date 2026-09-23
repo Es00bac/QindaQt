@@ -3,6 +3,7 @@
 #include "audio_settings_test_support.h"
 
 #include <qindaqt/apps/settings_audio/audio_settings_model.h>
+#include <qindaqt/services/audio_protocol/audio_validation.h>
 
 #include <QtTest>
 
@@ -27,6 +28,7 @@ private Q_SLOTS:
   void disablesActionsWhenCapabilitiesDisappear();
   void keepsDegradedTruthAdmittedAndLabeled();
   void uncertainOutcomesAreVisibleAndNeverReplayed();
+  void manualPeersUseTypedAdmittedDefinitions();
 
 private:
   struct Fixture final {
@@ -52,6 +54,85 @@ private:
 bool AudioSettingsModelTest::rowFlag(const QVariantList &rows, const int index,
                                      const char *const key) const {
   return rows.at(index).toMap().value(QString::fromLatin1(key)).toBool();
+}
+
+void AudioSettingsModelTest::manualPeersUseTypedAdmittedDefinitions() {
+  Fixture fixture;
+  Snapshot withPeers = readyAudioSnapshot(11, 3);
+  withPeers.capabilities |= Capability::Console | Capability::ManageVbanStreams;
+  withPeers.outputs[0].nodeName = QStringLiteral("alsa_output.desk");
+  withPeers.outputs[1].nodeName = QStringLiteral("alsa_output.headphones");
+  withPeers.outputs[2].nodeName = QStringLiteral("qindaqt.virtual.game-bus");
+  Strip strip;
+  strip.id = QStringLiteral("strip.hw.1");
+  strip.label = QStringLiteral("Mic");
+  withPeers.console.strips.append(strip);
+  Bus bus;
+  bus.id = QStringLiteral("bus.a1");
+  bus.label = QStringLiteral("Bus A1");
+  withPeers.console.buses.append(bus);
+  QVERIFY(validateSnapshot(withPeers).accepted);
+  fixture.transport.invalidate(QStringLiteral(":1.7"), 11, 3);
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.transport.fetches.size() >= 2, 1000);
+  fixture.transport.reply(fixture.transport.fetches.constLast(), withPeers);
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.model.canManagePeerStreams(), 1000);
+  QCOMPARE(fixture.model.peerOutputs().size(), 2);
+  QCOMPARE(fixture.model.peerBuses().size(), 1);
+
+  QVERIFY(!fixture.model.saveIncomingPeer(QStringLiteral("Peer"),
+                                          QStringLiteral("0.0.0.0"),
+                                          QStringLiteral("alsa_output.desk"), 6980));
+  QVERIFY(!fixture.model.saveIncomingPeer(QStringLiteral("Peer"),
+                                          QStringLiteral("192.0.2.10"),
+                                          QStringLiteral("qindaqt.virtual.game-bus"), 6980));
+  QVERIFY(fixture.transport.operations.isEmpty());
+  QVERIFY(fixture.model.saveIncomingPeer(QStringLiteral("Peer"),
+                                         QStringLiteral("192.0.2.10"),
+                                         QStringLiteral("alsa_output.desk"), 6980));
+  QCOMPARE(fixture.transport.operations.size(), 1);
+  const auto incoming = fixture.transport.operations.constLast();
+  QCOMPARE(incoming.request.kind, OperationKind::UpsertVbanStream);
+  QCOMPARE(incoming.request.vbanDefinition.host, QStringLiteral("192.0.2.10"));
+  QCOMPARE(incoming.request.vbanDefinition.outputNodeName,
+           QStringLiteral("alsa_output.desk"));
+  QVERIFY(!incoming.request.vbanDefinition.outgoing);
+  fixture.transport.finish(incoming, audioResult(OperationKind::UpsertVbanStream,
+                                                  OperationStatus::Succeeded, 11, 3));
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.transport.fetches.size() >= 3, 1000);
+  withPeers.revision = 4;
+  withPeers.console.vban.append(incoming.request.vbanDefinition);
+  fixture.transport.reply(fixture.transport.fetches.constLast(), withPeers);
+  QTRY_COMPARE_WITH_TIMEOUT(fixture.model.serviceRevision(), qulonglong(4), 1000);
+  const QVariantMap saved = fixture.model.consoleVban().constFirst().toMap();
+  QCOMPARE(saved.value(QStringLiteral("name")).toString(), QStringLiteral("Peer"));
+  QCOMPARE(saved.value(QStringLiteral("host")).toString(), QStringLiteral("192.0.2.10"));
+  QCOMPARE(saved.value(QStringLiteral("outputNodeName")).toString(),
+           QStringLiteral("alsa_output.desk"));
+  QVERIFY(!saved.value(QStringLiteral("enabled")).toBool());
+  QVERIFY(!saved.value(QStringLiteral("active")).toBool());
+  QVERIFY(fixture.model.saveOutgoingPeer(QStringLiteral("ToPeer"),
+                                         QStringLiteral("bus.a1"),
+                                         QStringLiteral("192.0.2.20"), 6981));
+  QCOMPARE(fixture.transport.operations.size(), 2);
+  const auto outgoing = fixture.transport.operations.constLast();
+  QCOMPARE(outgoing.request.kind, OperationKind::UpsertVbanStream);
+  QVERIFY(outgoing.request.vbanDefinition.outgoing);
+  QCOMPARE(outgoing.request.vbanDefinition.busId, QStringLiteral("bus.a1"));
+  QCOMPARE(outgoing.request.vbanDefinition.host, QStringLiteral("192.0.2.20"));
+  QCOMPARE(outgoing.request.vbanDefinition.port, quint32(6981));
+  fixture.transport.finish(outgoing, audioResult(OperationKind::UpsertVbanStream,
+                                                  OperationStatus::Succeeded, 11, 4));
+  QTRY_VERIFY_WITH_TIMEOUT(fixture.transport.fetches.size() >= 4, 1000);
+  withPeers.revision = 5;
+  withPeers.console.vban.append(outgoing.request.vbanDefinition);
+  fixture.transport.reply(fixture.transport.fetches.constLast(), withPeers);
+  QTRY_COMPARE_WITH_TIMEOUT(fixture.model.consoleVban().size(), 2, 1000);
+  QVERIFY(fixture.model.setVbanEnabled(QStringLiteral("Peer"), true));
+  QCOMPARE(fixture.transport.operations.size(), 3);
+  const auto enable = fixture.transport.operations.constLast();
+  QCOMPARE(enable.request.kind, OperationKind::SetVbanEnabled);
+  QCOMPARE(enable.request.displayName, QStringLiteral("Peer"));
+  QVERIFY(enable.request.enabled);
 }
 
 void AudioSettingsModelTest::projectsBoundedAuthoritativeInventory() {

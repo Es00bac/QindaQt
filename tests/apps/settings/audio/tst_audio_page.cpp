@@ -36,6 +36,7 @@ private Q_SLOTS:
   void keepsCompactFocusVisibleWithoutAPageCloseAction();
   void disabledDefaultFallsThroughToFirstAdmittedAction();
   void supportsDocumentPagingKeys();
+  void compactTabsAndManualPeerKeyboardFlow();
   void stubMatchesRealModelSurface();
 
 private:
@@ -381,6 +382,116 @@ void AudioPageTest::supportsDocumentPagingKeys() {
   QTRY_VERIFY(viewport->property("contentY").toReal() < maximum);
   QTest::keyClick(m_view.get(), Qt::Key_Home, Qt::ControlModifier);
   QTRY_COMPARE(viewport->property("contentY").toReal(), 0.0);
+}
+
+void AudioPageTest::compactTabsAndManualPeerKeyboardFlow() {
+  auto [guard, page] = createPage(QSize(420, 320));
+  QVERIFY(page != nullptr);
+  auto *tabs = findItem(page, QStringLiteral("audioDestinationTabs"));
+  auto *lastTab = findItem(tabs, QStringLiteral("tab_2"));
+  auto *output = findItem(page, QStringLiteral("audioOutputDefault_12"));
+  auto *sendName = findItem(page, QStringLiteral("audioPeerSendName"));
+  auto *sendHost = findItem(page, QStringLiteral("audioPeerSendHost"));
+  auto *sendSave = findItem(page, QStringLiteral("audioPeerSendSave"));
+  auto *receiveName = findItem(page, QStringLiteral("audioPeerReceiveName"));
+  auto *receiveSource = findItem(page, QStringLiteral("audioPeerReceiveSource"));
+  auto *receiveOutput = findItem(page, QStringLiteral("audioPeerReceiveOutput"));
+  auto *receiveSave = findItem(page, QStringLiteral("audioPeerReceiveSave"));
+  QVERIFY(tabs && lastTab && output && sendName && sendHost && sendSave);
+  QVERIFY(receiveName && receiveSource && receiveOutput && receiveSave);
+  QVERIFY(lastTab->mapToItem(page, QPointF(lastTab->width(), 0)).x() <= page->width());
+  QCOMPARE(page->property("activeTab").toInt(), 0);
+  QVERIFY(output->isVisible());
+  tabs->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), tabs);
+  QTest::keyClick(m_view.get(), Qt::Key_Right);
+  QTRY_COMPARE(page->property("activeTab").toInt(), 1);
+  QVERIFY(!output->isVisible());
+  QVERIFY(findItem(page, QStringLiteral("consoleStrip_strip.hw.1"))->isVisible());
+  QTest::keyClick(m_view.get(), Qt::Key_Right);
+  QTRY_COMPARE(page->property("activeTab").toInt(), 2);
+  QVERIFY(sendName->isVisible());
+  QCOMPARE(page->property("firstFocusTarget").value<QObject *>(),
+           static_cast<QObject *>(sendName));
+  sendName->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), sendName);
+  sendName->setProperty("text", QStringLiteral("Desk"));
+  sendHost->setProperty("text", QStringLiteral("192.0.2.20"));
+  QCoreApplication::processEvents();
+  QVERIFY(sendSave->property("available").toBool());
+  QVERIFY(QMetaObject::invokeMethod(sendSave, "clicked"));
+  QCOMPARE(m_model->savedPeerName, QStringLiteral("Desk"));
+  QCOMPARE(m_model->savedPeerBus, QStringLiteral("bus.a2"));
+  QCOMPARE(m_model->savedPeerHost, QStringLiteral("192.0.2.20"));
+  QCOMPARE(m_model->savedPeerPort, 6980);
+  QVERIFY(m_model->savedPeerOutgoing);
+  receiveName->setProperty("text", QStringLiteral("DeskRx"));
+  receiveSource->setProperty("text", QStringLiteral("192.0.2.10"));
+  receiveOutput->setProperty("currentIndex", 0);
+  QCoreApplication::processEvents();
+  QVERIFY(receiveSave->property("available").toBool());
+  receiveSave->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), receiveSave);
+  auto *viewport = findItem(page, QStringLiteral("audioFormViewport"));
+  QVERIFY(viewport != nullptr);
+  QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
+  QVERIFY(QMetaObject::invokeMethod(receiveSave, "clicked"));
+  QCOMPARE(m_model->savedPeerName, QStringLiteral("DeskRx"));
+  QCOMPARE(m_model->savedPeerHost, QStringLiteral("192.0.2.10"));
+  QCOMPARE(m_model->savedPeerOutput, QStringLiteral("alsa_output.desk"));
+  QVERIFY(!m_model->savedPeerOutgoing);
+
+  // A fresh authoritative row repopulates the editor and exposes the
+  // local-graph-only state. It remains reachable in the compact viewport.
+  m_model->consoleVban = {QVariantMap{
+      {QStringLiteral("name"), QStringLiteral("DeskRx")},
+      {QStringLiteral("outgoing"), false},
+      {QStringLiteral("busId"), QString()},
+      {QStringLiteral("host"), QStringLiteral("192.0.2.10")},
+      {QStringLiteral("port"), 6980},
+      {QStringLiteral("enabled"), true},
+      {QStringLiteral("active"), false},
+      {QStringLiteral("outputNodeName"), QStringLiteral("alsa_output.desk")}}};
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  auto *edit = findItem(page, QStringLiteral("audioPeerEdit_DeskRx"));
+  auto *enable = findItem(page, QStringLiteral("audioPeerEnable_DeskRx"));
+  auto *peerState = findItem(page, QStringLiteral("audioPeerState_DeskRx"));
+  QVERIFY(edit && enable && peerState);
+  QVERIFY(peerState->property("text").toString().contains(QStringLiteral("waiting")));
+  receiveName->setProperty("text", QString());
+  QVERIFY(QMetaObject::invokeMethod(edit, "clicked"));
+  QCOMPARE(receiveName->property("text").toString(), QStringLiteral("DeskRx"));
+  QCOMPARE(receiveSource->property("text").toString(), QStringLiteral("192.0.2.10"));
+  QCOMPARE(receiveOutput->property("currentIndex").toInt(), 0);
+  QVERIFY(QMetaObject::invokeMethod(enable, "clicked"));
+  QCOMPARE(m_model->lastVbanName, QStringLiteral("DeskRx"));
+  QVERIFY(!m_model->lastVbanEnabled);
+  m_model->consoleVban[0] = QVariantMap{
+      {QStringLiteral("name"), QStringLiteral("DeskRx")},
+      {QStringLiteral("outgoing"), false},
+      {QStringLiteral("busId"), QString()},
+      {QStringLiteral("host"), QStringLiteral("192.0.2.10")},
+      {QStringLiteral("port"), 6980},
+      {QStringLiteral("enabled"), true},
+      {QStringLiteral("active"), true},
+      {QStringLiteral("outputNodeName"), QStringLiteral("alsa_output.desk")}};
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  QVERIFY(peerState->property("text").toString().contains(QStringLiteral("unconfirmed")));
+
+  m_model->canManagePeerStreams = false;
+  m_model->errorText = QStringLiteral("Receiver output unavailable");
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  QVERIFY(findItem(page, QStringLiteral("audioPeerUnavailable"))->isVisible());
+  QVERIFY(!receiveSave->property("available").toBool());
+  QVERIFY(!enable->property("available").toBool());
+  QCOMPARE(findItem(page, QStringLiteral("audioError"))->property("text").toString(),
+           QStringLiteral("Receiver output unavailable"));
+  tabs->forceActiveFocus(Qt::TabFocusReason);
+  QTest::keyClick(m_view.get(), Qt::Key_Left);
+  QTRY_COMPARE(page->property("activeTab").toInt(), 1);
 }
 
 void AudioPageTest::stubMatchesRealModelSurface() {

@@ -93,6 +93,18 @@ WirePlumberAudioBackend::WirePlumberAudioBackend(QObject *parent)
                     Q_EMIT recordingFailed(generation, reason);
                 },
                 Qt::QueuedConnection);
+        },
+        [this](QStringList names) {
+            const quint64 generation = m_runGeneration.load(std::memory_order_acquire);
+            if (!m_running.load(std::memory_order_acquire)) return;
+            QMetaObject::invokeMethod(
+                this,
+                [this, generation, names = std::move(names)] {
+                    if (!m_running.load(std::memory_order_acquire)
+                        || generation != m_runGeneration.load(std::memory_order_acquire)) return;
+                    Q_EMIT vbanRunningChanged(generation, names);
+                },
+                Qt::QueuedConnection);
         });
 }
 

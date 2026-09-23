@@ -6,6 +6,7 @@ import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
 import QindaTK.QindaQt
 
 T.Page {
@@ -18,26 +19,36 @@ T.Page {
 
     required property var audioSettings
     signal closeRequested()
+    property int activeTab: 0
 
-    // Focus entry follows visual traversal order: the first enabled,
-    // admitted control of the output, input, virtual-device, then stream
-    // sections, then Retry. Sections recompute their target from the live
-    // projection, so a control the snapshot disabled is never nominated
-    // (AGENT-GUARD: the Settings host forceActiveFocus()es this target).
+    function selectTab(index) {
+        if (index < 0 || index > 2) return
+        root.activeTab = index
+        viewport.contentY = 0
+    }
+
+    // AGENT-GUARD: host entry/exit targets must belong to the VISIBLE tab.
+    // A hidden device control must never absorb Settings keyboard entry when
+    // the mixer or peer editor is selected. The mixer uses its TabStrip as
+    // entry until its dense QindaTK controls expose one stable target.
     readonly property Item firstFocusTarget:
-        outputSection.firstActionTarget !== null ? outputSection.firstActionTarget
-        : inputSection.firstActionTarget !== null ? inputSection.firstActionTarget
-        : virtualSection.firstActionTarget !== null ? virtualSection.firstActionTarget
-        : streamSection.firstActionTarget !== null ? streamSection.firstActionTarget
-        : retryButton.visible ? retryButton
-        : root
+        activeTab === 0
+            ? (outputSection.firstActionTarget !== null ? outputSection.firstActionTarget
+               : inputSection.firstActionTarget !== null ? inputSection.firstActionTarget
+               : virtualSection.firstActionTarget !== null ? virtualSection.firstActionTarget
+               : streamSection.firstActionTarget !== null ? streamSection.firstActionTarget
+               : retryButton.visible ? retryButton : destinationTabs)
+        : activeTab === 2 && peerSection.firstActionTarget !== null
+            ? peerSection.firstActionTarget : destinationTabs
 
-    // The last domain action follows the visible traversal order.
     readonly property Item lastActionTarget:
-        streamSection.lastActionTarget !== null ? streamSection.lastActionTarget
-        : virtualSection.lastActionTarget !== null ? virtualSection.lastActionTarget
-        : inputSection.lastActionTarget !== null ? inputSection.lastActionTarget
-        : outputSection.lastActionTarget
+        activeTab === 0
+            ? (streamSection.lastActionTarget !== null ? streamSection.lastActionTarget
+               : virtualSection.lastActionTarget !== null ? virtualSection.lastActionTarget
+               : inputSection.lastActionTarget !== null ? inputSection.lastActionTarget
+               : outputSection.lastActionTarget)
+        : activeTab === 2 && peerSection.lastActionTarget !== null
+            ? peerSection.lastActionTarget : destinationTabs
 
     title: qsTr("Audio")
 
@@ -117,6 +128,18 @@ T.Page {
             Accessible.name: text
         }
 
+        Tk.TabStrip {
+            id: destinationTabs
+            objectName: "audioDestinationTabs"
+            Layout.fillWidth: true
+            model: [qsTr("Devices"), qsTr("Mixer"), qsTr("Other computers")]
+            currentIndex: root.activeTab
+            small: width < 480
+            stretch: true
+            Accessible.name: qsTr("Audio settings sections")
+            onTabActivated: index => root.selectTab(index)
+        }
+
         Flickable {
             id: viewport
             objectName: "audioFormViewport"
@@ -180,6 +203,7 @@ T.Page {
                     spacing: Tokens.space["3"]
 
                     Label {
+                        visible: root.activeTab === 0
                         Layout.fillWidth: true
                         text: qsTr("Default output: %1 · Default input: %2")
                             .arg(root.audioSettings.defaultOutputName.length > 0
@@ -193,17 +217,23 @@ T.Page {
                         Accessible.name: text
                     }
 
-                    // The console comes first: it is the surface a user
-                    // operates continuously, while the device lists below it
-                    // are configuration they visit occasionally.
                     AudioConsoleSection {
                         id: consoleSection
                         audioSettings: root.audioSettings
+                        visible: root.activeTab === 1
+                                 && (root.audioSettings.consoleAvailable ?? false)
+                    }
+
+                    AudioPeerSection {
+                        id: peerSection
+                        audioSettings: root.audioSettings
+                        visible: root.activeTab === 2
                     }
 
                     AudioDeviceSection {
                         id: outputSection
                         audioSettings: root.audioSettings
+                        visible: root.activeTab === 0
                         kindPrefix: "audioOutput"
                         sectionTitle: qsTr("Output devices")
                         sectionDescription: qsTr(
@@ -216,6 +246,7 @@ T.Page {
                     AudioDeviceSection {
                         id: inputSection
                         audioSettings: root.audioSettings
+                        visible: root.activeTab === 0
                         kindPrefix: "audioInput"
                         sectionTitle: qsTr("Input devices")
                         sectionDescription: qsTr(
@@ -228,12 +259,14 @@ T.Page {
                     AudioVirtualDeviceSection {
                         id: virtualSection
                         audioSettings: root.audioSettings
+                        visible: root.activeTab === 0
                         virtualDeviceRows: root.audioSettings.virtualDevices
                     }
 
                     AudioStreamSection {
                         id: streamSection
                         audioSettings: root.audioSettings
+                        visible: root.activeTab === 0
                         streamRows: root.audioSettings.streams
                     }
                 }

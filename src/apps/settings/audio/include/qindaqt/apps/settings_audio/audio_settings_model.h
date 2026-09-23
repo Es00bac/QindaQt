@@ -67,6 +67,9 @@ class AudioSettingsModel final : public QObject {
   Q_PROPERTY(QStringList consoleMacros READ consoleMacros NOTIFY viewChanged)
   Q_PROPERTY(QVariantMap consoleRecording READ consoleRecording NOTIFY viewChanged)
   Q_PROPERTY(QVariantList consoleVban READ consoleVban NOTIFY viewChanged)
+  Q_PROPERTY(bool canManagePeerStreams READ canManagePeerStreams NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList peerOutputs READ peerOutputs NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList peerBuses READ peerBuses NOTIFY viewChanged)
 
 public:
   explicit AudioSettingsModel(Audio::AudioClient &client,
@@ -90,6 +93,9 @@ public:
   [[nodiscard]] QStringList consoleMacros() const;
   [[nodiscard]] QVariantMap consoleRecording() const;
   [[nodiscard]] QVariantList consoleVban() const;
+  [[nodiscard]] bool canManagePeerStreams() const;
+  [[nodiscard]] QVariantList peerOutputs() const;
+  [[nodiscard]] QVariantList peerBuses() const;
 
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] QString errorText() const;
@@ -156,6 +162,14 @@ public:
   Q_INVOKABLE bool stopRecording();
   // VBAN (ADR-0185): switch a defined stream on or off.
   Q_INVOKABLE bool setVbanEnabled(QString name, bool enabled);
+  // Manual peer definitions are persisted by Audio1, never by Settings.
+  // Saving a receiver authorizes only one exact IPv4 source and one selected
+  // physical output; enable remains a second deliberate action.
+  Q_INVOKABLE bool saveOutgoingPeer(QString name, QString busId,
+                                   QString destinationHost, int port);
+  Q_INVOKABLE bool saveIncomingPeer(QString name, QString sourceIpv4,
+                                   QString outputNodeName, int port);
+  Q_INVOKABLE bool removePeer(QString name);
   Q_INVOKABLE bool setStripSource(QString stripId, quint64 serial);
   Q_INVOKABLE bool setBusTarget(QString busId, quint64 serial);
   Q_INVOKABLE bool setStripMuted(QString stripId, bool muted);

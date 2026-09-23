@@ -24,8 +24,9 @@ PipeWire destroying a virtual-bus module or qualify physical audio hardware.
 Audio1 is QindaQt's typed, restart-aware control and observation boundary for
 the running PipeWire graph. The D-Bus-activated `qindaqt-audio-service` owns
 `org.qindaqt.Audio1`; upstream WirePlumber remains the policy manager. Audio1
-does not open devices, transport samples, install PipeWire configuration, or
-replace WirePlumber policy.
+does not replace WirePlumber policy or install PipeWire configuration.
+Its VBAN worker does capture, transport, and receive user-enabled stereo audio
+through the graph as described below.
 
 The exact wire contract is in the [Audio1 reference](../reference/audio1-v2.md).
 The Qt/GLib ownership decision is recorded in
@@ -47,6 +48,26 @@ backend. The production adapter then resolves the same serial in the current
 WirePlumber object manager and synchronizes the core after an accepted action.
 These two checks prevent a disappeared or replaced object from being mutated
 through an earlier snapshot.
+
+## Manual peer audio boundary
+
+Audio1 schema 12 adds typed stream-definition upsert/delete and a
+`ManageVbanStreams` capability; [Audio1 schema 12](../reference/audio1-v12.md)
+defines the public fields. `VbanStore` owns the atomic JSON document, the
+coordinator owns enabled state and publication, and the GLib worker alone owns
+UDP threads and PipeWire stream/loopback lifetime. Settings sees bounded
+bus/output choices through the public snapshot and sends typed operations; it
+never edits the file or graph directly.
+
+An incoming definition grants one exact source IPv4, UDP port, and physical
+speaker. The receiver checks the datagram's actual source before decoding.
+The worker sends received audio through a dedicated exact-target loopback
+with fallback disabled, separate from console mixer routes. A disappeared
+speaker withdraws the path. Backend-observed local source and route nodes
+drive `active`; network delivery and acoustic output are not observed.
+[ADR-0246](../adr/0246-configure-manual-audio-peers-through-audio1.md)
+records the decision and [Audio VBAN streams](../reference/audio-vban-streams.md)
+gives the manual setup steps.
 
 ## Authority and handle lineage
 

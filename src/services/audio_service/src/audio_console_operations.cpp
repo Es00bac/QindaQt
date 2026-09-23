@@ -44,6 +44,8 @@ bool AudioOperationCoordinator::isConsoleOperation(const OperationKind kind) noe
     case OperationKind::StartRecording:
     case OperationKind::StopRecording:
     case OperationKind::SetVbanEnabled:
+    case OperationKind::UpsertVbanStream:
+    case OperationKind::DeleteVbanStream:
         return true;
     default:
         return false;
@@ -519,60 +521,6 @@ void AudioOperationCoordinator::acceptRecordingFailure(const quint64 generation,
     Q_UNUSED(reasonCode)
     m_recording = {};
     republishConsole();
-}
-
-QList<VbanStream> AudioOperationCoordinator::vbanStreams() const
-{
-    QList<VbanStream> streams = m_vban.load();
-    const QStringList enabled = m_console.enabledVbanStreams();
-    for (VbanStream &stream : streams) {
-        stream.enabled = enabled.contains(stream.name);
-        bool declared = false;
-        for (const BackendVbanStream &published : m_publishedVban) {
-            declared = declared || published.name == stream.name;
-        }
-        // Active means "declared to the graph": enabled, and for an outgoing
-        // stream, its bus has a device.
-        stream.active = declared;
-    }
-    return streams;
-}
-
-void AudioOperationCoordinator::publishVban()
-{
-    QList<BackendVbanStream> wanted;
-    const QStringList enabled = m_console.enabledVbanStreams();
-    const Console console = m_console.console();
-    for (const VbanStream &stream : m_vban.load()) {
-        if (!enabled.contains(stream.name)) {
-            continue;
-        }
-        BackendVbanStream declared;
-        declared.name = stream.name;
-        declared.outgoing = stream.outgoing;
-        declared.host = stream.host;
-        declared.port = stream.port;
-        if (stream.outgoing) {
-            bool bound = false;
-            for (const Bus &bus : console.buses) {
-                if (bus.id == stream.busId && bus.targetKnown) {
-                    declared.target = Handle{bus.targetEpoch, bus.targetSerial};
-                    bound = true;
-                }
-            }
-            if (!bound) {
-                continue;
-            }
-        }
-        wanted.append(declared);
-    }
-    if (wanted == m_publishedVban) {
-        return;
-    }
-    m_publishedVban = wanted;
-    if (m_backend != nullptr && m_running) {
-        m_backend->applyVban(m_publishedVban);
-    }
 }
 
 void AudioOperationCoordinator::republishConsole()

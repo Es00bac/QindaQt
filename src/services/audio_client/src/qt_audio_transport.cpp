@@ -368,6 +368,14 @@ void QtAudioTransport::submitOperation(const QString &owner, const quint64 reque
         method = QStringLiteral("SetVbanEnabled");
         arguments = {request.displayName, request.enabled};
         break;
+    case OperationKind::UpsertVbanStream:
+        method = QStringLiteral("UpsertVbanStream");
+        arguments = {QVariant::fromValue(request.vbanDefinition)};
+        break;
+    case OperationKind::DeleteVbanStream:
+        method = QStringLiteral("DeleteVbanStream");
+        arguments = {request.displayName};
+        break;
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(
