@@ -412,7 +412,7 @@ void AudioPageTest::compactTabsAndManualPeerKeyboardFlow() {
   QTRY_COMPARE(page->property("activeTab").toInt(), 2);
   QVERIFY(sendName->isVisible());
   QCOMPARE(page->property("firstFocusTarget").value<QObject *>(),
-           static_cast<QObject *>(sendName));
+           static_cast<QObject *>(findItem(page, QStringLiteral("audioPeerCodeSender"))));
   sendName->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), sendName);
   sendName->setProperty("text", QStringLiteral("Desk"));

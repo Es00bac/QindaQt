@@ -15,7 +15,7 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Tokens.space["3"]
 
-    readonly property Item firstActionTarget: sendName.enabled ? sendName : null
+    readonly property Item firstActionTarget: connectionCard.firstActionTarget
     readonly property Item lastActionTarget: receiveSave.enabled ? receiveSave : null
     readonly property var buses: audioSettings.peerBuses ?? []
     readonly property var outputs: audioSettings.peerOutputs ?? []
@@ -50,19 +50,19 @@ ColumnLayout {
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Other computers")
-        description: qsTr("Manual stereo audio over the local network")
+        description: qsTr("Stereo audio with another computer on your local network")
     }
     Label {
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
-        text: qsTr("Set up both computers. On the receiving computer, save an exact sender IPv4 address and speaker, then enable Receive. On the sending computer, choose a mixer bus and the receiver's address and port, then enable Send. Use the same stream name and UDP port at both ends.")
+        text: qsTr("Use a connection code to copy the sender details to the other computer, or use the manual forms below. Each computer needs its own send and receive setup.")
         Accessible.role: Accessible.StaticText
         Accessible.name: text
     }
     Label {
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
-        text: qsTr("VBAN is open LAN UDP without encryption or peer authentication. Only enable Receive on a trusted network. 'Local route active' confirms this computer's graph, not packet delivery or audible sound on the other computer.")
+        text: qsTr("Network audio is sent openly, without encryption or a check of the other computer's identity. Only turn on Receive on a trusted network. 'Local route active' means this computer's audio route is connected; it does not prove sound played on the other computer.")
         muted: true
         Accessible.role: Accessible.StaticText
         Accessible.name: text
@@ -75,6 +75,14 @@ ColumnLayout {
         wrapMode: Text.WordWrap
         Accessible.role: Accessible.StaticText
         Accessible.name: text
+    }
+
+    AudioPeerConnectionCard {
+        id: connectionCard
+        objectName: "audioPeerConnectionCard"
+        audioSettings: root.audioSettings
+        definitions: root.definitions
+        outputs: root.outputs
     }
 
     Repeater {
