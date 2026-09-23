@@ -7,6 +7,10 @@
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_protocol/settings_wire_status.h"
 
+#include <QCoreApplication>
+#include <QFontDatabase>
+#include <QGuiApplication>
+
 #include <utility>
 
 namespace QindaQt::Apps::SettingsAppearance {
@@ -39,6 +43,16 @@ AppearanceSettingsModel::AppearanceSettingsModel(
 {
     Q_ASSERT(m_client.thread() == thread());
     Q_ASSERT(m_previewFacade.isNull() || m_previewFacade->thread() == thread());
+    // AGENT-NOTE: Model-only tests use QCoreApplication. The installed-font
+    // catalog is available only in GUI compositions; the pure validation
+    // function still covers missing names with an injected catalog.
+    if (qobject_cast<QGuiApplication *>(QCoreApplication::instance()) != nullptr) {
+        for (const QString &family : QFontDatabase::families()) {
+            if (QFontDatabase::isFixedPitch(family)) {
+                m_installedMonospaceFamilies.append(family);
+            }
+        }
+    }
     connect(&m_client, &SettingsClient::stateChanged,
             this, &AppearanceSettingsModel::handleClientState);
     connect(&m_client, &SettingsClient::snapshotChanged,
@@ -53,7 +67,8 @@ AppearanceSettingsModel::AppearanceSettingsModel(
     m_decorations = Themes::DecorationThemeLoader::loadDirectories(
                         AppAppearance::standardDecorationDirectories())
                         .value_or(QVector<Themes::DecorationThemeSpec>{});
-    m_validation = validateAppearanceDraft(m_draft, installedThemeIds());
+    m_validation = validateAppearanceDraft(m_draft, installedThemeIds(),
+                                           m_installedMonospaceFamilies);
     refreshValidationAndPreview();
 }
 
@@ -87,6 +102,11 @@ bool AppearanceSettingsModel::conflict() const noexcept
 bool AppearanceSettingsModel::unavailable() const noexcept
 {
     return m_state == State::Unavailable;
+}
+
+bool AppearanceSettingsModel::hasConfirmed() const noexcept
+{
+    return m_hasBaseline;
 }
 
 bool AppearanceSettingsModel::canEdit() const noexcept
@@ -145,6 +165,11 @@ QString AppearanceSettingsModel::errorText() const
 QVariantMap AppearanceSettingsModel::draft() const
 {
     return m_draft.toVariantMap();
+}
+
+QString AppearanceSettingsModel::confirmedMonospaceFamily() const
+{
+    return m_confirmed.fontMonospaceFamily;
 }
 
 QVariantMap AppearanceSettingsModel::fieldErrors() const
