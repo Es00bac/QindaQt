@@ -69,6 +69,15 @@ public:
     [[nodiscard]] const QString &currentOwner() const noexcept { return m_owner; }
     [[nodiscard]] const std::optional<SettingsSnapshot> &snapshot() const noexcept { return m_snapshot; }
     [[nodiscard]] bool writeInFlight() const noexcept { return m_write.has_value(); }
+    // Same-thread admission preview for a known-valid value. It mirrors the
+    // state, scope, request, and token guard in setUserValue(); callers must
+    // still check that method's return because validation and races can fail.
+    // No ownership is transferred and the answer is valid only until the next
+    // client/transport event. See ADR-0249.
+    [[nodiscard]] bool canSetUserValue(const QString &key) const noexcept {
+        return m_state == ClientState::Ready && m_snapshot && !m_request && !m_write
+               && m_nextToken != 0 && m_keys.contains(key);
+    }
 
 Q_SIGNALS:
     void stateChanged();
@@ -78,6 +87,9 @@ Q_SIGNALS:
     void ownerChanged();
     void snapshotChanged();
     void writeInFlightChanged();
+    // Emitted when a readiness, request, or token transition may change
+    // canSetUserValue() for any scoped key.
+    void writeAdmissionChanged();
     void commitFinished(const QindaQt::Services::SettingsClient::CommitOutcome &outcome);
     void commitUncertain(const QString &message);
 
@@ -111,7 +123,10 @@ private:
     void scheduleRetry();
     void makeWriteUncertain(QString message);
     void publish(ClientState state, QString error = {});
-    [[nodiscard]] quint64 nextToken();
+    [[nodiscard]] quint64 nextToken() noexcept {
+        if (m_nextToken == 0) return 0;
+        return m_nextToken++;
+    }
 
     SettingsTransport &m_transport;
     QStringList m_keys;

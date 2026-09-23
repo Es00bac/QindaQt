@@ -37,12 +37,27 @@ class FakeWeekStart final : public WeekStartPreference {
 public:
   [[nodiscard]] QString weekStart() const override { return m_weekStart; }
   [[nodiscard]] bool editable() const override { return m_editable; }
-  void setWeekStart(const QString &weekStart) override {
+  [[nodiscard]] WeekStartWriteState writeState() const override { return m_state; }
+  [[nodiscard]] QString diagnostic() const override { return m_diagnostic; }
+  [[nodiscard]] QString availabilityText() const override {
+    return m_editable ? QString{} : QStringLiteral("Settings unavailable");
+  }
+  bool setWeekStart(const QString &weekStart) override {
     m_requested.append(weekStart);
     if (!m_accept) {
-      return;
+      m_state = WeekStartWriteState::Refused;
+      m_diagnostic = QStringLiteral("Write refused");
+      Q_EMIT weekStartChanged();
+      return false;
     }
+    m_state = WeekStartWriteState::Idle;
+    m_diagnostic.clear();
     m_weekStart = weekStart;
+    Q_EMIT weekStartChanged();
+    return true;
+  }
+  void refresh() override {
+    ++m_refreshes;
     Q_EMIT weekStartChanged();
   }
 
@@ -50,6 +65,9 @@ public:
   bool m_editable = true;
   bool m_accept = true;
   QStringList m_requested;
+  WeekStartWriteState m_state = WeekStartWriteState::Idle;
+  QString m_diagnostic;
+  int m_refreshes = 0;
 };
 
 [[nodiscard]] SystemTimeSnapshot readySnapshot() {
@@ -265,6 +283,10 @@ void TestDateTimeSettingsModel::firstDayOfTheWeekFollowsThePreference() {
   fixture.model->requestWeekStart(QStringLiteral("sunday"));
   QCOMPARE(fixture.week->m_requested.size(), 2);
   QCOMPARE(fixture.model->weekStart(), QStringLiteral("monday"));
+  QVERIFY(fixture.model->weekStartErrorText().contains(QStringLiteral("refused")));
+  QVERIFY(!fixture.model->weekStartPending());
+  fixture.model->retryWeekStart();
+  QCOMPARE(fixture.week->m_refreshes, 1);
 }
 
 QTEST_MAIN(TestDateTimeSettingsModel)

@@ -181,6 +181,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Appearance route](apps/appearance-settings.md) documents the
   first-party appearance settings surface: validated drafts, QST previews,
   per-key Settings1 commits, and recovery truth.
+- [Settings Date & time route](apps/datetime-settings.md) records exact
+  Settings1 admission, confirmed first-day-of-week readback, and visible
+  refusal, conflict, uncertainty, and Retry outcomes.
 - [Settings Display route](apps/display-settings.md) documents the first-party
   display settings surface: output selection, validated drafts, advertised modes,
   logical scale, reversible transaction coordinator preview/confirmation, and

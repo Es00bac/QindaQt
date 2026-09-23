@@ -33,6 +33,11 @@ class DateTimeSettingsModel final : public QObject {
   Q_PROPERTY(QString weekStart READ weekStart NOTIFY viewChanged FINAL)
   Q_PROPERTY(QStringList weekStarts READ weekStarts CONSTANT FINAL)
   Q_PROPERTY(bool weekStartEditable READ weekStartEditable NOTIFY viewChanged FINAL)
+  Q_PROPERTY(bool weekStartPending READ weekStartPending NOTIFY viewChanged FINAL)
+  Q_PROPERTY(bool weekStartUncertain READ weekStartUncertain NOTIFY viewChanged FINAL)
+  Q_PROPERTY(bool weekStartConflict READ weekStartConflict NOTIFY viewChanged FINAL)
+  Q_PROPERTY(QString weekStartStatusText READ weekStartStatusText NOTIFY viewChanged FINAL)
+  Q_PROPERTY(QString weekStartErrorText READ weekStartErrorText NOTIFY viewChanged FINAL)
   // Set while a platform request is outstanding. Controls stay enabled --
   // disabling them would make a slow authentication prompt look like a hang.
   Q_PROPERTY(bool busy READ busy NOTIFY viewChanged FINAL)
@@ -47,6 +52,7 @@ public:
   Q_INVOKABLE void requestTimeZone(const QString &timeZone);
   Q_INVOKABLE void requestAutomaticTime(bool enabled);
   Q_INVOKABLE void requestWeekStart(const QString &weekStart);
+  Q_INVOKABLE void retryWeekStart();
   Q_INVOKABLE void refresh();
   Q_INVOKABLE void clearError();
 
@@ -63,6 +69,11 @@ public:
   [[nodiscard]] QString weekStart() const;
   [[nodiscard]] QStringList weekStarts() const;
   [[nodiscard]] bool weekStartEditable() const;
+  [[nodiscard]] bool weekStartPending() const;
+  [[nodiscard]] bool weekStartUncertain() const;
+  [[nodiscard]] bool weekStartConflict() const;
+  [[nodiscard]] QString weekStartStatusText() const;
+  [[nodiscard]] QString weekStartErrorText() const;
   [[nodiscard]] bool busy() const { return m_pendingRequests > 0; }
   [[nodiscard]] QString statusText() const;
   [[nodiscard]] QString errorText() const { return m_errorText; }

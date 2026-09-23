@@ -249,3 +249,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0245: Write only supported default-application associations](0245-write-only-supported-default-application-associations.md)
 - [ADR-0246: Configure manual audio peers through Audio1](0246-configure-manual-audio-peers-through-audio1.md)
 - [ADR-0247: Run XDG autostart in the session supervisor](0247-run-xdg-autostart-in-the-session-supervisor.md)
+- [ADR-0248: Confirm Streaming preferences before OBS consumption](0248-confirm-streaming-preferences-before-obs-consumption.md)
+- [ADR-0249: Confirm week-start writes against Settings1](0249-confirm-week-start-writes-against-settings1.md)

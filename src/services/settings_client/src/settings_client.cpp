@@ -151,6 +151,7 @@ void SettingsClient::stop()
     }
     m_transportStarted = false;
     publish(ClientState::Unavailable);
+    Q_EMIT writeAdmissionChanged();
     if (wasWriting) {
         Q_EMIT writeInFlightChanged();
     }
@@ -180,8 +181,7 @@ void SettingsClient::refresh()
 
 bool SettingsClient::setUserValue(const QString &key, const QVariant &value, QString *error)
 {
-    if (m_state != ClientState::Ready || !m_snapshot || m_request || m_write
-        || !m_keys.contains(key)) {
+    if (!canSetUserValue(key)) {
         setError(error, QStringLiteral("settings client is not ready for this key"));
         return false;
     }
@@ -202,6 +202,7 @@ bool SettingsClient::setUserValue(const QString &key, const QVariant &value, QSt
                         m_snapshot->settingsSchemaVersion, m_snapshot->revision};
     m_timeout.start(m_timing.requestTimeoutMilliseconds);
     Q_EMIT writeInFlightChanged();
+    Q_EMIT writeAdmissionChanged();
     m_transport.commit(token, m_owner, m_snapshot->epoch, m_snapshot->revision,
                        QVariantList{operation});
     return true;
@@ -227,6 +228,7 @@ bool SettingsClient::removeUserValue(const QString &key, QString *error)
                         m_snapshot->settingsSchemaVersion, m_snapshot->revision};
     m_timeout.start(m_timing.requestTimeoutMilliseconds);
     Q_EMIT writeInFlightChanged();
+    Q_EMIT writeAdmissionChanged();
     m_transport.commit(token, m_owner, m_snapshot->epoch, m_snapshot->revision,
                        QVariantList{operation});
     return true;
@@ -330,6 +332,7 @@ void SettingsClient::handleSnapshot(quint64 token, const QString &owner,
     m_retryIndex = 0;
     publish(ClientState::Ready);
     Q_EMIT snapshotChanged();
+    Q_EMIT writeAdmissionChanged();
     const bool followUp = m_dirty;
     m_dirty = false;
     if (followUp) {
@@ -454,6 +457,7 @@ void SettingsClient::requestSnapshotNow()
     // target revision that can force an endless catch-up loop.
     m_dirty = false;
     m_request = Request{token, m_owner, RequestKind::Snapshot, {}, 0, 0};
+    Q_EMIT writeAdmissionChanged();
     m_timeout.start(m_timing.requestTimeoutMilliseconds);
     m_transport.requestSnapshot(token, m_owner, m_keys);
 }
@@ -518,18 +522,7 @@ void SettingsClient::publish(ClientState state, QString error)
     m_state = state;
     m_lastError = std::move(error);
     Q_EMIT stateChanged();
-}
-
-quint64 SettingsClient::nextToken()
-{
-    if (m_nextToken == 0) {
-        return 0;
-    }
-    const quint64 result = m_nextToken++;
-    if (m_nextToken == 0) {
-        m_nextToken = 0;
-    }
-    return result;
+    Q_EMIT writeAdmissionChanged();
 }
 
 } // namespace QindaQt::Services::SettingsClient
