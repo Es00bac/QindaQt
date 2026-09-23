@@ -3,6 +3,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QMetaType>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QVariant>
@@ -125,15 +126,22 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
     kwin.endGroup();
 
     kwin.beginGroup(QStringLiteral("Effect-overview"));
-    // AGENT-CONTRACT (ADR-0232): KWin's overview effect reserves the top-left screen
-    // corner by default (its BorderActivate default is ElectricTopLeft = 7,
-    // an IntList), so brushing that corner raises KWin's own window grid.
-    // QindaQt owns that gesture: the desktop's own gather action arranges
-    // iconified chips, rolled-up container cards, and remaining windows in
-    // one deterministic layout, which KWin's grid cannot express. An empty
-    // list reserves no corner at all; the effect keeps its own shortcut.
-    // Seed-missing only, so a user who reassigned the corner keeps it.
-    seedMissing(kwin, QStringLiteral("BorderActivate"), QStringList{});
+    // AGENT-GUARD (ADR-0240): KWin reads this entry as an IntList. QSettings
+    // serializes an empty QStringList as @Invalid(), which KConfig reads as
+    // edge 0 (ElectricTop), making KWin's overview own the entire top edge.
+    // A valid empty QString persists as BorderActivate=, an empty IntList.
+    // Repair that legacy seed whether QSettings has reloaded it as invalid or
+    // still has the typed empty list cached in this process. Preserve a user's
+    // chosen edges.
+    const QString overviewBorder = QStringLiteral("BorderActivate");
+    const QVariant existingOverviewBorder = kwin.value(overviewBorder);
+    const bool malformedEmptyList =
+        existingOverviewBorder.metaType() == QMetaType::fromType<QStringList>()
+        && existingOverviewBorder.toStringList().isEmpty();
+    if (!kwin.contains(overviewBorder) || !existingOverviewBorder.isValid()
+        || malformedEmptyList) {
+        kwin.setValue(overviewBorder, QStringLiteral(""));
+    }
     kwin.endGroup();
 
     kwin.sync();

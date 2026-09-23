@@ -57,3 +57,8 @@ exists in the task-list applet slice.
   composition keeps the port unwired by design.
 - Hostile-payload validation (stride/byte bounds, dimension caps) belongs to
   the client and is required before the port can be wired.
+
+Gather uses KWin's restricted `ScreenShot2.CaptureWindow` path for snapshot
+previews instead of waiting for this endpoint; see
+[ADR-0241](0241-capture-gather-window-previews-through-kwin.md). The dock hover
+port and this compositor IPC contract remain outstanding.

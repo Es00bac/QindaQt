@@ -8,20 +8,16 @@ import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
 // One free window as a grid tile: not iconified, and not a member of any
-// container. Icon and title today, because the compositor has no window
-// preview renderer yet (ADR-0119).
-//
-// AGENT-NOTE: when the preview channel lands, the preview goes in
-// `thumbnailArea` and this tile keeps everything else - the frame still comes
-// from the planner, and the model's only change is that a tile gains a real
-// source size so the planner aspect-fits it. The icon block below becomes the
-// fallback for a window whose preview has not arrived, which it already is.
+// container. A bounded ScreenShot2 capture fills the thumbnail area when it
+// arrives; the icon is the fallback for denied, stale or unavailable captures
+// (ADR-0241). The planner still owns the cell and the image fits inside it.
 //
 // AGENT-CONTRACT: every colour, radius, spacing and duration is a QST-1 role.
 Item {
     id: tile
 
     required property var item
+    property string previewUrl: ""
     property bool interactive: true
     property bool reducedMotion: false
 
@@ -68,18 +64,28 @@ Item {
             anchors.margins: Tokens.ready ? Tokens.space["2"] : 0
             spacing: Tokens.ready ? Tokens.space["1"] : 0
 
-            // Where a live thumbnail goes once ADR-0119 lands. Until then the
-            // application icon fills it, which is the same fallback a window
-            // with no preview yet will always need.
             Item {
                 id: thumbnailArea
                 objectName: "gatherWindowTileThumbnailArea"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                clip: true
+
+                Image {
+                    id: preview
+                    objectName: "gatherWindowTilePreview"
+                    anchors.fill: parent
+                    source: tile.previewUrl
+                    fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    cache: false
+                    Accessible.ignored: true
+                }
 
                 ShellIcons.Icon {
                     objectName: "gatherWindowTileIcon"
                     anchors.centerIn: parent
+                    visible: preview.status !== Image.Ready
                     name: String(tile.item.iconName ?? "")
                     size: Math.max(1, Math.round(tile.height * tile.glyphProportion))
                     color: !Tokens.ready ? "transparent"

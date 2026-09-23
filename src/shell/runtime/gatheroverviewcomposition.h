@@ -6,6 +6,8 @@
 #include <QHash>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
+#include <QVariantMap>
 
 #include <memory>
 
@@ -19,6 +21,8 @@ class TaskListAppletController;
 }
 
 namespace QindaQt::Shell {
+
+class KWinScreenshotPreviewPort;
 
 // Owns the gather overview (ADR-0232): its controller, its per-output overlay
 // windows,
@@ -80,11 +84,18 @@ private:
     void feedSource();
     void handleActivation(const QString &taskId, const QString &windowId,
                           quint64 generationRevision);
+    void requestVisiblePreviews();
+    void clearPreviews();
+    void publishPreviews();
 
     QGuiApplication &m_app;
     QQmlEngine &m_engine;
     QPointer<ShellTaskListApplet::TaskListAppletController> m_taskList;
     std::unique_ptr<ShellGatherOverview::GatherOverviewController> m_controller;
+    std::unique_ptr<KWinScreenshotPreviewPort> m_previewPort;
+    QVariantMap m_previewUrls;
+    QSet<QString> m_requestedPreviews;
+    quint64 m_previewRevision = 0;
     QHash<QScreen *, QQuickWindow *> m_windows;
     // AGENT-CONTRACT: the overview is ONE arrangement, shown on one output.
     // There is a window per output so that whichever screen the user is on

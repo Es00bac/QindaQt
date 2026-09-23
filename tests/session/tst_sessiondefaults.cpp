@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "sessiondefaults.h"
 
+#include <KConfig>
+#include <KConfigGroup>
 #include <QDir>
 #include <QFile>
 #include <QSettings>
@@ -30,6 +32,7 @@ private Q_SLOTS:
     void seedsTheMetaKeyOntoTheLauncherAction();
     void keepsAnExplicitModifierOnlyShortcut();
     void releasesTheOverviewHotCornerWithoutOverridingAChoice();
+    void repairsTheInvalidOverviewEdgeSeed();
 };
 
 void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
@@ -325,11 +328,9 @@ void SessionDefaultsTest::seedsTranslucencyEffectsWithoutOverridingChoices()
     settings.endGroup();
 }
 
-// AGENT-GUARD (regression): KWin's overview effect reserves the top-left
-// screen corner by default (BorderActivate defaults to ElectricTopLeft = 7),
-// so brushing that corner raised KWin's own window grid instead of QindaQt's
-// gather arrangement. An empty list reserves no corner; a user who bound the
-// corner themselves keeps it.
+// AGENT-GUARD (ADR-0240): This assertion uses KConfig, the reader KWin uses.
+// QSettings alone considered @Invalid() an empty list, but KConfig treated it
+// as edge 0 and raised the wrong overview from the entire top edge.
 void SessionDefaultsTest::releasesTheOverviewHotCornerWithoutOverridingAChoice()
 {
     QTemporaryDir temporary;
@@ -338,11 +339,10 @@ void SessionDefaultsTest::releasesTheOverviewHotCornerWithoutOverridingAChoice()
     QString error;
     QVERIFY2(SessionDefaults::ensure(temporary.path(), &error), qPrintable(error));
     {
-        QSettings settings(path, QSettings::IniFormat);
-        settings.beginGroup(QStringLiteral("Effect-overview"));
-        QVERIFY(settings.contains(QStringLiteral("BorderActivate")));
-        QVERIFY(settings.value(QStringLiteral("BorderActivate")).toStringList().isEmpty());
-        settings.endGroup();
+        KConfig config(path, KConfig::SimpleConfig);
+        const auto group = config.group("Effect-overview");
+        QVERIFY(group.hasKey("BorderActivate"));
+        QCOMPARE(group.readEntry("BorderActivate", QList<int>{7}), QList<int>{});
     }
 
     QTemporaryDir chosen;
@@ -361,6 +361,31 @@ void SessionDefaultsTest::releasesTheOverviewHotCornerWithoutOverridingAChoice()
     QCOMPARE(settings.value(QStringLiteral("BorderActivate")).toStringList(),
              QStringList{QStringLiteral("7")});
     settings.endGroup();
+}
+
+void SessionDefaultsTest::repairsTheInvalidOverviewEdgeSeed()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    {
+        QSettings existing(path, QSettings::IniFormat);
+        existing.beginGroup(QStringLiteral("Effect-overview"));
+        existing.setValue(QStringLiteral("BorderActivate"), QStringList{});
+        existing.endGroup();
+        existing.sync();
+    }
+    {
+        KConfig config(path, KConfig::SimpleConfig);
+        QCOMPARE(config.group("Effect-overview")
+                     .readEntry("BorderActivate", QList<int>{7}), QList<int>{0});
+    }
+    QString error;
+    QVERIFY2(SessionDefaults::ensure(temporary.path(), &error), qPrintable(error));
+    KConfig config(path, KConfig::SimpleConfig);
+    const auto group = config.group("Effect-overview");
+    QVERIFY(group.hasKey("BorderActivate"));
+    QCOMPARE(group.readEntry("BorderActivate", QList<int>{7}), QList<int>{});
 }
 
 QTEST_GUILESS_MAIN(SessionDefaultsTest)

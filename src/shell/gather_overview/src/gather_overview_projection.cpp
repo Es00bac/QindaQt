@@ -139,10 +139,9 @@ projectGatherOverview(const GatherOverviewRequest &request)
         plan.containerIds.append(item.taskId);
     plan.windows.reserve(windows.size());
     for (const GatherOverviewItem &item : windows) {
-        // No source size: this tree has no window-preview renderer yet
-        // (ADR-0119), so a tile fills its cell. When previews land the
-        // preview's own size belongs here and the planner aspect-fits it
-        // without any change to this policy.
+        // Gather captures snapshots after projection (ADR-0241). Keep the
+        // planner's cell stable while pixels arrive asynchronously; the QML
+        // image aspect-fits inside its thumbnail area.
         plan.windows.append(HybridGather::GatherTile{item.taskId, QSizeF()});
     }
 

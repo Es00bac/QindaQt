@@ -116,6 +116,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         tst_gather_overview_composition.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime/gatheroverviewcomposition.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime/gatheroverviewcomposition.h"
+        "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime/kwinscreenshotpreviewport.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../../src/shell/runtime/kwinscreenshotpreviewport.h"
         # AGENT-GUARD: both fakes are header-only QObjects, so AUTOMOC only
         # generates their vtables if the headers are listed as sources. Without
         # these two lines the link fails on "vtable for FakeOperationAuthority"
@@ -137,6 +139,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellTaskListProducer
             QindaQt::ShellTaskListOperations
             LayerShellQt::Interface
+            Qt6::DBus
             Qt6::Gui
             Qt6::Qml
             Qt6::Quick

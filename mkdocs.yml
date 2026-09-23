@@ -389,3 +389,5 @@ nav:
       - "ADR-0237: The visibility snapshot stays atomic, and says what it rejected": adr/0237-the-visibility-snapshot-stays-atomic.md
       - "ADR-0238: The audio applet's device picker sets the system default": adr/0238-the-output-picker-sets-the-default.md
       - "ADR-0239: Publish fullscreen in the shell visibility snapshot": adr/0239-publish-fullscreen-in-shell-visibility.md
+      - "ADR-0240: Encode the KWin overview edge with KConfig semantics": adr/0240-encode-the-kwin-overview-edge-with-kconfig-semantics.md
+      - "ADR-0241: Capture Gather window previews through KWin's restricted interface": adr/0241-capture-gather-window-previews-through-kwin.md
