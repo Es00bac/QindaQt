@@ -134,6 +134,10 @@ public:
   quint64 streamVolumeSerial = 0;
   double streamVolumeLevel = -1.0;
   quint64 streamMuteSerial = 0;
+  quint64 movedStreamSerial = 0;
+  quint64 movedDeviceSerial = 0;
+  int moveStreamCalls = 0;
+  bool acceptStreamMove = true;
   bool streamMuted = false;
   quint64 channelSerial = 0;
   int channelIndex = -1;
@@ -182,6 +186,12 @@ public:
     streamMuteSerial = serial;
     streamMuted = muted;
     return true;
+  }
+  Q_INVOKABLE bool moveStream(quint64 streamSerial, quint64 deviceSerial) {
+    ++moveStreamCalls;
+    movedStreamSerial = streamSerial;
+    movedDeviceSerial = deviceSerial;
+    return acceptStreamMove;
   }
   Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int index,
                                           double level) {

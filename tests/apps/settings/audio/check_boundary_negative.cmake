@@ -47,6 +47,7 @@ function(expect_permitted_surface)
         "  Q_INVOKABLE bool setDeviceMuted(quint64 serial, bool muted);\n"
         "  Q_INVOKABLE bool setStreamVolume(quint64 serial, double level);\n"
         "  Q_INVOKABLE bool setStreamMuted(quint64 serial, bool muted);\n"
+        "  Q_INVOKABLE bool moveStream(quint64 streamSerial, quint64 deviceSerial);\n"
         "  Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int channelIndex, double level);\n"
         "  Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName, int channels);\n"
         "  Q_INVOKABLE bool removeVirtualDevice(quint64 serial);\n"

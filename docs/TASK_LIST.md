@@ -69,6 +69,14 @@ integrated in the qinda source tree, not installed into a live session:
   docs pass. Private runtimes carried nonzero stereo PCM in both directions
   between qinda and qinda-top; physical speakers were not tested. Discovery,
   pairing and synchronized multichannel playback remain later work.
+- Per-application audio routing (`5c8aae4b`): playback and recording
+  streams now offer direction-matched device choices in Audio Settings. The
+  picker tracks confirmed Audio1 routing, handles pending/refused/stale
+  outcomes and preserves wheel scrolling. Independent review rejected an
+  initial concurrent-move false-success report; the repaired candidate keeps
+  each failed stream and aggregate error visible and passed the exact
+  two-move recheck. The merged build, 9/9 focused Audio rows and broad
+  Settings 129/129 pass; live app/device movement remains to qualify.
 - Audio wheel controls (`35392d6b`, `40768275`, `8f384cb4`): Settings and
   applet controls handle partial/multiple detents, pixel input and boundaries
   while preserving confirmed volume. Two review-found pending/readback races

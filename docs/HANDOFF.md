@@ -5,8 +5,8 @@
 The qinda source branch integrates Default Applications (`e02cd663`), Input
 (`5bb5fb73`, `0c41a5e3`), Touch (`e3602974`), first-day-of-week (`2b885b6c`), Appearance monospace (`fdbc50f4`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
 (`1d5de5e3`, `79a037c8`), audio wheel controls (`35392d6b`,
-`40768275`, `8f384cb4`), Streaming (`351a497f`), and manual LAN/tabbed
-audio (`c99ef063` plus reviewed tab-aware wheel test `4abb0306`).
+`40768275`, `8f384cb4`), Streaming (`351a497f`), manual LAN/tabbed audio (`c99ef063` plus reviewed tab-aware wheel
+test `4abb0306`), and per-application audio routing (`5c8aae4b`).
 Every slice had an independent exact-commit review. Initial Input, Voice,
 Startup and Streaming candidates, two wheel candidates, two Touch
 candidates, and the first monospace candidate were rejected and repaired
@@ -43,6 +43,11 @@ validator pass for this integrated tree (378 pages after Streaming). Manual
 LAN audio passes a combined Settings/shell and affected service build, 36/36
 Audio/Settings rows, the installed audio applet package and installed
 Settings-route rows (2/2), and strict docs/link validation (380 pages).
+Per-application stream moves now use the live Audio1 MoveStream authority
+from the Devices tab. A rejected first candidate let one confirmed stream
+erase a sibling failed move; the same reviewer accepted the per-stream repair
+after reproducing both two-move permutations. The merged build, 9/9
+focused Audio Settings rows and broad Settings 129/129 pass.
 Private qinda/qinda-top runtimes carried nonzero stereo PCM both ways; the
 selected-route graph and stale-evidence regression pass. No live physical
 speaker playback, peer authentication, encryption, discovery, pairing or
