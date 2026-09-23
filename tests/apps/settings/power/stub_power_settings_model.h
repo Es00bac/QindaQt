@@ -82,26 +82,50 @@ Q_SIGNALS:
 
 class StubIdleDisplaySettings final : public QObject {
   Q_OBJECT
+  Q_PROPERTY(bool hasConfirmed MEMBER hasConfirmed NOTIFY changed)
+  Q_PROPERTY(bool available MEMBER available NOTIFY changed)
+  Q_PROPERTY(bool canEdit MEMBER canEdit NOTIFY changed)
   Q_PROPERTY(bool enabled MEMBER enabled NOTIFY changed)
   Q_PROPERTY(int minutes MEMBER minutes NOTIFY changed)
   Q_PROPERTY(bool busy MEMBER busy NOTIFY changed)
+  Q_PROPERTY(bool conflict MEMBER conflict NOTIFY changed)
+  Q_PROPERTY(bool uncertain MEMBER uncertain NOTIFY changed)
   Q_PROPERTY(QString statusText MEMBER statusText NOTIFY changed)
   Q_PROPERTY(QString errorText MEMBER errorText NOTIFY changed)
 public:
   using QObject::QObject;
+  bool hasConfirmed = true;
+  bool available = true;
+  bool canEdit = true;
   bool enabled = true;
   int minutes = 10;
   bool busy = false;
+  bool conflict = false;
+  bool uncertain = false;
+  bool acceptEnabled = true;
+  bool acceptMinutes = true;
   QString statusText = QStringLiteral("10 minutes of inactivity turns the display off.");
   QString errorText;
   int enabledCalls = 0;
   int minutesCalls = 0;
   int retryCalls = 0;
   Q_INVOKABLE bool setEnabled(bool value) {
-    ++enabledCalls; enabled = value; Q_EMIT changed(); return true;
+    ++enabledCalls;
+    if (!acceptEnabled) {
+      errorText = QStringLiteral("Display-off save refused");
+      Q_EMIT changed();
+      return false;
+    }
+    enabled = value; Q_EMIT changed(); return true;
   }
   Q_INVOKABLE bool setMinutes(int value) {
-    ++minutesCalls; minutes = value; Q_EMIT changed(); return true;
+    ++minutesCalls;
+    if (!acceptMinutes) {
+      errorText = QStringLiteral("Display-off save refused");
+      Q_EMIT changed();
+      return false;
+    }
+    minutes = value; Q_EMIT changed(); return true;
   }
   Q_INVOKABLE bool retry() { ++retryCalls; return true; }
 Q_SIGNALS:

@@ -1,279 +1,316 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <qindaqt/apps/settings_power/idle_display_settings.h>
-
-#include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/settings_client/settings_transport.h>
 #include <qindaqt/services/settings_protocol/settings_wire_contract.h>
-#include <qindaqt/session/desktop_controls/settings1_idle_preferences.h>
 
 #include <QtTest>
-
-#include <memory>
 
 using namespace QindaQt::Apps::SettingsPower;
 using namespace QindaQt::Session::DesktopControls;
 using namespace QindaQt::Services::SettingsClient;
-using QindaQt::Services::SettingsProtocol::SettingsWireStatus;
-using QindaQt::Services::SettingsProtocol::WireContract;
+using namespace QindaQt::Services::SettingsProtocol;
 
 namespace {
+const QString key = QStringLiteral("power.idleDisplayOffMinutes");
+const QString ownerA = QStringLiteral(":1.7");
+const QString epochA = QStringLiteral("idle-epoch-a");
 
-constexpr auto kIdleKey = "power.idleDisplayOffMinutes";
+QVariantMap snapshotWire(QString epoch, quint64 revision, QVariant value) {
+  return {{QLatin1StringView(WireContract::FieldStatus), quint32(SettingsWireStatus::Applied)},
+          {QLatin1StringView(WireContract::FieldWireSchemaVersion), WireContract::WireSchemaVersion},
+          {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
+          {QLatin1StringView(WireContract::FieldEpoch), epoch},
+          {QLatin1StringView(WireContract::FieldRevision), revision},
+          {QLatin1StringView(WireContract::FieldValues), QVariantMap{{key, value}}},
+          {QLatin1StringView(WireContract::FieldSourceLayers),
+           QVariantMap{{key, QStringLiteral("user-overrides")}}},
+          {QLatin1StringView(WireContract::FieldMessage), QString{}}};
+}
+QVariantMap commitWire(QString epoch, SettingsWireStatus status,
+                       quint64 before, quint64 after, QVariant value,
+                       QString message = {}) {
+  const QStringList changed = status == SettingsWireStatus::Applied && after > before
+      ? QStringList{key} : QStringList{};
+  return {{QLatin1StringView(WireContract::FieldStatus), quint32(status)},
+          {QLatin1StringView(WireContract::FieldWireSchemaVersion), WireContract::WireSchemaVersion},
+          {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
+          {QLatin1StringView(WireContract::FieldEpoch), epoch},
+          {QLatin1StringView(WireContract::FieldRevisionBefore), before},
+          {QLatin1StringView(WireContract::FieldRevisionAfter), after},
+          {QLatin1StringView(WireContract::FieldValues), QVariantMap{{key, value}}},
+          {QLatin1StringView(WireContract::FieldSourceLayers),
+           QVariantMap{{key, QStringLiteral("user-overrides")}}},
+          {QLatin1StringView(WireContract::FieldChangedKeys), changed},
+          {QLatin1StringView(WireContract::FieldMessage), message}};
+}
 
-class FakeSettingsTransport final : public SettingsTransport {
-    Q_OBJECT
-
+class FakeTransport final : public SettingsTransport {
 public:
-    bool start(QString *error) override
-    {
-        if (error != nullptr) {
-            error->clear();
-        }
-        return true;
-    }
-    void stop() override {}
-
-    void requestSnapshot(quint64 token, const QString &owner, const QStringList &) override
-    {
-        QMetaObject::invokeMethod(
-            this,
-            [this, token, owner] {
-                Q_EMIT snapshotReceived(token, owner, snapshotWire(m_epoch, ++m_revision,
-                                                                   m_value));
-            },
-            Qt::QueuedConnection);
-    }
-
-    struct CommitRequest {
-        quint64 token = 0;
-        QString owner;
-        QString epoch;
-        quint64 baseRevision = 0;
-    };
-
-    void commit(quint64 token, const QString &owner, const QString &epoch,
-                quint64 baseRevision, const QVariantList &operations) override
-    {
-        for (const QVariant &operation : operations) {
-            m_committedOperations.append(operation.toMap());
-        }
-        m_commits.append(CommitRequest{token, owner, epoch, baseRevision});
-    }
-
-    void requestActivation() override {}
-
-    // The test answers commits synchronously, mirroring the settings client
-    // tests: the model sees exactly one deterministic reply per write.
-    void replyToLastCommit(SettingsWireStatus status, const QVariant &value)
-    {
-        QVERIFY(!m_commits.isEmpty());
-        const CommitRequest request = m_commits.takeLast();
-        m_revision = request.baseRevision + 1;
-        const quint64 after = status == SettingsWireStatus::Applied
-            ? m_revision : request.baseRevision;
-        m_commitStatus = status;
-        m_value = value;
-        Q_EMIT commitReceived(request.token, request.owner,
-                              commitWire(request.baseRevision, after));
-    }
-
-    [[nodiscard]] int pendingCommitCount() const noexcept
-    {
-        return static_cast<int>(m_commits.size());
-    }
-
-    void announceOwner()
-    {
-        QMetaObject::invokeMethod(
-            this, [this] { Q_EMIT ownerChanged(QStringLiteral(":1.7")); },
-            Qt::QueuedConnection);
-    }
-
-    void setValue(const QVariant &value) { m_value = value; }
-    void setCommitStatus(SettingsWireStatus status) { m_commitStatus = status; }
-
-    [[nodiscard]] const QList<QVariantMap> &committedOperations() const noexcept
-    {
-        return m_committedOperations;
-    }
-
-    [[nodiscard]] static QVariantMap snapshotWire(const QString &epoch, quint64 revision,
-                                                  const QVariant &value)
-    {
-        return {{QLatin1StringView(WireContract::FieldStatus),
-                 quint32(SettingsWireStatus::Applied)},
-                {QLatin1StringView(WireContract::FieldWireSchemaVersion),
-                 WireContract::WireSchemaVersion},
-                {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
-                {QLatin1StringView(WireContract::FieldEpoch), epoch},
-                {QLatin1StringView(WireContract::FieldRevision), revision},
-                {QLatin1StringView(WireContract::FieldValues),
-                 QVariantMap{{QString::fromLatin1(kIdleKey), value}}},
-                {QLatin1StringView(WireContract::FieldSourceLayers),
-                 QVariantMap{{QString::fromLatin1(kIdleKey),
-                              QStringLiteral("user-overrides")}}},
-                {QLatin1StringView(WireContract::FieldMessage), QString{}}};
-    }
-
-private:
-    [[nodiscard]] QVariantMap commitWire(quint64 before, quint64 after) const
-    {
-        return {{QLatin1StringView(WireContract::FieldStatus), quint32(m_commitStatus)},
-                {QLatin1StringView(WireContract::FieldWireSchemaVersion),
-                 WireContract::WireSchemaVersion},
-                {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
-                {QLatin1StringView(WireContract::FieldEpoch), m_epoch},
-                {QLatin1StringView(WireContract::FieldRevisionBefore), before},
-                {QLatin1StringView(WireContract::FieldRevisionAfter), after},
-                {QLatin1StringView(WireContract::FieldValues),
-                 QVariantMap{{QString::fromLatin1(kIdleKey), m_value}}},
-                {QLatin1StringView(WireContract::FieldSourceLayers),
-                 QVariantMap{{QString::fromLatin1(kIdleKey),
-                              QStringLiteral("user-overrides")}}},
-                {QLatin1StringView(WireContract::FieldChangedKeys),
-                 QStringList{QString::fromLatin1(kIdleKey)}},
-                {QLatin1StringView(WireContract::FieldMessage), QString{}}};
-    }
-
-    QString m_epoch = QStringLiteral("epoch-9");
-    quint64 m_revision = 0;
-    QVariant m_value = QVariant::fromValue<qint64>(20);
-    SettingsWireStatus m_commitStatus = SettingsWireStatus::Applied;
-    QList<QVariantMap> m_committedOperations;
-    QList<CommitRequest> m_commits;
+  bool start(QString *error) override { if (error) error->clear(); return true; }
+  void stop() override {}
+  void requestSnapshot(quint64 token, const QString &owner,
+                       const QStringList &) override {
+    snapshots.append({token, owner});
+  }
+  void commit(quint64 token, const QString &owner, const QString &epoch,
+              quint64 revision, const QVariantList &operations) override {
+    commits.append({token, owner, epoch, revision, operations});
+  }
+  void requestActivation() override {}
+  struct SnapshotRequest { quint64 token; QString owner; };
+  struct CommitRequest {
+    quint64 token; QString owner; QString epoch; quint64 revision;
+    QVariantList operations;
+  };
+  QList<SnapshotRequest> snapshots;
+  QList<CommitRequest> commits;
 };
 
+struct Fixture {
+  FakeTransport transport;
+  SettingsClient client{transport, Settings1IdlePreferences::scopedKey(),
+                        ClientTiming{150, 0, {10}}};
+  Settings1IdlePreferences preferences{client};
+  IdleDisplaySettingsModel model{preferences, client};
+
+  Fixture() {
+    const bool started = client.start();
+    Q_ASSERT(started);
+    Q_EMIT transport.ownerChanged(ownerA);
+  }
+  bool answer(quint64 revision, qint64 value,
+              QString owner = ownerA, QString epoch = epochA) {
+    if (!QTest::qWaitFor([this] { return !transport.snapshots.isEmpty(); }, 2000))
+      return false;
+    const auto request = transport.snapshots.takeFirst();
+    if (request.owner != owner) return false;
+    Q_EMIT transport.snapshotReceived(request.token, request.owner,
+        snapshotWire(epoch, revision, QVariant::fromValue(value)));
+    return true;
+  }
+  bool ready(qint64 value = 20) {
+    return answer(1, value) && model.available() && model.canEdit();
+  }
+  FakeTransport::CommitRequest lastCommit() const {
+    Q_ASSERT(!transport.commits.isEmpty());
+    return transport.commits.constLast();
+  }
+  void reply(SettingsWireStatus status, quint64 before, quint64 after,
+             qint64 value, QString message = {}) {
+    const auto request = lastCommit();
+    Q_EMIT transport.commitReceived(request.token, request.owner,
+        commitWire(request.epoch, status, before, after,
+                   QVariant::fromValue(value), message));
+  }
+};
 } // namespace
 
 class IdleDisplaySettingsModelTest final : public QObject {
-    Q_OBJECT
-
+  Q_OBJECT
 private Q_SLOTS:
-    void init();
-    void initialTruthReflectsThePersistedSnapshot();
-    void disablingWritesNeverAndReconcilesStatus();
-    void enablingWithUnknownMinutesUsesTheDefault();
-    void minutesAreBoundsCheckedBeforeWriting();
-    void appliedCommitClearsBusyAndReportsStatus();
-    void rejectedCommitReportsTheFailure();
-    void busyModelRejectsFurtherWrites();
-    void retryClearsErrorAndRefreshes();
-
-private:
-    std::unique_ptr<FakeSettingsTransport> m_transport;
-    std::unique_ptr<SettingsClient> m_client;
-    std::unique_ptr<Settings1IdlePreferences> m_preferences;
-    std::unique_ptr<IdleDisplaySettingsModel> m_model;
+  void absenceAndAdmission();
+  void malformedSnapshotDoesNotClaimPolicy();
+  void appliedNeedsFreshReadback();
+  void mismatchAndRefusalStayVisible();
+  void lostReplyAndOwnerReplacementNeverReplay();
+  void newOwnerDisabledValueDoesNotRetainOldTimeout();
+  void boundsAndDisabledDefault();
 };
 
-void IdleDisplaySettingsModelTest::init() {
-    m_client.reset();
-    m_transport = std::make_unique<FakeSettingsTransport>();
-    m_client = std::make_unique<SettingsClient>(
-        *m_transport, Settings1IdlePreferences::scopedKey());
-    m_preferences = std::make_unique<Settings1IdlePreferences>(*m_client);
-    m_model = std::make_unique<IdleDisplaySettingsModel>(*m_preferences, *m_client);
-    QString error;
-    QVERIFY(m_client->start(&error));
+void IdleDisplaySettingsModelTest::absenceAndAdmission() {
+  Fixture f;
+  QVERIFY(!f.model.hasConfirmed());
+  QVERIFY(!f.model.available());
+  QVERIFY(!f.model.canEdit());
+  QVERIFY(!f.model.enabled());
+  QCOMPARE(f.model.minutes(), 0);
+  QVERIFY(f.model.statusText().contains(QStringLiteral("not confirmed")));
+  QVERIFY(!f.model.setEnabled(false));
+  QVERIFY(f.transport.commits.isEmpty());
+  QVERIFY(f.ready());
+  QVERIFY(f.model.hasConfirmed());
+  QCOMPARE(f.model.minutes(), 20);
+  QVERIFY(f.model.enabled());
+  f.client.refresh();
+  QTRY_COMPARE(f.transport.snapshots.size(), 1);
+  QVERIFY(!f.model.canEdit());
+  QVERIFY(!f.model.setMinutes(15));
+  QVERIFY(f.transport.commits.isEmpty());
+  const QString admissionError = f.model.errorText();
+  QVERIFY(!admissionError.isEmpty());
+  QVERIFY(f.answer(1, 20));
+  QVERIFY(f.model.canEdit());
+  QCOMPARE(f.model.errorText(), admissionError);
+  f.client.refresh();
+  QVERIFY(f.answer(2, 30));
+  QCOMPARE(f.model.minutes(), 30);
+  QCOMPARE(f.model.errorText(), admissionError);
+  QVERIFY(f.transport.commits.isEmpty());
 }
 
-void IdleDisplaySettingsModelTest::initialTruthReflectsThePersistedSnapshot() {
-    m_transport->setValue(QVariant::fromValue<qint64>(20));
-    m_transport->announceOwner();
-    QTRY_COMPARE(m_model->minutes(), 20);
-    QVERIFY(m_model->enabled());
-    QVERIFY(m_model->statusText().contains(QStringLiteral("20")));
-    QVERIFY(m_model->errorText().isEmpty());
+void IdleDisplaySettingsModelTest::malformedSnapshotDoesNotClaimPolicy() {
+  Fixture f;
+  QTRY_COMPARE(f.transport.snapshots.size(), 1);
+  const auto request = f.transport.snapshots.takeFirst();
+  Q_EMIT f.transport.snapshotReceived(request.token, request.owner,
+      snapshotWire(epochA, 1, QStringLiteral("20")));
+  QVERIFY(!f.model.hasConfirmed());
+  QVERIFY(!f.model.available());
+  QVERIFY(!f.model.canEdit());
+  QVERIFY(!f.model.enabled());
+  QVERIFY(!f.model.setMinutes(15));
+  QVERIFY(f.transport.commits.isEmpty());
+  f.client.refresh();
+  QVERIFY(f.answer(2, 20));
+  QVERIFY(f.model.available());
+  QVERIFY(f.model.hasConfirmed());
+  QCOMPARE(f.model.minutes(), 20);
 }
 
-void IdleDisplaySettingsModelTest::disablingWritesNeverAndReconcilesStatus() {
-    m_transport->setValue(QVariant::fromValue<qint64>(20));
-    m_transport->announceOwner();
-    // Wait for confirmed truth, not the construction default, so the write
-    // path sees a Ready client.
-    QTRY_COMPARE(m_model->minutes(), 20);
-
-    QVERIFY(m_model->setEnabled(false));
-    QCOMPARE(m_transport->committedOperations().size(), 1);
-    const QVariantMap operation = m_transport->committedOperations().constFirst();
-    QCOMPARE(operation.value(QStringLiteral("key")).toString(),
-             QStringLiteral("power.idleDisplayOffMinutes"));
-    QCOMPARE(operation.value(QStringLiteral("value")).toLongLong(), -1);
-
-    m_transport->replyToLastCommit(SettingsWireStatus::Applied,
-                                   QVariant::fromValue<qint64>(-1));
-    QTRY_VERIFY(!m_model->enabled());
-    QVERIFY(!m_model->busy());
-    QVERIFY(!m_model->statusText().contains(QStringLiteral("20")));
+void IdleDisplaySettingsModelTest::appliedNeedsFreshReadback() {
+  Fixture f;
+  QVERIFY(f.ready());
+  QVERIFY(f.model.setMinutes(15));
+  QVERIFY(f.model.busy());
+  QVERIFY(!f.model.canEdit());
+  QCOMPARE(f.model.minutes(), 20);
+  QCOMPARE(f.lastCommit().operations.constFirst().toMap()
+               .value(QLatin1StringView(WireContract::FieldValue)).toLongLong(), 15);
+  f.reply(SettingsWireStatus::Applied, 1, 2, 15);
+  QVERIFY(f.model.busy());
+  QCOMPARE(f.model.minutes(), 20);
+  QVERIFY(f.model.statusText().contains(QStringLiteral("Checking")));
+  QVERIFY(f.answer(1, 20));
+  QVERIFY(f.model.busy());
+  QCOMPARE(f.model.minutes(), 20);
+  f.client.refresh();
+  QVERIFY(f.answer(2, 15));
+  QVERIFY(!f.model.busy());
+  QVERIFY(f.model.available());
+  QCOMPARE(f.model.minutes(), 15);
+  QVERIFY(f.model.errorText().isEmpty());
+  QCOMPARE(f.transport.commits.size(), 1);
 }
 
-void IdleDisplaySettingsModelTest::enablingWithUnknownMinutesUsesTheDefault() {
-    m_transport->setValue(QVariant::fromValue<qint64>(-1));
-    m_transport->announceOwner();
-    QTRY_VERIFY(!m_model->enabled());
-
-    QVERIFY(m_model->setEnabled(true));
-    m_transport->replyToLastCommit(SettingsWireStatus::Applied,
-                                   QVariant::fromValue<qint64>(
-                                       IdleDisplayPreferences::defaultTimeoutMinutes()));
-    QCOMPARE(m_transport->committedOperations().constFirst()
-                 .value(QStringLiteral("value"))
-                 .toLongLong(),
-             IdleDisplayPreferences::defaultTimeoutMinutes());
+void IdleDisplaySettingsModelTest::mismatchAndRefusalStayVisible() {
+  Fixture f;
+  QVERIFY(f.ready());
+  QVERIFY(f.model.setMinutes(15));
+  f.reply(SettingsWireStatus::Applied, 1, 2, 15);
+  QVERIFY(f.answer(2, 30));
+  QVERIFY(!f.model.busy());
+  QVERIFY(f.model.conflict());
+  QCOMPARE(f.model.minutes(), 30);
+  QVERIFY(f.model.errorText().contains(QStringLiteral("differs")));
+  f.client.refresh();
+  QVERIFY(f.answer(2, 30));
+  QVERIFY(f.model.conflict());
+  QVERIFY(!f.model.errorText().isEmpty());
+  QVERIFY(f.model.setMinutes(18));
+  f.reply(SettingsWireStatus::PersistenceFailed, 2, 2, 30,
+          QStringLiteral("disk full"));
+  QVERIFY(!f.model.busy());
+  QVERIFY(!f.model.conflict());
+  QCOMPARE(f.model.minutes(), 30);
+  QVERIFY(f.model.errorText().contains(QStringLiteral("disk full")));
+  QVERIFY(f.answer(2, 30));
+  QVERIFY(f.model.errorText().contains(QStringLiteral("disk full")));
+  QVERIFY(f.model.retry());
+  QVERIFY(f.answer(2, 30));
+  QVERIFY(f.model.errorText().contains(QStringLiteral("disk full")));
+  QCOMPARE(f.transport.commits.size(), 2);
 }
 
-void IdleDisplaySettingsModelTest::minutesAreBoundsCheckedBeforeWriting() {
-    m_transport->announceOwner();
-    QTRY_VERIFY(m_client->snapshot().has_value());
-    QVERIFY(!m_model->setMinutes(0));
-    QVERIFY(!m_model->setMinutes(241));
-    QVERIFY(!m_model->errorText().isEmpty());
-    QCOMPARE(m_transport->committedOperations().size(), 0);
-    QVERIFY(m_model->setMinutes(240));
-    QCOMPARE(m_transport->committedOperations().size(), 1);
-    m_transport->replyToLastCommit(SettingsWireStatus::Applied,
-                                   QVariant::fromValue<qint64>(240));
-    QTRY_VERIFY(!m_model->busy());
+void IdleDisplaySettingsModelTest::lostReplyAndOwnerReplacementNeverReplay() {
+  Fixture lost;
+  QVERIFY(lost.ready());
+  QVERIFY(lost.model.setMinutes(15));
+  auto request = lost.lastCommit();
+  Q_EMIT lost.transport.requestFailed(request.token, request.owner,
+      QStringLiteral("org.freedesktop.DBus.Error.NoReply"),
+      QStringLiteral("reply lost"));
+  QVERIFY(lost.model.uncertain());
+  QVERIFY(!lost.model.busy());
+  QCOMPARE(lost.model.minutes(), 20);
+  QVERIFY(lost.model.errorText().contains(QStringLiteral("may have happened")));
+  QVERIFY(lost.answer(1, 20));
+  QCOMPARE(lost.transport.commits.size(), 1);
+
+  Fixture replaced;
+  QVERIFY(replaced.ready());
+  QVERIFY(replaced.model.setMinutes(15));
+  Q_EMIT replaced.transport.ownerChanged(QStringLiteral(":1.8"));
+  QVERIFY(replaced.model.uncertain());
+  QVERIFY(!replaced.model.canEdit());
+  QVERIFY(!replaced.model.available());
+  QCOMPARE(replaced.model.minutes(), 20);
+  Q_EMIT replaced.transport.commitReceived(replaced.lastCommit().token, ownerA,
+      commitWire(epochA, SettingsWireStatus::Applied, 1, 2,
+                 QVariant::fromValue<qint64>(15)));
+  QVERIFY(replaced.model.uncertain());
+  QVERIFY(replaced.answer(1, 10, QStringLiteral(":1.8"),
+                          QStringLiteral("idle-epoch-b")));
+  QVERIFY(replaced.model.canEdit());
+  QCOMPARE(replaced.model.minutes(), 10);
+  QCOMPARE(replaced.transport.commits.size(), 1);
+
+  Fixture applied;
+  QVERIFY(applied.ready());
+  QVERIFY(applied.model.setMinutes(15));
+  applied.reply(SettingsWireStatus::Applied, 1, 2, 15);
+  QVERIFY(applied.model.busy());
+  Q_EMIT applied.transport.ownerChanged(QStringLiteral(":1.8"));
+  QVERIFY(applied.model.uncertain());
+  QVERIFY(!applied.model.busy());
+  // The old owner's post-Applied snapshot cannot confirm its retired write.
+  Q_EMIT applied.transport.snapshotReceived(0, ownerA,
+      snapshotWire(epochA, 2, QVariant::fromValue<qint64>(15)));
+  QVERIFY(applied.answer(1, 25, QStringLiteral(":1.8"),
+                         QStringLiteral("idle-epoch-b")));
+  QCOMPARE(applied.model.minutes(), 25);
+  QVERIFY(applied.model.uncertain());
+  QCOMPARE(applied.transport.commits.size(), 1);
 }
 
-void IdleDisplaySettingsModelTest::appliedCommitClearsBusyAndReportsStatus() {
-    m_transport->announceOwner();
-    QTRY_VERIFY(m_client->snapshot().has_value());
-    QVERIFY(m_model->setMinutes(15));
-    QVERIFY(m_model->busy());
-    m_transport->replyToLastCommit(SettingsWireStatus::Applied,
-                                   QVariant::fromValue<qint64>(15));
-    QVERIFY(!m_model->busy());
-    QVERIFY2(m_model->errorText().isEmpty(), qPrintable(m_model->errorText()));
+void IdleDisplaySettingsModelTest::newOwnerDisabledValueDoesNotRetainOldTimeout() {
+  Fixture f;
+  QVERIFY(f.ready(30));
+  QCOMPARE(f.model.minutes(), 30);
+  Q_EMIT f.transport.ownerChanged(QStringLiteral(":1.8"));
+  QVERIFY(!f.model.available());
+  // The retained old value stays visible only as last-confirmed truth.
+  QCOMPARE(f.model.minutes(), 30);
+  QVERIFY(f.answer(1, -1, QStringLiteral(":1.8"),
+                   QStringLiteral("idle-epoch-b")));
+  QVERIFY(f.model.available());
+  QVERIFY(!f.model.enabled());
+  QCOMPARE(f.model.minutes(), IdleDisplayPreferences::defaultTimeoutMinutes());
+  QVERIFY(f.model.setEnabled(true));
+  QCOMPARE(f.lastCommit().operations.constFirst().toMap()
+               .value(QLatin1StringView(WireContract::FieldValue)).toLongLong(),
+           IdleDisplayPreferences::defaultTimeoutMinutes());
 }
 
-void IdleDisplaySettingsModelTest::rejectedCommitReportsTheFailure() {
-    m_transport->setCommitStatus(SettingsWireStatus::PersistenceFailed);
-    m_transport->announceOwner();
-    QTRY_VERIFY(m_client->snapshot().has_value());
-    QVERIFY(m_model->setMinutes(15));
-    m_transport->replyToLastCommit(SettingsWireStatus::PersistenceFailed,
-                                   QVariant::fromValue<qint64>(20));
-    QVERIFY(!m_model->busy());
-    QVERIFY(!m_model->errorText().isEmpty());
-}
-
-void IdleDisplaySettingsModelTest::busyModelRejectsFurtherWrites() {
-    m_transport->announceOwner();
-    QTRY_VERIFY(m_client->snapshot().has_value());
-    QVERIFY(m_model->setMinutes(15));
-    QVERIFY(m_model->busy());
-    QVERIFY(!m_model->setMinutes(30));
-    QCOMPARE(m_transport->committedOperations().size(), 1);
-    QCOMPARE(m_transport->pendingCommitCount(), 1);
-}
-
-void IdleDisplaySettingsModelTest::retryClearsErrorAndRefreshes() {
-    m_transport->announceOwner();
-    QTRY_VERIFY(m_client->snapshot().has_value());
-    QVERIFY(m_model->retry());
-    QVERIFY(m_model->errorText().isEmpty());
+void IdleDisplaySettingsModelTest::boundsAndDisabledDefault() {
+  Fixture f;
+  QVERIFY(f.ready(-1));
+  QVERIFY(!f.model.enabled());
+  QCOMPARE(f.model.minutes(), IdleDisplayPreferences::defaultTimeoutMinutes());
+  QVERIFY(!f.model.setMinutes(0));
+  QVERIFY(!f.model.setMinutes(241));
+  QVERIFY(f.transport.commits.isEmpty());
+  QVERIFY(f.model.setEnabled(true));
+  QCOMPARE(f.lastCommit().operations.constFirst().toMap()
+               .value(QLatin1StringView(WireContract::FieldValue)).toLongLong(),
+           IdleDisplayPreferences::defaultTimeoutMinutes());
+  f.reply(SettingsWireStatus::Applied, 1, 2,
+          IdleDisplayPreferences::defaultTimeoutMinutes());
+  QVERIFY(f.answer(2, IdleDisplayPreferences::defaultTimeoutMinutes()));
+  QVERIFY(f.model.enabled());
+  QVERIFY(f.model.setEnabled(false));
+  QCOMPARE(f.lastCommit().operations.constFirst().toMap()
+               .value(QLatin1StringView(WireContract::FieldValue)).toLongLong(), -1);
 }
 
 QTEST_MAIN(IdleDisplaySettingsModelTest)
