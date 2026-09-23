@@ -3,19 +3,26 @@
 ## September 23 — Settings repair integration on qinda
 
 The qinda source branch integrates Default Applications (`e02cd663`), Input
-(`5bb5fb73`, `0c41a5e3`), Touch (`e3602974`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
+(`5bb5fb73`, `0c41a5e3`), Touch (`e3602974`), Appearance monospace (`fdbc50f4`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
 (`1d5de5e3`, `79a037c8`), audio wheel controls (`35392d6b`,
 `40768275`, `8f384cb4`), Streaming (`351a497f`), and manual LAN/tabbed
 audio (`c99ef063` plus reviewed tab-aware wheel test `4abb0306`).
 Every slice had an independent exact-commit review. Initial Input, Voice,
-Startup and Streaming candidates, two wheel candidates, and two Touch
-candidates were rejected and repaired before acceptance. None has been deployed to a live desktop.
+Startup and Streaming candidates, two wheel candidates, two Touch
+candidates, and the first monospace candidate were rejected and repaired
+before acceptance. None has been deployed to a live desktop.
 
 The combined Settings build and 122/122 Settings rows passed after Default
 Applications. Input then passed a combined build and 14/14 Input/route rows.
 Touch passed independent exact-commit review including immediate owner
 replacement and post-Applied final-slider probes. Its merged-source build,
 17/17 affected client/Input rows and broad Settings 126/126 rows pass.
+The Appearance monospace picker now validates the installed fixed-width
+family separately from the UI family; its rejected first candidate omitted
+the shipped Noto Sans Mono on qinda Qt 6.11. Independent review accepted the
+resolved-family glyph fallback and missing-family behavior. The merged
+Settings build, 11/11 Appearance/font-consumer rows and broad Settings
+126/126 rows pass.
 Voice passed the combined shell, Settings and console build, 9/9 focused,
 route and private-bus interop rows, and the broader Settings suite (123/123).
 Startup passed the combined Settings/session build, 9/9 core

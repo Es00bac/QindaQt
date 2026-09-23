@@ -60,6 +60,7 @@ QVariantMap defaultDraftMap()
             {QStringLiteral("appearance.colorScheme"),
              QStringLiteral("system")},
             {QStringLiteral("fonts.family"), QStringLiteral("Noto Sans")},
+            {QStringLiteral("fonts.monospaceFamily"), QStringLiteral("Noto Sans Mono")},
             {QStringLiteral("fonts.pointSize"), 10.0},
             {QStringLiteral("fonts.antialiasing"), true},
             {QStringLiteral("fonts.hinting"), QStringLiteral("slight")},
@@ -190,6 +191,7 @@ private:
     {
         model.loading = false;
         model.ready = true;
+        model.hasConfirmed = true;
         model.canEdit = true;
         model.statusText.clear();
         model.draftDirty = dirty;

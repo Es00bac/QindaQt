@@ -86,6 +86,7 @@ class StubAppearanceModel final : public QObject {
     Q_PROPERTY(bool saving MEMBER saving NOTIFY stateChanged)
     Q_PROPERTY(bool conflict MEMBER conflict NOTIFY stateChanged)
     Q_PROPERTY(bool unavailable MEMBER unavailable NOTIFY stateChanged)
+    Q_PROPERTY(bool hasConfirmed MEMBER hasConfirmed NOTIFY stateChanged)
     Q_PROPERTY(bool canEdit MEMBER canEdit NOTIFY stateChanged)
     Q_PROPERTY(bool draftDirty MEMBER draftDirty NOTIFY draftChanged)
     Q_PROPERTY(bool draftValid MEMBER draftValid NOTIFY draftChanged)
@@ -96,9 +97,12 @@ class StubAppearanceModel final : public QObject {
     Q_PROPERTY(bool saveResultsHaveFailure MEMBER saveResultsHaveFailure
                    NOTIFY stateChanged)
     Q_PROPERTY(QVariantMap draft MEMBER draft NOTIFY draftChanged)
+    Q_PROPERTY(QString confirmedMonospaceFamily MEMBER confirmedMonospaceFamily
+                   NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap fieldErrors MEMBER fieldErrors NOTIFY draftChanged)
     Q_PROPERTY(QVariantList installedThemes MEMBER installedThemes CONSTANT)
     Q_PROPERTY(QVariantList bundledWallpapers MEMBER bundledWallpapers CONSTANT)
+    Q_PROPERTY(QStringList installedMonospaceFamilies MEMBER installedMonospaceFamilies CONSTANT)
     Q_PROPERTY(QString resolvedThemeId MEMBER resolvedThemeId NOTIFY draftChanged)
     Q_PROPERTY(bool configuredThemeInstalled MEMBER configuredThemeInstalled
                    NOTIFY draftChanged)
@@ -184,6 +188,7 @@ public:
     bool saving = false;
     bool conflict = false;
     bool unavailable = false;
+    bool hasConfirmed = false;
     bool canEdit = false;
     bool draftDirty = false;
     bool draftValid = true;
@@ -204,9 +209,12 @@ public:
     QVariantList decorationDocuments;
     QUrl previewWallpaper;
     QVariantMap draft;
+    QString confirmedMonospaceFamily = QStringLiteral("Noto Sans Mono");
     QVariantMap fieldErrors;
     QVariantList installedThemes;
     QVariantList bundledWallpapers;
+    QStringList installedMonospaceFamilies{QStringLiteral("Noto Sans Mono"),
+                                           QStringLiteral("Liberation Mono")};
     QStringList draftKeys;
     QVariantList draftValues;
     int applies = 0;

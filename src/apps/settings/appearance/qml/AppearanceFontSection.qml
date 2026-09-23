@@ -74,6 +74,68 @@ ColumnLayout {
 
     FormRow {
         Layout.fillWidth: true
+        label: qsTr("Monospace font family")
+        description: qsTr("Choose an installed fixed-width font for code and terminals")
+        errorMessage: root.appearanceSettings.fieldErrors["fonts.monospaceFamily"] ?? ""
+        editor: monospaceFamilyField
+
+        ComboBox {
+            id: monospaceFamilyField
+            objectName: "appearanceMonospaceFamilyField"
+            width: 260
+            editable: true
+            enabled: root.appearanceSettings.canEdit && !root.editorBusy
+            model: root.appearanceSettings.installedMonospaceFamilies
+            currentIndex: model.indexOf(String(root.draftValue("fonts.monospaceFamily")))
+            editText: String(root.draftValue("fonts.monospaceFamily"))
+            Accessible.role: Accessible.ComboBox
+            Accessible.name: qsTr("Monospace font family")
+            Accessible.description: qsTr("Installed fixed-width families; type to search")
+            // AGENT-GUARD: Keep typed intent in the shared draft before focus
+            // moves; an unchecked local editor would be lost on Apply/Revert.
+            onEditTextChanged: {
+                if (!activeFocus)
+                    return
+                const typed = editText
+                // The model publishes draftChanged synchronously. Queueing
+                // the write avoids a QML binding cycle while the editText
+                // binding is being evaluated.
+                Qt.callLater(() => {
+                    if (root.appearanceSettings.canEdit
+                            && typed !== String(root.draftValue("fonts.monospaceFamily")))
+                        root.setDraft("fonts.monospaceFamily", typed)
+                })
+            }
+            onActivated: index => root.setDraft("fonts.monospaceFamily", currentText)
+            onAccepted: root.setDraft("fonts.monospaceFamily", editText)
+        }
+    }
+
+    Label {
+        objectName: "appearanceMonospaceState"
+        Layout.fillWidth: true
+        text: root.appearanceSettings.hasConfirmed
+              ? qsTr("Saved: %1 · Draft: %2")
+                    .arg(root.appearanceSettings.confirmedMonospaceFamily)
+                    .arg(String(root.draftValue("fonts.monospaceFamily")))
+              : qsTr("Waiting for confirmed font settings")
+        wrapMode: Text.Wrap
+        muted: true
+        Accessible.name: text
+    }
+
+    Label {
+        objectName: "appearanceMonospacePreview"
+        Layout.fillWidth: true
+        text: qsTr("0123456789  abcdefghijklmnopqrstuvwxyz")
+        font.family: String(root.draftValue("fonts.monospaceFamily"))
+        font.pointSize: Number(root.draftValue("fonts.pointSize"))
+        wrapMode: Text.WrapAnywhere
+        Accessible.name: qsTr("Monospace preview using %1").arg(font.family)
+    }
+
+    FormRow {
+        Layout.fillWidth: true
         label: qsTr("Font size")
         description: qsTr("Interface font size in points")
         errorMessage: root.appearanceSettings.fieldErrors["fonts.pointSize"] ?? ""

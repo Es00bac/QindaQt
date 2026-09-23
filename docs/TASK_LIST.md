@@ -27,6 +27,13 @@ integrated in the qinda source tree, not installed into a live session:
   revisions received independent review before the final one was accepted.
   The combined build, focused 17/17 and broad Settings 126/126 pass; physical
   touchscreen use remains to qualify.
+- Appearance monospace font (`fdbc50f4`): the font picker now edits
+  `fonts.monospaceFamily` separately from the UI family and keeps the
+  confirmed value visible. A qinda Qt metadata false-negative excluded the
+  shipped default; the rejected candidate was repaired with resolved-family
+  glyph checks and independently accepted. The merged build, 11/11 focused
+  Appearance/font-consumer rows and broad Settings 126/126 pass; live font
+  application and relogin remain to qualify.
 - Voice (`6a2d9e2d`, `58ca80c7`): confirmed Off withdraws desktop provider
   use even through a conflicting or uncertain save. The rejected first
   candidate was repaired and independently accepted. The combined build,
