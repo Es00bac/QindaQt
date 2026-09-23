@@ -39,6 +39,9 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
     } else if (key == QLatin1String(AppearanceKeys::FontFamily)) {
         if (value.metaType().id() != QMetaType::QString) return false;
         next.fontFamily = value.toString();
+    } else if (key == QLatin1String(AppearanceKeys::FontMonospaceFamily)) {
+        if (value.metaType().id() != QMetaType::QString) return false;
+        next.fontMonospaceFamily = value.toString();
     } else if (key == QLatin1String(AppearanceKeys::FontPointSize)) {
         if (!requireDouble(&next.fontPointSize)) return false;
     } else if (key == QLatin1String(AppearanceKeys::FontAntialiasing)) {

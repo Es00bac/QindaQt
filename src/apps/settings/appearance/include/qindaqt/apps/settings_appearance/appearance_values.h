@@ -25,6 +25,7 @@ inline constexpr QLatin1String Wallpaper{"appearance.wallpaper"};
 inline constexpr QLatin1String WallpaperMode{"appearance.wallpaperMode"};
 inline constexpr QLatin1String UiScale{"appearance.uiScale"};
 inline constexpr QLatin1String FontFamily{"fonts.family"};
+inline constexpr QLatin1String FontMonospaceFamily{"fonts.monospaceFamily"};
 inline constexpr QLatin1String FontPointSize{"fonts.pointSize"};
 inline constexpr QLatin1String FontAntialiasing{"fonts.antialiasing"};
 inline constexpr QLatin1String FontHinting{"fonts.hinting"};
@@ -68,6 +69,7 @@ struct AppearanceValues final {
     WallpaperMode wallpaperMode{WallpaperMode::Scaled};
     double uiScale = 1.0;
     QString fontFamily{QStringLiteral("Noto Sans")};
+    QString fontMonospaceFamily{QStringLiteral("Noto Sans Mono")};
     double fontPointSize = 10.0;
     bool fontAntialiasing = true;
     FontHinting fontHinting{FontHinting::Slight};
@@ -102,6 +104,7 @@ struct AppearanceValidation final {
 // commit can fail as ValidationFailed. Pure and catalog-driven.
 [[nodiscard]] AppearanceValidation
 validateAppearanceDraft(const AppearanceValues &values,
-                        const QSet<QString> &installedThemeIds);
+                        const QSet<QString> &installedThemeIds,
+                        const QStringList &installedMonospaceFamilies = {});
 
 } // namespace QindaQt::Apps::SettingsAppearance

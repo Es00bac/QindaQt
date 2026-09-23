@@ -50,7 +50,8 @@ constexpr double MaximumUiScale = 3.0;
 QStringList AppearanceKeys::scopedKeys()
 {
     QStringList keys{QLatin1String(Theme), QLatin1String(ColorScheme),
-                     QLatin1String(FontFamily), QLatin1String(FontPointSize),
+                     QLatin1String(FontFamily), QLatin1String(FontMonospaceFamily),
+                     QLatin1String(FontPointSize),
                      QLatin1String(FontAntialiasing), QLatin1String(FontHinting),
                      QLatin1String(FontSubpixelOrder), QLatin1String(Wallpaper),
                      QLatin1String(WallpaperMode), QLatin1String(UiScale)};
@@ -179,6 +180,14 @@ AppearanceValues::fromVariantMap(const QVariantMap &values, QString *error)
         return fail(QLatin1String(AppearanceKeys::FontFamily),
                     QStringLiteral("expected a non-empty string value"));
     }
+    if (!requireString(AppearanceKeys::FontMonospaceFamily,
+                       &decoded.fontMonospaceFamily)) {
+        return std::nullopt;
+    }
+    if (decoded.fontMonospaceFamily.isEmpty()) {
+        return fail(QLatin1String(AppearanceKeys::FontMonospaceFamily),
+                    QStringLiteral("expected a non-empty string value"));
+    }
     if (!requireString(AppearanceKeys::Wallpaper, &decoded.wallpaper)) {
         return std::nullopt;
     }
@@ -297,6 +306,7 @@ QVariantMap AppearanceValues::toVariantMap() const
             {QLatin1String(AppearanceKeys::ColorScheme),
              colorSchemeToken(colorScheme)},
             {QLatin1String(AppearanceKeys::FontFamily), fontFamily},
+            {QLatin1String(AppearanceKeys::FontMonospaceFamily), fontMonospaceFamily},
             {QLatin1String(AppearanceKeys::FontPointSize), fontPointSize},
             {QLatin1String(AppearanceKeys::FontAntialiasing), fontAntialiasing},
             {QLatin1String(AppearanceKeys::FontHinting),
@@ -315,7 +325,8 @@ QVariantMap AppearanceValues::toVariantMap() const
 
 AppearanceValidation
 validateAppearanceDraft(const AppearanceValues &values,
-                        const QSet<QString> &installedThemeIds)
+                        const QSet<QString> &installedThemeIds,
+                        const QStringList &installedMonospaceFamilies)
 {
     AppearanceValidation result;
     const auto reject = [&result](QLatin1String key, const QString &message) {
@@ -339,6 +350,19 @@ validateAppearanceDraft(const AppearanceValues &values,
     } else if (!isUsableString(values.fontFamily)) {
         reject(AppearanceKeys::FontFamily,
                QStringLiteral("Font family must not contain embedded NUL"));
+    }
+    if (values.fontMonospaceFamily.isEmpty()) {
+        reject(AppearanceKeys::FontMonospaceFamily,
+               QStringLiteral("Choose a monospace font family"));
+    } else if (!isUsableString(values.fontMonospaceFamily)) {
+        reject(AppearanceKeys::FontMonospaceFamily,
+               QStringLiteral("Monospace font family must not contain embedded NUL"));
+    } else if (!installedMonospaceFamilies.isEmpty()
+               && !installedMonospaceFamilies.contains(values.fontMonospaceFamily,
+                                                       Qt::CaseInsensitive)) {
+        reject(AppearanceKeys::FontMonospaceFamily,
+               QStringLiteral("Monospace font '%1' is not installed")
+                   .arg(values.fontMonospaceFamily));
     }
     if (!isUsableString(values.wallpaper)) {
         reject(AppearanceKeys::Wallpaper,

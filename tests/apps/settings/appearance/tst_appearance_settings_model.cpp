@@ -160,6 +160,7 @@ private slots:
     void loadingThenReadyWithConfirmedBaseline();
     void draftValidationGatesApplyAndCancelRestores();
     void applySequencesPerKeyCommitsInOrder();
+    void monospaceDraftSavesWithoutChangingInterfaceFont();
     void conflictStopsSequenceAndRequiresExplicitReapply();
     void uncertainWriteIsNeverReplayed();
     void ownerLossDuringSequenceAbortsWithoutReplay();
@@ -361,6 +362,75 @@ void AppearanceSettingsModelTests::applySequencesPerKeyCommitsInOrder()
     QTRY_VERIFY(model->ready());
     QVERIFY(!model->draftDirty());
     QVERIFY(!model->saving());
+}
+
+void AppearanceSettingsModelTests::monospaceDraftSavesWithoutChangingInterfaceFont()
+{
+    auto *model = makeModel(Qt::ColorScheme::Light);
+    QVERIFY(model != nullptr);
+    QCOMPARE(model->confirmedMonospaceFamily(), QStringLiteral("Noto Sans Mono"));
+    QVERIFY(!model->setDraftValue(QLatin1String(AppearanceKeys::FontMonospaceFamily), 7));
+    QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::FontMonospaceFamily),
+                                 QString{}));
+    QVERIFY(!model->draftValid());
+    QVERIFY(!model->applyAvailable());
+    QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::FontMonospaceFamily),
+                                 QStringLiteral("Liberation Mono")));
+    QVERIFY(model->draftValid());
+    QCOMPARE(model->draft().value(QLatin1String(AppearanceKeys::FontFamily)).toString(),
+             QStringLiteral("Noto Sans"));
+    QVERIFY(model->applyDraft());
+    QCOMPARE(m_transport.commits.size(), 1);
+    const auto write = m_transport.commits.constFirst();
+    const auto operation = write.operations.constFirst().toMap();
+    QCOMPARE(operation.value(QLatin1StringView(WireContract::FieldKey)).toString(),
+             QLatin1String(AppearanceKeys::FontMonospaceFamily));
+    QCOMPARE(operation.value(QLatin1StringView(WireContract::FieldValue)).toString(),
+             QStringLiteral("Liberation Mono"));
+    auto authority = defaultAppearanceMap();
+    authority[QLatin1String(AppearanceKeys::FontMonospaceFamily)] =
+        QStringLiteral("Liberation Mono");
+    Q_EMIT m_transport.commitReceived(
+        write.token, write.owner,
+        commitWire(SettingsWireStatus::Applied, 7, 8,
+                   {{QLatin1String(AppearanceKeys::FontMonospaceFamily),
+                     QStringLiteral("Liberation Mono")}},
+                   QStringLiteral("epoch-a")));
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 8, authority));
+    QTRY_VERIFY(model->ready());
+    QVERIFY(!model->draftDirty());
+    QCOMPARE(model->confirmedMonospaceFamily(), QStringLiteral("Liberation Mono"));
+    QCOMPARE(model->draft().value(QLatin1String(AppearanceKeys::FontFamily)).toString(),
+             QStringLiteral("Noto Sans"));
+
+    // A later authoritative snapshot rebases untouched monospace while an
+    // independent interface-font draft remains the user's own intent.
+    QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::FontFamily),
+                                 QStringLiteral("Inter")));
+    authority[QLatin1String(AppearanceKeys::FontMonospaceFamily)] =
+        QStringLiteral("JetBrains Mono");
+    model->retry();
+    QVERIFY(answerRefresh(m_transport, QStringLiteral("epoch-a"), 9, authority));
+    QTRY_COMPARE(model->confirmedMonospaceFamily(), QStringLiteral("JetBrains Mono"));
+    QCOMPARE(model->draft().value(QLatin1String(AppearanceKeys::FontMonospaceFamily))
+                 .toString(), QStringLiteral("JetBrains Mono"));
+    QCOMPARE(model->draft().value(QLatin1String(AppearanceKeys::FontFamily)).toString(),
+             QStringLiteral("Inter"));
+
+    SequenceTransport reopenedTransport;
+    SettingsClient reopenedClient(reopenedTransport, AppearanceKeys::scopedKeys(),
+                                  {.requestTimeoutMilliseconds = 100,
+                                   .debounceMilliseconds = 0,
+                                   .retryMilliseconds = {10}});
+    AppearanceSettingsModel reopened(reopenedClient, loadFixtureThemes(),
+                                     QVariantList{}, Qt::ColorScheme::Light);
+    QVERIFY(reopenedClient.start());
+    QVERIFY(establishBaseline(reopenedTransport, QStringLiteral(":1.5reopen"),
+                              QStringLiteral("epoch-b"), 9, authority));
+    QTRY_VERIFY(reopened.ready());
+    QCOMPARE(reopened.confirmedMonospaceFamily(), QStringLiteral("JetBrains Mono"));
+    QCOMPARE(reopened.draft().value(QLatin1String(AppearanceKeys::FontFamily)).toString(),
+             QStringLiteral("Noto Sans"));
 }
 
 void AppearanceSettingsModelTests::conflictStopsSequenceAndRequiresExplicitReapply()

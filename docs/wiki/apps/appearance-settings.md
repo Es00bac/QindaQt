@@ -23,7 +23,7 @@ One page covers the appearance preference set stored through Settings1:
 | Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get, over the draft wallpaper; twelve built-in theme cards, each a rendered thumbnail of that theme's chrome with its paired decoration document and its panel material (ADR-0206); the system/light/dark scheme choice; the **Translucency** and **Motion** switches; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme`, `accessibility.reducedTransparency`, `accessibility.reducedMotion` |
 | Windows | A separate catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; a **Window decoration** chooser of decoration documents (ADR-0207) painted by the decoration painter; QindaQt-only application-window controls and shared-painter preview while QindaQt is selected; a **Container decoration** chooser painted by the compositor's container renderer; and an independently truthful two-window container preview with button and tab controls (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowDecoration`, `appearance.containerDecoration`, `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
 | Wallpaper | Bundled previews (any of png/jpg/jpeg/webp/bmp beneath the wallpaper data directories, ADR-0228), native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
-| Fonts | Installed-family picker with a live sample, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
+| Fonts | Independent interface and installed fixed-width family pickers with live samples and saved/draft monospace state, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.monospaceFamily`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
 Display scale belongs to the separate **Display** route, which owns the live
 output configuration. Appearance offers a direct route action rather than a
@@ -89,9 +89,11 @@ The route model projects the same Loading/Ready/Saving/Conflict/Unavailable
 truth as the DND controller, extended to a draft workflow:
 
 - **Draft** — edits accumulate locally and are validated immediately
-  (installed theme, non-empty family, 6–36 pt, 0.5–3.0 scale, no embedded
-  NUL). Invalid fields expose per-key error text and disable Apply; they never
-  reach Settings1.
+  (installed theme, non-empty family, installed fixed-width monospace family,
+  6–36 pt, 0.5–3.0 scale, no embedded NUL). Invalid fields expose per-key
+  error text and disable Apply; they never reach Settings1. The monospace
+  picker lists Qt's installed fixed-width families and keeps an in-progress
+  typed name in the shared draft before focus moves.
 - **Preview** — the draft drives one complete published QST generation, so
   the page chrome, theme previews, and font sample stay consistent. When the
   configured theme id is not installed, the page shows which theme the
@@ -170,8 +172,13 @@ page receives only its own model even though both models share the process.
   configuration and requests one live reload. After Settings1 Apply publishes
   a confirmed snapshot, the production shell adopts appearance preferences.
 - Font families are listed from the local Qt font database for selection. The
-  persisted value remains validated text because first-party session bootstrap
-  remains the consumer that applies it before application construction.
+  monospace catalog filters to fixed-width families and checks typed draft
+  names against that catalog. The persisted values remain separate validated
+  strings: `fonts.family` changes interface text; `fonts.monospaceFamily`
+  flows through FontSettingsBridge and the Qt platform theme's `FixedFont`.
+  First-party session bootstrap applies the confirmed preferences before
+  application construction. A missing previously saved family stays visible
+  as confirmed state so the user can choose an installed replacement.
 - No multi-key atomic transactions: the public client exposes single-key
   writes only; see ADR-0028 for the batch follow-up boundary.
 - No accessibility-domain coupling: text scale, reduced motion, and reduced
@@ -199,11 +206,20 @@ ctest --test-dir build/dev \
   uncertain no-replay, owner-loss and reply-gap owner/epoch replacement abort,
   diagnostic retention, fail-closed snapshot decode, answerable Conflict
   Revert, clean/partially dirty authority rebase, exact outbound keys, strict
-  enum metatypes, and later-key partial-failure results.
+  enum metatypes, later-key partial-failure results, and an independent
+  monospace save/readback with untouched interface font and external rebase.
 - `qindaqt.appearance-page` — offscreen Controls scene: focused-destination
   navigation, theme click selection/gating, installed-font and wallpaper
   selection wiring, tokenized font selectors and checked-only hinting emphasis,
   one shared Settings1 action row, per-key result truth, and accessible roles.
+- `qindaqt.appearance-monospace-page` — real keyboard editing of the installed
+  monospace picker at 420×320, typed unknown-family forwarding, independent
+  interface draft, sample, and confirmed-versus-draft readout.
+
+The existing `qindaqt.font-settings-bridge` and `qindaqt.native-theme` tests
+prove that a confirmed `fonts.monospaceFamily` snapshot reaches the font
+coordinator and that Qt's `FixedFont` reads the independent family. The
+Appearance model test proves this route commits that exact key alone.
 - `qindaqt.appearance-window-decoration-controller` — Aurorae discovery,
   stable selection identities, exact KWin library/theme persistence, unrelated
   key preservation, QindaQt-theme cleanup, and one reload request per apply.

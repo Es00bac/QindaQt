@@ -98,6 +98,11 @@ void AppearanceValuesTests::decodeRejectsWrongTypesAndUnknownTokens()
     QVERIFY(error.contains(QLatin1String(AppearanceKeys::FontFamily)));
 
     values = validMap();
+    values[QLatin1String(AppearanceKeys::FontMonospaceFamily)] = QString{};
+    QVERIFY(!AppearanceValues::fromVariantMap(values, &error).has_value());
+    QVERIFY(error.contains(QLatin1String(AppearanceKeys::FontMonospaceFamily)));
+
+    values = validMap();
     values[QLatin1String(AppearanceKeys::ColorScheme)] =
         QStringLiteral("sepia");
     QVERIFY(!AppearanceValues::fromVariantMap(values, &error).has_value());
@@ -154,6 +159,15 @@ void AppearanceValuesTests::validationRequiresInstalledThemesAndBounds()
         QLatin1String(AppearanceKeys::FontFamily)));
 
     values.fontFamily = QStringLiteral("Inter");
+    values.fontMonospaceFamily = QStringLiteral("Missing Mono");
+    result = validateAppearanceDraft(values, installed,
+                                     {QStringLiteral("Liberation Mono")});
+    QVERIFY(result.fieldErrors.value(QLatin1String(AppearanceKeys::FontMonospaceFamily))
+                .toString().contains(QStringLiteral("not installed")));
+    values.fontMonospaceFamily = QStringLiteral("Liberation Mono");
+    result = validateAppearanceDraft(values, installed,
+                                     {QStringLiteral("Liberation Mono")});
+    QVERIFY(!result.fieldErrors.contains(QLatin1String(AppearanceKeys::FontMonospaceFamily)));
     values.fontPointSize = 40.0;
     result = validateAppearanceDraft(values, installed);
     QVERIFY(result.fieldErrors.contains(
@@ -177,19 +191,25 @@ void AppearanceValuesTests::scopedKeysMatchSchemaKeys()
     // list with itself. Every client-scoped key must be defined by the
     // authority that will validate its optimistic commits.
     const auto keys = AppearanceKeys::scopedKeys();
-    // Ten appearance keys plus the chrome arrangement keys (ADR-0129), the
+    // Eleven appearance keys plus the chrome arrangement keys (ADR-0129), the
     // two decoration document choices (ADR-0207) and the two accessibility
     // switches the route offers (ADR-0206).
-    QCOMPARE(keys.size(), 10 + QindaQt::Decoration::ChromePreferences::settingsKeys().size()
+    QCOMPARE(keys.size(), 11 + QindaQt::Decoration::ChromePreferences::settingsKeys().size()
                               + QindaQt::Decoration::ChromePreferences::decorationKeys().size()
                               + 2);
     QVERIFY(keys.contains(QStringLiteral("accessibility.reducedTransparency")));
     QVERIFY(keys.contains(QStringLiteral("accessibility.reducedMotion")));
+    QVERIFY(keys.contains(QLatin1String(AppearanceKeys::FontMonospaceFamily)));
     QCOMPARE(QindaQt::Decoration::ChromePreferences::decorationKeys().size(), 2);
     for (const QString &key : keys) {
         QVERIFY2(schema->definition(key) != nullptr, qPrintable(key));
     }
     QVERIFY(!keys.contains(QStringLiteral("appearance.accentColor")));
+
+    const auto *mono = schema->definition(QLatin1String(AppearanceKeys::FontMonospaceFamily));
+    QVERIFY(mono != nullptr);
+    QVERIFY(mono->type == SettingValueType::String);
+    QCOMPARE(mono->defaultValue.toString(), QStringLiteral("Noto Sans Mono"));
 
     const auto *scheme = schema->definition(
         QLatin1String(AppearanceKeys::ColorScheme));
