@@ -166,6 +166,14 @@ is private until a fresh authority baseline either resolves it or makes
 **Apply my choice** valid again. Confirmed validation, persistence, and
 revision-exhaustion diagnostics survive automatic authoritative refresh;
 only a new explicit write dismisses them. None of these paths replays a write.
+The Notifications schedule and DND controller share one serial scoped client,
+so each records whether it admitted the current write before consuming the
+client commit signal. Their controls disable during the other write. The
+schedule requires exact-owner, same-epoch, post-result revision and value
+confirmation before claiming a save; DND also checks its own confirming read.
+An exact owner transition is signaled synchronously even when the generic
+client remains Authenticating, allowing both to withdraw old-owner pending
+intent before a timeout or replacement snapshot.
 
 Shell composition injects confirmed values into the persistence-neutral
 notification interruption policy. Before its first authenticated Settings1

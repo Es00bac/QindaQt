@@ -78,7 +78,19 @@ their QObject projections and never imports transport or Settings1 authority. Th
 scoped client: the Do Not Disturb controller and the quiet-hours schedule.
 Both are purpose-scoped to the same four `services.doNotDisturb*` keys, so a
 schedule edit and a Do Not Disturb edit share one owner and one token
-sequence rather than racing two (ADR-0212).
+sequence rather than racing two (ADR-0212). The controls serialize that shared
+write lane and consume only their own commit outcomes. A schedule edit stays
+on its last confirmed value while saving; after an Applied reply it waits for
+an exact-owner, same-epoch read at or above the result revision. A refused,
+conflicting, uncertain, or unconfirmable result is shown beside quiet hours
+without moving its controls or replaying the request. Owner replacement retires
+pending schedule intent immediately. Do Not Disturb remains a separate manual
+switch: the schedule never writes its key, and neither control borrows the
+other control save result. Both DND and the schedule are popup-interruption
+reasons: low and normal banners are held, while critical presentation still
+requires the independent privacy gate to allow it. Neither is the separate
+notification-service disable-all policy, and neither changes lock-screen
+privacy or rewrites the manual DND key on a schedule.
 
 Network owns one public Qt Network transport, `NetworkClient`, and
 `NetworkSettingsModel` for the process lifetime. It does not share the

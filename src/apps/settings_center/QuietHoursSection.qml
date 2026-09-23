@@ -26,7 +26,7 @@ ColumnLayout {
         objectName: "settingsQuietHoursSwitch"
         text: qsTr("Quiet on a schedule")
         checked: section.schedule.scheduleEnabled
-        enabled: section.schedule.available
+        enabled: section.schedule.canEdit
         focusPolicy: Qt.StrongFocus
         KeyNavigation.tab: startField
         KeyNavigation.backtab: section.focusBefore
@@ -44,7 +44,7 @@ ColumnLayout {
         spacing: Tokens.space["3"]
         // The times stay readable while the schedule is off, so a user can
         // see what turning it on would do before they do it.
-        enabled: section.schedule.available
+        enabled: section.schedule.canEdit
 
         Label {
             text: qsTr("From")
@@ -111,6 +111,19 @@ ColumnLayout {
     }
 
     Label {
+        objectName: "settingsQuietHoursStatus"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: section.schedule.statusText
+        font.family: Tokens.type.fontFamily
+        wrapMode: Text.Wrap
+        textFormat: Text.PlainText
+        Accessible.role: section.schedule.conflict || section.schedule.uncertain
+                         ? Accessible.AlertMessage : Accessible.StaticText
+        Accessible.name: text
+    }
+
+    Label {
         objectName: "settingsQuietHoursError"
         Layout.fillWidth: true
         visible: section.schedule.errorText.length > 0
@@ -119,7 +132,7 @@ ColumnLayout {
         color: Tokens.danger.default
         wrapMode: Text.WordWrap
         textFormat: Text.PlainText
-        Accessible.role: Accessible.StaticText
+        Accessible.role: Accessible.AlertMessage
         Accessible.name: text
     }
 }

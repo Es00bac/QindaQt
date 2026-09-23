@@ -257,3 +257,16 @@ set_tests_properties(
     qindaqt.settings-app-installed-routes PROPERTIES
     LABELS "offscreen;settings;appearance;clipboard;color;startup;package" RUN_SERIAL TRUE TIMEOUT 90
 )
+
+# Scoped Notifications schedule and DND share one serial Settings1 write lane.
+qt_add_executable(qindaqt_notification_schedule_outcomes_test
+    tst_notification_schedule_outcomes.cpp)
+target_include_directories(qindaqt_notification_schedule_outcomes_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(qindaqt_notification_schedule_outcomes_test PRIVATE
+    qindaqt_settings_notifications QindaQt::SettingsClient Qt6::Core Qt6::Test)
+qindaqt_enable_warnings(qindaqt_notification_schedule_outcomes_test)
+add_test(NAME qindaqt.settings-notification-schedule-outcomes
+         COMMAND qindaqt_notification_schedule_outcomes_test)
+set_tests_properties(qindaqt.settings-notification-schedule-outcomes PROPERTIES
+    LABELS "settings;notifications;service"
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")
