@@ -140,7 +140,7 @@ class NotificationLiveDriverTests(unittest.TestCase):
                     "--theme",
                     theme,
                     "--no-polkit-agent", "--no-powerdevil",
-                    "--no-global-shortcut-daemon",
+                    "--no-global-shortcut-daemon", "--no-autostart",
                 ],
             )
 
@@ -159,6 +159,7 @@ class NotificationLiveDriverTests(unittest.TestCase):
             self.assertIn("--no-polkit-agent", shlex.split(command))
             self.assertIn("--no-powerdevil", shlex.split(command))
             self.assertIn("--no-global-shortcut-daemon", shlex.split(command))
+            self.assertIn("--no-autostart", shlex.split(command))
 
     def test_process_group_guard_rejects_self_and_non_leader_targets(self) -> None:
         with self.assertRaises(RuntimeError):

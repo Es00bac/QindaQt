@@ -383,7 +383,7 @@ class NestedLaunchIsolationTests(unittest.TestCase):
             self.assertEqual(
                 wrapper.read_text(encoding="utf-8"),
                 "#!/usr/bin/sh\n"
-                "exec /opt/qindaqt/bin/qindaqt-session --no-polkit-agent --no-powerdevil --no-global-shortcut-daemon\n",
+                "exec /opt/qindaqt/bin/qindaqt-session --no-polkit-agent --no-powerdevil --no-global-shortcut-daemon --no-autostart\n",
             )
             self.assertEqual(wrapper.stat().st_mode & 0o777, 0o700)
 

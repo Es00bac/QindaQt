@@ -6,6 +6,7 @@
 #include "qindaqt/session_supervisor/supervised_process_launcher.h"
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
 #include "first_launch_welcome.h"
+#include "session_autostart_runner.h"
 
 #include <QCoreApplication>
 #include <QFileInfo>
@@ -61,6 +62,7 @@ std::optional<QStringList> shellProcessArguments(const SessionProcessOptions &op
 SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options, QObject *parent)
     : QObject(parent), m_options(std::move(options))
       , m_welcome(std::make_unique<FirstLaunchWelcome>())
+      , m_autostart(std::make_unique<SessionAutostartRunner>(m_options.autostart))
       , m_desktopControls(std::make_unique<OptionalSessionChild>(
             QStringLiteral("desktop-controls"), QStringList{}))
       , m_polkitAgent(std::make_unique<OptionalSessionChild>(
@@ -188,6 +190,14 @@ bool SessionProcessSupervisor::start(QString *error)
     startNetworkSecretAgent();
     startOptionalChildren();
     startWelcome();
+    // AGENT-CONTRACT: defer the batch to the first event-loop turn. main
+    // registers Session1 and other session bridges after start() returns,
+    // before user applications can consume them. A stop before that turn
+    // cancels launch; shell replacement never schedules this callback.
+    QTimer::singleShot(0, this, [this] {
+        if (m_running && !m_stopping)
+            m_autostart->startOnce();
+    });
     setError(error, {});
     return true;
 }
@@ -207,6 +217,7 @@ void SessionProcessSupervisor::stop() noexcept
         Q_EMIT childStopRequested(QStringLiteral("welcome"));
     }
     m_welcome->stop();
+    m_autostart->stop();
     if (m_shell.state() != QProcess::NotRunning) {
         Q_EMIT childStopRequested(QStringLiteral("shell"));
     }
@@ -550,6 +561,7 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
         Q_EMIT childStopRequested(QStringLiteral("welcome"));
     }
     m_welcome->stop();
+    m_autostart->stop();
     if (role == ChildRole::NotificationHost) {
         if (m_shell.state() != QProcess::NotRunning) {
             Q_EMIT childStopRequested(QStringLiteral("shell"));

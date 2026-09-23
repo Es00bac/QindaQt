@@ -19,6 +19,8 @@ target_sources(
         src/supervised_process_launcher.cpp
         src/tokenized_process_launcher.cpp
         src/session_process_supervisor.cpp
+        src/session_autostart_runner.cpp
+        src/session_autostart_runner.h
         src/session_service.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -39,7 +41,7 @@ pkg_check_modules(libsystemd REQUIRED IMPORTED_TARGET libsystemd)
 
 target_link_libraries(
     qindaqt_session_supervisor_support
-    PUBLIC QindaQt::NotificationPresentationProtocol Qt6::Core Qt6::DBus
+    PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus
     PRIVATE PkgConfig::libsystemd
 )
 target_compile_features(qindaqt_session_supervisor_support PUBLIC cxx_std_20)

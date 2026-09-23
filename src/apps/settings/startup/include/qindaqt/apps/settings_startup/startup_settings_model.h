@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include <qindaqt/session_autostart/autostart_catalog.h>
+
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
@@ -24,6 +26,8 @@ struct AutostartEntry final {
   QString iconName;
   QString exec;
   bool enabled = true;
+  bool eligible = false;
+  QString ineligibilityReason;
   // True only for an entry this route itself created (X-QindaQt-Custom=true
   // in the file); only a custom entry can be removed outright rather than
   // just disabled, because removing a real installed application's
@@ -65,6 +69,7 @@ public:
   // found wins for the "is this system-provided" question); `userDirectory`
   // is the one directory ever written to.
   XdgAutostartStore(QString userDirectory, QStringList systemDirectories);
+  explicit XdgAutostartStore(SessionAutostart::ScanOptions options);
 
   [[nodiscard]] QList<AutostartEntry> list(QString *error) override;
   [[nodiscard]] bool setEnabled(const QString &id, bool enabled,
@@ -74,8 +79,7 @@ public:
   [[nodiscard]] bool removeCustom(const QString &id, QString *error) override;
 
 private:
-  QString m_userDirectory;
-  QStringList m_systemDirectories;
+  SessionAutostart::ScanOptions m_options;
 };
 
 // QML-facing projection: one flat list of AutostartEntry rows plus intents.

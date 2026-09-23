@@ -29,6 +29,8 @@ private Q_SLOTS:
   void userEntryShadowsSystemEntryOfTheSameId();
   void disablingASystemEntryWritesAUserOverrideWithoutTouchingTheSystemFile();
   void enablingASystemEntryAfterOverrideRestoresIt();
+  void enablingClearsEveryRecognizedDisableFlag();
+  void rejectsUnsafeIds();
   void disablingAUserOnlyEntryPatchesItInPlace();
   void invalidFilesAreSkipped();
   void addCommandCreatesAMarkedCustomEntry();
@@ -151,6 +153,40 @@ void XdgAutostartStoreTest::enablingASystemEntryAfterOverrideRestoresIt() {
   // The override file exists (Hidden=false), not deleted; still shadows the
   // system copy but agrees with it.
   QVERIFY(QFile::exists(QDir(userDir).filePath(QStringLiteral("app.desktop"))));
+}
+
+void XdgAutostartStoreTest::enablingClearsEveryRecognizedDisableFlag() {
+  QTemporaryDir root;
+  QVERIFY(root.isValid());
+  const QString userDir = root.filePath(QStringLiteral("user/autostart"));
+  QVERIFY(QDir().mkpath(userDir));
+  const QString path = QDir(userDir).filePath(QStringLiteral("app.desktop"));
+  writeDesktopFile(path, QStringLiteral(
+      "[Desktop Entry]\nType=Application\nName=App\nExec=app\n"
+      "Hidden=true\nX-GNOME-Autostart-enabled=false\n"
+      "X-GNOME-Autostart-enabled=false\nX-Unrelated=preserve\n"));
+  XdgAutostartStore store(userDir, {});
+  QString error;
+  QVERIFY(store.setEnabled(QStringLiteral("app"), true, &error));
+  QFile file(path);
+  QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+  const QString contents = QString::fromUtf8(file.readAll());
+  QVERIFY(contents.contains(QStringLiteral("Hidden=false")));
+  QCOMPARE(contents.count(QStringLiteral("X-GNOME-Autostart-enabled=true")), 2);
+  QVERIFY(contents.contains(QStringLiteral("X-Unrelated=preserve")));
+  QVERIFY(store.list(&error).constFirst().enabled);
+}
+
+void XdgAutostartStoreTest::rejectsUnsafeIds() {
+  QTemporaryDir root;
+  QVERIFY(root.isValid());
+  XdgAutostartStore store(root.filePath(QStringLiteral("user/autostart")), {});
+  QString error;
+  QVERIFY(!store.setEnabled(QStringLiteral("../elsewhere"), true, &error));
+  QVERIFY(!error.isEmpty());
+  error.clear();
+  QVERIFY(!store.removeCustom(QStringLiteral("../elsewhere"), &error));
+  QVERIFY(!error.isEmpty());
 }
 
 void XdgAutostartStoreTest::disablingAUserOnlyEntryPatchesItInPlace() {

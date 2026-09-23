@@ -185,3 +185,32 @@ add_test(
 )
 set_tests_properties(qindaqt.session-child-startup PROPERTIES
     TIMEOUT 30 LABELS "session;contract;pure")
+
+qt_add_executable(qindaqt_autostart_catalog_tests tst_autostart_catalog.cpp)
+target_link_libraries(qindaqt_autostart_catalog_tests PRIVATE
+    QindaQt::SessionAutostart Qt6::Core Qt6::Test)
+qindaqt_enable_warnings(qindaqt_autostart_catalog_tests)
+add_test(NAME qindaqt.session-autostart-catalog
+    COMMAND qindaqt_autostart_catalog_tests)
+set_tests_properties(qindaqt.session-autostart-catalog PROPERTIES
+    TIMEOUT 30 LABELS "session;autostart;pure")
+
+qt_add_executable(qindaqt_session_autostart_child_helper
+    session_autostart_child_helper.cpp)
+target_link_libraries(qindaqt_session_autostart_child_helper PRIVATE Qt6::Core)
+qindaqt_enable_warnings(qindaqt_session_autostart_child_helper)
+qt_add_executable(qindaqt_session_autostart_lifetime_tests
+    tst_session_autostart_lifetime.cpp)
+target_link_libraries(qindaqt_session_autostart_lifetime_tests PRIVATE
+    QindaQt::SessionSupervisorSupport Qt6::Core Qt6::Test)
+target_compile_definitions(qindaqt_session_autostart_lifetime_tests PRIVATE
+    QINDAQT_SESSION_TOKEN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_token_child_helper>"
+    QINDAQT_SESSION_AUTOSTART_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_autostart_child_helper>")
+add_dependencies(qindaqt_session_autostart_lifetime_tests
+    qindaqt_session_token_child_helper qindaqt_session_autostart_child_helper)
+qindaqt_enable_warnings(qindaqt_session_autostart_lifetime_tests)
+add_test(NAME qindaqt.session-autostart-lifetime
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_session_autostart_lifetime_tests>)
+set_tests_properties(qindaqt.session-autostart-lifetime PROPERTIES
+    TIMEOUT 40 LABELS "session;autostart;dbus"
+    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")

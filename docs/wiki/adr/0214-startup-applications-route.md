@@ -1,10 +1,10 @@
 # ADR-0214: Startup applications route shadows, never edits, system entries
 
-- **Status:** Accepted
+- **Status:** Superseded
 - **Date:** 2026-09-18
 - **Owners:** Settings Center, Startup applications route
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0247](0247-run-xdg-autostart-in-the-session-supervisor.md)
 
 ## Context
 

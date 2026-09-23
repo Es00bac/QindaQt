@@ -20,6 +20,8 @@ StartupSettingsModel::projectEntry(const AutostartEntry &entry) const {
       {QStringLiteral("iconName"), entry.iconName},
       {QStringLiteral("exec"), entry.exec},
       {QStringLiteral("enabled"), entry.enabled},
+      {QStringLiteral("eligible"), entry.eligible},
+      {QStringLiteral("ineligibilityReason"), entry.ineligibilityReason},
       {QStringLiteral("custom"), entry.custom},
   };
 }

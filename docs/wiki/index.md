@@ -43,6 +43,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Compositor and session integration](architecture/compositor-session.md)
   records the exact KWin ABI, launcher/plugin boundary, completed Compositor
   MVP evidence, and explicit later-milestone boundaries.
+- [Session autostart](architecture/session-autostart.md) defines one
+  supervisor-owned XDG login batch, shared Settings eligibility, and private
+  test isolation.
 - [Release procedure](development/releases.md) defines the exact native build,
   nested plugin boots, package inspection, review, and evidence required before
   publishing. [KWin upgrades](development/kwin-upgrades.md) keep source objects,

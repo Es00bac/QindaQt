@@ -291,7 +291,7 @@ def _add_presentation_evidence(
         "sessionArguments": [
             "--profile", scenario.profile_id, "--theme", scenario.theme_id,
             "--no-polkit-agent", "--no-powerdevil",
-            "--no-global-shortcut-daemon",
+            "--no-global-shortcut-daemon", "--no-autostart",
         ],
         "editorArguments": ["--theme", scenario.theme_id],
     }

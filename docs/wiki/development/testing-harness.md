@@ -3932,3 +3932,13 @@ ignores a hover; after `FocusPolicy=FocusFollowsMouse` a hover activates in
 both directions; and the restored chord docks again. Focus-follows-mouse is
 judged on pointer-focus changes, so the driver always leaves for the backdrop
 before entering the window under test.
+
+## Private session autostart isolation
+
+The production session supervisor consumes XDG autostart entries once at login
+([session autostart](../architecture/session-autostart.md)). Every staged,
+private-bus and nested test wrapper that invokes the real qindaqt-session
+passes --no-autostart. Test cases for autostart itself inject disposable
+user/system roots directly into SessionProcessOptions and never read the
+developer's XDG autostart tree. A compositor probe supplied as --session is
+not qindaqt-session and has no autostart behavior.

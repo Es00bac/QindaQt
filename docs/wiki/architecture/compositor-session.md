@@ -82,7 +82,11 @@ After the first shell starts, the
 supervisor also starts an installed sibling `qindaqt-welcome --first-launch` as
 an optional parent-death-bound child. Welcome decides locally whether it should
 show, exits successfully when a person has opted out, and is never restarted;
-its failure cannot end the session. The notification host is
+its failure cannot end the session. The supervisor also consumes [XDG autostart entries](session-autostart.md)
+once per login after the essential shell and named optional desktop children
+start. Settings and the session share eligibility; surviving direct children
+stop at logout. Shell replacement does not launch them twice.
+The notification host is
 session-resident. An unexpected shell exit schedules a replacement with a
 fresh descriptor containing the same token, the same direct KWin PID, and the
 same profile/theme arguments. Retry delays use paced exponential backoff from

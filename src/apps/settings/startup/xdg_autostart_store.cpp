@@ -4,13 +4,9 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
-#include <QtCore/QHash>
-#include <QtCore/QPair>
 #include <QtCore/QSaveFile>
-#include <QtCore/QStandardPaths>
 #include <QtCore/QTextStream>
 
-#include <algorithm>
 
 namespace QindaQt::Apps::SettingsStartup {
 namespace {
@@ -113,42 +109,42 @@ QString slugify(const QString &name) {
   return slug.isEmpty() ? QStringLiteral("entry") : slug;
 }
 
-// Rewrites (or appends) `Hidden=<true|false>` inside the [Desktop Entry]
-// group of `sourceText`, preserving every other line verbatim -- so
-// disabling a copied system entry never loses an unrelated key this route
-// does not understand.
-QString withHiddenSetTo(const QString &sourceText, bool hidden) {
+// Patch the two disable flags this route interprets. Re-enabling must
+// clear both, including repeated keys; a Hidden=false override alone leaves
+// GNOME's false flag disabling the same entry on the next login.
+QString withEnabledSetTo(const QString &sourceText, bool enabled) {
   QStringList lines = sourceText.split(QLatin1Char('\n'));
   QString section;
   int entryHeader = -1;
-  int hiddenLine = -1;
+  bool sawHidden = false;
   for (int index = 0; index < lines.size(); ++index) {
     QString parsed;
     if (parseSection(lines.at(index), &parsed)) {
       section = parsed;
-      if (section == QLatin1String("Desktop Entry") && entryHeader < 0) {
+      if (section == QLatin1String("Desktop Entry") && entryHeader < 0)
         entryHeader = index;
-      }
       continue;
     }
-    if (section != QLatin1String("Desktop Entry")) {
+    if (section != QLatin1String("Desktop Entry"))
       continue;
-    }
     const QString key = lines.at(index).section(QLatin1Char('='), 0, 0).trimmed();
     if (key == QLatin1String("Hidden")) {
-      hiddenLine = index;
+      lines[index] = enabled ? QStringLiteral("Hidden=false")
+                             : QStringLiteral("Hidden=true");
+      sawHidden = true;
+    } else if (enabled && key == QLatin1String("X-GNOME-Autostart-enabled")) {
+      lines[index] = QStringLiteral("X-GNOME-Autostart-enabled=true");
     }
   }
-  const QString line =
-      QStringLiteral("Hidden=%1").arg(hidden ? QStringLiteral("true")
-                                             : QStringLiteral("false"));
-  if (hiddenLine >= 0) {
-    lines[hiddenLine] = line;
-  } else if (entryHeader >= 0) {
-    lines.insert(entryHeader + 1, line);
-  } else {
-    lines.append(QStringLiteral("[Desktop Entry]"));
-    lines.append(line);
+  if (!sawHidden) {
+    const QString hidden = enabled ? QStringLiteral("Hidden=false")
+                                   : QStringLiteral("Hidden=true");
+    if (entryHeader >= 0)
+      lines.insert(entryHeader + 1, hidden);
+    else {
+      lines.append(QStringLiteral("[Desktop Entry]"));
+      lines.append(hidden);
+    }
   }
   return lines.join(QLatin1Char('\n'));
 }
@@ -176,77 +172,50 @@ bool writeFileAtomically(const QString &path, const QString &contents,
 
 } // namespace
 
-XdgAutostartStore::XdgAutostartStore() {
-  m_userDirectory =
-      QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
-          .filePath(QStringLiteral("autostart"));
-  m_systemDirectories = QStandardPaths::locateAll(
-      QStandardPaths::ConfigLocation, QStringLiteral("autostart"),
-      QStandardPaths::LocateDirectory);
-  // AGENT-NOTE: QStandardPaths::locateAll(ConfigLocation, ...) walks both
-  // XDG_CONFIG_HOME and every XDG_CONFIG_DIRS entry (Qt maps ConfigLocation
-  // to that whole search path), which already includes the user directory
-  // first -- drop it here so m_systemDirectories is read-only sources only.
-  m_systemDirectories.removeAll(m_userDirectory);
-}
+XdgAutostartStore::XdgAutostartStore()
+    : m_options(SessionAutostart::ScanOptions::fromEnvironment()) {}
 
 XdgAutostartStore::XdgAutostartStore(QString userDirectory,
                                      QStringList systemDirectories)
-    : m_userDirectory(std::move(userDirectory))
-    , m_systemDirectories(std::move(systemDirectories)) {}
+    : m_options(SessionAutostart::ScanOptions::fromEnvironment()) {
+  m_options.userDirectory = std::move(userDirectory);
+  m_options.systemDirectories = std::move(systemDirectories);
+}
+
+XdgAutostartStore::XdgAutostartStore(SessionAutostart::ScanOptions options)
+    : m_options(std::move(options)) {}
 
 QList<AutostartEntry> XdgAutostartStore::list(QString *error) {
-  Q_UNUSED(error);
-  // id -> (path, isUserDirectory); first occurrence (user directory
-  // scanned first) wins, matching XDG's shadow-by-basename merge rule.
-  QHash<QString, QPair<QString, bool>> byId;
-  const auto scan = [&byId](const QString &directory, const bool isUser) {
-    QDir dir(directory);
-    if (!dir.exists()) {
-      return;
-    }
-    const QFileInfoList files =
-        dir.entryInfoList({QStringLiteral("*.desktop")}, QDir::Files);
-    for (const QFileInfo &info : files) {
-      const QString id = info.completeBaseName();
-      if (!byId.contains(id)) {
-        byId.insert(id, {info.absoluteFilePath(), isUser});
-      }
-    }
-  };
-  scan(m_userDirectory, true);
-  for (const QString &directory : m_systemDirectories) {
-    scan(directory, false);
-  }
-
+  const QList<SessionAutostart::Entry> scanned =
+      SessionAutostart::scan(m_options, error);
   QList<AutostartEntry> entries;
-  entries.reserve(byId.size());
-  for (auto it = byId.constBegin(); it != byId.constEnd(); ++it) {
-    const DesktopEntryFields fields = readDesktopEntry(it.value().first);
-    if (!fields.valid) {
-      continue;
-    }
+  entries.reserve(scanned.size());
+  for (const auto &source : scanned) {
     AutostartEntry entry;
-    entry.id = it.key();
-    entry.name = fields.name;
-    entry.comment = fields.comment;
-    entry.iconName = fields.iconName;
-    entry.exec = fields.exec;
-    entry.enabled = !fields.hidden && !fields.gnomeAutostartDisabled;
-    entry.custom = fields.custom;
-    entries.append(entry);
+    entry.id = source.id;
+    entry.name = source.name;
+    entry.comment = source.comment;
+    entry.iconName = source.iconName;
+    entry.exec = source.exec;
+    entry.enabled = source.enabled;
+    entry.eligible = source.eligible;
+    entry.ineligibilityReason = source.ineligibilityReason;
+    entry.custom = source.custom;
+    entries.append(std::move(entry));
   }
-  std::sort(entries.begin(), entries.end(),
-           [](const AutostartEntry &left, const AutostartEntry &right) {
-             return left.name.localeAwareCompare(right.name) < 0;
-           });
   return entries;
 }
 
 bool XdgAutostartStore::setEnabled(const QString &id, const bool enabled,
                                    QString *error) {
+  if (id.isEmpty() || id == QLatin1String(".") || id == QLatin1String("..")
+      || id.contains(QLatin1Char('/')) || id.contains(QLatin1Char('\\'))) {
+    if (error != nullptr)
+      *error = QStringLiteral("invalid autostart entry id");
+    return false;
+  }
   const QString userPath =
-      QDir(m_userDirectory).filePath(id + QStringLiteral(".desktop"));
+      QDir(m_options.userDirectory).filePath(id + QStringLiteral(".desktop"));
   QString sourceText;
   if (QFile userFile(userPath); userFile.exists()) {
     if (!userFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -260,7 +229,7 @@ bool XdgAutostartStore::setEnabled(const QString &id, const bool enabled,
     // No user override yet: this id must come from a system directory, or
     // there is nothing to enable/disable.
     bool found = false;
-    for (const QString &directory : m_systemDirectories) {
+    for (const QString &directory : m_options.systemDirectories) {
       const QString systemPath =
           QDir(directory).filePath(id + QStringLiteral(".desktop"));
       QFile systemFile(systemPath);
@@ -282,13 +251,13 @@ bool XdgAutostartStore::setEnabled(const QString &id, const bool enabled,
     }
   }
 
-  if (!QDir().mkpath(m_userDirectory)) {
+  if (!QDir().mkpath(m_options.userDirectory)) {
     if (error != nullptr) {
-      *error = QStringLiteral("could not create '%1'").arg(m_userDirectory);
+      *error = QStringLiteral("could not create '%1'").arg(m_options.userDirectory);
     }
     return false;
   }
-  const QString patched = withHiddenSetTo(sourceText, !enabled);
+  const QString patched = withEnabledSetTo(sourceText, enabled);
   return writeFileAtomically(userPath, patched, error);
 }
 
@@ -309,15 +278,15 @@ QString XdgAutostartStore::addCommand(const QString &name,
     }
     return {};
   }
-  if (!QDir().mkpath(m_userDirectory)) {
+  if (!QDir().mkpath(m_options.userDirectory)) {
     if (error != nullptr) {
-      *error = QStringLiteral("could not create '%1'").arg(m_userDirectory);
+      *error = QStringLiteral("could not create '%1'").arg(m_options.userDirectory);
     }
     return {};
   }
   const QString baseId = QStringLiteral("qindaqt-custom-") + slugify(trimmedName);
   QString id = baseId;
-  QDir dir(m_userDirectory);
+  QDir dir(m_options.userDirectory);
   for (int suffix = 2; dir.exists(id + QStringLiteral(".desktop")); ++suffix) {
     id = baseId + QStringLiteral("-%1").arg(suffix);
   }
@@ -348,8 +317,14 @@ QString XdgAutostartStore::addCommand(const QString &name,
 }
 
 bool XdgAutostartStore::removeCustom(const QString &id, QString *error) {
+  if (id.isEmpty() || id.contains(QLatin1Char('/'))
+      || id.contains(QLatin1Char('\\'))) {
+    if (error != nullptr)
+      *error = QStringLiteral("invalid autostart entry id");
+    return false;
+  }
   const QString path =
-      QDir(m_userDirectory).filePath(id + QStringLiteral(".desktop"));
+      QDir(m_options.userDirectory).filePath(id + QStringLiteral(".desktop"));
   const DesktopEntryFields fields = readDesktopEntry(path);
   // AGENT-GUARD: only an entry this route marked X-QindaQt-Custom=true may
   // be deleted outright. A real installed application's autostart file is
