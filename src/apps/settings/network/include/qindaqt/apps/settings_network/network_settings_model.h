@@ -7,10 +7,12 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QTimer>
 #include <QtCore/QVariantList>
 #include <QtDBus/QDBusConnection>
 
 #include <memory>
+#include <optional>
 
 namespace QindaQt::Apps::SettingsNetwork {
 
@@ -93,6 +95,7 @@ public:
   Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId);
   Q_INVOKABLE bool connectVisibleNetwork(const QString &accessPointId);
   Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface);
+  Q_INVOKABLE bool setRadio(quint32 kind, bool enabled);
 
 Q_SIGNALS:
   void viewChanged();
@@ -103,6 +106,12 @@ private:
       const QindaQt::Network::OperationResult &result);
   void handleOperationUncertain(const QString &message);
   void beginOperationMessage(QindaQt::Network::OperationKind kind);
+  void handleRadioSnapshot();
+  void handleRadioClientState();
+  void finishRadioOperation(const QindaQt::Network::OperationResult &result);
+  void finishRadioUncertain(const QString &message);
+  void clearRadioPending();
+  [[nodiscard]] QString radioBlockedText(const QString &reason) const;
   void rejectAction(const QString &reason);
   [[nodiscard]] QString actionFailureText(const QString &reason) const;
 
@@ -110,6 +119,19 @@ private:
   std::unique_ptr<NetworkSecretAgentPresence> m_secretAgentPresence;
   QString m_localError;
   QString m_operationStatusText;
+  struct PendingRadio final {
+    QindaQt::Network::RadioKind kind = QindaQt::Network::RadioKind::Wifi;
+    bool enabled = false;
+    QString owner;
+    quint64 epoch = 0;
+    quint64 revision = 0;
+    bool awaitingReadback = false;
+  };
+  std::optional<PendingRadio> m_pendingRadio;
+  std::optional<QindaQt::Network::RadioKind> m_radioErrorKind;
+  QString m_radioError;
+  QTimer m_radioReadbackRetry;
+  QTimer m_radioReadbackDeadline;
 };
 
 } // namespace QindaQt::Apps::SettingsNetwork

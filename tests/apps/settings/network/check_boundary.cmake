@@ -36,6 +36,7 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId)"
         "Q_INVOKABLE bool connectVisibleNetwork(const QString &accessPointId)"
         "Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface)"
+        "Q_INVOKABLE bool setRadio(quint32 kind, bool enabled)"
     )
     foreach(invokable IN LISTS invokables)
         string(REGEX REPLACE "[ \t\r\n]+" " " normalized "${invokable}")
@@ -51,9 +52,9 @@ endforeach()
 file(GLOB_RECURSE route_qml LIST_DIRECTORIES false "${route_root}/qml/*.qml")
 foreach(source IN LISTS route_qml)
     file(READ "${source}" content)
-    if(content MATCHES "TextField|TextInput|TextEdit|TextArea|Password|Passphrase|privateKey|SetRadio|radioSettings")
+    if(content MATCHES "TextField|TextInput|TextEdit|TextArea|Password|Passphrase|privateKey")
         message(FATAL_ERROR
-            "Network Settings QML gained credential/profile/radio editing in ${source}")
+            "Network Settings QML gained credential/profile editing in ${source}")
     endif()
 endforeach()
 

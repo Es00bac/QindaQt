@@ -46,6 +46,7 @@ function(expect_permitted_surface)
         "  Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId);\n"
         "  Q_INVOKABLE bool connectVisibleNetwork(const QString &accessPointId);\n"
         "  Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface);\n"
+        "  Q_INVOKABLE bool setRadio(quint32 kind, bool enabled);\n"
         "};\n")
     file(WRITE "${poison_root}/src/apps/settings/network/qml/Allowed.qml"
         "import QindaQt.Controls 1.0\nButton { text: \"Permitted\" }\n")
@@ -82,22 +83,22 @@ expect_rejection(
 expect_rejection(
     "src/apps/settings/network/qml/Poison.qml"
     "import QindaQt.Controls 1.0\nTextField { objectName: \"networkPassword\" }"
-    "gained credential/profile/radio editing"
+    "gained credential/profile editing"
 )
 expect_rejection(
     "src/apps/settings/network/qml/Poison.qml"
     "import QtQuick\nTextInput { }"
-    "gained credential/profile/radio editing"
+    "gained credential/profile editing"
 )
 expect_rejection(
     "src/apps/settings/network/qml/Poison.qml"
     "import QtQuick\nTextEdit { }"
-    "gained credential/profile/radio editing"
+    "gained credential/profile editing"
 )
 expect_rejection(
     "src/apps/settings/network/qml/Poison.qml"
     "import QtQuick.Controls as T\nT.TextArea { }"
-    "gained credential/profile/radio editing"
+    "gained credential/profile editing"
 )
 expect_rejection(
     "src/apps/settings/network/poison.h"

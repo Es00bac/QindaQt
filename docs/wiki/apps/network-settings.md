@@ -5,7 +5,8 @@ settings surface. It is a modular Settings Center route composed exclusively
 through the public Network1 client boundary. The route observes bounded
 network truth and offers only actions that the current authoritative snapshot
 admits. [ADR-0055](../adr/0055-compose-network-settings-through-network1.md)
-records this composition choice.
+records this composition choice; [ADR-0251](../adr/0251-expose-admitted-radio-switches-through-network1.md)
+authorizes typed radio changes.
 
 ## Truth shown by the route
 
@@ -13,7 +14,7 @@ The route presents the current public snapshot in four groups:
 
 | Group | Public truth | Interaction |
 | --- | --- | --- |
-| Radio state | Wi-Fi and WWAN software/hardware state | Read-only |
+| Radio state | Wi-Fi and WWAN software/hardware state, capability, pending and denial truth | Switch each present, unblocked radio when the public service admits the change |
 | Devices | Bounded interface, type, state, active known-network id, and capabilities | Disconnect when that active device is currently admitted |
 | Saved networks | Derived known-network id, presentation name, security, and capabilities | Connect the existing stored profile when currently admitted |
 | Wi-Fi access points | Presentation-safe SSID, signal, security, saved-network relation, scan freshness, and secret-agent presence truth | Connect a supported visible unsaved network when currently admitted |
@@ -40,7 +41,13 @@ One process-lifetime route model projects one public `NetworkClient`:
 - A duplicate snapshot does not disturb current truth. Retired epochs remain
   fenced across A→B→A owner sequences.
 
-Reload asks the public client for authoritative truth. Scan, saved-network
+Reload asks the public client for authoritative truth. Wi-Fi and mobile radio
+switches carry only typed kind and desired software state through public
+NetworkClient admission. The switch stays at confirmed snapshot state during a
+request. After Applied, the route requires a newer same-owner/epoch snapshot
+confirming the requested value. Stale readback is retried for a bounded time;
+contradictory readback, hardware denial, owner replacement, or timeout remains
+visible and never replays the write. Scan, saved-network
 connect, visible-network connect, and disconnect carry only public typed
 identifiers and the initiating lineage. The first-use action carries an opaque
 access-point id derived from public device/BSSID truth; it carries no SSID or
@@ -59,7 +66,8 @@ visible and is never automatically replayed.
 ## Credential and authority boundary
 
 The route has no password, passphrase, certificate, private-key, secret-agent,
-profile-editor, or radio-mutation API. Connecting a saved network activates its
+profile-editor, or arbitrary radio-operation API. Its only radio mutation is
+typed `setRadio(kind, enabled)` through Network1. Connecting a saved network activates its
 existing profile. Connecting a visible unsaved Open, WPA2 Personal, or WPA3
 Personal network asks Network1 to create and activate a minimal profile. Hidden,
 WEP, and enterprise first-use connections remain unsupported.
@@ -89,7 +97,9 @@ within the route. Closing Settings remains a single window-level action; the
 route does not duplicate it with a page button.
 
 Inventory cards expose accessible names, descriptions, roles, current state,
-and disabled state. Scan, reload, connect, and disconnect have explicit
+and disabled state. Radio switches expose accessible names and blocked or
+pending reasons, retain confirmed state after keyboard admission refusal, and
+settle only on service readback. Scan, reload, connect, and disconnect have explicit
 accessible action names. Stale, unavailable, pending, and error notices use
 truthful visible text rather than color alone. When the service is unavailable,
 the route hides stale inventory, password-prompt guidance, and scan controls;
@@ -116,7 +126,7 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.(network-(settings-model|settings-agent-gate|settings-model-adversarial|page|settings-boundary|settings-boundary-poison)|settings-(route-registry|navigation-controller|navigation-page))$'
+  -R '^qindaqt\.(network-(settings-model|radio-outcomes|settings-agent-gate|settings-model-adversarial|page|settings-boundary|settings-boundary-poison)|settings-(route-registry|navigation-controller|navigation-page))$'
 ```
 
 - the model row proves bounded projection, exact lineage, public capability and
@@ -125,15 +135,17 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
 - the agent-gate row proves a secured unsaved network with absent-agent
   `connectAvailable=false` cannot dispatch through the invokable and returns
   the typed `secret-agent-unavailable` rejection;
+- the radio-outcomes row proves Wi-Fi/mobile write admission, hardware/capability
+  refusal, confirmed newer readback, bounded uncertainty, owner fencing, and no replay;
 - the adversarial row proves malformed/stale handling, owner loss and A→B→A
   replacement, ignored late replies, mismatched operation lineage, redaction,
-  and absence of credential/radio mutation APIs;
+  and absence of credential or widened radio mutation APIs;
 - the page row runs under fatal QML warnings and proves accessible controls,
   visible-network prompt truth/action wiring, stale/owner-loss fail-closed
   behavior, compact focus reveal, and keyboard cycling; and
 - boundary and poison rows reject private service headers, Qt D-Bus outside
   the exact presence observer/model seam, callable D-Bus from that observer, a
-  radio invokable, credential text input, or a private service dependency.
+  widened radio invokable, credential text input, or a private service dependency.
 
 The same selector runs in strict Debug and Release builds. Settings Center's
 route and installed-package rows additionally prove canonical startup,
@@ -142,7 +154,7 @@ rejection. Tests use fake public transports or absent private buses and never
 touch host networking.
 
 This route still does not claim credential payload handling, arbitrary profile
-creation/editing, software-radio mutation, persistence control, a shell applet,
+creation/editing, persistence control, a shell applet,
 physical network/radio qualification, or session-runtime integration. Its only
 profile-creation request is the fixed supported visible-network intent. The
 separate process owns the bounded credential-entry claim.

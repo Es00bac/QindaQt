@@ -19,6 +19,24 @@ add_test(
 )
 
 qt_add_executable(
+    qindaqt_network_radio_outcomes_tests
+    tst_network_radio_outcomes.cpp
+    network_settings_test_support.h
+)
+target_include_directories(
+    qindaqt_network_radio_outcomes_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_network_radio_outcomes_tests
+    PRIVATE qindaqt_settings_network Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_network_radio_outcomes_tests)
+add_test(
+    NAME qindaqt.network-radio-outcomes
+    COMMAND qindaqt_network_radio_outcomes_tests
+)
+
+qt_add_executable(
     qindaqt_network_settings_agent_gate_tests
     tst_network_settings_agent_gate.cpp
     network_settings_test_support.h
