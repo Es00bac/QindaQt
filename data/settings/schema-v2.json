@@ -364,6 +364,12 @@
       "default": true
     },
     {
+      "key": "services.notificationPolicies",
+      "domain": "services",
+      "type": "object",
+      "default": {}
+    },
+    {
       "key": "services.doNotDisturb",
       "domain": "services",
       "type": "boolean",

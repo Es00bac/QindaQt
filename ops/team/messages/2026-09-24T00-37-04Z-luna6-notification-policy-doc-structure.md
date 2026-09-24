@@ -1,0 +1,3 @@
+# Luna6 Notification Policy documentation correction
+
+- 2026-09-24T00:37:04Z — Moved implemented per-app Qt beep and arrival-time quiet-hours behavior before the architecture and shell omission-list headings; those lists now name only remaining items. Changed the ambiguous inhibition gap to external notification inhibition and described no timer-driven change to manual DND. Re-ran `python3 tools/docs_validation.py` (383 Markdown docs/navigation) and `build/docs-venv/bin/mkdocs build --strict`; both passed. Target build and 15 focused/regression tests remain green. Preparing the isolated candidate commit and reviewer handoff.

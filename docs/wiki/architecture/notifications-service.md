@@ -147,6 +147,21 @@ critical urgency bypasses, Active/Recent remain, and disabling does not replay.
 Neither the host nor private notification protocol gains a setting or field.
 See [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
 
+Per-application mute and sound are likewise shell-side policies, persisted as
+one bounded `services.notificationPolicies` Settings1 object and consumed by
+the shell presenter through the shared strict codec. Desktop-entry identity is
+a preference hint supplied by the notification producer, not trusted sender
+identity. Mute filters popup projection and sound only; Active and Recent
+remain. DND's critical bypass and lock privacy's unconditional denial keep
+their own authority. The Settings route shares its scoped client with DND and
+quiet hours, discovers rows through ApplicationCatalog, and displays only
+confirmed values. Opt-in sound reaches Qt's platform beep facility only for
+new notifications admitted by all policies. Neither the host nor presentation
+wire changes. The persisted contract is in
+[ADR-0255](../adr/0255-persist-per-application-notification-policies-through-settings1.md),
+and presenter behavior is in
+[Notification presentation](../shell/notification-presentation.md).
+
 Lock privacy is a separate, higher-priority shell policy and likewise does not
 change the presentation wire. The session supervisor supplies KWin's direct
 kernel-parent PID alongside the token descriptor. A focused asynchronous
@@ -275,13 +290,20 @@ contract, and actual nested KScreenLocker privacy without touching the host
 desktop. Its development-only read-only observability is specified by
 [ADR-0020](../adr/0020-authenticate-private-live-evidence.md).
 
+Per-app opt-in sound requests Qt's default platform beep for newly arriving
+notifications admitted by mute, Do Not Disturb, quiet hours, and lock privacy.
+The Settings1 quiet-hours window filters low and normal notifications at
+arrival; it has no timer and never changes the separate manual Do Not Disturb
+setting.
+
 The following are not yet implemented:
 
 - complete accessibility-tree and screen-reader behavior;
 - popup-safe icon/image loading and activation-token acquisition;
 - post-start notification-host restart policy;
-- sound, persistent disk history, Do Not Disturb scheduling/inhibition, and
-  physical desktop interaction qualification;
+- selectable sound themes, persistent disk history, external notification
+  inhibition, timer-driven changes to manual Do Not Disturb, and physical
+  audibility qualification;
 - physical-seat/real-desktop lock transition, multi-seat/session-switching,
   alternative-locker, and suspend/resume qualification, plus any future
   least-authority lock-screen presenter;

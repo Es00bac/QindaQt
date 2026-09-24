@@ -41,3 +41,19 @@ add_test(
     NAME qindaqt.notification-presentation-privacy
     COMMAND qindaqt_notification_presentation_privacy_tests
 )
+
+qt_add_executable(
+    qindaqt_notification_presentation_app_policy_tests
+    tst_notification_presentation_app_policy.cpp
+)
+target_link_libraries(
+    qindaqt_notification_presentation_app_policy_tests
+    PRIVATE QindaQt::NotificationPresentationModel Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_notification_presentation_app_policy_tests)
+add_test(
+    NAME qindaqt.notification-presentation-app-policy
+    COMMAND qindaqt_notification_presentation_app_policy_tests
+)
+set_tests_properties(qindaqt.notification-presentation-app-policy PROPERTIES
+    LABELS "notifications;presentation;policy;model")

@@ -402,3 +402,4 @@ nav:
       - "ADR-0248: Confirm Streaming preferences before OBS consumption": adr/0248-confirm-streaming-preferences-before-obs-consumption.md
       - "ADR-0249: Confirm week-start writes against Settings1": adr/0249-confirm-week-start-writes-against-settings1.md
       - "ADR-0250: Require an active Loader witness for every Settings route": adr/0250-require-active-loader-witness-for-every-settings-route.md
+      - "ADR-0255: Persist per-application notification policies through Settings1": adr/0255-persist-per-application-notification-policies-through-settings1.md

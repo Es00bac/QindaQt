@@ -14,6 +14,8 @@
 #include "qindaqt/apps/settings_bluetooth/bluetooth_settings_model.h"
 #include "qindaqt/apps/settings_display/display_settings_model.h"
 #include "qindaqt/apps/settings_network/network_settings_model.h"
+#include "qindaqt/apps/settings_notifications/notification_application_settings_model.h"
+#include "qindaqt/application_catalog/application_directory_scan.h"
 #include "qindaqt/services/audio_client/audio_client.h"
 #include "qindaqt/services/audio_client/qt_audio_transport.h"
 #include "qindaqt/services/bluetooth_client/bluetooth_client.h"
@@ -24,6 +26,7 @@
 #include "qindaqt/services/font_discovery/font_session_bootstrap.h"
 #include "qindaqt/services/network_qt_transport/qt_network_transport.h"
 #include "qindaqt/services/settings_client/do_not_disturb_controller.h"
+#include "qindaqt/services/notification_presentation_policy/notification_application_policy.h"
 #include "notification_schedule_model.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
@@ -269,26 +272,47 @@ LaunchArguments parseLaunchArguments(const QCoreApplication &application) {
 }
 
 // AGENT-CONTRACT: Notifications owns one independent Settings1 transport and
-// one client scoped to the four `services.doNotDisturb*` keys. The switch and
-// the quiet-hours schedule (ADR-0212) are two projections of that one client,
-// so a schedule edit and a Do Not Disturb edit share an owner and a token
-// sequence instead of racing two. All four are schema keys with defaults, so
-// widening the scope by three cannot turn a present value into
-// "unavailable". Members are declared transport-first for the same reason
-// AccessibilityServices is: each holds its dependency by reference.
+// one client scoped to DND, quiet-hours, and per-application policy keys. The
+// route's three projections share one owner and token sequence, so an edit
+// cannot race another Settings1 client with a duplicate local token. Every
+// key is schema-defined with a default. Members are declared transport-first
+// because each consumer holds its dependency by reference.
+QVector<QindaQt::Apps::SettingsNotifications::NotificationApplicationDescriptor>
+notificationApplicationDescriptors() {
+  QStringList roots =
+      QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
+  roots.removeDuplicates();
+  const auto scan = QindaQt::ApplicationCatalog::scanApplicationDirectories(
+      roots, QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay);
+  QVector<QindaQt::Apps::SettingsNotifications::NotificationApplicationDescriptor>
+      applications;
+  applications.reserve(scan.applications.size());
+  for (const auto &application : scan.applications) {
+    applications.append({application.entry.id, application.entry.name,
+                         application.entry.iconName});
+  }
+  return applications;
+}
+
 struct QuietingServices {
   QindaQt::Services::SettingsClient::QtSettingsTransport transport;
   QindaQt::Services::SettingsClient::SettingsClient client;
   QindaQt::Services::SettingsClient::DoNotDisturbController controller;
   QindaQt::Apps::SettingsNotifications::NotificationScheduleModel schedule;
+  QindaQt::Apps::SettingsNotifications::NotificationApplicationSettingsModel
+      applicationPolicies;
 
   explicit QuietingServices(const QDBusConnection &bus)
       : transport(bus),
         client(transport, {QStringLiteral("services.doNotDisturb"),
                            QStringLiteral("services.doNotDisturbSchedule"),
                            QStringLiteral("services.doNotDisturbStartMinutes"),
-                           QStringLiteral("services.doNotDisturbEndMinutes")}),
-        controller(client), schedule(client) {
+                           QStringLiteral("services.doNotDisturbEndMinutes"),
+                           QString::fromLatin1(QindaQt::Services::
+                               NotificationPresentationPolicy::
+                                   NotificationPoliciesSettingsKey)}),
+        controller(client), schedule(client),
+        applicationPolicies(client, notificationApplicationDescriptors()) {
     startSettingsClient(client);
   }
 };
@@ -442,6 +466,8 @@ int main(int argc, char **argv) {
        QVariant::fromValue(static_cast<QObject *>(&quieting.controller))},
       {QStringLiteral("quietingSchedule"),
        QVariant::fromValue(static_cast<QObject *>(&quieting.schedule))},
+      {QStringLiteral("applicationPolicies"),
+       QVariant::fromValue(static_cast<QObject *>(&quieting.applicationPolicies))},
       {QStringLiteral("appearanceSettings"),
        QVariant::fromValue(static_cast<QObject *>(&appearanceSettings))},
       {QStringLiteral("windowDecorationSettings"),

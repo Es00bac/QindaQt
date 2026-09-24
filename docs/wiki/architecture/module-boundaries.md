@@ -123,6 +123,7 @@ tests, and the wiki page describing its contract.
 | `src/application_catalog` | Shared installed-application catalog: bounded XDG application-directory scanning, the nested category tree, and pure launch planning over launcher-L0 parsers ([ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md)). Default scans retain menu visibility; the explicit MIME-handler mode includes `NoDisplay` handlers while always honoring `Hidden` deletion and higher-root masking ([ADR-0218](../adr/0218-use-qindatk-and-poppler-for-the-viewer.md)) | Public `QindaQt::ShellLauncher` (Qt Core) and Qt Core; never process spawning, environment reads, shell/compositor internals, or KDE frameworks |
 | `src/apps/settings_center` | Bounded built-in route descriptors/registry, process-local navigation history, responsive QST/Controls host, and composition of route-owned public models | Public Settings1 clients, route domain models, themes/QST-1, QindaQt.Controls, and Qt Core/Gui/QML; never settings service/persistence implementations, shell/compositor/platform mutation, arbitrary QML route loading, or one shared transport across independently tokened clients |
 | `src/apps/settings/appearance` | Strict Appearance values, per-key draft/rebase and save-result truth, pure QST preview projection, and the route's modular QML presentation | Public Settings1 client, themes, QST-1, QindaQt.Controls, and Qt Core/Gui/QML; never settings persistence/service implementations, shell/compositor/display/platform mutation, another route's model, or transport access from QML |
+| `src/apps/settings/notifications` | Confirmed DND, quiet-hours, and bounded per-application mute/sound projections for the Notifications route | Public Settings1 client, notification presentation policy codec, public ApplicationCatalog scanner, and Qt Core; no Settings1 persistence internals, notification host/presenter runtime, shell-private headers, or transport authority in QML |
 | `src/apps/settings/customize` | Route-owned profile/catalog composition, direct editor-session canvas projection, Settings1 selection lifecycle, atomic user-profile persistence, and responsive accessible QML | Public Settings1 client, `shell_customization_editor`, `shell_customization`, `profiles`, applet manifests, QST-1, QindaQt.Controls, and Qt Core/Gui/QML; never private repository headers, settings service persistence, shell surfaces, LayerShellQt, compositor/platform mutation, or engine-policy duplication in QML |
 | `src/apps/settings/audio` | Public-Audio1 consumer projection for the Settings Audio route: bounded device/stream rows, shared admission truth, closed set-default/volume/mute intents, and the route's modular QML presentation | Public Audio1 client/protocol, themes/QST-1, QindaQt.Controls, and Qt Core/Gui/QML; never the resident audio service, WirePlumber/PipeWire, Qt D-Bus, stream movement, text entry, or transport access from QML |
 | `src/apps/settings/bluetooth` | Exact-lineage Bluetooth inventory, route-scoped discovery lease lifetime, admitted device/pairing controls, one inline prompt, and responsive accessible QML | Public Bluetooth client/protocol, QST-1, QindaQt.Controls, and Qt Core/Gui/QML; never BlueZ, private Bluetooth service/model headers, Qt D-Bus, local pairing/trust/remove authority, another route's model, or transport access from QML |
@@ -267,6 +268,15 @@ implemented; do not use placeholder modules to bypass a boundary.
   and retains the last confirmed value across service loss.
   See
   [ADR-0010](../adr/0010-inject-shell-notification-interruption-policy.md).
+- Per-application notification preferences use one shared strict codec over
+  the public `services.notificationPolicies` Settings1 value. Settings obtains
+  desktop-entry identities from the public ApplicationCatalog scanner; the
+  shell bridge applies only exact confirmed snapshots to a separate presenter
+  policy. Producer-supplied desktop-entry hints match preferences only and
+  grant no authority. Mute filters popups and sound while Active/Recent remain;
+  platform sound requests are gated by mute, interruption policy, and lock
+  privacy. No notification host or private wire changes. See
+  [ADR-0255](../adr/0255-persist-per-application-notification-policies-through-settings1.md).
 - Session lock observation is a separate public service-client boundary. It
   authenticates the common unique owner of the QindaQt compositor and both
   KScreenLocker names against the supervisor-provisioned KWin PID, then drives

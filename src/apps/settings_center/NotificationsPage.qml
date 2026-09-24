@@ -11,18 +11,23 @@ T.Page {
     // ADR-0212: the Do Not Disturb schedule, over the same purpose-scoped
     // Settings1 client the switch uses.
     required property var quietingSchedule
+    required property var applicationPolicies
     readonly property Item firstFocusTarget: doNotDisturbSwitch
     // The ring's two ends. Only one action is ever projected at a time, but
     // forward and back keep their original preference so the order cannot
     // change under a state that shows both.
-    readonly property Item forwardAction: conflictAction.visible
-                                          ? conflictAction
-                                          : retryAction.visible
-                                          ? retryAction : doNotDisturbSwitch
+    readonly property Item actionAfterApplications: conflictAction.visible
+                                                    ? conflictAction
+                                                    : retryAction.visible
+                                                    ? retryAction : doNotDisturbSwitch
+    readonly property Item forwardAction: applicationPoliciesSection.firstControl
+                                          ?? actionAfterApplications
     readonly property Item backwardAction: retryAction.visible
                                            ? retryAction
                                            : conflictAction.visible
-                                           ? conflictAction : quietHours.lastControl
+                                           ? conflictAction
+                                           : applicationPoliciesSection.lastControl
+                                           ?? quietHours.lastControl
     title: qsTr("Notifications")
 
     background: Rectangle { color: Tokens.bg.base }
@@ -61,7 +66,7 @@ T.Page {
             Accessible.role: Accessible.CheckBox
             Accessible.name: qsTr("Do Not Disturb")
             Accessible.description: qsTr(
-                "Low and normal notification banners are hidden; critical banners remain visible only when privacy permits")
+                "Low and normal banners are hidden; critical banners bypass Do Not Disturb unless their app is muted, and lock privacy always applies")
             Accessible.checked: checked
             onClicked: {
                 root.quietingSettings.requestSet(
@@ -81,6 +86,14 @@ T.Page {
             schedule: root.quietingSchedule
             focusBefore: doNotDisturbSwitch
             focusAfter: root.forwardAction
+        }
+
+        NotificationApplicationPoliciesSection {
+            id: applicationPoliciesSection
+            Layout.fillWidth: true
+            policies: root.applicationPolicies
+            focusBefore: quietHours.lastControl
+            focusAfter: root.actionAfterApplications
         }
 
         Label {
@@ -119,7 +132,8 @@ T.Page {
                 visible: root.quietingSettings.conflict
                 text: qsTr("Apply my choice")
                 focusPolicy: Qt.StrongFocus
-                KeyNavigation.backtab: quietHours.lastControl
+                KeyNavigation.backtab: applicationPoliciesSection.lastControl
+                                          ?? quietHours.lastControl
                 KeyNavigation.tab: doNotDisturbSwitch
                 onClicked: root.quietingSettings.applyMyChoice()
             }
@@ -130,7 +144,8 @@ T.Page {
                 visible: root.quietingSettings.unavailable
                 text: qsTr("Retry")
                 focusPolicy: Qt.StrongFocus
-                KeyNavigation.backtab: quietHours.lastControl
+                KeyNavigation.backtab: applicationPoliciesSection.lastControl
+                                          ?? quietHours.lastControl
                 KeyNavigation.tab: doNotDisturbSwitch
                 onClicked: root.quietingSettings.retry()
             }

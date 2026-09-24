@@ -24,6 +24,7 @@
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
+#include "qindaqt/services/notification_presentation_policy/notification_application_policy.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/voice_protocol/voice_settings_keys.h"
 #include "qindaqt/shell_window_actions_client/qt_shell_window_actions_transport.h"
@@ -72,23 +73,24 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
     m_settingsClient = std::make_unique<Services::SettingsClient::SettingsClient>(
         *m_settingsTransport, shellScope);
     // AGENT-CONTRACT: Settings1 rejects an entire scoped snapshot when any
-    // requested key is unknown. Notification quieting therefore owns a
-    // purpose-scoped client so optional applet keys cannot turn a present,
-    // defaulted services.doNotDisturb value into "unavailable".
+    // requested key is unknown. Notification presentation therefore owns a
+    // purpose-scoped client so optional applet keys cannot turn its DND,
+    // schedule, or per-app policy values into "unavailable".
     m_quietingSettingsTransport =
         std::make_unique<Services::SettingsClient::QtSettingsTransport>(
             QDBusConnection::sessionBus());
     m_quietingSettingsClient =
         std::make_unique<Services::SettingsClient::SettingsClient>(
             *m_quietingSettingsTransport,
-            // ADR-0212 adds the schedule keys to the same purpose-scoped
-            // client. All four are schema keys with defaults, so widening the
-            // scope by them cannot make a present value read "unavailable" --
-            // which is the property the comment above protects.
+            // ADR-0212 and ADR-0255 keep schedule and per-app policy on the
+            // same purpose-scoped client as DND. Every key has a schema
+            // default, so the complete authoritative snapshot is atomic.
             QStringList{QStringLiteral("services.doNotDisturb"),
                         QStringLiteral("services.doNotDisturbSchedule"),
                         QStringLiteral("services.doNotDisturbStartMinutes"),
-                        QStringLiteral("services.doNotDisturbEndMinutes")});
+                        QStringLiteral("services.doNotDisturbEndMinutes"),
+                        QString::fromLatin1(Services::NotificationPresentationPolicy::
+                                                NotificationPoliciesSettingsKey)});
     m_customizationSettingsTransport =
         std::make_unique<Services::SettingsClient::QtSettingsTransport>(
             QDBusConnection::sessionBus());

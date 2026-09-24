@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/services/settings_service/settings_repository.h"
+#include "qindaqt/services/notification_presentation_policy/notification_application_policy.h"
 #include "qindaqt/settings/settings_document.h"
 
 #include <QFile>
@@ -14,6 +15,7 @@ class SettingsRepositoryTests final : public QObject {
 private slots:
     void initTestCase();
     void commitPersistsBeforeAuthoritativeSwap();
+    void notificationApplicationPolicyPersistsAndReloadsAsOneValue();
     void noOpConflictAndSaveFailureAreAtomic();
     void rejectsInvalidUnknownAndExhaustedInput();
     void unknownKeysPrecedeRevisionChecksAndHaveNoAuthority();
@@ -45,6 +47,51 @@ void SettingsRepositoryTests::commitPersistsBeforeAuthoritativeSwap()
     const auto disk = SettingsFileStore::load(path, *m_schema);
     QVERIFY2(disk.ok, qPrintable(disk.error));
     QCOMPARE(disk.document.values.value(QStringLiteral("services.doNotDisturb")).toBool(), true);
+}
+
+void SettingsRepositoryTests::notificationApplicationPolicyPersistsAndReloadsAsOneValue()
+{
+    using namespace QindaQt::Services::NotificationPresentationPolicy;
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("user.json"));
+    const QString applicationId = QStringLiteral("org.example.Mail");
+    const PerApplicationNotificationPolicies policies{
+        {applicationId, {.muted = true, .soundEnabled = true}},
+        {QStringLiteral("org.example.Calendar"), {.muted = false, .soundEnabled = true}},
+    };
+    QVariantMap encoded;
+    QString encodeError;
+    QVERIFY2(NotificationApplicationPolicy::encodeSettingsValue(
+                 policies, &encoded, &encodeError), qPrintable(encodeError));
+
+    SettingsRepository repository(LayeredSettings(*m_schema), path,
+                                  QStringLiteral("policy-round-trip"));
+    const auto committed = repository.commitUserOverrides(0, {{
+        .key = QString::fromLatin1(NotificationPoliciesSettingsKey),
+        .remove = false,
+        .value = encoded,
+    }});
+    QVERIFY2(committed.ok(), qPrintable(committed.message));
+
+    const auto disk = SettingsFileStore::load(path, *m_schema);
+    QVERIFY2(disk.ok, qPrintable(disk.error));
+    QCOMPARE(disk.document.values.value(
+                 QString::fromLatin1(NotificationPoliciesSettingsKey)).toMap(), encoded);
+
+    LayeredSettings restoredSettings(*m_schema);
+    const auto restoredLayer = restoredSettings.replaceLayer(
+        SettingLayer::UserOverrides, disk.document.values);
+    QVERIFY2(restoredLayer.ok(), qPrintable(restoredLayer.message));
+    SettingsRepository restored(std::move(restoredSettings), path,
+                                QStringLiteral("policy-round-trip-reloaded"));
+    const auto snapshot = restored.snapshot({
+        QString::fromLatin1(NotificationPoliciesSettingsKey)});
+    QVERIFY(snapshot.ok);
+    const auto decoded = NotificationApplicationPolicy::decodeSettingsValue(
+        snapshot.values.value(QString::fromLatin1(NotificationPoliciesSettingsKey)));
+    QVERIFY2(decoded.ok(), qPrintable(decoded.error));
+    QVERIFY(*decoded.policies == policies);
 }
 
 void SettingsRepositoryTests::noOpConflictAndSaveFailureAreAtomic()
