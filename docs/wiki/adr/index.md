@@ -258,3 +258,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0255: Persist per-application notification policies through Settings1](0255-persist-per-application-notification-policies-through-settings1.md)
 - [ADR-0256: Refresh Audio1 after package upgrades at session entry](0256-refresh-audio1-after-package-upgrades.md)
 - [ADR-0259: Preview screen savers without the lock screen](0259-preview-screen-savers-without-the-lock-screen.md)
+- [ADR-0261: Lay desktop icons out inside the panels' work area](0261-lay-desktop-icons-out-inside-the-panel-work-area.md)

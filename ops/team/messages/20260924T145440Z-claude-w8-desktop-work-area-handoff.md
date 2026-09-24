@@ -1,0 +1,10 @@
+# claude-w8-desktop-work-area handoff
+
+- Time: 2026-09-24T14:54:40Z
+- Branch: worker/claude-w8-desktop-work-area-20260923 (base 3dfec4c1), pushed to hub; candidate head SHA is in the manager handoff.
+- Contract (ADR-0261): after every accepted panel plan the runtime publishes per-output edge depths (`PanelReservationInsets::fromPlan`: mapped reservation carrier's exclusiveZone + anchored-edge margin) to `DesktopSurfaceController::setOutputReservations`; each `outputRects` entry carries `workArea` = QScreen geometry minus those depths. Unplaced icons flow inside the primary's work area; stored positions are clamped into their owner's work area at resolution only (store never rewritten); drag translation is bounded by the work areas' bounding box and drops snap/clamp into the owner's work area. Hidden, auto-hiding, overlay and non-carrier panels reserve nothing.
+- Also: `qindaqt.desktop-surface-customize-menu` failed at base on qinda (listed the real ~/Desktop); now isolated to a temporary HOME (separate commit).
+- Gates: ctest -L desktop-surface (12/12); ctest shell-layout/shell-surface/shell-orchestration/shell-visibility-producer/panel-blur/shell-runtime rows (26 passed; qindaqt.shell-runtime-component-closure fails only because the partial dev build lacks install artifacts such as libqindaqt_start_menu_qmlplugin.so); cmake --build qindaqt-shell OK; ./tools/validate-docs OK.
+- Mutation proof: default flow on the full output, unclamped stored positions and full-output drag bounds restored -> 7 of 8 work-area rows fail (the no-reservation row passes by design); drag bound alone -> only the drag row fails; static-policy reservations -> the auto-hidden reservation row fails.
+- Probe frame: tst_desktop_icon_work_area firstIconStartsBelowTheTopBar with QINDAQT_DESKTOP_WORK_AREA_CAPTURE set; reserved 26 px band empty, first icon at y=32.
+- Remaining: independent review; live check after install (first icon below the command bar and beside the left shelf in the qindaqt layout).

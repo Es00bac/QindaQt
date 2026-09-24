@@ -141,3 +141,41 @@ qindaqt_add_desktop_surface_test(
     SUPPORT desktop_surface_qml_test_support.h
     OFFSCREEN
 )
+# The desktop work area (ADR-0261): icons flow, clamp and drag inside each
+# output minus the panels' exclusive zones, including the first-icon probe
+# (set QINDAQT_DESKTOP_WORK_AREA_CAPTURE=<png> to keep its frame for review).
+qindaqt_add_desktop_surface_test(
+    qindaqt_desktop_icon_work_area_tests
+    tst_desktop_icon_work_area.cpp
+    qindaqt.desktop-icon-work-area
+    SUPPORT desktop_surface_qml_test_support.h
+    OFFSCREEN
+)
+
+# The runtime half of the same contract: PanelReservationInsets reads the
+# depths panels reserve from plans built by the real solver and planners. It
+# compiles the one runtime source directly (runtime-layout-adoption
+# precedent) and needs neither QML nor a display.
+qt_add_executable(
+    qindaqt_panel_reservation_insets_tests
+    tst_panel_reservation_insets.cpp
+    "${QINDAQT_SOURCE_ROOT}/src/shell/runtime/panelreservationinsets.cpp"
+    "${QINDAQT_SOURCE_ROOT}/src/shell/runtime/panelreservationinsets.h"
+)
+target_include_directories(
+    qindaqt_panel_reservation_insets_tests
+    PRIVATE "${QINDAQT_SOURCE_ROOT}/src/shell/runtime"
+)
+target_link_libraries(
+    qindaqt_panel_reservation_insets_tests
+    PRIVATE QindaQt::ShellSurface qindaqt_profiles Qt6::Core Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_panel_reservation_insets_tests)
+add_test(NAME qindaqt.desktop-work-area-reservations
+         COMMAND qindaqt_panel_reservation_insets_tests)
+set_tests_properties(
+    qindaqt.desktop-work-area-reservations
+    PROPERTIES
+        LABELS "shell;desktop-surface"
+        ENVIRONMENT_MODIFICATION "${desktop_surface_test_environment}"
+)

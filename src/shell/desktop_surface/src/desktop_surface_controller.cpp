@@ -10,9 +10,12 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickWindow>
+#include <QRect>
 #include <QScreen>
 #include <QStringList>
+#include <QVariantMap>
 
+#include <algorithm>
 #include <utility>
 
 namespace QindaQt::Shell::DesktopSurface {
@@ -27,6 +30,30 @@ QString componentErrors(const QQmlComponent &component)
         messages.push_back(error.toString());
     }
     return messages.join(QLatin1Char('\n'));
+}
+
+// The part of `geometry` the panels leave free. Negative depths count as
+// none. Depths that would consume a whole axis cannot describe a real layout
+// (the solver never produces one), so they fail open to the whole output:
+// icons under a panel stay reachable, icons crushed into nothing would not.
+QRect workAreaFor(const QRect &geometry, const QMargins &reserved)
+{
+    const QMargins depth(std::max(0, reserved.left()), std::max(0, reserved.top()),
+                         std::max(0, reserved.right()), std::max(0, reserved.bottom()));
+    const qint64 horizontal = static_cast<qint64>(depth.left()) + depth.right();
+    const qint64 vertical = static_cast<qint64>(depth.top()) + depth.bottom();
+    if (horizontal >= geometry.width() || vertical >= geometry.height()) {
+        return geometry;
+    }
+    return geometry.marginsRemoved(depth);
+}
+
+QVariantMap rectMap(const QRect &rect)
+{
+    return QVariantMap{{QStringLiteral("x"), rect.x()},
+                       {QStringLiteral("y"), rect.y()},
+                       {QStringLiteral("width"), rect.width()},
+                       {QStringLiteral("height"), rect.height()}};
 }
 
 } // namespace
@@ -65,12 +92,15 @@ QVariantList DesktopSurfaceController::outputRects() const
     rects.reserve(screens.size());
     for (const QScreen *screen : screens) {
         const QRect geometry = screen->geometry();
-        rects.append(QVariantMap{
-            {QStringLiteral("name"), screen->name()},
-            {QStringLiteral("x"), geometry.x()},
-            {QStringLiteral("y"), geometry.y()},
-            {QStringLiteral("width"), geometry.width()},
-            {QStringLiteral("height"), geometry.height()}});
+        QVariantMap rect = rectMap(geometry);
+        rect.insert(QStringLiteral("name"), screen->name());
+        // AGENT-NOTE: depths, not rectangles, cross the ADR-0261 boundary, so
+        // the work area is always cut from the same QScreen geometry that
+        // places this surface, even where the panel plan adopted the
+        // compositor's frame for the same output.
+        rect.insert(QStringLiteral("workArea"),
+                    rectMap(workAreaFor(geometry, m_reservations.value(screen->name()))));
+        rects.append(rect);
     }
     return rects;
 }
@@ -85,6 +115,16 @@ QString DesktopSurfaceController::primaryOutputName() const
     return screens.isEmpty() ? QString() : screens.constFirst()->name();
 }
 
+void DesktopSurfaceController::publishGeometry()
+{
+    const QVariantList rects = outputRects();
+    const QString primary = primaryOutputName();
+    for (QQuickWindow *window : std::as_const(m_windows)) {
+        window->setProperty("outputRects", rects);
+        window->setProperty("primaryOutputName", primary);
+    }
+}
+
 void DesktopSurfaceController::refreshOutputs()
 {
     for (const auto &connection : std::as_const(m_screenConnections)) {
@@ -97,15 +137,24 @@ void DesktopSurfaceController::refreshOutputs()
                                            [this](const QRect &) { refreshOutputs(); }));
     }
 
-    const QVariantList rects = outputRects();
-    const QString primary = primaryOutputName();
-    for (QQuickWindow *window : std::as_const(m_windows)) {
-        window->setProperty("outputRects", rects);
-        window->setProperty("primaryOutputName", primary);
-    }
+    publishGeometry();
     if (m_started) {
         reconcile();
     }
+}
+
+void DesktopSurfaceController::setOutputReservations(
+    const QHash<QString, QMargins> &reservations)
+{
+    // AGENT-GUARD: the runtime republishes after every accepted panel plan,
+    // including the many that only change visibility elsewhere. Assigning
+    // `outputRects` always notifies QML, so an unchanged map must stop here
+    // or every focus change would re-resolve every icon on every output.
+    if (reservations == m_reservations) {
+        return;
+    }
+    m_reservations = reservations;
+    publishGeometry();
 }
 
 void DesktopSurfaceController::adoptProfile(
