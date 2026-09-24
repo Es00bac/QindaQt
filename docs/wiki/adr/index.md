@@ -257,3 +257,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0254: Separate saved window preferences from session apply truth](0254-separate-window-settings-from-session-apply-truth.md)
 - [ADR-0255: Persist per-application notification policies through Settings1](0255-persist-per-application-notification-policies-through-settings1.md)
 - [ADR-0256: Refresh Audio1 after package upgrades at session entry](0256-refresh-audio1-after-package-upgrades.md)
+- [ADR-0258: Network panel applet over public Network1](0258-network-panel-applet-over-public-network1.md)

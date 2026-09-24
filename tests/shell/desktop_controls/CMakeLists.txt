@@ -51,6 +51,15 @@ qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_values_tests
     tst_desktop_controls_values.cpp qindaqt.desktop-controls-values)
 qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_status_tests
     tst_system_status_controller.cpp qindaqt.desktop-controls-system-status)
+# ADR-0258: the network lane over the Network applet facade and the Settings
+# route's fake Network1 transport.
+qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_status_network_tests
+    tst_system_status_network_lane.cpp qindaqt.desktop-controls-system-status-network)
+target_sources(qindaqt_desktop_controls_status_network_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/tests/apps/settings/network/network_settings_test_support.h")
+target_include_directories(qindaqt_desktop_controls_status_network_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/tests/apps/settings/network"
+    "${PROJECT_SOURCE_DIR}/tests/shell/network_applet")
 qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_menu_places_tests
     tst_system_menu_and_places.cpp qindaqt.desktop-controls-system-menu-places)
 qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_launcher_windows_tests

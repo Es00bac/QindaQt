@@ -28,10 +28,14 @@ folder-videos
 help-about
 network-bluetooth-activated
 network-bluetooth-inactive-symbolic
+network-offline
+network-wired
+network-wireless
 network-wireless-disconnected
 network-wireless-off
 network-wireless-signal-excellent
 network-wireless-signal-good
+network-wireless-signal-none
 network-wireless-signal-ok
 network-wireless-signal-weak
 notifications

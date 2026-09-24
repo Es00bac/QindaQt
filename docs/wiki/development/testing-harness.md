@@ -382,6 +382,21 @@ bounded uncertain no-replay completion, and typed results. Boundary and poison
 rows prove every login1 symbol remains inside `src/services/session_actions`.
 The environment always poisons the host system-bus address.
 
+The Network applet slice ([Network applet](../shell/network-applet.md)) is
+selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.(network-applet-|desktop-controls-system-status-network)' \
+  --output-on-failure --no-tests=error
+```
+
+It runs the pure projection and request rows, the controller over the Settings
+route's fake Network1 transport, the compiled QML offscreen under
+`QT_FATAL_WARNINGS` with keyboard-only interaction on horizontal and compact
+vertical panels, the credential-free source boundary, and the System Status
+network lane. It has no installed-package or nested-session row yet.
+
 The production Bluetooth applet slice is selected with:
 
 ```sh

@@ -40,6 +40,7 @@ endfunction()
 require_declaration("src/shell/launcher/qml/LauncherApplet.qml" "launcherAppletIcon")
 require_declaration("src/shell/audio_applet/qml/AudioApplet.qml" "audioAppletIcon")
 require_declaration("src/shell/bluetooth_applet/qml/BluetoothApplet.qml" "bluetoothAppletIcon")
+require_declaration("src/shell/network_applet/qml/NetworkApplet.qml" "networkAppletIcon")
 require_declaration("src/shell/power_applet/qml/PowerApplet.qml" "powerAppletIcon")
 require_declaration("src/shell/smart_lights_applet/qml/SmartLightsApplet.qml" "smartLightsAppletIcon")
 require_declaration("src/shell/clipboard_applet/qml/ClipboardPanelApplet.qml" "clipboardPanelIcon")
@@ -95,6 +96,16 @@ foreach(icon_name IN ITEMS network-bluetooth-activated
                            network-bluetooth-inactive-symbolic)
     require_icon("src/shell/bluetooth_applet/qml/BluetoothApplet.qml" "${icon_name}")
 endforeach()
+# ADR-0258: the Network applet's closed glyph vocabulary (indicatorIconName).
+# The System Status network lane reuses the same facade value.
+foreach(icon_name IN ITEMS network-offline network-wireless-off
+                           network-wireless-disconnected network-wired network-wireless
+                           network-wireless-signal-excellent network-wireless-signal-good
+                           network-wireless-signal-ok network-wireless-signal-weak
+                           network-wireless-signal-none)
+    require_icon("src/shell/network_applet/src/network_applet_presentation.cpp" "${icon_name}")
+endforeach()
+require_icon("src/shell/network_applet/qml/NetworkApplet.qml" "network-offline")
 # The Smart Lights chip uses the freedesktop brightness-* pair rather than a
 # QindaQt-only name, so the panel still shows a glyph under Breeze.
 foreach(icon_name IN ITEMS brightness-high brightness-low)

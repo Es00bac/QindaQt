@@ -6,6 +6,7 @@ import QindaQt.Shell.BluetoothApplet 1.0 as BluetoothAppletModule
 import QindaQt.Shell.ClipboardApplet 1.0 as ClipboardAppletModule
 import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
+import QindaQt.Shell.NetworkApplet 1.0 as NetworkAppletModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 import QindaQt.Shell.SmartLightsApplet 1.0 as SmartLightsAppletModule
 import QindaQt.Shell.VoiceApplet 1.0 as VoiceAppletModule
@@ -25,6 +26,7 @@ Item {
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
+    property var networkAppletAccess: null
     property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var smartLightsAppletAccess: null
@@ -58,6 +60,8 @@ Item {
         ready && entryPoint === "qindaqt.applets.audio"
     readonly property bool bluetoothReady:
         ready && entryPoint === "qindaqt.applets.bluetooth"
+    readonly property bool networkReady:
+        ready && entryPoint === "qindaqt.applets.network"
     readonly property bool powerReady:
         ready && entryPoint === "qindaqt.applets.power"
     readonly property bool smartLightsReady:
@@ -93,7 +97,7 @@ Item {
     readonly property bool desktopControlReady: desktopControlComponent !== null
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
-        || powerReady || smartLightsReady || voiceReady || clipboardReady
+        || networkReady || powerReady || smartLightsReady || voiceReady || clipboardReady
         || launcherReady || globalMenuReady
         || taskListReady || statusNotifierReady || desktopControlReady
         || startMenuReady
@@ -125,6 +129,7 @@ Item {
             : root.notificationCenterReady ? notificationsComponent
             : root.audioReady ? audioComponent
             : root.bluetoothReady ? bluetoothComponent
+            : root.networkReady ? networkComponent
             : root.powerReady ? powerComponent
             : root.smartLightsReady ? smartLightsComponent
             : root.voiceReady ? voiceComponent
@@ -247,6 +252,17 @@ Item {
             anchors.fill: parent
             visible: root.bluetoothReady
             access: root.bluetoothAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: networkComponent
+        NetworkAppletModule.NetworkApplet {
+            anchors.fill: parent
+            visible: root.networkReady
+            access: root.networkAppletAccess
             theme: root.theme
             vertical: root.vertical
         }

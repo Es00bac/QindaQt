@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "network",
+  "name": "Network",
+  "description": "Shows the current wired, Wi-Fi, or mobile connection from public Network1 truth and offers policy-gated Wi-Fi radio, join, disconnect, and rescan controls. It never handles credentials; secured networks prompt in the separate network secret agent.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.network"
+  },
+  "placements": {
+    "zones": ["panel-start", "panel-center", "panel-end"],
+    "orientations": ["horizontal", "vertical"]
+  },
+  "sizing": {
+    "mainAxis": {"minimum": 40, "preferred": 72, "maximum": 140, "stretch": false},
+    "crossAxis": {"minimum": 24, "preferred": 32, "maximum": 72, "stretch": false}
+  },
+  "capabilities": ["network.read", "network.control"],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

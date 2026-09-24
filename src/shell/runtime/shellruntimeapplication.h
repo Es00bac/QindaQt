@@ -77,6 +77,7 @@ namespace DesktopSurface {
 class DesktopSurfaceController;
 }
 class BluetoothAppletComposition;
+class NetworkAppletComposition;
 class GlobalMenuAppletComposition;
 class GatherOverviewComposition;
 class GatherOverviewShortcutProducer;
@@ -262,6 +263,7 @@ private:
     // make resetRuntime optional or rely on member order for this pair.
     std::unique_ptr<AudioAppletComposition> m_audioApplet;
     std::unique_ptr<BluetoothAppletComposition> m_bluetoothApplet;
+    std::unique_ptr<NetworkAppletComposition> m_networkApplet;
     std::unique_ptr<SmartLightsAppletComposition> m_smartLightsApplet;
     std::unique_ptr<VoiceAppletComposition> m_voiceApplet;
     std::unique_ptr<ObsAppletComposition> m_obsApplet;

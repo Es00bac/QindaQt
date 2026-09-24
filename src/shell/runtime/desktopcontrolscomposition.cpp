@@ -102,8 +102,11 @@ void DesktopControlsComposition::compose(
         statusGrants.bluetoothControl = status.has(Capability::BluetoothControl);
         statusGrants.powerRead = status.has(Capability::PowerRead);
         statusGrants.powerControl = status.has(Capability::PowerControl);
+        statusGrants.networkRead = status.has(Capability::NetworkRead);
+        statusGrants.networkControl = status.has(Capability::NetworkControl);
         m_systemStatus = std::make_unique<DesktopControls::SystemStatusController>(
-            facades.audio, facades.bluetooth, facades.power, statusGrants);
+            facades.audio, facades.bluetooth, facades.power, facades.network,
+            statusGrants);
     }
 
     const AuditedGrants systemMenu = grantsFor("system-menu");
