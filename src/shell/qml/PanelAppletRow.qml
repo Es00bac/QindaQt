@@ -214,7 +214,8 @@ Flickable {
                 ? Math.max(0, Number(taskListAppletAccess.entryCount ?? 0)
                               - dockClaimedTaskIds.length) : 1
         }
-        if (plugin === "quick-launch") {
+        if (plugin === "quick-launch" // ADR-0268: a permanent end is one tile
+                && !["file-manager", "trash"].includes((applet.settings ?? ({})).items)) {
             const quick = desktopControlsAccess !== null
                 ? desktopControlsAccess.quickLaunch : null
             return quick !== null && quick !== undefined

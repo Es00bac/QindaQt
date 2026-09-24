@@ -8,9 +8,12 @@
 
 #include <qindaqt/services/dock_items/dock_items.h>
 
+#include "file_manager_menu_catalog.h"
+
 #include <QFileInfo>
 #include <QMimeDatabase>
 
+#include <algorithm>
 #include <utility>
 
 namespace QindaQt::Shell::DesktopControls {
@@ -199,6 +202,17 @@ void QuickLaunchController::rebuild()
   // so application tiles wait (the launcher's Loading truth) while folder,
   // file, and Trash tiles, which need no catalog, show at once.
   const bool catalog = m_launcher != nullptr && m_launcher->hasCatalog();
+  // ADR-0268: the permanent File Manager tile, whether or not the dock value
+  // also stores the application.
+  const QString fileManagerEntry = QindaQt::Apps::FileManager::MenuCatalog::desktopEntryId();
+  QVariantMap fileManagerRow;
+  if (catalog) {
+    const QVariantMap presentation = m_launcher->applicationPresentation(fileManagerEntry);
+    if (!presentation.isEmpty()) {
+      fileManagerRow = applicationRow(fileManagerEntry, -1, presentation);
+      fileManagerRow.insert(QStringLiteral("fixed"), true);
+    }
+  }
   const auto appendApplication = [&](const QString &entryId, int index) {
     const QVariantMap presentation = m_launcher->applicationPresentation(entryId);
     if (presentation.isEmpty())
@@ -276,6 +290,14 @@ void QuickLaunchController::rebuild()
       break;
     }
   }
+  // While a permanent File Manager tile is shown it stands for the File
+  // Manager's windows, as a pinned tile does for its application's.
+  if (m_fileManagerEnds > 0 && !fileManagerRow.isEmpty()) {
+    for (const RunningWindow &window : m_running.value(fileManagerEntry)) {
+      if (!claimed.contains(window.taskId))
+        claimed.append(window.taskId);
+    }
+  }
   // AGENT-GUARD: QML repeats rows as a plain list, so every published change
   // rebuilds each tile (focus, hover, anchored popups). The task list
   // reprojects on every focus or title change; publish only real changes.
@@ -286,6 +308,7 @@ void QuickLaunchController::rebuild()
   const int itemCountNow = itemCount();
   const QString launcherPhase = m_launcher != nullptr ? m_launcher->phase() : QString{};
   if (rows == m_rows && applicationRows == m_applicationRows && claimed == m_claimedTaskIds
+      && fileManagerRow == m_fileManagerRow
       && trash == m_trashInDock && editableNow == m_publishedEditable
       && itemCountNow == m_publishedItemCount && launcherPhase == m_publishedPhase) {
     return;
@@ -296,12 +319,31 @@ void QuickLaunchController::rebuild()
   m_rows = rows;
   m_applicationRows = applicationRows;
   m_claimedTaskIds = claimed;
+  m_fileManagerRow = fileManagerRow;
   m_trashInDock = trash;
   Q_EMIT stateChanged();
 }
 
+void QuickLaunchController::holdFileManagerEnd(bool shown)
+{
+  m_fileManagerEnds = std::max(0, m_fileManagerEnds + (shown ? 1 : -1));
+  rebuild();
+}
+
+QVariantMap QuickLaunchController::trashRow() const
+{
+  QVariantMap row = pathRow(DockItem::trash(), -1);
+  row.insert(QStringLiteral("fixed"), true);
+  return row;
+}
+
 bool QuickLaunchController::knownEntry(const QString &entryId) const
 {
+  // The permanent File Manager tile opens like a pinned one (ADR-0268).
+  if (!m_fileManagerRow.isEmpty()
+      && m_fileManagerRow.value(QStringLiteral("entryId")).toString() == entryId) {
+    return true;
+  }
   for (const QVariant &value : m_applicationRows) {
     if (value.toMap().value(QStringLiteral("entryId")).toString() == entryId) {
       return true;

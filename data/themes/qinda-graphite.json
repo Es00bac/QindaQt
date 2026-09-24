@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-graphite",
+  "name": "Qinda Graphite",
+  "variant": "light",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Noto Sans",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 2,
+  "motionDuration": 120,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#B4B4B0",
+    "surface": "#C4C4C0",
+    "surfaceRaised": "#D8D8D4",
+    "border": "#5C5C58",
+    "text": "#0E0E0E",
+    "textMuted": "#2F2F2C",
+    "accent": "#34508A",
+    "accentText": "#FFFFFF",
+    "danger": "#9E2A2B"
+  },
+  "decoration": {
+    "buttonPlacement": "right",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "bold",
+    "hoverGlyphs": false,
+    "titleBarColor": "#151515",
+    "titleBarInactiveColor": "#6E6E6A",
+    "closeColor": "#9E2A2B",
+    "minimizeColor": "#2F2F2C",
+    "maximizeColor": "#2F2F2C",
+    "titleWear": false
+  },
+  "radii": {
+    "decoration": 2
+  }
+}

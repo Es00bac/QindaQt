@@ -58,6 +58,16 @@ QVariantMap DecorationSpec::toVariantMap() const
     if (restoreColor.isValid()) {
         values.insert(QStringLiteral("restoreColor"), restoreColor);
     }
+    // ADR-0268 behaviour keys, likewise only when the document authors them.
+    if (!titleDoubleClick.isEmpty()) {
+        values.insert(QStringLiteral("titleDoubleClick"), titleDoubleClick);
+    }
+    if (minimizeAction != QLatin1String("minimize")) {
+        values.insert(QStringLiteral("minimizeAction"), minimizeAction);
+    }
+    if (!titleWear) {
+        values.insert(QStringLiteral("titleWear"), false);
+    }
     return values;
 }
 

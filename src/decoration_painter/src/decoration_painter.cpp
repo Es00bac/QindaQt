@@ -141,6 +141,11 @@ DecorationChrome DecorationChrome::fromChromePalette(
     chrome.titleBar = theme.decoration.titleBarColor;
     chrome.titleBarInactive = theme.decoration.titleBarInactiveColor;
     chrome.restore = theme.decoration.restoreColor;
+    // Title-bar behaviour and finish the theme authors (ADR-0268); every
+    // default publishes nothing, so other themes stay byte-identical.
+    chrome.titleDoubleClick = theme.decoration.titleDoubleClick;
+    chrome.minimizeRollsUp = theme.decoration.minimizeAction == QLatin1String("roll-up");
+    chrome.titleWorn = theme.decoration.titleWear;
     // An authored decoration block states its button side; unauthored themes
     // keep the legacy rule so their published map stays byte-identical.
     if (theme.decoration.authored) {
@@ -327,7 +332,9 @@ void paintDecorationTitle(QPainter &painter, const DecorationChrome &chrome,
     const qreal titleHeight = decorationTitleHeight(chrome);
     const qreal radius = decorationFrameRadius(chrome, frame.maximized);
     const QColor title = decorationTitleColor(chrome, frame.active);
-    const bool worn = chrome.wornLuna();
+    // ADR-0268: a theme may paint its authored bar clean (titleWear false);
+    // the flat branch below then fills it in the authored color.
+    const bool worn = chrome.wornLuna() && chrome.titleWorn;
     // ADR-0264: a tab style fills only its tab; the strip beside it stays
     // clear. Every other style's bar spans the full width, as it shipped.
     const qreal barWidth = titleTabWidth(chrome, frame);
@@ -387,9 +394,10 @@ void paintDecorationCaption(QPainter &painter, const DecorationChrome &chrome,
     int alignment = leftAligned ? static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter)
                                 : static_cast<int>(Qt::AlignCenter);
     QFont font = frame.font;
-    if (chrome.wornLuna()) {
+    if (chrome.wornLuna() && chrome.titleWorn) {
         // Luna captions carried the era's humanist title face; the family is
         // advisory and falls back through fontconfig when it is not installed.
+        // A clean authored bar keeps the theme's own face (ADR-0268).
         font.setFamily(QStringLiteral("Trebuchet MS"));
     }
     font.setWeight(captionWeight(chrome));
@@ -419,8 +427,12 @@ void paintDecorationCaption(QPainter &painter, const DecorationChrome &chrome,
     const auto caption = metrics.elidedText(frame.caption, Qt::ElideRight,
                                             qFloor(textRect.width()));
     if (chrome.wornLuna()) {
-        painter.setPen(QPen(QColor(0, 0, 0, 140)));
-        painter.drawText(textRect.translated(0.0, 1.0), alignment, caption);
+        // An authored bar takes caption ink by its own lightness; only the
+        // weathered one adds the drop shadow.
+        if (chrome.titleWorn) {
+            painter.setPen(QPen(QColor(0, 0, 0, 140)));
+            painter.drawText(textRect.translated(0.0, 1.0), alignment, caption);
+        }
         painter.setPen(QPen(decorationCaptionColor(chrome, frame.active)));
         painter.drawText(textRect, alignment, caption);
     } else {

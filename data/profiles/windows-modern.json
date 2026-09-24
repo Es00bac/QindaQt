@@ -2,15 +2,16 @@
   "schemaVersion": 1,
   "id": "windows-modern",
   "name": "Centered Taskbar",
-  "description": "A 48-pixel bottom taskbar whose start button and task tiles stay centred, with the modern Windows start panel: a search field, a pinned application grid, and the complete list behind All apps. Widgets sit at the left, the status area at the right.",
-  "defaultTheme": "qinda-glass-light",
+  "description": "A 48-pixel bottom taskbar whose start button and task tiles stay centred, with a modern start panel: a search field over installed applications, a pinned grid, and the complete list behind All apps, and no advertising, promoted apps, web results, or account prompts. Widgets sit at the left and the status area at the right; menus stay in their windows.",
+  "defaultTheme": "qinda-daylight",
   "workflow": {
     "overview": "task-view",
     "workspacePolicy": "static",
     "launcher": "centered-menu",
     "menu": "start-menu",
     "taskList": "grouped-icons",
-    "globalMenu": false
+    "globalMenu": false,
+    "fileManager": "explorer"
   },
   "panels": [
     {

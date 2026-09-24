@@ -118,8 +118,14 @@ struct DecorationChrome {
     // Offer the roll-up button, the compositor's roll-up (ADR-0203).
     bool rollUpButton = false;
     // Title-bar double-click: empty leaves KWin's own action; otherwise
-    // maximize, roll-up, or minimize, which the decoration runs itself.
+    // maximize, roll-up, or minimize, which the decoration runs itself. The
+    // theme may author it (ADR-0268); the Appearance option overrides.
     QString titleDoubleClick;
+    // Theme-authored (ADR-0268). minimizeRollsUp puts the roll-up control in
+    // minimize's place, so minimizing iconifies to the desktop; titleWorn
+    // false paints an authored title bar clean, without the ADR-0124 wear.
+    bool minimizeRollsUp = false;
+    bool titleWorn = true;
 
     [[nodiscard]] static DecorationChrome
     fromChromePalette(const HybridChrome::ChromePalette &palette,

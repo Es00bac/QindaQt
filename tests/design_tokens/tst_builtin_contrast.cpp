@@ -38,7 +38,7 @@ void BuiltInContrastTests::everyBuiltInMeetsDocumentedPairs()
 {
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 12);
+    QCOMPARE(loaded.size(), 16);
 
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -94,7 +94,7 @@ void BuiltInContrastTests::everyBuiltInTranslucentSurfaceKeepsTextContrast()
     // surface composited on black and on white at its published opacity.
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 12);
+    QCOMPARE(loaded.size(), 16);
     int translucentSurfaces = 0;
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));

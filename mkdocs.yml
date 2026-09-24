@@ -419,4 +419,5 @@ nav:
       - "ADR-0263: The Mac-style layout is the default": adr/0263-the-mac-style-layout-is-the-default.md
       - "ADR-0264: Window button styles are data, with title-bar options": adr/0264-window-button-styles-are-data.md
       - "ADR-0265: Keep the dock's items in one structured Settings1 value": adr/0265-keep-dock-items-in-one-structured-settings-value.md
+      - "ADR-0268: Familiar desktop experiences are layout and theme pairs": adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md
       - "ADR-0273: Integrate the File Manager with the desktop like Finder": adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md

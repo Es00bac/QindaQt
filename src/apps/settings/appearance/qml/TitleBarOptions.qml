@@ -138,8 +138,9 @@ ColumnLayout {
         choiceObjectName: root.objectPrefix + "TitleDoubleClick"
         hint: root.windows ? qsTr("What double-clicking a title bar does")
                            : qsTr("What double-clicking the container bar does")
-        // Windows default to KWin's own double-click (maximize unless the
-        // user changed it); a container bar did nothing before ADR-0264.
+        // Windows default to the theme's double-click (ADR-0268), else
+        // KWin's own (maximize unless the user changed it); a container bar
+        // did nothing before ADR-0264.
         choices: [
             root.windows ? { token: "theme", label: qsTr("Default") }
                          : { token: "none", label: qsTr("Nothing") },

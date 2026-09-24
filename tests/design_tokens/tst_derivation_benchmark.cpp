@@ -27,9 +27,10 @@ void DerivationBenchmark::deriveAllFiveBuiltIns()
     const auto themes = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
     // Theming v2 (ADR-0206) ships twelve built-in documents: the six v1
-    // themes plus their glass and paper variants. The row pins the count so a
-    // theme that fails to load, or a stray file, is noticed here first.
-    QCOMPARE(themes.size(), 12);
+    // themes plus their glass and paper variants; ADR-0268 adds the four
+    // desktop-experience themes. The row pins the count so a theme that fails
+    // to load, or a stray file, is noticed here first.
+    QCOMPARE(themes.size(), 16);
     for (const auto &theme : themes) {
         QVERIFY2(theme.ok, qPrintable(theme.error));
     }

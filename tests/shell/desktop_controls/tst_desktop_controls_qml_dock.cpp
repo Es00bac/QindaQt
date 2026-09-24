@@ -130,6 +130,7 @@ private Q_SLOTS:
   void applicationDroppedOnATileMakesAGroup();
   void menuRepeatsGesturesForKeyboardUsers();
   void runningIndicatorIsAlsoSaidInWords();
+  void permanentEndsShowOneFixedTileAndOthersLeaveThemOut();
 };
 
 void DesktopControlsQmlDockTests::tilesPresentEveryKindWithAccessibleTruth()
@@ -464,6 +465,47 @@ void DesktopControlsQmlDockTests::runningIndicatorIsAlsoSaidInWords()
   QTRY_VERIFY(runningDot(host, 0) != nullptr && runningDot(host, 0)->isVisible());
   QVERIFY(QAccessible::queryAccessibleInterface(tiles(host).constFirst())
               ->text(QAccessible::Description).startsWith(QStringLiteral("Running")));
+}
+
+// ADR-0268: the Mac-style dock's slices. "others" leaves the stored Trash
+// to the Trash end; the end is one fixed tile its menu never moves or
+// removes, and it opens the Trash without a stored index.
+void DesktopControlsQmlDockTests::permanentEndsShowOneFixedTileAndOthersLeaveThemOut()
+{
+  DockFixture fixture({DockItem::application(QStringLiteral("editor")), DockItem::trash()});
+  AppletHost host;
+  QString error;
+  QVERIFY2(host.create(QStringLiteral("QuickLaunchApplet"), &fixture.quick, &error, false,
+                       true, 60, 60), qPrintable(error));
+  QTRY_VERIFY(host.window->isExposed());
+  QCOMPARE(tiles(host).size(), 2);
+  host.root->setProperty("items", QStringLiteral("others"));
+  QTRY_COMPARE(tiles(host).size(), 1);
+  QCOMPARE(QAccessible::queryAccessibleInterface(tiles(host).constFirst())->text(QAccessible::Name),
+           QStringLiteral("Fixture Editor"));
+  // No File Manager in this catalog: its end shows nothing rather than a gap.
+  host.root->setProperty("items", QStringLiteral("file-manager"));
+  QTRY_COMPARE(tiles(host).size(), 0);
+
+  host.root->setProperty("items", QStringLiteral("trash"));
+  QTRY_COMPARE(tiles(host).size(), 1);
+  auto *menu = host.child<QObject>(QStringLiteral("quickLaunchContextMenu"));
+  QVERIFY(menu != nullptr);
+  tiles(host).constFirst()->forceActiveFocus(Qt::TabFocusReason);
+  keyClickFocused(host, Qt::Key_Menu);
+  QTRY_VERIFY(menu->property("opened").toBool());
+  QVERIFY(menu->property("fixed").toBool());
+  for (const char *hidden : {"quickLaunchUnpin", "quickLaunchMoveUp", "quickLaunchMoveDown",
+                             "quickLaunchShowTrash"}) {
+    QVERIFY2(!host.child<QObject>(QString::fromLatin1(hidden))->property("visible").toBool(),
+             hidden);
+  }
+  QVERIFY(host.child<QObject>(QStringLiteral("quickLaunchEmptyTrash"))->property("visible").toBool());
+  fixture.paths.directories.insert(fixture.paths.trash);
+  QVERIFY(QMetaObject::invokeMethod(host.child<QObject>(QStringLiteral("quickLaunchOpen")),
+                                    "triggered"));
+  QCOMPARE(fixture.paths.openedFolders.constLast(), fixture.paths.trash);
+  QVERIFY(fixture.launcher.transport.commits.isEmpty());
 }
 
 QTEST_MAIN(DesktopControlsQmlDockTests)

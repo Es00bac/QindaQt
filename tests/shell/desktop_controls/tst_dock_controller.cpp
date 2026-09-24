@@ -39,6 +39,25 @@ struct DockStack {
   }
 };
 
+// ADR-0268: a stack where the File Manager is installed too, so the dock's
+// permanent File Manager end has a catalog entry to present.
+struct FileManagerDockStack {
+  LauncherStack launcher;
+  QindaQt::Shell::Launcher::LauncherAppletController controller{
+      &launcher.scanner, &launcher.persistence, &launcher.executor, true};
+
+  explicit FileManagerDockStack(const DockItems &dock)
+  {
+    QVERIFY(launcher.addEntry(QStringLiteral("org.qindaqt.FileManager.desktop"),
+                              QStringLiteral("File Manager"), QStringLiteral("/bin/true"),
+                              QStringLiteral("Icon=system-file-manager\n")));
+    QVERIFY(launcher.addEntry(QStringLiteral("editor.desktop"), QStringLiteral("Fixture Editor"),
+                              QStringLiteral("/bin/true")));
+    QVERIFY(launcher.scanner.start());
+    launcher.publishDock(dock);
+  }
+};
+
 DockItems dockOf(const QVector<DockItem> &items)
 {
   return *DockItems::fromItems(items);
@@ -65,6 +84,8 @@ private Q_SLOTS:
   void runningPinnedApplicationsClaimTheirWindows();
   void keepInDockPinsARunningWindowsApplication();
   void refusalsAreFeedbackNotSilence();
+  void permanentEndsAreRowsTheDockDoesNotStore();
+  void fileManagerEndClaimsItsWindowsWhileShown();
 };
 
 void DockControllerTests::rowsProjectEveryKindWithStoredIndices()
@@ -369,6 +390,74 @@ void DockControllerTests::refusalsAreFeedbackNotSilence()
   QVERIFY(!detached.editable());
   QVERIFY(!detached.moveItem(0, 1));
   QVERIFY(detached.feedback().contains(QStringLiteral("unavailable")));
+}
+
+// ADR-0268: the Mac-style dock's File Manager and Trash ends are rows the
+// dock value does not store (index -1, fixed) that still open.
+void DockControllerTests::permanentEndsAreRowsTheDockDoesNotStore()
+{
+  FileManagerDockStack stack(dockOf({DockItem::application(QStringLiteral("editor"))}));
+  RecordingDockPaths paths;
+  QuickLaunchController quick(&stack.controller, true);
+  quick.setPathPort(&paths);
+
+  const QVariantMap fileManager = quick.fileManagerRow();
+  QCOMPARE(fileManager.value(QStringLiteral("entryId")).toString(),
+           QStringLiteral("org.qindaqt.FileManager"));
+  QCOMPARE(fileManager.value(QStringLiteral("kind")).toString(), QStringLiteral("application"));
+  QCOMPARE(fileManager.value(QStringLiteral("index")).toInt(), -1);
+  QVERIFY(fileManager.value(QStringLiteral("fixed")).toBool());
+  const QVariantMap trash = quick.trashRow();
+  QCOMPARE(trash.value(QStringLiteral("kind")).toString(), QStringLiteral("trash"));
+  QCOMPARE(trash.value(QStringLiteral("index")).toInt(), -1);
+  QVERIFY(trash.value(QStringLiteral("fixed")).toBool());
+  // Neither end is stored: the dock value still holds only the editor.
+  QCOMPARE(quick.itemCount(), 1);
+  QVERIFY(!quick.trashInDock());
+
+  // The File Manager end starts the File Manager like a pinned tile.
+  QVERIFY(quick.activate(QStringLiteral("org.qindaqt.FileManager")));
+  QCOMPARE(stack.launcher.spawner.requests.size(), 1);
+  // The Trash end opens the home Trash through the File Manager seam.
+  QVERIFY(!quick.openTrash());
+  QVERIFY(quick.feedback().contains(QStringLiteral("empty")));
+  paths.directories.insert(paths.trash);
+  QVERIFY(quick.openTrash());
+  QCOMPARE(paths.openedFolders.constLast(), paths.trash);
+  QVERIFY(stack.launcher.transport.commits.isEmpty());
+}
+
+void DockControllerTests::fileManagerEndClaimsItsWindowsWhileShown()
+{
+  FileManagerDockStack stack(dockOf({DockItem::application(QStringLiteral("editor"))}));
+  TaskListStack tasks;
+  TaskListAppletController taskList(tasks.source, tasks.authority, tasks.port,
+                                    {true, true, true});
+  QuickLaunchController quick(&stack.controller, true);
+  quick.setWindowSource(
+      &taskList,
+      [](const QString &applicationId) {
+        return applicationId == QLatin1StringView("org.qindaqt.TextEditor")
+            ? QStringLiteral("org.qindaqt.FileManager") : QString{};
+      },
+      {true, true});
+  QVERIFY(tasks.publish(TaskListStack::activeEditorFacts()) > 0);
+
+  // The File Manager runs but the dock stores it nowhere: no claim yet.
+  QVERIFY(quick.fileManagerRow().value(QStringLiteral("running")).toBool());
+  QVERIFY(quick.claimedTaskIds().isEmpty());
+  // A shown end stands for its windows; two outputs hold it twice.
+  quick.holdFileManagerEnd(true);
+  quick.holdFileManagerEnd(true);
+  QCOMPARE(quick.claimedTaskIds(), QStringList{QStringLiteral("w-editor")});
+  quick.holdFileManagerEnd(false);
+  QCOMPARE(quick.claimedTaskIds(), QStringList{QStringLiteral("w-editor")});
+  quick.holdFileManagerEnd(false);
+  QVERIFY(quick.claimedTaskIds().isEmpty());
+  // An unmatched release never leaves a negative count behind.
+  quick.holdFileManagerEnd(false);
+  quick.holdFileManagerEnd(true);
+  QCOMPARE(quick.claimedTaskIds(), QStringList{QStringLiteral("w-editor")});
 }
 
 QTEST_GUILESS_MAIN(DockControllerTests)
