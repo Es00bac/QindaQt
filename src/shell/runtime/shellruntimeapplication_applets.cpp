@@ -63,7 +63,9 @@ bool ShellRuntimeApplication::initializeLauncherRuntime(QString *error)
                            QString::fromLatin1(
                                Services::Voice::kVoiceInputSettingsKey),
                            Launcher::LauncherPersistenceController::pinnedKey(),
-                           Launcher::LauncherPersistenceController::recentKey()};
+                           Launcher::LauncherPersistenceController::recentKey(),
+                           // ADR-0265: the dock value the pins now live in.
+                           Launcher::LauncherPersistenceController::dockItemsKey()};
     // The appearance bridge and token publisher consume the confirmed
     // preference scope; all keys are declared in settings schema v2.
     for (const QString &key : ShellPreferenceValues::scopedKeys()) {

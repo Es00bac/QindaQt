@@ -69,6 +69,10 @@ qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_launcher_windows_test
 target_link_libraries(qindaqt_desktop_controls_launcher_windows_tests PRIVATE QindaQt::ShellIcons)
 qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_search_tests
     tst_command_search_controller.cpp qindaqt.desktop-controls-command-search)
+# ADR-0265: the dock facade over the launcher's dock value, a recording File
+# Manager seam, and the task-list fakes (running indicators, one icon per app).
+qindaqt_add_desktop_controls_test(qindaqt_desktop_controls_dock_tests
+    tst_dock_controller.cpp qindaqt.desktop-controls-dock)
 
 # Composition root over injected seams. Compiles the shell-private runtime
 # composition directly (launcher composition test precedent).
@@ -159,6 +163,9 @@ qindaqt_add_desktop_controls_qml_test(qindaqt_desktop_controls_qml_menu_tests
 qindaqt_add_desktop_controls_qml_test(qindaqt_desktop_controls_qml_active_application_tests
     tst_desktop_controls_qml_active_application.cpp
     qindaqt.desktop-controls-offscreen-active-application)
+# ADR-0265: the compiled dock — tiles, stacks, drag/drop gestures, keyboard.
+qindaqt_add_desktop_controls_qml_test(qindaqt_desktop_controls_qml_dock_tests
+    tst_desktop_controls_qml_dock.cpp qindaqt.desktop-controls-offscreen-dock)
 
 add_test(
     NAME qindaqt.desktop-controls-boundary

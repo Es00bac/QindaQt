@@ -13,6 +13,9 @@ Item {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool dockHasLauncherGroup: false
+    // ADR-0265 dock pins (see the production applet).
+    property var dockClaimedTaskIds: []
+    property var dockAccess: null
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     property bool luna: false

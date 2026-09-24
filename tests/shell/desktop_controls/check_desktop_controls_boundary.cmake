@@ -11,7 +11,8 @@ endif()
 file(GLOB_RECURSE controller_sources
     "${SOURCE_ROOT}/src/shell/desktop_controls/src/*.cpp"
     "${SOURCE_ROOT}/src/shell/desktop_controls/include/*.h")
-file(GLOB qml_sources "${SOURCE_ROOT}/src/shell/desktop_controls/qml/*.qml")
+file(GLOB qml_sources "${SOURCE_ROOT}/src/shell/desktop_controls/qml/*.qml"
+    "${SOURCE_ROOT}/src/shell/desktop_controls/qml/*.js")
 
 set(forbidden_cpp
     "<QDBus" "QtDBus" "QDBusConnection" "<KWin" "kwin/" "LayerShellQt"
@@ -35,12 +36,12 @@ foreach(source IN LISTS qml_sources)
     file(READ "${source}" contents)
     get_filename_component(source_name "${source}" NAME)
     foreach(token IN LISTS forbidden_qml)
-        # AGENT-NOTE (ADR-0124): QuickLaunchApplet.qml is the single
-        # hex-literal exception — its `luna` instance dressing paints the
-        # worn-Luna Bliss hover chrome (fixed visual identity, not palette
-        # authority). Every other file and every other forbidden token still
-        # fails this gate.
-        if(source_name STREQUAL "QuickLaunchApplet.qml"
+        # AGENT-NOTE (ADR-0124): DockItemTile.qml (the dock tile, split out
+        # of QuickLaunchApplet.qml by ADR-0265) is the single hex-literal
+        # exception — its `luna` instance dressing paints the worn-Luna Bliss
+        # hover chrome (fixed visual identity, not palette authority). Every
+        # other file and every other forbidden token still fails this gate.
+        if(source_name STREQUAL "DockItemTile.qml"
            AND token MATCHES "^#\\[0-9a-fA-F")
             continue()
         endif()
@@ -56,7 +57,11 @@ endforeach()
 # QindaQt.Controls.PanelPopup, which owns the window guarantee together with
 # edge-aware placement for every panel surface. The PanelPopup source is
 # checked below so the delegating spelling cannot become a loophole.
-foreach(popup_source IN ITEMS ControlPopupFrame.qml QuickLaunchApplet.qml SystemMenuApplet.qml)
+# ADR-0265 moved the dock's menu and tooltip out of QuickLaunchApplet.qml into
+# DockItemMenu.qml and DockItemTile.qml; its other popups derive from
+# ControlPopupFrame, which is checked here itself.
+foreach(popup_source IN ITEMS ControlPopupFrame.qml DockItemMenu.qml DockItemTile.qml
+                              DockStackPopup.qml SystemMenuApplet.qml)
     file(READ "${SOURCE_ROOT}/src/shell/desktop_controls/qml/${popup_source}" contents)
     string(FIND "${contents}" "popupType: T.Popup.Window" literal_hit)
     string(FIND "${contents}" "C.PanelPopup {" delegated_hit)

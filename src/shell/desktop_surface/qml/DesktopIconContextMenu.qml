@@ -16,6 +16,12 @@ T.Menu {
     signal cutRequested()
     signal copyRequested()
     signal deleteRequested()
+    // ADR-0265: offered only where a dock is composed. A desktop entry reads
+    // "Pin to Dock" (it becomes its installed application); anything else
+    // is kept as a file or folder item.
+    signal addToDockRequested()
+    property bool dockAvailable: false
+    property bool desktopEntry: false
     popupType: T.Popup.Window
     topPadding: 4
     bottomPadding: 4
@@ -79,5 +85,12 @@ T.Menu {
         objectName: "desktopIconContextDelete"
         label: qsTr("Delete")
         onTriggered: root.deleteRequested()
+    }
+    IconMenuItem {
+        objectName: "desktopIconContextAddToDock"
+        visible: root.dockAvailable
+        height: visible ? implicitHeight : 0
+        label: root.desktopEntry ? qsTr("Pin to Dock") : qsTr("Add to Dock")
+        onTriggered: root.addToDockRequested()
     }
 }

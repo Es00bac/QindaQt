@@ -9,6 +9,7 @@
 #include "qindaqt/shell/desktop_controls/applet_grants.h"
 #include "qindaqt/shell/desktop_controls/command_search_controller.h"
 #include "qindaqt/shell/desktop_controls/desktop_controls_access.h"
+#include "qindaqt/shell/desktop_controls/file_manager_dock_paths.h"
 #include "qindaqt/shell/desktop_controls/file_manager_folder_opener.h"
 #include "qindaqt/shell/desktop_controls/places_controller.h"
 #include "qindaqt/shell/desktop_controls/quick_launch_controller.h"
@@ -129,6 +130,16 @@ void DesktopControlsComposition::compose(
     if (quickLaunch.resolved) {
         m_quickLaunch = std::make_unique<DesktopControls::QuickLaunchController>(
             facades.launcher, quickLaunch.has(Capability::ApplicationLaunch));
+        // ADR-0265: pinned folders, files, and Trash open only through the
+        // File Manager boundary and the same folder opener Places uses;
+        // running indicators read, and activate through, the task list.
+        m_dockPaths = std::make_unique<DesktopControls::FileManagerDockPaths>(folderOpener);
+        m_quickLaunch->setPathPort(m_dockPaths.get());
+        m_quickLaunch->setWindowSource(
+            facades.taskList, facades.desktopEntryForWindow,
+            DesktopControls::QuickLaunchController::WindowGrants{
+                quickLaunch.has(Capability::WindowRead),
+                quickLaunch.has(Capability::WindowActivate)});
     }
 
     const AuditedGrants activeApplication = grantsFor("active-application");

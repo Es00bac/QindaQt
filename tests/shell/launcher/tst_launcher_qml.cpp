@@ -145,9 +145,7 @@ struct Stack {
 
     Stack()
         : scanner({ root.path() })
-        , client(transport,
-                 { LauncherPersistenceController::pinnedKey(),
-                   LauncherPersistenceController::recentKey() })
+        , client(transport, LauncherPersistenceController::scopedKeys())
         , persistence(client)
         , executor(scanner, spawner, activator)
         , controller(&scanner, &persistence, &executor, true)

@@ -19,7 +19,9 @@
 #include "task_list_operation_test_support.h"
 #include "task_list_test_support.h"
 
+#include <qindaqt/services/dock_items/dock_items.h>
 #include <qindaqt/services/settings_client/settings_client.h>
+#include <qindaqt/shell/desktop_controls/dock_path_port.h>
 #include <qindaqt/shell/desktop_controls/places_controller.h>
 #include <qindaqt/shell/global_menu/applet/globalmenuappletaccess.h>
 #include <qindaqt/shell/global_menu/protocol/menu_tree.h>
@@ -27,9 +29,13 @@
 #include <qindaqt/shell/workspaces/workspace_controller.h>
 
 #include <QObject>
+#include <QSet>
 #include <QTemporaryDir>
 #include <QUuid>
 #include <QtTest>
+
+#include <functional>
+#include <utility>
 
 namespace QindaQt::Tests::DesktopControls {
 
@@ -48,9 +54,7 @@ struct LauncherStack {
 
     LauncherStack()
         : scanner({root.path()})
-        , client(transport,
-                 {Shell::Launcher::LauncherPersistenceController::pinnedKey(),
-                  Shell::Launcher::LauncherPersistenceController::recentKey()})
+        , client(transport, Shell::Launcher::LauncherPersistenceController::scopedKeys())
         , persistence(client)
         , executor(scanner, spawner, activator)
     {
@@ -66,15 +70,59 @@ struct LauncherStack {
     // Publishes a Settings1 baseline so pinned/recent identities are known.
     void publishPinned(const QStringList &pinnedIds)
     {
+        publishValues({{Shell::Launcher::LauncherPersistenceController::pinnedKey(),
+                        QVariant(pinnedIds)}});
+    }
+
+    // ADR-0265: a baseline whose dock is the given structured value.
+    void publishDock(const Services::DockItems::DockItems &dock)
+    {
+        publishValues({{Shell::Launcher::LauncherPersistenceController::dockItemsKey(),
+                        Services::DockItems::DockItems::encodeSettingsValue(dock)}});
+    }
+
+    void publishValues(const QVariantMap &values)
+    {
         QVERIFY(client.start());
         transport.announceOwner();
         QTRY_VERIFY(!transport.snapshots.isEmpty());
         transport.replyLastSnapshot(Launcher::FakeSettingsTransport::snapshotWire(
-            QStringLiteral("epoch-a"), 0,
-            {{Shell::Launcher::LauncherPersistenceController::pinnedKey(),
-              QVariant(pinnedIds)}}));
+            QStringLiteral("epoch-a"), revision, values));
         QTRY_VERIFY(persistence.persistenceReady());
     }
+
+    // The dock value of the last commit (decoded), for asserting an edit.
+    Services::DockItems::DockItems committedDock() const
+    {
+        if (transport.commits.isEmpty())
+            return {};
+        const QVariantMap operation =
+            transport.commits.constLast().operations.constFirst().toMap();
+        const auto decoded = Services::DockItems::DockItems::decodeSettingsValue(
+            operation.value(QStringLiteral("value")));
+        return decoded.ok() ? *decoded.items : Services::DockItems::DockItems{};
+    }
+
+    // Confirms the last dock commit the way Settings1 would: Applied, then a
+    // snapshot carrying the written value.
+    void settleDock()
+    {
+        const QString key = Shell::Launcher::LauncherPersistenceController::dockItemsKey();
+        const QVariant written = transport.commits.constLast()
+                                     .operations.constFirst().toMap()
+                                     .value(QStringLiteral("value"));
+        const qsizetype snapshotsBefore = transport.snapshots.size();
+        transport.replyLastCommit(Launcher::FakeSettingsTransport::commitWire(
+            Services::SettingsProtocol::SettingsWireStatus::Applied,
+            QStringLiteral("epoch-a"), revision, revision + 1, {{key, written}}));
+        ++revision;
+        QTRY_COMPARE(transport.snapshots.size(), snapshotsBefore + 1);
+        transport.replyLastSnapshot(Launcher::FakeSettingsTransport::snapshotWire(
+            QStringLiteral("epoch-a"), revision, {{key, written}}));
+        QTRY_VERIFY(persistence.persistenceReady() && !persistence.writeInFlight());
+    }
+
+    quint64 revision = 0;
 };
 
 // Task-list T0 source + T1 authority fake + recording port.
@@ -171,6 +219,67 @@ public:
 
     QStringList opened;
     Result nextResult{true, {}};
+};
+
+// ADR-0265: the dock's filesystem and File Manager seam, recorded. Paths
+// are classified from the two sets; nothing touches the real filesystem.
+class RecordingDockPaths final : public Shell::DesktopControls::DockPathPort {
+public:
+    PathKind classify(const QString &absolutePath) const override
+    {
+        if (directories.contains(absolutePath))
+            return PathKind::Directory;
+        return files.contains(absolutePath) ? PathKind::File : PathKind::Missing;
+    }
+    Shell::DesktopControls::FolderOpener::Result openFolder(const QString &absolutePath) override
+    {
+        openedFolders.append(absolutePath);
+        return nextResult;
+    }
+    Shell::DesktopControls::FolderOpener::Result openFile(const QString &absolutePath) override
+    {
+        openedFiles.append(absolutePath);
+        return nextResult;
+    }
+    QVariantList listFolder(const QString &absolutePath, int limit,
+                            QString *diagnostic) const override
+    {
+        listed.append(absolutePath);
+        if (diagnostic != nullptr)
+            diagnostic->clear();
+        return listing.mid(0, limit);
+    }
+    Shell::DesktopControls::FolderOpener::Result openListedEntry(const QVariantMap &entry) override
+    {
+        openedEntries.append(entry);
+        return nextResult;
+    }
+    QString trashFilesDirectory() const override { return trash; }
+    bool emptyTrash(std::function<void(bool, const QString &)> finished,
+                    QString *diagnostic) override
+    {
+        ++emptyTrashCalls;
+        if (!trashStarts) {
+            if (diagnostic != nullptr)
+                *diagnostic = QStringLiteral("trash refused");
+            return false;
+        }
+        trashFinished = std::move(finished);
+        return true;
+    }
+
+    QSet<QString> directories;
+    QSet<QString> files;
+    QString trash = QStringLiteral("/home/fixture/.local/share/Trash/files");
+    QVariantList listing;
+    mutable QStringList listed;
+    QStringList openedFolders;
+    QStringList openedFiles;
+    QVariantList openedEntries;
+    Shell::DesktopControls::FolderOpener::Result nextResult{true, {}};
+    int emptyTrashCalls = 0;
+    bool trashStarts = true;
+    std::function<void(bool, const QString &)> trashFinished;
 };
 
 class StubSessionActions final : public QObject {

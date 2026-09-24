@@ -461,7 +461,7 @@ void ShellRuntimeApplication::initializeDesktopControls(
             m_taskListApplet->access(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
             m_powerApplet->access() ? m_powerApplet->access()->sessionActions() : nullptr,
-            m_networkApplet->access()});
+            m_networkApplet->access(), m_taskListApplet->desktopEntryResolver()});
     QString desktopControlsError;
     if (!m_desktopControls->start(&desktopControlsError)) {
         qWarning().noquote() << "QindaQt shell could not start desktop controls:"

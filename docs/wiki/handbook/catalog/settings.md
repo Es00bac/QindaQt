@@ -75,7 +75,8 @@ All **86 keys** in active schema v2 are listed below. The immutable v1 schema re
 
 | Key | Type | Default | Schema constraints | Disposition / evidence |
 | --- | --- | --- | --- | --- |
-| `panels.launcherPinned` | string-list | `[]` | None beyond type | **App-owned** — Launcher owns pinned-item editing. |
+| `panels.launcherPinned` | string-list | `[]` | None beyond type | **Legacy** — ADR-0076's pins; read once to migrate into `panels.dockItems`, never written since ADR-0265. |
+| `panels.dockItems` | object | `{}` | None beyond type; the dock codec bounds it | **App-owned** — The dock (quick launch) and the launcher's pins; edited on the dock, from pin menus, or through `Settings1DockPins` (ADR-0265). |
 | `panels.launcherRecent` | string-list | `[]` | None beyond type | **App-owned** — Launcher owns recent-item history. |
 | `panels.layoutProfile` | string | `"qindaqt"` | `{"nonEmpty":true}` | **Active route** — Customize owns the visible or confirmed preference boundary. |
 | `panels.autoHideDelayMs` | integer | `250` | `{"minimum":0,"maximum":5000}` | **Active route** — Customize edits the confirmed panel reveal/hide delay; Shell PanelVisibilityRuntime consumes it. |

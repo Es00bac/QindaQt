@@ -251,8 +251,10 @@ surface hosts the desktop-icons entry (see its bullet below):
   Places, quick launch, show desktop, system menu, system status, workspace
   switcher, and workspace tiles. Each presentation consumes only its borrowed
   shell facade; application tiles activate the bounded pinned launcher
-  projection, while command-menu rows carry their rendered publication
-  generation through activation. Workspace operations re-read compositor
+  projection, quick launch (the dock, ADR-0265) also holds
+  `windows.read` and `windows.activate` for its running indicators and to
+  bring a running pinned application forward, while command-menu rows carry
+  their rendered publication generation through activation. Workspace operations re-read compositor
   state after completion so property writes converge even when a change signal
   is absent. See [Desktop controls](desktop-controls.md) and
   [ADR-0075](../adr/0075-desktop-controls-and-workspaces.md).
