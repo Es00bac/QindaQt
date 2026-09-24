@@ -32,11 +32,13 @@ QQuickItem *findItem(QQuickItem *root, const QString &name) {
 }
 
 QVariantMap batteryRow(const QString &id, bool known, double percentage,
-                       quint32 severity) {
+                       quint32 severity,
+                       const QString &name = QStringLiteral("Main battery"),
+                       const QString &state = QStringLiteral("Discharging")) {
   return {{QStringLiteral("id"), id},
-          {QStringLiteral("name"), QStringLiteral("Main battery")},
+          {QStringLiteral("name"), name},
           {QStringLiteral("kindText"), QStringLiteral("Battery")},
-          {QStringLiteral("stateText"), QStringLiteral("Discharging")},
+          {QStringLiteral("stateText"), state},
           {QStringLiteral("percentageText"), known
                ? QStringLiteral("%1 percent").arg(percentage, 0, 'f', 0)
                : QStringLiteral("Level Low")},
@@ -58,6 +60,7 @@ private Q_SLOTS:
   void knownChargeDrawsABoundAccentMeter();
   void unknownChargeAndTheAdapterDrawNoMeter();
   void onlyAPowerWarningChangesTheMeterColour();
+  void metersShareOneColumnAcrossRows();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -208,6 +211,57 @@ void PowerSupplyMeterTest::onlyAPowerWarningChangesTheMeterColour() {
   QVERIFY(warning != nullptr);
   QVERIFY(warning->isVisible());
   QVERIFY(!warning->property("text").toString().isEmpty());
+}
+
+void PowerSupplyMeterTest::metersShareOneColumnAcrossRows() {
+  // Every row is its own grid, and these names and state lines differ widely
+  // in length. Only equal column shares keep the bars in one column.
+  const QStringList ids{QStringLiteral("short"), QStringLiteral("long"),
+                        QStringLiteral("full")};
+  auto *section = createSection({
+      batteryRow(ids.at(0), true, 76.0, 2, QStringLiteral("UPS"),
+                 QStringLiteral("Charging")),
+      batteryRow(ids.at(1), true, 9.0, 3,
+                 QStringLiteral("Vendor Model Extended Life Battery Pack"),
+                 QStringLiteral("Waiting to discharge")),
+      batteryRow(ids.at(2), true, 100.0, 1, QStringLiteral("Main battery"),
+                 QStringLiteral("Fully charged")),
+  });
+  QVERIFY(section != nullptr);
+  // Each meter's (x mapped to the section, width); empty until all are shown.
+  const auto geometry = [section, &ids] {
+    QList<QPointF> placed;
+    for (const QString &id : ids) {
+      auto *meter = findItem(section, QStringLiteral("powerSupplyMeter_") + id);
+      if (meter == nullptr || !meter->isVisible()) return QList<QPointF>{};
+      placed.append({meter->mapToItem(section, QPointF(0, 0)).x(), meter->width()});
+    }
+    return placed;
+  };
+  const auto describe = [&geometry] {
+    QStringList text;
+    for (const QPointF &entry : geometry())
+      text.append(QStringLiteral("x=%1 width=%2").arg(entry.x()).arg(entry.y()));
+    return text.join(QStringLiteral("; "));
+  };
+  // Wide two-column rows, then narrower two-column rows (a row switches to
+  // one column below 500 px). The meters sit in the second column, so a
+  // settled layout puts them past 40 % of the width and inside the section;
+  // a stale layout from the previous width fails one of the two.
+  for (const qreal width : {720.0, 540.0}) {
+    section->setWidth(width);
+    const auto aligned = [&geometry, &ids, width] {
+      const QList<QPointF> placed = geometry();
+      if (placed.size() != ids.size()) return false;
+      for (const QPointF &entry : placed) {
+        if (entry != placed.first()) return false;
+      }
+      const QPointF first = placed.first();
+      return first.y() > 0 && first.x() > width * 0.4
+          && first.x() + first.y() <= width;
+    };
+    QTRY_VERIFY2(aligned(), qPrintable(describe()));
+  }
 }
 
 QTEST_MAIN(PowerSupplyMeterTest)

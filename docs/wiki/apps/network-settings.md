@@ -88,13 +88,17 @@ and [Network secret agent](../architecture/network-secret-agent.md).
 
 ## Responsive interaction and accessibility
 
-The page uses QST-1 semantic roles and QindaQt.Controls. The one QindaTK
-control is each access point's signal `Tk.Meter`. It sits beside the unchanged
-percentage text, for example "61%", which keeps its own accessible name. It
-fills in the neutral accent rather than QindaTK's load ramp, because high signal
-is good, and exposes a progress-bar role named "Signal strength bar, N
-percent". The section instantiates the `QindaQtTheme` bridge so the bar follows
-the session theme even before any other QindaTK surface has opened. At compact sizes,
+The page uses QST-1 semantic roles and QindaQt.Controls. The only QindaTK
+controls are each access point's signal `Tk.Meter` and the `Tk.ToolTip` it
+shows on hover. The meter sits beside the unchanged percentage text, for example
+"61%", which keeps its own accessible name. It fills in the neutral accent
+rather than QindaTK's load ramp, because high signal is good, and exposes a
+progress-bar role named "Signal strength bar, N percent". Every row gives the
+meter, the percentage text (measured on "100%") and the trailing area ("Saved",
+or the wrapping prompt above Connect) the same fixed widths, so all bars start
+at one x and only the network-name column absorbs differences between rows.
+The section instantiates the `QindaQtTheme` bridge so the bar follows the
+session theme even before any other QindaTK surface has opened. At compact sizes,
 the same ordered content remains vertically scrollable. Page Up/Page Down and
 Ctrl+Home/Ctrl+End move through it, and changing keyboard focus reveals the
 focused control. The page declares its first eligible action—Scan or Reload—as
@@ -149,7 +153,8 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
 - the page row runs under fatal QML warnings and proves accessible controls,
   visible-network prompt truth/action wiring, each access point's signal meter
   (bound 0–100 value, accent colour, accessible name, the percentage text
-  still beside it), stale/owner-loss fail-closed
+  still beside it, and one shared x and width across rows whose digits, saved
+  state and prompt lengths differ, wide and compact), stale/owner-loss fail-closed
   behavior, compact focus reveal, and keyboard cycling; and
 - boundary and poison rows reject private service headers, Qt D-Bus outside
   the exact presence observer/model seam, callable D-Bus from that observer, a

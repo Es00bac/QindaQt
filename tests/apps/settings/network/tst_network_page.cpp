@@ -53,6 +53,7 @@ private Q_SLOTS:
   void initTestCase();
   void rendersTruthAndSecretBoundaryAccessibly();
   void drawsSignalMetersBesideThePercentText();
+  void signalMetersShareOneColumn();
   void routesScanConnectDisconnectAndReloadIntents();
   void radioKeyboardRefusalAndConfirmedReadback();
   void showsStaleTruthReadOnlyAndOwnerLossEmpty();
@@ -217,6 +218,62 @@ void NetworkPageTest::drawsSignalMetersBesideThePercentText() {
   guest = findItem(page, QStringLiteral("networkSignalMeter_") + guestId);
   QVERIFY(guest != nullptr);
   QCOMPARE(guest->property("value").toReal(), 23.0);
+}
+
+void NetworkPageTest::signalMetersShareOneColumn() {
+  auto [guard, page] = createPage(QSize(900, 760));
+  QVERIFY(page != nullptr);
+  // Vary everything that sits beside a bar: the digits (100% and 5%), Saved
+  // versus prompt and Connect, and the prompt's length.
+  QVariantMap saved = m_model->accessPoints.at(0).toMap();
+  saved.insert(QStringLiteral("signalStrength"), 100);
+  QVariantMap weak = m_model->accessPoints.at(1).toMap();
+  weak.insert(QStringLiteral("signalStrength"), 5);
+  weak.insert(QStringLiteral("promptStatusText"),
+              QStringLiteral("A password prompt will appear if the desktop "
+                             "password agent is still running when you connect."));
+  QVariantMap other = weak;
+  other.insert(QStringLiteral("id"), QString(64, u'e'));
+  other.insert(QStringLiteral("displayName"),
+              QStringLiteral("Library guest network with a long name"));
+  other.insert(QStringLiteral("signalStrength"), 61);
+  other.insert(QStringLiteral("promptStatusText"), QStringLiteral("Open network."));
+  m_model->accessPoints = {saved, weak, other};
+  Q_EMIT m_model->viewChanged();
+  const QStringList ids{QString(64, u'd'), QString(64, u'c'), QString(64, u'e')};
+
+  // Each meter's (x mapped to the page, width); empty until all are shown.
+  const auto geometry = [page, &ids] {
+    QList<QPointF> placed;
+    for (const QString &id : ids) {
+      auto *meter = findItem(page, QStringLiteral("networkSignalMeter_") + id);
+      if (meter == nullptr || !meter->isVisible()) return QList<QPointF>{};
+      placed.append({meter->mapToItem(page, QPointF(0, 0)).x(), meter->width()});
+    }
+    return placed;
+  };
+  const auto describe = [&geometry] {
+    QStringList text;
+    for (const QPointF &entry : geometry())
+      text.append(QStringLiteral("x=%1 width=%2").arg(entry.x()).arg(entry.y()));
+    return text.join(QStringLiteral("; "));
+  };
+  // Wide, then compact. A settled layout keeps each bar inside the page and
+  // past the SSID column; a stale one from the previous width fails that.
+  for (const qreal width : {900.0, 480.0}) {
+    page->setWidth(width);
+    const auto aligned = [&geometry, &ids, width] {
+      const QList<QPointF> placed = geometry();
+      if (placed.size() != ids.size()) return false;
+      for (const QPointF &entry : placed) {
+        if (entry != placed.first()) return false;
+      }
+      const QPointF first = placed.first();
+      return first.y() > 0 && first.x() > width * 0.25
+          && first.x() + first.y() <= width;
+    };
+    QTRY_VERIFY2(aligned(), qPrintable(describe()));
+  }
 }
 
 void NetworkPageTest::routesScanConnectDisconnectAndReloadIntents() {
