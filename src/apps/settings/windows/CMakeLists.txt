@@ -35,9 +35,15 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_WINDOWS_SETTINGS_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_settings_windows.qmltypes
     SOURCES
+        windows_session_apply_status_client.h
+        windows_session_apply_status_client.cpp
         windows_route_composition.h
         windows_route_composition.cpp
     QML_FILES qml/WindowsPage.qml qml/WindowsChoiceRow.qml
+)
+target_include_directories(
+    qindaqt_settings_windows_qml
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 target_link_libraries(
     qindaqt_settings_windows_qml

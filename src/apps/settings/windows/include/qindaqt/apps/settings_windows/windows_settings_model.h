@@ -40,6 +40,10 @@ class WindowsSettingsModel final : public QObject {
     Q_PROPERTY(bool applyAvailable READ applyAvailable NOTIFY viewChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY viewChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY viewChanged)
+    Q_PROPERTY(QString savedStatusText READ savedStatusText NOTIFY viewChanged)
+    Q_PROPERTY(QString sessionApplyStatusText READ sessionApplyStatusText NOTIFY viewChanged)
+    Q_PROPERTY(bool sessionApplyFailed READ sessionApplyFailed NOTIFY viewChanged)
+    Q_PROPERTY(bool applyRetryAvailable READ applyRetryAvailable NOTIFY viewChanged)
     Q_PROPERTY(QString snapDistanceError READ snapDistanceError NOTIFY viewChanged)
     Q_PROPERTY(QString focusPolicy READ focusPolicy NOTIFY viewChanged)
     Q_PROPERTY(QString dockingModifier READ dockingModifier NOTIFY viewChanged)
@@ -72,6 +76,10 @@ public:
     [[nodiscard]] bool applyAvailable() const noexcept;
     [[nodiscard]] QString statusText() const;
     [[nodiscard]] QString errorText() const;
+    [[nodiscard]] QString savedStatusText() const;
+    [[nodiscard]] QString sessionApplyStatusText() const;
+    [[nodiscard]] bool sessionApplyFailed() const noexcept;
+    [[nodiscard]] bool applyRetryAvailable() const noexcept;
     [[nodiscard]] QString snapDistanceError() const { return m_snapDistanceError; }
     [[nodiscard]] QString focusPolicy() const { return m_confirmed.focusPolicy; }
     [[nodiscard]] QString dockingModifier() const { return m_confirmed.dockingModifier; }
@@ -118,9 +126,14 @@ public:
     Q_INVOKABLE bool revertDraft();
     // Safe authority refresh; never resubmits a write.
     Q_INVOKABLE void retry();
+    // Retries only the session-side writer/reconfigure operation. It never
+    // changes or replays a Settings1 preference commit.
+    Q_INVOKABLE bool retrySessionApply();
+    void setSessionApplyStatus(SessionApplyStatus status);
 
 Q_SIGNALS:
     void viewChanged();
+    void retrySessionApplyRequested();
 
 private:
     struct CommitIntent final {
@@ -135,6 +148,7 @@ private:
     void setState(State state, QString transientError = {});
     void setAuthorityReady(bool ready);
     void setConfirmed(const WindowsValues &values);
+    [[nodiscard]] bool sessionApplyMatchesConfirmed() const noexcept;
     void writeNextQueuedKey();
     void abortSequence();
     [[nodiscard]] bool setDraftToken(QString WindowsValues::*field, const QStringList &allowed,
@@ -147,6 +161,7 @@ private:
     QString m_transientError;
     QString m_confirmedError;
     QString m_snapDistanceError;
+    SessionApplyStatus m_sessionApply;
     QString m_confirmedOwner;
     QString m_confirmedEpoch;
     QList<CommitIntent> m_queue;

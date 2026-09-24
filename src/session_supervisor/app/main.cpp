@@ -8,6 +8,7 @@
 #include "qindaqt/session/window_management/kwin_reconfigure_requester.h"
 #include "qindaqt/session/window_management/kwin_window_management_writer.h"
 #include "qindaqt/session/window_management/window_management_bridge.h"
+#include "qindaqt/session/window_management/window_management_apply_state_service.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -158,6 +159,14 @@ int main(int argc, char *argv[])
     QindaQt::Session::WindowManagement::WindowManagementBridge windowManagementBridge(
         windowManagementSettings, kwinWriter, kwinReconfigure);
     QString windowManagementError;
+    QindaQt::Session::WindowManagement::WindowManagementApplyStateService
+        windowManagementApplyState(windowManagementBridge,
+                                   QDBusConnection::sessionBus());
+    if (!windowManagementApplyState.start(&windowManagementError)) {
+        QTextStream(stderr) << QCoreApplication::applicationName()
+                            << ": windowManagement apply status is unavailable: "
+                            << windowManagementError << '\n';
+    }
     if (!windowManagementSettings.start(&windowManagementError)) {
         QTextStream(stderr) << QCoreApplication::applicationName()
                             << ": windowManagement bridge has no Settings1 scope yet: "
