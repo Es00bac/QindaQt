@@ -117,6 +117,10 @@ void SettingsNavigationInteractionTest::testKeyboardNavigationAndShortcuts() {
   });
   QVERIFY(rootObj != nullptr);
   std::unique_ptr<QObject> rootGuard(rootObj);
+  // AGENT-GUARD: Keep Main.qml's optional application-policy model at its null
+  // default; this route must remain constructible when its independent catalog
+  // is unavailable, and this CTest treats QML warnings as fatal.
+  QVERIFY(rootObj->property("applicationPolicies").value<QObject *>() == nullptr);
 
   auto *window = qobject_cast<QQuickWindow *>(rootObj);
   QVERIFY(window != nullptr);
@@ -144,6 +148,9 @@ void SettingsNavigationInteractionTest::testKeyboardNavigationAndShortcuts() {
   // Shortcut Ctrl+1 switches to notifications
   QTest::keyClick(window, Qt::Key_1, Qt::ControlModifier);
   QCOMPARE(navigation.activeRouteId(), QStringLiteral("notifications"));
+  QTRY_VERIFY(sceneItem(window->contentItem(),
+                        QStringLiteral("settingsDoNotDisturbSwitch")) != nullptr);
+  QVERIFY(rootObj->property("applicationPolicies").value<QObject *>() == nullptr);
 
   // Ctrl+4 selects the production Network route, and its declared first
   // target is the capability-gated scan action.

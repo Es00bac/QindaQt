@@ -119,10 +119,10 @@ Item {
 
             Button {
                 objectName: "settingsNotificationPoliciesRetry"
-                visible: root.policies && (root.policies.conflict
-                                           || root.policies.uncertain
-                                           || !root.policies.available)
-                enabled: root.policies && !root.policies.pending
+                visible: Boolean(root.policies && (root.policies.conflict
+                                                   || root.policies.uncertain
+                                                   || !root.policies.available))
+                enabled: Boolean(root.policies && !root.policies.pending)
                 text: qsTr("Refresh")
                 focusPolicy: Qt.StrongFocus
                 KeyNavigation.tab: root.focusBefore
@@ -133,7 +133,8 @@ Item {
 
         Label {
             Layout.fillWidth: true
-            visible: root.applicationCount === 0 && root.policies?.available
+            visible: root.applicationCount === 0
+                     && (root.policies?.available ?? false)
             text: qsTr("No installed applications were found.")
             textFormat: Text.PlainText
             Accessible.role: Accessible.StaticText
