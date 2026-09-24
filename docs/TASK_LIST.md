@@ -5,6 +5,22 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 24 — Settings search, meters, key caps, Network applet, desktop icons (plan W1–W5, W8)
+
+Integrated on main: **W1** Ctrl+K search in Settings (`11ecca24`, ADR-0257), **W8** desktop icons laid
+out inside the panels' work area (`212af0a8`, ADR-0261), **W2/W3** Settings signal and charge meters and
+QindaTK empty states (`20c278d5`), **W4** Input shortcuts drawn with QindaTK key caps (`4e3cf916`), and
+**W5** the Network panel applet over public Network1 (`e4505fd5`, ADR-0258). W1 was independently
+reviewed (REJECT, repaired, ACCEPT); W2/W3 was reviewed (REJECT on alignment, repaired); the owner waived
+further independent review on 2026-09-24, so W8, W5 and the W2/W3 repair integrated on implementer tests
+plus the manager gates. Combined gates on the integrated tree: full build; Settings 136/136 after a
+test-only timeout fix for a load-sensitive screen saver preview case; desktop surface 12/12; applet
+runtime/catalog/network applet/System Status 16/16; network and Settings Network 44/44; validate-docs.
+`ctest -L shell` 199/205: the six `shell.notification-live.*` rows fail staging the absolute
+`/etc/xdg/autostart/qindaqt-obs-login.desktop` without privilege (the known r4 test limitation) and the
+`desktop.virtual.*` rows skip. The desktop package must require QindaTK 0.1.0-r5 (KeyCap, CommandPalette).
+Live checks on qinda-top remain: Ctrl+K search, the meters, key caps, the Network applet, icon placement.
+
 ## September 24 — Screen saver Preview shows the saver, never the lock screen (plan W6)
 
 Integrated `1f26b4da` (reviews `aaa2c7ef`). Settings → Screen saver → Preview

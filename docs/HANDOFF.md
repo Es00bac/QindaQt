@@ -1,5 +1,15 @@
 # Integration handoff
 
+## September 24 — W1, W2/W3, W4, W5, W8 integration batch
+
+Main carries W1 (`11ecca24` + reviews `32deef08`), W8 (`212af0a8`), W2/W3 (`20c278d5`), W4
+(`4e3cf916`), W5 (`e4505fd5`) and a test-only wait fix for the screen saver preview failure cases. Only the
+ADR index and `mkdocs.yml` conflicted (resolved in number order: 0257, 0258, 0259, 0261). Gates: full
+build, Settings 136/136, desktop surface 12/12, applet/network-applet 16/16, network 44/44, validate-docs;
+shell 199/205 with the known privileged-autostart staging limitation and skipped virtual-desktop rows.
+Next: desktop package 0.1.0_pre20260924-r2 requiring `>=dev-libs/qindatk-0.1.0-r5`, installed on
+qinda-top through Portage, then live checks.
+
 ## September 24 — W6 screen saver preview integration
 
 Integrated `1f26b4da` (candidate `08a2b990`, accepted by luna-review-w6 on
