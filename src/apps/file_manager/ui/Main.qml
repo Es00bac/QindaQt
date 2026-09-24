@@ -28,6 +28,8 @@ ApplicationWindow {
 
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
+    // ADR-0273: Keep in Dock, set after loading (runtime/finder_integration).
+    property var dockPins: null
     // ADR-0194: the Network place's hub replaces the folder views while true.
     // Browsing to any folder leaves it. (Applications is a browsable place in
     // the ordinary views since ADR-0262, so it needs no mode of its own.)
@@ -413,10 +415,21 @@ ApplicationWindow {
         id: applicationsActions
         anchors.fill: parent
         applicationsController: root.applicationsController
+        dockPins: root.dockPins
         navigationController: root.navigationController
         selection: entrySelection
         iconView: entryGrid
         detailsView: entryList
+    }
+
+    // ADR-0273: org.freedesktop.FileManager1 and --select reveal entries here.
+    EntryReveal {
+        objectName: "entryReveal"
+        navigationController: root.navigationController
+        selection: entrySelection
+        iconView: entryGrid
+        detailsView: entryList
+        coordinator: root.coordinator
     }
 
     WindowServices {

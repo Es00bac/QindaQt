@@ -23,7 +23,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 35);
+  QCOMPARE(actions.size(), 36);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -52,7 +52,9 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("view.refresh"),
       // ADR-0262: the Applications place's own actions.
       QStringLiteral("application.open"), QStringLiteral("application.show-entry-file"),
-      QStringLiteral("view.group-by-category")};
+      QStringLiteral("view.group-by-category"),
+      // ADR-0273: Keep in Dock.
+      QStringLiteral("application.keep-in-dock")};
   QCOMPARE(identities, expected);
 
   const auto trash = std::find_if(actions.cbegin(), actions.cend(), [](const auto &action) {
@@ -202,6 +204,15 @@ void TestFileManagerActionCatalog::s2ViewEditGoActionsAreCatalogued() {
   QCOMPARE(group->shortcut, QKeySequence(QStringLiteral("Ctrl+G")));
   QVERIFY(group->checkable);
   QVERIFY(!group->destructive);
+
+  // ADR-0273: Keep in Dock sits with Get Info and shows its state as a check.
+  const auto keepInDock = find("application.keep-in-dock");
+  QVERIFY(keepInDock != actions.cend());
+  QCOMPARE(keepInDock->menuId, QStringLiteral("file"));
+  QCOMPARE(keepInDock->order, showEntry->order);
+  QCOMPARE(keepInDock->shortcut, QKeySequence(QStringLiteral("Ctrl+Alt+D")));
+  QVERIFY(keepInDock->checkable);
+  QVERIFY(!keepInDock->destructive);
 }
 
 QTEST_MAIN(TestFileManagerActionCatalog)

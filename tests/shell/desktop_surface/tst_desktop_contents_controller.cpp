@@ -81,6 +81,9 @@ private Q_SLOTS:
   void rowsCarryTheIdentityFieldsTheBatchContractsConsume();
   void trashesOnlyListedEntriesThroughTheIdentityBoundary();
   void clipboardOperationsFailClosedWithoutAClipboard();
+  void fileManagerActionsReachFileManagerThroughTheBoundary();
+  void fileManagerActionsRefuseUnlistedPathsAndOtherActions();
+  void changesOtherProgramsMakeAreListedWithoutARefresh();
 
 private:
   std::unique_ptr<QTemporaryDir> m_root;
@@ -358,6 +361,75 @@ void DesktopContentsControllerTests::
   QVERIFY(controller.feedback().contains(QStringLiteral("clipboard")));
   QVERIFY(!controller.cutSelection(rows));
   QVERIFY(!controller.pasteIntoDesktop());
+}
+
+// ADR-0273: Get Info and Open With hand one listed entry, and New File the
+// Desktop folder itself, to File Manager on its reveal command line.
+void DesktopContentsControllerTests::fileManagerActionsReachFileManagerThroughTheBoundary() {
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Notes.txt"))));
+  DesktopContentsController controller(m_root->path(), {m_program});
+  const QByteArray folder = QFileInfo(m_root->path()).canonicalFilePath().toLocal8Bit();
+
+  QVERIFY2(controller.runFileManagerAction(QStringLiteral("file.properties"),
+                                           m_root->filePath(QStringLiteral("Notes.txt"))),
+           qPrintable(controller.feedback()));
+  QTRY_COMPARE(recorded(m_record),
+               QByteArray("--select=Notes.txt") + '\0' + "--action=file.properties" + '\0' +
+                   folder + '\0');
+  QVERIFY(QFile::remove(m_record));
+
+  QVERIFY2(controller.runFileManagerAction(QStringLiteral("file.open-with"),
+                                           m_root->filePath(QStringLiteral("Notes.txt"))),
+           qPrintable(controller.feedback()));
+  QTRY_COMPARE(recorded(m_record),
+               QByteArray("--select=Notes.txt") + '\0' + "--action=file.open-with" + '\0' +
+                   folder + '\0');
+  QVERIFY(QFile::remove(m_record));
+
+  QVERIFY2(controller.runFileManagerAction(QStringLiteral("file.new-file")),
+           qPrintable(controller.feedback()));
+  QTRY_COMPARE(recorded(m_record),
+               QByteArray("--action=file.new-file") + '\0' + folder + '\0');
+  QCOMPARE(controller.feedback(), QString());
+}
+
+void DesktopContentsControllerTests::fileManagerActionsRefuseUnlistedPathsAndOtherActions() {
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Notes.txt"))));
+  DesktopContentsController controller(m_root->path(), {m_program});
+  // A path the listing never reported, and one that vanished since.
+  QVERIFY(!controller.runFileManagerAction(QStringLiteral("file.properties"),
+                                           m_root->filePath(QStringLiteral("Unlisted.txt"))));
+  QVERIFY(!controller.feedback().isEmpty());
+  controller.clearFeedback();
+  QVERIFY(QFile::remove(m_root->filePath(QStringLiteral("Notes.txt"))));
+  QVERIFY(!controller.runFileManagerAction(QStringLiteral("file.properties"),
+                                           m_root->filePath(QStringLiteral("Notes.txt"))));
+  QVERIFY(!controller.feedback().isEmpty());
+  controller.clearFeedback();
+  // Only Get Info, Open With and New File are handed over; never Trash.
+  QVERIFY(!controller.runFileManagerAction(QStringLiteral("file.empty-trash")));
+  QVERIFY(!controller.feedback().isEmpty());
+  QTest::qWait(100);
+  QVERIFY(!QFile::exists(m_record));
+}
+
+// ADR-0273: like a File Manager view, the Desktop follows its folder.
+void DesktopContentsControllerTests::changesOtherProgramsMakeAreListedWithoutARefresh() {
+  DesktopContentsController controller(m_root->path());
+  QCOMPARE(controller.rows().size(), 0);
+  QVERIFY(writeFile(m_root->filePath(QStringLiteral("Downloaded.pdf"))));
+  QTRY_COMPARE(controller.rows().size(), 1);
+  QCOMPARE(rowNamed(controller.rows(), QStringLiteral("Downloaded.pdf"))
+               .value(QStringLiteral("label"))
+               .toString(),
+           QStringLiteral("Downloaded.pdf"));
+
+  // An unchanged folder keeps its rows: nothing is rebuilt for nothing.
+  QSignalSpy rowsChanged(&controller, &DesktopContentsController::rowsChanged);
+  controller.refresh();
+  QCOMPARE(rowsChanged.size(), 0);
+  QVERIFY(QFile::remove(m_root->filePath(QStringLiteral("Downloaded.pdf"))));
+  QTRY_COMPARE(controller.rows().size(), 0);
 }
 
 QTEST_GUILESS_MAIN(DesktopContentsControllerTests)

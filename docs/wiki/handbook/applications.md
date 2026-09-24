@@ -83,6 +83,11 @@ and `Ctrl+D` to bookmark a folder. List and grid views share your selection;
 Ctrl-click picks individual files and Shift-click selects a range. Click a
 column heading to sort. Copy, move, and Trash work on the selected files together.
 
+When a browser, an editor, or a download manager offers **Show in folder**,
+File Manager opens that folder with the file selected. In **Applications**,
+right-click an application and choose **Keep in Dock**, or drag it onto the
+dock.
+
 ## Terminal (QQ_Term)
 
 Each QQ_Term window runs one shell, with saved profiles and 42 colour schemes.
