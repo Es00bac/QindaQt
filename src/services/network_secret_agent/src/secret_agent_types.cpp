@@ -2,7 +2,10 @@
 
 #include <qindaqt/services/network_secret_agent/secret_agent_types.h>
 
+#include "secret_agent_types_p.h"
+
 #include <QtDBus/QDBusMetaType>
+#include <QtDBus/QDBusVariant>
 
 namespace QindaQt::Network::SecretAgent {
 namespace {
@@ -14,6 +17,10 @@ void overwriteOwnedStorage(void *data, const qsizetype bytes) noexcept {
   }
 }
 
+// AGENT-CONTRACT: Wiping intentionally writes through Qt's implicitly shared
+// storage. Every alias must be dead or another secret-bearing copy that must
+// also be scrubbed; never pass storage a live request/settings owner still
+// needs.
 void wipeByteArray(QByteArray &bytes) noexcept {
   if (!bytes.isEmpty()) {
     // AGENT-GUARD: Do not call non-const data(), detach(), or fill() here.
@@ -26,19 +33,41 @@ void wipeByteArray(QByteArray &bytes) noexcept {
   }
 }
 
+// AGENT-CONTRACT: Wiping intentionally writes through Qt's implicitly shared
+// storage. Every alias must be dead or another secret-bearing copy that must
+// also be scrubbed; never pass storage a live request/settings owner still
+// needs.
 void wipeString(QString &text) noexcept {
   if (!text.isEmpty()) {
     // DBus/QML values own dynamic storage. A zero-capacity QString is an
     // external/static view and must not be written through.
     if (text.capacity() >= text.size()) {
       auto *data = const_cast<QChar *>(text.constData());
-      overwriteOwnedStorage(data,
-                            text.size() * qsizetype(sizeof(QChar)));
+      overwriteOwnedStorage(data, text.size() * qsizetype(sizeof(QChar)));
     }
     text.clear();
   }
 }
 
+void wipeVariant(QVariant &value) noexcept;
+
+template <typename Associative>
+void wipeAssociative(Associative &values) noexcept {
+  // AGENT-GUARD: Key text shares its backing allocation with the map key. Wipe
+  // it only while walking toward an immediate clear; never perform key lookup,
+  // insertion, or removal after its ordering/hash text has been overwritten.
+  for (auto entry = values.begin(); entry != values.end(); ++entry) {
+    QString key = entry.key();
+    wipeString(key);
+    wipeVariant(entry.value());
+  }
+  values.clear();
+}
+
+// AGENT-CONTRACT: Nested QString and QByteArray values may share their
+// allocations with other Qt values. Only wipe when every alias is dead or is a
+// secret-bearing copy that must also be scrubbed; do not pass a live
+// request/settings value that another owner still needs.
 void wipeVariant(QVariant &value) noexcept {
   if (value.metaType() == QMetaType::fromType<QString>()) {
     auto *text = static_cast<QString *>(value.data());
@@ -54,22 +83,19 @@ void wipeVariant(QVariant &value) noexcept {
     nested.clear();
   } else if (value.metaType() == QMetaType::fromType<QVariantMap>()) {
     QVariantMap nested = value.toMap();
-    for (QVariant &entry : nested) {
-      wipeVariant(entry);
-    }
-    nested.clear();
+    wipeAssociative(nested);
   } else if (value.metaType() == QMetaType::fromType<QVariantHash>()) {
     QVariantHash nested = value.toHash();
-    for (QVariant &entry : nested) {
-      wipeVariant(entry);
-    }
-    nested.clear();
+    wipeAssociative(nested);
   } else if (value.metaType() == QMetaType::fromType<QStringList>()) {
     QStringList nested = value.toStringList();
     for (QString &entry : nested) {
       wipeString(entry);
     }
     nested.clear();
+  } else if (value.metaType() == QMetaType::fromType<QDBusVariant>()) {
+    QVariant nested = value.value<QDBusVariant>().variant();
+    wipeVariant(nested);
   }
   value.clear();
 }
@@ -110,13 +136,23 @@ QByteArray takeSecretUtf8(QVariant &value) noexcept {
 }
 
 void wipeSettingsMap(NmSettingsMap &settings) noexcept {
-  for (QVariantMap &section : settings) {
-    for (QVariant &value : section) {
-      wipeVariant(value);
-    }
-    section.clear();
+  // AGENT-CONTRACT: This recursively overwrites shared key/value storage.
+  // Call only for a request/settings copy whose aliases are all dead or are
+  // themselves secret-bearing copies to scrub; no live owner may need them.
+  for (auto section = settings.begin(); section != settings.end(); ++section) {
+    QString key = section.key();
+    wipeString(key);
+    wipeAssociative(section.value());
   }
   settings.clear();
+}
+
+void Private::wipeVariantValue(QVariant &value) noexcept { wipeVariant(value); }
+
+void Private::wipeStringValue(QString &text) noexcept { wipeString(text); }
+
+void Private::wipeByteArrayValue(QByteArray &bytes) noexcept {
+  wipeByteArray(bytes);
 }
 
 } // namespace QindaQt::Network::SecretAgent
