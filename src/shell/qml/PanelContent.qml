@@ -24,6 +24,7 @@ Item {
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
+    property var networkAppletAccess: null
     property var smartLightsAppletAccess: null
     property var voiceAppletAccess: null
     property var obsAppletAccess: null
@@ -295,6 +296,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        networkAppletAccess: root.networkAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
         voiceAppletAccess: root.voiceAppletAccess
         obsAppletAccess: root.obsAppletAccess
@@ -331,6 +333,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        networkAppletAccess: root.networkAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
         voiceAppletAccess: root.voiceAppletAccess
         obsAppletAccess: root.obsAppletAccess
@@ -367,6 +370,7 @@ Item {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        networkAppletAccess: root.networkAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
         voiceAppletAccess: root.voiceAppletAccess
         obsAppletAccess: root.obsAppletAccess

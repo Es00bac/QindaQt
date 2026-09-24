@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "system-status",
   "name": "System Status",
-  "description": "Aggregates the sound, Bluetooth, and power applet facades into one compact indicator with quick controls.",
+  "description": "Aggregates the sound, Bluetooth, power, and network applet facades into one compact indicator with quick controls.",
   "apiVersion": "1.0",
   "entryPoint": {
     "kind": "builtin",
@@ -39,7 +39,9 @@
     "bluetooth.read",
     "bluetooth.control",
     "power.read",
-    "power.control"
+    "power.control",
+    "network.read",
+    "network.control"
   ],
   "settingsSchema": {
     "type": "object",

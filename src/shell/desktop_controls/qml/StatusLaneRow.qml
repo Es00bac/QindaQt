@@ -30,6 +30,15 @@ ColumnLayout {
                 return rows[i]
         return null
     }
+    readonly property var wifiRadio: {
+        if (laneId !== "network" || facade === null)
+            return null
+        const rows = facade.radioRows
+        for (let i = 0; i < rows.length; ++i)
+            if (rows[i].id === "wifi")
+                return rows[i]
+        return null
+    }
     readonly property var firstAdapter: laneId === "bluetooth" && facade !== null
                                         && facade.adapterRows.length > 0
                                         ? facade.adapterRows[0] : null
@@ -106,6 +115,19 @@ ColumnLayout {
                  && lane.firstAdapter.canSetPowered && !lane.facade.operationPending
         checked: lane.firstAdapter !== null && lane.firstAdapter.powered
         onToggled: lane.facade.requestAdapterPower(lane.firstAdapter.id, checked)
+    }
+
+    // Network: Wi-Fi radio. The switch shows confirmed truth only; the
+    // facade reports the request outcome in its own popup and lane summary.
+    C.Switch {
+        objectName: "statusLaneWifiSwitch"
+        visible: lane.laneId === "network" && lane.available && lane.wifiRadio !== null
+        text: qsTr("Wi-Fi")
+        enabled: lane.controlGranted && lane.wifiRadio !== null
+                 && lane.wifiRadio.canToggle && !lane.facade.operationPending
+        checkable: false
+        checked: lane.wifiRadio !== null && lane.wifiRadio.enabled
+        onClicked: lane.facade.requestRadio("wifi", !lane.wifiRadio.enabled)
     }
 
     // Power: profile choice.

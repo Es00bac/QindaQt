@@ -228,6 +228,13 @@ Panel thickness also respects each applet's declared minimum cross extent. The
 least that thick; `macos-inspired` reaches 24 px precisely because its menu bar
 hosts no launcher.
 
+The network appears in every profile that shows service status: the
+`qindaqt` instrument strip places the standalone Network applet beside
+Bluetooth and Power, and the `gnome-inspired`, `macos-inspired`,
+`unity-inspired`, and `windows-modern` profiles, which place no standalone
+Bluetooth or Power applet either, show it as the network lane of their System
+Status instance ([Network applet](network-applet.md)).
+
 Only layouts that resolve a global-menu applet own the AppMenu registrar;
 every other layout keeps application menus inside their windows, and a live
 layout switch moves the registrar with it

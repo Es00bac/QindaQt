@@ -6,6 +6,8 @@
 #include "../common/shelltokenpublisher.h"
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
+#include "network_applet_controller.h"
+#include "networkappletcomposition.h"
 #include "smartlightsappletcomposition.h"
 #include "obsappletcomposition.h"
 #include "desktopcontrolscomposition.h"
@@ -456,7 +458,8 @@ void ShellRuntimeApplication::initializeDesktopControls(
             m_launcherApplet->access(), m_globalMenuApplet->access(),
             m_taskListApplet->access(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
-            m_powerApplet->access() ? m_powerApplet->access()->sessionActions() : nullptr});
+            m_powerApplet->access() ? m_powerApplet->access()->sessionActions() : nullptr,
+            m_networkApplet->access()});
     QString desktopControlsError;
     if (!m_desktopControls->start(&desktopControlsError)) {
         qWarning().noquote() << "QindaQt shell could not start desktop controls:"
@@ -519,6 +522,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
                 *m_quietingSettingsClient, *m_notificationApplicationPolicy);
         m_settingsRouteLauncher = std::make_unique<SettingsRouteLauncher>();
         m_voiceApplet->attachRoutes(m_settingsRouteLauncher.get());
+        m_networkApplet->attachRoutes(m_settingsRouteLauncher.get());
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
                 *m_notificationClient, *m_notificationInterruptionPolicy,
@@ -578,6 +582,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_voiceApplet->access(),
             m_obsApplet->access());
     m_windowFactory->setDesktopControlsAccess(m_desktopControls->access());
+    m_windowFactory->setNetworkAppletAccess(m_networkApplet->access());
     m_windowFactory->setGatherOverviewAccess(m_gatherOverview.get());
     // The panel right-click configuration facade composes over the shared
     // Settings1 client and the Settings route launcher (both owned above).
@@ -717,6 +722,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_clipboardApplet.reset();
     m_audioApplet.reset();
     m_bluetoothApplet.reset();
+    m_networkApplet.reset();
     m_smartLightsApplet.reset();
     m_voiceApplet.reset();
     m_powerApplet.reset();

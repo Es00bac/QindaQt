@@ -62,6 +62,7 @@ target_link_libraries(
         QindaQt::ShellAudioAppletRuntime
         QindaQt::ShellBluetoothAppletRuntime
         QindaQt::ShellPowerAppletRuntime
+        QindaQt::ShellNetworkAppletRuntime
         Qt6::Core
 )
 target_compile_features(qindaqt_shell_desktop_controls PUBLIC cxx_std_20)

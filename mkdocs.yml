@@ -79,6 +79,7 @@ nav:
       - Applet runtime: shell/applet-runtime.md
       - Audio applet: shell/audio-applet.md
       - Bluetooth applet: shell/bluetooth-applet.md
+      - Network applet: shell/network-applet.md
       - Clipboard applet: shell/clipboard-applet.md
       - Panel popup placement: shell/panel-popup-placement.md
       - Production panel surfaces: shell/panel-surfaces.md
@@ -409,5 +410,6 @@ nav:
       - "ADR-0255: Persist per-application notification policies through Settings1": adr/0255-persist-per-application-notification-policies-through-settings1.md
       - "ADR-0256: Refresh Audio1 after package upgrades at session entry": adr/0256-refresh-audio1-after-package-upgrades.md
       - "ADR-0257: Search Settings routes through a QindaTK command palette": adr/0257-search-settings-routes-through-a-qindatk-command-palette.md
+      - "ADR-0258: Network panel applet over public Network1": adr/0258-network-panel-applet-over-public-network1.md
       - "ADR-0259: Preview screen savers without the lock screen": adr/0259-preview-screen-savers-without-the-lock-screen.md
       - "ADR-0261: Lay desktop icons out inside the panels' work area": adr/0261-lay-desktop-icons-out-inside-the-panel-work-area.md

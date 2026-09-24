@@ -33,10 +33,12 @@ is the same as for panel instances.
 
 Schema v1 recognizes narrowly named requests for application launching;
 window read, activation, and management; global-menu and status-item access;
-notification, audio, power, clipboard, Bluetooth, display, and settings access.
+notification, audio, power, clipboard, Bluetooth, network, display, and settings access.
 Read and control capabilities are separate where the platform service exposes
 both. Power applets request `power.read` and `power.control`; the production
-Bluetooth applet requests `bluetooth.read` and `bluetooth.control`. Control is
+Bluetooth applet requests `bluetooth.read` and `bluetooth.control`; the Network
+applet and System Status request `network.read` and `network.control`
+([ADR-0258](../adr/0258-network-panel-applet-over-public-network1.md)). Control is
 effective only with the corresponding read grant.
 
 The manifest is a request, never a grant. Runtime policy must combine package

@@ -62,6 +62,7 @@ private slots:
     void globalMenuUsesLeastAuthorityAndStockTopPanels();
     void globalMenuResolvesOnVerticalPanelsWithLeastAuthority();
     void desktopControlsResolveReadyInEveryStockPlacement();
+    void networkAppletResolvesInStockAndVerticalPlacements();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -96,6 +97,8 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
         QStringLiteral("qindaqt.applets.gather-overview"),
         QStringLiteral("qindaqt.applets.global-menu"),
         QStringLiteral("qindaqt.applets.launcher"),
+        // Network over public Network1 (ADR-0258); sorted position.
+        QStringLiteral("qindaqt.applets.network"),
         QStringLiteral("qindaqt.applets.notification-center"),
         // Streaming control surface (ADR-0198/ADR-0199); sorted position.
         QStringLiteral("qindaqt.applets.obs"),
@@ -659,6 +662,62 @@ void AppletInstanceResolverTests::desktopControlsResolveReadyInEveryStockPlaceme
         fixture.catalog, fixture.policy, fixture.registry);
     QCOMPARE(AppletRuntime::toString(activeApplication.status),
              QStringLiteral("placement-rejected"));
+}
+
+void AppletInstanceResolverTests::networkAppletResolvesInStockAndVerticalPlacements()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    const QStringList expectedGrants{QStringLiteral("network.control"),
+                                     QStringLiteral("network.read")};
+    for (const Profiles::Edge edge : {Profiles::Edge::Top, Profiles::Edge::Bottom,
+                                      Profiles::Edge::Left, Profiles::Edge::Right}) {
+        const auto network = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+            instance(QStringLiteral("network")), edge, fixture.catalog, fixture.policy,
+            fixture.registry);
+        QVERIFY2(network.ready(), qPrintable(network.diagnostic));
+        QCOMPARE(network.entryPoint, QStringLiteral("qindaqt.applets.network"));
+        QCOMPARE(network.grantedCapabilities, expectedGrants);
+    }
+
+    // ADR-0258: the default profile places the applet beside Bluetooth and
+    // Power, and every stock System Status also aggregates the network lane.
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(
+                 QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+    bool defaultPlacesNetwork = false;
+    int statusInstances = 0;
+    for (const auto &profile : profiles.profiles()) {
+        for (const auto &panel : profile.panels) {
+            for (const auto &applet : panel.applets) {
+                if (applet.plugin != QLatin1StringView("network")
+                    && applet.plugin != QLatin1StringView("system-status")) {
+                    continue;
+                }
+                const auto resolved = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                    applet, panel.edge, fixture.catalog, fixture.policy, fixture.registry);
+                QVERIFY2(resolved.ready(),
+                         qPrintable(QStringLiteral("%1/%2/%3: %4")
+                                        .arg(profile.id, panel.id, applet.plugin,
+                                             resolved.diagnostic)));
+                if (applet.plugin == QLatin1StringView("network")) {
+                    QCOMPARE(resolved.grantedCapabilities, expectedGrants);
+                    defaultPlacesNetwork = defaultPlacesNetwork
+                        || profile.id == QLatin1StringView("qindaqt");
+                } else {
+                    ++statusInstances;
+                    QVERIFY(resolved.grantedCapabilities.contains(
+                        QStringLiteral("network.read")));
+                    QVERIFY(resolved.grantedCapabilities.contains(
+                        QStringLiteral("network.control")));
+                }
+            }
+        }
+    }
+    QVERIFY(defaultPlacesNetwork);
+    QVERIFY(statusInstances >= 4);
 }
 
 QTEST_GUILESS_MAIN(AppletInstanceResolverTests)

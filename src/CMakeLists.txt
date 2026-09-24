@@ -182,6 +182,7 @@ endif()
 
 if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/bluetooth_applet)
+    add_subdirectory(shell/network_applet)
     add_subdirectory(shell/smart_lights_applet)
     add_subdirectory(shell/voice_applet)
     add_subdirectory(shell/obs_applet)
