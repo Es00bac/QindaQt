@@ -76,22 +76,6 @@ qindaqt_add_file_manager_test(
     tst_file_manager_action_catalog.cpp
     qindaqt.file-manager-action-catalog
 )
-# ADR-0269: Open With's bounded launch and its use of Settings' association
-# store, over a fixed catalog and a recording starter (nothing is spawned).
-qindaqt_add_file_manager_test(
-    qindaqt_file_manager_open_with_tests
-    tst_open_with.cpp
-    qindaqt.file-manager-open-with
-)
-# ADR-0269: the right-click set's file operations and the KArchive jobs on
-# temporary files; the fixtures build their archives with KArchive directly.
-find_package(KF6Archive 6.0 REQUIRED CONFIG)
-qindaqt_add_file_manager_test(
-    qindaqt_file_manager_file_actions_mutation_tests
-    tst_file_actions_mutation.cpp
-    qindaqt.file-manager-file-actions-mutation
-)
-target_link_libraries(qindaqt_file_manager_file_actions_mutation_tests PRIVATE KF6::Archive)
 qindaqt_add_file_manager_test(
     qindaqt_file_manager_local_lister_tests
     tst_local_directory_lister.cpp
@@ -332,6 +316,60 @@ add_test(
 set_tests_properties(
     qindaqt.file-manager-desktop-file-boundary PROPERTIES LABELS "file-manager"
 )
+
+# ADR-0273: "Show in folder" -- the URI and path policy every
+# org.freedesktop.FileManager1 call passes before a window is shown.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_reveal_request_tests
+    tst_reveal_request.cpp
+    qindaqt.file-manager-reveal-request
+)
+
+# ADR-0273: org.freedesktop.FileManager1 on a private session bus with a
+# recording window factory, and the production factory's window reuse rule.
+# The bus configuration has no activation directories, so the row can never
+# start the host's own file manager.
+find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session REQUIRED)
+qt_add_executable(qindaqt_file_manager_file_manager1_tests tst_file_manager1_service.cpp)
+target_link_libraries(
+    qindaqt_file_manager_file_manager1_tests
+    PRIVATE qindaqt_file_manager_support Qt6::DBus Qt6::Gui Qt6::Test
+)
+target_include_directories(
+    qindaqt_file_manager_file_manager1_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_compile_features(qindaqt_file_manager_file_manager1_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_file_manager_file_manager1_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_file_manager_file_manager1_tests)
+add_test(
+    NAME qindaqt.file-manager-file-manager1
+    COMMAND "${QINDAQT_DBUS_RUN_SESSION}"
+            "--config-file=${CMAKE_CURRENT_SOURCE_DIR}/file_manager1_bus.conf"
+            -- $<TARGET_FILE:qindaqt_file_manager_file_manager1_tests>
+)
+set_tests_properties(
+    qindaqt.file-manager-file-manager1
+    PROPERTIES
+        LABELS "file-manager"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:"
+)
+
+# ADR-0273: Keep in Dock over the dock's public pin helper (ADR-0265) and the
+# application.keep-in-dock action, against a scripted Settings1 transport.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_application_dock_pins_tests
+    tst_application_dock_pins.cpp
+    qindaqt.file-manager-application-dock-pins
+)
+target_link_libraries(
+    qindaqt_file_manager_application_dock_pins_tests PRIVATE QindaQt::DockPins
+)
+set_tests_properties(qindaqt.file-manager-application-dock-pins PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
 
 add_test(
     NAME qindaqt.file-manager-desktop-metadata
@@ -574,21 +612,9 @@ set_tests_properties(qindaqt.file-manager-applications-ui PROPERTIES
 qt_add_resources(qindaqt_file_manager_applications_ui_tests file_manager_applications_ui_artwork
     PREFIX /qindaqt/file-manager
     FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
-# ADR-0269: production Main.qml with the right-click set -- the context menu's
-# visibility rules for files, folders, archives, the background and Trash,
-# and each action from the catalog to its controller, over temporary files
-# and a recording starter.
-qindaqt_add_file_manager_test(qindaqt_file_manager_file_actions_ui_tests
-    tst_file_actions_ui.cpp qindaqt.file-manager-file-actions-ui)
-target_link_libraries(qindaqt_file_manager_file_actions_ui_tests PRIVATE Qt6::Quick)
-target_compile_definitions(qindaqt_file_manager_file_actions_ui_tests PRIVATE
-    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
-set_tests_properties(qindaqt.file-manager-file-actions-ui PROPERTIES
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion"
-    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
-qt_add_resources(qindaqt_file_manager_file_actions_ui_tests file_manager_file_actions_ui_artwork
-    PREFIX /qindaqt/file-manager
-    FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
+# ADR-0269: the right-click set's rows live in their own file (after the
+# artwork's resource alias above is set).
+include("${CMAKE_CURRENT_SOURCE_DIR}/FileActionsTests.cmake")
 
 # AGENT-GUARD: these rows construct a QGuiApplication, so they must name a
 # platform. Without this they default to xcb and abort before their first

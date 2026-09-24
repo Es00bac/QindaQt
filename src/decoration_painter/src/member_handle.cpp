@@ -21,7 +21,10 @@ DecorationMemberHandleLayout layoutMemberHandle(const DecorationChrome &chrome,
     const qreal cell = DecorationMiniButtonCell;
     const qreal top = (DecorationMemberHandleHeight - cell) / 2.0;
     const bool right = effectiveButtonSide(chrome) == DecorationButtonSide::Right;
-    const auto kinds = decorationButtonKinds(chrome);
+    // A handlebar never offers roll-up (ADR-0264): its wheel already rolls
+    // the whole container, and a member cannot roll up on its own.
+    auto kinds = decorationButtonKinds(chrome);
+    kinds.removeAll(DecorationButtonKind::RollUp);
     const auto count = static_cast<qreal>(kinds.size());
     const qreal groupWidth = count * cell + std::max(0.0, count - 1.0) * DecorationMiniButtonSpacing;
     const qreal inset = std::min(

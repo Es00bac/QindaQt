@@ -3,6 +3,7 @@
 #include "launcher_persistence.h"
 #include "launcher_runtime_test_support.h"
 
+#include <qindaqt/services/dock_items/dock_items.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 
 #include <QSignalSpy>
@@ -12,6 +13,9 @@ using namespace QindaQt::Services::SettingsClient;
 using namespace QindaQt::Services::SettingsProtocol;
 using namespace QindaQt::Shell::Launcher;
 using namespace QindaQt::Tests::Launcher;
+using QindaQt::Services::DockItems::DockEditError;
+using QindaQt::Services::DockItems::DockItem;
+using QindaQt::Services::DockItems::DockItems;
 
 namespace {
 
@@ -23,6 +27,22 @@ QVariantList idList(const QStringList &ids)
     return values;
 }
 
+// ADR-0265: the stored dock value for a dock of plain applications.
+QVariant dockValue(const QStringList &ids)
+{
+    DockItems dock;
+    for (const QString &id : ids)
+        (void)dock.insert(dock.size(), DockItem::application(id));
+    return DockItems::encodeSettingsValue(dock);
+}
+
+QStringList committedDockIds(const QVariant &value)
+{
+    const auto decoded = DockItems::decodeSettingsValue(value);
+    return decoded.ok() && !decoded.unmigrated ? decoded.items->applicationIds()
+                                               : QStringList{};
+}
+
 const QString kEpoch = QStringLiteral("epoch-a");
 
 struct WiredController {
@@ -31,9 +51,7 @@ struct WiredController {
     LauncherPersistenceController controller;
 
     WiredController()
-        : client(transport,
-                 { LauncherPersistenceController::pinnedKey(),
-                   LauncherPersistenceController::recentKey() },
+        : client(transport, LauncherPersistenceController::scopedKeys(),
                  ClientTiming { .requestTimeoutMilliseconds = 500,
                                 .debounceMilliseconds = 1,
                                 .retryMilliseconds = { 10 } })
@@ -74,12 +92,21 @@ struct WiredController {
                values, baseRevision + 1);
     }
 
+    // The one committed operation's value, which must be for `key`.
+    QVariant committedValue(const QString &key)
+    {
+        const auto operation = transport.commits.constLast().operations.constFirst().toMap();
+        if (operation.value(QStringLiteral("key")).toString() != key)
+            return {};
+        return operation.value(QStringLiteral("value"));
+    }
+
     // A new external baseline arrives as an invalidation hint plus snapshot.
     void publishExternal(const QVariantMap &values, quint64 revision)
     {
         const qsizetype snapshotsBefore = transport.snapshots.size();
         Q_EMIT transport.settingsChanged(QStringLiteral(":1.99"), kEpoch, revision,
-                                         { LauncherPersistenceController::pinnedKey() });
+                                         values.keys());
         QTRY_COMPARE(transport.snapshots.size(), snapshotsBefore + 1);
         transport.replyLastSnapshot(
             FakeSettingsTransport::snapshotWire(kEpoch, revision, values));
@@ -95,6 +122,9 @@ class LauncherPersistenceTests final : public QObject
 private Q_SLOTS:
     void availabilityNoticeClearsAfterConfirmedRecovery();
     void pinRoundTripsThroughTheClient();
+    void legacyPinsMigrateOnTheFirstDockWrite();
+    void malformedDockIsIgnoredUntilTheNextEdit();
+    void dockEditsCommitTheWholeDockAndRevertOnRefusal();
     void restoresConfirmedListsFromSnapshots();
     void hostileStoredValuesAreIgnored();
     void conflictRevertsToTheConfirmedValue();
@@ -135,28 +165,138 @@ void LauncherPersistenceTests::pinRoundTripsThroughTheClient()
     QTRY_VERIFY(!wired.transport.commits.isEmpty());
     const auto &commit = wired.transport.commits.constLast();
     QCOMPARE(commit.operations.size(), 1);
-    const auto operation = commit.operations.constFirst().toMap();
-    QCOMPARE(operation.value(QStringLiteral("key")).toString(),
-             LauncherPersistenceController::pinnedKey());
-    QCOMPARE(operation.value(QStringLiteral("value")).toStringList(),
+    // ADR-0265: a pin writes the whole structured dock, never the legacy list.
+    const QVariant written =
+        wired.committedValue(LauncherPersistenceController::dockItemsKey());
+    QCOMPARE(committedDockIds(written),
              QStringList({ QStringLiteral("org.qindaqt.editor") }));
 
-    wired.settleApplied(
-        {{ LauncherPersistenceController::pinnedKey(),
-           idList({ QStringLiteral("org.qindaqt.editor") }) }},
-        0);
+    wired.settleApplied({{ LauncherPersistenceController::dockItemsKey(), written }}, 0);
     QVERIFY(wired.controller.statusText().isEmpty());
     QVERIFY(wired.controller.pinned().contains(QStringLiteral("org.qindaqt.editor")));
 
     // A second writer's invalidation replaces the model wholesale.
     const QVariantMap external {
-        { LauncherPersistenceController::pinnedKey(),
-          idList({ QStringLiteral("org.other.app"),
-                   QStringLiteral("org.qindaqt.editor") }) },
+        { LauncherPersistenceController::dockItemsKey(),
+          dockValue({ QStringLiteral("org.other.app"),
+                      QStringLiteral("org.qindaqt.editor") }) },
     };
     wired.publishExternal(external, 2);
     QTRY_COMPARE(wired.controller.pinned().ids().constFirst(),
                  QStringLiteral("org.other.app"));
+}
+
+void LauncherPersistenceTests::legacyPinsMigrateOnTheFirstDockWrite()
+{
+    WiredController wired;
+    wired.publishBaseline(
+        {{ LauncherPersistenceController::pinnedKey(),
+           idList({ QStringLiteral("a.app"), QStringLiteral("b.app") }) }});
+    // Unmigrated: the dock is derived from ADR-0076's list.
+    QCOMPARE(wired.controller.pinned().ids(),
+             QStringList({ QStringLiteral("a.app"), QStringLiteral("b.app") }));
+    QCOMPARE(wired.controller.dock().size(), 2);
+
+    QCOMPARE(wired.controller.pin(QStringLiteral("c.app")), PersistenceMutation::Applied);
+    QTRY_VERIFY(!wired.transport.commits.isEmpty());
+    // One operation, on the dock key; the legacy list is carried over, not
+    // rewritten.
+    QCOMPARE(wired.transport.commits.constLast().operations.size(), 1);
+    const QVariant written =
+        wired.committedValue(LauncherPersistenceController::dockItemsKey());
+    QCOMPARE(committedDockIds(written),
+             QStringList({ QStringLiteral("a.app"), QStringLiteral("b.app"),
+                           QStringLiteral("c.app") }));
+    wired.settleApplied(
+        {{ LauncherPersistenceController::dockItemsKey(), written },
+         { LauncherPersistenceController::pinnedKey(),
+           idList({ QStringLiteral("a.app"), QStringLiteral("b.app") }) }},
+        0);
+    QCOMPARE(wired.controller.pinned().ids().size(), 3);
+
+    // Once migrated, the legacy key is inert: another writer changing it
+    // alone changes nothing.
+    wired.publishExternal(
+        {{ LauncherPersistenceController::dockItemsKey(), written },
+         { LauncherPersistenceController::pinnedKey(), idList({ QStringLiteral("z.app") }) }},
+        2);
+    QTest::qWait(20);
+    QCOMPARE(wired.controller.pinned().ids(),
+             QStringList({ QStringLiteral("a.app"), QStringLiteral("b.app"),
+                           QStringLiteral("c.app") }));
+}
+
+void LauncherPersistenceTests::malformedDockIsIgnoredUntilTheNextEdit()
+{
+    WiredController wired;
+    // A future or corrupted dock value is not partially trusted, and the
+    // legacy list does not stand in for it.
+    wired.publishBaseline(
+        {{ LauncherPersistenceController::dockItemsKey(),
+           QVariantMap {{ QStringLiteral("version"), qint64(9) },
+                        { QStringLiteral("items"), QVariantList {} }} },
+         { LauncherPersistenceController::pinnedKey(), idList({ QStringLiteral("a.app") }) }});
+    QVERIFY(wired.controller.pinned().ids().isEmpty());
+    QVERIFY(wired.controller.dock().isEmpty());
+    QVERIFY(!wired.controller.statusText().isEmpty());
+    QVERIFY(wired.controller.persistenceReady());
+
+    // The next explicit edit replaces it with a well-formed dock.
+    QCOMPARE(wired.controller.pin(QStringLiteral("b.app")), PersistenceMutation::Applied);
+    QTRY_VERIFY(!wired.transport.commits.isEmpty());
+    QCOMPARE(committedDockIds(
+                 wired.committedValue(LauncherPersistenceController::dockItemsKey())),
+             QStringList({ QStringLiteral("b.app") }));
+}
+
+void LauncherPersistenceTests::dockEditsCommitTheWholeDockAndRevertOnRefusal()
+{
+    WiredController wired;
+    wired.publishBaseline(
+        {{ LauncherPersistenceController::dockItemsKey(),
+           dockValue({ QStringLiteral("writer"), QStringLiteral("calc") }) }},
+        3);
+    QSignalSpy dockChanged(&wired.controller, &LauncherPersistenceController::dockChanged);
+
+    // Grouping is a dock edit like any other: applied live, committed whole.
+    QCOMPARE(wired.controller.editDock([](DockItems &dock) {
+                 return dock.combine(0, 1, QStringLiteral("Office"));
+             }),
+             PersistenceMutation::Applied);
+    QVERIFY(dockChanged.size() >= 1);
+    QCOMPARE(wired.controller.dock().size(), 1);
+    // The pinned projection keeps both members, so the launcher's Pinned
+    // section still lists them.
+    QCOMPARE(wired.controller.pinned().ids(),
+             QStringList({ QStringLiteral("writer"), QStringLiteral("calc") }));
+    QTRY_VERIFY(!wired.transport.commits.isEmpty());
+    const auto written = DockItems::decodeSettingsValue(
+        wired.committedValue(LauncherPersistenceController::dockItemsKey()));
+    QVERIFY(written.ok());
+    QCOMPARE(written.items->items().constFirst(),
+             DockItem::group(QStringLiteral("Office"),
+                             { QStringLiteral("writer"), QStringLiteral("calc") }));
+
+    // A refused edit returns the last confirmed dock and keeps the reason.
+    wired.settle(FakeSettingsTransport::commitWire(
+                     SettingsWireStatus::ValidationFailed, kEpoch, 3, 3,
+                     {{ LauncherPersistenceController::dockItemsKey(),
+                        dockValue({ QStringLiteral("writer"), QStringLiteral("calc") }) }}),
+                 {{ LauncherPersistenceController::dockItemsKey(),
+                    dockValue({ QStringLiteral("writer"), QStringLiteral("calc") }) }},
+                 3);
+    QCOMPARE(wired.controller.dock().size(), 2);
+    QVERIFY(!wired.controller.statusText().isEmpty());
+
+    // A model refusal never reaches Settings1 and says why.
+    const qsizetype commitsBefore = wired.transport.commits.size();
+    QCOMPARE(wired.controller.editDock([](DockItems &dock) {
+                 return dock.insert(0, DockItem::application(QStringLiteral("writer")));
+             }),
+             PersistenceMutation::RejectedByModel);
+    QCOMPARE(wired.controller.lastDockEditError(), DockEditError::AlreadyInDock);
+    QCOMPARE(wired.transport.commits.size(), commitsBefore);
+    QCOMPARE(wired.controller.dock().size(), 2);
 }
 
 void LauncherPersistenceTests::restoresConfirmedListsFromSnapshots()
@@ -209,11 +349,11 @@ void LauncherPersistenceTests::conflictRevertsToTheConfirmedValue()
     QVERIFY(wired.controller.pinned().contains(QStringLiteral("new.app")));
 
     // Another writer moved the repository to revision 8; the client's base
-    // was 7, so the commit conflicts and the resync restores authority.
+    // was 7, so the commit conflicts and the resync restores authority. The
+    // dock key still holds its schema default (the dock was never written).
     wired.settle(FakeSettingsTransport::commitWire(
                      SettingsWireStatus::Conflict, kEpoch, 8, 8,
-                     {{ LauncherPersistenceController::pinnedKey(),
-                        idList({ QStringLiteral("confirmed.app") }) }}),
+                     {{ LauncherPersistenceController::dockItemsKey(), QVariantMap {} }}),
                  {{ LauncherPersistenceController::pinnedKey(),
                     idList({ QStringLiteral("confirmed.app") }) }},
                  8);

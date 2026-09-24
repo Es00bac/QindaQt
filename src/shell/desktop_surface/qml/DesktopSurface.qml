@@ -263,6 +263,7 @@ Window {
         screenName: root.screenName
         outputRects: root.outputRects
         primaryOutputName: root.primaryOutputName
+        dockAccess: root.access !== null ? (root.access.quickLaunch ?? null) : null
     }
 
     Item {

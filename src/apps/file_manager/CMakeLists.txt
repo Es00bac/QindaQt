@@ -17,6 +17,8 @@ target_sources(
         model/clipboard_controller.cpp
         model/launch_intent.cpp
         model/local_directory_lister.cpp
+        model/reveal_request.cpp
+        model/reveal_request.h
         public/desktop_file_boundary.cpp
     PUBLIC
         public/desktop_file_boundary.h
@@ -63,6 +65,8 @@ target_sources(
         app_shell/file_manager_application_actions.h
         app_shell/file_manager_browsing_actions.cpp
         app_shell/file_manager_browsing_actions.h
+        app_shell/file_manager_dock_actions.cpp
+        app_shell/file_manager_dock_actions.h
         app_shell/file_manager_item_actions.cpp
         app_shell/file_manager_item_actions.h
         app_shell/file_manager_mutation_actions.cpp
@@ -72,7 +76,11 @@ target_sources(
         preview/local_preview.cpp
         preview/preview_provider.cpp
         preview/theme_icon_provider.cpp
+        runtime/application_dock_pins.cpp
         runtime/file_manager_application.cpp
+        runtime/file_manager1_service.cpp
+        runtime/finder_integration.cpp
+        runtime/process_reveal_windows.cpp
         model/bookmarks_store.cpp
         model/clipboard_controller.cpp
         model/entry_properties.cpp
@@ -139,7 +147,11 @@ target_sources(
         preview/local_preview.h
         preview/preview_provider.h
         preview/theme_icon_provider.h
+        runtime/application_dock_pins.h
         runtime/file_manager_application.h
+        runtime/file_manager1_service.h
+        runtime/finder_integration.h
+        runtime/process_reveal_windows.h
         model/bookmarks_store.h
         model/applications_controller.h
         model/applications_listing.h
@@ -228,7 +240,14 @@ target_link_libraries(
     # application class lives in runtime/file_manager_application.h.
     # ADR-0157: Qt6::DBus is private for the session KIOFuse mount call; the
     # kio-fuse daemon lifecycle belongs to the platform, not File Manager.
+    # ADR-0273: runtime/file_manager1_service.h also names QtDBus types; its
+    # only includers (the executable and its focused tests) link Qt6::DBus.
+    # Keep in Dock writes through the dock's public pin helper
+    # (Settings1DockPins, ADR-0265) and the Settings1 client's D-Bus
+    # transport; all three are static, so the FileManager component gains no
+    # shared library.
     PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets KF6::Archive Qt6::Widgets Qt6::DBus
+            QindaQt::DockPins QindaQt::SettingsClient
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)
@@ -299,6 +318,7 @@ qt_add_qml_module(
         ui/ContextOpenWithMenu.qml
         ui/FileActions.qml
         ui/OpenWithDialog.qml
+        ui/EntryReveal.qml
         ui/EntryDrag.js
     DEPENDENCIES
         QindaQt.Controls/1.0
@@ -366,6 +386,21 @@ install(
 install(
     FILES org.qindaqt.FileManager.desktop
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
+    COMPONENT FileManager
+)
+# ADR-0273: D-Bus activation for org.freedesktop.FileManager1 ("Show in
+# folder"). The file is named after File Manager, not the interface, so it can
+# sit beside another file manager's provider of the same name without a
+# package file collision; the bus picks one of them when no File Manager
+# process is running.
+configure_file(
+    org.qindaqt.FileManager.FileManager1.service.in
+    "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.FileManager.FileManager1.service"
+    @ONLY
+)
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.FileManager.FileManager1.service"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/services"
     COMPONENT FileManager
 )
 

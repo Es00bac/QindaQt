@@ -59,7 +59,7 @@ function(qindaqt_add_launcher_runtime)
     if(TARGET qindaqt_shell_launcher_runtime)
         return()
     endif()
-    if(NOT TARGET qindaqt_settings_client
+    if(NOT TARGET qindaqt_settings_client OR NOT TARGET qindaqt_dock_items
        OR NOT TARGET qindaqt_tokens_qml OR NOT TARGET qindaqt_controls_qml)
         message(STATUS
             "Launcher runtime dependencies unavailable; building the pure L0 model only")
@@ -94,6 +94,8 @@ function(qindaqt_add_launcher_runtime)
         PUBLIC
             QindaQt::ShellLauncher
             QindaQt::SettingsClient
+            # ADR-0265: the pinned set is a projection of the dock value.
+            QindaQt::DockItems
             Qt6::Core
             Qt6::DBus
     )

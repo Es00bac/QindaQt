@@ -76,11 +76,19 @@ ColumnLayout {
                     "displayText": String(item.displayText ?? ""),
                     "iconName": String(item.iconName ?? ""),
                     "accessibleDescription":
-                        String(item.accessibleDescription ?? "")
+                        String(item.accessibleDescription ?? ""),
+                    "pinned": Boolean(item.pinned)
                 })
             }
         }
         return rows
+    }
+
+    // Pin to Dock / Remove from Dock (ADR-0265) through the launcher's own
+    // pin mutation; one menu for the column, retargeted on open.
+    function openProgramMenu(program, anchor) {
+        programMenu.program = program
+        programMenu.popup(anchor)
     }
 
     function focusSearch() {
@@ -127,6 +135,29 @@ ColumnLayout {
     }
 
     spacing: 0
+
+    T.Menu {
+        id: programMenu
+        objectName: "startMenuProgramMenu"
+        popupType: T.Popup.Window
+
+        property var program: ({})
+
+        T.MenuItem {
+            objectName: "startMenuTogglePin"
+            text: Boolean(programMenu.program.pinned) ? qsTr("Remove from Dock")
+                                                      : qsTr("Pin to Dock")
+            onTriggered: {
+                if (!root.ready)
+                    return
+                const entryId = String(programMenu.program.entryId ?? "")
+                if (Boolean(programMenu.program.pinned))
+                    root.launcher.unpin(entryId)
+                else
+                    root.launcher.pin(entryId)
+            }
+        }
+    }
 
     C.TextField {
         id: searchField
@@ -234,7 +265,20 @@ ColumnLayout {
             Keys.onSpacePressed: launch()
             Keys.onUpPressed: root.focusRow(row.index - 1)
             Keys.onDownPressed: root.focusRow(row.index + 1)
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Menu
+                        || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) {
+                    root.openProgramMenu(row.modelData, row)
+                    event.accepted = true
+                }
+            }
             Accessible.onPressAction: launch()
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: root.openProgramMenu(row.modelData, row)
+            }
 
             // AGENT-GUARD: own both sides of the hover contrast pair — the
             // white text may only ever appear on the XP selection blue, never

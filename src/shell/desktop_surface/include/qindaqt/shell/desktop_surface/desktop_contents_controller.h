@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <QFileSystemWatcher>
 #include <QHash>
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QTimer>
 #include <QVariantList>
 #include <qqmlintegration.h>
 
@@ -28,14 +30,16 @@ namespace QindaQt::Shell::DesktopSurface {
 //
 // AGENT-CONTRACT: crosses into File Manager exclusively through
 // `Apps::FileManager::Desktop::FileBoundary::listLocalFolder`,
-// `launchLocalFile`, `openLocalFolder`, and
-// `createLocalMutationController` (see module-boundaries.md); it
-// never includes File
+// `launchLocalFile`, `openLocalFolder`, `revealLocalItem`,
+// `runLocalFolderAction`, and `createLocalMutationController` (see
+// module-boundaries.md); it never includes File
 // Manager's model/**, mutation/**, or app_shell/** headers directly. A
 // missing/unreadable root publishes zero rows plus `feedback` instead of
 // leaving the surface input-blocked; hidden (dot) entries are omitted from
 // the desktop presentation the same way every other stock desktop hides
-// them.
+// them. Like a File Manager view it follows its folder: a change another
+// program makes there (File Manager's New File, a download) is re-listed
+// shortly after (ADR-0273).
 //
 // Not final: QML_ELEMENT instantiates the type through a QQmlElement
 // subclass.
@@ -90,6 +94,15 @@ public:
   // listing never reported, or any typed boundary refusal, publishes
   // `feedback`, returns false, and launches nothing.
   Q_INVOKABLE bool open(const QString &absolutePath);
+  // Hands one File Manager dialog to File Manager (ADR-0273): Get Info
+  // ("file.properties") or Open With ("file.open-with") for one entry of the
+  // last listing, fenced by the identity the listing reported, or, with no
+  // path, New File ("file.new-file") or Get Info in the Desktop folder
+  // itself. File Manager opens on the Desktop folder, with the entry selected,
+  // and runs the action there. An unlisted path, another action, or any typed
+  // boundary refusal publishes `feedback`, returns false, and starts nothing.
+  Q_INVOKABLE bool runFileManagerAction(const QString &actionId,
+                                        const QString &absolutePath = {});
   // Renames only an entry from the last listing, using the complete listing-
   // time identity consumed by File Manager's asynchronous mutation boundary.
   Q_INVOKABLE bool rename(const QString &absolutePath, const QString &newName);
@@ -138,6 +151,10 @@ private:
   void publishFeedback(const QString &message);
 
   QString m_root;
+  // ADR-0273: re-lists the root shortly after it changes on disk; a burst of
+  // changes (a copy of many files) becomes one refresh.
+  QFileSystemWatcher m_watcher;
+  QTimer m_refreshTimer;
   // Unset means FileBoundary's production program candidates.
   std::optional<QStringList> m_fileManagerPrograms;
   QClipboard *m_clipboard = nullptr;

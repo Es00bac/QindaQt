@@ -43,3 +43,29 @@ set_tests_properties(
     qindaqt.decoration-documents
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+# Named window-button styles and title-bar options (ADR-0264).
+qt_add_executable(qindaqt_decoration_button_styles_tests
+    tst_decoration_button_styles.cpp legacy_button_painters.h)
+target_link_libraries(
+    qindaqt_decoration_button_styles_tests
+    PRIVATE QindaQt::DecorationPainter Qt6::Gui Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_decoration_button_styles_tests)
+add_test(NAME qindaqt.decoration-button-styles COMMAND qindaqt_decoration_button_styles_tests)
+set_tests_properties(
+    qindaqt.decoration-button-styles
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+qt_add_executable(qindaqt_decoration_title_options_tests tst_decoration_title_options.cpp)
+target_link_libraries(
+    qindaqt_decoration_title_options_tests
+    PRIVATE QindaQt::DecorationPainter Qt6::Gui Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_decoration_title_options_tests)
+add_test(NAME qindaqt.decoration-title-options COMMAND qindaqt_decoration_title_options_tests)
+set_tests_properties(
+    qindaqt.decoration-title-options
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)

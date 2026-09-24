@@ -309,6 +309,28 @@ void KWinHybridSession::dispatchChromePointerDecision(
     for (const auto &request : decision.shadeRequests) {
         applyWheelShade(request.containerId, request.shade);
     }
+    for (const auto &containerId : decision.titleDoubleClicks) {
+        applyTitleDoubleClick(containerId);
+    }
+}
+
+void KWinHybridSession::applyTitleDoubleClick(const QString &containerId)
+{
+    switch (m_chromeStyle.titleDoubleClick) {
+    case HybridChrome::TitleDoubleClickAction::None:
+        return;
+    case HybridChrome::TitleDoubleClickAction::RollUp:
+        applyWheelShade(containerId, true);
+        return;
+    case HybridChrome::TitleDoubleClickAction::Minimize:
+        handleWindowAction(containerId, HybridChrome::WindowAction::Minimize);
+        return;
+    case HybridChrome::TitleDoubleClickAction::Maximize:
+        handleWindowAction(containerId, isContainerMaximized(containerId)
+                                            ? HybridChrome::WindowAction::Restore
+                                            : HybridChrome::WindowAction::Maximize);
+        return;
+    }
 }
 
 void KWinHybridSession::handleChromeDrag(

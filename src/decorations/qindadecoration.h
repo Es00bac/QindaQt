@@ -6,7 +6,9 @@
 #include <KDecoration3/Decoration>
 #include <KDecoration3/DecorationButton>
 
+#include <QElapsedTimer>
 #include <QPalette>
+#include <QPointF>
 #include <QVariantList>
 
 #include <memory>
@@ -64,6 +66,13 @@ public:
 public Q_SLOTS:
     void updateControlHover();
 
+Q_SIGNALS:
+    // AGENT-CONTRACT (ADR-0264): the roll-up button and a roll-up title
+    // double-click ask the compositor to roll this window up to its icon
+    // (ADR-0203); KWinChromeAppearance connects to this signal by name.
+    // Emitted from the event loop, never inside KWin's input dispatch.
+    void qindaqtRollUpRequested();
+
 protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -77,6 +86,10 @@ private:
     void reconcileButtons();
     void updateGeometry();
     void updateVisualStyle();
+    void requestRollUp();
+    // Runs the chrome's title double-click action on the second press of a
+    // double-click over the title; true when it consumed the press.
+    [[nodiscard]] bool runTitleDoubleClick(const QPointF &position);
     [[nodiscard]] QColor titleColor() const;
     [[nodiscard]] QColor captionColor() const;
     [[nodiscard]] QColor textColor() const;
@@ -95,6 +108,9 @@ private:
     // Side, style, and visible set the current button group was built for;
     // a published chrome change that alters any of them rebuilds the group.
     QString m_buttonArrangement;
+    // The first press of a possible title double-click (ADR-0264).
+    QElapsedTimer m_titleClickClock;
+    QPointF m_titleClickPosition;
 };
 
 } // namespace QindaQt::Decoration

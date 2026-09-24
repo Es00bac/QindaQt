@@ -21,7 +21,7 @@ QString missingUiContractObject(QObject *root) {
       QStringLiteral("renameDialog"), QStringLiteral("destinationDialog"),
       QStringLiteral("trashConfirmationDialog"),
       QStringLiteral("emptyTrashConfirmationDialog"),
-      QStringLiteral("propertiesDialog"),
+      QStringLiteral("propertiesDialog"), QStringLiteral("entryReveal"),
       QStringLiteral("filterSubfoldersToggle"),
       // ADR-0194/0195: the network surfaces are part of the installed
       // package's contract, so a packaging change that drops one fails the

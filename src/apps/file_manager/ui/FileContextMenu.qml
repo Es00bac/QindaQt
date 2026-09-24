@@ -63,19 +63,21 @@ Menu {
     // tst_viewport.qml's minimal QtObject) falls back to true rather than
     // throwing on an undefined iteration.
     function actionEnabled(id) {
+        const action = root.catalogAction(id)
+        return action === null || action.enabled === true
+    }
+
+    // The coordinator's published entry for `id`, or null.
+    function catalogAction(id) {
         const menuGroups = root.appCoordinator.menus
-        if (!menuGroups)
-            return true
-        for (let i = 0; i < menuGroups.length; ++i) {
-            const actions = menuGroups[i].actions
-            if (!actions)
-                continue
+        for (let i = 0; menuGroups && i < menuGroups.length; ++i) {
+            const actions = menuGroups[i].actions || []
             for (let j = 0; j < actions.length; ++j) {
                 if (actions[j].id === id)
-                    return actions[j].enabled === true
+                    return actions[j]
             }
         }
-        return true
+        return null
     }
 
     // QQC2 creates the entry that stands for a sub-menu itself, so its
@@ -106,6 +108,12 @@ Menu {
         root.showSubMenu(newFileMenu, "contextNewFileMenu", newFile)
         root.showSubMenu(sortMenu, "contextSortMenu", root.isBackground)
         root.showSubMenu(viewMenu, "contextViewMenu", root.isBackground)
+    }
+
+    // The same menus' checked truth, for checkable actions set in C++.
+    function actionChecked(id) {
+        const action = root.catalogAction(id)
+        return action !== null && action.checked === true
     }
 
     // Background actions: apply to the browsed folder, not to any entry.
@@ -300,6 +308,16 @@ Menu {
         enabled: visible && root.actionEnabled("application.show-entry-file")
         text: qsTr("Show Desktop Entry File")
         onTriggered: root.appCoordinator.activateAction("application.show-entry-file")
+    }
+    MenuItem {
+        // ADR-0273: checked only once the dock confirms the application.
+        objectName: "contextKeepInDockAction"
+        visible: !root.isBackground && root.applicationsPlace && root.selectionCount === 1
+        enabled: visible && root.actionEnabled("application.keep-in-dock")
+        checkable: true
+        checked: root.actionChecked("application.keep-in-dock")
+        text: qsTr("Keep in Dock")
+        onTriggered: root.appCoordinator.activateAction("application.keep-in-dock")
     }
     ContextActionItem {
         objectName: "contextPutBackAction"; contextMenu: root; actionId: "file.put-back"

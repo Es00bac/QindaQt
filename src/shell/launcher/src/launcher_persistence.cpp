@@ -10,14 +10,28 @@
 
 namespace QindaQt::Shell::Launcher {
 
+using QindaQt::Services::DockItems::DockEditError;
+using QindaQt::Services::DockItems::DockItem;
+using QindaQt::Services::DockItems::DockItems;
 using QindaQt::Services::SettingsClient::ClientState;
 using QindaQt::Services::SettingsClient::CommitOutcome;
 using QindaQt::Services::SettingsClient::SettingsClient;
 using QindaQt::Services::SettingsProtocol::SettingsWireStatus;
-using QindaQt::ShellLauncher::Bounds::maxPinnedEntries;
 using QindaQt::ShellLauncher::Bounds::maxRecentEntries;
 using QindaQt::ShellLauncher::Bounds::isValidEntryId;
-using QindaQt::ShellLauncher::PinError;
+
+namespace {
+
+QVariantList idValues(const QStringList &ids)
+{
+  QVariantList values;
+  values.reserve(ids.size());
+  for (const QString &id : ids)
+    values.append(id);
+  return values;
+}
+
+} // namespace
 
 bool normalizeStoredIdList(const QVariant &stored, int ceiling, QStringList *ids)
 {
@@ -87,10 +101,21 @@ void LauncherPersistenceController::handleSnapshot()
   if (m_availabilityNotice && m_client.state() == ClientState::Ready)
     setStatusText({});
 
-  QStringList pinned;
-  if (!normalizeStoredIdList(snapshot->values.value(pinnedKey()),
-                             maxPinnedEntries, &pinned)) {
-    pinned.clear();
+  // ADR-0265: a migrated dock value is the pin authority; until the first
+  // dock write the dock is derived from the legacy id list, which keeps its
+  // whole-list rejection. Either malformed value reads as an empty dock with
+  // visible truth, and the next explicit edit replaces it.
+  DockItems dock;
+  const auto decodedDock =
+      DockItems::decodeSettingsValue(snapshot->values.value(dockItemsKey()));
+  if (!decodedDock.ok()) {
+    setStatusText(QStringLiteral("Stored dock items are malformed and were ignored"));
+  } else if (!decodedDock.unmigrated) {
+    dock = *decodedDock.items;
+  } else if (const auto legacy =
+                 DockItems::fromLegacyValue(snapshot->values.value(pinnedKey()))) {
+    dock = *legacy;
+  } else {
     setStatusText(QStringLiteral("Stored pinned list is malformed and was ignored"));
   }
   QStringList recent;
@@ -104,17 +129,13 @@ void LauncherPersistenceController::handleSnapshot()
   // previous confirmed snapshot. After an uncertain commit the authoritative
   // resync may be byte-for-byte unchanged while the live model still contains
   // the unconfirmed draft; it must converge without replay (ADR-0012).
-  const bool pinnedDidChange = pinned != m_pinned.ids();
+  const bool dockDidChange = dock != m_dock;
   const bool recentDidChange = recent != m_recent.ids();
-  m_confirmedPinned = pinned;
+  m_confirmedDock = dock;
   m_confirmedRecent = recent;
   m_confirmedBaseline = true;
-  if (pinnedDidChange) {
-    m_pinned = PinnedApplications();
-    for (const QString &id : pinned)
-      m_pinned.pin(id); // validated above; cannot fail
-    Q_EMIT pinnedChanged();
-  }
+  if (dockDidChange)
+    adoptDock(dock);
   if (recentDidChange) {
     m_recent = RecentApplications();
     for (auto it = recent.crbegin(); it != recent.crend(); ++it)
@@ -131,8 +152,8 @@ void LauncherPersistenceController::handleCommit(const CommitOutcome &outcome)
   const QString key = m_pendingKey;
   m_pendingKey.clear();
   if (outcome.status == SettingsWireStatus::Applied) {
-    if (key == pinnedKey())
-      m_confirmedPinned = m_pinned.ids();
+    if (key == dockItemsKey())
+      m_confirmedDock = m_dock;
     else
       m_confirmedRecent = m_recent.ids();
     setStatusText({});
@@ -178,26 +199,33 @@ void LauncherPersistenceController::handleClientState()
 void LauncherPersistenceController::clearAuthoritativeTruth()
 {
   m_confirmedBaseline = false;
-  m_confirmedPinned.clear();
+  m_confirmedDock = DockItems();
   m_confirmedRecent.clear();
-  if (!m_pinned.ids().isEmpty()) {
-    m_pinned = PinnedApplications();
-    Q_EMIT pinnedChanged();
-  }
+  if (!m_dock.isEmpty())
+    adoptDock(DockItems());
   if (!m_recent.ids().isEmpty()) {
     m_recent = RecentApplications();
     Q_EMIT recentChanged();
   }
 }
 
+void LauncherPersistenceController::adoptDock(const DockItems &dock)
+{
+  m_dock = dock;
+  PinnedApplications pinned;
+  for (const QString &id : m_dock.applicationIds())
+    pinned.pin(id); // the dock shares the pinned ceiling; cannot fail
+  const bool pinnedDidChange = pinned.ids() != m_pinned.ids();
+  m_pinned = pinned;
+  Q_EMIT dockChanged();
+  if (pinnedDidChange)
+    Q_EMIT pinnedChanged();
+}
+
 void LauncherPersistenceController::revertToConfirmed(const QString &key)
 {
-  if (key == pinnedKey()) {
-    PinnedApplications restored;
-    for (const QString &id : m_confirmedPinned)
-      restored.pin(id);
-    m_pinned = restored;
-    Q_EMIT pinnedChanged();
+  if (key == dockItemsKey()) {
+    adoptDock(m_confirmedDock);
   } else {
     RecentApplications restored;
     for (auto it = m_confirmedRecent.crbegin(); it != m_confirmedRecent.crend(); ++it)
@@ -216,15 +244,11 @@ void LauncherPersistenceController::setStatusText(const QString &text, bool avai
   Q_EMIT stateChanged();
 }
 
-PersistenceMutation LauncherPersistenceController::commitList(const QString &key,
-                                                              const QStringList &ids)
+PersistenceMutation LauncherPersistenceController::commitValue(const QString &key,
+                                                               const QVariant &value)
 {
-  QVariantList values;
-  values.reserve(ids.size());
-  for (const QString &id : ids)
-    values.append(id);
   QString error;
-  if (!m_client.setUserValue(key, QVariant::fromValue(values), &error)) {
+  if (!m_client.setUserValue(key, value, &error)) {
     revertToConfirmed(key);
     setStatusText(error.isEmpty()
                       ? QStringLiteral("Settings persistence is unavailable")
@@ -238,40 +262,53 @@ PersistenceMutation LauncherPersistenceController::commitList(const QString &key
   return PersistenceMutation::Applied;
 }
 
-PersistenceMutation LauncherPersistenceController::mutatePinned(
-    const QString &key, PinError (PinnedApplications::*op)(const QString &),
-    const QString &entryId)
+PersistenceMutation LauncherPersistenceController::editDock(const DockEdit &edit)
 {
   if (!persistenceReady())
     return PersistenceMutation::Unavailable;
   if (writeInFlight())
     return PersistenceMutation::Busy;
-  if ((m_pinned.*op)(entryId) != PinError::None)
+  DockItems next = m_dock;
+  m_lastDockEditError = edit(next);
+  if (m_lastDockEditError != DockEditError::None)
     return PersistenceMutation::RejectedByModel;
-  const PersistenceMutation result = commitList(key, m_pinned.ids());
-  if (result == PersistenceMutation::Applied)
-    Q_EMIT pinnedChanged();
-  return result;
+  // AGENT-GUARD: the live dock changes before the commit resolves (ADR-0012);
+  // a refusal or an unavailable client reverts to m_confirmedDock.
+  adoptDock(next);
+  return commitValue(dockItemsKey(), DockItems::encodeSettingsValue(m_dock));
 }
 
 PersistenceMutation LauncherPersistenceController::pin(const QString &entryId)
 {
-  return mutatePinned(pinnedKey(), &PinnedApplications::pin, entryId);
+  return editDock([&entryId](DockItems &dock) {
+    return dock.insert(dock.size(), DockItem::application(entryId));
+  });
 }
 
 PersistenceMutation LauncherPersistenceController::unpin(const QString &entryId)
 {
-  return mutatePinned(pinnedKey(), &PinnedApplications::unpin, entryId);
+  return editDock([&entryId](DockItems &dock) { return dock.removeApplication(entryId); });
 }
 
 PersistenceMutation LauncherPersistenceController::movePinnedUp(const QString &entryId)
 {
-  return mutatePinned(pinnedKey(), &PinnedApplications::moveUp, entryId);
+  return editDock([&entryId](DockItems &dock) {
+    const qsizetype index = dock.indexOfApplication(entryId);
+    if (index < 0)
+      return DockEditError::NotInDock;
+    return index == 0 ? DockEditError::None : dock.moveToGap(index, index - 1);
+  });
 }
 
 PersistenceMutation LauncherPersistenceController::movePinnedDown(const QString &entryId)
 {
-  return mutatePinned(pinnedKey(), &PinnedApplications::moveDown, entryId);
+  return editDock([&entryId](DockItems &dock) {
+    const qsizetype index = dock.indexOfApplication(entryId);
+    if (index < 0)
+      return DockEditError::NotInDock;
+    return index + 1 >= dock.size() ? DockEditError::None
+                                    : dock.moveToGap(index, index + 2);
+  });
 }
 
 PersistenceMutation LauncherPersistenceController::clearRecent()
@@ -281,7 +318,7 @@ PersistenceMutation LauncherPersistenceController::clearRecent()
   if (writeInFlight())
     return PersistenceMutation::Busy;
   m_recent.clear();
-  const PersistenceMutation result = commitList(recentKey(), {});
+  const PersistenceMutation result = commitValue(recentKey(), QVariantList{});
   if (result == PersistenceMutation::Applied)
     Q_EMIT recentChanged();
   return result;
@@ -294,7 +331,7 @@ PersistenceMutation LauncherPersistenceController::recordLaunch(const QString &e
                            : PersistenceMutation::Unavailable;
   if (m_recent.record(entryId) != QindaQt::ShellLauncher::RecentError::None)
     return PersistenceMutation::RejectedByModel;
-  const PersistenceMutation result = commitList(recentKey(), m_recent.ids());
+  const PersistenceMutation result = commitValue(recentKey(), idValues(m_recent.ids()));
   if (result == PersistenceMutation::Applied)
     Q_EMIT recentChanged();
   return result;

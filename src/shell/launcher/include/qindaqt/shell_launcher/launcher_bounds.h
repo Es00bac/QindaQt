@@ -39,7 +39,11 @@ inline constexpr int maxStartupWmClassLength = 256;
 
 // Query and collection bounds for the interaction model.
 inline constexpr int maxQueryLength = 128;
-inline constexpr int maxPinnedEntries = 16;
+// ADR-0265: the pinned set is every application in the dock, group members
+// included, so this is also the dock's application ceiling
+// (QindaQt::Services::DockItems::Bounds::maxApplications). It was 16 while
+// pins were a flat list (ADR-0076).
+inline constexpr int maxPinnedEntries = 64;
 inline constexpr int maxRecentEntries = 8;
 
 inline bool isValidEntryId(const QString &entryId)

@@ -7,8 +7,15 @@ import QtQuick.Templates as T
 // Styled desktop context menu (ADR-0125). One menu, three item sets driven by
 // the desktop-icons `contextMenuStyle` setting. Every entry dispatches
 // through an existing seam: launcherAccess.activate(entryId, actionId),
-// placesAccess.open(placeId), newFolder.create(), or the icons view reflow.
-// A null facade disables its entries instead of crashing.
+// placesAccess.open(placeId), newFolder.create(), or the icons view (reflow,
+// refresh, paste, select all, and File Manager actions through its contents
+// controller). A null facade disables its entries instead of crashing.
+//
+// ADR-0273: the desktop is one more File Manager view. Its folder actions
+// (New Folder, New File, Paste, Select All, Get Info, Refresh, Open) are in
+// every style and use the File Manager's own words, read from its public
+// menu catalog by action id (DesktopFileActions); only the desktop's own
+// entries (Arrange, Sort By, Clean Up, settings) spell their labels here.
 //
 // AGENT-GUARD: the popup must keep popupType Window (panel precedent). The
 // desktop surface is a focus-less layer-shell toplevel; an Item-popup child
@@ -112,6 +119,21 @@ T.Menu {
                 iconsView.pasteClipboard()
             }
             break
+        case "refresh":
+            if (iconsView !== null) {
+                iconsView.contents.refresh()
+            }
+            break
+        case "selectAll":
+            if (iconsView !== null) {
+                iconsView.selectAll()
+            }
+            break
+        case "fileManager":
+            if (iconsView !== null) {
+                iconsView.runFileManagerAction(actionId, "")
+            }
+            break
         case "launch":
             activate(targetId, actionId)
             break
@@ -140,20 +162,39 @@ T.Menu {
         if (entry.needsClipboard === true) {
             return iconsView !== null && iconsView.canPaste === true
         }
+        if (entry.needsView === true) {
+            return iconsView !== null
+        }
         return true
+    }
+
+    // The File Manager's label for a catalog action id (ADR-0273).
+    function fm(actionId) {
+        return DesktopFileActions.label(actionId)
     }
 
     // One descriptor per visible row; `separator` rows render a divider line.
     readonly property var entries: {
+        const newFolder = {objectName: "desktopContextNewFolder", text: root.fm("file.new-folder"),
+                           kind: "newFolder", needsNewFolder: true}
+        const newFile = {objectName: "desktopContextNewFile", text: root.fm("file.new-file"),
+                         kind: "fileManager", actionId: "file.new-file", needsView: true}
+        const paste = {objectName: "desktopContextPaste", text: root.fm("edit.paste"),
+                       kind: "paste", needsClipboard: true}
+        const selectAll = {objectName: "desktopContextSelectAll", text: root.fm("edit.select-all"),
+                           kind: "selectAll", needsView: true}
+        const getInfo = {objectName: "desktopContextGetInfo", text: root.fm("file.properties"),
+                         kind: "fileManager", actionId: "file.properties", needsView: true}
         if (style === "mac") {
             return [
-                {objectName: "desktopContextNewFolder", text: qsTr("New Folder"),
-                 kind: "newFolder", needsNewFolder: true},
-                {objectName: "desktopContextOpen", text: qsTr("Open"),
+                newFolder,
+                newFile,
+                {objectName: "desktopContextOpen", text: root.fm("file.open"),
                  kind: "openPlace", targetId: "desktop", needsPlaces: true},
+                getInfo,
                 {separator: true},
-                {objectName: "desktopContextPaste", text: qsTr("Paste"),
-                 kind: "paste", needsClipboard: true},
+                paste,
+                selectAll,
                 {separator: true},
                 {objectName: "desktopContextSortBy", text: qsTr("Sort By"),
                  kind: "reflow"},
@@ -175,12 +216,12 @@ T.Menu {
                  text: qsTr("Open Terminal Here"),
                  kind: "launch", targetId: "org.qindaqt.QQTerm",
                  needsLauncher: true},
-                {objectName: "desktopContextCreateFolder",
-                 text: qsTr("Create Folder…"), kind: "newFolder",
-                 needsNewFolder: true},
-                {objectName: "desktopContextPaste", text: qsTr("Paste"),
-                 kind: "paste", needsClipboard: true},
+                newFolder,
+                newFile,
+                paste,
+                selectAll,
                 {separator: true},
+                getInfo,
                 {objectName: "desktopContextSettings",
                  text: qsTr("Desktop Settings"),
                  kind: "launch", targetId: "org.qindaqt.Settings",
@@ -190,14 +231,17 @@ T.Menu {
         return [
             {objectName: "desktopContextArrange", text: qsTr("Arrange Icons"),
              kind: "reflow"},
-            {objectName: "desktopContextRefresh", text: qsTr("Refresh"),
-             kind: "reflow"},
+            // The File Manager's Refresh reads the folder again; arranging
+            // stays with Arrange Icons.
+            {objectName: "desktopContextRefresh", text: root.fm("view.refresh"),
+             kind: "refresh", needsView: true},
             {separator: true},
-            {objectName: "desktopContextNewFolder", text: qsTr("New Folder"),
-             kind: "newFolder", needsNewFolder: true},
-            {objectName: "desktopContextPaste", text: qsTr("Paste"),
-             kind: "paste", needsClipboard: true},
+            newFolder,
+            newFile,
+            paste,
+            selectAll,
             {separator: true},
+            getInfo,
             {objectName: "desktopContextDisplayProperties",
              text: qsTr("Display Properties"),
              kind: "launch", targetId: "org.qindaqt.Settings",
@@ -210,62 +254,13 @@ T.Menu {
 
         model: root.entries
 
-        delegate: T.MenuItem {
-            id: entry
+        delegate: DesktopMenuItem {
+            id: menuEntry
 
-            required property var modelData
-            required property int index
-
-            readonly property bool isSeparator: modelData.separator === true
-
-            objectName: isSeparator ? "" : String(modelData.objectName)
-            enabled: !isSeparator && root.entryEnabled(modelData)
-            hoverEnabled: !isSeparator
-            padding: isSeparator ? 2 : 6
-            leftPadding: isSeparator ? 2 : 10
-            rightPadding: isSeparator ? 2 : 10
-            implicitWidth: Math.max(implicitContentWidth + leftPadding
-                                    + rightPadding, 1)
-            implicitHeight: Math.max(implicitContentHeight + topPadding
-                                     + bottomPadding, 1)
-
-            onTriggered: root.dispatch(String(modelData.kind ?? ""),
-                                       String(modelData.targetId ?? ""),
-                                       String(modelData.actionId ?? ""))
-
-            contentItem: Item {
-                implicitWidth: entry.isSeparator ? 160
-                                                 : labelText.implicitWidth
-                implicitHeight: entry.isSeparator ? 1
-                                                  : labelText.implicitHeight
-
-                Rectangle {
-                    anchors.fill: parent
-                    visible: entry.isSeparator
-                    color: "#3c433f"
-                }
-
-                Text {
-                    id: labelText
-                    visible: !entry.isSeparator
-                    text: String(entry.modelData.text ?? "")
-                    color: entry.enabled ? "#ffeeeeee" : "#7f8a8a8a"
-                    font: entry.font
-                    elide: Text.ElideRight
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-            background: Rectangle {
-                visible: !entry.isSeparator
-                radius: 3
-                color: entry.enabled
-                       && (entry.hovered || entry.activeFocus)
-                       ? "#3b74dd" : "transparent"
-            }
-
-            Accessible.role: entry.isSeparator ? Accessible.NoRole
-                                               : Accessible.MenuItem
-            Accessible.name: entry.isSeparator ? "" : String(modelData.text)
+            available: root.entryEnabled(menuEntry.modelData)
+            onTriggered: root.dispatch(String(menuEntry.modelData.kind ?? ""),
+                                       String(menuEntry.modelData.targetId ?? ""),
+                                       String(menuEntry.modelData.actionId ?? ""))
         }
 
         onObjectAdded: (index, object) => root.insertItem(index, object)

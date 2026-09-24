@@ -2,7 +2,7 @@
 
 > Source snapshot: integrated Settings route registry and `data/settings/schema-v2.json` through accepted notification policy repair `341060fb` (2026-09-24). This is a source-contract inventory, not physical hardware qualification.
 
-All **86 keys** in active schema v2 are listed below. The immutable v1 schema remains at `data/settings/schema-v1.json`; packaged defaults are in `data/settings/profile-defaults/qindaqt.json`. JSON literals preserve type: `"[]"` is a string, while `[]` is a string-list. See [Settings service](../../architecture/settings-service.md) and [Settings1](../../reference/settings1-v1.md) for persistence and transport rules.
+All **97 keys** in active schema v2 are listed below. The immutable v1 schema remains at `data/settings/schema-v1.json`; packaged defaults are in `data/settings/profile-defaults/qindaqt.json`. JSON literals preserve type: `"[]"` is a string, while `[]` is a string-list. See [Settings service](../../architecture/settings-service.md) and [Settings1](../../reference/settings1-v1.md) for persistence and transport rules.
 
 **Active route** means a first-party Settings control and a documented consumer or authority path exist; it does not assert a live physical test. **Active consumer; editor gap** means the value is applied but this base has no verified settings editor. **App-owned** means another named app/shell surface owns the interaction. **Legacy/superseded** remains in schema for compatibility while another authority owns current behavior. **Reserved** is intentionally hidden pending a real consumer. **Missing consumer** has no verified production consumer in this repository; an external package may still use it. Storage alone never proves an effective control.
 
@@ -20,14 +20,25 @@ All **86 keys** in active schema v2 are listed below. The immutable v1 schema re
 | `appearance.blurEnabled` | boolean | `true` | None beyond type | **Missing consumer** — No verified production consumer. |
 | `appearance.animationsEnabled` | boolean | `true` | None beyond type | **Missing consumer** — No verified production consumer. |
 | `appearance.animationDurationMs` | integer | `180` | `{"minimum":0,"maximum":1000}` | **Missing consumer** — No verified production consumer. |
-| `appearance.windowButtonStyle` | string | `"theme"` | `{"allowedValues":["theme","traffic-lights","flat","glyph"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowButtonStyle` | string | `"theme"` | `{"allowedValues":["theme","traffic-lights","flat","glyph","gel","bevel","blue-tiles","wide","tab","bold","minimal","pills","dots","outline","chunky"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.windowButtonSide` | string | `"theme"` | `{"allowedValues":["theme","left","right"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.windowButtons` | string | `"all"` | `{"allowedValues":["all","minimize-close","close"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.windowTitleAlignment` | string | `"center"` | `{"allowedValues":["center","left"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
-| `appearance.containerButtonStyle` | string | `"theme"` | `{"allowedValues":["theme","traffic-lights","flat"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.containerButtonStyle` | string | `"theme"` | `{"allowedValues":["theme","traffic-lights","flat","glyph","gel","bevel","blue-tiles","wide","tab","bold","minimal","pills","dots","outline","chunky"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.containerButtonSide` | string | `"theme"` | `{"allowedValues":["theme","left","right"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.containerTabOrder` | string | `"theme"` | `{"allowedValues":["theme","left-to-right","right-to-left"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.containerButtonGlyphs` | string | `"theme"` | `{"allowedValues":["theme","always","hover"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowButtonSize` | string | `"theme"` | `{"allowedValues":["theme","small","large"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowButtonSpacing` | string | `"theme"` | `{"allowedValues":["theme","tight","roomy"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowTitleHeight` | string | `"theme"` | `{"allowedValues":["theme","compact","tall"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowCornerRadius` | string | `"theme"` | `{"allowedValues":["theme","square","small","large"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowTitleWeight` | string | `"theme"` | `{"allowedValues":["theme","regular","bold"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowAppIcon` | string | `"hidden"` | `{"allowedValues":["hidden","shown"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowRollUpButton` | string | `"hidden"` | `{"allowedValues":["hidden","shown"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.windowTitleDoubleClick` | string | `"theme"` | `{"allowedValues":["theme","maximize","roll-up","minimize"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.containerButtonSize` | string | `"theme"` | `{"allowedValues":["theme","small","large"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.containerButtonSpacing` | string | `"theme"` | `{"allowedValues":["theme","tight","roomy"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.containerTitleDoubleClick` | string | `"none"` | `{"allowedValues":["none","maximize","roll-up","minimize"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.windowDecoration` | string | `"theme"` | `{"nonEmpty":true}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.containerDecoration` | string | `"theme"` | `{"nonEmpty":true}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 
@@ -75,7 +86,8 @@ All **86 keys** in active schema v2 are listed below. The immutable v1 schema re
 
 | Key | Type | Default | Schema constraints | Disposition / evidence |
 | --- | --- | --- | --- | --- |
-| `panels.launcherPinned` | string-list | `[]` | None beyond type | **App-owned** — Launcher owns pinned-item editing. |
+| `panels.launcherPinned` | string-list | `[]` | None beyond type | **Legacy** — ADR-0076's pins; read once to migrate into `panels.dockItems`, never written since ADR-0265. |
+| `panels.dockItems` | object | `{}` | None beyond type; the dock codec bounds it | **App-owned** — The dock (quick launch) and the launcher's pins; edited on the dock, from pin menus, or through `Settings1DockPins` (ADR-0265). |
 | `panels.launcherRecent` | string-list | `[]` | None beyond type | **App-owned** — Launcher owns recent-item history. |
 | `panels.layoutProfile` | string | `"qindaqt"` | `{"nonEmpty":true}` | **Active route** — Customize owns the visible or confirmed preference boundary. |
 | `panels.autoHideDelayMs` | integer | `250` | `{"minimum":0,"maximum":5000}` | **Active route** — Customize edits the confirmed panel reveal/hide delay; Shell PanelVisibilityRuntime consumes it. |

@@ -287,6 +287,10 @@ private:
     // Wheel roll-up from shared chrome or a member handlebar (ADR-0131); a
     // no-op when the container already has the requested state.
     void applyWheelShade(const QString &containerId, bool shade);
+    // ADR-0264: a double-click on the shared title row runs the chrome
+    // style's action through the container's existing maximize/restore,
+    // minimize, or roll-up paths; None leaves the row inert.
+    void applyTitleDoubleClick(const QString &containerId);
     void forgetShadedContainer(const QString &containerId);
     void restoreShadeForShutdown();
     // Iconified windows (ADR-0203); implemented in kwinhybridiconify.cpp.

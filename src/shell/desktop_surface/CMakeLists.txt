@@ -53,9 +53,11 @@ qt_add_qml_module(
     TYPEINFO qindaqt_desktop_surface.qmltypes
     SOURCES
         include/qindaqt/shell/desktop_surface/desktop_contents_controller.h
+        include/qindaqt/shell/desktop_surface/desktop_file_actions.h
         include/qindaqt/shell/desktop_surface/desktop_icon_layout_store.h
         include/qindaqt/shell/desktop_surface/new_folder_controller.h
         src/desktop_contents_controller.cpp
+        src/desktop_file_actions.cpp
         src/desktop_icon_layout_store.cpp
         src/new_folder_controller.cpp
     QML_FILES
@@ -63,6 +65,7 @@ qt_add_qml_module(
         qml/DesktopContextMenu.qml
         qml/DesktopCustomizeMenu.qml
         qml/DesktopIconContextMenu.qml
+        qml/DesktopMenuItem.qml
         qml/DesktopRenamePopup.qml
         qml/DesktopIconPlacement.qml
         qml/DesktopIconSelection.qml
@@ -92,10 +95,13 @@ target_link_libraries(
         Qt6::QuickControls2
     PRIVATE
         # AGENT-GUARD: Desktop-scoped code links only File Manager's isolated
-        # local-files boundary. Linking qindaqt_file_manager_support here pulls
-        # AppShell and KIO into qindaqt-shell and makes its staged runtime fail
-        # before main() when those application-only libraries are absent.
+        # local-files boundary and its values-only menu catalog (ADR-0273: the
+        # desktop menus' words). Linking qindaqt_file_manager_support here
+        # pulls AppShell and KIO into qindaqt-shell and makes its staged
+        # runtime fail before main() when those application-only libraries
+        # are absent.
         qindaqt_file_manager_desktop_boundary
+        qindaqt_file_manager_menu_catalog
 )
 target_compile_features(qindaqt_desktop_surface_qml PUBLIC cxx_std_20)
 set_target_properties(qindaqt_desktop_surface_qml

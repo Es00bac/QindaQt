@@ -110,6 +110,27 @@ foreach(required_entry IN ITEMS
     endif()
 endforeach()
 
+# ADR-0273: the component carries D-Bus activation for
+# org.freedesktop.FileManager1, starting this executable hidden for the service.
+set(file_manager1_service
+    "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/dbus-1/services/org.qindaqt.FileManager.FileManager1.service"
+)
+if(NOT EXISTS "${file_manager1_service}")
+    message(FATAL_ERROR "Installed File Manager payload is missing: ${file_manager1_service}")
+endif()
+file(READ "${file_manager1_service}" file_manager1_contents)
+foreach(required_entry IN ITEMS
+        "[D-BUS Service]"
+        "Name=org.freedesktop.FileManager1\n"
+        "/qindaqt-file-manager --service\n")
+    string(FIND "${file_manager1_contents}" "${required_entry}" entry_position)
+    if(entry_position EQUAL -1)
+        message(FATAL_ERROR
+            "Installed FileManager1 activation file is missing: ${required_entry}"
+        )
+    endif()
+endforeach()
+
 # The test host may still have a valid build tree. Reject any executable that
 # embeds that escape hatch before exercising the sanitized staged prefix.
 set(build_qml_root "${build_directory}/qml")
