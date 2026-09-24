@@ -32,8 +32,9 @@ namespace QindaQt::Shell {
 // folders through the launcher's bounded process seam), the launcher
 // (desktop-entry activation and its popup request), the clipboard applet's
 // popup request, the workspace controller, the Settings route launcher, the
-// gather overview's one door, the shortcut note, and the desktop-icons
-// surface commands. No command runs a program, a path, or a URL of its own.
+// gather overview's one door, the shortcut note, panel edit mode, and the
+// desktop-icons surface commands. No command runs a program, a path, or a URL
+// of its own.
 //
 // AGENT-CONTRACT: every controller and hook is borrowed, may be absent
 // (null/empty: that capability is not present), and must outlive this object
@@ -63,6 +64,10 @@ public:
         // ShortcutNoteController::noteVisible() / toggle()
         std::function<bool()> shortcutNoteVisible;
         std::function<void()> toggleShortcutNote;
+        // LiveCustomizationController::editMode() / toggleEditMode()
+        // (ADR-0266); the owner calls notifyFactsChanged() on editModeChanged.
+        std::function<bool()> editingPanels;
+        std::function<void()> toggleEditPanels;
     };
 
     // AGENT-NOTE: the Welcome application's desktop entry

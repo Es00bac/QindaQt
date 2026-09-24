@@ -85,12 +85,15 @@ consumes the same painted bounds as the input mask.
 ## Panel right-click configuration
 
 Right-clicking a panel's own surface (behind every applet chip) opens the
-panel configuration menu: "Customize Panel…" (opens the Settings app's
+panel configuration menu: "Edit Panels" (panel edit mode, where applets are
+dragged within and between panels; it reads "Done Editing Panels" while
+editing, see [Production panel surfaces](panel-surfaces.md#in-place-customization-meta-right-click)),
+"Customize Panel…" (opens the Settings app's
 Customize route) plus live quick settings — transparency for every panel,
 and magnification plus an integer-step 32–64 logical-pixel tile-size slider
 and numeric input for docks. “Logical pixels” are Qt layout units; output scale
 maps them to device pixels, so the control does not promise physical-pixel
 sizing. Every quick setting persists through Settings1 and applies immediately.
-Deep layout edits
-(alignment, autohide, applet arrangement) remain Customize-editor work until
-the live profile-binding slice lands; the menu routes there.
+Applet arrangement happens in panel edit mode; other deep layout edits
+(alignment, autohide) are in the Meta+right-click panel menu and the
+Customize route.

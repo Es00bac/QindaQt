@@ -17,6 +17,10 @@ T.Menu {
     // PanelQuickConfig facade and the effective quick settings PanelContent
     // resolves (schema defaults first, persisted values win).
     property var panelQuickConfig: null
+    // LiveCustomizationController facade (may be null): Edit Panels.
+    property var liveCustomization: null
+    readonly property bool editMode: liveCustomization !== null
+                                     && liveCustomization.editMode === true
     property bool dockMode: false
     property bool panelTransparency: true
     property bool dockZoom: true
@@ -27,6 +31,14 @@ T.Menu {
     objectName: "panelConfigMenu"
     popupType: T.Popup.Window
 
+    // Panel edit mode (ADR-0266): drag applets within and between panels.
+    T.MenuItem {
+        objectName: "panelConfigEditPanels"
+        text: root.editMode ? qsTr("Done Editing Panels") : qsTr("Edit Panels")
+        enabled: root.editMode
+                 || (root.liveCustomization !== null && root.liveCustomization.available === true)
+        onTriggered: root.liveCustomization.toggleEditMode()
+    }
     T.MenuItem {
         objectName: "panelConfigCustomize"
         text: qsTr("Customize Panel…")

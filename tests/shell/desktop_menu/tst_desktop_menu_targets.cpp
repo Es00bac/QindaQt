@@ -42,6 +42,8 @@ struct Routing {
     int gatherToggles = 0;
     bool noteVisible = false;
     int noteToggles = 0;
+    bool editingPanels = false;
+    int panelToggles = 0;
     std::unique_ptr<ShellDesktopMenuTargets> targets;
 
     bool setUp()
@@ -88,6 +90,11 @@ struct Routing {
         hooks.toggleShortcutNote = [this] {
             ++noteToggles;
             noteVisible = !noteVisible;
+        };
+        hooks.editingPanels = [this] { return editingPanels; };
+        hooks.toggleEditPanels = [this] {
+            ++panelToggles;
+            editingPanels = !editingPanels;
         };
         targets = std::make_unique<ShellDesktopMenuTargets>(
             ShellDesktopMenuTargets::Controllers{systemMenu.get(), places.get(),
@@ -141,7 +148,7 @@ void DesktopMenuTargetsTest::everyEntryIsPresentWhenEveryOwnerIs()
           facts.logOut, facts.suspend, facts.restart, facts.shutDown,
           facts.newFileManagerWindow, facts.find, facts.help, facts.newFolder, facts.selectAll,
           facts.cleanUp, facts.clipboardHistory, facts.showDesktop, facts.gatherOverview,
-          facts.places, facts.workspaces, facts.shortcutNote}) {
+          facts.places, facts.workspaces, facts.shortcutNote, facts.editPanels}) {
         QVERIFY(capability.present);
         QVERIFY(capability.enabled);
     }
@@ -260,6 +267,10 @@ void DesktopMenuTargetsTest::windowAndHelpCommandsReachTheirOwners()
     QVERIFY(perform(routing, current, "desktop.shortcut-note"));
     QCOMPARE(routing.noteToggles, 1);
     QVERIFY(routing.targets->facts().shortcutNoteVisible);
+    QVERIFY(!routing.targets->facts().editingPanels);
+    QVERIFY(perform(routing, current, "desktop.edit-panels"));
+    QCOMPARE(routing.panelToggles, 1);
+    QVERIFY(routing.targets->facts().editingPanels);
     QVERIFY(perform(routing, current, "desktop.help"));
     QCOMPARE(routing.lastProgram(), QStringLiteral("/bin/echo"));
     QVERIFY(QFile::exists(
@@ -293,7 +304,8 @@ void DesktopMenuTargetsTest::absentOwnersAreOmittedOrDisabled()
     for (const DesktopCommand kind :
          {DesktopCommand::AboutComputer, DesktopCommand::LockScreen, DesktopCommand::NewFolder,
           DesktopCommand::Find, DesktopCommand::ClipboardHistory, DesktopCommand::ShowDesktop,
-          DesktopCommand::GatherOverview, DesktopCommand::ShortcutNote, DesktopCommand::Help}) {
+          DesktopCommand::GatherOverview, DesktopCommand::ShortcutNote, DesktopCommand::Help,
+          DesktopCommand::EditPanels}) {
         QVERIFY(!empty.perform({kind, {}, 0}));
         QVERIFY(!empty.lastFailure().isEmpty());
     }

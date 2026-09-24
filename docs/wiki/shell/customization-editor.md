@@ -163,6 +163,10 @@ calls unchanged. The shell's `LiveCustomizationController` (see
 [Production panel surfaces](panel-surfaces.md#in-place-customization-meta-right-click))
 maps each menu entry to one `applyGesture` and one `applyToUserProfile`, and
 the shell adopts the written profile through its existing store path.
+Edit-mode drags run the session's arm/begin/hover/drop gesture; the panel
+surface under the pointer's global drag point supplies each hovered target,
+across panels and displays
+([ADR-0266](../adr/0266-edit-mode-drags-applets-across-panels-and-displays.md)).
 
 ## Testing
 

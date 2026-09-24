@@ -4,7 +4,10 @@
 - **Date:** 2026-09-18
 - **Owners:** Shell runtime, customization editor domain
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** In part, [ADR-0266](0266-edit-mode-drags-applets-across-panels-and-displays.md):
+  how edit-mode drags resolve their targets (now on the panel surface under a
+  global drag point), and decision 5's "Esc is not offered" (panels take
+  on-demand keyboard focus while editing). The rest stands.
 
 ## Context
 

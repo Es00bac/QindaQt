@@ -45,9 +45,12 @@ Applying a profile is a transaction: validate, stage a live preview, commit, or
 roll back. It does not require logout. A failure on one output must not leave a
 partially applied layout on the others.
 
-Customization is direct rather than a global edit mode. The settings window
-offers applets, panel fragments, and profiles that users drag onto highlighted
-monitor edges or existing panels. The editor provides preview, undo/redo,
+Customization is direct. On the desktop itself, panels are edited where they
+are: Meta+right-click menus, and panel edit mode, where applets are dragged
+within and between panels and displays
+([ADR-0266](../adr/0266-edit-mode-drags-applets-across-panels-and-displays.md)).
+The settings window offers applets, panel fragments, and profiles that users
+drag onto highlighted monitor edges or existing panels. The editor provides preview, undo/redo,
 duplicate, reset, save-as-profile, and import/export. Every operation has a
 keyboard-accessible equivalent.
 

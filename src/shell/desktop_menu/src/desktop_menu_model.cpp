@@ -250,6 +250,9 @@ void addViewMenu(const DesktopMenuFacts &facts, QList<MenuItem> &topLevel,
   menu.nextGroup();
   menu.add(QStringLiteral("desktop.clean-up"), QStringLiteral("Clean Up"), facts.cleanUp,
            command(DesktopCommand::CleanUp));
+  menu.nextGroup();
+  menu.addCheckable(QStringLiteral("desktop.edit-panels"), QStringLiteral("Edit Panels"),
+                    facts.editPanels, command(DesktopCommand::EditPanels), facts.editingPanels);
   menu.appendTo(topLevel);
 }
 

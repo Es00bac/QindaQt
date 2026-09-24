@@ -159,6 +159,10 @@ DesktopMenu::DesktopMenuFacts ShellDesktopMenuTargets::facts() const
     const bool note = m_hooks.toggleShortcutNote && m_hooks.shortcutNoteVisible;
     facts.shortcutNote = capability(note, true);
     facts.shortcutNoteVisible = note && m_hooks.shortcutNoteVisible();
+
+    const bool panels = m_hooks.toggleEditPanels && m_hooks.editingPanels;
+    facts.editPanels = capability(panels, true);
+    facts.editingPanels = panels && m_hooks.editingPanels();
     return facts;
 }
 
@@ -245,6 +249,12 @@ bool ShellDesktopMenuTargets::perform(const DesktopMenu::DesktopMenuCommand &com
             return refuse(QStringLiteral("The shortcut note is unavailable"));
         }
         m_hooks.toggleShortcutNote();
+        return accept();
+    case DesktopCommand::EditPanels:
+        if (!m_hooks.toggleEditPanels) {
+            return refuse(QStringLiteral("Panel editing is unavailable"));
+        }
+        m_hooks.toggleEditPanels();
         return accept();
     }
     return refuse(QStringLiteral("Unknown desktop menu command"));
