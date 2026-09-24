@@ -83,6 +83,9 @@ void bindBusLifetime(QDBusConnection connection, QObject &receiver) {
 
 int main(int argc, char **argv) {
   QGuiApplication application(argc, argv);
+  // AGENT-GUARD: Closing the last credential prompt must not terminate the
+  // resident agent; NetworkManager can request another secret later.
+  application.setQuitOnLastWindowClosed(false);
   application.setApplicationName(
       QStringLiteral("qindaqt-network-secret-agent"));
   application.setOrganizationName(QStringLiteral("QindaQt"));

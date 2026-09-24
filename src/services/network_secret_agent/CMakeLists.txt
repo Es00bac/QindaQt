@@ -15,6 +15,9 @@ target_sources(
         src/secret_agent_object.cpp
         src/secret_agent_object_p.h
         src/secret_agent_types.cpp
+        src/secret_agent_types_p.h
+        src/secret_request_admission.cpp
+        src/secret_request_admission_p.h
         src/secret_request_policy.cpp
         src/secret_request_policy_p.h
     PUBLIC

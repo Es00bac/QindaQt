@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "secret_request_admission_p.h"
 #include "secret_request_policy_p.h"
 
 #include <QtCore/QCoreApplication>
@@ -11,163 +12,10 @@
 namespace QindaQt::Network::SecretAgent::Private {
 namespace {
 
-constexpr qsizetype kMaximumSections = 16;
-constexpr qsizetype kMaximumProperties = 32;
 constexpr qsizetype kMaximumHints = 16;
-constexpr qsizetype kMaximumTextBytes = 512;
-constexpr qsizetype kMaximumAggregateBytes = 65'536;
-constexpr qsizetype kMaximumNestedItems = 256;
-constexpr int kMaximumVariantDepth = 8;
 
 QString tr(const char *text) {
   return QCoreApplication::translate("NetworkSecretPrompt", text);
-}
-
-bool boundedText(const QString &text, const bool allowEmpty = false) {
-  return (allowEmpty || !text.isEmpty()) && !text.contains(QChar::Null) &&
-         text.toUtf8().size() <= kMaximumTextBytes;
-}
-
-bool consumeBytes(const qsizetype bytes, qsizetype &aggregate) {
-  if (bytes < 0 || bytes > kMaximumAggregateBytes - aggregate) {
-    return false;
-  }
-  aggregate += bytes;
-  return true;
-}
-
-bool consumeVariant(const QVariant &value, qsizetype &aggregate,
-                    const int depth);
-
-bool consumeList(const QVariantList &values, qsizetype &aggregate,
-                 const int depth) {
-  if (values.size() > kMaximumNestedItems ||
-      !consumeBytes(values.size() * qsizetype(sizeof(QVariant)), aggregate)) {
-    return false;
-  }
-  return std::all_of(values.cbegin(), values.cend(),
-                     [&aggregate, depth](const QVariant &entry) {
-                       return consumeVariant(entry, aggregate, depth + 1);
-                     });
-}
-
-bool consumeMap(const QVariantMap &values, qsizetype &aggregate,
-                const int depth) {
-  if (values.size() > kMaximumNestedItems ||
-      !consumeBytes(values.size() * qsizetype(sizeof(QVariant)), aggregate)) {
-    return false;
-  }
-  for (auto entry = values.cbegin(); entry != values.cend(); ++entry) {
-    if (!boundedText(entry.key()) ||
-        !consumeBytes(entry.key().toUtf8().size(), aggregate) ||
-        !consumeVariant(entry.value(), aggregate, depth + 1)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool consumeHash(const QVariantHash &values, qsizetype &aggregate,
-                 const int depth) {
-  if (values.size() > kMaximumNestedItems ||
-      !consumeBytes(values.size() * qsizetype(sizeof(QVariant)), aggregate)) {
-    return false;
-  }
-  for (auto entry = values.cbegin(); entry != values.cend(); ++entry) {
-    if (!boundedText(entry.key()) ||
-        !consumeBytes(entry.key().toUtf8().size(), aggregate) ||
-        !consumeVariant(entry.value(), aggregate, depth + 1)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool consumeStrings(const QStringList &values, qsizetype &aggregate,
-                    const int depth) {
-  if (depth >= kMaximumVariantDepth ||
-      values.size() > kMaximumNestedItems ||
-      !consumeBytes(values.size() * qsizetype(sizeof(QString)), aggregate)) {
-    return false;
-  }
-  for (const QString &text : values) {
-    if (!boundedText(text, true) ||
-        !consumeBytes(text.toUtf8().size(), aggregate)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool consumeVariant(const QVariant &value, qsizetype &aggregate,
-                    const int depth) {
-  if (!value.isValid() || depth > kMaximumVariantDepth) {
-    return false;
-  }
-  switch (value.typeId()) {
-  case QMetaType::QString: {
-    const QString text = value.toString();
-    return boundedText(text, true) &&
-           consumeBytes(text.toUtf8().size(), aggregate);
-  }
-  case QMetaType::QByteArray:
-    return consumeBytes(value.toByteArray().size(), aggregate);
-  case QMetaType::QStringList:
-    return consumeStrings(value.toStringList(), aggregate, depth);
-  case QMetaType::QVariantList:
-    return consumeList(value.toList(), aggregate, depth);
-  case QMetaType::QVariantMap:
-    return consumeMap(value.toMap(), aggregate, depth);
-  case QMetaType::QVariantHash:
-    return consumeHash(value.toHash(), aggregate, depth);
-  case QMetaType::Bool:
-    return consumeBytes(sizeof(bool), aggregate);
-  case QMetaType::Char:
-  case QMetaType::SChar:
-  case QMetaType::UChar:
-    return consumeBytes(sizeof(char), aggregate);
-  case QMetaType::Short:
-  case QMetaType::UShort:
-    return consumeBytes(sizeof(short), aggregate);
-  case QMetaType::Int:
-  case QMetaType::UInt:
-  case QMetaType::Float:
-    return consumeBytes(sizeof(quint32), aggregate);
-  case QMetaType::LongLong:
-  case QMetaType::ULongLong:
-  case QMetaType::Double:
-    return consumeBytes(sizeof(quint64), aggregate);
-  default:
-    return false;
-  }
-}
-
-bool boundedConnection(const NmSettingsMap &connection) {
-  if (connection.isEmpty() || connection.size() > kMaximumSections) {
-    return false;
-  }
-  qsizetype aggregate = 0;
-  for (auto section = connection.cbegin(); section != connection.cend();
-       ++section) {
-    if (!boundedText(section.key()) ||
-        section.value().size() > kMaximumProperties) {
-      return false;
-    }
-    if (!consumeBytes(section.key().toUtf8().size(), aggregate)) {
-      return false;
-    }
-    for (auto property = section.value().cbegin();
-         property != section.value().cend(); ++property) {
-      if (!boundedText(property.key())) {
-        return false;
-      }
-      if (!consumeBytes(property.key().toUtf8().size(), aggregate) ||
-          !consumeVariant(property.value(), aggregate, 0)) {
-        return false;
-      }
-    }
-  }
-  return true;
 }
 
 QString connectionName(const NmSettingsMap &connection) {
