@@ -22,6 +22,7 @@ set(
     "qindaqt_shell_gather_overview_ui|QindaQt/Shell/GatherOverview"
     "qindaqt_shell_obs_applet_runtime|QindaQt/Shell/ObsApplet"
     "qindaqt_shell_bluetooth_applet_runtime|QindaQt/Shell/BluetoothApplet"
+    "qindaqt_shell_network_applet_runtime|QindaQt/Shell/NetworkApplet"
     "qindaqt_global_menu_qml|QindaQt/Shell/GlobalMenu"
     "qindaqt_shell_launcher_qml|QindaQt/Shell/Launcher"
     "qindaqt_shell_power_applet_runtime|QindaQt/Shell/PowerApplet"
