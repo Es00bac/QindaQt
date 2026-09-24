@@ -239,18 +239,23 @@ in this module; a bounded follow-up if wanted.
 
 ## Inhibition and availability boundary
 
-Idle inhibition is delegated to PowerDevil's policy authority:
+Inhibition follows the policy authority for each action:
 
-- **Native Wayland idle inhibitors (`zwp_idle_inhibitor_v1`) are honored** by
-  PowerDevil's idle policy through the KDE idle policy path.
-- **Portal Idle and legacy `org.freedesktop.ScreenSaver.Inhibit` are honored**
-  by PowerDevil's PolicyAgent when the session-owned PowerDevil service is
-  present. QindaQt does not inspect either inhibition source or issue a
-  competing DPMS request.
-- If the PowerDevil owner is absent, QindaQt does not provide idle display-off;
-  the display remains on. The installed-session gate must exercise fullscreen
-  video/game playback through native, portal, and ScreenSaver inhibition with
-  the real release-matched PowerDevil owner.
+- **Display-off policy:** native Wayland idle inhibitors
+  (`zwp_idle_inhibitor_v1`), Portal Idle, and legacy
+  `org.freedesktop.ScreenSaver.Inhibit` are honored by PowerDevil's idle policy
+  and PolicyAgent when the session-owned PowerDevil service is present.
+  QindaQt does not inspect these inhibition sources or issue a competing DPMS
+  request. If the PowerDevil owner is absent, QindaQt does not provide idle
+  display-off; the display remains on. The installed-session gate must exercise
+  fullscreen video/game playback through native, portal, and ScreenSaver
+  inhibition with the real release-matched PowerDevil owner.
+- **Automatic lock policy:** KScreenLocker itself honors
+  `org.freedesktop.ScreenSaver.Inhibit` for
+  its automatic idle-lock timeout. Settings' Screen saver Preview holds this
+  standard request only while the bounded preview runs, preventing the
+  password screen from covering it; an unavailable inhibitor prevents Preview
+  from starting. See [ADR-0259](../adr/0259-preview-screen-savers-without-the-lock-screen.md).
 
 A DPMS controller that is unavailable at policy start (late global bind,
 hotplug) cannot permanently disarm the policy: the controller reports an

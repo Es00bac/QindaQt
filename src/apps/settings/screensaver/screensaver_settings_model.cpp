@@ -68,6 +68,11 @@ ScreensaverSettingsModel::ScreensaverSettingsModel(
           this, &ScreensaverSettingsModel::handleUncertain);
   connect(&m_preview, &ScreensaverPreview::finished, this,
           &ScreensaverSettingsModel::publishStatus);
+  connect(&m_preview, &ScreensaverPreview::failed, this,
+          [this](const QString &message) {
+            m_previewError = message;
+            publishStatus();
+          });
   m_readbackRetryTimer.setSingleShot(true);
   connect(&m_readbackRetryTimer, &QTimer::timeout, this, [this] {
     if (m_pending && m_waitingForReadback) m_client.refresh();
@@ -180,6 +185,10 @@ const QString &ScreensaverSettingsModel::previewSummary() const noexcept {
   return m_previewSummary;
 }
 
+const QString &ScreensaverSettingsModel::previewErrorText() const noexcept {
+  return m_previewError;
+}
+
 QString ScreensaverSettingsModel::displayName(const QString &saver) const {
   if (saver == ScreensaverPreferences::blankToken()) return tr("Blank screen");
   const std::optional<ScreensaverCatalogEntry> entry = m_catalog.entry(saver);
@@ -235,10 +244,11 @@ bool ScreensaverSettingsModel::preview() {
     publishStatus();
     return false;
   }
+  m_previewError.clear();
   QString error;
   if (!m_preview.start(saver(), &error)) {
-    m_localError = error.isEmpty() ? tr("The preview could not be started.")
-                                   : error;
+    m_previewError = error.isEmpty() ? tr("The preview could not be started.")
+                                     : error;
     publishStatus();
     return false;
   }
@@ -461,19 +471,15 @@ void ScreensaverSettingsModel::publishStatus() {
 
 void ScreensaverSettingsModel::publishPreviewSummary() {
   switch (m_preview.kindFor(saver())) {
-  case ScreensaverPreview::Kind::TestingGreeter:
-    m_previewSummary = saver() == ScreensaverPreferences::blankToken()
-        ? tr("Opens the lock screen in its testing mode, showing the plain "
-             "dark screen a locked session would show. The session is never locked.")
-        : tr("Opens the lock screen in its testing mode, drawing %1 the way a "
-             "locked session would. The session is never locked.")
-              .arg(displayName(saver()));
+  case ScreensaverPreview::Kind::BlackWindow:
+    m_previewSummary =
+        tr("Shows a full-screen black window. Any key, click, or pointer "
+           "movement closes it; the session stays unlocked.");
     break;
   case ScreensaverPreview::Kind::SaverProgram:
     m_previewSummary =
-        tr("Runs %1 itself, the way it appears while the session is unlocked "
-           "but idle. The greeter cannot draw this one, so a locked screen "
-           "keeps its own wallpaper. Any input dismisses the preview.")
+        tr("Runs %1 itself with the catalog arguments used while idle. Any "
+           "input dismisses the preview; the lock screen is not shown.")
             .arg(displayName(saver()));
     break;
   case ScreensaverPreview::Kind::Unavailable:

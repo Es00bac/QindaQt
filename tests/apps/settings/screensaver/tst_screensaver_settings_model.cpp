@@ -48,6 +48,8 @@ private Q_SLOTS:
     void blankIsItsOwnChoice();
     void saverOptionsListTheBuiltInsThenTheDiscovered();
     void previewStartsWithPersistedTruth();
+    void previewStartFailureIsReported();
+    void asynchronousPreviewFailureIsReported();
     void defaultValuedFirstSnapshotEstablishesAuthority();
     void occupiedReadLaneRefusesWritesAndRecovers();
     void appliedWaitsForSameLineageReadback();
@@ -306,7 +308,20 @@ void ScreensaverSettingsModelTest::previewStartsWithPersistedTruth() {
     QCOMPARE(m_preview->starts, 1);
     // The preview always shows persisted truth, not a write in flight.
     QCOMPARE(m_preview->lastToken, QStringLiteral("circuit-reef"));
-    QVERIFY(m_model->previewSummary().contains(QStringLiteral("never locked")));
+    QVERIFY(m_model->previewSummary().contains(
+        QStringLiteral("catalog arguments")));
+    QVERIFY(m_model->previewSummary().contains(
+        QStringLiteral("lock screen is not shown")));
+
+    QVERIFY(m_model->setSaver(ScreensaverPreferences::blankToken()));
+    m_transport->replyToLastCommit(SettingsWireStatus::Applied);
+    QTRY_COMPARE(m_model->saver(), ScreensaverPreferences::blankToken());
+    QVERIFY(m_model->previewAvailable());
+    QVERIFY(m_model->preview());
+    QCOMPARE(m_preview->starts, 2);
+    QCOMPARE(m_preview->lastToken, ScreensaverPreferences::blankToken());
+    QVERIFY(m_model->previewSummary().contains(
+        QStringLiteral("full-screen black window")));
 
     // "none" previews nothing.
     QVERIFY(m_model->setSaver(ScreensaverPreferences::noneToken()));
@@ -314,7 +329,31 @@ void ScreensaverSettingsModelTest::previewStartsWithPersistedTruth() {
     QTRY_COMPARE(m_model->saver(), ScreensaverPreferences::noneToken());
     QVERIFY(!m_model->previewAvailable());
     QVERIFY(!m_model->preview());
-    QCOMPARE(m_preview->starts, 1);
+    QCOMPARE(m_preview->starts, 2);
+}
+
+void ScreensaverSettingsModelTest::previewStartFailureIsReported() {
+    m_transport->setValue(kSaverKey, "prism-brawl");
+    m_transport->announceOwner();
+    QTRY_COMPARE(m_model->saver(), QStringLiteral("prism-brawl"));
+    QVERIFY(m_model->previewAvailable());
+
+    m_preview->startOk = false;
+    QVERIFY(!m_model->preview());
+    QVERIFY(m_model->previewErrorText().contains(QStringLiteral("preview refused")));
+    QCOMPARE(m_preview->starts, 0);
+}
+
+void ScreensaverSettingsModelTest::asynchronousPreviewFailureIsReported() {
+    m_transport->setValue(kSaverKey, "qinda-patrol");
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_client->snapshot().has_value());
+
+    QVERIFY(m_model->preview());
+    QVERIFY(m_model->previewErrorText().isEmpty());
+    const QString message = QStringLiteral("The screensaver crashed with exit code 17.");
+    m_preview->reportFailure(message);
+    QVERIFY(m_model->previewErrorText().contains(message));
 }
 
 void ScreensaverSettingsModelTest::defaultValuedFirstSnapshotEstablishesAuthority() {
