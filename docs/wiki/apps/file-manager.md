@@ -32,7 +32,11 @@ location in either direction (ADR-0195), with sign-in left to the platform
 (ADR-0200), a preferences window whose settings survive a restart (ADR-0198),
 and a per-location "mount at login" knob that writes one systemd user unit
 (ADR-0199). Per-volume Trash and portal locations remain later slices (see the
-roadmap below).
+roadmap below). The Finder integration (W12) lets other applications' "Show in
+folder" open a File Manager window with the item selected, through
+`org.freedesktop.FileManager1`, and gives the desktop's icons the File
+Manager's menu words and Get Info
+([ADR-0273](../adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md)).
 
 The durable local-launch choice is recorded in
 [ADR-0029](../adr/0029-file-manager-bounded-local-launch.md); the S1 mutation
@@ -410,6 +414,61 @@ or launched-process lifetime; a validation failure or a `false` return from
 rather than blocking navigation, crashing, or silently doing nothing. See
 [ADR-0029](../adr/0029-file-manager-bounded-local-launch.md) for the full
 rationale and boundary.
+
+## Show in folder (`org.freedesktop.FileManager1`)
+
+Browsers, editors and download managers ask the desktop's file manager to
+show a file through the freedesktop.org `org.freedesktop.FileManager1`
+interface. Chromium and Electron applications, Firefox and KDE applications
+call `ShowItems` for "Show in folder", and open the parent folder themselves
+when the call fails. File Manager implements the interface at
+`/org/freedesktop/FileManager1` on the session bus
+([ADR-0273](../adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md)):
+
+- **`ShowItems(uris, startupId)`** opens the folder holding each item, with
+  the item selected and scrolled into view. Items in one folder share one
+  window; items in several folders open one window per folder.
+- **`ShowFolders(uris, startupId)`** opens each folder.
+- **`ShowItemProperties(uris, startupId)`** does what `ShowItems` does and
+  opens the properties dialog for the selection.
+
+Every URI is checked before anything is shown, and one bad URI refuses the
+whole call with `org.freedesktop.DBus.Error.InvalidArgs`, so the caller falls
+back instead of showing half of its request. A URI must be a `file:` URI of
+an absolute local path, with no host other than `localhost` and no user,
+port, query or fragment. A folder must resolve once to a readable, enterable
+directory, the rule `FileBoundary::openLocalFolder` applies. An item must
+exist in such a folder. A symbolic link is the entry itself, even when it
+dangles, so the link is selected and not its target. One call carries at
+most 256 URIs and opens at most 8 windows. When no window could be shown the
+call answers `org.freedesktop.DBus.Error.Failed`. A hidden entry turns Show
+Hidden on in its window so it can be selected. `startupId` is the caller's
+activation token; only the first window of a call uses it to take focus.
+
+**Which window.** A File Manager process has one window. The first File
+Manager process owns the bus name; later ones queue behind it and take over
+when it exits, and none takes the name from another file manager that owns
+it. The owning process shows a request in its own window only when that
+window already shows the folder or has shown nothing yet. Every other request
+starts a new File Manager process with the reveal command line: one
+`--select=<name>` per entry, `--show-properties` when asked, then the folder
+as the single positional argument. The new process validates the folder like
+any folder argument and ignores a name that is not an entry of it.
+
+**Activation.** When no File Manager is running, the session bus starts
+`qindaqt-file-manager --service` from
+`share/dbus-1/services/org.qindaqt.FileManager.FileManager1.service`, which
+the `FileManager` install component carries. That process keeps its window
+hidden until the first request and then shows the request in it; without a
+usable session bus it shows its window at the start folder instead. The file
+is named after File Manager rather than the interface so it can sit beside
+another file manager's provider of the same name without a package file
+collision. Dolphin, for example, installs `org.kde.dolphin.FileManager1.service`.
+With two providers installed, the bus chooses which one it starts when no
+file manager is running; an open File Manager window always answers first.
+
+The desktop's **Get Info** starts File Manager on the same command line
+through `FileBoundary::revealLocalItem` ([below](#public-desktop-file-boundary)).
 
 ## Applications browser
 
@@ -853,6 +912,15 @@ banners, the Nearby section, and the preferences window with all four pages.
 - `composeFileManagerMenuExport()` is the application composition boundary. It
   lends the primary window, coordinator, and session-bus connection to the
   opt-in AppShell exporter; it contains no filesystem or shell authority.
+- `planReveal()` (`model/reveal_request.h`) is the pure "Show in folder"
+  policy: it validates every URI of one FileManager1 call and groups them
+  into windows (ADR-0273). It performs bounded stat calls only.
+  `FileManager1Service` (`runtime/file_manager1_service.h`) is the D-Bus
+  adaptor. It owns no window and hands each planned request to an injected
+  `RevealWindows` seam. `ProcessRevealWindows`
+  (`runtime/process_reveal_windows.h`) is the production seam: this
+  process's window, reached through `ui/EntryReveal.qml` by its object name,
+  or a new File Manager process on the reveal command line.
 - QML (`ui/Main.qml` and its `Toolbar`/`Breadcrumb`/`LocationBar`/
   `PlacesSidebar`/`EntrySelection`/`EntryList`/`EntryGrid`/`StatePane`/
   `StatusBanners`/`NetworkHub`/`NetworkLocationCard`/`ConnectToServerDialog`/
@@ -862,15 +930,17 @@ banners, the Nearby section, and the preferences window with all four pages.
   itself.
 
 All expected errors cross the lister/launcher/mutation boundaries as typed
-values plus bounded human-readable diagnostics. There is no D-Bus authority,
-shell-private dependency, global worker pool, or exception-based failure
-channel. The one mutation worker and its backend are private implementation
+values plus bounded human-readable diagnostics. The one D-Bus authority is
+the FileManager1 service, which only validates paths and shows windows
+(ADR-0273). There is no shell-private dependency, global worker pool, or
+exception-based failure channel. The one mutation worker and its backend are private implementation
 details with constructor-visible ownership. The optional menu transport is a
 borrowed AppShell adapter, not File Manager domain authority.
 
 The `model/**` and `mutation/**` C++ headers and build target are private
 implementation surfaces and are not installed or ABI-stable. The executable
-name, desktop ID, folder-launch-argument contract, and documented action
+name, desktop ID, folder-launch-argument contract, reveal command line
+(`--select=`, `--show-properties`, `--service`), FileManager1 service, and documented action
 object names/shortcuts form the compatibility surface.
 
 ## Public menu catalog
@@ -936,6 +1006,20 @@ boundaries](../architecture/module-boundaries.md)).
     `LaunchRefused` happens after a start attempt.
   - **Success** means the process started. File Manager revalidates its
     folder argument (exit 4 otherwise), and its later exit is not observed.
+- `revealArguments(request)` is the one definition of the reveal command line
+  ([Show in folder](#show-in-folder-orgfreedesktopfilemanager1)): one
+  `--select=<name>` per entry, `--show-properties` when asked, then the
+  folder. The `=` form keeps a name that begins with `-` a value. File
+  Manager's `main.cpp` reads exactly this shape, and its own FileManager1
+  windows write it.
+- `revealLocalItem(absolutePath, listed, showProperties, programCandidates,
+  start)` opens the folder holding one listed local item in File Manager with
+  the item selected and, for the desktop's Get Info, its properties dialog
+  open (ADR-0273). The identity, program, launch and refusal rules are
+  `openLocalFolder`'s. The item may be any kind of entry, a dangling link
+  included; its folder must be a readable, enterable directory, and
+  `canonicalPath` reports that folder. An item with no folder (`/`) is
+  `NotFound`.
 - `createLocalMutationController(parent)` composes one `MutationController`
   over a `LocalMutationBackend` rooted at the same `$XDG_DATA_HOME/Trash`
   File Manager's own `main.cpp` wires (ADR-0064), so Desktop-initiated
@@ -1056,6 +1140,21 @@ against planted poison. All Trash roots live below disposable fixture/build
 directories; no row reads or mutates the user's home Trash. Bookmark store
 rows likewise live below `QTemporaryDir` roots and never touch the real
 `$XDG_STATE_HOME` inventory.
+
+The Finder integration (ADR-0273) adds two rows and extends three.
+`qindaqt.file-manager-reveal-request` drives `planReveal()` over real
+temporary trees: canonical folders and links, grouping by folder in
+first-seen order, dangling links as entries, every refused URI shape,
+missing, non-directory and unreadable targets, the all-or-nothing rule, and
+both bounds. `qindaqt.file-manager-file-manager1` runs under
+`dbus-run-session` with a bus configuration that has no activation
+directories, so it can never start the host's own file manager. It proves
+the name, introspection, the queue to a second process, grouping, the
+single-use token, `InvalidArgs` and `Failed` against a recording window
+factory, and `ProcessRevealWindows`' reuse rule against a stand-in reveal
+object. `qindaqt.file-manager-desktop-file-boundary` adds Get Info's command
+line and its refusals. The UI-contract row requires the `entryReveal`
+object, and the package row requires the installed activation file.
 
 ## Roadmap
 

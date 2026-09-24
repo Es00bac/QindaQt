@@ -35,6 +35,7 @@
 #include "preview/theme_icon_provider.h"
 #include "runtime/file_manager_application.h"
 #include "runtime/mutation_ui_action_probe.h"
+#include "runtime/process_reveal_windows.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 
@@ -119,6 +120,7 @@ void registerCommandLineOptions(QCommandLineParser &parser) {
   parser.addOption(
       {QStringLiteral("check-ui-actions"),
        QStringLiteral("Drive production mutation QML against a disposable fixture and exit")});
+  QindaQt::Apps::FileManager::registerRevealOptions(parser);
 }
 
 // Creates and seeds the disposable --check-ui-actions fixture. The probe's S2
@@ -214,7 +216,7 @@ void publishSearchResultsInto(QindaQt::Apps::FileManager::SearchController &sear
       QStringLiteral("renameDialog"), QStringLiteral("destinationDialog"),
       QStringLiteral("trashConfirmationDialog"),
       QStringLiteral("emptyTrashConfirmationDialog"),
-      QStringLiteral("propertiesDialog"),
+      QStringLiteral("propertiesDialog"), QStringLiteral("entryReveal"),
       QStringLiteral("filterSubfoldersToggle"),
       // ADR-0194/0195: the network surfaces are part of the installed
       // package's contract, so a packaging change that drops one fails the
@@ -487,6 +489,7 @@ int main(int argc, char **argv) {
        {QStringLiteral("mountManager"),
         QVariant::fromValue(static_cast<QObject *>(network.mounts.get()))},
        {QStringLiteral("chooserMode"), parser.isSet(QStringLiteral("choose-application"))},
+       {QStringLiteral("visible"), !parser.isSet(QStringLiteral("service"))},
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));
@@ -511,6 +514,8 @@ int main(int argc, char **argv) {
     destroyRoots();
     return *probeExit;
   }
+  [[maybe_unused]] const auto fileManager1 = QindaQt::Apps::FileManager::composeFileManager1(
+      parser, engine.rootObjects().constFirst(), *controller, startPath, applications->chooserMode());
   const int exitCode = application->exec();
   destroyRoots();
   return exitCode;

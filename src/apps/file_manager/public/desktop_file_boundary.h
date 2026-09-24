@@ -4,6 +4,7 @@
 #include "../model/clipboard_controller.h"
 #include "../model/file_manager_types.h"
 #include "../model/launch_intent.h"
+#include "../model/reveal_request.h"
 #include "../mutation/mutation_controller.h"
 
 #include <QObject>
@@ -55,7 +56,7 @@ using ProcessStarter =
     std::function<bool(const QString &program, const QStringList &arguments)>;
 
 // AGENT-CONTRACT: FileBoundary is the sole path from Desktop-owned code
-// (window listing/launch/folder open and, later, the network worker's URL/job
+// (window listing/launch/folder open/Get Info and, later, the network worker's URL/job
 // integration) into File Manager's local-filesystem authority. Desktop must
 // never construct LocalDirectoryLister, DesktopFileLauncher, or
 // LocalMutationBackend itself, and must never include File Manager's
@@ -110,6 +111,27 @@ public:
   // launchLocalFile documents. GUI-thread only.
   [[nodiscard]] static FolderOpenResult openLocalFolder(
       const QString &absolutePath, ListedIdentity listed,
+      const QStringList &programCandidates = fileManagerProgramCandidates(),
+      const ProcessStarter &start = {});
+
+  // AGENT-CONTRACT (ADR-0273): the one command line that starts File Manager
+  // showing request.folder with request.names selected, and their properties
+  // open when request.showProperties: one "--select=<name>" element per name,
+  // then "--show-properties" when asked, then the folder as the single
+  // positional argument. File Manager's main.cpp and
+  // runtime/process_reveal_windows read and write exactly this shape. Every
+  // element is one literal argv entry; nothing is joined into a command line.
+  [[nodiscard]] static QStringList revealArguments(const RevealRequest &request);
+
+  // Opens the folder holding one listed local item in QindaQt File Manager
+  // with that item selected and, when `showProperties`, its properties dialog
+  // open: the Desktop's Get Info. The item must still be the object
+  // `listed` names (the openLocalFolder identity rule) and its folder must
+  // resolve once to a readable, enterable directory. The program and launch
+  // rules, refusals and success meaning are openLocalFolder's; on success
+  // `canonicalPath` is that folder. GUI-thread only.
+  [[nodiscard]] static FolderOpenResult revealLocalItem(
+      const QString &absolutePath, ListedIdentity listed, bool showProperties,
       const QStringList &programCandidates = fileManagerProgramCandidates(),
       const ProcessStarter &start = {});
 
