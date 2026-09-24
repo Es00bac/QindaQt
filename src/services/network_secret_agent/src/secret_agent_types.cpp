@@ -41,6 +41,21 @@ void wipeString(QString &text) noexcept {
   }
 }
 
+void wipeVariant(QVariant &value) noexcept;
+
+template <typename Associative>
+void wipeAssociative(Associative &values) noexcept {
+  // AGENT-GUARD: Key text shares its backing allocation with the map key. Wipe
+  // it only while walking toward an immediate clear; never perform key lookup,
+  // insertion, or removal after its ordering/hash text has been overwritten.
+  for (auto entry = values.begin(); entry != values.end(); ++entry) {
+    QString key = entry.key();
+    wipeString(key);
+    wipeVariant(entry.value());
+  }
+  values.clear();
+}
+
 void wipeVariant(QVariant &value) noexcept {
   if (value.metaType() == QMetaType::fromType<QString>()) {
     auto *text = static_cast<QString *>(value.data());
@@ -56,16 +71,10 @@ void wipeVariant(QVariant &value) noexcept {
     nested.clear();
   } else if (value.metaType() == QMetaType::fromType<QVariantMap>()) {
     QVariantMap nested = value.toMap();
-    for (QVariant &entry : nested) {
-      wipeVariant(entry);
-    }
-    nested.clear();
+    wipeAssociative(nested);
   } else if (value.metaType() == QMetaType::fromType<QVariantHash>()) {
     QVariantHash nested = value.toHash();
-    for (QVariant &entry : nested) {
-      wipeVariant(entry);
-    }
-    nested.clear();
+    wipeAssociative(nested);
   } else if (value.metaType() == QMetaType::fromType<QStringList>()) {
     QStringList nested = value.toStringList();
     for (QString &entry : nested) {
@@ -115,11 +124,10 @@ QByteArray takeSecretUtf8(QVariant &value) noexcept {
 }
 
 void wipeSettingsMap(NmSettingsMap &settings) noexcept {
-  for (QVariantMap &section : settings) {
-    for (QVariant &value : section) {
-      wipeVariant(value);
-    }
-    section.clear();
+  for (auto section = settings.begin(); section != settings.end(); ++section) {
+    QString key = section.key();
+    wipeString(key);
+    wipeAssociative(section.value());
   }
   settings.clear();
 }
@@ -127,5 +135,9 @@ void wipeSettingsMap(NmSettingsMap &settings) noexcept {
 void Private::wipeVariantValue(QVariant &value) noexcept { wipeVariant(value); }
 
 void Private::wipeStringValue(QString &text) noexcept { wipeString(text); }
+
+void Private::wipeByteArrayValue(QByteArray &bytes) noexcept {
+  wipeByteArray(bytes);
+}
 
 } // namespace QindaQt::Network::SecretAgent

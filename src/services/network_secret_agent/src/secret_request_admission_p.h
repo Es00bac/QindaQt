@@ -17,4 +17,8 @@ namespace QindaQt::Network::SecretAgent::Private {
 // Bounded, non-empty (unless allowEmpty), NUL-free display/key text.
 [[nodiscard]] bool boundedText(const QString &text, bool allowEmpty = false);
 
+// Counts UTF-8 bytes directly from UTF-16 storage without creating an encoded
+// copy. Lone surrogates count as the three-byte replacement scalar.
+[[nodiscard]] qsizetype utf8ByteCount(const QString &text) noexcept;
+
 } // namespace QindaQt::Network::SecretAgent::Private

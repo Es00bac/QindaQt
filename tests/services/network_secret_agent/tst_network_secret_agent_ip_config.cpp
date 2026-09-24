@@ -5,6 +5,8 @@
 // demarshal, so they cannot be covered by the in-process controller tests.
 
 #include "private_network_manager_bus.h"
+#include "secret_agent_types_p.h"
+#include "secret_request_admission_p.h"
 
 #include <qindaqt/services/network_secret_agent/resident_secret_agent.h>
 #include <qindaqt/services/network_secret_agent/secret_agent_types.h>
@@ -14,6 +16,8 @@
 #include <QtDBus/QDBusMetaType>
 #include <QtDBus/QDBusPendingReply>
 #include <QtTest/QTest>
+
+#include <algorithm>
 
 using namespace QindaQt::Network::SecretAgent;
 using namespace QindaQt::Network::SecretAgent::Testing;
@@ -104,6 +108,19 @@ StringMap stringMap(const int entries) {
   return result;
 }
 
+qsizetype baseConnectionBytes() {
+  using QindaQt::Network::SecretAgent::Private::utf8ByteCount;
+  return utf8ByteCount(QStringLiteral("connection")) +
+         utf8ByteCount(QStringLiteral("id")) +
+         utf8ByteCount(QStringLiteral("Private Bus Wi-Fi")) +
+         utf8ByteCount(QStringLiteral("uuid")) +
+         utf8ByteCount(
+             QStringLiteral("12345678-1234-4234-9234-123456789abc")) +
+         utf8ByteCount(QStringLiteral("802-11-wireless-security")) +
+         utf8ByteCount(QStringLiteral("key-mgmt")) +
+         utf8ByteCount(QStringLiteral("wpa-psk"));
+}
+
 // Wraps `value` in `levels` single-entry a{sv} maps below the property.
 QVariant nested(QVariant value, const int levels) {
   for (int level = 0; level < levels; ++level) {
@@ -137,6 +154,23 @@ NmSettingsMap networkManagerDhcpProfile() {
         {QStringLiteral("routes"), QVariant::fromValue(QList<Ipv6Route>{})}}}};
 }
 
+QDBusMessage vpnSecretsGetSecretsMessage(const QString &destination) {
+  NmSettingsMap settings = connectionMap();
+  settings.insert(QStringLiteral("vpn"),
+                  {{QStringLiteral("secrets"),
+                    QVariant::fromValue(
+                        StringMap{{QStringLiteral("password"),
+                                  QStringLiteral("vpn-secret-canary")}})}});
+  QDBusMessage message = QDBusMessage::createMethodCall(
+      destination, QString::fromLatin1(kSecretAgentPath),
+      QString::fromLatin1(kSecretAgentInterface), QStringLiteral("GetSecrets"));
+  message.setArguments(
+      {QVariant::fromValue(settings),
+       QDBusObjectPath(QString::fromLatin1(kKnownConnectionPath)),
+       QStringLiteral("vpn"), QStringList{}, 0x1U});
+  return message;
+}
+
 } // namespace
 
 class NetworkSecretAgentIpConfigTest final : public QObject {
@@ -145,8 +179,11 @@ class NetworkSecretAgentIpConfigTest final : public QObject {
 private Q_SLOTS:
   void initTestCase();
   void cleanupTestCase();
+  void countsUtf8BytesWithoutEncoding();
+  void wipesDetachedByteBufferAndMapKeys();
   void admitsBoundedWireFormsAndRefusesOversized_data();
   void admitsBoundedWireFormsAndRefusesOversized();
+  void admitsVpnSecretShapeBeforeUnsupportedSettingRefusal();
 
 private:
   PrivateNetworkManagerBus m_bus;
@@ -170,6 +207,65 @@ void NetworkSecretAgentIpConfigTest::initTestCase() {
 void NetworkSecretAgentIpConfigTest::cleanupTestCase() {
   const QString failure = m_bus.stop();
   QVERIFY2(failure.isEmpty(), qPrintable(failure));
+}
+
+void NetworkSecretAgentIpConfigTest::countsUtf8BytesWithoutEncoding() {
+  const char32_t smileCodePoint = 0x1f642;
+  const QString emoji = QString::fromUcs4(&smileCodePoint, 1);
+  QString validSurrogatePair;
+  validSurrogatePair.append(QChar(0xd800));
+  validSurrogatePair.append(QChar(0xdc00));
+  const QList<QString> inputs{
+      QStringLiteral("ASCII"), QString::fromUtf8("caf\xc3\xa9"), emoji,
+      validSurrogatePair};
+  for (const QString &input : inputs) {
+    QCOMPARE(QindaQt::Network::SecretAgent::Private::utf8ByteCount(input),
+             input.toUtf8().size());
+  }
+  // Qt 6.11.1 suppresses isolated surrogates in QString::toUtf8(); admission
+  // deliberately counts the requested U+FFFD replacement size instead.
+  QCOMPARE(QindaQt::Network::SecretAgent::Private::utf8ByteCount(
+               QString(QChar(0xd800))),
+           3);
+  QCOMPARE(QindaQt::Network::SecretAgent::Private::utf8ByteCount(
+               QString(QChar(0xdc00))),
+           3);
+}
+
+void NetworkSecretAgentIpConfigTest::wipesDetachedByteBufferAndMapKeys() {
+  QByteArray decoded("wire-secret-canary");
+  decoded.detach();
+  const QByteArray retained = decoded;
+  const char *const bytes = retained.constData();
+  const qsizetype byteCount = retained.size();
+  QindaQt::Network::SecretAgent::Private::wipeByteArrayValue(decoded);
+  QVERIFY(decoded.isEmpty());
+  for (qsizetype index = 0; index < byteCount; ++index) {
+    QCOMPARE(bytes[index], '\0');
+    QCOMPARE(retained.at(index), '\0');
+  }
+
+  QString sectionKey = QString::fromUtf8("section-key-canary");
+  QString propertyKey = QString::fromUtf8("property-key-canary");
+  QString nestedKey = QString::fromUtf8("nested-key-canary");
+  QString nestedValue = QString::fromUtf8("nested-value-canary");
+  const QString sectionAlias = sectionKey;
+  const QString propertyAlias = propertyKey;
+  const QString nestedKeyAlias = nestedKey;
+  const QString nestedValueAlias = nestedValue;
+  QVariantMap nestedMap{{nestedKey, nestedValue}};
+  QVariantMap section{{propertyKey, nestedMap}};
+  NmSettingsMap settings{{sectionKey, section}};
+  wipeSettingsMap(settings);
+  QVERIFY(settings.isEmpty());
+  const auto allZero = [](const QString &text) {
+    return std::all_of(text.cbegin(), text.cend(),
+                       [](const QChar character) { return character.isNull(); });
+  };
+  QVERIFY(allZero(sectionAlias));
+  QVERIFY(allZero(propertyAlias));
+  QVERIFY(allZero(nestedKeyAlias));
+  QVERIFY(allZero(nestedValueAlias));
 }
 
 void NetworkSecretAgentIpConfigTest::
@@ -261,6 +357,52 @@ void NetworkSecretAgentIpConfigTest::
       withProperty(wired, s390, QVariant::fromValue(stringMap(256))), true);
   row("wired-s390-options-257",
       withProperty(wired, s390, QVariant::fromValue(stringMap(257))), false);
+  row("vpn-secret-shaped-a-ss-admitted",
+      withProperty(QStringLiteral("vpn"), QStringLiteral("secrets"),
+                   QVariant::fromValue(StringMap{
+                       {QStringLiteral("password"),
+                        QStringLiteral("vpn-secret-canary")}})),
+      true);
+
+  // Exercise the exact aggregate byte boundary, including the base profile
+  // plus the section/property names and per-record QVariant overhead.
+  const qsizetype base = baseConnectionBytes();
+  const qsizetype ipv6NameBytes =
+      QindaQt::Network::SecretAgent::Private::utf8ByteCount(v6);
+  const qsizetype dnsKeyBytes =
+      QindaQt::Network::SecretAgent::Private::utf8ByteCount(dns);
+  const qsizetype dnsPayloadAtLimit =
+      65'536 - base - ipv6NameBytes - dnsKeyBytes - qsizetype(sizeof(QVariant));
+  row("ipv6-dns-aay-aggregate-at-limit",
+      withProperty(v6, dns,
+                   QVariant::fromValue(QList<QByteArray>{
+                       ipv6Bytes(dnsPayloadAtLimit)})),
+      true);
+  row("ipv6-dns-aay-aggregate-over-limit",
+      withProperty(v6, dns,
+                   QVariant::fromValue(QList<QByteArray>{
+                       ipv6Bytes(dnsPayloadAtLimit + 1)})),
+      false);
+
+  const qsizetype addressesKeyBytes =
+      QindaQt::Network::SecretAgent::Private::utf8ByteCount(addresses);
+  const qsizetype recordPayloadAtLimit =
+      65'536 - base - ipv6NameBytes - addressesKeyBytes -
+      qsizetype(sizeof(QVariant)) - qsizetype(sizeof(quint32));
+  const qsizetype addressBytes = recordPayloadAtLimit / 2;
+  const qsizetype nextHopBytes = recordPayloadAtLimit - addressBytes;
+  row("ipv6-address-a-record-aggregate-at-limit",
+      withProperty(v6, addresses,
+                   QVariant::fromValue(QList<Ipv6Address>{
+                       Ipv6Address{ipv6Bytes(addressBytes), 64,
+                                   ipv6Bytes(nextHopBytes)}})),
+      true);
+  row("ipv6-address-a-record-aggregate-over-limit",
+      withProperty(v6, addresses,
+                   QVariant::fromValue(QList<Ipv6Address>{
+                       Ipv6Address{ipv6Bytes(addressBytes), 64,
+                                   ipv6Bytes(nextHopBytes + 1)}})),
+      false);
 
   // Depth: a two-level wire form must end at or above the eighth level.
   row("aau-depth-6",
@@ -306,6 +448,21 @@ void NetworkSecretAgentIpConfigTest::
              QString::fromLatin1(kNoSecretsError));
     QVERIFY(prompt.requests.isEmpty());
   }
+  resident.stop();
+}
+
+void NetworkSecretAgentIpConfigTest::
+    admitsVpnSecretShapeBeforeUnsupportedSettingRefusal() {
+  FakePrompt prompt;
+  ResidentSecretAgent resident(prompt, m_bus.agent(), m_bus.presence());
+  QCOMPARE(resident.start(), ResidentStartStatus::Started);
+
+  auto pending = watch(m_bus.manager(),
+                       vpnSecretsGetSecretsMessage(m_bus.agent().baseService()));
+  QTRY_VERIFY(pending->isFinished());
+  QCOMPARE(QDBusPendingReply<NmSettingsMap>(*pending).error().name(),
+           QString::fromLatin1(kNoSecretsError));
+  QVERIFY(prompt.requests.isEmpty());
   resident.stop();
 }
 
