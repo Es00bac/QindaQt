@@ -5,6 +5,7 @@
 - **Owners:** Platform and session supervision
 - **Supersedes:** None
 - **Superseded by:** None
+- **Extended by:** [ADR-0256](0256-refresh-audio1-after-package-upgrades.md)
 
 ## Context
 
@@ -27,9 +28,11 @@ its own direct Wayland connection rather than only using D-Bus: today that is
 `wl_display_connect` in the clipboard Wayland adapter) and
 `qindaqt-display-service` ([ADR-0053](0053-compose-display1-from-authenticated-runtime-authorities.md),
 `wl_display_connect` in the display-writer output-management port). Ordinary
-D-Bus-only activatable services (Settings1, Network1, Power1, Bluetooth1) are
-unaffected: systemd starts them fresh, with the just-published environment,
-the first time this session's shell talks to them.
+D-Bus-only activatable services (Settings1, Network1, Power1, Bluetooth1,
+and Audio1) were outside this refresh list at acceptance: systemd starts them
+fresh with the just-published environment when this session first talks to
+them. ADR-0256 records the later, evidence-backed Audio1 package-upgrade
+exception; the other services remain outside this list.
 
 A live physical-session recovery on 2026-09-06 found a second, related cause:
 the `xdg-desktop-portal` frontend process (PID 1966668, started 19:33 under a
@@ -48,49 +51,46 @@ Both processes cache session identity/routing or connection state at startup
 that `SetEnvironment` does not retroactively correct. Restarting the user
 session's two portal units (not a host logout) recovered correct routing.
 Other D-Bus-only activatable services have no such per-process startup cache
-and remain unaffected as above.
+and remain unaffected by this stale-desktop-environment diagnosis. The later
+Audio1 package-upgrade ABI exception is recorded separately in ADR-0256.
 
 ## Decision
 
-Immediately after `publishActivationEnvironment` and before any desktop
-consumer starts, `qindaqt-session` calls a new, separate
-`refreshResidentServices(bus, unitNames)` (in
-`src/session_supervisor/src/resident_service_refresh.{h,cpp}`) with a fixed,
-reviewed list of unit names returned by `residentServiceRefreshUnits()`, in
-order: `qindaqt-clipboard-host.service`, `qindaqt-display-service.service`,
-`plasma-xdg-desktop-portal-kde.service`, and `xdg-desktop-portal.service` —
-the portal backend before the frontend that routes to it: the backend restart
-is requested first, but request order does not guarantee completion order,
-since each `RestartUnit` call only enqueues a systemd job. The list is not
-limited to direct Wayland consumers; it also covers resident services that
-cache desktop-scoped environment or routing decisions at their own startup.
-It does not follow that every D-Bus service needs a restart here — only ones
-with such a startup-time cache, or their own Wayland connection, do.
+Immediately after publishing the activation environment and before any
+desktop consumer starts, qindaqt-session calls the separate
+refreshResidentServices(bus, unitNames) helper in
+src/session_supervisor/src/resident_service_refresh.{h,cpp} with the fixed,
+reviewed list returned by residentServiceRefreshUnits(). At ADR-0094
+acceptance, the list was qindaqt-clipboard-host.service,
+qindaqt-display-service.service, plasma-xdg-desktop-portal-kde.service, and
+xdg-desktop-portal.service — the portal backend before the frontend that routes
+to it. The backend restart is requested first, but request order does not
+guarantee completion order, since each RestartUnit call only enqueues a systemd
+job.
 
-For each named unit, in order, it calls
-`org.freedesktop.systemd1.Manager.RestartUnit(name, "replace")` on the same
-session bus, with the D-Bus call itself bounded by a two-second timeout.
-`RestartUnit` enqueues a systemd job and replies with a job object path; it
-does not wait for the unit to finish restarting. It both requests a restart
-for a unit that is already resident from a prior desktop and starts one that
-has not yet been activated in this session; no separate active-state query is
-needed. Once its restart job completes, a resident Wayland consumer
-reconnects with `wl_display_connect` under the environment `SetEnvironment`
-just applied; a restarted portal frontend or backend re-selects its routing
-from the same freshly applied `XDG_CURRENT_DESKTOP`.
+For each named unit, in order, the supervisor calls
+org.freedesktop.systemd1.Manager.RestartUnit(name, "replace") through the
+systemd user-manager route: the private control socket when available, or the
+session bus only when the manager owns that name there. This preserves the
+private-bus routing contract in ADR-0170 and avoids activating a second,
+unreachable user manager. The call itself is bounded by two seconds and
+returns a job object path; it does not wait for the unit to finish restarting.
+A unit already resident from a prior desktop is restarted, and an inactive
+unit can be started without a separate active-state query. The Audio1-specific
+old-owner wait and its bounded result are described in ADR-0256. Once a
+Wayland consumer restarts, it reconnects under the environment just applied;
+the portal frontend and backend re-select routing from the current
+XDG_CURRENT_DESKTOP.
 
-The list is closed and explicit. A service is added only when its own module
-independently opens Wayland or is itself a Wayland client, or independently
-caches desktop-scoped environment or routing state at its own startup;
-ownership and review stay
-with that module's ADR. No unit outside this fixed list is touched, so
-unrelated resident services (Settings1, Network1, Power1, Bluetooth1) and
-their persisted preferences are left running exactly as they were. A missing
-unit or transport failure is logged and does not stop the desktop from
-starting, matching ADR-0082's failure posture. This mechanism does not itself
-change what `qindaqt-clipboard-host`'s ADR-0058 restart already implies (a new
-capture epoch); it only makes that restart happen reliably at session entry
-instead of requiring a manual `systemctl --user restart`.
+The list is closed and explicit. The original inclusion rule covers services
+whose own module independently opens Wayland, is itself a Wayland client, or
+caches desktop-scoped environment or routing at startup. ADR-0256 adds Audio1
+only as a package-upgrade ABI exception, with its own evidence and bounded
+owner-retirement contract. Ownership and review stay with each service's
+module ADR. No unit outside the current five-unit list is touched; Settings1,
+Network1, Power1, and Bluetooth1 remain outside it with their persisted
+preferences unchanged. A missing unit or transport failure is logged and does
+not stop the desktop from starting, matching ADR-0082's failure posture.
 
 This is not a login-time fix for every possible service-scaling failure; it
 closes the two demonstrated lifecycle causes (a resident process holding a
@@ -100,24 +100,21 @@ activation-environment scaling problems are resolved.
 
 ## Consequences
 
-- A resident Wayland-connected service picks up the current session's socket,
-  and a resident portal frontend or backend picks up correct desktop routing,
-  without a full logout and without a manual operator restart.
-- Session startup makes four additional bounded, best-effort D-Bus calls; a
-  slow or unreachable user manager degrades to the same warning-and-continue
-  behavior as the existing `SetEnvironment` call.
-- The fixed list is a private-bus-tested contract
-  (`qindaqt.session-resident-service-refresh`) covering: all configured units
-  receive `RestartUnit` with mode `replace`; one unit failing to restart does
-  not stop the request for the remaining units or fail session startup; and
-  the production list itself.
-- Adding a fifth resident consumer requires updating
-  `residentServiceRefreshUnits()` and this ADR's list, not a structural change
-  to the mechanism.
+- At ADR-0094 acceptance, session startup made four bounded, best-effort D-Bus
+  calls. ADR-0256 adds Audio1 as a fifth unit and waits at most two seconds for
+  its prior unique bus owner to retire. Timeout or owner-query failure is
+  logged, reported by the helper, and does not stop session startup.
+- The private-bus-tested contract qindaqt.session-resident-service-refresh
+  covers configured restart calls, continued requests after a unit error, the
+  fixed production list, delayed Audio1-owner retirement, and the bounded
+  stale-owner case.
+- Any further resident-service addition requires updating the fixed unit list
+  and the owning ADR; the refresh mechanism remains unchanged.
 
 ## Revisit when
 
-A future resident service opens its own Wayland connection, or independently
-caches desktop-scoped environment or routing state at startup, and needs the
-same treatment; or systemd/D-Bus gains a native "reload environment into
-running service" primitive that makes the explicit restart list unnecessary.
+A future resident service opens its own Wayland connection, independently
+caches desktop-scoped environment or routing state at startup, or presents a
+demonstrated incompatible package-upgrade ABI that requires the same
+treatment; or systemd/D-Bus gains a native reload-environment-into-running-
+service primitive that makes the explicit restart list unnecessary.
