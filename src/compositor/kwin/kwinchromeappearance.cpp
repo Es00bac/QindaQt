@@ -156,6 +156,23 @@ void KWinChromeAppearance::publishWindow(const QString &windowId) {
     // foreign decorations continue to use their KDecoration palette.
     decoration->setProperty(PaletteProperty, m_qmlPalette);
     decoration->update();
+    // AGENT-CONTRACT (ADR-0264): QindaDecoration declares
+    // qindaqtRollUpRequested(); a foreign decoration does not and is never
+    // connected. Unique, because every palette publish passes through here.
+    if (decoration->metaObject()->indexOfSignal("qindaqtRollUpRequested()") >= 0)
+      connect(decoration, SIGNAL(qindaqtRollUpRequested()), this,
+              SLOT(relayDecorationRollUp()), Qt::UniqueConnection);
+  }
+}
+
+void KWinChromeAppearance::relayDecorationRollUp() {
+  const QObject *decoration = sender();
+  for (const auto &id : m_registry.windowIds()) {
+    auto *window = m_registry.window(id);
+    if (window && static_cast<const QObject *>(window->decoration()) == decoration) {
+      Q_EMIT windowRollUpRequested(id);
+      return;
+    }
   }
 }
 

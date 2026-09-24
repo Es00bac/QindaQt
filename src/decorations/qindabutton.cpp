@@ -18,6 +18,7 @@ QindaButton::QindaButton(DecorationButtonType type,
                          QindaDecoration *decoration,
                          QObject *parent)
     : KDecoration3::DecorationButton(type, decoration, parent)
+    , m_kind(QindaDecoration::buttonKind(type))
 {
     connect(this, &KDecoration3::DecorationButton::hoveredChanged,
             decoration, &QindaDecoration::updateControlHover);
@@ -59,12 +60,24 @@ QindaButton *QindaButton::create(DecorationButtonType type,
                          button, &QindaButton::setVisible);
         break;
     case DecorationButtonType::Custom:
-        // The contained-window "more" control (ADR-0131).
+        // The contained-window "more" control (ADR-0131) and the roll-up
+        // button (ADR-0264): always offered where the arrangement asks.
         button->setVisible(true);
         break;
     default:
         button->setVisible(false);
         break;
+    }
+    return button;
+}
+
+QindaButton *QindaButton::createForKind(DecorationButtonKind kind,
+                                       KDecoration3::Decoration *decoration,
+                                       QObject *parent)
+{
+    auto *button = create(QindaDecoration::buttonType(kind), decoration, parent);
+    if (button) {
+        button->m_kind = kind;
     }
     return button;
 }
@@ -82,7 +95,7 @@ void QindaButton::paint(QPainter *painter, const QRectF &repaintArea)
     // AGENT-CONTRACT: the shared painter renders every button (ADR-0127);
     // this method only reports live hover/press state.
     DecorationButtonVisual visual;
-    visual.kind = QindaDecoration::buttonKind(type());
+    visual.kind = m_kind;
     visual.geometry = geometry();
     visual.hovered = isHovered();
     visual.pressed = isPressed();

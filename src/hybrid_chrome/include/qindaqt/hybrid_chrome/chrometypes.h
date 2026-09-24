@@ -8,10 +8,14 @@
 #include <QMetaType>
 #include <QPointF>
 #include <QRectF>
+#include <QSizeF>
 #include <QString>
 #include <QVector>
 
+#include <functional>
 #include <optional>
+
+class QPainter;
 
 namespace QindaQt::HybridChrome {
 Q_NAMESPACE
@@ -33,6 +37,17 @@ enum class ButtonStyle {
     TrafficLights,
 };
 Q_ENUM_NS(ButtonStyle)
+
+// What a double-click on a container's shared title row does (ADR-0264).
+// None keeps the row inert, as it shipped; the others run the container's
+// own maximize/restore, roll-up, or minimize.
+enum class TitleDoubleClickAction {
+    None,
+    Maximize,
+    RollUp,
+    Minimize,
+};
+Q_ENUM_NS(TitleDoubleClickAction)
 
 enum class WindowAction {
     Close,
@@ -113,6 +128,19 @@ struct ChromeMaterial final
     friend bool operator==(const ChromeMaterial &, const ChromeMaterial &) = default;
 };
 
+struct ChromeRenderPlan;
+struct WindowButtonGeometry;
+
+// AGENT-CONTRACT: paints one container window button in a named style
+// (ADR-0264). The decoration painter owns the named styles and supplies this
+// through ChromeStyle, so containers draw exactly the buttons windows draw
+// while this module never depends on it. ChromeRenderer calls it inside its
+// clip; the callee must leave the QPainter state as it found it.
+using ChromeButtonPainter =
+    std::function<void(QPainter &painter, const ChromeRenderPlan &plan,
+                       const WindowButtonGeometry &button, bool hovered, bool pressed,
+                       bool glyphVisible)>;
+
 struct ChromeStyle final
 {
     ButtonSide buttonSide = ButtonSide::Right;
@@ -121,6 +149,15 @@ struct ChromeStyle final
     bool hoverGlyphs = false;
     ChromePalette palette;
     ChromeMaterial material;
+    // Named window-button style (ADR-0264): its name and the painter that
+    // draws it. An empty painter keeps the built-in plates of `buttonStyle`.
+    QString namedButtonStyle;
+    ChromeButtonPainter buttonPainter;
+    // Button cell and gap overrides; an empty size or a negative gap keeps
+    // the metrics. The layout never lets a cell outgrow the title row.
+    QSizeF buttonSize;
+    qreal buttonSpacing = -1.0;
+    TitleDoubleClickAction titleDoubleClick = TitleDoubleClickAction::None;
 
     // AGENT-CONTRACT: Palette values come from the resolved theme. This
     // factory owns Qinda macOS behavior without duplicating theme color data.

@@ -304,6 +304,15 @@ void ChromeRenderer::paint(QPainter &painter,
     // plan's locator here duplicates captions and obscures native close,
     // minimize, maximize/restore, and decoration drag handling.
     for (const auto &button : plan.buttons) {
+        const bool hovered = targetMatchesButton(state.hoveredTarget, button.action);
+        const bool pressed = targetMatchesButton(state.pressedTarget, button.action);
+        const bool glyphVisible = button.glyphVisibleWhenIdle || state.controlsHovered
+            || hovered || pressed;
+        if (plan.style.buttonPainter) {
+            // ADR-0264: a named style paints through the decoration painter.
+            plan.style.buttonPainter(painter, plan, button, hovered, pressed, glyphVisible);
+            continue;
+        }
         painter.setPen(QPen(plan.style.palette.border, plan.borderHairline));
         painter.setBrush(button.fillColor);
         if (plan.style.buttonStyle == ButtonStyle::TrafficLights) {
@@ -311,9 +320,6 @@ void ChromeRenderer::paint(QPainter &painter,
         } else {
             painter.drawRoundedRect(button.rect, 3.0, 3.0);
         }
-        const bool glyphVisible = button.glyphVisibleWhenIdle || state.controlsHovered
-            || targetMatchesButton(state.hoveredTarget, button.action)
-            || targetMatchesButton(state.pressedTarget, button.action);
         if (glyphVisible) {
             paintActionGlyph(painter, button, plan);
         }

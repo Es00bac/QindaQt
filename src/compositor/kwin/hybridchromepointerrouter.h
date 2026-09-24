@@ -66,6 +66,9 @@ struct ChromePointerDecision final
     QVector<RoutedChromeDrag> drags;
     QVector<ChromeContextMenuRequest> contextMenus;
     QVector<ChromeShadeRequest> shadeRequests;
+    // ADR-0264: containers whose shared title row was double-clicked; the
+    // session runs the chrome style's title double-click action.
+    QVector<QString> titleDoubleClicks;
 };
 
 // AGENT-CONTRACT: A consumed decision can carry a raise request without
@@ -142,7 +145,8 @@ private:
     void cancelPointer(ChromePointerDecision *decision);
     void resetPointer() noexcept;
     // ADR-0139: stamps a completed click on a shaded badge so a second click
-    // within the double-click interval requests the unroll.
+    // within the double-click interval requests the unroll. ADR-0264 reuses
+    // the same stamp for a double-click on the unshaded title row.
     void noteBadgeClick(const ChromePointerHit &hit);
     [[nodiscard]] bool isBadgeDoubleClick(const ChromePointerHit &hit) const;
 

@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QFontMetricsF>
 #include <QPainter>
+#include <QIcon>
 #include <QPainterPath>
 #include <QPalette>
 #include <QStyle>
@@ -453,12 +454,15 @@ void AppearanceWindowPreview::paintWindow(QPainter &painter, const QRectF &frame
     const QSizeF size = frame.size();
     // Client area first: the decoration's rounded title sits on top of it
     // exactly as KWin composes a decorated window.
+    // The chrome's own radius and title height (ADR-0207, ADR-0264), so the
+    // client area meets the title exactly where the live window's does.
+    const qreal radius = decorationFrameRadius(chrome, false);
+    const qreal titleHeight = decorationTitleHeight(chrome);
     QPainterPath body;
-    body.addRoundedRect(QRectF(QPointF(0.0, 0.0), size), DecorationCornerRadius,
-                        DecorationCornerRadius);
+    body.addRoundedRect(QRectF(QPointF(0.0, 0.0), size), radius, radius);
     painter.fillPath(body, palette.color(QPalette::Window));
-    const QRectF client(1.0, DecorationTitleHeight, size.width() - 2.0,
-                        size.height() - DecorationTitleHeight - 1.0);
+    const QRectF client(1.0, titleHeight, size.width() - 2.0,
+                        size.height() - titleHeight - 1.0);
     painter.save();
     painter.setClipPath(body, Qt::IntersectClip);
     painter.setClipRect(client, Qt::IntersectClip);
@@ -485,6 +489,8 @@ void AppearanceWindowPreview::paintWindow(QPainter &painter, const QRectF &frame
     state.caption = caption;
     state.font = m_toolkitFont;
     state.active = active;
+    // A document icon for the app-icon option; headless runs have none.
+    state.icon = QIcon::fromTheme(QStringLiteral("text-x-generic"));
     paintDecoration(painter, chrome, state, layoutDecorationButtons(chrome, size));
     painter.restore();
 }
