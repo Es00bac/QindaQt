@@ -317,6 +317,60 @@ set_tests_properties(
     qindaqt.file-manager-desktop-file-boundary PROPERTIES LABELS "file-manager"
 )
 
+# ADR-0273: "Show in folder" -- the URI and path policy every
+# org.freedesktop.FileManager1 call passes before a window is shown.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_reveal_request_tests
+    tst_reveal_request.cpp
+    qindaqt.file-manager-reveal-request
+)
+
+# ADR-0273: org.freedesktop.FileManager1 on a private session bus with a
+# recording window factory, and the production factory's window reuse rule.
+# The bus configuration has no activation directories, so the row can never
+# start the host's own file manager.
+find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session REQUIRED)
+qt_add_executable(qindaqt_file_manager_file_manager1_tests tst_file_manager1_service.cpp)
+target_link_libraries(
+    qindaqt_file_manager_file_manager1_tests
+    PRIVATE qindaqt_file_manager_support Qt6::DBus Qt6::Gui Qt6::Test
+)
+target_include_directories(
+    qindaqt_file_manager_file_manager1_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_compile_features(qindaqt_file_manager_file_manager1_tests PRIVATE cxx_std_20)
+set_target_properties(
+    qindaqt_file_manager_file_manager1_tests PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_file_manager_file_manager1_tests)
+add_test(
+    NAME qindaqt.file-manager-file-manager1
+    COMMAND "${QINDAQT_DBUS_RUN_SESSION}"
+            "--config-file=${CMAKE_CURRENT_SOURCE_DIR}/file_manager1_bus.conf"
+            -- $<TARGET_FILE:qindaqt_file_manager_file_manager1_tests>
+)
+set_tests_properties(
+    qindaqt.file-manager-file-manager1
+    PROPERTIES
+        LABELS "file-manager"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:"
+)
+
+# ADR-0273: Keep in Dock over the dock's public pin helper (ADR-0265) and the
+# application.keep-in-dock action, against a scripted Settings1 transport.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_application_dock_pins_tests
+    tst_application_dock_pins.cpp
+    qindaqt.file-manager-application-dock-pins
+)
+target_link_libraries(
+    qindaqt_file_manager_application_dock_pins_tests PRIVATE QindaQt::DockPins
+)
+set_tests_properties(qindaqt.file-manager-application-dock-pins PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
 add_test(
     NAME qindaqt.file-manager-desktop-metadata
     COMMAND "${CMAKE_COMMAND}"

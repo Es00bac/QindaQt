@@ -104,6 +104,19 @@ qindaqt_add_desktop_surface_test(
     SUPPORT desktop_surface_qml_test_support.h
     OFFSCREEN
 )
+# ADR-0273: the desktop's menus are File Manager menus: the File Manager's
+# words from its public catalog, and Get Info, Open With and New File handed to
+# File Manager through its boundary (PATH holds a recording stand-in).
+qindaqt_add_desktop_surface_test(
+    qindaqt_desktop_file_manager_menu_tests
+    tst_desktop_file_manager_menus.cpp
+    qindaqt.desktop-file-manager-menus
+    SUPPORT desktop_surface_qml_test_support.h
+    OFFSCREEN
+)
+target_link_libraries(
+    qindaqt_desktop_file_manager_menu_tests PRIVATE qindaqt_file_manager_menu_catalog
+)
 # One desktop across several outputs (ADR-0167): ownership, the primary-output
 # default, manual placement onto another output, a drag across the seam, and an
 # output going away. Split from the single-surface interaction row because it

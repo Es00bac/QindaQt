@@ -24,14 +24,19 @@ Other looks are available — see [Making it yours](customization.md).
 
 ## Desktop icons and menus
 
-The icons are the real files and folders in your Desktop directory. Drag an
-icon with the left button to place it anywhere on that screen; QindaQt keeps
-the position after restarting the shell. Right-click an icon for its own
-**Open**, **Cut**, **Copy**, **Rename…**, and **Delete** menu; every entry
-applies to the whole current selection. **Delete** moves the selected items to
-the home Trash (recoverable, exactly like File Manager's Trash). Renaming
-changes the real Desktop item through the same protected operation used by
-File Manager and keeps the icon where you put it.
+The icons are the real files and folders in your Desktop directory, and the
+desktop behaves like one more File Manager window: its menus use File
+Manager's words, and a file another program saves there (a download, say)
+appears on its own. Drag an icon with the left button to place it anywhere on
+that screen; QindaQt keeps the position after restarting the shell.
+Right-click an icon for **Open**, **Open With…** (files only), **Get Info**,
+**Rename**, **Cut**, **Copy**, and **Move to Trash**. Cut, Copy, and Move to
+Trash apply to the whole current selection; the others to the icon you
+clicked. **Get Info** and **Open With…** open File Manager on your Desktop
+folder with the icon selected and show File Manager's own dialog. **Move to
+Trash** moves the selected items to the home Trash (recoverable, exactly like
+File Manager's Trash). Renaming changes the real Desktop item through the same
+protected operation used by File Manager and keeps the icon where you put it.
 
 Selecting more than one icon works the way other desktops teach you: drag a
 rubber band across empty desktop space to select every icon it crosses (Shift
@@ -41,8 +46,10 @@ selects every icon. Press **Delete** to trash the selection. Drag any selected
 icon and the whole selection moves together, each icon keeping its own saved
 spot. A plain click on empty space clears the selection.
 
-Right-click empty desktop space for the desktop menu; it offers **Paste** whenever
-the clipboard holds files, landing them in your Desktop directory. Middle-click
+Right-click empty desktop space for the desktop menu. Whatever its style, it
+offers **New Folder**, **New File…** (File Manager asks for the kind of file),
+**Paste** whenever the clipboard holds files, landing them in your Desktop
+directory, **Select All**, and **Get Info** for the Desktop folder. Middle-click
 empty space for the Applications menu, XFCE-style. Both menus open under the
 pointer and move inward only when necessary to stay on screen. **Arrange
 Icons** returns the current screen's icons to their configured left- or

@@ -245,10 +245,15 @@ void DesktopSurfaceQmlTests::contextMenuStyleSwitchesItemSets()
         const char *style;
         QList<QPair<QString, int>> expected;
     } cases[] = {
+        // ADR-0273: every style carries the File Manager's folder actions
+        // (New Folder, New File, Select All, Get Info).
         {"windows",
          {{"desktopContextArrange", 1},
           {"desktopContextRefresh", 1},
           {"desktopContextNewFolder", 1},
+          {"desktopContextNewFile", 1},
+          {"desktopContextSelectAll", 1},
+          {"desktopContextGetInfo", 1},
           {"desktopContextDisplayProperties", 1},
           {"desktopContextApplications", 0},
           {"desktopContextOpen", 0},
@@ -256,7 +261,10 @@ void DesktopSurfaceQmlTests::contextMenuStyleSwitchesItemSets()
         {"mac",
          {{"desktopContextArrange", 0},
           {"desktopContextNewFolder", 1},
+          {"desktopContextNewFile", 1},
           {"desktopContextOpen", 1},
+          {"desktopContextGetInfo", 1},
+          {"desktopContextSelectAll", 1},
           {"desktopContextSortBy", 1},
           {"desktopContextCleanUp", 1},
           {"desktopContextScreenSaver", 1},
@@ -267,7 +275,10 @@ void DesktopSurfaceQmlTests::contextMenuStyleSwitchesItemSets()
           {"desktopContextOpen", 0},
           {"desktopContextApplications", 1},
           {"desktopContextTerminal", 1},
-          {"desktopContextCreateFolder", 1},
+          {"desktopContextNewFolder", 1},
+          {"desktopContextNewFile", 1},
+          {"desktopContextSelectAll", 1},
+          {"desktopContextGetInfo", 1},
           {"desktopContextSettings", 1}}},
     };
 
