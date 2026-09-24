@@ -26,6 +26,7 @@ private slots:
     void contentReloadKeepsSelectionAndAdoptsSavedPanels();
     void selectionAdoptionSwitchesProfile();
     void unknownSelectionFailsClosedToPriorLayout();
+    void deletedPriorLayoutFallsBackToMacStyleDefault();
     void commandLineLockLeavesCatalogUntouched();
     void reloadFailureKeepsPriorCatalog();
 
@@ -43,6 +44,8 @@ constexpr auto qindaqtSource =
     QINDAQT_SOURCE_DIR "/data/profiles/qindaqt.json";
 constexpr auto minimalSource =
     QINDAQT_SOURCE_DIR "/data/profiles/minimal.json";
+constexpr auto macosSource =
+    QINDAQT_SOURCE_DIR "/data/profiles/macos-inspired.json";
 
 // Writes a user-store copy of the qindaqt profile keeping only its first
 // panel, the way the Customize route persists an edited layout.
@@ -166,6 +169,37 @@ void RuntimeLayoutAdoptionTests::unknownSelectionFailsClosedToPriorLayout()
     QCOMPARE(catalog.current().value(QStringLiteral("id")).toString(),
              QStringLiteral("qindaqt"));
     QCOMPARE(panelCount(catalog, QStringLiteral("qindaqt")), priorPanelCount);
+}
+
+// ADR-0263: when both the saved selection and the running layout are gone,
+// the catalog lands on the Mac-style default rather than the old qindaqt one.
+void RuntimeLayoutAdoptionTests::deletedPriorLayoutFallsBackToMacStyleDefault()
+{
+    QTemporaryDir builtin;
+    QTemporaryDir user;
+    QVERIFY(builtin.isValid() && user.isValid());
+    QVERIFY(copyFile(QString::fromLatin1(qindaqtSource),
+                     builtin.filePath(QStringLiteral("qindaqt.json"))));
+    QVERIFY(copyFile(QString::fromLatin1(macosSource),
+                     builtin.filePath(QStringLiteral("macos-inspired.json"))));
+    QVERIFY(copyFile(QString::fromLatin1(minimalSource),
+                     user.filePath(QStringLiteral("minimal.json"))));
+    const QStringList directories{builtin.path(), user.path()};
+
+    ProfileCatalog catalog;
+    QString error;
+    QVERIFY(catalog.loadDirectories(directories, &error));
+    QVERIFY(catalog.selectById(QStringLiteral("minimal")));
+    QVERIFY(QFile::remove(user.filePath(QStringLiteral("minimal.json"))));
+
+    QString diagnostic;
+    QCOMPARE(Adoption::reloadAndSelect(
+                 catalog, directories, QStringLiteral("deleted-profile"),
+                 false, &diagnostic),
+             Outcome::KeptPriorSelection);
+    QVERIFY(!diagnostic.isEmpty());
+    QCOMPARE(catalog.current().value(QStringLiteral("id")).toString(),
+             QStringLiteral("macos-inspired"));
 }
 
 void RuntimeLayoutAdoptionTests::commandLineLockLeavesCatalogUntouched()
