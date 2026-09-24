@@ -72,6 +72,12 @@ bool isRevealableName(const QString &name) {
          !name.contains(QLatin1Char('/')) && !name.contains(QChar::Null);
 }
 
+bool isRevealAction(const QString &actionId) {
+  return actionId == QLatin1String("file.properties") ||
+         actionId == QLatin1String("file.open-with") ||
+         actionId == QLatin1String("file.new-file");
+}
+
 RevealPlan planReveal(RevealKind kind, const QStringList &uris) {
   if (uris.size() > maximumRevealUris) {
     return refused(RevealError::TooMany,
@@ -128,7 +134,9 @@ RevealPlan planReveal(RevealKind kind, const QStringList &uris) {
                        QStringLiteral("At most %1 folders can be shown at once")
                            .arg(maximumRevealWindows));
       }
-      plan.requests.append({folder, {}, kind == RevealKind::ItemProperties});
+      plan.requests.append({folder, {},
+                            kind == RevealKind::ItemProperties ? QStringLiteral("file.properties")
+                                                               : QString()});
       request = &plan.requests.last();
     }
     if (!name.isEmpty() && !request->names.contains(name)) {

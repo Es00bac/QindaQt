@@ -357,6 +357,20 @@ set_tests_properties(
         ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:"
 )
 
+# ADR-0273: Keep in Dock over the dock's public pin helper (ADR-0265) and the
+# application.keep-in-dock action, against a scripted Settings1 transport.
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_application_dock_pins_tests
+    tst_application_dock_pins.cpp
+    qindaqt.file-manager-application-dock-pins
+)
+target_link_libraries(
+    qindaqt_file_manager_application_dock_pins_tests PRIVATE QindaQt::DockPins
+)
+set_tests_properties(qindaqt.file-manager-application-dock-pins PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
 add_test(
     NAME qindaqt.file-manager-desktop-metadata
     COMMAND "${CMAKE_COMMAND}"

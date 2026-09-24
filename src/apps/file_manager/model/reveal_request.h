@@ -8,15 +8,16 @@
 namespace QindaQt::Apps::FileManager {
 
 // ADR-0273: one File Manager window's share of a "show in folder" request --
-// the folder it shows and the entries it selects there.
+// the folder it shows, the entries it selects there, and the File Manager
+// action it then runs on that selection.
 struct RevealRequest final {
   // Canonical absolute directory, readable and enterable when planned.
   QString folder;
   // Plain names of entries of `folder`, in request order and without
   // duplicates. Empty to show the folder with nothing selected.
   QStringList names;
-  // Also open the properties dialog for the selected entries.
-  bool showProperties = false;
+  // Empty, or one isRevealAction() id run once the entries are selected.
+  QString action;
 
   friend bool operator==(const RevealRequest &, const RevealRequest &) = default;
 };
@@ -55,6 +56,14 @@ inline constexpr qsizetype maximumRevealWindows = 8;
 // True for the name of one directory entry: not empty, not "." or "..", and
 // without '/' or NUL.
 [[nodiscard]] bool isRevealableName(const QString &name);
+
+// AGENT-CONTRACT: the File Manager actions a reveal may run once shown, all
+// catalog ids (public/file_manager_menu_catalog): "file.properties" (Get
+// Info), "file.open-with" and "file.new-file". The Desktop hands its dialogs
+// to File Manager through them (FileBoundary::revealLocalItem and
+// runLocalFolderAction). Any other id, a destructive one above all, is
+// refused by the boundary and ignored by main.cpp.
+[[nodiscard]] bool isRevealAction(const QString &actionId);
 
 // Validates every URI of one org.freedesktop.FileManager1 call before anything
 // is shown, then groups them into windows: one per distinct folder, in the

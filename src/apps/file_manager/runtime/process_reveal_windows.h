@@ -7,10 +7,7 @@
 #include <QStringList>
 
 #include <functional>
-#include <memory>
 
-class QCommandLineParser;
-class QObject;
 class QWindow;
 
 namespace QindaQt::Apps::FileManager {
@@ -49,27 +46,5 @@ private:
   QString m_program;
   RevealProcessStarter m_start;
 };
-
-// The ADR-0273 options: --select=<name> (repeatable), --show-properties, and
-// --service (start hidden for org.freedesktop.FileManager1 activation).
-void registerRevealOptions(QCommandLineParser &parser);
-
-// What one File Manager process keeps alive for org.freedesktop.FileManager1.
-struct FileManager1Runtime final {
-  std::unique_ptr<ProcessRevealWindows> windows;
-  std::unique_ptr<FileManager1Service> service;
-};
-
-// Applies --select/--show-properties to this process's window, which shows the
-// positional folder `startPath`, then serves org.freedesktop.FileManager1 from
-// it on the session bus. A workspace picker (`chooserMode`) does neither.
-// Without a usable bus the window works as before, and a --service start
-// shows its window instead of staying hidden with nothing to serve. Call once
-// the QML root has loaded, and never in a --check-* probe mode.
-[[nodiscard]] FileManager1Runtime composeFileManager1(const QCommandLineParser &parser,
-                                                      QObject *qmlRoot,
-                                                      NavigationController &navigation,
-                                                      const QString &startPath,
-                                                      bool chooserMode);
 
 } // namespace QindaQt::Apps::FileManager

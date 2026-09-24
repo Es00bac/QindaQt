@@ -4,9 +4,6 @@
 #include "../model/navigation_controller.h"
 #include "../public/desktop_file_boundary.h"
 
-#include <QCommandLineParser>
-#include <QCoreApplication>
-#include <QDBusConnection>
 #include <QGuiApplication>
 #include <QMetaObject>
 #include <QProcess>
@@ -20,11 +17,11 @@ namespace QindaQt::Apps::FileManager {
 namespace {
 
 // AGENT-NOTE: a FileManager1 StartupId is the caller's activation token. Qt's
-// Wayland plugin activates a window with XDG_ACTIVATION_TOKEN, read when the
-// window asks for activation; its X11 plugin reads DESKTOP_STARTUP_ID at
-// start-up only.
+// Wayland plugin activates a window with XDG_ACTIVATION_TOKEN, read (and
+// cleared) when a window is first shown or asks for activation; its X11
+// plugin reads DESKTOP_STARTUP_ID at start-up only.
 [[nodiscard]] bool onWayland() {
-  return QGuiApplication::platformName() == QLatin1String("wayland");
+  return QGuiApplication::platformName().startsWith(QLatin1String("wayland"));
 }
 
 bool startDetached(const QString &program, const QStringList &arguments,
@@ -61,16 +58,16 @@ bool ProcessRevealWindows::show(const RevealRequest &request, const QString &act
 bool ProcessRevealWindows::showHere(const RevealRequest &request,
                                     const QString &activationToken) {
   // AGENT-CONTRACT: ui/EntryReveal.qml is found by its objectName and answers
-  // reveal(folder, names, showProperties) with QVariant arguments.
+  // reveal(folder, names, action) with QVariant arguments.
   QObject *reveal = m_window.findChild<QObject *>(QStringLiteral("entryReveal"));
   const QVariant folder(request.folder);
   const QVariant names(request.names);
-  const QVariant showProperties(request.showProperties);
+  const QVariant action(request.action);
   QVariant shown;
   if (reveal == nullptr ||
       !QMetaObject::invokeMethod(reveal, "reveal", Q_RETURN_ARG(QVariant, shown),
                                  Q_ARG(QVariant, folder), Q_ARG(QVariant, names),
-                                 Q_ARG(QVariant, showProperties))) {
+                                 Q_ARG(QVariant, action))) {
     return false;
   }
   // The token is consumed here and never left in the environment, where
@@ -87,42 +84,6 @@ bool ProcessRevealWindows::showHere(const RevealRequest &request,
     qunsetenv("XDG_ACTIVATION_TOKEN");
   }
   return shown.toBool();
-}
-
-void registerRevealOptions(QCommandLineParser &parser) {
-  parser.addOption({QStringLiteral("select"),
-                    QStringLiteral("Select this entry of the folder; repeatable (ADR-0273)"),
-                    QStringLiteral("name")});
-  parser.addOption({QStringLiteral("show-properties"),
-                    QStringLiteral("Open the properties of the selected entries (ADR-0273)")});
-  parser.addOption(
-      {QStringLiteral("service"),
-       QStringLiteral("Start hidden to serve org.freedesktop.FileManager1 (ADR-0273)")});
-}
-
-FileManager1Runtime composeFileManager1(const QCommandLineParser &parser, QObject *qmlRoot,
-                                        NavigationController &navigation,
-                                        const QString &startPath, bool chooserMode) {
-  FileManager1Runtime runtime;
-  auto *window = qobject_cast<QWindow *>(qmlRoot);
-  if (window == nullptr || chooserMode) {
-    return runtime;
-  }
-  runtime.windows = std::make_unique<ProcessRevealWindows>(
-      *window, navigation, QCoreApplication::applicationFilePath());
-  // A name that cannot be an entry would never match one; drop it here.
-  QStringList names = parser.values(QStringLiteral("select"));
-  names.removeIf([](const QString &name) { return !isRevealableName(name); });
-  if (!names.isEmpty()) {
-    const bool shown = runtime.windows->showHere(
-        {startPath, names, parser.isSet(QStringLiteral("show-properties"))}, {});
-    Q_UNUSED(shown);
-  }
-  runtime.service = std::make_unique<FileManager1Service>(*runtime.windows);
-  if (!runtime.service->publish(QDBusConnection::sessionBus()) && !window->isVisible()) {
-    window->show();
-  }
-  return runtime;
 }
 
 } // namespace QindaQt::Apps::FileManager

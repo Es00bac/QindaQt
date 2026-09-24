@@ -34,8 +34,8 @@ and a per-location "mount at login" knob that writes one systemd user unit
 (ADR-0199). Per-volume Trash and portal locations remain later slices (see the
 roadmap below). The Finder integration (W12) lets other applications' "Show in
 folder" open a File Manager window with the item selected, through
-`org.freedesktop.FileManager1`, and gives the desktop's icons the File
-Manager's menu words and Get Info
+`org.freedesktop.FileManager1`, gives the desktop's menus the File Manager's
+words and dialogs, and keeps applications in the dock
 ([ADR-0273](../adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md)).
 
 The durable local-launch choice is recorded in
@@ -429,8 +429,8 @@ when the call fails. File Manager implements the interface at
   the item selected and scrolled into view. Items in one folder share one
   window; items in several folders open one window per folder.
 - **`ShowFolders(uris, startupId)`** opens each folder.
-- **`ShowItemProperties(uris, startupId)`** does what `ShowItems` does and
-  opens the properties dialog for the selection.
+- **`ShowItemProperties(uris, startupId)`** does what `ShowItems` does, then
+  runs Get Info (`file.properties`) on the selection.
 
 Every URI is checked before anything is shown, and one bad URI refuses the
 whole call with `org.freedesktop.DBus.Error.InvalidArgs`, so the caller falls
@@ -451,9 +451,14 @@ when it exits, and none takes the name from another file manager that owns
 it. The owning process shows a request in its own window only when that
 window already shows the folder or has shown nothing yet. Every other request
 starts a new File Manager process with the reveal command line: one
-`--select=<name>` per entry, `--show-properties` when asked, then the folder
-as the single positional argument. The new process validates the folder like
-any folder argument and ignores a name that is not an entry of it.
+`--select=<name>` per entry, `--action=<id>` when an action follows, then the
+folder as the single positional argument. The action may only be
+`file.properties` (Get Info), `file.open-with` or `file.new-file`; any other
+is ignored. The new process validates the folder like any folder argument,
+ignores a name that is not an entry of it, selects and scrolls to the
+entries, and activates the action through its coordinator exactly as the
+menu item would. When none of the named entries is there any more, the
+action does not run.
 
 **Activation.** When no File Manager is running, the session bus starts
 `qindaqt-file-manager --service` from
@@ -467,8 +472,9 @@ collision. Dolphin, for example, installs `org.kde.dolphin.FileManager1.service`
 With two providers installed, the bus chooses which one it starts when no
 file manager is running; an open File Manager window always answers first.
 
-The desktop's **Get Info** starts File Manager on the same command line
-through `FileBoundary::revealLocalItem` ([below](#public-desktop-file-boundary)).
+The desktop's **Get Info**, **Open With…** and **New File…** start File
+Manager on the same command line through `FileBoundary::revealLocalItem` and
+`runLocalFolderAction` ([below](#public-desktop-file-boundary)).
 
 ## Applications browser
 
@@ -514,18 +520,29 @@ the reason in the window's "Couldn't open the application" banner. The
 compositor route still opens them, because it owns the full desktop-entry
 launch facility.
 
-The item context menu offers **Open**, **Get Info** and **Show Desktop Entry
-File** (Ctrl+Shift+E). Get Info shows the name, description, category, raw XDG
-categories, the planned command (display only) and the desktop-entry file
-path. Show Desktop Entry File opens the entry's folder and selects it there.
-Application items are not files, so they cannot be cut, copied, pasted,
-renamed, moved, trashed, bookmarked or dragged, and nothing can be created in
-the place. **Keep in Dock**, **Add to Desktop**, **Open in New Workspace**,
-sorting by recently used, and dragging an application to the dock or desktop
-are not offered yet, because no public boundary for them exists; ADR-0262
-lists what each one waits for. Dropping files on an application to open
-them with it belongs to Open With (W10). The documents launch contract above
-is unchanged.
+The item context menu offers **Open**, **Get Info**, **Show Desktop Entry
+File** (Ctrl+Shift+E) and **Keep in Dock** (Ctrl+Alt+D). Get Info shows the
+name, description, category, raw XDG categories, the planned command (display
+only) and the desktop-entry file path. Show Desktop Entry File opens the
+entry's folder and selects it there. Application items are not files, so they
+cannot be cut, copied, pasted, renamed, moved, trashed or bookmarked, and
+nothing can be created in the place. **Add to Desktop**, **Open in New
+Workspace** and sorting by recently used are not offered yet, because no
+public boundary for them exists; ADR-0262 lists what each one waits for.
+Dropping files on an application to open them with it belongs to Open With
+(W10). The documents launch contract above is unchanged.
+
+**Keep in Dock** ([ADR-0273](../adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md))
+acts on the one selected application and is checked while the dock holds it,
+in a group or not. It writes through the dock's public pin helper,
+`Settings1DockPins` ([ADR-0265](../adr/0265-keep-dock-items-in-one-structured-settings-value.md)),
+and the check changes only once Settings1 confirms the new dock: a refused or
+unconfirmed write leaves it as it was. While a change is saving, or without
+Settings1, the item is disabled. Dragging one application out of the place
+offers its desktop-entry id as `application/x-qindaqt-desktop-entry-id`, the
+format the dock accepts, so it can be dropped onto the dock. Application rows
+still never enter a file drag, and nothing in File Manager accepts the
+format.
 
 The Applications behaviour lives in the model and controller layer:
 `ApplicationsController` (catalog, rows, Get Info, launch policy),
@@ -921,6 +938,14 @@ banners, the Nearby section, and the preferences window with all four pages.
   (`runtime/process_reveal_windows.h`) is the production seam: this
   process's window, reached through `ui/EntryReveal.qml` by its object name,
   or a new File Manager process on the reveal command line.
+- `ApplicationDockPins` (`runtime/application_dock_pins.h`) is Keep in Dock's
+  QML face over `Settings1DockPins` (ADR-0273). It owns one Settings1 client
+  scoped to the dock's keys and publishes only confirmed truth;
+  `bindFileManagerDockActions()` drives the `application.keep-in-dock`
+  action from it. `composeFinderIntegration()`
+  (`runtime/finder_integration.h`) composes the dock pins, the
+  `--select`/`--action` reveal and the FileManager1 service once the window
+  has loaded, and never in a `--check-*` probe.
 - QML (`ui/Main.qml` and its `Toolbar`/`Breadcrumb`/`LocationBar`/
   `PlacesSidebar`/`EntrySelection`/`EntryList`/`EntryGrid`/`StatePane`/
   `StatusBanners`/`NetworkHub`/`NetworkLocationCard`/`ConnectToServerDialog`/
@@ -932,15 +957,16 @@ banners, the Nearby section, and the preferences window with all four pages.
 All expected errors cross the lister/launcher/mutation boundaries as typed
 values plus bounded human-readable diagnostics. The one D-Bus authority is
 the FileManager1 service, which only validates paths and shows windows
-(ADR-0273). There is no shell-private dependency, global worker pool, or
-exception-based failure channel. The one mutation worker and its backend are private implementation
+(ADR-0273); Keep in Dock is a Settings1 client like any other writer. There is
+no shell-private dependency, global worker pool, or exception-based failure
+channel. The one mutation worker and its backend are private implementation
 details with constructor-visible ownership. The optional menu transport is a
 borrowed AppShell adapter, not File Manager domain authority.
 
 The `model/**` and `mutation/**` C++ headers and build target are private
 implementation surfaces and are not installed or ABI-stable. The executable
 name, desktop ID, folder-launch-argument contract, reveal command line
-(`--select=`, `--show-properties`, `--service`), FileManager1 service, and documented action
+(`--select=`, `--action=`, `--service`), FileManager1 service, and documented action
 object names/shortcuts form the compatibility surface.
 
 ## Public menu catalog
@@ -1008,18 +1034,25 @@ boundaries](../architecture/module-boundaries.md)).
     folder argument (exit 4 otherwise), and its later exit is not observed.
 - `revealArguments(request)` is the one definition of the reveal command line
   ([Show in folder](#show-in-folder-orgfreedesktopfilemanager1)): one
-  `--select=<name>` per entry, `--show-properties` when asked, then the
-  folder. The `=` form keeps a name that begins with `-` a value. File
-  Manager's `main.cpp` reads exactly this shape, and its own FileManager1
-  windows write it.
-- `revealLocalItem(absolutePath, listed, showProperties, programCandidates,
-  start)` opens the folder holding one listed local item in File Manager with
-  the item selected and, for the desktop's Get Info, its properties dialog
-  open (ADR-0273). The identity, program, launch and refusal rules are
-  `openLocalFolder`'s. The item may be any kind of entry, a dangling link
-  included; its folder must be a readable, enterable directory, and
-  `canonicalPath` reports that folder. An item with no folder (`/`) is
-  `NotFound`.
+  `--select=<name>` per entry, `--action=<id>` when an action follows, then
+  the folder. The `=` form keeps a name that begins with `-` a value. File
+  Manager's Finder integration reads exactly this shape, and its own
+  FileManager1 windows write it.
+- `revealLocalItem(absolutePath, listed, action, programCandidates, start)`
+  opens the folder holding one listed local item in File Manager with the
+  item selected, then runs `action` there: nothing, `file.properties` for the
+  desktop's Get Info, or `file.open-with` for its Open With (ADR-0273). The
+  identity, program, launch and refusal rules are `openLocalFolder`'s. The
+  item may be any kind of entry, a dangling link included; its folder must be
+  a readable, enterable directory, and `canonicalPath` reports that folder.
+  An item with no folder (`/`) is `NotFound`, and any other action is
+  `UnsupportedAction`, refused before anything is checked or started.
+- `runLocalFolderAction(absolutePath, action, programCandidates, start)`
+  opens a folder the caller owns (the Desktop's own directory, not a listed
+  entry, so no identity applies) with nothing selected and runs
+  `file.new-file` or `file.properties` there: the desktop's New File and
+  background Get Info. The folder rules and refusals are `openLocalFolder`'s;
+  any other action is `UnsupportedAction`.
 - `createLocalMutationController(parent)` composes one `MutationController`
   over a `LocalMutationBackend` rooted at the same `$XDG_DATA_HOME/Trash`
   File Manager's own `main.cpp` wires (ADR-0064), so Desktop-initiated
@@ -1141,20 +1174,25 @@ directories; no row reads or mutates the user's home Trash. Bookmark store
 rows likewise live below `QTemporaryDir` roots and never touch the real
 `$XDG_STATE_HOME` inventory.
 
-The Finder integration (ADR-0273) adds two rows and extends three.
+The Finder integration (ADR-0273) adds three rows and extends four.
 `qindaqt.file-manager-reveal-request` drives `planReveal()` over real
 temporary trees: canonical folders and links, grouping by folder in
 first-seen order, dangling links as entries, every refused URI shape,
-missing, non-directory and unreadable targets, the all-or-nothing rule, and
-both bounds. `qindaqt.file-manager-file-manager1` runs under
-`dbus-run-session` with a bus configuration that has no activation
+missing, non-directory and unreadable targets, the all-or-nothing rule, both
+bounds, and the only actions a reveal may run. `qindaqt.file-manager-file-manager1`
+runs under `dbus-run-session` with a bus configuration that has no activation
 directories, so it can never start the host's own file manager. It proves
 the name, introspection, the queue to a second process, grouping, the
 single-use token, `InvalidArgs` and `Failed` against a recording window
 factory, and `ProcessRevealWindows`' reuse rule against a stand-in reveal
-object. `qindaqt.file-manager-desktop-file-boundary` adds Get Info's command
-line and its refusals. The UI-contract row requires the `entryReveal`
-object, and the package row requires the installed activation file.
+object. `qindaqt.file-manager-application-dock-pins` drives Keep in Dock
+against a scripted Settings1 transport: nothing before a confirmed dock or a
+selection, a pin and an unpin that check only after the readback, and a
+refused write that leaves the check alone. `qindaqt.file-manager-desktop-file-boundary`
+adds Get Info's and Open With's command line, the folder actions, and their
+refusals; the action-catalog row counts Keep in Dock; the UI-contract row
+requires the `entryReveal` object; and the package row requires the
+installed activation file.
 
 ## Roadmap
 

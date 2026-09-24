@@ -133,8 +133,8 @@ QStringList FileBoundary::revealArguments(const RevealRequest &request) {
     // The "=" form keeps a name that starts with "-" from reading as an option.
     arguments.append(QStringLiteral("--select=") + name);
   }
-  if (request.showProperties) {
-    arguments.append(QStringLiteral("--show-properties"));
+  if (!request.action.isEmpty()) {
+    arguments.append(QStringLiteral("--action=") + request.action);
   }
   arguments.append(request.folder);
   return arguments;
@@ -142,9 +142,13 @@ QStringList FileBoundary::revealArguments(const RevealRequest &request) {
 
 FolderOpenResult FileBoundary::revealLocalItem(const QString &absolutePath,
                                                const ListedIdentity listed,
-                                               const bool showProperties,
+                                               const QString &action,
                                                const QStringList &programCandidates,
                                                const ProcessStarter &start) {
+  if (!action.isEmpty() && !isRevealAction(action)) {
+    return {FolderOpenError::UnsupportedAction,
+            QStringLiteral("File Manager does not run %1 on start").arg(action), {}};
+  }
   if (auto refusal = refuseUnlisted(absolutePath, listed)) {
     return *refusal;
   }
@@ -158,8 +162,27 @@ FolderOpenResult FileBoundary::revealLocalItem(const QString &absolutePath,
   if (auto refusal = refuseUnusableFolder(folder, item.absolutePath())) {
     return *refusal;
   }
-  return startFileManager(absolutePath, folder,
-                          revealArguments({folder, {name}, showProperties}),
+  return startFileManager(absolutePath, folder, revealArguments({folder, {name}, action}),
+                          programCandidates, start);
+}
+
+FolderOpenResult FileBoundary::runLocalFolderAction(const QString &absolutePath,
+                                                    const QString &action,
+                                                    const QStringList &programCandidates,
+                                                    const ProcessStarter &start) {
+  if (!isRevealAction(action)) {
+    return {FolderOpenError::UnsupportedAction,
+            QStringLiteral("File Manager does not run %1 on start").arg(action), {}};
+  }
+  if (absolutePath.isEmpty() || !QFileInfo(absolutePath).isAbsolute()) {
+    return {FolderOpenError::NotFound,
+            QStringLiteral("%1 is not an absolute local folder").arg(absolutePath), {}};
+  }
+  const QString folder = QFileInfo(absolutePath).canonicalFilePath();
+  if (auto refusal = refuseUnusableFolder(folder, absolutePath)) {
+    return *refusal;
+  }
+  return startFileManager(absolutePath, folder, revealArguments({folder, {}, action}),
                           programCandidates, start);
 }
 
