@@ -1,6 +1,6 @@
 # W0 network secret-agent repair worker
 
-- Status: working — final build and requested suites pass; preparing the candidate and exact handoff evidence.
+- Status: handoff — product candidate `58e71c99988866e7f996b073a8f405f470aeaff3` is ready for independent review.
 
 ## Updates
 
@@ -12,3 +12,4 @@
 - 2026-09-24T07:55:14Z — The request-retention regression found and isolated a live alias: the retained `PromptRequest.settingName` shared the settings-map key that the input wipe scrubs. Added an independent prompt setting-name copy and recorded the finding in `20260924T075514Z-luna-w0-repair-finding.md`; rebuilding and rerunning now.
 - 2026-09-24T07:58:03Z — The post-reply assertion also found `SecretReply.settingName` and `SecretValue.key` sharing with live prompt metadata during reply-map cleanup. Both reply strings now take independent storage; the second finding is in `20260924T075803Z-luna-w0-repair-finding.md`.
 - 2026-09-24T08:03:06Z — The final affected-target build passes with `-j8 -l20`; the focused D-Bus/IP-config/lifetime selection passes 15/15 executions and the broader network/Settings Network selection passes 39/39. `./tools/validate-docs` validates 388 Markdown documents and navigation, and `git diff --check` is clean. The initial regressions were corrected; strict MkDocs is unavailable on qinda.
+- 2026-09-24T08:04:31Z — Product candidate `58e71c99988866e7f996b073a8f405f470aeaff3` is committed with the requested GPT-6 Luna co-author. The exact candidate paths, verification, intermediate failures/fixes, and bounded caveats are in `20260924T080431Z-luna-w0-repair-handoff.md`.
