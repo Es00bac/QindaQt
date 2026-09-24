@@ -84,7 +84,32 @@ Flickable {
     readonly property bool dockOverflowFallback: dockMode
         && (dockHorizontalTileLimit < minimumFittedDockTileSize
             || dockVerticalTileLimit < minimumFittedDockTileSize)
-    readonly property real desiredExtent: vertical ? grid.implicitHeight : grid.implicitWidth
+    // Edit-mode drop preview (ADR-0266): while a drag hovers an accepted
+    // target in this zone, the chips from the insertion point on slide aside
+    // by one gap, a marker fills it, and the zone asks for the extra extent
+    // so the panel makes room instead of clipping. Presentation only: the
+    // profile changes on drop, through the editor transaction.
+    readonly property var previewTarget: {
+        const controller = liveCustomization
+        if (controller === null || controller.dragActive !== true
+                || controller.dropAccepted !== true) {
+            return null
+        }
+        const target = controller.dropTarget ?? ({})
+        return String(target.panelId ?? "") === String(panel.id ?? "")
+            && String(target.zone ?? "") === zone ? target : null
+    }
+    readonly property int previewIndex: {
+        if (previewTarget === null)
+            return -1
+        const before = String(previewTarget.beforeAppletId ?? "")
+        const index = zoneApplets.findIndex(applet => String(applet.id ?? "") === before)
+        return before !== "" && index >= 0 ? index : zoneApplets.length
+    }
+    readonly property real previewExtent: previewIndex < 0 ? 0 : Tokens.space["6"] + Tokens.space["2"]
+    // The chips alone; a preview gap never reshapes a dock (dockUsesSideZones).
+    readonly property real contentExtent: vertical ? grid.implicitHeight : grid.implicitWidth
+    readonly property real desiredExtent: contentExtent + previewExtent
     // The extent this zone must keep to still paint every one of its applets
     // at the minimum its own manifest declares (`sizing.mainAxis.minimum`,
     // republished by the applet resolver as `runtime.mainAxisMinimum`).
@@ -108,10 +133,14 @@ Flickable {
         }
         return total + Math.max(0, count - 1) * grid.spacing
     }
-    contentWidth: vertical ? width : grid.implicitWidth
-    contentHeight: vertical ? grid.implicitHeight : height
+    contentWidth: vertical ? width : grid.implicitWidth + previewExtent
+    contentHeight: vertical ? grid.implicitHeight + previewExtent : height
     flickableDirection: vertical ? Flickable.VerticalFlick : Flickable.HorizontalFlick
     boundsBehavior: Flickable.StopAtBounds
+    // AGENT-GUARD: a zone never flicks in edit mode. HorizontalFlick makes
+    // an overflowing zone steal a drag past the threshold, which cancels the
+    // edit-mode applet drag in the middle of the gesture (ADR-0266).
+    interactive: !(liveCustomization !== null && liveCustomization.editMode === true)
     clip: true
     // AGENT-GUARD: an unconditional attached scroll bar is a full-width,
     // pointer-interactive overlay across the last ~10 logical pixels of the
@@ -204,6 +233,31 @@ Flickable {
             }
         }
         return ""
+    }
+
+    function previewShift(index) {
+        return previewIndex >= 0 && index >= previewIndex ? previewExtent : 0
+    }
+
+    // Where the preview gap opens along the main axis (content coordinates):
+    // halfway into the spacing before the chip the drop lands before, or just
+    // past the last chip that paints.
+    function previewGapStart() {
+        const lead = item => vertical ? item.y : item.x
+        const size = item => vertical ? item.height : item.width
+        const anchor = previewIndex >= 0 && previewIndex < repeater.count
+            ? repeater.itemAt(previewIndex) : null
+        if (anchor !== null) {
+            return lead(grid) + lead(anchor) - grid.spacing / 2
+        }
+        let end = 0
+        for (let index = 0; index < repeater.count; ++index) {
+            const chip = repeater.itemAt(index)
+            if (chip !== null && size(chip) > 0) {
+                end = Math.max(end, lead(chip) + size(chip))
+            }
+        }
+        return lead(grid) + end
     }
 
     function dockUnitsFor(applet) {
@@ -299,6 +353,20 @@ Flickable {
         return false
     }
 
+    // The edit-mode drop marker, centred in the preview gap.
+    Rectangle {
+        objectName: "panelDropMarker"
+        readonly property real center: root.previewGapStart() + root.previewExtent / 2
+        visible: root.previewIndex >= 0
+        width: root.vertical ? Math.max(0, root.width - 4) : 3
+        height: root.vertical ? 3 : Math.max(0, root.height - root.dockZoomHeadroom - 4)
+        x: root.vertical ? 2 : center - width / 2
+        y: root.vertical ? center - height / 2 : root.dockZoomHeadroom + 2
+        radius: 1.5
+        color: Tokens.ready ? Tokens.fg.default : "#dddddd"
+        Accessible.ignored: true
+    }
+
     Grid {
         id: grid
         // Dock mode: sit below the magnification envelope so the tiles rest
@@ -315,7 +383,15 @@ Flickable {
             id: repeater
 
             AppletChip {
+                id: chipDelegate
                 required property var modelData
+                required property int index
+
+                // The drop preview's gap (previewIndex above).
+                transform: Translate {
+                    x: root.vertical ? 0 : root.previewShift(chipDelegate.index)
+                    y: root.vertical ? root.previewShift(chipDelegate.index) : 0
+                }
 
                 // AGENT-GUARD: do not override AppletChip's zero extent for an
                 // empty live applet; doing so resurrects an invisible panel slot.

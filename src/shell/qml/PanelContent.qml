@@ -114,8 +114,10 @@ Item {
         id: dockZoneViewport
     }
     readonly property bool dockUsesSideZones: dockMode
-        && (startZone.desiredExtent > 0 || endZone.desiredExtent > 0)
+        && (startZone.contentExtent > 0 || endZone.contentExtent > 0)
     readonly property rect inputBounds: dockMode ? centerZone.dockInputBounds(material.x, material.y, material.width, material.height, width, height, contentInset) : Qt.rect(0, 0, width, height)
+    // The painted shelf; the edit-mode bar sits at its trailing end.
+    readonly property rect materialBounds: Qt.rect(material.x, material.y, material.width, material.height)
 
     clip: true
 
@@ -123,7 +125,8 @@ Item {
         id: material
         objectName: "panelMaterial"
         width: root.dockMode && !root.dockUsesSideZones
-            ? Math.min(parent.width, centerZone.desiredExtent + root.contentInset * 2)
+            ? Math.min(parent.width, centerZone.desiredExtent + root.contentInset * 2
+                                     + liveHost.editBarReserve)
             : parent.width
         height: root.dockMode ? Math.min(parent.height, root.effectiveDockTileSize) : parent.height
         x: Math.round((parent.width - width) / 2)
@@ -178,7 +181,7 @@ Item {
             enabled: root.panelQuickConfig !== null || root.liveCustomizationAvailable
             // The customization chord (Meta+right by default, one Settings1
             // key) opens the live customization menu; a plain right click
-            // keeps the quick-config menu.
+            // keeps the quick-config menu, which also carries Edit Panels.
             // AGENT-GUARD: the customization menu opens at an explicit point
             // along the panel's far edge, never at the pointer: a popup
             // window that starts under the pointer pre-hovers its first entry
@@ -186,7 +189,7 @@ Item {
             onClicked: (mouse) => {
                 if (root.chordHeld(mouse.modifiers)) {
                     liveHost.openPanelMenu(mouse.x, mouse.y)
-                } else if (root.panelQuickConfig !== null) {
+                } else if (root.panelQuickConfig !== null || root.liveCustomizationAvailable) {
                     panelConfigMenu.popup()
                 }
             }
@@ -194,10 +197,12 @@ Item {
     }
 
     // Live customization (chord, menus, edit-mode bar, drop targets) lives in
-    // its own component so this surface keeps its shape budget.
+    // its own component so this surface keeps its shape budget. It stacks
+    // above the zones so the edit bar is never under a chip.
     PanelLiveCustomization {
         id: liveHost
         objectName: "panelLiveCustomization"
+        z: 1
         panelContent: root
         controller: root.liveCustomization
         outputId: root.outputId
@@ -212,6 +217,11 @@ Item {
 
     function dropTargetAt(x, y) {
         return liveHost.dropTargetAt(x, y)
+    }
+
+    // An edit-mode drag started on this surface moved to (x, y) here.
+    function trackDrag(x, y) {
+        liveHost.trackDrag(x, y)
     }
 
     // AGENT-NOTE: Luna notification-area well (ADR-0124, "Luna taskbar
@@ -243,6 +253,7 @@ Item {
     PanelQuickConfigMenu {
         id: panelConfigMenu
         panelQuickConfig: root.panelQuickConfig
+        liveCustomization: root.liveCustomization
         dockMode: root.dockMode
         panelTransparency: root.panelTransparency
         dockZoom: root.dockZoom
@@ -260,7 +271,9 @@ Item {
         return false
     }
 
-    readonly property real extent: Math.max(0, (horizontal ? width : height) - contentInset * 2)
+    // In edit mode the zones leave the bar its own stretch (ADR-0266).
+    readonly property real extent: Math.max(0, (horizontal ? width : height) - contentInset * 2
+                                               - liveHost.editBarReserve)
 
     // Zone budgets are pure arithmetic in PanelZoneBudget.js (ADR-0188).
     readonly property var zoneDemands: ({start: startZone.desiredExtent,

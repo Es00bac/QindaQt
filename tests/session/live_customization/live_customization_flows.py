@@ -145,10 +145,11 @@ def run_editmode(session: LiveSession) -> None:
     editing = session.capture("edit-mode")
     session.verdict("edit-mode-capture-differs", editing.sha256 != before.sha256)
 
-    # Drag the launcher chip from the bar onto the tray's end third.
+    # Drag the launcher chip from the bar onto the tray's trailing end: the
+    # tray surface resolves it (ADR-0266) to its end zone, after tray-clock.
     tray = rects["tray"]
     session.drag(first_chip_point(session, "bar"),
-                 (tray["x"] + tray["width"] * 0.9, tray["y"] + tray["height"] / 2))
+                 (tray["x"] + tray["width"] - 8, tray["y"] + tray["height"] / 2))
     profile = session.wait_profile_change("profile after drag")
     session.verdict("drag-to-other-panel-persisted",
                     session.applet_ids(profile, "bar") == ["clock"]

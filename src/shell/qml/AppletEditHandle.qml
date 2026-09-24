@@ -4,9 +4,11 @@ import QindaQt.Tokens 1.0
 
 // Per-chip overlay for live customization. Always present so the
 // Meta+right-click chord wins over the applet's own right-click handlers
-// (exclusive grab on press, non-chord presses fall through untouched); in
-// edit mode it also paints a handle and turns the chip into a drag source
-// whose drop targets are resolved by the hosting PanelContent.
+// (exclusive grab on press, non-chord presses fall through untouched). In
+// edit mode (ADR-0266) a shield covers the whole chip: the applet beneath is
+// inert (no clicks, popups, wheel or drags of its own), a left drag anywhere
+// on it moves the applet, and a right click opens its customize menu. Drop
+// targets are resolved by the panel surfaces (PanelLiveCustomization).
 Item {
     id: root
     objectName: "appletEditHandle"
@@ -15,7 +17,7 @@ Item {
     required property var applet
     // LiveCustomizationController (may be null: everything is inert).
     property var controller: null
-    // The PanelContent hosting this chip; resolves drop targets.
+    // The PanelContent hosting this chip; publishes the drag pointer.
     property var editorHost: null
     readonly property bool active: controller !== null && controller.available === true
     readonly property bool editMode: active && controller.editMode === true
@@ -66,43 +68,68 @@ Item {
         }
     }
 
-    DragHandler {
-        id: dragHandler
-        objectName: "appletEditDrag"
+    // AGENT-CONTRACT (ADR-0266, with ADR-0265): edit mode owns every press on
+    // the chip. The shield accepts all buttons, so nothing beneath -- the
+    // applet's controls and menus, and the dock strip's own tile drag,
+    // drag-off-to-remove and grouping (W13) -- ever sees a press while the
+    // whole applet is being moved; outside edit mode the shield is disabled
+    // and this file adds nothing but the chord.
+    MouseArea {
+        id: shield
+        objectName: "appletEditShield"
+        anchors.fill: parent
         enabled: root.editMode
-        acceptedButtons: Qt.LeftButton
-        target: null
-        onActiveChanged: {
-            if (active) {
-                if (!root.controller.beginAppletDrag(root.panelId, root.appletId)) {
-                    return
-                }
-                root.hoverAt(centroid.position)
-            } else if (root.controller.dragActive) {
-                if (root.controller.dropAccepted) {
-                    root.controller.dropApplet()
-                } else {
-                    root.controller.cancelDrag()
-                }
+        acceptedButtons: Qt.AllButtons
+        hoverEnabled: true
+        cursorShape: dragHandler.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.RightButton) {
+                root.openMenu()
             }
         }
-        onCentroidChanged: {
-            if (active && root.controller.dragActive) {
-                root.hoverAt(centroid.position)
+        onWheel: (wheel) => { wheel.accepted = true }
+
+        // AGENT-GUARD: the DragHandler must stay a handler of the shield.
+        // Handlers see a press before their own item does, so it holds a
+        // passive grab while the shield takes the exclusive one, then takes
+        // the drag over past the threshold. On any item beneath the shield it
+        // would never see the press at all.
+        DragHandler {
+            id: dragHandler
+            objectName: "appletEditDrag"
+            acceptedButtons: Qt.LeftButton
+            target: null
+            onActiveChanged: {
+                if (active) {
+                    if (!root.controller.beginAppletDrag(root.panelId, root.appletId)) {
+                        return
+                    }
+                    root.trackAt(centroid.position)
+                } else if (root.controller.dragActive) {
+                    if (root.controller.dropAccepted) {
+                        root.controller.dropApplet()
+                    } else {
+                        root.controller.cancelDrag()
+                    }
+                }
+            }
+            onCentroidChanged: {
+                if (active && root.controller.dragActive) {
+                    root.trackAt(centroid.position)
+                }
             }
         }
     }
 
-    function hoverAt(localPoint) {
-        if (editorHost === null || editorHost.dropTargetAt === undefined) {
+    // The pointer keeps its implicit grab on this surface while the button
+    // is held, even over another panel or display, so every position is
+    // published from here in this surface's coordinates.
+    function trackAt(localPoint) {
+        if (editorHost === null || editorHost.trackDrag === undefined) {
             return
         }
-        const hostPoint = mapToItem(editorHost, localPoint.x, localPoint.y)
-        const target = editorHost.dropTargetAt(hostPoint.x, hostPoint.y)
-        if (target !== null && target !== undefined) {
-            controller.hoverDropTarget(String(target.panelId), String(target.zone),
-                                       String(target.beforeAppletId ?? ""))
-        }
+        const hostPoint = shield.mapToItem(editorHost, localPoint.x, localPoint.y)
+        editorHost.trackDrag(hostPoint.x, hostPoint.y)
     }
 
     AppletCustomizeMenu {

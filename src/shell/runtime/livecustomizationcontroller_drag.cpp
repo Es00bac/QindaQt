@@ -11,6 +11,8 @@
 
 #include <QPoint>
 
+#include <cmath>
+
 namespace QindaQt::Shell {
 
 namespace Model = LiveCustomizationModel;
@@ -65,6 +67,7 @@ bool LiveCustomizationController::beginAppletDrag(const QString &panelId,
     payload.sourceAppletId = appletId;
     m_dropAccepted = false;
     m_dropReason.clear();
+    m_dropTarget.clear();
     const EditorOutcome armed = m_host->arm(payload);
     if (!armed.ok) {
         return settle(QStringLiteral("drag-arm"), armed, false);
@@ -82,8 +85,30 @@ bool LiveCustomizationController::hoverDropTarget(const QString &panelId, const 
     const auto acceptance = m_host->acceptance();
     m_dropAccepted = outcome.ok && (!acceptance.has_value() || acceptance->accepted);
     m_dropReason = acceptance.has_value() ? acceptance->reason : outcome.message;
+    m_dropTarget = m_dropAccepted ? QVariantMap{{QStringLiteral("panelId"), panelId},
+                                                {QStringLiteral("zone"), zone},
+                                                {QStringLiteral("beforeAppletId"), beforeAppletId}}
+                                  : QVariantMap{};
     Q_EMIT changed();
     return outcome.ok;
+}
+
+void LiveCustomizationController::trackDragPoint(double x, double y)
+{
+    if (!dragActive()) {
+        return;
+    }
+    m_dragPoint = QPointF(x, y);
+    // AGENT-GUARD: settle "over no panel" BEFORE announcing the point. The
+    // empty target is structurally invalid, so the engine paints it rejected
+    // and dropAccepted turns false; skipping this lets a release over the
+    // desktop commit the last target a panel accepted. (Nothing is accepted
+    // any more once it ran, so moves across the desktop do not repeat it.)
+    if (m_dropAccepted && panelSurfaceAt(QString(), x, y).isEmpty()) {
+        const bool hovered = hoverDropTarget(QString(), QString(), QString());
+        Q_UNUSED(hovered);
+    }
+    Q_EMIT dragPointChanged();
 }
 
 bool LiveCustomizationController::dropApplet()
@@ -94,6 +119,7 @@ bool LiveCustomizationController::dropApplet()
     const bool dropped = settle(QStringLiteral("drag-drop"), m_host->drop(), true);
     m_dropAccepted = false;
     m_dropReason.clear();
+    m_dropTarget.clear();
     Q_EMIT changed();
     return dropped;
 }
@@ -106,6 +132,7 @@ bool LiveCustomizationController::cancelDrag()
     const bool cancelled = settle(QStringLiteral("drag-cancel"), m_host->cancel(), false);
     m_dropAccepted = false;
     m_dropReason.clear();
+    m_dropTarget.clear();
     Q_EMIT changed();
     return cancelled;
 }
@@ -117,9 +144,12 @@ QVariantMap LiveCustomizationController::panelSurfaceAt(const QString &outputId,
     if (layout == nullptr) {
         return {};
     }
-    const QPoint point(static_cast<int>(x), static_cast<int>(y));
+    // Solved geometry is global and outputs never overlap, so an empty
+    // output id may search them all (a drag that crosses displays).
+    const QPoint point(static_cast<int>(std::floor(x)), static_cast<int>(std::floor(y)));
     for (const auto &surface : layout->surfaces) {
-        if (surface.outputId == outputId && surface.geometry.contains(point)) {
+        if ((outputId.isEmpty() || surface.outputId == outputId)
+            && surface.geometry.contains(point)) {
             return surfaceMap(surface);
         }
     }

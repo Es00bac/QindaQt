@@ -698,6 +698,53 @@ set_tests_properties(
     LABELS "shell;runtime;customize"
 )
 
+# Panel edit mode's keyboard half (ADR-0266): on-demand keyboard only while
+# editing, and Escape cancels a drag or leaves edit mode. Offscreen windows;
+# the layer-shell seam is a recorder.
+qt_add_executable(
+    qindaqt_panel_edit_keyboard_tests
+    tst_paneleditkeyboard.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/paneleditkeyboard.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/paneleditkeyboard.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationcontroller.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationcontroller_drag.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationcontroller_panels.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationcontroller.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationmodel.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/livecustomizationmodel.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/settingsroutelauncher.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/settingsroutelauncher.h"
+)
+target_include_directories(
+    qindaqt_panel_edit_keyboard_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
+)
+target_link_libraries(
+    qindaqt_panel_edit_keyboard_tests
+    PRIVATE
+        qindaqt_applets
+        qindaqt_profiles
+        QindaQt::SettingsClient
+        QindaQt::ShellCustomizationEditor
+        QindaQt::ShellLayout
+        Qt6::Gui
+        Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_panel_edit_keyboard_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+qindaqt_enable_warnings(qindaqt_panel_edit_keyboard_tests)
+add_test(
+    NAME qindaqt.shell-panel-edit-keyboard
+    COMMAND qindaqt_panel_edit_keyboard_tests
+)
+set_tests_properties(
+    qindaqt.shell-panel-edit-keyboard PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "shell;runtime;customize"
+)
+
 add_test(
     NAME qindaqt.live-customization-offscreen
     COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
