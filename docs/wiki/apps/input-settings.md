@@ -145,6 +145,13 @@ first snapshot and the tab is reachable by mouse or keyboard.
   next session.
 - A shortcut change is read back from kglobalaccel. If the key already belongs
   to another action, the row names that action; "Assign anyway" moves the key.
+- A set shortcut is drawn as keys (QindaTK `KeyCap`), one group of caps per
+  binding with a muted "or" between them; the row's accessible name spells the
+  same keys in words ("Shortcut: Meta+Space or Ctrl+Plus"). The Plus key is
+  named "Plus" because KeyCap splits a sequence on `+`. "Disabled" and the
+  capture prompt stay as text. This needs `dev-libs/qindatk-0.1.0-r5` or
+  newer: against r4 the row fails to load with "KeyCap is not a type", so
+  `qindaqt-desktop` must depend on `>=dev-libs/qindatk-0.1.0-r5`.
 - In a capture control, Escape cancels, Backspace clears, and Tab leaves the
   control without capturing. While capture is active, the control claims
   `ShortcutOverride` for keys it records or consumes, and the Input route
@@ -179,7 +186,7 @@ first snapshot and the tab is reachable by mouse or keyboard.
 | `qindaqt.settings-input-keyboard-layout-port` | `kxkbrc` round trip with `Use=true`, hostile catalogs, the announcement |
 | `qindaqt.settings-input-shortcut-port` | The kglobalaccel wire contract, read-back truth, command components, malformed replies |
 | `qindaqt.settings-input-pointer-devices-model`, `-keyboard-models`, `-shortcuts-model` | Presentation truth and write paths over fakes |
-| `qindaqt.settings-input-page` | Offscreen page: capability hiding, editors seated inside their rows, conflict capture, capture keys, keyboard navigation, unavailable notices, reachable Touch tab and real mouse edit |
+| `qindaqt.settings-input-page` | Offscreen page: capability hiding, editors seated inside their rows, shortcut keys drawn as one KeyCap group per binding with a spelled-out accessible name, conflict capture, capture keys, keyboard navigation, unavailable notices, reachable Touch tab and real mouse edit |
 | `qindaqt.settings-input-touch-model` | Ready/last-known admission, confirmed post-commit slider coalescing, refusal/conflict/uncertainty, external refresh and owner replacement over a fake Settings1 transport |
 | `qindaqt.settings-input-touch-section` | Offscreen Touch section: initial notice, control gating, real slider gestures and authoritative readback |
 | `qindaqt.settings-input-tablet-model` | Grouping a pen with its pad, selection surviving a refresh, deep-link selection, capability gating, the mapping write order, a refused write, the area helpers, reset |

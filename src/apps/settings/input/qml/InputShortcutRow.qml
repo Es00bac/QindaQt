@@ -5,11 +5,16 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
-// One global shortcut row: the action and component names, the active keys,
-// reset, clear, remove (command shortcuts only), capture, and the explicit
-// decision a captured key needs when another action already holds it
-// (ADR-0134).
+// One global shortcut row: the action and component names, the active keys
+// drawn as key caps, reset, clear, remove (command shortcuts only), capture,
+// and the explicit decision a captured key needs when another action already
+// holds it (ADR-0134).
+//
+// AGENT-GUARD: Tk.KeyCap arrived in dev-libs/qindatk-0.1.0-r5. Against r4 or
+// older this file fails to load ("KeyCap is not a type") and the whole
+// Shortcuts destination is lost, so the package must depend on r5.
 Rectangle {
     id: row
 
@@ -31,6 +36,26 @@ Rectangle {
     // Capture state for this row; null while not capturing.
     property var pendingKeys: null
     readonly property bool capturing: pendingKeys !== null
+
+    // AGENT-CONTRACT: `keys` is ShortcutsModel's display string: each binding
+    // is one single-chord QKeySequence in NativeText ("Ctrl+Shift+K"), and
+    // bindings are joined with ", " (shortcuts_model.cpp keysDisplay). The
+    // port builds every sequence from one combined key, so ", " never
+    // separates chords here. A comma key ("Ctrl+,") is still safe: its
+    // own comma is not followed by a space.
+    readonly property var bindings: keys.length > 0 ? keys.split(", ") : []
+    readonly property string spokenKeys:
+        bindings.map(binding => capSequence(binding)).join(qsTr(" or "))
+
+    // KeyCap splits its sequence on "+", so the Plus key itself ("Ctrl++",
+    // or a bare "+") is named instead of producing empty caps.
+    function capSequence(binding) {
+        if (binding === "+")
+            return qsTr("Plus")
+        if (binding.endsWith("++"))
+            return binding.slice(0, -1) + qsTr("Plus")
+        return binding
+    }
 
     function conflictText(conflicts) {
         return qsTr("Already used by %1").arg(conflicts.join(", "))
@@ -65,14 +90,51 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             spacing: Tokens.space["2"]
-            Label {
+            // The keys cell: the capture prompt, "Disabled", or one KeyCap
+            // group per binding separated by a muted "or". `text` and the
+            // accessible name spell the same state in words.
+            Flow {
+                id: keysCell
                 objectName: "inputShortcutKeys_" + row.index
-                Layout.fillWidth: true
-                text: row.capturing
+                readonly property bool showCaps: !row.capturing
+                                                 && row.bindings.length > 0
+                readonly property string text: row.capturing
                       ? qsTr("Press keys — Esc cancels, Backspace clears")
-                      : row.keys.length > 0 ? row.keys
-                                            : qsTr("Disabled")
-                muted: !row.capturing && row.keys.length === 0
+                      : showCaps ? row.spokenKeys : qsTr("Disabled")
+                Layout.fillWidth: true
+                spacing: Tokens.space["2"]
+                Accessible.role: Accessible.StaticText
+                Accessible.name: showCaps
+                                 ? qsTr("Shortcut: %1").arg(row.spokenKeys)
+                                 : text
+
+                Label {
+                    objectName: "inputShortcutKeysText_" + row.index
+                    visible: !keysCell.showCaps
+                    text: keysCell.text
+                    muted: !row.capturing
+                }
+                Repeater {
+                    model: keysCell.showCaps ? row.bindings : []
+                    delegate: Row {
+                        id: binding
+                        required property string modelData
+                        required property int index
+                        spacing: Tokens.space["2"]
+                        Label {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: binding.index > 0
+                            text: qsTr("or")
+                            muted: true
+                        }
+                        Tk.KeyCap {
+                            objectName: "inputShortcutKeyCap_" + row.index
+                                        + "_" + binding.index
+                            anchors.verticalCenter: parent.verticalCenter
+                            sequence: row.capSequence(binding.modelData)
+                        }
+                    }
+                }
             }
             Button {
                 objectName: "inputShortcutReset_" + row.index

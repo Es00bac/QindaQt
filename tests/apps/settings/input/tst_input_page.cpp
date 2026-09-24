@@ -12,7 +12,10 @@
 #include <qindaqt/themes/theme_loader.h>
 
 #include <QQmlComponent>
+#include <QJSValue>
+#include <QQmlContext>
 #include <QQmlEngine>
+#include <QQmlProperty>
 #include <QQuickItem>
 
 #include <QQuickWindow>
@@ -125,6 +128,7 @@ private Q_SLOTS:
 
     void capabilityHidingHidesUnsupportedRows();
     void editorsSeatInsideTheirFormRows();
+    void shortcutKeysDrawAsKeyCapsPerBinding();
     void conflictCaptureNamesTheConflictingAction();
     void captureFlowEscapeCancelsAndBackspaceClears();
     void keyboardNavigationReachesTabsAndControls();
@@ -320,6 +324,52 @@ void InputPageTest::rejectedPointerEditRestoresControl() {
     QTRY_COMPARE(control->property("checked").toBool(), false);
     QVERIFY(facade->pointerModel.selection()->statusText().contains(
         QStringLiteral("refused")));
+}
+
+void InputPageTest::shortcutKeysDrawAsKeyCapsPerBinding() {
+    // Three bindings, including the two keys KeyCap's "+" split would
+    // mangle, and one action with none.
+    auto &actions = facade->m_shortcutPort.mutableScripted();
+    actions.append(shellAction(
+        QStringLiteral("qindaqt_reveal_panels"),
+        QStringLiteral("Reveal QindaQt panels"),
+        {QKeySequence(Qt::META | Qt::Key_Space),
+         QKeySequence(Qt::CTRL | Qt::Key_Plus),
+         QKeySequence(Qt::CTRL | Qt::Key_Comma)}));
+    actions.append(shellAction(QStringLiteral("qindaqt_open_launcher"),
+                               QStringLiteral("Open launcher"), {}));
+    QVERIFY(selectDestination(QStringLiteral("shortcuts")));
+    QTRY_VERIFY(isShown(QStringLiteral("inputShortcutKeyCap_0_2")));
+
+    const auto capKeys = [this](const QString &objectName) {
+        QVariant keys = findObject(objectName)->property("keys");
+        if (keys.canConvert<QJSValue>())
+            keys = keys.value<QJSValue>().toVariant();
+        return keys.toStringList();
+    };
+    QCOMPARE(capKeys(QStringLiteral("inputShortcutKeyCap_0_0")),
+             QStringList({QStringLiteral("Meta"), QStringLiteral("Space")}));
+    QCOMPARE(capKeys(QStringLiteral("inputShortcutKeyCap_0_1")),
+             QStringList({QStringLiteral("Ctrl"), QStringLiteral("Plus")}));
+    QCOMPARE(capKeys(QStringLiteral("inputShortcutKeyCap_0_2")),
+             QStringList({QStringLiteral("Ctrl"), QStringLiteral(",")}));
+
+    // The cell keeps its object name and spells the keys for assistive
+    // technology, bindings joined by "or".
+    QObject *cell = findObject(QStringLiteral("inputShortcutKeys_0"));
+    QVERIFY(cell != nullptr);
+    const QString spoken = QStringLiteral("Meta+Space or Ctrl+Plus or Ctrl+,");
+    QCOMPARE(cell->property("text").toString(), spoken);
+    QCOMPARE(QQmlProperty(cell, QStringLiteral("Accessible.name"),
+                          qmlContext(cell)).read().toString(),
+             QStringLiteral("Shortcut: ") + spoken);
+
+    // No binding: the words stay, and no empty cap is drawn.
+    QCOMPARE(findObject(QStringLiteral("inputShortcutKeys_1"))
+                 ->property("text").toString(),
+             QStringLiteral("Disabled"));
+    QVERIFY(isShown(QStringLiteral("inputShortcutKeysText_1")));
+    QVERIFY(findObject(QStringLiteral("inputShortcutKeyCap_1_0")) == nullptr);
 }
 
 void InputPageTest::conflictCaptureNamesTheConflictingAction() {
