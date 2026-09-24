@@ -30,6 +30,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
                      "${CMAKE_BINARY_DIR}/src/services/settings_protocol")
     add_subdirectory("../../../src/services/settings_client"
                      "${CMAKE_BINARY_DIR}/src/services/settings_client")
+    add_subdirectory("../../../src/services/dock_items"
+                     "${CMAKE_BINARY_DIR}/src/services/dock_items")
     add_subdirectory("../../../src/applets" "${CMAKE_BINARY_DIR}/src/applets")
     add_subdirectory("../../../src/applet_host"
                      "${CMAKE_BINARY_DIR}/src/applet_host")

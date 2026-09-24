@@ -90,7 +90,7 @@ integration retains every accepted decision in numeric order.
 | [ADR-0073](0073-publish-atomic-authenticated-task-facts.md) | Accepted | Publish atomic task facts only to the authenticated production shell |
 | [ADR-0074](0074-compose-shell-preferences-through-settings1.md) | Accepted | Compose shell layout and token preferences through Settings1 |
 | [ADR-0075](0075-desktop-controls-and-workspaces.md) | Proposed | Compose desktop controls over bounded shell facades |
-| [ADR-0076](0076-register-launcher-persistence-in-panel-settings.md) | Accepted | Register launcher persistence in panel settings |
+| [ADR-0076](0076-register-launcher-persistence-in-panel-settings.md) | Accepted; pinned list superseded by ADR-0265 | Register launcher persistence in panel settings |
 | [ADR-0077](0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md) | Accepted | Acknowledge global menu hosting before hiding local menus |
 | [ADR-0078](0078-own-wallpaper-surfaces-in-the-shell.md) | Accepted | Own wallpaper surfaces in the shell |
 | [ADR-0079](0079-own-welcome-presentation-preference-locally.md) | Accepted | Own Welcome preference locally and supervision in session |
@@ -264,4 +264,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0261: Lay desktop icons out inside the panels' work area](0261-lay-desktop-icons-out-inside-the-panel-work-area.md)
 - [ADR-0262: Applications is browsed in the File Manager's ordinary views](0262-applications-is-browsed-in-the-file-managers-ordinary-views.md)
 - [ADR-0263: The Mac-style layout is the default](0263-the-mac-style-layout-is-the-default.md)
+- [ADR-0264: Window button styles are data, with title-bar options](0264-window-button-styles-are-data.md)
+- [ADR-0265: Keep the dock's items in one structured Settings1 value](0265-keep-dock-items-in-one-structured-settings-value.md)
 - [ADR-0269: Open With widens the bounded launch, and KArchive backs Compress and Extract](0269-open-with-widens-the-bounded-launch-and-karchive-backs-archives.md)
+- [ADR-0273: Integrate the File Manager with the desktop like Finder](0273-integrate-the-file-manager-with-the-desktop-like-finder.md)

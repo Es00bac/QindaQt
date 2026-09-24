@@ -25,7 +25,8 @@ bool hasChromeDecisionOutput(const ChromePointerDecision &decision) noexcept
     return decision.hoverChanged
         || !decision.containerRaiseRequests.isEmpty()
         || !decision.activations.isEmpty() || !decision.drags.isEmpty()
-        || !decision.contextMenus.isEmpty() || !decision.shadeRequests.isEmpty();
+        || !decision.contextMenus.isEmpty() || !decision.shadeRequests.isEmpty()
+        || !decision.titleDoubleClicks.isEmpty();
 }
 
 HybridChromePointerRouter::HybridChromePointerRouter(HitResolver resolver,
@@ -328,12 +329,17 @@ ChromePointerDecision HybridChromePointerRouter::pointerRelease(
             decision.shadeRequests.append({pressed.containerId, false});
         }
     } else if (m_hovered == m_pressed && !m_dragActive
-               && pressed.target.kind == HybridChrome::HitKind::OuterTitleDrag
-               && pressed.target.fromShadedBadge) {
-        // A double-click anywhere on the badge body unrolls; a single click
-        // only raises (already requested at press).
+               && pressed.target.kind == HybridChrome::HitKind::OuterTitleDrag) {
+        // A double-click anywhere on the badge body unrolls; on the unshaded
+        // title row it is the title-bar double-click (ADR-0264), whose
+        // action the session resolves. A single click only raises (already
+        // requested at press).
         if (isBadgeDoubleClick(pressed)) {
-            decision.shadeRequests.append({pressed.containerId, false});
+            if (pressed.target.fromShadedBadge) {
+                decision.shadeRequests.append({pressed.containerId, false});
+            } else {
+                decision.titleDoubleClicks.append(pressed.containerId);
+            }
             m_lastBadgeClickMs = -1;
         } else {
             noteBadgeClick(pressed);

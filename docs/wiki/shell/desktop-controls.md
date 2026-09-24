@@ -5,13 +5,16 @@ families: workspace switcher and tiles, show desktop, overview, active
 application, command palette and HUD, system menu and status, Places, quick
 launch, application tiles, and the Windows style dashboard. They are compiled
 QML in `QindaQt.Shell.DesktopControls 1.0` and consume shell-owned facades.
+Quick launch is the dock: pinned applications, folders, files, groups, and
+the Trash, with drag and drop ([Dock items](dock-items.md)).
 
 Each profile instance still passes manifest lookup, placement, host selection,
 compiled implementation, and capability policy before its one selected panel
 loader creates a control. A denied capability leaves the control unavailable
 and cannot create an alternate execution path. Application tiles use the
-launcher facade's bounded pinned projection and its audited activation intent;
-they are distinct tile presentation from the compact Quick Launch strip.
+dock's applications (group members included) and the launcher's audited
+activation intent; they are distinct tile presentation from the compact Quick
+Launch strip.
 
 Workspace controls read the authenticated workspace transport through a shared
 controller and include the displayed revision with every switch or show-desktop

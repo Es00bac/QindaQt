@@ -70,6 +70,8 @@ qt_add_qml_module(
         include/qindaqt/apps/settings_appearance/appearance_container_preview.h
         appearance_container_preview.cpp
     QML_FILES
+        qml/ChromeChoice.qml
+        qml/ChromeMenuChoice.qml
         qml/DecorationChoiceCard.qml
         qml/DecorationDocumentCard.qml
         qml/DecorationDocumentChooser.qml
@@ -81,6 +83,7 @@ qt_add_qml_module(
         qml/AppearanceWallpaperSection.qml
         qml/AppearanceWindowsSection.qml
         qml/SegmentedChoiceRow.qml
+        qml/TitleBarOptions.qml
 )
 target_link_libraries(
     qindaqt_settings_appearance_qml

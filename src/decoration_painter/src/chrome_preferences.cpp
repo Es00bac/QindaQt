@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/decoration_painter/decoration_painter.h"
 
+#include "qindaqt/decoration_painter/decoration_button_style.h"
 #include "qindaqt/themes/decoration_theme_loader.h"
 
 #include <utility>
 
 // User arrangement for the two chrome sets (ADR-0129): the preference model,
 // its Settings1 tokens, and the resolution of a theme plus preferences into
-// the published window chrome and the container chrome style.
+// the published window chrome. Container chrome resolves in
+// container_chrome_style.cpp from the same preferences.
 namespace QindaQt::Decoration {
 namespace {
-
-using HybridChrome::ButtonSide;
-using HybridChrome::ButtonStyle;
-using HybridChrome::ChromeStyle;
-using HybridChrome::TabVisualDirection;
 
 struct PreferenceField final {
     QLatin1String key;
@@ -24,26 +21,67 @@ struct PreferenceField final {
 
 const QList<PreferenceField> &preferenceFields()
 {
-    const auto theme = QStringLiteral("theme");
-    static const QList<PreferenceField> fields{
-        {ChromePreferenceKeys::WindowButtonStyle, &ChromePreferences::windowButtonStyle,
-         {theme, QStringLiteral("traffic-lights"), QStringLiteral("flat"),
-          QStringLiteral("glyph")}},
-        {ChromePreferenceKeys::WindowButtonSide, &ChromePreferences::windowButtonSide,
-         {theme, QStringLiteral("left"), QStringLiteral("right")}},
-        {ChromePreferenceKeys::WindowButtons, &ChromePreferences::windowButtons,
-         {QStringLiteral("all"), QStringLiteral("minimize-close"), QStringLiteral("close")}},
-        {ChromePreferenceKeys::WindowTitleAlignment, &ChromePreferences::windowTitleAlignment,
-         {QStringLiteral("center"), QStringLiteral("left")}},
-        {ChromePreferenceKeys::ContainerButtonStyle, &ChromePreferences::containerButtonStyle,
-         {theme, QStringLiteral("traffic-lights"), QStringLiteral("flat")}},
-        {ChromePreferenceKeys::ContainerButtonSide, &ChromePreferences::containerButtonSide,
-         {theme, QStringLiteral("left"), QStringLiteral("right")}},
-        {ChromePreferenceKeys::ContainerTabOrder, &ChromePreferences::containerTabOrder,
-         {theme, QStringLiteral("left-to-right"), QStringLiteral("right-to-left")}},
-        {ChromePreferenceKeys::ContainerButtonGlyphs, &ChromePreferences::containerButtonGlyphs,
-         {theme, QStringLiteral("always"), QStringLiteral("hover")}},
-    };
+    static const QList<PreferenceField> fields = [] {
+        const auto theme = QStringLiteral("theme");
+        // AGENT-CONTRACT: these lists mirror the allowedValues of the same
+        // keys in data/settings/schema-v2.json; a token missing on either
+        // side makes an Appearance commit fail validation. Both chrome sets
+        // offer every named button style (ADR-0264); "symbols" stays a
+        // theme-only name because windows paint it exactly like the lights.
+        const QStringList buttonStyles{
+            theme, QStringLiteral("traffic-lights"), QStringLiteral("flat"),
+            QStringLiteral("glyph"), QStringLiteral("gel"), QStringLiteral("bevel"),
+            QStringLiteral("blue-tiles"), QStringLiteral("wide"), QStringLiteral("tab"),
+            QStringLiteral("bold"), QStringLiteral("minimal"), QStringLiteral("pills"),
+            QStringLiteral("dots"), QStringLiteral("outline"), QStringLiteral("chunky")};
+        const QStringList sizes{theme, QStringLiteral("small"), QStringLiteral("large")};
+        const QStringList spacings{theme, QStringLiteral("tight"), QStringLiteral("roomy")};
+        const QStringList switches{QStringLiteral("hidden"), QStringLiteral("shown")};
+        const QStringList doubleClicks{QStringLiteral("maximize"), QStringLiteral("roll-up"),
+                                       QStringLiteral("minimize")};
+        return QList<PreferenceField>{
+            {ChromePreferenceKeys::WindowButtonStyle, &ChromePreferences::windowButtonStyle,
+             buttonStyles},
+            {ChromePreferenceKeys::WindowButtonSide, &ChromePreferences::windowButtonSide,
+             {theme, QStringLiteral("left"), QStringLiteral("right")}},
+            {ChromePreferenceKeys::WindowButtons, &ChromePreferences::windowButtons,
+             {QStringLiteral("all"), QStringLiteral("minimize-close"), QStringLiteral("close")}},
+            {ChromePreferenceKeys::WindowTitleAlignment, &ChromePreferences::windowTitleAlignment,
+             {QStringLiteral("center"), QStringLiteral("left")}},
+            {ChromePreferenceKeys::ContainerButtonStyle, &ChromePreferences::containerButtonStyle,
+             buttonStyles},
+            {ChromePreferenceKeys::ContainerButtonSide, &ChromePreferences::containerButtonSide,
+             {theme, QStringLiteral("left"), QStringLiteral("right")}},
+            {ChromePreferenceKeys::ContainerTabOrder, &ChromePreferences::containerTabOrder,
+             {theme, QStringLiteral("left-to-right"), QStringLiteral("right-to-left")}},
+            {ChromePreferenceKeys::ContainerButtonGlyphs,
+             &ChromePreferences::containerButtonGlyphs,
+             {theme, QStringLiteral("always"), QStringLiteral("hover")}},
+            // Title-bar options (ADR-0264), appended so the commit order of
+            // the original eight keys never changes.
+            {ChromePreferenceKeys::WindowButtonSize, &ChromePreferences::windowButtonSize, sizes},
+            {ChromePreferenceKeys::WindowButtonSpacing, &ChromePreferences::windowButtonSpacing,
+             spacings},
+            {ChromePreferenceKeys::WindowTitleHeight, &ChromePreferences::windowTitleHeight,
+             {theme, QStringLiteral("compact"), QStringLiteral("tall")}},
+            {ChromePreferenceKeys::WindowCornerRadius, &ChromePreferences::windowCornerRadius,
+             {theme, QStringLiteral("square"), QStringLiteral("small"), QStringLiteral("large")}},
+            {ChromePreferenceKeys::WindowTitleWeight, &ChromePreferences::windowTitleWeight,
+             {theme, QStringLiteral("regular"), QStringLiteral("bold")}},
+            {ChromePreferenceKeys::WindowAppIcon, &ChromePreferences::windowAppIcon, switches},
+            {ChromePreferenceKeys::WindowRollUpButton, &ChromePreferences::windowRollUpButton,
+             switches},
+            {ChromePreferenceKeys::WindowTitleDoubleClick,
+             &ChromePreferences::windowTitleDoubleClick, QStringList{theme} + doubleClicks},
+            {ChromePreferenceKeys::ContainerButtonSize, &ChromePreferences::containerButtonSize,
+             sizes},
+            {ChromePreferenceKeys::ContainerButtonSpacing,
+             &ChromePreferences::containerButtonSpacing, spacings},
+            {ChromePreferenceKeys::ContainerTitleDoubleClick,
+             &ChromePreferences::containerTitleDoubleClick,
+             QStringList{QStringLiteral("none")} + doubleClicks},
+        };
+    }();
     return fields;
 }
 
@@ -55,18 +93,6 @@ const PreferenceField *findField(const QString &key)
         }
     }
     return nullptr;
-}
-
-QColor styleColor(const QVariantMap &map, const char *name, const QColor &fallback)
-{
-    const auto value = map.value(QString::fromLatin1(name));
-    if (value.canConvert<QColor>()) {
-        const auto color = value.value<QColor>();
-        if (color.isValid()) {
-            return color;
-        }
-    }
-    return fallback;
 }
 
 } // namespace
@@ -184,6 +210,44 @@ DecorationChrome applyWindowPreferences(DecorationChrome chrome,
     }
     chrome.buttons = preferences.windowButtons;
     chrome.titleAlignment = preferences.windowTitleAlignment;
+    // Title-bar options (ADR-0264). "theme" keeps what the theme and its
+    // decoration document resolved, so untouched chrome stays byte-identical.
+    if (preferences.windowButtonSize == QLatin1String("small")) {
+        chrome.buttonScale = 0.8;
+    } else if (preferences.windowButtonSize == QLatin1String("large")) {
+        chrome.buttonScale = 1.25;
+    }
+    if (preferences.windowButtonSpacing == QLatin1String("tight")) {
+        chrome.spacingScale = 0.5;
+    } else if (preferences.windowButtonSpacing == QLatin1String("roomy")) {
+        chrome.spacingScale = 1.5;
+    }
+    // Heights are relative to the chosen style's own bar, so "tall" on the
+    // chunky style is still taller than chunky's own.
+    const auto &style = decorationButtonStyle(chrome.buttonStyle);
+    const qreal ownHeight = style.titleHeight > 0.0 ? style.titleHeight : DecorationTitleHeight;
+    if (preferences.windowTitleHeight == QLatin1String("compact")) {
+        chrome.titleHeight = ownHeight - 4.0;
+    } else if (preferences.windowTitleHeight == QLatin1String("tall")) {
+        chrome.titleHeight = ownHeight + 6.0;
+    }
+    if (preferences.windowCornerRadius == QLatin1String("square")) {
+        chrome.cornerRadius = 0.0;
+    } else if (preferences.windowCornerRadius == QLatin1String("small")) {
+        chrome.cornerRadius = 4.0;
+    } else if (preferences.windowCornerRadius == QLatin1String("large")) {
+        chrome.cornerRadius = 16.0;
+    }
+    if (preferences.windowTitleWeight == QLatin1String("regular")) {
+        chrome.titleWeight = QFont::Normal;
+    } else if (preferences.windowTitleWeight == QLatin1String("bold")) {
+        chrome.titleWeight = QFont::Bold;
+    }
+    chrome.appIcon = preferences.windowAppIcon == QLatin1String("shown");
+    chrome.rollUpButton = preferences.windowRollUpButton == QLatin1String("shown");
+    if (preferences.windowTitleDoubleClick != QLatin1String("theme")) {
+        chrome.titleDoubleClick = preferences.windowTitleDoubleClick;
+    }
     return chrome;
 }
 
@@ -191,49 +255,6 @@ DecorationChrome resolveWindowChrome(const Themes::ThemeSpec &theme,
                                      const ChromePreferences &preferences)
 {
     return applyWindowPreferences(DecorationChrome::fromTheme(theme), preferences);
-}
-
-namespace {
-
-ChromeStyle applyContainerPreferences(ChromeStyle style, bool themeHoverGlyphs,
-                                      const ChromePreferences &preferences);
-
-// The color theme's own container arrangement: an unauthored theme keeps the
-// Qinda macOS container arrangement every theme shipped with, so defaults
-// stay byte-identical. `themeHoverGlyphs` reports the theme's hover choice
-// for the "theme" preference token.
-ChromeStyle containerStyleForTheme(const Themes::ThemeSpec &theme, bool *themeHoverGlyphs)
-{
-    ChromeStyle style = ChromeStyle::qindaMacOS(chromePaletteForTheme(theme));
-    *themeHoverGlyphs = style.hoverGlyphs;
-    if (theme.decoration.authored) {
-        const auto &decoration = theme.decoration;
-        style.buttonSide = decoration.buttonPlacement == QLatin1String("left")
-            ? ButtonSide::Left : ButtonSide::Right;
-        style.tabDirection = decoration.tabDirection == QLatin1String("right-to-left")
-            ? TabVisualDirection::RightToLeft : TabVisualDirection::LeftToRight;
-        style.buttonStyle = decoration.buttonStyle == QLatin1String("traffic-lights")
-            ? ButtonStyle::TrafficLights : ButtonStyle::Symbols;
-        *themeHoverGlyphs = decoration.hoverGlyphs;
-    }
-    style.material = containerMaterialForTheme(theme);
-    return style;
-}
-
-} // namespace
-
-HybridChrome::ChromeMaterial containerMaterialForTheme(const Themes::ThemeSpec &theme)
-{
-    HybridChrome::ChromeMaterial material;
-    if (theme.schemaVersion < 2) {
-        return material;
-    }
-    const auto surface = theme.surface(QString(Themes::SurfaceNames::ContainerChrome));
-    material.opacity = surface.opacity;
-    material.tint = surface.tint;
-    material.border = surface.border;
-    material.highlight = surface.highlight;
-    return material;
 }
 
 DecorationChrome applyDecorationTheme(DecorationChrome chrome,
@@ -273,33 +294,6 @@ DecorationChrome applyDecorationTheme(DecorationChrome chrome,
     chrome.shadowOpacity = document.shadowOpacity * document.titleMaterial.shadow;
     chrome.handleStyle = document.memberHandleStyle;
     return chrome;
-}
-
-ChromeStyle applyDecorationTheme(ChromeStyle style, const Themes::DecorationThemeSpec &document)
-{
-    const auto &decoration = document.decoration;
-    style.buttonSide = decoration.buttonPlacement == QLatin1String("left")
-        ? ButtonSide::Left : ButtonSide::Right;
-    style.tabDirection = decoration.tabDirection == QLatin1String("right-to-left")
-        ? TabVisualDirection::RightToLeft : TabVisualDirection::LeftToRight;
-    style.buttonStyle = decoration.buttonStyle == QLatin1String("traffic-lights")
-        ? ButtonStyle::TrafficLights : ButtonStyle::Symbols;
-    style.hoverGlyphs = decoration.hoverGlyphs && style.buttonStyle == ButtonStyle::TrafficLights;
-    if (decoration.closeColor.isValid()) {
-        style.palette.close = decoration.closeColor;
-    }
-    if (decoration.minimizeColor.isValid()) {
-        style.palette.minimize = decoration.minimizeColor;
-    }
-    if (decoration.maximizeColor.isValid()) {
-        style.palette.maximize = decoration.maximizeColor;
-    }
-    style.material.opacity = document.titleMaterial.opacity;
-    style.material.tint = document.titleMaterial.tint;
-    style.material.border = document.titleMaterial.border;
-    style.material.highlight = document.titleMaterial.highlight;
-    style.material.squareBadge = document.containerBadgeStyle == QLatin1String("square");
-    return style;
 }
 
 std::optional<Themes::DecorationThemeSpec>
@@ -344,143 +338,6 @@ DecorationChrome decorateWindowChrome(DecorationChrome chrome, const Themes::The
         chrome = applyDecorationTheme(chrome, *document);
     }
     return applyWindowPreferences(chrome, preferences);
-}
-
-ChromeStyle resolveContainerStyle(const Themes::ThemeSpec &theme,
-                                  const std::optional<Themes::DecorationThemeSpec> &document,
-                                  const ChromePreferences &preferences)
-{
-    bool themeHoverGlyphs = false;
-    ChromeStyle style = containerStyleForTheme(theme, &themeHoverGlyphs);
-    if (document) {
-        style = applyDecorationTheme(style, *document);
-        themeHoverGlyphs = document->decoration.hoverGlyphs;
-    }
-    return applyContainerPreferences(style, themeHoverGlyphs, preferences);
-}
-
-ChromeStyle resolveContainerStyle(const Themes::ThemeSpec &theme,
-                                  const ChromePreferences &preferences)
-{
-    bool themeHoverGlyphs = false;
-    const ChromeStyle style = containerStyleForTheme(theme, &themeHoverGlyphs);
-    return applyContainerPreferences(style, themeHoverGlyphs, preferences);
-}
-
-namespace {
-
-ChromeStyle applyContainerPreferences(ChromeStyle style, bool themeHoverGlyphs,
-                                      const ChromePreferences &preferences)
-{
-    if (preferences.containerButtonStyle == QLatin1String("traffic-lights")) {
-        style.buttonStyle = ButtonStyle::TrafficLights;
-    } else if (preferences.containerButtonStyle == QLatin1String("flat")) {
-        style.buttonStyle = ButtonStyle::Symbols;
-    }
-    if (preferences.containerButtonSide == QLatin1String("left")) {
-        style.buttonSide = ButtonSide::Left;
-    } else if (preferences.containerButtonSide == QLatin1String("right")) {
-        style.buttonSide = ButtonSide::Right;
-    }
-    if (preferences.containerTabOrder == QLatin1String("left-to-right")) {
-        style.tabDirection = TabVisualDirection::LeftToRight;
-    } else if (preferences.containerTabOrder == QLatin1String("right-to-left")) {
-        style.tabDirection = TabVisualDirection::RightToLeft;
-    }
-    if (preferences.containerButtonGlyphs == QLatin1String("always")) {
-        style.hoverGlyphs = false;
-    } else if (preferences.containerButtonGlyphs == QLatin1String("hover")) {
-        style.hoverGlyphs = true;
-    } else {
-        // Hover-only glyphs belong to traffic lights; flat symbols without a
-        // glyph would be blank plates, so "theme" keeps them visible.
-        style.hoverGlyphs = style.buttonStyle == ButtonStyle::TrafficLights && themeHoverGlyphs;
-    }
-    return style;
-}
-
-} // namespace
-
-QVariantMap containerStyleToVariantMap(const ChromeStyle &style)
-{
-    const auto &palette = style.palette;
-    QVariantMap values = {
-        {QStringLiteral("buttonSide"),
-         style.buttonSide == ButtonSide::Left ? QStringLiteral("left") : QStringLiteral("right")},
-        {QStringLiteral("tabDirection"),
-         style.tabDirection == TabVisualDirection::RightToLeft
-             ? QStringLiteral("right-to-left") : QStringLiteral("left-to-right")},
-        {QStringLiteral("buttonStyle"),
-         style.buttonStyle == ButtonStyle::TrafficLights
-             ? QStringLiteral("traffic-lights") : QStringLiteral("symbols")},
-        {QStringLiteral("hoverGlyphs"), style.hoverGlyphs},
-        {QStringLiteral("surface"), palette.surface},
-        {QStringLiteral("surfaceRaised"), palette.surfaceRaised},
-        {QStringLiteral("border"), palette.border},
-        {QStringLiteral("text"), palette.text},
-        {QStringLiteral("textMuted"), palette.textMuted},
-        {QStringLiteral("accent"), palette.accent},
-        {QStringLiteral("close"), palette.close},
-        {QStringLiteral("minimize"), palette.minimize},
-        {QStringLiteral("maximize"), palette.maximize},
-    };
-    // Material keys (ADR-0207), omitted at their defaults.
-    if (!qFuzzyCompare(style.material.opacity, 1.0)) {
-        values.insert(QStringLiteral("materialOpacity"), style.material.opacity);
-    }
-    if (style.material.tint.isValid()) {
-        values.insert(QStringLiteral("materialTint"), style.material.tint);
-    }
-    if (!qFuzzyCompare(style.material.border, 1.0)) {
-        values.insert(QStringLiteral("materialBorder"), style.material.border);
-    }
-    if (style.material.highlight) {
-        values.insert(QStringLiteral("materialHighlight"), true);
-    }
-    if (style.material.squareBadge) {
-        values.insert(QStringLiteral("squareBadge"), true);
-    }
-    return values;
-}
-
-ChromeStyle containerStyleFromVariantMap(const QVariantMap &map)
-{
-    ChromeStyle style;
-    const auto text = [&map](const char *name) {
-        return map.value(QString::fromLatin1(name)).toString();
-    };
-    style.buttonSide = text("buttonSide") == QLatin1String("left") ? ButtonSide::Left
-                                                                   : ButtonSide::Right;
-    style.tabDirection = text("tabDirection") == QLatin1String("right-to-left")
-        ? TabVisualDirection::RightToLeft : TabVisualDirection::LeftToRight;
-    style.buttonStyle = text("buttonStyle") == QLatin1String("traffic-lights")
-        ? ButtonStyle::TrafficLights : ButtonStyle::Symbols;
-    style.hoverGlyphs = map.value(QStringLiteral("hoverGlyphs")).toBool();
-    auto &palette = style.palette;
-    palette.surface = styleColor(map, "surface", palette.surface);
-    palette.surfaceRaised = styleColor(map, "surfaceRaised", palette.surfaceRaised);
-    palette.border = styleColor(map, "border", palette.border);
-    palette.text = styleColor(map, "text", palette.text);
-    palette.textMuted = styleColor(map, "textMuted", palette.textMuted);
-    palette.accent = styleColor(map, "accent", palette.accent);
-    palette.close = styleColor(map, "close", palette.close);
-    palette.minimize = styleColor(map, "minimize", palette.minimize);
-    palette.maximize = styleColor(map, "maximize", palette.maximize);
-    const auto bounded = [&map](const char *name, double fallback) {
-        const auto value = map.value(QString::fromLatin1(name));
-        if (value.metaType().id() != QMetaType::Double && value.metaType().id() != QMetaType::Int
-            && value.metaType().id() != QMetaType::Float) {
-            return fallback;
-        }
-        const double decoded = value.toDouble();
-        return decoded >= 0.0 && decoded <= 1.0 ? decoded : fallback;
-    };
-    style.material.opacity = bounded("materialOpacity", 1.0);
-    style.material.tint = styleColor(map, "materialTint", QColor());
-    style.material.border = bounded("materialBorder", 1.0);
-    style.material.highlight = map.value(QStringLiteral("materialHighlight")).toBool();
-    style.material.squareBadge = map.value(QStringLiteral("squareBadge")).toBool();
-    return style;
 }
 
 } // namespace QindaQt::Decoration

@@ -3,6 +3,19 @@
 
 namespace QindaQt::Themes {
 
+QStringList DecorationThemeTokens::buttonStyles()
+{
+    // The four shipped styles first, then the W19 styles (ADR-0264).
+    return {QStringLiteral("symbols"), QStringLiteral("traffic-lights"),
+            QStringLiteral("glyph"), QStringLiteral("flat"),
+            QStringLiteral("gel"), QStringLiteral("bevel"),
+            QStringLiteral("blue-tiles"), QStringLiteral("wide"),
+            QStringLiteral("tab"), QStringLiteral("bold"),
+            QStringLiteral("minimal"), QStringLiteral("pills"),
+            QStringLiteral("dots"), QStringLiteral("outline"),
+            QStringLiteral("chunky")};
+}
+
 QStringList DecorationThemeTokens::memberHandleStyles()
 {
     return {QStringLiteral("grip"), QStringLiteral("dots"), QStringLiteral("plain")};

@@ -513,6 +513,15 @@ void TaskListAppletComposition::compose(
         });
 }
 
+std::function<QString(const QString &applicationId)>
+TaskListAppletComposition::desktopEntryResolver() const
+{
+    return [this](const QString &applicationId) {
+        return m_iconResolver ? m_iconResolver->desktopIdForAppId(applicationId)
+                              : QString{};
+    };
+}
+
 bool TaskListAppletComposition::start(QString *error)
 {
     if (!m_ownedProducer) {

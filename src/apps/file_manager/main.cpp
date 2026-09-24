@@ -37,6 +37,7 @@
 #include "runtime/file_actions_composition.h"
 #include "runtime/file_manager_application.h"
 #include "runtime/mutation_ui_action_probe.h"
+#include "runtime/finder_integration.h"
 #include "runtime/ui_contract_probe.h"
 #include "mutation/karchive_codec.h"
 #include "mutation/local_mutation_backend.h"
@@ -126,6 +127,7 @@ void registerCommandLineOptions(QCommandLineParser &parser) {
   parser.addOption(
       {QStringLiteral("check-ui-actions"),
        QStringLiteral("Drive production mutation QML against a disposable fixture and exit")});
+  QindaQt::Apps::FileManager::registerFinderOptions(parser);
 }
 
 // Creates and seeds the disposable --check-ui-actions fixture. The probe's S2
@@ -169,6 +171,16 @@ seedUiActionFixture(const QString &parentPath, QString *fixturePath) {
     }
   }
   return roots;
+}
+
+// The window's one mutation controller over the home Trash. ADR-0269:
+// Compress and Extract run in the same busy slot through the KArchive codec.
+[[nodiscard]] std::unique_ptr<QindaQt::Apps::FileManager::MutationController>
+composeMutationController(const QString &trashRoot) {
+  return std::make_unique<QindaQt::Apps::FileManager::MutationController>(
+      std::make_unique<QindaQt::Apps::FileManager::LocalMutationBackend>(
+          trashRoot, std::make_shared<QindaQt::Apps::FileManager::LocalDeviceResolver>(),
+          std::make_shared<QindaQt::Apps::FileManager::KArchiveCodec>()));
 }
 
 // The one app-local state root: bookmarks, saved network locations and
@@ -398,12 +410,7 @@ int main(int argc, char **argv) {
   const QString trashRoot = QDir(QStandardPaths::writableLocation(
                                      QStandardPaths::GenericDataLocation))
                                 .filePath(QStringLiteral("Trash"));
-  // ADR-0269: Compress and Extract run in the same busy slot through KArchive.
-  auto mutationController =
-      std::make_unique<QindaQt::Apps::FileManager::MutationController>(
-          std::make_unique<QindaQt::Apps::FileManager::LocalMutationBackend>(
-              trashRoot, std::make_shared<QindaQt::Apps::FileManager::LocalDeviceResolver>(),
-              std::make_shared<QindaQt::Apps::FileManager::KArchiveCodec>()));
+  auto mutationController = composeMutationController(trashRoot);
   auto clipboardController =
       std::make_unique<QindaQt::Apps::FileManager::ClipboardController>(
           *mutationController, *QGuiApplication::clipboard());
@@ -456,6 +463,7 @@ int main(int argc, char **argv) {
        {QStringLiteral("mountManager"),
         QVariant::fromValue(static_cast<QObject *>(network.mounts.get()))},
        {QStringLiteral("chooserMode"), parser.isSet(QStringLiteral("choose-application"))},
+       {QStringLiteral("visible"), !parser.isSet(QStringLiteral("service"))},
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
   fileActions.insertInto(initialProperties);
@@ -482,6 +490,9 @@ int main(int argc, char **argv) {
     destroyRoots();
     return *probeExit;
   }
+  [[maybe_unused]] const auto finder = QindaQt::Apps::FileManager::composeFinderIntegration(
+      parser, engine.rootObjects().constFirst(), *controller, *appCoordinator, startPath,
+      applications->chooserMode());
   const int exitCode = application->exec();
   destroyRoots();
   return exitCode;

@@ -4,6 +4,7 @@
 #include "public/desktop_file_boundary.h"
 
 #include <QClipboard>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QStandardPaths>
 #include <QVariantMap>
@@ -52,6 +53,16 @@ DesktopContentsController::DesktopContentsController(QString root,
       m_clipboard(clipboard)
 {
     initializeMutation();
+    m_refreshTimer.setSingleShot(true);
+    m_refreshTimer.setInterval(150);
+    connect(&m_refreshTimer, &QTimer::timeout, this, &DesktopContentsController::refresh);
+    connect(&m_watcher, &QFileSystemWatcher::directoryChanged, &m_refreshTimer,
+            qOverload<>(&QTimer::start));
+    // AGENT-GUARD: watch only an existing directory. addPath() warns about a
+    // missing one, and the surface's offscreen rows treat warnings as fatal.
+    if (!m_root.isEmpty() && QFileInfo(m_root).isDir()) {
+        m_watcher.addPath(m_root);
+    }
     refresh();
 }
 
@@ -123,9 +134,13 @@ void DesktopContentsController::refresh()
             });
         }
     }
-    m_listed = std::move(listed);
-    m_rows = std::move(rows);
-    Q_EMIT rowsChanged();
+    // An unchanged listing (the watcher also fires after this controller's
+    // own mutations) keeps the rows, so the icons are not rebuilt for nothing.
+    if (rows != m_rows) {
+        m_listed = std::move(listed);
+        m_rows = std::move(rows);
+        Q_EMIT rowsChanged();
+    }
     publishFeedback(listing.ok() ? QString() : listing.diagnostic);
 }
 
@@ -157,6 +172,39 @@ bool DesktopContentsController::open(const QString &absolutePath)
     }
     if (!diagnostic.isEmpty()) {
         publishFeedback(diagnostic);
+        return false;
+    }
+    clearFeedback();
+    return true;
+}
+
+bool DesktopContentsController::runFileManagerAction(const QString &actionId,
+                                                     const QString &absolutePath)
+{
+    using QindaQt::Apps::FileManager::Desktop::FileBoundary;
+    using QindaQt::Apps::FileManager::Desktop::FolderOpenResult;
+    using QindaQt::Apps::FileManager::Desktop::ListedIdentity;
+    FolderOpenResult result;
+    if (absolutePath.isEmpty()) {
+        result = m_fileManagerPrograms
+                     ? FileBoundary::runLocalFolderAction(m_root, actionId, *m_fileManagerPrograms)
+                     : FileBoundary::runLocalFolderAction(m_root, actionId);
+    } else {
+        const auto listed = m_listed.constFind(absolutePath);
+        if (listed == m_listed.cend()) {
+            publishFeedback(QStringLiteral("%1 is not on the Desktop").arg(absolutePath));
+            return false;
+        }
+        const ListedIdentity identity{listed->device, listed->inode};
+        result = m_fileManagerPrograms
+                     ? FileBoundary::revealLocalItem(absolutePath, identity, actionId,
+                                                     *m_fileManagerPrograms)
+                     : FileBoundary::revealLocalItem(absolutePath, identity, actionId);
+    }
+    if (!result.ok()) {
+        publishFeedback(result.diagnostic.isEmpty()
+                            ? QStringLiteral("File Manager could not run %1").arg(actionId)
+                            : result.diagnostic);
         return false;
     }
     clearFeedback();

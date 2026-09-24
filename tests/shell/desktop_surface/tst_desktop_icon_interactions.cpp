@@ -380,12 +380,12 @@ void DesktopIconInteractionTests::deleteMovesEverySelectedIconToTrash()
     host.clickWindow(Qt::LeftButton, Qt::ControlModifier, gammaCenter);
     QCOMPARE(selectedTileCount(tiles), 2);
 
-    // Right-click on a selected icon opens the icon menu; Delete applies to
-    // the whole selection.
+    // Right-click on a selected icon opens the icon menu; Move to Trash
+    // applies to the whole selection.
     host.clickWindow(Qt::RightButton, Qt::NoModifier, gammaCenter);
     auto *menu = host.child<QObject>(QStringLiteral("desktopIconContextMenu"));
     QTRY_VERIFY(menu->property("opened").toBool());
-    triggerMenuItem(host, QStringLiteral("desktopIconContextDelete"));
+    triggerMenuItem(host, QStringLiteral("desktopIconContextTrash"));
 
     const QDir trashFiles(m_home->path() + QStringLiteral("/.local/share/Trash/files"));
     QTRY_VERIFY_WITH_TIMEOUT(trashFiles.exists(QStringLiteral("Alpha.txt")), 5000);

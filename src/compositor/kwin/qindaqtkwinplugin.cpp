@@ -95,6 +95,16 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
             m_hybridSession.get(), &KWinHybridSession::setChromeStyle);
     connect(m_chromeAppearance.get(), &KWinChromeAppearance::nativePaletteChanged,
             m_hybridSession.get(), &KWinHybridSession::setNativePalette);
+    // ADR-0264: the decoration's roll-up button and title double-click use
+    // the compositor's existing roll-up to the icon (ADR-0203).
+    connect(m_chromeAppearance.get(), &KWinChromeAppearance::windowRollUpRequested,
+            m_hybridSession.get(), [this](const QString &windowId) {
+                QString error;
+                if (!m_hybridSession->iconifyWindow(windowId, &error)) {
+                    qWarning("QindaQt title-bar roll-up of '%s' failed: %s",
+                             qPrintable(windowId), qPrintable(error));
+                }
+            });
     m_shellCredentials = std::make_unique<QtBusShellCredentialSource>(m_bus);
     m_shellPanelOwner = std::make_unique<KWinShellPanelOwnerSource>();
     m_shellIdentity = std::make_unique<KWinShellWindowIdentityPublisher>(

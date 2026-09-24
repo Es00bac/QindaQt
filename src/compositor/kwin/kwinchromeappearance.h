@@ -46,10 +46,16 @@ public:
   [[nodiscard]] QVariantMap qmlPalette() const { return m_qmlPalette; }
 
 Q_SIGNALS:
+  // ADR-0264: a QindaQt decoration's roll-up button or roll-up title
+  // double-click asked to roll this managed window up to its icon.
+  void windowRollUpRequested(const QString &windowId);
   void paletteChanged(const QindaQt::HybridChrome::ChromePalette &palette);
   void nativePaletteChanged(const QPalette &palette);
   void containerStyleChanged(const QindaQt::HybridChrome::ChromeStyle &style);
   void qmlPaletteChanged();
+
+private Q_SLOTS:
+  void relayDecorationRollUp();
 
 private:
   void publish();

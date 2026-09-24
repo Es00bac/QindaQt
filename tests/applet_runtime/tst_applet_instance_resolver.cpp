@@ -657,6 +657,15 @@ void AppletInstanceResolverTests::desktopControlsResolveReadyInEveryStockPlaceme
         fixture.catalog, fixture.policy, fixture.registry);
     QVERIFY2(hud.ready(), qPrintable(hud.diagnostic));
     QCOMPARE(hud.grantedCapabilities, QStringList{QStringLiteral("global-menu.read")});
+    // ADR-0265: the dock reads running windows for its indicators and brings a
+    // running pinned application forward; it never manages windows.
+    const auto dock = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+        instance(QStringLiteral("quick-launch")), Profiles::Edge::Bottom,
+        fixture.catalog, fixture.policy, fixture.registry);
+    QVERIFY2(dock.ready(), qPrintable(dock.diagnostic));
+    QCOMPARE(dock.grantedCapabilities,
+             QStringList({QStringLiteral("applications.launch"),
+                          QStringLiteral("windows.activate"), QStringLiteral("windows.read")}));
     const auto activeApplication = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
         instance(QStringLiteral("active-application")), Profiles::Edge::Left,
         fixture.catalog, fixture.policy, fixture.registry);

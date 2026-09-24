@@ -89,8 +89,8 @@ model.
 
 ## Pinned, recent, and presentation
 
-`PinnedApplications` is an ordered identity list (ceiling 16) with explicit
-pin/unpin/move outcomes. `RecentApplications` is a bounded (ceiling 8)
+`PinnedApplications` is an ordered identity list (ceiling 64, the dock's
+application ceiling) with explicit pin/unpin/move outcomes. `RecentApplications` is a bounded (ceiling 8)
 most-recently-used list where recording an existing id moves it to the front
 and the oldest id is evicted. Neither pure model persists anything; the L1
 `LauncherPersistenceController` composes them with Settings1 without moving
@@ -125,6 +125,10 @@ elided line, and exposes a compact keyboard-focusable Pin or Unpin button. It ca
 controller mutation and has no independent QML pin state. This makes the
 persisted pin projection available
 to Quick Launch and dock composition without treating a launch as a pin.
+Each row also offers Pin to Dock / Remove from Dock on right-click or the
+Menu key (one menu per section, retargeted on open) and can be dragged onto
+the dock, carrying its desktop-entry id as
+`application/x-qindaqt-desktop-entry-id` ([Dock items](dock-items.md)).
 
 ## L1 production adapters
 
@@ -161,17 +165,21 @@ winning document are retained (bounded) exclusively for the execution adapter.
 ### Pinned/recent persistence
 
 `LauncherPersistenceController` borrows the public Settings1 client scoped to
-the documented key set:
+the documented key set (`LauncherPersistenceController::scopedKeys()`):
 
 | Key | Value |
 | --- | --- |
-| `panels.launcherPinned` | Ordered desktop-entry ids, at most 16 |
+| `panels.dockItems` | The dock ([ADR-0265](../adr/0265-keep-dock-items-in-one-structured-settings-value.md)); the pins are its applications, group members included |
+| `panels.launcherPinned` | ADR-0076's ordered desktop-entry ids, at most 16; read only until the first dock edit migrates them, never written |
 | `panels.launcherRecent` | Most-recent-first desktop-entry ids, at most 8 |
 
-Only desktop-entry ids are ever stored. Stored values are validated on every
-snapshot: a non-list, non-string element, an invalid id, a duplicate, or an
-over-ceiling count poisons the whole key, which is then treated as absent
-with visible degraded truth — partial lists never enter the models. Semantics
+`pinned()` is the projection of every dock application in dock order, and
+every pin, unpin, and move is a dock edit (`editDock`) that commits the whole
+dock value. Stored values are validated on every snapshot: for the id lists a
+non-list, non-string element, an invalid id, a duplicate, or an over-ceiling
+count poisons the whole key, and the dock value goes through the dock codec's
+equally strict whole-value check. A rejected value is treated as absent with
+visible degraded truth — partial lists never enter the models. Semantics
 follow ADR-0012: a mutation applies to the live model and commits
 immediately; a confirmed rejection (including `UnknownKey`) reverts the model
 to the last confirmed value and keeps the reason visible until the next
@@ -378,8 +386,8 @@ ctest --test-dir build/dev -R '^qindaqt\.launcher-' --output-on-failure
 | `qindaqt.launcher-application-scanner` | Fixture trees, precedence, subdirectory ids, escaping application-tree links, FIFO/non-regular refusal, hostile/unreadable/oversized entries, denied ancestor traversal versus confirmed absence, hidden shadowing, watcher refresh, generation fencing, document retention, deterministic order. |
 | `qindaqt.launcher-execution` | Entry/action key scope, quoting, field-code expansion/refusal, no-shell-interpolation, output ceilings. |
 | `qindaqt.launcher-executor` | Intent fencing, spawner/activator seams, entry-policy inheritance by actions, hostile action-key inverse control, terminal policy routing/refusal, failure truth, inert fixture spawns, environment sanitization. |
-| `qindaqt.launcher-persistence` | Settings1 round trips, hostile stored values, conflict revert, `UnknownKey` fail-closed, unchanged-authority convergence after uncertain commits without replay, transport loss, write serialization, bounds. |
-| `qindaqt.launcher-settings-contract` | Shipped Settings1 schema and real private-bus transport, pinned/recent disk persistence, new service owner/epoch recovery, and fresh shell-client reload. |
+| `qindaqt.launcher-persistence` | Settings1 round trips, dock commits, legacy-pin migration, malformed dock values, hostile stored values, conflict revert, `UnknownKey` fail-closed, unchanged-authority convergence after uncertain commits without replay, transport loss, write serialization, bounds. |
+| `qindaqt.launcher-settings-contract` | Shipped Settings1 schema and real private-bus transport, dock/recent disk persistence, new service owner/epoch recovery, and fresh shell-client reload. |
 | `qindaqt.launcher-controller` | Projection, query collapse, grant gating, activation + recent recording, denied-ancestor degraded truth with bounded diagnostics, null-collaborator fail-closed. |
 | `qindaqt.launcher-composition` | Explicit XDG-root derivation, private-bus production policy composition, recording spawner/activator seams, denied-grant negative control, and no real application launch. |
 | `qindaqt.launcher-offscreen` | Fatal-warning-clean compiled QML loading, QST provisioning, pinned/recent/category/search rendering, Tab and cross-section Up/Down traversal, Return/Space activation, Escape, persistence alerts, enabled/denied accessible states, and null-controller fallback. |
@@ -389,7 +397,8 @@ ctest --test-dir build/dev -R '^qindaqt\.launcher-' --output-on-failure
 | `qindaqt.launcher-installed-package` | `LauncherAppletRuntime` relocates the shell, manifest/profile/policy/theme, compiled Launcher/Controls/Tokens closure, and warning-clean null-controller probe under source/build poison. |
 | `qindaqt.shell-runtime-component-closure` | Independently installs the Launcher component and proves the staged shell resolves its Launcher/Controls/Tokens libraries without ambient loader state. |
 
-The shipped Settings schema defines both launcher lists in the `panels` domain.
+The shipped Settings schema defines both launcher lists and the dock value in
+the `panels` domain.
 The former `shell.launcher.*` spellings were never admitted by the shipped
 schema and caused the entire scoped snapshot to fail with `UnknownKey`.
 [ADR-0076](../adr/0076-register-launcher-persistence-in-panel-settings.md)

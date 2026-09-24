@@ -7,6 +7,7 @@
 
 #include <QColor>
 #include <QFont>
+#include <QIcon>
 #include <QLatin1String>
 #include <QList>
 #include <QStringList>
@@ -102,6 +103,23 @@ struct DecorationChrome {
     double shadowOpacity = 0.30;
     // grip, dots, or plain (contained-window handlebar, ADR-0131).
     QString handleStyle = QStringLiteral("grip");
+    // Title-bar options (ADR-0264). Every default reproduces the shipped
+    // chrome, and toVariantMap omits defaults.
+    // Button cell and gap scales: the size and spacing options.
+    double buttonScale = 1.0;
+    double spacingScale = 1.0;
+    // Title-bar height; 0 keeps the button style's own (24 for most).
+    double titleHeight = 0.0;
+    // Caption weight as a QFont::Weight value; 0 keeps the shipped weight
+    // (DemiBold, Bold on the worn Luna bar).
+    int titleWeight = 0;
+    // Paint the window's application icon in front of the caption.
+    bool appIcon = false;
+    // Offer the roll-up button, the compositor's roll-up (ADR-0203).
+    bool rollUpButton = false;
+    // Title-bar double-click: empty leaves KWin's own action; otherwise
+    // maximize, roll-up, or minimize, which the decoration runs itself.
+    QString titleDoubleClick;
 
     [[nodiscard]] static DecorationChrome
     fromChromePalette(const HybridChrome::ChromePalette &palette,
@@ -122,7 +140,8 @@ struct DecorationChrome {
 chromePaletteForTheme(const Themes::ThemeSpec &theme);
 
 // More opens the window menu; it exists only on contained-window handlebars.
-enum class DecorationButtonKind { Close, Minimize, Maximize, More };
+// RollUp rolls an independent window up to its icon (ADR-0203, ADR-0264).
+enum class DecorationButtonKind { Close, Minimize, Maximize, More, RollUp };
 enum class DecorationButtonSide { Left, Right };
 
 struct DecorationButtonVisual {
@@ -159,6 +178,8 @@ struct DecorationFrameVisual {
     // handlebar wears the chrome identity color. Carried on the frame (not
     // the chrome) because it is per-window live state, not theme data.
     bool memberFocused = false;
+    // The window's application icon, painted when chrome.appIcon is set.
+    QIcon icon;
 };
 
 [[nodiscard]] DecorationVisualStyle decorationVisualStyle(const QColor &border,
@@ -171,11 +192,15 @@ struct DecorationFrameVisual {
 // authored radius for a floating window, zero when maximized.
 [[nodiscard]] qreal decorationFrameRadius(const DecorationChrome &chrome, bool maximized);
 [[nodiscard]] QMarginsF decorationBorders(bool maximized);
+// The title-bar height the chrome paints and the plugin reserves: the
+// height option, else the button style's own, else DecorationTitleHeight.
+[[nodiscard]] qreal decorationTitleHeight(const DecorationChrome &chrome);
+[[nodiscard]] QMarginsF decorationBorders(const DecorationChrome &chrome, bool maximized);
 [[nodiscard]] QMarginsF decorationResizeOnlyBorders(bool maximized,
                                                     bool containerMember);
-// Button geometry exactly as the live decoration lays it out: classic
-// symbols on the physical left (close, minimize, maximize), Luna glyphs on
-// the physical right (minimize, maximize, close).
+// Button geometry exactly as the live decoration lays it out: the style's
+// cell, gap and edge inset (ADR-0264) under the size and spacing options,
+// centered in the title bar, on the side effectiveButtonSide resolves.
 [[nodiscard]] QList<DecorationButtonVisual>
 layoutDecorationButtons(const DecorationChrome &chrome, const QSizeF &size);
 [[nodiscard]] QRectF decorationCaptionRect(const DecorationChrome &chrome,
@@ -212,12 +237,13 @@ void paintDecoration(QPainter &painter, const DecorationChrome &chrome,
                      const DecorationFrameVisual &frame,
                      const QList<DecorationButtonVisual> &buttons);
 
-// Arrangement (ADR-0129): an explicit buttonSide wins; otherwise glyph and
-// flat buttons sit on the right and every other style on the left.
+// Arrangement (ADR-0129): an explicit buttonSide wins; otherwise the button
+// style's own side (glyph and flat right, the lights left, ADR-0264).
 [[nodiscard]] DecorationButtonSide effectiveButtonSide(const DecorationChrome &chrome);
 // Visible actions in physical left-to-right order for the resolved side and
 // button set: the right edge reads minimize, maximize, close; the left edge
-// keeps Qinda macOS logical order close, minimize, maximize.
+// keeps Qinda macOS logical order close, minimize, maximize. The roll-up
+// button (ADR-0264) sits at the inner end of either.
 [[nodiscard]] QList<DecorationButtonKind>
 decorationButtonKinds(const DecorationChrome &chrome);
 
@@ -238,6 +264,18 @@ inline constexpr QLatin1String ContainerButtonStyle{"appearance.containerButtonS
 inline constexpr QLatin1String ContainerButtonSide{"appearance.containerButtonSide"};
 inline constexpr QLatin1String ContainerTabOrder{"appearance.containerTabOrder"};
 inline constexpr QLatin1String ContainerButtonGlyphs{"appearance.containerButtonGlyphs"};
+// Title-bar options (ADR-0264).
+inline constexpr QLatin1String WindowButtonSize{"appearance.windowButtonSize"};
+inline constexpr QLatin1String WindowButtonSpacing{"appearance.windowButtonSpacing"};
+inline constexpr QLatin1String WindowTitleHeight{"appearance.windowTitleHeight"};
+inline constexpr QLatin1String WindowCornerRadius{"appearance.windowCornerRadius"};
+inline constexpr QLatin1String WindowTitleWeight{"appearance.windowTitleWeight"};
+inline constexpr QLatin1String WindowAppIcon{"appearance.windowAppIcon"};
+inline constexpr QLatin1String WindowRollUpButton{"appearance.windowRollUpButton"};
+inline constexpr QLatin1String WindowTitleDoubleClick{"appearance.windowTitleDoubleClick"};
+inline constexpr QLatin1String ContainerButtonSize{"appearance.containerButtonSize"};
+inline constexpr QLatin1String ContainerButtonSpacing{"appearance.containerButtonSpacing"};
+inline constexpr QLatin1String ContainerTitleDoubleClick{"appearance.containerTitleDoubleClick"};
 } // namespace ChromePreferenceKeys
 
 // The user's arrangement for application window decorations and container
@@ -255,6 +293,20 @@ struct ChromePreferences {
     // Decoration document ids (ADR-0207): "theme" or a document id.
     QString windowDecoration = QStringLiteral("theme");
     QString containerDecoration = QStringLiteral("theme");
+    // Title-bar options (ADR-0264). "theme" keeps what the theme and its
+    // decoration document resolved; the window double-click "theme" leaves
+    // KWin's own action and the container "none" keeps the row inert.
+    QString windowButtonSize = QStringLiteral("theme");
+    QString windowButtonSpacing = QStringLiteral("theme");
+    QString windowTitleHeight = QStringLiteral("theme");
+    QString windowCornerRadius = QStringLiteral("theme");
+    QString windowTitleWeight = QStringLiteral("theme");
+    QString windowAppIcon = QStringLiteral("hidden");
+    QString windowRollUpButton = QStringLiteral("hidden");
+    QString windowTitleDoubleClick = QStringLiteral("theme");
+    QString containerButtonSize = QStringLiteral("theme");
+    QString containerButtonSpacing = QStringLiteral("theme");
+    QString containerTitleDoubleClick = QStringLiteral("none");
 
     [[nodiscard]] static QStringList settingsKeys();
     // The two decoration-document keys, scoped separately (see above).

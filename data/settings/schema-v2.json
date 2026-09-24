@@ -66,7 +66,8 @@
       "domain": "appearance",
       "type": "string",
       "default": "theme",
-      "constraints": { "allowedValues": ["theme", "traffic-lights", "flat", "glyph"] }
+      "constraints": { "allowedValues": ["theme", "traffic-lights", "flat", "glyph", "gel", "bevel", "blue-tiles", "wide",
+                                          "tab", "bold", "minimal", "pills", "dots", "outline", "chunky"] }
     },
     {
       "key": "appearance.windowButtonSide",
@@ -94,7 +95,8 @@
       "domain": "appearance",
       "type": "string",
       "default": "theme",
-      "constraints": { "allowedValues": ["theme", "traffic-lights", "flat"] }
+      "constraints": { "allowedValues": ["theme", "traffic-lights", "flat", "glyph", "gel", "bevel", "blue-tiles", "wide",
+                                          "tab", "bold", "minimal", "pills", "dots", "outline", "chunky"] }
     },
     {
       "key": "appearance.containerButtonSide",
@@ -116,6 +118,83 @@
       "type": "string",
       "default": "theme",
       "constraints": { "allowedValues": ["theme", "always", "hover"] }
+    },
+    {
+      "key": "appearance.windowButtonSize",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "small", "large"] }
+    },
+    {
+      "key": "appearance.windowButtonSpacing",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "tight", "roomy"] }
+    },
+    {
+      "key": "appearance.windowTitleHeight",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "compact", "tall"] }
+    },
+    {
+      "key": "appearance.windowCornerRadius",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "square", "small", "large"] }
+    },
+    {
+      "key": "appearance.windowTitleWeight",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "regular", "bold"] }
+    },
+    {
+      "key": "appearance.windowAppIcon",
+      "domain": "appearance",
+      "type": "string",
+      "default": "hidden",
+      "constraints": { "allowedValues": ["hidden", "shown"] }
+    },
+    {
+      "key": "appearance.windowRollUpButton",
+      "domain": "appearance",
+      "type": "string",
+      "default": "hidden",
+      "constraints": { "allowedValues": ["hidden", "shown"] }
+    },
+    {
+      "key": "appearance.windowTitleDoubleClick",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "maximize", "roll-up", "minimize"] }
+    },
+    {
+      "key": "appearance.containerButtonSize",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "small", "large"] }
+    },
+    {
+      "key": "appearance.containerButtonSpacing",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "tight", "roomy"] }
+    },
+    {
+      "key": "appearance.containerTitleDoubleClick",
+      "domain": "appearance",
+      "type": "string",
+      "default": "none",
+      "constraints": { "allowedValues": ["none", "maximize", "roll-up", "minimize"] }
     },
     {
       "key": "appearance.windowDecoration",
@@ -253,6 +332,12 @@
       "domain": "panels",
       "type": "string-list",
       "default": []
+    },
+    {
+      "key": "panels.dockItems",
+      "domain": "panels",
+      "type": "object",
+      "default": {}
     },
     {
       "key": "panels.layoutProfile",

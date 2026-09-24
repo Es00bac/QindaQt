@@ -82,6 +82,17 @@ DecorationChrome DecorationChrome::fromVariantMap(const QVariantMap &map)
                                {QStringLiteral("grip"), QStringLiteral("dots"),
                                 QStringLiteral("plain")},
                                QStringLiteral("grip"));
+    // Title-bar options (ADR-0264): tolerant, bounded, default when absent.
+    chrome.buttonScale = number("buttonScale", 0.5, 2.0, 1.0);
+    chrome.spacingScale = number("spacingScale", 0.0, 3.0, 1.0);
+    chrome.titleHeight = number("titleHeight", 0.0, 64.0, 0.0);
+    chrome.titleWeight = static_cast<int>(number("titleWeight", 0.0, 900.0, 0.0));
+    chrome.appIcon = map.value(QStringLiteral("appIcon")).toBool();
+    chrome.rollUpButton = map.value(QStringLiteral("rollUpButton")).toBool();
+    chrome.titleDoubleClick = token("titleDoubleClick",
+                                    {QStringLiteral("maximize"), QStringLiteral("roll-up"),
+                                     QStringLiteral("minimize")},
+                                    {});
     return chrome;
 }
 
@@ -147,6 +158,28 @@ QVariantMap DecorationChrome::toVariantMap() const
     }
     if (handleStyle != QLatin1String("grip")) {
         map.insert(QStringLiteral("handleStyle"), handleStyle);
+    }
+    // Title-bar options (ADR-0264), omitted at their defaults.
+    if (!qFuzzyCompare(buttonScale, 1.0)) {
+        map.insert(QStringLiteral("buttonScale"), buttonScale);
+    }
+    if (!qFuzzyCompare(spacingScale, 1.0)) {
+        map.insert(QStringLiteral("spacingScale"), spacingScale);
+    }
+    if (titleHeight > 0.0) {
+        map.insert(QStringLiteral("titleHeight"), titleHeight);
+    }
+    if (titleWeight > 0) {
+        map.insert(QStringLiteral("titleWeight"), titleWeight);
+    }
+    if (appIcon) {
+        map.insert(QStringLiteral("appIcon"), true);
+    }
+    if (rollUpButton) {
+        map.insert(QStringLiteral("rollUpButton"), true);
+    }
+    if (!titleDoubleClick.isEmpty()) {
+        map.insert(QStringLiteral("titleDoubleClick"), titleDoubleClick);
     }
     return map;
 }

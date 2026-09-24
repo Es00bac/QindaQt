@@ -36,7 +36,7 @@ hard-coding theme-specific palette values.
 | --- | --- |
 | `buttonPlacement` | `left` or `right`; defaults to `right` |
 | `tabDirection` | `left-to-right` or `right-to-left`; defaults to `left-to-right` |
-| `buttonStyle` | `symbols`, `traffic-lights`, or `glyph`; defaults to `symbols` |
+| `buttonStyle` | a named button style: `symbols`, `traffic-lights`, `glyph`, `flat`, `gel`, `bevel`, `blue-tiles`, `wide`, `tab`, `bold`, `minimal`, `pills`, `dots`, `outline`, or `chunky` ([ADR-0264](../adr/0264-window-button-styles-are-data.md)); defaults to `symbols` |
 | `hoverGlyphs` | Boolean controlling whether traffic-light glyphs appear only while hovered |
 | `closeColor`, `minimizeColor`, `maximizeColor` | Optional valid Qt colors |
 | `titleBarColor`, `titleBarInactiveColor` | Optional valid Qt colors; authoring `titleBarColor` selects the Luna title-bar presentation below |
@@ -54,7 +54,10 @@ paints `titleBarInactiveColor` ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-op
 The `glyph` button style draws right-positioned outline game-console
 glyphs — circle, triangle, maximized square, and cross — colored by
 `minimizeColor`, `maximizeColor`, `restoreColor`, and `closeColor`, with
-dash-pattern "chipped" strokes.
+solid strokes (the earlier dashed "chipped" pen made the cross unreadable,
+ADR-0264). Every style is one row of the decoration painter's style table;
+the W19 names bring their own shapes, fills and, for `blue-tiles` and
+`bold`, their own face colors.
 
 These are semantic decoration preferences, not QML implementation details. The
 compositor decoration and shell preview must consume the same map so ordinary
@@ -108,8 +111,9 @@ Declaring a `decoration` object marks the theme's decoration as authored,
 even when every field repeats a default. Container chrome follows an
 authored block: `buttonPlacement` sets the container button side,
 `tabDirection` sets the tab order, `buttonStyle` selects traffic lights
-(`traffic-lights`) or flat symbols (any other style), and `hoverGlyphs` keeps
-traffic-light symbols hidden until hover. A theme without the object keeps
+(`traffic-lights`), flat symbols (`symbols`, `glyph`, `flat`), or, for a W19
+style name, the same named buttons windows draw (ADR-0264), and
+`hoverGlyphs` keeps traffic-light symbols hidden until hover. A theme without the object keeps
 the Qinda macOS container arrangement for compatibility. Users can override both chrome sets
 from Appearance
 ([ADR-0129](../adr/0129-configure-window-and-container-chrome.md)); built-in

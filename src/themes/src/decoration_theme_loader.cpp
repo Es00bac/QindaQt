@@ -121,9 +121,7 @@ DecorationThemeLoadResult DecorationThemeLoader::fromJson(const QByteArray &json
         || !readToken(root, QStringLiteral("tabDirection"),
                       {QStringLiteral("left-to-right"), QStringLiteral("right-to-left")},
                       &theme.decoration.tabDirection, &error)
-        || !readToken(root, QStringLiteral("buttonStyle"),
-                      {QStringLiteral("symbols"), QStringLiteral("traffic-lights"),
-                       QStringLiteral("glyph")},
+        || !readToken(root, QStringLiteral("buttonStyle"), DecorationThemeTokens::buttonStyles(),
                       &theme.decoration.buttonStyle, &error)
         || !readToken(root, QStringLiteral("memberHandle"),
                       DecorationThemeTokens::memberHandleStyles(), &theme.memberHandleStyle,

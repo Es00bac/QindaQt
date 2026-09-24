@@ -84,6 +84,11 @@ public:
                                    const PinnedApplications &pinned,
                                    const RecentApplications &recent,
                                    const QString &query = {});
+
+  // The display values of one entry exactly as every section shows it, for
+  // surfaces that present a single application outside a section (dock
+  // tiles and group rows, ADR-0265).
+  static PresentationItem itemFor(const ApplicationEntry &entry, bool pinned);
 };
 
 } // namespace QindaQt::ShellLauncher
