@@ -5,10 +5,10 @@
 
 namespace QindaQt::SessionSupervisor {
 
-// The fixed, reviewed set of systemd user units that can be resident from a
-// prior desktop with session-scoped state that `SetEnvironment` alone cannot
-// refresh, and so must be explicitly restarted when this session starts, in
-// the listed order. AGENT-NOTE: source of truth is each service's own module.
+// This fixed list contains services that cache desktop session state across
+// logins, plus the narrow Audio1 package-upgrade exception: a persistent user
+// manager can retain its old D-Bus ABI after the installed binary changes.
+// AGENT-NOTE: source of truth is each service's owning module.
 // The backend restart is requested first; request order does not guarantee
 // completion order, since each `RestartUnit` call only enqueues a systemd
 // job: `plasma-xdg-desktop-portal-kde` (the KDE portal
@@ -19,11 +19,9 @@ namespace QindaQt::SessionSupervisor {
 // own direct Wayland connection: `qindaqt-clipboard-host` (ADR-0058,
 // wl_display_connect in clipboard_wayland_adapter) and
 // `qindaqt-display-service` (ADR-0053, wl_display_connect in
-// display_writer's output-management port). Add a unit here only when its
-// module independently opens Wayland, is itself a Wayland client, or
-// otherwise caches session-scoped state at startup; ordinary D-Bus-only
-// services with no such cache pick up the republished environment on their
-// next systemd activation and need no entry.
+// display_writer's output-management port). Ordinary D-Bus-only services
+// remain excluded unless a specific lifecycle defect is demonstrated, as it
+// is for Audio1's upgrade-stale process.
 [[nodiscard]] QStringList residentServiceRefreshUnits();
 
 // Requests a restart of each named systemd user unit by calling
@@ -37,12 +35,13 @@ namespace QindaQt::SessionSupervisor {
 // itself restarts; SetEnvironment only changes the environment future
 // activations receive. `RestartUnit` enqueues a systemd job and returns a job
 // object path; it does not wait for the restart to finish. It both requests a
-// restart for an already-active unit and starts one that is not yet running,
-// so no separate state query is needed. Each D-Bus call itself (not the
-// restart job) is bounded by a short timeout, and is best-effort: a missing
-// unit or transport failure is logged and does not stop the session, and no
-// unit outside the fixed list is touched.
-void refreshResidentServices(const QDBusConnection &bus,
+// restart for an already-active unit and starts one that is not yet running.
+// For Audio1, this function waits up to two seconds for its old unique owner
+// to disappear. It returns false if that owner cannot be proven retired;
+// the helper logs this failure and keeps the desktop available. Other unit
+// restart failures remain best-effort, and no unit outside the fixed list is
+// touched.
+bool refreshResidentServices(const QDBusConnection &bus,
                              const QStringList &unitNames,
                              const QString &systemdPrivateSocketPath = {});
 

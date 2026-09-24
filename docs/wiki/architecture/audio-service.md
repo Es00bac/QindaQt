@@ -22,7 +22,14 @@ The focused Settings Audio model/page checks passed; they do not exercise
 PipeWire destroying a virtual-bus module or qualify physical audio hardware.
 
 Audio1 is QindaQt's typed, restart-aware control and observation boundary for
-the running PipeWire graph. The D-Bus-activated `qindaqt-audio-service` owns
+the running PipeWire graph. The session supervisor restarts its user unit at
+each desktop session start and waits for a previous Audio1 bus owner to retire.
+This handles package upgrades when the systemd user manager persists across
+logout and would otherwise retain a process running an older D-Bus ABI. The
+wait is bounded; if the prior owner remains, the session logs the failure and
+continues so an audio lifecycle fault cannot block the desktop. The unit keeps
+its existing D-Bus activation boundary on QindaQt's private session bus
+(ADR-0170). The D-Bus-activated `qindaqt-audio-service` owns
 `org.qindaqt.Audio1`; upstream WirePlumber remains the policy manager. Audio1
 does not replace WirePlumber policy or install PipeWire configuration.
 Its VBAN worker does capture, transport, and receive user-enabled stereo audio
