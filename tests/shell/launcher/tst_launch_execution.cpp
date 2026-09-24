@@ -32,6 +32,7 @@ private Q_SLOTS:
     void expandsFieldCodesWithoutAShell();
     void rejectsUnsatisfiableFieldCodes();
     void enforcesOutputCeilings();
+    void expandsHandedOverLocalFiles();
 };
 
 void LaunchExecutionTests::parsesPrimaryAndActionExecutionKeys()
@@ -221,6 +222,58 @@ void LaunchExecutionTests::enforcesOutputCeilings()
         repeated += QStringLiteral(" %c%c%c%c%c%c%c%c%c%c");
     const auto grown = ExecFieldCodeExpander::expand(repeated, values());
     QVERIFY(!grown.ok());
+}
+
+void LaunchExecutionTests::expandsHandedOverLocalFiles()
+{
+    // ADR-0269: File Manager's Open With hands local paths to the file codes.
+    // Each path stays one whole argument, whatever characters it holds.
+    ExecExpansionValues withFiles = values();
+    withFiles.localFiles = { QStringLiteral("/home/u/two words.txt"),
+                             QStringLiteral("/home/u/semi;$(id).txt") };
+
+    const auto list = ExecFieldCodeExpander::expand(
+        QStringLiteral("fixture --open %F --end"), withFiles);
+    QVERIFY2(list.ok(), qPrintable(list.message));
+    QCOMPARE(list.plan->arguments,
+             QStringList({ QStringLiteral("--open"), QStringLiteral("/home/u/two words.txt"),
+                           QStringLiteral("/home/u/semi;$(id).txt"), QStringLiteral("--end") }));
+    QCOMPARE(list.plan->fileArguments, 2);
+
+    // The URL codes take the local path itself; no URL is built.
+    const auto urls = ExecFieldCodeExpander::expand(QStringLiteral("fixture %U"), withFiles);
+    QVERIFY2(urls.ok(), qPrintable(urls.message));
+    QCOMPARE(urls.plan->arguments, withFiles.localFiles);
+
+    // The single-file codes take the first path only; the caller then starts
+    // one process per file.
+    for (const QString &exec : { QStringLiteral("fixture %f"), QStringLiteral("fixture %u") }) {
+        const auto single = ExecFieldCodeExpander::expand(exec, withFiles);
+        QVERIFY2(single.ok(), qPrintable(single.message));
+        QCOMPARE(single.plan->arguments, QStringList{ withFiles.localFiles.first() });
+        QCOMPARE(single.plan->fileArguments, 1);
+    }
+
+    // An Exec without file codes takes none of the files.
+    const auto none = ExecFieldCodeExpander::expand(QStringLiteral("fixture --new"), withFiles);
+    QVERIFY(none.ok());
+    QCOMPARE(none.plan->fileArguments, 0);
+    QCOMPARE(none.plan->arguments, QStringList{ QStringLiteral("--new") });
+
+    // AGENT-GUARD: a file never merges into another argument and is never
+    // the program itself.
+    const auto embedded = ExecFieldCodeExpander::expand(
+        QStringLiteral("fixture --file=%f"), withFiles);
+    QCOMPARE(embedded.error, ExecPlanError::UnsupportedFieldCode);
+    const auto asProgram = ExecFieldCodeExpander::expand(QStringLiteral("%f --flag"), withFiles);
+    QCOMPARE(asProgram.error, ExecPlanError::UnsupportedFieldCode);
+
+    // Without files the launcher's own behaviour is unchanged.
+    const auto launcher = ExecFieldCodeExpander::expand(
+        QStringLiteral("fixture %F --flag"), values());
+    QVERIFY(launcher.ok());
+    QCOMPARE(launcher.plan->arguments, QStringList{ QStringLiteral("--flag") });
+    QCOMPARE(launcher.plan->fileArguments, 0);
 }
 
 QTEST_GUILESS_MAIN(LaunchExecutionTests)

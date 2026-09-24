@@ -11,7 +11,8 @@ using QindaQt::Shell::Launcher::LaunchExecutionParser;
 LaunchPreparation planApplicationLaunch(const QString &documentText,
                                         const QString &actionId,
                                         const QString &displayName,
-                                        const QString &desktopFilePath)
+                                        const QString &desktopFilePath,
+                                        const QStringList &localFiles)
 {
     const auto keys = LaunchExecutionParser::parse(documentText, actionId);
     if (!keys.ok()) {
@@ -22,7 +23,7 @@ LaunchPreparation planApplicationLaunch(const QString &documentText,
                 QStringLiteral("application requests D-Bus activation")};
     }
     const QindaQt::Shell::Launcher::ExecExpansionValues values{
-        displayName, {}, desktopFilePath};
+        displayName, {}, desktopFilePath, localFiles};
     const auto plan = QindaQt::Shell::Launcher::ExecFieldCodeExpander::expand(
         keys.keys->exec, values);
     if (!plan.ok()) {
@@ -30,10 +31,10 @@ LaunchPreparation planApplicationLaunch(const QString &documentText,
     }
     if (keys.keys->terminal) {
         return {LaunchSupport::TerminalRequired, plan.plan->program,
-                plan.plan->arguments, {}};
+                plan.plan->arguments, {}, plan.plan->fileArguments};
     }
     return {LaunchSupport::ProcessSpawn, plan.plan->program,
-            plan.plan->arguments, {}};
+            plan.plan->arguments, {}, plan.plan->fileArguments};
 }
 
 QStringList terminalCommandLine(const QStringList &terminalCommandPrefix,

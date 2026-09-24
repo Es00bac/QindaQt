@@ -72,42 +72,79 @@ QList<ActionDefinition> windowActions()
   // AppShell registry sorts by menu and `order`, so reordering here changes
   // nothing visible, but keeping it makes review diffs line up.
   return {
-      // ADR-0262: the Applications place's item actions. Open heads the File
-      // menu; Show Desktop Entry File sits with Properties (Get Info there).
-      // Both stay disabled outside that place (file_manager_application_actions).
-      action("application.open", "file", QStringLiteral("Open"),
-             QStringLiteral("Open the selected applications"), keys("Ctrl+O"), -1),
+      // ADR-0269: Open is one action for files, folders and (ADR-0262)
+      // Applications rows alike; it replaced "application.open". The File
+      // menu's orders are spaced in groups of ten -- open, create, change,
+      // archive, trash, info -- so an entry can join its group later without
+      // renumbering the others.
+      action("file.open", "file", QStringLiteral("Open"),
+             QStringLiteral("Open the selected items"), keys("Ctrl+O"), 0),
+      action("file.open-with", "file", QStringLiteral("Open With…"),
+             QStringLiteral("Choose an application to open the selected files with"),
+             keys("Ctrl+Shift+O"), 1),
+      action("file.open-new-window", "file", QStringLiteral("Open in New Window"),
+             QStringLiteral("Open the selected folder in a new window"),
+             keys("Ctrl+Alt+O"), 2),
+      // ADR-0262: Show Desktop Entry File sits with Get Info and stays
+      // disabled outside the Applications place (file_manager_application_actions).
       action("application.show-entry-file", "file", QStringLiteral("Show Desktop Entry File"),
              QStringLiteral("Show the selected application's desktop entry in its folder"),
-             keys("Ctrl+Shift+E"), 7),
+             keys("Ctrl+Shift+E"), 51),
       action("file.new-folder", "file", QStringLiteral("New Folder"),
              QStringLiteral("Create a folder in the current location"),
-             keys("Ctrl+Shift+N"), 0),
+             keys("Ctrl+Shift+N"), 10),
+      action("file.new-file", "file", QStringLiteral("New File…"),
+             QStringLiteral("Create a file in this folder, empty or from a template"),
+             keys("Ctrl+Alt+N"), 11),
+      action("file.open-terminal", "file", QStringLiteral("Open Terminal Here"),
+             QStringLiteral("Open a terminal in this folder"), keys("Shift+F4"), 12),
       action("file.rename", "file", QStringLiteral("Rename"),
-             QStringLiteral("Rename the selected item"), keys("F2"), 1),
+             QStringLiteral("Rename the selected item"), keys("F2"), 20),
+      action("file.duplicate", "file", QStringLiteral("Duplicate"),
+             QStringLiteral("Make a copy of each selected item beside it"),
+             keys("Ctrl+Shift+D"), 21),
+      action("file.make-link", "file", QStringLiteral("Make Link"),
+             QStringLiteral("Make a link to each selected item beside it"), keys("Ctrl+M"), 22),
       action("file.copy", "file", QStringLiteral("Copy To…"),
              QStringLiteral("Copy the selected item to a local path"),
-             keys("Ctrl+Shift+C"), 2),
+             keys("Ctrl+Shift+C"), 23),
       action("file.move", "file", QStringLiteral("Move To…"),
              QStringLiteral("Move the selected item to a local path"),
-             keys("Ctrl+Shift+M"), 3),
+             keys("Ctrl+Shift+M"), 24),
+      action("file.compress", "file", QStringLiteral("Compress"),
+             QStringLiteral("Compress the selected items into a zip archive"),
+             keys("Ctrl+Shift+K"), 30),
+      action("file.extract", "file", QStringLiteral("Extract"),
+             QStringLiteral("Extract each selected archive into a new folder"),
+             keys("Ctrl+Shift+X"), 31),
+      action("file.add-to-sidebar", "file", QStringLiteral("Add to Sidebar"),
+             QStringLiteral("Add the selected folders to the sidebar"),
+             keys("Ctrl+Shift+B"), 32),
       action("file.trash", "file", QStringLiteral("Move to Trash"),
              QStringLiteral("Move the selected item to the recoverable home Trash"),
-             keys("Delete"), 4, true),
+             keys("Delete"), 40, true),
+      // ADR-0269: never skips its confirmation, whatever Preferences say.
+      action("file.delete", "file", QStringLiteral("Delete Permanently"),
+             QStringLiteral("Delete the selected items at once, without Trash"),
+             keys("Shift+Delete"), 41, true),
+      action("file.put-back", "file", QStringLiteral("Put Back"),
+             QStringLiteral("Return the selected Trash items to where they came from"),
+             keys("Ctrl+Backspace"), 42),
       action("file.restore-last", "file", QStringLiteral("Restore Last Trashed Item"),
              QStringLiteral("Restore the last item moved to Trash"),
-             keys("Ctrl+Shift+R"), 5),
+             keys("Ctrl+Shift+R"), 43),
       action("file.empty-trash", "file", QStringLiteral("Empty Trash"),
              QStringLiteral("Permanently remove every item from the home Trash"),
-             keys("Ctrl+Shift+Delete"), 6, true),
+             keys("Ctrl+Shift+Delete"), 44, true),
       // ADR-0198: Preferences is a File-menu item with the platform-standard
       // Ctrl+, shortcut, after the item-specific entries.
       action("app.preferences", "file", QStringLiteral("Preferences"),
              QStringLiteral("Change what a window starts with, and network options"),
-             keys("Ctrl+,"), 8),
-      action("file.properties", "file", QStringLiteral("Properties"),
-             QStringLiteral("Show size, kind, and permissions for the selection"),
-             keys("Alt+Return"), 7),
+             keys("Ctrl+,"), 60),
+      // ADR-0269: Finder's name; with nothing selected it describes the folder.
+      action("file.properties", "file", QStringLiteral("Get Info"),
+             QStringLiteral("Show size, kind, and permissions for the selection or this folder"),
+             keys("Alt+Return"), 50),
       action("edit.undo", "edit", QStringLiteral("Undo File Operation"),
              QStringLiteral("Undo the last recoverable create, rename, or move"),
              standard(QKeySequence::Undo), 0),
@@ -122,6 +159,10 @@ QList<ActionDefinition> windowActions()
       action("edit.copy", "edit", QStringLiteral("Copy"),
              QStringLiteral("Copy the selected items to the clipboard"),
              standard(QKeySequence::Copy), 3),
+      // ADR-0269: shares Copy's order and sorts right after it by id.
+      action("edit.copy-path", "edit", QStringLiteral("Copy Path"),
+             QStringLiteral("Copy the full paths of the selected items as text"),
+             keys("Ctrl+Alt+C"), 3),
       action("edit.paste", "edit", QStringLiteral("Paste"),
              QStringLiteral("Paste the clipboard contents into this folder"),
              standard(QKeySequence::Paste), 4),
@@ -148,6 +189,16 @@ QList<ActionDefinition> windowActions()
       action("view.group-by-category", "view", QStringLiteral("Group by Category"),
              QStringLiteral("Group applications under their categories"), keys("Ctrl+G"), 9,
              false, true),
+      // ADR-0269: Sort By. Choosing the active sort again reverses it, as a
+      // column header does; like the view choices these are not checkable.
+      action("view.sort-name", "view", QStringLiteral("Sort by Name"),
+             QStringLiteral("Sort this folder by name"), keys("Ctrl+Alt+1"), 10),
+      action("view.sort-size", "view", QStringLiteral("Sort by Size"),
+             QStringLiteral("Sort this folder by size"), keys("Ctrl+Alt+2"), 11),
+      action("view.sort-kind", "view", QStringLiteral("Sort by Kind"),
+             QStringLiteral("Sort this folder by kind"), keys("Ctrl+Alt+3"), 12),
+      action("view.sort-modified", "view", QStringLiteral("Sort by Date Modified"),
+             QStringLiteral("Sort this folder by modification date"), keys("Ctrl+Alt+4"), 13),
       action("view.focus-location", "view", QStringLiteral("Location Bar"),
              QStringLiteral("Type a folder path directly"), keys("Ctrl+L"), 2),
       action("go.home", "go", QStringLiteral("Home Folder"),
@@ -180,7 +231,7 @@ QList<ActionDefinition> windowActions()
       // Applications place (file_manager_dock_actions).
       action("application.keep-in-dock", "file", QStringLiteral("Keep in Dock"),
              QStringLiteral("Keep the selected application in the dock"), keys("Ctrl+Alt+D"),
-             7, false, true),
+             51, false, true),
   };
 }
 

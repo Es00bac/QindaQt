@@ -4,7 +4,8 @@
 - **Date:** 2026-08-28
 - **Owners:** First-party applications / File Manager
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** None. [ADR-0269](0269-open-with-widens-the-bounded-launch-and-karchive-backs-archives.md) widens it for Open With; the
+  default-handler open below is unchanged.
 
 ## Context
 

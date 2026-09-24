@@ -75,6 +75,32 @@ public:
                                       const QString &destinationDirectory);
   Q_INVOKABLE bool moveForeignPathsTo(const QStringList &sourcePaths,
                                       const QString &destinationDirectory);
+  // ADR-0269 (the right-click set; mutation_controller_items.cpp). Items are
+  // entry snapshots as for the batch variants above and run with batch
+  // semantics -- serialized in the one busy slot, stopping at the first
+  // typed failure, no undo or restore token. createFile and compressItems
+  // are single requests instead; an empty new file keeps New Folder's
+  // undo (back to Trash). New names are chosen here, on the
+  // GUI thread, as the first free "<name> copy[ n]" (Duplicate), "Link to
+  // <name>[ n]" (Make Link, beside the item), "<name>.zip" or
+  // "Archive[ n].zip" (Compress, beside the first item) and "<archive
+  // name>[ n]" (Extract); the backend still creates each exclusively, so a
+  // racing writer yields AlreadyExists, never a replacement.
+  Q_INVOKABLE bool duplicateItems(const QVariantList &items);
+  Q_INVOKABLE bool makeLinks(const QVariantList &items);
+  // Delete Permanently: no Trash, no undo; the caller has already confirmed.
+  Q_INVOKABLE bool deleteItems(const QVariantList &items);
+  // Put Back: returns items of the home Trash's files/ folder to the path
+  // their Trash record names; that folder must still exist.
+  Q_INVOKABLE bool putBackItems(const QVariantList &items);
+  // New File: an empty file, or a copy of the template at templatePath.
+  Q_INVOKABLE bool createFile(const QString &parentPath, const QString &name,
+                              const QString &templatePath = QString());
+  Q_INVOKABLE bool compressItems(const QVariantList &items);
+  Q_INVOKABLE bool extractItems(const QVariantList &items);
+  // Whether Extract understands the file's name (zip, or tar with none,
+  // gzip, bzip2, xz or zstd compression).
+  Q_INVOKABLE bool isExtractable(const QString &path) const;
   Q_INVOKABLE bool restoreLast();
   Q_INVOKABLE bool emptyTrash();
   Q_INVOKABLE bool undo();
@@ -88,7 +114,16 @@ signals:
 private:
   [[nodiscard]] static std::optional<FileIdentity>
   identityFromMap(const QVariantMap &identity);
+  [[nodiscard]] static bool validName(const QString &name);
+  [[nodiscard]] static QStringList rootsFor(const QString &source,
+                                            const QString &destination = {});
+  // One selection snapshot's path and identity; a malformed or stale item
+  // fails the request with the stale-selection message.
+  [[nodiscard]] bool parseItem(const QVariant &item, QString *path, FileIdentity *identity);
   [[nodiscard]] bool submit(MutationRequest request, bool isUndo = false);
+  // Runs already-validated requests in order inside one worker invocation
+  // (the batch semantics above).
+  [[nodiscard]] bool submitRequests(MutationKind kind, QVector<MutationRequest> requests);
   // Validates the selection maps into per-item requests, then runs them in
   // order inside one worker invocation. Returns false (typed failure set)
   // when any item is invalid or another operation is running.

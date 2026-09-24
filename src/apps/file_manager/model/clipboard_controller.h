@@ -53,6 +53,10 @@ public:
   // MutationController::maximumForeignPaths; always copies, never moves.
   Q_INVOKABLE bool dropUrlsInto(const QVariantList &urls,
                                 const QString &destinationDirectory);
+  // ADR-0269 (Copy Path): the items' absolute paths, one per line, as plain
+  // text. Text is never adopted as files to paste, so the cut/copy snapshot
+  // this controller held is dropped with it.
+  Q_INVOKABLE bool copyPathsAsText(const QVariantList &items);
   Q_INVOKABLE void clear();
   void setSelectionCount(int count);
 
