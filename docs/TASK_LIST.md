@@ -5,6 +5,20 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 24 — Wi-Fi password agent fix integrated (plan W0)
+
+The Settings/QindaTK/Network plan (`plan/settings-qindatk-network-20260923`
+on the hub) is being delivered in reviewed slices. W0 is integrated
+(`f02c5a0b`, reviews `c04baab9`): the network secret agent admits the IP-config
+and DNS wire forms NetworkManager really sends, scrubs every decoded copy
+under an explicit shared-storage wipe contract, and stays resident after its
+last prompt. Before this, new secured Wi-Fi networks never reached the
+password prompt. Independent review: two REJECT rounds repaired, then ACCEPT.
+Integrated gates: full build, secret-agent 9/9, network and Settings Network
+39/39, validate-docs. Live qualification on qinda-top (join a new secured
+network; cancel, then prompt again) remains after the desktop package
+installs.
+
 ## September 23 — Settings repair in progress on qinda
 
 The September 23 audit is being repaired in independent slices. These are

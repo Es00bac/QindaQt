@@ -1,5 +1,17 @@
 # Integration handoff
 
+## September 24 — W0 Wi-Fi secret agent integration
+
+Integrated `f02c5a0b` (candidate `35af19a6`, accepted by luna-review-w0 on the
+second recheck) plus the review records in `c04baab9`. The integrated tree
+builds in full, and the secret-agent (9/9) and network plus Settings Network
+(39/39) CTest selections pass, as does validate-docs. The manager ruled that
+the shared-storage write-through wipe is the pre-existing, intended scrubbing
+contract; the candidate documents it and proves every admission wipe site
+touches only freshly decoded locals. Next: a desktop package pinned to this
+integration, installed on qinda-top through Portage, then a live secured-join
+check.
+
 ## September 23 — qinda-top r4 Settings checkpoint
 
 QindaQt source `d492ee808a5b5b2ea565f1a77966d7867d34770b` and QindaGentoo
