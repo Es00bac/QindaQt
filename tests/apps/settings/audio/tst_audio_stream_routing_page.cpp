@@ -43,6 +43,7 @@ class AudioStreamRoutingPageTest final : public QObject {
   Q_OBJECT
 private Q_SLOTS:
   void compactPickerKeyboardAndWheel();
+  void emptyStreamAndVirtualListsShowEmptyStates();
 };
 
 void AudioStreamRoutingPageTest::compactPickerKeyboardAndWheel() {
@@ -167,6 +168,40 @@ void AudioStreamRoutingPageTest::compactPickerKeyboardAndWheel() {
   QTRY_VERIFY(!playback->isEnabled());
   QCOMPARE(playback->property("displayText").toString(),
            QStringLiteral("Unknown device"));
+}
+
+void AudioStreamRoutingPageTest::emptyStreamAndVirtualListsShowEmptyStates() {
+  QQuickView view;
+  QString error;
+  QVERIFY2(prepareAudioPageEngine(view, &error), qPrintable(error));
+  StubAudioSettingsModel model;
+  auto [guard, page] = createAudioPage(view, model, QSize(900, 760));
+  QVERIFY(page != nullptr);
+  auto *streams = findItem(page, QStringLiteral("audioStreamsEmpty"));
+  auto *virtuals = findItem(page, QStringLiteral("audioVirtualEmpty"));
+  QVERIFY(streams != nullptr);
+  QVERIFY(virtuals != nullptr);
+  // Populated lists show rows, not the empty states.
+  QVERIFY(!streams->isVisible());
+  QVERIFY(!virtuals->isVisible());
+
+  model.streams.clear();
+  model.virtualDevices.clear();
+  Q_EMIT model.viewChanged();
+  QTRY_VERIFY(streams->isVisible() && streams->height() > 0);
+  QTRY_VERIFY(virtuals->isVisible() && virtuals->height() > 0);
+  // The add actions stay reachable while the virtual list is empty.
+  auto *addOutput = findItem(page, QStringLiteral("audioVirtualAddOutput"));
+  QVERIFY(addOutput != nullptr);
+  QVERIFY(addOutput->isVisible());
+  for (auto *empty : {streams, virtuals}) {
+    auto *accessible = QAccessible::queryAccessibleInterface(empty);
+    QVERIFY(accessible != nullptr);
+    QCOMPARE(accessible->role(), QAccessible::StaticText);
+    QCOMPARE(accessible->text(QAccessible::Name), empty->property("text").toString());
+  }
+  QCOMPARE(streams->property("text").toString(),
+           QStringLiteral("No application streams are currently reported."));
 }
 
 QTEST_MAIN(AudioStreamRoutingPageTest)

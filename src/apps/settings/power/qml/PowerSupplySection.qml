@@ -46,8 +46,13 @@ ColumnLayout {
                 columnSpacing: Tokens.space["4"]
                 rowSpacing: Tokens.space["1"]
 
+                // AGENT-GUARD: both columns take equal shares of the row
+                // (equal preferred widths, both filling). Every row is a
+                // separate grid, so a column sized from its own text would
+                // start the charge meters at a different x in each row.
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 1
                     spacing: Tokens.space["1"]
                     Label {
                         Layout.fillWidth: true
@@ -63,6 +68,7 @@ ColumnLayout {
 
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 1
                     spacing: Tokens.space["1"]
                     Label {
                         objectName: "powerSupplyState_" + supplyRow.modelData.id

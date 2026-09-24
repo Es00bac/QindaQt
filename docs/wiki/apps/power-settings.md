@@ -43,8 +43,10 @@ accent, because high charge is good, and changes colour only when Power itself
 raises a warning: the desktop's warning hue (`Tokens.status.warning.background`)
 at `warningSeverity` Low (3) and its danger hue (`Tokens.danger.default`) at
 Critical or Action (4 and above). The warning label beside it always states
-the warning in words. The supplies section instantiates the `QindaQtTheme`
-bridge so the bar follows the session theme. The route shows loading, ready, degraded, stale, unavailable, queued,
+the warning in words. Each supply row's two columns take equal shares of the
+row, so every bar starts at the same x whatever the supply's name or state
+line. The supplies section instantiates the `QindaQtTheme` bridge so the bar
+follows the session theme. The route shows loading, ready, degraded, stale, unavailable, queued,
 pending, convergence-wait, failed, and uncertain states separately.
 
 ## Screen-lock preference boundary
@@ -317,7 +319,8 @@ failure truth, and clamped one-to-240-minute timeout bounds.
 The warning-fatal supply-meter row (`qindaqt.settings-power-supply-meter`)
 loads the supplies section alone and proves the bar is bound to `percentage`,
 absent for an unknown charge and for the adapter, accent at no warning, warning
-and danger colours only at severities 3 and 4+, and accessibly named; the model
+and danger colours only at severities 3 and 4+, accessibly named, and at one
+shared x and width across rows with different names and state lines; the model
 row proves the `percentage`/`percentageKnown` projection roles for known and
 unknown charge.
 The warning-fatal page row renders wide and compact software scenes, verifies

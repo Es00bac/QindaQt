@@ -56,6 +56,22 @@ int main(int argc, char **argv) {
   }
 
   StubNetworkSettingsModel model;
+  // Rows that differ in everything beside the bar (digits, Saved versus
+  // Connect, prompt length), so a capture shows whether the bars line up.
+  QVariantMap saved = model.accessPoints.at(0).toMap();
+  saved.insert(QStringLiteral("signalStrength"), 100);
+  QVariantMap weak = model.accessPoints.at(1).toMap();
+  weak.insert(QStringLiteral("signalStrength"), 5);
+  weak.insert(QStringLiteral("promptStatusText"),
+              QStringLiteral("A password prompt will appear if the desktop "
+                             "password agent is still running when you connect."));
+  QVariantMap other = weak;
+  other.insert(QStringLiteral("id"), QString(64, u'e'));
+  other.insert(QStringLiteral("displayName"),
+               QStringLiteral("Library guest network with a long name"));
+  other.insert(QStringLiteral("signalStrength"), 61);
+  other.insert(QStringLiteral("promptStatusText"), QStringLiteral("Open network."));
+  model.accessPoints = {saved, weak, other};
   QQmlComponent component(view.engine());
   component.loadUrl(
       QUrl::fromLocalFile(QStringLiteral(QINDAQT_NETWORK_PAGE_QML_PATH)));
