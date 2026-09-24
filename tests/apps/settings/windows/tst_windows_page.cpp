@@ -35,6 +35,7 @@ private Q_SLOTS:
     void wiresDraftApplyAndRevertActions();
     void actualPointerAndKeyboardInputReachTheDraft();
     void presentsUnavailableWithRetry();
+    void ownerReplacementRevokesAppliedPresentation();
 
 private:
     std::unique_ptr<QQuickView> m_view;
@@ -328,6 +329,32 @@ void WindowsPageTest::presentsUnavailableWithRetry()
     QCOMPARE(m_model->retryRequests, 1);
     QVERIFY(QMetaObject::invokeMethod(notice, "retryRequested"));
     QCOMPARE(m_model->retryRequests, 2);
+}
+
+void WindowsPageTest::ownerReplacementRevokesAppliedPresentation()
+{
+    auto [guard, page] = createPage(QSize(900, 700));
+    QVERIFY(page != nullptr);
+    auto *applyStatus = findItem(page, QStringLiteral("windowsSessionApplyStatus"));
+    auto *savedStatus = findItem(page, QStringLiteral("windowsSavedStatus"));
+    QVERIFY(applyStatus != nullptr);
+    QVERIFY(savedStatus != nullptr);
+
+    m_model->sessionApplyStatusText = QStringLiteral("Applied in this session.");
+    Q_EMIT m_model->viewChanged();
+    QTRY_COMPARE(applyStatus->property("text").toString(),
+                 QStringLiteral("Applied in this session."));
+    QCOMPARE(savedStatus->property("text").toString(), QStringLiteral("Saved preference"));
+
+    m_model->sessionApplyStatusText = QStringLiteral(
+        "Saved preference; the session apply-state owner changed; checking the current "
+        "session status.");
+    Q_EMIT m_model->viewChanged();
+    QTRY_VERIFY(applyStatus->property("text").toString().contains(
+        QStringLiteral("owner changed")));
+    QVERIFY(!applyStatus->property("text").toString().contains(
+        QStringLiteral("Applied in this session")));
+    QCOMPARE(savedStatus->property("text").toString(), QStringLiteral("Saved preference"));
 }
 
 QTEST_MAIN(WindowsPageTest)

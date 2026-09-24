@@ -58,8 +58,12 @@ reconfigure reply for the current saved values. A write, readback, reconfigure,
 or owner failure stays visible with a diagnostic; a matching failure offers
 **Retry session apply**, which retries the session operation without changing
 Settings1. Missing session status is reported as unavailable, never inferred
-from a successful preference save. KWin owner replacement invalidates the
-prior acknowledgement until the replacement acknowledges its reconfigure.
+from a successful preference save. Every `WindowManagement1` unique-owner
+change synchronously revokes the prior status before the route reads the new
+owner; a delayed or timed-out replacement read therefore cannot leave the
+former owner's **Applied in this session** result visible. Late replies from a
+former owner are ignored. KWin owner replacement invalidates the prior
+acknowledgement until the replacement acknowledges its reconfigure.
 The page shows no "restart required" state because successful changes are live
 in the running session.
 
@@ -81,15 +85,18 @@ px) stacks every label above its control.
 - `qindaqt.settings-windows-model`: exact four-key scope, token and range
   gating, per-key commit order from fresh snapshots, fail-closed malformed
   refresh, conflict stop and explicit re-Apply, uncertain no-replay,
-  replacement abort, and choice lists covering every schema token.
+  replacement abort, choice lists covering every schema token, and confirmed
+  values remaining labeled as saved while the session apply status is revoked.
 - `qindaqt.settings-windows-page`: offscreen page over a stub model — wide and
   compact layouts, admitted focus, accessible roles and descriptions, separate
-  saved/effect status rows, labels not tokens, pointer-opened selector with
+  saved/effect status rows including owner-replacement revocation, labels not
+  tokens, pointer-opened selector with
   keyboard selection, pointer slider and Apply, Revert wiring, saving fences,
   and unavailable notice with Retry.
 - `qindaqt.settings-windows-session-apply-client`: private session bus — strict
   versioned state decoding, failure diagnostics, explicit retry, owner loss,
-  and replacement-owner convergence.
+  direct A-to-B unique-owner replacement with B's response held, late A reply
+  fencing, and replacement-owner convergence.
 - `qindaqt.window-management-bridge`: private session bus — Settings1 snapshot
   to kwinrc write/readback and exact-owner KWin acknowledgement, failed
   kwinrc write and reconfigure failures without a false Applied state, retry,
