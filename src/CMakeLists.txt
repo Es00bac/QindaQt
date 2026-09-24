@@ -59,6 +59,9 @@ add_subdirectory(services/settings_protocol)
 add_subdirectory(services/settings_service)
 add_subdirectory(services/settings_client)
 add_subdirectory(services/streaming_preferences)
+# ADR-0265: the dock value and pin helper; the launcher runtime (deferred to
+# the end of this scope) and the File Manager link it.
+add_subdirectory(services/dock_items)
 add_subdirectory(session/window_management)
 add_subdirectory(services/portal)
 add_subdirectory(services/display_protocol)

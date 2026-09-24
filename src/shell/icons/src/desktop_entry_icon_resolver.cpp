@@ -74,6 +74,12 @@ QString DesktopEntryIconResolver::displayNameForAppId(const QString &appId) cons
     return entry != nullptr ? entry->value : QString{};
 }
 
+QString DesktopEntryIconResolver::desktopIdForAppId(const QString &appId) const
+{
+    const Entry *entry = matchAppId(m_names, appId);
+    return entry != nullptr ? entry->id : QString{};
+}
+
 QString DesktopEntryIconResolver::applicationDisplayName(const QString &appId,
                                                          const QString &reportedName) const
 {

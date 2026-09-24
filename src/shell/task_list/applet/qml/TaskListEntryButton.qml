@@ -26,6 +26,8 @@ T.ToolButton {
 
     required property var entry
     required property var access
+    // ADR-0265: the dock facade, for "Keep in Dock"; null without a dock.
+    property var dockAccess: null
     property bool vertical: false
     property bool dockMode: false
     property int dockTileSize: 60
@@ -405,6 +407,24 @@ T.ToolButton {
                      && !button.entry.pending
             onTriggered: button.access.ungroupContainer(
                              button.entry.taskId, button.entry.generationRevision)
+        }
+        // Keep in Dock (ADR-0265) pins this window's application; the dock
+        // then shows it with a running indicator instead of this tile. The
+        // dock answers when the menu opens, never from a stale binding.
+        onAboutToShow: keepInDockItem.available = button.dockAccess !== null
+            && button.entry.kind !== "container"
+            && button.dockAccess.canKeepInDock(String(button.entry.applicationId ?? ""))
+        T.MenuSeparator {
+            visible: keepInDockItem.available
+        }
+        T.MenuItem {
+            id: keepInDockItem
+            property bool available: false
+            objectName: "taskListContextKeepInDock"
+            visible: available
+            height: visible ? implicitHeight : 0
+            text: qsTr("Keep in Dock")
+            onTriggered: button.dockAccess.keepInDock(String(button.entry.applicationId ?? ""))
         }
         T.MenuSeparator {
             visible: button.dockMode && button.stripMove !== null

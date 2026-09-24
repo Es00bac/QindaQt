@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "launcher_persistence.h"
+#include "qindaqt/services/dock_items/dock_items.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_service/resident_settings_service.h"
@@ -60,9 +61,10 @@ void LauncherSettingsContractTests::shippedSchemaPersistsPinsAcrossServiceRestar
     // Exercise launcher keys alongside shared runtime settings: an unknown
     // launcher key poisons the whole scoped snapshot, not just the launcher.
     Services::SettingsClient::SettingsClient client(transport,
-        {QStringLiteral("accessibility.reducedMotion"), QStringLiteral("panels.autoHideDelayMs"),
-         QStringLiteral("services.clipboardHistory"), LauncherPersistenceController::pinnedKey(),
-         LauncherPersistenceController::recentKey()});
+        QStringList{QStringLiteral("accessibility.reducedMotion"),
+                    QStringLiteral("panels.autoHideDelayMs"),
+                    QStringLiteral("services.clipboardHistory")}
+            + LauncherPersistenceController::scopedKeys());
     LauncherPersistenceController persistence(client);
     QVERIFY2(client.start(&error), qPrintable(error));
     QTRY_VERIFY2_WITH_TIMEOUT(persistence.persistenceReady(), qPrintable(client.lastError() + QStringLiteral(" / ") + persistence.statusText()), 3000);
@@ -75,8 +77,12 @@ void LauncherSettingsContractTests::shippedSchemaPersistsPinsAcrossServiceRestar
     QTRY_VERIFY_WITH_TIMEOUT(!persistence.writeInFlight() && persistence.persistenceReady(), 3000);
     const auto disk = Settings::SettingsFileStore::load(storage, *active);
     QVERIFY2(disk.ok, qPrintable(disk.error + QStringLiteral("; controller: ") + persistence.statusText()));
-    QCOMPARE(disk.document.values.value(LauncherPersistenceController::pinnedKey()).toStringList(),
-             QStringList{application});
+    // ADR-0265: the pin lives in the structured dock value, which the shipped
+    // schema admits and the document encoder stores as canonical JSON.
+    const auto storedDock = Services::DockItems::DockItems::decodeSettingsValue(
+        disk.document.values.value(LauncherPersistenceController::dockItemsKey()));
+    QVERIFY2(storedDock.ok() && !storedDock.unmigrated, qPrintable(storedDock.error));
+    QCOMPARE(storedDock.items->applicationIds(), QStringList{application});
     QCOMPARE(disk.document.values.value(LauncherPersistenceController::recentKey()).toStringList(),
              QStringList{application});
     const QString originalEpoch = service.epoch();
@@ -105,7 +111,7 @@ void LauncherSettingsContractTests::shippedSchemaPersistsPinsAcrossServiceRestar
         QStringLiteral("launcher-contract-fresh-client"));
     Services::SettingsClient::QtSettingsTransport freshTransport(freshBus);
     Services::SettingsClient::SettingsClient freshClient(freshTransport,
-        {LauncherPersistenceController::pinnedKey(), LauncherPersistenceController::recentKey()});
+        LauncherPersistenceController::scopedKeys());
     LauncherPersistenceController freshPersistence(freshClient);
     QVERIFY(freshPersistence.pinned().ids().isEmpty());
     QVERIFY(freshPersistence.recent().ids().isEmpty());

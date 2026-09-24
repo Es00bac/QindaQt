@@ -3,6 +3,8 @@
 - Status: Accepted
 - Date: 2026-09-05
 - Supersedes: the persistence key names in [ADR-0062](0062-bound-launcher-execution-behind-injected-seams.md)
+- Superseded in part by: [ADR-0265](0265-keep-dock-items-in-one-structured-settings-value.md)
+  (the pinned list; `panels.launcherRecent` stays as decided here)
 
 ## Context
 

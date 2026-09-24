@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QString>
 
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -46,6 +47,7 @@ namespace QindaQt::Shell::DesktopControls {
 class ActiveApplicationController;
 class CommandSearchController;
 class DesktopControlsAccess;
+class FileManagerDockPaths;
 class FileManagerFolderOpener;
 class FolderOpener;
 class PlacesController;
@@ -78,6 +80,11 @@ public:
         PowerApplet::PowerAppletController *power = nullptr;
         QObject *sessionActions = nullptr;
         NetworkApplet::NetworkAppletController *network = nullptr;
+        // ADR-0265: window app id -> desktop-entry id, the task list's own
+        // icon-resolver rules, so the dock's running indicators and the
+        // task list agree on which application a window belongs to. May be
+        // empty (exact ids only).
+        std::function<QString(const QString &applicationId)> desktopEntryForWindow = {};
     };
 
     DesktopControlsComposition(const Applets::ManifestCatalog &catalog,
@@ -114,6 +121,9 @@ private:
     Workspaces::WorkspaceTransport *m_transport = nullptr;
     std::unique_ptr<Launcher::QProcessLaunchSpawner> m_ownedSpawner;
     std::unique_ptr<DesktopControls::FileManagerFolderOpener> m_ownedOpener;
+    // The dock's File Manager boundary adapter over whichever folder opener
+    // is in use (owned or injected); declared after the opener it borrows.
+    std::unique_ptr<DesktopControls::FileManagerDockPaths> m_dockPaths;
     std::unique_ptr<Workspaces::WorkspaceController> m_workspaces;
     std::unique_ptr<DesktopControls::SystemStatusController> m_systemStatus;
     std::unique_ptr<DesktopControls::SystemMenuController> m_systemMenu;

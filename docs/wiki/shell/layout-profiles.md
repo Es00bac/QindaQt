@@ -251,7 +251,8 @@ branding.
 ## Centered dock presentation
 
 The QindaQt smart shelf and macOS-inspired dock use one canonical `task-list`
-instance, the launcher trigger, and the compiled `quick-launch` pins strip in
+instance, the launcher trigger, and the compiled `quick-launch` dock items
+([Dock items](dock-items.md)) in
 their center zone. Their existing applet presentation setting `dockMode: true`
 selects dock treatment after profile resolution; it is not a schema field and
 does not alter task-list, launcher, or pin persistence. A copied or renamed

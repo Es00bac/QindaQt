@@ -255,6 +255,12 @@
       "default": []
     },
     {
+      "key": "panels.dockItems",
+      "domain": "panels",
+      "type": "object",
+      "default": {}
+    },
+    {
       "key": "panels.layoutProfile",
       "domain": "panels",
       "type": "string",
