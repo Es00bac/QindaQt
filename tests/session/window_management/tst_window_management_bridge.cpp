@@ -4,6 +4,7 @@
 // fake org.kde.KWin that counts reconfigure calls.
 #include "qindaqt/session/window_management/kwin_reconfigure_requester.h"
 #include "qindaqt/session/window_management/kwin_window_management_writer.h"
+#include "qindaqt/session/window_management/window_management_apply_state_service.h"
 #include "qindaqt/session/window_management/window_management_bridge.h"
 
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
@@ -15,10 +16,16 @@
 #include "qindaqt/settings/settings_schema.h"
 
 #include <QDBusConnection>
+#include <QDBusArgument>
+#include <QDBusMessage>
+#include <QDBusPendingCallWatcher>
+#include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QProcess>
 #include <QSignalSpy>
 #include <QTemporaryDir>
+#include <QTimer>
 #include <QtTest>
 
 using namespace QindaQt::Session::WindowManagement;
@@ -47,6 +54,23 @@ QString readAll(const QString &path)
                                                             : QString();
 }
 
+QDBusMessage callWithEventLoop(const QDBusConnection &bus, const QString &method)
+{
+    QEventLoop loop;
+    const QDBusMessage request = QDBusMessage::createMethodCall(
+        QString::fromLatin1(WindowManagementApplyStateService::ServiceName),
+        QString::fromLatin1(WindowManagementApplyStateService::ObjectPath),
+        QString::fromLatin1(WindowManagementApplyStateService::InterfaceName), method);
+    QDBusPendingCallWatcher watcher(bus.asyncCall(request, 2'000));
+    QObject::connect(&watcher, &QDBusPendingCallWatcher::finished,
+                     &loop, &QEventLoop::quit);
+    QTimer::singleShot(2'000, &loop, &QEventLoop::quit);
+    if (!watcher.isFinished()) {
+        loop.exec();
+    }
+    return watcher.reply();
+}
+
 } // namespace
 
 class WindowManagementBridgeTest final : public QObject
@@ -55,7 +79,11 @@ class WindowManagementBridgeTest final : public QObject
 
 private Q_SLOTS:
     void confirmedSettingsBecomeKwinrcAndOneReconfigure();
-    void snapshotWithoutChangesNeverAsksForAReconfigure();
+    void dbusApplyStatePublishesAcknowledgementAndRetry();
+    void kwinrcWriteFailureNeverClaimsApplied();
+    void reconfigureFailureNeverClaimsApplied();
+    void compositorOwnerReplacementRequiresANewAcknowledgement();
+    void sameSnapshotDoesNotAskForAnotherReconfigure();
 };
 
 void WindowManagementBridgeTest::confirmedSettingsBecomeKwinrcAndOneReconfigure()
@@ -181,7 +209,29 @@ class CountingRequester final : public KWinReconfigureRequester
 {
 public:
     int requests = 0;
-    void requestReconfigure() override { ++requests; }
+    quint64 pendingRequest = 0;
+    QString owner = QStringLiteral(":kwin-owner");
+    void requestReconfigure(quint64 requestId) override
+    {
+        ++requests;
+        pendingRequest = requestId;
+    }
+    void finish(const QString &error = {})
+    {
+        const quint64 completed = pendingRequest;
+        pendingRequest = 0;
+        Q_EMIT reconfigureFinished(completed, owner, error);
+    }
+    void loseOwner()
+    {
+        owner.clear();
+        Q_EMIT ownerChanged(owner);
+    }
+    void replaceOwner()
+    {
+        owner = QStringLiteral(":kwin-replacement");
+        Q_EMIT ownerChanged(owner);
+    }
 };
 
 // The client's transport seam, driven by hand: no bus, canned snapshots.
@@ -240,7 +290,226 @@ QVariantMap defaultValues()
 
 } // namespace
 
-void WindowManagementBridgeTest::snapshotWithoutChangesNeverAsksForAReconfigure()
+void WindowManagementBridgeTest::dbusApplyStatePublishesAcknowledgementAndRetry()
+{
+    QProcess daemon;
+    daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
+                 {QStringLiteral("--session"), QStringLiteral("--nofork"),
+                  QStringLiteral("--print-address=1")});
+    QVERIFY(daemon.waitForStarted());
+    QVERIFY(daemon.waitForReadyRead());
+    const QString address = QString::fromUtf8(daemon.readLine()).trimmed();
+    const QString suffix = QString::number(QCoreApplication::applicationPid());
+    const QString serviceConnection = QStringLiteral("wm-state-service-") + suffix;
+    const QString readerConnection = QStringLiteral("wm-state-reader-") + suffix;
+    auto serviceBus = QDBusConnection::connectToBus(address, serviceConnection);
+    auto readerBus = QDBusConnection::connectToBus(address, readerConnection);
+    QVERIFY(serviceBus.isConnected() && readerBus.isConnected());
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const KWinWindowManagementWriter kwinrc(directory.filePath(QStringLiteral("kwinrc")));
+    CountingRequester requester;
+    FakeTransport transport;
+    SettingsClient client(transport, WindowManagementPreferences::scopedKeys(),
+                          {.requestTimeoutMilliseconds = 100,
+                           .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    WindowManagementBridge bridge(client, kwinrc, requester);
+    bridge.setReconfigureDebounceMilliseconds(0);
+    WindowManagementApplyStateService applyState(bridge, serviceBus);
+    QString error;
+    QVERIFY2(applyState.start(&error), qPrintable(error));
+    QString stateReadError;
+    const auto readState = [&readerBus, &stateReadError] {
+        const QDBusMessage reply = callWithEventLoop(readerBus, QStringLiteral("GetState"));
+        if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().isEmpty()) {
+            stateReadError = QStringLiteral("type %1; %2: ").arg(static_cast<int>(reply.type()))
+                + reply.errorName() + QStringLiteral(": ")
+                + reply.errorMessage();
+            return QVariantMap{};
+        }
+        return qdbus_cast<QVariantMap>(reply.arguments().constFirst());
+    };
+    const QVariantMap initialState = readState();
+    QVERIFY2(!initialState.isEmpty(), qPrintable(stateReadError));
+    QCOMPARE(initialState.value(QStringLiteral("phase")).toString(),
+             QStringLiteral("unavailable"));
+
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.50"));
+    QTRY_COMPARE(transport.pending.size(), 1);
+    auto snapshot = transport.pending.takeFirst();
+    Q_EMIT transport.snapshotReceived(snapshot.token, snapshot.owner,
+                                      snapshotWire(1, defaultValues()));
+    QTRY_COMPARE(requester.requests, 1);
+    QCOMPARE(readState().value(QStringLiteral("phase")).toString(),
+             QStringLiteral("applying"));
+    QVERIFY(!bridge.lastApplied().has_value());
+    requester.finish();
+    QCOMPARE(readState().value(QStringLiteral("phase")).toString(),
+             QStringLiteral("applied"));
+    QVERIFY(bridge.lastApplied() == std::optional(WindowManagementPreferences{}));
+
+    QVariantMap changed = defaultValues();
+    changed[QStringLiteral("windowManagement.dockingModifier")] = QStringLiteral("alt");
+    client.refresh();
+    QTRY_COMPARE(transport.pending.size(), 1);
+    snapshot = transport.pending.takeFirst();
+    Q_EMIT transport.snapshotReceived(snapshot.token, snapshot.owner,
+                                      snapshotWire(2, changed));
+    QTRY_COMPARE(requester.requests, 2);
+    requester.finish(QStringLiteral("KWin did not complete the reload"));
+    QCOMPARE(readState().value(QStringLiteral("phase")).toString(),
+             QStringLiteral("failed"));
+    QVERIFY(readState().value(QStringLiteral("message")).toString()
+                .contains(QStringLiteral("did not complete")));
+
+    const QDBusMessage retried = callWithEventLoop(readerBus, QStringLiteral("RetryApply"));
+    QCOMPARE(retried.type(), QDBusMessage::ReplyMessage);
+    QTRY_COMPARE(requester.requests, 3);
+    QCOMPARE(readState().value(QStringLiteral("phase")).toString(),
+             QStringLiteral("applying"));
+    requester.finish();
+    QCOMPARE(readState().value(QStringLiteral("phase")).toString(),
+             QStringLiteral("applied"));
+    QCOMPARE(qdbus_cast<QVariantMap>(
+                 readState().value(QStringLiteral("preferences")))
+                 .value(QStringLiteral("windowManagement.dockingModifier")).toString(),
+             QStringLiteral("alt"));
+
+    applyState.stop();
+    QDBusConnection::disconnectFromBus(serviceConnection);
+    QDBusConnection::disconnectFromBus(readerConnection);
+    daemon.kill();
+    QVERIFY(daemon.waitForFinished());
+}
+
+void WindowManagementBridgeTest::reconfigureFailureNeverClaimsApplied()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const KWinWindowManagementWriter kwinrc(directory.filePath(QStringLiteral("kwinrc")));
+    CountingRequester requester;
+    FakeTransport transport;
+    SettingsClient client(transport, WindowManagementPreferences::scopedKeys(),
+                          {.requestTimeoutMilliseconds = 100,
+                           .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    WindowManagementBridge bridge(client, kwinrc, requester);
+    bridge.setReconfigureDebounceMilliseconds(0);
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.20"));
+    QTRY_COMPARE(transport.pending.size(), 1);
+    const auto request = transport.pending.takeFirst();
+    Q_EMIT transport.snapshotReceived(request.token, request.owner,
+                                       snapshotWire(1, defaultValues()));
+    QTRY_COMPARE(requester.requests, 1);
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Applying);
+    QVERIFY(!bridge.lastApplied().has_value());
+
+    requester.finish(QStringLiteral("KWin reconfigure timed out"));
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Failed);
+    QVERIFY(bridge.applyState().error.contains(QStringLiteral("timed out")));
+    QVERIFY(!bridge.lastApplied().has_value());
+    QCOMPARE(bridge.appliedCount(), 0);
+
+    // A new explicit baseline retries the same persisted choice. Only its
+    // successful KWin reply can move the bridge into Applied.
+    client.refresh();
+    QTRY_COMPARE(transport.pending.size(), 1);
+    const auto retry = transport.pending.takeFirst();
+    Q_EMIT transport.snapshotReceived(retry.token, retry.owner,
+                                      snapshotWire(2, defaultValues()));
+    QTRY_COMPARE(requester.requests, 2);
+    requester.finish();
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Applied);
+    QVERIFY(bridge.lastApplied() == std::optional(WindowManagementPreferences{}));
+    QCOMPARE(bridge.appliedCount(), 1);
+}
+
+void WindowManagementBridgeTest::kwinrcWriteFailureNeverClaimsApplied()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("kwinrc"));
+    const KWinWindowManagementWriter kwinrc(path);
+    CountingRequester requester;
+    FakeTransport transport;
+    SettingsClient client(transport, WindowManagementPreferences::scopedKeys(),
+                          {.requestTimeoutMilliseconds = 100,
+                           .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    WindowManagementBridge bridge(client, kwinrc, requester);
+    bridge.setReconfigureDebounceMilliseconds(0);
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.25"));
+    QTRY_COMPARE(transport.pending.size(), 1);
+    auto request = transport.pending.takeFirst();
+    Q_EMIT transport.snapshotReceived(request.token, request.owner,
+                                       snapshotWire(1, defaultValues()));
+    QTRY_COMPARE(requester.requests, 1);
+    requester.finish();
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Applied);
+    QCOMPARE(bridge.applyState().kwinOwner, requester.owner);
+
+    // A directory at the configured file path makes the next write fail
+    // reliably even when this test runs with elevated filesystem privileges.
+    QVERIFY(QFile::remove(path));
+    QVERIFY(QDir(directory.path()).mkdir(QStringLiteral("kwinrc")));
+    QVariantMap changed = defaultValues();
+    changed[QStringLiteral("windowManagement.dockingModifier")] = QStringLiteral("alt");
+    client.refresh();
+    QTRY_COMPARE(transport.pending.size(), 1);
+    request = transport.pending.takeFirst();
+    Q_EMIT transport.snapshotReceived(request.token, request.owner,
+                                      snapshotWire(2, changed));
+
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Failed);
+    QVERIFY(bridge.applyState().error.contains(path));
+    QVERIFY(bridge.applyState().kwinOwner.isEmpty());
+    QVERIFY(bridge.lastApplied() == std::optional(WindowManagementPreferences{}));
+    QCOMPARE(bridge.appliedCount(), 1);
+    QCOMPARE(requester.requests, 1);
+}
+
+void WindowManagementBridgeTest::compositorOwnerReplacementRequiresANewAcknowledgement()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const KWinWindowManagementWriter kwinrc(directory.filePath(QStringLiteral("kwinrc")));
+    CountingRequester requester;
+    FakeTransport transport;
+    SettingsClient client(transport, WindowManagementPreferences::scopedKeys(),
+                          {.requestTimeoutMilliseconds = 100,
+                           .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    WindowManagementBridge bridge(client, kwinrc, requester);
+    bridge.setReconfigureDebounceMilliseconds(0);
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.30"));
+    QTRY_COMPARE(transport.pending.size(), 1);
+    auto request = transport.pending.takeFirst();
+    Q_EMIT transport.snapshotReceived(request.token, request.owner,
+                                      snapshotWire(1, defaultValues()));
+    QTRY_COMPARE(requester.requests, 1);
+    requester.finish();
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Applied);
+
+    requester.loseOwner();
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Unavailable);
+    QVERIFY(bridge.applyState().error.contains(QStringLiteral("KWin is not running")));
+    QVERIFY(!bridge.lastApplied().has_value());
+    requester.replaceOwner();
+    QTRY_COMPARE(requester.requests, 2);
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Applying);
+    QVERIFY(!bridge.lastApplied().has_value());
+    requester.finish();
+    QCOMPARE(bridge.applyState().phase, WindowManagementApplyPhase::Applied);
+    QCOMPARE(bridge.appliedCount(), 2);
+}
+
+void WindowManagementBridgeTest::sameSnapshotDoesNotAskForAnotherReconfigure()
 {
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
@@ -261,10 +530,11 @@ void WindowManagementBridgeTest::snapshotWithoutChangesNeverAsksForAReconfigure(
     Q_EMIT transport.snapshotReceived(request.token, request.owner,
                                       snapshotWire(1, defaultValues()));
     QTRY_VERIFY(client.state() == ClientState::Ready);
-    QCOMPARE(bridge.appliedCount(), 1);
     QTRY_COMPARE(requester.requests, 1);
+    requester.finish();
+    QCOMPARE(bridge.appliedCount(), 1);
 
-    // The same values again (a new owner re-sending its baseline): decoded,
+    // The same values again (a new Settings1 owner re-sending its baseline): decoded,
     // equal, no write and no reconfigure.
     Q_EMIT transport.ownerChanged(QStringLiteral(":1.11"));
     QTRY_COMPARE(transport.pending.size(), 1);
@@ -306,8 +576,9 @@ void WindowManagementBridgeTest::snapshotWithoutChangesNeverAsksForAReconfigure(
     request = transport.pending.takeFirst();
     Q_EMIT transport.snapshotReceived(request.token, request.owner, snapshotWire(0, changed));
     QTRY_VERIFY(client.state() == ClientState::Ready);
-    QCOMPARE(bridge.appliedCount(), 2);
     QTRY_COMPARE(requester.requests, 2);
+    requester.finish();
+    QCOMPARE(bridge.appliedCount(), 2);
     QVERIFY(readAll(kwinrc.path()).contains(QLatin1String("DockingModifier=disabled")));
 }
 

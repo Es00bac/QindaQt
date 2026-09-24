@@ -217,6 +217,26 @@ T.Page {
                     }
 
                     Label {
+                        objectName: "windowsSavedStatus"
+                        Layout.fillWidth: true
+                        text: root.windowsSettings.savedStatusText
+                        muted: true
+                        Accessible.role: Accessible.StaticText
+                        Accessible.name: text
+                    }
+
+                    Label {
+                        objectName: "windowsSessionApplyStatus"
+                        Layout.fillWidth: true
+                        text: root.windowsSettings.sessionApplyStatusText
+                        muted: true
+                        Accessible.role: root.windowsSettings.sessionApplyFailed
+                                         ? Accessible.AlertMessage
+                                         : Accessible.StaticText
+                        Accessible.name: text
+                    }
+
+                    Label {
                         objectName: "windowsStatus"
                         Layout.fillWidth: true
                         visible: text.length > 0 && !root.windowsSettings.unavailable
@@ -250,6 +270,15 @@ T.Page {
                             busy: root.windowsSettings.saving
                             accessibleDescription: qsTr("Save the changed window settings")
                             onClicked: root.windowsSettings.applyDraft()
+                        }
+
+                        Button {
+                            objectName: "windowsRetrySessionApplyButton"
+                            text: qsTr("Retry session apply")
+                            available: root.windowsSettings.applyRetryAvailable
+                            emphasized: false
+                            accessibleDescription: qsTr("Ask the session to apply the saved window settings again")
+                            onClicked: root.windowsSettings.retrySessionApply()
                         }
 
                         Button {

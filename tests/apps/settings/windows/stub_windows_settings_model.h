@@ -19,6 +19,10 @@ class StubWindowsSettingsModel final : public QObject {
     Q_PROPERTY(bool applyAvailable MEMBER applyAvailable NOTIFY viewChanged)
     Q_PROPERTY(QString statusText MEMBER statusText NOTIFY viewChanged)
     Q_PROPERTY(QString errorText MEMBER errorText NOTIFY viewChanged)
+    Q_PROPERTY(QString savedStatusText MEMBER savedStatusText NOTIFY viewChanged)
+    Q_PROPERTY(QString sessionApplyStatusText MEMBER sessionApplyStatusText NOTIFY viewChanged)
+    Q_PROPERTY(bool sessionApplyFailed MEMBER sessionApplyFailed NOTIFY viewChanged)
+    Q_PROPERTY(bool applyRetryAvailable MEMBER applyRetryAvailable NOTIFY viewChanged)
     Q_PROPERTY(QString snapDistanceError MEMBER snapDistanceError NOTIFY viewChanged)
     Q_PROPERTY(QString focusPolicy MEMBER focusPolicy NOTIFY viewChanged)
     Q_PROPERTY(QString dockingModifier MEMBER dockingModifier NOTIFY viewChanged)
@@ -56,6 +60,10 @@ public:
     bool applyAvailable = false;
     QString statusText;
     QString errorText;
+    QString savedStatusText = QStringLiteral("Saved preference");
+    QString sessionApplyStatusText = QStringLiteral("Saved preference; session status is unavailable.");
+    bool sessionApplyFailed = false;
+    bool applyRetryAvailable = false;
     QString snapDistanceError;
     QString focusPolicy = QStringLiteral("click");
     QString dockingModifier = QStringLiteral("super");
@@ -89,6 +97,7 @@ public:
     int applyRequests = 0;
     int revertRequests = 0;
     int retryRequests = 0;
+    int applyRetryRequests = 0;
 
     Q_INVOKABLE bool setDraftFocusPolicy(const QString &token)
     {
@@ -125,6 +134,7 @@ public:
     Q_INVOKABLE bool applyDraft() { ++applyRequests; return true; }
     Q_INVOKABLE bool revertDraft() { ++revertRequests; return true; }
     Q_INVOKABLE void retry() { ++retryRequests; }
+    Q_INVOKABLE bool retrySessionApply() { ++applyRetryRequests; return true; }
 
 Q_SIGNALS:
     void viewChanged();

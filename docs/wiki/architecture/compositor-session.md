@@ -178,11 +178,19 @@ A purpose-scoped Settings1 client over the five keys decodes every confirmed
 snapshot as a whole, writes the result into the user's `kwinrc` with KConfig
 (`[Windows] FocusPolicy`, `BorderSnapZone` and `WindowSnapZone` for KWin's own
 knobs; a `[QindaQt]` group carrying `DockingModifier`, `CloseContainerPolicy`
-and `SessionRestore`), and asks `org.kde.KWin.reconfigure` once per burst of
-changes, only when the file actually changed. The compositor plugin re-reads
-the `[QindaQt]` group on KWin's `configChanged` and rebinds the docking chord
-and the close policy without a restart. `SessionRestore` is carried but not
-yet consumed.
+and `SessionRestore`), and asks `org.kde.KWin.reconfigure` for the exact
+current compositor owner. It reads the owned values back and reports an
+acknowledged apply only after the KWin call succeeds and the values still
+match. The session publishes this state through
+[`org.qindaqt.WindowManagement1`](../adr/0254-separate-window-settings-from-session-apply-truth.md),
+so Settings can distinguish a saved preference from a failed, pending, or
+applied session effect. Settings retries never write Settings1 again. A lost
+Settings1 or KWin owner revokes stale acknowledgements, and a replacement KWin
+owner must acknowledge a new reconfigure even when `kwinrc` already matches.
+After convergence, ordinary changes keep the debounced write/reconfigure
+behavior. The compositor plugin re-reads the `[QindaQt]` group on KWin's
+`configChanged` and rebinds the docking chord and close policy without a
+restart. `SessionRestore` is carried but not yet consumed.
 
 ## Compositor-MVP runtime layers
 

@@ -252,3 +252,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0248: Confirm Streaming preferences before OBS consumption](0248-confirm-streaming-preferences-before-obs-consumption.md)
 - [ADR-0249: Confirm week-start writes against Settings1](0249-confirm-week-start-writes-against-settings1.md)
 - [ADR-0250: Require an active Loader witness for every Settings route](0250-require-active-loader-witness-for-every-settings-route.md)
+- [ADR-0254: Separate saved window preferences from session apply truth](0254-separate-window-settings-from-session-apply-truth.md)
