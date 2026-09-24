@@ -419,6 +419,17 @@ ApplicationWindow {
         detailsView: entryList
     }
 
+    // ADR-0273: org.freedesktop.FileManager1 and --select reveal entries here.
+    EntryReveal {
+        objectName: "entryReveal"
+        navigationController: root.navigationController
+        selection: entrySelection
+        iconView: entryGrid
+        detailsView: entryList
+        propertiesController: root.propertiesController
+        infoDialog: propertiesDialog
+    }
+
     WindowServices {
         id: windowServices
         anchors.fill: parent
