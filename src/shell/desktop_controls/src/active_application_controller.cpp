@@ -1,17 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/shell/desktop_controls/active_application_controller.h"
 
+#include "qindaqt/shell/global_menu/applet/globalmenuappletaccess.h"
 #include "qindaqt/shell/task_list/applet/task_list_applet_controller.h"
 
 namespace QindaQt::Shell::DesktopControls {
 
 ActiveApplicationController::ActiveApplicationController(
     ShellTaskListApplet::TaskListAppletController *taskList,
-    ActiveApplicationGrants grants, QObject *parent)
+    ActiveApplicationGrants grants, GlobalMenu::GlobalMenuAppletAccess *globalMenu,
+    QObject *parent)
     : QObject(parent)
     , m_taskList(grants.windowsRead ? taskList : nullptr)
+    , m_globalMenu(grants.windowsRead ? globalMenu : nullptr)
     , m_grants(grants)
 {
+  if (m_globalMenu != nullptr) {
+    connect(m_globalMenu,
+            &GlobalMenu::GlobalMenuAppletAccess::desktopMenuShownChanged, this,
+            &ActiveApplicationController::stateChanged);
+  }
   if (m_taskList != nullptr) {
     connect(m_taskList,
             &ShellTaskListApplet::TaskListAppletController::stateReprojected,
@@ -45,8 +53,18 @@ QString ActiveApplicationController::title() const
   return m_row.value(QStringLiteral("title")).toString();
 }
 
+bool ActiveApplicationController::desktopMenuShown() const
+{
+  return !hasActiveWindow() && m_globalMenu != nullptr
+      && m_globalMenu->desktopMenuShown()
+      && !m_globalMenu->desktopMenuTitle().isEmpty();
+}
+
 QString ActiveApplicationController::applicationName() const
 {
+  if (desktopMenuShown()) {
+    return m_globalMenu->desktopMenuTitle();
+  }
   const QString name = m_row.value(QStringLiteral("applicationName")).toString();
   return name.isEmpty() ? m_row.value(QStringLiteral("applicationId")).toString()
                         : name;
@@ -59,6 +77,9 @@ QString ActiveApplicationController::applicationId() const
 
 QString ActiveApplicationController::iconName() const
 {
+  if (desktopMenuShown()) {
+    return m_globalMenu->desktopMenuIconName();
+  }
   return m_row.value(QStringLiteral("iconName")).toString();
 }
 
@@ -105,6 +126,9 @@ bool ActiveApplicationController::canManage() const
 
 QString ActiveApplicationController::accessibleName() const
 {
+  if (desktopMenuShown()) {
+    return QStringLiteral("Active application: %1").arg(applicationName());
+  }
   if (!hasActiveWindow()) {
     return QStringLiteral("No active application");
   }
@@ -115,6 +139,10 @@ QString ActiveApplicationController::accessibleDescription() const
 {
   if (m_taskList == nullptr) {
     return QStringLiteral("Window information is not granted");
+  }
+  if (desktopMenuShown()) {
+    return QStringLiteral("No window is focused; the menu bar shows the %1 menu")
+        .arg(applicationName());
   }
   if (!hasActiveWindow()) {
     return QStringLiteral("No window is focused");

@@ -26,6 +26,7 @@ private Q_SLOTS:
     void testLineageExhaustionFailsClosed();
     void testReadDenialWithholdsObservation();
     void testWriteDenialKeepsBrowsingButRefusesMutation();
+    void testOpenRequestIsOnlyARequest();
 };
 
 void TstClipboardAppletController::testInitialState()
@@ -485,6 +486,17 @@ void TstClipboardAppletController::testWriteDenialKeepsBrowsingButRefusesMutatio
     QCOMPARE(controller.entryCount(), 1);
 }
 
+
+void TstClipboardAppletController::testOpenRequestIsOnlyARequest()
+{
+    // ADR-0260: the desktop menu's "Show Clipboard History" asks; the panel
+    // applet opens its own popup. The request never touches the client.
+    ClipboardAppletController controller(nullptr, true, false);
+    QSignalSpy opened(&controller, &ClipboardAppletController::openRequested);
+    controller.requestOpen();
+    QCOMPARE(opened.size(), 1);
+    QCOMPARE(controller.pendingOperationCount(), 0);
+}
 
 QTEST_MAIN(TstClipboardAppletController)
 #include "tst_clipboard_applet_controller.moc"

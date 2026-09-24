@@ -90,9 +90,17 @@ public:
     Q_INVOKABLE void clearSearch();
     Q_INVOKABLE void clearFeedback();
 
+    // AGENT-CONTRACT (ADR-0260): the shell's desktop menu ("Show Clipboard
+    // History") calls this; the panel applet QML connects to openRequested()
+    // and opens its own history popup. The controller owns no window, so this
+    // is only ever a request the presentation honours (the launcher's
+    // requestOpen() precedent).
+    void requestOpen();
+
 Q_SIGNALS:
     void stateReprojected();
     void feedbackChanged();
+    void openRequested();
 
 private Q_SLOTS:
     void onStateChanged(QindaQt::ShellClipboardApplet::ClientState state, const QString &reasonCode);

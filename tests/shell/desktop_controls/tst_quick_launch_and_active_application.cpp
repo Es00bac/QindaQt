@@ -4,6 +4,7 @@
 #include "qindaqt/shell/desktop_controls/active_application_controller.h"
 #include "qindaqt/shell/desktop_controls/quick_launch_controller.h"
 
+#include <qindaqt/shell/global_menu/applet/globalmenuappletaccess.h>
 #include <qindaqt/shell/icons/desktop_entry_icon_resolver.h>
 
 #include <QFile>
@@ -24,9 +25,28 @@ private Q_SLOTS:
   void activeApplicationFollowsTheActiveTaskRow();
   void activeApplicationIntentsAreFencedByGrantsAndPending();
   void activeApplicationAndTaskRowsShowDesktopEntryNames();
+  void activeApplicationNamesTheDesktopMenuWhileNoWindowIsFocused();
 };
 
 namespace {
+
+// A minimal desktop-channel tree (ADR-0260): one application menu.
+QindaQt::Shell::GlobalMenu::Protocol::MenuTree desktopMenuTree()
+{
+  using namespace QindaQt::Shell::GlobalMenu::Protocol;
+  MenuItem lock;
+  lock.id = QStringLiteral("desktop.lock-screen");
+  lock.text = QStringLiteral("Lock Screen");
+  MenuItem application;
+  application.id = QStringLiteral("desktop.menu.application");
+  application.kind = MenuItemKind::Submenu;
+  application.text = QStringLiteral("File Manager");
+  application.children = {lock};
+  MenuTree tree;
+  tree.revision = 1;
+  tree.items = {application};
+  return tree;
+}
 
 QVariantMap rowForTask(const TaskListAppletController &taskList, const QString &taskId)
 {
@@ -200,6 +220,58 @@ void QuickLaunchAndActiveApplicationTests::activeApplicationFollowsTheActiveTask
   tasks.publish(facts);
   QVERIFY(!active.hasActiveWindow());
   QCOMPARE(active.accessibleDescription(), QStringLiteral("No window is focused"));
+}
+
+void QuickLaunchAndActiveApplicationTests::
+    activeApplicationNamesTheDesktopMenuWhileNoWindowIsFocused()
+{
+  // ADR-0260: with no focused window and the desktop menu presented, the
+  // indicator reads like macOS's Finder name; a focused window always wins.
+  TaskListStack tasks;
+  TaskListAppletController taskList(tasks.source, tasks.authority, tasks.port,
+                                    {true, true, true});
+  QindaQt::Shell::GlobalMenu::GlobalMenuAppletAccess globalMenu;
+  ActiveApplicationController active(&taskList, {true, true}, &globalMenu);
+  QSignalSpy stateSpy(&active, &ActiveApplicationController::stateChanged);
+  QVERIFY(!active.desktopMenuShown());
+  QCOMPARE(active.accessibleName(), QStringLiteral("No active application"));
+
+  globalMenu.publishDesktopTree(desktopMenuTree(), QStringLiteral("File Manager"),
+                                QStringLiteral("org.qindaqt.FileManager"));
+  QVERIFY(stateSpy.size() >= 1);
+  QVERIFY(active.desktopMenuShown());
+  QVERIFY(!active.hasActiveWindow());
+  QCOMPARE(active.applicationName(), QStringLiteral("File Manager"));
+  QCOMPARE(active.iconName(), QStringLiteral("org.qindaqt.FileManager"));
+  QCOMPARE(active.accessibleName(), QStringLiteral("Active application: File Manager"));
+  QVERIFY(active.accessibleDescription().contains(QStringLiteral("File Manager menu")));
+  // There is no window to act on.
+  QVERIFY(!active.canManage());
+  QVERIFY(!active.minimize());
+  QVERIFY(!active.close());
+  QCOMPARE(tasks.port.calls.size(), 0);
+
+  // A focused window always wins over the desktop menu.
+  tasks.publish(TaskListStack::activeEditorFacts());
+  QVERIFY(!active.desktopMenuShown());
+  QCOMPARE(active.applicationName(), QStringLiteral("App org.qindaqt.TextEditor"));
+
+  auto facts = TaskListStack::activeEditorFacts();
+  facts[0].active = false;
+  tasks.publish(facts);
+  QVERIFY(active.desktopMenuShown());
+  // An application's menu presented in the bar takes the name away again.
+  QindaQt::Shell::GlobalMenu::Protocol::MenuTree application = menuTree();
+  globalMenu.publishTree(application);
+  QVERIFY(!active.desktopMenuShown());
+  QCOMPARE(active.accessibleName(), QStringLiteral("No active application"));
+
+  // Without windows.read the facade is never read.
+  globalMenu.publishUnavailable();
+  QVERIFY(globalMenu.desktopMenuShown());
+  ActiveApplicationController blind(&taskList, {false, true}, &globalMenu);
+  QVERIFY(!blind.desktopMenuShown());
+  QVERIFY(blind.applicationName().isEmpty());
 }
 
 void QuickLaunchAndActiveApplicationTests::activeApplicationIntentsAreFencedByGrantsAndPending()

@@ -146,6 +146,11 @@ void ClipboardAppletController::setFeedback(const QString &message, const QStrin
     Q_EMIT feedbackChanged();
 }
 
+void ClipboardAppletController::requestOpen()
+{
+    Q_EMIT openRequested();
+}
+
 void ClipboardAppletController::clearFeedback()
 {
     if (m_feedbackPresent) {

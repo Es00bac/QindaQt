@@ -181,6 +181,10 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/clipboardappletcomposition.h
         runtime/desktopcontrolscomposition.cpp
         runtime/desktopcontrolscomposition.h
+        runtime/desktopmenucomposition.cpp
+        runtime/desktopmenucomposition.h
+        runtime/desktopmenutargets.cpp
+        runtime/desktopmenutargets.h
         runtime/globalshortcutregistrar.h
         runtime/compositoroutputauthority.cpp
         runtime/compositoroutputauthority.h
@@ -222,6 +226,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shelldevelopmentevidence.h
         runtime/shellruntimeapplication.cpp
         runtime/shellruntimeapplication_applets.cpp
+        runtime/shellruntimeapplication_desktopmenu.cpp
         runtime/shellruntimeapplication_development.cpp
         runtime/shellruntimeapplication_surfaces.cpp
         runtime/shellruntimeapplication_touch.cpp
@@ -359,6 +364,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellTaskListOperations
             QindaQt::ShellStatusNotifierAppletRuntime QindaQt::ShellIcons
             QindaQt::ShellDesktopControlsRuntime
+            QindaQt::ShellDesktopMenu
             QindaQt::ShellStartMenuQml
             QindaQt::ShellDesktopSurface
             QindaQt::ShellDesktopSurfaceQml
