@@ -58,6 +58,8 @@ constexpr std::array capabilities{
     EnumToken{Capability::DisplayRead, "display.read"},
     EnumToken{Capability::DisplayControl, "display.control"},
     EnumToken{Capability::SettingsRead, "settings.read"},
+    EnumToken{Capability::NetworkRead, "network.read"},
+    EnumToken{Capability::NetworkControl, "network.control"},
 };
 
 template<typename Enum, std::size_t Size>

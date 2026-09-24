@@ -57,11 +57,11 @@ typed placeholder. Clock and provider-owned global-menu labels are the two
 intentional textual panel surfaces.
 
 The manifest catalog describes clock, notification center, audio, Bluetooth,
-power, launcher, task list, global menu, status tray, clipboard, status
+network, power, launcher, task list, global menu, status tray, clipboard, status
 notifier, start menu, desktop icons, and the thirteen desktop-control
 packages. The compiled first-party
-registry contains twenty-five audited entry points. The production QML
-dispatcher renders the twenty-four panel-hosted entry points, and the desktop
+registry contains thirty audited entry points. The production QML
+dispatcher renders the twenty-nine panel-hosted entry points, and the desktop
 surface hosts the desktop-icons entry (see its bullet below):
 
 - `qindaqt.applets.clock` renders local time, follows the locale by default,
@@ -99,6 +99,15 @@ surface hosts the desktop-icons entry (see its bullet below):
   BlueZ, or audio authority. Bluetooth B0 currently reports the deterministic
   empty backend, so production truth remains unavailable until the platform
   adapter lands; and
+- `qindaqt.applets.network` renders the current wired, Wi-Fi, or mobile
+  connection from public Network1 truth, a Wi-Fi switch, visible networks, and
+  Rescan. Its shell-private controller consumes only the public
+  `NetworkClient`; `network.read` gates observation and `network.control`
+  gates the typed intents. An action reports success only when a newer
+  same-owner snapshot confirms it; owner loss clears every row and ends a
+  request as uncertain without replay. It has no credential surface
+  ([Network applet](network-applet.md),
+  [ADR-0258](../adr/0258-network-panel-applet-over-public-network1.md)); and
 - `qindaqt.applets.launcher` renders the compiled
   `QindaQt.Shell.Launcher` module over its shell-private composition of
   injected-root scanning, public Settings1 persistence, and seam-based bounded
@@ -248,10 +257,10 @@ the zone changes where an instance renders, never what it may do — and the
 audited registry remains the only route into the zone
 ([ADR-0125](../adr/0125-host-desktop-zone-applets.md)).
 
-The notification-center, audio, Bluetooth, and power entries remain valid
+The notification-center, audio, Bluetooth, network, and power entries remain valid
 compiled applets when the shell starts without presentation-token
 provisioning, but the notification facade is absent and its control is
-visibly disabled. Audio, Power, and Bluetooth access are independent of the
+visibly disabled. Audio, Power, Bluetooth, and Network access are independent of the
 notification token and fail closed on their own capability/client state. The
 Power controller additionally borrows one shell-owned session-actions client;
 its Session buttons never enter the reusable applet API. Meta+L is owned by
@@ -261,7 +270,7 @@ typed Lock request through session_actions
 ([ADR-0132](../adr/0132-finish-session-locking.md)).
 The preview keeps deterministic static applet fixtures rather than connecting
 to live clock, notification, global-menu, clipboard, task-list,
-status-notifier, audio, Bluetooth, or power state.
+status-notifier, audio, Bluetooth, network, or power state.
 
 Both shell executables publish the selected theme into their engine-owned
 `QindaQt.Tokens` facade before constructing the dispatcher. Hosted applets may

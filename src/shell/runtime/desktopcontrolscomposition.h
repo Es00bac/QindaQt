@@ -34,6 +34,9 @@ class BluetoothAppletController;
 namespace QindaQt::Shell::PowerApplet {
 class PowerAppletController;
 }
+namespace QindaQt::Shell::NetworkApplet {
+class NetworkAppletController;
+}
 namespace QindaQt::Shell::Workspaces {
 class WorkspaceController;
 class WorkspaceTransport;
@@ -74,6 +77,7 @@ public:
         BluetoothApplet::BluetoothAppletController *bluetooth = nullptr;
         PowerApplet::PowerAppletController *power = nullptr;
         QObject *sessionActions = nullptr;
+        NetworkApplet::NetworkAppletController *network = nullptr;
     };
 
     DesktopControlsComposition(const Applets::ManifestCatalog &catalog,

@@ -15,6 +15,9 @@ class BluetoothAppletController;
 namespace QindaQt::Shell::PowerApplet {
 class PowerAppletController;
 }
+namespace QindaQt::Shell::NetworkApplet {
+class NetworkAppletController;
+}
 
 namespace QindaQt::Shell::DesktopControls {
 
@@ -29,12 +32,14 @@ struct SystemStatusGrants {
   bool bluetoothControl = false;
   bool powerRead = false;
   bool powerControl = false;
+  bool networkRead = false;
+  bool networkControl = false;
 
   friend bool operator==(const SystemStatusGrants &, const SystemStatusGrants &) =
       default;
 };
 
-// Aggregates the existing audio, Bluetooth, and power applet facades into one
+// Aggregates the existing audio, Bluetooth, power, and network applet facades into one
 // compact indicator. It owns no client, transport, or request state of its
 // own: every quick control in the popup re-enters the borrowed facade.
 //
@@ -52,14 +57,23 @@ class SystemStatusController final : public QObject {
   Q_PROPERTY(QObject *audio READ audio CONSTANT)
   Q_PROPERTY(QObject *bluetooth READ bluetooth CONSTANT)
   Q_PROPERTY(QObject *power READ power CONSTANT)
+  Q_PROPERTY(QObject *network READ network CONSTANT)
   Q_PROPERTY(bool audioControlGranted READ audioControlGranted CONSTANT)
   Q_PROPERTY(bool bluetoothControlGranted READ bluetoothControlGranted CONSTANT)
   Q_PROPERTY(bool powerControlGranted READ powerControlGranted CONSTANT)
+  Q_PROPERTY(bool networkControlGranted READ networkControlGranted CONSTANT)
 
 public:
   SystemStatusController(AudioApplet::AudioAppletController *audio,
                          BluetoothApplet::BluetoothAppletController *bluetooth,
                          PowerApplet::PowerAppletController *power,
+                         SystemStatusGrants grants, QObject *parent = nullptr);
+  // Adds the network lane (ADR-0258). The three-facade form above keeps its
+  // callers and simply has no network lane.
+  SystemStatusController(AudioApplet::AudioAppletController *audio,
+                         BluetoothApplet::BluetoothAppletController *bluetooth,
+                         PowerApplet::PowerAppletController *power,
+                         NetworkApplet::NetworkAppletController *network,
                          SystemStatusGrants grants, QObject *parent = nullptr);
 
   // Rows: {id, label, phase, summary, iconName, accessibleName,
@@ -86,6 +100,7 @@ public:
   [[nodiscard]] QObject *audio() const noexcept;
   [[nodiscard]] QObject *bluetooth() const noexcept;
   [[nodiscard]] QObject *power() const noexcept;
+  [[nodiscard]] QObject *network() const noexcept;
   [[nodiscard]] bool audioControlGranted() const noexcept
   {
     return m_grants.audioRead && m_grants.audioControl;
@@ -98,6 +113,10 @@ public:
   {
     return m_grants.powerRead && m_grants.powerControl;
   }
+  [[nodiscard]] bool networkControlGranted() const noexcept
+  {
+    return m_grants.networkRead && m_grants.networkControl;
+  }
   [[nodiscard]] const SystemStatusModel &model() const noexcept { return m_model; }
 
 Q_SIGNALS:
@@ -108,10 +127,12 @@ private:
   [[nodiscard]] StatusLaneInput audioLane() const;
   [[nodiscard]] StatusLaneInput bluetoothLane() const;
   [[nodiscard]] StatusLaneInput powerLane() const;
+  [[nodiscard]] StatusLaneInput networkLane() const;
 
   AudioApplet::AudioAppletController *m_audio = nullptr;
   BluetoothApplet::BluetoothAppletController *m_bluetooth = nullptr;
   PowerApplet::PowerAppletController *m_power = nullptr;
+  NetworkApplet::NetworkAppletController *m_network = nullptr;
   SystemStatusGrants m_grants;
   SystemStatusModel m_model;
 };

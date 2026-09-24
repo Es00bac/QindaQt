@@ -28,6 +28,15 @@ facades. Popups use `Popup.Window` so their keyboard focus and content are not
 clipped by the LayerShell panel band. All actions retain keyboard and
 accessible activation paths.
 
+System status aggregates the sound, Bluetooth, power, and network applet
+facades into one indicator. Each lane is gated by System Status' own
+`*.read` grant and its quick control by the matching `*.control` grant; the
+borrowed facade still applies its own grants and fences. The network lane
+(ADR-0258) reuses the [Network applet](network-applet.md) controller's own
+glyph, summary, and accessible text, so the two views cannot disagree, and
+its quick control is the Wi-Fi switch, which shows confirmed truth only. A
+failed or uncertain network request marks the lane for attention.
+
 Command palette, HUD, and overview search skip disabled results during Up/Down
 navigation. Enter in the search field activates the first enabled result;
 an all-disabled result list dispatches nothing. Moving above the first enabled
