@@ -87,6 +87,26 @@ applet only retires stale presentation. The
 `qindaqt.desktop-controls-offscreen-active-application` row proves this
 sequence offscreen.
 
+While no window is focused and the global menu presents the desktop menu
+([ADR-0260](../adr/0260-show-the-file-managers-menu-when-no-application-is-active.md)),
+the active application control names that menu's application, the File
+Manager, with its icon, as the Finder name reads on macOS. It reads the global
+menu facade's `desktopMenuShown`, `desktopMenuTitle`, and
+`desktopMenuIconName` only, and only under its existing `windows.read` grant.
+A focused window always wins, and with no window there are no Minimize or
+Close actions, so the summary stays disabled. Without the desktop menu it
+reads "Desktop" as before.
+
+The desktop menu reaches its system and place items through this module's
+controllers: System Settings through `SystemMenuController::openSettings`, the
+session items through the session-actions facade that controller lends (with
+the system menu's own Log out?, Restart?, and Shut down? questions), the Go
+entries through `PlacesController::open`, and workspace switching and Show
+Desktop through the workspace controller and its revision fence.
+`DesktopControlsAccess.desktopCommands` lends the desktop menu's command
+channel to the desktop-icons surfaces; no panel control reads it. See
+[Global menu](global-menu.md#desktop-menu-when-no-application-is-active).
+
 The focused checks are the desktop-controls unit, composition, offscreen QML,
 workspace transport, resolver/catalog, and boundary rows. These rows prove
 compiled presentation and injected-facade behavior; they do not qualify a

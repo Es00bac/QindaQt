@@ -78,6 +78,9 @@ public:
         PowerApplet::PowerAppletController *power = nullptr;
         QObject *sessionActions = nullptr;
         NetworkApplet::NetworkAppletController *network = nullptr;
+        // ADR-0260: the desktop menu's desktop-icons command channel, lent
+        // on to the desktop surfaces through DesktopControlsAccess.
+        QObject *desktopCommands = nullptr;
     };
 
     DesktopControlsComposition(const Applets::ManifestCatalog &catalog,

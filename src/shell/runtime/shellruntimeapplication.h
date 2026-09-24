@@ -73,6 +73,10 @@ class RuntimePanelWindowFactory;
 class AudioAppletComposition;
 class ShellAppearanceBridge;
 class DesktopControlsComposition;
+class DesktopMenuComposition;
+namespace DesktopMenu {
+class DesktopSurfaceCommands;
+}
 namespace DesktopSurface {
 class DesktopSurfaceController;
 }
@@ -139,6 +143,12 @@ private:
     void initializeAppearanceBridge(bool explicitThemeSelection);
     void initializeWallpaper();
     void initializeDesktopSurface(const Profiles::LayoutProfile &profile);
+    // ADR-0260: the File Manager's menu in the global menu while no
+    // application is active. Runs after every collaborator it borrows exists.
+    void initializeDesktopMenu(const Profiles::LayoutProfile &profile);
+    // Follows the global menu's residency and the layout's hosted popups;
+    // called from followGlobalMenuLayout() on startup and every adoption.
+    void followDesktopMenuLayout(const Profiles::LayoutProfile &profile);
     // Live customization (Meta+right-click menus, edit mode): the controller
     // hosts the Customize editor trio over the live profile and hands the
     // panel windows and desktop surfaces one borrowed facade.
@@ -289,6 +299,16 @@ private:
     std::unique_ptr<LiveCustomizationShortcut> m_liveCustomizationShortcut;
     std::unique_ptr<StatusNotifierAppletComposition> m_statusNotifierApplet;
     std::unique_ptr<DesktopControlsComposition> m_desktopControls;
+    // ADR-0260: the desktop menu's channel to the desktop-icons surfaces,
+    // lent to both the desktop controls access facade (the surfaces reach it
+    // there) and the desktop menu. resetRuntime() releases it only after the
+    // desktop menu, the desktop surface, and the desktop controls.
+    std::unique_ptr<DesktopMenu::DesktopSurfaceCommands> m_desktopSurfaceCommands;
+    // AGENT-GUARD: borrows the global menu facade, the window-actions client,
+    // the desktop controls' controllers, the launcher, clipboard, gather
+    // overview, Settings routes, the wallpaper's shortcut note, and the
+    // surface commands above. resetRuntime() destroys it FIRST.
+    std::unique_ptr<DesktopMenuComposition> m_desktopMenu;
     std::unique_ptr<NotificationWindowController> m_notificationWindows;
     std::unique_ptr<ShellDevelopmentEvidence> m_shellDevelopmentEvidence;
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_globalShortcutRegistrar;

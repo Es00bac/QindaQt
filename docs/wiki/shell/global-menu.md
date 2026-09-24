@@ -1,7 +1,11 @@
 # Global application menu
 
 The global menu applet presents the focused window's application menu in the
-panel. QindaQt builds it on a bounded, toolkit-neutral canonical menu/action
+panel; while no application is active it presents the shell-owned desktop
+menu, the File Manager's menu, as Finder's is on macOS
+([ADR-0260](../adr/0260-show-the-file-managers-menu-when-no-application-is-active.md),
+[below](#desktop-menu-when-no-application-is-active)). QindaQt builds it on a
+bounded, toolkit-neutral canonical menu/action
 model with proof-bound authenticated ownership. G1 provides compatibility with
 the standard AppMenu registrar and dbusmenu transports without inheriting the
 registrar protocol's unauthenticated authority model. The durable choices are
@@ -691,6 +695,74 @@ facade goes away), Qt Quick Controls can re-evaluate a retiring `MenuBarItem`
 before its menu is removed; offsets are clamped to the admitted entries and an
 absent entry measures as empty text, so no binding reads past the list.
 
+## Desktop menu when no application is active
+
+[ADR-0260](../adr/0260-show-the-file-managers-menu-when-no-application-is-active.md)
+fills the bar's empty state with the File Manager's menu. The module
+`src/shell/desktop_menu` owns the pure builder (`buildDesktopMenu`), the
+selection and activation controller (`DesktopMenuController`), the
+`DesktopMenuTargets` port, and the desktop-icons command channel
+(`DesktopSurfaceCommands`). Shell runtime composes it over the existing
+controllers (`DesktopMenuComposition`, `ShellDesktopMenuTargets`).
+
+**Two channels, one presentation.** `GlobalMenuAppletAccess` has an
+application channel (`publishTree`, `publishUnavailable`, `publishDegraded`,
+`beginTransition`, written only by the transport coordinator) and a desktop
+channel (`publishDesktopTree`, `retainDesktopTreeInert`, `withdrawDesktopTree`,
+written only by the desktop menu controller). `items`, `available`, `phase`,
+and `reasonCode` are the presented state: the application channel whenever it
+has anything to show, including a retained inert projection during a provider
+transition; otherwise the desktop tree; otherwise the application channel's
+unavailable or degraded truth. The desktop menu therefore never flashes
+between two application menus. An activation goes to the presented channel:
+desktop ids leave through `desktopActivationRequested`, never through the
+dbusmenu `Event` path, and one counter mints every projection generation so a
+delegate from one channel cannot match the other. The coordinator reads only
+`applicationAvailable()` and `applicationProjectionRetained()`, so ownership,
+authentication, invocation guarding, and the hosting acknowledgment
+([ADR-0077](../adr/0077-acknowledge-global-menu-hosting-before-hiding-local-menus.md))
+are exactly as described above. `desktopMenuShown`, `desktopMenuTitle`, and
+`desktopMenuIconName` tell the active-application indicator whose menu is
+shown.
+
+**Selection.** The desktop menu controller follows a presence derived from the
+same exact-owner identity client: an available identity without an active
+window shows the menu. The compositor admits only ordinary application
+windows as active, so the desktop surface, docks, and shell popups being
+focused read the same way. An active application window turns a shown desktop
+menu inert at once; the application's first tree replaces it as soon as it
+lands, and a menu-less application's inert copy is withdrawn after 500 ms,
+the transport's own presentation grace. A withdrawn or rereading identity
+keeps a shown menu actionable (its own popup opening invalidates the
+identity) for at most that grace. Focus handed back to the desktop shows the
+menu again once the application's retained presentation expires. The desktop
+menu exists exactly while the adopted layout hosts a granted global menu:
+`ShellRuntimeApplication::followDesktopMenuLayout` follows the same adoption
+as registrar residency, so ADR-0130 layouts never show it.
+
+**Contents.** "File Manager" (About This Computer, System Settings…,
+Keyboard Shortcuts…, Lock Screen, Log Out…, Suspend, Restart…, Shut Down…),
+File (New File Manager Window, New Folder, Find…), Edit (Paste, Select All,
+Show Clipboard History), View (Show Desktop, Gather Overview, Clean Up), Go
+(Home Folder, Desktop, Documents, Downloads, Music, Pictures, Videos,
+Computer), Window (the workspaces as one radio group), and Help (QindaQt Help,
+Keyboard Shortcuts). Menu titles and every entry backed by a File Manager
+action come from File Manager's public menu catalog
+([File Manager](../apps/file-manager.md#public-menu-catalog)); no shortcut
+text is shown because the focus-less desktop honours none of the window's
+keys. Absent owners omit their entries (desktop-icon entries need an attached
+primary desktop-icons surface; Find… and Show Clipboard History need a hosted
+launcher or clipboard applet); refusing owners disable them. Every command
+reaches one existing controller: see the routing table in the ADR.
+
+**Confirmation.** Log Out…, Restart…, and Shut Down… ask the system menu's
+questions first. The controller posts `requestConfirmation(token, title,
+text)`; each renderer hosts a `GlobalMenuConfirmation` dialog
+(`Popup.Window`, modal, Cancel/OK), and exactly one renderer claims the token
+(`claimConfirmation`) and opens it. `resolveConfirmation` answers the current
+token once; any other close declines, a new question declines the unanswered
+one, and the controller re-checks the owner's admission before dispatching.
+
 ## Manifest, policy, and packaging
 
 The existing `global-menu` manifest requests `global-menu.read` and
@@ -768,7 +840,19 @@ by clicking the lower edge and lower trailing corner of a rendered menu word,
 with a separate assertion that no zone scroll bar owns those points; see
 [panel surfaces](panel-surfaces.md#panel-hit-targets)),
 `qindaqt.global-menu-installed-package`, and the shared
-`qindaqt.shell-runtime-component-closure`. ADR-0130 residency is covered by
+`qindaqt.shell-runtime-component-closure`. ADR-0260 adds
+`qindaqt.global-menu-applet-access-desktop` (desktop channel, routing,
+generations, and confirmations), `qindaqt.desktop-menu-model` (canonical
+bounds, File Manager catalog parity, absent and refused capabilities, hostile
+workspace names), `qindaqt.desktop-menu-controller` (selection, hand-back,
+grace, activation, confirmation against the real facade),
+`qindaqt.desktop-menu-surface-commands`, `qindaqt.desktop-menu-targets`
+(every command reaches its real controller over the desktop-controls
+doubles), `qindaqt.desktop-menu-selection-private-bus` (the production
+composition and the desktop menu over one facade and identity client, plus
+every stock profile), and `qindaqt.desktop-menu-keyboard-qml-offscreen`
+(keyboard traversal, single activation, and confirmation through the compiled
+renderer under `QT_FATAL_WARNINGS=1`). ADR-0130 residency is covered by
 `GlobalMenuRuntimeCompositionTest::layoutHostingFollowsResolvedGlobalMenuInstances`
 (every stock layout, a hosting side-edge layout, and an unsupported-zone
 rejection) and

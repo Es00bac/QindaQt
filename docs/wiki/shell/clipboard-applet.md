@@ -235,6 +235,13 @@ dispatch: a stale target generation is refused fail-closed with user feedback.
 In-flight entries carry a pending marker that blocks duplicate intents and
 renders busy controls.
 
+`requestOpen()` is not an intent: it only emits `openRequested()`, which the
+panel applet answers by opening its own history popup. The shell's desktop
+menu ("Show Clipboard History",
+[ADR-0260](../adr/0260-show-the-file-managers-menu-when-no-application-is-active.md))
+uses it, on the launcher's `requestOpen()` precedent, and offers it only while
+the adopted layout hosts a ready clipboard applet.
+
 ## Packaging
 
 The `ClipboardApplet` install component packages the public boundary: the
@@ -271,7 +278,7 @@ ctest --test-dir build/dev -R '^qindaqt\.clipboard-applet-' --output-on-failure
 | Test | Scope |
 | --- | --- |
 | `qindaqt.clipboard-applet-model` | Pure projection: phases, fail-closed ordering, pinned-first partition, bounds, accessibility phrases, determinism, and exact whole-projection rejection of floor/bound/hostile-match violations. |
-| `qindaqt.clipboard-applet-controller` | Generation/owner/lock fencing with presented owner-A content, read/write capability gates, pending bookkeeping, feedback, lineage exhaustion. |
+| `qindaqt.clipboard-applet-controller` | Generation/owner/lock fencing with presented owner-A content, read/write capability gates, pending bookkeeping, feedback, lineage exhaustion, and the request-only open signal. |
 | `qindaqt.clipboard-applet-fencing` | Hostile-seam attribution: unique-but-unordered ids, complete generation/revision/entry-set search fencing, superseded-reply flushes inside dispatch calls, injected/duplicated completions, cross-request synchronous drain, monotonic promote ticks. |
 | `qindaqt.clipboard-applet-admission` | Snapshot admission: descriptor floor, media allowlist, collection/aggregate bounds, independent generation/lifetime-revision high-waters, impossible post-purge content, owner-lineage fencing with owner-A content, ceiling-exhaustion owner recovery, fail-closed rejection and recovery, missing/mismatched completion-lineage rejection, promote-tick exhaustion. |
 | `qindaqt.clipboard-applet-snapshot-invariants` | Whole C0 snapshot truth: nonzero generation, denied/disabled emptiness, exact aggregate sum, unique identities, pin ceiling, and denied-content lineage poisoning. |

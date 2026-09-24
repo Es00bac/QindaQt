@@ -260,4 +260,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0257: Search Settings routes through a QindaTK command palette](0257-search-settings-routes-through-a-qindatk-command-palette.md)
 - [ADR-0258: Network panel applet over public Network1](0258-network-panel-applet-over-public-network1.md)
 - [ADR-0259: Preview screen savers without the lock screen](0259-preview-screen-savers-without-the-lock-screen.md)
+- [ADR-0260: Show the File Manager's menu when no application is active](0260-show-the-file-managers-menu-when-no-application-is-active.md)
 - [ADR-0261: Lay desktop icons out inside the panels' work area](0261-lay-desktop-icons-out-inside-the-panel-work-area.md)

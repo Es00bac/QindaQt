@@ -31,6 +31,10 @@ class DesktopControlsAccess final : public QObject {
   Q_PROPERTY(QObject *commandHud READ commandHud CONSTANT)
   Q_PROPERTY(QObject *overview READ overview CONSTANT)
   Q_PROPERTY(QObject *launcher READ launcher CONSTANT)
+  // ADR-0260: the desktop menu's command channel to the desktop-icons
+  // surfaces (DesktopMenu::DesktopSurfaceCommands); only DesktopSurface.qml
+  // reads it. May be null.
+  Q_PROPERTY(QObject *desktopCommands READ desktopCommands CONSTANT)
 
 public:
   struct Facades {
@@ -49,6 +53,7 @@ public:
     QObject *commandHud = nullptr;
     QObject *overview = nullptr;
     QObject *launcher = nullptr;
+    QObject *desktopCommands = nullptr;
   };
 
   explicit DesktopControlsAccess(Facades facades, QObject *parent = nullptr);
@@ -92,6 +97,10 @@ public:
   [[nodiscard]] QObject *commandHud() const noexcept { return m_facades.commandHud; }
   [[nodiscard]] QObject *overview() const noexcept { return m_facades.overview; }
   [[nodiscard]] QObject *launcher() const noexcept { return m_facades.launcher; }
+  [[nodiscard]] QObject *desktopCommands() const noexcept
+  {
+    return m_facades.desktopCommands;
+  }
 
 Q_SIGNALS:
   void overviewRequested();

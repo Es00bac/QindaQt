@@ -10,7 +10,9 @@ import QindaQt.Tokens 1.0
 
 // GNOME-style active application indicator: the focused task-list row's
 // application name and icon; the popup offers Minimize and Close through the
-// task-list facade with the row's displayed revision.
+// task-list facade with the row's displayed revision. With no window focused
+// while the global menu shows the desktop menu (ADR-0260), it names that
+// menu's application (the File Manager) and offers no window actions.
 Item {
     id: root
 
@@ -19,7 +21,9 @@ Item {
 
     readonly property bool ready: access !== null && Tokens.ready
     readonly property bool hasWindow: ready && Boolean(access.hasActiveWindow)
-    readonly property string applicationName: hasWindow ? String(access.applicationName) : ""
+    readonly property bool desktopMenu: ready && !hasWindow && Boolean(access.desktopMenuShown)
+    readonly property bool named: hasWindow || desktopMenu
+    readonly property string applicationName: named ? String(access.applicationName) : ""
 
     // The task row the open popup was opened for; empty while it is closed.
     property string popupTaskId: ""
@@ -99,19 +103,19 @@ Item {
 
             ShellIcons.Icon {
                 objectName: "activeApplicationIcon"
-                name: root.hasWindow ? String(root.access.iconName) : "preferences-system-windows"
+                name: root.named ? String(root.access.iconName) : "preferences-system-windows"
                 size: Math.max(0, Math.min(18, root.height - Tokens.space["2"]))
-                color: root.hasWindow ? Tokens.fg.default : Tokens.fg.muted
-                symbolic: !root.hasWindow
-                fallbackText: root.hasWindow ? root.applicationName : qsTr("Desktop")
+                color: root.named ? Tokens.fg.default : Tokens.fg.muted
+                symbolic: !root.named
+                fallbackText: root.named ? root.applicationName : qsTr("Desktop")
                 Accessible.ignored: true
             }
 
             Text {
                 objectName: "activeApplicationName"
                 visible: !root.vertical
-                text: root.hasWindow ? root.applicationName : qsTr("Desktop")
-                color: root.hasWindow ? Tokens.fg.default : Tokens.fg.muted
+                text: root.named ? root.applicationName : qsTr("Desktop")
+                color: root.named ? Tokens.fg.default : Tokens.fg.muted
                 font.family: Tokens.type.fontFamily
                 font.pointSize: Tokens.type.caption
                 font.weight: Font.DemiBold
