@@ -43,6 +43,10 @@ qt_add_executable(
     tst_notificationquietingsettingsbridge.cpp
     "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationquietingsettingsbridge.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationquietingsettingsbridge.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationapplicationsettingsbridge.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationapplicationsettingsbridge.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationsoundoutput.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/notificationsoundoutput.h"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/settingsroutelauncher.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/settingsroutelauncher.h"
 )
@@ -56,6 +60,7 @@ target_link_libraries(
         QindaQt::SettingsClient
         QindaQt::SettingsService
         QindaQt::NotificationPresentationPolicy
+        QindaQt::NotificationPresentationModel
         Qt6::DBus
         Qt6::Test
 )

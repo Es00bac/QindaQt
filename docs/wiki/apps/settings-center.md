@@ -26,8 +26,9 @@ Route behavior is documented in the corresponding [Appearance](appearance-settin
 [Startup applications](startup-settings.md),
 [Screen saver](screensaver-settings.md),
 [Login screen](login-screen-settings.md), and [Voice](voice-settings.md) pages.
-Notifications includes Do Not Disturb and Quiet Hours; its shell policy is
-documented under [notification presentation](../shell/notification-presentation.md).
+Notifications includes Do Not Disturb, Quiet Hours, and per-application
+mute/sound controls; their shell policy is documented under
+[notification presentation](../shell/notification-presentation.md).
 The [21-route completeness inventory](../reference/settings-completeness.md)
 separates registered pages from effective controls and outstanding gaps.
 Route construction or installed-package success does not establish physical
@@ -77,11 +78,38 @@ bus. This separation is required: client request tokens are local sequences
 that begin at the same value, so sharing one transport could route a matching
 owner/token reply to both clients. The two domain models live for the process
 and retain their truthful state when the user changes pages. QML receives only
-their QObject projections and never imports transport or Settings1 authority. The Notifications route projects two models over that one
-scoped client: the Do Not Disturb controller and the quiet-hours schedule.
-Both are purpose-scoped to the same four `services.doNotDisturb*` keys, so a
-schedule edit and a Do Not Disturb edit share one owner and one token
-sequence rather than racing two (ADR-0212). The controls follow the scoped
+their QObject projections and never imports transport or Settings1 authority.
+The Notifications route projects the Do Not Disturb controller, quiet-hours
+schedule, and application policy model over one scoped Settings1 client. Its
+scope contains the four `services.doNotDisturb*` keys and
+`services.notificationPolicies`; each key is schema-defined with a default, so
+the route receives one exact-owner, atomic baseline. A schedule edit, DND edit,
+or per-application edit therefore shares one owner and one token sequence
+rather than racing another client (ADR-0212, ADR-0255). The application model
+receives desktop-entry identities from the public ApplicationCatalog scanner,
+including hidden entries, and retains configured rules for apps that are no
+longer installed so users can remove them. QML receives display names and
+canonical desktop IDs only; it does not scan XDG paths or read Settings1.
+
+The per-app persisted value is one JSON object, keyed by canonical desktop IDs
+without `.desktop`. Every rule has exactly `muted` and `soundEnabled` Boolean
+fields. Each stored rule retains both Boolean fields; a rule with both values
+false is omitted, so an empty object preserves current behavior.
+The strict shared codec rejects malformed or unknown records as a whole. UI
+edits show only the last confirmed values. A write becomes confirmed only
+after Applied and a same-owner, same-epoch snapshot at or above the returned
+revision exactly matches the requested object. Same-lineage snapshots below
+that floor leave the write pending and trigger another read; a four-second
+readback deadline or loss of owner/epoch authority retires it as uncertain,
+without replay. A qualifying snapshot with different values reports conflict.
+Refusal, conflict, uncertainty, or malformed saved data never becomes
+optimistic policy; unavailable and uncertain states retain confirmed values and
+expose a refresh action where appropriate. The virtualized application list
+traverses mute then sound for each row. Stable first/last focus endpoints
+position the ListView before transferring focus, so Tab and Backtab continue
+to work when the endpoint delegate is outside the viewport.
+
+The existing quiet-hours and DND controls follow the scoped
 client's write-admission signal as well as its write-in-flight state: a
 same-owner refresh temporarily disables DND and schedule controls even while
 the retained client state says Ready. Each Switch restores its confirmed-value
@@ -100,8 +128,10 @@ notification-service disable-all policy, and neither changes lock-screen
 privacy or rewrites the manual DND key on a schedule. The focused
 `qindaqt.settings-notification-page-admission` offscreen test loads this
 actual route with production controllers and a private Settings1 transport;
-it covers a same-owner refresh, keyboard activation, refusal, and unchanged
-readback without touching live user settings.
+it covers a same-owner refresh, pointer mute, keyboard sound activation,
+refusal, confirmed-value rollback, and unchanged readback without touching live
+user settings. The presenter and repository suites separately prove policy
+admission and disk round-trip.
 
 Network owns one public Qt Network transport, `NetworkClient`, and
 `NetworkSettingsModel` for the process lifetime. It does not share the

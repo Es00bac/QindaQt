@@ -1,0 +1,3 @@
+# Luna6 Notification Policy focused test update
+
+- 2026-09-24T00:17:46Z — The initial focused run found a desktop-id canonicalization assertion mismatch, an extra default-admitted silent app in the presenter fixture, unavailable `T.Separator`/incorrect ScrollBar attached syntax, and a Settings fake that modeled the commit epoch as the changed key and returned a non-exact refusal map. These are corrected. The dynamic offscreen route now verifies application list controls, pending and refused pointer/keyboard edits, confirmed-value rollback, and uncertain transport state. `qindaqt.settings-notification-page-admission` passes. Running the full five-test focused set and nearby notification/settings regressions next.

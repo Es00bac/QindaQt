@@ -255,3 +255,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0251: Expose admitted radio switches through Network1](0251-expose-admitted-radio-switches-through-network1.md)
 - [ADR-0252: Transfer manual stereo peers with a connection code](0252-transfer-manual-stereo-peers-with-connection-code.md)
 - [ADR-0254: Separate saved window preferences from session apply truth](0254-separate-window-settings-from-session-apply-truth.md)
+- [ADR-0255: Persist per-application notification policies through Settings1](0255-persist-per-application-notification-policies-through-settings1.md)

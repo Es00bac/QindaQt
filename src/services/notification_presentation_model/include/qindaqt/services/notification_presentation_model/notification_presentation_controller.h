@@ -14,6 +14,7 @@ class NotificationPresentationClient;
 }
 
 namespace QindaQt::Services::NotificationPresentationPolicy {
+class NotificationApplicationPolicy;
 class NotificationInterruptionPolicy;
 class NotificationPrivacyPolicy;
 }
@@ -50,13 +51,27 @@ class NotificationPresentationController final : public QObject {
 public:
     // AGENT-CONTRACT: `client`, `interruptionPolicy`, and `privacyPolicy` are
     // borrowed, must remain on this object's thread, and must outlive the
-    // controller. Invalid timing is replaced by bounded defaults instead of
-    // weakening limits. Privacy starts denied and outranks interruption
-    // policy, urgency, operations, and every public presentation projection.
+    // controller. This compatibility overload has no per-app policy authority.
+    // Invalid timing is replaced by bounded defaults instead of weakening
+    // limits. Privacy starts denied and outranks interruption policy, urgency,
+    // operations, and every public presentation projection.
     explicit NotificationPresentationController(
         NotificationPresentationClient::NotificationPresentationClient &client,
         NotificationPresentationPolicy::NotificationInterruptionPolicy &
             interruptionPolicy,
+        NotificationPresentationPolicy::NotificationPrivacyPolicy &privacyPolicy,
+        PresentationTiming timing = {}, QObject *parent = nullptr);
+
+    // AGENT-CONTRACT: `applicationPolicy` is borrowed on this object's thread
+    // and must outlive the controller. Popup mute remains separate from DND;
+    // sound requests go to the shell's platform alert output only for new
+    // notifications admitted by both policies and privacy.
+    explicit NotificationPresentationController(
+        NotificationPresentationClient::NotificationPresentationClient &client,
+        NotificationPresentationPolicy::NotificationInterruptionPolicy &
+            interruptionPolicy,
+        NotificationPresentationPolicy::NotificationApplicationPolicy &
+            applicationPolicy,
         NotificationPresentationPolicy::NotificationPrivacyPolicy &privacyPolicy,
         PresentationTiming timing = {}, QObject *parent = nullptr);
 
@@ -87,6 +102,7 @@ Q_SIGNALS:
     void operationBusyChanged();
     void operationErrorTextChanged();
     void operationError(const QString &message);
+    void notificationSoundRequested(quint32 notificationId);
 
 private:
     struct PopupEntry final {
@@ -110,10 +126,21 @@ private:
         const NotificationPresentation::PresentationNotification &notification);
     void setOperationError(QString message);
     [[nodiscard]] int popupDuration(quint32 urgency) const noexcept;
+    [[nodiscard]] bool allowsPopup(
+        const NotificationPresentation::PresentationNotification &notification) const noexcept;
+    void handleApplicationPolicyChanged();
+    NotificationPresentationController(
+        NotificationPresentationClient::NotificationPresentationClient &client,
+        NotificationPresentationPolicy::NotificationInterruptionPolicy &
+            interruptionPolicy,
+        NotificationPresentationPolicy::NotificationApplicationPolicy *applicationPolicy,
+        NotificationPresentationPolicy::NotificationPrivacyPolicy &privacyPolicy,
+        PresentationTiming timing, QObject *parent);
 
     NotificationPresentationClient::NotificationPresentationClient &m_client;
     NotificationPresentationPolicy::NotificationInterruptionPolicy &
         m_interruptionPolicy;
+    NotificationPresentationPolicy::NotificationApplicationPolicy *m_applicationPolicy = nullptr;
     NotificationPresentationPolicy::NotificationPrivacyPolicy &m_privacyPolicy;
     PresentationTiming m_timing;
     NotificationListModel m_active;

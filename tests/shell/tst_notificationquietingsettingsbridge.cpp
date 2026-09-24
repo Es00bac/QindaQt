@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "notificationquietingsettingsbridge.h"
+#include "notificationapplicationsettingsbridge.h"
+#include "notificationsoundoutput.h"
 #include "settingsroutelauncher.h"
 
 #include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
+#include "qindaqt/services/notification_presentation_policy/notification_application_policy.h"
 #include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
+#include "qindaqt/services/notification_presentation/presentation_access_token.h"
+#include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
+#include "qindaqt/services/notification_presentation_client/presentation_transport.h"
+#include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/services/settings_client/settings_transport.h"
@@ -36,6 +43,19 @@ public:
     QList<Request> requests;
 };
 
+class PresenterTransport final
+    : public QindaQt::Services::NotificationPresentationClient::PresentationTransport {
+public:
+    bool start(QString *) override { return true; }
+    void stop() override {}
+    void registerPresenter(quint64, const QString &, const QString &) override {}
+    void requestSnapshot(quint64, const QString &) override {}
+    void releasePresenter(const QString &) override {}
+    void dismiss(quint64, const QString &, quint32) override {}
+    void invokeAction(quint64, const QString &, quint32, const QString &,
+                      const QString &) override {}
+};
+
 namespace {
 QVariantMap snapshot(bool enabled, QString epoch, quint64 revision)
 {
@@ -50,6 +70,22 @@ QVariantMap snapshot(bool enabled, QString epoch, quint64 revision)
              QVariantMap{{QStringLiteral("services.doNotDisturb"), QStringLiteral("user-overrides")}}},
             {QLatin1StringView(WireContract::FieldMessage), QString{}}};
 }
+
+QVariantMap applicationPolicySnapshot(QString epoch, quint64 revision,
+                                      const QVariantMap &policies)
+{
+    const QString key = QString::fromLatin1(NotificationPoliciesSettingsKey);
+    const QVariantMap values{{key, policies}};
+    return {{QLatin1StringView(WireContract::FieldStatus), quint32(SettingsWireStatus::Applied)},
+            {QLatin1StringView(WireContract::FieldWireSchemaVersion), WireContract::WireSchemaVersion},
+            {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
+            {QLatin1StringView(WireContract::FieldEpoch), std::move(epoch)},
+            {QLatin1StringView(WireContract::FieldRevision), revision},
+            {QLatin1StringView(WireContract::FieldValues), values},
+            {QLatin1StringView(WireContract::FieldSourceLayers),
+             QVariantMap{{key, QStringLiteral("user-overrides")}}},
+            {QLatin1StringView(WireContract::FieldMessage), QString{}}};
+}
 }
 
 class NotificationQuietingSettingsBridgeTests final : public QObject {
@@ -57,6 +93,7 @@ class NotificationQuietingSettingsBridgeTests final : public QObject {
 private slots:
     void failsQuietThenRetainsLastConfirmedAcrossLossAndReplacement();
     void ordinaryControllerAndShellReconstructFromPersistedChoice();
+    void perApplicationBridgeConsumesOnlyExactConfirmedPolicyAndSoundOutputIsBound();
     void fixedLauncherExposesOnlyTheNotificationsRoute();
 };
 
@@ -95,6 +132,59 @@ void NotificationQuietingSettingsBridgeTests::failsQuietThenRetainsLastConfirmed
     Q_EMIT transport.busDisconnected();
     QCOMPARE(policy.doNotDisturbEnabled(), true);
     QVERIFY(bridge.controller().hasBaseline());
+}
+
+void NotificationQuietingSettingsBridgeTests::
+    perApplicationBridgeConsumesOnlyExactConfirmedPolicyAndSoundOutputIsBound()
+{
+    BridgeTransport transport;
+    SettingsClient client(transport,
+                          {QString::fromLatin1(NotificationPoliciesSettingsKey)},
+                          {.requestTimeoutMilliseconds = 100,
+                           .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    NotificationApplicationPolicy applicationPolicy;
+    NotificationApplicationSettingsBridge bridge(client, applicationPolicy);
+    QVERIFY(applicationPolicy.policies().isEmpty());
+
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.42"));
+    QTRY_COMPARE(transport.requests.size(), 1);
+    const auto first = transport.requests.takeFirst();
+    const QVariantMap rules{{QStringLiteral("org.example.Mail"),
+                             QVariantMap{{QStringLiteral("muted"), true},
+                                         {QStringLiteral("soundEnabled"), true}}}};
+    Q_EMIT transport.snapshotReceived(
+        first.token, first.owner,
+        applicationPolicySnapshot(QStringLiteral("app-policy-a"), 0, rules));
+    const PerApplicationNotificationPolicy expected{
+        .muted = true, .soundEnabled = true};
+    QVERIFY(applicationPolicy.policyForDesktopEntry(
+                QStringLiteral("org.example.Mail.desktop")) ==
+            expected);
+
+    Q_EMIT transport.ownerChanged(QString{});
+    QVERIFY(applicationPolicy.policyForDesktopEntry(
+                QStringLiteral("org.example.Mail")) ==
+            expected);
+
+    PresenterTransport presenterTransport;
+    auto token = QindaQt::Services::NotificationPresentation::
+        PresentationAccessToken::fromHex(QString(64, QLatin1Char('f')));
+    QVERIFY(token.has_value());
+    QindaQt::Services::NotificationPresentationClient::NotificationPresentationClient
+        presenter(presenterTransport, std::move(*token));
+    NotificationInterruptionPolicy interruption;
+    NotificationPrivacyPolicy privacy;
+    QindaQt::Services::NotificationPresentationModel::
+        NotificationPresentationController controller(
+            presenter, interruption, applicationPolicy, privacy);
+    QObject lifetime;
+    QList<quint32> alertIds;
+    connectNotificationSoundOutput(controller, lifetime,
+                                   [&alertIds](quint32 id) { alertIds.append(id); });
+    Q_EMIT controller.notificationSoundRequested(91);
+    QCOMPARE(alertIds, QList<quint32>{91});
 }
 
 void NotificationQuietingSettingsBridgeTests::ordinaryControllerAndShellReconstructFromPersistedChoice()

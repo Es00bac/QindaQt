@@ -1,8 +1,8 @@
 # Every Settings1 schema key and default
 
-> Source snapshot: integrated Settings route registry and `data/settings/schema-v2.json` at commit `452a5697` (2026-09-23). This is a source-contract inventory, not physical hardware qualification.
+> Source snapshot: integrated Settings route registry and `data/settings/schema-v2.json` through accepted notification policy repair `341060fb` (2026-09-24). This is a source-contract inventory, not physical hardware qualification.
 
-All **85 keys** in active schema v2 are listed below. The immutable v1 schema remains at `data/settings/schema-v1.json`; packaged defaults are in `data/settings/profile-defaults/qindaqt.json`. JSON literals preserve type: `"[]"` is a string, while `[]` is a string-list. See [Settings service](../../architecture/settings-service.md) and [Settings1](../../reference/settings1-v1.md) for persistence and transport rules.
+All **86 keys** in active schema v2 are listed below. The immutable v1 schema remains at `data/settings/schema-v1.json`; packaged defaults are in `data/settings/profile-defaults/qindaqt.json`. JSON literals preserve type: `"[]"` is a string, while `[]` is a string-list. See [Settings service](../../architecture/settings-service.md) and [Settings1](../../reference/settings1-v1.md) for persistence and transport rules.
 
 **Active route** means a first-party Settings control and a documented consumer or authority path exist; it does not assert a live physical test. **Active consumer; editor gap** means the value is applied but this base has no verified settings editor. **App-owned** means another named app/shell surface owns the interaction. **Legacy/superseded** remains in schema for compatibility while another authority owns current behavior. **Reserved** is intentionally hidden pending a real consumer. **Missing consumer** has no verified production consumer in this repository; an external package may still use it. Storage alone never proves an effective control.
 
@@ -109,6 +109,7 @@ All **85 keys** in active schema v2 are listed below. The immutable v1 schema re
 | `services.voiceInput` | boolean | `false` | None beyond type | **Active route** — Voice route preference gates QindaQt provider use; independent providers remain separate. |
 | `services.voicePanelTranscript` | boolean | `true` | None beyond type | **Active route** — Voice route and shell applet transcript visibility. |
 | `services.notifications` | boolean | `true` | None beyond type | **Missing consumer** — No verified consumer of this particular master toggle; notification service presence is not proof. |
+| `services.notificationPolicies` | object | `{}` | None beyond type | **Active route** — Notifications edits per-app mute and sound policy; the shell consumes confirmed Settings1 rules, while sender identity remains best-effort. |
 | `services.doNotDisturb` | boolean | `false` | None beyond type | **Active route** — Notifications route and shell interruption policy. |
 | `services.obsWebSocketPort` | integer | `4455` | `{"minimum":1,"maximum":65535}` | **Active route** — Streaming route and confirmed streaming-preferences/login consumer. |
 | `services.obsAutoConnect` | boolean | `true` | None beyond type | **Active route** — Streaming route and confirmed auto-connect consumer. |

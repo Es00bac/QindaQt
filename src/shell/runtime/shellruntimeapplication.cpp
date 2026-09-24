@@ -25,6 +25,8 @@
 #include "runtime_layout_adoption.h"
 #include "notificationwindowcontroller.h"
 #include "notificationquietingsettingsbridge.h"
+#include "notificationapplicationsettingsbridge.h"
+#include "notificationsoundoutput.h"
 #include "panelvisibilityruntime.h"
 #include "powerappletcomposition.h"
 #include "qtcompositoroutputauthority.h"
@@ -45,6 +47,7 @@
 #include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
 #include "qindaqt/services/notification_presentation_client/qt_notification_presentation_transport.h"
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
+#include "qindaqt/services/notification_presentation_policy/notification_application_policy.h"
 #include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
 #include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
 #include "qindaqt/services/session_lock_state/qt_session_lock_transport.h"
@@ -60,6 +63,7 @@
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 
 #include <QCoreApplication>
+#include <QApplication>
 #include <QDBusConnection>
 #include <QDebug>
 #include <QDir>
@@ -503,17 +507,25 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
                                      *options.compositorProcessId);
         m_notificationInterruptionPolicy = std::make_unique<Services::
             NotificationPresentationPolicy::NotificationInterruptionPolicy>();
+        m_notificationApplicationPolicy = std::make_unique<Services::
+            NotificationPresentationPolicy::NotificationApplicationPolicy>();
         m_notificationPrivacyPolicy = std::make_unique<Services::
             NotificationPresentationPolicy::NotificationPrivacyPolicy>();
         m_quietingSettingsBridge =
             std::make_unique<NotificationQuietingSettingsBridge>(
                 *m_quietingSettingsClient, *m_notificationInterruptionPolicy);
+        m_notificationApplicationSettingsBridge =
+            std::make_unique<NotificationApplicationSettingsBridge>(
+                *m_quietingSettingsClient, *m_notificationApplicationPolicy);
         m_settingsRouteLauncher = std::make_unique<SettingsRouteLauncher>();
         m_voiceApplet->attachRoutes(m_settingsRouteLauncher.get());
         m_notificationPresentation = std::make_unique<Services::
             NotificationPresentationModel::NotificationPresentationController>(
                 *m_notificationClient, *m_notificationInterruptionPolicy,
-                *m_notificationPrivacyPolicy);
+                *m_notificationApplicationPolicy, *m_notificationPrivacyPolicy);
+        connectNotificationSoundOutput(
+            *m_notificationPresentation, *this,
+            [](quint32) { QApplication::beep(); });
         m_notificationCenterAccess =
             std::make_unique<NotificationCenterAppletAccess>();
         connect(m_notificationCenterAccess.get(),
@@ -679,6 +691,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_liveCustomizationShortcut.reset();
     m_liveCustomization.reset();
     m_settingsRouteLauncher.reset();
+    m_notificationApplicationSettingsBridge.reset();
     m_quietingSettingsBridge.reset();
     m_outputAuthority.reset();
     m_panelVisibility.reset();
@@ -728,6 +741,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_settingsTransport.reset();
     m_notificationPresentation.reset();
     m_notificationPrivacyPolicy.reset();
+    m_notificationApplicationPolicy.reset();
     m_notificationInterruptionPolicy.reset();
     m_sessionLockMonitor.reset();
     m_sessionLockTransport.reset();
