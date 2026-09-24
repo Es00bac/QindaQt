@@ -54,7 +54,8 @@ public:
   QString errorText;
   bool previewAvailable = true;
   bool previewRunning = false;
-  QString previewSummary = QStringLiteral("Opens the lock screen in its testing mode.");
+  QString previewSummary = QStringLiteral(
+      "Runs Circuit Reef itself with the catalog arguments used by the idle path.");
   QStringList saverRequests;
   QList<int> minutesRequests;
   int retryCalls = 0;
@@ -147,6 +148,7 @@ private Q_SLOTS:
   void initTestCase();
   void rendersChoicesAndReflectsTruth();
   void delayRowDisablesWhenNothingRuns();
+  void previewButtonDisablesWhileWriteIsPending();
   void selectingSaverWritesTheToken();
   void unavailableChoiceHasNoFalseSelection();
   void keyboardRefusalRestoresConfirmedChoices();
@@ -224,6 +226,11 @@ void ScreensaverPageTest::rendersChoicesAndReflectsTruth() {
   QVERIFY(preview != nullptr);
   QVERIFY(preview->isVisible());
   QVERIFY(preview->isEnabled());
+  auto *previewSummary =
+      findItem(page, QStringLiteral("screensaverPreviewSummary"));
+  QVERIFY(previewSummary != nullptr);
+  QVERIFY(previewSummary->property("text").toString().contains(
+      QStringLiteral("catalog arguments used by the idle path")));
 
   // The note keeps the two concepts visibly separate.
   auto *note = findItem(page, QStringLiteral("screensaverNote"));
@@ -263,6 +270,20 @@ void ScreensaverPageTest::delayRowDisablesWhenNothingRuns() {
   Q_EMIT m_screensaver->changed();
   QCoreApplication::processEvents();
   QVERIFY(!preview->isVisible());
+}
+
+void ScreensaverPageTest::previewButtonDisablesWhileWriteIsPending() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+
+  auto *preview = findItem(page, QStringLiteral("screensaverPreviewButton"));
+  QVERIFY(preview != nullptr);
+  QVERIFY(preview->isEnabled());
+
+  m_screensaver->busy = true;
+  Q_EMIT m_screensaver->changed();
+  QCoreApplication::processEvents();
+  QVERIFY(!preview->isEnabled());
 }
 
 void ScreensaverPageTest::selectingSaverWritesTheToken() {

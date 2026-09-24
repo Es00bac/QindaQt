@@ -7,27 +7,27 @@
 #include <QString>
 #include <QStringList>
 
+#include <functional>
+#include <memory>
+
 namespace QindaQt::Session::DesktopControls {
 class ScreensaverCatalog;
 }
 
 namespace QindaQt::Apps::SettingsScreensaver {
 
-// Preview boundary for the Screen saver route (ADR-0226). A preview never
-// locks the session: savers the locker's wallpaper plugin can draw (and the
-// reserved "blank" choice) are shown through `kscreenlocker_greet --testing`,
-// the documented way to exercise the lock screen without locking; a saver the
-// greeter cannot draw runs as itself, exactly as it appears while the session
-// is unlocked but idle, and exits on input like it does there.
+// Preview boundary for the Screen saver route (ADR-0259). Discovered savers
+// use their catalog program and arguments; "blank" uses an input-dismissed
+// black window. A preview never invokes the lock screen or changes idle policy.
 class ScreensaverPreview : public QObject {
   Q_OBJECT
 
 public:
   // What previewing a given saver token means.
   enum class Kind {
-    Unavailable,   // "none", an unknown token, or a missing preview program
-    TestingGreeter,// kscreenlocker_greet --testing, the lock-screen rendering
-    SaverProgram,  // the saver binary itself, the unlocked-idle rendering
+    Unavailable,  // "none" or an unknown token
+    BlackWindow,  // Settings-owned full-screen black window for "blank"
+    SaverProgram, // the catalog program and arguments used by the idle path
   };
   Q_ENUM(Kind)
 
@@ -51,30 +51,30 @@ class ProcessScreensaverPreview final : public ScreensaverPreview {
   Q_OBJECT
 
 public:
+  using ProgramResolver = std::function<QString(const QString &catalogProgram)>;
+
   explicit ProcessScreensaverPreview(
       const QindaQt::Session::DesktopControls::ScreensaverCatalog &catalog,
       QObject *parent = nullptr);
-  // Test seam: an explicit greeter path instead of the platform lookup.
+  // Test seam. The resolver is copied and called on the GUI thread only for a
+  // discovered catalog program; return an executable or an empty string to
+  // report a start failure.
   ProcessScreensaverPreview(
       const QindaQt::Session::DesktopControls::ScreensaverCatalog &catalog,
-      QString greeterPath, QObject *parent = nullptr);
+      ProgramResolver programResolver, QObject *parent = nullptr);
   ~ProcessScreensaverPreview() override;
 
   [[nodiscard]] Kind kindFor(const QString &token) const override;
   [[nodiscard]] bool start(const QString &token, QString *error) override;
   [[nodiscard]] bool running() const override;
 
-  // The greeter is a libexec binary that is not on PATH; the lookup order is
-  // PATH first, then the known install roots.
-  [[nodiscard]] static QStringList greeterCandidates();
-  [[nodiscard]] static QString resolveGreeter();
-
 private:
-  [[nodiscard]] QString greeter() const;
+  class BlankPreview;
 
   const QindaQt::Session::DesktopControls::ScreensaverCatalog &m_catalog;
-  QString m_greeterPath; // empty until resolved; explicit in tests
+  ProgramResolver m_programResolver;
   QProcess m_process;
+  std::unique_ptr<BlankPreview> m_blankPreview;
 };
 
 } // namespace QindaQt::Apps::SettingsScreensaver

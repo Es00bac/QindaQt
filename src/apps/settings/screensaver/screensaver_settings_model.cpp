@@ -461,19 +461,15 @@ void ScreensaverSettingsModel::publishStatus() {
 
 void ScreensaverSettingsModel::publishPreviewSummary() {
   switch (m_preview.kindFor(saver())) {
-  case ScreensaverPreview::Kind::TestingGreeter:
-    m_previewSummary = saver() == ScreensaverPreferences::blankToken()
-        ? tr("Opens the lock screen in its testing mode, showing the plain "
-             "dark screen a locked session would show. The session is never locked.")
-        : tr("Opens the lock screen in its testing mode, drawing %1 the way a "
-             "locked session would. The session is never locked.")
-              .arg(displayName(saver()));
+  case ScreensaverPreview::Kind::BlackWindow:
+    m_previewSummary =
+        tr("Shows a full-screen black window. Any key, click, or pointer "
+           "movement closes it; the session stays unlocked.");
     break;
   case ScreensaverPreview::Kind::SaverProgram:
     m_previewSummary =
-        tr("Runs %1 itself, the way it appears while the session is unlocked "
-           "but idle. The greeter cannot draw this one, so a locked screen "
-           "keeps its own wallpaper. Any input dismisses the preview.")
+        tr("Runs %1 itself with the catalog arguments used while idle. Any "
+           "input dismisses the preview; the lock screen is not shown.")
             .arg(displayName(saver()));
     break;
   case ScreensaverPreview::Kind::Unavailable:
