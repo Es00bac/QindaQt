@@ -13,6 +13,7 @@ shortcuts.
 
 The durable ownership choice is [ADR-0048](../adr/0048-settings-center-navigation-and-route-ownership.md).
 The all-route construction witness and its limits are [ADR-0250](../adr/0250-require-active-loader-witness-for-every-settings-route.md).
+Ctrl+K search over routes and their sub-pages is [ADR-0257](../adr/0257-search-settings-routes-through-a-qindatk-command-palette.md).
 Route behavior is documented in the corresponding [Appearance](appearance-settings.md),
 [Display](display-settings.md), [Network](network-settings.md),
 [Customize](customize-settings.md), [Audio](audio-settings.md),
@@ -42,7 +43,7 @@ types:
 
 | Type | Authority |
 | --- | --- |
-| `SettingsRoute` | Bounded stable ID, closed component kind, localized title/description/category, icon name, and availability truth |
+| `SettingsRoute` | Bounded stable ID, closed component kind, localized title/description/category, icon name, availability truth, and optional search keywords and deep-link destinations (ADR-0257) |
 | `SettingsRouteRegistry` | At most 64 valid unique descriptors in deterministic insertion order |
 | `SettingsNavigationController` | Active/previous route, index traversal, QML-safe descriptor projection, and rejected-selection signal |
 
@@ -245,11 +246,14 @@ The interaction contract is:
 - click or Enter/Return activates a route tab;
 - Up/Down move within the wide route list; Left/Right move within compact tabs;
 - Tab from a route tab enters the active page's declared first focus target;
-- Escape returns focus to the active visible route tab. The one route-level
-  exception: while the Bluetooth route shows an active pairing prompt with a
+- Escape returns focus to the active visible route tab. There are two
+  exceptions. While the Bluetooth route shows an active pairing prompt with a
   free reply lane, the host Escape shortcut yields to the route's own Escape
-  shortcut so the prompt receives its cancel reply — two enabled identical
+  shortcut so the prompt receives its cancel reply. While the search palette
+  is visible, Escape closes only the palette. Two enabled identical
   window-context shortcuts would be ambiguous and neither would activate;
+- Ctrl+K, or the "Search settings" button in the sidebar or the compact
+  header's "Search" button, opens the search palette (see below);
 - Ctrl+1, Ctrl+2, Ctrl+3, Ctrl+4, and Ctrl+5 select Notifications, Appearance,
   Display, Network, and Customize respectively; Ctrl+6 selects Audio in its appended
   sixth position, and Ctrl+7 selects Bluetooth in its appended seventh
@@ -263,6 +267,35 @@ The interaction contract is:
   Bluetooth must first release a discovery lease or Customize owns a dirty
   draft; discovery release completes first, then the same modal discard
   decision as title-bar close and route departure must resolve.
+
+## Search
+
+Settings search ([ADR-0257](../adr/0257-search-settings-routes-through-a-qindatk-command-palette.md))
+is QindaTK's `Tk.CommandPalette`, wrapped by `SettingsCommandPalette.qml` and
+themed through `QindaQtTheme`. It is the one QindaTK surface in the navigation
+shell. It lists every registered route, sectioned General, Personalization,
+Hardware and sorted by title like the sidebar, and prints the route's
+Ctrl+digit shortcut for the first ten registered routes. Input's five
+sub-pages (Mouse & touchpad, Pen & tablet, Keyboard, Shortcuts, Touch) follow
+it as "Input › …" entries. Typing filters on the title and on the route's
+keywords. Matches are ordered by title prefix, then exact keyword, then label
+substring, then keyword prefix, so "wifi" leads to Network, "battery" to
+Power, and "shortcuts" to Input › Shortcuts. Arrow keys move the selection,
+Enter or a click activates, and Escape closes. After a route change, focus
+moves to the new page's declared first focus target.
+
+The terms and destinations are registry data
+(`settings_route_search_metadata.cpp`), not read from the pages. Every route
+has keywords, and only Input declares destinations. A destination entry calls
+`selectRouteDestination`. Repeating the current request while Input is open
+re-delivers it: the controller clears the link and sets it again, and
+`InputPage` opens a destination that arrives while it is open. Plain route
+entries call `selectRoute`, like the sidebar, so the route's last requested
+destination is kept. An unavailable route stays listed as
+"Title (unavailable: reason)". Choosing it changes nothing, the same guard as
+the sidebar and compact tabs, and it offers no destinations. The palette's
+filter field and list come from QindaTK. Its rows have no per-row accessible
+description, so the unavailable reason is part of the row text.
 
 The navigation containers expose `PageTabList`; each route exposes `PageTab`,
 an accessible name/description, and truthful selected state. Unavailable tabs
@@ -278,7 +311,7 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure \
-  -R '^qindaqt\.settings-(route-registry|navigation-(controller|layout|interaction))$'
+  -R '^qindaqt\.settings-(route-(registry|search)|command-palette|navigation-(controller|layout|interaction))$'
 ctest --test-dir build/dev --output-on-failure \
   -R '^qindaqt\.settings-app-'
 ```
@@ -286,6 +319,18 @@ ctest --test-dir build/dev --output-on-failure \
 - registry/controller tests cover hostile bounds, duplicates/capacity,
   component mapping, deterministic order, unknown selection, history,
   traversal, and unavailable truth;
+- `qindaqt.settings-route-search` proves that every route has keywords, that
+  route order and the ten digit routes are unchanged, that only Input
+  declares destinations and that their ids and titles match `InputPage.qml`,
+  that hostile keywords and destinations are rejected, and that a repeated
+  destination is re-delivered;
+- `qindaqt.settings-command-palette` drives the real `Main.qml` with
+  `QT_FATAL_WARNINGS=1`. It covers Ctrl+K, "wifi" → Network, "battery" →
+  Power, the printed Ctrl+digit shortcuts, "shortcuts" → Input › Shortcuts,
+  a second destination while Input is open, a repeated destination after an
+  in-page change, Escape closing only the palette with focus restored, the
+  unavailable route listed but not selected, and the 420×320 compact window
+  by keyboard only;
 - the offscreen navigation layout and interaction rows prove 720×520 wide
   and 440×360 compact layout, mutually exclusive page construction, route
   switching, shortcut and focus paths, PageTab semantics, selected state, and
@@ -329,6 +374,7 @@ ctest --test-dir build/dev --output-on-failure \
 
 This is an offscreen software-renderer and sanitized package boundary. It does
 not claim live AT-SPI, compositor focus, screen-reader traversal, platform-
-service pages beyond the compiled routes, search, arbitrary deep links,
+service pages beyond the compiled routes, search inside a page's controls,
+arbitrary deep links,
 per-route process isolation, a nested-session screenshot matrix, or physical
 DPI/input behavior.

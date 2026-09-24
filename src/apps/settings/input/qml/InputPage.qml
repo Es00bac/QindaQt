@@ -45,6 +45,16 @@ T.Page {
     title: qsTr("Input")
     background: Rectangle { color: Tokens.bg.base }
 
+    // AGENT-CONTRACT: a deep link that arrives while this page is already
+    // open (Settings search, ADR-0257) opens that destination too. The host
+    // binds initialDestination to the navigation controller's request; an
+    // empty or unknown id, which the controller sends between two identical
+    // requests, is ignored like at construction.
+    onInitialDestinationChanged: {
+        if (root.destinations.some(entry => entry.id === root.initialDestination))
+            root.selectDestination(root.initialDestination)
+    }
+
     function selectDestination(destination) {
         root.currentDestination = destination
         formViewport.contentY = 0

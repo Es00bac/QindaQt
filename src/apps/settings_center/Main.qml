@@ -80,7 +80,10 @@ T.ApplicationWindow {
             close.accepted = false
     }
 
-    SettingsRouteShortcuts { navigation: root.navigation }
+    SettingsRouteShortcuts {
+        navigation: root.navigation
+        onSearchRequested: searchPalette.open()
+    }
 
     Component.onCompleted: {
         if (root.bluetoothSettings !== null)
@@ -116,13 +119,12 @@ T.ApplicationWindow {
         }
     }
 
-    Shortcut {
-        sequence: "Alt+Left"
-        onActivated: {
-            if (root.navigation.previousRouteId.length > 0) {
-                root.navigation.selectRoute(root.navigation.previousRouteId)
-            }
-        }
+    // Settings search (ADR-0257); Ctrl+K is in SettingsRouteShortcuts.
+    SettingsCommandPalette {
+        id: searchPalette
+        navigation: root.navigation
+        onNavigated: Qt.callLater(() => (root.isCompact ? compactRouteHost : wideRouteHost)
+                                        .focusCurrentContent())
     }
 
     Shortcut {
@@ -130,13 +132,16 @@ T.ApplicationWindow {
         // sequence are ambiguous and Qt activates neither. While the
         // Bluetooth route shows an active prompt with a free reply lane, the
         // route's own Escape shortcut (BluetoothPairingSection.qml) must be
-        // the only enabled match so the prompt receives its cancel reply.
-        // This host shortcut yields then and stays enabled for every other
-        // route or prompt state.
-        enabled: !(root.navigation.activeRouteComponent === "bluetooth"
-                   && root.bluetoothSettings !== null
-                   && root.bluetoothSettings.pairingPrompt.active === true
-                   && root.bluetoothSettings.pairingReplyPending !== true)
+        // the only enabled match so the prompt receives its cancel reply; and
+        // while the search palette is visible, Escape only closes it
+        // (ADR-0257). This host shortcut yields then and stays enabled for
+        // every other route or prompt state.
+        objectName: "settingsEscapeShortcut"
+        enabled: !searchPalette.visible
+                 && !(root.navigation.activeRouteComponent === "bluetooth"
+                      && root.bluetoothSettings !== null
+                      && root.bluetoothSettings.pairingPrompt.active === true
+                      && root.bluetoothSettings.pairingReplyPending !== true)
         sequence: "Escape"
         onActivated: root.isCompact ? compactHeader.focusActiveButton()
                                     : sidebar.focusActiveButton()
@@ -163,6 +168,7 @@ T.ApplicationWindow {
             Layout.preferredWidth: 200
             navigation: root.navigation
             onContentFocusRequested: wideRouteHost.focusCurrentContent()
+            onSearchRequested: searchPalette.open()
         }
 
         SettingsRouteHost {
@@ -223,6 +229,7 @@ T.ApplicationWindow {
             Layout.fillWidth: true
             navigation: root.navigation
             onContentFocusRequested: compactRouteHost.focusCurrentContent()
+            onSearchRequested: searchPalette.open()
         }
 
         SettingsRouteHost {
