@@ -13,6 +13,7 @@ target_sources(
         screensaver_settings_model.cpp
         lock_screen_saver_store.cpp
         screensaver_preview.cpp
+        screensaver_idle_lock_inhibitor.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -30,7 +31,7 @@ find_package(KF6Config 6.0 REQUIRED CONFIG)
 target_link_libraries(
     qindaqt_settings_screensaver
     PUBLIC QindaQt::DesktopControls QindaQt::SettingsClient Qt6::Core
-    PRIVATE KF6::ConfigCore Qt6::Quick
+    PRIVATE KF6::ConfigCore Qt6::DBus Qt6::Quick
 )
 target_compile_features(qindaqt_settings_screensaver PUBLIC cxx_std_20)
 set_target_properties(
