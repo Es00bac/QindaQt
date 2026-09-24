@@ -6,6 +6,7 @@ import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK.QindaQt
 
 // Every global shortcut the desktop authority reports, searchable, with
 // capture-to-assign, conflict naming, reset, clear, and custom command
@@ -23,6 +24,11 @@ ColumnLayout {
     Component.onCompleted: shortcuts.refresh()
 
     spacing: Tokens.space["2"]
+
+    // Rows draw their keys with QindaTK KeyCap; the bridge feeds the
+    // desktop's QST-1 tokens into the toolkit theme so the caps wear the
+    // route's theme, as the Audio console does (ADR-0227).
+    QindaQtTheme {}
 
     DegradedNotice {
         id: degraded
