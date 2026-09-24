@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
 // Per-application stream inventory. A device choice names one live output for
 // playback or one live input for recording; only Audio1 readback changes the
@@ -179,10 +180,12 @@ ColumnLayout {
         }
     }
 
-    Label {
+    // AGENT-NOTE: themed through AudioPage's QindaQtTheme bridge.
+    Tk.EmptyState {
+        objectName: "audioStreamsEmpty"
         Layout.fillWidth: true
         visible: streamRepeater.count === 0
+        iconName: "audio-lines"
         text: qsTr("No application streams are currently reported.")
-        muted: true
     }
 }

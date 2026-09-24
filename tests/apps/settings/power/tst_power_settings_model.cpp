@@ -19,6 +19,7 @@ private Q_SLOTS:
   void ownerReplacementClearsActionableTruth();
   void staleSnapshotClosesPresentationAndAdmission();
   void successfulRetryClearsReconnectStatus();
+  void unknownChargePublishesNoNumericPercentage();
 };
 
 void PowerSettingsModelTest::projectsTruthAndKeepsSessionActionsInTheirInjectedBoundary() {
@@ -37,6 +38,14 @@ void PowerSettingsModelTest::projectsTruthAndKeepsSessionActionsInTheirInjectedB
            QStringLiteral("Low charge"));
   QVERIFY(battery.value(QStringLiteral("timeText")).toString()
               .contains(QStringLiteral("remaining")));
+  // Plan W2: the charge meter binds to numeric roles, never to the text.
+  QVERIFY(battery.value(QStringLiteral("percentageKnown")).toBool());
+  QCOMPARE(battery.value(QStringLiteral("percentage")).toDouble(), 37.0);
+  QCOMPARE(battery.value(QStringLiteral("warningSeverity")).toUInt(),
+           static_cast<quint32>(Power::WarningLevel::Low));
+  const QVariantMap adapter = model.supplyRows().at(0).toMap();
+  QVERIFY(adapter.contains(QStringLiteral("percentage")));
+  QVERIFY(!adapter.value(QStringLiteral("percentageKnown")).toBool());
   QCOMPARE(model.profileRows().size(), 3);
   QCOMPARE(model.profileHoldRows().size(), 1);
   QCOMPARE(model.profileHoldRows().first().toMap()
@@ -152,6 +161,30 @@ void PowerSettingsModelTest::successfulRetryClearsReconnectStatus() {
   QVERIFY(model.ready());
   QVERIFY(model.operationStatusText().isEmpty());
   QVERIFY(model.errorText().isEmpty());
+}
+
+void PowerSettingsModelTest::unknownChargePublishesNoNumericPercentage() {
+  // Unknown is not zero: the row says so in `percentageKnown`, the text
+  // falls back to the coarse level, and the page draws no meter.
+  FakePowerTransport transport;
+  Power::PowerClient client(&transport);
+  PowerSettingsModel model(client);
+  Power::Snapshot snapshot = readySnapshot();
+  snapshot.supplies.first().percentageKnown = false;
+  snapshot.supplies.first().percentage = 0.0;
+  snapshot.supplies.first().level = Power::BatteryLevel::Low;
+  snapshot.composite.percentageKnown = false;
+  snapshot.composite.percentage = 0.0;
+  snapshot.composite.level = Power::BatteryLevel::Low;
+  publish(client, transport, snapshot);
+
+  QVERIFY(model.ready());
+  QCOMPARE(model.supplyRows().size(), 2);
+  const QVariantMap battery = model.supplyRows().at(1).toMap();
+  QVERIFY(!battery.value(QStringLiteral("percentageKnown")).toBool());
+  QCOMPARE(battery.value(QStringLiteral("percentage")).toDouble(), 0.0);
+  QCOMPARE(battery.value(QStringLiteral("percentageText")).toString(),
+           QStringLiteral("Level Low"));
 }
 
 QTEST_GUILESS_MAIN(PowerSettingsModelTest)

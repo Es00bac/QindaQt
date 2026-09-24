@@ -326,6 +326,8 @@ public:
         {QStringLiteral("kindText"), QStringLiteral("Power adapter")},
         {QStringLiteral("stateText"), QStringLiteral("Connected")},
         {QStringLiteral("percentageText"), QString{}},
+        {QStringLiteral("percentageKnown"), false},
+        {QStringLiteral("percentage"), 0.0},
         {QStringLiteral("timeText"), QString{}},
         {QStringLiteral("warningText"), QStringLiteral("No warning")},
         {QStringLiteral("warningSeverity"), 0},

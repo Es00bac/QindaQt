@@ -37,6 +37,7 @@ private Q_SLOTS:
   void testKeyboardNudgesSlideAlongAttachedEdge();
   void testQuickPlacementCoversCommonCasesAndRevertRestores();
   void testDisabledOutputIsSelectableButNotDraggable();
+  void testNoEnabledDisplayShowsEmptyState();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -342,6 +343,46 @@ void DisplayArrangementCanvasTest::testDisabledOutputIsSelectableButNotDraggable
   QVERIFY(rig.model.draftValid());
   QTRY_VERIFY(leftButton->property("available").toBool());
   Support::keepRender(*m_view, QStringLiteral("arrangement-enabled-side"));
+}
+
+void DisplayArrangementCanvasTest::testNoEnabledDisplayShowsEmptyState() {
+  Support::ModelRig rig;
+  QVERIFY(rig.publish(Support::mixedDensitySnapshot()));
+  QString error;
+  auto page = Support::loadPage(*m_view, &rig.model, &error);
+  QVERIFY2(page.page != nullptr, qPrintable(error));
+  auto *canvas = findItemByObjectName(page.page, QStringLiteral("displayArrangementCanvas"));
+  QVERIFY(canvas != nullptr);
+  QTRY_COMPARE(canvas->property("tileCount").toInt(), 2);
+  auto *hidden = findItemByObjectName(page.page, QStringLiteral("displayArrangementEmpty"));
+  QVERIFY(hidden != nullptr);
+  QVERIFY(!hidden->isVisible());
+
+  // A valid Display1 snapshot always has an enabled output, so drive the
+  // canvas itself with none to reach its empty state.
+  QQmlComponent component(m_view->engine());
+  component.loadUrl(QUrl::fromLocalFile(QStringLiteral(
+      QINDAQT_SOURCE_DIR "/src/apps/settings/display/qml/DisplayArrangementCanvas.qml")));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+  std::unique_ptr<QObject> object(component.createWithInitialProperties({
+      {QStringLiteral("outputs"), QVariantList{}},
+      {QStringLiteral("selectedOutputId"), QString()},
+      {QStringLiteral("canEdit"), false},
+  }));
+  auto *bare = qobject_cast<QQuickItem *>(object.get());
+  QVERIFY2(bare != nullptr, qPrintable(component.errorString()));
+  bare->setParentItem(m_view->contentItem());
+  bare->setSize(QSizeF(480, 270));
+  QCOMPARE(bare->property("tileCount").toInt(), 0);
+  auto *empty = findItemByObjectName(bare, QStringLiteral("displayArrangementEmpty"));
+  QVERIFY(empty != nullptr);
+  QTRY_VERIFY(empty->isVisible() && empty->width() > 0 && empty->height() > 0);
+  QVERIFY(empty->width() <= bare->width());
+  auto *accessible = QAccessible::queryAccessibleInterface(empty);
+  QVERIFY(accessible != nullptr);
+  QCOMPARE(accessible->role(), QAccessible::StaticText);
+  QCOMPARE(accessible->text(QAccessible::Name),
+           QStringLiteral("No enabled displays to arrange."));
 }
 
 QTEST_MAIN(DisplayArrangementCanvasTest)

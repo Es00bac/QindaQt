@@ -103,6 +103,43 @@ set_tests_properties(qindaqt.settings-power-page PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "offscreen;settings;power;accessibility")
 
+# The charge meter (plan W2) loads PowerSupplySection.qml on its own, so its
+# rows stay out of the page suite, which is already near the size ceiling.
+qt_add_executable(qindaqt_power_supply_meter_tests
+    tst_power_supply_meter.cpp stub_power_settings_model.h)
+target_include_directories(qindaqt_power_supply_meter_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+target_compile_definitions(qindaqt_power_supply_meter_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_POWER_SUPPLY_SECTION_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/power/qml/PowerSupplySection.qml")
+target_link_libraries(qindaqt_power_supply_meter_tests PRIVATE
+    qindaqt_settings_appearance QindaQt::TokensQml qindaqt_themes
+    Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+add_dependencies(qindaqt_power_supply_meter_tests qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin)
+qindaqt_enable_warnings(qindaqt_power_supply_meter_tests)
+# Review-only capture of the real page (plan W2 charge meters); built, never
+# registered as a test. argv: <themeJson> <outputPng> <width> <height>.
+qt_add_executable(qindaqt_settings_power_visual_probe
+    visual_probe.cpp stub_power_settings_model.h)
+target_include_directories(qindaqt_settings_power_visual_probe PRIVATE "${PROJECT_SOURCE_DIR}")
+target_compile_definitions(qindaqt_settings_power_visual_probe PRIVATE
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_POWER_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/power/qml/PowerPage.qml")
+target_link_libraries(qindaqt_settings_power_visual_probe PRIVATE
+    qindaqt_settings_power qindaqt_settings_appearance QindaQt::TokensQml
+    QindaQt::ShellIcons qindaqt_shell_iconsplugin
+    qindaqt_themes Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+add_dependencies(qindaqt_settings_power_visual_probe qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin qindaqt_settings_power_qmlplugin qindaqt_shell_icons)
+qindaqt_enable_warnings(qindaqt_settings_power_visual_probe)
+
+add_test(NAME qindaqt.settings-power-supply-meter
+    COMMAND qindaqt_power_supply_meter_tests)
+set_tests_properties(qindaqt.settings-power-supply-meter PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "offscreen;settings;power;accessibility")
+
 add_test(NAME qindaqt.settings-power-boundary
     COMMAND "${CMAKE_COMMAND}" -DSOURCE_ROOT=${PROJECT_SOURCE_DIR}
     -P "${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake")

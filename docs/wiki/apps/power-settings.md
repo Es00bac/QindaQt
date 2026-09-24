@@ -21,7 +21,7 @@ The route presents only validated, bounded public snapshot copies:
 
 | Group | Public truth | Interaction |
 | --- | --- | --- |
-| Power supplies | AC-adapter presence plus up to eight batteries or UPS devices, with state, exact percentage or coarse level, upstream time estimate, and textual warning severity | Read-only inventory |
+| Power supplies | AC-adapter presence plus up to eight batteries or UPS devices, with state, exact percentage (text plus a charge bar) or coarse level, upstream time estimate, and textual warning severity | Read-only inventory |
 | Power profiles | Active profile and at most four supported profiles | Select a different profile only when the exact snapshot admits it |
 | Profile holds | Profile, bounded application name, and reason for each public hold | Read-only; daemon cookies and release authority are not exposed |
 | Internal brightness | Normalized 0–10000 position, exact observed raw value/maximum, and the reason a panel is not adjustable | Keyboard- and pointer-operable slider for the panel the shared Power1 target rule admits ([ADR-0148](../adr/0148-admit-internal-panel-brightness-through-power1.md)), including a panel whose kernel attribute is root-owned and is therefore written through the seat session ([ADR-0186](../adr/0186-write-internal-brightness-through-logind.md)); ambiguous, lower-preference, and unavailable panels show a disabled slider or no value, with visible text |
@@ -35,7 +35,18 @@ The route presents only validated, bounded public snapshot copies:
 
 Every state and warning has visible text; meaning is not carried by color
 alone. Unknown values are labeled unknown instead of manufacturing a number or
-estimate. The route shows loading, ready, degraded, stale, unavailable, queued,
+estimate. A battery or UPS whose exact percentage is known also shows a
+QindaTK `Tk.Meter` charge bar bound to the projection's numeric `percentage`
+role; when `percentageKnown` is false (coarse level only, and always for the AC
+adapter) no bar is drawn at all, never an empty one. The bar uses the neutral
+accent, because high charge is good, and changes colour only when Power itself
+raises a warning: the desktop's warning hue (`Tokens.status.warning.background`)
+at `warningSeverity` Low (3) and its danger hue (`Tokens.danger.default`) at
+Critical or Action (4 and above). The warning label beside it always states
+the warning in words. Each supply row's two columns take equal shares of the
+row, so every bar starts at the same x whatever the supply's name or state
+line. The supplies section instantiates the `QindaQtTheme` bridge so the bar
+follows the session theme. The route shows loading, ready, degraded, stale, unavailable, queued,
 pending, convergence-wait, failed, and uncertain states separately.
 
 ## Screen-lock preference boundary
@@ -212,7 +223,8 @@ standard-service availability.
 The same vertically scrollable content serves wide and compact Settings hosts.
 Page Up/Page Down and Ctrl+Home/Ctrl+End move the viewport, and focus changes
 reveal the active control. Supply, hold, and brightness cards expose list-item
-names and descriptions. Profile buttons expose radio-button role and checked
+names and descriptions. A charge bar exposes a progress-bar role named
+"<supply> charge bar, N percent". Profile buttons expose radio-button role and checked
 state. Brightness sliders expose slider role, target name, normalized value,
 and exact raw value in both visible and accessible descriptions; a panel that
 cannot be adjusted says read-only in its description. Brightness repeaters
@@ -304,6 +316,13 @@ round-trip preserving unrelated keys, merge-latest saves that keep external
 edits to the untouched key in both directions, retry that re-runs a failed
 load/save before any live configure is requested or claimed, saved-versus-live
 failure truth, and clamped one-to-240-minute timeout bounds.
+The warning-fatal supply-meter row (`qindaqt.settings-power-supply-meter`)
+loads the supplies section alone and proves the bar is bound to `percentage`,
+absent for an unknown charge and for the adapter, accent at no warning, warning
+and danger colours only at severities 3 and 4+, accessibly named, and at one
+shared x and width across rows with different names and state lines; the model
+row proves the `percentage`/`percentageKnown` projection roles for known and
+unknown charge.
 The warning-fatal page row renders wide and compact software scenes, verifies
 Power and session action wiring, destructive confirmation, accessible
 roles/descriptions, the internal slider's disabled truth plus keyboard, fence,
