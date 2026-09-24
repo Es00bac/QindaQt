@@ -7,15 +7,20 @@
 
 namespace QindaQt::Network::SecretAgent::Private {
 
-// Scrub a decoded, directly owned variant before releasing it. Qt D-Bus owns
-// the original wire argument until the incoming method call returns.
+// AGENT-CONTRACT: This intentionally scrubs shared nested storage. Every
+// alias must be dead or another secret-bearing copy that must also be scrubbed;
+// never pass a value another live request/settings owner still needs.
 void wipeVariantValue(QVariant &value) noexcept;
 
-// Scrub a decoded, directly owned string (shared allocations included) before
-// releasing it. Static or raw-data views are cleared without writing.
+// AGENT-CONTRACT: This intentionally scrubs shared storage. Every alias must
+// be dead or another secret-bearing copy that must also be scrubbed; never
+// pass a value another live request/settings owner still needs. Static or
+// raw-data views are cleared without writing.
 void wipeStringValue(QString &text) noexcept;
 
-// Scrub a decoded byte array without detaching its shared allocation.
+// AGENT-CONTRACT: This intentionally scrubs shared storage. Every alias must
+// be dead or another secret-bearing copy that must also be scrubbed; never
+// pass a value another live request/settings owner still needs.
 void wipeByteArrayValue(QByteArray &bytes) noexcept;
 
 } // namespace QindaQt::Network::SecretAgent::Private

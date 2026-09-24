@@ -167,8 +167,13 @@ std::optional<PromptRequest> promptFor(const GetSecretsRequest &request,
   if (keys.isEmpty()) {
     return std::nullopt;
   }
+  // AGENT-CONTRACT: NetworkManager repeats the setting name as a key in the
+  // input map, which is scrubbed on method return. The prompt outlives that
+  // map, so it must own an independent setting-name allocation.
+  QString promptSettingName(request.settingName.constData(),
+                            request.settingName.size());
   PromptRequest result{requestId, std::move(name), request.connectionPath,
-                       request.settingName, {}};
+                       std::move(promptSettingName), {}};
   result.fields.reserve(keys.size());
   for (const QString &key : std::as_const(keys)) {
     result.fields.append(field(key));
@@ -178,7 +183,11 @@ std::optional<PromptRequest> promptFor(const GetSecretsRequest &request,
 
 SecretReply replyFor(const PromptRequest &request, PromptResult &result) {
   SecretReply reply;
-  reply.settingName = request.settingName;
+  // AGENT-CONTRACT: sendCompletion wipes its temporary settings map by writing
+  // through shared text storage. Keep that cleanup from changing the prompt
+  // request that remains live while its completion callback sends the reply.
+  reply.settingName =
+      QString(request.settingName.constData(), request.settingName.size());
   reply.remember = result.remember;
   const qsizetype submittedCount = result.values.size();
   QSet<QString> seen;
@@ -195,7 +204,11 @@ SecretReply replyFor(const PromptRequest &request, PromptResult &result) {
       return {};
     }
     seen.insert(valueIt->key);
-    reply.values.append({field.key, std::move(valueIt->bytes)});
+    // AGENT-CONTRACT: sendCompletion wipes reply-map keys by writing through
+    // shared text storage. Keep the reply key independent from the live prompt
+    // field key retained by the controller/prompt port.
+    QString replyKey(field.key.constData(), field.key.size());
+    reply.values.append({std::move(replyKey), std::move(valueIt->bytes)});
   }
   if (reply.values.size() != request.fields.size() ||
       seen.size() != submittedCount) {

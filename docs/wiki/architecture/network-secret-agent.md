@@ -123,9 +123,15 @@ no settings store, secret store, cache, QindaQt D-Bus credential API, or
 payload logging.
 
 All directly owned byte and UTF-16 allocations are overwritten without a
-copy-on-write detach before release. Recursive input scrubbing covers map
-keys and values as well as list elements. The temporary reply map is
-overwritten and cleared immediately after synchronous D-Bus serialization.
+copy-on-write detach before release. These helpers intentionally write through
+implicitly shared storage: every alias must be dead or another secret-bearing
+copy that must also be scrubbed. A caller must never wipe an alias while a
+live request or settings owner still needs that data. Admission's byte arrays,
+strings, and nested variants are freshly decoded into disposable locals from
+`QDBusArgument` cursors. The controller keeps only an independent prompt
+request; it does not retain the input settings map. Recursive input scrubbing
+covers map keys and values as well as list elements. The temporary reply map
+is overwritten and cleared immediately after synchronous D-Bus serialization.
 Every `GetSecrets`, `SaveSecrets`, and `DeleteSecrets` input map is recursively
 overwritten on method return, including rejected calls, because the standard
 inputs can contain NetworkManager-owned secrets. No `QString` secret is

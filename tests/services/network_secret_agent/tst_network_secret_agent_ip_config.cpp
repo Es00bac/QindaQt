@@ -171,6 +171,10 @@ QDBusMessage vpnSecretsGetSecretsMessage(const QString &destination) {
   return message;
 }
 
+NmSettingsMap requestSettings(const QDBusMessage &message) {
+  return message.arguments().value(0).value<NmSettingsMap>();
+}
+
 } // namespace
 
 class NetworkSecretAgentIpConfigTest final : public QObject {
@@ -180,10 +184,11 @@ private Q_SLOTS:
   void initTestCase();
   void cleanupTestCase();
   void countsUtf8BytesWithoutEncoding();
-  void wipesDetachedByteBufferAndMapKeys();
+  void scrubsSharedSecretAliasesByDesign();
   void admitsBoundedWireFormsAndRefusesOversized_data();
   void admitsBoundedWireFormsAndRefusesOversized();
   void admitsVpnSecretShapeBeforeUnsupportedSettingRefusal();
+  void preservesRequestDataAcrossAdmissionAndRefusal();
 
 private:
   PrivateNetworkManagerBus m_bus;
@@ -232,7 +237,9 @@ void NetworkSecretAgentIpConfigTest::countsUtf8BytesWithoutEncoding() {
            3);
 }
 
-void NetworkSecretAgentIpConfigTest::wipesDetachedByteBufferAndMapKeys() {
+void NetworkSecretAgentIpConfigTest::scrubsSharedSecretAliasesByDesign() {
+  // Every retained alias below is a secret-bearing copy that must be scrubbed
+  // together with the value passed to the wipe helper.
   QByteArray decoded("wire-secret-canary");
   decoded.detach();
   const QByteArray retained = decoded;
@@ -464,6 +471,96 @@ void NetworkSecretAgentIpConfigTest::
            QString::fromLatin1(kNoSecretsError));
   QVERIFY(prompt.requests.isEmpty());
   resident.stop();
+}
+
+void NetworkSecretAgentIpConfigTest::
+    preservesRequestDataAcrossAdmissionAndRefusal() {
+  const QString settingName = QStringLiteral("802-11-wireless-security");
+  const QString ipSection = QStringLiteral("ipv4");
+  const QString addressDataKey = QStringLiteral("address-data");
+  NmSettingsMap ipSettings = connectionMap();
+  ipSettings.insert(ipSection,
+                    {{addressDataKey,
+                      QVariant::fromValue(addressData(1))}});
+  const NmSettingsMap expectedIpSettings = ipSettings;
+  FakePrompt prompt;
+  ResidentSecretAgent resident(prompt, m_bus.agent(), m_bus.presence());
+  QCOMPARE(resident.start(), ResidentStartStatus::Started);
+
+  const QDBusMessage admittedRequest = getSecretsMessage(
+      m_bus.agent().baseService(),
+      QString::fromLatin1(kKnownConnectionPath), 0x1U,
+      {{ipSection, {{addressDataKey,
+                     QVariant::fromValue(addressData(1))}}}});
+  // Keep the caller's complete settings map and the agent's retained prompt
+  // metadata alive across both scrub points: input admission and reply send.
+  const NmSettingsMap retainedIpSettings = requestSettings(admittedRequest);
+  QCOMPARE(retainedIpSettings, expectedIpSettings);
+  auto admitted = watch(m_bus.manager(), admittedRequest);
+  QTRY_COMPARE_WITH_TIMEOUT(prompt.requests.size(), 1, 2'000);
+  prompt.submit(false);
+  QTRY_VERIFY(admitted->isFinished());
+  const QDBusPendingReply<NmSettingsMap> reply = *admitted;
+  QVERIFY2(reply.isValid(), qPrintable(reply.error().name()));
+
+  const NmSettingsMap afterAdmission = requestSettings(admittedRequest);
+  QCOMPARE(afterAdmission.keys(), retainedIpSettings.keys());
+  QCOMPARE(afterAdmission, retainedIpSettings);
+  const auto addressRows =
+      afterAdmission.value(ipSection)
+          .value(addressDataKey)
+          .value<QList<QVariantMap>>();
+  QCOMPARE(addressRows, addressData(1));
+  const QStringList expectedAddressKeys{QStringLiteral("address"),
+                                        QStringLiteral("prefix")};
+  QCOMPARE(addressRows.first().keys(), expectedAddressKeys);
+  QCOMPARE(addressRows.first().value(QStringLiteral("address")).toString(),
+           QStringLiteral("192.0.2.1"));
+  QCOMPARE(addressRows.first().value(QStringLiteral("prefix")).toUInt(),
+           24U);
+
+  const PromptRequest &storedPrompt = prompt.requests.first();
+  QCOMPARE(storedPrompt.connectionName, QStringLiteral("Private Bus Wi-Fi"));
+  QCOMPARE(storedPrompt.connectionPath,
+           QString::fromLatin1(kKnownConnectionPath));
+  QCOMPARE(storedPrompt.settingName, settingName);
+  QCOMPARE(storedPrompt.fields.size(), 1);
+  QCOMPARE(storedPrompt.fields.first().key, QStringLiteral("psk"));
+  QCOMPARE(storedPrompt.fields.first().label,
+           QStringLiteral("Wi-Fi password"));
+  const NmSettingsMap replySettings = reply.value();
+  const QVariantMap replySection = replySettings.value(settingName);
+  QCOMPARE(replySection.value(QStringLiteral("psk")).toString(),
+           QStringLiteral("private-bus-canary"));
+  QCOMPARE(replySection.value(QStringLiteral("psk-flags")).toUInt(), 2U);
+  resident.stop();
+
+  // VPN's secrets property is the same a{ss} form traversed by admission, but
+  // VPN settings remain refused because they are outside this prompt contract.
+  FakePrompt refusedPrompt;
+  ResidentSecretAgent refusedAgent(refusedPrompt, m_bus.agent(),
+                                   m_bus.presence());
+  QCOMPARE(refusedAgent.start(), ResidentStartStatus::Started);
+  const QDBusMessage refusedRequest =
+      vpnSecretsGetSecretsMessage(m_bus.agent().baseService());
+  const NmSettingsMap retainedVpnSettings = requestSettings(refusedRequest);
+  auto refused = watch(m_bus.manager(), refusedRequest);
+  QTRY_VERIFY(refused->isFinished());
+  QCOMPARE(QDBusPendingReply<NmSettingsMap>(*refused).error().name(),
+           QString::fromLatin1(kNoSecretsError));
+  QVERIFY(refusedPrompt.requests.isEmpty());
+  const NmSettingsMap afterRefusal = requestSettings(refusedRequest);
+  QCOMPARE(afterRefusal.keys(), retainedVpnSettings.keys());
+  QCOMPARE(afterRefusal, retainedVpnSettings);
+  const StringMap vpnSecrets =
+      afterRefusal.value(QStringLiteral("vpn"))
+          .value(QStringLiteral("secrets"))
+          .value<StringMap>();
+  QCOMPARE(vpnSecrets.keys(), QStringList{QStringLiteral("password")});
+  QCOMPARE(vpnSecrets.value(QStringLiteral("password")),
+           QStringLiteral("vpn-secret-canary"));
+
+  refusedAgent.stop();
 }
 
 QTEST_GUILESS_MAIN(NetworkSecretAgentIpConfigTest)
