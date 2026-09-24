@@ -48,6 +48,32 @@ and permits at most 256 entries per nested container and eight nested levels.
 An invalid value or any metatype the admission walker cannot account for is
 rejected rather than treated as zero bytes.
 
+NetworkManager's ordinary `GetSecrets` profile includes IP address and route
+properties even when DHCP leaves their arrays empty. Inside a variant Qt D-Bus
+unwraps only `as` and `ay`; every other array or dictionary arrives as a
+`QDBusArgument`. The admission walker (`secret_request_admission.cpp`) accepts
+exactly these wire signatures and counts their elements and payload against
+the same item, depth, and aggregate limits:
+
+| Signature | NetworkManager source |
+| --- | --- |
+| `aa{sv}` | `ipv4`/`ipv6` `address-data`, `route-data`, `routing-rules` |
+| `aau` | legacy `ipv4.addresses`, `ipv4.routes` |
+| `a(ayuay)` | legacy `ipv6.addresses` |
+| `a(ayuayu)` | legacy `ipv6.routes` |
+| `au` | `ipv4.dns` when DNS servers are configured |
+| `aay` | `ipv6.dns` when DNS servers are configured |
+| `a{ss}` | `802-3-ethernet.s390-options` (every wired profile), bond options, user data |
+| `a{sv}` | a vardict nested in a variant |
+
+Unfamiliar signatures still fail closed. Wire values are read through a
+detached copy, so the inbound map is left intact for the recursive scrub;
+decoded `a{sv}` values and `a{ss}` strings are overwritten after counting.
+The private-bus `ip-config` regression covers the exact NetworkManager 1.56
+DHCP profile shape and the admitted and first-excess bound for every form.
+Before this, every new secured Wi-Fi request was refused as over-budget before
+the password prompt.
+
 The other recognized NetworkManager request bits are `REQUEST_NEW` (`0x2`),
 `USER_REQUESTED` (`0x4`), and `WPS_PBC_ACTIVE` (`0x8`). They do not weaken the
 interaction requirement. A non-interactive, foreign, unknown-connection,
@@ -74,6 +100,10 @@ the bounded 120-second default timeout all remove the prompt and complete the
 delayed call once with
 `org.freedesktop.NetworkManager.SecretAgent.Error.UserCanceled`. Late prompt
 completion is ignored.
+Closing the last prompt leaves the resident process and its NetworkManager
+registration running (`QGuiApplication::quitOnLastWindowClosed` is disabled),
+so a later connection request can prompt again. The process-level `lifetime`
+regression proves this against the built executable.
 
 ## Secret and storage contract
 
@@ -120,7 +150,8 @@ The `QindaQtNetworkSecretAgent` install component carries the executable, QST
 theme, and the Tokens and Controls QML modules needed by the standalone
 process. Its focused test matrix covers controller hostility, prompt keyboard
 and accessibility behavior, a private-bus fake AgentManager and Settings
-owner, owner replacement, standard method replies, presence observation,
+owner, owner replacement, standard method replies, Qt D-Bus IP-configuration
+wire admission, resident lifetime after the last prompt closes, presence observation,
 relocated launch, and positive/poison dependency checks. See the [testing
 harness](../development/testing-harness.md).
 

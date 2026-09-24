@@ -57,13 +57,25 @@ set_tests_properties(
             "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DISPLAY=;WAYLAND_DISPLAY=;DBUS_SESSION_BUS_ADDRESS=;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )
 
+# Shared private-bus fixture: disposable broker plus fake NetworkManager.
+qt_add_library(
+    qindaqt_network_secret_agent_test_bus STATIC
+    private_network_manager_bus.cpp
+    private_network_manager_bus.h
+)
+target_link_libraries(
+    qindaqt_network_secret_agent_test_bus
+    PUBLIC QindaQt::NetworkSecretAgent Qt6::DBus
+)
+qindaqt_enable_warnings(qindaqt_network_secret_agent_test_bus)
+
 qt_add_executable(
     qindaqt_network_secret_agent_dbus_tests
     tst_network_secret_agent_dbus.cpp
 )
 target_link_libraries(
     qindaqt_network_secret_agent_dbus_tests
-    PRIVATE QindaQt::NetworkSecretAgent Qt6::DBus Qt6::Test
+    PRIVATE qindaqt_network_secret_agent_test_bus Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_network_secret_agent_dbus_tests)
 add_test(
@@ -77,6 +89,60 @@ set_tests_properties(
         TIMEOUT 30
         ENVIRONMENT
             "DBUS_SESSION_BUS_ADDRESS=;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent;TMPDIR=${CMAKE_CURRENT_BINARY_DIR}"
+)
+
+qt_add_executable(
+    qindaqt_network_secret_agent_ip_config_tests
+    tst_network_secret_agent_ip_config.cpp
+)
+target_link_libraries(
+    qindaqt_network_secret_agent_ip_config_tests
+    PRIVATE qindaqt_network_secret_agent_test_bus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_network_secret_agent_ip_config_tests)
+add_test(
+    NAME qindaqt.network-secret-agent-ip-config
+    COMMAND qindaqt_network_secret_agent_ip_config_tests
+)
+set_tests_properties(
+    qindaqt.network-secret-agent-ip-config
+    PROPERTIES
+        LABELS "service;network;secret-agent;private-bus"
+        TIMEOUT 60
+        ENVIRONMENT
+            "DBUS_SESSION_BUS_ADDRESS=;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent;TMPDIR=${CMAKE_CURRENT_BINARY_DIR}"
+)
+
+# Drives the built executable (not a library double) so the process-lifetime
+# configuration in app/main.cpp is what is proven.
+qt_add_executable(
+    qindaqt_network_secret_agent_lifetime_tests
+    tst_network_secret_agent_lifetime.cpp
+)
+target_link_libraries(
+    qindaqt_network_secret_agent_lifetime_tests
+    PRIVATE qindaqt_network_secret_agent_test_bus Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_network_secret_agent_lifetime_tests
+    PRIVATE
+        QINDAQT_NETWORK_SECRET_AGENT_EXECUTABLE="$<TARGET_FILE:qindaqt-network-secret-agent>"
+)
+add_dependencies(
+    qindaqt_network_secret_agent_lifetime_tests qindaqt-network-secret-agent
+)
+qindaqt_enable_warnings(qindaqt_network_secret_agent_lifetime_tests)
+add_test(
+    NAME qindaqt.network-secret-agent-lifetime
+    COMMAND qindaqt_network_secret_agent_lifetime_tests
+)
+set_tests_properties(
+    qindaqt.network-secret-agent-lifetime
+    PROPERTIES
+        LABELS "service;network;secret-agent;private-bus;offscreen"
+        TIMEOUT 60
+        ENVIRONMENT
+            "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DISPLAY=;WAYLAND_DISPLAY=;DBUS_SESSION_BUS_ADDRESS=;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent;TMPDIR=${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 add_test(

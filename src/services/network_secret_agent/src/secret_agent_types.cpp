@@ -2,7 +2,10 @@
 
 #include <qindaqt/services/network_secret_agent/secret_agent_types.h>
 
+#include "secret_agent_types_p.h"
+
 #include <QtDBus/QDBusMetaType>
+#include <QtDBus/QDBusVariant>
 
 namespace QindaQt::Network::SecretAgent {
 namespace {
@@ -32,8 +35,7 @@ void wipeString(QString &text) noexcept {
     // external/static view and must not be written through.
     if (text.capacity() >= text.size()) {
       auto *data = const_cast<QChar *>(text.constData());
-      overwriteOwnedStorage(data,
-                            text.size() * qsizetype(sizeof(QChar)));
+      overwriteOwnedStorage(data, text.size() * qsizetype(sizeof(QChar)));
     }
     text.clear();
   }
@@ -70,6 +72,9 @@ void wipeVariant(QVariant &value) noexcept {
       wipeString(entry);
     }
     nested.clear();
+  } else if (value.metaType() == QMetaType::fromType<QDBusVariant>()) {
+    QVariant nested = value.value<QDBusVariant>().variant();
+    wipeVariant(nested);
   }
   value.clear();
 }
@@ -118,5 +123,9 @@ void wipeSettingsMap(NmSettingsMap &settings) noexcept {
   }
   settings.clear();
 }
+
+void Private::wipeVariantValue(QVariant &value) noexcept { wipeVariant(value); }
+
+void Private::wipeStringValue(QString &text) noexcept { wipeString(text); }
 
 } // namespace QindaQt::Network::SecretAgent
