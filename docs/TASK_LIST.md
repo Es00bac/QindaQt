@@ -5,6 +5,20 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 24 — Screen saver Preview shows the saver, never the lock screen (plan W6)
+
+Integrated `1f26b4da` (reviews `aaa2c7ef`). Settings → Screen saver → Preview
+runs the configured saver exactly as the idle launcher does (same catalog
+program and arguments); Blank previews in Settings-owned black windows on
+every display; the kscreenlocker greeter path is removed (ADR-0259 supersedes
+ADR-0226 clause 4). Preview holds an org.freedesktop.ScreenSaver inhibition,
+verified against KWin/KScreenLocker 6.6.6, so the idle lock cannot appear over
+it; it fails closed without one, ends after at most 60 s, and reports display,
+focus and saver-exit failures. Reported by Jarrod: Preview showed only the
+lock screen and required a password. Independent review: REJECT (4 findings),
+repaired, ACCEPT. Integrated gates: full build, Settings 133/133, screensaver
+6/6, secret agent 9/9, validate-docs. Live check on qinda-top remains.
+
 ## September 24 — Wi-Fi password agent fix integrated (plan W0)
 
 The Settings/QindaTK/Network plan (`plan/settings-qindatk-network-20260923`
