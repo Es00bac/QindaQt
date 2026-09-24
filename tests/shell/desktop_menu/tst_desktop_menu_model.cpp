@@ -105,7 +105,8 @@ void DesktopMenuModelTest::fullMenuValidatesAndReadsLikeFinder()
                           QStringLiteral("—"), QStringLiteral("Show Clipboard History")}));
     QCOMPARE(texts(topLevel(menu, "desktop.menu.view").children),
              (QStringList{QStringLiteral("Show Desktop"), QStringLiteral("Gather Overview"),
-                          QStringLiteral("—"), QStringLiteral("Clean Up")}));
+                          QStringLiteral("—"), QStringLiteral("Clean Up"),
+                          QStringLiteral("—"), QStringLiteral("Edit Panels")}));
     QCOMPARE(texts(topLevel(menu, "desktop.menu.go").children),
              (QStringList{QStringLiteral("Home Folder"), QStringLiteral("Desktop"),
                           QStringLiteral("Documents"), QStringLiteral("Downloads"),
@@ -125,6 +126,15 @@ void DesktopMenuModelTest::fullMenuValidatesAndReadsLikeFinder()
     QVERIFY(main->checkable);
     QVERIFY(main->checked);
     QCOMPARE(main->radioGroup, QStringLiteral("desktop.workspaces"));
+
+    // View > Edit Panels (ADR-0266) is checked exactly while panels are edited.
+    const MenuItem *editPanels = findItem(menu.tree.items, QStringLiteral("desktop.edit-panels"));
+    QVERIFY(editPanels != nullptr && editPanels->checkable && !editPanels->checked);
+    DesktopMenuFacts editing = fullFacts();
+    editing.editingPanels = true;
+    const BuiltDesktopMenu editingMenu = buildDesktopMenu(editing);
+    editPanels = findItem(editingMenu.tree.items, QStringLiteral("desktop.edit-panels"));
+    QVERIFY(editPanels != nullptr && editPanels->checked);
 }
 
 void DesktopMenuModelTest::labelsAndTitlesComeFromTheFileManagerCatalog()
@@ -217,6 +227,7 @@ void DesktopMenuModelTest::everyActionMapsToExactlyOneCommand()
          {DesktopCommand::SwitchWorkspace, QStringLiteral("ws-2"), 7}},
         {QStringLiteral("desktop.help"), {DesktopCommand::Help, {}, 0}},
         {QStringLiteral("desktop.shortcut-note"), {DesktopCommand::ShortcutNote, {}, 0}},
+        {QStringLiteral("desktop.edit-panels"), {DesktopCommand::EditPanels, {}, 0}},
     };
     QCOMPARE(menu.commands, expected);
     // Every action in the tree has a command and nothing else does.
@@ -283,7 +294,8 @@ void DesktopMenuModelTest::desktopIconsEntriesFollowTheSurface()
     QCOMPARE(texts(topLevel(menu, "desktop.menu.edit").children),
              QStringList{QStringLiteral("Show Clipboard History")});
     QCOMPARE(texts(topLevel(menu, "desktop.menu.view").children),
-             (QStringList{QStringLiteral("Show Desktop"), QStringLiteral("Gather Overview")}));
+             (QStringList{QStringLiteral("Show Desktop"), QStringLiteral("Gather Overview"),
+                          QStringLiteral("—"), QStringLiteral("Edit Panels")}));
     verifySeparatorsOnlyBetweenGroups(menu.tree.items);
 }
 

@@ -32,6 +32,7 @@ enum class DesktopCommand {
   SwitchWorkspace,      // WorkspaceController::switchTo(argument, revision)
   Help,                 // launcher activation of the Welcome desktop entry
   ShortcutNote,         // desktop shortcut note toggle (ADR-0084)
+  EditPanels,           // panel edit mode toggle (ADR-0266)
 };
 
 struct DesktopMenuCommand final {
@@ -110,6 +111,9 @@ struct DesktopMenuFacts final {
 
   Capability shortcutNote;
   bool shortcutNoteVisible = false;
+
+  Capability editPanels;
+  bool editingPanels = false;
 
   friend bool operator==(const DesktopMenuFacts &, const DesktopMenuFacts &) = default;
 };

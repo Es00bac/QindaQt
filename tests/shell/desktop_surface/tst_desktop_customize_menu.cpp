@@ -68,6 +68,12 @@ public:
         calls.append({QStringLiteral("toggleEditMode")});
         Q_EMIT editModeChanged();
     }
+    Q_INVOKABLE void enterEditMode()
+    {
+        m_editMode = true;
+        calls.append({QStringLiteral("enterEditMode")});
+        Q_EMIT editModeChanged();
+    }
     Q_INVOKABLE bool openCustomize()
     {
         calls.append({QStringLiteral("openCustomize")});
@@ -120,6 +126,7 @@ private Q_SLOTS:
     void cleanup();
     void chordOpensTheCustomizeMenuAndEntriesDispatch();
     void chordIsInertWithoutTheFacade();
+    void contextMenuEditPanelsEntersEditMode();
 
 private:
     std::unique_ptr<QTemporaryDir> m_home;
@@ -246,6 +253,56 @@ void DesktopCustomizeMenuTests::chordIsInertWithoutTheFacade()
     QVERIFY(!customize->property("opened").toBool());
     QMetaObject::invokeMethod(context, "close");
     QTRY_VERIFY(!context->property("opened").toBool());
+}
+
+// ADR-0266: every context-menu style offers Edit Panels; it needs the facade
+// and enters panel edit mode through it.
+void DesktopCustomizeMenuTests::contextMenuEditPanelsEntersEditMode()
+{
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    StubCustomization customization;
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher,
+                         {{QStringLiteral("contextMenuStyle"), QStringLiteral("windows")}},
+                         &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    auto *context = host.child<QObject>(QStringLiteral("desktopContextMenu"));
+    QVERIFY(context != nullptr);
+
+    for (const char *style : {"windows", "mac", "traditional"}) {
+        QVERIFY(host.window->setProperty(
+            "applets", makeApplets({{QStringLiteral("contextMenuStyle"),
+                                     QLatin1String(style)}})));
+        bool offered = false;
+        for (const QVariant &entry : context->property("entries").toList()) {
+            const QVariantMap map = entry.toMap();
+            if (map.value(QStringLiteral("objectName")).toString()
+                == QLatin1String("desktopContextEditPanels")) {
+                offered = map.value(QStringLiteral("kind")).toString()
+                          == QLatin1String("editPanels");
+            }
+        }
+        QVERIFY2(offered, style);
+    }
+
+    // Without the facade the entry is disabled; with it, it enters edit mode.
+    // (Rows of the replaced styles are deleted later: let them go first.)
+    const QString name = QStringLiteral("desktopContextEditPanels");
+    QTRY_COMPARE(host.visualItemsNamed(name).size(), 1);
+    QVERIFY(!host.visualItemsNamed(name).constFirst()->isEnabled());
+    host.window->setProperty("customizationAccess",
+                             QVariant::fromValue<QObject *>(&customization));
+    QTRY_VERIFY(host.visualItemsNamed(name).constFirst()->isEnabled());
+    const auto items = host.visualItemsNamed(name);
+    QCOMPARE(items.size(), 1);
+    QVERIFY(QMetaObject::invokeMethod(items.constFirst(), "triggered"));
+    QCOMPARE(customization.calls.size(), 1);
+    QCOMPARE(customization.calls.first().first().toString(), QStringLiteral("enterEditMode"));
+    QVERIFY(customization.editMode());
 }
 
 QTEST_MAIN(DesktopCustomizeMenuTests)

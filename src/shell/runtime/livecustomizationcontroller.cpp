@@ -152,6 +152,7 @@ void LiveCustomizationController::rebuildHost()
     m_outputsStale = false;
     m_dropAccepted = false;
     m_dropReason.clear();
+    m_dropTarget.clear();
     if (!m_host->ready()) {
         m_statusText = m_host->unavailableReason();
         qWarning().noquote() << "QindaQt shell live customization is unavailable:"
