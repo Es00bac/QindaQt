@@ -26,6 +26,7 @@ private Q_SLOTS:
     void containerTitleIsCarriedIntoThePlanWithoutAffectingTabs();
     void derivesMemberTitleAndDividerRegions();
     void hidesOnlySyntheticMemberTitleRegions();
+    void namedStyleCellsAndGapsOverrideTheMetrics();
     void rejectsInvalidInput();
 };
 
@@ -274,6 +275,40 @@ void ChromeLayoutTests::hidesOnlySyntheticMemberTitleRegions()
     }
     QVERIFY(plan->outerTitleDragRect.isValid());
     QVERIFY(plan->contentRect.isValid());
+}
+
+void ChromeLayoutTests::namedStyleCellsAndGapsOverrideTheMetrics()
+{
+    // ADR-0264: a named style or the size and spacing options resize the
+    // button cells and gaps; the row caps a cell's height, and unset
+    // overrides keep the metrics exactly.
+    auto request = qindaMacRequest();
+    request.style.buttonSize = QSizeF(20.0, 18.0);
+    request.style.buttonSpacing = 3.0;
+    QString error;
+    auto plan = ChromeLayoutEngine::build(request, &error);
+    QVERIFY2(plan, qPrintable(error));
+    QCOMPARE(plan->buttons.size(), 3);
+    QCOMPARE(plan->buttons[0].rect.size(), QSizeF(20.0, 18.0));
+    QCOMPARE(plan->buttons[1].rect.left() - plan->buttons[0].rect.right(), 3.0);
+    QCOMPARE(plan->buttons[0].rect.center().y(), plan->outerTitleBar.center().y());
+    QCOMPARE(plan->buttons[0].rect.left(),
+             plan->outerTitleBar.left() + request.metrics.buttonClusterInset);
+    QVERIFY(plan->outerTitleDragRect.left() > plan->buttons[2].rect.right());
+
+    request.style.buttonSize = QSizeF(30.0, 90.0);
+    plan = ChromeLayoutEngine::build(request, &error);
+    QVERIFY2(plan, qPrintable(error));
+    QCOMPARE(plan->buttons[0].rect.height(), plan->outerTitleBar.height());
+
+    request.style.buttonSize = {};
+    request.style.buttonSpacing = -1.0;
+    plan = ChromeLayoutEngine::build(request, &error);
+    QVERIFY2(plan, qPrintable(error));
+    QCOMPARE(plan->buttons[0].rect.size(),
+             QSizeF(request.metrics.buttonExtent, request.metrics.buttonExtent));
+    QCOMPARE(plan->buttons[1].rect.left() - plan->buttons[0].rect.right(),
+             request.metrics.buttonSpacing);
 }
 
 void ChromeLayoutTests::rejectsInvalidInput()

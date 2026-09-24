@@ -122,7 +122,57 @@ private Q_SLOTS:
     void widgetEmitsThresholdedDragLifecycle();
     void widgetCancelsDragOnPointerUngrab();
     void materialOpacityHighlightAndBorderRepaintTheSurface();
+    void namedButtonPainterReplacesTheBuiltInPlates();
 };
+
+void ChromeRendererTests::namedButtonPainterReplacesTheBuiltInPlates()
+{
+    // ADR-0264: a style that carries a button painter draws every window
+    // button through it, with the renderer's own hover, press and glyph
+    // visibility; nothing of the built-in plate is painted underneath.
+    auto request = qindaMacRequest();
+    struct Call final
+    {
+        WindowAction action;
+        bool hovered;
+        bool pressed;
+        bool glyphVisible;
+    };
+    QVector<Call> calls;
+    const QColor marker(QStringLiteral("#ff00ff"));
+    request.style.namedButtonStyle = QStringLiteral("probe");
+    request.style.buttonPainter = [&calls, marker](QPainter &painter, const ChromeRenderPlan &,
+                                                   const WindowButtonGeometry &button,
+                                                   bool hovered, bool pressed, bool glyphVisible) {
+        calls.append({button.action, hovered, pressed, glyphVisible});
+        painter.fillRect(button.rect, marker);
+    };
+    const auto plan = ChromeLayoutEngine::build(request);
+    QVERIFY(plan);
+    const auto idle = render(*plan);
+    QCOMPARE(calls.size(), 3);
+    for (const auto &button : plan->buttons) {
+        QCOMPARE(idle.pixelColor(physicalPoint(button.rect.center(), plan->devicePixelRatio)),
+                 marker);
+    }
+    // The macOS style reveals glyphs on hover, so nothing shows at rest.
+    QVERIFY(std::none_of(calls.cbegin(), calls.cend(),
+                         [](const Call &call) { return call.glyphVisible || call.hovered; }));
+
+    calls.clear();
+    ChromePaintState pressed;
+    pressed.controlsHovered = true;
+    pressed.hoveredTarget = {HitKind::WindowButton, plan->containerId, -1,
+                             WindowAction::Close, {}, std::nullopt};
+    pressed.pressedTarget = pressed.hoveredTarget;
+    static_cast<void>(render(*plan, pressed));
+    QCOMPARE(calls.size(), 3);
+    for (const auto &call : std::as_const(calls)) {
+        QVERIFY(call.glyphVisible);
+        QCOMPARE(call.hovered, call.action == WindowAction::Close);
+        QCOMPARE(call.pressed, call.action == WindowAction::Close);
+    }
+}
 
 void ChromeRendererTests::trafficLightGlyphsAppearOnControlHover()
 {

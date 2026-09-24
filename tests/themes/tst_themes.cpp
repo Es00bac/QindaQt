@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "qindaqt/themes/decoration_theme_spec.h"
 #include "qindaqt/themes/theme_catalog.h"
 #include "qindaqt/themes/theme_loader.h"
 
@@ -20,6 +21,7 @@ private slots:
     void qindaBlissDefinesWornLunaChrome();
     void everyBuiltInThemeAuthorsAWindowDecoration();
     void rejectsInvalidDecorationValues();
+    void acceptsNamedButtonStylesAndRejectsUnknownOnes();
     void catalogSwitchesTheme();
     void loadsSchemaV2SurfacesRadiiMotionAndAccent();
     void schemaV1DocumentsLoadWithSchemaV2Defaults();
@@ -115,6 +117,32 @@ void ThemeTests::rejectsInvalidDecorationValues()
     const auto result = ThemeLoader::fromJson(invalid, QStringLiteral("fixture"));
     QVERIFY(!result.ok);
     QVERIFY(result.error.contains(QStringLiteral("decoration")));
+}
+
+void ThemeTests::acceptsNamedButtonStylesAndRejectsUnknownOnes()
+{
+    // ADR-0264: a color theme's decoration block may name any style in the
+    // shared list; an unknown name still fails the whole theme.
+    const auto theme = [](const QString &style) {
+        return QByteArray(R"json({
+            "schemaVersion": 1, "id": "styled", "name": "Styled", "variant": "dark",
+            "colors": {
+                "canvas": "#101010", "surface": "#202020", "surfaceRaised": "#303030",
+                "border": "#404040", "text": "#ffffff", "textMuted": "#aaaaaa",
+                "accent": "#80c0b0", "accentText": "#102020", "danger": "#ff6060"
+            },
+            "decoration": {"buttonStyle": ")json")
+            + style.toUtf8() + "\"}}";
+    };
+    for (const QString &style : DecorationThemeTokens::buttonStyles()) {
+        const auto result = ThemeLoader::fromJson(theme(style), QStringLiteral("fixture"));
+        QVERIFY2(result.ok, qPrintable(style + QStringLiteral(": ") + result.error));
+        QCOMPARE(result.theme.decoration.buttonStyle, style);
+    }
+    const auto unknown = ThemeLoader::fromJson(theme(QStringLiteral("sparkles")),
+                                               QStringLiteral("fixture"));
+    QVERIFY(!unknown.ok);
+    QVERIFY(unknown.error.contains(QStringLiteral("decoration")));
 }
 
 void ThemeTests::requiresSemanticColorTokens()

@@ -21,7 +21,7 @@ One page covers the appearance preference set stored through Settings1:
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
 | Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get, over the draft wallpaper; twelve built-in theme cards, each a rendered thumbnail of that theme's chrome with its paired decoration document and its panel material (ADR-0206); the system/light/dark scheme choice; the **Translucency** and **Motion** switches; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme`, `accessibility.reducedTransparency`, `accessibility.reducedMotion` |
-| Windows | A separate catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; a **Window decoration** chooser of decoration documents (ADR-0207) painted by the decoration painter; QindaQt-only application-window controls and shared-painter preview while QindaQt is selected; a **Container decoration** chooser painted by the compositor's container renderer; and an independently truthful two-window container preview with button and tab controls (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowDecoration`, `appearance.containerDecoration`, `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs` |
+| Windows | A separate catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; a **Window decoration** chooser of decoration documents (ADR-0207) painted by the decoration painter; QindaQt-only application-window controls and shared-painter preview while QindaQt is selected; a **Container decoration** chooser painted by the compositor's container renderer; and an independently truthful two-window container preview with button and tab controls (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowDecoration`, `appearance.containerDecoration`, `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs`, and the ADR-0264 title-bar options `appearance.windowButtonSize`, `appearance.windowButtonSpacing`, `appearance.windowTitleHeight`, `appearance.windowCornerRadius`, `appearance.windowTitleWeight`, `appearance.windowAppIcon`, `appearance.windowRollUpButton`, `appearance.windowTitleDoubleClick`, `appearance.containerButtonSize`, `appearance.containerButtonSpacing`, `appearance.containerTitleDoubleClick` |
 | Wallpaper | Bundled previews (any of png/jpg/jpeg/webp/bmp beneath the wallpaper data directories, ADR-0228), native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Independent interface and installed fixed-width family pickers with live samples and saved/draft monospace state, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.monospaceFamily`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
@@ -69,6 +69,22 @@ arrangement rows still refine whichever document is in effect. The chooser
 cards, the theme thumbnails and both previews are painted by the same
 renderers from the draft theme, document, arrangement and wallpaper, so the
 route never shows a mock of a material.
+
+Since [ADR-0264](../adr/0264-window-button-styles-are-data.md) the **Buttons**
+row of both sets is a menu of the same fifteen named styles (Lights, Flat,
+Glyphs, Gel, Bevel, Blue tiles, Wide, Tab, Bold, Minimal, Pills, Dots, Outline,
+Chunky, or the theme's own). Each is a row of data for the one style painter,
+so the window preview, the container preview and the desktop draw the same
+buttons. Under the arrangement rows, **Button size**, **Button spacing** and
+**Double-click** appear for both sets, and windows add **Title bar** height,
+**Corners**, **Title weight**, **App icon** and a **Roll-up button**. The
+window roll-up button and a roll-up double-click roll the window up to its
+icon ([ADR-0203](../adr/0203-an-ordinary-window-rolls-up-to-its-icon.md));
+maximize and minimize are the window manager's own actions. The window
+double-click's **Default** leaves KWin's own double-click in charge, and the
+container's **Nothing** keeps its bar inert, as both shipped. A container
+bar's height belongs to the container layout, so containers have no height
+option. The rows live in `TitleBarOptions.qml`, built once per set.
 
 The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio
@@ -232,7 +248,11 @@ Appearance model test proves this route commits that exact key alone.
   key preservation, QindaQt-theme cleanup, and one reload request per apply.
 - `qindaqt.appearance-window-decoration-page` — installed-decoration card and
   apply wiring plus the rule that foreign selections hide QindaQt's inapplicable
-  preview and controls.
+  preview and controls; both fifteen-style menus and every ADR-0264 title-bar
+  option row forward their tokens to the draft.
+- `qindaqt.decoration-button-styles` and `qindaqt.decoration-title-options` —
+  the named styles' pixels (the shipped ones against their old painters) and
+  the option tokens, resolution and layout behind these rows (ADR-0264).
 
 Production application is defined by [ADR-0078](../adr/0078-own-wallpaper-surfaces-in-the-shell.md).
 `qindaqt.shell-wallpaper-controller` proves the whole chain over a private

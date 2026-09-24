@@ -14,12 +14,18 @@ target_sources(
         src/decoration_painter.cpp
         src/decoration_chrome_map.cpp
         src/decoration_buttons.cpp
+        src/decoration_button_painter.cpp
+        src/decoration_button_styles.cpp
         src/chrome_preferences.cpp
+        src/container_chrome_style.cpp
         src/member_handle.cpp
+        src/worn_luna_title.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
-        FILES include/qindaqt/decoration_painter/decoration_painter.h
+        FILES
+            include/qindaqt/decoration_painter/decoration_painter.h
+            include/qindaqt/decoration_painter/decoration_button_style.h
 )
 target_link_libraries(
     qindaqt_decoration_painter

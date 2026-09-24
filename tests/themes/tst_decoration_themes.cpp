@@ -15,6 +15,7 @@ private slots:
     void glassAuthorsATranslucentMaterialAndLunaClassicAuthorsColors();
     void colorsAreOptionalAndDeferToTheColorTheme();
     void rejectsInvalidValues();
+    void acceptsEveryNamedButtonStyle();
     void catalogLoadsDirectoriesAndFindsById();
     void everyBuiltInColorThemeReferencesAShippedDecorationOrNone();
 };
@@ -114,6 +115,23 @@ void DecorationThemeTests::rejectsInvalidValues()
     const auto badVersion = DecorationThemeLoader::fromJson(
         R"json({"schemaVersion": 2, "id": "x", "name": "X"})json", QStringLiteral("fixture"));
     QVERIFY(!badVersion.ok);
+}
+
+void DecorationThemeTests::acceptsEveryNamedButtonStyle()
+{
+    // ADR-0264: a document may name any window-button style, the W19 ones
+    // included; the list is the one the theme loader validates against.
+    const auto styles = DecorationThemeTokens::buttonStyles();
+    QCOMPARE(styles.size(), 15);
+    QCOMPARE(QSet<QString>(styles.cbegin(), styles.cend()).size(), styles.size());
+    for (const QString &style : styles) {
+        const auto json = QByteArray(R"json({"schemaVersion": 1, "id": "x", "name": "X",
+                                             "buttonStyle": ")json")
+            + style.toUtf8() + "\"}";
+        const auto result = DecorationThemeLoader::fromJson(json, QStringLiteral("fixture"));
+        QVERIFY2(result.ok, qPrintable(style + QStringLiteral(": ") + result.error));
+        QCOMPARE(result.theme.decoration.buttonStyle, style);
+    }
 }
 
 void DecorationThemeTests::catalogLoadsDirectoriesAndFindsById()
