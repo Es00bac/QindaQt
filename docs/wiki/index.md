@@ -51,6 +51,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   nested plugin boots, package inspection, review, and evidence required before
   publishing. [KWin upgrades](development/kwin-upgrades.md) keep source objects,
   package versions, and the binary plugin ABI coherent.
+- [Settings install checkpoint](development/install-checkpoint.md) defines the
+  read-only Settings/audio/network preflight, ignored-prefix source stage,
+  saved-state capture, rollback sequence, and later logout/login gates.
 - [Notification service](architecture/notifications-service.md) records the
   bounded model, freedesktop adapter, authenticated host/client transport,
   descriptor provisioning, and remaining service policy.
