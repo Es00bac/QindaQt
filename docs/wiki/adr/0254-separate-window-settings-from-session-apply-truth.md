@@ -52,11 +52,13 @@ and the [compositor/session architecture](../architecture/compositor-session.md)
    does not change or recommit Settings1 values.
 4. The Windows route watches the unique owner of this interface, reads state
    from that same owner, and treats service loss, owner replacement, and
-   malformed state as unavailable. It says `Applied in this session` only
-   when the reported applied preference equals the route's current
-   Settings1-confirmed values. A failed matching apply exposes its diagnostic
-   and an explicit retry action. KWin owner loss is reported until the
-   replacement compositor acknowledges the reapply.
+   malformed state as unavailable. Every unique-owner transition synchronously
+   revokes the previously published status before requesting the replacement's
+   state; generation fencing discards late replies from the former owner. It
+   says `Applied in this session` only when the reported applied preference
+   equals the route's current Settings1-confirmed values. A failed matching
+   apply exposes its diagnostic and an explicit retry action. KWin owner loss
+   is reported until the replacement compositor acknowledges the reapply.
 5. The initial confirmed session baseline and each replacement KWin owner
    receive one acknowledged reconfigure even when `kwinrc` already matches.
    After convergence, ordinary updates retain the existing debounced

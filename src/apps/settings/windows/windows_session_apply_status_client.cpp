@@ -101,10 +101,16 @@ void WindowsSessionApplyStatusClient::handleOwnerChanged(const QString &newOwner
     }
     m_owner = newOwner;
     ++m_requestGeneration;
+    // AGENT-GUARD: Apply acknowledgements belong to one unique service owner;
+    // revoke before reading a replacement or the page can present the former
+    // owner's Applied result while the new owner's GetState is pending (ADR-0254).
+    publishUnavailable(newOwner.isEmpty()
+                           ? QStringLiteral("The QindaQt session apply-state service is not "
+                                            "running. Start or restart the session to apply "
+                                            "saved window settings.")
+                           : QStringLiteral("The session apply-state owner changed; checking "
+                                            "the current session status."));
     if (m_owner.isEmpty()) {
-        publishUnavailable(QStringLiteral("The QindaQt session apply-state service is not "
-                                          "running. Start or restart the session to apply "
-                                          "saved window settings."));
         return;
     }
     if (!m_bus.connect(m_owner, QString::fromLatin1(ObjectPath),

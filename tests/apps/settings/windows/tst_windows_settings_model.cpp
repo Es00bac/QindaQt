@@ -372,6 +372,19 @@ void WindowsSettingsModelTest::savedAndSessionApplyStatusRemainSeparate()
     model.setSessionApplyStatus(status);
     QCOMPARE(model.sessionApplyStatusText(), QStringLiteral("Applied in this session."));
 
+    // The status client revokes an acknowledgement synchronously when its
+    // unique owner changes; equal saved values alone must not preserve Applied.
+    status.serviceAvailable = false;
+    status.phase = SessionApplyPhase::Unavailable;
+    status.preferences.reset();
+    status.message = QStringLiteral("The session apply-state owner changed.");
+    model.setSessionApplyStatus(status);
+    QVERIFY(model.sessionApplyStatusText().contains(QStringLiteral("unavailable")));
+    QVERIFY(!model.sessionApplyStatusText().contains(QStringLiteral("Applied in this session")));
+    QCOMPARE(model.savedStatusText(), QStringLiteral("Saved preference"));
+
+    status.serviceAvailable = true;
+    status.preferences = WindowsValues{};
     status.phase = SessionApplyPhase::Failed;
     status.message = QStringLiteral("kwinrc could not be written");
     model.setSessionApplyStatus(status);
