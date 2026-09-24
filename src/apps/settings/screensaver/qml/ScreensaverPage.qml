@@ -206,7 +206,7 @@ T.Page {
                                          && !root.screensaverSettings.previewRunning
                                 text: root.screensaverSettings.previewRunning
                                       ? qsTr("Preview running…") : qsTr("Preview")
-                                accessibleDescription: qsTr("Show what the chosen screensaver looks like without locking the session")
+                                accessibleDescription: qsTr("Preview the chosen screensaver; automatic idle locking is paused until it closes")
                                 onClicked: root.screensaverSettings.preview()
                             }
 
@@ -221,9 +221,19 @@ T.Page {
                             }
 
                             Label {
+                                objectName: "screensaverPreviewError"
+                                Layout.fillWidth: true
+                                visible: text.length > 0
+                                text: root.screensaverSettings.previewErrorText
+                                wrapMode: Text.Wrap
+                                Accessible.role: Accessible.AlertMessage
+                                Accessible.name: text
+                            }
+
+                            Label {
                                 objectName: "screensaverNote"
                                 Layout.fillWidth: true
-                                text: qsTr("A screensaver does not lock the session. Any activity dismisses it, and it stops when the screen locks. Locking is set separately below.")
+                                text: qsTr("Preview never starts the lock screen. Automatic idle locking is paused while Preview runs; activity dismisses it, and every preview closes after at most 60 seconds. Locking is set separately below.")
                                 wrapMode: Text.Wrap
                                 muted: true
                                 Accessible.name: text

@@ -49,6 +49,7 @@ private Q_SLOTS:
     void saverOptionsListTheBuiltInsThenTheDiscovered();
     void previewStartsWithPersistedTruth();
     void previewStartFailureIsReported();
+    void asynchronousPreviewFailureIsReported();
     void defaultValuedFirstSnapshotEstablishesAuthority();
     void occupiedReadLaneRefusesWritesAndRecovers();
     void appliedWaitsForSameLineageReadback();
@@ -339,8 +340,20 @@ void ScreensaverSettingsModelTest::previewStartFailureIsReported() {
 
     m_preview->startOk = false;
     QVERIFY(!m_model->preview());
-    QVERIFY(m_model->errorText().contains(QStringLiteral("preview refused")));
+    QVERIFY(m_model->previewErrorText().contains(QStringLiteral("preview refused")));
     QCOMPARE(m_preview->starts, 0);
+}
+
+void ScreensaverSettingsModelTest::asynchronousPreviewFailureIsReported() {
+    m_transport->setValue(kSaverKey, "qinda-patrol");
+    m_transport->announceOwner();
+    QTRY_VERIFY(m_client->snapshot().has_value());
+
+    QVERIFY(m_model->preview());
+    QVERIFY(m_model->previewErrorText().isEmpty());
+    const QString message = QStringLiteral("The screensaver crashed with exit code 17.");
+    m_preview->reportFailure(message);
+    QVERIFY(m_model->previewErrorText().contains(message));
 }
 
 void ScreensaverSettingsModelTest::defaultValuedFirstSnapshotEstablishesAuthority() {

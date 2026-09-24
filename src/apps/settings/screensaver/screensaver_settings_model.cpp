@@ -68,6 +68,11 @@ ScreensaverSettingsModel::ScreensaverSettingsModel(
           this, &ScreensaverSettingsModel::handleUncertain);
   connect(&m_preview, &ScreensaverPreview::finished, this,
           &ScreensaverSettingsModel::publishStatus);
+  connect(&m_preview, &ScreensaverPreview::failed, this,
+          [this](const QString &message) {
+            m_previewError = message;
+            publishStatus();
+          });
   m_readbackRetryTimer.setSingleShot(true);
   connect(&m_readbackRetryTimer, &QTimer::timeout, this, [this] {
     if (m_pending && m_waitingForReadback) m_client.refresh();
@@ -180,6 +185,10 @@ const QString &ScreensaverSettingsModel::previewSummary() const noexcept {
   return m_previewSummary;
 }
 
+const QString &ScreensaverSettingsModel::previewErrorText() const noexcept {
+  return m_previewError;
+}
+
 QString ScreensaverSettingsModel::displayName(const QString &saver) const {
   if (saver == ScreensaverPreferences::blankToken()) return tr("Blank screen");
   const std::optional<ScreensaverCatalogEntry> entry = m_catalog.entry(saver);
@@ -235,10 +244,11 @@ bool ScreensaverSettingsModel::preview() {
     publishStatus();
     return false;
   }
+  m_previewError.clear();
   QString error;
   if (!m_preview.start(saver(), &error)) {
-    m_localError = error.isEmpty() ? tr("The preview could not be started.")
-                                   : error;
+    m_previewError = error.isEmpty() ? tr("The preview could not be started.")
+                                     : error;
     publishStatus();
     return false;
   }

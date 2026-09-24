@@ -80,6 +80,12 @@ public:
 
     [[nodiscard]] bool running() const override { return false; }
 
+    void reportFailure(const QString &message)
+    {
+        Q_EMIT failed(message);
+        Q_EMIT finished();
+    }
+
     bool unavailable = false;
     bool startOk = true;
     int starts = 0;

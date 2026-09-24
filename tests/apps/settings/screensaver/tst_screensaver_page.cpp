@@ -39,6 +39,7 @@ class StubScreensaverSettings final : public QObject {
   Q_PROPERTY(bool previewAvailable MEMBER previewAvailable NOTIFY changed)
   Q_PROPERTY(bool previewRunning MEMBER previewRunning NOTIFY changed)
   Q_PROPERTY(QString previewSummary MEMBER previewSummary NOTIFY changed)
+  Q_PROPERTY(QString previewErrorText MEMBER previewErrorText NOTIFY changed)
 
 public:
   using QObject::QObject;
@@ -56,6 +57,7 @@ public:
   bool previewRunning = false;
   QString previewSummary = QStringLiteral(
       "Runs Circuit Reef itself with the catalog arguments used by the idle path.");
+  QString previewErrorText;
   QStringList saverRequests;
   QList<int> minutesRequests;
   int retryCalls = 0;
@@ -154,6 +156,7 @@ private Q_SLOTS:
   void keyboardRefusalRestoresConfirmedChoices();
   void lockSectionIsSeparateAndWrites();
   void errorsSurfaceWithRetry();
+  void previewFailureShowsWithoutSettingsRetry();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -235,7 +238,10 @@ void ScreensaverPageTest::rendersChoicesAndReflectsTruth() {
   // The note keeps the two concepts visibly separate.
   auto *note = findItem(page, QStringLiteral("screensaverNote"));
   QVERIFY(note != nullptr);
-  QVERIFY(note->property("text").toString().contains(QStringLiteral("does not lock")));
+  QVERIFY(note->property("text").toString().contains(
+      QStringLiteral("never starts the lock screen")));
+  QVERIFY(note->property("text").toString().contains(
+      QStringLiteral("paused while Preview runs")));
 
   auto *lockSwitch = findItem(page, QStringLiteral("screensaverAutomaticScreenLock"));
   QVERIFY(lockSwitch != nullptr);
@@ -426,6 +432,24 @@ void ScreensaverPageTest::errorsSurfaceWithRetry() {
   QVERIFY(lockError != nullptr);
   QVERIFY(lockError->isVisible());
   QVERIFY(lockError->property("text").toString().contains(QStringLiteral("unavailable")));
+}
+
+void ScreensaverPageTest::previewFailureShowsWithoutSettingsRetry() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+
+  m_screensaver->previewErrorText =
+      QStringLiteral("The screensaver crashed with exit code 17.");
+  Q_EMIT m_screensaver->changed();
+  QCoreApplication::processEvents();
+
+  auto *previewError = findItem(page, QStringLiteral("screensaverPreviewError"));
+  QVERIFY(previewError != nullptr);
+  QVERIFY(previewError->isVisible());
+  QVERIFY(previewError->property("text").toString().contains(QStringLiteral("17")));
+  auto *retry = findItem(page, QStringLiteral("screensaverRetry"));
+  QVERIFY(retry != nullptr);
+  QVERIFY(!retry->isVisible());
 }
 
 QTEST_MAIN(ScreensaverPageTest)

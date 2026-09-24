@@ -25,11 +25,18 @@ section it replaces.
 - **Preview** — runs each discovered saver as its own program with the same
   catalog arguments used by the unlocked idle path, regardless of whether the
   lock screen can draw that saver. Blank screen opens a full-screen black
-  window on each display. Any key (including Escape), click, or pointer
-  movement closes Blank; the saver program exits on its normal input path. The
-  preview never starts the lock screen or changes its policy. The button is
-  disabled while a preference write is in flight, a second preview cannot
-  stack, and launch failures appear on the page.
+  window on every available display. A partial show closes all opened windows
+  and reports failure. Blank closes on any key (including Escape), click, or
+  pointer movement; it also closes if keyboard focus is not confirmed within
+  one second. Every preview ends after at most 60 seconds. A saver that crashes
+  or exits nonzero reports its exit status and code on the page. The preview
+  never starts the lock screen. It holds KScreenLocker's standard
+  `org.freedesktop.ScreenSaver.Inhibit` request while running, so automatic
+  idle locking cannot put the password screen over the preview; the request is
+  released when the preview ends or Settings quits. If the lock service cannot
+  grant the request, Preview does not start. The button is disabled while a
+  preference write is in flight, a second preview cannot stack, and failures
+  appear on the page.
 - **Locking** — the walk-away section: whether the session locks
   automatically when idle, and after how long. This is the same shared
   screen-lock model and store the Power route's Screen lock section uses;
@@ -86,9 +93,10 @@ except the explicitly requested preview.
 
 ## What this route does not claim
 
-- It does not lock the session, and the preview never does either. The lock
-  authority stays with KScreenLocker. Preview does not inhibit the session's
-  normal idle-lock timeout.
+- Preview never requests a lock or starts the greeter. Its bounded,
+  preview-lifetime inhibitor prevents automatic idle locking from covering the
+  preview; a failed inhibit request prevents preview startup. Manual locking
+  remains a separate user action, and KScreenLocker remains the lock authority.
 - The lock-screen take-over follows the saver only for savers that ship a
   QML scene in the wallpaper plugin; a saver without one leaves the lock
   wallpaper unchanged, and the page says so.
@@ -119,8 +127,12 @@ except the explicitly requested preview.
 - `qindaqt.settings-screensaver-preview`: every discovered token starts its
   own resolved program with the catalog arguments; `blank` opens the black
   full-screen window and closes on key, Escape, click, or pointer movement;
-  `none`/unknown tokens refuse; failures surface; previews never stack; and
-  the greeter is never resolved or invoked.
+  denied activation closes Blank and reports failure; partial display failure
+  closes windows already opened; the 60-second deadline closes a preview;
+  `none`/unknown tokens refuse; a started program's nonzero exit and crash are
+  surfaced; idle inhibition is acquired/released over a fake ScreenSaver D-Bus
+  service, including Settings teardown; previews never stack; and the greeter
+  is never resolved or invoked.
 - `qindaqt.settings-screensaver-page`: the selector reflects truth and
   writes tokens, restores confirmed keyboard choices after refusal, shows
   no false selection before a baseline, disables delay for the built-ins,

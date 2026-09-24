@@ -1,117 +1,31 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <qindaqt/apps/settings_screensaver/screensaver_preview.h>
-
 #include <qindaqt/session/desktop_controls/screensaver_catalog.h>
 #include <qindaqt/session/desktop_controls/screensaver_preferences.h>
 
-#include <QFile>
-#include <QCursor>
+#include "screensaver_preview_test_support.h"
+#include "tst_screensaver_preview_failures.h"
+
 #include <QGuiApplication>
-#include <QQuickWindow>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include <memory>
-
+using namespace ScreensaverPreviewTestSupport;
 using QindaQt::Apps::SettingsScreensaver::ProcessScreensaverPreview;
 using QindaQt::Apps::SettingsScreensaver::ScreensaverPreview;
 using QindaQt::Session::DesktopControls::ScreensaverCatalog;
 using QindaQt::Session::DesktopControls::ScreensaverCatalogEntry;
 using QindaQt::Session::DesktopControls::ScreensaverPreferences;
 
-namespace {
-
-class FakeCatalog final : public ScreensaverCatalog {
-public:
-  [[nodiscard]] QList<ScreensaverCatalogEntry> entries() const override {
-    return {
-        {QStringLiteral("qinda-patrol"),
-         QStringLiteral("Qinda Patrol"),
-         {},
-         {},
-         {QStringLiteral("--screensaver"), QStringLiteral("--no-metrics")},
-         true},
-        {QStringLiteral("circuit-reef"),
-         QStringLiteral("Circuit Reef"),
-         {},
-         {},
-         {QStringLiteral("--screensaver"), QStringLiteral("--private")},
-         true},
-        {QStringLiteral("prism-brawl"),
-         QStringLiteral("Prism Brawl"),
-         {},
-         {},
-         {QStringLiteral("--screensaver"), QStringLiteral("--mute")},
-         false},
-        {QStringLiteral("new-house-saver"),
-         QStringLiteral("New Saver"),
-         {},
-         {},
-         {QStringLiteral("--screensaver")},
-         false},
-    };
-  }
-};
-
-QString makeArgumentRecorder(QTemporaryDir &directory,
-                             const QString &argumentsPath) {
-  QString quotedPath = argumentsPath;
-  quotedPath.replace(QLatin1Char('\''), QStringLiteral("'\\''"));
-  const QByteArray script =
-      "#!/bin/sh\nprintf '%s\\n' \"$@\" > '" + quotedPath.toUtf8() + "'\n";
-  const QString program = directory.filePath(QStringLiteral("fake-saver"));
-  QFile file(program);
-  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-    return {};
-  if (file.write(script) != script.size())
-    return {};
-  file.close();
-  if (!file.setPermissions(QFile::ReadOwner | QFile::WriteOwner |
-                           QFile::ExeOwner)) {
-    return {};
-  }
-  return program;
-}
-
-QStringList recordedArguments(const QString &path) {
-  QFile file(path);
-  if (!file.open(QIODevice::ReadOnly))
-    return {};
-  return QString::fromUtf8(file.readAll())
-      .split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-}
-
-QQuickWindow *blankPreviewWindow() {
-  for (QWindow *window : QGuiApplication::topLevelWindows()) {
-    if (window->objectName() ==
-        QStringLiteral("qindaqtBlankScreensaverPreview")) {
-      return qobject_cast<QQuickWindow *>(window);
-    }
-  }
-  return nullptr;
-}
-
-std::unique_ptr<ProcessScreensaverPreview>
-startBlankPreview(const FakeCatalog &catalog, QStringList *resolvedPrograms,
-                  QString *error) {
-  auto preview = std::make_unique<ProcessScreensaverPreview>(
-      catalog, [resolvedPrograms](const QString &program) {
-        resolvedPrograms->append(program);
-        return QStringLiteral("/bin/true");
-      });
-  if (!preview->start(ScreensaverPreferences::blankToken(), error))
-    return {};
-  return preview;
-}
-
-} // namespace
-
 class ScreensaverPreviewTest final : public QObject {
   Q_OBJECT
 
 private Q_SLOTS:
+  void initTestCase();
+  void cleanupTestCase();
+  void init();
   void kindForNothingChosenIsUnavailable();
   void kindForUnknownTokenIsUnavailable();
   void blankUsesTheBlackWindowPath();
@@ -125,8 +39,25 @@ private Q_SLOTS:
   void previewsNeverStack();
 
 private:
+  QDBusConnection m_bus{QDBusConnection::sessionBus()};
+  FakeScreenSaver m_screenSaver;
   FakeCatalog m_catalog;
 };
+
+void ScreensaverPreviewTest::initTestCase() {
+  QVERIFY(m_bus.isConnected());
+  QVERIFY(m_bus.registerService(QString::fromLatin1(kScreenSaverService)));
+  QVERIFY(m_bus.registerObject(QString::fromLatin1(kScreenSaverPath),
+                               &m_screenSaver,
+                               QDBusConnection::ExportAllSlots));
+}
+
+void ScreensaverPreviewTest::cleanupTestCase() {
+  m_bus.unregisterObject(QString::fromLatin1(kScreenSaverPath));
+  m_bus.unregisterService(QString::fromLatin1(kScreenSaverService));
+}
+
+void ScreensaverPreviewTest::init() { m_screenSaver.reset(); }
 
 void ScreensaverPreviewTest::kindForNothingChosenIsUnavailable() {
   ProcessScreensaverPreview preview(m_catalog);
@@ -153,6 +84,11 @@ void ScreensaverPreviewTest::blankUsesTheBlackWindowPath() {
   QVERIFY(preview->running());
   QVERIFY(!preview->start(ScreensaverPreferences::blankToken(), &error));
   QVERIFY(!error.isEmpty());
+  QCOMPARE(m_screenSaver.inhibitCalls, 1);
+  QCOMPARE(m_screenSaver.activeCookies.size(), 1);
+  QCOMPARE(m_screenSaver.lastApplication,
+           QStringLiteral("org.qindaqt.Settings"));
+  QVERIFY(m_screenSaver.lastReason.contains(QStringLiteral("Preview")));
 
   QQuickWindow *window = blankPreviewWindow();
   QVERIFY(window != nullptr);
@@ -195,6 +131,9 @@ void ScreensaverPreviewTest::
   }
   QCOMPARE(resolvedPrograms, expectedPrograms);
   QVERIFY(!resolvedPrograms.contains(QStringLiteral("kscreenlocker_greet")));
+  QCOMPARE(m_screenSaver.inhibitCalls, int(entries.size()));
+  QCOMPARE(m_screenSaver.uninhibitCalls, int(entries.size()));
+  QVERIFY(m_screenSaver.activeCookies.isEmpty());
 }
 
 void ScreensaverPreviewTest::emptyProgramResolutionReportsFailure() {
@@ -226,6 +165,8 @@ void ScreensaverPreviewTest::blankClosesOnAnyKey() {
   QTest::keyClick(window, Qt::Key_A);
   QTRY_VERIFY(!preview->running());
   QCOMPARE(finishedSpy.count(), 1);
+  QCOMPARE(m_screenSaver.uninhibitCalls, 1);
+  QVERIFY(m_screenSaver.activeCookies.isEmpty());
 }
 
 void ScreensaverPreviewTest::blankClosesOnEscape() {
@@ -271,8 +212,8 @@ void ScreensaverPreviewTest::blankClosesOnPointerMotion() {
   const QPoint firstTarget(20, 20);
   const QPoint secondTarget(40, 40);
   const QPoint target = window->mapToGlobal(firstTarget) == QCursor::pos()
-                           ? secondTarget
-                           : firstTarget;
+                            ? secondTarget
+                            : firstTarget;
   QTest::mouseMove(window, target);
   QTRY_VERIFY(!preview->running());
   QCOMPARE(finishedSpy.count(), 1);
@@ -302,5 +243,12 @@ void ScreensaverPreviewTest::previewsNeverStack() {
   QTRY_VERIFY_WITH_TIMEOUT(!preview.running(), 3000);
 }
 
-QTEST_MAIN(ScreensaverPreviewTest)
+int main(int argc, char **argv) {
+  QGuiApplication application(argc, argv);
+  ScreensaverPreviewTest previewTest;
+  const int previewResult = QTest::qExec(&previewTest, argc, argv);
+  ScreensaverPreviewFailureTest failureTest;
+  return previewResult | QTest::qExec(&failureTest, argc, argv);
+}
+
 #include "tst_screensaver_preview.moc"
