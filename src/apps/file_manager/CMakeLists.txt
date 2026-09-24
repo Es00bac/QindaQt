@@ -31,6 +31,27 @@ set_target_properties(
 )
 qindaqt_enable_warnings(qindaqt_file_manager_desktop_boundary)
 
+# ADR-0260: File Manager's menu vocabulary (menu titles, action labels,
+# descriptions, shortcuts) as pure values. File Manager's AppShell action
+# catalog and the shell's desktop menu both project it, so the desktop and a
+# File Manager window cannot drift apart. Only public/ is exported: a consumer
+# of this target cannot reach File Manager's private models through it.
+qt_add_library(qindaqt_file_manager_menu_catalog STATIC)
+target_sources(
+    qindaqt_file_manager_menu_catalog
+    PRIVATE public/file_manager_menu_catalog.cpp
+    PUBLIC public/file_manager_menu_catalog.h
+)
+target_include_directories(
+    qindaqt_file_manager_menu_catalog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public"
+)
+target_link_libraries(qindaqt_file_manager_menu_catalog PUBLIC Qt6::Core Qt6::Gui)
+target_compile_features(qindaqt_file_manager_menu_catalog PUBLIC cxx_std_20)
+set_target_properties(
+    qindaqt_file_manager_menu_catalog PROPERTIES CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_file_manager_menu_catalog)
+
 qt_add_library(qindaqt_file_manager_support STATIC)
 target_sources(
     qindaqt_file_manager_support
@@ -168,6 +189,7 @@ target_link_libraries(
     qindaqt_file_manager_support
     PUBLIC
         qindaqt_file_manager_desktop_boundary
+        qindaqt_file_manager_menu_catalog
         QindaQt::AppShell
         QindaQt::AppShellMenuExport
         QindaQt::ApplicationCatalog

@@ -9,6 +9,10 @@ namespace QindaQt::ShellTaskListApplet {
 class TaskListAppletController;
 }
 
+namespace QindaQt::Shell::GlobalMenu {
+class GlobalMenuAppletAccess;
+}
+
 namespace QindaQt::Shell::DesktopControls {
 
 struct ActiveApplicationGrants {
@@ -24,14 +28,25 @@ struct ActiveApplicationGrants {
 // and every intent come from the borrowed task-list facade, which applies its
 // own grants, generation fence, and pending marker before any dispatch.
 //
-// AGENT-CONTRACT: the borrowed facade may be null and must otherwise outlive
-// this controller on the GUI thread. This controller never sees compositor
-// objects or window identifiers other than the facade's opaque task id.
+// While no window is focused and the global menu presents the shell's desktop
+// menu (ADR-0260), the indicator names the application that menu belongs to
+// (the File Manager, as Finder on macOS) from the global menu facade's
+// read-only desktop-menu facts. A focused window always wins; there are no
+// window actions to offer in that state.
+//
+// AGENT-CONTRACT: both borrowed facades may be null and must otherwise
+// outlive this controller on the GUI thread. The global menu facade is read
+// only (desktopMenuShown/Title/IconName) and only when windows.read is
+// granted. This controller never sees compositor objects or window
+// identifiers other than the task facade's opaque task id.
 class ActiveApplicationController final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool available READ available NOTIFY stateChanged)
   Q_PROPERTY(QString phaseText READ phaseText NOTIFY stateChanged)
   Q_PROPERTY(bool hasActiveWindow READ hasActiveWindow NOTIFY stateChanged)
+  // True while no window is focused and the desktop menu stands for the
+  // desktop; applicationName/iconName then name its application.
+  Q_PROPERTY(bool desktopMenuShown READ desktopMenuShown NOTIFY stateChanged)
   Q_PROPERTY(QString title READ title NOTIFY stateChanged)
   Q_PROPERTY(QString applicationName READ applicationName NOTIFY stateChanged)
   Q_PROPERTY(QString applicationId READ applicationId NOTIFY stateChanged)
@@ -52,11 +67,13 @@ class ActiveApplicationController final : public QObject {
 public:
   ActiveApplicationController(ShellTaskListApplet::TaskListAppletController *taskList,
                               ActiveApplicationGrants grants,
+                              GlobalMenu::GlobalMenuAppletAccess *globalMenu = nullptr,
                               QObject *parent = nullptr);
 
   [[nodiscard]] bool available() const noexcept;
   [[nodiscard]] QString phaseText() const;
   [[nodiscard]] bool hasActiveWindow() const noexcept { return !m_row.isEmpty(); }
+  [[nodiscard]] bool desktopMenuShown() const;
   [[nodiscard]] QString title() const;
   [[nodiscard]] QString applicationName() const;
   [[nodiscard]] QString applicationId() const;
@@ -88,6 +105,7 @@ private:
   void publishFeedback(const QString &message);
 
   ShellTaskListApplet::TaskListAppletController *m_taskList = nullptr;
+  GlobalMenu::GlobalMenuAppletAccess *m_globalMenu = nullptr;
   ActiveApplicationGrants m_grants;
   QVariantMap m_row;
   QString m_feedback;

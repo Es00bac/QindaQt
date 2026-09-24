@@ -23,6 +23,17 @@ Item {
     implicitWidth: 32
     implicitHeight: 28
 
+    // ADR-0260: the desktop menu's "Show Clipboard History" asks the
+    // controller; the popup opens here, where it is placed and owned.
+    Connections {
+        target: root.available ? root.controller : null
+        ignoreUnknownSignals: true
+        function onOpenRequested() {
+            if (!historyPopup.opened)
+                historyPopup.open()
+        }
+    }
+
     ToolButton {
         id: summary
 

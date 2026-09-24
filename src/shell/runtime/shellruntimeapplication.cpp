@@ -12,10 +12,12 @@
 #include "smartlightsappletcomposition.h"
 #include "obsappletcomposition.h"
 #include "desktopcontrolscomposition.h"
+#include "desktopmenucomposition.h"
 #include "gatheroverviewcomposition.h"
 #include "gatheroverviewshortcut.h"
 #include "power_applet_controller.h"
 #include "qindaqt/shell/desktop_controls/desktop_controls_access.h"
+#include "qindaqt/shell/desktop_menu/desktop_surface_commands.h"
 #include "qindaqt/shell/desktop_surface/desktop_surface_controller.h"
 #include "globalmenuappletcomposition.h"
 #include "kglobalaccelshortcutregistrar.h"
@@ -451,6 +453,7 @@ void ShellRuntimeApplication::initializePanelVisibility(
 void ShellRuntimeApplication::initializeDesktopControls(
     std::optional<qint64> compositorProcessId)
 {
+    m_desktopSurfaceCommands = std::make_unique<DesktopMenu::DesktopSurfaceCommands>();
     // AGENT-GUARD: desktop controls borrow these applet facades. Construct
     // after them and destroy after panel windows, before any borrowed owner.
     m_desktopControls = std::make_unique<DesktopControlsComposition>(
@@ -461,7 +464,8 @@ void ShellRuntimeApplication::initializeDesktopControls(
             m_taskListApplet->access(), m_audioApplet->access(),
             m_bluetoothApplet->access(), m_powerApplet->access(),
             m_powerApplet->access() ? m_powerApplet->access()->sessionActions() : nullptr,
-            m_networkApplet->access()});
+            m_networkApplet->access(),
+            m_desktopSurfaceCommands.get()});
     QString desktopControlsError;
     if (!m_desktopControls->start(&desktopControlsError)) {
         qWarning().noquote() << "QindaQt shell could not start desktop controls:"
@@ -614,6 +618,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
     initializeWallpaper();
 
     initializeDesktopSurface(profile);
+    initializeDesktopMenu(profile);
 
     initializeAppearanceBridge(!options.themeId.isEmpty());
 
@@ -684,6 +689,8 @@ void ShellRuntimeApplication::resetRuntime()
 {
     m_outputDebounce.stop();
     m_profileAdoptDebounce.stop();
+    // The desktop menu borrows nearly everything below; it goes first.
+    m_desktopMenu.reset();
     m_wallpaper.reset();
     // Borrowed facades (desktop controls, launcher) are released further
     // down; the desktop surface must not outlive them (AGENT-GUARD on the
@@ -710,6 +717,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_backend.reset();
     m_windowFactory.reset();
     m_desktopControls.reset();
+    m_desktopSurfaceCommands.reset();
     m_statusNotifierApplet.reset();
     m_taskListApplet.reset();
     m_globalMenuApplet.reset();

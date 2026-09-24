@@ -232,6 +232,14 @@ Item {
         font.pixelSize: 12
     }
 
+    // ADR-0260: a shell-owned provider's confirmation (the desktop menu's
+    // Log Out…, Restart…, Shut Down…). It opens only while the facade holds
+    // an unanswered question that this renderer claimed.
+    GlobalMenuConfirmation {
+        access: root.access
+        theme: root.theme
+    }
+
     Item {
         id: nativeLayout
         objectName: root.vertical ? "globalMenuVerticalLayout"

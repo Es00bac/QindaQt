@@ -26,6 +26,8 @@ public:
   // note card. The note controller is QObject-parented to this controller and
   // must outlive `start()`; ownership is not transferred here.
   void setShortcutNote(ShortcutNoteController *note);
+  // The lent note (may be null); the desktop menu's Help toggles it.
+  [[nodiscard]] ShortcutNoteController *shortcutNote() const noexcept { return m_shortcutNote; }
 
 private:
   void applySnapshot();

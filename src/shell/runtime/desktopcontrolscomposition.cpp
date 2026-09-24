@@ -138,7 +138,8 @@ void DesktopControlsComposition::compose(
                 facades.taskList,
                 DesktopControls::ActiveApplicationGrants{
                     activeApplication.has(Capability::WindowRead),
-                    activeApplication.has(Capability::WindowManage)});
+                    activeApplication.has(Capability::WindowManage)},
+                facades.globalMenu);
     }
 
     const DesktopControls::CommandSearchController::Sources sources{
@@ -192,6 +193,7 @@ void DesktopControlsComposition::compose(
     // application launching; otherwise it lists no applications.
     exposed.launcher = dashboard.has(Capability::ApplicationLaunch) ? facades.launcher
                                                                      : nullptr;
+    exposed.desktopCommands = facades.desktopCommands;
     m_access = std::make_unique<DesktopControls::DesktopControlsAccess>(exposed);
 }
 
