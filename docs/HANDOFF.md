@@ -1,5 +1,15 @@
 # Integration handoff
 
+## September 24 — W6 screen saver preview integration
+
+Integrated `1f26b4da` (candidate `08a2b990`, accepted by luna-review-w6 on
+recheck) plus review records `aaa2c7ef`, on top of the W0 integration. The
+integrated tree builds in full; Settings (133/133), screensaver (6/6) and
+secret-agent (9/9) selections and validate-docs pass. Next: desktop package
+0.1.0_pre20260924-r1 (W0 + W6) on qinda-top through Portage, then a live
+Preview check (each saver and Blank; no lock screen; auto-lock still works
+afterwards).
+
 ## September 24 — W0 Wi-Fi secret agent integration
 
 Integrated `f02c5a0b` (candidate `35af19a6`, accepted by luna-review-w0 on the
