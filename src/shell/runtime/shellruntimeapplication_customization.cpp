@@ -4,13 +4,18 @@
 #include "kglobalaccelshortcutregistrar.h"
 #include "livecustomizationcontroller.h"
 #include "livecustomizationshortcut.h"
+#include "paneleditkeyboard.h"
 #include "runtimepanelwindowfactory.h"
 #include "settingsroutelauncher.h"
 
 #include "qindaqt/shell_surface/qt_output_inventory.h"
 
+#include <LayerShellQt/Window>
+
 #include <QDebug>
 #include <QDir>
+#include <QPointer>
+#include <QQuickWindow>
 #include <QStandardPaths>
 
 namespace QindaQt::Shell {
@@ -67,6 +72,24 @@ void ShellRuntimeApplication::initializeLiveCustomization(
             });
     if (m_windowFactory) {
         m_windowFactory->setLiveCustomization(m_liveCustomization.get());
+        // Edit mode's Escape (ADR-0266): panels ask for on-demand keyboard
+        // focus only while edit mode is on. Parented to the controller, so it
+        // never outlives it; the factory reaches it through a guarded pointer.
+        const QPointer<PanelEditKeyboard> keyboard = new PanelEditKeyboard(
+            *m_liveCustomization,
+            [](QWindow *window, bool wantsKeyboard) {
+                if (auto *layer = LayerShellQt::Window::get(window)) {
+                    layer->setKeyboardInteractivity(
+                        wantsKeyboard ? LayerShellQt::Window::KeyboardInteractivityOnDemand
+                                      : LayerShellQt::Window::KeyboardInteractivityNone);
+                }
+            },
+            m_liveCustomization.get());
+        m_windowFactory->setPanelWindowObserver([keyboard](QQuickWindow *window) {
+            if (keyboard) {
+                keyboard->attach(window);
+            }
+        });
     }
     // AGENT-NOTE: registration completes synchronously inside the shortcut's
     // constructor; the stack registrar may die at scope exit (note precedent).

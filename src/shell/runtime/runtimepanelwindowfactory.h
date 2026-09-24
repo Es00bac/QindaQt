@@ -11,6 +11,7 @@
 #include <QQuickWindow>
 #include <QVariantMap>
 
+#include <functional>
 #include <memory>
 
 class QQmlComponent;
@@ -122,6 +123,9 @@ public:
     void setPanelQuickConfig(QObject *access) noexcept;
     // Live customization controller (Meta+right-click menus, edit mode).
     void setLiveCustomization(QObject *access) noexcept;
+    // Called with every live panel window now and with each one created
+    // later (edit mode's Escape and keyboard policy attach through it).
+    void setPanelWindowObserver(std::function<void(QQuickWindow *)> observer);
 
 private:
     [[nodiscard]] bool ensureComponent(QString *error);
@@ -149,6 +153,7 @@ private:
     QObject *m_gatherOverviewAccess = nullptr;
     QObject *m_panelQuickConfig = nullptr;
     QObject *m_liveCustomization = nullptr;
+    std::function<void(QQuickWindow *)> m_windowObserver;
     std::unique_ptr<QQmlComponent> m_component;
 };
 

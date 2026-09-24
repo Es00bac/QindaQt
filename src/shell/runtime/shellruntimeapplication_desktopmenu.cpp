@@ -6,6 +6,7 @@
 #include "gatheroverviewcomposition.h"
 #include "globalmenuappletcomposition.h"
 #include "launcherappletcomposition.h"
+#include "livecustomizationcontroller.h"
 #include "settingsroutelauncher.h"
 #include "shortcutnotecontroller.h"
 #include "wallpapercontroller.h"
@@ -61,11 +62,22 @@ void ShellRuntimeApplication::initializeDesktopMenu(const Profiles::LayoutProfil
             }
         };
     }
+    // View > Edit Panels (ADR-0266): the live customization controller is
+    // destroyed after the desktop menu (resetRuntime()).
+    LiveCustomizationController *const panels = m_liveCustomization.get();
+    if (panels != nullptr) {
+        hooks.editingPanels = [panels] { return panels->editMode(); };
+        hooks.toggleEditPanels = [panels] { panels->toggleEditMode(); };
+    }
 
     m_desktopMenu = std::make_unique<DesktopMenuComposition>(DesktopMenuComposition::Borrowed{
         m_globalMenuApplet->access(), m_windowActionsClient.get(), controllers, std::move(hooks)});
     if (note && m_desktopMenu->targets() != nullptr) {
         connect(note.data(), &ShortcutNoteController::noteVisibleChanged, m_desktopMenu->targets(),
+                &ShellDesktopMenuTargets::notifyFactsChanged);
+    }
+    if (panels != nullptr && m_desktopMenu->targets() != nullptr) {
+        connect(panels, &LiveCustomizationController::editModeChanged, m_desktopMenu->targets(),
                 &ShellDesktopMenuTargets::notifyFactsChanged);
     }
     followDesktopMenuLayout(profile);

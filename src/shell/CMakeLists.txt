@@ -270,6 +270,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/livecustomizationmodel.h
         runtime/livecustomizationshortcut.cpp
         runtime/livecustomizationshortcut.h
+        runtime/paneleditkeyboard.cpp
+        runtime/paneleditkeyboard.h
         runtime/shellruntimeapplication_customization.cpp
         runtime/tasklistappletcomposition.h
         runtime/statusnotifierappletcomposition.cpp

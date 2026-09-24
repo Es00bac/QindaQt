@@ -743,7 +743,8 @@ as registrar residency, so ADR-0130 layouts never show it.
 **Contents.** "File Manager" (About This Computer, System Settings…,
 Keyboard Shortcuts…, Lock Screen, Log Out…, Suspend, Restart…, Shut Down…),
 File (New File Manager Window, New Folder, Find…), Edit (Paste, Select All,
-Show Clipboard History), View (Show Desktop, Gather Overview, Clean Up), Go
+Show Clipboard History), View (Show Desktop, Gather Overview, Clean Up, Edit
+Panels, which toggles panel edit mode, ADR-0266), Go
 (Home Folder, Desktop, Documents, Downloads, Music, Pictures, Videos,
 Computer), Window (the workspaces as one radio group), and Help (QindaQt Help,
 Keyboard Shortcuts). Menu titles and every entry backed by a File Manager
