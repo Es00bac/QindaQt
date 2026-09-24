@@ -279,6 +279,9 @@ DecorationChrome applyDecorationTheme(DecorationChrome chrome,
         chrome.titleBar = decoration.titleBarColor;
         chrome.titleBarInactive = decoration.titleBarInactiveColor.isValid()
             ? decoration.titleBarInactiveColor : decoration.titleBarColor;
+        // A document's authored bar is the weathered one it always was, even
+        // over a theme that paints its own bar clean (ADR-0268).
+        chrome.titleWorn = true;
     } else if (chrome.wornLuna() && document.titleMaterial.authored) {
         // A material document over a Luna theme paints the material, not the
         // theme's worn bar: the document owns the title surface.

@@ -3,6 +3,8 @@
 #include "qindaqt/themes/decoration_theme_spec.h"
 #include "qindaqt/themes/theme_spec.h"
 
+#include <QImage>
+#include <QPainter>
 #include <QTest>
 
 #include <algorithm>
@@ -51,6 +53,7 @@ private slots:
     void styleMetricsAndOptionsDriveTheLayout();
     void rollUpSitsAtTheInnerEndAndNeverOnAHandlebar();
     void containerOptionsResolveIntoTheContainerStyle();
+    void themeAuthoredBehaviourAndFinishResolve();
 };
 
 void DecorationTitleOptionTests::styleNamesMatchTheThemeAndSettingsTokens()
@@ -273,6 +276,70 @@ void DecorationTitleOptionTests::containerOptionsResolveIntoTheContainerStyle()
     preferences.containerButtonStyle = QStringLiteral("pills");
     preferences.containerButtonSpacing = QStringLiteral("roomy");
     QCOMPARE(resolveContainerStyle(plain, preferences).buttonSpacing, 0.0);
+}
+
+// ADR-0268: a theme may author its title double-click, a minimize that rolls
+// the window up to its icon, and a clean authored bar. The Appearance
+// double-click option still overrides, and defaults publish nothing new.
+void DecorationTitleOptionTests::themeAuthoredBehaviourAndFinishResolve()
+{
+    QindaQt::Themes::ThemeSpec theme;
+    theme.decoration.authored = true;
+    theme.decoration.buttonStyle = QStringLiteral("bevel");
+    theme.decoration.buttonPlacement = QStringLiteral("right");
+    theme.decoration.titleBarColor = QColor(QStringLiteral("#1f3c8c"));
+    theme.decoration.titleDoubleClick = QStringLiteral("roll-up");
+    theme.decoration.minimizeAction = QStringLiteral("roll-up");
+    theme.decoration.titleWear = false;
+    ChromePreferences preferences;
+    const auto chrome = resolveWindowChrome(theme, preferences);
+    QCOMPARE(chrome.titleDoubleClick, QStringLiteral("roll-up"));
+    QVERIFY(chrome.minimizeRollsUp);
+    QVERIFY(!chrome.titleWorn);
+    // Minimize's place holds the roll-up control, once, even with the
+    // roll-up button option shown too.
+    const QList<DecorationButtonKind> iconify{DecorationButtonKind::RollUp,
+                                              DecorationButtonKind::Maximize,
+                                              DecorationButtonKind::Close};
+    QCOMPARE(decorationButtonKinds(chrome), iconify);
+    preferences.windowRollUpButton = QStringLiteral("shown");
+    QCOMPARE(decorationButtonKinds(resolveWindowChrome(theme, preferences)), iconify);
+    // The user's double-click choice wins over the theme's.
+    preferences.windowTitleDoubleClick = QStringLiteral("maximize");
+    QCOMPARE(resolveWindowChrome(theme, preferences).titleDoubleClick,
+             QStringLiteral("maximize"));
+
+    // The published map carries all three, and only when authored.
+    const auto decoded = DecorationChrome::fromVariantMap(chrome.toVariantMap());
+    QCOMPARE(decoded.titleDoubleClick, QStringLiteral("roll-up"));
+    QVERIFY(decoded.minimizeRollsUp);
+    QVERIFY(!decoded.titleWorn);
+    const auto plainMap =
+        DecorationChrome::fromTheme(QindaQt::Themes::ThemeSpec{}).toVariantMap();
+    QVERIFY(!plainMap.contains(QStringLiteral("titleDoubleClick")));
+    QVERIFY(!plainMap.contains(QStringLiteral("minimizeRollsUp")));
+    QVERIFY(!plainMap.contains(QStringLiteral("titleWorn")));
+    QVERIFY(DecorationChrome::fromVariantMap({}).titleWorn);
+
+    // A clean authored bar is one flat fill of its color; the weathered one
+    // shades from a lighter top to a darker foot (ADR-0124).
+    DecorationFrameVisual frame;
+    frame.size = QSizeF(300.0, 120.0);
+    const auto paintTitle = [&frame](const DecorationChrome &painted) {
+        QImage image(frame.size.toSize(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        paintDecorationTitle(painter, painted, frame);
+        painter.end();
+        return image;
+    };
+    const QImage clean = paintTitle(chrome);
+    QCOMPARE(clean.pixelColor(150, 6).name(), QStringLiteral("#1f3c8c"));
+    QCOMPARE(clean.pixelColor(150, 18).name(), QStringLiteral("#1f3c8c"));
+    auto weatheredChrome = chrome;
+    weatheredChrome.titleWorn = true;
+    const QImage weathered = paintTitle(weatheredChrome);
+    QVERIFY(weathered.pixelColor(150, 4) != weathered.pixelColor(150, 20));
 }
 
 QTEST_MAIN(DecorationTitleOptionTests)

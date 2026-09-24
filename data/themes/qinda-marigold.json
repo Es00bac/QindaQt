@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-marigold",
+  "name": "Qinda Marigold",
+  "variant": "light",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Noto Sans",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 3,
+  "motionDuration": 130,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#CFCFCA",
+    "surface": "#DCDCD8",
+    "surfaceRaised": "#F4F3EF",
+    "border": "#8E8C84",
+    "text": "#1B1B18",
+    "textMuted": "#45443F",
+    "accent": "#2F62B5",
+    "accentText": "#FFFFFF",
+    "danger": "#B3261E"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "tab",
+    "hoverGlyphs": false,
+    "titleBarColor": "#F6C02B",
+    "titleBarInactiveColor": "#DDD8CB",
+    "closeColor": "#B3261E",
+    "minimizeColor": "#8E6A00",
+    "maximizeColor": "#4A7A3A",
+    "titleDoubleClick": "roll-up",
+    "titleWear": false
+  },
+  "radii": {
+    "decoration": 2
+  }
+}

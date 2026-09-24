@@ -23,6 +23,8 @@ T.Menu {
     property Item anchorTile: null
 
     readonly property string kind: String(row.kind ?? "")
+    // A permanent end (ADR-0268) is never grouped, moved, or removed.
+    readonly property bool fixed: Boolean(row.fixed)
 
     signal openRequested()
     signal openNewWindowRequested()
@@ -65,10 +67,12 @@ T.Menu {
         text: qsTr("Empty Trash…")
         onTriggered: menu.emptyTrashRequested()
     }
-    T.MenuSeparator {}
+    T.MenuSeparator {
+        visible: !menu.fixed
+    }
     DockMenuItem {
         objectName: "quickLaunchNewGroup"
-        visible: menu.kind === "application"
+        visible: menu.kind === "application" && !menu.fixed
         text: qsTr("New Group…")
         onTriggered: menu.newGroupRequested()
     }
@@ -86,18 +90,21 @@ T.Menu {
     }
     DockMenuItem {
         objectName: "quickLaunchMoveUp"
+        visible: !menu.fixed
         text: menu.vertical ? qsTr("Move up") : qsTr("Move left")
         enabled: menu.visualIndex > 0
         onTriggered: menu.moveRequested(-1)
     }
     DockMenuItem {
         objectName: "quickLaunchMoveDown"
+        visible: !menu.fixed
         text: menu.vertical ? qsTr("Move down") : qsTr("Move right")
         enabled: menu.visualIndex >= 0 && menu.visualIndex < menu.visualCount - 1
         onTriggered: menu.moveRequested(1)
     }
     DockMenuItem {
         objectName: "quickLaunchUnpin"
+        visible: !menu.fixed
         text: qsTr("Remove from Dock")
         onTriggered: menu.removeRequested()
     }

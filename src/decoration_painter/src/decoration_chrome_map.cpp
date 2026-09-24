@@ -93,6 +93,9 @@ DecorationChrome DecorationChrome::fromVariantMap(const QVariantMap &map)
                                     {QStringLiteral("maximize"), QStringLiteral("roll-up"),
                                      QStringLiteral("minimize")},
                                     {});
+    // Theme-authored behaviour and finish (ADR-0268).
+    chrome.minimizeRollsUp = map.value(QStringLiteral("minimizeRollsUp")).toBool();
+    chrome.titleWorn = map.value(QStringLiteral("titleWorn"), true).toBool();
     return chrome;
 }
 
@@ -180,6 +183,13 @@ QVariantMap DecorationChrome::toVariantMap() const
     }
     if (!titleDoubleClick.isEmpty()) {
         map.insert(QStringLiteral("titleDoubleClick"), titleDoubleClick);
+    }
+    // Theme-authored behaviour and finish (ADR-0268), omitted at defaults.
+    if (minimizeRollsUp) {
+        map.insert(QStringLiteral("minimizeRollsUp"), true);
+    }
+    if (!titleWorn) {
+        map.insert(QStringLiteral("titleWorn"), false);
     }
     return map;
 }

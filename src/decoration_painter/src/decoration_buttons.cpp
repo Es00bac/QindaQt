@@ -128,8 +128,14 @@ QList<DecorationButtonKind> decorationButtonKinds(const DecorationChrome &chrome
             kinds.removeAll(DecorationButtonKind::Maximize);
         }
     }
+    // ADR-0268: a theme whose minimize iconifies shows the roll-up control
+    // (the ADR-0203 roll-up to the icon) in minimize's place, once.
+    if (chrome.minimizeRollsUp) {
+        std::replace(kinds.begin(), kinds.end(), DecorationButtonKind::Minimize,
+                     DecorationButtonKind::RollUp);
+    }
     // ADR-0264: roll-up sits at the cluster's inner end, away from close.
-    if (chrome.rollUpButton) {
+    if (chrome.rollUpButton && !kinds.contains(DecorationButtonKind::RollUp)) {
         if (right) {
             kinds.prepend(DecorationButtonKind::RollUp);
         } else {

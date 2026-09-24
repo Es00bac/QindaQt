@@ -55,6 +55,12 @@ class QuickLaunchController final : public QObject {
   Q_PROPERTY(bool editable READ editable NOTIFY stateChanged)
   Q_PROPERTY(bool trashInDock READ trashInDock NOTIFY stateChanged)
   Q_PROPERTY(QStringList claimedTaskIds READ claimedTaskIds NOTIFY stateChanged)
+  // ADR-0268: the Mac-style dock's permanent ends. A quick-launch instance
+  // whose profile setting `items` is "file-manager" or "trash" shows one of
+  // these rows instead of dock items. Neither is stored in the dock value:
+  // their `index` is -1 and `fixed` is true, so nothing moves or removes them.
+  Q_PROPERTY(QVariantMap fileManagerRow READ fileManagerRow NOTIFY stateChanged)
+  Q_PROPERTY(QVariantMap trashRow READ trashRow CONSTANT)
   Q_PROPERTY(bool feedbackPresent READ feedbackPresent NOTIFY feedbackChanged)
   Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
 
@@ -105,10 +111,16 @@ public:
   [[nodiscard]] bool launchGranted() const noexcept { return m_launchGranted; }
   [[nodiscard]] bool editable() const;
   [[nodiscard]] bool trashInDock() const noexcept { return m_trashInDock; }
-  // Task ids of windows a top-level pinned application tile represents. A
-  // dock host hides these task tiles ("one icon per app"); group members
-  // keep their task tiles.
+  // Task ids of windows a top-level pinned application tile represents, and
+  // the File Manager's while a permanent File Manager tile is shown. A dock
+  // host hides these task tiles ("one icon per app"); group members keep
+  // their task tiles.
   [[nodiscard]] QStringList claimedTaskIds() const { return m_claimedTaskIds; }
+  // The File Manager as a permanent tile (an application row with index -1
+  // and fixed true); empty until the launcher catalog names it.
+  [[nodiscard]] QVariantMap fileManagerRow() const { return m_fileManagerRow; }
+  // The Trash as a permanent tile (a trash row with index -1 and fixed true).
+  [[nodiscard]] QVariantMap trashRow() const;
   [[nodiscard]] bool feedbackPresent() const noexcept { return !m_feedback.isEmpty(); }
   [[nodiscard]] QString feedback() const { return m_feedback; }
 
@@ -124,6 +136,13 @@ public:
   // A bounded listing of the pinned folder at index for its stack popup:
   // rows {name, path, isDirectory, iconName, device, inode}.
   Q_INVOKABLE QVariantList folderEntries(int index);
+  // Opens the home Trash in the File Manager: the permanent Trash tile, and
+  // a stored Trash item through openInFileManager.
+  Q_INVOKABLE bool openTrash();
+  // A permanent File Manager tile says it is shown (true) or gone (false),
+  // counted across outputs. While any is shown, the File Manager's windows
+  // are claimed like a pinned application's.
+  Q_INVOKABLE void holdFileManagerEnd(bool shown);
   // Opens one row folderEntries returned.
   Q_INVOKABLE bool openFolderEntry(const QVariantMap &entry);
   Q_INVOKABLE bool emptyTrash();
@@ -190,6 +209,8 @@ private:
   QVariantList m_rows;
   QVariantList m_applicationRows;
   QStringList m_claimedTaskIds;
+  QVariantMap m_fileManagerRow;
+  int m_fileManagerEnds = 0;
   QHash<QString, QList<RunningWindow>> m_running;
   bool m_trashInDock = false;
   // What the last stateChanged published besides the rows; -1 forces the

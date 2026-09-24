@@ -188,9 +188,10 @@ void AppearancePreviewTests::userDirectoryMergesWithoutHidingBuiltIns()
          QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes")},
         &error);
     QVERIFY2(merged.has_value(), qPrintable(error));
-    // Six schema v1 themes plus the six schema v2 themes (ADR-0206); the
-    // user copy of qinda-macos shadows the shipped one, never duplicates it.
-    QCOMPARE(merged->size(), 12);
+    // Six schema v1 themes, the six schema v2 themes (ADR-0206) and the four
+    // desktop-experience themes (ADR-0268); the user copy of qinda-macos
+    // shadows the shipped one, never duplicates it.
+    QCOMPARE(merged->size(), 16);
     QSet<QString> ids;
     for (const ThemeSpec &theme : *merged) {
         ids.insert(theme.id);

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "macos-inspired",
   "name": "Menu and Dock",
-  "description": "A 24-pixel global menu bar across the top and a centred dock whose painted shelf hugs only the tiles it holds, hiding itself when a window needs the room. Desktop icons sit on the right.",
+  "description": "A 24-pixel global menu bar across the top and a centred dock whose painted shelf hugs only the tiles it holds, hiding itself when a window needs the room. The File Manager always leads the dock and the Trash always ends it. Desktop icons sit on the right.",
   "defaultTheme": "qinda-macos",
   "workflow": {
     "overview": "expose",
@@ -10,7 +10,8 @@
     "launcher": "center-dock",
     "menu": "global",
     "taskList": "dock-indicators",
-    "globalMenu": true
+    "globalMenu": true,
+    "fileManager": "finder"
   },
   "panels": [
     {
@@ -30,9 +31,11 @@
       "id": "dock", "edge": "bottom", "layer": "overlay", "hideMode": "intelligent",
       "alignment": "center", "rows": 1, "thickness": 72, "length": 1.0,
       "applets": [
+        {"id": "file-manager", "plugin": "quick-launch", "settings": {"zone": "center", "dockMode": true, "items": "file-manager"}},
         {"id": "applications", "plugin": "launcher", "settings": {"zone": "center", "dockMode": true}},
-        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center", "dockMode": true}},
-        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "dockMode": true}}
+        {"id": "pins", "plugin": "quick-launch", "settings": {"zone": "center", "dockMode": true, "items": "others"}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "dockMode": true}},
+        {"id": "trash", "plugin": "quick-launch", "settings": {"zone": "center", "dockMode": true, "items": "trash"}}
       ]
     }
   ],

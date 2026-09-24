@@ -701,7 +701,7 @@ void AppearancePageTests::windowsDestinationPreviewsBothChromeSetsAndForwardsCho
 {
     QTest::addColumn<QString>("themeId");
     QTest::newRow("traffic-light-decoration") << QStringLiteral("qinda-dusk");
-    QTest::newRow("glyph-decoration") << QStringLiteral("qinda-bliss");
+    QTest::newRow("glyph-decoration") << QStringLiteral("qinda-dark");
 }
 
 void AppearancePageTests::windowsDestinationPreviewsBothChromeSetsAndForwardsChoices()

@@ -349,10 +349,10 @@ void AppletInstanceResolverTests::stockProfilesPlaceOneResolvedLauncher()
     QVERIFY2(profiles.loadDirectory(
                  QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
              qPrintable(error));
-    // One stock profile per distinct feel: Bliss, Centered Taskbar, Minimal,
-    // macOS, XFCE, Unity, GNOME overview, NeXT dock, and the QindaQt
-    // signature layout.
-    QCOMPARE(profiles.profiles().size(), 9);
+    // One stock profile per distinct feel: Classic Taskbar, Centered Taskbar,
+    // Minimal, Menu and Dock, XFCE, Unity, GNOME overview, NeXT dock, Corner
+    // Bar, Program Groups (ADR-0268), and the QindaQt signature layout.
+    QCOMPARE(profiles.profiles().size(), 11);
 
     for (const auto &profile : profiles.profiles()) {
         // AGENT-NOTE: the menu slot is the launcher by default, but the Bliss

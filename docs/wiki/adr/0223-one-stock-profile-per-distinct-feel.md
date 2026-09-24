@@ -92,3 +92,7 @@ taskbar.
 
 `docs/wiki/handbook/catalog/assets.md` still records eleven profiles: it is an
 explicit snapshot at a named commit, not a live mirror, and is left as written.
+
+[ADR-0268](0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)
+adds Corner Bar (`beos-inspired`) and Program Groups (`win31-inspired`), each
+with a theme of its own, for eleven stock profiles.

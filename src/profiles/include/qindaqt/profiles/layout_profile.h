@@ -42,6 +42,13 @@ struct WorkflowSpec {
     QString menu = QStringLiteral("global");
     QString taskList = QStringLiteral("grouped");
     bool globalMenu = true;
+    // The File Manager arrangement the layout's experience expects: "finder",
+    // "explorer", or "commander" (ADR-0268). A hint like the others; a value
+    // a consumer does not know means the default, Finder.
+    // AGENT-CONTRACT: placeholder for W11s. The File Manager's style setting
+    // (ADR-0271) uses the selected layout's hint as its default until the
+    // user picks a style; nothing reads it before W11s lands.
+    QString fileManager = QStringLiteral("finder");
 
     [[nodiscard]] QVariantMap toVariantMap() const;
 };

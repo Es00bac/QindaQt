@@ -438,7 +438,8 @@ ProfileValidationResult ProfileValidator::validate(const LayoutProfile &profile)
                           {&profile.workflow.workspacePolicy, "workspacePolicy"},
                           {&profile.workflow.launcher, "launcher"},
                           {&profile.workflow.menu, "menu"},
-                          {&profile.workflow.taskList, "taskList"}};
+                          {&profile.workflow.taskList, "taskList"},
+                          {&profile.workflow.fileManager, "fileManager"}};
     for (const auto &entry : workflowValues) {
         if (!isNonBlank(*entry.value)) {
             return failure(ProfileErrorCode::InvalidValue,

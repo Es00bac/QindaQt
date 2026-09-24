@@ -36,13 +36,29 @@ void ShellCaptureTest::capturesRequiredResolution_data()
     QTest::newRow("qinda-bliss-1080p") << QSize(1920, 1080)
                                        << QStringLiteral("qinda-bliss")
                                        << QStringLiteral("qinda-bliss");
+    // ADR-0268: each desktop experience with the theme it pairs with (Menu
+    // and Dock and Classic Taskbar are the two rows above).
+    const struct {
+        const char *profile;
+        const char *theme;
+    } experiences[] = {{"windows-modern", "qinda-daylight"},
+                       {"beos-inspired", "qinda-marigold"},
+                       {"win31-inspired", "qinda-classic-grey"},
+                       {"nextstep-inspired", "qinda-graphite"}};
+    for (const auto &experience : experiences) {
+        const QByteArray tag = QByteArray("experience-") + experience.profile;
+        QTest::newRow(tag.constData()) << QSize(1920, 1080)
+                                       << QString::fromLatin1(experience.profile)
+                                       << QString::fromLatin1(experience.theme);
+    }
     // Dispatcher/layout changes affect every preset, including side panels
     // and legacy controls migrated into compiled applets.
     const QStringList otherProfiles{
         QStringLiteral("gnome-inspired"), QStringLiteral("minimal"),
         QStringLiteral("nextstep-inspired"), QStringLiteral("unity-inspired"),
         QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired"),
-        QStringLiteral("qinda-bliss")};
+        QStringLiteral("qinda-bliss"), QStringLiteral("beos-inspired"),
+        QStringLiteral("win31-inspired")};
     for (const auto &preset : otherProfiles) {
         QTest::newRow(qPrintable(preset)) << QSize(1920, 1080) << preset
                                         << QStringLiteral("qinda-dark");
@@ -55,7 +71,8 @@ void ShellCaptureTest::capturesRequiredResolution_data()
         QStringLiteral("gnome-inspired"), QStringLiteral("minimal"),
         QStringLiteral("nextstep-inspired"), QStringLiteral("unity-inspired"),
         QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired"),
-        QStringLiteral("qinda-bliss")};
+        QStringLiteral("qinda-bliss"), QStringLiteral("beos-inspired"),
+        QStringLiteral("win31-inspired")};
     for (const auto *theme : {"qinda-glass-dark", "qinda-paper"}) {
         for (const auto &preset : everyProfile) {
             const QByteArray tag = QByteArray(theme) + '-' + preset.toLatin1();

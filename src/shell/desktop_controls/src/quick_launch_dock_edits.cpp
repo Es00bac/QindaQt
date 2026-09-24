@@ -247,14 +247,29 @@ bool QuickLaunchController::openInFileManager(int index)
     return false;
   }
   const DockItem item = items->items().at(index);
-  if (item.kind != DockItemKind::Folder && item.kind != DockItemKind::Trash) {
+  if (item.kind == DockItemKind::Trash)
+    return openTrash();
+  if (item.kind != DockItemKind::Folder) {
     publishFeedback(QStringLiteral("That item is not a folder"));
     return false;
   }
-  const QString path = item.kind == DockItemKind::Trash ? m_paths->trashFilesDirectory()
-                                                        : item.path;
-  if (item.kind == DockItemKind::Trash
-      && m_paths->classify(path) != DockPathPort::PathKind::Directory) {
+  const FolderOpener::Result opened = m_paths->openFolder(item.path);
+  if (!opened.ok) {
+    publishFeedback(QStringLiteral("Could not open the folder: %1").arg(opened.diagnostic));
+    return false;
+  }
+  clearFeedback();
+  return true;
+}
+
+bool QuickLaunchController::openTrash()
+{
+  if (m_paths == nullptr) {
+    publishFeedback(QStringLiteral("Opening folders is unavailable"));
+    return false;
+  }
+  const QString path = m_paths->trashFilesDirectory();
+  if (m_paths->classify(path) != DockPathPort::PathKind::Directory) {
     // The Trash folder appears on first use; before that it is simply empty.
     publishFeedback(QStringLiteral("The Trash is empty"));
     return false;

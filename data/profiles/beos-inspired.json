@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "beos-inspired",
+  "name": "Corner Bar",
+  "description": "One compact bar holds the top-right corner: the applications menu, a button for every running application, the status area, the tray, and the clock. Menus stay in their windows and desktop icons sit on the right. Its Qinda Marigold theme gives every window a yellow title tab that rolls the window up to its icon when double-clicked.",
+  "defaultTheme": "qinda-marigold",
+  "workflow": {
+    "overview": "disabled",
+    "workspacePolicy": "static",
+    "launcher": "corner-menu",
+    "menu": "window-local",
+    "taskList": "grouped",
+    "globalMenu": false,
+    "fileManager": "finder"
+  },
+  "panels": [
+    {
+      "id": "corner-bar", "edge": "top", "layer": "above", "hideMode": "never",
+      "alignment": "end", "rows": 1, "thickness": 32, "length": 0.5,
+      "applets": [
+        {"id": "applications", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "grouping": "always"}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
+      ]
+    }
+  ],
+  "desktop": {
+    "applets": [
+      {
+        "id": "desktop-icons",
+        "plugin": "desktop-icons",
+        "settings": {"placement": "right", "contextMenuStyle": "traditional"}
+      }
+    ]
+  }
+}

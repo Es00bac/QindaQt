@@ -52,9 +52,11 @@ target_sources(
 # AGENT-CONTRACT: this target consumes only the public facades of the applets
 # it aggregates plus the workspace controller, and (ADR-0265, the dock's
 # folders, files, and Trash) the File Manager's isolated local-files boundary
-# behind FileManagerDockPaths. It must never link a service client, a D-Bus
-# transport, KWin, LayerShellQt, or the shell runtime; the boundary test in
-# tests/shell/desktop_controls enforces the include set.
+# behind FileManagerDockPaths, and (ADR-0268, the dock's permanent File
+# Manager tile) the File Manager's pure-value menu catalog for its entry id.
+# It must never link a service client, a D-Bus transport, KWin, LayerShellQt,
+# or the shell runtime; the boundary test in tests/shell/desktop_controls
+# enforces the include set.
 target_link_libraries(
     qindaqt_shell_desktop_controls
     PUBLIC
@@ -75,6 +77,7 @@ target_link_libraries(
         # qindaqt_file_manager_support (AppShell/KIO would ride into the
         # shell; see src/shell/desktop_surface/CMakeLists.txt).
         qindaqt_file_manager_desktop_boundary
+        qindaqt_file_manager_menu_catalog
 )
 target_compile_features(qindaqt_shell_desktop_controls PUBLIC cxx_std_20)
 set_target_properties(qindaqt_shell_desktop_controls PROPERTIES CXX_EXTENSIONS OFF)
