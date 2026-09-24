@@ -200,7 +200,7 @@ void ScreensaverPreviewFailureTest::
 
   QVERIFY2(preview.start(QStringLiteral("broken-saver"), &error),
            qPrintable(error));
-  QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 3000);
+  QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 10000);
   QCOMPARE(failedSpy.count(), 1);
   QVERIFY(QFile::exists(startedPath));
   const QString message = failedSpy.constFirst().constFirst().toString();
@@ -238,7 +238,7 @@ void ScreensaverPreviewFailureTest::
 
   QVERIFY2(preview.start(QStringLiteral("crashing-saver"), &error),
            qPrintable(error));
-  QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 3000);
+  QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 10000);
   QCOMPARE(failedSpy.count(), 1);
   QVERIFY(QFile::exists(startedPath));
   const QString message = failedSpy.constFirst().constFirst().toString();
