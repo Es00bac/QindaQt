@@ -24,11 +24,6 @@ QStringList resolveApplicationDataRoots() {
   }
   return roots;
 }
-
-QString resolveMimeAppsListPath() {
-  return QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
-      .filePath(QStringLiteral("mimeapps.list"));
-}
 } // namespace
 
 class DefaultApplicationsRouteComposition::Private final {
@@ -55,17 +50,8 @@ public:
   }
 
   std::unique_ptr<DefaultApplicationsStore> makeStore(const QStringList &scanRoots) {
-    const QStringList configRoots =
-        QStandardPaths::standardLocations(QStandardPaths::GenericConfigLocation);
-    const QStringList desktops = qEnvironmentVariable("XDG_CURRENT_DESKTOP")
-                                     .split(QLatin1Char(':'), Qt::SkipEmptyParts);
-    QStringList userDesktopPaths = defaultApplicationsLookupPaths(
-        {QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)},
-        {}, desktops);
-    userDesktopPaths.removeLast(); // The generic user file is the normal write target.
-    mimeLookupPaths = defaultApplicationsLookupPaths(configRoots, scanRoots, desktops);
-    return std::make_unique<MimeAppsDefaultApplicationsStore>(
-        resolveMimeAppsListPath(), mimeLookupPaths, scan, userDesktopPaths);
+    // ADR-0269: one composition, shared with File Manager's Open With.
+    return createSessionDefaultApplicationsStore(scanRoots, scan, &mimeLookupPaths);
   }
 
   void refresh() {

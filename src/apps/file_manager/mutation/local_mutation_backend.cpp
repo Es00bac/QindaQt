@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <utility>
+
 namespace QindaQt::Apps::FileManager {
 namespace {
 
@@ -120,12 +122,25 @@ namespace {
   return token && token->load(std::memory_order_relaxed);
 }
 
+// New Folder's and New File's undo: the created item goes to Trash.
+[[nodiscard]] std::shared_ptr<MutationRequest> trashUndo(const MutationResult &created,
+                                                         const QStringList &roots) {
+  auto undo = std::make_shared<MutationRequest>();
+  undo->kind = MutationKind::Trash;
+  undo->sourcePath = created.outputPath;
+  undo->declaredRoots = roots;
+  undo->expectedSource = created.outputIdentity;
+  return undo;
+}
+
 } // namespace
 
 LocalMutationBackend::LocalMutationBackend(QString homeTrashRoot,
-                                           DeviceResolverPtr deviceResolver)
+                                           DeviceResolverPtr deviceResolver,
+                                           ArchiveCodecPtr archives)
     : m_deviceResolver(deviceResolver),
-      m_homeTrash(std::move(homeTrashRoot), std::move(deviceResolver)) {}
+      m_homeTrash(std::move(homeTrashRoot), std::move(deviceResolver)),
+      m_archives(std::move(archives)) {}
 
 std::optional<FileIdentity>
 LocalMutationBackend::identityForPath(const QString &path) {
@@ -166,6 +181,16 @@ MutationResult LocalMutationBackend::execute(
     return m_homeTrash.restore(request);
   case MutationKind::EmptyTrash:
     return m_homeTrash.empty(cancellation, progress);
+  case MutationKind::CreateFile:
+    return createFile(request);
+  case MutationKind::Link:
+    return link(request);
+  case MutationKind::Delete:
+    return remove(request, cancellation, progress);
+  case MutationKind::Compress:
+    return compress(request, cancellation, progress);
+  case MutationKind::Extract:
+    return extract(request, cancellation, progress);
   }
   return failure(MutationError::Unsupported, QStringLiteral("Unsupported operation"));
 }
@@ -185,12 +210,7 @@ MutationResult LocalMutationBackend::createFolder(const MutationRequest &request
     return result;
   }
   result.outputIdentity = identityForPath(result.outputPath);
-  auto undo = std::make_shared<MutationRequest>();
-  undo->kind = MutationKind::Trash;
-  undo->sourcePath = result.outputPath;
-  undo->declaredRoots = request.declaredRoots;
-  undo->expectedSource = result.outputIdentity;
-  result.undoRequest = std::move(undo);
+  result.undoRequest = trashUndo(result, request.declaredRoots);
   return result;
 }
 
@@ -298,6 +318,156 @@ MutationResult LocalMutationBackend::copy(
   if (result.ok()) {
     result.outputIdentity = identityForPath(result.outputPath);
   }
+  return result;
+}
+
+MutationResult LocalMutationBackend::createFile(const MutationRequest &request) {
+  if (const auto valid = validatePath(request.destinationPath, request.declaredRoots, true);
+      !valid.ok()) {
+    return valid;
+  }
+  const QString parent = QFileInfo(request.destinationPath).absolutePath();
+  if (const auto identity = verifyIdentity(parent, request.expectedParent); !identity.ok()) {
+    return identity;
+  }
+  MutationResult result = createLocalFileNoFollow(request.destinationPath, *request.expectedParent);
+  if (!result.ok()) {
+    return result;
+  }
+  result.outputIdentity = identityForPath(result.outputPath);
+  result.undoRequest = trashUndo(result, request.declaredRoots);
+  return result;
+}
+
+MutationResult LocalMutationBackend::link(const MutationRequest &request) {
+  if (const auto valid = validatePath(request.destinationPath, request.declaredRoots, true);
+      !valid.ok()) {
+    return valid;
+  }
+  // AGENT-GUARD: a link is made beside the item it names and points at that
+  // sibling by name, so it keeps working when the folder moves; anything
+  // else is a malformed request, never a link to an arbitrary target.
+  const QString parent = QFileInfo(request.destinationPath).absolutePath();
+  if (QFileInfo(request.sourcePath).absolutePath() != parent ||
+      request.linkTarget != QFileInfo(request.sourcePath).fileName()) {
+    return failure(MutationError::InvalidRequest,
+                   QStringLiteral("A link is made beside the item it points to"));
+  }
+  if (const auto identity = verifyIdentity(request.sourcePath, request.expectedSource);
+      !identity.ok()) {
+    return identity;
+  }
+  if (const auto identity = verifyIdentity(parent, request.expectedParent); !identity.ok()) {
+    return identity;
+  }
+  MutationResult result = createLocalSymlinkNoFollow(request.destinationPath,
+                                                     request.linkTarget, *request.expectedParent);
+  if (result.ok()) {
+    result.outputIdentity = identityForPath(result.outputPath);
+  }
+  return result;
+}
+
+MutationResult LocalMutationBackend::remove(const MutationRequest &request,
+                                            const MutationCancellation &cancellation,
+                                            const MutationProgressCallback &progress) {
+  // The item itself may be a link, removed as the link; no folder above it
+  // may be one.
+  const QString parent = QFileInfo(request.sourcePath).absolutePath();
+  if (const auto valid = validatePath(parent, request.declaredRoots, false); !valid.ok()) {
+    return valid;
+  }
+  if (!request.expectedSource || !request.expectedSource->valid()) {
+    return failure(MutationError::InvalidRequest,
+                   QStringLiteral("The operation has no valid identity precondition"));
+  }
+  MutationResult result = deleteLocalTreeNoFollow(request.sourcePath, *request.expectedSource,
+                                                  cancellation, progress);
+  if (result.ok()) {
+    // Deleting an item of the home Trash leaves no orphaned record behind.
+    m_homeTrash.forgetPayload(request.sourcePath);
+    result.outputPath = request.sourcePath;
+  }
+  return result;
+}
+
+MutationResult LocalMutationBackend::compress(const MutationRequest &request,
+                                              const MutationCancellation &cancellation,
+                                              const MutationProgressCallback &progress) {
+  if (!m_archives) {
+    return failure(MutationError::Unsupported, QStringLiteral("Compressing is not available here"));
+  }
+  if (request.archiveSources.isEmpty() ||
+      request.archiveSources.size() != request.archiveSourceIdentities.size()) {
+    return failure(MutationError::InvalidRequest, QStringLiteral("There is nothing to compress"));
+  }
+  for (qsizetype index = 0; index < request.archiveSources.size(); ++index) {
+    const QString &source = request.archiveSources.at(index);
+    if (const auto valid = validatePath(source, request.declaredRoots, false); !valid.ok()) {
+      return valid;
+    }
+    if (const auto identity = verifyIdentity(source, request.archiveSourceIdentities.at(index));
+        !identity.ok()) {
+      return identity;
+    }
+    if (containsPath(source, request.destinationPath)) {
+      return failure(MutationError::InvalidRequest,
+                     QStringLiteral("An archive cannot be written inside what it holds"));
+    }
+  }
+  if (const auto valid = validatePath(request.destinationPath, request.declaredRoots, true);
+      !valid.ok()) {
+    return valid;
+  }
+  const QString parent = QFileInfo(request.destinationPath).absolutePath();
+  if (const auto identity = verifyIdentity(parent, request.expectedParent); !identity.ok()) {
+    return identity;
+  }
+  MutationResult result = m_archives->compress(request.archiveSources, request.destinationPath,
+                                               *request.expectedParent, cancellation, progress);
+  if (result.ok()) {
+    result.outputPath = request.destinationPath;
+    result.outputIdentity = identityForPath(request.destinationPath);
+  }
+  return result;
+}
+
+MutationResult LocalMutationBackend::extract(const MutationRequest &request,
+                                             const MutationCancellation &cancellation,
+                                             const MutationProgressCallback &progress) {
+  if (!m_archives) {
+    return failure(MutationError::Unsupported, QStringLiteral("Extracting is not available here"));
+  }
+  for (const auto &[path, mayBeMissing] :
+       {std::pair{request.sourcePath, false}, std::pair{request.destinationPath, true}}) {
+    if (const auto valid = validatePath(path, request.declaredRoots, mayBeMissing); !valid.ok()) {
+      return valid;
+    }
+  }
+  if (const auto identity = verifyIdentity(request.sourcePath, request.expectedSource);
+      !identity.ok()) {
+    return identity;
+  }
+  const QString parent = QFileInfo(request.destinationPath).absolutePath();
+  if (const auto identity = verifyIdentity(parent, request.expectedParent); !identity.ok()) {
+    return identity;
+  }
+  if (const auto created = createLocalDirectoryNoFollow(request.destinationPath,
+                                                        *request.expectedParent);
+      !created.ok()) {
+    return created;
+  }
+  MutationResult result = m_archives->extract(request.sourcePath, *request.expectedSource,
+                                              request.destinationPath, cancellation, progress);
+  if (!result.ok()) {
+    // AGENT-GUARD: only the folder this request itself just created is
+    // removed, so a failed or cancelled Extract leaves nothing half-done.
+    const bool removedPartial = removeLocalTreeNoFollow(request.destinationPath);
+    Q_UNUSED(removedPartial);
+    return result;
+  }
+  result.outputPath = request.destinationPath;
+  result.outputIdentity = identityForPath(request.destinationPath);
   return result;
 }
 

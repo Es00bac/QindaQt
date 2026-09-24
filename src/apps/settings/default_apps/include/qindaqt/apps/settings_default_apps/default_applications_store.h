@@ -9,6 +9,7 @@
 #include <QtCore/QStringList>
 
 #include <array>
+#include <memory>
 
 namespace QindaQt::Apps::SettingsDefaultApps {
 
@@ -72,6 +73,17 @@ struct DefaultApplicationPreferences final {
   void setCategory(DefaultApplicationCategory category, const QString &desktopId);
 };
 
+// ADR-0269: one MIME type's handlers, as File Manager's Open With lists them.
+struct MimeTypeHandlers final {
+  // The effective default desktop ID ("x.desktop"); empty when none resolves.
+  QString defaultDesktopId;
+  // Every associated desktop ID, most preferred first: the default, then the
+  // user's Added Associations in lookup order, then the rest in scan order.
+  QStringList desktopIds;
+
+  friend bool operator==(const MimeTypeHandlers &, const MimeTypeHandlers &) = default;
+};
+
 // Build the freedesktop lookup order from caller-owned roots (home first),
 // then each system root. Desktop names are the XDG_CURRENT_DESKTOP components.
 // No environment lookup or filesystem access occurs in this helper.
@@ -96,6 +108,30 @@ public:
   virtual void setApplications(QindaQt::ApplicationCatalog::DirectoryScan applications) {
     Q_UNUSED(applications);
   }
+  // AGENT-CONTRACT (ADR-0269): File Manager's Open With reads and writes one
+  // MIME type at a time through this same store, so Settings and Open With
+  // share a single association authority. loadMimeTypeHandlers resolves the
+  // type exactly as load() resolves a category's types; saveMimeTypeDefault
+  // makes desktopId that type's default in the user's file (recording it as
+  // an Added Association when the entry does not declare the type, since
+  // lookup skips an unassociated default). The defaults refuse, so category
+  // stubs need not implement them.
+  [[nodiscard]] virtual bool loadMimeTypeHandlers(const QString &mimeType,
+                                                  MimeTypeHandlers *handlers,
+                                                  QString *error) {
+    Q_UNUSED(mimeType);
+    Q_UNUSED(handlers);
+    if (error) *error = QStringLiteral("default-applications-unsupported-store");
+    return false;
+  }
+  [[nodiscard]] virtual bool saveMimeTypeDefault(const QString &mimeType,
+                                                 const QString &desktopId,
+                                                 QString *error) {
+    Q_UNUSED(mimeType);
+    Q_UNUSED(desktopId);
+    if (error) *error = QStringLiteral("default-applications-unsupported-store");
+    return false;
+  }
 };
 
 class MimeAppsDefaultApplicationsStore final : public DefaultApplicationsStore {
@@ -115,6 +151,12 @@ public:
                                   const QString &desktopId,
                                   QString *error) override;
   void setApplications(QindaQt::ApplicationCatalog::DirectoryScan applications) override;
+  [[nodiscard]] bool loadMimeTypeHandlers(const QString &mimeType,
+                                          MimeTypeHandlers *handlers,
+                                          QString *error) override;
+  [[nodiscard]] bool saveMimeTypeDefault(const QString &mimeType,
+                                         const QString &desktopId,
+                                         QString *error) override;
 
 private:
   QString m_filePath;
@@ -122,5 +164,17 @@ private:
   QindaQt::ApplicationCatalog::DirectoryScan m_applications;
   QStringList m_userDesktopPaths;
 };
+
+// The session's store over the user's mimeapps.list, composed exactly as
+// Settings -> Default Applications composes it: the generic
+// $XDG_CONFIG_HOME/mimeapps.list is the write target, a desktop-specific user
+// file is edited only where it already owns a key, and lookup follows the XDG
+// config roots, then each data root's applications/ directory. A composition
+// helper (ADR-0269): unlike the store, it reads QStandardPaths and
+// XDG_CURRENT_DESKTOP. `lookupPaths`, when non-null, receives the lookup order
+// (the Settings route watches those files).
+[[nodiscard]] std::unique_ptr<DefaultApplicationsStore> createSessionDefaultApplicationsStore(
+    const QStringList &dataRoots, QindaQt::ApplicationCatalog::DirectoryScan applications,
+    QStringList *lookupPaths = nullptr);
 
 } // namespace QindaQt::Apps::SettingsDefaultApps

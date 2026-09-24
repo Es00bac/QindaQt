@@ -350,7 +350,7 @@ MutationResult copyEntryAt(
     if (removed) {
       ++*removed;
       report(progress, *removed,
-             QStringLiteral("Permanently removed %1 Trash items").arg(*removed));
+             QStringLiteral("Permanently removed %1 items").arg(*removed));
     }
     return true;
   }
@@ -390,7 +390,7 @@ MutationResult copyEntryAt(
   if (removed) {
     ++*removed;
     report(progress, *removed,
-           QStringLiteral("Permanently removed %1 Trash items").arg(*removed));
+           QStringLiteral("Permanently removed %1 items").arg(*removed));
   }
   return true;
 }
@@ -447,6 +447,26 @@ bool removeLocalTreeNoFollow(const QString &path) {
   }
   UniqueFd parent = openAbsoluteDirectory(QFileInfo(path).absolutePath());
   return parent.valid() && removeEntryAt(parent.get(), QFile::encodeName(name));
+}
+
+MutationResult deleteLocalTreeNoFollow(const QString &path, const FileIdentity &expected,
+                                       const MutationCancellation &cancellation,
+                                       const MutationProgressCallback &progress) {
+  const QByteArray name = QFile::encodeName(QFileInfo(path).fileName());
+  UniqueFd parent = name.isEmpty() ? UniqueFd() : openAbsoluteDirectory(QFileInfo(path).absolutePath());
+  struct stat status {};
+  int removed = 0;
+  if (!parent.valid() || ::fstatat(parent.get(), name.constData(), &status, AT_SYMLINK_NOFOLLOW) != 0) {
+    return failure(name.isEmpty() ? MutationError::InvalidRequest : errorForErrno(errno),
+                   QStringLiteral("The item could not be reached safely"));
+  }
+  if (identity(status) != expected) {
+    return failure(MutationError::Changed, QStringLiteral("The item changed before it could be deleted"));
+  }
+  return removeEntryAt(parent.get(), name, cancellation, progress, &removed)
+      ? MutationResult{}
+      : failure(cancelled(cancellation) ? MutationError::Cancelled : MutationError::PermissionDenied,
+                QStringLiteral("Deleting stopped after %1 items").arg(removed));
 }
 
 MutationResult emptyLocalDirectoryNoFollow(

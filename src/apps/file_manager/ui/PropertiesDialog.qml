@@ -10,7 +10,7 @@ Dialog {
 
     required property var controller
 
-    title: qsTr("Properties — %1").arg(controller.name)
+    title: qsTr("Get Info — %1").arg(controller.name)
     modal: true
     standardButtons: Dialog.Close
     anchors.centerIn: parent

@@ -10,6 +10,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#include <QtCore/QStandardPaths>
 
 #include <utility>
 
@@ -227,6 +228,35 @@ bool isAssociated(const QindaQt::ApplicationCatalog::ScannedApplication &app,
   }
   return desktopEntryMimeTypes(app.documentText).contains(mimeType);
 }
+
+// The effective default for one MIME type: the first installed, associated
+// desktop ID in lookup order (freedesktop MIME Apps specification).
+QString effectiveDefault(const QindaQt::ApplicationCatalog::DirectoryScan &scan,
+                         const QString &mimeType, const QList<MimeAppsFile> &files) {
+  for (const MimeAppsFile &file : files) {
+    for (const QString &desktopId : desktopIds(file.defaults.value(mimeType))) {
+      const auto *application = applicationForDesktopId(scan, desktopId);
+      if (application && isAssociated(*application, mimeType, files))
+        return canonicalDesktopId(desktopId);
+    }
+  }
+  return {};
+}
+
+// ADR-0269: a key Open With may write -- "type/subtype" in plain ASCII, so a
+// value from the MIME database can never become a group header, an
+// assignment, or a list separator in the file.
+bool validMimeTypeKey(const QString &mimeType) {
+  const qsizetype slash = mimeType.indexOf(QLatin1Char('/'));
+  if (mimeType.size() > 255 || slash <= 0 || slash == mimeType.size() - 1
+      || slash != mimeType.lastIndexOf(QLatin1Char('/'))) return false;
+  for (const QChar character : mimeType) {
+    const bool alphanumeric = (character >= u'a' && character <= u'z')
+        || (character >= u'A' && character <= u'Z') || (character >= u'0' && character <= u'9');
+    if (!alphanumeric && !QStringLiteral("/!#$&^_.+-").contains(character)) return false;
+  }
+  return true;
+}
 } // namespace
 
 MimeAppsDefaultApplicationsStore::MimeAppsDefaultApplicationsStore(
@@ -260,20 +290,8 @@ bool MimeAppsDefaultApplicationsStore::load(
   }
   for (const DefaultApplicationCategory category : kDefaultApplicationCategories) {
     const QStringList mimeTypes = defaultApplicationCategoryMimeTypes(category);
-    for (const QString &mimeType : mimeTypes) {
-      QString selected;
-      for (const MimeAppsFile &file : files) {
-        for (const QString &desktopId : desktopIds(file.defaults.value(mimeType))) {
-          const auto *application = applicationForDesktopId(m_applications, desktopId);
-          if (application && isAssociated(*application, mimeType, files)) {
-            selected = canonicalDesktopId(desktopId);
-            break;
-          }
-        }
-        if (!selected.isEmpty()) break;
-      }
-      next.effectiveByMimeType.insert(mimeType, selected);
-    }
+    for (const QString &mimeType : mimeTypes)
+      next.effectiveByMimeType.insert(mimeType, effectiveDefault(m_applications, mimeType, files));
     // An aggregate choice is truthful only if every managed MIME resolves
     // identically. The page shows mixed state and lets the user choose a
     // partial-scope handler without losing other MIME associations.
@@ -374,6 +392,113 @@ bool MimeAppsDefaultApplicationsStore::saveCategory(
 void MimeAppsDefaultApplicationsStore::setApplications(
     QindaQt::ApplicationCatalog::DirectoryScan applications) {
   m_applications = std::move(applications);
+}
+
+bool MimeAppsDefaultApplicationsStore::loadMimeTypeHandlers(
+    const QString &mimeType, MimeTypeHandlers *handlers, QString *error) {
+  if (handlers == nullptr || !validMimeTypeKey(mimeType)) {
+    if (error) *error = QStringLiteral("default-applications-invalid-mime-type");
+    return false;
+  }
+  QList<MimeAppsFile> files;
+  if (!readMimeAppsFiles(m_lookupPaths, &files, error)) return false;
+  MimeTypeHandlers next;
+  next.defaultDesktopId = effectiveDefault(m_applications, mimeType, files);
+  if (!next.defaultDesktopId.isEmpty()) next.desktopIds.append(next.defaultDesktopId);
+  const auto append = [&](const QindaQt::ApplicationCatalog::ScannedApplication &application) {
+    const QString desktopId = application.entry.id + QStringLiteral(".desktop");
+    if (!next.desktopIds.contains(desktopId) && isAssociated(application, mimeType, files))
+      next.desktopIds.append(desktopId);
+  };
+  // The MIME Apps specification orders Added Associations by preference;
+  // desktop-specific files cannot add associations (see isAssociated).
+  for (const MimeAppsFile &file : files) {
+    if (QFileInfo(file.path).fileName() != QLatin1String("mimeapps.list")) continue;
+    for (const QString &desktopId : desktopIds(file.added.value(mimeType)))
+      if (const auto *application = applicationForDesktopId(m_applications, desktopId))
+        append(*application);
+  }
+  for (const auto &application : m_applications.applications) append(application);
+  *handlers = std::move(next);
+  if (error) error->clear();
+  return true;
+}
+
+bool MimeAppsDefaultApplicationsStore::saveMimeTypeDefault(
+    const QString &mimeType, const QString &desktopId, QString *error) {
+  if (m_filePath.trimmed().isEmpty() || !validMimeTypeKey(mimeType)) {
+    if (error) *error = QStringLiteral("default-applications-invalid-mime-type");
+    return false;
+  }
+  const auto *application = applicationForDesktopId(m_applications, desktopId);
+  if (!application) {
+    if (error) *error = QStringLiteral("default-applications-unknown-application");
+    return false;
+  }
+  QList<MimeAppsFile> files;
+  if (!readMimeAppsFiles(m_lookupPaths, &files, error)) return false;
+  // As in saveCategory: a desktop-specific user file that already names this
+  // type's default outranks the generic file, so the choice is edited there.
+  QString target = m_filePath;
+  for (const QString &path : m_userDesktopPaths) {
+    const KConfig current(path, KConfig::SimpleConfig);
+    if (current.group(QString::fromLatin1(DefaultApplicationsGroup)).hasKey(mimeType)) {
+      target = path;
+      break;
+    }
+  }
+  const QString canonical = canonicalDesktopId(desktopId);
+  // AGENT-GUARD: lookup skips a default that is not an associated handler, so
+  // an application picked through Other Application... that does not declare
+  // the type is also made the user's first Added Association. Only the
+  // generic file may add associations; a desktop-specific one cannot.
+  const bool associate = !isAssociated(*application, mimeType, files);
+  QStringList paths{target};
+  if (associate && target != m_filePath) paths.append(m_filePath);
+  for (const QString &path : paths) {
+    const KSharedConfig::Ptr config = KSharedConfig::openConfig(path, KConfig::SimpleConfig);
+    if (!config || config->accessMode() != KConfigBase::ReadWrite) {
+      if (error) *error = QStringLiteral("default-applications-not-writable");
+      return false;
+    }
+    // Reparse and edit one key only, never a loaded snapshot (see saveCategory).
+    config->reparseConfiguration();
+    if (path == target) {
+      KConfigGroup defaults = config->group(QString::fromLatin1(DefaultApplicationsGroup));
+      defaults.writeEntry(mimeType, canonical + QLatin1Char(';'));
+    }
+    if (associate && path == m_filePath) {
+      KConfigGroup added = config->group(QStringLiteral("Added Associations"));
+      QStringList preferred = desktopIds(added.readEntry(mimeType, QString()));
+      preferred.removeAll(canonical);
+      preferred.prepend(canonical);
+      added.writeEntry(mimeType, preferred.join(QLatin1Char(';')) + QLatin1Char(';'));
+    }
+    if (!config->sync()) {
+      if (error) *error = QStringLiteral("default-applications-sync-failed");
+      return false;
+    }
+  }
+  if (error) error->clear();
+  return true;
+}
+
+std::unique_ptr<DefaultApplicationsStore> createSessionDefaultApplicationsStore(
+    const QStringList &dataRoots, QindaQt::ApplicationCatalog::DirectoryScan applications,
+    QStringList *lookupPaths) {
+  const QString configHome =
+      QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+  const QStringList desktops = qEnvironmentVariable("XDG_CURRENT_DESKTOP")
+                                   .split(QLatin1Char(':'), Qt::SkipEmptyParts);
+  QStringList userDesktopPaths = defaultApplicationsLookupPaths({configHome}, {}, desktops);
+  userDesktopPaths.removeLast(); // The generic user file is the normal write target.
+  const QStringList lookup = defaultApplicationsLookupPaths(
+      QStandardPaths::standardLocations(QStandardPaths::GenericConfigLocation), dataRoots,
+      desktops);
+  if (lookupPaths) *lookupPaths = lookup;
+  return std::make_unique<MimeAppsDefaultApplicationsStore>(
+      QDir(configHome).filePath(QStringLiteral("mimeapps.list")), lookup,
+      std::move(applications), userDesktopPaths);
 }
 
 } // namespace QindaQt::Apps::SettingsDefaultApps

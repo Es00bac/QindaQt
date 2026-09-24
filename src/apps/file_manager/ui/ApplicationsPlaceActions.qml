@@ -2,8 +2,10 @@
 import QtQuick
 
 // The Applications place's window actions (ADR-0262), kept out of Main.qml:
-// Open, Get Info (file.properties there), Show Desktop Entry File, Group by
-// Category and Keep in Dock (ADR-0273). Availability is decided in C++
+// Get Info (file.properties there), Show Desktop Entry File, Group by
+// Category and Keep in Dock (ADR-0273). Open is the window-wide file.open
+// (ADR-0269, FileActions), which activates application rows through the
+// same NavigationController path. Availability is decided in C++
 // (file_manager_application_actions, file_manager_dock_actions); this item
 // only carries each action out and owns the Get Info dialog.
 Item {
@@ -29,14 +31,6 @@ Item {
         if (navigation.applicationsPlace !== true)
             return false
         const entries = root.selection.selectedEntries()
-        if (actionId === "application.open") {
-            // Each row opens through NavigationController.activate(), the same
-            // path as a double-click, so its ApplicationsFileLauncher seam (and
-            // chooser mode, ADR-0165) apply to every trigger.
-            for (const entry of entries)
-                navigation.activate(root.selection.indexOfKey(root.selection.key(entry)))
-            return true
-        }
         if (actionId === "file.properties") {
             if (entries.length > 0)
                 infoDialog.show(root.applicationsController.describe(entries[0].applicationId))

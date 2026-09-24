@@ -25,6 +25,11 @@ ApplicationWindow {
     required property var preferencesController
     required property var discoveryController
     required property var mountManager
+    // ADR-0269: the right-click set's owners. Optional so a fixture window
+    // without them still loads; their actions then do nothing.
+    property var openWithController: null
+    property var folderLaunchController: null
+    property var fileTemplates: null
 
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
@@ -145,7 +150,7 @@ ApplicationWindow {
         target: root.coordinator
         function onActionRequested(actionId) {
             const navigation = root.navigationController
-            if (applicationsActions.handle(actionId)) {
+            if (applicationsActions.handle(actionId) || fileActions.handle(actionId)) {
                 return
             } else if (actionId === "go.applications") {
                 if (filterBar.visible) filterBar.closed()
@@ -198,10 +203,6 @@ ApplicationWindow {
                 root.clipboardController.copySelection(root.activeView().selectedEntries())
             } else if (actionId === "edit.paste") {
                 root.clipboardController.pasteInto(root.pasteDestination())
-            } else if (actionId === "file.properties") {
-                root.propertiesController.inspect(root.activeView().selectedEntries())
-                if (root.propertiesController.active)
-                    propertiesDialog.open()
             } else if (actionId === "go.home") {
                 root.networkMode = false
                 const places = root.placesController.places
@@ -336,6 +337,7 @@ ApplicationWindow {
                             appCoordinator: root.coordinator
                             mutationController: root.mutationController
                             clipboardController: root.clipboardController
+                            fileActions: fileActions
                         }
 
                         EntryGrid {
@@ -347,6 +349,7 @@ ApplicationWindow {
                             appCoordinator: root.coordinator
                             mutationController: root.mutationController
                             clipboardController: root.clipboardController
+                            fileActions: fileActions
                         }
                     }
 
@@ -385,6 +388,8 @@ ApplicationWindow {
             placesController: root.placesController
             transferQueueController: root.transferQueueController
             networkLocationsController: root.networkLocationsController
+            openWithController: root.openWithController
+            folderLaunchController: root.folderLaunchController
         }
     }
 
@@ -409,6 +414,21 @@ ApplicationWindow {
         id: propertiesDialog
         objectName: "propertiesDialog"
         controller: root.propertiesController
+    }
+
+    FileActions {
+        id: fileActions
+        anchors.fill: parent
+        navigationController: root.navigationController
+        mutationController: root.mutationController
+        clipboardController: root.clipboardController
+        propertiesController: root.propertiesController
+        placesController: root.placesController
+        selection: entrySelection
+        openWithController: root.openWithController
+        folderLaunchController: root.folderLaunchController
+        fileTemplates: root.fileTemplates
+        onPropertiesRequested: propertiesDialog.open()
     }
 
     ApplicationsPlaceActions {

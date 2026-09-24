@@ -44,6 +44,9 @@ public:
   // Entries are the QML listing snapshots (name/path/isDirectory/isSymlink/
   // size/modified/mode keys). An empty list clears the dialog state.
   Q_INVOKABLE void inspect(const QVariantList &entries);
+  // ADR-0269: Get Info with nothing selected describes the browsed folder
+  // itself, from one fresh stat (fields it cannot read stay empty).
+  Q_INVOKABLE void inspectFolder(const QString &path);
   Q_INVOKABLE void clear();
 
   [[nodiscard]] bool active() const { return m_active; }

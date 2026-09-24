@@ -85,6 +85,18 @@ so a revealed lower-priority default is displayed immediately. Inherited values
 are never copied into user policy as a side effect of choosing another category.
 Errors leave the last confirmed projection available and are exposed to the page.
 
+File Manager's Open With uses the same store one MIME type at a time
+([ADR-0269](../adr/0269-open-with-widens-the-bounded-launch-and-karchive-backs-archives.md)).
+`loadMimeTypeHandlers` resolves a type exactly as `load()` resolves a
+category's types and lists its handlers default first, then the user's Added
+Associations, then declaring entries in scan order. `saveMimeTypeDefault`
+writes one type's default to the same target a category write would use,
+refuses malformed type keys, and also records the application as the type's
+first Added Association when its entry does not declare the type (lookup would
+otherwise skip the default). Both callers compose the store through
+`createSessionDefaultApplicationsStore`, so Settings and File Manager read and
+write the same files in the same order.
+
 ## Candidate applications and presentation
 
 Candidates come from
@@ -123,7 +135,9 @@ and added associations, higher-priority desktop entries, NoDisplay defaults,
 Hidden/malformed root masking, hidden-handler fallback, restoring inherited
 defaults, supported-only partial writes, mixed MIME readback,
 Added/Removed Association candidate eligibility, and catalog replacement
-after an application is removed. The offscreen page gate verifies eight
+after an application is removed; `qindaqt.settings-default-apps-mime-types`
+covers the per-type reads and writes File Manager's Open With uses. The
+offscreen page gate verifies eight
 categories, mixed selections, partial-scope labels, and keyboard choice
 dispatch. Session tests prove login preserves existing user MIME files and
 creates no new user MIME policy.

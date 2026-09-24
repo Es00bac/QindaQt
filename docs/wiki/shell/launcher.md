@@ -215,7 +215,12 @@ with locale variants and extension keys. `Exec` expansion follows the desktop-en
 codes: `%c`/`%k` expand in place, `%i` becomes the two-argument `--icon` form
 only as a standalone token, file/URL and deprecated codes drop as whole
 tokens, and embedded or unknown codes are a typed refusal. Output argv is
-capped in count and total size.
+capped in count and total size. The launcher hands over no files; File
+Manager's Open With
+([ADR-0269](../adr/0269-open-with-widens-the-bounded-launch-and-karchive-backs-archives.md))
+passes `ExecExpansionValues::localFiles`, which fill `%F`/`%U` (every file)
+or `%f`/`%u` (the first) as whole arguments, never inside another token and
+never as the program; `ExecPlan::fileArguments` says how many were taken.
 
 Dispatch then follows the entry's declared surface:
 

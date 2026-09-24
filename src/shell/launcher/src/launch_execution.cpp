@@ -3,6 +3,7 @@
 
 #include <QSet>
 
+#include <algorithm>
 #include <utility>
 
 namespace QindaQt::Shell::Launcher {
@@ -148,12 +149,20 @@ bool isDroppedCode(QChar code)
   return dropped.contains(code);
 }
 
-// Expands one token into zero, one, or two replacement arguments. Returns
-// false when a field code is unsupported; an empty result means the token
-// disappears entirely (a standalone file/URL or deprecated code, or %i
-// without an Icon).
+bool isFileCode(QChar code)
+{
+  return code == QLatin1Char('f') || code == QLatin1Char('F')
+      || code == QLatin1Char('u') || code == QLatin1Char('U');
+}
+
+// Expands one token into zero, one, two, or (a %F/%U list) several
+// replacement arguments. Returns false when a field code is unsupported; an
+// empty result means the token disappears entirely (a standalone file/URL
+// code with no files, a deprecated code, or %i without an Icon).
+// *fileArguments grows to the number of localFiles a file code consumed.
 bool expandToken(const QString &token, const ExecExpansionValues &values,
-                 QStringList *replacement, ExecPlanError *error)
+                 QStringList *replacement, ExecPlanError *error,
+                 qsizetype *fileArguments)
 {
   QString expanded = token;
   qsizetype percent = expanded.indexOf(QLatin1Char('%'));
@@ -169,6 +178,19 @@ bool expandToken(const QString &token, const ExecExpansionValues &values,
       continue;
     }
     const bool standalone = expanded.size() == 2;
+    if (isFileCode(code) && !values.localFiles.isEmpty()) {
+      // ADR-0269: the same whole-token rule as the dropped codes below; a
+      // path spliced into a larger token would change its argument's meaning.
+      if (!standalone) {
+        *error = ExecPlanError::UnsupportedFieldCode;
+        return false;
+      }
+      const bool list = code == QLatin1Char('F') || code == QLatin1Char('U');
+      const QStringList files = list ? values.localFiles : values.localFiles.mid(0, 1);
+      replacement->append(files);
+      *fileArguments = std::max(*fileArguments, files.size());
+      return true;
+    }
     if (isDroppedCode(code)) {
       if (!standalone) {
         // AGENT-GUARD: A list code embedded in a larger token would expand to
@@ -318,12 +340,20 @@ ExecPlanResult ExecFieldCodeExpander::expand(const QString &decodedExec,
 
   QStringList argv;
   qsizetype totalCodeUnits = 0;
+  qsizetype fileArguments = 0;
   for (const QString &token : *tokens) {
     QStringList replacement;
     ExecPlanError tokenError = ExecPlanError::None;
-    if (!expandToken(token, values, &replacement, &tokenError)) {
+    const qsizetype filesBefore = fileArguments;
+    if (!expandToken(token, values, &replacement, &tokenError, &fileArguments)) {
       return planFailure(tokenError,
                          QStringLiteral("Exec contains a field code the launcher cannot satisfy"));
+    }
+    // AGENT-GUARD (ADR-0269): a handed-over file is data, never the program
+    // to run; an Exec that starts with a file code is refused outright.
+    if (argv.isEmpty() && fileArguments != filesBefore) {
+      return planFailure(ExecPlanError::UnsupportedFieldCode,
+                         QStringLiteral("Exec names a file argument as its program"));
     }
     for (const QString &argument : replacement)
       totalCodeUnits += argument.size();
@@ -342,6 +372,7 @@ ExecPlanResult ExecFieldCodeExpander::expand(const QString &decodedExec,
   ExecPlan plan;
   plan.program = argv.constFirst();
   plan.arguments = argv.mid(1);
+  plan.fileArguments = fileArguments;
   return ExecPlanResult { plan, ExecPlanError::None, {} };
 }
 

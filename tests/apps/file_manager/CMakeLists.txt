@@ -612,6 +612,9 @@ set_tests_properties(qindaqt.file-manager-applications-ui PROPERTIES
 qt_add_resources(qindaqt_file_manager_applications_ui_tests file_manager_applications_ui_artwork
     PREFIX /qindaqt/file-manager
     FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
+# ADR-0269: the right-click set's rows live in their own file (after the
+# artwork's resource alias above is set).
+include("${CMAKE_CURRENT_SOURCE_DIR}/FileActionsTests.cmake")
 
 # AGENT-GUARD: these rows construct a QGuiApplication, so they must name a
 # platform. Without this they default to xcb and abort before their first

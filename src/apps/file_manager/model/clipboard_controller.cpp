@@ -155,6 +155,21 @@ bool ClipboardController::dropUrlsInto(const QVariantList &urls,
   return m_mutation.copyForeignPathsTo(paths, destinationInfo.absoluteFilePath());
 }
 
+bool ClipboardController::copyPathsAsText(const QVariantList &items) {
+  const QStringList paths = pathsOf(items);
+  if (paths.isEmpty() || paths.contains(QString())) {
+    return reject(QStringLiteral("No items are selected"));
+  }
+  m_snapshot.clear();
+  m_cut = false;
+  m_pendingCutPaste = false;
+  m_foreignPaths.clear();
+  m_lastRejection.clear();
+  m_clipboard.setText(paths.join(QLatin1Char('\n')));
+  emit stateChanged();
+  return true;
+}
+
 void ClipboardController::clear() {
   const bool hadContent = canPaste();
   m_snapshot.clear();
