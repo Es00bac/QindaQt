@@ -25,6 +25,12 @@ struct DirectoryEntry final {
   qint64 identitySize = 0;
   qint64 modifiedNanoseconds = 0;
   quint32 mode = 0;
+  // ADR-0262: a row of the Applications place names an installed application
+  // rather than a file. Every filesystem entry leaves these four empty.
+  QString applicationId; // desktop-entry id; non-empty only for application rows
+  QString iconName;      // theme icon; empty derives one from the file name
+  QString kindText;      // Kind column text, e.g. the application's category
+  QString note;          // why an application row cannot start from here
 
   [[nodiscard]] bool operator==(const DirectoryEntry &) const = default;
 };

@@ -98,13 +98,15 @@ same normalized navigation boundary, and Escape restores the breadcrumbs.
 Successful asynchronous network navigation also restores the breadcrumbs once
 the listing arrives; failed navigation keeps the location field available for
 correction. Closing location entry returns keyboard focus to the folder view.
-Folder-specific menu actions and shortcuts are disabled while Applications
-or the Network hub is visible, including actions on a retained file selection.
+Folder-specific menu actions and shortcuts are disabled while the Network hub
+is visible, including actions on a retained file selection; inside the
+Applications place only the file actions are disabled (see
+[Applications browser](#applications-browser)).
 The window supplies the nonpersistent `folderViewActive` presentation flag to
 the existing browsing, mutation, and clipboard action bindings. Home and
 location entry return to the folder view even when its path is unchanged.
-Folder navigation leaves the Applications or Network hub through the
-controller's `navigationChanged` notification. New Folder is available in the
+Folder navigation leaves the Network hub through the controller's
+`navigationChanged` notification. New Folder is available in the
 toolbar for remote locations that support creation, and disables while their
 creation operation is pending.
 Tooltips and accessible labels explain every icon action.
@@ -414,35 +416,71 @@ rationale and boundary.
 **Applications** is a place in the sidebar, beside Home, File System, Trash and
 Network, drawn with the `folder-applications` glyph
 ([ADR-0172](../adr/0172-applications-is-a-place-and-a-docked-window-can-replace-itself.md)).
-It carries an empty path for the same reason Network does - there is no
-navigable directory behind it - so neither is emphasized by path comparison,
-navigated to, nor accepted as a drop target; activating it raises the same
-`go.applications` action, so there is exactly one route into the browser.
+Activating it, **Go ▸ Applications** (Ctrl+Shift+A) or typing `applications:`
+in the location bar all open one virtual location that the window browses in
+its ordinary Icon and Details views, exactly like a folder
+([ADR-0262](../adr/0262-applications-is-browsed-in-the-file-managers-ordinary-views.md)).
+The place is emphasized in the sidebar by that path. It is never a drop target
+and has no parent: Up is disabled and the breadcrumb reads just "Applications".
 
-`go.applications` (Ctrl+Shift+A) swaps the folder views for a Finder-style
-installed-application browser: the fixed launcher category groups as
-top-level folders, registered XDG additional categories nested inside, and a
-breadcrumb/back row for drill-down. Entries and hierarchy come from the
-shared `application_catalog` module (launcher-L0 parsers, no second parsing
-authority; [ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md)).
-Activating an entry asks the compositor first (ADR-0172). When this window is
-the active one and is docked in a container, the chosen application **takes its
-place**: the compositor launches it and swaps it in through the same atomic
-`ReplaceMemberWindow` transaction a restored picker uses, gated on the bus
-daemon's credential for the caller matching KWin's authenticated client PID for
-that window, so a caller can only ever replace its own. A rejection is the
-ordinary undocked case and falls back silently to a plain detached launch,
-which starts an entry only when its planned argv is a plain process;
-terminal-required and D-Bus-activatable entries stay inert on that path and say
-so, while the compositor route handles them because it owns the full
-desktop-entry launch facility. Browsing to any folder path exits the browser;
-the documents launch contract above is unchanged.
+Every launchable application is one item, sorted A to Z. Each item shows its
+theme icon at the current zoom and its category as the Details view's
+**Category** column. Size and date are unknown and show a dash. Entries come
+only from the shared `application_catalog` module (launcher-L0 parsers, no
+second parsing authority;
+[ADR-0164](../adr/0164-shared-application-catalog-and-file-manager-applications-browser.md)).
+`NoDisplay` and `Hidden` entries never appear. Selection, rubber-band,
+keyboard navigation, type-to-select, zoom, the filter bar and sorting are
+the folder ones. The filter bar's Subfolders toggle is disabled, because the
+place has no subfolders. **View ▸ Group by Category** (Ctrl+G, also in the
+background context menu) sorts by category, and the Details view adds a
+heading for each category. The Icon view does not have headings yet. The
+place keeps its own sort apart from the window's folder sort, so grouping
+never reorders ordinary folders. Visiting the place or refreshing it (F5)
+rescans the catalog.
 
-Launched with `--choose-application`, the browser becomes a workspace picker
-(ADR-0165): activations hand the entry to the compositor instead of starting
-it directly, so terminal and D-Bus-activatable applications are also
-choosable; the picker window closes when the compositor swaps the launched
-application into the layout.
+A single click selects. A double-click, Enter, **File ▸ Open** (Ctrl+O) or the
+context menu's **Open** opens the selected applications. Opening asks the
+compositor first (ADR-0172). When this window is the active one and is docked
+in a container, the chosen application **takes its place**: the compositor
+launches it and swaps it in through the same atomic `ReplaceMemberWindow`
+transaction a restored picker uses. That swap is gated on the bus daemon's
+credential for the caller matching KWin's authenticated client PID for the
+window, so a caller can only ever replace its own window. A rejection is the
+ordinary undocked case. It falls back silently to a plain detached launch,
+which starts an entry only when its planned argv is a plain process.
+Terminal-required and D-Bus-activatable entries are dimmed. Their tooltip,
+accessible description and Get Info say why. On that fallback they report
+the reason in the window's "Couldn't open the application" banner. The
+compositor route still opens them, because it owns the full desktop-entry
+launch facility.
+
+The item context menu offers **Open**, **Get Info** and **Show Desktop Entry
+File** (Ctrl+Shift+E). Get Info shows the name, description, category, raw XDG
+categories, the planned command (display only) and the desktop-entry file
+path. Show Desktop Entry File opens the entry's folder and selects it there.
+Application items are not files, so they cannot be cut, copied, pasted,
+renamed, moved, trashed, bookmarked or dragged, and nothing can be created in
+the place. **Keep in Dock**, **Add to Desktop**, **Open in New Workspace**,
+sorting by recently used, and dragging an application to the dock or desktop
+are not offered yet, because no public boundary for them exists; ADR-0262
+lists what each one waits for. Dropping files on an application to open
+them with it belongs to Open With (W10). The documents launch contract above
+is unchanged.
+
+The Applications behaviour lives in the model and controller layer:
+`ApplicationsController` (catalog, rows, Get Info, launch policy),
+`ApplicationsListing` (pure projections), the `ApplicationsDirectoryLister` and
+`ApplicationsFileLauncher` decorators around the navigation's own seams, and
+`ApplicationsPlaceOrder`. The views receive ordinary rows, so the QindaTK views
+planned in W11 inherit the place without re-implementing it.
+
+Launched with `--choose-application`, the window opens directly into
+Applications as a workspace picker (ADR-0165). A banner explains the choice.
+Opening an item hands it to the compositor instead of starting it, so
+terminal and D-Bus-activatable applications can also be chosen. A rejected
+choice stays in the picker with the reason. The picker window closes when the
+compositor swaps the launched application into the layout.
 
 ## First-class network locations
 

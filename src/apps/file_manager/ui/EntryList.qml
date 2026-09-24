@@ -118,7 +118,9 @@ Control {
                 objectName: "sortHeader_kind"
                 visible: root.width > 580
                 key: "kind"
-                label: qsTr("Kind")
+                // ADR-0262: an application's Kind is its category.
+                label: root.navigationController.applicationsPlace === true
+                    ? qsTr("Category") : qsTr("Kind")
             }
             SortHeaderButton {
                 objectName: "sortHeader_modified"
@@ -188,6 +190,22 @@ Control {
                 currentIndex: root.selection.currentIndex
                 function selectEntry(index) { root.selection.selectOnly(index) }
                 model: root.navigationController.entries
+                // ADR-0262: Group by Category is the category sort in the
+                // Applications place; each category then gets a heading row.
+                section.property: root.navigationController.applicationsPlace === true
+                    && root.navigationController.sortColumn === "kind" ? "kindText" : ""
+                section.delegate: Label {
+                    required property string section
+                    width: ListView.view ? ListView.view.width : 0
+                    topPadding: 10
+                    bottomPadding: 4
+                    leftPadding: 12
+                    text: section
+                    font.bold: true
+                    color: root.palette.placeholderText
+                    Accessible.role: Accessible.Heading
+                    Accessible.name: section
+                }
 
                 ScrollBar.vertical: ViewportScrollBar {
                     objectName: "entryListScrollBar"

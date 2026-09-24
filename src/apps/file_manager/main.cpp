@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
+#include "app_shell/file_manager_application_actions.h"
 #include "app_shell/file_manager_browsing_actions.h"
 #include "app_shell/file_manager_mutation_actions.h"
 #include "app_shell/file_manager_transfer_actions.h"
 #include "model/applications_controller.h"
+#include "model/applications_place.h"
+#include "model/applications_place_order.h"
 #include "model/bookmarks_store.h"
 #include "model/clipboard_controller.h"
 #include "model/entry_properties.h"
@@ -76,6 +79,8 @@ namespace {
                                                              clipboard, mutation);
   QindaQt::Apps::FileManager::bindFileManagerMutationActions(coordinator, navigation,
                                                              mutation);
+  QindaQt::Apps::FileManager::bindFileManagerApplicationActions(coordinator, navigation,
+                                                                clipboard);
   QObject::connect(
       &coordinator,
       &QindaQt::AppShell::ApplicationCoordinator::quitDecisionRequested,
@@ -394,9 +399,21 @@ int main(int argc, char **argv) {
   }
 
   QQmlApplicationEngine engine;
+  // ADR-0262: the Applications place is browsed through the navigation's own
+  // lister and launcher seams, so this controller is built first and outlives
+  // them. Its catalog is scanned whenever the place is listed (and on F5).
+  auto applicationsController =
+      std::make_unique<QindaQt::Apps::FileManager::ApplicationsController>(
+          uniqueApplicationDataRoots());
+  applicationsController->setChooserMode(parser.isSet(QStringLiteral("choose-application")));
+  auto *applications = applicationsController.get();
   auto controller = std::make_unique<QindaQt::Apps::FileManager::NavigationController>(
-      std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
-      std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>(),
+      std::make_unique<QindaQt::Apps::FileManager::ApplicationsDirectoryLister>(
+          std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
+          [applications] { applications->refresh(); return applications->listing(); }),
+      std::make_unique<QindaQt::Apps::FileManager::ApplicationsFileLauncher>(
+          std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>(),
+          [applications](const QString &id) { return applications->open(id); }),
       std::make_unique<QindaQt::Apps::FileManager::KioNetworkDirectoryBackend>(),
       std::make_unique<QindaQt::Apps::FileManager::KioFuseRemoteFileOpener>(),
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteRenamer>(),
@@ -410,7 +427,10 @@ int main(int argc, char **argv) {
                           new QindaQt::Apps::FileManager::ThemeIconProvider());
   QObject::connect(controller.get(), &QindaQt::Apps::FileManager::NavigationController::entriesChanged,
                    &engine, [previews, &controller] { previews->setGeneration(controller->listingGeneration()); });
-  controller->navigateTo(startPath);
+  // ADR-0262: Applications keeps its own sort (A to Z) apart from folders'.
+  QindaQt::Apps::FileManager::ApplicationsPlaceOrder applicationsOrder(*controller);
+  // ADR-0165/ADR-0262: a workspace picker opens straight into Applications.
+  controller->navigateTo(applications->chooserMode() ? applications->location() : startPath);
 
   const QString trashRoot = QDir(QStandardPaths::writableLocation(
                                      QStandardPaths::GenericDataLocation))
@@ -431,12 +451,6 @@ int main(int argc, char **argv) {
           std::make_unique<QindaQt::Apps::FileManager::BookmarksStore>(stateDirectory));
   NetworkComposition network = composeNetworkSurfaces(stateDirectory);
   auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
-  // The first synchronous application scan happens here so the browser opens
-  // ready.
-  auto applicationsController =
-      std::make_unique<QindaQt::Apps::FileManager::ApplicationsController>(
-          uniqueApplicationDataRoots());
-  applicationsController->refresh();
   const QString appShellError = configureAppShell(
       *appCoordinator, *controller, *mutationController, *clipboardController);
   if (!appShellError.isEmpty()) {

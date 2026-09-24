@@ -16,8 +16,10 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
       const QLatin1String actionId(id);
       const bool folderAction = actionId == QLatin1String("file.trash") || actionId == QLatin1String("file.copy")
           || actionId == QLatin1String("file.move") || actionId == QLatin1String("file.rename") || actionId == QLatin1String("file.new-folder");
+      // ADR-0262: application rows are not files; no mutation reaches them.
       const auto result = coordinator.setActionEnabled(
-          actionId, value && (!folderAction || navigation.folderViewActive()));
+          actionId, value && (!folderAction || (navigation.folderViewActive()
+                                                && !navigation.applicationsPlace())));
       Q_UNUSED(result);
     };
     const bool idle = !mutation.busy() && !navigation.remoteActive();

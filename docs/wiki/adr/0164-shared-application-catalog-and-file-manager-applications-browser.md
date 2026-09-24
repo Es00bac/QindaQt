@@ -5,7 +5,7 @@
 - **Owners:** First-party applications (File Manager) with the Shell working
   group (launcher L0)
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0262](0262-applications-is-browsed-in-the-file-managers-ordinary-views.md) for the drill-down presentation only (decision 3's folders/entries/breadcrumb browser); the catalog, launch planning and launch policy stand
 
 ## Context
 

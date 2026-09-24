@@ -34,6 +34,9 @@ Menu {
     // object without a showHidden property (e.g. tst_viewport.qml) yields a
     // real false instead of an undefined-to-bool assignment warning.
     readonly property bool showHiddenChecked: root.navigationController.showHidden === true
+    // ADR-0262: the Applications place offers application actions instead of
+    // file ones; compared for the same minimal-fixture reason as above.
+    readonly property bool applicationsPlace: root.navigationController.applicationsPlace === true
 
     // Reuses the exact enabled truth the menu bar/toolbar already read from
     // (coordinator.menus[].actions[].enabled, driven by
@@ -64,7 +67,7 @@ Menu {
     // Background actions: apply to the browsed folder, not to any entry.
     MenuItem {
         objectName: "contextNewFolderAction"
-        visible: root.isBackground
+        visible: root.isBackground && !root.applicationsPlace
         enabled: root.isBackground && root.actionEnabled("file.new-folder")
         text: qsTr("New Folder")
         onTriggered: root.appCoordinator.activateAction("file.new-folder")
@@ -72,7 +75,7 @@ Menu {
     MenuItem {
         id: backgroundPasteItem
         objectName: "contextBackgroundPasteAction"
-        visible: root.isBackground && root.canPaste
+        visible: root.isBackground && root.canPaste && !root.applicationsPlace
         enabled: root.isBackground && root.actionEnabled("edit.paste")
         text: qsTr("Paste")
         // Still activates the same "edit.paste" action every other Paste
@@ -116,32 +119,48 @@ Menu {
     }
     MenuItem {
         objectName: "contextShowHiddenAction"
-        visible: root.isBackground
+        visible: root.isBackground && !root.applicationsPlace
         enabled: root.isBackground
         checkable: true
         checked: root.showHiddenChecked
         text: qsTr("Show Hidden Files")
         onTriggered: root.appCoordinator.activateAction("view.show-hidden")
     }
+    MenuItem {
+        objectName: "contextGroupByCategoryAction"
+        visible: root.isBackground && root.applicationsPlace
+        enabled: visible && root.actionEnabled("view.group-by-category")
+        checkable: true
+        checked: root.navigationController.sortColumn === "kind"
+        text: qsTr("Group by Category")
+        onTriggered: root.appCoordinator.activateAction("view.group-by-category")
+    }
 
     // Selection actions: apply to the entries selectionCount describes.
     MenuItem {
+        objectName: "contextOpenApplicationAction"
+        visible: !root.isBackground && root.applicationsPlace
+        enabled: visible && root.actionEnabled("application.open")
+        text: qsTr("Open")
+        onTriggered: root.appCoordinator.activateAction("application.open")
+    }
+    MenuItem {
         objectName: "contextCutAction"
-        visible: !root.isBackground
+        visible: !root.isBackground && !root.applicationsPlace
         enabled: !root.isBackground && root.actionEnabled("edit.cut")
         text: qsTr("Cut")
         onTriggered: root.appCoordinator.activateAction("edit.cut")
     }
     MenuItem {
         objectName: "contextClipboardCopyAction"
-        visible: !root.isBackground
+        visible: !root.isBackground && !root.applicationsPlace
         enabled: !root.isBackground && root.actionEnabled("edit.copy")
         text: qsTr("Copy")
         onTriggered: root.appCoordinator.activateAction("edit.copy")
     }
     MenuItem {
         objectName: "contextRenameAction"
-        visible: !root.isBackground && root.selectionCount === 1
+        visible: !root.isBackground && root.selectionCount === 1 && !root.applicationsPlace
         enabled: !root.isBackground && root.selectionCount === 1
             && root.actionEnabled("file.rename")
         text: qsTr("Rename")
@@ -149,30 +168,38 @@ Menu {
     }
     MenuItem {
         objectName: "contextCopyAction"
-        visible: !root.isBackground
+        visible: !root.isBackground && !root.applicationsPlace
         enabled: !root.isBackground && root.actionEnabled("file.copy")
         text: qsTr("Copy To…")
         onTriggered: root.appCoordinator.activateAction("file.copy")
     }
     MenuItem {
         objectName: "contextMoveAction"
-        visible: !root.isBackground
+        visible: !root.isBackground && !root.applicationsPlace
         enabled: !root.isBackground && root.actionEnabled("file.move")
         text: qsTr("Move To…")
         onTriggered: root.appCoordinator.activateAction("file.move")
     }
     MenuItem {
         objectName: "contextTrashAction"
-        visible: !root.isBackground
+        visible: !root.isBackground && !root.applicationsPlace
         enabled: !root.isBackground && root.actionEnabled("file.trash")
         text: qsTr("Move to Trash")
         onTriggered: root.appCoordinator.activateAction("file.trash")
     }
     MenuItem {
         objectName: "contextPropertiesAction"
-        visible: !root.isBackground
-        enabled: !root.isBackground && root.actionEnabled("file.properties")
-        text: qsTr("Properties")
+        // Get Info describes one application at a time.
+        visible: !root.isBackground && (!root.applicationsPlace || root.selectionCount === 1)
+        enabled: visible && root.actionEnabled("file.properties")
+        text: root.applicationsPlace ? qsTr("Get Info") : qsTr("Properties")
         onTriggered: root.appCoordinator.activateAction("file.properties")
+    }
+    MenuItem {
+        objectName: "contextShowEntryFileAction"
+        visible: !root.isBackground && root.applicationsPlace && root.selectionCount === 1
+        enabled: visible && root.actionEnabled("application.show-entry-file")
+        text: qsTr("Show Desktop Entry File")
+        onTriggered: root.appCoordinator.activateAction("application.show-entry-file")
     }
 }

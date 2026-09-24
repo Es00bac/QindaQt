@@ -2,6 +2,8 @@
 #include "app_shell/file_manager_action_catalog.h"
 #include "app_shell/file_manager_browsing_actions.h"
 #include "model/applications_controller.h"
+#include "model/applications_place.h"
+#include "model/applications_place_order.h"
 #include "model/clipboard_controller.h"
 #include "model/entry_properties.h"
 #include "model/local_directory_lister.h"
@@ -20,6 +22,7 @@
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QStandardPaths>
 #include <QStyleHints>
 #include <QTemporaryDir>
 #include <QTimer>
@@ -63,8 +66,28 @@ int main(int argc, char **argv) {
   }
   QFile::copy(sourceRoot + "/data/artwork/empty-folder.png",
               folder + "/Little duck.png");
-  NavigationController navigation(std::make_unique<LocalDirectoryLister>(),
-                                  std::make_unique<DesktopFileLauncher>());
+  // ADR-0262: QINDAQT_FILES_PROBE_PLACE=applications opens the Applications
+  // place over QINDAQT_FILES_PROBE_APP_ROOTS (colon-separated XDG data roots,
+  // default this machine's). The probe's launch seams refuse everything, so a
+  // capture can never start an application.
+  const bool applicationsPlace =
+      qEnvironmentVariable("QINDAQT_FILES_PROBE_PLACE") == QStringLiteral("applications");
+  QStringList appRoots = qEnvironmentVariable("QINDAQT_FILES_PROBE_APP_ROOTS")
+                             .split(QLatin1Char(':'), Qt::SkipEmptyParts);
+  if (appRoots.isEmpty())
+    appRoots = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
+  ApplicationsController applications(
+      appRoots, ApplicationLaunchSeams{
+                    [](const QString &) { return ChooserReply{false, QStringLiteral("probe")}; },
+                    [](const QString &, const QStringList &) { return false; }});
+  NavigationController navigation(
+      std::make_unique<ApplicationsDirectoryLister>(
+          std::make_unique<LocalDirectoryLister>(),
+          [&applications] { applications.refresh(); return applications.listing(); }),
+      std::make_unique<ApplicationsFileLauncher>(
+          std::make_unique<DesktopFileLauncher>(),
+          [&applications](const QString &id) { return applications.open(id); }));
+  ApplicationsPlaceOrder applicationsOrder(navigation);
   MutationController mutation(
       std::make_unique<LocalMutationBackend>(temporary.filePath("Trash")));
   ClipboardController clipboard(mutation, *QGuiApplication::clipboard());
@@ -72,7 +95,6 @@ int main(int argc, char **argv) {
   SearchController search;
   PlacesController places(
       std::make_unique<BookmarksStore>(temporary.filePath("state")));
-  ApplicationsController applications(QStringList{});
   // The probe renders; it never transfers, discovers, or mounts.
   Test::WindowSupportControllers support(temporary.path());
   QindaQt::AppShell::ApplicationCoordinator coordinator;
@@ -81,7 +103,11 @@ int main(int argc, char **argv) {
   if (!coordinator.replaceActions(fileManagerActionCatalog()).ok())
     return 5;
   bindFileManagerBrowsingActions(coordinator, navigation);
-  QIcon::setThemeSearchPaths({sourceRoot + "/data/icons"});
+  // Application icons live in the system hicolor tree the QindaQt theme
+  // inherits; only the Applications capture needs it on the search path.
+  QIcon::setThemeSearchPaths(applicationsPlace
+      ? QStringList{sourceRoot + "/data/icons", QStringLiteral("/usr/share/icons")}
+      : QStringList{sourceRoot + "/data/icons"});
   QIcon::setThemeName(QStringLiteral("QindaQt"));
   QQmlApplicationEngine engine;
   auto *provider = new PreviewProvider(std::make_unique<LocalPreviewDecoder>());
@@ -90,9 +116,17 @@ int main(int argc, char **argv) {
   QObject::connect(
       &navigation, &NavigationController::entriesChanged, &engine,
       [&] { provider->setGeneration(navigation.listingGeneration()); });
-  navigation.navigateTo(folder);
-  navigation.setViewMode(qEnvironmentVariable("QINDAQT_FILES_PROBE_VIEW", "grid"));
-  navigation.zoomBy(qEnvironmentVariableIntValue("QINDAQT_FILES_PROBE_ZOOM_STEPS"));
+  navigation.navigateTo(applicationsPlace ? ApplicationsController::location() : folder);
+  // Idempotent: setSortColumn() flips the direction of the active column.
+  const auto applyPresentation = [&navigation] {
+    const QString sort = qEnvironmentVariable("QINDAQT_FILES_PROBE_SORT");
+    if (!sort.isEmpty() && navigation.sortColumn() != sort)
+      navigation.setSortColumn(sort);
+    navigation.setViewMode(qEnvironmentVariable("QINDAQT_FILES_PROBE_VIEW", "grid"));
+    navigation.resetZoom();
+    navigation.zoomBy(qEnvironmentVariableIntValue("QINDAQT_FILES_PROBE_ZOOM_STEPS"));
+  };
+  applyPresentation();
   QVariantMap initialProperties{
       {{"navigationController",
         QVariant::fromValue(static_cast<QObject *>(&navigation))},
@@ -121,6 +155,21 @@ int main(int argc, char **argv) {
     return 8;
   window->resize(QString::fromLocal8Bit(argv[4]).toInt(),
                  QString::fromLocal8Bit(argv[5]).toInt());
+  // PresentationDefaults.qml applied the fixture's default preferences when
+  // the window completed; the requested view, zoom and sort win over them.
+  applyPresentation();
+  // Optional capture state: select one row, then run one catalog action
+  // (for example file.properties for Get Info) exactly as a user would.
+  if (qEnvironmentVariableIsSet("QINDAQT_FILES_PROBE_SELECT")) {
+    if (auto *selection = window->findChild<QObject *>(QStringLiteral("entrySelection")))
+      QMetaObject::invokeMethod(
+          selection, "selectOnly",
+          Q_ARG(QVariant, qEnvironmentVariableIntValue("QINDAQT_FILES_PROBE_SELECT")));
+  }
+  if (qEnvironmentVariableIsSet("QINDAQT_FILES_PROBE_ACTION"))
+    QTimer::singleShot(600, &app, [&coordinator] {
+      coordinator.activateAction(qEnvironmentVariable("QINDAQT_FILES_PROBE_ACTION"));
+    });
   const QString output = QString::fromLocal8Bit(argv[3]);
   QTimer::singleShot(1400, &app, [&] {
     const auto image = window->grabWindow();

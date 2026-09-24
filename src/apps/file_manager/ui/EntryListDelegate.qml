@@ -55,8 +55,12 @@ Rectangle {
     }
 
     Accessible.role: Accessible.ListItem
-    Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
+    Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.applicationId
+        ? qsTr(", application") : delegateRoot.modelData.isDirectory
         ? qsTr(", folder") : qsTr(", file"))
+    // ADR-0262: a dimmed application row also says why in words (no
+    // information by colour alone): here, in its tooltip and in Get Info.
+    Accessible.description: delegateRoot.modelData.note || ""
     Accessible.selected: delegateRoot.entrySelected
     border.width: ListView.isCurrentItem && ListView.view && ListView.view.activeFocus ? 2 : 0
     border.color: delegateRoot.viewPalette.highlight
@@ -78,7 +82,8 @@ Rectangle {
             Layout.fillWidth: true
             text: delegateRoot.modelData.name
             color: delegateRoot.entrySelected ? delegateRoot.viewPalette.highlightedText
-                 : delegateRoot.modelData.isHidden ? delegateRoot.viewPalette.placeholderText
+                 : delegateRoot.modelData.isHidden || delegateRoot.modelData.launchable === false
+                 ? delegateRoot.viewPalette.placeholderText
                  : delegateRoot.viewPalette.text
             elide: Text.ElideMiddle
             Accessible.ignored: true
@@ -113,6 +118,9 @@ Rectangle {
         id: hoverArea
         anchors.fill: parent
         hoverEnabled: true
+        ToolTip.visible: containsMouse && (delegateRoot.modelData.note || "").length > 0
+        ToolTip.text: delegateRoot.modelData.note || ""
+        ToolTip.delay: 600
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: (mouse) => {
             if (delegateRoot.ListView.view)
