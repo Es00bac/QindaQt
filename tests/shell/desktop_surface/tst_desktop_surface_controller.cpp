@@ -6,7 +6,10 @@
 #include "qindaqt/shell/desktop_surface/desktop_surface_controller.h"
 
 #include <QGuiApplication>
+#include <QMargins>
 #include <QQmlEngine>
+#include <QRect>
+#include <QScreen>
 #include <QtTest>
 
 using QindaQt::Shell::DesktopSurface::DesktopSurfaceController;
@@ -45,6 +48,7 @@ private Q_SLOTS:
     void emptyProfileProducesZeroWindows();
     void desktopAppletResolvesAgainstTheRealCatalog();
     void unresolvableAppletKeepsTheInventoryFailClosed();
+    void panelReservationsCutEachOutputsWorkArea();
 };
 
 void DesktopSurfaceControllerTests::emptyProfileProducesZeroWindows()
@@ -152,6 +156,73 @@ void DesktopSurfaceControllerTests::
     QCOMPARE(runtime.value(QStringLiteral("ready")).toBool(), false);
     QVERIFY(!runtime.value(QStringLiteral("diagnostic")).toString().isEmpty());
     QCOMPARE(controller.windowCount(), 0);
+}
+
+namespace {
+
+QRect rectOf(const QVariantMap &map)
+{
+    return QRect(map.value(QStringLiteral("x")).toInt(), map.value(QStringLiteral("y")).toInt(),
+                 map.value(QStringLiteral("width")).toInt(),
+                 map.value(QStringLiteral("height")).toInt());
+}
+
+QVariantMap entryNamed(const QVariantList &rects, const QString &name)
+{
+    for (const QVariant &value : rects) {
+        const QVariantMap entry = value.toMap();
+        if (entry.value(QStringLiteral("name")).toString() == name) {
+            return entry;
+        }
+    }
+    return {};
+}
+
+} // namespace
+
+// ADR-0261: what every surface receives as `outputRects`. The output itself
+// is always the whole screen - the surface spans it, behind the panels - and
+// `workArea` is that screen minus the depths the runtime published for it.
+void DesktopSurfaceControllerTests::panelReservationsCutEachOutputsWorkArea()
+{
+    QQmlEngine engine;
+    DesktopSurfaceController controller(*qGuiApp, engine, {}, this);
+    const QScreen *screen = qGuiApp->primaryScreen();
+    QVERIFY(screen != nullptr);
+    const QString name = screen->name();
+    const QRect geometry = screen->geometry();
+    const auto workArea = [&controller, &name] {
+        return rectOf(entryNamed(controller.outputRects(), name)
+                          .value(QStringLiteral("workArea"))
+                          .toMap());
+    };
+
+    // Before any plan is published the whole output is work area.
+    QCOMPARE(rectOf(entryNamed(controller.outputRects(), name)), geometry);
+    QCOMPARE(workArea(), geometry);
+
+    controller.setOutputReservations({{name, QMargins(52, 26, 0, 0)}});
+    QCOMPARE(controller.outputReservations().value(name), QMargins(52, 26, 0, 0));
+    QCOMPARE(workArea(), geometry.adjusted(52, 26, 0, 0));
+    QCOMPARE(rectOf(entryNamed(controller.outputRects(), name)), geometry);
+
+    controller.setOutputReservations({{name, QMargins(0, 24, 0, 72)}});
+    QCOMPARE(workArea(), geometry.adjusted(0, 24, 0, -72));
+
+    // A negative depth reserves nothing; depths that would leave no room
+    // cannot be a real panel layout and fail open to the whole output.
+    controller.setOutputReservations({{name, QMargins(-8, 26, 0, 0)}});
+    QCOMPARE(workArea(), geometry.adjusted(0, 26, 0, 0));
+    controller.setOutputReservations({{name, QMargins(0, geometry.height(), 0, 0)}});
+    QCOMPARE(workArea(), geometry);
+
+    // Depths for an output that is not connected, or none at all (the
+    // auto-hidden panel was the only one), leave this output whole.
+    controller.setOutputReservations({{QStringLiteral("NOT-CONNECTED"), QMargins(0, 26, 0, 0)}});
+    QCOMPARE(workArea(), geometry);
+    controller.setOutputReservations({});
+    QVERIFY(controller.outputReservations().isEmpty());
+    QCOMPARE(workArea(), geometry);
 }
 
 QTEST_MAIN(DesktopSurfaceControllerTests)

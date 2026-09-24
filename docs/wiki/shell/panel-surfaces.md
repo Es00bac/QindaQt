@@ -93,6 +93,13 @@ Earlier reserving visuals and all non-reserving surfaces use `-1`, so KWin does
 not independently displace them around reservations and does not add a stacked
 edge more than once.
 
+The desktop surface lays its icons out inside these same reservations. After
+every accepted plan the runtime publishes each output's carrier depths (zone
+plus anchored-edge margin) to `DesktopSurfaceController`, never the solver's
+static work area, so a hidden or overlay panel reserves nothing for desktop
+icons either
+([ADR-0261](../adr/0261-lay-desktop-icons-out-inside-the-panel-work-area.md)).
+
 ## Output changes
 
 The runtime listens for screen addition/removal, geometry, orientation, and
