@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "desktop_surface_qml_test_support.h"
 
+#include <QDir>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
+#include <QTemporaryDir>
 #include <QtTest>
+
+#include <memory>
 
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_DesktopSurfacePlugin)
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
@@ -112,9 +116,40 @@ class DesktopCustomizeMenuTests final : public QObject {
     Q_OBJECT
 
 private Q_SLOTS:
+    void init();
+    void cleanup();
     void chordOpensTheCustomizeMenuAndEntriesDispatch();
     void chordIsInertWithoutTheFacade();
+
+private:
+    std::unique_ptr<QTemporaryDir> m_home;
+    QByteArray m_previousHome;
+    QByteArray m_previousDataHome;
 };
+
+// AGENT-GUARD: both rows right-click the middle of an 800x600 surface. They
+// must run over an EMPTY redirected Desktop and data home: listing the real
+// ~/Desktop put a user's icon under that point (24 entries fill four columns),
+// so the click opened the icon menu and both rows failed on that machine, and
+// the shared placement store would have read and migrated the real layout.
+void DesktopCustomizeMenuTests::init()
+{
+    m_home = std::make_unique<QTemporaryDir>();
+    QVERIFY(m_home->isValid());
+    m_previousHome = qgetenv("HOME");
+    m_previousDataHome = qgetenv("XDG_DATA_HOME");
+    qputenv("HOME", m_home->path().toLocal8Bit());
+    qputenv("XDG_DATA_HOME",
+            (m_home->path() + QStringLiteral("/.local/share")).toLocal8Bit());
+    QVERIFY(QDir().mkpath(m_home->path() + QStringLiteral("/Desktop")));
+}
+
+void DesktopCustomizeMenuTests::cleanup()
+{
+    qputenv("HOME", m_previousHome);
+    qputenv("XDG_DATA_HOME", m_previousDataHome);
+    m_home.reset();
+}
 
 void DesktopCustomizeMenuTests::chordOpensTheCustomizeMenuAndEntriesDispatch()
 {

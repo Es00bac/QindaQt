@@ -26,11 +26,11 @@ Item {
     required property var layoutStore
     required property string screenName
 
-    // Global-frame geometry of every connected output, as
-    // {name, x, y, width, height}, and the name of the output that unplaced
-    // icons flow onto. Both are injected by DesktopSurfaceController from the
-    // platform's screen truth. Defaults keep a single-surface host (tests, a
-    // one-output session) behaving exactly as a local-coordinate surface.
+    // Global-frame {name, x, y, width, height, workArea} of every output and
+    // the output unplaced icons flow onto, injected by DesktopSurfaceController
+    // from screen truth and the panels' reservations (ADR-0261). Defaults keep
+    // a single-surface host (tests, a one-output session) behaving exactly as a
+    // local-coordinate surface.
     property var outputRects: []
     property string primaryOutputName: screenName
     // Programmatic movement glides; a dragged icon never does (see the tile).
@@ -135,9 +135,9 @@ Item {
     }
     function moveDrag(dx, dy) {
         // AGENT-GUARD: clamp the group's TRANSLATION once, not each icon
-        // separately. Per-icon clamping collapsed a multi-icon drag into a
-        // pile as soon as one icon reached a desktop edge.
-        const bounds = placement.desktopBounds
+        // separately; per-icon clamping collapsed a multi-icon drag into a
+        // pile at an edge. The bound is the work area (ADR-0261).
+        const bounds = placement.workBounds
         let minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity
         for (const key of dragKeys) {
             const start = dragStart[key]
@@ -161,8 +161,8 @@ Item {
             if (live.x === undefined)
                 continue
             const dropped = { x: Number(live.x), y: Number(live.y) }
-            const target = snapToGrid
-                ? placement.snapGlobal(dropped, key, dragKeys) : dropped
+            const target = snapToGrid ? placement.snapGlobal(dropped, key, dragKeys)
+                                      : placement.clampToWorkArea(dropped)
             layoutStore.setPosition(key, target.x, target.y)
         }
         dragKeys = []

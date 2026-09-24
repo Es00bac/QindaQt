@@ -3,6 +3,7 @@
 
 #include "notificationoutputselector.h"
 #include "notificationwindowcontroller.h"
+#include "panelreservationinsets.h"
 #include "panelvisibilityruntime.h"
 #include "qtcompositoroutputauthority.h"
 
@@ -254,6 +255,15 @@ bool ShellRuntimeApplication::reconcileSurfaces(QString *error)
     if (!result.ok()) {
         *error = result.message;
         return false;
+    }
+    // AGENT-CONTRACT (ADR-0261): the desktop lays its icons out inside what
+    // the accepted panel plan leaves free. Publish after every accepted plan -
+    // a hotplug, a profile adoption, a panel mapping or unmapping all land
+    // here - and never from a rejected one, which keeps the prior surfaces
+    // and therefore the prior reservations. The controller ignores repeats.
+    if (m_desktopSurface) {
+        m_desktopSurface->setOutputReservations(
+            PanelReservationInsets::fromPlan(m_controller->currentPlan()));
     }
     if (m_notificationWindows) {
         QScreen *const screen = notificationScreen(
