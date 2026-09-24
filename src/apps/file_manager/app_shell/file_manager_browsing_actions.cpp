@@ -33,7 +33,9 @@ void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinato
     // disabled instead of presenting a dead end (ADR-0137).
     enabled("view.filter", !navigation.remoteActive());
     for (const char *id : {"view.refresh", "view.show-hidden", "view.grid-mode",
-                           "view.details-mode", "view.zoom-reset", "edit.select-all"})
+                           "view.details-mode", "view.zoom-reset", "edit.select-all",
+                           "view.sort-name", "view.sort-size", "view.sort-kind",
+                           "view.sort-modified"})
       enabled(id, true);
     // A bookmark names a folder; the Applications place is reached from Places.
     enabled("bookmark.add", !navigation.applicationsPlace());

@@ -28,6 +28,7 @@ private Q_SLOTS:
     void routesTerminalAndDbusVariants();
     void failsClosedOnBrokenDocuments();
     void buildsTerminalCommandLines();
+    void plansHandedOverFiles();
 };
 
 void LaunchSupportTests::plansAPlainProcessSpawn()
@@ -94,6 +95,26 @@ void LaunchSupportTests::buildsTerminalCommandLines()
     QCOMPARE(command, expected);
     QVERIFY(terminalCommandLine({}, QStringLiteral("fixture"), {}).isEmpty());
     QVERIFY(terminalCommandLine({QStringLiteral("qqterm")}, {}, {}).isEmpty());
+}
+
+void LaunchSupportTests::plansHandedOverFiles()
+{
+    // ADR-0269: the files reach the Exec file codes; the plan says how many.
+    const QStringList files{QStringLiteral("/data/a.txt"), QStringLiteral("/data/b.txt")};
+    const auto single = planApplicationLaunch(
+        document(), {}, QStringLiteral("Fixture"), {}, files);
+    QCOMPARE(single.support, LaunchSupport::ProcessSpawn);
+    QCOMPARE(single.arguments,
+             QStringList({QStringLiteral("--start"), QStringLiteral("/data/a.txt")}));
+    QCOMPARE(single.fileArguments, 1);
+
+    const auto terminal = planApplicationLaunch(
+        QStringLiteral("[Desktop Entry]\nType=Application\nName=Fixture\n"
+                       "Exec=fixture %F\nTerminal=true\n"),
+        {}, QStringLiteral("Fixture"), {}, files);
+    QCOMPARE(terminal.support, LaunchSupport::TerminalRequired);
+    QCOMPARE(terminal.arguments, files);
+    QCOMPARE(terminal.fileArguments, 2);
 }
 
 QTEST_GUILESS_MAIN(LaunchSupportTests)

@@ -8,9 +8,10 @@ class NavigationController;
 
 // GUI-thread composition, called once after installing the action catalog.
 // Borrows all objects; Qt disconnects on either destruction. ADR-0262: the
-// Applications place's own actions -- Open (any selection), Show Desktop Entry
-// File (exactly one selected row) and Group by Category -- are enabled only
-// while that place is the visible folder view; Group by Category is checked
+// Applications place's own actions -- Show Desktop Entry File (exactly one
+// selected row) and Group by Category -- are enabled only while that place
+// is the visible folder view (Open became the shared file.open in ADR-0269,
+// bound in file_manager_item_actions); Group by Category is checked
 // while the window sorts by category there, because grouping IS the category
 // sort (ListingOrder) plus the views' section breaks.
 void bindFileManagerApplicationActions(AppShell::ApplicationCoordinator &coordinator,

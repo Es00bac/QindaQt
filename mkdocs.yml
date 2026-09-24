@@ -416,3 +416,4 @@ nav:
       - "ADR-0261: Lay desktop icons out inside the panels' work area": adr/0261-lay-desktop-icons-out-inside-the-panel-work-area.md
       - "ADR-0262: Applications is browsed in the File Manager's ordinary views": adr/0262-applications-is-browsed-in-the-file-managers-ordinary-views.md
       - "ADR-0263: The Mac-style layout is the default": adr/0263-the-mac-style-layout-is-the-default.md
+      - "ADR-0269: Open With widens the bounded launch, and KArchive backs Compress and Extract": adr/0269-open-with-widens-the-bounded-launch-and-karchive-backs-archives.md

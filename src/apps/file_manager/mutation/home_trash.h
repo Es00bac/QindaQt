@@ -18,6 +18,16 @@ public:
   [[nodiscard]] MutationResult empty(const MutationCancellation &cancellation,
                                      const MutationProgressCallback &progress);
 
+  // ADR-0269 (Put Back): the original path recorded for one item of a
+  // Trash's files/ folder, read from the sibling info/<name>.trashinfo
+  // (bounded, never through a link) with restore()'s parsing. Empty when the
+  // item has no valid record. GUI-thread safe: one small bounded read.
+  [[nodiscard]] static QString originalPathFor(const QString &payloadPath);
+  // ADR-0269 (Delete Permanently inside Trash): after a payload of this
+  // Trash's files/ folder was deleted, removes its record so no orphaned
+  // metadata remains. Any other path is ignored.
+  void forgetPayload(const QString &payloadPath) const;
+
 private:
   QString m_root;
   DeviceResolverPtr m_deviceResolver;

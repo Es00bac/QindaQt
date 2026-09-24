@@ -170,6 +170,30 @@ private:
 #endif
 }
 
+// Opens destination's parent without following links and confirms it is
+// still expectedParent; *name receives the encoded leaf name.
+[[nodiscard]] MutationResult openExpectedParent(const QString &destination,
+                                                const FileIdentity &expectedParent,
+                                                UniqueFd *parent, QByteArray *name) {
+  const QString leaf = QFileInfo(destination).fileName();
+  if (leaf.isEmpty()) {
+    return failure(MutationError::InvalidRequest,
+                   QStringLiteral("A filesystem root cannot be created"));
+  }
+  *parent = openAbsoluteDirectory(QFileInfo(destination).absolutePath());
+  struct stat parentStatus {};
+  if (!parent->valid() || ::fstat(parent->get(), &parentStatus) != 0) {
+    return failure(errorForErrno(errno),
+                   QStringLiteral("The destination parent could not be opened safely"));
+  }
+  if (identity(parentStatus) != expectedParent) {
+    return failure(MutationError::Changed,
+                   QStringLiteral("The destination parent changed"));
+  }
+  *name = QFile::encodeName(leaf);
+  return {};
+}
+
 } // namespace
 
 MutationResult ensureLocalDirectoryNoFollow(const QString &path,
@@ -393,6 +417,51 @@ MutationResult relocateLocalNoFollow(const QString &source,
     Q_UNUSED(ignoredRollback);
     return failure(MutationError::Changed,
                    QStringLiteral("The source changed while it was being moved"));
+  }
+  MutationResult result;
+  result.outputPath = destination;
+  return result;
+}
+
+MutationResult createLocalFileNoFollow(const QString &destination,
+                                       const FileIdentity &expectedParent) {
+  UniqueFd parent;
+  QByteArray name;
+  if (auto opened = openExpectedParent(destination, expectedParent, &parent, &name);
+      !opened.ok()) {
+    return opened;
+  }
+  UniqueFd output(::openat(parent.get(), name.constData(),
+                           O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, 0666));
+  if (!output.valid()) {
+    return failure(errorForErrno(errno), QStringLiteral("The file could not be created"));
+  }
+  if (::fsync(output.get()) != 0 || ::fsync(parent.get()) != 0) {
+    const int commitError = errno;
+    const int ignoredRemoval = ::unlinkat(parent.get(), name.constData(), 0);
+    Q_UNUSED(ignoredRemoval);
+    return failure(errorForErrno(commitError),
+                   QStringLiteral("The new file could not be committed"));
+  }
+  MutationResult result;
+  result.outputPath = destination;
+  return result;
+}
+
+MutationResult createLocalSymlinkNoFollow(const QString &destination,
+                                          const QString &target,
+                                          const FileIdentity &expectedParent) {
+  if (target.isEmpty() || target.contains(QChar::Null)) {
+    return failure(MutationError::InvalidRequest, QStringLiteral("A link needs a target"));
+  }
+  UniqueFd parent;
+  QByteArray name;
+  if (auto opened = openExpectedParent(destination, expectedParent, &parent, &name);
+      !opened.ok()) {
+    return opened;
+  }
+  if (::symlinkat(QFile::encodeName(target).constData(), parent.get(), name.constData()) != 0) {
+    return failure(errorForErrno(errno), QStringLiteral("The link could not be created"));
   }
   MutationResult result;
   result.outputPath = destination;

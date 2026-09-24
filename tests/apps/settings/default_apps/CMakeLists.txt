@@ -14,6 +14,21 @@ add_test(NAME qindaqt.settings-default-apps-store
 set_tests_properties(qindaqt.settings-default-apps-store PROPERTIES
     LABELS "settings;default-apps;model")
 
+# ADR-0269: single-MIME-type reads and writes (File Manager's Open With).
+qt_add_executable(
+    qindaqt_default_applications_mime_types_tests
+    tst_default_applications_mime_types.cpp
+)
+target_link_libraries(
+    qindaqt_default_applications_mime_types_tests
+    PRIVATE qindaqt_settings_default_apps Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_default_applications_mime_types_tests)
+add_test(NAME qindaqt.settings-default-apps-mime-types
+         COMMAND qindaqt_default_applications_mime_types_tests)
+set_tests_properties(qindaqt.settings-default-apps-mime-types PROPERTIES
+    LABELS "settings;default-apps;model")
+
 qt_add_executable(
     qindaqt_default_applications_catalog_tests
     tst_default_applications_catalog.cpp

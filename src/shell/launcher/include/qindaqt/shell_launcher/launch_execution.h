@@ -70,6 +70,13 @@ struct ExecExpansionValues {
   QString name;
   QString iconName;
   QString desktopFilePath;
+  // ADR-0269 (File Manager's Open With): absolute local paths handed to the
+  // application. Empty -- the launcher's own case -- keeps dropping
+  // %f/%F/%u/%U. Otherwise %f/%u take the first path and %F/%U every path,
+  // each path one whole argv element (the specification allows a local path
+  // for the URL codes, so no URL is ever built or guessed). The caller has
+  // already validated the paths; this grammar never reads the filesystem.
+  QStringList localFiles = {};
 };
 
 enum class ExecPlanError {
@@ -84,6 +91,10 @@ enum class ExecPlanError {
 struct ExecPlan {
   QString program;
   QStringList arguments;
+  // ADR-0269: how many ExecExpansionValues::localFiles the argv carries -- 0
+  // when Exec has no file code, 1 for %f/%u, all of them for %F/%U. A caller
+  // holding more files than this plans one launch per file.
+  qsizetype fileArguments = 0;
 
   friend bool operator==(const ExecPlan &, const ExecPlan &) = default;
 };
@@ -99,10 +110,12 @@ struct ExecPlanResult {
 // Turns a decoded Exec string into an argv vector without any shell
 // interpolation: double-quote grouping with the \" \\ \` \$ escapes, field
 // codes per the desktop-entry specification, and fixed output ceilings.
-// %f/%F/%u/%U (file/URL arguments the launcher never supplies) and the
-// deprecated %d/%D/%n/%N/%v/%m codes are dropped as whole tokens; an unknown
-// or embedded list code is a typed error, so a hostile Exec can never smuggle
-// text into a different argument position.
+// %f/%F/%u/%U expand to ExecExpansionValues::localFiles when there are any
+// and are otherwise dropped as whole tokens (the launcher supplies none), as
+// are the deprecated %d/%D/%n/%N/%v/%m codes; an unknown or embedded file or
+// list code is a typed error, and so is a file code in the program position,
+// so a hostile Exec can never smuggle text into a different argument
+// position.
 class ExecFieldCodeExpander {
 public:
   static ExecPlanResult expand(const QString &decodedExec,

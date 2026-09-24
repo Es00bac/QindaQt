@@ -7,32 +7,13 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QPointer>
+#include <QSet>
 
 #include <limits>
 #include <type_traits>
 
 namespace QindaQt::Apps::FileManager {
 namespace {
-
-[[nodiscard]] bool validName(const QString &name) {
-  return !name.isEmpty() && QFile::encodeName(name).size() <= 255 &&
-         name != QLatin1String(".") &&
-         name != QLatin1String("..") && !name.contains(QLatin1Char('/')) &&
-         !name.contains(QLatin1Char('\\')) && !name.contains(QChar::Null);
-}
-
-[[nodiscard]] QStringList rootsFor(const QString &source,
-                                   const QString &destination = {}) {
-  QStringList roots;
-  if (!source.isEmpty()) {
-    roots.append(QFileInfo(source).absolutePath());
-  }
-  if (!destination.isEmpty()) {
-    roots.append(QFileInfo(destination).absolutePath());
-  }
-  roots.removeDuplicates();
-  return roots;
-}
 
 template <typename Integer>
 [[nodiscard]] bool parseDecimalIdentityField(const QVariantMap &identity,
@@ -57,6 +38,32 @@ template <typename Integer>
     }
   }
   return ok;
+}
+
+// AGENT-GUARD: an earlier item of a batch changes the time stamp of the
+// folder it writes into, so the parent identity taken when the batch was
+// requested would fail every later item bound for the same folder. Accept
+// exactly that change -- the same device and inode, stat'ed afresh -- and
+// never a different folder.
+void acceptOwnWrites(MutationRequest &request, const QSet<QString> &written) {
+  if (!request.expectedParent || request.destinationPath.isEmpty()) {
+    return;
+  }
+  const QString folder = QDir::cleanPath(QFileInfo(request.destinationPath).absolutePath());
+  const auto fresh = written.contains(folder)
+      ? LocalMutationBackend::identityForPath(folder) : std::nullopt;
+  if (fresh && fresh->device == request.expectedParent->device &&
+      fresh->inode == request.expectedParent->inode) {
+    request.expectedParent = fresh;
+  }
+}
+
+void recordWrites(const MutationRequest &request, QSet<QString> &written) {
+  for (const QString &path : {request.destinationPath, request.sourcePath}) {
+    if (!path.isEmpty()) {
+      written.insert(QDir::cleanPath(QFileInfo(path).absolutePath()));
+    }
+  }
 }
 
 } // namespace
@@ -338,17 +345,9 @@ bool MutationController::submitBatch(MutationKind kind,
   QVector<MutationRequest> requests;
   requests.reserve(items.size());
   for (const QVariant &item : items) {
-    if (item.metaType().id() != QMetaType::QVariantMap) {
-      fail(MutationError::InvalidRequest,
-           QStringLiteral("The selection is stale; refresh and try again"));
-      return false;
-    }
-    const QVariantMap map = item.toMap();
-    const QString source = map.value(QStringLiteral("path")).toString();
-    const std::optional<FileIdentity> identity = identityFromMap(map);
-    if (source.isEmpty() || !identity) {
-      fail(MutationError::InvalidRequest,
-           QStringLiteral("The selection is stale; refresh and try again"));
+    QString source;
+    FileIdentity identity;
+    if (!parseItem(item, &source, &identity)) {
       return false;
     }
     MutationRequest request;
@@ -369,7 +368,19 @@ bool MutationController::submitBatch(MutationKind kind,
     }
     requests.append(std::move(request));
   }
+  return submitRequests(kind, std::move(requests));
+}
 
+bool MutationController::submitRequests(MutationKind kind,
+                                        QVector<MutationRequest> requests) {
+  if (busy()) {
+    fail(MutationError::Busy, QStringLiteral("Another file operation is still running"));
+    return false;
+  }
+  if (requests.isEmpty()) {
+    fail(MutationError::InvalidRequest, QStringLiteral("No items are selected"));
+    return false;
+  }
   m_failure = MutationError::None;
   m_failureMessage.clear();
   m_resultText.clear();
@@ -402,7 +413,9 @@ bool MutationController::submitBatch(MutationKind kind,
        progress = std::move(progress), total]() mutable {
         int completed = 0;
         MutationResult outcome;
-        for (const MutationRequest &request : requests) {
+        QSet<QString> written;
+        for (MutationRequest &request : requests) {
+          acceptOwnWrites(request, written);
           if (cancellation->load(std::memory_order_relaxed)) {
             outcome.error = MutationError::Cancelled;
             outcome.diagnostic =
@@ -435,6 +448,7 @@ bool MutationController::submitBatch(MutationKind kind,
                     .arg(outcome.diagnostic);
             break;
           }
+          recordWrites(request, written);
           ++completed;
         }
         if (outcome.ok()) {

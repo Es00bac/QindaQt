@@ -166,7 +166,9 @@ state at roomy sizes, while compact windows retain the accessible state card.
 | `edit.cut` | `Ctrl+X` | Cut the selected entries to the file clipboard |
 | `edit.copy` | `Ctrl+C` | Copy the selected entries to the file clipboard |
 | `edit.paste` | `Ctrl+V` | Paste clipboard files into the current or focused folder |
-| `file.properties` | `Alt+Return` | Open the properties dialog for the selection |
+| `file.properties` | `Alt+Return` | Get Info: size, kind and permissions of the selection, or of the folder when nothing is selected |
+| `edit.copy-path` | `Ctrl+Alt+C` | Copy the selected items' full paths as text |
+| `view.sort-name` / `-size` / `-kind` / `-modified` | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Sort by that column; choosing the active one again reverses it |
 | `edit.select-all` | `Ctrl+A` | Select every visible entry |
 | `go.home` | `Alt+Home` | Open the home folder |
 | `bookmark.add` | `Ctrl+D` | Bookmark the current folder |
@@ -265,6 +267,18 @@ controller.
 | `file.empty-trash` | `Ctrl+Shift+Delete` | Confirm and permanently empty home Trash |
 | `edit.undo` | platform Undo | Undo the last recoverable create, rename, or move |
 | `operation.cancel` | `Ctrl+Escape` | Request cancellation of the running operation |
+| `file.open` | `Ctrl+O` | Open the selection: a folder here, a file with its default application, several folders in new windows |
+| `file.open-with` | `Ctrl+Shift+O` | Choose an application for the selected files (ADR-0269) |
+| `file.open-new-window` | `Ctrl+Alt+O` | Open the selected folders in new File Manager windows |
+| `file.new-file` | `Ctrl+Alt+N` | Create an empty file (undoable) or a copy of a template |
+| `file.open-terminal` | `Shift+F4` | Open QQ_Term in the current folder |
+| `file.duplicate` | `Ctrl+Shift+D` | Copy each selected item beside itself as "name copy" |
+| `file.make-link` | `Ctrl+M` | Make a relative "Link to name" beside each selected item |
+| `file.compress` | `Ctrl+Shift+K` | Compress the selection into a zip beside it |
+| `file.extract` | `Ctrl+Shift+X` | Extract each selected archive into a new folder |
+| `file.add-to-sidebar` | `Ctrl+Shift+B` | Bookmark the selected folders |
+| `file.delete` | `Shift+Delete` | Confirm, then delete permanently without Trash |
+| `file.put-back` | `Ctrl+Backspace` | Inside Trash, return the selected items to their recorded folders |
 
 ### Background and selection context menus
 
@@ -272,16 +286,25 @@ controller.
 `EntryGrid` and `EntryList` both instantiate, so Icon and Details behave
 identically instead of each declaring its own item list. Right-clicking (or
 invoking the context-menu key on) empty folder space shows only background
-actions — New Folder, Paste (only when the clipboard actually holds
-something), Refresh, the Icon/Details toggle, and Show Hidden. Right-clicking
-(or invoking the context-menu key while) a selection is targeted shows only
-`edit.cut`/`edit.copy`, `file.copy`/`file.move`/`file.trash`/`file.properties`,
-and `file.rename` — Rename only when exactly one entry is targeted, since
-`MutationDialogs.dispatch("file.rename")` only ever acts on the first selected
-entry. Every item dispatches through the same
-`ApplicationCoordinator::activateAction()`/`MutationDialogs` path the toolbar
-and menu bar already use; the menu adds no new mutation policy, only
-context-scoped visibility.
+actions: New Folder, New File ▸ (an empty file, then one entry per template),
+Paste (only when the clipboard actually holds something), Open Terminal Here,
+Select All, Sort By ▸, View ▸, Show Hidden, Refresh and Get Info for the
+folder itself. Right-clicking (or invoking the context-menu key while) a
+selection is targeted shows the item set: Open, Open With ▸ (files only: the
+recommended applications, the default marked, then Other Application…), Open
+in New Window (folders only), Cut, Copy, Copy Path, Rename (exactly one entry,
+since `MutationDialogs.dispatch("file.rename")` only ever acts on the first
+selected entry), Duplicate, Make Link, Copy To…, Move To…, Compress, Extract
+(only when every selected item is an archive), Add to Sidebar (folders only),
+Get Info, Move to Trash and Delete Permanently. Inside the home Trash, Put
+Back replaces Move to Trash and the creating actions are hidden. The right-click
+set is local-only: in smb/sftp locations and the Applications place its items
+are hidden (ADR-0262 keeps Open, Get Info and Show Desktop Entry File there).
+Every item dispatches through the same `ApplicationCoordinator::activateAction()`
+path the toolbar and menu bar use, so availability is the catalog's own
+enabled state (`bindFileManagerItemActions`); the three entries no static
+action can name (one application of Open With ▸, one template of New File ▸,
+and the background Get Info) call the window's `FileActions` directly.
 
 A mouse right-click on an unselected entry replaces the selection with that
 entry first (mirroring a plain left-click), so the menu always targets what
@@ -410,6 +433,66 @@ or launched-process lifetime; a validation failure or a `false` return from
 rather than blocking navigation, crashing, or silently doing nothing. See
 [ADR-0029](../adr/0029-file-manager-bounded-local-launch.md) for the full
 rationale and boundary.
+
+## The right-click set (ADR-0269)
+
+`FileActions.qml` carries the right-click set out; availability is decided in
+C++ (`app_shell/file_manager_item_actions.cpp`) and every effect runs in a
+controller, so the QindaTK views of W11 inherit the behaviour unchanged.
+
+**Open With** lists the applications that handle every selected file: the
+handlers of the file's type and of its parent types (a C source file also
+offers text editors), the effective default first and marked. They come from
+Settings → Default Applications' own store (`loadMimeTypeHandlers`), built by
+the same `createSessionDefaultApplicationsStore` composition, so there is one
+association authority. **Other Application…** opens a chooser that lists the
+recommended applications and then every row of the Applications place, A to Z;
+its **Always open … with this application** box writes the type's default
+through the store (`saveMimeTypeDefault`, which also records an Added
+Association for an application that does not declare the type) and reports
+success only after a fresh lookup confirms it. The chosen application starts
+through `OpenWithLauncher`: each file is validated as in the bounded launch
+above, then handed to the desktop entry's own `Exec` as whole arguments
+through the shared launcher grammar (`%F`/`%U` take every file, `%f`/`%u` one
+file per start, an `Exec` with no file code is refused), `Terminal=true`
+entries run inside `qqterm -e`, and D-Bus-activatable entries are refused for
+now. No shell, URL or MIME guessing is involved, and at most 32 files open at
+once. Failures appear in the window's banner.
+
+**Open Terminal Here** starts QQ_Term as
+`qqterm --working-directory <folder>`; **Open in New Window** starts a File
+Manager through `Desktop::FileBoundary::openLocalFolder`, which refuses a
+folder that is no longer the one listed. Both pass argv only.
+
+**New File** offers an empty file and every visible regular file directly in
+the templates folder (`XDG_TEMPLATES_DIR`, usually `~/Templates`); a dialog
+asks for the name. **Duplicate** names copies "report copy.txt", then
+"report copy 2.txt"; **Make Link** makes "Link to report.txt", a relative link
+to its sibling. **Delete Permanently** always asks first, whatever the Trash
+preference says, and never goes through Trash; deleting inside the home Trash
+also removes the item's `.trashinfo` record. **Put Back** returns items of the
+home Trash's `files/` folder to the path their record names, refusing (and
+leaving the item in Trash) when that folder no longer exists. **Add to
+Sidebar** bookmarks the selected folders. **Get Info** with nothing selected,
+or from the background menu, describes the folder being browsed.
+
+**Compress** writes a zip beside the first selected item ("Photos.zip" for
+one item, "Archive.zip" for several); **Extract** unpacks each selected zip or
+tar (plain, gzip, bzip2, xz or zstd) into a new folder named after the
+archive, taking the contents of a single top-level folder so the name is not
+nested twice. Both are cancellable jobs in the ordinary mutation busy slot,
+through the `ArchiveCodec` seam whose only implementation, `KArchiveCodec`, is
+the one place that names KArchive. Extract accepts only single-component entry
+names (never `..`), creates links last and never follows them, drops special
+files and setuid bits, stops at 20,000 entries or depth 64, and removes its
+folder after any failure or cancellation; a failed Compress removes only the
+archive it created.
+
+Every new operation is identity-checked like the S1 set and runs as a batch
+where it takes several items. A batch accepts the time-stamp changes its own
+earlier items make to a folder it writes into (same device and inode, freshly
+read), so several items into one folder — including multi-item paste — no
+longer fail after the first.
 
 ## Applications browser
 
@@ -889,7 +972,10 @@ the application's short title ("File Manager", the desktop entry's
 GenericName), desktop entry id, and icon, and one command File Manager's
 window menu does not offer yet, `file.new-window` ("New File Manager
 Window", no shortcut until a handler honours one). Standard-key shortcuts
-(Undo, Cut, Copy, Paste, Zoom) stay platform-resolved exactly as before.
+(Undo, Cut, Copy, Paste, Zoom) stay platform-resolved exactly as before. The
+right-click set's commands (ADR-0269) are catalog entries too, so the desktop
+menu can reuse them; `file.open` replaced `application.open`, and
+Properties is labelled Get Info. No two catalog actions share a shortcut.
 
 ## Public Desktop file boundary
 
@@ -1065,10 +1151,10 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   sidebar with app-local persistence (ADR-0090).
 - **S3 (partly landed)** — daily-use completion: the file clipboard
   cut/copy/paste, drag-and-drop, bounded recursive search, and the properties
-  dialog are delivered. Still open: a preview pane, an open-with chooser
-  (requires widening ADR-0029's launch contract through a new ADR), optional
-  permanent deletion, and refinement beyond the shipped public Controls icon
-  boundary (ADR-0111).
+  dialog are delivered, and the right-click set (W10) added Open With,
+  permanent deletion, archives and the rest (ADR-0269). Still open: a preview
+  pane and refinement beyond the shipped public Controls icon boundary
+  (ADR-0111).
 - **S4** — volumes: mount enumeration and per-volume Trash (supersedes the
   ADR-0064 deferral with its own ADR; coordinate polkit/udisks boundaries
   through the Program Manager thread first).
@@ -1136,10 +1222,13 @@ rows likewise live below `QTemporaryDir` roots and never touch the real
   ADR-0090.
 - Batch operations are not covered by undo or Restore Last (one-level,
   single-item recovery is unchanged from S1).
-- Permanent deletion outside confirmed Empty Trash, per-volume Trash, mounts,
-  additional preview formats, portal-mediated paths, and open-with remain
-  explicit later outcomes (S3–S5). A QindaQt credential-entry UI is no longer
+- Per-volume Trash, mounts, additional preview formats, and portal-mediated
+  paths remain explicit later outcomes (S3–S5); Open With and Delete
+  Permanently landed with ADR-0269. A QindaQt credential-entry UI is no longer
   among them: ADR-0196 decides that sign-in belongs to the platform.
+- Open With cannot yet start D-Bus-activatable applications, and Compress
+  writes zip only. The right-click set works in local folders only; Put Back
+  and Delete-in-Trash cover the home Trash (per-volume Trash is S4).
 - Batch transfers across the local/network boundary are landed as the S6
   transfer queue (ADR-0195). The single-child same-authority remote Copy To
   and Move To (ADR-0155/0156) keep exactly their reviewed case, so a batch
@@ -1250,3 +1339,16 @@ walk, and stale-worker fencing. The UI-actions row drives `edit.copy`/
 `edit.cut`/`edit.paste` through the production QML action seam against
 on-disk fixtures, proving menu-armed enabled state, copy-paste commit,
 cut-paste move, and post-commit clipboard clearing end to end.
+
+The right-click set's rows (ADR-0269) are `qindaqt.file-manager-open-with`
+(the bounded Open With launch over a recording starter: list and single-file
+`Exec` codes, refusals, terminal routing, link resolution; and the candidate
+listing, parent-type handlers, shared-handler intersection and Always Open With
+over a temporary `mimeapps.list`), `qindaqt.file-manager-file-actions-mutation`
+(Duplicate, Make Link, Delete Permanently, Put Back, New File and the KArchive
+Compress/Extract jobs against temporary files, including a hostile archive
+name and a cancelled Extract), `qindaqt.file-manager-file-actions-ui`
+(production `Main.qml`: the menu's visibility rules for a file, a folder, an
+archive, the background and Trash, and each action from the catalog to its
+controller), and `qindaqt.settings-default-apps-mime-types` (the store's
+per-type reads and writes).

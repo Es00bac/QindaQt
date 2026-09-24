@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <QVector>
 
 #include <atomic>
 #include <functional>
@@ -19,6 +20,17 @@ enum class MutationKind {
   Trash,
   Restore,
   EmptyTrash,
+  // ADR-0269 (the right-click set). CreateFile makes an empty regular file
+  // at destinationPath; Link makes a symbolic link there whose literal
+  // target is linkTarget; Delete removes sourcePath's tree permanently,
+  // never through Trash; Compress writes a new archive at destinationPath
+  // holding archiveSources; Extract unpacks the archive at sourcePath into a
+  // new folder at destinationPath.
+  CreateFile,
+  Link,
+  Delete,
+  Compress,
+  Extract,
 };
 
 enum class MutationError {
@@ -56,6 +68,13 @@ struct MutationRequest final {
   QStringList declaredRoots;
   std::optional<FileIdentity> expectedSource;
   std::optional<FileIdentity> expectedParent;
+  // Link only: the new link's literal target text (the source's own name,
+  // since a link is made beside what it points to).
+  QString linkTarget = {};
+  // Compress only: every item the archive holds, each with the identity the
+  // user saw; sourcePath and expectedSource stay empty.
+  QStringList archiveSources = {};
+  QVector<FileIdentity> archiveSourceIdentities = {};
 };
 
 struct MutationProgress final {
@@ -81,5 +100,8 @@ using MutationProgressCallback = std::function<void(const MutationProgress &)>;
 
 [[nodiscard]] QString mutationErrorKey(MutationError error);
 [[nodiscard]] QString boundedMutationDiagnostic(const QString &message);
+// The typed error for a failed system call's errno (ADR-0269 code uses this
+// one mapping instead of another private copy).
+[[nodiscard]] MutationError mutationErrorForErrno(int error);
 
 } // namespace QindaQt::Apps::FileManager

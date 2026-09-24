@@ -16,6 +16,8 @@ Control {
     // fixture tests may leave them null (drops then refuse politely).
     property var mutationController: null
     property var clipboardController: null
+    // ADR-0269: the window's FileActions, for the context menu's right-click set.
+    property var fileActions: null
 
     property int iconSize: 64
     readonly property int rowIconSize: Math.max(20, Math.round(iconSize * 0.4375))
@@ -258,6 +260,7 @@ Control {
             navigationController: root.navigationController
             clipboardController: root.clipboardController
             mutationController: root.mutationController
+            fileActions: root.fileActions
         }
 
         Label {

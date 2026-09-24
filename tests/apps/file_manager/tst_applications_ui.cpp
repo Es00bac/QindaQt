@@ -2,6 +2,7 @@
 #include "app_shell/file_manager_action_catalog.h"
 #include "app_shell/file_manager_application_actions.h"
 #include "app_shell/file_manager_browsing_actions.h"
+#include "app_shell/file_manager_item_actions.h"
 #include "app_shell/file_manager_mutation_actions.h"
 #include "app_shell/file_manager_transfer_actions.h"
 #include "application_fixtures.h"
@@ -65,6 +66,8 @@ struct ApplicationsWindow final
         bindFileManagerTransferActions(coordinator, *navigation, clipboard, mutation);
         bindFileManagerMutationActions(coordinator, *navigation, mutation);
         bindFileManagerApplicationActions(coordinator, *navigation, clipboard);
+        bindFileManagerItemActions(coordinator, *navigation, clipboard, mutation,
+                                   temporaryPath + QStringLiteral("/Trash/files"));
         // main.cpp: a picker opens straight into Applications.
         navigation->navigateTo(chooser ? ApplicationsController::location() : temporaryPath);
 
@@ -361,7 +364,7 @@ void ApplicationsUiTests::contextMenuOffersApplicationActions()
     QTest::mouseClick(w.window, Qt::RightButton, Qt::NoModifier, centerOf(delegateFor(grid, 3)));
     QTRY_VERIFY(menu->property("visible").toBool());
     QCOMPARE(menu->property("selectionCount").toInt(), 1);
-    QVERIFY(shown("contextOpenApplicationAction"));
+    QVERIFY(shown("contextOpenAction"));
     QVERIFY(shown("contextPropertiesAction"));
     QCOMPARE(menuItem("contextPropertiesAction")->property("text").toString(), QStringLiteral("Get Info"));
     QVERIFY(shown("contextShowEntryFileAction"));
@@ -369,10 +372,10 @@ void ApplicationsUiTests::contextMenuOffersApplicationActions()
                                    "contextCopyAction", "contextMoveAction", "contextTrashAction"}) {
         QVERIFY2(!shown(fileAction), fileAction);
     }
-    QVERIFY(menuItem("contextOpenApplicationAction")->isEnabled());
+    QVERIFY(menuItem("contextOpenAction")->isEnabled());
 
     // Open goes through the same activation path as a double-click.
-    QMetaObject::invokeMethod(menuItem("contextOpenApplicationAction"), "triggered");
+    QMetaObject::invokeMethod(menuItem("contextOpenAction"), "triggered");
     QTRY_COMPARE(w.recorder.chosen, QStringList{QStringLiteral("editor")});
     QCOMPARE(w.recorder.spawned.size(), 1);
 
@@ -413,7 +416,7 @@ void ApplicationsUiTests::contextMenuOffersApplicationActions()
     QVERIFY(shown("contextRefreshAction"));
     QVERIFY(!shown("contextNewFolderAction"));
     QVERIFY(!shown("contextShowHiddenAction"));
-    QVERIFY(!shown("contextOpenApplicationAction"));
+    QVERIFY(!shown("contextOpenAction"));
     QMetaObject::invokeMethod(menu, "close");
 }
 
@@ -437,15 +440,16 @@ void ApplicationsUiTests::fileActionsStayOffInsideApplications()
                            "application.show-entry-file"}) {
         QVERIFY2(!w.actionEnabled(QString::fromLatin1(id)), id);
     }
-    for (const char *id : {"application.open", "file.properties", "view.filter", "view.grid-mode",
+    for (const char *id : {"file.open", "file.properties", "view.filter", "view.grid-mode",
                            "view.details-mode", "view.zoom-in", "edit.select-all", "go.back"}) {
         QVERIFY2(w.actionEnabled(QString::fromLatin1(id)), id);
     }
     QVERIFY(!newFolder->property("available").toBool());
     QVERIFY(!w.navigation->canGoUp());
 
-    // Opening several selected applications opens each one.
-    w.coordinator.activateAction(QStringLiteral("application.open"));
+    // Opening several selected applications opens each one (ADR-0269: the
+    // window-wide file.open, the same NavigationController activation).
+    w.coordinator.activateAction(QStringLiteral("file.open"));
     QTRY_COMPARE(w.recorder.chosen.size(), 5);
 
     // Zoom resizes application icons like file icons.
@@ -456,7 +460,7 @@ void ApplicationsUiTests::fileActionsStayOffInsideApplications()
     w.coordinator.activateAction(QStringLiteral("go.back"));
     QTRY_VERIFY(!w.navigation->applicationsPlace());
     QTRY_VERIFY(w.actionEnabled(QStringLiteral("file.new-folder")));
-    QVERIFY(!w.actionEnabled(QStringLiteral("application.open")));
+    QVERIFY(!w.actionEnabled(QStringLiteral("file.open")));
 }
 
 void ApplicationsUiTests::chooserModeKeepsItsSemantics()

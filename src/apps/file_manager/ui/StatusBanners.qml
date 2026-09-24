@@ -17,6 +17,10 @@ ColumnLayout {
     required property var placesController
     required property var transferQueueController
     required property var networkLocationsController
+    // ADR-0269: Open With and Open Terminal Here / Open in New Window report
+    // failures here. Optional for fixture windows.
+    property var openWithController: null
+    property var folderLaunchController: null
     property bool chooserMode: false
 
     spacing: 0
@@ -91,6 +95,27 @@ ColumnLayout {
         message: root.navigationController.launchError
         actionText: qsTr("Dismiss")
         onActionTriggered: root.navigationController.clearLaunchError()
+    }
+
+    StatusBanner {
+        objectName: "openWithErrorBanner"
+        Layout.fillWidth: true
+        visible: root.openWithController !== null && root.openWithController.lastError.length > 0
+        title: qsTr("Couldn't open with that application")
+        message: root.openWithController ? root.openWithController.lastError : ""
+        actionText: qsTr("Dismiss")
+        onActionTriggered: root.openWithController.clearLastError()
+    }
+
+    StatusBanner {
+        objectName: "folderLaunchErrorBanner"
+        Layout.fillWidth: true
+        visible: root.folderLaunchController !== null
+            && root.folderLaunchController.lastError.length > 0
+        title: qsTr("Couldn't open that folder")
+        message: root.folderLaunchController ? root.folderLaunchController.lastError : ""
+        actionText: qsTr("Dismiss")
+        onActionTriggered: root.folderLaunchController.clearLastError()
     }
 
     StatusBanner {
