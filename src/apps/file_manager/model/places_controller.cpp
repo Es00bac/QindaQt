@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "places_controller.h"
+#include "applications_location.h"
 
 #include <QDir>
 #include <QStandardPaths>
@@ -50,14 +51,13 @@ QVariantList PlacesController::places() const {
     list.append(placeMap(QStringLiteral("trash"), QStringLiteral("Trash"),
                          QDir(dataHome).filePath(QStringLiteral("Trash/files"))));
   }
-  // AGENT-NOTE (ADR-0164/ADR-0172): Applications is a place, not a folder.
-  // It carries the same empty path as Network for the same reason -- there is
-  // no navigable directory behind it -- and PlacesSidebar routes it into the
-  // Applications browser instead of NavigationController::navigateTo().
-  // Before this it was reachable only from the Go menu, which is not where a
-  // user looks for "the thing that says Applications".
+  // AGENT-NOTE (ADR-0172/ADR-0262): Applications is a place, not a folder.
+  // Its path is the virtual Applications location the window browses in the
+  // ordinary views, so the sidebar can emphasize it; PlacesSidebar still
+  // routes it through the "go.applications" action (one route in) and never
+  // accepts a drop on it, because no directory stands behind it.
   list.append(placeMap(QStringLiteral("applications"),
-                       QStringLiteral("Applications"), QString()));
+                       QStringLiteral("Applications"), ApplicationsLocation::location()));
   // AGENT-NOTE (S5): this place exposes the route to network browsing
   // without pretending a connection exists -- an empty path is never a
   // navigable location, so PlacesSidebar routes it to the location bar

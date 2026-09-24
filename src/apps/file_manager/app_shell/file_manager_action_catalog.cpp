@@ -34,6 +34,17 @@ namespace {
 
 QList<QindaQt::AppShell::ActionSpec> fileManagerActionCatalog() {
   return {
+      // ADR-0262: the Applications place's item actions. Open heads the File
+      // menu; Show Desktop Entry File sits with Properties (Get Info there).
+      // Both stay disabled outside that place (file_manager_application_actions).
+      action(QStringLiteral("application.open"), QStringLiteral("file"),
+             QStringLiteral("File"), QStringLiteral("Open"),
+             QStringLiteral("Open the selected applications"),
+             QKeySequence(QStringLiteral("Ctrl+O")), 0, -1),
+      action(QStringLiteral("application.show-entry-file"), QStringLiteral("file"),
+             QStringLiteral("File"), QStringLiteral("Show Desktop Entry File"),
+             QStringLiteral("Show the selected application's desktop entry in its folder"),
+             QKeySequence(QStringLiteral("Ctrl+Shift+E")), 0, 7),
       action(QStringLiteral("file.new-folder"), QStringLiteral("file"),
              QStringLiteral("File"), QStringLiteral("New Folder"),
              QStringLiteral("Create a folder in the current location"),
@@ -126,6 +137,10 @@ QList<QindaQt::AppShell::ActionSpec> fileManagerActionCatalog() {
              QStringLiteral("View"), QStringLiteral("Filter This Folder"),
              QStringLiteral("Filter filenames in the current folder"),
              QKeySequence(QStringLiteral("Ctrl+F")), 2, 8),
+      action(QStringLiteral("view.group-by-category"), QStringLiteral("view"),
+             QStringLiteral("View"), QStringLiteral("Group by Category"),
+             QStringLiteral("Group applications under their categories"),
+             QKeySequence(QStringLiteral("Ctrl+G")), 2, 9, false, true),
       action(QStringLiteral("view.focus-location"), QStringLiteral("view"),
              QStringLiteral("View"), QStringLiteral("Location Bar"),
              QStringLiteral("Type a folder path directly"),
@@ -148,7 +163,7 @@ QList<QindaQt::AppShell::ActionSpec> fileManagerActionCatalog() {
              QKeySequence(QStringLiteral("Alt+Up")), 3, 4),
       action(QStringLiteral("go.applications"), QStringLiteral("go"),
              QStringLiteral("Go"), QStringLiteral("Applications"),
-             QStringLiteral("Browse installed applications by category"),
+             QStringLiteral("Show every installed application"),
              QKeySequence(QStringLiteral("Ctrl+Shift+A")), 3, 5),
       // ADR-0194: the Go menu's network pair. "go.network" opens the hub of
       // saved locations; "network.connect" opens the hub with the

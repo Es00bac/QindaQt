@@ -259,3 +259,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0256: Refresh Audio1 after package upgrades at session entry](0256-refresh-audio1-after-package-upgrades.md)
 - [ADR-0257: Search Settings routes through a QindaTK command palette](0257-search-settings-routes-through-a-qindatk-command-palette.md)
 - [ADR-0259: Preview screen savers without the lock screen](0259-preview-screen-savers-without-the-lock-screen.md)
+- [ADR-0262: Applications is browsed in the File Manager's ordinary views](0262-applications-is-browsed-in-the-file-managers-ordinary-views.md)

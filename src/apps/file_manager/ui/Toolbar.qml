@@ -64,9 +64,11 @@ ToolBar {
             objectName: "newFolderButton"
             iconName: "folder-new"
             text: qsTr("New Folder")
-            available: (!root.mutationController.busy && !root.navigationController.remoteActive)
-                       || (root.navigationController.remoteCreateAvailable
-                           && !root.navigationController.remoteCreateBusy)
+            // ADR-0262: nothing can be created inside the Applications place.
+            available: !root.navigationController.applicationsPlace
+                       && ((!root.mutationController.busy && !root.navigationController.remoteActive)
+                           || (root.navigationController.remoteCreateAvailable
+                               && !root.navigationController.remoteCreateBusy))
             Accessible.description: qsTr("Create a folder in the current location")
             onClicked: root.appCoordinator.activateAction("file.new-folder")
         }

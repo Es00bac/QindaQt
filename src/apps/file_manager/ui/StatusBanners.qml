@@ -17,8 +17,19 @@ ColumnLayout {
     required property var placesController
     required property var transferQueueController
     required property var networkLocationsController
+    property bool chooserMode: false
 
     spacing: 0
+
+    // ADR-0165/ADR-0262: a picker window explains what opening an application
+    // will do while it shows the Applications place.
+    StatusBanner {
+        objectName: "chooserHint"
+        Layout.fillWidth: true
+        visible: root.chooserMode && root.navigationController.applicationsPlace === true
+        title: qsTr("Choose an application")
+        message: qsTr("Open the application that will replace this picker in the layout.")
+    }
 
     StatusBanner {
         objectName: "mutationProgressCard"
@@ -75,7 +86,8 @@ ColumnLayout {
         objectName: "launchErrorBanner"
         Layout.fillWidth: true
         visible: root.navigationController.launchError.length > 0
-        title: qsTr("Couldn't open the file")
+        title: root.navigationController.applicationsPlace === true
+            ? qsTr("Couldn't open the application") : qsTr("Couldn't open the file")
         message: root.navigationController.launchError
         actionText: qsTr("Dismiss")
         onActionTriggered: root.navigationController.clearLaunchError()

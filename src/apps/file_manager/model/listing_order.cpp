@@ -45,6 +45,12 @@ namespace {
     if (rankA != rankB) {
       return rankA < rankB ? -1 : 1;
     }
+    // ADR-0262: a row that names its own kind (an application's category)
+    // compares by that label, which is what grouping by category sorts on.
+    if (!a.kindText.isEmpty() || !b.kindText.isEmpty()) {
+      const int byLabel = a.kindText.compare(b.kindText, Qt::CaseInsensitive);
+      return byLabel == 0 ? 0 : (byLabel < 0 ? -1 : 1);
+    }
     const QString suffixA = QFileInfo(a.name).suffix().toLower();
     const QString suffixB = QFileInfo(b.name).suffix().toLower();
     if (suffixA != suffixB) {

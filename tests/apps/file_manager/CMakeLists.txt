@@ -536,6 +536,28 @@ qindaqt_add_file_manager_test(
     tst_applications_controller.cpp
     qindaqt.file-manager-applications-controller
 )
+# ADR-0262: the Applications place browsed by the ordinary NavigationController
+# through its lister/launcher decorators, over a fixture catalog and a
+# recording launch seam (no bus, nothing spawned).
+qindaqt_add_file_manager_test(
+    qindaqt_file_manager_applications_place_tests
+    tst_applications_place.cpp
+    qindaqt.file-manager-applications-place
+)
+# ADR-0262: production Main.qml in the Applications place -- selection,
+# double-click/Enter opening, type-to-select, filter, details view, grouping,
+# context actions, chooser mode and the docked replacement route.
+qindaqt_add_file_manager_test(qindaqt_file_manager_applications_ui_tests
+    tst_applications_ui.cpp qindaqt.file-manager-applications-ui)
+target_link_libraries(qindaqt_file_manager_applications_ui_tests PRIVATE Qt6::Quick)
+target_compile_definitions(qindaqt_file_manager_applications_ui_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+set_tests_properties(qindaqt.file-manager-applications-ui PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+qt_add_resources(qindaqt_file_manager_applications_ui_tests file_manager_applications_ui_artwork
+    PREFIX /qindaqt/file-manager
+    FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
 
 # AGENT-GUARD: these rows construct a QGuiApplication, so they must name a
 # platform. Without this they default to xcb and abort before their first

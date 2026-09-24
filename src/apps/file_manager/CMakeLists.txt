@@ -36,6 +36,8 @@ target_sources(
     qindaqt_file_manager_support
     PRIVATE
         app_shell/file_manager_action_catalog.cpp
+        app_shell/file_manager_application_actions.cpp
+        app_shell/file_manager_application_actions.h
         app_shell/file_manager_browsing_actions.cpp
         app_shell/file_manager_browsing_actions.h
         app_shell/file_manager_mutation_actions.cpp
@@ -51,6 +53,9 @@ target_sources(
         model/entry_properties.cpp
         model/listing_order.cpp
         model/applications_controller.cpp
+        model/applications_listing.cpp
+        model/applications_place.cpp
+        model/applications_place_order.cpp
         model/navigation_controller.cpp
         model/workspace_chooser_client.cpp
         model/navigation_history.cpp
@@ -102,6 +107,10 @@ target_sources(
         runtime/file_manager_application.h
         model/bookmarks_store.h
         model/applications_controller.h
+        model/applications_listing.h
+        model/applications_location.h
+        model/applications_place.h
+        model/applications_place_order.h
         model/clipboard_controller.h
         model/directory_lister.h
         model/entry_properties.h
@@ -214,7 +223,8 @@ qt_add_qml_module(
         ui/ViewportNavigation.qml
         ui/ZoomWheelHandler.qml
         ui/StatePane.qml
-        ui/ApplicationsView.qml
+        ui/ApplicationInfoDialog.qml
+        ui/ApplicationsPlaceActions.qml
         ui/MutationDialogs.qml
         ui/StatusBanners.qml
         ui/ExportedMenuBar.qml
