@@ -22,7 +22,8 @@ namespace QindaQt::Apps::FileManager {
 namespace EntryPresentation {
 
 [[nodiscard]] inline QString sizeTextFor(const DirectoryEntry &entry) {
-  if (entry.isDirectory) {
+  // An application row has no meaningful size: unknown reads as a dash.
+  if (entry.isDirectory || !entry.applicationId.isEmpty()) {
     return QStringLiteral("—");
   }
   return QLocale().formattedDataSize(entry.size);
@@ -36,6 +37,9 @@ namespace EntryPresentation {
 }
 
 [[nodiscard]] inline QString kindTextFor(const DirectoryEntry &entry) {
+  if (!entry.kindText.isEmpty()) {
+    return entry.kindText;
+  }
   if (entry.isDirectory) {
     return QStringLiteral("Folder");
   }
@@ -82,6 +86,11 @@ entryListToVariants(const QVector<DirectoryEntry> &entries, quint64 generation,
         {QStringLiteral("modifiedNanoseconds"),
          QString::number(entry.modifiedNanoseconds)},
         {QStringLiteral("mode"), QString::number(entry.mode)},
+        // ADR-0262: application rows open through ApplicationsController;
+        // "launchable" is false only for a row whose note explains why not.
+        {QStringLiteral("applicationId"), entry.applicationId},
+        {QStringLiteral("launchable"), entry.note.isEmpty()},
+        {QStringLiteral("note"), entry.note},
     });
   }
   return list;

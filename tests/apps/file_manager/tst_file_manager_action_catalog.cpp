@@ -23,7 +23,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 32);
+  QCOMPARE(actions.size(), 35);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -49,7 +49,10 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("go.forward"), QStringLiteral("go.up"), QStringLiteral("go.applications"),
       QStringLiteral("go.network"), QStringLiteral("network.connect"),
       QStringLiteral("app.preferences"),
-      QStringLiteral("view.refresh")};
+      QStringLiteral("view.refresh"),
+      // ADR-0262: the Applications place's own actions.
+      QStringLiteral("application.open"), QStringLiteral("application.show-entry-file"),
+      QStringLiteral("view.group-by-category")};
   QCOMPARE(identities, expected);
 
   const auto trash = std::find_if(actions.cbegin(), actions.cend(), [](const auto &action) {
@@ -178,6 +181,27 @@ void TestFileManagerActionCatalog::s2ViewEditGoActionsAreCatalogued() {
   QCOMPARE(bookmarkAdd->order, 1);
   QCOMPARE(bookmarkAdd->shortcut, QKeySequence(QStringLiteral("Ctrl+D")));
   QVERIFY(!bookmarkAdd->checkable);
+
+  // ADR-0262: Open heads the File menu, Show Desktop Entry File sits with
+  // Properties (Get Info there), and Group by Category is a View toggle.
+  const auto open = find("application.open");
+  QVERIFY(open != actions.cend());
+  QCOMPARE(open->menuId, QStringLiteral("file"));
+  QCOMPARE(open->order, -1);
+  QCOMPARE(open->shortcut, QKeySequence(QStringLiteral("Ctrl+O")));
+  QVERIFY(!open->checkable);
+  const auto showEntry = find("application.show-entry-file");
+  QVERIFY(showEntry != actions.cend());
+  QCOMPARE(showEntry->menuId, QStringLiteral("file"));
+  QCOMPARE(showEntry->order, 7);
+  QCOMPARE(showEntry->shortcut, QKeySequence(QStringLiteral("Ctrl+Shift+E")));
+  const auto group = find("view.group-by-category");
+  QVERIFY(group != actions.cend());
+  QCOMPARE(group->menuId, QStringLiteral("view"));
+  QCOMPARE(group->menuOrder, 2);
+  QCOMPARE(group->shortcut, QKeySequence(QStringLiteral("Ctrl+G")));
+  QVERIFY(group->checkable);
+  QVERIFY(!group->destructive);
 }
 
 QTEST_MAIN(TestFileManagerActionCatalog)

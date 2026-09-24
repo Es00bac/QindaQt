@@ -218,9 +218,9 @@ void TestNetworkHubUi::theNetworkPlaceOpensAHubThatRenders() {
   QVERIFY(connectButton);
   QVERIFY(rendersInsideWindow(connectButton, fixture.window));
 
-  // Browsing anywhere leaves the hub, exactly as the Applications browser
-  // does. It has to be a different folder: navigating to the one already open
-  // changes nothing and would make this row pass for the wrong reason.
+  // Browsing anywhere leaves the hub. It has to be a different folder:
+  // navigating to the one already open changes nothing and would make this
+  // row pass for the wrong reason.
   fixture.navigation->navigateTo(temporary.filePath(QStringLiteral("elsewhere")));
   QTRY_VERIFY(!rendersInsideWindow(hub, fixture.window));
 }

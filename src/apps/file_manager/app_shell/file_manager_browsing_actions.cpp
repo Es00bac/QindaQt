@@ -7,8 +7,10 @@ namespace QindaQt::Apps::FileManager {
 void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinator,
                                    NavigationController &navigation) {
   const auto sync = [&coordinator, &navigation] {
-    coordinator.setWindowTitle(
-        QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
+    // ADR-0262: the Applications place is titled by name, never by address.
+    coordinator.setWindowTitle(QStringLiteral("QindaQt File Manager — %1")
+        .arg(navigation.applicationsPlace() ? QStringLiteral("Applications")
+                                            : navigation.currentPath()));
     const auto enabled = [&coordinator, &navigation](const char *id, bool value) {
       const QLatin1String actionId(id);
       const bool folderAction = actionId.startsWith(QLatin1String("view."))
@@ -31,8 +33,10 @@ void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinato
     // disabled instead of presenting a dead end (ADR-0137).
     enabled("view.filter", !navigation.remoteActive());
     for (const char *id : {"view.refresh", "view.show-hidden", "view.grid-mode",
-                           "view.details-mode", "view.zoom-reset", "edit.select-all", "bookmark.add"})
+                           "view.details-mode", "view.zoom-reset", "edit.select-all"})
       enabled(id, true);
+    // A bookmark names a folder; the Applications place is reached from Places.
+    enabled("bookmark.add", !navigation.applicationsPlace());
     checked("view.show-hidden", navigation.showHidden());
   };
   QObject::connect(&navigation, &NavigationController::navigationChanged,

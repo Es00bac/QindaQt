@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "applications_location.h"
 #include "directory_lister.h"
 #include "file_manager_types.h"
 #include "launch_intent.h"
@@ -64,6 +65,8 @@ class NavigationController final : public QObject {
   // preview, recursive search, bounded local launch) while this is true;
   // navigation itself (back/forward/up/refresh/location entry) stays live.
   Q_PROPERTY(bool remoteActive READ remoteActive NOTIFY navigationChanged FINAL)
+  // ADR-0262: true while the current location is the Applications place.
+  Q_PROPERTY(bool applicationsPlace READ applicationsPlace NOTIFY navigationChanged FINAL)
   // ADR-0153: true while browsing remote with a RemoteRenamer injected --
   // the action bindings use this to keep "file.rename" available remotely.
   Q_PROPERTY(bool remoteRenameAvailable READ remoteRenameAvailable NOTIFY navigationChanged FINAL)
@@ -225,6 +228,7 @@ public:
   [[nodiscard]] bool canZoomIn() const;
   [[nodiscard]] bool canZoomOut() const;
   [[nodiscard]] bool remoteActive() const noexcept { return m_remoteActive; }
+  [[nodiscard]] bool applicationsPlace() const { return ApplicationsLocation::isLocation(currentPath()); }
   [[nodiscard]] bool remoteRenameAvailable() const noexcept {
     return m_remoteActive && m_remoteRename != nullptr;
   }

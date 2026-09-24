@@ -11,6 +11,12 @@
 var internalFormat = "application/x-qindaqt-file-entries"
 
 function mimeFor(entries) {
+    // ADR-0262: application rows are not files. Neither the dock nor the
+    // desktop accepts a dragged application today, and a row's virtual path
+    // must never reach a copy or move, so they never enter a drag.
+    entries = entries.filter(entry => !entry.applicationId)
+    if (entries.length === 0)
+        return ({})
     const urls = []
     for (const entry of entries)
         urls.push("file://" + encodeURI(entry.path))
@@ -53,6 +59,10 @@ function droppableInternalEntries(jsonText, destinationDir) {
 // Qt.IgnoreAction when nothing was dispatchable.
 function dispatch(drop, destinationDir, mutationController, clipboardController) {
     if (!mutationController || !clipboardController)
+        return Qt.IgnoreAction
+    // A virtual place such as Applications (ADR-0262) is neither a local
+    // folder nor a network URL (both judged by the controllers): refuse here.
+    if (!destinationDir.startsWith("/") && destinationDir.indexOf("://") < 0)
         return Qt.IgnoreAction
     if (drop.formats.indexOf(internalFormat) >= 0) {
         const kept = droppableInternalEntries(drop.getDataAsString(internalFormat),
