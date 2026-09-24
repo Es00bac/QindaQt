@@ -59,11 +59,13 @@ void DesktopControlsCompositionTests::stockPolicyComposesEveryFacadeOverInjected
   Launcher::LauncherAppletController launcher(&launcherStack.scanner, nullptr,
                                               &launcherStack.executor, true);
   StubSessionActions session;
+  QObject desktopCommands;
 
   DesktopControlsComposition composition(
       catalog.manifests, catalog.policy, transport, opener,
       DesktopControlsComposition::BorrowedFacades{&launcher, nullptr, nullptr, nullptr,
-                                                 nullptr, nullptr, &session});
+                                                 nullptr, nullptr, &session, nullptr,
+                                                 &desktopCommands});
   auto *access = composition.access();
   QVERIFY(access != nullptr);
   QVERIFY(access->workspaces() != nullptr);
@@ -76,6 +78,10 @@ void DesktopControlsCompositionTests::stockPolicyComposesEveryFacadeOverInjected
   QVERIFY(access->commandHud() != nullptr);
   QVERIFY(access->overview() != nullptr);
   QCOMPARE(access->launcher(), &launcher);
+  // ADR-0260: the desktop menu's command channel reaches the desktop surfaces
+  // through this facade, untouched.
+  QCOMPARE(access->desktopCommands(), &desktopCommands);
+  QCOMPARE(access->property("desktopCommands").value<QObject *>(), &desktopCommands);
   QCOMPARE(access->systemMenu()->property("sessionActions").value<QObject *>(), &session);
 
   // Grants from the stock policy reach each facade.

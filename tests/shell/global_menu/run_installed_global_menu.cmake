@@ -38,6 +38,7 @@ foreach(required_path IN ITEMS
         "${qml}/qmldir"
         "${qml}/GlobalMenuActionEntry.qml"
         "${qml}/GlobalMenuApplet.qml"
+        "${qml}/GlobalMenuConfirmation.qml"
         "${qml}/GlobalMenuNativeMenu.qml"
         "${qml}/GlobalMenuNativeMenuItem.qml"
         "${data}/applets/global-menu.json"

@@ -4,6 +4,8 @@
 
 #include "qindaqt/shell/desktop_controls/active_application_controller.h"
 
+#include <qindaqt/shell/global_menu/applet/globalmenuappletaccess.h>
+
 #include <QQmlExtensionPlugin>
 #include <QtTest>
 
@@ -40,6 +42,7 @@ class DesktopControlsQmlActiveApplicationTests final : public QObject {
 
 private Q_SLOTS:
     void popupRetiresWithItsDisplayedTask();
+    void namesTheDesktopMenuApplicationWithoutAWindow();
 };
 
 void DesktopControlsQmlActiveApplicationTests::popupRetiresWithItsDisplayedTask()
@@ -137,6 +140,49 @@ void DesktopControlsQmlActiveApplicationTests::popupRetiresWithItsDisplayedTask(
     QCOMPARE(tasks.port.lastCall().firstId, QStringLiteral("w-terminal"));
     QCOMPARE(tasks.port.lastCall().revision, terminalRevision);
     QTRY_VERIFY(!popup->property("opened").toBool());
+}
+
+void DesktopControlsQmlActiveApplicationTests::namesTheDesktopMenuApplicationWithoutAWindow()
+{
+    // ADR-0260: the top-left name reads "File Manager" while the global menu
+    // shows the desktop menu, and "Desktop" again once it does not.
+    TaskListStack tasks;
+    ShellTaskListApplet::TaskListAppletController taskList(tasks.source, tasks.authority,
+                                                          tasks.port, {true, true, true});
+    Shell::GlobalMenu::GlobalMenuAppletAccess globalMenu;
+    ActiveApplicationController active(&taskList, {true, true}, &globalMenu);
+
+    AppletHost host;
+    QString error;
+    QVERIFY2(host.create(QStringLiteral("ActiveApplicationApplet"), &active, &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    auto *name = host.child<QQuickItem>(QStringLiteral("activeApplicationName"));
+    auto *summary = host.child<QQuickItem>(QStringLiteral("activeApplicationSummary"));
+    auto *icon = host.child<QQuickItem>(QStringLiteral("activeApplicationIcon"));
+    QVERIFY(name != nullptr && summary != nullptr && icon != nullptr);
+    QCOMPARE(name->property("text").toString(), QStringLiteral("Desktop"));
+
+    Shell::GlobalMenu::Protocol::MenuTree tree;
+    Shell::GlobalMenu::Protocol::MenuItem lock;
+    lock.id = QStringLiteral("desktop.lock-screen");
+    lock.text = QStringLiteral("Lock Screen");
+    Shell::GlobalMenu::Protocol::MenuItem application;
+    application.id = QStringLiteral("desktop.menu.application");
+    application.kind = Shell::GlobalMenu::Protocol::MenuItemKind::Submenu;
+    application.text = QStringLiteral("File Manager");
+    application.children = {lock};
+    tree.revision = 1;
+    tree.items = {application};
+    globalMenu.publishDesktopTree(tree, QStringLiteral("File Manager"),
+                                  QStringLiteral("org.qindaqt.FileManager"));
+    QTRY_COMPARE(name->property("text").toString(), QStringLiteral("File Manager"));
+    QCOMPARE(icon->property("name").toString(), QStringLiteral("org.qindaqt.FileManager"));
+    // No window: the indicator names the menu but offers no window actions.
+    QVERIFY(!summary->isEnabled());
+
+    globalMenu.withdrawDesktopTree();
+    QTRY_COMPARE(name->property("text").toString(), QStringLiteral("Desktop"));
 }
 
 QTEST_MAIN(DesktopControlsQmlActiveApplicationTests)

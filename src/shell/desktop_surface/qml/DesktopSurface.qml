@@ -127,6 +127,66 @@ Window {
         applicationsMenu.open()
     }
 
+    // ADR-0260: requests from the global menu's desktop menu (the File
+    // Manager's menu shown while no application is active). Each one runs
+    // through the exact path this surface's own right-click menu uses, and
+    // New Folder / Paste / Clean Up run on the primary output's surface only
+    // so one request never becomes one per output. Hosts whose access facade
+    // has no `desktopCommands` (previews, older tests) attach nothing.
+    readonly property var desktopCommands: root.access !== null
+        && root.access.desktopCommands !== undefined ? root.access.desktopCommands : null
+    readonly property bool primarySurface: root.screenName === root.primaryOutputName
+
+    function reportPasteAvailable() {
+        if (root.desktopCommands !== null && root.primarySurface)
+            root.desktopCommands.reportPasteAvailable(root.screenName,
+                                                      desktopContents.canPaste === true)
+    }
+
+    function attachDesktopCommands() {
+        if (root.desktopCommands === null)
+            return
+        root.desktopCommands.attachSurface(root.screenName, root.primarySurface)
+        root.reportPasteAvailable()
+    }
+
+    onPrimarySurfaceChanged: attachDesktopCommands()
+    Component.onCompleted: attachDesktopCommands()
+    Component.onDestruction: {
+        if (root.desktopCommands !== null)
+            root.desktopCommands.detachSurface(root.screenName)
+    }
+
+    Connections {
+        target: root.desktopCommands
+        ignoreUnknownSignals: true
+        function onCommandRequested(command, primaryOnly) {
+            if (primaryOnly && !root.primarySurface)
+                return
+            switch (String(command)) {
+            case "select-all":
+                iconsView.selectAll()
+                break
+            case "new-folder":
+                contextMenu.dispatch("newFolder", "", "")
+                break
+            case "paste":
+                contextMenu.dispatch("paste", "", "")
+                break
+            case "clean-up":
+                contextMenu.dispatch("reflow", "", "")
+                break
+            }
+        }
+    }
+
+    Connections {
+        target: desktopContents
+        function onClipboardChanged() {
+            root.reportPasteAvailable()
+        }
+    }
+
     NewFolderController {
         id: newFolderController
     }

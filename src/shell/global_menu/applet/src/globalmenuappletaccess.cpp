@@ -60,6 +60,13 @@ QVariantList projectTopLevel(const Protocol::MenuTree &tree, const QString &gene
     return projection;
 }
 
+bool admitsAction(const Protocol::MenuTree &tree, const QString &actionId)
+{
+    const Protocol::MenuItem *item = Protocol::findMenuItemById(tree.items, actionId);
+    return item != nullptr && item->kind == Protocol::MenuItemKind::Action
+        && item->enabled && item->visible;
+}
+
 } // namespace
 
 GlobalMenuAppletAccess::GlobalMenuAppletAccess(QObject *parent)
@@ -92,6 +99,16 @@ bool GlobalMenuAppletAccess::rendererPresent() const noexcept
     return m_rendererCount > 0;
 }
 
+bool GlobalMenuAppletAccess::applicationAvailable() const noexcept
+{
+    return m_applicationAvailable;
+}
+
+bool GlobalMenuAppletAccess::applicationProjectionRetained() const noexcept
+{
+    return !m_applicationProjection.isEmpty();
+}
+
 void GlobalMenuAppletAccess::attachRenderer()
 {
     const bool wasPresent = rendererPresent();
@@ -116,7 +133,9 @@ void GlobalMenuAppletAccess::detachRenderer()
 
 void GlobalMenuAppletAccess::activate(const QString &actionId, const QString &generation)
 {
-    if (generation != QString::number(m_generation))
+    const quint64 presented = presentingDesktop() ? m_desktopGeneration
+                                                  : m_applicationGeneration;
+    if (generation != QString::number(presented))
         return;
     activate(actionId);
 }
@@ -126,12 +145,19 @@ void GlobalMenuAppletAccess::activate(const QString &actionId)
     // AGENT-GUARD: this authority check is the complete boundary offered to
     // QML. A disabled/invisible/unknown/non-action id must never reach
     // `activationRequested`, mirroring NotificationCenterAppletAccess::toggle().
+    // The presented channel decides where an admitted id goes, so a desktop
+    // id can never reach the application's dbusmenu `Event` path and an
+    // application id can never run a shell command.
     if (!m_available) {
         return;
     }
-    const Protocol::MenuItem *item = Protocol::findMenuItemById(m_tree.items, actionId);
-    if (!item || item->kind != Protocol::MenuItemKind::Action || !item->enabled
-        || !item->visible) {
+    if (presentingDesktop()) {
+        if (m_desktopState == DesktopState::Active && admitsAction(m_desktopTree, actionId)) {
+            Q_EMIT desktopActivationRequested(actionId);
+        }
+        return;
+    }
+    if (!admitsAction(m_tree, actionId)) {
         return;
     }
     Q_EMIT activationRequested(actionId);
@@ -148,65 +174,211 @@ void GlobalMenuAppletAccess::publishTree(const Protocol::MenuTree &tree)
         return;
     }
     m_tree = tree;
-    setTopLevelProjection(projectTopLevel(tree, QString::number(++m_generation)));
-    setAvailable(true);
-    setPhase(QStringLiteral("ready"), {});
+    m_applicationGeneration = ++m_generationCounter;
+    m_applicationProjection =
+        projectTopLevel(tree, QString::number(m_applicationGeneration));
+    m_applicationAvailable = true;
+    m_applicationPhase = QStringLiteral("ready");
+    m_applicationReasonCode.clear();
+    present();
 }
 
 void GlobalMenuAppletAccess::publishUnavailable()
 {
     m_tree = Protocol::MenuTree{};
-    setTopLevelProjection({});
-    setAvailable(false);
-    setPhase(QStringLiteral("unavailable"), {});
+    m_applicationProjection.clear();
+    m_applicationAvailable = false;
+    m_applicationPhase = QStringLiteral("unavailable");
+    m_applicationReasonCode.clear();
+    present();
 }
 
 void GlobalMenuAppletAccess::publishDegraded(const QString &reasonCode)
 {
     m_tree = Protocol::MenuTree{};
-    setTopLevelProjection({});
-    setAvailable(false);
-    setPhase(QStringLiteral("degraded"), reasonCode);
+    m_applicationProjection.clear();
+    m_applicationAvailable = false;
+    m_applicationPhase = QStringLiteral("degraded");
+    m_applicationReasonCode = reasonCode;
+    present();
 }
 
 void GlobalMenuAppletAccess::beginTransition()
 {
-    if (m_topLevelProjection.isEmpty()) {
+    if (m_applicationProjection.isEmpty()) {
         // Nothing retained to hold the slot open: this is indistinguishable
         // from unavailable for presentation purposes.
         publishUnavailable();
         return;
     }
-    setAvailable(false);
-    setPhase(QStringLiteral("loading"), {});
+    m_applicationAvailable = false;
+    m_applicationPhase = QStringLiteral("loading");
+    m_applicationReasonCode.clear();
+    present();
 }
 
-void GlobalMenuAppletAccess::setAvailable(bool available)
+void GlobalMenuAppletAccess::publishDesktopTree(const Protocol::MenuTree &tree,
+                                                const QString &title,
+                                                const QString &iconName)
 {
-    if (m_available == available) {
+    if (!Protocol::validateMenuTree(tree).accepted) {
+        withdrawDesktopTree();
         return;
     }
-    m_available = available;
-    Q_EMIT availableChanged();
+    if (m_desktopState != DesktopState::Absent && m_desktopTree.items == tree.items
+        && m_desktopTitle == title && m_desktopIconName == iconName) {
+        // AGENT-GUARD: identical content keeps its generation. Minting a new
+        // one would rebuild every delegate and close an open popup for no
+        // visible change (the same rule the transport applies to Unchanged).
+        m_desktopTree = tree;
+        m_desktopState = DesktopState::Active;
+        present();
+        return;
+    }
+    m_desktopTree = tree;
+    m_desktopTitle = title;
+    m_desktopIconName = iconName;
+    m_desktopGeneration = ++m_generationCounter;
+    m_desktopProjection = projectTopLevel(tree, QString::number(m_desktopGeneration));
+    m_desktopState = DesktopState::Active;
+    present();
 }
 
-void GlobalMenuAppletAccess::setTopLevelProjection(QVariantList projection)
+void GlobalMenuAppletAccess::retainDesktopTreeInert()
 {
-    if (m_topLevelProjection == projection) {
+    if (m_desktopState == DesktopState::Absent) {
         return;
     }
-    m_topLevelProjection = std::move(projection);
-    Q_EMIT itemsChanged();
+    m_desktopState = DesktopState::Inert;
+    present();
 }
 
-void GlobalMenuAppletAccess::setPhase(QString phase, QString reasonCode)
+void GlobalMenuAppletAccess::withdrawDesktopTree()
 {
-    if (m_phase == phase && m_reasonCode == reasonCode) {
+    m_desktopState = DesktopState::Absent;
+    m_desktopTree = Protocol::MenuTree{};
+    m_desktopProjection.clear();
+    m_desktopTitle.clear();
+    m_desktopIconName.clear();
+    present();
+}
+
+bool GlobalMenuAppletAccess::desktopMenuShown() const noexcept
+{
+    return m_desktopShown;
+}
+
+QString GlobalMenuAppletAccess::desktopMenuTitle() const
+{
+    return m_presentedTitle;
+}
+
+QString GlobalMenuAppletAccess::desktopMenuIconName() const
+{
+    return m_presentedIconName;
+}
+
+bool GlobalMenuAppletAccess::presentingDesktop() const noexcept
+{
+    return m_applicationProjection.isEmpty() && m_desktopState != DesktopState::Absent;
+}
+
+void GlobalMenuAppletAccess::present()
+{
+    const bool desktop = presentingDesktop();
+    QVariantList projection = desktop ? m_desktopProjection : m_applicationProjection;
+    const bool available = desktop ? m_desktopState == DesktopState::Active
+                                   : m_applicationAvailable;
+    QString phase = desktop ? (m_desktopState == DesktopState::Active
+                                   ? QStringLiteral("ready")
+                                   : QStringLiteral("loading"))
+                            : m_applicationPhase;
+    QString reasonCode = desktop ? QString{} : m_applicationReasonCode;
+    QString title = desktop ? m_desktopTitle : QString{};
+    QString iconName = desktop ? m_desktopIconName : QString{};
+
+    // AGENT-NOTE: items, then available, then phase: the order every
+    // publisher emitted in before the desktop channel existed. The QML
+    // renderer and its tests depend on a shrinking projection landing before
+    // availability moves.
+    if (m_topLevelProjection != projection) {
+        m_topLevelProjection = std::move(projection);
+        Q_EMIT itemsChanged();
+    }
+    if (m_available != available) {
+        m_available = available;
+        Q_EMIT availableChanged();
+    }
+    if (m_phase != phase || m_reasonCode != reasonCode) {
+        m_phase = std::move(phase);
+        m_reasonCode = std::move(reasonCode);
+        Q_EMIT phaseChanged();
+    }
+    if (m_desktopShown != desktop || m_presentedTitle != title
+        || m_presentedIconName != iconName) {
+        m_desktopShown = desktop;
+        m_presentedTitle = std::move(title);
+        m_presentedIconName = std::move(iconName);
+        Q_EMIT desktopMenuShownChanged();
+    }
+}
+
+void GlobalMenuAppletAccess::requestConfirmation(const QString &token,
+                                                 const QString &title,
+                                                 const QString &text)
+{
+    if (token.isEmpty()) {
         return;
     }
-    m_phase = std::move(phase);
-    m_reasonCode = std::move(reasonCode);
-    Q_EMIT phaseChanged();
+    const QString previous = m_confirmation.value(QStringLiteral("token")).toString();
+    if (!previous.isEmpty()) {
+        // An unanswered question is declined, never silently accepted.
+        m_confirmation.clear();
+        Q_EMIT confirmationResolved(previous, false);
+    }
+    m_confirmation = {{QStringLiteral("token"), token},
+                      {QStringLiteral("title"), title},
+                      {QStringLiteral("text"), text}};
+    m_confirmationClaimed = false;
+    Q_EMIT confirmationChanged();
+}
+
+bool GlobalMenuAppletAccess::claimConfirmation(const QString &token)
+{
+    if (token.isEmpty() || m_confirmationClaimed
+        || m_confirmation.value(QStringLiteral("token")).toString() != token) {
+        return false;
+    }
+    m_confirmationClaimed = true;
+    return true;
+}
+
+void GlobalMenuAppletAccess::withdrawConfirmation(const QString &token)
+{
+    if (token.isEmpty()
+        || m_confirmation.value(QStringLiteral("token")).toString() != token) {
+        return;
+    }
+    m_confirmation.clear();
+    Q_EMIT confirmationChanged();
+}
+
+QVariantMap GlobalMenuAppletAccess::confirmation() const
+{
+    return m_confirmation;
+}
+
+void GlobalMenuAppletAccess::resolveConfirmation(const QString &token, bool accepted)
+{
+    // AGENT-GUARD: only the exact outstanding token resolves, and only once:
+    // a stale dialog (or a second click) must never run a session action.
+    if (token.isEmpty()
+        || m_confirmation.value(QStringLiteral("token")).toString() != token) {
+        return;
+    }
+    m_confirmation.clear();
+    Q_EMIT confirmationChanged();
+    Q_EMIT confirmationResolved(token, accepted);
 }
 
 } // namespace QindaQt::Shell::GlobalMenu

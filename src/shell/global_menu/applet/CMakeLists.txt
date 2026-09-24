@@ -46,6 +46,7 @@ qt_add_qml_module(
     QML_FILES
         qml/GlobalMenuActionEntry.qml
         qml/GlobalMenuApplet.qml
+        qml/GlobalMenuConfirmation.qml
         qml/GlobalMenuNativeMenu.qml
         qml/GlobalMenuNativeMenuItem.qml
 )
@@ -74,6 +75,7 @@ install(
         "${QINDAQT_GLOBAL_MENU_QML_OUTPUT_DIRECTORY}/qindaqt_global_menu.qmltypes"
         qml/GlobalMenuActionEntry.qml
         qml/GlobalMenuApplet.qml
+        qml/GlobalMenuConfirmation.qml
         qml/GlobalMenuNativeMenu.qml
         qml/GlobalMenuNativeMenuItem.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/Shell/GlobalMenu"

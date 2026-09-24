@@ -396,9 +396,12 @@ void GlobalMenuTransportCoordinator::suspendAuthority()
         // extend the retained placeholder indefinitely.
         return;
     }
-    if (m_applet.items().isEmpty()) {
+    if (!m_applet.applicationProjectionRetained()) {
         // No presentation is retained, so there is nothing to grace: this is
-        // the ordinary unavailable transition.
+        // the ordinary unavailable transition. AGENT-GUARD (ADR-0260): ask
+        // the application channel, never the presented items — a shell
+        // desktop menu shown in the empty state is not this provider's
+        // retained presentation.
         clearAuthority();
         return;
     }
@@ -496,7 +499,10 @@ void GlobalMenuTransportCoordinator::renewBoundProvider(
 
 void GlobalMenuTransportCoordinator::refreshHostedMenu()
 {
-    const bool shouldHost = m_applet.rendererPresent() && m_applet.available()
+    // AGENT-GUARD (ADR-0260): hosting is acknowledged only for the
+    // application channel's own accepted tree; a presented desktop menu must
+    // never make an application hide its in-window menu.
+    const bool shouldHost = m_applet.rendererPresent() && m_applet.applicationAvailable()
         && m_exporter && m_exporter->lastAccepted().has_value()
         && !m_boundEndpoint.uniqueOwner.isEmpty()
         && !m_boundEndpoint.objectPath.isEmpty();

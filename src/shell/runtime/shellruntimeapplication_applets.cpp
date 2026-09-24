@@ -287,6 +287,7 @@ void ShellRuntimeApplication::followGlobalMenuLayout(
                       " applications keep in-window menus in layout")
             << profile.id;
     }
+    followDesktopMenuLayout(profile);
 }
 
 void ShellRuntimeApplication::startSettingsClients()
