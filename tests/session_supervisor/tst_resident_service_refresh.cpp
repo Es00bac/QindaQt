@@ -3,7 +3,9 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QElapsedTimer>
 #include <QProcess>
+#include <QTimer>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusObjectPath>
@@ -20,6 +22,8 @@ public:
     QStringList requestedUnits;
     QStringList requestedModes;
     QString failingUnit;
+    QString delayedRetireUnit;
+    int delayedRetireMilliseconds = 300;
 
     QString introspect(const QString &) const override { return {}; }
 
@@ -30,6 +34,12 @@ public:
         const QString mode = message.arguments().value(1).toString();
         requestedUnits.append(unit);
         requestedModes.append(mode);
+        if (unit == delayedRetireUnit) {
+            auto bus = connection;
+            QTimer::singleShot(delayedRetireMilliseconds, this, [bus]() mutable {
+                bus.unregisterService(QStringLiteral("org.qindaqt.Audio1"));
+            });
+        }
         if (unit == failingUnit) {
             connection.send(message.createErrorReply(
                 QStringLiteral("org.freedesktop.systemd1.NoSuchUnit"),
@@ -160,9 +170,74 @@ private Q_SLOTS:
         QVERIFY(!publisher.readAllStandardError().contains("Could not restart"));
     }
 
-    // One unit failing to restart (missing, or the job manager rejects it)
-    // must not abandon the remaining units in the fixed list, and must not
-    // fail the session startup that calls this helper.
+    // RestartUnit replies when its job is enqueued. Model the old owner
+    // disappearing later, and require the helper to wait for that retirement.
+    void audioRefreshWaitsUntilTheOldOwnerHasRetired()
+    {
+        auto bus = QDBusConnection::sessionBus();
+        QVERIFY(bus.isConnected());
+        FakeUserManager manager;
+        manager.delayedRetireUnit = QStringLiteral("qindaqt-audio-service.service");
+        QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.Audio1")));
+        QDBusMessage ownerQuery = QDBusMessage::createMethodCall(
+            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("GetNameOwner"));
+        ownerQuery.setArguments({QStringLiteral("org.qindaqt.Audio1")});
+        const auto oldOwnerReply = bus.call(ownerQuery);
+        QVERIFY(oldOwnerReply.type() != QDBusMessage::ErrorMessage);
+        const QString oldOwner = oldOwnerReply.arguments().constFirst().toString();
+
+        QElapsedTimer elapsed;
+        elapsed.start();
+        QProcess publisher;
+        publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                        {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                         QStringLiteral("qindaqt-audio-service.service")});
+        QVERIFY(publisher.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(publisher.state() == QProcess::NotRunning, 6000);
+        QCOMPARE(publisher.exitCode(), 0);
+        QVERIFY(elapsed.elapsed() >= 250);
+        QVERIFY(!bus.interface()->isServiceRegistered(QStringLiteral("org.qindaqt.Audio1")));
+        QCOMPARE(manager.requestedUnits,
+                 QStringList({QStringLiteral("qindaqt-audio-service.service")}));
+        QVERIFY(oldOwner.startsWith(QLatin1Char(':')));
+
+        bus.unregisterObject(QStringLiteral("/org/freedesktop/systemd1"));
+        bus.unregisterService(QStringLiteral("org.freedesktop.systemd1"));
+    }
+
+    // A manager may accept a restart job without retiring an owner on a
+    // private session bus. The wait stays bounded and reports that edge.
+    void audioRefreshReportsAnOwnerThatOutlivesTheBound()
+    {
+        auto bus = QDBusConnection::sessionBus();
+        QVERIFY(bus.isConnected());
+        FakeUserManager manager;
+        manager.delayedRetireUnit = QStringLiteral("qindaqt-audio-service.service");
+        manager.delayedRetireMilliseconds = 2500;
+        QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.Audio1")));
+
+        QElapsedTimer elapsed;
+        elapsed.start();
+        QProcess publisher;
+        publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                        {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                         QStringLiteral("qindaqt-audio-service.service")});
+        QVERIFY(publisher.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(publisher.state() == QProcess::NotRunning, 6000);
+        QCOMPARE(publisher.exitCode(), 3);
+        QVERIFY(elapsed.elapsed() >= 1500);
+        QVERIFY(bus.interface()->isServiceRegistered(QStringLiteral("org.qindaqt.Audio1")));
+
+        bus.unregisterService(QStringLiteral("org.qindaqt.Audio1"));
+        bus.unregisterObject(QStringLiteral("/org/freedesktop/systemd1"));
+        bus.unregisterService(QStringLiteral("org.freedesktop.systemd1"));
+    }
+
     void oneFailingUnitDoesNotStopTheRemainingRefresh()
     {
         auto bus = QDBusConnection::sessionBus();
@@ -192,14 +267,14 @@ private Q_SLOTS:
         bus.unregisterService(QStringLiteral("org.freedesktop.systemd1"));
     }
 
-    // The fixed list itself is the reviewed product contract: only modules
-    // that independently open a Wayland connection, or that otherwise cache
-    // session-scoped desktop identity/routing at their own startup, belong
-    // here.
+    // The fixed list is reviewed per module: session-bound Wayland/routing
+    // users plus Audio1's demonstrated stale-package owner failure. The
+    // other D-Bus-only Settings services remain outside this list.
     void residentUnitListNamesOnlyReviewedResidentServices()
     {
         const QStringList units = QindaQt::SessionSupervisor::residentServiceRefreshUnits();
-        QCOMPARE(units, QStringList({QStringLiteral("qindaqt-clipboard-host.service"),
+        QCOMPARE(units, QStringList({QStringLiteral("qindaqt-audio-service.service"),
+                                     QStringLiteral("qindaqt-clipboard-host.service"),
                                      QStringLiteral("qindaqt-display-service.service"),
                                      QStringLiteral("plasma-xdg-desktop-portal-kde.service"),
                                      QStringLiteral("xdg-desktop-portal.service")}));

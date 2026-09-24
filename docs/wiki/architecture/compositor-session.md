@@ -609,26 +609,43 @@ bus endpoint.
 Republishing the environment only changes what *future* activations receive.
 A systemd user service that is already resident from a prior desktop and
 either opens its own direct Wayland connection or is itself a Wayland
-client — today `qindaqt-clipboard-host`, `qindaqt-display-service`, and the
-`plasma-xdg-desktop-portal-kde` backend (also a screencast/remote-desktop
+client — today `qindaqt-clipboard-host`, `qindaqt-display-service`, and
+the `plasma-xdg-desktop-portal-kde` backend (also a screencast/remote-desktop
 consumer) — or independently caches desktop-scoped environment or routing
 state at its own startup — today the `xdg-desktop-portal` frontend, which
 selects and caches which backend it routes to — keeps that stale connection
-or routing until the process itself restarts. Immediately after publishing
-the environment and before any desktop consumer starts, the supervisor
-therefore calls `refreshResidentServices` with the fixed, reviewed unit list
-from `residentServiceRefreshUnits()`, in order (the portal backend before the
-frontend that routes to it), requesting a restart of each one through
-systemd's `RestartUnit` (routed through sd-bus exactly like the
-`SetEnvironment` publication above), which enqueues a job and does not itself
-wait for the restart to finish. This starts a unit that has not yet run in this
-session and restarts one that already holds a stale socket or cached
-routing, without a full logout and without touching any other resident
-service or its preferences. Each D-Bus call is bounded and best-effort; a
-missing unit or transport failure is logged and does not stop the session.
-See
-[ADR-0094](../adr/0094-refresh-resident-wayland-session-services.md). The
-private-bus `qindaqt.session-resident-service-refresh` gate covers both the
+or routing until the process itself restarts.
+
+Audio1 is a narrow package-upgrade exception to that session-state rule: an
+install can replace its executable while the systemd user manager keeps the
+old process resident, and that process may expose incompatible D-Bus
+structures to newly installed Settings clients. The session supervisor also
+restarts `qindaqt-audio-service` at login and waits up to two seconds for the
+old unique bus owner to disappear before it starts shell consumers. If the old
+owner remains or its state cannot be read, it logs a warning and continues so
+an audio-service failure cannot block desktop availability; in that bounded
+failure case Settings may still encounter the old owner. The retirement is
+proven when the systemd manager can stop the active Audio1 process. On
+QindaQt's private session bus, ADR-0170 documents that a Type=dbus unit may
+time out while D-Bus activation leaves an unmanaged process; this wait reports
+that case but cannot guarantee its retirement.
+
+Immediately after publishing the environment and before any desktop consumer
+starts, the supervisor calls `refreshResidentServices` with the fixed,
+reviewed unit list from `residentServiceRefreshUnits()`, in order (Audio1,
+then the portal backend before the frontend that routes to it), requesting a
+restart of each one through systemd's `RestartUnit` (routed through sd-bus
+exactly like the `SetEnvironment` publication above). Each restart request
+enqueues a job; it does not itself wait for the restart to finish. The
+Audio1-specific owner wait closes the stale-package race before consumer
+startup. This starts a unit that has not yet run in this session and restarts
+one that already holds a stale socket or cached routing, without a full logout
+and without touching any other resident service or its preferences. Each
+D-Bus call is bounded and best-effort; a missing unit or transport failure is
+logged and does not stop the session. See
+[ADR-0094](../adr/0094-refresh-resident-wayland-session-services.md).
+
+The private-bus `qindaqt.session-resident-service-refresh` gate covers both the
 mechanism (against a fake user manager, including one unit failing to restart
 without stopping the request for the rest) and the fixed production list, and
 a second lane drives sd-bus `RestartUnit` calls against a fake manager on an

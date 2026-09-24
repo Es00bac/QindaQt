@@ -22,7 +22,6 @@ int main(int argc, char **argv)
             unitNames.append(arg);
         }
     }
-    QindaQt::SessionSupervisor::refreshResidentServices(
-        QDBusConnection::sessionBus(), unitNames, socketPath);
-    return 0;
+    return QindaQt::SessionSupervisor::refreshResidentServices(
+        QDBusConnection::sessionBus(), unitNames, socketPath) ? 0 : 3;
 }
