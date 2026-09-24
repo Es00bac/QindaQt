@@ -5,6 +5,8 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
+import QindaTK.QindaQt
 
 // Pen & tablet rows. Every control a tablet cannot honor is hidden through
 // the selection's availability truth; nothing renders disabled-but-visible
@@ -51,14 +53,18 @@ ColumnLayout {
         reason: qsTr("Tablets are unavailable right now.")
     }
 
-    Label {
+    // AGENT-NOTE: feeds the session theme into QindaTK's Theme singleton so
+    // the empty state below matches the page even when no other QindaTK
+    // surface has been opened yet (bridges are idempotent).
+    QindaQtTheme {}
+
+    Tk.EmptyState {
         id: noTablets
         objectName: "tabletNoDevices"
         Layout.fillWidth: true
         visible: root.tablets.available && !root.hasTablets
+        iconName: "pen-tool"
         text: qsTr("No pen tablet or pen display is connected. Plug one in and it will appear here.")
-        Accessible.role: Accessible.StaticText
-        Accessible.name: text
     }
 
     FormRow {

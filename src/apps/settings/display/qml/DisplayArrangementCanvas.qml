@@ -3,6 +3,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
+import QindaTK.QindaQt
 import "DisplayArrangementGeometry.js" as Geometry
 
 // Scaled diagram of every enabled display at its logical size. Dragging a
@@ -157,13 +159,18 @@ Rectangle {
         }
     }
 
-    Text {
+    // AGENT-NOTE: feeds the session theme into QindaTK's Theme singleton so
+    // the empty state below matches the page even when no other QindaTK
+    // surface has been opened yet (bridges are idempotent).
+    QindaQtTheme {}
+
+    Tk.EmptyState {
+        objectName: "displayArrangementEmpty"
         anchors.centerIn: parent
+        width: Math.min(canvas.width, implicitWidth)
         visible: tileRepeater.count === 0
+        iconName: "monitor"
         text: qsTr("No enabled displays to arrange.")
-        font.family: Tokens.type.fontFamily
-        font.pointSize: Tokens.type.body
-        color: Tokens.fg.muted
     }
 
     Repeater {

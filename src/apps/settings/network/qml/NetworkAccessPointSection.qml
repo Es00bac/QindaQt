@@ -5,6 +5,8 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
+import QindaTK.QindaQt
 
 ColumnLayout {
     id: root
@@ -12,6 +14,12 @@ ColumnLayout {
     required property var networkSettings
     Layout.fillWidth: true
     spacing: Tokens.space["2"]
+
+    // AGENT-NOTE: Tk.Theme is an engine singleton that keeps QindaTK's own
+    // preset until a bridge feeds it the desktop's tokens. The signal meter
+    // must wear the session theme even when no other QindaTK route has been
+    // opened, so this section carries its own bridge (bridges are idempotent).
+    QindaQtTheme {}
 
     SectionHeader {
         Layout.fillWidth: true
@@ -55,6 +63,33 @@ ColumnLayout {
                             .arg(accessPointRow.modelData.deviceInterface)
                             .arg(accessPointRow.modelData.frequencyMHz)
                         muted: true
+                    }
+                }
+
+                // AGENT-CONTRACT: the meter repeats the percentage beside it;
+                // it never replaces the text, so nothing is carried by colour
+                // or bar length alone. High signal is good, so the fill is the
+                // neutral accent, not QindaTK's load ramp (high = bad).
+                Tk.Meter {
+                    id: signalMeter
+                    objectName: "networkSignalMeter_" + accessPointRow.modelData.id
+                    Layout.preferredWidth: 64
+                    Layout.preferredHeight: implicitHeight
+                    Layout.alignment: Qt.AlignVCenter
+                    from: 0
+                    to: 100
+                    value: accessPointRow.modelData.signalStrength
+                    color: Tk.Theme.color.accent
+                    trackColor: Tk.Theme.color.divider
+                    tooltip: qsTr("Signal strength %1 percent")
+                        .arg(accessPointRow.modelData.signalStrength)
+                    Accessible.role: Accessible.ProgressBar
+                    Accessible.name: qsTr("Signal strength bar, %1 percent")
+                        .arg(accessPointRow.modelData.signalStrength)
+
+                    Tk.ToolTip {
+                        text: signalMeter.tooltip
+                        visible: signalMeter.hovered
                     }
                 }
 

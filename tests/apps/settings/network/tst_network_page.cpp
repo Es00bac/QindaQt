@@ -8,6 +8,7 @@
 
 #include <QtGui/QAccessible>
 #include <QtGui/QAccessibleInterface>
+#include <QtGui/QColor>
 #include <QtCore/QMetaObject>
 #include <QtQml/QQmlComponent>
 #include <QtQuick/QQuickItem>
@@ -51,6 +52,7 @@ class NetworkPageTest final : public QObject {
 private Q_SLOTS:
   void initTestCase();
   void rendersTruthAndSecretBoundaryAccessibly();
+  void drawsSignalMetersBesideThePercentText();
   void routesScanConnectDisconnectAndReloadIntents();
   void radioKeyboardRefusalAndConfirmedReadback();
   void showsStaleTruthReadOnlyAndOwnerLossEmpty();
@@ -161,6 +163,60 @@ void NetworkPageTest::rendersTruthAndSecretBoundaryAccessibly() {
               .contains(QStringLiteral("credential prompt"),
                         Qt::CaseInsensitive));
   QCOMPARE(scanAccessible->role(), QAccessible::Button);
+}
+
+void NetworkPageTest::drawsSignalMetersBesideThePercentText() {
+  auto [guard, page] = createPage(QSize(900, 760));
+  QVERIFY(page != nullptr);
+  const QString guestId(64, u'c');
+  auto *cafe = findItem(page, QStringLiteral("networkSignalMeter_") + QString(64, u'd'));
+  auto *guest = findItem(page, QStringLiteral("networkSignalMeter_") + guestId);
+  QVERIFY(cafe != nullptr);
+  QVERIFY(guest != nullptr);
+  QVERIFY(guest->isVisible());
+  QVERIFY(guest->width() > 0 && guest->height() > 0);
+  QCOMPARE(cafe->property("value").toReal(), 72.0);
+  QCOMPARE(guest->property("value").toReal(), 61.0);
+  QCOMPARE(guest->property("from").toReal(), 0.0);
+  QCOMPARE(guest->property("to").toReal(), 100.0);
+
+  // High signal is good: the neutral accent the section's theme bridge fed
+  // into Tk.Theme, not a load ramp.
+  QQmlComponent probe(m_view->engine());
+  probe.setData("import QtQuick\nimport QindaTK as Tk\n"
+                "QtObject { property color accent: Tk.Theme.color.accent }\n",
+                QUrl());
+  std::unique_ptr<QObject> theme(probe.create());
+  QVERIFY(theme != nullptr);
+  QCOMPARE(guest->property("color").value<QColor>(),
+           theme->property("accent").value<QColor>());
+  QVERIFY(guest->property("ramp").value<QObject *>() == nullptr);
+
+  auto *accessible = QAccessible::queryAccessibleInterface(guest);
+  QVERIFY(accessible != nullptr);
+  QCOMPARE(accessible->role(), QAccessible::ProgressBar);
+  QCOMPARE(accessible->text(QAccessible::Name),
+           QStringLiteral("Signal strength bar, 61 percent"));
+
+  // The percentage text stays beside the bar: nothing is carried by the bar
+  // alone.
+  QQuickItem *row = guest->parentItem();
+  QVERIFY(row != nullptr);
+  bool textShown = false;
+  for (QQuickItem *child : row->childItems())
+    textShown = textShown
+        || (child->isVisible() && child->property("text").toString() == QStringLiteral("61%"));
+  QVERIFY(textShown);
+
+  // Bound, not copied: a republished reading moves the bar.
+  QVariantMap moved = m_model->accessPoints.at(1).toMap();
+  moved.insert(QStringLiteral("signalStrength"), 23);
+  m_model->accessPoints[1] = moved;
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  guest = findItem(page, QStringLiteral("networkSignalMeter_") + guestId);
+  QVERIFY(guest != nullptr);
+  QCOMPARE(guest->property("value").toReal(), 23.0);
 }
 
 void NetworkPageTest::routesScanConnectDisconnectAndReloadIntents() {

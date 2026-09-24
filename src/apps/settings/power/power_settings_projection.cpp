@@ -158,6 +158,8 @@ QVariantList supplies(const Power::Snapshot &snapshot) {
       {QStringLiteral("stateText"), snapshot.source.acPresent
            ? tr("Connected") : tr("Not connected")},
       {QStringLiteral("percentageText"), QString{}},
+      {QStringLiteral("percentageKnown"), false},
+      {QStringLiteral("percentage"), 0.0},
       {QStringLiteral("timeText"), QString{}},
       {QStringLiteral("warningText"), tr("No warning")},
       {QStringLiteral("warningSeverity"), 0},
@@ -187,6 +189,12 @@ QVariantList supplies(const Power::Snapshot &snapshot) {
              ? tr("Uninterruptible power supply") : tr("Battery")},
         {QStringLiteral("stateText"), state},
         {QStringLiteral("percentageText"), percentage},
+        // AGENT-CONTRACT: `percentage` (0-100) means something only while
+        // `percentageKnown` is true. The page then draws no charge meter at
+        // all, so the 0.0 placeholder never renders as an empty bar.
+        {QStringLiteral("percentageKnown"), supply.percentageKnown},
+        {QStringLiteral("percentage"),
+         supply.percentageKnown ? supply.percentage : 0.0},
         {QStringLiteral("timeText"), estimate},
         {QStringLiteral("warningText"), warning},
         {QStringLiteral("warningSeverity"), static_cast<quint32>(supply.warning)},

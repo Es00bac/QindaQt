@@ -5,6 +5,8 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
+import QindaTK.QindaQt
 
 ColumnLayout {
     id: root
@@ -94,12 +96,17 @@ ColumnLayout {
         Accessible.name: text
     }
 
-    Label {
+    // AGENT-NOTE: feeds the session theme into QindaTK's Theme singleton so
+    // the empty state below matches the page even when no other QindaTK
+    // surface has been opened yet (bridges are idempotent).
+    QindaQtTheme {}
+
+    Tk.EmptyState {
+        objectName: "colorProfilesEmpty"
         Layout.fillWidth: true
         visible: root.colorSettings.selectedOutputId.length > 0
                  && profileRepeater.count === 0
+        iconName: "palette"
         text: qsTr("No discovered profiles are available to assign.")
-        muted: true
-        Accessible.name: text
     }
 }
