@@ -808,7 +808,8 @@ banners, the Nearby section, and the preferences window with all four pages.
   properties-dialog state and the bounded total-size worker with the same
   generation-fenced disposal contract. It never mutates the filesystem.
 - `fileManagerActionCatalog()` contributes the closed mutation, view, edit,
-  and navigation action set to AppShell. `ApplicationCoordinator` transports
+  and navigation action set to AppShell, projected from the public menu
+  catalog ([below](#public-menu-catalog)). `ApplicationCoordinator` transports
   activation and close requests but never examines a path or decides whether
   an operation is recoverable.
 - `composeFileManagerMenuExport()` is the application composition boundary. It
@@ -833,6 +834,24 @@ The `model/**` and `mutation/**` C++ headers and build target are private
 implementation surfaces and are not installed or ABI-stable. The executable
 name, desktop ID, folder-launch-argument contract, and documented action
 object names/shortcuts form the compatibility surface.
+
+## Public menu catalog
+
+File Manager's menu vocabulary — the File, Edit, View, and Go titles and every
+action's id, label, description, and shortcut — is a small public catalog of
+values, `public/file_manager_menu_catalog.h` (target
+`qindaqt_file_manager_menu_catalog`, Qt Core/Gui only, exporting only
+`public/`). `fileManagerActionCatalog()` projects it into AppShell actions,
+and the shell's desktop menu (the File Manager's menu shown in the global menu
+while no application is active,
+[ADR-0260](../adr/0260-show-the-file-managers-menu-when-no-application-is-active.md))
+projects the same values, so the desktop and a File Manager window cannot
+drift apart. Neither consumer spells a shared string. The catalog also names
+the application's short title ("File Manager", the desktop entry's
+GenericName), desktop entry id, and icon, and one command File Manager's
+window menu does not offer yet, `file.new-window` ("New File Manager
+Window", no shortcut until a handler honours one). Standard-key shortcuts
+(Undo, Cut, Copy, Paste, Zoom) stay platform-resolved exactly as before.
 
 ## Public Desktop file boundary
 
