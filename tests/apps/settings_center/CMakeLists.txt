@@ -220,6 +220,7 @@ set_tests_properties(qindaqt.settings-navigation-interaction PROPERTIES
 # route modules as the interaction row; QindaTK resolves from Qt's QML path.
 qt_add_executable(qindaqt_settings_command_palette_test
     tst_settings_command_palette.cpp
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/input/support/fake_ports.h
     settings_navigation_page_test_support.h
     settings_navigation_page_fixture.h
     ${PROJECT_SOURCE_DIR}/tests/apps/settings/audio/stub_audio_settings_model.h
@@ -232,7 +233,7 @@ qt_add_executable(qindaqt_settings_command_palette_test
 target_include_directories(qindaqt_settings_command_palette_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(qindaqt_settings_command_palette_test PRIVATE
     QindaQt::ShellIcons qindaqt_shell_iconsplugin
-    QindaQt::SettingsNavigation qindaqt_settings_audio qindaqt_settings_appearance qindaqt_settings_display
+    QindaQt::SettingsNavigation qindaqt_settings_input qindaqt_settings_audio qindaqt_settings_appearance qindaqt_settings_display
     qindaqt_settings_network qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
     qindaqt_settings_bluetooth qindaqt_settings_power qindaqt_settings_power_backend_qml
     qindaqt_settings_power_backend_qmlplugin qindaqt_settings_clipboard_qml

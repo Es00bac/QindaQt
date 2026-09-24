@@ -14,6 +14,8 @@ import QindaQt.Tokens 1.0
 ColumnLayout {
     id: root
 
+    signal captureActivityChanged(bool active)
+
     required property var inputSettings
     readonly property var shortcuts: inputSettings.shortcuts
 
@@ -76,6 +78,8 @@ ColumnLayout {
 
         delegate: InputShortcutRow {
             shortcuts: root.shortcuts
+            onCaptureActivityChanged: active =>
+                root.captureActivityChanged(active)
         }
     }
 
@@ -111,6 +115,8 @@ ColumnLayout {
             objectName: "inputCommandCapture"
             placeholderText: qsTr("Set shortcut")
             formatter: key => shortcuts.displayKey(key)
+            onCaptureActivityChanged: active =>
+                root.captureActivityChanged(active)
         }
         Button {
             objectName: "inputCommandAddButton"

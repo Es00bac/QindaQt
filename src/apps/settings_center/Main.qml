@@ -33,6 +33,12 @@ T.ApplicationWindow {
     required property var quietingSchedule
     property var applicationPolicies: null
     required property var appearanceSettings
+    property var inputSettings: InputRouteComposition
+    // AGENT-CONTRACT: InputShortcutRow -> InputShortcutsSection -> InputPage
+    // reports active capture here, so Settings' window shortcuts stand down
+    // until capture ends or the Input page is destroyed.
+    property bool inputShortcutCaptureActive: false
+    property int inputShortcutCaptureGeneration: 0
     property var windowDecorationSettings: null
     property var displaySettings: null
     property var networkSettings: null
@@ -80,8 +86,26 @@ T.ApplicationWindow {
             close.accepted = false
     }
 
+    function updateInputShortcutCapture(active) {
+        const generation = ++root.inputShortcutCaptureGeneration
+        if (active) {
+            root.inputShortcutCaptureActive = true
+            return
+        }
+        // AGENT-GUARD: Keep window shortcuts disabled until the captured key
+        // event has finished dispatch; re-enabling synchronously in onPressed
+        // would let Qt's Shortcut map activate the same chord a second time.
+        Qt.callLater(() => {
+            if (root !== null
+                    && generation === root.inputShortcutCaptureGeneration)
+                root.inputShortcutCaptureActive = false
+        })
+    }
+
     SettingsRouteShortcuts {
+        objectName: "settingsRouteShortcuts"
         navigation: root.navigation
+        enabled: !root.inputShortcutCaptureActive
         onSearchRequested: searchPalette.open()
     }
 
@@ -97,6 +121,8 @@ T.ApplicationWindow {
     Connections {
         target: root.navigation
         function onActiveRouteChanged() {
+            if (root.navigation.activeRouteComponent !== "input")
+                root.updateInputShortcutCapture(false)
             if (root.bluetoothSettings !== null)
                 root.bluetoothSettings.setRouteActive(
                             root.navigation.activeRouteComponent === "bluetooth")
@@ -138,6 +164,7 @@ T.ApplicationWindow {
         // every other route or prompt state.
         objectName: "settingsEscapeShortcut"
         enabled: !searchPalette.visible
+                 && !root.inputShortcutCaptureActive
                  && !(root.navigation.activeRouteComponent === "bluetooth"
                       && root.bluetoothSettings !== null
                       && root.bluetoothSettings.pairingPrompt.active === true
@@ -152,6 +179,7 @@ T.ApplicationWindow {
     // key bindings and emits a QML warning that aborts the QT_FATAL_WARNINGS
     // navigation-page test row during Main.qml construction.
     Shortcut {
+        enabled: !root.inputShortcutCaptureActive
         sequences: [StandardKey.Quit]
         onActivated: root.close()
     }
@@ -385,9 +413,12 @@ T.ApplicationWindow {
         id: inputRouteComponent
         InputPage {
             objectName: "inputPage"
-            inputSettings: InputRouteComposition
+            inputSettings: root.inputSettings
             initialDestination: root.navigation.requestedDestination
             initialSelection: root.navigation.requestedSelection
+            onShortcutCaptureActivityChanged: active =>
+                root.updateInputShortcutCapture(active)
+            Component.onDestruction: root.updateInputShortcutCapture(false)
             onCloseRequested: root.close()
         }
     }

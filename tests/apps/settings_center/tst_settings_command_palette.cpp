@@ -8,7 +8,9 @@
 #include "tests/apps/settings/power/power_navigation_assertions.h"
 #include "tests/apps/settings_center/settings_navigation_page_fixture.h"
 #include "tests/apps/settings_center/settings_navigation_page_test_support.h"
+#include "tests/apps/settings/input/support/fake_ports.h"
 
+#include <qindaqt/apps/settings_input/shortcuts_model.h>
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/token_facade.h"
 #include "qindaqt/themes/theme_loader.h"
@@ -26,8 +28,36 @@ Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 
 using namespace QindaQt::Apps::SettingsCenter;
 using namespace QindaQt::Apps::SettingsCenter::TestSupport;
+using namespace QindaQt::Apps::SettingsInput;
+using QindaQt::Tests::FakeShortcutPort;
 using QindaQt::Apps::SettingsPower::TestSupport::StubIdleDisplaySettings;
 using QindaQt::Apps::SettingsPower::TestSupport::StubScreenLockSettings;
+
+class CommandPaletteInputFacade final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(QObject *shortcuts READ shortcuts CONSTANT)
+
+public:
+  CommandPaletteInputFacade() : m_shortcuts(m_shortcutPort) {
+    ShortcutAction action;
+    action.componentUnique = QStringLiteral("qindaqt-test");
+    action.componentFriendly = QStringLiteral("Test shortcuts");
+    action.actionUnique = QStringLiteral("capture-test");
+    action.actionFriendly = QStringLiteral("Capture test");
+    m_shortcutPort.mutableScripted().append(action);
+    m_shortcuts.refresh();
+  }
+
+  QObject *shortcuts() { return &m_shortcuts; }
+  int lastAssignedSequence() const {
+    const auto &assigned = m_shortcutPort.assigned();
+    return assigned.isEmpty() ? 0 : assigned.constLast().second;
+  }
+
+private:
+  FakeShortcutPort m_shortcutPort;
+  ShortcutsModel m_shortcuts;
+};
 
 class SettingsCommandPaletteTest final : public QObject {
   Q_OBJECT
@@ -35,16 +65,21 @@ class SettingsCommandPaletteTest final : public QObject {
 private Q_SLOTS:
   void initTestCase();
   void ctrlKFindsNetworkByKeyword();
+  void filteredRowsKeepCrossSectionRelevanceOrder();
   void destinationOpensInputSubPageEvenWhenInputIsOpen();
+  void activeShortcutCaptureOwnsShellShortcutKeys();
   void escapeClosesOnlyThePalette();
   void compactWindowSearchesByKeyboard();
   void unavailableRouteIsListedWithItsReasonButNotSelected();
 
 private:
   std::unique_ptr<QObject> createWindow(SettingsNavigationController &navigation,
-                                        QSize size);
+                                        QSize size,
+                                        QObject *inputSettings = nullptr);
   static QObject *palette(QObject *root);
   static QVariantMap currentRow(QObject *palette);
+  static QStringList resultIds(QObject *palette);
+  static void pressCapturedChord(QObject *capture, Qt::Key key);
   static void search(QQuickWindow *window, QObject *palette, const QString &text);
 
   std::unique_ptr<QQmlApplicationEngine> m_engine;
@@ -90,7 +125,8 @@ void SettingsCommandPaletteTest::initTestCase() {
 
 std::unique_ptr<QObject>
 SettingsCommandPaletteTest::createWindow(SettingsNavigationController &navigation,
-                                         QSize size) {
+                                         QSize size,
+                                         QObject *inputSettings) {
   QQmlComponent component(m_engine.get());
   component.loadUrl(QUrl::fromLocalFile(
       QStringLiteral(QINDAQT_SETTINGS_SOURCE_DIR "/Main.qml")));
@@ -99,7 +135,7 @@ SettingsCommandPaletteTest::createWindow(SettingsNavigationController &navigatio
     return {};
   }
   const auto object = [](QObject *value) { return QVariant::fromValue(value); };
-  std::unique_ptr<QObject> root(component.createWithInitialProperties({
+  QVariantMap initialProperties{
       {QStringLiteral("navigation"), object(&navigation)},
       {QStringLiteral("quietingSettings"), object(m_quieting.get())},
       {QStringLiteral("quietingSchedule"), object(m_quietingSchedule.get())},
@@ -112,7 +148,13 @@ SettingsCommandPaletteTest::createWindow(SettingsNavigationController &navigatio
       {QStringLiteral("screenLockSettings"), object(m_screenLock.get())},
       {QStringLiteral("idleDisplaySettings"), object(m_idleDisplay.get())},
       {QStringLiteral("clipboardSettings"), object(m_clipboard.get())},
-  }));
+  };
+  if (inputSettings != nullptr) {
+    initialProperties.insert(QStringLiteral("inputSettings"),
+                             object(inputSettings));
+  }
+  std::unique_ptr<QObject> root(
+      component.createWithInitialProperties(initialProperties));
   auto *window = qobject_cast<QQuickWindow *>(root.get());
   if (window == nullptr) {
     return {};
@@ -135,6 +177,33 @@ QVariantMap SettingsCommandPaletteTest::currentRow(QObject *palette) {
   const int current = palette->property("currentRow").toInt();
   return current >= 0 && current < rows.size() ? rows.at(current).toMap()
                                                : QVariantMap{};
+}
+
+QStringList SettingsCommandPaletteTest::resultIds(QObject *palette) {
+  QStringList ids;
+  for (const QVariant &row : palette->property("rows").toList()) {
+    const QVariantMap map = row.toMap();
+    if (!map.value(QStringLiteral("header")).toBool())
+      ids.append(map.value(QStringLiteral("id")).toString());
+  }
+  return ids;
+}
+
+void SettingsCommandPaletteTest::pressCapturedChord(QObject *capture,
+                                                    Qt::Key key) {
+  // QTest's offscreen Ctrl helper sends Control separately and drops QML
+  // Button focus before K/1. Invoke the production handlers on the real
+  // Main.qml capture item with the same key and modifier values.
+  QVariant claimsShortcutOverride;
+  QVERIFY(QMetaObject::invokeMethod(
+      capture, "claimsShortcutOverride",
+      Q_RETURN_ARG(QVariant, claimsShortcutOverride),
+      Q_ARG(QVariant, QVariant(static_cast<int>(key)))));
+  QVERIFY(claimsShortcutOverride.toBool());
+  QVERIFY(QMetaObject::invokeMethod(
+      capture, "handleCapturedKey",
+      Q_ARG(QVariant, QVariant(static_cast<int>(key))),
+      Q_ARG(QVariant, QVariant(static_cast<int>(Qt::ControlModifier)))));
 }
 
 // Opens the palette with Ctrl+K and types into it, as a keyboard user would.
@@ -208,16 +277,42 @@ void SettingsCommandPaletteTest::ctrlKFindsNetworkByKeyword() {
   QVERIFY(networkScan != nullptr);
   QTRY_COMPARE(window->activeFocusItem(), networkScan);
 
-  // "battery" must rank Power first even though About this computer is in an
-  // earlier section; the exact keyword outranks a partial one.
+  // Descriptions are not search input: About's description mentions battery
+  // health, but only its title and registered keywords are indexed.
   search(window, searchPalette, QStringLiteral("battery"));
   if (QTest::currentTestFailed()) {
     return;
   }
+  QCOMPARE(searchPalette->property("resultCount").toInt(), 1);
+  QCOMPARE(resultIds(searchPalette), QStringList{QStringLiteral("route:power")});
   QCOMPARE(currentRow(searchPalette).value(QStringLiteral("id")).toString(),
            QStringLiteral("route:power"));
   QTest::keyClick(window, Qt::Key_Return);
   QCOMPARE(navigation.activeRouteId(), QStringLiteral("power"));
+}
+
+void SettingsCommandPaletteTest::filteredRowsKeepCrossSectionRelevanceOrder() {
+  SettingsNavigationController navigation(SettingsRouteRegistry::createDefault(),
+                                          QStringLiteral("notifications"));
+  auto root = createWindow(navigation, QSize(720, 520));
+  QVERIFY(root != nullptr);
+  auto *window = qobject_cast<QQuickWindow *>(root.get());
+  QObject *searchPalette = palette(root.get());
+  QVERIFY(searchPalette != nullptr);
+
+  search(window, searchPalette, QStringLiteral("screen"));
+  if (QTest::currentTestFailed()) {
+    return;
+  }
+  // Relevance tiers are title prefix, exact keyword, label substring, then
+  // keyword prefix, then other keyword substrings; ties keep sidebar order.
+  QCOMPARE(resultIds(searchPalette),
+           QStringList({QStringLiteral("route:screensaver"),
+                        QStringLiteral("route:display"),
+                        QStringLiteral("route:login-screen"),
+                        QStringLiteral("route:power"),
+                        QStringLiteral("route:streaming"),
+                        QStringLiteral("destination:input/touch")}));
 }
 
 void SettingsCommandPaletteTest::destinationOpensInputSubPageEvenWhenInputIsOpen() {
@@ -271,6 +366,68 @@ void SettingsCommandPaletteTest::destinationOpensInputSubPageEvenWhenInputIsOpen
                         QStringLiteral("inputDestinationPage_keyboard")) != nullptr);
   QCOMPARE(inputPage->property("currentDestination").toString(),
            QStringLiteral("keyboard"));
+}
+
+void SettingsCommandPaletteTest::activeShortcutCaptureOwnsShellShortcutKeys() {
+  SettingsNavigationController navigation(SettingsRouteRegistry::createDefault(),
+                                          QStringLiteral("notifications"));
+  CommandPaletteInputFacade inputSettings;
+  auto root = createWindow(navigation, QSize(720, 520), &inputSettings);
+  QVERIFY(root != nullptr);
+  auto *window = qobject_cast<QQuickWindow *>(root.get());
+  QObject *searchPalette = palette(root.get());
+  QObject *routeShortcuts =
+      root->findChild<QObject *>(QStringLiteral("settingsRouteShortcuts"));
+  QObject *searchShortcut =
+      root->findChild<QObject *>(QStringLiteral("settingsSearchShortcut"));
+  QObject *escapeShortcut =
+      root->findChild<QObject *>(QStringLiteral("settingsEscapeShortcut"));
+  QVERIFY(searchPalette != nullptr);
+  QVERIFY(routeShortcuts != nullptr);
+  QVERIFY(searchShortcut != nullptr);
+  QVERIFY(escapeShortcut != nullptr);
+  QVERIFY(navigation.selectRouteDestination(QStringLiteral("input"),
+                                            QStringLiteral("shortcuts")));
+  QTRY_VERIFY(sceneItem(window->contentItem(),
+                        QStringLiteral("inputDestinationPage_shortcuts")) !=
+              nullptr);
+  auto *capture = sceneItem(window->contentItem(),
+                            QStringLiteral("inputShortcutCapture_0"));
+  QVERIFY(capture != nullptr);
+
+  QVERIFY(QMetaObject::invokeMethod(capture, "beginCapture"));
+  QTRY_VERIFY(capture->property("capturing").toBool());
+  QTRY_VERIFY(!routeShortcuts->property("enabled").toBool());
+  QTRY_VERIFY(!searchShortcut->property("enabled").toBool());
+  QTRY_VERIFY(!escapeShortcut->property("enabled").toBool());
+  QTRY_COMPARE(window->activeFocusItem(), capture);
+  pressCapturedChord(capture, Qt::Key_K);
+  QTRY_VERIFY(!capture->property("capturing").toBool());
+  QTRY_VERIFY(!searchPalette->property("visible").toBool());
+  QCOMPARE(navigation.activeRouteId(), QStringLiteral("input"));
+  QCOMPARE(inputSettings.lastAssignedSequence(),
+           QKeyCombination(Qt::ControlModifier, Qt::Key_K).toCombined());
+  QTRY_VERIFY(routeShortcuts->property("enabled").toBool());
+  QTRY_VERIFY(searchShortcut->property("enabled").toBool());
+
+  // Assignment resets the model and may replace its delegate; use the newly
+  // instantiated capture button for the second shortcut regression.
+  capture = sceneItem(window->contentItem(),
+                      QStringLiteral("inputShortcutCapture_0"));
+  QVERIFY(capture != nullptr);
+  QVERIFY(QMetaObject::invokeMethod(capture, "beginCapture"));
+  QTRY_VERIFY(capture->property("capturing").toBool());
+  QTRY_VERIFY(!routeShortcuts->property("enabled").toBool());
+  QTRY_VERIFY(!escapeShortcut->property("enabled").toBool());
+  QTRY_COMPARE(window->activeFocusItem(), capture);
+  pressCapturedChord(capture, Qt::Key_1);
+  QTRY_VERIFY(!capture->property("capturing").toBool());
+  QTRY_VERIFY(!searchPalette->property("visible").toBool());
+  QCOMPARE(navigation.activeRouteId(), QStringLiteral("input"));
+  QCOMPARE(inputSettings.lastAssignedSequence(),
+           QKeyCombination(Qt::ControlModifier, Qt::Key_1).toCombined());
+  QTRY_VERIFY(routeShortcuts->property("enabled").toBool());
+  QTRY_VERIFY(escapeShortcut->property("enabled").toBool());
 }
 
 void SettingsCommandPaletteTest::escapeClosesOnlyThePalette() {

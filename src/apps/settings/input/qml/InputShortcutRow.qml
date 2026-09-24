@@ -13,6 +13,8 @@ import QindaQt.Tokens 1.0
 Rectangle {
     id: row
 
+    signal captureActivityChanged(bool active)
+
     required property var shortcuts
     required property int index
     required property string componentName
@@ -92,11 +94,14 @@ Rectangle {
                 onClicked: row.shortcuts.removeCommand(row.index)
             }
             ShortcutCaptureButton {
+                id: captureButton
                 objectName: "inputShortcutCapture_" + row.index
                 sequence: 0
                 captureHint: qsTr("Capturing…")
                 placeholderText: qsTr("Change")
                 formatter: key => row.shortcuts.displayKey(key)
+                onCaptureActivityChanged: active =>
+                    row.captureActivityChanged(active)
                 enabled: !row.shortcuts.busy
                 onCaptured: sequence => {
                     row.pendingKeys = [sequence]

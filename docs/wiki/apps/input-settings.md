@@ -146,7 +146,11 @@ first snapshot and the tab is reachable by mouse or keyboard.
 - A shortcut change is read back from kglobalaccel. If the key already belongs
   to another action, the row names that action; "Assign anyway" moves the key.
 - In a capture control, Escape cancels, Backspace clears, and Tab leaves the
-  control without capturing.
+  control without capturing. While capture is active, the control claims
+  `ShortcutOverride` for keys it records or consumes, and the Input route
+  reports capture activity to the Settings shell. The shell disables its
+  global shortcuts until capture ends, so Ctrl+K, Ctrl+digit, and Alt+Left are
+  saved as shortcut data without opening search or changing routes.
 - A custom command shortcut creates `~/.local/share/kglobalaccel/qindaqt-custom-<name>.desktop`
   and binds its launch action. Removing it deletes that file and the binding.
 
