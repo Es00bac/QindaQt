@@ -1,4 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// The Settings Customize preset page (ADR-0267), warning-fatal and offscreen,
+// against the stub model: built-ins before own presets, accessible cards with
+// text badges, switching by pointer and keyboard, the name dialog's
+// validation, confirmed delete and restore, the degraded notice, and the
+// global auto-hide delay control.
 #include "stub_customize_settings_model.h"
 
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
@@ -7,7 +12,6 @@
 #include "qindaqt/themes/theme_loader.h"
 
 #include <QAccessible>
-#include <QDebug>
 #include <QKeyEvent>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
@@ -22,21 +26,27 @@ using QindaQt::Apps::SettingsCustomize::TestSupport::StubCustomizeSettingsModel;
 
 namespace {
 
-QQuickItem *item(QObject *root, const char *name)
+QQuickItem *item(QQuickItem *root, const char *name)
 {
-    auto *rootItem = qobject_cast<QQuickItem *>(root);
-    if (rootItem == nullptr) {
+    if (root == nullptr) {
         return nullptr;
     }
-    if (rootItem->objectName() == QLatin1String(name)) {
-        return rootItem;
+    if (root->objectName() == QLatin1String(name)) {
+        return root;
     }
-    for (QQuickItem *child : rootItem->childItems()) {
+    for (QQuickItem *child : root->childItems()) {
         if (auto *match = item(child, name); match != nullptr) {
             return match;
         }
     }
     return nullptr;
+}
+
+// Popup content lives under the window's overlay, not under the page, so
+// dialog controls are searched from the window content item.
+QQuickItem *windowItem(QQuickView &view, const char *name)
+{
+    return item(view.contentItem(), name);
 }
 
 QString accessibleName(QQuickItem *candidate)
@@ -45,25 +55,37 @@ QString accessibleName(QQuickItem *candidate)
         return {};
     }
     QAccessibleInterface *interface = QAccessible::queryAccessibleInterface(candidate);
-    return interface == nullptr ? QString{}
-                                : interface->text(QAccessible::Name);
+    return interface == nullptr ? QString{} : interface->text(QAccessible::Name);
 }
 
-// The canvas Image declares its QML fillMode through a metaobject enum
-// (QQuickImage is private API); resolve symbolic values at runtime instead of
-// hardcoding private integer constants.
-int fillModeValue(QQuickItem *image, const char *key)
+bool accessibleChecked(QQuickItem *candidate)
 {
-    const QMetaObject *meta = image->metaObject();
-    const int index = meta->indexOfProperty("fillMode");
-    if (index < 0) {
-        return -1;
-    }
-    return meta->property(index).enumerator().keyToValue(key);
+    QAccessibleInterface *interface = candidate == nullptr
+        ? nullptr : QAccessible::queryAccessibleInterface(candidate);
+    return interface != nullptr && interface->state().checked;
 }
 
-// Shared production-page load: token facade, the shipped icon theme (so both
-// callers exercise resolved glyph rendering, not placeholders), and the
+void click(QQuickView &view, QQuickItem *target)
+{
+    QVERIFY(target != nullptr);
+    QVERIFY(target->isVisible());
+    const QPoint centre = target->mapToScene(
+        QPointF(target->width() / 2, target->height() / 2)).toPoint();
+    QTest::mouseClick(&view, Qt::LeftButton, Qt::NoModifier, centre);
+}
+
+QObject *popup(QQuickView &view, const char *name)
+{
+    return view.rootObject()->findChild<QObject *>(QLatin1String(name));
+}
+
+bool opened(QQuickView &view, const char *name)
+{
+    QObject *dialog = popup(view, name);
+    return dialog != nullptr && dialog->property("opened").toBool();
+}
+
+// Shared production-page load: token facade, the shipped icon theme, and the
 // compiled CustomizePage.qml bound to `model`.
 bool loadCustomizePage(QQuickView &view, StubCustomizeSettingsModel &model,
                        QString *error)
@@ -106,149 +128,289 @@ class CustomizePageTests final : public QObject {
     Q_OBJECT
 
 private slots:
-    void rendersCompactAndWideWithoutLosingAccessibleEditors();
-    void rendersAppletSettingEditorsInWideMode();
+    void rendersBuiltInsThenOwnPresetsAccessibly();
+    void cardsSwitchByPointerAndKeyboard();
+    void saveCurrentLayoutValidatesTheName();
+    void ownPresetsRenameDuplicateAndDeleteAfterConfirmation();
+    void editedBuiltInRestoresAfterConfirmationOrSavesAsNew();
+    void busyAndUnavailableStatesStayTruthful();
     void panelHideDelayCommitsFinalPointerAndKeyboardIntent();
-    void rendersAppletSettingEditorsInCompactMode();
-    void canvasFollowsConfiguredWallpaperAndFallsBackToTokens();
-    void canvasWindowPreviewShowsResolvedChromeAndStaysContained();
 };
 
-void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
+void CustomizePageTests::rendersBuiltInsThenOwnPresetsAccessibly()
 {
     StubCustomizeSettingsModel model;
     QQuickView view;
-    QString loadError;
-    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
+    QString error;
+    QVERIFY2(loadCustomizePage(view, model, &error), qPrintable(error));
+    for (const QSize size : {QSize(720, 900), QSize(1080, 900)}) {
+        view.resize(size);
+        view.show();
+        QTest::qWait(50);
+        QQuickItem *root = view.rootObject() != nullptr
+            ? qobject_cast<QQuickItem *>(view.rootObject()) : nullptr;
+        QVERIFY(root != nullptr);
 
-    view.resize(720, 720);
+        // The WYSIWYG editor is gone: no canvas, palette, outline or panes.
+        QVERIFY(item(root, "customizeOutputCanvas") == nullptr);
+        QVERIFY(item(root, "customizePalette") == nullptr);
+        QVERIFY(item(root, "customizeProperties") == nullptr);
+
+        auto *fixture = item(root, "customizeProfileCard_fixture");
+        auto *alternate = item(root, "customizeProfileCard_alternate");
+        auto *mac = item(root, "customizeProfileCard_macos-inspired");
+        auto *mine = item(root, "customizeProfileCard_user-mine");
+        QVERIFY(fixture != nullptr && alternate != nullptr && mac != nullptr && mine != nullptr);
+        QVERIFY(fixture->isVisible() && mine->isVisible());
+        QVERIFY2(accessibleName(fixture).contains(QStringLiteral("layout preset")),
+                 qPrintable(accessibleName(fixture)));
+        QVERIFY(accessibleChecked(fixture));
+        QVERIFY(!accessibleChecked(alternate));
+        QVERIFY2(accessibleName(alternate).contains(QStringLiteral("modified")),
+                 qPrintable(accessibleName(alternate)));
+
+        // Built-ins come first: My presets is laid out below them.
+        auto *builtIns = item(root, "customizeBuiltInPresets");
+        auto *own = item(root, "customizeOwnPresets");
+        QVERIFY(builtIns != nullptr && own != nullptr);
+        QVERIFY(builtIns->mapToScene(QPointF()).y() < own->mapToScene(QPointF()).y());
+        QVERIFY(item(builtIns, "customizeProfileCard_user-mine") == nullptr);
+        QVERIFY(item(own, "customizeProfileCard_user-mine") != nullptr);
+
+        // Badges are words, never colour alone.
+        QVERIFY(item(root, "customizePresetModifiedBadge_alternate")->isVisible());
+        QVERIFY(!item(root, "customizePresetModifiedBadge_fixture")->isVisible());
+        QVERIFY(item(root, "customizePresetDefaultBadge_macos-inspired")->isVisible());
+
+        // Each kind offers only its own actions.
+        for (const char *name : {"customizePresetRename_user-mine",
+                                 "customizePresetDuplicate_user-mine",
+                                 "customizePresetDelete_user-mine",
+                                 "customizePresetRestore_alternate",
+                                 "customizePresetSaveAs_alternate"}) {
+            QVERIFY2(item(root, name) != nullptr && item(root, name)->isVisible(), name);
+        }
+        for (const char *name : {"customizePresetRename_fixture",
+                                 "customizePresetDelete_fixture",
+                                 "customizePresetRestore_fixture",
+                                 "customizePresetDelete_alternate",
+                                 "customizePresetRestore_user-mine"}) {
+            QVERIFY2(item(root, name) == nullptr || !item(root, name)->isVisible(), name);
+        }
+        QVERIFY2(accessibleName(item(root, "customizePresetDelete_user-mine"))
+                     .contains(QStringLiteral("Mine")),
+                 qPrintable(accessibleName(item(root, "customizePresetDelete_user-mine"))));
+        QVERIFY(item(root, "customizeEditHint")->isVisible());
+        QVERIFY(item(root, "customizeSaveCurrentPreset")->isVisible());
+    }
+
+    // With no own presets the section explains how to make one.
+    model.setOwnPreset(false);
+    QTRY_VERIFY(item(qobject_cast<QQuickItem *>(view.rootObject()),
+                     "customizeProfileCard_user-mine") == nullptr);
+}
+
+void CustomizePageTests::cardsSwitchByPointerAndKeyboard()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString error;
+    QVERIFY2(loadCustomizePage(view, model, &error), qPrintable(error));
+    view.resize(1080, 900);
     view.show();
-    QTest::qWait(50);
-    auto *compact = item(view.rootObject(), "customizeCompactLayout");
-    auto *wide = item(view.rootObject(), "customizeWideLayout");
-    QVERIFY(compact != nullptr);
-    QVERIFY(wide != nullptr);
-    QVERIFY(compact->isVisible());
-    QVERIFY(!wide->isVisible());
-    QVERIFY(item(view.rootObject(), "customizeOutputCanvas") != nullptr);
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    auto *root = qobject_cast<QQuickItem *>(view.rootObject());
 
-    auto *paletteButton = item(compact, "customizePalette_clock");
-    auto *panelButton = item(compact, "customizeOutlinePanel_bar");
-    auto *zoneButton = item(compact, "customizeOutlineZone_bar_end");
+    click(view, item(root, "customizeProfileCard_alternate"));
+    QTRY_COMPARE(model.calls.size(), 1);
+    QCOMPARE(model.calls.last(),
+             (QVariantList{QStringLiteral("activatePreset"), QStringLiteral("alternate")}));
 
-    // The layout gallery is the route's primary switcher: every catalog
-    // profile renders a visible miniature card with an accessible name.
-    auto *profileCard = item(view.rootObject(),
-                             "customizeProfileCard_fixture");
-    QVERIFY(profileCard != nullptr);
-    QVERIFY(profileCard->isVisible());
-    QVERIFY2(accessibleName(profileCard)
-                 .contains(QStringLiteral("layout profile"),
-                           Qt::CaseInsensitive),
-             qPrintable(accessibleName(profileCard)));
-
-    QVERIFY2(accessibleName(paletteButton).contains(QStringLiteral("clock applet"),
-                                                    Qt::CaseInsensitive),
-             qPrintable(accessibleName(paletteButton)));
-    QVERIFY2(accessibleName(panelButton).contains(QStringLiteral("panel"),
-                                                  Qt::CaseInsensitive),
-             qPrintable(accessibleName(panelButton)));
-    QVERIFY2(accessibleName(zoneButton).contains(QStringLiteral("end zone"),
-                                                 Qt::CaseInsensitive),
-             qPrintable(accessibleName(zoneButton)));
-
-    QVERIFY(paletteButton != nullptr);
-    paletteButton->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(paletteButton->hasActiveFocus());
+    auto *mac = item(root, "customizeProfileCard_macos-inspired");
+    mac->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(mac->hasActiveFocus());
     QTest::keyClick(&view, Qt::Key_Space);
-    QTRY_COMPARE(model.keyboardInsertCalls, 1);
+    QTRY_COMPARE(model.calls.size(), 2);
+    QCOMPARE(model.calls.last().at(1).toString(), QStringLiteral("macos-inspired"));
+    QTest::keyClick(&view, Qt::Key_Return);
+    QTRY_COMPARE(model.calls.size(), 3);
+    QCOMPARE(model.calls.last().at(1).toString(), QStringLiteral("macos-inspired"));
 
-    view.resize(1080, 720);
-    QTest::qWait(50);
-    QVERIFY(!compact->isVisible());
-    QVERIFY(wide->isVisible());
-    QVERIFY(item(view.rootObject(), "customizeThicknessSlider") != nullptr);
+    // The page's first focus target is the first built-in card.
+    QCOMPARE(root->property("firstFocusTarget").value<QQuickItem *>(),
+             item(root, "customizeProfileCard_fixture"));
+}
 
-    auto *primaryScope = item(view.rootObject(), "customizeDisplayScopePrimary");
-    auto *allScope = item(view.rootObject(), "customizeDisplayScopeAll");
-    auto *scopeError = item(view.rootObject(), "customizeDisplayScopeError");
-    QVERIFY(primaryScope != nullptr);
-    QVERIFY(allScope != nullptr);
-    QVERIFY(scopeError != nullptr);
-    QVERIFY(primaryScope->isVisible());
-    QVERIFY(allScope->isVisible());
-    QVERIFY2(accessibleName(primaryScope).contains(QStringLiteral("Primary display")),
-             qPrintable(accessibleName(primaryScope)));
-    QVERIFY2(accessibleName(allScope).contains(QStringLiteral("All displays")),
-             qPrintable(accessibleName(allScope)));
-    allScope->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(allScope->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Space);
-    QTRY_COMPARE(model.configurePanelCalls, 1);
-    QCOMPARE(model.lastConfiguredField, QStringLiteral("outputScope"));
-    QCOMPARE(model.lastConfiguredValue, QVariant(QStringLiteral("all")));
+void CustomizePageTests::saveCurrentLayoutValidatesTheName()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString error;
+    QVERIFY2(loadCustomizePage(view, model, &error), qPrintable(error));
+    view.resize(1080, 900);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    auto *root = qobject_cast<QQuickItem *>(view.rootObject());
 
-    primaryScope->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(primaryScope->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Space);
-    QTRY_COMPARE(model.configurePanelCalls, 2);
-    QCOMPARE(model.lastConfiguredField, QStringLiteral("outputScope"));
-    QCOMPARE(model.lastConfiguredValue, QVariant(QStringLiteral("primary")));
+    click(view, item(root, "customizeSaveCurrentPreset"));
+    QTRY_VERIFY(opened(view, "customizePresetNameDialog"));
+    auto *field = windowItem(view, "customizePresetNameField");
+    auto *save = windowItem(view, "customizePresetNameSave");
+    auto *message = windowItem(view, "customizePresetNameError");
+    QVERIFY(field != nullptr && save != nullptr && message != nullptr);
+    QTRY_VERIFY(field->hasActiveFocus());
+    QCOMPARE(field->property("text").toString(), QString());
+    QVERIFY(!save->isEnabled());
+    QVERIFY(!message->isVisible());
 
-    model.setPrimaryDisplayAvailable(false);
-    QTRY_VERIFY(!primaryScope->isEnabled());
-    QTRY_VERIFY(scopeError->isVisible());
-    QVERIFY2(accessibleName(scopeError).contains(QStringLiteral("not currently known")),
-             qPrintable(accessibleName(scopeError)));
+    field->setProperty("text", QStringLiteral("fixture"));
+    QTRY_VERIFY(message->isVisible());
+    QVERIFY(!save->isEnabled());
+    QVERIFY2(accessibleName(message).contains(QStringLiteral("exists")),
+             qPrintable(accessibleName(message)));
+    QVERIFY(model.calls.isEmpty());
 
-    model.setDirty(true);
-    QVERIFY(QMetaObject::invokeMethod(view.rootObject(), "requestClose"));
-    auto *discardDialog = view.rootObject()->findChild<QObject *>(
-        QStringLiteral("customizeDiscardDialog"));
-    QVERIFY(discardDialog != nullptr);
-    QTRY_VERIFY(discardDialog->property("visible").toBool());
-    const qreal expectedX = (view.width()
-                             - discardDialog->property("width").toReal()) / 2.0;
-    const qreal expectedY = (view.height()
-                             - discardDialog->property("height").toReal()) / 2.0;
-    QVERIFY(qAbs(discardDialog->property("x").toReal() - expectedX) < 1.0);
-    QVERIFY(qAbs(discardDialog->property("y").toReal() - expectedY) < 1.0);
-    QVERIFY(QMetaObject::invokeMethod(discardDialog, "reject"));
+    field->setProperty("text", QStringLiteral("Evening"));
+    QTRY_VERIFY(save->isEnabled());
+    click(view, save);
+    QTRY_COMPARE(model.calls.size(), 1);
+    QCOMPARE(model.calls.last(),
+             (QVariantList{QStringLiteral("savePresetAs"), QStringLiteral("fixture"),
+                           QStringLiteral("Evening")}));
+    QTRY_VERIFY(!opened(view, "customizePresetNameDialog"));
 
-    // A 960px Settings window gives the route a medium-width work area after
-    // the Settings Center sidebar. Its primary Arrange task must therefore
-    // keep the representative desktop and all scaled applet markers contained.
-    view.resize(960, 680);
-    QTest::qWait(50);
-    QVERIFY(compact->isVisible());
-    auto *canvas = item(view.rootObject(), "customizeOutputCanvas");
-    auto *panel = item(view.rootObject(), "customizeCanvasPanel_bar");
-    auto *chip = item(view.rootObject(), "customizeChip_clock-instance");
-    QVERIFY(canvas != nullptr);
-    QVERIFY(panel != nullptr);
-    QVERIFY(chip != nullptr);
-    auto *desktopApplet = item(compact,
-                               "customizeDesktopApplet_desktop-icons-instance");
-    QVERIFY(desktopApplet != nullptr);
-    QVERIFY(desktopApplet->isVisible());
-    QVERIFY2(accessibleName(desktopApplet).contains(QStringLiteral("Desktop Icons")),
-             qPrintable(accessibleName(desktopApplet)));
-    const QRectF chipBounds = chip->mapRectToItem(panel, chip->boundingRect());
-    QVERIFY(chipBounds.left() >= 0.0);
-    QVERIFY(chipBounds.top() >= 0.0);
-    QVERIFY(chipBounds.right() <= panel->width());
-    QVERIFY(chipBounds.bottom() <= panel->height());
+    // A store failure keeps the dialog open with the model's reason.
+    model.admitStoreActions = false;
+    model.setMessages({}, QStringLiteral("disk full"));
+    click(view, item(root, "customizeSaveCurrentPreset"));
+    QTRY_VERIFY(opened(view, "customizePresetNameDialog"));
+    field->setProperty("text", QStringLiteral("Night"));
+    QTRY_VERIFY(save->isEnabled());
+    click(view, save);
+    QTRY_COMPARE(model.calls.size(), 2);
+    QVERIFY(opened(view, "customizePresetNameDialog"));
+    QTRY_VERIFY(accessibleName(message).contains(QStringLiteral("disk full")));
+    click(view, windowItem(view, "customizePresetNameCancel"));
+    QTRY_VERIFY(!opened(view, "customizePresetNameDialog"));
+}
 
-    auto *outlineTab = item(view.rootObject(), "customizeCompactTab_1");
-    auto *detailsTab = item(view.rootObject(), "customizeCompactTab_2");
-    QVERIFY(outlineTab != nullptr);
-    QVERIFY(detailsTab != nullptr);
-    QVERIFY(QMetaObject::invokeMethod(outlineTab, "click"));
-    QTRY_COMPARE(view.rootObject()->property("compactSection").toInt(), 1);
-    QTRY_VERIFY(item(compact, "customizeOutlinePanel_bar")->isVisible());
-    QVERIFY(QMetaObject::invokeMethod(detailsTab, "click"));
-    QTRY_COMPARE(view.rootObject()->property("compactSection").toInt(), 2);
-    QTRY_VERIFY(item(compact, "customizeProperties")->isVisible());
+void CustomizePageTests::ownPresetsRenameDuplicateAndDeleteAfterConfirmation()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString error;
+    QVERIFY2(loadCustomizePage(view, model, &error), qPrintable(error));
+    view.resize(1080, 900);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    auto *root = qobject_cast<QQuickItem *>(view.rootObject());
+
+    click(view, item(root, "customizePresetRename_user-mine"));
+    QTRY_VERIFY(opened(view, "customizePresetNameDialog"));
+    auto *field = windowItem(view, "customizePresetNameField");
+    QCOMPARE(field->property("text").toString(), QStringLiteral("Mine"));
+    field->setProperty("text", QStringLiteral("Mine, renamed"));
+    click(view, windowItem(view, "customizePresetNameSave"));
+    QTRY_COMPARE(model.calls.size(), 1);
+    QCOMPARE(model.calls.last(),
+             (QVariantList{QStringLiteral("renamePreset"), QStringLiteral("user-mine"),
+                           QStringLiteral("Mine, renamed")}));
+    QTRY_VERIFY(!opened(view, "customizePresetNameDialog"));
+
+    click(view, item(root, "customizePresetDuplicate_user-mine"));
+    QTRY_COMPARE(model.calls.size(), 2);
+    QCOMPARE(model.calls.last(),
+             (QVariantList{QStringLiteral("duplicatePreset"), QStringLiteral("user-mine")}));
+
+    // Delete asks first; Cancel deletes nothing.
+    click(view, item(root, "customizePresetDelete_user-mine"));
+    QTRY_VERIFY(opened(view, "customizePresetConfirmDialog"));
+    QVERIFY(accessibleName(windowItem(view, "customizePresetConfirmText"))
+                .contains(QStringLiteral("Mine")));
+    click(view, windowItem(view, "customizePresetConfirmCancel"));
+    QTRY_VERIFY(!opened(view, "customizePresetConfirmDialog"));
+    QCOMPARE(model.calls.size(), 2);
+
+    // Deleting the preset in use says the desktop moves to the default first.
+    model.setActivePreset(QStringLiteral("user-mine"));
+    click(view, item(root, "customizePresetDelete_user-mine"));
+    QTRY_VERIFY(opened(view, "customizePresetConfirmDialog"));
+    const QString warning = accessibleName(windowItem(view, "customizePresetConfirmText"));
+    QVERIFY2(warning.contains(QStringLiteral("current layout"))
+                 && warning.contains(QStringLiteral("Mac")),
+             qPrintable(warning));
+    click(view, windowItem(view, "customizePresetConfirmAccept"));
+    QTRY_COMPARE(model.calls.size(), 3);
+    QCOMPARE(model.calls.last(),
+             (QVariantList{QStringLiteral("deletePreset"), QStringLiteral("user-mine")}));
+    QTRY_VERIFY(!opened(view, "customizePresetConfirmDialog"));
+}
+
+void CustomizePageTests::editedBuiltInRestoresAfterConfirmationOrSavesAsNew()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString error;
+    QVERIFY2(loadCustomizePage(view, model, &error), qPrintable(error));
+    view.resize(1080, 900);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    auto *root = qobject_cast<QQuickItem *>(view.rootObject());
+
+    click(view, item(root, "customizePresetRestore_alternate"));
+    QTRY_VERIFY(opened(view, "customizePresetConfirmDialog"));
+    QVERIFY(accessibleName(windowItem(view, "customizePresetConfirmText"))
+                .contains(QStringLiteral("Alternate")));
+    QVERIFY(model.calls.isEmpty());
+    click(view, windowItem(view, "customizePresetConfirmAccept"));
+    QTRY_COMPARE(model.calls.size(), 1);
+    QCOMPARE(model.calls.last(),
+             (QVariantList{QStringLiteral("restorePreset"), QStringLiteral("alternate")}));
+    QTRY_VERIFY(!opened(view, "customizePresetConfirmDialog"));
+
+    click(view, item(root, "customizePresetSaveAs_alternate"));
+    QTRY_VERIFY(opened(view, "customizePresetNameDialog"));
+    QCOMPARE(windowItem(view, "customizePresetNameField")->property("text").toString(),
+             QStringLiteral("Alternate (edited)"));
+    click(view, windowItem(view, "customizePresetNameSave"));
+    QTRY_COMPARE(model.calls.size(), 2);
+    QCOMPARE(model.calls.last(),
+             (QVariantList{QStringLiteral("savePresetAs"), QStringLiteral("alternate"),
+                           QStringLiteral("Alternate (edited)")}));
+}
+
+void CustomizePageTests::busyAndUnavailableStatesStayTruthful()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString error;
+    QVERIFY2(loadCustomizePage(view, model, &error), qPrintable(error));
+    view.resize(1080, 900);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    auto *root = qobject_cast<QQuickItem *>(view.rootObject());
+
+    model.setBusy(true);
+    QTRY_VERIFY(!item(root, "customizeProfileCard_alternate")->isEnabled());
+    QVERIFY(!item(root, "customizePresetDelete_user-mine")->isEnabled());
+    QVERIFY(!item(root, "customizeSaveCurrentPreset")->isEnabled());
+    model.setBusy(false);
+    QTRY_VERIFY(item(root, "customizeProfileCard_alternate")->isEnabled());
+
+    model.setMessages(QStringLiteral("Switched to Alternate."), {});
+    QTRY_VERIFY(item(root, "customizeNotice")->isVisible());
+    QVERIFY(!item(root, "customizeError")->isVisible());
+    model.setMessages({}, QStringLiteral("Settings refused the layout change: busy"));
+    QTRY_VERIFY(item(root, "customizeError")->isVisible());
+    QVERIFY(!item(root, "customizeNotice")->isVisible());
+
+    model.setUnavailable(true);
+    auto *notice = item(root, "customizeUnavailableNotice");
+    QTRY_VERIFY(notice != nullptr && notice->isVisible());
+    QVERIFY(!item(root, "customizeBuiltInPresets")->isVisible());
+    QVERIFY(!item(root, "customizeSaveCurrentPreset")->isVisible());
+    // The global delay is not a layout property and stays reachable.
+    QVERIFY(item(root, "customizePanelHideDelaySlider")->isVisible());
 }
 
 void CustomizePageTests::panelHideDelayCommitsFinalPointerAndKeyboardIntent()
@@ -257,10 +419,12 @@ void CustomizePageTests::panelHideDelayCommitsFinalPointerAndKeyboardIntent()
     QQuickView view;
     QString error;
     QVERIFY2(loadCustomizePage(view, model, &error), qPrintable(error));
-    view.resize(1080, 1080);
+    // Tall enough that the whole page, the delay slider included, is on screen.
+    view.resize(1080, 1600);
     view.show();
-    auto *slider = item(view.rootObject(), "customizePanelHideDelaySlider");
-    auto *status = item(view.rootObject(), "customizePanelHideDelayStatus");
+    auto *root = qobject_cast<QQuickItem *>(view.rootObject());
+    auto *slider = item(root, "customizePanelHideDelaySlider");
+    auto *status = item(root, "customizePanelHideDelayStatus");
     QVERIFY(slider != nullptr);
     QVERIFY(status != nullptr);
     QTRY_VERIFY(slider->isVisible());
@@ -303,236 +467,6 @@ void CustomizePageTests::panelHideDelayCommitsFinalPointerAndKeyboardIntent()
     QTRY_VERIFY(!slider->isEnabled());
     QCOMPARE(status->property("text").toString(),
              QStringLiteral("Saved delay unavailable"));
-}
-
-void CustomizePageTests::rendersAppletSettingEditorsInWideMode()
-{
-    StubCustomizeSettingsModel model;
-    QQuickView view;
-    QString loadError;
-    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
-    view.resize(1080, 720);
-    view.show();
-    QTest::qWait(50);
-
-    model.selectApplet(QStringLiteral("bar"), QStringLiteral("clock-instance"));
-    auto *settingSwitch = item(view.rootObject(), "customizeAppletSettingSwitch_showIcon");
-    auto *settingSlider = item(view.rootObject(), "customizeAppletSettingSlider_refreshSeconds");
-    auto *settingChoice = item(view.rootObject(), "customizeAppletSettingChoice_alignment");
-    auto *readOnlyRow = item(view.rootObject(), "customizeAppletSettingError");
-    QVERIFY(settingSwitch != nullptr);
-    QVERIFY(settingSlider != nullptr);
-    QVERIFY(settingChoice != nullptr);
-    QVERIFY(readOnlyRow != nullptr);
-    QVERIFY(settingSwitch->isVisible());
-    QVERIFY(settingSlider->isVisible());
-    QVERIFY(settingChoice->isVisible());
-    QVERIFY2(accessibleName(settingSwitch).contains(QStringLiteral("showIcon")),
-             qPrintable(accessibleName(settingSwitch)));
-
-    settingSwitch->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(settingSwitch->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Space);
-    QTRY_COMPARE(model.configureAppletSettingCalls, 1);
-    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("showIcon"));
-    QCOMPARE(model.lastConfiguredAppletValue, QVariant(false));
-
-    settingSlider->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(settingSlider->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Right);
-    QTRY_COMPARE(model.configureAppletSettingCalls, 2);
-    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("refreshSeconds"));
-
-    // The ComboBox's own accessible name is its displayed value (QindaQt's
-    // wrapper binds Accessible.name to displayText, matching native combo
-    // boxes); the field identity instead lives in accessibleDescription,
-    // which production QML binds to the field label.
-    QAccessibleInterface *choiceInterface =
-        QAccessible::queryAccessibleInterface(settingChoice);
-    QVERIFY(choiceInterface != nullptr);
-    QVERIFY2(choiceInterface->text(QAccessible::Description)
-                 .contains(QStringLiteral("alignment")),
-             qPrintable(choiceInterface->text(QAccessible::Description)));
-
-    // A focused, closed ComboBox commits its highlighted neighbor with a
-    // plain arrow key -- no popup interaction needed, matching native combo
-    // box keyboard behavior (verified against a standalone Qt6 probe before
-    // relying on it here).
-    settingChoice->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(settingChoice->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Down);
-    QTRY_COMPARE(model.configureAppletSettingCalls, 3);
-    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("alignment"));
-    QCOMPARE(model.lastConfiguredAppletValue, QVariant(QStringLiteral("center")));
-
-    // The declared-but-Unsupported freeform string field (labelFormat) stays
-    // the quiet read-only row rather than gaining an invented free-text
-    // editor: its sibling editor controls exist (one delegate instantiates
-    // all four candidate rows) but none of them is visible.
-    auto *labelFormatSwitch =
-        item(view.rootObject(), "customizeAppletSettingSwitch_labelFormat");
-    auto *labelFormatChoice =
-        item(view.rootObject(), "customizeAppletSettingChoice_labelFormat");
-    auto *labelFormatSlider =
-        item(view.rootObject(), "customizeAppletSettingSlider_labelFormat");
-    QVERIFY(labelFormatSwitch == nullptr || !labelFormatSwitch->isVisible());
-    QVERIFY(labelFormatChoice == nullptr || !labelFormatChoice->isVisible());
-    QVERIFY(labelFormatSlider == nullptr || !labelFormatSlider->isVisible());
-
-    model.setAppletSettingError(QStringLiteral("'refreshSeconds' must be between 1 and 60"));
-    QTRY_VERIFY(readOnlyRow->isVisible());
-    QVERIFY2(accessibleName(readOnlyRow).contains(QStringLiteral("between 1 and 60")),
-             qPrintable(accessibleName(readOnlyRow)));
-    model.setAppletSettingError(QString());
-}
-
-void CustomizePageTests::rendersAppletSettingEditorsInCompactMode()
-{
-    StubCustomizeSettingsModel model;
-    QQuickView view;
-    QString loadError;
-    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
-    view.resize(720, 720);
-    view.show();
-    QTest::qWait(50);
-
-    model.selectApplet(QStringLiteral("bar"), QStringLiteral("clock-instance"));
-    auto *detailsTab = item(view.rootObject(), "customizeCompactTab_2");
-    QVERIFY(detailsTab != nullptr);
-    QVERIFY(QMetaObject::invokeMethod(detailsTab, "click"));
-    QTRY_COMPARE(view.rootObject()->property("compactSection").toInt(), 2);
-
-    auto *compact = item(view.rootObject(), "customizeCompactLayout");
-    QVERIFY(compact != nullptr);
-    QTRY_VERIFY(item(compact, "customizeProperties")->isVisible());
-
-    auto *settingSwitch = item(compact, "customizeAppletSettingSwitch_showIcon");
-    auto *settingSlider = item(compact, "customizeAppletSettingSlider_refreshSeconds");
-    auto *settingChoice = item(compact, "customizeAppletSettingChoice_alignment");
-    QVERIFY(settingSwitch != nullptr);
-    QVERIFY(settingSlider != nullptr);
-    QVERIFY(settingChoice != nullptr);
-    QVERIFY(settingSwitch->isVisible());
-    QVERIFY(settingSlider->isVisible());
-    QVERIFY(settingChoice->isVisible());
-
-    settingSwitch->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(settingSwitch->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Space);
-    QTRY_COMPARE(model.configureAppletSettingCalls, 1);
-    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("showIcon"));
-    QCOMPARE(model.lastConfiguredAppletValue, QVariant(false));
-
-    settingSlider->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(settingSlider->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Right);
-    QTRY_COMPARE(model.configureAppletSettingCalls, 2);
-    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("refreshSeconds"));
-
-    settingChoice->forceActiveFocus(Qt::TabFocusReason);
-    QTRY_VERIFY(settingChoice->hasActiveFocus());
-    QTest::keyClick(&view, Qt::Key_Down);
-    QTRY_COMPARE(model.configureAppletSettingCalls, 3);
-    QCOMPARE(model.lastConfiguredAppletKey, QStringLiteral("alignment"));
-    QCOMPARE(model.lastConfiguredAppletValue, QVariant(QStringLiteral("center")));
-}
-
-void CustomizePageTests::canvasFollowsConfiguredWallpaperAndFallsBackToTokens()
-{
-    StubCustomizeSettingsModel model;
-    QQuickView view;
-    QString loadError;
-    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
-    view.resize(1080, 720);
-    view.show();
-    QTest::qWait(50);
-
-    // Red-before contract: the canvas must surface a wallpaper item driven by
-    // the configured wallpaper truth, not only the decorative gradient.
-    auto *wallpaper = item(view.rootObject(), "customizeCanvasWallpaper");
-    QVERIFY(wallpaper != nullptr);
-
-    // No configured wallpaper (explicit "none" truth) keeps the token
-    // gradient: the image stays hidden and loads nothing.
-    QVERIFY(!wallpaper->isVisible());
-    QCOMPARE(wallpaper->property("source").toUrl(), QUrl());
-
-    const QUrl bundled = QUrl::fromLocalFile(QStringLiteral(
-        QINDAQT_SOURCE_DIR "/data/wallpapers/jade-fold.png"));
-    model.wallpaperPreviewFixture()->configure(bundled, QStringLiteral("tiled"));
-    QTRY_VERIFY(wallpaper->isVisible());
-    QCOMPARE(wallpaper->property("source").toUrl(), bundled);
-    QCOMPARE(wallpaper->property("fillMode").toInt(),
-             fillModeValue(wallpaper, "Tile"));
-
-    model.wallpaperPreviewFixture()->configure(bundled, QStringLiteral("centered"));
-    QTRY_COMPARE(wallpaper->property("fillMode").toInt(),
-                 fillModeValue(wallpaper, "Pad"));
-
-    model.wallpaperPreviewFixture()->configure(bundled, QStringLiteral("scaled"));
-    QTRY_COMPARE(wallpaper->property("fillMode").toInt(),
-                 fillModeValue(wallpaper, "PreserveAspectCrop"));
-
-    // Unavailable/invalid Settings1 truth fails closed back to the gradient.
-    model.wallpaperPreviewFixture()->configure(QUrl(), QStringLiteral("scaled"),
-                                               QStringLiteral("unavailable"));
-    QTRY_VERIFY(!wallpaper->isVisible());
-    QCOMPARE(wallpaper->property("source").toUrl(), QUrl());
-}
-
-void CustomizePageTests::canvasWindowPreviewShowsResolvedChromeAndStaysContained()
-{
-    StubCustomizeSettingsModel model;
-    QQuickView view;
-    QString loadError;
-    QVERIFY2(loadCustomizePage(view, model, &loadError), qPrintable(loadError));
-    view.resize(1080, 720);
-    view.show();
-    QTest::qWait(50);
-
-    // Red-before contract: the canvas must surface a preview item bound to
-    // the model's resolved chrome truth, not a hard-coded mock.
-    auto *preview = item(view.rootObject(), "customizeWindowPreview");
-    QVERIFY(preview != nullptr);
-
-    const QVariantMap firstChrome{
-        {QStringLiteral("surface"), QColor(Qt::red)},
-        {QStringLiteral("buttonStyle"), QStringLiteral("flat")},
-        {QStringLiteral("buttonSide"), QStringLiteral("left")},
-    };
-    model.windowPreviewFixture()->configure(firstChrome);
-    QTRY_COMPARE(preview->property("chrome").toMap().value(QStringLiteral("buttonSide")),
-                 QVariant(QStringLiteral("left")));
-
-    const QVariantMap secondChrome{
-        {QStringLiteral("surface"), QColor(Qt::blue)},
-        {QStringLiteral("buttonStyle"), QStringLiteral("symbols")},
-        {QStringLiteral("buttonSide"), QStringLiteral("right")},
-    };
-    model.windowPreviewFixture()->configure(secondChrome);
-    QTRY_COMPARE(preview->property("chrome").toMap().value(QStringLiteral("buttonSide")),
-                 QVariant(QStringLiteral("right")));
-
-    // Responsive containment: across different monitor aspect ratios, the
-    // preview stays fully inside its screen, never overflowing. The page's
-    // own compact/wide switch (< 1000px) is a separate concern from this
-    // preview's containment and stays out of scope here.
-    auto *screen = item(view.rootObject(), "customizeOutputCanvas");
-    QVERIFY(screen != nullptr);
-    for (const int width : {1080, 1600}) {
-        view.resize(width, 720);
-        view.show();
-        QTest::qWait(50);
-        QVERIFY(preview->isVisible());
-        const QRectF previewRect(preview->mapToItem(screen, QPointF(0, 0)),
-                                 QSizeF(preview->width(), preview->height()));
-        const QRectF screenRect(0, 0, screen->width(), screen->height());
-        QVERIFY2(screenRect.contains(previewRect),
-                 qPrintable(QStringLiteral("preview %1 escaped screen %2 at width %3")
-                                .arg(QDebug::toString(previewRect),
-                                     QDebug::toString(screenRect))
-                                .arg(width)));
-    }
 }
 
 QTEST_MAIN(CustomizePageTests)

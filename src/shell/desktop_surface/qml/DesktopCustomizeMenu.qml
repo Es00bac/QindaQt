@@ -2,14 +2,18 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as Controls
 import QtQuick.Templates as T
 
 // Meta+right-click menu on the desktop (live customization). Same Templates
 // construction, palette and Window popup contract as DesktopContextMenu.
 // Entry order is a keyboard contract for the nested rows:
 //   0 Add panel ▸ (Top, Bottom, Left, Right)   1 Change wallpaper…
-//   2 Desktop icons ▸ (typed desktop-icons settings)   3 Enter/Exit edit mode
-//   4 Undo   5 Open Customize…
+//   2 Desktop icons ▸ (Show/Hide, then the typed desktop-icons settings)
+//   3 Enter/Exit edit mode   4 Undo   5 Open Customize…
+// Desktop icons ▸ gained Show/Hide and the number rows (icon size) when the
+// Settings editor was retired (ADR-0267); nothing on the desktop could add,
+// remove or resize them before.
 // AGENT-GUARD: rows are never `visible`-gated (QQC2 Menu evicts hidden
 // items) and never disabled while the facade is present: keyboard
 // navigation skips disabled rows and shifts every later position. Without
@@ -20,6 +24,9 @@ T.Menu {
     // Borrowed LiveCustomizationController facade; may be null.
     property var controller: null
     readonly property bool available: controller !== null && controller.available === true
+    // The layout's desktop-icons applet id ("" when it has none): whatever
+    // id the layout gave it, so a re-added instance keeps working.
+    property string iconsId: ""
     property var iconRows: []
 
     objectName: "desktopCustomizeMenu"
@@ -58,19 +65,22 @@ T.Menu {
     onOpened: currentIndex = -1
 
     onAboutToShow: {
-        iconRows = available
-            ? controller.appletSettingRows("@desktop", "desktop-icons") : []
+        iconsId = available ? String(controller.desktopAppletId("desktop-icons")) : ""
+        iconRows = iconsId !== ""
+            ? controller.appletSettingRows("@desktop", iconsId) : []
     }
 
-    // Switches first, then choices, whichever Instantiator settles first.
+    // After Show/Hide: switches, then choices, then numbers, whichever
+    // Instantiator settles first.
     function iconInsertionIndex(kind, ordinal) {
-        let index = 0
-        if (kind === "choice") {
-            for (let position = 0; position < iconsMenu.count; ++position) {
-                const item = iconsMenu.itemAt(position)
-                if (!item.subMenu)
-                    ++index
-            }
+        const order = {boolean: 0, choice: 1, integer: 2}
+        let index = 1
+        for (let position = 1; position < iconsMenu.count; ++position) {
+            const item = iconsMenu.itemAt(position)
+            const entryKind = item.subMenu ? String(item.subMenu.settingKind ?? "choice")
+                                           : "boolean"
+            if (order[entryKind] < order[kind])
+                ++index
         }
         return index + ordinal
     }
@@ -158,6 +168,18 @@ T.Menu {
         objectName: "desktopCustomizeIcons"
         title: qsTr("Desktop icons")
         enabled: root.available
+        // Adds or removes the layout's desktop-icons applet. A text toggle,
+        // not a checkable row: a triggered checkable row breaks its binding.
+        Row {
+            objectName: "desktopCustomizeIconsShown"
+            text: root.iconsId !== "" ? qsTr("Hide desktop icons") : qsTr("Show desktop icons")
+            onTriggered: {
+                if (root.iconsId !== "")
+                    root.controller.removeApplet("@desktop", root.iconsId)
+                else
+                    root.controller.addApplet("@desktop", "desktop", "desktop-icons")
+            }
+        }
         Instantiator {
             model: root.iconRows.filter(row => String(row.kind) === "boolean")
             delegate: Row {
@@ -166,7 +188,7 @@ T.Menu {
                 text: String(modelData.title)
                 checkable: true
                 checked: Boolean(modelData.value)
-                onTriggered: root.controller.setAppletSetting("@desktop", "desktop-icons",
+                onTriggered: root.controller.setAppletSetting("@desktop", root.iconsId,
                                                               String(modelData.key), checked)
             }
             onObjectAdded: (index, object) => iconsMenu.insertItem(
@@ -178,6 +200,7 @@ T.Menu {
             delegate: Sub {
                 id: choiceMenu
                 required property var modelData
+                readonly property string settingKind: "choice"
                 objectName: "desktopCustomizeIcons:" + String(modelData.key)
                 title: String(modelData.title)
                 Instantiator {
@@ -189,7 +212,7 @@ T.Menu {
                         text: String(modelData)
                         checkable: true
                         checked: String(choiceMenu.modelData.value) === String(modelData)
-                        onTriggered: root.controller.setAppletSetting("@desktop", "desktop-icons",
+                        onTriggered: root.controller.setAppletSetting("@desktop", root.iconsId,
                                          String(choiceMenu.modelData.key), String(modelData))
                     }
                     onObjectAdded: (index, object) => choiceMenu.insertItem(index, object)
@@ -198,6 +221,31 @@ T.Menu {
             }
             onObjectAdded: (index, object) => iconsMenu.insertMenu(
                                root.iconInsertionIndex("choice", index), object)
+            onObjectRemoved: (index, object) => iconsMenu.removeMenu(object)
+        }
+        Instantiator {
+            model: root.iconRows.filter(row => String(row.kind) === "integer")
+            delegate: Sub {
+                id: integerMenu
+                required property var modelData
+                readonly property string settingKind: "integer"
+                objectName: "desktopCustomizeIcons:" + String(modelData.key)
+                title: String(modelData.title)
+                Controls.SpinBox {
+                    objectName: "desktopCustomizeIconsInteger:" + String(integerMenu.modelData.key)
+                    width: 180
+                    from: Number(integerMenu.modelData.minimum)
+                    to: Number(integerMenu.modelData.maximum)
+                    stepSize: 1
+                    editable: true
+                    value: Number(integerMenu.modelData.value)
+                    Accessible.name: String(integerMenu.modelData.title)
+                    onValueModified: root.controller.setAppletSetting("@desktop", root.iconsId,
+                                         String(integerMenu.modelData.key), value)
+                }
+            }
+            onObjectAdded: (index, object) => iconsMenu.insertMenu(
+                               root.iconInsertionIndex("integer", index), object)
             onObjectRemoved: (index, object) => iconsMenu.removeMenu(object)
         }
     }

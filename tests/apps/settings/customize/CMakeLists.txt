@@ -4,31 +4,29 @@ find_package(Qt6 6.11 REQUIRED COMPONENTS WaylandClient)
 find_package(Wayland REQUIRED COMPONENTS Client)
 
 qt_add_executable(
-    qindaqt_settings_customize_model_tests
-    tst_customize_settings_model.cpp
+    qindaqt_settings_customize_presets_tests
+    tst_customize_presets.cpp
     customize_test_support.h
     customize_sequence_transport.h
-    customize_window_preview_test_support.h
 )
 target_include_directories(
-    qindaqt_settings_customize_model_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+    qindaqt_settings_customize_presets_tests PRIVATE "${PROJECT_SOURCE_DIR}"
 )
 target_compile_definitions(
-    qindaqt_settings_customize_model_tests PRIVATE
+    qindaqt_settings_customize_presets_tests PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
 )
 target_link_libraries(
-    qindaqt_settings_customize_model_tests
-    PRIVATE qindaqt_settings_customize QindaQt::AppAppearance
-            QindaQt::DecorationPainter Qt6::Gui Qt6::Test
+    qindaqt_settings_customize_presets_tests
+    PRIVATE qindaqt_settings_customize Qt6::Test
 )
-qindaqt_enable_warnings(qindaqt_settings_customize_model_tests)
+qindaqt_enable_warnings(qindaqt_settings_customize_presets_tests)
 add_test(
-    NAME qindaqt.settings-customize-model
-    COMMAND qindaqt_settings_customize_model_tests
+    NAME qindaqt.settings-customize-presets
+    COMMAND qindaqt_settings_customize_presets_tests
 )
 set_tests_properties(
-    qindaqt.settings-customize-model PROPERTIES
+    qindaqt.settings-customize-presets PROPERTIES
     LABELS "settings;customize;domain"
 )
 
@@ -37,7 +35,6 @@ qt_add_executable(
     tst_customize_panel_delay.cpp
     customize_test_support.h
     customize_sequence_transport.h
-    customize_window_preview_test_support.h
 )
 target_include_directories(
     qindaqt_settings_customize_panel_delay_tests PRIVATE "${PROJECT_SOURCE_DIR}"
@@ -48,8 +45,7 @@ target_compile_definitions(
 )
 target_link_libraries(
     qindaqt_settings_customize_panel_delay_tests
-    PRIVATE qindaqt_settings_customize QindaQt::AppAppearance
-            QindaQt::DecorationPainter Qt6::Gui Qt6::Test
+    PRIVATE qindaqt_settings_customize Qt6::Test
 )
 qindaqt_enable_warnings(qindaqt_settings_customize_panel_delay_tests)
 add_test(
@@ -58,86 +54,6 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-customize-panel-delay PROPERTIES
-    LABELS "settings;customize;domain"
-)
-
-qt_add_executable(
-    qindaqt_settings_customize_applet_setting_validation_tests
-    tst_customize_applet_setting_validation.cpp
-)
-target_include_directories(
-    qindaqt_settings_customize_applet_setting_validation_tests PRIVATE
-    "${PROJECT_SOURCE_DIR}/src/apps/settings/customize"
-)
-target_link_libraries(
-    qindaqt_settings_customize_applet_setting_validation_tests
-    PRIVATE qindaqt_settings_customize Qt6::Test
-)
-qindaqt_enable_warnings(qindaqt_settings_customize_applet_setting_validation_tests)
-add_test(
-    NAME qindaqt.settings-customize-applet-setting-validation
-    COMMAND qindaqt_settings_customize_applet_setting_validation_tests
-)
-set_tests_properties(
-    qindaqt.settings-customize-applet-setting-validation PROPERTIES
-    LABELS "settings;customize;domain"
-)
-
-qt_add_executable(
-    qindaqt_settings_customize_wallpaper_preview_tests
-    tst_customize_wallpaper_preview.cpp
-    customize_test_support.h
-    customize_sequence_transport.h
-    customize_window_preview_test_support.h
-)
-target_include_directories(
-    qindaqt_settings_customize_wallpaper_preview_tests PRIVATE "${PROJECT_SOURCE_DIR}"
-)
-target_compile_definitions(
-    qindaqt_settings_customize_wallpaper_preview_tests PRIVATE
-    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
-target_link_libraries(
-    qindaqt_settings_customize_wallpaper_preview_tests
-    PRIVATE qindaqt_settings_customize QindaQt::AppAppearance
-            QindaQt::DecorationPainter Qt6::Gui Qt6::Test
-)
-qindaqt_enable_warnings(qindaqt_settings_customize_wallpaper_preview_tests)
-add_test(
-    NAME qindaqt.settings-customize-wallpaper-preview
-    COMMAND qindaqt_settings_customize_wallpaper_preview_tests
-)
-set_tests_properties(
-    qindaqt.settings-customize-wallpaper-preview PROPERTIES
-    LABELS "settings;customize;domain"
-)
-
-qt_add_executable(
-    qindaqt_settings_customize_window_preview_tests
-    tst_customize_window_preview.cpp
-    customize_test_support.h
-    customize_sequence_transport.h
-    customize_window_preview_test_support.h
-)
-target_include_directories(
-    qindaqt_settings_customize_window_preview_tests PRIVATE "${PROJECT_SOURCE_DIR}"
-)
-target_compile_definitions(
-    qindaqt_settings_customize_window_preview_tests PRIVATE
-    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
-target_link_libraries(
-    qindaqt_settings_customize_window_preview_tests
-    PRIVATE qindaqt_settings_customize QindaQt::AppAppearance
-            QindaQt::DecorationPainter Qt6::Gui Qt6::Test
-)
-qindaqt_enable_warnings(qindaqt_settings_customize_window_preview_tests)
-add_test(
-    NAME qindaqt.settings-customize-window-preview
-    COMMAND qindaqt_settings_customize_window_preview_tests
-)
-set_tests_properties(
-    qindaqt.settings-customize-window-preview PROPERTIES
     LABELS "settings;customize;domain"
 )
 
@@ -174,47 +90,6 @@ add_test(
 )
 set_tests_properties(
     qindaqt.settings-customize-page PROPERTIES
-    LABELS "offscreen;settings;customize;accessibility"
-    ENVIRONMENT
-        "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"
-)
-
-qt_add_executable(
-    qindaqt_settings_customize_pointer_tests
-    tst_customize_pointer.cpp
-    customize_test_support.h
-    customize_sequence_transport.h
-    customize_window_preview_test_support.h
-)
-target_include_directories(
-    qindaqt_settings_customize_pointer_tests PRIVATE "${PROJECT_SOURCE_DIR}"
-)
-target_compile_definitions(
-    qindaqt_settings_customize_pointer_tests PRIVATE
-    QINDAQT_CUSTOMIZE_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/customize/qml/CustomizePage.qml"
-    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
-    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-)
-target_link_libraries(
-    qindaqt_settings_customize_pointer_tests
-    PRIVATE QindaQt::ShellIcons qindaqt_shell_iconsplugin
-            qindaqt_settings_customize qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
-            qindaqt_settings_appearance qindaqt_themes QindaQt::TokensQml
-            QindaQt::AppAppearance QindaQt::DecorationPainter
-            Qt6::Quick Qt6::QuickControls2 Qt6::Test
-)
-add_dependencies(
-    qindaqt_settings_customize_pointer_tests
-    qindaqt_shell_iconsplugin
-    qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin
-)
-qindaqt_enable_warnings(qindaqt_settings_customize_pointer_tests)
-add_test(
-    NAME qindaqt.settings-customize-pointer
-    COMMAND qindaqt_settings_customize_pointer_tests
-)
-set_tests_properties(
-    qindaqt.settings-customize-pointer PROPERTIES
     LABELS "offscreen;settings;customize;accessibility"
     ENVIRONMENT
         "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1;QT_FATAL_WARNINGS=1"

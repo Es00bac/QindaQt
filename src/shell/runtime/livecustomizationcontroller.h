@@ -113,6 +113,9 @@ public:
     Q_INVOKABLE bool moveAppletToPanel(const QString &panelId, const QString &appletId,
                                        const QString &targetPanelId);
     Q_INVOKABLE bool removeApplet(const QString &panelId, const QString &appletId);
+    // A copy of the applet, with its whole settings map, at the end of the
+    // same zone (the retired Settings editor's Duplicate, ADR-0267).
+    Q_INVOKABLE bool duplicateApplet(const QString &panelId, const QString &appletId);
     Q_INVOKABLE QVariantList appletSettingRows(const QString &panelId,
                                                const QString &appletId) const;
     Q_INVOKABLE bool setAppletSetting(const QString &panelId, const QString &appletId,
@@ -126,6 +129,10 @@ public:
     Q_INVOKABLE bool configurePanel(const QString &panelId, const QString &field,
                                     const QVariant &value);
     Q_INVOKABLE bool addPanel(const QString &edge);
+    // The first desktop applet ("@desktop" owner) of `pluginId`, or empty
+    // when the layout has none: the desktop menu's Desktop Icons toggle and
+    // settings follow whatever id the layout gave it.
+    Q_INVOKABLE QString desktopAppletId(const QString &pluginId) const;
     Q_INVOKABLE bool removePanel(const QString &panelId);
     // -- session --
     Q_INVOKABLE bool undo();

@@ -141,15 +141,15 @@ libnm, or credential handling. The Network page receives only its route model;
 the complete authority and operation contract is in [Network
 Settings](network-settings.md).
 
-Customize owns a separate Settings1 client for `panels.layoutProfile`, an
-audited profile/manifest catalog, a profiles store adapter, and one public
-customization-editor session. Its QML composition is engine-singleton scoped,
-so responsive host reconstruction and route changes retain the draft and
-lease. Pending application-close truth is window-owned rather than host-local,
-so either responsive host reconstructs the same unresolved modal. It shares no
-request tokens or editing lease with another route. The
-[Customize route](customize-settings.md) defines its gesture, persistence,
-conflict, and failure truth.
+Customize owns a separate Settings1 client for `panels.layoutProfile` and
+`panels.autoHideDelayMs`, the installed and user profile catalogs, and the
+public profiles store: it switches and saves layout presets and edits no
+layout (ADR-0267). Its QML composition is engine-singleton scoped, so
+responsive host reconstruction and route changes keep a pending switch. It
+holds no draft, so its model's `dirty` is always false and the window's
+Customize departure fence below never engages. It shares no request tokens
+with another route. The [Customize route](customize-settings.md) defines its
+switching, store, confirmation and failure truth.
 
 Audio owns one public Audio transport, `AudioClient`, and
 `AudioSettingsModel` for the process lifetime. It never imports the private
@@ -268,9 +268,10 @@ The interaction contract is:
   or compact tab list;
 - Alt+Left selects the immediately previous route; and
 - the platform Quit shortcut closes the ordinary application window unless
-  Bluetooth must first release a discovery lease or Customize owns a dirty
-  draft; discovery release completes first, then the same modal discard
-  decision as title-bar close and route departure must resolve.
+  Bluetooth must first release a discovery lease or the Customize model
+  reports `dirty` (which the preset page never does, ADR-0267); discovery
+  release completes first, then the same modal discard decision as
+  title-bar close and route departure must resolve.
 
 ## Search
 

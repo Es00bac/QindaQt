@@ -7,7 +7,11 @@
 - **Superseded by:** In part, [ADR-0266](0266-edit-mode-drags-applets-across-panels-and-displays.md):
   how edit-mode drags resolve their targets (now on the panel surface under a
   global drag point), and decision 5's "Esc is not offered" (panels take
-  on-demand keyboard focus while editing). The rest stands.
+  on-demand keyboard focus while editing). In part,
+  [ADR-0267](0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md):
+  the Settings route is no longer a second editing surface (it switches and
+  saves presets); its editor host stays only as the parity reference. The
+  rest stands.
 
 ## Context
 

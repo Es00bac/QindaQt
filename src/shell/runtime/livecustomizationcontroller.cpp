@@ -339,6 +339,30 @@ bool LiveCustomizationController::removeApplet(const QString &panelId, const QSt
                   true);
 }
 
+bool LiveCustomizationController::duplicateApplet(const QString &panelId,
+                                                  const QString &appletId)
+{
+    if (!ensureHost()) {
+        return false;
+    }
+    const auto *applet = ownedApplet(panelId, appletId);
+    if (applet == nullptr) {
+        m_statusText = QStringLiteral("the applet is unknown");
+        Q_EMIT changed();
+        return false;
+    }
+    // The same target the Settings route's Duplicate used: the applet's own
+    // zone with no anchor, so the copy lands at the end of that zone.
+    const QString copyId = Model::nextInstanceId(*m_host->profile(), applet->plugin);
+    const QString zone = panelId == ShellCustomization::DesktopAppletOwnerId
+        ? QStringLiteral("desktop") : Model::appletZone(*applet);
+    return settle(QStringLiteral("duplicate-applet"),
+                  m_host->applyGesture(
+                      ShellCustomizationEditor::duplicateIntent(panelId, appletId, copyId),
+                      targetOf(panelId, zone), copyId),
+                  true);
+}
+
 QVariantList LiveCustomizationController::appletSettingRows(const QString &panelId,
                                                             const QString &appletId) const
 {

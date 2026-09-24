@@ -55,6 +55,7 @@ Item {
         function moveAppletStep(p, a, d) { return record("moveAppletStep", p, a, d) }
         function moveAppletToPanel(p, a, t) { return record("moveAppletToPanel", p, a, t) }
         function removeApplet(p, a) { return record("removeApplet", p, a) }
+        function duplicateApplet(p, a) { return record("duplicateApplet", p, a) }
         function appletSettingRows(p, a) {
             return [{key: "showSeconds", title: "Show seconds", kind: "boolean", value: false},
                     {key: "format", title: "Format", kind: "choice", value: "locale",
@@ -65,7 +66,7 @@ Item {
         function palette(p) { return [{pluginId: "clock", name: "Clock", zones: ["start", "end"]}] }
         function addApplet(p, z, id) { return record("addApplet", p, z, id) }
         function panelOptions(p) { return {edge: "top", alignment: "fill", hideMode: "never",
-                                           thickness: 32, length: 1.0} }
+                                           thickness: 32, length: 1.0, output: "*"} }
         function panelIds() { return ["bar", "tray"] }
         function configurePanel(p, f, v) { return record("configurePanel", p, f, v) }
         function addPanel(e) { return record("addPanel", e) }
@@ -183,7 +184,8 @@ Item {
             const names = ["appletCustomizeMoveStart", "appletCustomizeMoveCenter",
                            "appletCustomizeMoveEnd", "appletCustomizeMoveLeft",
                            "appletCustomizeMoveRight", "appletCustomizeMovePanel",
-                           "appletCustomizeRemove", "appletCustomizeSettings"]
+                           "appletCustomizeRemove", "appletCustomizeSettings",
+                           "appletCustomizeDuplicate"]
             for (let index = 0; index < names.length; ++index)
                 compare(entryName(open, index), names[index], "entry " + index)
             // Every row stays enabled: keyboard positions are a strict contract.
@@ -213,6 +215,9 @@ Item {
             tryCompare(movePanel, "count", 1)
             movePanel.itemAt(0).triggered()
             compare(stub.calls[5], ["moveAppletToPanel", "bar", "a", "tray"])
+            // W15: Duplicate, the retired Settings editor's last applet action.
+            open.itemAt(8).triggered()
+            compare(stub.calls[6], ["duplicateApplet", "bar", "a"])
             open.close()
             tryVerify(() => !open.opened, 2000)
         }
@@ -248,6 +253,20 @@ Item {
             compare(stub.calls[6], ["configurePanel", "bar", "edge", "bottom"])
             panelMenu.menuAt(2).itemAt(1).triggered()   // Auto-hide > Intelligent
             compare(stub.calls[7], ["configurePanel", "bar", "hideMode", "intelligent"])
+            // W15: Displays pins the panel to the display it was clicked on
+            // (this surface's output) or shows it on every display.
+            const displays = panelMenu.menuAt(5)
+            compare(displays.objectName, "panelCustomizeDisplays")
+            verify(displays.itemAt(1).checked)   // the fixture's output is "*"
+            displays.itemAt(0).triggered()
+            compare(stub.calls[8], ["configurePanel", "bar", "output", "OUT-1"])
+            displays.itemAt(1).triggered()
+            compare(stub.calls[9], ["configurePanel", "bar", "output", "*"])
+            // The size spin box offers exactly the engine's 20-192 range.
+            const size = panelMenu.menuAt(3).itemAt(0)
+            compare(size.objectName, "panelCustomizeSizeInput")
+            compare(size.from, 20)
+            compare(size.to, 192)
             customize.close()
             tryVerify(() => !customize.opened, 2000)
         }
