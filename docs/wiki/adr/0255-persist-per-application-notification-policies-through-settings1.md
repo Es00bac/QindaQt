@@ -30,6 +30,9 @@ ApplicationCatalog boundary and displays confirmed Settings1 values. It does
 not apply an edit until Settings1 reports Applied and a same-owner, same-epoch
 snapshot at or beyond that revision matches the requested value. Refused,
 conflicting, malformed, or uncertain outcomes never become presenter policy.
+An accepted snapshot below the Applied revision floor cannot settle the write;
+Settings keeps it pending while retrying readback. A four-second deadline or
+owner/epoch authority loss retires the outcome as uncertain, without replay.
 
 The shell applies only an exact confirmed snapshot through its own bridge.
 Mute suppresses that application's popup, including critical urgency, and its
@@ -50,8 +53,9 @@ removed. Applications may supply an identity hint that matches a preference,
 but that hint grants no service or presentation authority. Sound currently
 uses Qt's platform beep facility; this contract does not select a theme or
 guarantee audible output. Focused tests cover strict encoding, Settings1
-refusal and uncertainty, real-page rollback, presenter admission, and a disk
-round-trip through schema-v2 persistence.
+revision-floor ordering, bounded below-floor uncertainty without replay,
+refusal, real-page rollback and virtualized keyboard traversal, presenter
+admission, and a disk round-trip through schema-v2 persistence.
 
 ## Revisit when
 

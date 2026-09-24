@@ -306,6 +306,20 @@ set_tests_properties(qindaqt.settings-notification-schedule-outcomes PROPERTIES
     LABELS "settings;notifications;service"
     ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")
 
+# Applied per-app policy writes reconcile only from a same-lineage snapshot at
+# or above revisionAfter; below-floor reads retry within a bounded deadline.
+qt_add_executable(qindaqt_notification_application_outcomes_test
+    tst_notification_application_outcomes.cpp)
+target_include_directories(qindaqt_notification_application_outcomes_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(qindaqt_notification_application_outcomes_test PRIVATE
+    qindaqt_settings_notifications QindaQt::SettingsClient Qt6::Core Qt6::Test)
+qindaqt_enable_warnings(qindaqt_notification_application_outcomes_test)
+add_test(NAME qindaqt.settings-notification-application-outcomes
+         COMMAND qindaqt_notification_application_outcomes_test)
+set_tests_properties(qindaqt.settings-notification-application-outcomes PROPERTIES
+    LABELS "settings;notifications;service"
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")
+
 # Actual Notifications route with production controllers and a private
 # Settings1 fake: same-owner refresh and refusal must never appear as a save.
 qt_add_executable(qindaqt_notification_page_admission_test

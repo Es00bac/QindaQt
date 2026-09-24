@@ -12,43 +12,56 @@ Item {
     required property Item focusBefore
     required property Item focusAfter
     readonly property int applicationCount: policies ? policies.rowCount() : 0
-    readonly property Item firstControl: applicationCount > 0
-        && applicationList.itemAtIndex(0)
-        ? applicationList.itemAtIndex(0).muteControl : null
-    readonly property Item lastControl: applicationCount > 0
-        && applicationList.itemAtIndex(applicationCount - 1)
-        ? applicationList.itemAtIndex(applicationCount - 1).soundControl : null
+    // AGENT-GUARD: ListView delegates exist only near the viewport. Keep
+    // stable focus endpoints here; each proxy scrolls to its row before the
+    // actual control receives focus, so ring edges never depend on itemAtIndex.
+    readonly property Item firstControl: applicationCount > 0 ? firstFocusProxy : null
+    readonly property Item lastControl: applicationCount > 0 ? lastFocusProxy : null
 
     implicitHeight: content.implicitHeight
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Per-application notifications")
 
+    function focusControlAt(row, soundControl, retries) {
+        if (row < 0 || row >= applicationCount)
+            return
+        applicationList.positionViewAtIndex(row, ListView.Contain)
+        const item = applicationList.itemAtIndex(row)
+        if (item) {
+            (soundControl ? item.soundControl : item.muteControl).forceActiveFocus()
+        } else if (retries > 0) {
+            // Delegate creation follows layout. A bounded queued retry handles
+            // that frame without leaving keyboard focus on the invisible proxy.
+            Qt.callLater(() => root.focusControlAt(row, soundControl, retries - 1))
+        }
+    }
+
+    function focusFirstControl() {
+        focusControlAt(0, false, 4)
+    }
+
+    function focusLastControl() {
+        focusControlAt(applicationCount - 1, true, 4)
+    }
+
     function focusAfterIndex(row, fromSoundControl) {
         if (!fromSoundControl) {
-            const item = applicationList.itemAtIndex(row)
-            if (item) item.soundControl.forceActiveFocus()
-            return
+            focusControlAt(row, true, 4)
+        } else if (row + 1 < applicationCount) {
+            focusControlAt(row + 1, false, 4)
+        } else {
+            root.focusAfter.forceActiveFocus()
         }
-        if (row + 1 < applicationCount) {
-            applicationList.positionViewAtIndex(row + 1, ListView.Contain)
-            Qt.callLater(() => applicationList.itemAtIndex(row + 1)?.muteControl.forceActiveFocus())
-            return
-        }
-        root.focusAfter.forceActiveFocus()
     }
 
     function focusBeforeIndex(row, soundControl) {
         if (soundControl) {
-            const item = applicationList.itemAtIndex(row)
-            if (item) item.muteControl.forceActiveFocus()
-            return
+            focusControlAt(row, false, 4)
+        } else if (row > 0) {
+            focusControlAt(row - 1, true, 4)
+        } else {
+            root.focusBefore.forceActiveFocus()
         }
-        if (row > 0) {
-            applicationList.positionViewAtIndex(row - 1, ListView.Contain)
-            Qt.callLater(() => applicationList.itemAtIndex(row - 1)?.soundControl.forceActiveFocus())
-            return
-        }
-        root.focusBefore.forceActiveFocus()
     }
 
     ColumnLayout {
@@ -242,6 +255,34 @@ Item {
                     Accessible.ignored: true
                 }
             }
+        }
+    }
+
+    FocusScope {
+        id: firstFocusProxy
+        objectName: "notificationPoliciesFirstFocusProxy"
+        width: 0
+        height: 0
+        visible: true
+        opacity: 0
+        Accessible.ignored: true
+        onActiveFocusChanged: {
+            if (activeFocus)
+                root.focusFirstControl()
+        }
+    }
+
+    FocusScope {
+        id: lastFocusProxy
+        objectName: "notificationPoliciesLastFocusProxy"
+        width: 0
+        height: 0
+        visible: true
+        opacity: 0
+        Accessible.ignored: true
+        onActiveFocusChanged: {
+            if (activeFocus)
+                root.focusLastControl()
         }
     }
 }
