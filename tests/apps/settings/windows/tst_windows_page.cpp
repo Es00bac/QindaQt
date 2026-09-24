@@ -33,7 +33,9 @@ private Q_SLOTS:
     void rendersWideControlsWithAdmittedFocus();
     void rendersCompactAndFollowsTheDraft();
     void wiresDraftApplyAndRevertActions();
+    void actualPointerAndKeyboardInputReachTheDraft();
     void presentsUnavailableWithRetry();
+    void ownerReplacementRevokesAppliedPresentation();
 
 private:
     std::unique_ptr<QQuickView> m_view;
@@ -109,6 +111,15 @@ void WindowsPageTest::rendersWideControlsWithAdmittedFocus()
     QVERIFY(revert != nullptr);
     QVERIFY(retry != nullptr);
     QVERIFY(notice != nullptr);
+    auto *savedStatus = findItem(page, QStringLiteral("windowsSavedStatus"));
+    auto *applyStatus = findItem(page, QStringLiteral("windowsSessionApplyStatus"));
+    auto *retryApply = findItem(page, QStringLiteral("windowsRetrySessionApplyButton"));
+    QVERIFY(savedStatus != nullptr);
+    QVERIFY(applyStatus != nullptr);
+    QVERIFY(retryApply != nullptr);
+    QCOMPARE(savedStatus->property("text").toString(), QStringLiteral("Saved preference"));
+    QVERIFY(applyStatus->property("text").toString().contains(QStringLiteral("unavailable")));
+    QVERIFY(!retryApply->isEnabled());
     QVERIFY(!notice->isVisible());
     QVERIFY(!retry->isVisible());
     // Nothing is dirty yet, so neither Apply nor Revert is admitted.
@@ -227,6 +238,54 @@ void WindowsPageTest::wiresDraftApplyAndRevertActions()
     QCOMPARE(apply->property("busy").toBool(), true);
 }
 
+void WindowsPageTest::actualPointerAndKeyboardInputReachTheDraft()
+{
+    auto [guard, page] = createPage(QSize(900, 700));
+    QVERIFY(page != nullptr);
+    auto *focusPolicy = findItem(page, QStringLiteral("windowsFocusPolicySelector"));
+    auto *docking = findItem(page, QStringLiteral("windowsDockingModifierSelector"));
+    auto *slider = findItem(page, QStringLiteral("windowsSnapDistanceSlider"));
+    auto *apply = findItem(page, QStringLiteral("windowsApplyButton"));
+    QVERIFY(focusPolicy != nullptr);
+    QVERIFY(docking != nullptr);
+    QVERIFY(slider != nullptr);
+    QVERIFY(apply != nullptr);
+
+    // A pointer opens the real selector; keyboard navigation and Return
+    // commit its displayed choice through the page's activated handler.
+    const QPointF focusCenter = focusPolicy->mapToScene(
+        QPointF(focusPolicy->width() / 2, focusPolicy->height() / 2));
+    QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, focusCenter.toPoint());
+    QTest::keyClick(m_view.get(), Qt::Key_Down);
+    QTest::keyClick(m_view.get(), Qt::Key_Return);
+    QTRY_COMPARE(m_model->focusPolicyRequests, 1);
+    QCOMPARE(m_model->lastFocusPolicy, QStringLiteral("focus-follows-mouse"));
+
+    // The closed selector's Space/Down/Return path reaches the same model
+    // without invoking a test-only signal or writing while it is merely read.
+    docking->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_COMPARE(m_view->activeFocusItem(), docking);
+    QTest::keyClick(m_view.get(), Qt::Key_Space);
+    QTest::keyClick(m_view.get(), Qt::Key_Down);
+    QTest::keyClick(m_view.get(), Qt::Key_Down);
+    QTest::keyClick(m_view.get(), Qt::Key_Return);
+    QTRY_COMPARE(m_model->dockingModifierRequests, 1);
+    QCOMPARE(m_model->lastDockingModifier, QStringLiteral("control"));
+
+    // A real pointer click on the slider track moves the draft; a model-side
+    // binding refresh remains silent (covered by rendersCompactAndFollowsTheDraft).
+    const QPointF sliderPoint = slider->mapToScene(
+        QPointF(slider->width() * 0.75, slider->height() / 2));
+    QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, sliderPoint.toPoint());
+    QTRY_COMPARE(m_model->snapDistanceRequests, 1);
+    QVERIFY(m_model->lastSnapDistance >= 40);
+
+    const QPointF applyCenter = apply->mapToScene(
+        QPointF(apply->width() / 2, apply->height() / 2));
+    QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, applyCenter.toPoint());
+    QTRY_COMPARE(m_model->applyRequests, 1);
+}
+
 void WindowsPageTest::presentsUnavailableWithRetry()
 {
     auto [guard, page] = createPage(QSize(420, 320));
@@ -244,6 +303,8 @@ void WindowsPageTest::presentsUnavailableWithRetry()
     auto *slider = findItem(page, QStringLiteral("windowsSnapDistanceSlider"));
     auto *retry = findItem(page, QStringLiteral("windowsRetryButton"));
     auto *status = findItem(page, QStringLiteral("windowsStatus"));
+    auto *savedStatus = findItem(page, QStringLiteral("windowsSavedStatus"));
+    auto *applyStatus = findItem(page, QStringLiteral("windowsSessionApplyStatus"));
     QVERIFY(notice != nullptr);
     QTRY_VERIFY(notice->isVisible());
     const auto *noticeAccessible = QAccessible::queryAccessibleInterface(notice);
@@ -258,6 +319,8 @@ void WindowsPageTest::presentsUnavailableWithRetry()
     // The unavailable reason lives in the notice; it is not repeated below.
     QVERIFY(status != nullptr);
     QVERIFY(!status->isVisible());
+    QVERIFY(savedStatus != nullptr);
+    QVERIFY(applyStatus != nullptr);
     QVERIFY(retry != nullptr);
     QVERIFY(retry->isVisible());
     QVERIFY(retry->isEnabled());
@@ -266,6 +329,32 @@ void WindowsPageTest::presentsUnavailableWithRetry()
     QCOMPARE(m_model->retryRequests, 1);
     QVERIFY(QMetaObject::invokeMethod(notice, "retryRequested"));
     QCOMPARE(m_model->retryRequests, 2);
+}
+
+void WindowsPageTest::ownerReplacementRevokesAppliedPresentation()
+{
+    auto [guard, page] = createPage(QSize(900, 700));
+    QVERIFY(page != nullptr);
+    auto *applyStatus = findItem(page, QStringLiteral("windowsSessionApplyStatus"));
+    auto *savedStatus = findItem(page, QStringLiteral("windowsSavedStatus"));
+    QVERIFY(applyStatus != nullptr);
+    QVERIFY(savedStatus != nullptr);
+
+    m_model->sessionApplyStatusText = QStringLiteral("Applied in this session.");
+    Q_EMIT m_model->viewChanged();
+    QTRY_COMPARE(applyStatus->property("text").toString(),
+                 QStringLiteral("Applied in this session."));
+    QCOMPARE(savedStatus->property("text").toString(), QStringLiteral("Saved preference"));
+
+    m_model->sessionApplyStatusText = QStringLiteral(
+        "Saved preference; the session apply-state owner changed; checking the current "
+        "session status.");
+    Q_EMIT m_model->viewChanged();
+    QTRY_VERIFY(applyStatus->property("text").toString().contains(
+        QStringLiteral("owner changed")));
+    QVERIFY(!applyStatus->property("text").toString().contains(
+        QStringLiteral("Applied in this session")));
+    QCOMPARE(savedStatus->property("text").toString(), QStringLiteral("Saved preference"));
 }
 
 QTEST_MAIN(WindowsPageTest)

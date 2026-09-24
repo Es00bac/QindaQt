@@ -63,4 +63,34 @@ KWinWriteOutcome KWinWindowManagementWriter::write(
     return {true, true, {}};
 }
 
+KWinReadbackOutcome KWinWindowManagementWriter::readback(
+    const WindowManagementPreferences &preferences) const
+{
+    const KConfig config(m_path, KConfig::SimpleConfig);
+    const KConfigGroup windows = config.group(QString::fromLatin1(WindowsGroup));
+    const KConfigGroup qindaqt = config.group(QString::fromLatin1(QindaQtGroup));
+    const bool matches = windows.hasKey("FocusPolicy")
+        && windows.readEntry("FocusPolicy", QString{})
+            == WindowManagementPreferences::kwinFocusPolicy(preferences.focusPolicy)
+        && windows.hasKey("BorderSnapZone")
+        && windows.readEntry("BorderSnapZone", -1) == preferences.snapDistance
+        && windows.hasKey("WindowSnapZone")
+        && windows.readEntry("WindowSnapZone", -1) == preferences.snapDistance
+        && qindaqt.hasKey("DockingModifier")
+        && qindaqt.readEntry("DockingModifier", QString{})
+            == WindowManagementPreferences::dockingModifierName(preferences.dockingModifier)
+        && qindaqt.hasKey("CloseContainerPolicy")
+        && qindaqt.readEntry("CloseContainerPolicy", QString{})
+            == WindowManagementPreferences::closeContainerPolicyName(
+                preferences.closeContainerPolicy)
+        && qindaqt.hasKey("SessionRestore")
+        && qindaqt.readEntry("SessionRestore", !preferences.sessionRestore)
+            == preferences.sessionRestore;
+    if (!matches) {
+        return {false, QStringLiteral("kwinrc at '%1' does not match the saved window settings")
+                             .arg(m_path)};
+    }
+    return {true, {}};
+}
+
 } // namespace QindaQt::Session::WindowManagement

@@ -31,9 +31,12 @@ session and a consumer that re-reads on the compositor's own reload signal.
    totally: a value outside the schema fails the whole snapshot and the last
    good preferences stay in force. Decoded preferences are written with
    KConfig into the user's `kwinrc` (`SimpleConfig`, so no cascaded defaults
-   are copied in and every foreign group survives), and only when at least
-   one entry actually differs is one `org.kde.KWin.reconfigure` requested,
-   debounced so a burst of edits costs one reload.
+   are copied in and every foreign group survives). An initial confirmed
+   baseline and each replacement KWin owner receive one reconfigure even when
+   the file already matches; after convergence, changed entries request one
+   `org.kde.KWin.reconfigure`, debounced so a burst of edits costs one reload.
+   The separate [ADR-0254](0254-separate-window-settings-from-session-apply-truth.md)
+   defines when the session may report that this effect was applied.
 2. **The kwinrc mapping is fixed.** KWin-native knobs go where KWin reads
    them: `[Windows] FocusPolicy` (`ClickToFocus` / `FocusFollowsMouse` /
    `FocusUnderMouse`) and `BorderSnapZone` = `WindowSnapZone` =

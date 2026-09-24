@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QtCore/QString>
+#include <QtCore/QMetaType>
 #include <QtCore/QStringList>
 #include <QtCore/QVariant>
 #include <QtCore/QVariantList>
@@ -12,7 +13,7 @@
 namespace QindaQt::Apps::SettingsWindows {
 
 // AGENT-CONTRACT: The route scopes its Settings1 client to exactly these
-// four schema v2 keys, the ones the session bridge (ADR-0199) carries into
+// four schema v2 keys, the ones the session bridge (ADR-0209) carries into
 // kwinrc and the compositor consumes live. The schema's session-restore key
 // exists but has no consumer yet, so it is deliberately not scoped, read, or
 // written here; the boundary scan rejects any route source naming it
@@ -61,4 +62,18 @@ struct WindowsValues final {
     }
 };
 
+enum class SessionApplyPhase { Unavailable, Applying, Applied, Failed };
+
+// AGENT-CONTRACT: This is observed session-side state from the window
+// management writer/reconfigure path. It never substitutes for the
+// Settings1-confirmed WindowsValues held by WindowsSettingsModel.
+struct SessionApplyStatus final {
+    bool serviceAvailable = false;
+    SessionApplyPhase phase = SessionApplyPhase::Unavailable;
+    std::optional<WindowsValues> preferences;
+    QString message;
+};
+
 } // namespace QindaQt::Apps::SettingsWindows
+
+Q_DECLARE_METATYPE(QindaQt::Apps::SettingsWindows::SessionApplyStatus)

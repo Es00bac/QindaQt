@@ -63,9 +63,9 @@ QString WindowsSettingsModel::statusText() const
     case State::Loading:
         return QStringLiteral("Loading window settings…");
     case State::Ready:
-        return draftDirty() ? QStringLiteral("Changes not yet applied.") : QString{};
+        return {};
     case State::Saving:
-        return QStringLiteral("Applying window settings…");
+        return QStringLiteral("Saving window settings…");
     case State::Conflict:
         return QStringLiteral("Changed elsewhere. Current values were reloaded; apply again to keep your changes.");
     case State::Unavailable:
@@ -82,6 +82,88 @@ QString WindowsSettingsModel::errorText() const
     // transient authority diagnostic so the "not replayed" truth stays
     // visible while the authority state churns; Apply/Revert clear it.
     return m_confirmedError.isEmpty() ? m_transientError : m_confirmedError;
+}
+
+QString WindowsSettingsModel::savedStatusText() const
+{
+    if (!m_hasBaseline) {
+        return loading() ? QStringLiteral("Loading saved preferences…")
+                         : QStringLiteral("Saved preferences are unavailable.");
+    }
+    if (saving()) {
+        return QStringLiteral("Saving changes…");
+    }
+    if (!m_authorityReady || unavailable()) {
+        return QStringLiteral("Showing the last confirmed saved preference; current settings "
+                              "authority is unavailable.");
+    }
+    if (draftDirty()) {
+        return QStringLiteral("Unsaved changes");
+    }
+    return QStringLiteral("Saved preference");
+}
+
+bool WindowsSettingsModel::sessionApplyMatchesConfirmed() const noexcept
+{
+    return m_hasBaseline && m_sessionApply.preferences.has_value()
+        && *m_sessionApply.preferences == m_confirmed;
+}
+
+bool WindowsSettingsModel::sessionApplyFailed() const noexcept
+{
+    return m_sessionApply.serviceAvailable
+        && m_sessionApply.phase == SessionApplyPhase::Failed
+        && sessionApplyMatchesConfirmed();
+}
+
+bool WindowsSettingsModel::applyRetryAvailable() const noexcept
+{
+    return sessionApplyFailed() && canEdit() && !draftDirty();
+}
+
+QString WindowsSettingsModel::sessionApplyStatusText() const
+{
+    if (!m_hasBaseline) {
+        return QStringLiteral("Waiting for saved preferences before checking session effect.");
+    }
+    if (saving()) {
+        return QStringLiteral("Waiting for Settings1 to confirm the saved preference.");
+    }
+    if (draftDirty()) {
+        return QStringLiteral("The session applies saved preferences after these changes are saved.");
+    }
+    if (!m_authorityReady || unavailable()) {
+        return QStringLiteral("The last confirmed preference is shown; its current session "
+                              "effect cannot be compared while Settings1 is unavailable.");
+    }
+    if (!m_sessionApply.serviceAvailable) {
+        return QStringLiteral("Saved preference; session apply status is unavailable. Check "
+                              "that the QindaQt session is running.");
+    }
+    if (m_sessionApply.phase == SessionApplyPhase::Unavailable) {
+        return m_sessionApply.message.isEmpty()
+            ? QStringLiteral("Saved preference; the session cannot currently apply it.")
+            : QStringLiteral("Saved preference; %1").arg(m_sessionApply.message);
+    }
+    if (!sessionApplyMatchesConfirmed()) {
+        return QStringLiteral("Waiting for the session to apply the current saved preference.");
+    }
+    switch (m_sessionApply.phase) {
+    case SessionApplyPhase::Unavailable:
+        return m_sessionApply.message.isEmpty()
+            ? QStringLiteral("Saved preference; KWin is unavailable in this session.")
+            : QStringLiteral("Saved preference; %1").arg(m_sessionApply.message);
+    case SessionApplyPhase::Applying:
+        return QStringLiteral("Saved preference; applying to this session…");
+    case SessionApplyPhase::Applied:
+        return QStringLiteral("Applied in this session.");
+    case SessionApplyPhase::Failed:
+        return QStringLiteral("Saved, but not applied: %1")
+            .arg(m_sessionApply.message.isEmpty()
+                     ? QStringLiteral("the session could not reload the window settings")
+                     : m_sessionApply.message);
+    }
+    return {};
 }
 
 bool WindowsSettingsModel::setDraftToken(QString WindowsValues::*field,
@@ -212,6 +294,21 @@ void WindowsSettingsModel::retry()
     // Never claim progress before the client actually retries; a repeated
     // synchronous failure keeps the Unavailable truth visible.
     m_client.refresh();
+}
+
+bool WindowsSettingsModel::retrySessionApply()
+{
+    if (!applyRetryAvailable()) {
+        return false;
+    }
+    Q_EMIT retrySessionApplyRequested();
+    return true;
+}
+
+void WindowsSettingsModel::setSessionApplyStatus(SessionApplyStatus status)
+{
+    m_sessionApply = std::move(status);
+    Q_EMIT viewChanged();
 }
 
 void WindowsSettingsModel::handleClientState()

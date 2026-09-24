@@ -254,3 +254,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0250: Require an active Loader witness for every Settings route](0250-require-active-loader-witness-for-every-settings-route.md)
 - [ADR-0251: Expose admitted radio switches through Network1](0251-expose-admitted-radio-switches-through-network1.md)
 - [ADR-0252: Transfer manual stereo peers with a connection code](0252-transfer-manual-stereo-peers-with-connection-code.md)
+- [ADR-0254: Separate saved window preferences from session apply truth](0254-separate-window-settings-from-session-apply-truth.md)

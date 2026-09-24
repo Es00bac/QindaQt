@@ -49,34 +49,65 @@ the confirmed values and is refused while a commit is in flight.
   (the page reports the distance error inline), so the route never submits a
   value Settings1 would reject.
 
-Once Settings1 confirms a key, `qindaqt-session` writes it into `kwinrc` and
-asks KWin to reconfigure; the change is live in the running session without a
-restart. The page shows no "restart required" state because there is none.
+Once Settings1 confirms a key, `qindaqt-session` writes the complete confirmed
+snapshot into `kwinrc`, reads the owned values back, and asks the current KWin
+owner to reconfigure. The page displays the Settings1 saved preference and the
+session's apply result as separate facts. It reports **Applied in this
+session** only when the session has matching readback and a successful
+reconfigure reply for the current saved values. A write, readback, reconfigure,
+or owner failure stays visible with a diagnostic; a matching failure offers
+**Retry session apply**, which retries the session operation without changing
+Settings1. Missing session status is reported as unavailable, never inferred
+from a successful preference save. Every `WindowManagement1` unique-owner
+change synchronously revokes the prior status before the route reads the new
+owner; a delayed or timed-out replacement read therefore cannot leave the
+former owner's **Applied in this session** result visible. Late replies from a
+former owner are ignored. KWin owner replacement invalidates the prior
+acknowledgement until the replacement acknowledges its reconfigure.
+The page shows no "restart required" state because successful changes are live
+in the running session.
 
 ## Page
 
 Three closed choices (`ComboBox`) and one slider under **Focus**, **Arranging
 windows**, and **Window groups**, each with a one-sentence tooltip and
 accessible description; the choice labels are presentation only and never
-expose the schema tokens. The first focus target is the focus-policy selector,
-or Retry when the route is unavailable. Apply is admitted only for a dirty
-draft in an editable state and shows busy while Saving; Revert is admitted for
-a dirty draft; Retry appears with the degraded notice. The compact layout
-(under 560 px) stacks every label above its control.
+expose the schema tokens. Saved preference and session effect each have their
+own accessible status row. A failed session apply uses an alert role and shows
+its diagnostic beside **Retry session apply**. The first focus target is the
+focus-policy selector, or Settings1 Retry when the route is unavailable. Apply
+is admitted only for a dirty draft in an editable state and shows busy while
+Saving; Revert is admitted for a dirty draft. The compact layout (under 560
+px) stacks every label above its control.
 
 ## Verification
 
 - `qindaqt.settings-windows-model`: exact four-key scope, token and range
   gating, per-key commit order from fresh snapshots, fail-closed malformed
   refresh, conflict stop and explicit re-Apply, uncertain no-replay,
-  replacement abort, and choice lists covering every schema token.
+  replacement abort, choice lists covering every schema token, and confirmed
+  values remaining labeled as saved while the session apply status is revoked.
 - `qindaqt.settings-windows-page`: offscreen page over a stub model — wide and
-  compact layouts, admitted focus, accessible roles and descriptions, labels
-  not tokens, interactive-only draft writes (activation and slider move), Apply
-  and Revert wiring, saving fences, unavailable notice with Retry.
+  compact layouts, admitted focus, accessible roles and descriptions, separate
+  saved/effect status rows including owner-replacement revocation, labels not
+  tokens, pointer-opened selector with
+  keyboard selection, pointer slider and Apply, Revert wiring, saving fences,
+  and unavailable notice with Retry.
+- `qindaqt.settings-windows-session-apply-client`: private session bus — strict
+  versioned state decoding, failure diagnostics, explicit retry, owner loss,
+  direct A-to-B unique-owner replacement with B's response held, late A reply
+  fencing, and replacement-owner convergence.
+- `qindaqt.window-management-bridge`: private session bus — Settings1 snapshot
+  to kwinrc write/readback and exact-owner KWin acknowledgement, failed
+  kwinrc write and reconfigure failures without a false Applied state, retry,
+  and compositor replacement.
+- `compositor.window-management-bridge.docking-chord.single-1080p`: nested
+  private KWin — pointer docking and hover-focus behavior changes after
+  kwinrc reconfigure without restarting the compositor.
 - `qindaqt.settings-windows-boundary` and `-boundary-poison`: public-client
   allow-list (no bridge, compositor, KConfig, or non-public header; D-Bus only
-  in the composition root; the reserved session-restore key rejected).
+  in the route composition and its focused status transport; the reserved
+  session-restore key rejected).
 - `qindaqt.settings-windows-installed-route`: relocated stage runs `--page
   windows` resident with host buses poisoned and fails closed when its module
   is withheld.

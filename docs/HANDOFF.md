@@ -105,6 +105,18 @@ combined build, 23/23 focused rows (after rebuilding a stale pointer test
 executable), broad Settings 136/136, strict MkDocs and 384-document link
 validation pass. No live panel timing has been changed on qinda-top.
 
+Windows Settings now separates the Settings1-confirmed saved preference from
+the session's KWin apply status. The session-owned WindowManagement1 service
+reports Applied only after kwinrc write/readback, exact KWin-owner reconfigure,
+and a matching second readback; failure, owner loss and retry are visible.
+Independent review rejected a direct apply-service A-to-B replacement that
+briefly retained the old Applied status, then accepted exact repaired
+`5290e12d` with immediate revocation and delayed-reply regression. The
+integrated build and 9/9 focused Windows/private-bus/nested/installed-route
+rows pass. Broad Settings passed 136/137 under parallel load; the global
+installed-route wrapper timed out during Notifications construction, then
+passed alone 1/1 (27.86 seconds). Live qinda-top effects remain unqualified.
+
 Per-application stream moves now use the live Audio1 MoveStream authority
 from the Devices tab. A rejected first candidate let one confirmed stream
 erase a sibling failed move; the same reviewer accepted the per-stream repair

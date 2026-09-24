@@ -15,6 +15,12 @@ struct KWinWriteOutcome final {
     QString error;
 };
 
+struct KWinReadbackOutcome final {
+    bool matches = false;
+    // Nonempty when an owned key is absent or differs from the requested value.
+    QString error;
+};
+
 // Writes the preferences into one kwinrc file with KConfig, the format KWin
 // re-reads on `reconfigure`. KWin-native knobs go to `[Windows]`
 // (FocusPolicy, BorderSnapZone, WindowSnapZone); QindaQt-owned ones to a
@@ -26,6 +32,8 @@ public:
     explicit KWinWindowManagementWriter(QString kwinrcPath);
 
     [[nodiscard]] KWinWriteOutcome write(const WindowManagementPreferences &preferences) const;
+    [[nodiscard]] KWinReadbackOutcome readback(
+        const WindowManagementPreferences &preferences) const;
     [[nodiscard]] const QString &path() const noexcept { return m_path; }
 
     static constexpr auto WindowsGroup = "Windows";

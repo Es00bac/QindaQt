@@ -43,6 +43,7 @@ private Q_SLOTS:
     void uncertainWriteIsNeverReplayed();
     void replacementDuringSequenceAbortsWithoutReplay();
     void choiceListsCoverEverySchemaToken();
+    void savedAndSessionApplyStatusRemainSeparate();
 };
 
 void WindowsSettingsModelTest::loadingThenReadyScopesExactlyFourKeys()
@@ -119,7 +120,7 @@ void WindowsSettingsModelTest::draftSettersGateTokensAndRangeAndRevertRestores()
     QVERIFY(model.setDraftCloseContainerPolicy(QStringLiteral("ungroup")));
     QVERIFY(model.draftDirty());
     QVERIFY(model.applyAvailable());
-    QVERIFY(model.statusText().contains(QStringLiteral("not yet applied")));
+    QCOMPARE(model.savedStatusText(), QStringLiteral("Unsaved changes"));
     QCOMPARE(model.dockingModifier(), QStringLiteral("super"));
     QCOMPARE(model.snapDistance(), 12);
 
@@ -344,6 +345,67 @@ void WindowsSettingsModelTest::choiceListsCoverEverySchemaToken()
              WindowsValues::dockingModifierTokens());
     QCOMPARE(tokensOf(WindowsSettingsModel::closeContainerPolicyChoices()),
              WindowsValues::closeContainerPolicyTokens());
+}
+
+void WindowsSettingsModelTest::savedAndSessionApplyStatusRemainSeparate()
+{
+    FakeSettingsTransport transport;
+    SettingsClient client(transport, WindowsKeys::scopedKeys(), fastTiming());
+    WindowsSettingsModel model(client);
+    QVERIFY(client.start());
+    QVERIFY(establishBaseline(transport, QStringLiteral(":1.40"),
+                              QStringLiteral("epoch-a"), 8, defaultValues()));
+    QTRY_VERIFY(model.ready());
+    QCOMPARE(model.savedStatusText(), QStringLiteral("Saved preference"));
+    QVERIFY(model.sessionApplyStatusText().contains(QStringLiteral("status is unavailable")));
+
+    SessionApplyStatus status;
+    status.serviceAvailable = true;
+    status.phase = SessionApplyPhase::Applying;
+    status.preferences = WindowsValues{};
+    model.setSessionApplyStatus(status);
+    QCOMPARE(model.sessionApplyStatusText(),
+             QStringLiteral("Saved preference; applying to this session…"));
+    QCOMPARE(model.savedStatusText(), QStringLiteral("Saved preference"));
+
+    status.phase = SessionApplyPhase::Applied;
+    model.setSessionApplyStatus(status);
+    QCOMPARE(model.sessionApplyStatusText(), QStringLiteral("Applied in this session."));
+
+    // The status client revokes an acknowledgement synchronously when its
+    // unique owner changes; equal saved values alone must not preserve Applied.
+    status.serviceAvailable = false;
+    status.phase = SessionApplyPhase::Unavailable;
+    status.preferences.reset();
+    status.message = QStringLiteral("The session apply-state owner changed.");
+    model.setSessionApplyStatus(status);
+    QVERIFY(model.sessionApplyStatusText().contains(QStringLiteral("unavailable")));
+    QVERIFY(!model.sessionApplyStatusText().contains(QStringLiteral("Applied in this session")));
+    QCOMPARE(model.savedStatusText(), QStringLiteral("Saved preference"));
+
+    status.serviceAvailable = true;
+    status.preferences = WindowsValues{};
+    status.phase = SessionApplyPhase::Failed;
+    status.message = QStringLiteral("kwinrc could not be written");
+    model.setSessionApplyStatus(status);
+    QVERIFY(model.sessionApplyFailed());
+    QVERIFY(model.applyRetryAvailable());
+    QVERIFY(model.sessionApplyStatusText().contains(QStringLiteral("not applied")));
+    QSignalSpy retry(&model, &WindowsSettingsModel::retrySessionApplyRequested);
+    QVERIFY(model.retrySessionApply());
+    QCOMPARE(retry.size(), 1);
+
+    // An old applied snapshot cannot be presented as the current preference.
+    status.phase = SessionApplyPhase::Applied;
+    status.preferences->focusPolicy = QStringLiteral("focus-follows-mouse");
+    model.setSessionApplyStatus(status);
+    QVERIFY(!model.sessionApplyFailed());
+    QVERIFY(!model.applyRetryAvailable());
+    QVERIFY(model.sessionApplyStatusText().contains(QStringLiteral("Waiting")));
+
+    QVERIFY(model.setDraftFocusPolicy(QStringLiteral("focus-under-mouse")));
+    QCOMPARE(model.savedStatusText(), QStringLiteral("Unsaved changes"));
+    QVERIFY(model.sessionApplyStatusText().contains(QStringLiteral("after these changes are saved")));
 }
 
 QTEST_GUILESS_MAIN(WindowsSettingsModelTest)
