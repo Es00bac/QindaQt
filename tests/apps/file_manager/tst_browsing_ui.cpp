@@ -173,12 +173,12 @@ void BrowsingUiTests::keyboardWheelAndFilter() {
   QTRY_VERIFY(locationField->hasActiveFocus());
   QTest::keyClick(window, Qt::Key_Escape);
   QTRY_VERIFY(grid->hasActiveFocus());
-  window->setProperty("applicationsMode", true);
-  navigation.navigateTo(temporary.path());
-  QTRY_VERIFY(!window->property("applicationsMode").toBool());
+  // ADR-0262: Applications is an ordinary location now, so only the Network
+  // hub is a route the window must leave.
   window->setProperty("networkMode", true);
-  navigation.navigateTo(folder);
+  navigation.navigateTo(temporary.path());
   QTRY_VERIFY(!window->property("networkMode").toBool());
+  navigation.navigateTo(folder);
 
   auto *forward = window->findChild<QQuickItem *>("navigateForwardButton");
   QVERIFY(forward && forward->isVisible());

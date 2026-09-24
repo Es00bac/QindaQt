@@ -189,8 +189,11 @@ Control {
                     }
 
                     Accessible.role: Accessible.ListItem
-                    Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.isDirectory
+                    Accessible.name: delegateRoot.modelData.name + (delegateRoot.modelData.applicationId
+                        ? qsTr(", application") : delegateRoot.modelData.isDirectory
                         ? qsTr(", folder") : qsTr(", file"))
+                    // ADR-0262: a dimmed application says why in words too.
+                    Accessible.description: delegateRoot.modelData.note || ""
                     Accessible.selected: delegateRoot.entrySelected
                     border.width: GridView.isCurrentItem && gridView.activeFocus ? 2 : 0
                     border.color: root.palette.highlight
@@ -241,7 +244,8 @@ Control {
                             horizontalAlignment: Text.AlignHCenter
                             text: delegateRoot.modelData.name
                             color: delegateRoot.entrySelected ? root.palette.highlightedText
-                                 : delegateRoot.modelData.isHidden ? root.palette.placeholderText
+                                 : delegateRoot.modelData.isHidden || delegateRoot.modelData.launchable === false
+                                 ? root.palette.placeholderText
                                  : root.palette.text
                             elide: Text.ElideMiddle
                             maximumLineCount: 2
@@ -254,6 +258,9 @@ Control {
                         id: hoverArea
                         anchors.fill: parent
                         hoverEnabled: true
+                        ToolTip.visible: containsMouse && (delegateRoot.modelData.note || "").length > 0
+                        ToolTip.text: delegateRoot.modelData.note || ""
+                        ToolTip.delay: 600
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onClicked: (mouse) => {
                             gridView.forceActiveFocus()

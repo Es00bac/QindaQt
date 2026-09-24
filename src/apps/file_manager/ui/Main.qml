@@ -28,19 +28,18 @@ ApplicationWindow {
 
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
-    // The Applications browser (ADR-0164) replaces the folder views while
-    // true. Browsing to any folder path exits it; "go.applications" enters.
-    property bool applicationsMode: false
     // ADR-0194: the Network place's hub replaces the folder views while true.
-    // Browsing to any folder leaves it, exactly as the Applications browser does.
+    // Browsing to any folder leaves it. (Applications is a browsable place in
+    // the ordinary views since ADR-0262, so it needs no mode of its own.)
     property bool networkMode: false
     Binding {
         target: root.navigationController
         property: "folderViewActive"
-        value: !root.applicationsMode && !root.networkMode
+        value: !root.networkMode
     }
-    // ADR-0165: --choose-application turns the Applications browser into a
-    // workspace picker; a successful choice quits the picker window after
+    // ADR-0165: --choose-application starts in the Applications place as a
+    // workspace picker (main.cpp); ApplicationsController routes activations to
+    // the compositor and a successful choice quits the picker window after
     // the compositor closes it (see chooserSucceeded handling below).
     property bool chooserMode: false
 
@@ -109,10 +108,9 @@ ApplicationWindow {
 
     Connections {
         target: root.navigationController
-        // Browsing to any folder exits the Applications browser; the folder
-        // views are the default surface and a Places click must land there.
+        // Browsing anywhere leaves the Network hub; the folder views are the
+        // default surface and a Places click must land there.
         function onNavigationChanged() {
-            root.applicationsMode = false
             root.networkMode = false
         }
     }
@@ -145,19 +143,18 @@ ApplicationWindow {
         target: root.coordinator
         function onActionRequested(actionId) {
             const navigation = root.navigationController
-            if (actionId === "go.applications") {
+            if (applicationsActions.handle(actionId)) {
+                return
+            } else if (actionId === "go.applications") {
                 if (filterBar.visible) filterBar.closed()
-                root.networkMode = false
-                root.applicationsMode = true
+                navigation.navigateTo(root.applicationsController.location)
                 return
             } else if (actionId === "go.network") {
                 if (filterBar.visible) filterBar.closed()
-                root.applicationsMode = false
                 root.networkMode = true
                 return
             } else if (actionId === "network.connect") {
                 if (filterBar.visible) filterBar.closed()
-                root.applicationsMode = false
                 root.networkMode = true
                 windowServices.openConnectDialog("")
                 return
@@ -188,7 +185,6 @@ ApplicationWindow {
                 filterBar.visible = true
                 filterBar.activate()
             } else if (actionId === "view.focus-location") {
-                root.applicationsMode = false
                 root.networkMode = false
                 toolbar.locationBar.visible = true
                 toolbar.locationBar.activate()
@@ -205,7 +201,6 @@ ApplicationWindow {
                 if (root.propertiesController.active)
                     propertiesDialog.open()
             } else if (actionId === "go.home") {
-                root.applicationsMode = false
                 root.networkMode = false
                 const places = root.placesController.places
                 if (places.length > 0)
@@ -276,12 +271,13 @@ ApplicationWindow {
         Toolbar {
             id: toolbar
             Layout.fillWidth: true
-            visible: !root.applicationsMode && !root.networkMode
+            visible: !root.networkMode
             navigationController: root.navigationController
             mutationController: root.mutationController
             appCoordinator: root.coordinator
             onBrowseRequested: root.activeView().focusView()
         }
+
 
         FilterBar {
             id: filterBar
@@ -303,7 +299,7 @@ ApplicationWindow {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: root.networkMode ? 2 : root.applicationsMode ? 1 : 0
+            currentIndex: root.networkMode ? 1 : 0
 
             RowLayout {
                 Layout.fillWidth: true
@@ -360,14 +356,6 @@ ApplicationWindow {
                 }
             }
 
-            ApplicationsView {
-                objectName: "applicationsView"
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                applicationsController: root.applicationsController
-                chooserMode: root.chooserMode
-            }
-
             NetworkHub {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -381,7 +369,7 @@ ApplicationWindow {
 
         FolderStatusBar {
             Layout.fillWidth: true
-            visible: !root.applicationsMode && !root.networkMode
+            visible: !root.networkMode
             navigationController: root.navigationController
             selection: entrySelection
             appCoordinator: root.coordinator
@@ -389,6 +377,7 @@ ApplicationWindow {
 
         StatusBanners {
             Layout.fillWidth: true
+            chooserMode: root.chooserMode
             navigationController: root.navigationController
             mutationController: root.mutationController
             placesController: root.placesController
@@ -418,6 +407,16 @@ ApplicationWindow {
         id: propertiesDialog
         objectName: "propertiesDialog"
         controller: root.propertiesController
+    }
+
+    ApplicationsPlaceActions {
+        id: applicationsActions
+        anchors.fill: parent
+        applicationsController: root.applicationsController
+        navigationController: root.navigationController
+        selection: entrySelection
+        iconView: entryGrid
+        detailsView: entryList
     }
 
     WindowServices {

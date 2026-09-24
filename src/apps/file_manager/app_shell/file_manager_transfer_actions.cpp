@@ -20,7 +20,10 @@ void bindFileManagerTransferActions(AppShell::ApplicationCoordinator &coordinato
     };
     // A remote entry carries no local mutation identity; disable every
     // current-selection mutation action while browsing smb/sftp (S5).
-    const bool idle = navigation.folderViewActive() && !mutation.busy() && !navigation.remoteActive();
+    // ADR-0262: application rows cannot be cut, copied or pasted into; Get
+    // Info (file.properties) stays available for them.
+    const bool idle = navigation.folderViewActive() && !mutation.busy() && !navigation.remoteActive()
+        && !navigation.applicationsPlace();
     const bool hasSelection = navigation.folderViewActive() && clipboard.selectionCount() > 0;
     enabled("edit.cut", idle && hasSelection);
     enabled("edit.copy", idle && hasSelection);

@@ -104,16 +104,17 @@ Control {
                             : modelData.id === "applications" ? "folder-applications"
                             : modelData.id === "network" ? "network-workgroup" : "drive-harddisk"
 
-                        // Places with no navigable path behind them. Both open a route
-                        // rather than a directory, so neither may be emphasized by
-                        // path comparison, navigated to, or used as a drop target.
+                        // Places with no directory behind them open through their Go
+                        // action and are never drop targets. Applications is browsed in
+                        // the ordinary views (ADR-0262), so it is emphasized by its path;
+                        // Network's empty path never matches.
                         readonly property bool routePlace: modelData.id === "network"
                             || modelData.id === "applications"
 
                         objectName: "placeButton_" + modelData.id
                         Layout.fillWidth: true
                         text: modelData.name
-                        emphasized: !routePlace
+                        emphasized: modelData.path.length > 0
                             && root.navigationController.currentPath === modelData.path
                         // ADR-0194: the Network place opens the hub -- the saved
                         // locations and the way to add one -- rather than pretending a

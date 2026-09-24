@@ -81,6 +81,10 @@ QImage LocalPreviewDecoder::decode(const DirectoryEntry &entry,
   return result.scaled(192, 192, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 QString entryIconName(const DirectoryEntry &entry) {
+  // ADR-0262: an application row carries its own theme icon (never previewed:
+  // it has no identity size, so previewUrl() below declines it).
+  if (!entry.iconName.isEmpty())
+    return entry.iconName;
   if (entry.isDirectory)
     return QStringLiteral("folder");
   const auto mime = QMimeDatabase().mimeTypeForFile(

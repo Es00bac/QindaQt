@@ -52,7 +52,7 @@ Control {
                 root.navigationController.setNameFilter(text)
                 if (text.trim().length === 0 && root.navigationController.guestListingActive)
                     root.navigationController.clearGuestListing()
-                else if (subfoldersToggle.checked)
+                else if (subfoldersToggle.checked && subfoldersToggle.enabled)
                     searchDebounce.restart()
             }
             onAccepted: root.browseRequested()
@@ -72,6 +72,8 @@ Control {
         CheckBox {
             id: subfoldersToggle
             objectName: "filterSubfoldersToggle"
+            // ADR-0262: the Applications place has no subfolders to search.
+            enabled: !root.navigationController.applicationsPlace
             text: qsTr("Subfolders")
             Accessible.name: qsTr("Include subfolders (recursive search)")
             onToggled: {
