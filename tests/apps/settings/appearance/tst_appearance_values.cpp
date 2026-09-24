@@ -27,6 +27,8 @@ private slots:
     void decodeRejectsWrongTypesAndUnknownTokens();
     void validationRequiresInstalledThemesAndBounds();
     void scopedKeysMatchSchemaKeys();
+    void chromeTokensMatchTheirSchemaDefinitions();
+    void titleBarOptionsDecodeStrictlyAndRoundTrip();
     void bundledWallpaperCatalogIsOrderedAndDeduplicated();
     void chromeArrangementTokensDecodeStrictlyAndRoundTrip();
 };
@@ -240,6 +242,68 @@ void AppearanceValuesTests::scopedKeysMatchSchemaKeys()
     QCOMPARE(*uiScale->maximum, 3.0);
 }
 
+
+void AppearanceValuesTests::chromeTokensMatchTheirSchemaDefinitions()
+{
+    // AGENT-GUARD: ChromePreferences and the schema must offer the same
+    // tokens with the same default for every chrome key, or the route would
+    // offer values Settings1 rejects on commit (ADR-0129, ADR-0264).
+    QString error;
+    const auto schema = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    QVERIFY2(schema.has_value(), qPrintable(error));
+    for (const QString &key : QindaQt::Decoration::ChromePreferences::settingsKeys()) {
+        const auto *definition = schema->definition(key);
+        QVERIFY2(definition != nullptr, qPrintable(key));
+        QVERIFY(definition->type == SettingValueType::String);
+        const auto tokens = QindaQt::Decoration::ChromePreferences::tokens(key);
+        QCOMPARE(QSet<QString>(definition->allowedValues.cbegin(),
+                               definition->allowedValues.cend()),
+                 QSet<QString>(tokens.cbegin(), tokens.cend()));
+        QCOMPARE(definition->defaultValue.toString(), tokens.constFirst());
+    }
+}
+
+void AppearanceValuesTests::titleBarOptionsDecodeStrictlyAndRoundTrip()
+{
+    QVariantMap map = AppearanceValues{}.toVariantMap();
+    // Defaults reproduce the shipped chrome and double-click (ADR-0264).
+    QCOMPARE(map.value(QStringLiteral("appearance.windowButtonSize")).toString(),
+             QStringLiteral("theme"));
+    QCOMPARE(map.value(QStringLiteral("appearance.windowRollUpButton")).toString(),
+             QStringLiteral("hidden"));
+    QCOMPARE(map.value(QStringLiteral("appearance.containerTitleDoubleClick")).toString(),
+             QStringLiteral("none"));
+
+    map.insert(QStringLiteral("appearance.windowButtonStyle"), QStringLiteral("blue-tiles"));
+    map.insert(QStringLiteral("appearance.containerButtonStyle"), QStringLiteral("chunky"));
+    map.insert(QStringLiteral("appearance.windowTitleHeight"), QStringLiteral("compact"));
+    map.insert(QStringLiteral("appearance.windowAppIcon"), QStringLiteral("shown"));
+    map.insert(QStringLiteral("appearance.windowTitleDoubleClick"), QStringLiteral("minimize"));
+    map.insert(QStringLiteral("appearance.containerButtonSpacing"), QStringLiteral("roomy"));
+    map.insert(QStringLiteral("appearance.containerTitleDoubleClick"), QStringLiteral("roll-up"));
+    const auto decoded = AppearanceValues::fromVariantMap(map);
+    QVERIFY(decoded.has_value());
+    QCOMPARE(decoded->chrome.windowButtonStyle, QStringLiteral("blue-tiles"));
+    QCOMPARE(decoded->chrome.containerButtonStyle, QStringLiteral("chunky"));
+    QCOMPARE(decoded->chrome.windowTitleHeight, QStringLiteral("compact"));
+    QCOMPARE(decoded->chrome.windowAppIcon, QStringLiteral("shown"));
+    QCOMPARE(decoded->chrome.windowTitleDoubleClick, QStringLiteral("minimize"));
+    QCOMPARE(decoded->chrome.containerButtonSpacing, QStringLiteral("roomy"));
+    QCOMPARE(decoded->chrome.containerTitleDoubleClick, QStringLiteral("roll-up"));
+    QCOMPARE(decoded->toVariantMap(), map);
+
+    // Strict decode: an unknown token or a missing option fails, naming it.
+    QString error;
+    QVariantMap unknown = map;
+    unknown.insert(QStringLiteral("appearance.windowCornerRadius"), QStringLiteral("round"));
+    QVERIFY(!AppearanceValues::fromVariantMap(unknown, &error).has_value());
+    QVERIFY(error.contains(QStringLiteral("appearance.windowCornerRadius")));
+    QVariantMap missing = map;
+    missing.remove(QStringLiteral("appearance.containerButtonSize"));
+    QVERIFY(!AppearanceValues::fromVariantMap(missing, &error).has_value());
+    QVERIFY(error.contains(QStringLiteral("appearance.containerButtonSize")));
+}
 
 void AppearanceValuesTests::bundledWallpaperCatalogIsOrderedAndDeduplicated()
 {

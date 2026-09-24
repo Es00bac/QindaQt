@@ -43,7 +43,45 @@ private Q_SLOTS:
     void cancelsOwnedGrabAndClearsHoverOutsideChrome();
     void rollsContainersWithTheWheelOverChromeAndHandlebars();
     void touchHitTestReachesNearbyOwnedTargetsOnly();
+    void reportsTitleRowDoubleClicksButNotSingleClicksOrDrags();
 };
+
+void HybridChromePointerRouterTests::reportsTitleRowDoubleClicksButNotSingleClicksOrDrags()
+{
+    // ADR-0264: a double-click on the unshaded shared title row is reported
+    // for the session to resolve against the style's action; one click, a
+    // click pair split by a drag, and the shaded badge's unroll are not.
+    const auto outerTitle = hit(HybridChrome::HitKind::OuterTitleDrag,
+                                QStringLiteral("container-a"));
+    // A generous interval keeps the pair deterministic under a loaded host.
+    HybridChromePointerRouter router(
+        [outerTitle](const QPointF &) { return std::optional(outerTitle); }, 8.0, 60000.0);
+    const auto click = [&router](QPointF at) {
+        static_cast<void>(router.pointerPress(pointer(at, Qt::LeftButton, Qt::LeftButton)));
+        return router.pointerRelease(pointer(at, Qt::LeftButton, {}));
+    };
+    const auto first = click({20.0, 10.0});
+    QVERIFY(first.consumed);
+    QVERIFY(first.titleDoubleClicks.isEmpty());
+    const auto second = click({20.0, 10.0});
+    QCOMPARE(second.titleDoubleClicks, QVector<QString>{QStringLiteral("container-a")});
+    QVERIFY(second.shadeRequests.isEmpty());
+    QVERIFY(second.activations.isEmpty());
+    QVERIFY(hasChromeDecisionOutput(second));
+    // The pair is spent: the next click starts a new one.
+    QVERIFY(click({20.0, 10.0}).titleDoubleClicks.isEmpty());
+
+    HybridChromePointerRouter dragged(
+        [outerTitle](const QPointF &) { return std::optional(outerTitle); }, 8.0, 60000.0);
+    static_cast<void>(dragged.pointerPress(pointer({20.0, 10.0}, Qt::LeftButton, Qt::LeftButton)));
+    static_cast<void>(dragged.pointerMove(pointer({80.0, 10.0}, Qt::NoButton, Qt::LeftButton)));
+    const auto dropped = dragged.pointerRelease(pointer({80.0, 10.0}, Qt::LeftButton, {}));
+    QVERIFY(!dropped.drags.isEmpty());
+    QVERIFY(dropped.titleDoubleClicks.isEmpty());
+    static_cast<void>(dragged.pointerPress(pointer({80.0, 10.0}, Qt::LeftButton, Qt::LeftButton)));
+    QVERIFY(dragged.pointerRelease(pointer({80.0, 10.0}, Qt::LeftButton, {}))
+                .titleDoubleClicks.isEmpty());
+}
 
 void HybridChromePointerRouterTests::reportsRaiseOnlyDecisionAsDispatchable()
 {

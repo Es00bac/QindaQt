@@ -37,7 +37,8 @@ inline constexpr QLatin1String ReducedTransparency{"accessibility.reducedTranspa
 inline constexpr QLatin1String ReducedMotion{"accessibility.reducedMotion"};
 
 // Deterministic commit order; also the SettingsClient scope for the route.
-// The eight chrome arrangement keys (ADR-0129) follow the appearance keys.
+// The chrome arrangement keys (ADR-0129) and title-bar options (ADR-0264)
+// follow the appearance keys.
 [[nodiscard]] QStringList scopedKeys();
 } // namespace AppearanceKeys
 
