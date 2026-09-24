@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
 // Managed virtual devices (Audio1 schema v2): create virtual output/input
 // devices applications select like hardware, and remove only devices the
@@ -64,18 +65,18 @@ ColumnLayout {
             "Extra software devices for streaming, recording, and app-to-app audio")
     }
 
+    // AGENT-NOTE: themed through AudioPage's QindaQtTheme bridge.
+    Tk.EmptyState {
+        objectName: "audioVirtualEmpty"
+        Layout.fillWidth: true
+        visible: virtualRepeater.count === 0
+        iconName: "layers"
+        text: qsTr("No virtual devices have been created.")
+    }
+
     RowLayout {
         Layout.fillWidth: true
         spacing: Tokens.space["2"]
-
-        Label {
-            Layout.fillWidth: true
-            visible: virtualRepeater.count === 0
-            text: qsTr("No virtual devices have been created.")
-            muted: true
-            Accessible.role: Accessible.StaticText
-            Accessible.name: text
-        }
 
         AudioIconButton {
             id: addOutputButton

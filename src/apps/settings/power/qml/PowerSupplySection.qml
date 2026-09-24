@@ -5,6 +5,8 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
+import QindaTK.QindaQt
 
 ColumnLayout {
     id: root
@@ -12,6 +14,12 @@ ColumnLayout {
     required property var powerSettings
     Layout.fillWidth: true
     spacing: Tokens.space["2"]
+
+    // AGENT-NOTE: Tk.Theme is an engine singleton that keeps QindaTK's own
+    // preset until a bridge feeds it the desktop's tokens. The charge meter
+    // must wear the session theme even when no other QindaTK route has been
+    // opened, so this section carries its own bridge (bridges are idempotent).
+    QindaQtTheme {}
 
     SectionHeader {
         Layout.fillWidth: true
@@ -63,6 +71,47 @@ ColumnLayout {
                                supplyRow.modelData.percentageText,
                                supplyRow.modelData.timeText]
                               .filter(value => value.length > 0).join(" · ")
+                    }
+                    // AGENT-CONTRACT: an unknown charge draws no meter at all,
+                    // never an empty bar (unknown is not zero). High charge is
+                    // good, so the fill is the neutral accent rather than a
+                    // load ramp; it changes colour only when Power itself
+                    // raises a warning (Low = 3, Critical/Action >= 4, the same
+                    // thresholds as the warning label below, which always
+                    // states the warning in words). The warning hues come
+                    // from the desktop tokens, as the panel's audio meter's
+                    // do: Tk.Theme.color.warning is bridged from the status
+                    // pair's text-on-warning half, which is near-black on dark
+                    // themes and near-white on light ones.
+                    Tk.Meter {
+                        id: chargeMeter
+                        objectName: "powerSupplyMeter_" + supplyRow.modelData.id
+                        visible: supplyRow.modelData.percentageKnown === true
+                        Layout.fillWidth: true
+                        Layout.maximumWidth: 240
+                        Layout.preferredHeight: implicitHeight
+                        from: 0
+                        to: 100
+                        value: supplyRow.modelData.percentageKnown === true
+                               ? supplyRow.modelData.percentage : 0
+                        color: supplyRow.modelData.warningSeverity >= 4
+                               ? Tokens.danger.default
+                               : supplyRow.modelData.warningSeverity >= 3
+                                 ? Tokens.status.warning.background
+                                 : Tk.Theme.color.accent
+                        trackColor: Tk.Theme.color.divider
+                        tooltip: qsTr("%1 charge %2 percent")
+                            .arg(supplyRow.modelData.name)
+                            .arg(Math.round(chargeMeter.value))
+                        Accessible.role: Accessible.ProgressBar
+                        Accessible.name: qsTr("%1 charge bar, %2 percent")
+                            .arg(supplyRow.modelData.name)
+                            .arg(Math.round(chargeMeter.value))
+
+                        Tk.ToolTip {
+                            text: chargeMeter.tooltip
+                            visible: chargeMeter.hovered
+                        }
                     }
                     Label {
                         objectName: "powerSupplyWarning_" + supplyRow.modelData.id

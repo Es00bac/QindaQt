@@ -105,6 +105,22 @@ add_dependencies(
     qindaqt_settings_network_qmlplugin
 )
 add_test(NAME qindaqt.network-page COMMAND qindaqt_network_page_tests)
+
+# Review-only capture of the real page (plan W2 signal meters); built, never
+# registered as a test. argv: <themeJson> <outputPng> <width> <height>.
+qt_add_executable(qindaqt_settings_network_visual_probe
+    visual_probe.cpp stub_network_settings_model.h)
+target_include_directories(qindaqt_settings_network_visual_probe PRIVATE
+    "${PROJECT_SOURCE_DIR}")
+target_compile_definitions(qindaqt_settings_network_visual_probe PRIVATE
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_NETWORK_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/network/qml/NetworkPage.qml")
+target_link_libraries(qindaqt_settings_network_visual_probe PRIVATE
+    qindaqt_settings_network qindaqt_settings_appearance QindaQt::TokensQml
+    qindaqt_themes Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+qindaqt_enable_warnings(qindaqt_settings_network_visual_probe)
+add_dependencies(qindaqt_settings_network_visual_probe qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin qindaqt_settings_network_qmlplugin)
 set_tests_properties(
     qindaqt.network-page PROPERTIES
     LABELS "offscreen;settings;network;accessibility"
