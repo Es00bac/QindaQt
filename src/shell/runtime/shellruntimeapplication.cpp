@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellruntimeapplication.h"
 #include "wallpapercontroller.h"
+#include "default_layout_profile.h"
 
 #include "../common/catalogpaths.h"
 #include "../common/shelltokenpublisher.h"
@@ -240,8 +241,9 @@ bool ShellRuntimeApplication::loadCatalogs(const RuntimeOptions &options, QStrin
             << "QindaQt shell could not honor the saved profile selection;"
                " falling back to the default profile:"
             << requestedProfile;
-        if (!m_profiles.selectById(QStringLiteral("qindaqt"))) {
-            *error = QStringLiteral("Unknown profile: qindaqt");
+        const QString fallback = QString::fromLatin1(DefaultLayoutProfileId);
+        if (!m_profiles.selectById(fallback)) {
+            *error = QStringLiteral("Unknown profile: %1").arg(fallback);
             return false;
         }
     }

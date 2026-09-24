@@ -40,7 +40,9 @@ Item {
         id: button
         objectName: "systemMenuButton"
         anchors.fill: parent
-        iconName: "preferences-system"
+        // The QindaQt mark (tools/qinda_icon_catalog_apps.py); the menu's own
+        // "System Settings" row keeps the Settings gear.
+        iconName: "qindaqt-mark"
         fallbackText: qsTr("System")
         vertical: root.vertical
         available: root.ready

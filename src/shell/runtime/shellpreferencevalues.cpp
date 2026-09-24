@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellpreferencevalues.h"
 
+#include "default_layout_profile.h"
+
 #include <QFileInfo>
 #include <QMetaType>
 
@@ -155,7 +157,7 @@ QString resolveStartupProfileId(
     if (preferences.has_value()) {
         return preferences->layoutProfileId;
     }
-    return QStringLiteral("qindaqt");
+    return QString::fromLatin1(DefaultLayoutProfileId);
 }
 
 QString resolveStartupThemeId(

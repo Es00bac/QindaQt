@@ -135,6 +135,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/panelvisibilityruntime.h
         runtime/runtime_layout_adoption.cpp
         runtime/runtime_layout_adoption.h
+        runtime/default_layout_profile.h
         runtime/launchershortcut.cpp
         runtime/launchershortcut.h
         runtime/gatheroverviewshortcut.cpp
