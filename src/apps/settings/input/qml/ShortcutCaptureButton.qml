@@ -25,6 +25,7 @@ T.Button {
 
     signal captured(int sequence)
     signal cleared()
+    signal captureActivityChanged(bool active)
 
     // True while the next key press belongs to this control. Focus loss
     // cancels, so Tab away is always a safe exit.
@@ -46,6 +47,7 @@ T.Button {
 
     onClicked: root.beginCapture()
     onActiveFocusChanged: if (!root.activeFocus) root.captureMode = false
+    onCapturingChanged: root.captureActivityChanged(root.capturing)
 
     function sequenceText(sequence) {
         if (root.formatter !== null) {
@@ -97,17 +99,24 @@ T.Button {
     }
 
     Keys.priority: Keys.BeforeItem
-    Keys.onPressed: event => {
-        if (!root.capturing) {
-            event.accepted = false
-            return
-        }
-        event.accepted = true
-        const key = event.key
-        const mods = event.modifiers
+    // AGENT-GUARD: Claim every press this capture handles before Qt checks
+    // window Shortcuts, or shell actions such as Ctrl+K and Ctrl+digit can
+    // steal it. Plain Tab remains the documented way out of capture.
+    function claimsShortcutOverride(key) {
+        return root.capturing && key !== 0
+    }
+
+    Keys.onShortcutOverride: event => {
+        // Claim modifier-only key presses too: some window shortcut maps can
+        // change focus before the non-modifier part of a chord arrives.
+        // Plain Tab still reaches onPressed below and exits with focus traversal.
+        event.accepted = root.claimsShortcutOverride(event.key)
+    }
+    function handleCapturedKey(key, mods) {
+        if (!root.capturing) return false
         if (key === Qt.Key_Escape && mods === 0) {
             root.captureMode = false
-            return
+            return true
         }
         if (key === Qt.Key_Backspace && mods === 0) {
             root.captureMode = false
@@ -115,23 +124,27 @@ T.Button {
                 root.sequence = 0
                 root.cleared()
             }
-            return
+            return true
         }
         const modifierOnly =
             key === Qt.Key_Control || key === Qt.Key_Shift
             || key === Qt.Key_Alt || key === Qt.Key_Meta
             || key === Qt.Key_AltGr
         if (modifierOnly || key === 0) {
-            return
+            return true
         }
         if (key === Qt.Key_Tab && mods === 0) {
             // Keep standard focus navigation out of a capture.
             root.captureMode = false
-            event.accepted = false
-            return
+            return false
         }
         root.captureMode = false
         root.sequence = key | mods
         root.captured(root.sequence)
+        return true
+    }
+
+    Keys.onPressed: event => {
+        event.accepted = root.handleCapturedKey(event.key, event.modifiers)
     }
 }

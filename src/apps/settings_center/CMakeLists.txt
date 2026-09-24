@@ -12,6 +12,8 @@ qt_add_library(
     settings_route.cpp
     settings_route_registry.h
     settings_route_registry.cpp
+    settings_route_search_metadata.h
+    settings_route_search_metadata.cpp
     settings_navigation_controller.h
     settings_navigation_controller.cpp
 )
@@ -50,6 +52,8 @@ qt_add_qml_module(
         AddedRouteComponents.qml
         SettingsUnavailableRoute.qml
         SettingsWindowsRouteLoader.qml
+        SettingsCommandPalette.qml
+        SettingsSearchCommands.js
 )
 target_link_libraries(
     qindaqt-settings PRIVATE

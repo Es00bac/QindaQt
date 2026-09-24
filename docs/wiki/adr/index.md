@@ -257,4 +257,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0254: Separate saved window preferences from session apply truth](0254-separate-window-settings-from-session-apply-truth.md)
 - [ADR-0255: Persist per-application notification policies through Settings1](0255-persist-per-application-notification-policies-through-settings1.md)
 - [ADR-0256: Refresh Audio1 after package upgrades at session entry](0256-refresh-audio1-after-package-upgrades.md)
+- [ADR-0257: Search Settings routes through a QindaTK command palette](0257-search-settings-routes-through-a-qindatk-command-palette.md)
 - [ADR-0259: Preview screen savers without the lock screen](0259-preview-screen-savers-without-the-lock-screen.md)

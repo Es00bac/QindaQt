@@ -20,6 +20,8 @@ Rectangle {
     readonly property string activeRouteId:
         navigation ? String(navigation.activeRouteId ?? "") : ""
     signal contentFocusRequested()
+    // The host owns the search palette (ADR-0257); this only asks for it.
+    signal searchRequested()
 
     implicitHeight: 48
     color: Tokens.bg.base
@@ -179,6 +181,17 @@ Rectangle {
                     }
                 }
             }
+        }
+
+        Controls.Button {
+            objectName: "settingsCompactSearchButton"
+            implicitHeight: 32
+            implicitWidth: Math.max(64, implicitContentWidth + leftPadding + rightPadding)
+            emphasized: false
+            text: qsTr("Search")
+            Accessible.name: qsTr("Search settings")
+            accessibleDescription: qsTr("Find a settings page by name or topic. Shortcut: Ctrl+K")
+            onClicked: header.searchRequested()
         }
     }
 }

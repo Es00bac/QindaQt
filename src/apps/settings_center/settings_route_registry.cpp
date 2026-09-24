@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "settings_route_registry.h"
+#include "settings_route_search_metadata.h"
 
 #include <QCoreApplication>
 
@@ -457,6 +458,13 @@ void SettingsRouteRegistry::registerVoiceRoute() {
 SettingsRouteRegistry SettingsRouteRegistry::createDefault() {
   SettingsRouteRegistry registry;
   registry.registerBuiltInRoutes();
+  // ADR-0257: search metadata is attached after registration so the route
+  // builders above stay one descriptor each; the descriptor is re-checked
+  // because registerRoute() validated it before the keywords existed.
+  for (SettingsRoute &route : registry.m_routes) {
+    applyBuiltInSearchMetadata(route);
+    Q_ASSERT(route.isValid());
+  }
   return registry;
 }
 

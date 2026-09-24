@@ -31,6 +31,8 @@ class SettingsNavigationController final : public QObject {
                  activeRouteUnavailableReason NOTIFY activeRouteChanged)
   Q_PROPERTY(QString previousRouteId READ previousRouteId NOTIFY
                  previousRouteIdChanged)
+  // Each entry is SettingsRoute::toVariantMap(): identity, presentation,
+  // availability, and the ADR-0257 search `keywords` and `destinations`.
   Q_PROPERTY(QVariantList routes READ routesList NOTIFY routesChanged)
   Q_PROPERTY(int routeCount READ routeCount NOTIFY routesChanged)
   Q_PROPERTY(int activeIndex READ activeIndex NOTIFY activeRouteIdChanged)
@@ -84,7 +86,9 @@ public:
   // Asks the next page of `routeId` to open a destination with an item
   // selected — the in-process form of the command-line deep link, used when
   // one route sends the user to another (the Display card's "Pen & tablet
-  // settings…"). Rejects an unknown route without changing state.
+  // settings…"). Rejects an unknown route without changing state. Repeating
+  // the current request for the active route re-delivers it (the link is
+  // cleared and set again), so an open page can react to it (ADR-0257).
   Q_INVOKABLE bool selectRouteDestination(const QString &routeId,
                                           const QString &destination,
                                           const QString &selection = {});
