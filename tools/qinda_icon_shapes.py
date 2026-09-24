@@ -11,6 +11,7 @@ fake a hole, because the runtime's symbolic recolor is `source-in`: it
 replaces every opaque pixel's RGB and keeps its alpha, so a faked hole becomes
 solid icon color instead of vanishing. See docs/wiki/shell/icon-theme.md.
 """
+import math
 from dataclasses import dataclass
 
 # AGENT-CONTRACT: Pearl / Smoked Plum material identity, documented in
@@ -89,13 +90,52 @@ TRASH_D = "M16 20h32l-3 32c-.4 4-3 6-7 6H26c-4 0-6.6-2-7-6z"
 DOC_D = "M16 6h22l10 10v42H16z"
 DOC_FOLD_D = "M38 6v10h10"
 MOON_D = "M40 14a20 20 0 1 0 0 36 16 16 0 0 1 0-36z"
-GEAR_BADGE_CX, GEAR_BADGE_CY, GEAR_BADGE_R = 48, 16, 5
+def _num(value: float) -> str:
+    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
+def circle_d(cx: float, cy: float, r: float) -> str:
+    """A full circle as a subpath, for `filled(..., rule="evenodd")` holes."""
+    return (f"M{_num(cx + r)} {_num(cy)}A{_num(r)} {_num(r)} 0 1 0 {_num(cx - r)} {_num(cy)}"
+            f"A{_num(r)} {_num(r)} 0 1 0 {_num(cx + r)} {_num(cy)}Z")
+
+
+def gear_d(cx: float, cy: float, r_out: float, r_root: float, teeth: int,
+           tooth_frac: float = 0.5, taper: float = 0.72) -> str:
+    """Closed toothed-gear outline: tapered teeth joined by root-circle arcs.
+
+    AGENT-NOTE: this replaced the retired four-spoke circle (ring plus four
+    ticks) that doubled as the Settings icon and the system-menu logo; Jarrod
+    rejected that motif, so no icon may draw it again (plan W18, 2026-09-24).
+    """
+    points = []
+    step = 2 * math.pi / teeth
+    half_root = step * tooth_frac / 2
+    half_tip = half_root * taper
+    for i in range(teeth):
+        a = i * step - math.pi / 2
+        for angle, r in ((a - half_root, r_root), (a - half_tip, r_out),
+                         (a + half_tip, r_out), (a + half_root, r_root)):
+            points.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+    parts = [f"M{_num(points[0][0])} {_num(points[0][1])}"]
+    for i in range(teeth):
+        _, tip_a, tip_b, root_b = points[4 * i:4 * i + 4]
+        nxt = points[(4 * i + 4) % len(points)]
+        parts.append(f"L{_num(tip_a[0])} {_num(tip_a[1])}L{_num(tip_b[0])} {_num(tip_b[1])}"
+                     f"L{_num(root_b[0])} {_num(root_b[1])}"
+                     f"A{_num(r_root)} {_num(r_root)} 0 0 1 {_num(nxt[0])} {_num(nxt[1])}")
+    parts.append("Z")
+    return "".join(parts)
+
+
+GEAR_BADGE_CX, GEAR_BADGE_CY = 48, 16
+GEAR_BADGE_D = gear_d(GEAR_BADGE_CX, GEAR_BADGE_CY, 9, 6.6, 6, tooth_frac=0.55)
 
 
 def gear_badge(color: str = INK) -> str:
-    """Small settings-for-subsystem tick used by every preferences-system-* glyph."""
-    return ring(GEAR_BADGE_CX, GEAR_BADGE_CY, GEAR_BADGE_R, width=4, color=color) + stroke(
-        f"M{GEAR_BADGE_CX} {GEAR_BADGE_CY - 8}v3M{GEAR_BADGE_CX} {GEAR_BADGE_CY + 8}v-3"
-        f"M{GEAR_BADGE_CX - 8} {GEAR_BADGE_CY}h3M{GEAR_BADGE_CX + 8} {GEAR_BADGE_CY}h-3",
-        width=3, color=color,
-    )
+    """Small six-tooth gear used by every preferences-system-* glyph.
+
+    The centre is a real evenodd hole, so the symbolic recolor keeps it clear.
+    """
+    return filled(GEAR_BADGE_D + circle_d(GEAR_BADGE_CX, GEAR_BADGE_CY, 2.6),
+                  fill=color, rule="evenodd")

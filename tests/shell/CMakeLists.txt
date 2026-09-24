@@ -546,6 +546,10 @@ target_link_libraries(
     qindaqt_shell_preference_values_tests
     PRIVATE QindaQt::DesignTokens Qt6::Core Qt6::Test
 )
+target_compile_definitions(
+    qindaqt_shell_preference_values_tests
+    PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
 qindaqt_enable_warnings(qindaqt_shell_preference_values_tests)
 add_test(
     NAME qindaqt.shell-preference-values

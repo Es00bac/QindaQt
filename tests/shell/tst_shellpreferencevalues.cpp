@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "shellpreferencevalues.h"
 
+#include "default_layout_profile.h"
+
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QtTest>
 
 using namespace QindaQt::Shell;
@@ -36,6 +42,7 @@ private slots:
     void rejectsBlankStrings();
     void scopedKeysCoverEveryDecodedKey();
     void startupSelectionPrecedence();
+    void defaultLayoutMatchesSettingsDefaults();
     void resolvesBundledAndCustomWallpapers();
 };
 
@@ -126,7 +133,9 @@ void ShellPreferenceValuesTests::startupSelectionPrecedence()
              QStringLiteral("gnome-inspired"));
     QCOMPARE(resolveStartupProfileId({}, preferences),
              QStringLiteral("xfce-inspired"));
-    QCOMPARE(resolveStartupProfileId({}, std::nullopt), QStringLiteral("qindaqt"));
+    // ADR-0263: with no confirmed preference the Mac-style layout is used.
+    QCOMPARE(resolveStartupProfileId({}, std::nullopt),
+             QStringLiteral("macos-inspired"));
 
     QCOMPARE(resolveStartupThemeId(QStringLiteral("qinda-dark"), preferences,
                                    QStringLiteral("profile-default")),
@@ -137,6 +146,51 @@ void ShellPreferenceValuesTests::startupSelectionPrecedence()
              QStringLiteral("profile-default"));
 }
 
+
+namespace {
+
+QJsonObject readJsonObject(const QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    return QJsonDocument::fromJson(file.readAll()).object();
+}
+
+} // namespace
+
+// ADR-0263: the shell fallback, the Settings1 schema default, and the
+// distribution profile-defaults layer must all name the same installed
+// stock layout, or a new user and a degraded startup would disagree.
+void ShellPreferenceValuesTests::defaultLayoutMatchesSettingsDefaults()
+{
+    const QString expected = QString::fromLatin1(DefaultLayoutProfileId);
+    QCOMPARE(expected, QStringLiteral("macos-inspired"));
+
+    const QJsonObject schema = readJsonObject(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"));
+    QString schemaDefault;
+    for (const QJsonValue &entry : schema.value(QStringLiteral("settings")).toArray()) {
+        const QJsonObject key = entry.toObject();
+        if (key.value(QStringLiteral("key")).toString()
+            == QStringLiteral("panels.layoutProfile")) {
+            schemaDefault = key.value(QStringLiteral("default")).toString();
+        }
+    }
+    QCOMPARE(schemaDefault, expected);
+
+    const QJsonObject profileDefaults = readJsonObject(QStringLiteral(
+        QINDAQT_SOURCE_DIR "/data/settings/profile-defaults/qindaqt.json"));
+    QCOMPARE(profileDefaults.value(QStringLiteral("values")).toObject()
+                 .value(QStringLiteral("panels.layoutProfile")).toString(),
+             expected);
+
+    const QJsonObject stock = readJsonObject(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/") + expected
+        + QStringLiteral(".json"));
+    QCOMPARE(stock.value(QStringLiteral("id")).toString(), expected);
+}
 
 void ShellPreferenceValuesTests::resolvesBundledAndCustomWallpapers()
 {
