@@ -78,7 +78,7 @@ All **85 keys** in active schema v2 are listed below. The immutable v1 schema re
 | `panels.launcherPinned` | string-list | `[]` | None beyond type | **App-owned** — Launcher owns pinned-item editing. |
 | `panels.launcherRecent` | string-list | `[]` | None beyond type | **App-owned** — Launcher owns recent-item history. |
 | `panels.layoutProfile` | string | `"qindaqt"` | `{"nonEmpty":true}` | **Active route** — Customize owns the visible or confirmed preference boundary. |
-| `panels.autoHideDelayMs` | integer | `250` | `{"minimum":0,"maximum":5000}` | **Active consumer; editor gap** — Shell PanelVisibilityRuntime consumes it; no owned editor was verified on this base. |
+| `panels.autoHideDelayMs` | integer | `250` | `{"minimum":0,"maximum":5000}` | **Active route** — Customize edits the confirmed panel reveal/hide delay; Shell PanelVisibilityRuntime consumes it. |
 | `panels.configuration` | object | `{}` | None beyond type | **App-owned** — Panel quick configuration and task-order persistence; edit through Customize/panel controls. |
 
 ## window-management
