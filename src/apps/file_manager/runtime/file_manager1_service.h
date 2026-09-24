@@ -17,8 +17,8 @@ class RevealWindows {
 public:
   virtual ~RevealWindows() = default;
 
-  // Shows request.folder with request.names selected, and their properties
-  // when request.showProperties. `activationToken` is the caller's StartupId
+  // Shows request.folder with request.names selected, then runs
+  // request.action there. `activationToken` is the caller's StartupId
   // (an xdg-activation token, or an X11 startup id), possibly empty. Returns
   // false when no window could be shown.
   [[nodiscard]] virtual bool show(const RevealRequest &request,

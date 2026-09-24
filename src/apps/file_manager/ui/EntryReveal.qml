@@ -31,6 +31,8 @@ QtObject {
             navigation.setShowHidden(true)
         if (navigation.currentPath !== folder || !navigation.folderViewActive)
             navigation.navigateTo(folder)
+        else if (names.length > 0)
+            navigation.refresh() // an entry saved since the last listing, a download above all
         if (navigation.currentPath !== folder)
             return false
         const indexes = []
