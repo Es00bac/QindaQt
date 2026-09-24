@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Tokens 1.0
+import QindaQt.Controls 1.0 as Controls
 
 Rectangle {
     id: sidebar
@@ -19,6 +20,8 @@ Rectangle {
     readonly property string activeRouteId:
         navigation ? String(navigation.activeRouteId ?? "") : ""
     signal contentFocusRequested()
+    // The host owns the search palette (ADR-0257); this only asks for it.
+    signal searchRequested()
 
     implicitWidth: 224
     color: Tokens.bg.base
@@ -106,6 +109,15 @@ Rectangle {
             Layout.bottomMargin: Tokens.space["1"]
             Accessible.role: Accessible.Heading
             Accessible.name: text
+        }
+
+        Controls.Button {
+            objectName: "settingsSidebarSearchButton"
+            Layout.fillWidth: true
+            emphasized: false
+            text: qsTr("Search settings")
+            accessibleDescription: qsTr("Find a settings page by name or topic. Shortcut: Ctrl+K")
+            onClicked: sidebar.searchRequested()
         }
 
         Flickable {
