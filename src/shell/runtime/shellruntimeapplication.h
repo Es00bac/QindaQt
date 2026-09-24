@@ -53,6 +53,7 @@ class NotificationPresentationController;
 }
 
 namespace QindaQt::Services::NotificationPresentationPolicy {
+class NotificationApplicationPolicy;
 class NotificationInterruptionPolicy;
 class NotificationPrivacyPolicy;
 }
@@ -88,6 +89,7 @@ class LiveCustomizationShortcut;
 class NotificationCenterAppletAccess;
 class NotificationCenterShortcut;
 class NotificationWindowController;
+class NotificationApplicationSettingsBridge;
 class NotificationQuietingSettingsBridge;
 class PanelVisibilityRuntime;
 class PowerAppletComposition;
@@ -224,6 +226,9 @@ private:
                         NotificationInterruptionPolicy>
         m_notificationInterruptionPolicy;
     std::unique_ptr<Services::NotificationPresentationPolicy::
+                        NotificationApplicationPolicy>
+        m_notificationApplicationPolicy;
+    std::unique_ptr<Services::NotificationPresentationPolicy::
                         NotificationPrivacyPolicy>
         m_notificationPrivacyPolicy;
     std::unique_ptr<Services::SettingsClient::QtSettingsTransport>
@@ -234,6 +239,8 @@ private:
     std::unique_ptr<Services::SettingsClient::SettingsClient>
         m_quietingSettingsClient;
     std::unique_ptr<NotificationQuietingSettingsBridge> m_quietingSettingsBridge;
+    std::unique_ptr<NotificationApplicationSettingsBridge>
+        m_notificationApplicationSettingsBridge;
     // Purpose-scoped Settings1 client for shell.customization.chord (an
     // absent optional key must never poison the shell's main scope).
     std::unique_ptr<Services::SettingsClient::QtSettingsTransport>

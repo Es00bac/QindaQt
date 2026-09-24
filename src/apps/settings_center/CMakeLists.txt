@@ -38,6 +38,7 @@ qt_add_qml_module(
     QML_FILES
         Main.qml
         NotificationsPage.qml
+        NotificationApplicationPoliciesSection.qml
         QuietHoursSection.qml
         SettingsSidebar.qml
         SettingsCompactHeader.qml

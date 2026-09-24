@@ -193,6 +193,10 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/notificationwindowcontroller.h
         runtime/notificationquietingsettingsbridge.cpp
         runtime/notificationquietingsettingsbridge.h
+        runtime/notificationapplicationsettingsbridge.cpp
+        runtime/notificationapplicationsettingsbridge.h
+        runtime/notificationsoundoutput.cpp
+        runtime/notificationsoundoutput.h
         runtime/notificationoutputselector.cpp
         runtime/notificationoutputselector.h
         runtime/powerappletcomposition.cpp
