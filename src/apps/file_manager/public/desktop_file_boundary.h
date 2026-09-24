@@ -34,6 +34,8 @@ enum class FolderOpenError {
   NotInstalled,
   // The candidate process could not be started.
   LaunchRefused,
+  // The requested File Manager action is not an isRevealAction() id.
+  UnsupportedAction,
 };
 
 struct FolderOpenResult final {
@@ -115,23 +117,37 @@ public:
       const ProcessStarter &start = {});
 
   // AGENT-CONTRACT (ADR-0273): the one command line that starts File Manager
-  // showing request.folder with request.names selected, and their properties
-  // open when request.showProperties: one "--select=<name>" element per name,
-  // then "--show-properties" when asked, then the folder as the single
-  // positional argument. File Manager's main.cpp and
-  // runtime/process_reveal_windows read and write exactly this shape. Every
-  // element is one literal argv entry; nothing is joined into a command line.
+  // showing request.folder with request.names selected, then running
+  // request.action there: one "--select=<name>" element per name, then
+  // "--action=<id>" when there is an action, then the folder as the single
+  // positional argument. File Manager's runtime/finder_integration reads and
+  // runtime/process_reveal_windows writes exactly this shape. Every element
+  // is one literal argv entry; nothing is joined into a command line.
   [[nodiscard]] static QStringList revealArguments(const RevealRequest &request);
 
   // Opens the folder holding one listed local item in QindaQt File Manager
-  // with that item selected and, when `showProperties`, its properties dialog
-  // open: the Desktop's Get Info. The item must still be the object
+  // with that item selected, then runs `action` on it there: empty to only
+  // select it, "file.properties" for the Desktop's Get Info,
+  // "file.open-with" for its Open With. The item must still be the object
   // `listed` names (the openLocalFolder identity rule) and its folder must
-  // resolve once to a readable, enterable directory. The program and launch
-  // rules, refusals and success meaning are openLocalFolder's; on success
-  // `canonicalPath` is that folder. GUI-thread only.
+  // resolve once to a readable, enterable directory. Any other action is
+  // UnsupportedAction. The program and launch rules, refusals and success
+  // meaning are openLocalFolder's; on success `canonicalPath` is that folder.
+  // GUI-thread only.
   [[nodiscard]] static FolderOpenResult revealLocalItem(
-      const QString &absolutePath, ListedIdentity listed, bool showProperties,
+      const QString &absolutePath, ListedIdentity listed, const QString &action,
+      const QStringList &programCandidates = fileManagerProgramCandidates(),
+      const ProcessStarter &start = {});
+
+  // Opens a folder the caller owns rather than listed (the Desktop's own
+  // directory) in QindaQt File Manager with nothing selected, then runs one
+  // isRevealAction() `action` there: "file.new-file" for the Desktop's New
+  // File, "file.properties" for its Get Info. The folder must resolve once to
+  // a readable, enterable directory; there is no listed identity to fence.
+  // The program, launch, refusal and success rules are openLocalFolder's.
+  // GUI-thread only.
+  [[nodiscard]] static FolderOpenResult runLocalFolderAction(
+      const QString &absolutePath, const QString &action,
       const QStringList &programCandidates = fileManagerProgramCandidates(),
       const ProcessStarter &start = {});
 

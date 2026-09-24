@@ -53,8 +53,8 @@ public:
   using QObject::QObject;
 
   Q_INVOKABLE QVariant reveal(const QVariant &folder, const QVariant &names,
-                              const QVariant &showProperties) {
-    calls.append({folder.toString(), names.toStringList(), showProperties.toBool()});
+                              const QVariant &action) {
+    calls.append({folder.toString(), names.toStringList(), action.toString()});
     return true;
   }
 
@@ -201,7 +201,6 @@ void TestFileManager1Service::servesTheFreedesktopNameAndQueuesTheNextProcess() 
               .type() == QDBusMessage::ReplyMessage);
   QCOMPARE(secondWindows.shown.size(), 1);
   QVERIFY(m_windows.shown.isEmpty());
-  secondConnection = QDBusConnection(QString());
   QDBusConnection::disconnectFromBus(QStringLiteral("file-manager1-second"));
 }
 
@@ -217,12 +216,12 @@ void TestFileManager1Service::showItemsGroupsByFolderAndHandsTheTokenToTheFirstW
   QCOMPARE(m_windows.shown.at(0).request,
            (RevealRequest{canonical(m_root.filePath(QStringLiteral("A"))),
                           {QStringLiteral("one.txt"), QStringLiteral("two.txt")},
-                          false}));
+                          {}}));
   QCOMPARE(m_windows.shown.at(0).token, QStringLiteral("activation-token-1"));
   QCOMPARE(m_windows.shown.at(1).request,
            (RevealRequest{canonical(m_root.filePath(QStringLiteral("B"))),
                           {QStringLiteral("three.txt")},
-                          false}));
+                          {}}));
   // A token is single-use: the second window must not try to take focus.
   QCOMPARE(m_windows.shown.at(1).token, QString());
 }
@@ -239,11 +238,11 @@ void TestFileManager1Service::showFoldersAndItemPropertiesReachTheWindowFactory(
            QDBusMessage::ReplyMessage);
   QCOMPARE(m_windows.shown.size(), 2);
   QCOMPARE(m_windows.shown.at(0).request,
-           (RevealRequest{canonical(m_root.filePath(QStringLiteral("B"))), {}, false}));
+           (RevealRequest{canonical(m_root.filePath(QStringLiteral("B"))), {}, {}}));
   QCOMPARE(m_windows.shown.at(1).request,
            (RevealRequest{canonical(m_root.filePath(QStringLiteral("A"))),
                           {QStringLiteral("two.txt")},
-                          true}));
+                          QStringLiteral("file.properties")}));
 }
 
 void TestFileManager1Service::refusedCallsAnswerInvalidArgsAndShowNothing() {
@@ -301,26 +300,27 @@ void TestFileManager1Service::processWindowsReuseOnlyAnUnshownOrSameFolderWindow
 
   // A window that has shown nothing yet (a --service start) takes any folder.
   QVERIFY(!window.isVisible());
-  QVERIFY(windows.show({b, {QStringLiteral("three.txt")}, false}, {}));
-  QCOMPARE(reveal->calls, (QList<RevealRequest>{{b, {QStringLiteral("three.txt")}, false}}));
+  QVERIFY(windows.show({b, {QStringLiteral("three.txt")}, {}}, {}));
+  QCOMPARE(reveal->calls, (QList<RevealRequest>{{b, {QStringLiteral("three.txt")}, {}}}));
   QVERIFY(window.isVisible());
   QVERIFY(started.isEmpty());
 
   // A shown window is reused for the folder it shows (the navigation is at A).
-  QVERIFY(windows.show({a, {QStringLiteral("one.txt")}, true}, {}));
+  const QString info = QStringLiteral("file.properties");
+  QVERIFY(windows.show({a, {QStringLiteral("one.txt")}, info}, {}));
   QCOMPARE(reveal->calls.size(), 2);
-  QCOMPARE(reveal->calls.constLast(), (RevealRequest{a, {QStringLiteral("one.txt")}, true}));
+  QCOMPARE(reveal->calls.constLast(), (RevealRequest{a, {QStringLiteral("one.txt")}, info}));
   QVERIFY(started.isEmpty());
 
   // Any other folder is a new File Manager process on the reveal command line.
-  const RevealRequest elsewhere{b, {QStringLiteral("-dash.txt")}, true};
+  const RevealRequest elsewhere{b, {QStringLiteral("-dash.txt")}, info};
   QVERIFY(windows.show(elsewhere, QStringLiteral("activation-token-2")));
   QCOMPARE(reveal->calls.size(), 2);
   QCOMPARE(started.size(), 1);
   QCOMPARE(started.constFirst().program, program);
   QCOMPARE(started.constFirst().arguments,
            (QStringList{QStringLiteral("--select=-dash.txt"),
-                        QStringLiteral("--show-properties"), b}));
+                        QStringLiteral("--action=file.properties"), b}));
   QCOMPARE(started.constFirst().arguments,
            QindaQt::Apps::FileManager::Desktop::FileBoundary::revealArguments(elsewhere));
   QCOMPARE(started.constFirst().token, QStringLiteral("activation-token-2"));
@@ -331,7 +331,7 @@ void TestFileManager1Service::processWindowsReuseOnlyAnUnshownOrSameFolderWindow
                                    [](const QString &, const QStringList &, const QString &) {
                                      return true;
                                    });
-  QVERIFY(!bareWindows.show({a, {}, false}, {}));
+  QVERIFY(!bareWindows.show({a, {}, {}}, {}));
   QVERIFY(!bare.isVisible());
 }
 

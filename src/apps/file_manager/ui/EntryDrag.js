@@ -9,14 +9,24 @@
 // dispatch, never moved).
 
 var internalFormat = "application/x-qindaqt-file-entries"
+// AGENT-CONTRACT (ADR-0265/0273): one desktop-entry id, the format the dock
+// accepts from the launcher and from here. DockDropGeometry.js in
+// QindaQt.Shell.DesktopControls owns the spelling.
+var applicationFormat = "application/x-qindaqt-desktop-entry-id"
 
 function mimeFor(entries) {
-    // ADR-0262: application rows are not files. Neither the dock nor the
-    // desktop accepts a dragged application today, and a row's virtual path
-    // must never reach a copy or move, so they never enter a drag.
+    // ADR-0262: application rows are not files: a row's virtual path must
+    // never reach a copy or move, so they never enter a file drag. One
+    // dragged application offers its desktop-entry id instead, which the
+    // dock keeps (ADR-0273); nothing in File Manager accepts it.
+    const applications = entries.filter(entry => entry.applicationId)
     entries = entries.filter(entry => !entry.applicationId)
-    if (entries.length === 0)
-        return ({})
+    if (entries.length === 0) {
+        const mime = {}
+        if (applications.length === 1)
+            mime[applicationFormat] = String(applications[0].applicationId)
+        return mime
+    }
     const urls = []
     for (const entry of entries)
         urls.push("file://" + encodeURI(entry.path))

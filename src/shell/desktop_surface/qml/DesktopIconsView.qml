@@ -71,6 +71,7 @@ Item {
 
     property string contextEntryId: ""
     property string contextEntryLabel: ""
+    property bool contextEntryIsDirectory: false
     // The dock facade (ADR-0265) for "Add to Dock"; null without a dock.
     property var dockAccess: null
 
@@ -97,6 +98,11 @@ Item {
             contents.copySelection(picked)
     }
     function pasteClipboard() { contents.pasteIntoDesktop() }
+    // ADR-0273: File Manager's own dialogs (Get Info, Open With, New File) for
+    // one icon, or for the Desktop folder when `entryId` is empty.
+    function runFileManagerAction(actionId, entryId) {
+        contents.runFileManagerAction(actionId, entryId)
+    }
     // The whole selection joins the dock as one edit (the dock refuses a
     // second write while the first is saving).
     function addSelectionToDock() {
@@ -213,6 +219,7 @@ Item {
     function openIconMenu(tile, localX, localY) {
         contextEntryId = tile.entryId
         contextEntryLabel = tile.entryLabel
+        contextEntryIsDirectory = tile.modelData.isDirectory === true
         const point = tile.mapToItem(root, localX, localY)
         positionAnchor(iconMenuAnchor, point.x, point.y,
                        iconContextMenu.width, iconContextMenu.height)
@@ -292,7 +299,10 @@ Item {
         DesktopIconContextMenu {
             id: iconContextMenu
             objectName: "desktopIconContextMenu"
+            directory: root.contextEntryIsDirectory
             onOpenRequested: root.openEntry(root.contextEntryId)
+            onOpenWithRequested: root.runFileManagerAction("file.open-with", root.contextEntryId)
+            onInfoRequested: root.runFileManagerAction("file.properties", root.contextEntryId)
             onRenameRequested: renamePopup.begin(root.contextEntryId,
                                                   root.contextEntryLabel)
             onCutRequested: root.cutSelectionOps()

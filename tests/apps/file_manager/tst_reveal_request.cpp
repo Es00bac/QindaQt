@@ -42,6 +42,7 @@ private slots:
   void oneBadUriRefusesTheWholeCall();
   void boundsUrisAndWindows();
   void namesMustBeSingleEntries();
+  void onlyTheDocumentedActionsMayFollowAReveal();
 };
 
 void TestRevealRequest::foldersResolveOnceToCanonicalDirectories() {
@@ -59,7 +60,7 @@ void TestRevealRequest::foldersResolveOnceToCanonicalDirectories() {
       planReveal(RevealKind::Folders, {uriOf(root.filePath(unusual)),
                                        uriOf(root.filePath(QStringLiteral("Link"))), localhost});
   QVERIFY2(plan.ok(), qPrintable(plan.diagnostic));
-  QCOMPARE(plan.requests, (QList<RevealRequest>{{folder, {}, false}}));
+  QCOMPARE(plan.requests, (QList<RevealRequest>{{folder, {}, {}}}));
 
   // Nothing to show is not an error.
   const RevealPlan empty = planReveal(RevealKind::Items, {});
@@ -92,8 +93,8 @@ void TestRevealRequest::itemsGroupByFolderInFirstSeenOrder() {
   QCOMPARE(plan.requests,
            (QList<RevealRequest>{
                {a, {QStringLiteral("two.txt"), QStringLiteral("one.txt"), QStringLiteral("Sub")},
-                false},
-               {b, {QStringLiteral("three.txt")}, false}}));
+                {}},
+               {b, {QStringLiteral("three.txt")}, {}}}));
 }
 
 void TestRevealRequest::itemPropertiesAskForTheDialogAndRootIsAFolder() {
@@ -104,12 +105,13 @@ void TestRevealRequest::itemPropertiesAskForTheDialogAndRootIsAFolder() {
       RevealKind::ItemProperties, {uriOf(root.filePath(QStringLiteral("notes.txt")))});
   QVERIFY2(properties.ok(), qPrintable(properties.diagnostic));
   QCOMPARE(properties.requests,
-           (QList<RevealRequest>{{canonical(root.path()), {QStringLiteral("notes.txt")}, true}}));
+           (QList<RevealRequest>{{canonical(root.path()), {QStringLiteral("notes.txt")},
+                                  QStringLiteral("file.properties")}}));
 
   // "/" has no folder to be selected in, so it is shown as a folder.
   const RevealPlan rootItem = planReveal(RevealKind::Items, {QStringLiteral("file:///")});
   QVERIFY2(rootItem.ok(), qPrintable(rootItem.diagnostic));
-  QCOMPARE(rootItem.requests, (QList<RevealRequest>{{QStringLiteral("/"), {}, false}}));
+  QCOMPARE(rootItem.requests, (QList<RevealRequest>{{QStringLiteral("/"), {}, {}}}));
 }
 
 void TestRevealRequest::symbolicLinksAreEntriesEvenWhenDangling() {
@@ -130,7 +132,7 @@ void TestRevealRequest::symbolicLinksAreEntriesEvenWhenDangling() {
   QCOMPARE(plan.requests,
            (QList<RevealRequest>{{canonical(root.path()),
                                   {QStringLiteral("link.txt"), QStringLiteral("dangling")},
-                                  false}}));
+                                  {}}}));
 }
 
 void TestRevealRequest::refusesEverythingThatIsNotALocalFileUri() {
@@ -258,6 +260,17 @@ void TestRevealRequest::namesMustBeSingleEntries() {
            RevealError::NotFound);
   QCOMPARE(planReveal(RevealKind::Items, {base + QStringLiteral("/.")}).error,
            RevealError::NotFound);
+}
+
+void TestRevealRequest::onlyTheDocumentedActionsMayFollowAReveal() {
+  for (const char *action : {"file.properties", "file.open-with", "file.new-file"}) {
+    QVERIFY2(isRevealAction(QLatin1String(action)), action);
+  }
+  // A destructive or unknown action never runs from a command line.
+  for (const char *action : {"", "file.trash", "file.empty-trash", "file.delete", "edit.paste",
+                             "application.keep-in-dock", "file.properties ", "FILE.PROPERTIES"}) {
+    QVERIFY2(!isRevealAction(QLatin1String(action)), action);
+  }
 }
 
 QTEST_GUILESS_MAIN(TestRevealRequest)

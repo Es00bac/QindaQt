@@ -175,6 +175,12 @@ QList<ActionDefinition> windowActions()
       action("bookmark.add", "go", QStringLiteral("Bookmark Current Folder"),
              QStringLiteral("Add the current folder to the bookmarks sidebar"),
              keys("Ctrl+D"), 1),
+      // ADR-0273: Keep in Dock for the one selected application, beside Get
+      // Info; checked while the dock holds it, disabled outside the
+      // Applications place (file_manager_dock_actions).
+      action("application.keep-in-dock", "file", QStringLiteral("Keep in Dock"),
+             QStringLiteral("Keep the selected application in the dock"), keys("Ctrl+Alt+D"),
+             7, false, true),
   };
 }
 

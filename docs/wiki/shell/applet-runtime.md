@@ -211,8 +211,17 @@ surface hosts the desktop-icons entry (see its bullet below):
   (`snapToGrid`, default true) and glides there; placement animations are
   suppressed until the surface has a real size, so nothing flies in at
   startup.
-  Each tile has its own Open/Rename context menu, and rename crosses only File
-  Manager's public identity-fenced mutation boundary. The surface also owns a right-click
+  Each tile has its own context menu, and the desktop is one more File
+  Manager view ([ADR-0273](../adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md)):
+  Open, Open With… (files only), Get Info, Rename, Cut, Copy, and Move to
+  Trash, in File Manager's own words read from its public menu catalog by
+  action id. Rename crosses only File Manager's public identity-fenced
+  mutation boundary; Get Info and Open With start File Manager on the Desktop
+  folder with the icon selected and run its dialog there, through
+  `FileBoundary::revealLocalItem`. Every background style also offers New
+  File…, Select All, and Get Info for the Desktop folder, and Refresh re-reads
+  the folder. The surface re-lists the Desktop folder shortly after any
+  program changes it. The surface also owns a right-click
   desktop context menu in `windows`, `mac`, or `traditional` style whose
   XFCE-style Applications menu sits behind a configurable modifier key. An
   explicitly styled `Templates.Menu` owns a content-model `ListView` and a

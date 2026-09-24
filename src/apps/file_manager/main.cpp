@@ -35,7 +35,7 @@
 #include "preview/theme_icon_provider.h"
 #include "runtime/file_manager_application.h"
 #include "runtime/mutation_ui_action_probe.h"
-#include "runtime/process_reveal_windows.h"
+#include "runtime/finder_integration.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 
@@ -120,7 +120,7 @@ void registerCommandLineOptions(QCommandLineParser &parser) {
   parser.addOption(
       {QStringLiteral("check-ui-actions"),
        QStringLiteral("Drive production mutation QML against a disposable fixture and exit")});
-  QindaQt::Apps::FileManager::registerRevealOptions(parser);
+  QindaQt::Apps::FileManager::registerFinderOptions(parser);
 }
 
 // Creates and seeds the disposable --check-ui-actions fixture. The probe's S2
@@ -514,8 +514,9 @@ int main(int argc, char **argv) {
     destroyRoots();
     return *probeExit;
   }
-  [[maybe_unused]] const auto fileManager1 = QindaQt::Apps::FileManager::composeFileManager1(
-      parser, engine.rootObjects().constFirst(), *controller, startPath, applications->chooserMode());
+  [[maybe_unused]] const auto finder = QindaQt::Apps::FileManager::composeFinderIntegration(
+      parser, engine.rootObjects().constFirst(), *controller, *appCoordinator, startPath,
+      applications->chooserMode());
   const int exitCode = application->exec();
   destroyRoots();
   return exitCode;

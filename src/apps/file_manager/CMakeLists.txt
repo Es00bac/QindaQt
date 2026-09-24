@@ -63,6 +63,8 @@ target_sources(
         app_shell/file_manager_application_actions.h
         app_shell/file_manager_browsing_actions.cpp
         app_shell/file_manager_browsing_actions.h
+        app_shell/file_manager_dock_actions.cpp
+        app_shell/file_manager_dock_actions.h
         app_shell/file_manager_mutation_actions.cpp
         app_shell/file_manager_mutation_actions.h
         app_shell/file_manager_transfer_actions.cpp
@@ -70,8 +72,10 @@ target_sources(
         preview/local_preview.cpp
         preview/preview_provider.cpp
         preview/theme_icon_provider.cpp
+        runtime/application_dock_pins.cpp
         runtime/file_manager_application.cpp
         runtime/file_manager1_service.cpp
+        runtime/finder_integration.cpp
         runtime/process_reveal_windows.cpp
         model/bookmarks_store.cpp
         model/clipboard_controller.cpp
@@ -129,8 +133,10 @@ target_sources(
         preview/local_preview.h
         preview/preview_provider.h
         preview/theme_icon_provider.h
+        runtime/application_dock_pins.h
         runtime/file_manager_application.h
         runtime/file_manager1_service.h
+        runtime/finder_integration.h
         runtime/process_reveal_windows.h
         model/bookmarks_store.h
         model/applications_controller.h
@@ -212,7 +218,12 @@ target_link_libraries(
     # kio-fuse daemon lifecycle belongs to the platform, not File Manager.
     # ADR-0273: runtime/file_manager1_service.h also names QtDBus types; its
     # only includers (the executable and its focused tests) link Qt6::DBus.
+    # Keep in Dock writes through the dock's public pin helper
+    # (Settings1DockPins, ADR-0265) and the Settings1 client's D-Bus
+    # transport; all three are static, so the FileManager component gains no
+    # shared library.
     PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets Qt6::Widgets Qt6::DBus
+            QindaQt::DockPins QindaQt::SettingsClient
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)

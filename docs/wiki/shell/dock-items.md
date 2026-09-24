@@ -26,8 +26,9 @@ group members included.
 
 ## Gestures
 
-- **Drop to add.** Launcher rows (and the File Manager's Applications view,
-  plan W12) offer an application under
+- **Drop to add.** Launcher rows and the File Manager's Applications view
+  ([ADR-0273](../adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md))
+  offer an application under
   `application/x-qindaqt-desktop-entry-id`. Files and folders arrive as
   `text/uri-list`: a folder becomes a folder item, a file a file item, a
   `.desktop` file that names an installed application becomes that
@@ -65,6 +66,7 @@ Manager**. Reduced motion skips the unfold.
 | Start menu program list | Right-click or Menu key: Pin to Dock / Remove from Dock |
 | Running window (task list) | Right-click or Menu key: Keep in Dock, when an installed application owns the window |
 | Desktop icons | Right-click: Pin to Dock (a `.desktop` file) or Add to Dock (anything else); the whole selection joins |
+| File Manager's Applications place | Right-click: Keep in Dock (checked while the dock holds it), or drag onto the dock ([ADR-0273](../adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md)) |
 | Another process | `Settings1DockPins` (below) |
 
 A pinned application that is running shows a dot, and its accessible

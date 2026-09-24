@@ -64,6 +64,23 @@ Menu {
         return true
     }
 
+    // The same menus' checked truth, for checkable actions set in C++.
+    function actionChecked(id) {
+        const menuGroups = root.appCoordinator.menus
+        if (!menuGroups)
+            return false
+        for (let i = 0; i < menuGroups.length; ++i) {
+            const actions = menuGroups[i].actions
+            if (!actions)
+                continue
+            for (let j = 0; j < actions.length; ++j) {
+                if (actions[j].id === id)
+                    return actions[j].checked === true
+            }
+        }
+        return false
+    }
+
     // Background actions: apply to the browsed folder, not to any entry.
     MenuItem {
         objectName: "contextNewFolderAction"
@@ -201,5 +218,15 @@ Menu {
         enabled: visible && root.actionEnabled("application.show-entry-file")
         text: qsTr("Show Desktop Entry File")
         onTriggered: root.appCoordinator.activateAction("application.show-entry-file")
+    }
+    MenuItem {
+        // ADR-0273: checked only once the dock confirms the application.
+        objectName: "contextKeepInDockAction"
+        visible: !root.isBackground && root.applicationsPlace && root.selectionCount === 1
+        enabled: visible && root.actionEnabled("application.keep-in-dock")
+        checkable: true
+        checked: root.actionChecked("application.keep-in-dock")
+        text: qsTr("Keep in Dock")
+        onTriggered: root.appCoordinator.activateAction("application.keep-in-dock")
     }
 }

@@ -91,6 +91,7 @@ private slots:
   void folderOpenReportsMissingProgramAndRefusedLaunch();
   void getInfoStartsFileManagerSelectingTheItemWithItsProperties();
   void getInfoRefusesReplacedMissingAndRootItemsWithoutLaunch();
+  void folderActionsStartFileManagerOnTheFolderItself();
 
 private:
   bool m_hadPreviousXdgDataHome = false;
@@ -313,8 +314,8 @@ void TestDesktopFileBoundary::folderOpenReportsMissingProgramAndRefusedLaunch() 
 }
 
 // ADR-0273: the Desktop's Get Info starts File Manager on the item's folder
-// with the item selected and its properties open, on the one reveal command
-// line File Manager's main.cpp reads.
+// with the item selected and Get Info running on it, on the one reveal
+// command line File Manager's Finder integration reads.
 void TestDesktopFileBoundary::getInfoStartsFileManagerSelectingTheItemWithItsProperties() {
   QTemporaryDir root;
   QTemporaryDir bin;
@@ -337,21 +338,22 @@ void TestDesktopFileBoundary::getInfoStartsFileManagerSelectingTheItemWithItsPro
   const QString record = bin.filePath(QStringLiteral("argv"));
   const QString program = writeRecordingProgram(bin.path(), record);
   QVERIFY(!program.isEmpty());
+  const QString getInfo = QStringLiteral("file.properties");
   const Desktop::FolderOpenResult info = Desktop::FileBoundary::revealLocalItem(
-      root.filePath(hostileName), identityOf(listing, hostileName), true, {program}, capture);
+      root.filePath(hostileName), identityOf(listing, hostileName), getInfo, {program}, capture);
   QVERIFY2(info.ok(), qPrintable(info.diagnostic));
   QCOMPARE(info.canonicalPath, folder);
   QCOMPARE(programs, QStringList{program});
   // "--select=" keeps a name that starts with "--" a value, never an option.
   const QStringList expected{QStringLiteral("--select=") + hostileName,
-                             QStringLiteral("--show-properties"), folder};
+                             QStringLiteral("--action=file.properties"), folder};
   QCOMPARE(arguments, QList<QStringList>{expected});
-  QCOMPARE(Desktop::FileBoundary::revealArguments({folder, {hostileName}, true}), expected);
+  QCOMPARE(Desktop::FileBoundary::revealArguments({folder, {hostileName}, getInfo}), expected);
 
-  // Selecting without properties drops the flag; a dangling link is an item.
+  // Selecting without an action drops the option; a dangling link is an item.
   const Desktop::FolderOpenResult select = Desktop::FileBoundary::revealLocalItem(
       root.filePath(QStringLiteral("Dangling")), identityOf(listing, QStringLiteral("Dangling")),
-      false, {program}, capture);
+      {}, {program}, capture);
   QVERIFY2(select.ok(), qPrintable(select.diagnostic));
   QCOMPARE(arguments.constLast(),
            (QStringList{QStringLiteral("--select=Dangling"), folder}));
@@ -364,7 +366,7 @@ void TestDesktopFileBoundary::getInfoStartsFileManagerSelectingTheItemWithItsPro
       qScopeGuard([&previousDirectory] { QDir::setCurrent(previousDirectory); });
   QVERIFY(QDir::setCurrent(workingDirectory.path()));
   const Desktop::FolderOpenResult started = Desktop::FileBoundary::revealLocalItem(
-      root.filePath(hostileName), identityOf(listing, hostileName), true, {program});
+      root.filePath(hostileName), identityOf(listing, hostileName), getInfo, {program});
   QVERIFY2(started.ok(), qPrintable(started.diagnostic));
   QTRY_COMPARE(recordedArguments(record), expected);
   QVERIFY(!QFile::exists(workingDirectory.filePath(QStringLiteral("PWNED"))));
@@ -389,7 +391,9 @@ void TestDesktopFileBoundary::getInfoRefusesReplacedMissingAndRootItemsWithoutLa
   };
   const QStringList programs{QStringLiteral("/bin/true")};
   const auto info = [&](const QString &path, Desktop::ListedIdentity identity) {
-    return Desktop::FileBoundary::revealLocalItem(path, identity, true, programs, counting);
+    return Desktop::FileBoundary::revealLocalItem(path, identity,
+                                                  QStringLiteral("file.properties"), programs,
+                                                  counting);
   };
   QCOMPARE(info(root.filePath(QStringLiteral("gone.txt")),
                 identityOf(listing, QStringLiteral("gone.txt")))
@@ -409,7 +413,66 @@ void TestDesktopFileBoundary::getInfoRefusesReplacedMissingAndRootItemsWithoutLa
                                       static_cast<quint64>(rootStatus.st_ino)})
                .error,
            Desktop::FolderOpenError::NotFound);
+  // Only the documented actions run: never a destructive one.
+  for (const char *action : {"file.empty-trash", "file.trash", "edit.paste"}) {
+    QCOMPARE(Desktop::FileBoundary::revealLocalItem(
+                 root.filePath(QStringLiteral("moved.txt")),
+                 identityOf(Desktop::FileBoundary::listLocalFolder(root.path()),
+                            QStringLiteral("moved.txt")),
+                 QLatin1String(action), programs, counting)
+                 .error,
+             Desktop::FolderOpenError::UnsupportedAction);
+  }
   QCOMPARE(starts, 0);
+}
+
+// ADR-0273: the Desktop's New File and background Get Info run in its own
+// folder, with nothing selected.
+void TestDesktopFileBoundary::folderActionsStartFileManagerOnTheFolderItself() {
+  QTemporaryDir root;
+  QVERIFY(root.isValid());
+  QVERIFY(QDir(root.path()).mkdir(QStringLiteral("Desktop")));
+  QVERIFY(QFile::link(root.filePath(QStringLiteral("Desktop")),
+                      root.filePath(QStringLiteral("Link"))));
+  QVERIFY(writeFile(root.filePath(QStringLiteral("notes.txt"))));
+  const QString folder = QFileInfo(root.filePath(QStringLiteral("Desktop"))).canonicalFilePath();
+
+  QList<QStringList> arguments;
+  int starts = 0;
+  const Desktop::ProcessStarter capture = [&](const QString &, const QStringList &argv) {
+    ++starts;
+    arguments.append(argv);
+    return true;
+  };
+  const QStringList programs{QStringLiteral("/bin/true")};
+  const Desktop::FolderOpenResult newFile = Desktop::FileBoundary::runLocalFolderAction(
+      root.filePath(QStringLiteral("Link")), QStringLiteral("file.new-file"), programs, capture);
+  QVERIFY2(newFile.ok(), qPrintable(newFile.diagnostic));
+  QCOMPARE(newFile.canonicalPath, folder);
+  QCOMPARE(arguments.constLast(),
+           (QStringList{QStringLiteral("--action=file.new-file"), folder}));
+  QVERIFY(Desktop::FileBoundary::runLocalFolderAction(root.filePath(QStringLiteral("Desktop")),
+                                                      QStringLiteral("file.properties"),
+                                                      programs, capture)
+              .ok());
+  QCOMPARE(arguments.constLast(),
+           (QStringList{QStringLiteral("--action=file.properties"), folder}));
+  QCOMPARE(starts, 2);
+
+  // A folder action needs a real folder and a documented action.
+  const auto run = [&](const QString &path, const QString &action) {
+    return Desktop::FileBoundary::runLocalFolderAction(path, action, programs, capture).error;
+  };
+  QCOMPARE(run(root.filePath(QStringLiteral("missing")), QStringLiteral("file.new-file")),
+           Desktop::FolderOpenError::NotFound);
+  QCOMPARE(run(root.filePath(QStringLiteral("notes.txt")), QStringLiteral("file.new-file")),
+           Desktop::FolderOpenError::NotDirectory);
+  QCOMPARE(run(QStringLiteral("Desktop"), QStringLiteral("file.new-file")),
+           Desktop::FolderOpenError::NotFound);
+  QCOMPARE(run(folder, QString()), Desktop::FolderOpenError::UnsupportedAction);
+  QCOMPARE(run(folder, QStringLiteral("file.empty-trash")),
+           Desktop::FolderOpenError::UnsupportedAction);
+  QCOMPARE(starts, 2);
 }
 
 QTEST_GUILESS_MAIN(TestDesktopFileBoundary)
