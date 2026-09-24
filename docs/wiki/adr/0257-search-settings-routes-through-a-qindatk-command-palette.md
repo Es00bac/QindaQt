@@ -47,24 +47,36 @@ the shell cannot open).
    sub-pages, whose ids and titles must match the page's own list. The
    controller's `routes` projection carries both fields to QML.
 2. **The shell searches with `Tk.CommandPalette`.** A Settings-owned wrapper
-   builds one command per route (sectioned and ordered like the sidebar,
-   printing the route's Ctrl+digit shortcut where it has one) and one per
-   destination. It ranks matches so Enter takes the obvious result: title
-   prefix, then exact keyword, then label substring, then keyword prefix. It
-   only calls `selectRoute` or `selectRouteDestination`. It instantiates
-   `QindaQtTheme` so the palette wears the session's QST-1 theme. This amends
-   ADR-0048 clause 5 for the palette only: the rest of the navigation shell
-   stays on QindaQt.Controls.
+   builds one command per route (printing the route's Ctrl+digit shortcut
+   where it has one) and one per destination. With an empty filter, commands
+   keep the sidebar's General, Personalization and Hardware sections and title
+   order. With a nonempty filter, all matches use one translated "Results"
+   section: QindaTK groups rows by section, so separate sections would break
+   the global relevance order. Matches rank by title prefix, exact keyword,
+   label substring, then keyword prefix, then other keyword substring;
+   equal-rank matches retain the sidebar's order. Search reads titles and
+   registered keywords, not route descriptions. It only calls `selectRoute` or
+   `selectRouteDestination`. It instantiates `QindaQtTheme` so the palette
+   wears the session's QST-1 theme. This amends ADR-0048 clause 5 for the
+   palette only: the rest of the navigation shell stays on QindaQt.Controls.
 3. **Ctrl+K and visible buttons open it.** The shell has a Ctrl+K shortcut and
    a "Search settings" button in both the wide sidebar and the compact header.
-4. **Unavailable routes stay listed with their reason, like the sidebar.**
+4. **Input shortcut capture takes precedence over shell shortcuts.** Input
+   reports capture activity through `InputShortcutRow`,
+   `InputShortcutsSection`, and `InputPage` to `Main.qml`; the shell disables
+   its global navigation, search, Escape, and Quit shortcuts until capture
+   ends. The capture control also claims `ShortcutOverride` for keys it
+   records or consumes. Ctrl+K, Ctrl+digits and Alt+Left are captured without
+   opening the palette or changing routes. Plain Tab remains the
+   focus-navigation exit from capture.
+5. **Unavailable routes stay listed with their reason, like the sidebar.**
    Choosing one does not select it, and an unavailable route offers no
    destinations.
-5. **Escape belongs to the palette while it is visible.** The host Escape
+6. **Escape belongs to the palette while it is visible.** The host Escape
    shortcut is disabled while the palette is visible, alongside the existing
    Bluetooth pairing-prompt exception, because two enabled window shortcuts
    with one sequence are ambiguous and Qt activates neither.
-6. **A repeated deep link reaches an open page.** When
+7. **A repeated deep link reaches an open page.** When
    `selectRouteDestination` repeats the current request for the active route,
    the controller clears the link and sets it again, so the open page observes
    it. The Input page opens a destination that arrives while it is open.
@@ -86,13 +98,15 @@ the shell cannot open).
   package's QindaTK lower bound must be a release that ships `CommandPalette`.
 - Keywords are translatable per route, as one comma-separated list, so a
   translation can change which synonyms it offers.
-- A shortcut-capture control that does not claim `ShortcutOverride` loses
-  Ctrl+K to the palette, just as it already loses Ctrl+digit to route
-  selection.
+- The active Input shortcut capture claims handled keys before the shell's
+  window shortcuts; Ctrl+K, Ctrl+digit and Alt+Left are captured without
+  opening search or changing routes, while plain Tab leaves capture.
 - `qindaqt.settings-command-palette` drives the real `Main.qml` offscreen
-  with `QT_FATAL_WARNINGS`: Ctrl+K, keyword search, ranking, destinations
-  with Input already open, Escape standing down, the unavailable route, and
-  the 420×320 compact window by keyboard only. The route-construction
+  with `QT_FATAL_WARNINGS`: Ctrl+K, keyword search, visible ranking across
+  sections, the description-free battery match, Ctrl+K and Ctrl+1 capture in
+  Input without shell actions, destinations with Input already open, Escape
+  standing down, the unavailable route, and the 420×320 compact window by
+  keyboard only. The route-construction
   witness ([ADR-0250](0250-require-active-loader-witness-for-every-settings-route.md))
   and its installed-package row are unchanged and must still pass.
 

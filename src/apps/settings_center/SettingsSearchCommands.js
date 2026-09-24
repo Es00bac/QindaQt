@@ -91,10 +91,9 @@ function buildCommands(routes, formats) {
     return commands
 }
 
-// Lower is better. Tk.CommandPalette only filters, in list order, grouping
-// by the section of the first match; ordering here is what makes Enter pick
-// the obvious result ("battery" -> Power, not a page that merely mentions
-// battery health).
+// Lower is better. For a nonempty filter, paletteCommands keeps this complete
+// relevance order in one section because Tk.CommandPalette groups by section.
+// That makes Enter pick the obvious result ("battery" -> Power).
 function matchRank(command, needle) {
     if (command.title.toLowerCase().startsWith(needle))
         return 0
@@ -116,6 +115,18 @@ function orderedFor(commands, filterText) {
                                 ({ command: command, index: index, rank: matchRank(command, needle) }))
     ranked.sort((left, right) => left.rank - right.rank || left.index - right.index)
     return ranked.map(entry => entry.command)
+}
+
+// Tk.CommandPalette groups rows by `section`. Keep the sidebar sections for an
+// empty filter, but put filtered matches together so grouping cannot scramble
+// the relevance order across General, Personalization and Hardware.
+function paletteCommands(commands, filterText, resultsSection) {
+    const ordered = orderedFor(commands, filterText)
+    const needle = String(filterText === undefined || filterText === null ? "" : filterText)
+                       .trim()
+    if (needle.length === 0)
+        return ordered
+    return ordered.map(command => Object.assign({}, command, { section: resultsSection }))
 }
 
 function find(commands, id) {

@@ -254,6 +254,10 @@ The interaction contract is:
   window-context shortcuts would be ambiguous and neither would activate;
 - Ctrl+K, or the "Search settings" button in the sidebar or the compact
   header's "Search" button, opens the search palette (see below);
+- while an Input shortcut capture is active, the Input route reports that
+  state and the shell disables its global navigation, search, Escape, and Quit
+  shortcuts. Ctrl+K, Ctrl+digit, and Alt+Left are captured without opening
+  search or changing routes; plain Tab still leaves capture;
 - Ctrl+1, Ctrl+2, Ctrl+3, Ctrl+4, and Ctrl+5 select Notifications, Appearance,
   Display, Network, and Customize respectively; Ctrl+6 selects Audio in its appended
   sixth position, and Ctrl+7 selects Bluetooth in its appended seventh
@@ -273,16 +277,25 @@ The interaction contract is:
 Settings search ([ADR-0257](../adr/0257-search-settings-routes-through-a-qindatk-command-palette.md))
 is QindaTK's `Tk.CommandPalette`, wrapped by `SettingsCommandPalette.qml` and
 themed through `QindaQtTheme`. It is the one QindaTK surface in the navigation
-shell. It lists every registered route, sectioned General, Personalization,
-Hardware and sorted by title like the sidebar, and prints the route's
-Ctrl+digit shortcut for the first ten registered routes. Input's five
+shell. With an empty filter it lists every registered route, sectioned General,
+Personalization, Hardware and sorted by title like the sidebar, and prints the
+route's Ctrl+digit shortcut for the first ten registered routes. Input's five
 sub-pages (Mouse & touchpad, Pen & tablet, Keyboard, Shortcuts, Touch) follow
-it as "Input › …" entries. Typing filters on the title and on the route's
-keywords. Matches are ordered by title prefix, then exact keyword, then label
-substring, then keyword prefix, so "wifi" leads to Network, "battery" to
-Power, and "shortcuts" to Input › Shortcuts. Arrow keys move the selection,
-Enter or a click activates, and Escape closes. After a route change, focus
-moves to the new page's declared first focus target.
+it as "Input › …" entries. Search matches only titles and registered keywords;
+route descriptions are not indexed. Matches are ordered by title prefix, then
+exact keyword, then label substring, then keyword prefix, then other keyword
+substrings. A nonempty filter
+puts all matches in one "Results" section because QindaTK groups rows by
+section; this keeps the global relevance order visible across the sidebar's
+sections. For "screen", Screen saver ranks first by title prefix, Display next
+by exact keyword, Login screen next by label substring, then Power and
+Streaming by keyword prefix in their existing title order, followed by Input
+› Touch because "screen" occurs within its "touchscreen" keyword. "wifi"
+leads to Network, "battery" returns Power (the About description's
+battery-health text is not searchable), and "shortcuts" leads to Input ›
+Shortcuts. Arrow keys move the selection, Enter or a click activates, and
+Escape closes. After a route change, focus moves to the new page's declared
+first focus target.
 
 The terms and destinations are registry data
 (`settings_route_search_metadata.cpp`), not read from the pages. Every route
@@ -326,11 +339,13 @@ ctest --test-dir build/dev --output-on-failure \
   destination is re-delivered;
 - `qindaqt.settings-command-palette` drives the real `Main.qml` with
   `QT_FATAL_WARNINGS=1`. It covers Ctrl+K, "wifi" → Network, "battery" →
-  Power, the printed Ctrl+digit shortcuts, "shortcuts" → Input › Shortcuts,
-  a second destination while Input is open, a repeated destination after an
-  in-page change, Escape closing only the palette with focus restored, the
-  unavailable route listed but not selected, and the 420×320 compact window
-  by keyboard only;
+  Power with no description-only About match, the cross-section "screen"
+  relevance order, the printed Ctrl+digit shortcuts, "shortcuts" → Input ›
+  Shortcuts, Ctrl+K and Ctrl+1 captured without invoking shell shortcuts while
+  the real Input capture is active, a second destination while Input is open,
+  a repeated destination after an in-page change, Escape closing only the
+  palette with focus restored, the unavailable route listed but not selected,
+  and the 420×320 compact window by keyboard only;
 - the offscreen navigation layout and interaction rows prove 720×520 wide
   and 440×360 compact layout, mutually exclusive page construction, route
   switching, shortcut and focus paths, PageTab semantics, selected state, and

@@ -35,7 +35,8 @@ Tk.CommandPalette {
 
     objectName: "settingsCommandPalette"
     placeholderText: qsTr("Search settings…")
-    commands: SettingsSearch.orderedFor(palette.allCommands, palette.filterText)
+    commands: SettingsSearch.paletteCommands(
+        palette.allCommands, palette.filterText, qsTr("Results"))
 
     function activateCommand(commandId) {
         const command = SettingsSearch.find(palette.allCommands, commandId)

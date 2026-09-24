@@ -15,6 +15,7 @@ T.Page {
 
     required property var inputSettings
     signal closeRequested()
+    signal shortcutCaptureActivityChanged(bool active)
 
     // Deep link from the pen-display notification: which destination to open
     // and which device to select there (qindaqt-settings --destination
@@ -210,6 +211,8 @@ T.Page {
         id: shortcutsPage
         InputShortcutsSection {
             inputSettings: root.inputSettings
+            onCaptureActivityChanged: active =>
+                root.shortcutCaptureActivityChanged(active)
         }
     }
     Component {

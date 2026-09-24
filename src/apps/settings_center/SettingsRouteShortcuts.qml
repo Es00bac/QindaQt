@@ -19,6 +19,7 @@ Item {
     signal searchRequested()
 
     Shortcut {
+        enabled: root.enabled
         sequence: "Alt+Left"
         onActivated: {
             if (root.navigation.previousRouteId.length > 0) {
@@ -29,6 +30,7 @@ Item {
 
     Shortcut {
         objectName: "settingsSearchShortcut"
+        enabled: root.enabled
         sequence: "Ctrl+K"
         onActivated: root.searchRequested()
     }
@@ -44,6 +46,7 @@ Item {
             required property int index
 
             Shortcut {
+                enabled: root.enabled
                 // Ctrl+1..Ctrl+9, then Ctrl+0 for the tenth route.
                 sequence: "Ctrl+" + ((shortcutHolder.index + 1) % 10)
                 onActivated: root.navigation.selectIndex(shortcutHolder.index)
