@@ -291,7 +291,8 @@ hosted at the 26px row a stock panel hands it.
 The desktop is customized where it is. A modifier chord on a panel's own
 material, on an applet chip, or on the desktop opens a context menu whose
 every entry is one editing gesture followed by one Apply of the user profile,
-and an edit mode adds drag handles for longer sessions. The Settings
+and edit mode ("Edit Panels") turns every applet into a drag handle for
+longer sessions. The Settings
 Customize route stays for previews and for the full property panes; both
 surfaces host the same editor domain, so the profile a menu entry persists is
 byte-identical to what the route persists for the same intent (see
@@ -302,7 +303,9 @@ and [ADR-0213](../adr/0213-host-the-customization-editor-live-in-the-shell.md)).
 `shell.customization.chord` (`meta-right` or `meta-alt-right`) selects the
 alternative. The shell reads it through a purpose-scoped client so an absent
 key can never poison the shell's main preference scope. A plain right click
-keeps the quick-config menu documented above. Two compositor facts make the
+keeps the panel configuration menu
+([Dock interactions](dock-interactions.md#panel-right-click-configuration)),
+whose first entry is Edit Panels. Two compositor facts make the
 chord deliverable to a focus-less layer-shell panel: KWin sends keyboard
 modifiers to the pointer-focused surface, and its `[MouseBindings]`
 `CommandAll3` window action (default `Resize`) runs on layer-shell windows
@@ -350,25 +353,60 @@ Settings route) rebuilds it. Explicit `--profile` still locks adoption for
 the process, and an explicit `--profile-dir` excludes the user store, exactly
 as before.
 
-**Edit mode.** Meta+Shift+E (a KGlobalAccel action,
-`qindaqt_toggle_panel_edit_mode`) or the menu entry toggles it. Every chip
-shows a handle (`AppletEditHandle`); dragging one runs the editor's
-arm/begin/hover/drop protocol, resolving the target under the pointer through
-`PanelLiveCustomization.dropTargetAt`: a zone of this panel with the chip the
-drop lands before, or another panel by the solved surface geometry with its
-zone chosen by thirds along its main axis. A release over a rejected target
-cancels. A Done/Undo bar (`PanelEditBar`) sits at every panel's trailing end
-while edit mode is on; it overlays the end zone on purpose because layer-shell
-panels take no keyboard focus, so a separate focusable window (and Esc) is
-not available -- Done, Meta+Shift+E or the menu entry leave edit mode, and
-Esc closes the menus.
+**Edit mode**
+([ADR-0266](../adr/0266-edit-mode-drags-applets-across-panels-and-displays.md)).
+"Edit Panels" in every panel's plain right-click menu (a toggle that reads
+"Done Editing Panels" while editing), in every desktop context-menu style,
+the desktop menu's View ▸ Edit Panels (checkable), the Meta+right-click
+entries, or Meta+Shift+E (a KGlobalAccel action,
+`qindaqt_toggle_panel_edit_mode`) enters it. While it is on:
 
-Evidence: `qindaqt.live-customization-offscreen` and
-`qindaqt.live-customization-edit-mode-offscreen` (chord branch, entry order,
-every entry's controller call, handles, bar, drop targets, a handle drag),
-`qindaqt.desktop-surface-customize-menu`,
+- *Applets are inert.* `AppletEditHandle` covers each chip with a shield that
+  takes every press, wheel and hover, so no applet control, popup or menu
+  reacts, and the dock strip's own tile drag, drag-off-to-remove and grouping
+  ([ADR-0265](../adr/0265-keep-dock-items-in-one-structured-settings-value.md))
+  never start. A left drag anywhere on the chip moves the whole applet; a
+  right click opens its customize menu. Zones do not flick.
+- *Drops resolve on the panel under the pointer.* The drag keeps the pointer's
+  implicit grab on the surface where it started, so that surface publishes
+  every position in global logical coordinates
+  (`LiveCustomizationController.trackDragPoint`, its solved origin plus the
+  local point). Each surface resolves points inside itself in
+  `PanelLiveCustomization.dropTargetAt` -- the nearest zone along the main
+  axis (boundaries halfway between zones, so an empty zone is reachable; a
+  dock keeps its shelf as the centre zone) and the chip the drop lands
+  before -- and hovers that target, so drops within a zone, across zones,
+  onto another panel and onto another display all land exactly. A point over
+  no panel hovers the empty target, which the editor rejects, so a release
+  over the desktop (or on a rejected target) cancels. A drop commits through
+  the editor transaction: one gesture, one Apply, the same undo and
+  persistence as the menus.
+- *Preview.* The accepted target (`dropTarget`) opens a gap in its zone: the
+  chips from the insertion point slide aside, the zone asks for the extra
+  extent so the panel makes room, and a marker fills the gap.
+- *The bar.* `PanelEditBar` (Add applet…, Undo, Done) sits at the trailing end
+  of each panel's painted material, in a stretch the zones leave free while
+  editing, so it never covers an applet; a dock widens its shelf by the same
+  stretch, keeping the bar inside its input mask. Add applet… lists, per zone,
+  the palette the catalog admits for the panel's orientation and appends the
+  choice through the `InsertApplet` intent.
+- *Keyboard.* Panel surfaces ask for on-demand keyboard interactivity
+  (`PanelEditKeyboard`), so clicking a panel focuses it; Escape there cancels
+  an open drag, else leaves edit mode. Done, the menus and Meta+Shift+E leave
+  too, and leaving hands the keyboard back.
+
+Evidence: `qindaqt.live-customization-offscreen` (chord branch, entry order,
+every entry's controller call) and
+`qindaqt.live-customization-edit-mode-offscreen` (Edit Panels in the plain
+menu, inert applets, the bar beside the zones, zone and anchor resolution, a
+drag within the panel, onto a second panel surface and off every panel, the
+gap and marker, the applet picker),
+`qindaqt.desktop-surface-customize-menu` (including Edit Panels in every
+context-menu style), `qindaqt.shell-panel-edit-keyboard` (keyboard only while
+editing; Escape cancels a drag, then leaves),
 `qindaqt.shell-live-customization-controller` (every action against the real
-manifest catalog and a temporary store), and the nested rows
+manifest catalog and a temporary store, the global drag point and off-target
+cancel), and the nested rows
 `shell.live-customization.{menu,editmode}.{single-1080p,single-1440p-125}`
 (`tests/session/live_customization`), which start the production shell on a
 proof profile inside a private virtual KWin, drive the chord and the menus

@@ -58,6 +58,7 @@ inline DesktopMenuFacts fullFacts()
                            {QStringLiteral("ws-2"), QStringLiteral("Games"), false}};
     facts.workspaceRevision = 7;
     facts.shortcutNote = on;
+    facts.editPanels = on;
     return facts;
 }
 

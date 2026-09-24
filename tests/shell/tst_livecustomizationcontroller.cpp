@@ -91,6 +91,7 @@ private Q_SLOTS:
     void paletteAndSettingRowsFollowTheManifests();
     void panelOptionsRouteThroughMoveAndConfigure();
     void editModeDragsResolveAndPersist();
+    void dragPointClearsOffTargetDrops();
     void chordDefaultsAndModifiers();
     void modelArithmetic();
     void survivesAPinnedDisplayGoingAway();
@@ -430,6 +431,76 @@ void LiveCustomizationControllerTest::editModeDragsResolveAndPersist()
              (QStringList{QStringLiteral("tasks-1"), QStringLiteral("clock-1")}));
     controller.toggleEditMode();
     QVERIFY(controller.editMode());
+}
+
+// ADR-0266: the drag pointer travels in global coordinates; a point over a
+// panel only announces itself (that surface resolves the target), while a
+// point over no panel clears the target first, so a release there cancels.
+void LiveCustomizationControllerTest::dragPointClearsOffTargetDrops()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    LiveCustomizationController controller(m_catalog.manifests(), directory.path(),
+                                           fixtureOutputs, nullptr, nullptr);
+    controller.adoptProfile(fixtureProfile());
+    controller.enterEditMode();
+
+    // Solved geometry is global: an empty output id searches every output,
+    // so a drag that reaches the second display finds the wildcard tray's
+    // copy there.
+    QCOMPARE(controller.panelSurfaceAt(QString(), 960, 1075)
+                 .value(QStringLiteral("panelId")).toString(),
+             QStringLiteral("tray"));
+    QVERIFY(controller.panelSurfaceAt(QString(), 960, 540).isEmpty());
+    LiveCustomizationController dual(
+        m_catalog.manifests(), directory.path(),
+        [] {
+            return QVector<ShellLayout::LogicalOutput>{
+                {QStringLiteral("OUT-1"), QRect(0, 0, 1920, 1080), 1.0},
+                {QStringLiteral("OUT-2"), QRect(1920, 0, 1920, 1080), 1.0}};
+        },
+        nullptr, nullptr);
+    dual.adoptProfile(fixtureProfile());
+    const QVariantMap second = dual.panelSurfaceAt(QString(), 1920 + 960, 1075);
+    QCOMPARE(second.value(QStringLiteral("panelId")).toString(), QStringLiteral("tray"));
+    QCOMPARE(second.value(QStringLiteral("outputId")).toString(), QStringLiteral("OUT-2"));
+
+    QSignalSpy moved(&controller, &LiveCustomizationController::dragPointChanged);
+    controller.trackDragPoint(960, 1075);
+    QCOMPARE(moved.size(), 0); // no drag, nothing to track
+    QVERIFY(controller.beginAppletDrag(QStringLiteral("bar"), QStringLiteral("clock-1")));
+
+    // The dragged applet's own slot is no target (a self anchor).
+    QVERIFY(controller.hoverDropTarget(QStringLiteral("bar"), QStringLiteral("start"),
+                                       QStringLiteral("clock-1")));
+    QVERIFY(!controller.dropAccepted());
+    QVERIFY(controller.dropTarget().isEmpty());
+
+    QVERIFY(controller.hoverDropTarget(QStringLiteral("tray"), QStringLiteral("end"), QString()));
+    QVERIFY(controller.dropAccepted());
+    QCOMPARE(controller.dropTarget(),
+             (QVariantMap{{QStringLiteral("panelId"), QStringLiteral("tray")},
+                          {QStringLiteral("zone"), QStringLiteral("end")},
+                          {QStringLiteral("beforeAppletId"), QString()}}));
+
+    controller.trackDragPoint(960, 1075);
+    QCOMPARE(moved.size(), 1);
+    QCOMPARE(controller.dragPoint(), QPointF(960, 1075));
+    QVERIFY(controller.dropAccepted());
+
+    controller.trackDragPoint(960, 540);
+    QCOMPARE(moved.size(), 2);
+    QVERIFY(!controller.dropAccepted());
+    QVERIFY(controller.dropTarget().isEmpty());
+    QVERIFY(controller.dragActive());
+
+    // Back over the tray's accepted target: accepted again without a replay.
+    QVERIFY(controller.hoverDropTarget(QStringLiteral("tray"), QStringLiteral("end"), QString()));
+    QVERIFY(controller.dropAccepted());
+    controller.trackDragPoint(960, 540);
+    QVERIFY(controller.cancelDrag());
+    QVERIFY(!controller.dragActive());
+    QVERIFY(QDir(directory.path()).entryList(QDir::Files).isEmpty());
 }
 
 void LiveCustomizationControllerTest::chordDefaultsAndModifiers()

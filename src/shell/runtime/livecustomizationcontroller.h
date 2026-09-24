@@ -6,6 +6,7 @@
 #include "qindaqt/shell_layout/panel_layout_types.h"
 
 #include <QObject>
+#include <QPointF>
 #include <QString>
 #include <QVariant>
 #include <QVariantList>
@@ -50,6 +51,12 @@ class LiveCustomizationController final : public QObject {
     Q_PROPERTY(bool dragActive READ dragActive NOTIFY changed)
     Q_PROPERTY(bool dropAccepted READ dropAccepted NOTIFY changed)
     Q_PROPERTY(QString dropReason READ dropReason NOTIFY changed)
+    // The accepted target an edit-mode drag hovers ({panelId, zone,
+    // beforeAppletId}); empty when there is none. Panels paint their gap
+    // and marker from it (ADR-0266).
+    Q_PROPERTY(QVariantMap dropTarget READ dropTarget NOTIFY changed)
+    // The pointer of an edit-mode drag in global logical coordinates.
+    Q_PROPERTY(QPointF dragPoint READ dragPoint NOTIFY dragPointChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY changed)
     Q_PROPERTY(QString chord READ chord NOTIFY chordChanged)
     Q_PROPERTY(int chordModifiers READ chordModifiers NOTIFY chordChanged)
@@ -87,6 +94,8 @@ public:
     [[nodiscard]] bool dragActive() const;
     [[nodiscard]] bool dropAccepted() const noexcept { return m_dropAccepted; }
     [[nodiscard]] QString dropReason() const { return m_dropReason; }
+    [[nodiscard]] QVariantMap dropTarget() const { return m_dropTarget; }
+    [[nodiscard]] QPointF dragPoint() const noexcept { return m_dragPoint; }
     [[nodiscard]] QString statusText() const { return m_statusText; }
     [[nodiscard]] QString chord() const { return m_chord; }
     [[nodiscard]] int chordModifiers() const { return modifiersForChord(m_chord); }
@@ -132,14 +141,22 @@ public:
                                      const QString &beforeAppletId);
     Q_INVOKABLE bool dropApplet();
     Q_INVOKABLE bool cancelDrag();
-    // Solved surface geometry for cross-panel drops: the surface under a
-    // global point on one output, and one surface by identity.
+    // Cross-panel drags (ADR-0266): the surface that owns the drag publishes
+    // its pointer in global logical coordinates, and every panel surface
+    // resolves the target for a point inside itself on dragPointChanged. A
+    // point over no panel surface hovers the empty target first, so a
+    // release there cancels instead of dropping at the last good target.
+    Q_INVOKABLE void trackDragPoint(double x, double y);
+    // Solved surface geometry (global logical coordinates): the surface under
+    // a point on one output (an empty output id searches every output), and
+    // one surface by identity.
     Q_INVOKABLE QVariantMap panelSurfaceAt(const QString &outputId, double x, double y) const;
     Q_INVOKABLE QVariantMap panelSurface(const QString &outputId, const QString &panelId) const;
 
 Q_SIGNALS:
     void changed();
     void editModeChanged();
+    void dragPointChanged();
     void chordChanged();
     // One line per menu action for evidence and logging: ok, action, message.
     void actionReported(bool ok, const QString &action, const QString &message);
@@ -167,6 +184,8 @@ private:
     bool m_editMode = false;
     bool m_dropAccepted = false;
     QString m_dropReason;
+    QVariantMap m_dropTarget;
+    QPointF m_dragPoint;
     QString m_statusText;
     QString m_chord;
 };
