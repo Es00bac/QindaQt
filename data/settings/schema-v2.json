@@ -258,7 +258,7 @@
       "key": "panels.layoutProfile",
       "domain": "panels",
       "type": "string",
-      "default": "qindaqt",
+      "default": "macos-inspired",
       "constraints": { "nonEmpty": true }
     },
     {

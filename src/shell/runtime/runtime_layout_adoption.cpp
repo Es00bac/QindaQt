@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "runtime_layout_adoption.h"
 
+#include "default_layout_profile.h"
+
 #include <QVariant>
 
 namespace QindaQt::Shell::RuntimeLayoutAdoption {
@@ -43,7 +45,7 @@ Outcome reloadAndSelect(Profiles::ProfileCatalog &catalog,
                           .arg(target, priorId);
     }
     if (catalog.selectById(priorId)
-        || catalog.selectById(QStringLiteral("qindaqt"))) {
+        || catalog.selectById(QString::fromLatin1(DefaultLayoutProfileId))) {
         return Outcome::KeptPriorSelection;
     }
     if (diagnostic != nullptr) {

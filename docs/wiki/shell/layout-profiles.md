@@ -183,9 +183,13 @@ and reconciles a newly applied Customize profile live
 ([ADR-0122](../adr/0122-adopt-saved-layout-preferences-live.md)).
 Before the initial surface plan it performs one bounded read of the scoped
 Settings1 snapshot; an explicit `--profile` outranks the saved selection, and
-the `qindaqt` profile remains the fallback when the service is unavailable or
-the saved profile has been deleted or renamed (a diagnostic names the dropped
-selection). Only an explicit unknown `--profile` fails startup.
+the `macos-inspired` profile (menu bar and dock) is the fallback when the
+service is unavailable or the saved profile has been deleted or renamed (a
+diagnostic names the dropped selection). It is also the Settings1 default for
+a new user, and the live-adoption fallback when neither the saved nor the
+running layout survives a reload
+([ADR-0263](../adr/0263-the-mac-style-layout-is-the-default.md)). Only an
+explicit unknown `--profile` fails startup.
 After Customize atomically saves profile content and confirms selection, the
 running shell reloads the same catalog precedence and incrementally reconciles
 the resulting surface set without a compositor or shell restart. Startup still

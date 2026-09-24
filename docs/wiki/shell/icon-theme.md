@@ -39,12 +39,19 @@ The palette is the icon-side spelling of the Pearl / Smoked Plum identity in
 
 | Color | Icon role |
 | --- | --- |
-| Heather (legacy `BLUE` generator constant) | Body of every first-party application and shell built-in in the `apps` group (launcher Q, Settings dial, File Manager folder, clock, notifications bell, executable), the `preferences-system-*` family, and neutral action frames; the palette samplers (application grid, theme dots, color dial) show amber, blue, violet, and apricot only |
-| Apricot (legacy `AMBER` generator constant) | At most one accent per first-party icon, placed where it meets the surface rather than on top of a blue body: the launcher Q tail, the Settings dial ticks, the Text Editor pen, the Terminal prompt, and the Welcome (`help-about`) question mark |
+| Heather (legacy `BLUE` generator constant) | Body of every first-party application and shell built-in in the `apps` group (launcher Q, Settings gear, QindaQt system-menu mark, File Manager folder, clock, notifications bell, executable), the `preferences-system-*` family, and neutral action frames; the palette samplers (application grid, theme dots, color dial) show amber, blue, violet, and apricot only |
+| Apricot (legacy `AMBER` generator constant) | At most one accent per first-party icon, placed where it meets the surface rather than on top of a blue body: the launcher Q tail, the Settings gear hub, the system-menu mark's inner window, the Text Editor pen, the Terminal prompt, and the Welcome (`help-about`) question mark |
 | Porcelain | Light bodies (Text Editor page) and marks painted on a blue or ink body |
 | Jade | Semantic success or positive state only: battery charge, `emblem-ok`/`dialog-ok`, `security-high`, upload/update arrows, media glyphs; never a brand or application color |
 | Apricot | Warning, off, and destructive overlays (`dialog-warning`, `dialog-error`, offline slashes, muted audio), place folders, and small status badges |
 | Violet | Audio, input, and storage devices, sleep, and media MIME types |
+
+The Settings icon (`preferences-system`, aliased as `org.qindaqt.Settings`)
+is an eight-tooth gear, and every `preferences-system-*` glyph carries a small
+six-tooth gear badge. The system-menu applet shows `qindaqt-mark`, the "Nest":
+a rounded container with a small window resting in its upper-left corner. The
+four-spoke circle that once served as both the Settings icon and the
+system-menu logo is retired; no icon may draw it (plan W18, 2026-09-24).
 
 Keep small on-body marks pearl or ink so they remain recognizable without hue. Application and
 category icons use rounded forms with restrained layering. Actions, status,

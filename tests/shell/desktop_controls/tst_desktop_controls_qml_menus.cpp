@@ -224,6 +224,9 @@ void DesktopControlsQmlMenuTests::systemMenuOpensAWindowPopupAndDispatchesThroug
     QVERIFY(interface != nullptr);
     QCOMPARE(interface->role(), QAccessible::Button);
     QCOMPARE(interface->text(QAccessible::Name), QStringLiteral("System menu"));
+    // Plan W18: the button shows the QindaQt mark, never the Settings gear
+    // (the retired four-spoke circle once served as both).
+    QCOMPARE(button->property("iconName").toString(), QStringLiteral("qindaqt-mark"));
 
     host.focus(button);
     QTest::keyClick(host.window.get(), Qt::Key_Space);

@@ -12,7 +12,8 @@ small on-body marks readable by luminance and preserve real symbolic cutouts.
 """
 from qinda_icon_shapes import (
     AMBER, APRICOT, BELL_CLAPPER_D, BELL_D, BLUE, BLUETOOTH_D, FOLDER_D,
-    INK, PORCELAIN, VIOLET, Icon, dot, filled, gear_badge, ring, rect, stroke, strokes,
+    INK, PORCELAIN, VIOLET, Icon, circle_d, dot, filled, gear_badge, gear_d, ring, rect, stroke,
+    strokes,
 )
 
 GROUP = "apps"
@@ -27,6 +28,9 @@ def _q_logo(accent: str, tail: str) -> Icon:
              f'<circle cx="32" cy="28" r="10" fill="{PORCELAIN}"/>'
              f'<path d="M33 37 38 54" stroke="{tail}" stroke-width="11" stroke-linecap="round"/>')
     return Icon(GROUP, symbolic, color)
+
+
+_SETTINGS_GEAR_D = gear_d(32, 32, 27, 20.5, 8)
 
 
 CANON = {
@@ -44,11 +48,23 @@ CANON = {
         rect(14, 10, 36, 44, rx=10) + stroke("M26 24 38 32 26 40"),
         rect(14, 10, 36, 44, rx=10, fill=BLUE) + stroke("M26 24 38 32 26 40", color=PORCELAIN, width=6),
     ),
+    # Settings: an eight-tooth gear. The thin same-colour round-joined outline
+    # only softens the tooth corners; the symbolic hub is a real evenodd hole.
     "preferences-system": Icon(
         GROUP,
-        ring(32, 32, 14) + strokes("M32 12v6", "M32 46v6", "M12 32h6", "M46 32h6"),
-        f'<circle cx="32" cy="32" r="22" fill="{BLUE}"/><circle cx="32" cy="32" r="9" fill="{PORCELAIN}"/>'
-        + strokes("M32 6v8", "M32 50v8", "M6 32h8", "M50 32h8", color=AMBER, width=6),
+        filled(_SETTINGS_GEAR_D + circle_d(32, 32, 9), rule="evenodd")
+        + stroke(_SETTINGS_GEAR_D, width=2.5, cap="butt"),
+        filled(_SETTINGS_GEAR_D, fill=BLUE) + stroke(_SETTINGS_GEAR_D, width=2.5, color=BLUE, cap="butt")
+        + dot(32, 32, 10, PORCELAIN) + dot(32, 32, 4.5, AMBER),
+    ),
+    # QindaQt's system-menu mark ("Nest"): a window resting inside its
+    # container. AGENT-NOTE: chosen over the "Seed" and "Pebble" candidates
+    # rendered for Jarrod on 2026-09-24 (plan W18); he may pick another later.
+    # It must never reuse the retired four-spoke circle or the triangle glyph.
+    "qindaqt-mark": Icon(
+        GROUP,
+        rect(9, 9, 46, 46, rx=13) + rect(19, 19, 17, 17, rx=5, fill=INK),
+        rect(6, 6, 52, 52, rx=15, fill=BLUE) + rect(17, 17, 19, 19, rx=6, fill=AMBER),
     ),
     "preferences-desktop-theme": Icon(
         GROUP,
