@@ -74,7 +74,8 @@ void ManifestTest::roundTripsEveryFirstPartyManifest()
     const QDir directory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/applets"));
     const QStringList fileNames =
         directory.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
-    QCOMPARE(fileNames.size(), 33);
+    QCOMPARE(fileNames.size(), 34);
+    QVERIFY(fileNames.contains(QStringLiteral("network.json"))); // ADR-0258
     QVERIFY(fileNames.contains(QStringLiteral("audio.json")));
     // ADR-0224: three manifests name a presentation of an existing
     // implementation, the same aliasing precedent as system-tray.json.
