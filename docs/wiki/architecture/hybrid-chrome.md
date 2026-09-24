@@ -201,6 +201,19 @@ window still blocks the target. For a tab drag the exclusion covers the dragged
 page's complete membership, since the press raises the whole source container
 and every one of its page members floats above the destination.
 
+A double-click on the unshaded shared outer title is reported to the session,
+which runs the container style's title double-click
+([ADR-0264](../adr/0264-window-button-styles-are-data.md)): the container's own
+maximize/restore or minimize window action, or its wheel roll-up. The default
+`none` keeps the row inert, as it shipped; a double-click on the shaded badge
+still unrolls.
+
+The shared row's window buttons are the built-in traffic lights or flat
+plates unless the style carries a `ChromeButtonPainter`: the decoration
+painter supplies one for every named button style (ADR-0264), so a container's
+buttons match a window's. The style may also override the button cell and gap;
+the layout keeps a cell inside the title row.
+
 An unmodified right-button press and matching release on the shared outer title,
 a page tab, or a grouped native member title opens the same nonblocking QindaQt
 group menu. The visible management control in the shared row is the keyboard

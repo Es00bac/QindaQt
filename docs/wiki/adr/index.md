@@ -262,3 +262,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0259: Preview screen savers without the lock screen](0259-preview-screen-savers-without-the-lock-screen.md)
 - [ADR-0261: Lay desktop icons out inside the panels' work area](0261-lay-desktop-icons-out-inside-the-panel-work-area.md)
 - [ADR-0262: Applications is browsed in the File Manager's ordinary views](0262-applications-is-browsed-in-the-file-managers-ordinary-views.md)
+- [ADR-0264: Window button styles are data, with title-bar options](0264-window-button-styles-are-data.md)

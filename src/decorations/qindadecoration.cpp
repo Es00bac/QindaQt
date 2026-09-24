@@ -5,7 +5,6 @@
 #include "qindadecorationvisuals.h"
 #include "qindawindowcontextmenu.h"
 
-#include <QWheelEvent>
 #include <KDecoration3/DecoratedWindow>
 #include <KDecoration3/DecorationButtonGroup>
 #include <KDecoration3/DecorationSettings>
@@ -53,18 +52,6 @@ bool QindaDecoration::containerMember() const
     return property("qindaqtContainerMember").toBool();
 }
 
-void QindaDecoration::wheelEvent(QWheelEvent *event)
-{
-    // ADR-0203 supersedes ADR-0131's decoration roll-up: a modifier-free wheel
-    // over an independent window's title bar is consumed by the QindaQt
-    // compositor plugin (KWinInteractionFilter) before it reaches KDecoration
-    // and rolls the window up to its icon chip; a wheel over a container
-    // member's handlebar is consumed by the chrome router and rolls the whole
-    // container. The decoration therefore never shades on wheel any more.
-    // KWin's native shade stays reachable from the window menu.
-    KDecoration3::Decoration::wheelEvent(event);
-}
-
 bool QindaDecoration::init()
 {
     createButtons();
@@ -78,6 +65,9 @@ bool QindaDecoration::init()
             this, &QindaDecoration::updateGeometry);
     connect(window(), &KDecoration3::DecoratedWindow::captionChanged,
             this, qOverload<>(&QindaDecoration::update));
+    // The title may show the application icon (ADR-0264).
+    connect(window(), &KDecoration3::DecoratedWindow::iconChanged,
+            this, qOverload<>(&QindaDecoration::update));
     connect(window(), &KDecoration3::DecoratedWindow::activeChanged,
             this, &QindaDecoration::updateVisualStyle);
     connect(window(), &KDecoration3::DecoratedWindow::paletteChanged,
@@ -85,40 +75,6 @@ bool QindaDecoration::init()
     connect(window(), &KDecoration3::DecoratedWindow::scaleChanged,
             this, &QindaDecoration::updateGeometry);
     return true;
-}
-
-void QindaDecoration::mouseMoveEvent(QMouseEvent *event)
-{
-    if (m_contextPressPosition.has_value()) {
-        event->accept();
-        return;
-    }
-    KDecoration3::Decoration::mouseMoveEvent(event);
-}
-
-void QindaDecoration::mousePressEvent(QMouseEvent *event)
-{
-    if (event->button() == Qt::RightButton) {
-        m_contextPressPosition = event->position();
-        event->accept();
-        return;
-    }
-    m_contextPressPosition.reset();
-    KDecoration3::Decoration::mousePressEvent(event);
-}
-
-void QindaDecoration::mouseReleaseEvent(QMouseEvent *event)
-{
-    if (event->button() == Qt::RightButton
-        && m_contextPressPosition.has_value()) {
-        const auto pressedAt = std::exchange(m_contextPressPosition, std::nullopt);
-        if (QLineF(*pressedAt, event->position()).length() <= 8.0) {
-            showContextMenu(event->position());
-        }
-        event->accept();
-        return;
-    }
-    KDecoration3::Decoration::mouseReleaseEvent(event);
 }
 
 bool QindaDecoration::event(QEvent *event)
@@ -129,8 +85,10 @@ bool QindaDecoration::event(QEvent *event)
         if (change->propertyName() == QByteArrayLiteral("qindaqtChromePalette")) {
             // AGENT-NOTE: the palette map arrives after init(), so the glyph
             // button group is (re)built here rather than in createButtons.
+            // The map also carries the title height, button metrics and
+            // radius (ADR-0207, ADR-0264), so the geometry is refreshed too.
             reconcileButtons();
-            updateVisualStyle();
+            updateGeometry();
         } else if (change->propertyName() == QByteArrayLiteral("qindaqtContainerMember")) {
             // A member switches between the full title bar and the handlebar
             // (ADR-0131), which changes its buttons as well as its geometry.
@@ -251,6 +209,7 @@ DecorationFrameVisual QindaDecoration::frameState() const
     frame.controlsHovered = m_controlsHovered;
     frame.restoreGlyph = window()->isMaximized() || memberFocusMaximized();
     frame.memberHandle = containerMember();
+    frame.icon = window()->icon();
     return frame;
 }
 
@@ -304,7 +263,15 @@ void QindaDecoration::createButtons()
               : KDecoration3::DecorationButtonGroup::Position::Left,
         this, &QindaButton::create);
     for (const auto kind : decorationButtonKinds(chrome)) {
-        if (auto *button = QindaButton::create(buttonType(kind), this, stoplights)) {
+        if (member && kind == DecorationButtonKind::RollUp) {
+            // A handlebar never offers roll-up: its wheel rolls the container.
+            continue;
+        }
+        if (auto *button = QindaButton::createForKind(kind, this, stoplights)) {
+            if (kind == DecorationButtonKind::RollUp) {
+                connect(button, &KDecoration3::DecorationButton::clicked, this,
+                        [this](Qt::MouseButton) { requestRollUp(); });
+            }
             stoplights->addButton(button);
         }
     }
@@ -508,6 +475,7 @@ KDecoration3::DecorationButtonType QindaDecoration::buttonType(DecorationButtonK
     case DecorationButtonKind::Maximize:
         return KDecoration3::DecorationButtonType::Maximize;
     case DecorationButtonKind::More:
+    case DecorationButtonKind::RollUp:
         return KDecoration3::DecorationButtonType::Custom;
     }
     return KDecoration3::DecorationButtonType::Close;

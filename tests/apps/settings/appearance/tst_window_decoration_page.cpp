@@ -97,6 +97,7 @@ class WindowDecorationPageTests final : public QObject {
 
 private slots:
     void listsAppliesAndGatesForeignDecorationPreview();
+    void offersEveryButtonStyleAndTitleBarOption();
 };
 
 void WindowDecorationPageTests::listsAppliesAndGatesForeignDecorationPreview()
@@ -132,6 +133,82 @@ void WindowDecorationPageTests::listsAppliesAndGatesForeignDecorationPreview()
     QTRY_COMPARE(scene.model->windowDecorations.applies, 1);
     QCOMPARE(scene.model->windowDecorations.configuredId,
              QStringLiteral("aurorae:Scratchy"));
+}
+
+void WindowDecorationPageTests::offersEveryButtonStyleAndTitleBarOption()
+{
+    // ADR-0264: windows and containers list the same fifteen button styles
+    // in a menu that follows the draft, and every title-bar option row
+    // forwards its token to the one draft.
+    const auto scene = createScene();
+    QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
+    auto *destination = item(scene.root, QStringLiteral("appearanceDestination_windows"));
+    QVERIFY(destination != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(destination, "click"));
+    QCoreApplication::processEvents();
+
+    QQuickItem *windowStyles = nullptr;
+    QTRY_VERIFY((windowStyles = item(scene.root, QStringLiteral("appearanceWindowButtonStyle")))
+                != nullptr);
+    auto *containerStyles = item(scene.root, QStringLiteral("appearanceContainerButtonStyle"));
+    QVERIFY(containerStyles != nullptr);
+    QCOMPARE(windowStyles->property("count").toInt(), 15);
+    QCOMPARE(containerStyles->property("count").toInt(), 15);
+    QCOMPARE(windowStyles->property("currentIndex").toInt(), 0);
+    const auto indexOf = [](QQuickItem *menu, const QString &token) {
+        int index = -1;
+        QMetaObject::invokeMethod(menu, "indexOfValue", Q_RETURN_ARG(int, index),
+                                  Q_ARG(QVariant, token));
+        return index;
+    };
+    const int gel = indexOf(windowStyles, QStringLiteral("gel"));
+    QVERIFY(gel > 0);
+    QVERIFY(QMetaObject::invokeMethod(windowStyles, "activated", Q_ARG(int, gel)));
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.windowButtonStyle"))
+                     .toString(),
+                 QStringLiteral("gel"));
+    QTRY_COMPARE(windowStyles->property("currentIndex").toInt(), gel);
+    const int pills = indexOf(containerStyles, QStringLiteral("pills"));
+    QVERIFY(pills > 0);
+    QVERIFY(QMetaObject::invokeMethod(containerStyles, "activated", Q_ARG(int, pills)));
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.containerButtonStyle"))
+                     .toString(),
+                 QStringLiteral("pills"));
+
+    const QList<std::pair<QString, QString>> rows{
+        {QStringLiteral("appearanceWindowButtonSize_large"),
+         QStringLiteral("appearance.windowButtonSize")},
+        {QStringLiteral("appearanceWindowButtonSpacing_roomy"),
+         QStringLiteral("appearance.windowButtonSpacing")},
+        {QStringLiteral("appearanceWindowTitleHeight_tall"),
+         QStringLiteral("appearance.windowTitleHeight")},
+        {QStringLiteral("appearanceWindowCornerRadius_square"),
+         QStringLiteral("appearance.windowCornerRadius")},
+        {QStringLiteral("appearanceWindowTitleWeight_bold"),
+         QStringLiteral("appearance.windowTitleWeight")},
+        {QStringLiteral("appearanceWindowAppIcon_shown"),
+         QStringLiteral("appearance.windowAppIcon")},
+        {QStringLiteral("appearanceWindowRollUpButton_shown"),
+         QStringLiteral("appearance.windowRollUpButton")},
+        {QStringLiteral("appearanceWindowTitleDoubleClick_roll-up"),
+         QStringLiteral("appearance.windowTitleDoubleClick")},
+        {QStringLiteral("appearanceContainerButtonSize_small"),
+         QStringLiteral("appearance.containerButtonSize")},
+        {QStringLiteral("appearanceContainerButtonSpacing_tight"),
+         QStringLiteral("appearance.containerButtonSpacing")},
+        {QStringLiteral("appearanceContainerTitleDoubleClick_maximize"),
+         QStringLiteral("appearance.containerTitleDoubleClick")},
+    };
+    for (const auto &[objectName, key] : rows) {
+        QQuickItem *choice = nullptr;
+        QTRY_VERIFY2((choice = item(scene.root, objectName)) != nullptr, qPrintable(objectName));
+        QVERIFY(QMetaObject::invokeMethod(choice, "click"));
+        const QString token = objectName.section(QLatin1Char('_'), 1);
+        QTRY_COMPARE(scene.model->draft.value(key).toString(), token);
+        QTRY_VERIFY2(choice->property("checked").toBool(), qPrintable(objectName));
+    }
+    // A container bar's height belongs to the container layout: no option.
+    QVERIFY(item(scene.root, QStringLiteral("appearanceContainerTitleHeight_tall")) == nullptr);
 }
 
 QTEST_MAIN(WindowDecorationPageTests)

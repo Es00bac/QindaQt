@@ -14,14 +14,15 @@ void QindaDecoration::updateGeometry()
     // because their frames change only through container reflow; the veto in
     // KWinMemberPolicyManager is the enforcement side of the same contract.
     const bool member = containerMember();
+    const auto chrome = chromeState();
     // Grouped leaves keep a native handlebar for ordinary detach and
     // per-window controls (ADR-0131): tall enough to grab, never a full title.
+    // A window's title follows its button style and height option (ADR-0264).
     const qreal titleHeight = member ? DecorationMemberHandleHeight
-                                     : DecorationTitleHeight;
+                                     : decorationTitleHeight(chrome);
     setBorders(maximized ? QMarginsF(0.0, titleHeight, 0.0, 0.0)
                          : QMarginsF(1.0, titleHeight, 1.0, 1.0));
     setResizeOnlyBorders(decorationResizeOnlyBorders(maximized, member));
-    const auto chrome = chromeState();
     setBorderRadius(KDecoration3::BorderRadius(
         maximized ? 0.0
                   : member ? DecorationMemberCornerRadius
@@ -85,14 +86,19 @@ void QindaDecoration::updateGeometry()
     auto *group = m_leftButtons != nullptr ? m_leftButtons : m_rightButtons;
     if (group != nullptr && !layout.isEmpty()) {
         const QSizeF extent = layout.constFirst().geometry.size();
-        group->setSpacing(DecorationButtonSpacing);
+        // The layout's own gap and edge inset (ADR-0264), so the live group
+        // sits exactly where the Settings preview draws it.
+        group->setSpacing(layout.size() > 1
+                              ? layout.at(1).geometry.left() - layout.at(0).geometry.right()
+                              : 0.0);
         for (auto *button : group->buttons()) {
             button->setGeometry(QRectF(QPointF(0.0, 0.0), extent));
         }
         if (group == m_rightButtons) {
             // The live group width skips hidden actions, so the cluster stays
             // flush with the right inset.
-            group->setPos(QPointF(size().width() - group->geometry().width() - 14.0,
+            const qreal inset = size().width() - layout.constLast().geometry.right();
+            group->setPos(QPointF(size().width() - group->geometry().width() - inset,
                                   layout.constFirst().geometry.top()));
         } else {
             group->setPos(layout.constFirst().geometry.topLeft());

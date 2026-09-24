@@ -26,42 +26,29 @@ ColumnLayout {
     readonly property Item firstFocusTarget: firstDecorationChoice !== null
                                                   ? firstDecorationChoice
                                                   : windowStyleRow.firstChoice
+    // ADR-0264: windows and containers offer the same named button styles.
+    // AGENT-CONTRACT: tokens mirror ChromePreferences::tokens() for both
+    // style keys (chrome_preferences.cpp) and data/settings/schema-v2.json.
+    readonly property var buttonStyleChoices: [
+        { token: "theme", label: qsTr("Theme") },
+        { token: "traffic-lights", label: qsTr("Lights") },
+        { token: "flat", label: qsTr("Flat") },
+        { token: "glyph", label: qsTr("Glyphs") },
+        { token: "gel", label: qsTr("Gel") },
+        { token: "bevel", label: qsTr("Bevel") },
+        { token: "blue-tiles", label: qsTr("Blue tiles") },
+        { token: "wide", label: qsTr("Wide") },
+        { token: "tab", label: qsTr("Tab") },
+        { token: "bold", label: qsTr("Bold") },
+        { token: "minimal", label: qsTr("Minimal") },
+        { token: "pills", label: qsTr("Pills") },
+        { token: "dots", label: qsTr("Dots") },
+        { token: "outline", label: qsTr("Outline") },
+        { token: "chunky", label: qsTr("Chunky") }
+    ]
 
     Layout.fillWidth: true
     spacing: Tokens.space["3"]
-
-    component ChromeChoice: FormRow {
-        id: choiceRow
-
-        required property var settings
-        required property bool canEdit
-        required property string settingsKey
-        required property string choiceObjectName
-        required property var choices
-        property string hint: ""
-        readonly property Item firstChoice: segmented.firstChoice
-
-        Layout.fillWidth: true
-        description: ""
-        editor: segmented
-        T.ToolTip.visible: hintHover.hovered && hint.length > 0
-        T.ToolTip.delay: 600
-        T.ToolTip.text: hint
-
-        HoverHandler { id: hintHover }
-
-        SegmentedChoiceRow {
-            id: segmented
-            objectName: choiceRow.choiceObjectName
-            choices: choiceRow.choices
-            currentValue: choiceRow.settings.draft[choiceRow.settingsKey]
-                          ?? choiceRow.choices[0].token
-            editable: choiceRow.canEdit
-            descriptionPrefix: choiceRow.label
-            onChoicePicked: token => choiceRow.settings.setDraftValue(
-                                choiceRow.settingsKey, token)
-        }
-    }
 
     WindowDecorationChooser {
         id: decorationChooser
@@ -122,7 +109,7 @@ ColumnLayout {
         objectPrefix: "appearanceWindowDecorationDocument"
     }
 
-    ChromeChoice {
+    ChromeMenuChoice {
         id: windowStyleRow
         visible: root.qindaQtDecorationSelected
         label: qsTr("Buttons")
@@ -130,13 +117,8 @@ ColumnLayout {
         canEdit: root.editable
         settingsKey: "appearance.windowButtonStyle"
         choiceObjectName: "appearanceWindowButtonStyle"
-        hint: qsTr("Colored lights, flat symbols, or console glyphs")
-        choices: [
-            { token: "theme", label: qsTr("Theme") },
-            { token: "traffic-lights", label: qsTr("Lights") },
-            { token: "flat", label: qsTr("Flat") },
-            { token: "glyph", label: qsTr("Glyphs") }
-        ]
+        hint: qsTr("How the close, minimize and maximize buttons look")
+        choices: root.buttonStyleChoices
     }
 
     ChromeChoice {
@@ -183,6 +165,13 @@ ColumnLayout {
         ]
     }
 
+    TitleBarOptions {
+        visible: root.qindaQtDecorationSelected
+        kind: "window"
+        appearanceSettings: root.appearanceSettings
+        editable: root.editable
+    }
+
     SectionHeader {
         objectName: "appearanceContainersHeader"
         Layout.fillWidth: true
@@ -217,18 +206,14 @@ ColumnLayout {
         objectPrefix: "appearanceContainerDecorationDocument"
     }
 
-    ChromeChoice {
+    ChromeMenuChoice {
         label: qsTr("Buttons")
         settings: root.appearanceSettings
         canEdit: root.editable
         settingsKey: "appearance.containerButtonStyle"
         choiceObjectName: "appearanceContainerButtonStyle"
-        hint: qsTr("Colored lights or flat symbols on the container bar")
-        choices: [
-            { token: "theme", label: qsTr("Theme") },
-            { token: "traffic-lights", label: qsTr("Lights") },
-            { token: "flat", label: qsTr("Flat") }
-        ]
+        hint: qsTr("How the buttons on the container bar look")
+        choices: root.buttonStyleChoices
     }
 
     ChromeChoice {
@@ -271,5 +256,11 @@ ColumnLayout {
             { token: "always", label: qsTr("Always") },
             { token: "hover", label: qsTr("On hover") }
         ]
+    }
+
+    TitleBarOptions {
+        kind: "container"
+        appearanceSettings: root.appearanceSettings
+        editable: root.editable
     }
 }

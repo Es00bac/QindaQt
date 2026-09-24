@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/decoration_painter/decoration_painter.h"
 
+#include "qindaqt/decoration_painter/decoration_button_style.h"
 #include "qindaqt/hybrid_chrome/chromeidentity.h"
 
 #include <QFontMetricsF>
-#include <QLinearGradient>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>
-#include <QPolygonF>
-#include <QRandomGenerator>
 #include <QtMath>
 
 #include <algorithm>
@@ -25,18 +23,87 @@ QColor inkShadow(const QColor &surface)
                            source.blue() / 4);
 }
 
-constexpr qreal kPi = 3.14159265358979323846;
-
-QPointF onBar(const QRectF &bar, QRandomGenerator &generator)
-{
-    return QPointF(bar.left() + generator.bounded(int(bar.width())),
-                   bar.top() + generator.bounded(int(bar.height())));
-}
-
 QColor themeColor(const Themes::ThemeSpec &theme, const char *key, QColor fallback)
 {
     const auto candidate = theme.colors.value(QString::fromLatin1(key));
     return candidate.isValid() ? candidate : fallback;
+}
+
+QColor actionColor(const DecorationChrome &chrome, DecorationButtonKind kind)
+{
+    switch (kind) {
+    case DecorationButtonKind::Close:
+        return chrome.close;
+    case DecorationButtonKind::Minimize:
+        return chrome.minimize;
+    case DecorationButtonKind::RollUp:
+        // ADR-0264: a neutral light, never mistaken for close or zoom.
+        return chrome.textMuted;
+    case DecorationButtonKind::Maximize:
+    case DecorationButtonKind::More:
+        break;
+    }
+    return chrome.maximize;
+}
+
+// The caption weight: the title-weight option, else the shipped weight.
+QFont::Weight captionWeight(const DecorationChrome &chrome)
+{
+    if (chrome.titleWeight > 0) {
+        return static_cast<QFont::Weight>(std::clamp(chrome.titleWeight, 100, 900));
+    }
+    return chrome.wornLuna() ? QFont::Bold : QFont::DemiBold;
+}
+
+// ADR-0264: the application icon's edge in the caption row.
+qreal captionIconExtent(const QRectF &captionRect)
+{
+    return std::min(16.0, captionRect.height() - 6.0);
+}
+
+// ADR-0264: a tab style's title reaches from the left edge past its buttons
+// and caption; every other style spans the whole width. With the buttons
+// moved to the right edge the tab spans the bar, so they stay on it.
+qreal titleTabWidth(const DecorationChrome &chrome, const DecorationFrameVisual &frame)
+{
+    const qreal width = frame.size.width();
+    if (!decorationButtonStyle(chrome.buttonStyle).titleTab
+        || effectiveButtonSide(chrome) == DecorationButtonSide::Right) {
+        return width;
+    }
+    const QRectF caption = decorationCaptionRect(chrome, frame.size,
+                                                 layoutDecorationButtons(chrome, frame.size));
+    QFont font = frame.font;
+    font.setWeight(captionWeight(chrome));
+    qreal right = caption.left() + QFontMetricsF(font).horizontalAdvance(frame.caption) + 14.0;
+    if (chrome.appIcon && !frame.icon.isNull()) {
+        right += captionIconExtent(caption) + 6.0;
+    }
+    return std::clamp(right, std::min(width, 120.0), width);
+}
+
+// A tab title's outline: the tab over the body, one closed path, so no
+// frame line crosses the transparent strip beside the tab.
+void paintTabFrame(QPainter &painter, const QRectF &bounds, qreal titleHeight, qreal tabWidth,
+                   const DecorationVisualStyle &style)
+{
+    if (!style.framed || !style.frameColor.isValid() || bounds.isEmpty()) {
+        return;
+    }
+    const qreal inset = style.frameWidth / 2.0;
+    const qreal radius = std::max(0.0, style.cornerRadius - inset);
+    QPainterPath tab;
+    tab.addRoundedRect(QRectF(inset, inset, tabWidth - 2.0 * inset, titleHeight + radius),
+                       radius, radius);
+    QPainterPath body;
+    body.addRoundedRect(QRectF(inset, titleHeight, bounds.width() - 2.0 * inset,
+                               bounds.height() - titleHeight - inset),
+                        radius, radius);
+    QPainterPath shoulder;
+    shoulder.addRect(QRectF(inset, titleHeight, bounds.width() - 2.0 * inset, radius));
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(style.frameColor, style.frameWidth));
+    painter.drawPath(tab.united(body.united(shoulder)).simplified());
 }
 
 } // namespace
@@ -194,18 +261,14 @@ QColor decorationTextColor(const DecorationChrome &chrome, bool active)
 QColor decorationButtonFill(const DecorationChrome &chrome, DecorationButtonKind kind,
                             bool active)
 {
-    const QColor color = kind == DecorationButtonKind::Close ? chrome.close
-        : kind == DecorationButtonKind::Minimize ? chrome.minimize
-                                                 : chrome.maximize;
+    const QColor color = actionColor(chrome, kind);
     return active ? color : color.darker(112);
 }
 
 QColor decorationButtonGlyphColor(const DecorationChrome &chrome,
                                   DecorationButtonKind kind, bool active)
 {
-    const QColor fill = kind == DecorationButtonKind::Close ? chrome.close
-        : kind == DecorationButtonKind::Minimize ? chrome.minimize
-                                                 : chrome.maximize;
+    const QColor fill = actionColor(chrome, kind);
     Q_UNUSED(active)
     return qGray(fill.rgb()) >= 128 ? QColor(Qt::black) : QColor(Qt::white);
 }
@@ -224,6 +287,7 @@ QColor decorationGlyphChromeColor(const DecorationChrome &chrome,
         }
         return chrome.maximize;
     case DecorationButtonKind::More:
+    case DecorationButtonKind::RollUp:
         return chrome.textMuted;
     }
     return chrome.maximize;
@@ -234,101 +298,6 @@ quint32 decorationWearSeed(const QString &caption, qreal width)
     // AGENT-NOTE: focus state is deliberately excluded. The same window text
     // and width always reproduce the same wear; only the palette dims.
     return quint32(qHash(caption) ^ (quint64(width) << 32));
-}
-
-void paintWornLunaTitle(QPainter &painter, const QRectF &bar,
-                        const QColor &paintColor, quint32 seed)
-{
-    if (!paintColor.isValid() || bar.isEmpty()) {
-        return;
-    }
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    const qreal radius = DecorationCornerRadius;
-
-    // Rust undercoat: what the Luna paint flaked away from.
-    QLinearGradient undercoat(bar.topLeft(), bar.bottomLeft());
-    undercoat.setColorAt(0.0, QColor(QStringLiteral("#4a2f1b")));
-    undercoat.setColorAt(1.0, QColor(QStringLiteral("#6f4526")));
-    QPainterPath underPath;
-    underPath.addRoundedRect(bar, radius, radius);
-    painter.fillPath(underPath, undercoat);
-
-    // Surviving Luna paint keeps its original vertical sheen.
-    QLinearGradient sheen(bar.topLeft(), bar.bottomLeft());
-    sheen.setColorAt(0.0, paintColor.lighter(122));
-    sheen.setColorAt(0.55, paintColor);
-    sheen.setColorAt(1.0, paintColor.darker(126));
-    QPainterPath paintPath;
-    paintPath.addRoundedRect(bar, radius, radius);
-    painter.fillPath(paintPath, sheen);
-
-    // Thin surviving gloss line under the top edge.
-    painter.fillRect(QRectF(bar.left(), bar.top() + 1.0, bar.width(), 1.2),
-                     QColor(255, 255, 255, 70));
-
-    QRandomGenerator generator(seed);
-    painter.setPen(Qt::NoPen);
-
-    // Edge chips: paint flaked off along the top and bottom seams. Every
-    // chip reveals the undercoat with a slightly darker worn rim.
-    const QColor chipFill(QStringLiteral("#5f3d22"));
-    const QColor chipRim(QStringLiteral("#3e2716"));
-    const int chipCount = qBound(4, qRound(bar.width() / 95.0), 24);
-    for (int i = 0; i < chipCount; ++i) {
-        const bool topEdge = generator.bounded(2) == 0;
-        const qreal cx = bar.left() + generator.bounded(int(bar.width()));
-        const qreal cy = topEdge ? bar.top() + generator.bounded(3)
-                                 : bar.bottom() - 1.0 - generator.bounded(3);
-        const qreal span = 1.8 + generator.bounded(40) / 10.0;
-        QPolygonF chip;
-        const int points = 3 + generator.bounded(3);
-        for (int p = 0; p < points; ++p) {
-            const qreal angle = (p / qreal(points)) * 2.0 * kPi
-                + generator.bounded(628) / 100.0;
-            const qreal extent = span * (0.6 + generator.bounded(100) / 160.0);
-            chip.append(QPointF(cx + std::cos(angle) * extent,
-                                cy + std::sin(angle) * extent * 0.7));
-        }
-        painter.setBrush(chipFill);
-        painter.drawPolygon(chip);
-        painter.setBrush(Qt::NoBrush);
-        QColor rimColor = chipRim;
-        rimColor.setAlpha(150);
-        QPen rim(rimColor, 0.6);
-        painter.setPen(rim);
-        painter.drawPolygon(chip);
-        painter.setPen(Qt::NoPen);
-    }
-
-    // Rust speckles bloom through the paint, denser toward the bottom seam.
-    const int speckles = qBound(6, qRound(bar.width() / 42.0), 60);
-    for (int i = 0; i < speckles; ++i) {
-        const QPointF spot = onBar(bar, generator);
-        QColor rust(QStringLiteral("#8c5427"));
-        rust.setAlpha(90 + generator.bounded(110));
-        painter.setBrush(rust);
-        const qreal extent = 0.6 + generator.bounded(90) / 90.0;
-        painter.drawEllipse(spot, extent, extent);
-    }
-
-    // Weather streaks run from the bottom seam downward and fade out.
-    const int drips = qBound(2, qRound(bar.width() / 240.0), 8);
-    for (int i = 0; i < drips; ++i) {
-        const qreal cx = bar.left() + 8.0
-            + generator.bounded(qMax(1, int(bar.width()) - 16));
-        const qreal length = 3.0 + generator.bounded(90) / 10.0;
-        QLinearGradient drip(cx, qMax(bar.top(), bar.bottom() - length), cx,
-                             bar.bottom());
-        QColor stain(QStringLiteral("#74451f"));
-        QColor faded = stain;
-        faded.setAlpha(0);
-        drip.setColorAt(0.0, faded);
-        drip.setColorAt(1.0, stain);
-        painter.setBrush(drip);
-        painter.drawRect(QRectF(cx, bar.bottom() - length, 1.1, length));
-    }
-    painter.restore();
 }
 
 void paintDecorationFrame(QPainter &painter, const QRectF &bounds,
@@ -355,12 +324,15 @@ void paintDecorationTitle(QPainter &painter, const DecorationChrome &chrome,
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
     const QRectF bounds(QPointF(0.0, 0.0), frame.size);
-    const qreal titleHeight = DecorationTitleHeight;
+    const qreal titleHeight = decorationTitleHeight(chrome);
     const qreal radius = decorationFrameRadius(chrome, frame.maximized);
     const QColor title = decorationTitleColor(chrome, frame.active);
     const bool worn = chrome.wornLuna();
+    // ADR-0264: a tab style fills only its tab; the strip beside it stays
+    // clear. Every other style's bar spans the full width, as it shipped.
+    const qreal barWidth = titleTabWidth(chrome, frame);
     if (worn) {
-        paintWornLunaTitle(painter, QRectF(0.0, 0.0, frame.size.width(), titleHeight),
+        paintWornLunaTitle(painter, QRectF(0.0, 0.0, barWidth, titleHeight),
                            title, decorationWearSeed(frame.caption, frame.size.width()));
     } else {
         // Theming v2 (ADR-0207): the title fill carries the document's
@@ -371,10 +343,9 @@ void paintDecorationTitle(QPainter &painter, const DecorationChrome &chrome,
         fill.setAlphaF(static_cast<float>(std::clamp(chrome.titleOpacity, 0.0, 1.0)
                                           * title.alphaF()));
         QPainterPath titlePath;
-        titlePath.addRoundedRect(QRectF(0.0, 0.0, frame.size.width(),
-                                        titleHeight + radius),
+        titlePath.addRoundedRect(QRectF(0.0, 0.0, barWidth, titleHeight + radius),
                                  radius, radius);
-        const QRectF seam(0.0, titleHeight - radius, frame.size.width(), radius);
+        const QRectF seam(0.0, titleHeight - radius, barWidth, radius);
         if (chrome.titleTint.isValid() && chrome.titleOpacity < 1.0) {
             QColor tint = chrome.titleTint;
             if (tint.alphaF() >= 1.0F) {
@@ -387,14 +358,18 @@ void paintDecorationTitle(QPainter &painter, const DecorationChrome &chrome,
         painter.fillRect(seam, fill);
         if (chrome.titleHighlight) {
             const QColor highlight(255, 255, 255, qGray(title.rgb()) < 128 ? 46 : 120);
-            painter.fillRect(QRectF(radius / 2.0, 1.0, frame.size.width() - radius, 1.0),
-                             highlight);
+            painter.fillRect(QRectF(radius / 2.0, 1.0, barWidth - radius, 1.0), highlight);
         }
         painter.setPen(QPen(chrome.border, 0.75));
         painter.drawLine(QPointF(0.0, titleHeight - 0.5),
                          QPointF(frame.size.width(), titleHeight - 0.5));
     }
-    paintDecorationFrame(painter, bounds, decorationVisualStyleFor(chrome, frame.maximized));
+    if (barWidth < frame.size.width()) {
+        paintTabFrame(painter, bounds, titleHeight, barWidth,
+                      decorationVisualStyleFor(chrome, frame.maximized));
+    } else {
+        paintDecorationFrame(painter, bounds, decorationVisualStyleFor(chrome, frame.maximized));
+    }
     painter.restore();
 }
 
@@ -406,31 +381,51 @@ void paintDecorationCaption(QPainter &painter, const DecorationChrome &chrome,
         return;
     }
     painter.save();
-    const int alignment = chrome.titleAlignment == QLatin1String("left")
-        ? static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter)
-        : static_cast<int>(Qt::AlignCenter);
+    // A tab title always reads from its buttons outward (ADR-0264).
+    const bool leftAligned = chrome.titleAlignment == QLatin1String("left")
+        || decorationButtonStyle(chrome.buttonStyle).titleTab;
+    int alignment = leftAligned ? static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter)
+                                : static_cast<int>(Qt::AlignCenter);
     QFont font = frame.font;
     if (chrome.wornLuna()) {
         // Luna captions carried the era's humanist title face; the family is
         // advisory and falls back through fontconfig when it is not installed.
         font.setFamily(QStringLiteral("Trebuchet MS"));
-        font.setWeight(QFont::Bold);
-        painter.setFont(font);
-        const QFontMetricsF metrics(font);
-        const auto caption = metrics.elidedText(frame.caption, Qt::ElideRight,
-                                                qFloor(captionRect.width()));
+    }
+    font.setWeight(captionWeight(chrome));
+    painter.setFont(font);
+    const QFontMetricsF metrics(font);
+    QRectF textRect = captionRect;
+    if (chrome.appIcon && !frame.icon.isNull()) {
+        // ADR-0264: the application icon leads the caption; a centered
+        // caption centers icon and text together.
+        const qreal extent = captionIconExtent(captionRect);
+        constexpr qreal gap = 6.0;
+        if (extent >= 8.0 && captionRect.width() > extent + gap) {
+            qreal iconLeft = captionRect.left();
+            if (!leftAligned) {
+                const qreal textWidth = std::min(metrics.horizontalAdvance(frame.caption),
+                                                 captionRect.width() - extent - gap);
+                iconLeft = std::max(captionRect.left(),
+                                    captionRect.center().x() - (extent + gap + textWidth) / 2.0);
+            }
+            const QRectF iconRect(iconLeft, captionRect.center().y() - extent / 2.0, extent,
+                                  extent);
+            frame.icon.paint(&painter, iconRect.toAlignedRect());
+            textRect.setLeft(iconRect.right() + gap);
+            alignment = static_cast<int>(Qt::AlignLeft | Qt::AlignVCenter);
+        }
+    }
+    const auto caption = metrics.elidedText(frame.caption, Qt::ElideRight,
+                                            qFloor(textRect.width()));
+    if (chrome.wornLuna()) {
         painter.setPen(QPen(QColor(0, 0, 0, 140)));
-        painter.drawText(captionRect.translated(0.0, 1.0), alignment, caption);
+        painter.drawText(textRect.translated(0.0, 1.0), alignment, caption);
         painter.setPen(QPen(decorationCaptionColor(chrome, frame.active)));
-        painter.drawText(captionRect, alignment, caption);
+        painter.drawText(textRect, alignment, caption);
     } else {
         painter.setPen(decorationTextColor(chrome, frame.active));
-        font.setWeight(QFont::DemiBold);
-        painter.setFont(font);
-        const QFontMetricsF metrics(font);
-        const auto caption = metrics.elidedText(frame.caption, Qt::ElideRight,
-                                                qFloor(captionRect.width()));
-        painter.drawText(captionRect, alignment, caption);
+        painter.drawText(textRect, alignment, caption);
     }
     painter.restore();
 }

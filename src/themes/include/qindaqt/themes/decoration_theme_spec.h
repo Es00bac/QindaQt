@@ -37,6 +37,9 @@ struct DecorationThemeSpec final {
 };
 
 namespace DecorationThemeTokens {
+// Every window-button style name a theme or document may author (ADR-0264).
+// The decoration painter holds one spec per name; its tests pin the match.
+[[nodiscard]] QStringList buttonStyles();
 [[nodiscard]] QStringList memberHandleStyles();
 [[nodiscard]] QStringList containerBadgeStyles();
 } // namespace DecorationThemeTokens

@@ -204,21 +204,29 @@ void appendContainerControls(const ChromeLayoutRequest &request,
 void appendWindowButtons(const ChromeLayoutRequest &request, ChromeRenderPlan *plan)
 {
     const auto &metrics = request.metrics;
-    const auto actions = actionOrder(request.style, request.maximized);
+    const auto &style = request.style;
+    const auto actions = actionOrder(style, request.maximized);
     const auto actionCount = static_cast<qreal>(actions.size());
-    const qreal clusterWidth = actionCount * metrics.buttonExtent
-        + (actionCount - 1.0) * metrics.buttonSpacing;
-    qreal buttonX = request.style.buttonSide == ButtonSide::Left
+    // ADR-0264: a named style or the size option may resize the cells; the
+    // row height caps them so a large style never spills out of the row.
+    const QSizeF cell = style.buttonSize.isEmpty()
+        ? QSizeF(metrics.buttonExtent, metrics.buttonExtent)
+        : QSizeF(style.buttonSize.width(),
+                 std::min(style.buttonSize.height(), plan->outerTitleBar.height()));
+    const qreal spacing = style.buttonSpacing >= 0.0 ? style.buttonSpacing
+                                                     : metrics.buttonSpacing;
+    const qreal clusterWidth = actionCount * cell.width() + (actionCount - 1.0) * spacing;
+    qreal buttonX = style.buttonSide == ButtonSide::Left
         ? plan->outerTitleBar.left() + metrics.buttonClusterInset
         : plan->outerTitleBar.right() - metrics.buttonClusterInset - clusterWidth;
-    const qreal buttonY = plan->outerTitleBar.center().y() - metrics.buttonExtent / 2.0;
+    const qreal buttonY = plan->outerTitleBar.center().y() - cell.height() / 2.0;
     for (const auto action : actions) {
         plan->buttons.append({action,
-                              {buttonX, buttonY, metrics.buttonExtent, metrics.buttonExtent},
-                              buttonColor(request.style, action),
+                              {buttonX, buttonY, cell.width(), cell.height()},
+                              buttonColor(style, action),
                               glyph(action),
-                              !request.style.hoverGlyphs});
-        buttonX += metrics.buttonExtent + metrics.buttonSpacing;
+                              !style.hoverGlyphs});
+        buttonX += cell.width() + spacing;
     }
 }
 

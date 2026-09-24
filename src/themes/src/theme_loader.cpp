@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/themes/theme_loader.h"
 
+#include "qindaqt/themes/decoration_theme_spec.h"
+
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
@@ -16,7 +18,6 @@ constexpr const char *requiredColors[] = {
     "canvas", "surface", "surfaceRaised", "border", "text", "textMuted", "accent", "accentText", "danger"};
 constexpr const char *buttonPlacements[] = {"left", "right"};
 constexpr const char *tabDirections[] = {"left-to-right", "right-to-left"};
-constexpr const char *buttonStyles[] = {"symbols", "traffic-lights", "glyph"};
 
 LoadResult failure(const QString &origin, const QString &message)
 {
@@ -298,7 +299,7 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
     }
     if (!contains(theme.decoration.buttonPlacement, buttonPlacements)
         || !contains(theme.decoration.tabDirection, tabDirections)
-        || !contains(theme.decoration.buttonStyle, buttonStyles)) {
+        || !DecorationThemeTokens::buttonStyles().contains(theme.decoration.buttonStyle)) {
         return failure(origin, QStringLiteral("theme decoration contains an unknown enum value"));
     }
 
