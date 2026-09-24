@@ -33,6 +33,35 @@ set_tests_properties(
 )
 
 qt_add_executable(
+    qindaqt_settings_customize_panel_delay_tests
+    tst_customize_panel_delay.cpp
+    customize_test_support.h
+    customize_sequence_transport.h
+    customize_window_preview_test_support.h
+)
+target_include_directories(
+    qindaqt_settings_customize_panel_delay_tests PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+target_compile_definitions(
+    qindaqt_settings_customize_panel_delay_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+target_link_libraries(
+    qindaqt_settings_customize_panel_delay_tests
+    PRIVATE qindaqt_settings_customize QindaQt::AppAppearance
+            QindaQt::DecorationPainter Qt6::Gui Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_settings_customize_panel_delay_tests)
+add_test(
+    NAME qindaqt.settings-customize-panel-delay
+    COMMAND qindaqt_settings_customize_panel_delay_tests
+)
+set_tests_properties(
+    qindaqt.settings-customize-panel-delay PROPERTIES
+    LABELS "settings;customize;domain"
+)
+
+qt_add_executable(
     qindaqt_settings_customize_applet_setting_validation_tests
     tst_customize_applet_setting_validation.cpp
 )

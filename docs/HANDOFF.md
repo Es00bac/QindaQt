@@ -96,6 +96,15 @@ Integrated Audio/VBAN/navigation gates pass 17/17 and broad Settings 135/135;
 strict docs validate 384 pages. qinda-top still runs Audio1 schema 11, so this
 schema-12 source is not live. No physical speaker playback or synchronized surround is
 claimed.
+Panel auto-hide reveal and hide delays are now editable in Customize Settings
+through the existing shell visibility policy. The first candidate committed
+a held arrow key on an auto-repeat release; independent review rejected it,
+and accepted exact repaired `6476e40d` after the held-key probe passed.
+The candidate's affected suite passed 20/20. On the integrated tree, the
+combined build, 23/23 focused rows (after rebuilding a stale pointer test
+executable), broad Settings 136/136, strict MkDocs and 384-document link
+validation pass. No live panel timing has been changed on qinda-top.
+
 Per-application stream moves now use the live Audio1 MoveStream authority
 from the Devices tab. A rejected first candidate let one confirmed stream
 erase a sibling failed move; the same reviewer accepted the per-stream repair

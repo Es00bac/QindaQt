@@ -116,7 +116,8 @@ class CustomizeRouteComposition::Private final {
 public:
     Private()
         : transport(QDBusConnection::sessionBus())
-        , client(transport, {QString(LayoutProfileSettingsKey)})
+        , client(transport, {QString(LayoutProfileSettingsKey),
+                             QString(PanelHideDelaySettingsKey)})
         , wallpaperTransport(QDBusConnection::sessionBus())
         , wallpaperClient(wallpaperTransport,
                           {QString(SettingsAppearance::AppearanceKeys::Wallpaper),

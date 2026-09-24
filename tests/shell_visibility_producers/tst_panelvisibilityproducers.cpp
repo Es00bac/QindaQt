@@ -171,6 +171,7 @@ private slots:
     void shortcut();
     void animation();
     void reducedMotion();
+    void savedDelayChangesPointerLeaveTimingAcrossProfileSwitch();
     void foregroundTransitions();
     void foregroundReleasesPointerReveal();
     void boundaryPoison();
@@ -349,6 +350,55 @@ void PanelVisibilityProducerTests::reducedMotion()
                            {QStringLiteral("panels.autoHideDelayMs"), -1}});
     QVERIFY(!runtime.reducedMotion());
     QCOMPARE(runtime.animationDurationMilliseconds(), 320);
+}
+
+void PanelVisibilityProducerTests::savedDelayChangesPointerLeaveTimingAcrossProfileSwitch()
+{
+    ShellOrchestration::PanelInteractionStore store;
+    QVERIFY(store.setIdentities({identity()}));
+    NullSettingsTransport transport;
+    Services::SettingsClient::SettingsClient settings(transport, {});
+    FakeRegistrar registrar;
+    Profiles::LayoutProfile profile;
+    Profiles::PanelSpec panel;
+    panel.id = QStringLiteral("dock");
+    panel.hideMode = Profiles::HideMode::Intelligent;
+    profile.panels.append(panel);
+    Shell::PanelVisibilityRuntime runtime(
+        *qGuiApp, store, settings, registrar, profile, 320);
+    bool reconcile = false;
+    QString error;
+    QWindow panelWindow;
+    panelWindow.setObjectName(QStringLiteral("qindaqt-panel-dock@main"));
+    QEvent enter(QEvent::Enter);
+    QEvent leave(QEvent::Leave);
+
+    runtime.applySettings({{QStringLiteral("accessibility.reducedMotion"), true},
+                           {QStringLiteral("panels.autoHideDelayMs"), qint64(50)}});
+    (void)runtime.synchronize(plan(ShellSurface::PanelSurfaceMapping::Mapped),
+                              false, &reconcile, &error);
+    QCOMPARE(runtime.animationDurationMilliseconds(), 80);
+    QCoreApplication::sendEvent(&panelWindow, &enter);
+    QVERIFY(reveal(store));
+    QCoreApplication::sendEvent(&panelWindow, &leave);
+    QTRY_VERIFY_WITH_TIMEOUT(!reveal(store), 500);
+
+    // The setting is global: adopting a new profile refreshes inventory, not
+    // Settings1 delay. A longer saved value measurably extends the leave hold.
+    Profiles::LayoutProfile alternate = profile;
+    alternate.id = QStringLiteral("alternate");
+    runtime.applySettings({{QStringLiteral("accessibility.reducedMotion"), false},
+                           {QStringLiteral("panels.autoHideDelayMs"), qint64(500)}});
+    runtime.applyProfile(alternate);
+    (void)runtime.synchronize(plan(ShellSurface::PanelSurfaceMapping::Mapped),
+                              false, &reconcile, &error);
+    QCOMPARE(runtime.animationDurationMilliseconds(), 320);
+    QCoreApplication::sendEvent(&panelWindow, &enter);
+    QVERIFY(reveal(store));
+    QCoreApplication::sendEvent(&panelWindow, &leave);
+    QTest::qWait(100);
+    QVERIFY(reveal(store));
+    QTRY_VERIFY_WITH_TIMEOUT(!reveal(store), 1'000);
 }
 
 void PanelVisibilityProducerTests::foregroundTransitions()

@@ -192,6 +192,22 @@ commits a changed selection through the route-owned Settings1 client. Conflict,
 uncertain result, owner loss, and failed profile storage retain dirty truth and
 surface an explicit diagnostic; none is reported as success.
 
+The selected panel's Visibility pane also edits the global
+`panels.autoHideDelayMs` Settings1 preference from 0 to 5000 ms. Its label
+says **all panels** because this value is independent of the selected panel
+and profile; switching profiles does not reset it. The control shows a saved
+value only after an exact typed Settings1 snapshot, and enables only when the
+current owner admits a write and the layout editor has no unapplied draft.
+Pointer and keyboard slider gestures submit their final value once. A commit
+reply remains pending until a same-owner, same-epoch snapshot reaches its
+reported revision and confirms the requested value. Stale readback triggers a
+bounded refresh, then an uncertainty notice rather than a replay. Refusal,
+conflicting external values, owner replacement, and unavailable Settings1
+leave the last confirmed value and an explicit status visible. Retry refreshes
+truth without resubmitting the prior intent. The [panel visibility runtime](../shell/panel-visibility.md#production-integration)
+consumes the same key for pointer-leave timing; it does not read a duplicate
+per-profile preference.
+
 Undo/Redo cleanliness compares the full canonical profile with the applied
 baseline. Discard rebuilds the confirmed selection from the latest successfully stored
 content for that profile. Each successful content write refreshes the in-memory
