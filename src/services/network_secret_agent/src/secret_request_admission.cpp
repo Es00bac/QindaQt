@@ -94,6 +94,9 @@ bool walkByteArrays(const QDBusArgument &cursor, qsizetype &aggregate,
     }
     QByteArray bytes;
     cursor >> bytes;
+    // AGENT-CONTRACT: `bytes` was freshly decoded from this QDBusArgument
+    // cursor into an iteration-local allocation. No request/settings map
+    // refers to it, so every local alias can be scrubbed as this scope exits.
     const auto wipeBytes =
         qScopeGuard([&bytes] { wipeByteArrayValue(bytes); });
     if (!consumeBytes(bytes.size(), aggregate)) {
@@ -116,12 +119,18 @@ bool walkIpv6Records(const QDBusArgument &cursor, qsizetype &aggregate,
     cursor.beginStructure();
     QByteArray address;
     cursor >> address;
+    // AGENT-CONTRACT: `address` was freshly decoded from this QDBusArgument
+    // cursor into an iteration-local allocation; no stored request/settings
+    // map aliases it, so its decoded aliases are disposable here.
     const auto wipeAddress =
         qScopeGuard([&address] { wipeByteArrayValue(address); });
     quint32 prefix = 0;
     cursor >> prefix;
     QByteArray nextHop;
     cursor >> nextHop;
+    // AGENT-CONTRACT: `nextHop` was freshly decoded from this QDBusArgument
+    // cursor into an iteration-local allocation; no stored request/settings
+    // map aliases it, so its decoded aliases are disposable here.
     const auto wipeNextHop =
         qScopeGuard([&nextHop] { wipeByteArrayValue(nextHop); });
     quint32 metric = 0;
@@ -164,8 +173,13 @@ bool walkStringMap(const QDBusArgument &cursor, qsizetype &aggregate,
     QString text;
     cursor.beginMapEntry();
     cursor >> key;
+    // AGENT-CONTRACT: `key` was freshly decoded from this QDBusArgument cursor
+    // into an iteration-local string, with no alias in the stored request map.
     const auto wipeKey = qScopeGuard([&key] { wipeStringValue(key); });
     cursor >> text;
+    // AGENT-CONTRACT: `text` was freshly decoded from this QDBusArgument
+    // cursor into an iteration-local string, with no alias in the stored
+    // request map.
     const auto wipeText = qScopeGuard([&text] { wipeStringValue(text); });
     cursor.endMapEntry();
     const bool accepted = boundedText(key) &&
@@ -194,10 +208,15 @@ bool walkVariantMap(const QDBusArgument &cursor, qsizetype &aggregate,
     QDBusVariant wrapped;
     cursor.beginMapEntry();
     cursor >> key;
+    // AGENT-CONTRACT: `key` was freshly decoded from this QDBusArgument cursor
+    // into an iteration-local string, with no alias in the stored request map.
     const auto wipeKey = qScopeGuard([&key] { wipeStringValue(key); });
     cursor >> wrapped;
     cursor.endMapEntry();
     QVariant entry = wrapped.variant();
+    // AGENT-CONTRACT: `wrapped` was freshly decoded from the cursor. `entry`
+    // can share only with that same disposable local; neither value aliases
+    // the stored request/settings map, and both leave scope after this entry.
     const auto wipeEntry =
         qScopeGuard([&entry] { wipeVariantValue(entry); });
     const bool accepted = boundedText(key) &&

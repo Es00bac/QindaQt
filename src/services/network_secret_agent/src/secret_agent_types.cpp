@@ -17,6 +17,10 @@ void overwriteOwnedStorage(void *data, const qsizetype bytes) noexcept {
   }
 }
 
+// AGENT-CONTRACT: Wiping intentionally writes through Qt's implicitly shared
+// storage. Every alias must be dead or another secret-bearing copy that must
+// also be scrubbed; never pass storage a live request/settings owner still
+// needs.
 void wipeByteArray(QByteArray &bytes) noexcept {
   if (!bytes.isEmpty()) {
     // AGENT-GUARD: Do not call non-const data(), detach(), or fill() here.
@@ -29,6 +33,10 @@ void wipeByteArray(QByteArray &bytes) noexcept {
   }
 }
 
+// AGENT-CONTRACT: Wiping intentionally writes through Qt's implicitly shared
+// storage. Every alias must be dead or another secret-bearing copy that must
+// also be scrubbed; never pass storage a live request/settings owner still
+// needs.
 void wipeString(QString &text) noexcept {
   if (!text.isEmpty()) {
     // DBus/QML values own dynamic storage. A zero-capacity QString is an
@@ -56,6 +64,10 @@ void wipeAssociative(Associative &values) noexcept {
   values.clear();
 }
 
+// AGENT-CONTRACT: Nested QString and QByteArray values may share their
+// allocations with other Qt values. Only wipe when every alias is dead or is a
+// secret-bearing copy that must also be scrubbed; do not pass a live
+// request/settings value that another owner still needs.
 void wipeVariant(QVariant &value) noexcept {
   if (value.metaType() == QMetaType::fromType<QString>()) {
     auto *text = static_cast<QString *>(value.data());
@@ -124,6 +136,9 @@ QByteArray takeSecretUtf8(QVariant &value) noexcept {
 }
 
 void wipeSettingsMap(NmSettingsMap &settings) noexcept {
+  // AGENT-CONTRACT: This recursively overwrites shared key/value storage.
+  // Call only for a request/settings copy whose aliases are all dead or are
+  // themselves secret-bearing copies to scrub; no live owner may need them.
   for (auto section = settings.begin(); section != settings.end(); ++section) {
     QString key = section.key();
     wipeString(key);

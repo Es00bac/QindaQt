@@ -82,8 +82,10 @@ struct GetSecretsRequest final {
 };
 
 void registerSecretAgentDBusTypes();
-// AGENT-CONTRACT: These consume mutable, dynamically owned Qt values. They
-// overwrite shared backing allocations before clearing the passed container;
+// AGENT-CONTRACT: These consume mutable, dynamically owned Qt values and
+// intentionally overwrite implicitly shared backing allocations. Every alias
+// must be dead or another secret-bearing copy that must also be scrubbed; do
+// not pass a value another live request/settings owner still needs.
 // takeSecretUtf8 returns a separately owned byte buffer or empty on mismatch.
 [[nodiscard]] QByteArray takeSecretUtf8(QVariant &value) noexcept;
 void wipeSettingsMap(NmSettingsMap &settings) noexcept;
