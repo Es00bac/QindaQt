@@ -7,7 +7,8 @@ import QtQuick.Templates as T
 // Styled desktop context menu (ADR-0125). One menu, three item sets driven by
 // the desktop-icons `contextMenuStyle` setting. Every entry dispatches
 // through an existing seam: launcherAccess.activate(entryId, actionId),
-// placesAccess.open(placeId), newFolder.create(), or the icons view reflow.
+// placesAccess.open(placeId), newFolder.create(), the icons view reflow, or
+// customizationAccess.enterEditMode() (Edit Panels, ADR-0266).
 // A null facade disables its entries instead of crashing.
 //
 // AGENT-GUARD: the popup must keep popupType Window (panel precedent). The
@@ -31,6 +32,9 @@ T.Menu {
     property var launcherAccess: null
     property NewFolderController newFolder: null
     property var iconsView: null
+    // Borrowed LiveCustomizationController facade; may be null. Backs Edit
+    // Panels (ADR-0266).
+    property var customizationAccess: null
 
     signal applicationsRequested()
 
@@ -123,6 +127,11 @@ T.Menu {
         case "applications":
             applicationsRequested()
             break
+        case "editPanels":
+            if (customizationAccess !== null) {
+                customizationAccess.enterEditMode()
+            }
+            break
         }
     }
 
@@ -139,6 +148,9 @@ T.Menu {
         }
         if (entry.needsClipboard === true) {
             return iconsView !== null && iconsView.canPaste === true
+        }
+        if (entry.needsCustomization === true) {
+            return customizationAccess !== null && customizationAccess.available === true
         }
         return true
     }
@@ -164,6 +176,8 @@ T.Menu {
                  text: qsTr("Change Desktop && Screen Saver…"),
                  kind: "launch", targetId: "org.qindaqt.Settings",
                  actionId: "appearance", needsLauncher: true},
+                {objectName: "desktopContextEditPanels", text: qsTr("Edit Panels"),
+                 kind: "editPanels", needsCustomization: true},
             ]
         }
         if (style === "traditional") {
@@ -185,6 +199,8 @@ T.Menu {
                  text: qsTr("Desktop Settings"),
                  kind: "launch", targetId: "org.qindaqt.Settings",
                  actionId: "appearance", needsLauncher: true},
+                {objectName: "desktopContextEditPanels", text: qsTr("Edit Panels"),
+                 kind: "editPanels", needsCustomization: true},
             ]
         }
         return [
@@ -202,6 +218,8 @@ T.Menu {
              text: qsTr("Display Properties"),
              kind: "launch", targetId: "org.qindaqt.Settings",
              actionId: "display", needsLauncher: true},
+            {objectName: "desktopContextEditPanels", text: qsTr("Edit Panels"),
+             kind: "editPanels", needsCustomization: true},
         ]
     }
 

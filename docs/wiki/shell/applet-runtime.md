@@ -239,7 +239,9 @@ surface hosts the desktop-icons entry (see its bullet below):
   dispatch the installed `org.qindaqt.Settings` entry's `appearance` and
   `display` desktop actions through the borrowed launcher facade, opening
   the Appearance or Display route each label promises rather than the
-  primary Settings launch.
+  primary Settings launch. Every style ends with "Edit Panels", which enters
+  panel edit mode through the borrowed live customization facade (disabled
+  without it; ADR-0266).
   Folder creation goes through the least-authority `NewFolderController`
   seam, which writes only under the user's Desktop directory; the manifest
   requests only `applications.launch` and no new capability enum. See

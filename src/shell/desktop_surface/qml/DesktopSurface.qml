@@ -32,7 +32,8 @@ Window {
     // one. All three are injected by DesktopSurfaceController; see ADR-0167.
     required property var layoutStore
     // Borrowed LiveCustomizationController facade (Meta+right-click
-    // customization menu); may be null, which keeps the chord inert.
+    // customization menu, and Edit Panels in the context menu); may be null,
+    // which keeps the chord inert and disables Edit Panels.
     property var customizationAccess: null
     property var outputRects: []
     property string primaryOutputName: screenName
@@ -281,6 +282,7 @@ Window {
             launcherAccess: root.launcherAccess
             newFolder: newFolderController
             iconsView: iconsView
+            customizationAccess: root.customizationAccess
             onApplicationsRequested: root.openApplicationsMenuAtDefault()
         }
     }

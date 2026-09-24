@@ -42,6 +42,8 @@ Item {
         property bool dragActive: false
         property bool dropAccepted: false
         property string dropReason: ""
+        property var dropTarget: ({})
+        property point dragPoint: Qt.point(0, 0)
         property string statusText: ""
         property string chord: "meta-right"
         property int chordModifiers: Qt.MetaModifier

@@ -248,6 +248,20 @@ void RuntimePanelWindowFactory::setLiveCustomization(QObject *access) noexcept
     m_liveCustomization = access;
 }
 
+void RuntimePanelWindowFactory::setPanelWindowObserver(
+    std::function<void(QQuickWindow *)> observer)
+{
+    m_windowObserver = std::move(observer);
+    if (!m_windowObserver) {
+        return;
+    }
+    for (const QPointer<QQuickWindow> &window : std::as_const(m_liveWindows)) {
+        if (window) {
+            m_windowObserver(window);
+        }
+    }
+}
+
 bool RuntimePanelWindowFactory::ensureComponent(QString *error)
 {
     if (m_component && m_component->isReady()) {
@@ -409,6 +423,9 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         return entry.isNull();
     });
     m_liveWindows.append(QPointer<QQuickWindow>(window));
+    if (m_windowObserver) {
+        m_windowObserver(window);
+    }
     return std::unique_ptr<QQuickWindow>(window);
 }
 
