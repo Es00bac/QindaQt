@@ -8,6 +8,7 @@
 
 #include <QAccessible>
 #include <QDebug>
+#include <QKeyEvent>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
@@ -107,6 +108,7 @@ class CustomizePageTests final : public QObject {
 private slots:
     void rendersCompactAndWideWithoutLosingAccessibleEditors();
     void rendersAppletSettingEditorsInWideMode();
+    void panelHideDelayCommitsFinalPointerAndKeyboardIntent();
     void rendersAppletSettingEditorsInCompactMode();
     void canvasFollowsConfiguredWallpaperAndFallsBackToTokens();
     void canvasWindowPreviewShowsResolvedChromeAndStaysContained();
@@ -247,6 +249,60 @@ void CustomizePageTests::rendersCompactAndWideWithoutLosingAccessibleEditors()
     QVERIFY(QMetaObject::invokeMethod(detailsTab, "click"));
     QTRY_COMPARE(view.rootObject()->property("compactSection").toInt(), 2);
     QTRY_VERIFY(item(compact, "customizeProperties")->isVisible());
+}
+
+void CustomizePageTests::panelHideDelayCommitsFinalPointerAndKeyboardIntent()
+{
+    StubCustomizeSettingsModel model;
+    QQuickView view;
+    QString error;
+    QVERIFY2(loadCustomizePage(view, model, &error), qPrintable(error));
+    view.resize(1080, 1080);
+    view.show();
+    auto *slider = item(view.rootObject(), "customizePanelHideDelaySlider");
+    auto *status = item(view.rootObject(), "customizePanelHideDelayStatus");
+    QVERIFY(slider != nullptr);
+    QVERIFY(status != nullptr);
+    QTRY_VERIFY(slider->isVisible());
+    QVERIFY(slider->isEnabled());
+    QCOMPARE(slider->property("value").toInt(), 250);
+
+    slider->forceActiveFocus(Qt::TabFocusReason);
+    QTRY_VERIFY(slider->hasActiveFocus());
+    QKeyEvent press(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier);
+    QCoreApplication::sendEvent(&view, &press);
+    QKeyEvent repeatPress(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier,
+                          QString(), true);
+    QCoreApplication::sendEvent(&view, &repeatPress);
+    QKeyEvent repeatRelease(QEvent::KeyRelease, Qt::Key_Right, Qt::NoModifier,
+                            QString(), true);
+    QCoreApplication::sendEvent(&view, &repeatRelease);
+    QCoreApplication::processEvents();
+    QCOMPARE(model.delaySetCount, 0);
+    QCOMPARE(slider->property("value").toInt(), 350);
+    QKeyEvent release(QEvent::KeyRelease, Qt::Key_Right, Qt::NoModifier);
+    QCoreApplication::sendEvent(&view, &release);
+    QTRY_COMPARE(model.delaySetCount, 1);
+    QCOMPARE(model.lastDelayMs, 350);
+    QTRY_COMPARE(slider->property("value").toInt(), 250);
+
+    const QPoint start = slider->mapToScene(
+        QPointF(slider->width() * 0.05, slider->height() / 2)).toPoint();
+    const QPoint finish = slider->mapToScene(
+        QPointF(slider->width() * 0.78, slider->height() / 2)).toPoint();
+    QTest::mousePress(&view, Qt::LeftButton, Qt::NoModifier, start);
+    QTest::mouseMove(&view, finish, 20);
+    QTest::mouseRelease(&view, Qt::LeftButton, Qt::NoModifier, finish);
+    QTRY_COMPARE(model.delaySetCount, 2);
+    QVERIFY(model.lastDelayMs >= 3500);
+    QVERIFY(model.lastDelayMs <= 4300);
+    QTRY_COMPARE(slider->property("value").toInt(), 250);
+
+    model.setDelayState(false, false, false, 250,
+                        QStringLiteral("Saved delay unavailable"));
+    QTRY_VERIFY(!slider->isEnabled());
+    QCOMPARE(status->property("text").toString(),
+             QStringLiteral("Saved delay unavailable"));
 }
 
 void CustomizePageTests::rendersAppletSettingEditorsInWideMode()

@@ -155,6 +155,13 @@ settled authority snapshot: every published surface geometry is positive and
 inside the framebuffer, and a hidden panel's role is absent. A role that never
 reaches that state fails closed at the observation deadline.
 
+Customize exposes the global auto-hide delay alongside the selected panel's
+visibility mode. A confirmed 0–5000 ms Settings1 value changes the pointer
+leave timer for every auto-hiding panel on the next runtime synchronize, and
+a profile switch preserves that global value. The selected theme's animation
+and `accessibility.reducedMotion` are separate: changing the leave delay does
+not lengthen a reduced-motion fade.
+
 The runtime reads only exact typed settings. `panels.autoHideDelayMs` is the
 canonical signed 64-bit integer produced by the Settings1 codec, while
 `accessibility.reducedMotion` is an exact boolean. Missing or malformed

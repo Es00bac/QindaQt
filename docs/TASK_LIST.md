@@ -127,6 +127,13 @@ integrated in the qinda source tree, not installed into a live session:
   same reviewer accepted its narrow link repair. Integrated Audio/VBAN/
   navigation tests pass 17/17 and broad Settings 135/135. Live physical playback,
   discovery, authentication, encryption and synchronized surround remain open.
+- Panel auto-hide timing (`6476e40d`, independently accepted): Customize
+  Settings exposes panel reveal and hide delays through the existing shell
+  visibility policy. A held arrow key originally committed on auto-repeat
+  release; the reviewer rejected it, and the repaired editor waits for the
+  final release. The accepted candidate passed 20/20 affected rows. On the merged tree,
+  23/23 focused rows and the broad Settings suite 136/136 pass. Live
+  pointer and panel behavior on qinda-top remains to qualify.
 - Per-application audio routing (`5c8aae4b`): playback and recording
   streams now offer direction-matched device choices in Audio Settings. The
   picker tracks confirmed Audio1 routing, handles pending/refused/stale
