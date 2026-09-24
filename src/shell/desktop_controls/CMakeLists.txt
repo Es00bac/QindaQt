@@ -23,9 +23,11 @@ target_sources(
         src/command_search_controller.cpp
         src/command_search_types.cpp
         src/desktop_controls_access.cpp
+        src/file_manager_dock_paths.cpp
         src/file_manager_folder_opener.cpp
         src/places_controller.cpp
         src/quick_launch_controller.cpp
+        src/quick_launch_dock_edits.cpp
         src/system_menu_controller.cpp
         src/system_status_controller.cpp
         src/system_status_presentation.cpp
@@ -38,6 +40,8 @@ target_sources(
             include/qindaqt/shell/desktop_controls/command_search_controller.h
             include/qindaqt/shell/desktop_controls/command_search_types.h
             include/qindaqt/shell/desktop_controls/desktop_controls_access.h
+            include/qindaqt/shell/desktop_controls/dock_path_port.h
+            include/qindaqt/shell/desktop_controls/file_manager_dock_paths.h
             include/qindaqt/shell/desktop_controls/file_manager_folder_opener.h
             include/qindaqt/shell/desktop_controls/places_controller.h
             include/qindaqt/shell/desktop_controls/quick_launch_controller.h
@@ -46,9 +50,11 @@ target_sources(
             include/qindaqt/shell/desktop_controls/system_status_presentation.h
 )
 # AGENT-CONTRACT: this target consumes only the public facades of the applets
-# it aggregates plus the workspace controller. It must never link a service
-# client, a D-Bus transport, KWin, LayerShellQt, or the shell runtime; the
-# boundary test in tests/shell/desktop_controls enforces the include set.
+# it aggregates plus the workspace controller, and (ADR-0265, the dock's
+# folders, files, and Trash) the File Manager's isolated local-files boundary
+# behind FileManagerDockPaths. It must never link a service client, a D-Bus
+# transport, KWin, LayerShellQt, or the shell runtime; the boundary test in
+# tests/shell/desktop_controls enforces the include set.
 target_link_libraries(
     qindaqt_shell_desktop_controls
     PUBLIC
@@ -64,6 +70,11 @@ target_link_libraries(
         QindaQt::ShellPowerAppletRuntime
         QindaQt::ShellNetworkAppletRuntime
         Qt6::Core
+    PRIVATE
+        # AGENT-GUARD: only File Manager's isolated boundary, never
+        # qindaqt_file_manager_support (AppShell/KIO would ride into the
+        # shell; see src/shell/desktop_surface/CMakeLists.txt).
+        qindaqt_file_manager_desktop_boundary
 )
 target_compile_features(qindaqt_shell_desktop_controls PUBLIC cxx_std_20)
 set_target_properties(qindaqt_shell_desktop_controls PROPERTIES CXX_EXTENSIONS OFF)
@@ -87,6 +98,12 @@ set(QINDAQT_DESKTOP_CONTROLS_QML_FILES
     qml/ControlPopupFrame.qml
     qml/DashboardApplet.qml
     qml/DesktopControlButton.qml
+    qml/DockDropGeometry.js
+    qml/DockGestures.qml
+    qml/DockItemMenu.qml
+    qml/DockItemTile.qml
+    qml/DockPromptPopup.qml
+    qml/DockStackPopup.qml
     qml/MenuRow.qml
     qml/OverviewTriggerApplet.qml
     qml/PlacesMenuApplet.qml

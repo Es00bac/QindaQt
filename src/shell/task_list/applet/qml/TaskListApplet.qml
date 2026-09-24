@@ -38,8 +38,20 @@ Item {
     // button per container. Dock strips keep container rows: they reorder tasks.
     property string grouping: "when-crowded"
     readonly property bool ungrouped: grouping === "never" && !dockMode
+    // ADR-0265: tasks a pinned dock tile in the same dock already shows (the
+    // dock's claimedTaskIds). A dock strip leaves them out, so a running
+    // pinned application has one icon, not two. Empty everywhere else.
+    property var dockClaimedTaskIds: []
+    // The dock facade for "Keep in Dock"; null where no dock is composed.
+    property var dockAccess: null
     readonly property var taskRows: access === null ? []
-        : ungrouped ? access.windowRows : access.entryRows
+        : ungrouped ? access.windowRows : unclaimedRows(access.entryRows)
+
+    function unclaimedRows(rows) {
+        if (!dockMode || dockClaimedTaskIds.length === 0)
+            return rows
+        return rows.filter(row => dockClaimedTaskIds.indexOf(String(row.taskId)) < 0)
+    }
     readonly property int presentedOverflowCount: access === null ? 0
         : ungrouped ? access.windowOverflowCount : access.overflowCount
     property int dockTileSize: 60
@@ -118,7 +130,7 @@ Item {
     }
 
     function dockDragBegin(fromIndex) {
-        const rows = access !== null ? access.entryRows : []
+        const rows = root.taskRows
         if (fromIndex < 0 || fromIndex >= rows.length) {
             dockDragFrom = -1
             return
@@ -129,7 +141,7 @@ Item {
     }
 
     function dockDragUpdate(pointerX) {
-        const rows = access !== null ? access.entryRows : []
+        const rows = root.taskRows
         dockDragTo = Math.max(0, Math.min(
             rows.length, Math.round(pointerX / dockSlotExtent)))
     }
@@ -149,7 +161,7 @@ Item {
         if (target === from || target === from + 1) {
             return
         }
-        const rows = access.entryRows
+        const rows = root.taskRows
         if (from >= rows.length) {
             return
         }
@@ -263,7 +275,7 @@ Item {
         if (access === null || direction === 0) {
             return
         }
-        const rows = access.entryRows
+        const rows = root.taskRows
         if (index < 0 || index >= rows.length) {
             return
         }
@@ -285,8 +297,10 @@ Item {
     }
 
     readonly property string phase: access !== null ? access.phaseText : "unavailable"
-    readonly property bool stripVisible: access !== null && access.entryCount > 0
-    readonly property bool dockEmpty: dockMode && phase === "empty"
+    readonly property bool stripVisible: access !== null && taskRows.length > 0
+    // Every window claimed by a pinned dock tile leaves nothing to show.
+    readonly property bool dockEmpty: dockMode && (phase === "empty"
+        || (access !== null && access.entryCount > 0 && taskRows.length === 0))
 
     // Passive hover: never consumes events; only tracks the strip-local
     // pointer x that drives the magnification falloff.
@@ -417,6 +431,7 @@ Item {
 
                 entry: modelData
                 access: root.access
+                dockAccess: root.dockAccess
                 vertical: root.vertical
                 dockMode: root.dockMode
                 dockTileSize: root.resolvedDockTileSize

@@ -48,6 +48,11 @@ public:
     // empty when no visible entry matches.
     [[nodiscard]] QString displayNameForAppId(const QString &appId) const;
 
+    // The desktop-entry id of that same matching entry (ADR-0265: the dock
+    // matches running windows to pinned applications with it, so the dock
+    // and the task list agree on which application a window belongs to).
+    [[nodiscard]] QString desktopIdForAppId(const QString &appId) const;
+
     // Presentation name for a compositor window (task list rows, the active
     // application indicator): the entry name for `appId`, else the entry name
     // for `reportedName` (the compositor's resource class: the Wayland app id

@@ -86,6 +86,7 @@ nav:
       - Panel visibility policy: shell/panel-visibility.md
       - Task list source model: shell/task-list.md
       - Dock interactions: shell/dock-interactions.md
+      - Dock items: shell/dock-items.md
       - Global application menu: shell/global-menu.md
       - Notification presentation: shell/notification-presentation.md
       - Power applet presentation: shell/power-applet.md
@@ -417,3 +418,4 @@ nav:
       - "ADR-0262: Applications is browsed in the File Manager's ordinary views": adr/0262-applications-is-browsed-in-the-file-managers-ordinary-views.md
       - "ADR-0263: The Mac-style layout is the default": adr/0263-the-mac-style-layout-is-the-default.md
       - "ADR-0264: Window button styles are data, with title-bar options": adr/0264-window-button-styles-are-data.md
+      - "ADR-0265: Keep the dock's items in one structured Settings1 value": adr/0265-keep-dock-items-in-one-structured-settings-value.md

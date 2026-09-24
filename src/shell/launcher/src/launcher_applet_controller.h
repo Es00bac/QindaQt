@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "launcher_persistence.h"
 #include "qindaqt/shell_launcher/launcher_pinned_recent.h"
+
+#include <qindaqt/services/dock_items/dock_items.h>
 
 #include <QObject>
 #include <QString>
 #include <QVariantList>
+#include <QVariantMap>
 
 namespace QindaQt::Shell::Launcher {
 
 class ApplicationScanner;
 class LaunchExecutor;
-class LauncherPersistenceController;
 
 // Shell-private adapter from the launcher adapters to bounded values for the
 // compiled QindaQt.Shell.Launcher QML module. The QML never sees a catalog,
@@ -54,6 +57,12 @@ public:
   // `query` or `sections`, so other shell controls (quick launch, command
   // search) can read the launcher without disturbing the launcher popup.
   Q_INVOKABLE [[nodiscard]] QVariantList sectionsForQuery(const QString &query) const;
+  // One installed application's display values, the same ones its launcher
+  // rows show: {entryId, displayText, iconName, accessibleDescription,
+  // categoryIdentity}. Empty when no catalog is published yet or the
+  // catalog does not publish that id.
+  Q_INVOKABLE [[nodiscard]] QVariantMap applicationPresentation(const QString &entryId) const;
+  [[nodiscard]] bool hasCatalog() const;
   [[nodiscard]] bool launchGranted() const noexcept { return m_launchGranted; }
   [[nodiscard]] QString persistenceStatus() const;
   [[nodiscard]] QString feedback() const { return m_feedback; }
@@ -62,12 +71,27 @@ public:
   // executor; returns false without side effects when the grant is missing,
   // the executor is absent, or the launch is refused/failed.
   Q_INVOKABLE bool activate(const QString &entryId, const QString &actionId = {});
+  // Pin adds the application to the end of the dock; unpin removes it from
+  // wherever it is in the dock, a group included (ADR-0265).
   Q_INVOKABLE bool pin(const QString &entryId);
   Q_INVOKABLE bool unpin(const QString &entryId);
   Q_INVOKABLE bool movePinnedUp(const QString &entryId);
   Q_INVOKABLE bool movePinnedDown(const QString &entryId);
   Q_INVOKABLE bool clearRecent();
   Q_INVOKABLE void clearFeedback();
+
+  // The dock value behind pinned() (ADR-0265); an empty dock without
+  // persistence. A borrowed reference to the live value: it stays valid for
+  // the persistence's lifetime and its contents change with stateChanged.
+  [[nodiscard]] const QindaQt::Services::DockItems::DockItems &dock() const noexcept;
+  // Whether a dock edit can be admitted right now (confirmed baseline, no
+  // write in flight). Presentation honesty only; editDock re-checks.
+  [[nodiscard]] bool dockEditable() const noexcept;
+  // Applies one dock edit through the persistence rules. On refusal returns
+  // false and, when a refusal string is given, a short English reason for the
+  // caller's own feedback line; nothing is published here.
+  bool editDock(const LauncherPersistenceController::DockEdit &edit,
+                QString *refusal = nullptr);
 
   // AGENT-CONTRACT: the shell's global shortcut calls this; QML connects to
   // openRequested() and opens its own popup. The controller owns no window, so

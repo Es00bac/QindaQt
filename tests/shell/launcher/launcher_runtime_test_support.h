@@ -123,7 +123,8 @@ public:
 
     // The client requires exact scope: every requested key must appear in the
     // reply. Keys the fixture does not set are reported as canonical null,
-    // which the launcher controller treats as absent.
+    // which the launcher controller treats as absent. Clients built on this
+    // fixture are scoped to LauncherPersistenceController::scopedKeys().
     static QVariantMap snapshotWire(const QString &epoch, quint64 revision,
                                     const QVariantMap &values)
     {
@@ -131,8 +132,7 @@ public:
         using Services::SettingsProtocol::WireContract;
         QVariantMap full = values;
         for (const QString &key :
-             { Shell::Launcher::LauncherPersistenceController::pinnedKey(),
-               Shell::Launcher::LauncherPersistenceController::recentKey() }) {
+             Shell::Launcher::LauncherPersistenceController::scopedKeys()) {
             if (!full.contains(key))
                 full.insert(key, QVariant::fromValue(nullptr));
         }

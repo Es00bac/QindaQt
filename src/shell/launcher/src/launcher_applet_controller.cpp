@@ -13,6 +13,10 @@
 
 namespace QindaQt::Shell::Launcher {
 
+using QindaQt::Services::DockItems::DockEditError;
+using QindaQt::Services::DockItems::DockItems;
+using QindaQt::ShellLauncher::LauncherCategory;
+using QindaQt::ShellLauncher::LauncherCategoryModel;
 using QindaQt::ShellLauncher::LauncherPresentation;
 using QindaQt::ShellLauncher::LauncherPresentationModel;
 using QindaQt::ShellLauncher::LauncherStatus;
@@ -24,21 +28,11 @@ using QindaQt::ShellLauncher::SectionLabel;
 
 namespace {
 
-// Stable, locale-independent section identities; the QML adapter translates
+// Stable, locale-independent category identities; the QML adapters translate
 // them (the L0 model deliberately owns no user-facing strings).
-QString sectionIdentity(const PresentationSection &section)
+QString categoryIdentity(LauncherCategory category)
 {
-  switch (section.label) {
-  case SectionLabel::Pinned:
-    return QStringLiteral("pinned");
-  case SectionLabel::Recent:
-    return QStringLiteral("recent");
-  case SectionLabel::SearchResults:
-    return QStringLiteral("searchResults");
-  case SectionLabel::Category:
-    break;
-  }
-  switch (section.category) {
+  switch (category) {
   case QindaQt::ShellLauncher::LauncherCategory::Utilities:
     return QStringLiteral("utilities");
   case QindaQt::ShellLauncher::LauncherCategory::Development:
@@ -65,6 +59,61 @@ QString sectionIdentity(const PresentationSection &section)
     return QStringLiteral("other");
   }
   return QStringLiteral("other");
+}
+
+QString sectionIdentity(const PresentationSection &section)
+{
+  switch (section.label) {
+  case SectionLabel::Pinned:
+    return QStringLiteral("pinned");
+  case SectionLabel::Recent:
+    return QStringLiteral("recent");
+  case SectionLabel::SearchResults:
+    return QStringLiteral("searchResults");
+  case SectionLabel::Category:
+    break;
+  }
+  return categoryIdentity(section.category);
+}
+
+// A short reason for a refused dock edit, shown on the caller's own
+// feedback line (the launcher's or the dock's).
+QString dockRefusal(PersistenceMutation result, DockEditError error)
+{
+  switch (result) {
+  case PersistenceMutation::Applied:
+    return {};
+  case PersistenceMutation::Unavailable:
+    return QStringLiteral("The Dock cannot change until Settings is available");
+  case PersistenceMutation::Busy:
+    return QStringLiteral("The Dock is still saving the previous change");
+  case PersistenceMutation::RejectedByModel:
+    break;
+  }
+  switch (error) {
+  case DockEditError::AlreadyInDock:
+    return QStringLiteral("That item is already in the Dock");
+  case DockEditError::DockFull:
+    return QStringLiteral("The Dock is full");
+  case DockEditError::GroupFull:
+    return QStringLiteral("That group is full");
+  case DockEditError::InvalidItem:
+    return QStringLiteral("That item cannot be kept in the Dock");
+  case DockEditError::NotInDock:
+    return QStringLiteral("That item is no longer in the Dock");
+  case DockEditError::OutOfRange:
+  case DockEditError::WrongKind:
+    return QStringLiteral("The Dock changed; try again");
+  case DockEditError::None:
+    break;
+  }
+  return QStringLiteral("The Dock could not be changed");
+}
+
+const DockItems &emptyDock()
+{
+  static const DockItems empty;
+  return empty;
 }
 
 QVariantList projectSections(const LauncherPresentation &presentation)
@@ -111,7 +160,9 @@ LauncherAppletController::LauncherAppletController(
             this, [this](quint64) { rebuild(); });
   }
   if (m_persistence != nullptr) {
-    connect(m_persistence, &LauncherPersistenceController::pinnedChanged,
+    // dockChanged accompanies every pinnedChanged and also covers dock
+    // changes the sections do not show, which the dock applet still needs.
+    connect(m_persistence, &LauncherPersistenceController::dockChanged,
             this, [this] { rebuild(); });
     connect(m_persistence, &LauncherPersistenceController::recentChanged,
             this, [this] { rebuild(); });
@@ -198,6 +249,56 @@ QVariantList LauncherAppletController::sectionsForQuery(const QString &query) co
       query.left(QindaQt::ShellLauncher::Bounds::maxQueryLength)));
 }
 
+QVariantMap LauncherAppletController::applicationPresentation(const QString &entryId) const
+{
+  if (m_scanner == nullptr || !m_scanner->catalog())
+    return {};
+  const auto entry = m_scanner->catalog()->entry(entryId);
+  if (!entry)
+    return {};
+  const auto item = LauncherPresentationModel::itemFor(*entry, false);
+  return QVariantMap {
+      { QStringLiteral("entryId"), item.entryId },
+      { QStringLiteral("displayText"), item.displayText },
+      { QStringLiteral("iconName"), item.iconName },
+      { QStringLiteral("accessibleDescription"), item.accessibleDescription },
+      { QStringLiteral("categoryIdentity"),
+        categoryIdentity(LauncherCategoryModel::categoryFor(entry->categories)) },
+  };
+}
+
+bool LauncherAppletController::hasCatalog() const
+{
+  return m_scanner != nullptr && m_scanner->catalog().has_value();
+}
+
+const DockItems &LauncherAppletController::dock() const noexcept
+{
+  return m_persistence != nullptr ? m_persistence->dock() : emptyDock();
+}
+
+bool LauncherAppletController::dockEditable() const noexcept
+{
+  return m_persistence != nullptr && m_persistence->persistenceReady()
+      && !m_persistence->writeInFlight();
+}
+
+bool LauncherAppletController::editDock(const LauncherPersistenceController::DockEdit &edit,
+                                        QString *refusal)
+{
+  if (m_persistence == nullptr) {
+    if (refusal != nullptr)
+      *refusal = QStringLiteral("The Dock is unavailable");
+    return false;
+  }
+  const PersistenceMutation result = m_persistence->editDock(edit);
+  if (result == PersistenceMutation::Applied)
+    return true;
+  if (refusal != nullptr)
+    *refusal = dockRefusal(result, m_persistence->lastDockEditError());
+  return false;
+}
+
 void LauncherAppletController::rebuild()
 {
   m_sections = sectionsForQuery(m_query);
@@ -230,7 +331,15 @@ bool LauncherAppletController::pin(const QString &entryId)
 {
   if (m_persistence == nullptr)
     return false;
-  return m_persistence->pin(entryId) == PersistenceMutation::Applied;
+  const PersistenceMutation result = m_persistence->pin(entryId);
+  if (result == PersistenceMutation::Applied)
+    return true;
+  // A full dock is the one refusal a user can act on; say so.
+  if (result == PersistenceMutation::RejectedByModel
+      && m_persistence->lastDockEditError() == DockEditError::DockFull) {
+    publishFeedback(dockRefusal(result, DockEditError::DockFull));
+  }
+  return false;
 }
 
 bool LauncherAppletController::unpin(const QString &entryId)

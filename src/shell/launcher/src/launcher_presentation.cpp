@@ -5,9 +5,9 @@
 #include "qindaqt/shell_launcher/launcher_search_ranker.h"
 
 namespace QindaQt::ShellLauncher {
-namespace {
 
-PresentationItem makeItem(const ApplicationEntry &entry, bool pinned)
+PresentationItem LauncherPresentationModel::itemFor(const ApplicationEntry &entry,
+                                                   bool pinned)
 {
   PresentationItem item;
   item.entryId = entry.id;
@@ -21,6 +21,13 @@ PresentationItem makeItem(const ApplicationEntry &entry, bool pinned)
     item.accessibleDescription = entry.name;
   item.pinned = pinned;
   return item;
+}
+
+namespace {
+
+PresentationItem makeItem(const ApplicationEntry &entry, bool pinned)
+{
+  return LauncherPresentationModel::itemFor(entry, pinned);
 }
 
 LauncherStatus statusFor(const ApplicationCatalog &catalog)

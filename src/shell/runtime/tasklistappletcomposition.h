@@ -89,6 +89,11 @@ public:
     // complete type. Keep the two in step if the controller's alias changes.
     [[nodiscard]] std::function<QString(const QString &applicationId)>
     iconNameResolver() const;
+    // Window app id -> desktop-entry id under the same resolver the icons and
+    // names use (ADR-0265: the dock's running indicators). Same lifetime rule
+    // as iconNameResolver.
+    [[nodiscard]] std::function<QString(const QString &applicationId)>
+    desktopEntryResolver() const;
 
 private:
     void compose(const Applets::ManifestCatalog &catalog,

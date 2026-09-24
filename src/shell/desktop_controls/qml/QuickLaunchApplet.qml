@@ -2,21 +2,28 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as T
 import QtQuick.Layouts
 import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
-// Pinned-application strip: the launcher's pinned entries as icon buttons.
-// Activation, unpinning, and reordering all re-enter the launcher facade.
+// The dock (ADR-0265; "quick launch" on a taskbar): the launcher-owned dock
+// value as tiles — pinned applications, folders, files, groups, and Trash.
+// Activation, grouping, reordering, and removal all re-enter the dock facade;
+// this file only decides which call a click, drop, drag, or menu makes.
+//
+// Dragging a tile along the strip moves it (live gap), onto an application
+// or group groups it, and off the strip across the panel removes it. Things
+// dropped from elsewhere (launcher rows, .desktop files, files, folders, a
+// group member dragged out of its popup) are added at the pointer. The menu
+// repeats every gesture for keyboard users.
 Item {
     id: root
 
     required property var access
     property bool vertical: false
     // Panel composition elects this compact dock presentation. No pin is
-    // synthesized here: rows remain the launcher facade's persisted pins.
+    // synthesized here: rows remain the launcher facade's persisted dock.
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
@@ -37,6 +44,9 @@ Item {
     readonly property int iconExtent: dockMode
         ? Math.min(40, Math.max(16, resolvedDockTileSize - 8))
                                                : Math.max(0, Math.min(20, (vertical ? width : height) - Tokens.space["2"]))
+    readonly property int tileExtent: dockMode ? resolvedDockTileSize
+                                               : iconExtent + Tokens.space["2"] * 2
+    readonly property real slotExtent: tileExtent + Tokens.space["1"]
     // AGENT-GUARD: magnification transforms tile visuals only — delegate
     // sizes, layout bounds, and hit targets never change. Tiles are pinned to
     // Layout preferred sizes, so the swell cannot move the strip.
@@ -57,6 +67,12 @@ Item {
         Math.max(0, (dockMode ? iconExtent
                               : Math.min(40, Math.max(16, resolvedDockTileSize - 8)))
                    - resolvedDockTileSize / 2) + 3
+
+    // AGENT-NOTE: an empty dock is a zero-size chip yet must take its first
+    // drop, so its drop area is a square reaching one tile each way from
+    // that point, over neighbours that accept no drops (the zone viewport
+    // still clips it to the panel).
+    readonly property real emptyDropReach: tileExtent
 
     function dockZoomFor(centerX) {
         if (!dockZoomActive || dockPointerX < 0) {
@@ -100,19 +116,19 @@ Item {
                 root.dockPointerX = hovered ? point.position.x : -1
         }
     }
-    property string contextEntryId: ""
 
     objectName: "quickLaunchApplet"
-    visible: !dockMode || showRows
+    // An empty dock stays present (zero width) so it can accept a drop.
+    visible: !dockMode || showRows || ready
     implicitWidth: showRows ? strip.implicitWidth
                             : (dockMode ? 0 : placeholder.implicitWidth + Tokens.space["2"])
     implicitHeight: showRows ? strip.implicitHeight : (dockMode ? 0 : 28)
 
     Accessible.role: Accessible.Grouping
-    Accessible.name: qsTr("Quick launch")
-    Accessible.description: !ready ? qsTr("Quick launch is not connected")
-                            : rows.length === 0 ? qsTr("No pinned applications")
-                            : qsTr("%1 pinned applications").arg(rows.length)
+    Accessible.name: dockMode ? qsTr("Dock") : qsTr("Quick launch")
+    Accessible.description: !ready ? qsTr("The dock is not connected")
+                            : rows.length === 0 ? qsTr("Nothing is kept in the dock")
+                            : qsTr("%1 items").arg(rows.length)
 
     function focusIndex(index) {
         if (index < 0 || index >= repeater.count)
@@ -120,6 +136,43 @@ Item {
         const item = repeater.itemAt(index)
         if (item !== null)
             item.forceActiveFocus(Qt.TabFocusReason)
+    }
+
+    function activateRow(position, item) {
+        const row = rows[position]
+        if (row === undefined || !ready)
+            return
+        const kind = String(row.kind)
+        if (kind === "group" || kind === "folder")
+            stackPopup.show(row, item)
+        else if (kind === "application")
+            access.activate(String(row.entryId))
+        else
+            access.activateItem(Number(row.index))
+    }
+
+    function openMenu(position, item) {
+        itemMenu.row = rows[position] ?? ({})
+        itemMenu.visualIndex = position
+        itemMenu.anchorTile = item
+        itemMenu.popup(item)
+    }
+
+    function tileAt(position) {
+        return repeater.itemAt(position)
+    }
+
+    DockGestures {
+        id: gestures
+        objectName: "quickLaunchGestures"
+        access: root.access
+        ready: root.ready
+        rows: root.rows
+        vertical: root.vertical
+        slotExtent: root.slotExtent
+        tileExtent: root.tileExtent
+        crossExtent: root.vertical ? root.width : root.height
+        onFocusRequested: (position) => Qt.callLater(root.focusIndex, position)
     }
 
     ShellIcons.Icon {
@@ -133,6 +186,50 @@ Item {
         symbolic: true
         fallbackText: qsTr("Quick launch")
         Accessible.ignored: true
+    }
+
+    // One passive DragHandler on the strip arbitrates tile drags: presses stay
+    // with the tiles, and only a drag past the threshold takes the grab, so a
+    // click never moves anything. The pointer is tracked outside the strip
+    // during the grab, which is how dragging across the panel removes a tile.
+    DragHandler {
+        id: tileDrag
+        target: null
+        enabled: root.showRows && Boolean(root.access.editable)
+        acceptedButtons: Qt.LeftButton
+        onActiveChanged: {
+            if (active)
+                gestures.dragBegin(centroid.pressPosition)
+            else
+                gestures.dragEnd()
+        }
+        onTranslationChanged: gestures.dragUpdate(centroid.position, centroid.pressPosition)
+    }
+
+    DropArea {
+        id: dropArea
+        objectName: "quickLaunchDropArea"
+        x: root.showRows ? 0 : root.width / 2 - root.emptyDropReach
+        y: root.showRows ? 0 : root.height / 2 - root.emptyDropReach
+        width: root.showRows ? root.width : root.emptyDropReach * 2
+        height: root.showRows ? root.height : root.emptyDropReach * 2
+        enabled: root.ready
+        onEntered: (drag) => {
+            const kind = gestures.dropKind(drag)
+            drag.accepted = kind !== "" && Boolean(root.access.editable)
+            if (drag.accepted)
+                gestures.dropHover(Qt.point(drag.x + dropArea.x, drag.y + dropArea.y), kind)
+        }
+        onPositionChanged: (drag) =>
+            gestures.dropHover(Qt.point(drag.x + dropArea.x, drag.y + dropArea.y),
+                               gestures.dropKind(drag))
+        onExited: gestures.dragReset()
+        onDropped: (drop) => {
+            if (gestures.dropCommit(drop))
+                drop.acceptProposedAction()
+            else
+                drop.accepted = false
+        }
     }
 
     GridLayout {
@@ -149,145 +246,100 @@ Item {
             id: repeater
             model: root.rows
 
-            T.Button {
-                id: entryButton
+            DockItemTile {
+                id: tileDelegate
 
                 required property var modelData
                 required property int index
 
-                objectName: "quickLaunchEntry"
-                // The tile owns the entire hover envelope, so magnification
-                // stays inside its hit target and never asks GridLayout to
-                // grow after the pointer moves.
-                Layout.preferredWidth: root.dockMode ? root.resolvedDockTileSize
-                                                      : root.iconExtent + Tokens.space["2"] * 2
-                Layout.preferredHeight: root.dockMode ? root.resolvedDockTileSize
-                                                       : root.iconExtent + Tokens.space["2"] * 2
-                padding: root.dockMode ? 0 : Tokens.space["2"]
-                focusPolicy: Qt.TabFocus
-                hoverEnabled: true
-                enabled: root.ready && Boolean(root.access.launchGranted)
-
-                Accessible.role: Accessible.Button
-                Accessible.name: String(modelData.accessibleName)
-                Accessible.description: String(modelData.accessibleDescription)
-
-                T.ToolTip {
-                    id: quickLaunchTooltip
-                    objectName: "quickLaunchEntryTooltip"
-                    visible: root.dockMode && entryButton.hovered
-                    text: String(entryButton.modelData.accessibleName)
-                    delay: Tokens.motion.short
-                    popupType: T.Popup.Window
-                }
-
-                function activate() { root.access.activate(String(modelData.entryId)) }
-                function openContext() {
-                    root.contextEntryId = String(modelData.entryId)
-                    contextMenu.popup(entryButton)
-                }
-
-                onClicked: activate()
-                Keys.onReturnPressed: activate()
-                Keys.onEnterPressed: activate()
-                Accessible.onPressAction: activate()
+                row: modelData
+                visualIndex: index
+                vertical: root.vertical
+                dockMode: root.dockMode
+                tileExtent: root.tileExtent
+                iconExtent: root.iconExtent
+                reducedMotion: root.reducedMotion
+                luna: root.luna
+                launchEnabled: root.ready && Boolean(root.access.launchGranted)
+                zoomScale: root.dockZoomFor(x + width / 2)
+                mainShift: gestures.shiftFor(index)
+                dragHeld: index === gestures.dragFrom
+                mergeTarget: index === gestures.hoverTarget
+                removing: gestures.dragRemoving && index === gestures.dragFrom
+                onActivated: root.activateRow(index, tileDelegate)
+                onContextRequested: root.openMenu(index, tileDelegate)
                 Keys.onLeftPressed: if (!root.vertical) root.focusIndex(index - 1)
                 Keys.onRightPressed: if (!root.vertical) root.focusIndex(index + 1)
                 Keys.onUpPressed: if (root.vertical) root.focusIndex(index - 1)
                 Keys.onDownPressed: if (root.vertical) root.focusIndex(index + 1)
-                Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Menu
-                            || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) {
-                        openContext()
-                        event.accepted = true
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.RightButton
-                    onClicked: entryButton.openContext()
-                }
-
-                contentItem: Item {
-                    ShellIcons.Icon {
-                        id: entryIcon
-                        objectName: "quickLaunchEntryIcon"
-                        width: size
-                        height: size
-                        anchors.centerIn: parent
-                        name: String(entryButton.modelData.iconName)
-                        size: root.iconExtent
-                        color: entryButton.enabled ? Tokens.fg.default : Tokens.fg.disabled
-                        symbolic: false
-                        fallbackText: String(entryButton.modelData.displayText)
-                        // Bottom-anchored swell inside the tile's reserved
-                        // envelope; the hovered tile is the falloff peak, so
-                        // the zoom subsumes the former flat hover bump.
-                        transformOrigin: Item.Bottom
-                        scale: !root.dockMode
-                               ? (entryButton.hovered && !root.reducedMotion ? 1.08 : 1.0)
-                               : (root.reducedMotion ? 1.0
-                                                     : Math.max(1.0, root.dockZoomFor(
-                                                           entryButton.x
-                                                           + entryButton.width / 2)))
-                        property real hoverLift: root.dockMode && entryButton.hovered && !root.reducedMotion ? -3 : 0
-                        transform: Translate { y: entryIcon.hoverLift }
-                        Accessible.ignored: true
-
-                        // Tokens clamp motion durations for reduced-motion
-                        // accessibility; the applet owns no parallel preference.
-                        Behavior on hoverLift {
-                            NumberAnimation { duration: Tokens.motion.short }
-                        }
-                        Behavior on scale {
-                            NumberAnimation { duration: Tokens.motion.short }
-                        }
-                    }
-                }
-
-                background: Rectangle {
-                    radius: root.dockMode ? Tokens.radius.l : Tokens.radius.m
-                    // Luna tiles keep a translucent white hover so the state
-                    // stays visible on the dark taskbar gradient.
-                    color: entryButton.down ? (root.luna ? "#33518f" : Tokens.state.pressed)
-                         : entryButton.hovered ? (root.luna ? "#3d6cb8" : Tokens.state.hover)
-                         : "transparent"
-                    C.FocusRing { anchors.fill: parent; control: entryButton }
-                }
             }
         }
     }
 
-    // QindaQt.Controls ships no menu primitive yet (task-list precedent); the
-    // context menu uses the QQC2 style palette and owns no applet colors.
-    T.Menu {
-        id: contextMenu
-        objectName: "quickLaunchContextMenu"
-        popupType: T.Popup.Window
+    // "Drag here to remove": said in words while a tile hovers off the strip.
+    C.Label {
+        objectName: "quickLaunchRemoveHint"
+        visible: gestures.dragRemoving
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.top
+        text: qsTr("Release to remove from the Dock")
+        Accessible.role: Accessible.AlertMessage
+    }
 
-        T.MenuItem {
-            objectName: "quickLaunchMoveUp"
-            text: root.vertical ? qsTr("Move up") : qsTr("Move left")
-            onTriggered: root.access.moveUp(root.contextEntryId)
+    DockItemMenu {
+        id: itemMenu
+        vertical: root.vertical
+        visualCount: root.rows.length
+        trashInDock: root.ready && Boolean(root.access.trashInDock)
+        onOpenRequested: root.activateRow(itemMenu.visualIndex, itemMenu.anchorTile)
+        onOpenNewWindowRequested: root.access.openNewWindow(String(itemMenu.row.entryId))
+        onOpenInFileManagerRequested:
+            root.access.openInFileManager(Number(itemMenu.row.index))
+        onEmptyTrashRequested: promptPopup.ask("emptyTrash", Number(itemMenu.row.index), "",
+                                               itemMenu.anchorTile)
+        onNewGroupRequested: {
+            const title = gestures.categoryTitle(String(itemMenu.row.categoryIdentity ?? ""))
+            promptPopup.ask("newGroup", Number(itemMenu.row.index),
+                            title.length > 0 ? title : qsTr("New Group"), itemMenu.anchorTile)
         }
-        T.MenuItem {
-            objectName: "quickLaunchMoveDown"
-            text: root.vertical ? qsTr("Move down") : qsTr("Move right")
-            onTriggered: root.access.moveDown(root.contextEntryId)
-        }
-        T.MenuItem {
-            objectName: "quickLaunchUnpin"
-            text: qsTr("Unpin")
-            onTriggered: root.access.unpin(root.contextEntryId)
+        onRenameRequested: promptPopup.ask("rename", Number(itemMenu.row.index),
+                                           String(itemMenu.row.displayText), itemMenu.anchorTile)
+        onUngroupRequested: root.access.ungroup(Number(itemMenu.row.index))
+        onMoveRequested: (direction) => gestures.moveRow(itemMenu.visualIndex, direction)
+        onRemoveRequested: root.access.removeItem(Number(itemMenu.row.index))
+        onShowTrashRequested: root.access.showTrash()
+    }
+
+    DockStackPopup {
+        id: stackPopup
+        access: root.access
+        reducedMotion: root.reducedMotion
+        vertical: root.vertical
+        dockRows: root.rows
+        tileAt: root.tileAt
+    }
+
+    DockPromptPopup {
+        id: promptPopup
+        vertical: root.vertical
+        onConfirmed: (mode, targetIndex, text) => {
+            if (!root.ready)
+                return
+            if (mode === "emptyTrash")
+                root.access.emptyTrash()
+            else if (mode === "newGroup")
+                root.access.newGroup(targetIndex, text)
+            else
+                root.access.renameGroup(targetIndex, text)
         }
     }
 
     ControlPopupFrame {
         id: feedbackPopup
         objectName: "quickLaunchFeedbackPopup"
-        visible: root.ready && Boolean(root.access.feedbackPresent)
-        heading: qsTr("Quick launch")
+        // The group/folder popup shows the same line inline while it is open.
+        visible: root.ready && Boolean(root.access.feedbackPresent) && !stackPopup.visible
+        heading: root.dockMode ? qsTr("Dock") : qsTr("Quick launch")
         feedback: root.ready ? String(root.access.feedback) : ""
         initialFocusItem: dismiss
 

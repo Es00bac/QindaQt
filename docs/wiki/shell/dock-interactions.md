@@ -6,7 +6,9 @@ contracts for dock growth, overflow scrolling, magnification, drag-and-drop
 reordering, hover previews, translucency, and the panel right-click
 configuration menu. The task-list data contracts stay in
 [Task list source model](task-list.md); surface geometry stays in
-[Production panel surfaces](panel-surfaces.md).
+[Production panel surfaces](panel-surfaces.md). The dock's pinned
+applications, folders, files, groups, and Trash, with their drag and drop,
+are [Dock items](dock-items.md).
 
 ## Growth and overflow
 

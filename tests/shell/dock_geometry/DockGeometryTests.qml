@@ -96,6 +96,40 @@ Item {
             verify(panel.inputBounds.width >= material.width)
         }
 
+        // ADR-0265: a running pinned application is its dock tile. The task
+        // strip hands the claimed windows to the dock, so the fit arithmetic
+        // counts each application once; a zone without the pins claims none.
+        function test_pinnedTilesClaimTheirTaskTiles() {
+            const pins = { id: "pins", plugin: "quick-launch",
+                settings: { zone: "center", dockMode: true },
+                runtime: { ready: true, entryPoint: "qindaqt.applets.quick-launch" } }
+            const tasks = { id: "tasks", plugin: "task-list",
+                settings: { zone: "center", dockMode: true },
+                runtime: { ready: true, entryPoint: "qindaqt.applets.task-list" } }
+            panel.desktopControlsAccess = ({ quickLaunch: {
+                rows: [{ index: 0 }, { index: 1 }], claimedTaskIds: ["w-a"] } })
+            panel.taskListAppletAccess = ({ entryCount: 3 })
+            panel.panel = { id: "claim-dock", edge: "bottom", alignment: "center",
+                rows: 1, thickness: 80, applets: [pins, tasks] }
+            wait(20)
+            let center = findChild(panel, "panelZoneCenter")
+            compare(center.dockClaimedTaskIds, ["w-a"])
+            compare(center.dockUnitCount, 4)
+            const strips = root.named(panel, "taskListApplet")
+            compare(strips.length, 1)
+            compare(strips[0].dockClaimedTaskIds, ["w-a"])
+            compare(strips[0].dockAccess, panel.desktopControlsAccess.quickLaunch)
+
+            panel.panel = { id: "tasks-only", edge: "bottom", alignment: "center",
+                rows: 1, thickness: 80, applets: [tasks] }
+            wait(20)
+            center = findChild(panel, "panelZoneCenter")
+            compare(center.dockClaimedTaskIds.length, 0)
+            compare(center.dockUnitCount, 3)
+            panel.desktopControlsAccess = null
+            panel.taskListAppletAccess = null
+        }
+
         function test_tilesShrinkWithoutChangingPreference() {
             panel.width = 240
             panel.launcherAppletAccess = ({})

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "quick-launch",
   "name": "Quick Launch",
-  "description": "Shows the launcher's pinned applications as icon buttons that start, unpin, and reorder them.",
+  "description": "The dock: pinned applications, folders, files, groups of applications, and the Trash as tiles that open, group, reorder, and accept dropped items; running pinned applications show a running indicator.",
   "apiVersion": "1.0",
   "entryPoint": {
     "kind": "builtin",
@@ -35,7 +35,9 @@
     }
   },
   "capabilities": [
-    "applications.launch"
+    "applications.launch",
+    "windows.read",
+    "windows.activate"
   ],
   "settingsSchema": {
     "type": "object",
