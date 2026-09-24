@@ -95,6 +95,10 @@ qt_add_executable(
     qindaqt_network_secret_agent_ip_config_tests
     tst_network_secret_agent_ip_config.cpp
 )
+target_include_directories(
+    qindaqt_network_secret_agent_ip_config_tests
+    PRIVATE ${PROJECT_SOURCE_DIR}/src/services/network_secret_agent/src
+)
 target_link_libraries(
     qindaqt_network_secret_agent_ip_config_tests
     PRIVATE qindaqt_network_secret_agent_test_bus Qt6::Test

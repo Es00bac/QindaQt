@@ -2,9 +2,11 @@
 
 #include "secret_request_admission_p.h"
 #include "secret_request_policy_p.h"
+#include "secret_agent_types_p.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRegularExpression>
+#include <QtCore/QScopeGuard>
 #include <QtCore/QSet>
 
 #include <algorithm>
@@ -23,8 +25,10 @@ QString connectionName(const NmSettingsMap &connection) {
   if (section == connection.cend()) {
     return {};
   }
-  const QString id = section->value(QStringLiteral("id")).toString();
-  const QString uuid = section->value(QStringLiteral("uuid")).toString();
+  QString id = section->value(QStringLiteral("id")).toString();
+  const auto wipeId = qScopeGuard([&id] { wipeStringValue(id); });
+  QString uuid = section->value(QStringLiteral("uuid")).toString();
+  const auto wipeUuid = qScopeGuard([&uuid] { wipeStringValue(uuid); });
   static const QRegularExpression uuidPattern(
       QStringLiteral("^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-5][0-9A-Fa-f]{3}-"
                      "[89ABab][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$"));
@@ -74,8 +78,10 @@ QStringList wifiFields(const QVariantMap &setting, const QStringList &hints) {
     }
     return result;
   }
-  const QString keyManagement =
+  QString keyManagement =
       setting.value(QStringLiteral("key-mgmt")).toString();
+  const auto wipeKeyManagement =
+      qScopeGuard([&keyManagement] { wipeStringValue(keyManagement); });
   if (keyManagement == QStringLiteral("none")) {
     const quint32 index =
         std::min(setting.value(QStringLiteral("wep-tx-keyidx")).toUInt(), 3U);
@@ -105,6 +111,20 @@ QStringList enterpriseFields(const QStringList &hints) {
   return result;
 }
 
+bool validPromptBytes(const SecretValue &value, const qsizetype maximumLength) {
+  if (value.bytes.isEmpty() || value.bytes.contains('\0') ||
+      value.bytes.size() > maximumLength) {
+    return false;
+  }
+  QString decoded = QString::fromUtf8(value.bytes);
+  const auto wipeDecoded =
+      qScopeGuard([&decoded] { wipeStringValue(decoded); });
+  QByteArray encoded = decoded.toUtf8();
+  const auto wipeEncoded =
+      qScopeGuard([&encoded] { wipeByteArrayValue(encoded); });
+  return encoded == value.bytes;
+}
+
 } // namespace
 
 QString flagsKey(const QString &key) {
@@ -129,7 +149,8 @@ std::optional<PromptRequest> promptFor(const GetSecretsRequest &request,
       !boundedConnection(request.connection) || !validHints(request.hints)) {
     return std::nullopt;
   }
-  const QString name = connectionName(request.connection);
+  QString name = connectionName(request.connection);
+  const auto wipeName = qScopeGuard([&name] { wipeStringValue(name); });
   if (name.isEmpty()) {
     return std::nullopt;
   }
@@ -146,8 +167,8 @@ std::optional<PromptRequest> promptFor(const GetSecretsRequest &request,
   if (keys.isEmpty()) {
     return std::nullopt;
   }
-  PromptRequest result{
-      requestId, name, request.connectionPath, request.settingName, {}};
+  PromptRequest result{requestId, std::move(name), request.connectionPath,
+                       request.settingName, {}};
   result.fields.reserve(keys.size());
   for (const QString &key : std::as_const(keys)) {
     result.fields.append(field(key));
@@ -168,9 +189,7 @@ SecretReply replyFor(const PromptRequest &request, PromptResult &result) {
                        return candidate.key == field.key;
                      });
     if (valueIt == result.values.end() || seen.contains(valueIt->key) ||
-        valueIt->bytes.isEmpty() || valueIt->bytes.contains('\0') ||
-        valueIt->bytes.size() > field.maximumLength ||
-        QString::fromUtf8(valueIt->bytes).toUtf8() != valueIt->bytes) {
+        !validPromptBytes(*valueIt, field.maximumLength)) {
       reply.wipe();
       result.wipe();
       return {};

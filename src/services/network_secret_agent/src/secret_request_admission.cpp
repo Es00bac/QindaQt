@@ -3,10 +3,12 @@
 #include "secret_agent_types_p.h"
 #include "secret_request_admission_p.h"
 
+#include <QtCore/QScopeGuard>
 #include <QtDBus/QDBusArgument>
 #include <QtDBus/QDBusVariant>
 
 #include <algorithm>
+#include <limits>
 
 namespace QindaQt::Network::SecretAgent::Private {
 namespace {
@@ -92,6 +94,8 @@ bool walkByteArrays(const QDBusArgument &cursor, qsizetype &aggregate,
     }
     QByteArray bytes;
     cursor >> bytes;
+    const auto wipeBytes =
+        qScopeGuard([&bytes] { wipeByteArrayValue(bytes); });
     if (!consumeBytes(bytes.size(), aggregate)) {
       return false;
     }
@@ -111,10 +115,16 @@ bool walkIpv6Records(const QDBusArgument &cursor, qsizetype &aggregate,
     }
     cursor.beginStructure();
     QByteArray address;
+    cursor >> address;
+    const auto wipeAddress =
+        qScopeGuard([&address] { wipeByteArrayValue(address); });
     quint32 prefix = 0;
+    cursor >> prefix;
     QByteArray nextHop;
+    cursor >> nextHop;
+    const auto wipeNextHop =
+        qScopeGuard([&nextHop] { wipeByteArrayValue(nextHop); });
     quint32 metric = 0;
-    cursor >> address >> prefix >> nextHop;
     if (hasMetric) {
       cursor >> metric;
     }
@@ -153,14 +163,15 @@ bool walkStringMap(const QDBusArgument &cursor, qsizetype &aggregate,
     QString key;
     QString text;
     cursor.beginMapEntry();
-    cursor >> key >> text;
+    cursor >> key;
+    const auto wipeKey = qScopeGuard([&key] { wipeStringValue(key); });
+    cursor >> text;
+    const auto wipeText = qScopeGuard([&text] { wipeStringValue(text); });
     cursor.endMapEntry();
     const bool accepted = boundedText(key) &&
-                          consumeBytes(key.toUtf8().size(), aggregate) &&
+                          consumeBytes(utf8ByteCount(key), aggregate) &&
                           boundedText(text, true) &&
-                          consumeBytes(text.toUtf8().size(), aggregate);
-    wipeStringValue(key);
-    wipeStringValue(text);
+                          consumeBytes(utf8ByteCount(text), aggregate);
     if (!accepted) {
       return false;
     }
@@ -182,14 +193,16 @@ bool walkVariantMap(const QDBusArgument &cursor, qsizetype &aggregate,
     QString key;
     QDBusVariant wrapped;
     cursor.beginMapEntry();
-    cursor >> key >> wrapped;
+    cursor >> key;
+    const auto wipeKey = qScopeGuard([&key] { wipeStringValue(key); });
+    cursor >> wrapped;
     cursor.endMapEntry();
     QVariant entry = wrapped.variant();
+    const auto wipeEntry =
+        qScopeGuard([&entry] { wipeVariantValue(entry); });
     const bool accepted = boundedText(key) &&
-                          consumeBytes(key.toUtf8().size(), aggregate) &&
+                          consumeBytes(utf8ByteCount(key), aggregate) &&
                           consumeVariant(entry, aggregate, depth + 1);
-    // Scrubs the shared payload allocation, so `wrapped` is covered too.
-    wipeVariantValue(entry);
     if (!accepted) {
       return false;
     }
@@ -273,10 +286,13 @@ bool consumeAssociative(const Associative &values, qsizetype &aggregate,
       !consumeBytes(values.size() * qsizetype(sizeof(QVariant)), aggregate)) {
     return false;
   }
-  for (auto entry = values.cbegin(); entry != values.cend(); ++entry) {
-    if (!boundedText(entry.key()) ||
-        !consumeBytes(entry.key().toUtf8().size(), aggregate) ||
-        !consumeVariant(entry.value(), aggregate, depth + 1)) {
+  for (auto entry = values.keyValueBegin();
+       entry != values.keyValueEnd(); ++entry) {
+    const QString &key = entry->first;
+    const QVariant &value = entry->second;
+    if (!boundedText(key) ||
+        !consumeBytes(utf8ByteCount(key), aggregate) ||
+        !consumeVariant(value, aggregate, depth + 1)) {
       return false;
     }
   }
@@ -291,7 +307,7 @@ bool consumeStrings(const QStringList &values, qsizetype &aggregate,
   }
   for (const QString &text : values) {
     if (!boundedText(text, true) ||
-        !consumeBytes(text.toUtf8().size(), aggregate)) {
+        !consumeBytes(utf8ByteCount(text), aggregate)) {
       return false;
     }
   }
@@ -305,20 +321,28 @@ bool consumeVariant(const QVariant &value, qsizetype &aggregate,
   }
   switch (value.typeId()) {
   case QMetaType::QString: {
-    const QString text = value.toString();
+    const auto &text = *static_cast<const QString *>(value.constData());
     return boundedText(text, true) &&
-           consumeBytes(text.toUtf8().size(), aggregate);
+           consumeBytes(utf8ByteCount(text), aggregate);
   }
   case QMetaType::QByteArray:
-    return consumeBytes(value.toByteArray().size(), aggregate);
+    return consumeBytes(
+        static_cast<const QByteArray *>(value.constData())->size(), aggregate);
   case QMetaType::QStringList:
-    return consumeStrings(value.toStringList(), aggregate, depth);
+    return consumeStrings(
+        *static_cast<const QStringList *>(value.constData()), aggregate, depth);
   case QMetaType::QVariantList:
-    return consumeList(value.toList(), aggregate, depth);
+    return consumeList(
+        *static_cast<const QVariantList *>(value.constData()), aggregate,
+        depth);
   case QMetaType::QVariantMap:
-    return consumeAssociative(value.toMap(), aggregate, depth);
+    return consumeAssociative(
+        *static_cast<const QVariantMap *>(value.constData()), aggregate,
+        depth);
   case QMetaType::QVariantHash:
-    return consumeAssociative(value.toHash(), aggregate, depth);
+    return consumeAssociative(
+        *static_cast<const QVariantHash *>(value.constData()), aggregate,
+        depth);
   case QMetaType::Bool:
     return consumeBytes(sizeof(bool), aggregate);
   case QMetaType::Char:
@@ -338,11 +362,15 @@ bool consumeVariant(const QVariant &value, qsizetype &aggregate,
     return consumeBytes(sizeof(quint64), aggregate);
   default:
     if (value.metaType() == QMetaType::fromType<QDBusArgument>()) {
-      return consumeWire(value.value<QDBusArgument>(), aggregate, depth);
+      return consumeWire(
+          *static_cast<const QDBusArgument *>(value.constData()), aggregate,
+          depth);
     }
     if (value.metaType() == QMetaType::fromType<QDBusVariant>()) {
-      return consumeVariant(value.value<QDBusVariant>().variant(), aggregate,
-                            depth + 1);
+      const auto &wrapped =
+          *static_cast<const QDBusVariant *>(value.constData());
+      const QVariant nested = wrapped.variant();
+      return consumeVariant(nested, aggregate, depth + 1);
     }
     return false;
   }
@@ -352,7 +380,41 @@ bool consumeVariant(const QVariant &value, qsizetype &aggregate,
 
 bool boundedText(const QString &text, const bool allowEmpty) {
   return (allowEmpty || !text.isEmpty()) && !text.contains(QChar::Null) &&
-         text.toUtf8().size() <= kMaximumTextBytes;
+         utf8ByteCount(text) <= kMaximumTextBytes;
+}
+
+qsizetype utf8ByteCount(const QString &text) noexcept {
+  // AGENT-GUARD: Admission must count secret text without materializing an
+  // unwiped UTF-8 QByteArray. Count valid pairs as four bytes and lone
+  // surrogates as the three-byte U+FFFD replacement so malformed UTF-16 cannot
+  // bypass the text budget.
+  qsizetype bytes = 0;
+  constexpr qsizetype maximum = std::numeric_limits<qsizetype>::max();
+  for (qsizetype index = 0; index < text.size(); ++index) {
+    const quint16 first = text.at(index).unicode();
+    qsizetype encoded = 0;
+    if (first <= 0x7fU) {
+      encoded = 1;
+    } else if (first <= 0x7ffU) {
+      encoded = 2;
+    } else if (first >= 0xd800U && first <= 0xdbffU &&
+               index + 1 < text.size()) {
+      const quint16 second = text.at(index + 1).unicode();
+      if (second >= 0xdc00U && second <= 0xdfffU) {
+        encoded = 4;
+        ++index;
+      } else {
+        encoded = 3;
+      }
+    } else {
+      encoded = 3;
+    }
+    if (bytes > maximum - encoded) {
+      return maximum;
+    }
+    bytes += encoded;
+  }
+  return bytes;
 }
 
 bool boundedConnection(const NmSettingsMap &connection) {
@@ -360,22 +422,26 @@ bool boundedConnection(const NmSettingsMap &connection) {
     return false;
   }
   qsizetype aggregate = 0;
-  for (auto section = connection.cbegin(); section != connection.cend();
-       ++section) {
-    if (!boundedText(section.key()) ||
-        section.value().size() > kMaximumProperties) {
+  for (auto section = connection.keyValueBegin();
+       section != connection.keyValueEnd(); ++section) {
+    const QString &sectionName = section->first;
+    const QVariantMap &properties = section->second;
+    if (!boundedText(sectionName) ||
+        properties.size() > kMaximumProperties) {
       return false;
     }
-    if (!consumeBytes(section.key().toUtf8().size(), aggregate)) {
+    if (!consumeBytes(utf8ByteCount(sectionName), aggregate)) {
       return false;
     }
-    for (auto property = section.value().cbegin();
-         property != section.value().cend(); ++property) {
-      if (!boundedText(property.key())) {
+    for (auto property = properties.keyValueBegin();
+         property != properties.keyValueEnd(); ++property) {
+      const QString &propertyName = property->first;
+      const QVariant &propertyValue = property->second;
+      if (!boundedText(propertyName)) {
         return false;
       }
-      if (!consumeBytes(property.key().toUtf8().size(), aggregate) ||
-          !consumeVariant(property.value(), aggregate, 0)) {
+      if (!consumeBytes(utf8ByteCount(propertyName), aggregate) ||
+          !consumeVariant(propertyValue, aggregate, 0)) {
         return false;
       }
     }

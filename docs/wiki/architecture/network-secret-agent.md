@@ -46,7 +46,11 @@ The 65,536-byte aggregate budget traverses supported nested lists, string
 lists, maps, and hashes, counts container/key overhead and scalar payloads,
 and permits at most 256 entries per nested container and eight nested levels.
 An invalid value or any metatype the admission walker cannot account for is
-rejected rather than treated as zero bytes.
+rejected rather than treated as zero bytes. UTF-8 byte lengths are counted
+directly from QString UTF-16 code units, so admission does not allocate an
+encoded copy of a secret; valid surrogate pairs count as four bytes and lone
+surrogates count as the three-byte U+FFFD replacement so malformed UTF-16
+cannot bypass the text budget.
 
 NetworkManager's ordinary `GetSecrets` profile includes IP address and route
 properties even when DHCP leaves their arrays empty. Inside a variant Qt D-Bus
@@ -68,7 +72,9 @@ the same item, depth, and aggregate limits:
 
 Unfamiliar signatures still fail closed. Wire values are read through a
 detached copy, so the inbound map is left intact for the recursive scrub;
-decoded `a{sv}` values and `a{ss}` strings are overwritten after counting.
+decoded `a{sv}` keys and values, `a{ss}` keys and values, and byte arrays in
+`aay` and IPv6 records are overwritten after counting, including limit
+refusal.
 The private-bus `ip-config` regression covers the exact NetworkManager 1.56
 DHCP profile shape and the admitted and first-excess bound for every form.
 Before this, every new secured Wi-Fi request was refused as over-budget before
@@ -117,9 +123,10 @@ no settings store, secret store, cache, QindaQt D-Bus credential API, or
 payload logging.
 
 All directly owned byte and UTF-16 allocations are overwritten without a
-copy-on-write detach before release. The temporary reply map is overwritten
-and cleared immediately after synchronous D-Bus serialization. Every
-`GetSecrets`, `SaveSecrets`, and `DeleteSecrets` input map is recursively
+copy-on-write detach before release. Recursive input scrubbing covers map
+keys and values as well as list elements. The temporary reply map is
+overwritten and cleared immediately after synchronous D-Bus serialization.
+Every `GetSecrets`, `SaveSecrets`, and `DeleteSecrets` input map is recursively
 overwritten on method return, including rejected calls, because the standard
 inputs can contain NetworkManager-owned secrets. No `QString` secret is
 retained by the process. Diagnostics contain fixed redacted text only.

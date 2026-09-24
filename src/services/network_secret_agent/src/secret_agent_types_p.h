@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <QtCore/QByteArray>
 #include <QtCore/QVariant>
 
 namespace QindaQt::Network::SecretAgent::Private {
@@ -13,5 +14,8 @@ void wipeVariantValue(QVariant &value) noexcept;
 // Scrub a decoded, directly owned string (shared allocations included) before
 // releasing it. Static or raw-data views are cleared without writing.
 void wipeStringValue(QString &text) noexcept;
+
+// Scrub a decoded byte array without detaching its shared allocation.
+void wipeByteArrayValue(QByteArray &bytes) noexcept;
 
 } // namespace QindaQt::Network::SecretAgent::Private
