@@ -6,8 +6,10 @@ contract are [ADR-0226](../adr/0226-configure-the-screen-saver.md); the saver
 itself remains decoration, never a lock
 ([ADR-0215](../adr/0215-the-idle-screensaver-is-decoration-not-a-lock.md)),
 and the lock screen draws the chosen saver through the wallpaper plugin
-([ADR-0216](../adr/0216-the-locker-draws-the-screensaver.md)). The route was
-split out of the Power route, whose Screensaver section it replaces.
+([ADR-0216](../adr/0216-the-locker-draws-the-screensaver.md)). Preview follows
+the separate [ADR-0259](../adr/0259-preview-screen-savers-without-the-lock-screen.md)
+contract. The route was split out of the Power route, whose Screensaver
+section it replaces.
 
 ## What the route shows
 
@@ -20,11 +22,14 @@ split out of the Power route, whose Screensaver section it replaces.
   `--all-screens`). Only system application directories are scanned, so the
   persisted token can never resolve to a user-planted file. A **Start after**
   delay (1–240 minutes) is enabled only when a real program was chosen.
-- **Preview** — opens the choice without locking the session: savers the
-  locker's wallpaper plugin can draw, and Blank screen, through
-  `kscreenlocker_greet --testing`; any other saver runs as itself, as it
-  appears while idle and unlocked. The button is disabled while a preference
-  write is in flight and refuses to stack a second preview.
+- **Preview** — runs each discovered saver as its own program with the same
+  catalog arguments used by the unlocked idle path, regardless of whether the
+  lock screen can draw that saver. Blank screen opens a full-screen black
+  window on each display. Any key (including Escape), click, or pointer
+  movement closes Blank; the saver program exits on its normal input path. The
+  preview never starts the lock screen or changes its policy. The button is
+  disabled while a preference write is in flight, a second preview cannot
+  stack, and launch failures appear on the page.
 - **Locking** — the walk-away section: whether the session locks
   automatically when idle, and after how long. This is the same shared
   screen-lock model and store the Power route's Screen lock section uses;
@@ -32,10 +37,10 @@ split out of the Power route, whose Screensaver section it replaces.
   `[Daemon]` truth. When that truth cannot be read or written, the section
   says so with the reason.
 
-The status line says which lock-screen behaviour is in effect: a saver the
-greeter can draw keeps showing while locked, any other saver leaves the lock
-screen's own wallpaper alone, and Blank screen is the plugin's painted dark
-ground.
+The status line says which lock-screen behaviour is in effect: a saver with a
+wallpaper-plugin scene keeps showing while locked, any other saver leaves the
+lock screen's own wallpaper alone, and Blank screen is the plugin's painted
+dark ground.
 
 ## Authority and write boundary
 
@@ -82,7 +87,8 @@ except the explicitly requested preview.
 ## What this route does not claim
 
 - It does not lock the session, and the preview never does either. The lock
-  authority stays with KScreenLocker.
+  authority stays with KScreenLocker. Preview does not inhibit the session's
+  normal idle-lock timeout.
 - The lock-screen take-over follows the saver only for savers that ship a
   QML scene in the wallpaper plugin; a saver without one leaves the lock
   wallpaper unchanged, and the page says so.
@@ -110,9 +116,11 @@ except the explicitly requested preview.
   wallpaper over, remembering exactly one displaced plugin and giving it
   back, `blank` keeping the plugin installed, and never moving a `[Daemon]`
   key.
-- `qindaqt.settings-screensaver-preview`: kind resolution per token class,
-  nothing-to-preview and never-stack refusals, and the process boundary
-  itself.
+- `qindaqt.settings-screensaver-preview`: every discovered token starts its
+  own resolved program with the catalog arguments; `blank` opens the black
+  full-screen window and closes on key, Escape, click, or pointer movement;
+  `none`/unknown tokens refuse; failures surface; previews never stack; and
+  the greeter is never resolved or invoked.
 - `qindaqt.settings-screensaver-page`: the selector reflects truth and
   writes tokens, restores confirmed keyboard choices after refusal, shows
   no false selection before a baseline, disables delay for the built-ins,

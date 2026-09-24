@@ -30,7 +30,7 @@ set_tests_properties(qindaqt.settings-screensaver-lock-screen-saver-store PROPER
 qt_add_executable(qindaqt_screensaver_preview_tests
     tst_screensaver_preview.cpp)
 target_link_libraries(qindaqt_screensaver_preview_tests
-    PRIVATE qindaqt_settings_screensaver Qt6::Test)
+    PRIVATE qindaqt_settings_screensaver Qt6::Quick Qt6::Test)
 qindaqt_enable_warnings(qindaqt_screensaver_preview_tests)
 add_test(NAME qindaqt.settings-screensaver-preview
     COMMAND qindaqt_screensaver_preview_tests)

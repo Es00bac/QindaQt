@@ -408,3 +408,4 @@ nav:
       - "ADR-0254: Window Settings session apply truth": adr/0254-separate-window-settings-from-session-apply-truth.md
       - "ADR-0255: Persist per-application notification policies through Settings1": adr/0255-persist-per-application-notification-policies-through-settings1.md
       - "ADR-0256: Refresh Audio1 after package upgrades at session entry": adr/0256-refresh-audio1-after-package-upgrades.md
+      - "ADR-0259: Preview screen savers without the lock screen": adr/0259-preview-screen-savers-without-the-lock-screen.md

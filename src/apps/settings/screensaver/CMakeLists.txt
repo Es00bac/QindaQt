@@ -2,8 +2,9 @@
 
 # The Screen saver route (ADR-0226): the model layer over the purpose-scoped
 # Settings1 pair `power.screensaver` / `power.screensaverMinutes`, the lock
-# screen saver mirror (kscreenlockerrc [Greeter] only), and the testing-mode
-# preview boundary. The walk-away lock section on the same page reuses
+# screen saver mirror (kscreenlockerrc [Greeter] only), and the unlocked
+# saver/black-window preview boundary. The walk-away lock section on the same
+# page reuses
 # qindaqt_settings_screen_lock; neither store may write the other's group.
 qt_add_library(qindaqt_settings_screensaver STATIC)
 target_sources(
@@ -29,7 +30,7 @@ find_package(KF6Config 6.0 REQUIRED CONFIG)
 target_link_libraries(
     qindaqt_settings_screensaver
     PUBLIC QindaQt::DesktopControls QindaQt::SettingsClient Qt6::Core
-    PRIVATE KF6::ConfigCore
+    PRIVATE KF6::ConfigCore Qt6::Quick
 )
 target_compile_features(qindaqt_settings_screensaver PUBLIC cxx_std_20)
 set_target_properties(

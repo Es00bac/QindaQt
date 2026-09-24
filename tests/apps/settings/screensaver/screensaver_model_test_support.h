@@ -22,8 +22,8 @@ inline constexpr auto kSaverKey = "power.screensaver";
 inline constexpr auto kMinutesKey = "power.screensaverMinutes";
 
 // The installed saver set, fixed for the test: two savers the locker's
-// wallpaper plugin can draw and one it cannot, which is the split the
-// mirror and the status line must be honest about.
+// wallpaper plugin can draw and one it cannot. Preview ignores that display
+// metadata and runs every discovered saver as its own program.
 class FakeScreensaverCatalog final : public ScreensaverCatalog {
 public:
     [[nodiscard]] QList<ScreensaverCatalogEntry> entries() const override
@@ -51,10 +51,11 @@ public:
     [[nodiscard]] Kind kindFor(const QString &token) const override
     {
         if (unavailable) return Kind::Unavailable;
-        if (token == ScreensaverPreferences::blankToken()) return Kind::TestingGreeter;
+        if (token == ScreensaverPreferences::blankToken())
+            return Kind::BlackWindow;
         if (token == QStringLiteral("qinda-patrol")
             || token == QStringLiteral("circuit-reef")) {
-            return Kind::TestingGreeter;
+            return Kind::SaverProgram;
         }
         if (token == QStringLiteral("prism-brawl")) return Kind::SaverProgram;
         return Kind::Unavailable;
