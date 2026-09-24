@@ -5,6 +5,7 @@
 
 #include "audioappletcomposition.h"
 #include "bluetoothappletcomposition.h"
+#include "networkappletcomposition.h"
 #include "smartlightsappletcomposition.h"
 #include "voiceappletcomposition.h"
 #include "obsappletcomposition.h"
@@ -186,6 +187,8 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
         std::make_unique<AudioAppletComposition>(m_applets, m_appletPolicy);
     m_bluetoothApplet =
         std::make_unique<BluetoothAppletComposition>(m_applets, m_appletPolicy);
+    m_networkApplet =
+        std::make_unique<NetworkAppletComposition>(m_applets, m_appletPolicy);
     m_smartLightsApplet =
         std::make_unique<SmartLightsAppletComposition>(m_applets, m_appletPolicy);
     m_obsApplet =

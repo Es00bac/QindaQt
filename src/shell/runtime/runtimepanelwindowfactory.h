@@ -109,6 +109,10 @@ public:
     // no-op while RuntimePanel.qml has not yet declared the property, so the
     // C++ and QML halves of this wiring may land in either order.
     void setDesktopControlsAccess(QObject *access) noexcept;
+    // Network applet facade (ADR-0258). Set after construction, like the
+    // desktop controls facade, so the long positional constructor is not
+    // widened for one more borrowed applet.
+    void setNetworkAppletAccess(QObject *access) noexcept;
     // The gather overview composition (the panel button half of the
     // Meta+G gesture). Set after construction for the same reason as
     // the desktop controls facade above; ShellRuntimeApplication
@@ -141,6 +145,7 @@ private:
     VoiceApplet::VoiceAppletController *m_voiceAppletAccess = nullptr;
     ObsApplet::ObsAppletController *m_obsAppletAccess = nullptr;
     QObject *m_desktopControlsAccess = nullptr;
+    QObject *m_networkAppletAccess = nullptr;
     QObject *m_gatherOverviewAccess = nullptr;
     QObject *m_panelQuickConfig = nullptr;
     QObject *m_liveCustomization = nullptr;

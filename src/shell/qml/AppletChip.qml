@@ -14,6 +14,7 @@ Rectangle {
     property var notificationCenterAppletAccess: null
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
+    property var networkAppletAccess: null
     property var smartLightsAppletAccess: null
     property var voiceAppletAccess: null
     property var obsAppletAccess: null
@@ -89,6 +90,7 @@ Rectangle {
             "clock": qsTr("Clock"),
             "notification-center": qsTr("Notifications"),
             "bluetooth": "Bluetooth",
+            "network": qsTr("Network"),
             "power": "Power",
             "audio": "Audio",
             "launcher": qsTr("Applications"),
@@ -101,7 +103,7 @@ Rectangle {
         if (["launcher", "application-launcher", "system-menu", "classic-menu",
              "application-menu", "start-menu", "quick-launch"].includes(plugin))
             return "start-here-kde"
-        if (plugin === "system-status") return networkIconName()
+        if (plugin === "system-status" || plugin === "network") return networkIconName()
         if (plugin === "bluetooth") return "network-bluetooth-inactive-symbolic"
         if (plugin === "power") return "battery-missing"
         if (plugin === "audio") return "audio-volume-muted"
@@ -158,6 +160,7 @@ Rectangle {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        networkAppletAccess: root.networkAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
         voiceAppletAccess: root.voiceAppletAccess
         obsAppletAccess: root.obsAppletAccess

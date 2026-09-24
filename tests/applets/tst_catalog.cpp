@@ -40,7 +40,7 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 33);
+    QCOMPARE(catalog.manifests().size(), 34);
 
     const QSet<QString> expected{
         QStringLiteral("launcher"),
@@ -56,6 +56,8 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
         QStringLiteral("clock"),
         QStringLiteral("notification-center"),
         QStringLiteral("bluetooth"),
+        // Network over public Network1 (docs/wiki/shell/network-applet.md).
+        QStringLiteral("network"),
         QStringLiteral("power"),
         QStringLiteral("audio"),
         QStringLiteral("clipboard"),
@@ -137,6 +139,15 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QVERIFY(power->capabilities
             == QVector<Capability>({Capability::PowerRead,
                                     Capability::PowerControl}));
+    const AppletManifest *network = catalog.findById(QStringLiteral("network"));
+    QVERIFY(network != nullptr);
+    QCOMPARE(network->entryPoint.value, QStringLiteral("qindaqt.applets.network"));
+    QVERIFY(network->capabilities
+            == QVector<Capability>({Capability::NetworkRead,
+                                    Capability::NetworkControl}));
+    QCOMPARE(toString(Capability::NetworkRead), QStringLiteral("network.read"));
+    QCOMPARE(capabilityFromString(QStringLiteral("network.control")),
+             std::optional<Capability>(Capability::NetworkControl));
     QVERIFY(audio->capabilities
             == QVector<Capability>({Capability::AudioRead,
                                     Capability::AudioControl}));

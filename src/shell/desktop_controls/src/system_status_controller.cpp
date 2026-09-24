@@ -3,6 +3,7 @@
 
 #include "audio_applet_controller.h"
 #include "bluetooth_applet_controller.h"
+#include "network_applet_controller.h"
 #include "power_applet_controller.h"
 
 #include <QRegularExpression>
@@ -50,12 +51,27 @@ SystemStatusController::SystemStatusController(
     BluetoothApplet::BluetoothAppletController *bluetooth,
     PowerApplet::PowerAppletController *power, SystemStatusGrants grants,
     QObject *parent)
+    : SystemStatusController(audio, bluetooth, power, nullptr, grants, parent)
+{
+}
+
+SystemStatusController::SystemStatusController(
+    AudioApplet::AudioAppletController *audio,
+    BluetoothApplet::BluetoothAppletController *bluetooth,
+    PowerApplet::PowerAppletController *power,
+    NetworkApplet::NetworkAppletController *network, SystemStatusGrants grants,
+    QObject *parent)
     : QObject(parent)
     , m_audio(grants.audioRead ? audio : nullptr)
     , m_bluetooth(grants.bluetoothRead ? bluetooth : nullptr)
     , m_power(grants.powerRead ? power : nullptr)
+    , m_network(grants.networkRead ? network : nullptr)
     , m_grants(grants)
 {
+  if (m_network != nullptr) {
+    connect(m_network, &NetworkApplet::NetworkAppletController::stateChanged, this,
+            &SystemStatusController::reproject);
+  }
   if (m_audio != nullptr) {
     connect(m_audio, &AudioApplet::AudioAppletController::stateReprojected, this,
             &SystemStatusController::reproject);
@@ -104,6 +120,11 @@ QObject *SystemStatusController::bluetooth() const noexcept
 QObject *SystemStatusController::power() const noexcept
 {
   return m_power;
+}
+
+QObject *SystemStatusController::network() const noexcept
+{
+  return m_network;
 }
 
 StatusLaneInput SystemStatusController::audioLane() const
@@ -196,9 +217,33 @@ StatusLaneInput SystemStatusController::powerLane() const
   return lane;
 }
 
+StatusLaneInput SystemStatusController::networkLane() const
+{
+  StatusLaneInput lane;
+  lane.id = QStringLiteral("network");
+  lane.label = QStringLiteral("Network");
+  lane.granted = m_grants.networkRead;
+  lane.present = m_network != nullptr;
+  if (!lane.present) {
+    return lane;
+  }
+  // AGENT-NOTE: the facade already projects the one glyph vocabulary
+  // (indicatorIconName), so this lane and the standalone applet can never
+  // disagree about the state.
+  lane.phase = m_network->phase();
+  lane.summary = m_network->summaryLabel();
+  lane.accessibleName = m_network->accessibleName();
+  lane.accessibleDescription = m_network->accessibleDescription();
+  lane.iconName = m_network->iconName();
+  lane.attention = m_network->requestPhase() == QLatin1StringView("failed")
+      || m_network->requestPhase() == QLatin1StringView("uncertain");
+  return lane;
+}
+
 void SystemStatusController::reproject()
 {
-  m_model = projectSystemStatus({audioLane(), bluetoothLane(), powerLane()});
+  m_model = projectSystemStatus(
+      {audioLane(), bluetoothLane(), powerLane(), networkLane()});
   Q_EMIT stateChanged();
 }
 

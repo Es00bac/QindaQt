@@ -9,7 +9,7 @@ import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
 
 // Aggregated system status: one button showing a lane icon per granted
-// service (sound, Bluetooth, power), and a popup with each lane's quick
+// service (sound, Bluetooth, power, network), and a popup with each lane's quick
 // controls. All truth and every request come from the borrowed facades.
 Item {
     id: root
@@ -31,6 +31,7 @@ Item {
         if (laneId === "audio") return root.access.audio
         if (laneId === "bluetooth") return root.access.bluetooth
         if (laneId === "power") return root.access.power
+        if (laneId === "network") return root.access.network
         return null
     }
 
@@ -40,6 +41,7 @@ Item {
         if (laneId === "audio") return Boolean(root.access.audioControlGranted)
         if (laneId === "bluetooth") return Boolean(root.access.bluetoothControlGranted)
         if (laneId === "power") return Boolean(root.access.powerControlGranted)
+        if (laneId === "network") return Boolean(root.access.networkControlGranted)
         return false
     }
 
