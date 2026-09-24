@@ -8,7 +8,8 @@ completion. Architectural detail and long-range milestone state remain in the
 ## September 23 — Settings repair in progress on qinda
 
 The September 23 audit is being repaired in independent slices. These are
-integrated in the qinda source tree, not installed into a live session:
+integrated in the qinda source tree and included in the r4 package installed
+on qinda-top. Live page and hardware checks remain to qualify:
 
 - Default Applications (`e02cd663`): per-MIME eligibility and effective
   associations, mixed aggregate defaults, partial-write reporting, reset
@@ -127,6 +128,15 @@ integrated in the qinda source tree, not installed into a live session:
   same reviewer accepted its narrow link repair. Integrated Audio/VBAN/
   navigation tests pass 17/17 and broad Settings 135/135. Live physical playback,
   discovery, authentication, encryption and synchronized surround remain open.
+- Audio1 package-upgrade lifecycle (`d492ee80`, independently accepted):
+  session startup now restarts Audio1 after publishing the activation environment
+  and waits up to two seconds for an older D-Bus owner to retire before desktop
+  consumers start. ADR-0256 records the private-bus warning-and-continue limit.
+  The integrated session group passes 10/10; the full Settings tree builds and
+  its 138-row suite passed 137/138 in parallel, with the timed-out installed
+  route passing 1/1 alone. qinda-top r4 installed with 1,624/1,624 files good;
+  the newly started Audio1 and Settings1 processes answer D-Bus. A fresh-login
+  Settings Audio page check remains to qualify.
 - Panel auto-hide timing (`6476e40d`, independently accepted): Customize
   Settings exposes panel reveal and hide delays through the existing shell
   visibility policy. A held arrow key originally committed on auto-repeat
@@ -156,8 +166,8 @@ integrated in the qinda source tree, not installed into a live session:
   waits for exact-owner readback, and keyboard navigation traverses virtualized
   rows. Reviewers accepted delayed-readback, 30-app focus, and absent-model
   regressions. The per-app sound uses the platform alert sound. This source
-  update is later than the r3 trial package pin; live notification and speaker
-  behavior on qinda-top remains to qualify in a later install.
+  update is included in qinda-top r4; live notification and speaker behavior
+  remain to qualify after the next login.
 - Per-application audio routing (`5c8aae4b`): playback and recording
   streams now offer direction-matched device choices in Audio Settings. The
   picker tracks confirmed Audio1 routing, handles pending/refused/stale

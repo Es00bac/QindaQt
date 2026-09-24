@@ -1,5 +1,28 @@
 # Integration handoff
 
+## September 23 — qinda-top r4 Settings checkpoint
+
+QindaQt source `d492ee808a5b5b2ea565f1a77966d7867d34770b` and QindaGentoo
+recipe `b0120a7dbd62976f4b198a7572b2f52f15d67c6b` produced the signed
+`gui-wm/qindaqt-desktop-0.1.0_pre20260923-r4` package. The native
+`--buildpkgonly` build and binary-only Portage upgrade passed; `qcheck` reports
+1,624/1,624 installed files good. The r3 binary remains available for rollback.
+The package contains Settings, Audio1, session, shell, Viewer, File Manager,
+Editor, KWin compositor/KDecoration plugins, and the OBS autostart entry.
+
+The integrated full build, 10/10 session-supervisor rows, 3/3 static KWin
+contract rows, source release contract, nested compositor-plugin boot, strict
+MkDocs and the 388-document link/navigation validator pass. The 138-row
+Settings run passed 137/138 at four-way parallelism; its installed Customize
+route timed out constructing Notifications, then passed 1/1 alone. The
+installed-plugin discovery test cannot stage the pre-existing absolute
+`/etc/xdg/autostart/qindaqt-obs-login.desktop` destination without privilege;
+Portage staged that file under its image and the installed package contains it.
+This test limitation remains open. After the package merge, Audio1 and
+Settings1 were restarted or reactivated and answered D-Bus; Settings1 exposes
+the new per-app notification key. The graphical session was not logged out.
+A fresh-login Audio and other Settings page check remains open.
+
 ## September 23 — Settings repair integration on qinda
 
 Per-app notification mute and sound policy is integrated from independently
@@ -12,16 +35,15 @@ an undefined-to-Boolean QML warning when the policy model was absent. The
 same worker repaired all three bindings and a separate reviewer accepted the
 exact repair after 10/10 focused rows and the 30-app probe passed. The broad
 suite was not repeated for this narrow fix at the user's trial-release
-priority. qinda-top r3 is pinned to earlier clean `397216bc`; this notification
-source remains for a later package. No live notification/speaker claim yet.
+priority. This source is included in qinda-top r4; live notification and
+speaker behavior have not yet been checked after login.
 
 The independently reviewed install checkpoint helper is integrated at
 `8ed0e55c`. Its focused Python tests pass 32/32, strict MkDocs and the
 386-document validator pass, and the existing generated CMake install tree
 passes the 340-script/1,549-rule destination audit. No CMake stage or live
-service/package operation has run. The qinda-top r3 trial release is a separate Portage transaction pinned to
-earlier clean source `397216bc`; this later notification integration remains
-for a subsequent package.
+service/package operation has run through this helper. The qinda-top r4
+Portage transaction is recorded above and includes notification policy.
 
 The qinda source branch integrates Default Applications (`e02cd663`), Input
 (`5bb5fb73`, `0c41a5e3`), Touch (`e3602974`), Notifications (`3785d58f`), first-day-of-week (`2b885b6c`), Appearance monospace (`fdbc50f4`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
@@ -31,7 +53,8 @@ test `4abb0306`), and per-application audio routing (`5c8aae4b`).
 Every slice had an independent exact-commit review. Initial Input, Voice,
 Startup and Streaming candidates, two wheel candidates, two Touch
 candidates, and the first monospace candidate were rejected and repaired
-before acceptance. None has been deployed to a live desktop.
+before acceptance. Their source is now installed in qinda-top r4; live
+page and hardware behavior still require a fresh-session check.
 
 The combined Settings build and 122/122 Settings rows passed after Default
 Applications. Input then passed a combined build and 14/14 Input/route rows.
