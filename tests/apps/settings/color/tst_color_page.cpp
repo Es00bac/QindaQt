@@ -33,6 +33,7 @@ private Q_SLOTS:
   void rendersWideTruthAndAccessibleControls();
   void routesAssignmentActions();
   void compactAndUnavailableFocusRemainAdmitted();
+  void emptyOutputAndProfileListsShowEmptyStates();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -175,6 +176,35 @@ void ColorPageTest::compactAndUnavailableFocusRemainAdmitted() {
   QCOMPARE(page->property("firstFocusTarget").value<QObject *>(), import);
   import->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), import);
+}
+
+void ColorPageTest::emptyOutputAndProfileListsShowEmptyStates() {
+  auto [guard, page] = createPage(QSize(900, 700));
+  QVERIFY(page != nullptr);
+  auto *outputs = findItem(page, QStringLiteral("colorOutputsEmpty"));
+  auto *profiles = findItem(page, QStringLiteral("colorProfilesEmpty"));
+  QVERIFY(outputs != nullptr);
+  QVERIFY(profiles != nullptr);
+  QVERIFY(!outputs->isVisible());
+  QVERIFY(!profiles->isVisible());
+
+  // A selected display with nothing to assign names that, not a blank list.
+  m_model->profileRows.clear();
+  Q_EMIT m_model->viewChanged();
+  QTRY_VERIFY(profiles->isVisible() && profiles->height() > 0);
+  QVERIFY(!outputs->isVisible());
+
+  m_model->outputRows.clear();
+  Q_EMIT m_model->viewChanged();
+  QTRY_VERIFY(outputs->isVisible() && outputs->height() > 0);
+  for (auto *empty : {outputs, profiles}) {
+    auto *accessible = QAccessible::queryAccessibleInterface(empty);
+    QVERIFY(accessible != nullptr);
+    QCOMPARE(accessible->role(), QAccessible::StaticText);
+    QCOMPARE(accessible->text(QAccessible::Name), empty->property("text").toString());
+  }
+  QCOMPARE(outputs->property("text").toString(),
+           QStringLiteral("No displays are currently reported."));
 }
 
 QTEST_MAIN(ColorPageTest)

@@ -8,6 +8,7 @@
 
 #include <QtGui/QAccessible>
 #include <QtGui/QAccessibleInterface>
+#include <QtGui/QColor>
 #include <QtCore/QMetaObject>
 #include <QtQml/QQmlComponent>
 #include <QtQuick/QQuickItem>
@@ -51,6 +52,8 @@ class NetworkPageTest final : public QObject {
 private Q_SLOTS:
   void initTestCase();
   void rendersTruthAndSecretBoundaryAccessibly();
+  void drawsSignalMetersBesideThePercentText();
+  void signalMetersShareOneColumn();
   void routesScanConnectDisconnectAndReloadIntents();
   void radioKeyboardRefusalAndConfirmedReadback();
   void showsStaleTruthReadOnlyAndOwnerLossEmpty();
@@ -161,6 +164,116 @@ void NetworkPageTest::rendersTruthAndSecretBoundaryAccessibly() {
               .contains(QStringLiteral("credential prompt"),
                         Qt::CaseInsensitive));
   QCOMPARE(scanAccessible->role(), QAccessible::Button);
+}
+
+void NetworkPageTest::drawsSignalMetersBesideThePercentText() {
+  auto [guard, page] = createPage(QSize(900, 760));
+  QVERIFY(page != nullptr);
+  const QString guestId(64, u'c');
+  auto *cafe = findItem(page, QStringLiteral("networkSignalMeter_") + QString(64, u'd'));
+  auto *guest = findItem(page, QStringLiteral("networkSignalMeter_") + guestId);
+  QVERIFY(cafe != nullptr);
+  QVERIFY(guest != nullptr);
+  QVERIFY(guest->isVisible());
+  QVERIFY(guest->width() > 0 && guest->height() > 0);
+  QCOMPARE(cafe->property("value").toReal(), 72.0);
+  QCOMPARE(guest->property("value").toReal(), 61.0);
+  QCOMPARE(guest->property("from").toReal(), 0.0);
+  QCOMPARE(guest->property("to").toReal(), 100.0);
+
+  // High signal is good: the neutral accent the section's theme bridge fed
+  // into Tk.Theme, not a load ramp.
+  QQmlComponent probe(m_view->engine());
+  probe.setData("import QtQuick\nimport QindaTK as Tk\n"
+                "QtObject { property color accent: Tk.Theme.color.accent }\n",
+                QUrl());
+  std::unique_ptr<QObject> theme(probe.create());
+  QVERIFY(theme != nullptr);
+  QCOMPARE(guest->property("color").value<QColor>(),
+           theme->property("accent").value<QColor>());
+  QVERIFY(guest->property("ramp").value<QObject *>() == nullptr);
+
+  auto *accessible = QAccessible::queryAccessibleInterface(guest);
+  QVERIFY(accessible != nullptr);
+  QCOMPARE(accessible->role(), QAccessible::ProgressBar);
+  QCOMPARE(accessible->text(QAccessible::Name),
+           QStringLiteral("Signal strength bar, 61 percent"));
+
+  // The percentage text stays beside the bar: nothing is carried by the bar
+  // alone.
+  QQuickItem *row = guest->parentItem();
+  QVERIFY(row != nullptr);
+  bool textShown = false;
+  for (QQuickItem *child : row->childItems())
+    textShown = textShown
+        || (child->isVisible() && child->property("text").toString() == QStringLiteral("61%"));
+  QVERIFY(textShown);
+
+  // Bound, not copied: a republished reading moves the bar.
+  QVariantMap moved = m_model->accessPoints.at(1).toMap();
+  moved.insert(QStringLiteral("signalStrength"), 23);
+  m_model->accessPoints[1] = moved;
+  Q_EMIT m_model->viewChanged();
+  QCoreApplication::processEvents();
+  guest = findItem(page, QStringLiteral("networkSignalMeter_") + guestId);
+  QVERIFY(guest != nullptr);
+  QCOMPARE(guest->property("value").toReal(), 23.0);
+}
+
+void NetworkPageTest::signalMetersShareOneColumn() {
+  auto [guard, page] = createPage(QSize(900, 760));
+  QVERIFY(page != nullptr);
+  // Vary everything that sits beside a bar: the digits (100% and 5%), Saved
+  // versus prompt and Connect, and the prompt's length.
+  QVariantMap saved = m_model->accessPoints.at(0).toMap();
+  saved.insert(QStringLiteral("signalStrength"), 100);
+  QVariantMap weak = m_model->accessPoints.at(1).toMap();
+  weak.insert(QStringLiteral("signalStrength"), 5);
+  weak.insert(QStringLiteral("promptStatusText"),
+              QStringLiteral("A password prompt will appear if the desktop "
+                             "password agent is still running when you connect."));
+  QVariantMap other = weak;
+  other.insert(QStringLiteral("id"), QString(64, u'e'));
+  other.insert(QStringLiteral("displayName"),
+              QStringLiteral("Library guest network with a long name"));
+  other.insert(QStringLiteral("signalStrength"), 61);
+  other.insert(QStringLiteral("promptStatusText"), QStringLiteral("Open network."));
+  m_model->accessPoints = {saved, weak, other};
+  Q_EMIT m_model->viewChanged();
+  const QStringList ids{QString(64, u'd'), QString(64, u'c'), QString(64, u'e')};
+
+  // Each meter's (x mapped to the page, width); empty until all are shown.
+  const auto geometry = [page, &ids] {
+    QList<QPointF> placed;
+    for (const QString &id : ids) {
+      auto *meter = findItem(page, QStringLiteral("networkSignalMeter_") + id);
+      if (meter == nullptr || !meter->isVisible()) return QList<QPointF>{};
+      placed.append({meter->mapToItem(page, QPointF(0, 0)).x(), meter->width()});
+    }
+    return placed;
+  };
+  const auto describe = [&geometry] {
+    QStringList text;
+    for (const QPointF &entry : geometry())
+      text.append(QStringLiteral("x=%1 width=%2").arg(entry.x()).arg(entry.y()));
+    return text.join(QStringLiteral("; "));
+  };
+  // Wide, then compact. A settled layout keeps each bar inside the page and
+  // past the SSID column; a stale one from the previous width fails that.
+  for (const qreal width : {900.0, 480.0}) {
+    page->setWidth(width);
+    const auto aligned = [&geometry, &ids, width] {
+      const QList<QPointF> placed = geometry();
+      if (placed.size() != ids.size()) return false;
+      for (const QPointF &entry : placed) {
+        if (entry != placed.first()) return false;
+      }
+      const QPointF first = placed.first();
+      return first.y() > 0 && first.x() > width * 0.25
+          && first.x() + first.y() <= width;
+    };
+    QTRY_VERIFY2(aligned(), qPrintable(describe()));
+  }
 }
 
 void NetworkPageTest::routesScanConnectDisconnectAndReloadIntents() {

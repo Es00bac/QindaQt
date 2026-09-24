@@ -39,6 +39,7 @@ qt_add_qml_module(
     OUTPUT_DIRECTORY "${QINDAQT_NETWORK_SETTINGS_QML_OUTPUT_DIRECTORY}"
     TYPEINFO qindaqt_settings_network.qmltypes
     QML_FILES
+        qml/NetworkAccessPointActions.qml
         qml/NetworkAccessPointSection.qml
         qml/NetworkDeviceSection.qml
         qml/NetworkPage.qml
