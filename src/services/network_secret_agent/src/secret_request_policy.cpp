@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "secret_request_admission_p.h"
 #include "secret_request_policy_p.h"
+#include "secret_agent_types_p.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QRegularExpression>
+#include <QtCore/QScopeGuard>
 #include <QtCore/QSet>
 
 #include <algorithm>
@@ -11,163 +14,10 @@
 namespace QindaQt::Network::SecretAgent::Private {
 namespace {
 
-constexpr qsizetype kMaximumSections = 16;
-constexpr qsizetype kMaximumProperties = 32;
 constexpr qsizetype kMaximumHints = 16;
-constexpr qsizetype kMaximumTextBytes = 512;
-constexpr qsizetype kMaximumAggregateBytes = 65'536;
-constexpr qsizetype kMaximumNestedItems = 256;
-constexpr int kMaximumVariantDepth = 8;
 
 QString tr(const char *text) {
   return QCoreApplication::translate("NetworkSecretPrompt", text);
-}
-
-bool boundedText(const QString &text, const bool allowEmpty = false) {
-  return (allowEmpty || !text.isEmpty()) && !text.contains(QChar::Null) &&
-         text.toUtf8().size() <= kMaximumTextBytes;
-}
-
-bool consumeBytes(const qsizetype bytes, qsizetype &aggregate) {
-  if (bytes < 0 || bytes > kMaximumAggregateBytes - aggregate) {
-    return false;
-  }
-  aggregate += bytes;
-  return true;
-}
-
-bool consumeVariant(const QVariant &value, qsizetype &aggregate,
-                    const int depth);
-
-bool consumeList(const QVariantList &values, qsizetype &aggregate,
-                 const int depth) {
-  if (values.size() > kMaximumNestedItems ||
-      !consumeBytes(values.size() * qsizetype(sizeof(QVariant)), aggregate)) {
-    return false;
-  }
-  return std::all_of(values.cbegin(), values.cend(),
-                     [&aggregate, depth](const QVariant &entry) {
-                       return consumeVariant(entry, aggregate, depth + 1);
-                     });
-}
-
-bool consumeMap(const QVariantMap &values, qsizetype &aggregate,
-                const int depth) {
-  if (values.size() > kMaximumNestedItems ||
-      !consumeBytes(values.size() * qsizetype(sizeof(QVariant)), aggregate)) {
-    return false;
-  }
-  for (auto entry = values.cbegin(); entry != values.cend(); ++entry) {
-    if (!boundedText(entry.key()) ||
-        !consumeBytes(entry.key().toUtf8().size(), aggregate) ||
-        !consumeVariant(entry.value(), aggregate, depth + 1)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool consumeHash(const QVariantHash &values, qsizetype &aggregate,
-                 const int depth) {
-  if (values.size() > kMaximumNestedItems ||
-      !consumeBytes(values.size() * qsizetype(sizeof(QVariant)), aggregate)) {
-    return false;
-  }
-  for (auto entry = values.cbegin(); entry != values.cend(); ++entry) {
-    if (!boundedText(entry.key()) ||
-        !consumeBytes(entry.key().toUtf8().size(), aggregate) ||
-        !consumeVariant(entry.value(), aggregate, depth + 1)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool consumeStrings(const QStringList &values, qsizetype &aggregate,
-                    const int depth) {
-  if (depth >= kMaximumVariantDepth ||
-      values.size() > kMaximumNestedItems ||
-      !consumeBytes(values.size() * qsizetype(sizeof(QString)), aggregate)) {
-    return false;
-  }
-  for (const QString &text : values) {
-    if (!boundedText(text, true) ||
-        !consumeBytes(text.toUtf8().size(), aggregate)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool consumeVariant(const QVariant &value, qsizetype &aggregate,
-                    const int depth) {
-  if (!value.isValid() || depth > kMaximumVariantDepth) {
-    return false;
-  }
-  switch (value.typeId()) {
-  case QMetaType::QString: {
-    const QString text = value.toString();
-    return boundedText(text, true) &&
-           consumeBytes(text.toUtf8().size(), aggregate);
-  }
-  case QMetaType::QByteArray:
-    return consumeBytes(value.toByteArray().size(), aggregate);
-  case QMetaType::QStringList:
-    return consumeStrings(value.toStringList(), aggregate, depth);
-  case QMetaType::QVariantList:
-    return consumeList(value.toList(), aggregate, depth);
-  case QMetaType::QVariantMap:
-    return consumeMap(value.toMap(), aggregate, depth);
-  case QMetaType::QVariantHash:
-    return consumeHash(value.toHash(), aggregate, depth);
-  case QMetaType::Bool:
-    return consumeBytes(sizeof(bool), aggregate);
-  case QMetaType::Char:
-  case QMetaType::SChar:
-  case QMetaType::UChar:
-    return consumeBytes(sizeof(char), aggregate);
-  case QMetaType::Short:
-  case QMetaType::UShort:
-    return consumeBytes(sizeof(short), aggregate);
-  case QMetaType::Int:
-  case QMetaType::UInt:
-  case QMetaType::Float:
-    return consumeBytes(sizeof(quint32), aggregate);
-  case QMetaType::LongLong:
-  case QMetaType::ULongLong:
-  case QMetaType::Double:
-    return consumeBytes(sizeof(quint64), aggregate);
-  default:
-    return false;
-  }
-}
-
-bool boundedConnection(const NmSettingsMap &connection) {
-  if (connection.isEmpty() || connection.size() > kMaximumSections) {
-    return false;
-  }
-  qsizetype aggregate = 0;
-  for (auto section = connection.cbegin(); section != connection.cend();
-       ++section) {
-    if (!boundedText(section.key()) ||
-        section.value().size() > kMaximumProperties) {
-      return false;
-    }
-    if (!consumeBytes(section.key().toUtf8().size(), aggregate)) {
-      return false;
-    }
-    for (auto property = section.value().cbegin();
-         property != section.value().cend(); ++property) {
-      if (!boundedText(property.key())) {
-        return false;
-      }
-      if (!consumeBytes(property.key().toUtf8().size(), aggregate) ||
-          !consumeVariant(property.value(), aggregate, 0)) {
-        return false;
-      }
-    }
-  }
-  return true;
 }
 
 QString connectionName(const NmSettingsMap &connection) {
@@ -175,8 +25,10 @@ QString connectionName(const NmSettingsMap &connection) {
   if (section == connection.cend()) {
     return {};
   }
-  const QString id = section->value(QStringLiteral("id")).toString();
-  const QString uuid = section->value(QStringLiteral("uuid")).toString();
+  QString id = section->value(QStringLiteral("id")).toString();
+  const auto wipeId = qScopeGuard([&id] { wipeStringValue(id); });
+  QString uuid = section->value(QStringLiteral("uuid")).toString();
+  const auto wipeUuid = qScopeGuard([&uuid] { wipeStringValue(uuid); });
   static const QRegularExpression uuidPattern(
       QStringLiteral("^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-5][0-9A-Fa-f]{3}-"
                      "[89ABab][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$"));
@@ -226,8 +78,10 @@ QStringList wifiFields(const QVariantMap &setting, const QStringList &hints) {
     }
     return result;
   }
-  const QString keyManagement =
+  QString keyManagement =
       setting.value(QStringLiteral("key-mgmt")).toString();
+  const auto wipeKeyManagement =
+      qScopeGuard([&keyManagement] { wipeStringValue(keyManagement); });
   if (keyManagement == QStringLiteral("none")) {
     const quint32 index =
         std::min(setting.value(QStringLiteral("wep-tx-keyidx")).toUInt(), 3U);
@@ -257,6 +111,20 @@ QStringList enterpriseFields(const QStringList &hints) {
   return result;
 }
 
+bool validPromptBytes(const SecretValue &value, const qsizetype maximumLength) {
+  if (value.bytes.isEmpty() || value.bytes.contains('\0') ||
+      value.bytes.size() > maximumLength) {
+    return false;
+  }
+  QString decoded = QString::fromUtf8(value.bytes);
+  const auto wipeDecoded =
+      qScopeGuard([&decoded] { wipeStringValue(decoded); });
+  QByteArray encoded = decoded.toUtf8();
+  const auto wipeEncoded =
+      qScopeGuard([&encoded] { wipeByteArrayValue(encoded); });
+  return encoded == value.bytes;
+}
+
 } // namespace
 
 QString flagsKey(const QString &key) {
@@ -281,7 +149,8 @@ std::optional<PromptRequest> promptFor(const GetSecretsRequest &request,
       !boundedConnection(request.connection) || !validHints(request.hints)) {
     return std::nullopt;
   }
-  const QString name = connectionName(request.connection);
+  QString name = connectionName(request.connection);
+  const auto wipeName = qScopeGuard([&name] { wipeStringValue(name); });
   if (name.isEmpty()) {
     return std::nullopt;
   }
@@ -298,8 +167,13 @@ std::optional<PromptRequest> promptFor(const GetSecretsRequest &request,
   if (keys.isEmpty()) {
     return std::nullopt;
   }
-  PromptRequest result{
-      requestId, name, request.connectionPath, request.settingName, {}};
+  // AGENT-CONTRACT: NetworkManager repeats the setting name as a key in the
+  // input map, which is scrubbed on method return. The prompt outlives that
+  // map, so it must own an independent setting-name allocation.
+  QString promptSettingName(request.settingName.constData(),
+                            request.settingName.size());
+  PromptRequest result{requestId, std::move(name), request.connectionPath,
+                       std::move(promptSettingName), {}};
   result.fields.reserve(keys.size());
   for (const QString &key : std::as_const(keys)) {
     result.fields.append(field(key));
@@ -309,7 +183,11 @@ std::optional<PromptRequest> promptFor(const GetSecretsRequest &request,
 
 SecretReply replyFor(const PromptRequest &request, PromptResult &result) {
   SecretReply reply;
-  reply.settingName = request.settingName;
+  // AGENT-CONTRACT: sendCompletion wipes its temporary settings map by writing
+  // through shared text storage. Keep that cleanup from changing the prompt
+  // request that remains live while its completion callback sends the reply.
+  reply.settingName =
+      QString(request.settingName.constData(), request.settingName.size());
   reply.remember = result.remember;
   const qsizetype submittedCount = result.values.size();
   QSet<QString> seen;
@@ -320,15 +198,17 @@ SecretReply replyFor(const PromptRequest &request, PromptResult &result) {
                        return candidate.key == field.key;
                      });
     if (valueIt == result.values.end() || seen.contains(valueIt->key) ||
-        valueIt->bytes.isEmpty() || valueIt->bytes.contains('\0') ||
-        valueIt->bytes.size() > field.maximumLength ||
-        QString::fromUtf8(valueIt->bytes).toUtf8() != valueIt->bytes) {
+        !validPromptBytes(*valueIt, field.maximumLength)) {
       reply.wipe();
       result.wipe();
       return {};
     }
     seen.insert(valueIt->key);
-    reply.values.append({field.key, std::move(valueIt->bytes)});
+    // AGENT-CONTRACT: sendCompletion wipes reply-map keys by writing through
+    // shared text storage. Keep the reply key independent from the live prompt
+    // field key retained by the controller/prompt port.
+    QString replyKey(field.key.constData(), field.key.size());
+    reply.values.append({std::move(replyKey), std::move(valueIt->bytes)});
   }
   if (reply.values.size() != request.fields.size() ||
       seen.size() != submittedCount) {
