@@ -150,6 +150,14 @@ integrated in the qinda source tree, not installed into a live session:
   host-bound rollback recipe. The integrated 32/32 helper tests and strict
   documentation gates pass. No stage or live install has run; the qinda-top
   release uses its existing Portage package path.
+- Per-application notification mute and sound (`8f0ca030` plus accepted
+  `341060fb` unavailable-model repair): Notifications saves per-app policy in
+  one Settings1 object. The shell applies confirmed mute/sound rules; a save
+  waits for exact-owner readback, and keyboard navigation traverses virtualized
+  rows. Reviewers accepted delayed-readback, 30-app focus, and absent-model
+  regressions. The per-app sound uses the platform alert sound. This source
+  update is later than the r3 trial package pin; live notification and speaker
+  behavior on qinda-top remains to qualify in a later install.
 - Per-application audio routing (`5c8aae4b`): playback and recording
   streams now offer direction-matched device choices in Audio Settings. The
   picker tracks confirmed Audio1 routing, handles pending/refused/stale

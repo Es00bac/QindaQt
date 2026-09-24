@@ -7,12 +7,12 @@ and the [active Loader witness](../adr/0250-require-active-loader-witness-for-ev
 prove that each route can construct or show its declared unavailable state.
 They do not prove physical hardware behavior or that every stored schema key
 has a consumer. The [Settings1 key catalog](../handbook/catalog/settings.md)
-classifies all 85 storage keys separately; many routes use native service
+classifies all 86 storage keys separately; many routes use native service
 authority outside Settings1.
 
 | Order | Route ID | Current owned surface | Boundary or remaining gap |
 | --- | --- | --- | --- |
-| 1 | `notifications` | Do Not Disturb and [Quiet Hours schedule](../shell/notification-presentation.md) | Shell interruption policy consumes these preferences. No per-app allow/quiet editor or verified `services.notifications` master-key consumer. |
+| 1 | `notifications` | Do Not Disturb, [Quiet Hours and per-app mute/sound](../shell/notification-presentation.md) | Shell consumes confirmed policy; app identity is best-effort. No verified `services.notifications` master-key consumer. |
 | 2 | `appearance` | [Theme, wallpaper, fonts (including monospace), and window/container decoration](../apps/appearance-settings.md) | Some retained appearance schema keys have no verified runtime consumer; see catalog. |
 | 3 | `display` | [Output arrangement, mirror, orientation, resolution/scale, refresh and night light](../apps/display-settings.md) | Display1/KWin own topology; legacy `displays.*` topology keys are not another editor. HDR behavior is not established by the old `displays.hdrPolicy` default. |
 | 4 | `network` | [Wi-Fi, saved/visible networks, devices and admitted Wi-Fi/mobile radio switches](../apps/network-settings.md) | Network1 owns mutation and hardware refusal; credentials stay with the separate agent. No live radio test is claimed here. |

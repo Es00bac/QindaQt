@@ -2,6 +2,7 @@
 #include "qindaqt/services/notification_presentation_model/notification_presentation_controller.h"
 
 #include "qindaqt/services/notification_presentation_client/notification_presentation_client.h"
+#include "qindaqt/services/notification_presentation_policy/notification_application_policy.h"
 #include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
 #include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
 
@@ -47,9 +48,34 @@ NotificationPresentationController::NotificationPresentationController(
         interruptionPolicy,
     NotificationPresentationPolicy::NotificationPrivacyPolicy &privacyPolicy,
     PresentationTiming timing, QObject *parent)
+    : NotificationPresentationController(client, interruptionPolicy, nullptr,
+                                         privacyPolicy, std::move(timing), parent)
+{
+}
+
+NotificationPresentationController::NotificationPresentationController(
+    NotificationPresentationClient::NotificationPresentationClient &client,
+    NotificationPresentationPolicy::NotificationInterruptionPolicy &
+        interruptionPolicy,
+    NotificationPresentationPolicy::NotificationApplicationPolicy &applicationPolicy,
+    NotificationPresentationPolicy::NotificationPrivacyPolicy &privacyPolicy,
+    PresentationTiming timing, QObject *parent)
+    : NotificationPresentationController(client, interruptionPolicy, &applicationPolicy,
+                                         privacyPolicy, std::move(timing), parent)
+{
+}
+
+NotificationPresentationController::NotificationPresentationController(
+    NotificationPresentationClient::NotificationPresentationClient &client,
+    NotificationPresentationPolicy::NotificationInterruptionPolicy &
+        interruptionPolicy,
+    NotificationPresentationPolicy::NotificationApplicationPolicy *applicationPolicy,
+    NotificationPresentationPolicy::NotificationPrivacyPolicy &privacyPolicy,
+    PresentationTiming timing, QObject *parent)
     : QObject(parent)
     , m_client(client)
     , m_interruptionPolicy(interruptionPolicy)
+    , m_applicationPolicy(applicationPolicy)
     , m_privacyPolicy(privacyPolicy)
     , m_timing(timing.isValid() ? std::move(timing) : PresentationTiming{})
 {
@@ -69,6 +95,13 @@ NotificationPresentationController::NotificationPresentationController(
                 doNotDisturbEnabledChanged,
             this, &NotificationPresentationController::
                       handleInterruptionPolicyChanged);
+    if (m_applicationPolicy) {
+        connect(m_applicationPolicy,
+                &NotificationPresentationPolicy::NotificationApplicationPolicy::
+                    policiesChanged,
+                this,
+                &NotificationPresentationController::handleApplicationPolicyChanged);
+    }
     connect(&m_privacyPolicy,
             &NotificationPresentationPolicy::NotificationPrivacyPolicy::
                 privatePresentationAllowedChanged,
@@ -162,6 +195,13 @@ bool NotificationPresentationController::operationBusy() const noexcept
 {
     return privatePresentationAllowed() && !m_suppressCurrentOperationOutcome &&
         m_client.operationInFlight();
+}
+
+bool NotificationPresentationController::allowsPopup(
+    const NotificationPresentation::PresentationNotification &notification) const noexcept
+{
+    return (!m_applicationPolicy || m_applicationPolicy->allowsPopup(notification)) &&
+        m_interruptionPolicy.allowsPopup(notification);
 }
 
 const QString &
@@ -315,6 +355,26 @@ void NotificationPresentationController::handleInterruptionPolicyChanged()
     Q_EMIT doNotDisturbEnabledChanged();
 }
 
+void NotificationPresentationController::handleApplicationPolicyChanged()
+{
+    if (!privatePresentationAllowed()) {
+        return;
+    }
+    const auto firstSuppressed = std::remove_if(
+        m_popupEntries.begin(), m_popupEntries.end(),
+        [this](const PopupEntry &entry) {
+            return !allowsPopup(entry.notification);
+        });
+    if (firstSuppressed != m_popupEntries.end()) {
+        m_popupEntries.erase(firstSuppressed, m_popupEntries.end());
+        publishPopups();
+    } else {
+        rearmPopupTimer();
+    }
+    // AGENT-CONTRACT: per-app mute changes popup admission only. Active and
+    // Recent content stay intact, and lifting mute never replays old banners.
+}
+
 void NotificationPresentationController::baseline(
     const NotificationPresentation::PresentationSnapshot &snapshot)
 {
@@ -372,6 +432,11 @@ void NotificationPresentationController::update(
         if (previous != m_previous.cend() && previous.value() == notification) {
             continue;
         }
+        const bool popupAllowed = allowsPopup(notification);
+        if (previous == m_previous.cend() && popupAllowed && m_applicationPolicy &&
+            m_applicationPolicy->allowsSound(notification)) {
+            Q_EMIT notificationSoundRequested(notification.id);
+        }
         // AGENT-CONTRACT: the open center is already presenting current
         // notifications. Do not queue those same updates as stale popups that
         // appear only after the user closes the center.
@@ -383,7 +448,7 @@ void NotificationPresentationController::update(
             [&notification](const auto &entry) {
                 return entry.notification.id == notification.id;
             });
-        if (!m_interruptionPolicy.allowsPopup(notification)) {
+        if (!popupAllowed) {
             if (existing != m_popupEntries.end()) {
                 m_popupEntries.erase(existing);
             }

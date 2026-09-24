@@ -25,8 +25,8 @@ The production path is:
    provisioned KWin PID. Only its conclusive `Unlocked` state opens the privacy
    gate.
 5. `NotificationPresentationController` projects that snapshot into separate
-   active, popup, and recent list models using an injected shell-owned
-   interruption policy and the higher-priority privacy policy.
+   active, popup, and recent list models using injected per-application,
+   interruption, and higher-priority privacy policies.
 6. The shell window controller maps popup and center QML as nonexclusive
    LayerShellQt overlay surfaces.
 
@@ -127,6 +127,41 @@ conflict action reappears only after a fresh baseline proves the original
 choice still differs. Confirmed validation, persistence, or revision-exhaustion
 failures stay visible on both the settings page and shell center after the
 automatic refresh; a new user write explicitly dismisses that diagnostic.
+
+## Per-application mute and sound
+
+The Notifications route discovers desktop applications through the public
+ApplicationCatalog scanner and shows each canonical desktop-entry ID with its
+display name. It includes hidden entries and keeps saved rules for removed apps
+visible as removable “Not installed” rows. Producer-supplied `desktopEntry` is
+only a best-effort preference match; it is not authenticated sender identity
+and does not change service admission or application ownership.
+
+One schema-defined Settings1 value, `services.notificationPolicies`, is the
+authoritative persisted contract. It is a JSON object keyed by canonical
+desktop IDs without `.desktop`, with at most 256 rules. Each stored rule has
+exactly two Boolean fields, `muted` and `soundEnabled`; a rule with both values
+false is omitted, so `{}` preserves current behavior. Settings and the shell use the same strict
+codec. Invalid values do not partially apply. The shell bridge changes the
+presenter only from a ready, exact-owner Settings1 snapshot and retains the
+last confirmed map during loss or uncertainty.
+
+Mute suppresses that app's popup, including critical popups, and its alert
+sound. It does not dismiss the host notification or remove it from Active or
+Recent. Do Not Disturb remains a separate interruption policy: it suppresses
+low and normal popups while critical urgency bypasses it. Lock privacy remains
+the higher-priority boundary and suppresses all content and sound, including
+critical alerts. These policies never rewrite one another.
+
+Sound is a per-app opt-in and defaults off. For each newly arriving notification
+with sound enabled, the presenter requests the platform alert only if both app
+mute and interruption admission allow its popup and lock privacy is open. Thus
+ordinary alerts stay silent under DND, while a permitted critical alert may
+request sound. Baseline snapshots, replacements, or entries already present
+when a rule changes never replay sound. The current shell adapter calls Qt's
+platform beep facility; this setting does not select a sound theme or promise
+physical audibility. No standard notification wire or host policy changed.
+See [ADR-0255](../adr/0255-persist-per-application-notification-policies-through-settings1.md).
 
 ## Quiet hours
 
@@ -440,6 +475,12 @@ with no popup or Recent replay. These tests do not lock the developer's
 desktop. Once authenticated, `Lock()` and `GetActive()` are sent to KWin's
 unique owner rather than resolving the well-known locker name again.
 
+Per-app opt-in sound requests Qt's default platform beep for newly arriving
+notifications admitted by mute, Do Not Disturb, quiet hours, and lock privacy.
+The Settings1 quiet-hours window filters low and normal notifications at
+arrival; it has no timer and never changes the separate manual Do Not Disturb
+setting.
+
 The following remain unqualified or unimplemented:
 
 - screenshot-based visual baselines and full accessibility-tree/screen-reader
@@ -447,7 +488,9 @@ The following remain unqualified or unimplemented:
 - seat-/active-window-based multi-output placement and per-output histories;
   semantic-primary transfer is implemented, while the S3 dual-output live
   rerun remains the compositor-level acceptance gate;
-- Do Not Disturb scheduling/inhibition, sound, and safe image/icon loading;
+- selectable sound themes, external notification inhibition, timer-driven
+  changes to manual Do Not Disturb, safe image/icon loading, and physical
+  audibility qualification;
 - persistent notification history and live session-bus activation interaction;
 - physical-seat and real-desktop lock interaction, multi-seat/session switching,
   alternative-locker support, suspend/resume qualification, and a separately

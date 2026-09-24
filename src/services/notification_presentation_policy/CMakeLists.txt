@@ -10,12 +10,14 @@ target_sources(
     qindaqt_notification_presentation_policy
     PRIVATE
         src/notification_interruption_policy.cpp
+        src/notification_application_policy.cpp
         src/notification_privacy_policy.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/services/notification_presentation_policy/notification_interruption_policy.h
+            include/qindaqt/services/notification_presentation_policy/notification_application_policy.h
             include/qindaqt/services/notification_presentation_policy/notification_privacy_policy.h
 )
 target_link_libraries(

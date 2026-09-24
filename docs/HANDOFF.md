@@ -2,12 +2,26 @@
 
 ## September 23 — Settings repair integration on qinda
 
+Per-app notification mute and sound policy is integrated from independently
+accepted `8f0ca030` and narrow unavailable-model repair `341060fb`. The
+initial candidate retired an Applied save on below-floor readback and skipped
+virtualized app rows with Backtab; the descendant waits for exact revision
+readback or bounded uncertainty and traverses a 30-app list. A first merged
+broad Settings run passed 135/138; three navigation/lifecycle rows aborted on
+an undefined-to-Boolean QML warning when the policy model was absent. The
+same worker repaired all three bindings and a separate reviewer accepted the
+exact repair after 10/10 focused rows and the 30-app probe passed. The broad
+suite was not repeated for this narrow fix at the user's trial-release
+priority. qinda-top r3 is pinned to earlier clean `397216bc`; this notification
+source remains for a later package. No live notification/speaker claim yet.
+
 The independently reviewed install checkpoint helper is integrated at
 `8ed0e55c`. Its focused Python tests pass 32/32, strict MkDocs and the
 386-document validator pass, and the existing generated CMake install tree
 passes the 340-script/1,549-rule destination audit. No CMake stage or live
-service/package operation has run. The qinda-top release remains a separate
-Portage transaction pinned to the final integrated source commit.
+service/package operation has run. The qinda-top r3 trial release is a separate Portage transaction pinned to
+earlier clean source `397216bc`; this later notification integration remains
+for a subsequent package.
 
 The qinda source branch integrates Default Applications (`e02cd663`), Input
 (`5bb5fb73`, `0c41a5e3`), Touch (`e3602974`), Notifications (`3785d58f`), first-day-of-week (`2b885b6c`), Appearance monospace (`fdbc50f4`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
