@@ -58,7 +58,39 @@ ColumnLayout {
     signal activationRequested(string entryId)
     signal revealRequested(Item item)
 
+    function openPinMenu(item, anchor) {
+        pinMenu.launcherItem = item
+        pinMenu.popup(anchor)
+    }
+
+    // Pin to Dock / Remove from Dock for one row (ADR-0265): the same
+    // controller mutation as the row's Pin button.
+    function togglePin(item) {
+        if (root.controller === null)
+            return
+        if (item.pinned)
+            root.controller.unpin(item.entryId)
+        else
+            root.controller.pin(item.entryId)
+    }
+
     spacing: Tokens.space["1"]
+
+    // One row menu per section, retargeted on open; a menu per row would
+    // build hundreds of popups every time the launcher opens.
+    C.Menu {
+        id: pinMenu
+        objectName: "launcherRowMenu"
+        popupType: C.Popup.Window
+
+        property var launcherItem: ({})
+
+        C.MenuItem {
+            objectName: "launcherRowTogglePin"
+            text: pinMenu.launcherItem.pinned ? qsTr("Remove from Dock") : qsTr("Pin to Dock")
+            onTriggered: root.togglePin(pinMenu.launcherItem)
+        }
+    }
 
     SectionHeader {
         objectName: "launcherSectionHeader-"
@@ -108,7 +140,34 @@ ColumnLayout {
             Keys.onSpacePressed: launch()
             Keys.onUpPressed: root.flatFocusRequested(flatIndex - 1)
             Keys.onDownPressed: root.flatFocusRequested(flatIndex + 1)
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Menu
+                        || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) {
+                    root.openPinMenu(modelData, row)
+                    event.accepted = true
+                }
+            }
             Accessible.onPressAction: launch()
+
+            // AGENT-CONTRACT: a row drags its desktop-entry id under
+            // application/x-qindaqt-desktop-entry-id, the format the dock's
+            // drop area accepts (DockDropGeometry.js in
+            // QindaQt.Shell.DesktopControls owns the spelling; ADR-0265).
+            Drag.active: pinDrag.active
+            Drag.dragType: Drag.Automatic
+            Drag.supportedActions: Qt.CopyAction
+            Drag.mimeData: ({ "application/x-qindaqt-desktop-entry-id": String(modelData.entryId) })
+
+            DragHandler {
+                id: pinDrag
+                target: null
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: root.openPinMenu(row.modelData, row)
+            }
 
             // AGENT-GUARD: native delegate styles can paint a light surface
             // behind token-colored text. Own both sides of the contrast pair.
@@ -158,15 +217,10 @@ ColumnLayout {
                     topPadding: Tokens.space["1"]
                     bottomPadding: Tokens.space["1"]
                     accessibleDescription: row.modelData.pinned
-                        ? qsTr("Remove this application from Quick Launch")
-                        : qsTr("Add this application to Quick Launch")
+                        ? qsTr("Remove this application from the Dock")
+                        : qsTr("Keep this application in the Dock")
                     onActiveFocusChanged: if (activeFocus) root.revealRequested(row)
-                    onClicked: {
-                        if (row.modelData.pinned)
-                            root.controller.unpin(row.modelData.entryId)
-                        else
-                            root.controller.pin(row.modelData.entryId)
-                    }
+                    onClicked: root.togglePin(row.modelData)
                 }
             }
         }

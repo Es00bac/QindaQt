@@ -71,6 +71,8 @@ Item {
 
     property string contextEntryId: ""
     property string contextEntryLabel: ""
+    // The dock facade (ADR-0265) for "Add to Dock"; null without a dock.
+    property var dockAccess: null
 
     function isSelected(entryId) { return selection.isSelected(entryId) }
     function selectionCount() { return selection.count() }
@@ -95,6 +97,15 @@ Item {
             contents.copySelection(picked)
     }
     function pasteClipboard() { contents.pasteIntoDesktop() }
+    // The whole selection joins the dock as one edit (the dock refuses a
+    // second write while the first is saving).
+    function addSelectionToDock() {
+        if (dockAccess === null)
+            return
+        const paths = selection.selectedRows().map(row => String(row.path))
+        if (paths.length > 0)
+            dockAccess.addPaths(paths)
+    }
     function reflow() {
         selection.clear()
         layoutStore.clearAll()
@@ -287,6 +298,9 @@ Item {
             onCutRequested: root.cutSelectionOps()
             onCopyRequested: root.copySelectionOps()
             onDeleteRequested: root.trashSelection()
+            dockAvailable: root.dockAccess !== null
+            desktopEntry: root.contextEntryId.endsWith(".desktop")
+            onAddToDockRequested: root.addSelectionToDock()
         }
     }
     Item {

@@ -18,7 +18,9 @@ Item {
     property bool vertical: false
 
     readonly property bool ready: access !== null && Tokens.ready
-    readonly property var rows: ready ? access.rows : []
+    // Applications only (ADR-0265): the dock facade also carries folders,
+    // files, groups, and Trash, which these launch tiles do not present.
+    readonly property var rows: ready ? access.applicationRows : []
     readonly property bool showRows: ready && rows.length > 0
     readonly property int tileExtent: vertical ? Math.max(48, width - Tokens.space["2"])
                                                : 64

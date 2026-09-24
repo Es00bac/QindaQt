@@ -44,6 +44,15 @@ Flickable {
     readonly property var zoneApplets: (panel.applets ?? []).filter(
         applet => appletZone(applet) === zone)
     readonly property int minimumFittedDockTileSize: 24
+    // ADR-0265: in a dock zone that shows the pins, a running pinned
+    // application is its pinned tile; the task strip leaves those tasks out
+    // and the fit arithmetic below counts only the tiles still shown.
+    readonly property var dockClaimedTaskIds: {
+        if (!dockMode || !zoneApplets.some(applet => String(applet.plugin ?? "") === "quick-launch"))
+            return []
+        const quick = desktopControlsAccess !== null ? desktopControlsAccess.quickLaunch : null
+        return quick !== null && quick !== undefined ? (quick.claimedTaskIds ?? []) : []
+    }
     readonly property int dockUnitCount: dockMode ? countDockUnits() : 0
     readonly property int dockGroupCount: dockMode ? countDockGroups() : 0
     readonly property real dockFitSpacing:
@@ -202,7 +211,8 @@ Flickable {
         if (["dock-task-list", "grouped-task-list", "centered-task-list",
              "task-list"].includes(plugin)) {
             return taskListAppletAccess !== null
-                ? Math.max(0, Number(taskListAppletAccess.entryCount ?? 0)) : 1
+                ? Math.max(0, Number(taskListAppletAccess.entryCount ?? 0)
+                              - dockClaimedTaskIds.length) : 1
         }
         if (plugin === "quick-launch") {
             const quick = desktopControlsAccess !== null
@@ -344,6 +354,7 @@ Flickable {
                 dockZoomEnabled: root.dockZoomEnabled
                 dockHasLauncherGroup: root.dockMode
                     && root.dockHasVisibleLauncherBefore(modelData)
+                dockClaimedTaskIds: root.dockClaimedTaskIds
 
                 AppletEditHandle {
                     anchors.fill: parent

@@ -103,9 +103,7 @@ void LauncherCompositionTests::auditedCompositionUsesInjectedExecutionSeams()
     QString error;
     QVERIFY2(fixture.load(&error), qPrintable(error));
     FakeSettingsTransport transport;
-    SettingsClient settings(
-        transport, {LauncherPersistenceController::pinnedKey(),
-                    LauncherPersistenceController::recentKey()});
+    SettingsClient settings(transport, LauncherPersistenceController::scopedKeys());
     RecordingSpawner spawner;
     RecordingActivator activator;
     LauncherAppletComposition composition(
@@ -149,9 +147,7 @@ void LauncherCompositionTests::deniedGrantNeverReachesExecutionSeams()
     fixture.policy.auditedBuiltinDefault =
         AppletHost::CapabilityDisposition::Deny;
     FakeSettingsTransport transport;
-    SettingsClient settings(
-        transport, {LauncherPersistenceController::pinnedKey(),
-                    LauncherPersistenceController::recentKey()});
+    SettingsClient settings(transport, LauncherPersistenceController::scopedKeys());
     RecordingSpawner spawner;
     RecordingActivator activator;
     LauncherAppletComposition composition(

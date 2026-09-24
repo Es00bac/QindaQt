@@ -43,6 +43,9 @@ Item {
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     property bool dockHasLauncherGroup: false
+    // ADR-0265: task ids the dock's pinned tiles represent in this dock zone
+    // (PanelAppletRow computes them); the task strip leaves them out.
+    property var dockClaimedTaskIds: []
     // Worn Luna taskbar (ADR-0124): lunaMode is PanelContent's panel-derived
     // dressing and `presentation: "luna"` the per-instance profile opt-in.
     // Either one selects the Luna path of a renderer that has one.
@@ -314,6 +317,9 @@ Item {
             dockMode: root.dockMode
             dockTileSize: root.dockTileSize
             dockHasLauncherGroup: root.dockHasLauncherGroup
+            dockClaimedTaskIds: root.dockClaimedTaskIds
+            dockAccess: root.desktopControlsAccess !== null
+                ? (root.desktopControlsAccess.quickLaunch ?? null) : null
             reducedMotion: root.reducedMotion
             dockZoomEnabled: root.dockZoomEnabled
             luna: root.luna

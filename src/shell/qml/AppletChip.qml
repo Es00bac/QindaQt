@@ -31,6 +31,8 @@ Rectangle {
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     property bool dockHasLauncherGroup: false
+    // ADR-0265: forwarded to the task strip (see BuiltinAppletContent).
+    property var dockClaimedTaskIds: []
     // Worn Luna taskbar (ADR-0124): set by PanelContent for the bliss-taskbar
     // panel only; every other host leaves it false and keeps the raised chip.
     property bool lunaMode: false
@@ -177,6 +179,7 @@ Rectangle {
         reducedMotion: root.reducedMotion
         dockZoomEnabled: root.dockZoomEnabled
         dockHasLauncherGroup: root.dockHasLauncherGroup
+        dockClaimedTaskIds: root.dockClaimedTaskIds
         lunaMode: root.lunaMode
     }
 
