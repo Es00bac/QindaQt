@@ -1,6 +1,6 @@
 # Luna — W6 screen saver preview
 
-- Status: working — Repairing four blocking W6 review findings in the existing worktree.
+- Status: idle — Candidate `8b9cb78828ab83504eeff703080678c3e31fc5ce` is pushed to `hub`; awaiting independent review.
 
 ## Updates
 
@@ -13,3 +13,4 @@
 - 2026-09-24T10:53:00Z — The all-Settings build completed successfully after CMake regeneration. Focused screensaver CTest passed 6/6; the first full `-L settings` run passed 132/133, with only `compositor.touch-chrome.enabled.gtk-csd.single-1080p` failing because its required `qindaqt_compositor.so` target had not been built. Building that target now before rerunning the full suite.
 - 2026-09-24T11:03:07Z — Built `qindaqt_compositor` to supply the integration test plugin, then reran the full Settings filter successfully (133/133); focused screensaver filter is 6/6. `./tools/validate-docs` and `mkdocs build --strict` both pass. Completing final diff review before commit/push.
 - 2026-09-24T11:06:00Z — Final review capped injected preview durations at the production 60-second maximum, preserving shorter test deadlines without allowing any environment to extend the lock-inhibition window. Rebuilding and rerunning gates after this final edit.
+- 2026-09-24T11:12:15Z — Candidate `8b9cb78828ab83504eeff703080678c3e31fc5ce` was pushed to `hub`; focused and full Settings gates plus both documentation checks are green. Handoff requests independent review of that exact commit.
