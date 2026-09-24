@@ -16,6 +16,14 @@ namespace QindaQt::Apps::FileManager {
 
 [[nodiscard]] bool removeLocalTreeNoFollow(const QString &path);
 
+// ADR-0269: Delete Permanently. The item must still be `expected` (lstat
+// identity, taken under its pinned parent, so a link is removed as the link
+// itself); a folder is removed depth-first without following links.
+// Cancellation between entries leaves what was not yet removed in place.
+[[nodiscard]] MutationResult deleteLocalTreeNoFollow(
+    const QString &path, const FileIdentity &expected,
+    const MutationCancellation &cancellation, const MutationProgressCallback &progress);
+
 [[nodiscard]] MutationResult emptyLocalDirectoryNoFollow(
     const QString &path, const MutationCancellation &cancellation,
     const MutationProgressCallback &progress, int *removed);

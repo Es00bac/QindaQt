@@ -28,7 +28,10 @@ void bindFileManagerTransferActions(AppShell::ApplicationCoordinator &coordinato
     enabled("edit.cut", idle && hasSelection);
     enabled("edit.copy", idle && hasSelection);
     enabled("edit.paste", idle && clipboard.canPaste());
-    enabled("file.properties", hasSelection && !navigation.remoteActive());
+    // ADR-0269: Get Info with nothing selected describes the browsed folder,
+    // which the Applications place does not have.
+    enabled("file.properties", navigation.folderViewActive() && !navigation.remoteActive()
+                                   && (hasSelection || !navigation.applicationsPlace()));
   };
   QObject::connect(&clipboard, &ClipboardController::stateChanged,
                    &coordinator, sync);

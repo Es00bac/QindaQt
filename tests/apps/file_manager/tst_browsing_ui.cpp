@@ -299,7 +299,8 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
     QCOMPARE(menu->property("selectionCount").toInt(), expectedSelectionCount);
     QCOMPARE(itemVisible(menu, "contextNewFolderAction"), background);
     QCOMPARE(itemVisible(menu, "contextRefreshAction"), background);
-    QCOMPARE(itemVisible(menu, "contextViewModeAction"), background);
+    // ADR-0269: View ▸ (a sub-menu entry named when the menu opens).
+    QCOMPARE(itemVisible(menu, "contextViewMenu"), background);
     QCOMPARE(itemVisible(menu, "contextShowHiddenAction"), background);
     QCOMPARE(itemVisible(menu, "contextCutAction"), !background);
     QCOMPARE(itemVisible(menu, "contextClipboardCopyAction"), !background);

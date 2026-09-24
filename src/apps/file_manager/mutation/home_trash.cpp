@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <optional>
 
 namespace QindaQt::Apps::FileManager {
 namespace {
@@ -143,6 +144,21 @@ namespace {
   return token && token->load(std::memory_order_relaxed);
 }
 
+// The first non-empty Path= value of a .trashinfo, percent-decoded; nullopt
+// when the header is not "[Trash Info]".
+[[nodiscard]] std::optional<QString> recordedPath(const QByteArray &contents) {
+  const QList<QByteArray> lines = contents.split('\n');
+  if (lines.isEmpty() || lines.first() != QByteArray("[Trash Info]")) {
+    return std::nullopt;
+  }
+  for (const QByteArray &line : lines) {
+    if (line.size() > 5 && line.startsWith("Path=")) {
+      return QUrl::fromPercentEncoding(line.mid(5));
+    }
+  }
+  return QString();
+}
+
 } // namespace
 
 HomeTrash::HomeTrash(QString root, DeviceResolverPtr deviceResolver)
@@ -261,17 +277,11 @@ MutationResult HomeTrash::restore(const MutationRequest &request) {
   if (!infoFile.result.ok()) {
     return infoFile.result;
   }
-  const QList<QByteArray> lines = infoFile.contents.split('\n');
-  if (lines.isEmpty() || lines.first() != QByteArray("[Trash Info]")) {
+  const std::optional<QString> recorded = recordedPath(infoFile.contents);
+  if (!recorded) {
     return failure(MutationError::IoError, QStringLiteral("Trash metadata has an invalid header"));
   }
-  QByteArray encodedPath;
-  for (const QByteArray &line : lines) {
-    if (encodedPath.isEmpty() && line.startsWith("Path=")) {
-      encodedPath = line.mid(5);
-    }
-  }
-  const QString originalPath = QUrl::fromPercentEncoding(encodedPath);
+  const QString originalPath = *recorded;
   if (!QFileInfo(originalPath).isAbsolute() || originalPath != request.destinationPath) {
     return failure(MutationError::InvalidRequest,
                    QStringLiteral("Trash metadata does not match the requested restore path"));
@@ -314,6 +324,32 @@ MutationResult HomeTrash::restore(const MutationRequest &request) {
   result.originalPath = originalPath;
   result.outputIdentity = LocalMutationBackend::identityForPath(originalPath);
   return result;
+}
+
+QString HomeTrash::originalPathFor(const QString &payloadPath) {
+  const QFileInfo payload(payloadPath);
+  const QString token = payload.fileName();
+  const QDir files = payload.absoluteDir();
+  if (token.isEmpty() || files.dirName() != QLatin1String("files")) {
+    return {};
+  }
+  const QString infoPath = QDir(QFileInfo(files.absolutePath()).absolutePath())
+                               .filePath(QStringLiteral("info/%1.trashinfo").arg(token));
+  const SafeFileReadResult infoFile = readLocalFileNoFollow(infoPath, 4096);
+  const std::optional<QString> recorded =
+      infoFile.result.ok() ? recordedPath(infoFile.contents) : std::nullopt;
+  return recorded && QFileInfo(*recorded).isAbsolute() ? *recorded : QString();
+}
+
+void HomeTrash::forgetPayload(const QString &payloadPath) const {
+  const QFileInfo payload(payloadPath);
+  if (payload.fileName().isEmpty() ||
+      QDir::cleanPath(payload.absolutePath()) != QDir(m_root).filePath(QStringLiteral("files"))) {
+    return;
+  }
+  const bool removed = removeLocalTreeNoFollow(QDir(m_root).filePath(
+      QStringLiteral("info/%1.trashinfo").arg(payload.fileName())));
+  Q_UNUSED(removed);
 }
 
 MutationResult HomeTrash::empty(const MutationCancellation &cancellation,

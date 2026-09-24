@@ -4,11 +4,13 @@ qt_add_library(qindaqt_file_manager_desktop_boundary STATIC)
 target_sources(
     qindaqt_file_manager_desktop_boundary
     PRIVATE
+        mutation/archive_codec.cpp
         mutation/device_resolver.cpp
         mutation/home_trash.cpp
         mutation/local_mutation_backend.cpp
         mutation/mutation_controller.cpp
         mutation/mutation_controller_foreign.cpp
+        mutation/mutation_controller_items.cpp
         mutation/mutation_types.cpp
         mutation/safe_path_operations.cpp
         mutation/safe_tree_operations.cpp
@@ -61,6 +63,8 @@ target_sources(
         app_shell/file_manager_application_actions.h
         app_shell/file_manager_browsing_actions.cpp
         app_shell/file_manager_browsing_actions.h
+        app_shell/file_manager_item_actions.cpp
+        app_shell/file_manager_item_actions.h
         app_shell/file_manager_mutation_actions.cpp
         app_shell/file_manager_mutation_actions.h
         app_shell/file_manager_transfer_actions.cpp
@@ -72,7 +76,11 @@ target_sources(
         model/bookmarks_store.cpp
         model/clipboard_controller.cpp
         model/entry_properties.cpp
+        model/file_templates.cpp
+        model/folder_launch_controller.cpp
         model/listing_order.cpp
+        model/open_with_controller.cpp
+        model/open_with_launcher.cpp
         model/applications_controller.cpp
         model/applications_listing.cpp
         model/applications_place.cpp
@@ -112,10 +120,16 @@ target_sources(
         network/transfer_queue_controller.cpp
         network/transfer_router.cpp
         network/transfer_types.cpp
+        # ADR-0269: the only sources that name KArchive.
+        mutation/karchive_codec.cpp
+        mutation/karchive_codec_extract.cpp
+        mutation/karchive_io.h
     PUBLIC
         app_shell/file_manager_action_catalog.h
+        mutation/archive_codec.h
         mutation/device_resolver.h
         mutation/home_trash.h
+        mutation/karchive_codec.h
         mutation/local_mutation_backend.h
         mutation/mutation_backend.h
         mutation/mutation_controller.h
@@ -137,10 +151,14 @@ target_sources(
         model/entry_properties.h
         model/entry_presentation.h
         model/file_manager_types.h
+        model/file_templates.h
+        model/folder_launch_controller.h
         model/launch_intent.h
         model/listing_order.h
         model/local_directory_lister.h
         model/navigation_controller.h
+        model/open_with_controller.h
+        model/open_with_launcher.h
         model/workspace_chooser_client.h
         model/navigation_history.h
         model/places_controller.h
@@ -185,11 +203,17 @@ target_sources(
 )
 target_include_directories(qindaqt_file_manager_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 find_package(KF6KIO 6.0 REQUIRED CONFIG)
+# ADR-0269: KArchive (a tier-1 framework beside the KIO this target already
+# uses) backs Compress/Extract; packaging adds kde-frameworks/karchive:6.
+find_package(KF6Archive 6.0 REQUIRED CONFIG)
 target_link_libraries(
     qindaqt_file_manager_support
     PUBLIC
         qindaqt_file_manager_desktop_boundary
         qindaqt_file_manager_menu_catalog
+        # ADR-0269: Open With reads and writes associations through Settings'
+        # own Default Applications store; there is no second MIME authority.
+        qindaqt_settings_default_apps
         QindaQt::AppShell
         QindaQt::AppShellMenuExport
         QindaQt::ApplicationCatalog
@@ -204,7 +228,7 @@ target_link_libraries(
     # application class lives in runtime/file_manager_application.h.
     # ADR-0157: Qt6::DBus is private for the session KIOFuse mount call; the
     # kio-fuse daemon lifecycle belongs to the platform, not File Manager.
-    PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets Qt6::Widgets Qt6::DBus
+    PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets KF6::Archive Qt6::Widgets Qt6::DBus
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)
@@ -212,9 +236,13 @@ qindaqt_enable_warnings(qindaqt_file_manager_support)
 
 qt_add_executable(qindaqt-file-manager
     main.cpp
+    runtime/file_actions_composition.cpp
+    runtime/file_actions_composition.h
     runtime/mutation_ui_action_probe.cpp
     runtime/selection_ui_probe.cpp
     runtime/mutation_ui_action_probe.h
+    runtime/ui_contract_probe.cpp
+    runtime/ui_contract_probe.h
 )
 set_source_files_properties("${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png"
     PROPERTIES QT_RESOURCE_ALIAS empty-folder.png)
@@ -265,6 +293,12 @@ qt_add_qml_module(
         ui/TransferQueueBanner.qml
         ui/PropertiesDialog.qml
         ui/FileContextMenu.qml
+        ui/ContextActionItem.qml
+        ui/ContextChoiceMenu.qml
+        ui/ContextNewFileMenu.qml
+        ui/ContextOpenWithMenu.qml
+        ui/FileActions.qml
+        ui/OpenWithDialog.qml
         ui/EntryDrag.js
     DEPENDENCIES
         QindaQt.Controls/1.0

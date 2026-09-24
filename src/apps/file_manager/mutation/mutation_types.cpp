@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "mutation_types.h"
 
+#include <cerrno>
+
 namespace QindaQt::Apps::FileManager {
 
 QString mutationErrorKey(MutationError error) {
@@ -33,6 +35,34 @@ QString mutationErrorKey(MutationError error) {
     return QStringLiteral("busy");
   }
   return QStringLiteral("io-error");
+}
+
+MutationError mutationErrorForErrno(int error) {
+  switch (error) {
+  case EACCES:
+  case EPERM:
+    return MutationError::PermissionDenied;
+  case EEXIST:
+  case ENOTEMPTY:
+    return MutationError::AlreadyExists;
+  case EXDEV:
+    return MutationError::CrossDevice;
+  case ENOSPC:
+#ifdef EDQUOT
+  case EDQUOT:
+#endif
+    return MutationError::DiskFull;
+  case ENOENT:
+  case ENOTDIR:
+    return MutationError::Vanished;
+  case ENAMETOOLONG:
+  case EINVAL:
+    return MutationError::InvalidRequest;
+  case ELOOP:
+    return MutationError::SymlinkEscape;
+  default:
+    return MutationError::IoError;
+  }
 }
 
 QString boundedMutationDiagnostic(const QString &message) {

@@ -28,6 +28,9 @@ struct LaunchPreparation final
     QString program;
     QStringList arguments;
     QString message;
+    // ADR-0269: how many of the planned localFiles the argv carries (see
+    // ExecPlan::fileArguments): 0, 1 (%f/%u) or all of them (%F/%U).
+    qsizetype fileArguments = 0;
 
     [[nodiscard]] bool spawnable() const noexcept
     {
@@ -41,10 +44,14 @@ struct LaunchPreparation final
 // Extracts the execution keys of one entry/action from the exact document
 // text a scan retained and plans the argv without any shell interpolation.
 // Pure text work over caller-supplied input; process spawning stays with the
-// caller (the file manager owns a QProcess adapter).
+// caller (the file manager owns a QProcess adapter). localFiles (ADR-0269,
+// File Manager's Open With) are already-validated absolute paths that the
+// Exec file codes receive as whole arguments; leave it empty to plan a plain
+// application start.
 [[nodiscard]] LaunchPreparation planApplicationLaunch(
     const QString &documentText, const QString &actionId,
-    const QString &displayName, const QString &desktopFilePath);
+    const QString &displayName, const QString &desktopFilePath,
+    const QStringList &localFiles = {});
 
 // The single Exec argument vector for launching a terminal-required
 // application through the supplied terminal emulator command prefix. Empty

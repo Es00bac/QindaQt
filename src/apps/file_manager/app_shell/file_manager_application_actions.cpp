@@ -18,7 +18,8 @@ void bindFileManagerApplicationActions(AppShell::ApplicationCoordinator &coordin
       const auto result = coordinator.setActionEnabled(QLatin1String(id), enabled);
       Q_UNUSED(result);
     };
-    apply("application.open", selected > 0);
+    // ADR-0269: Open is file.open now, one action everywhere, bound with the
+    // other item actions (file_manager_item_actions.cpp).
     apply("application.show-entry-file", selected == 1);
     apply("view.group-by-category", place);
     const auto checked = coordinator.setActionChecked(

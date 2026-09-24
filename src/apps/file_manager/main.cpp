@@ -2,6 +2,7 @@
 #include "app_shell/file_manager_action_catalog.h"
 #include "app_shell/file_manager_application_actions.h"
 #include "app_shell/file_manager_browsing_actions.h"
+#include "app_shell/file_manager_item_actions.h"
 #include "app_shell/file_manager_mutation_actions.h"
 #include "app_shell/file_manager_transfer_actions.h"
 #include "model/applications_controller.h"
@@ -33,8 +34,11 @@
 #include "network/transfer_queue_controller.h"
 #include "preview/preview_provider.h"
 #include "preview/theme_icon_provider.h"
+#include "runtime/file_actions_composition.h"
 #include "runtime/file_manager_application.h"
 #include "runtime/mutation_ui_action_probe.h"
+#include "runtime/ui_contract_probe.h"
+#include "mutation/karchive_codec.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"
 
@@ -63,7 +67,8 @@ namespace {
     QindaQt::AppShell::ApplicationCoordinator &coordinator,
     QindaQt::Apps::FileManager::NavigationController &navigation,
     QindaQt::Apps::FileManager::MutationController &mutation,
-    QindaQt::Apps::FileManager::ClipboardController &clipboard) {
+    QindaQt::Apps::FileManager::ClipboardController &clipboard,
+    const QString &trashFilesDirectory) {
   coordinator.setApplicationName(QStringLiteral("QindaQt File Manager"));
   coordinator.setWindowTitle(
       QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
@@ -81,6 +86,8 @@ namespace {
                                                              mutation);
   QindaQt::Apps::FileManager::bindFileManagerApplicationActions(coordinator, navigation,
                                                                 clipboard);
+  QindaQt::Apps::FileManager::bindFileManagerItemActions(coordinator, navigation, clipboard,
+                                                         mutation, trashFilesDirectory);
   QObject::connect(
       &coordinator,
       &QindaQt::AppShell::ApplicationCoordinator::quitDecisionRequested,
@@ -197,50 +204,6 @@ void publishSearchResultsInto(QindaQt::Apps::FileManager::SearchController &sear
       });
 }
 
-// Returns the first missing required UI object name, or an empty string when
-// the complete --check-ui-contract surface is present.
-[[nodiscard]] QString missingUiContractObject(QObject *root) {
-  const QStringList requiredObjects = {
-      QStringLiteral("newFolderButton"), QStringLiteral("entryListView"),
-      QStringLiteral("entryGridView"), QStringLiteral("locationField"),
-      QStringLiteral("locationToggleButton"), QStringLiteral("toggleHiddenButton"),
-      QStringLiteral("toggleViewModeButton"), QStringLiteral("placesSidebar"),
-      QStringLiteral("addBookmarkButton"), QStringLiteral("bookmarkList"),
-      QStringLiteral("bookmarkStoreBanner"), QStringLiteral("sortHeader_name"),
-      QStringLiteral("sortHeader_size"), QStringLiteral("sortHeader_kind"),
-      QStringLiteral("sortHeader_modified"),
-      QStringLiteral("mutationProgressCard"), QStringLiteral("mutationFailureCard"),
-      QStringLiteral("mutationResultCard"), QStringLiteral("newFolderDialog"),
-      QStringLiteral("renameDialog"), QStringLiteral("destinationDialog"),
-      QStringLiteral("trashConfirmationDialog"),
-      QStringLiteral("emptyTrashConfirmationDialog"),
-      QStringLiteral("propertiesDialog"),
-      QStringLiteral("filterSubfoldersToggle"),
-      // ADR-0194/0195: the network surfaces are part of the installed
-      // package's contract, so a packaging change that drops one fails the
-      // probe instead of shipping a Network place that opens nothing.
-      QStringLiteral("networkHub"), QStringLiteral("connectToServerButton"),
-      QStringLiteral("networkLocationList"),
-      QStringLiteral("connectToServerDialog"),
-      QStringLiteral("connectSchemeBox"), QStringLiteral("connectHostField"),
-      QStringLiteral("connectPathField"), QStringLiteral("connectNameField"),
-      QStringLiteral("transferQueueBanner"),
-      QStringLiteral("transferRefusalBanner"),
-      // ADR-0200/0198: the nearby section and the preferences window are part
-      // of the installed package's contract too.
-      QStringLiteral("nearbyServersSection"), QStringLiteral("preferencesWindow"),
-      QStringLiteral("preferencesTabBar"), QStringLiteral("preferencesGeneralPage"),
-      QStringLiteral("preferencesViewsPage"),
-      QStringLiteral("preferencesNetworkPage"),
-      QStringLiteral("preferencesTrashPage")};
-  for (const QString &objectName : requiredObjects) {
-    if (!root->findChild<QObject *>(objectName)) {
-      return objectName;
-    }
-  }
-  return {};
-}
-
 // The five owners the network and preference surfaces need, composed
 // together so the composition root stays within the function-length budget
 // and so their wiring -- units follow the saved locations, discovery follows
@@ -307,7 +270,7 @@ struct NetworkComposition final {
     return 0;
   }
   if (parser.isSet(QStringLiteral("check-ui-contract"))) {
-    const QString missing = missingUiContractObject(root);
+    const QString missing = QindaQt::Apps::FileManager::missingUiContractObject(root);
     if (!missing.isEmpty()) {
       std::fprintf(stderr, "qindaqt-file-manager: missing UI object %s\n",
                    qPrintable(missing));
@@ -435,9 +398,12 @@ int main(int argc, char **argv) {
   const QString trashRoot = QDir(QStandardPaths::writableLocation(
                                      QStandardPaths::GenericDataLocation))
                                 .filePath(QStringLiteral("Trash"));
+  // ADR-0269: Compress and Extract run in the same busy slot through KArchive.
   auto mutationController =
       std::make_unique<QindaQt::Apps::FileManager::MutationController>(
-          std::make_unique<QindaQt::Apps::FileManager::LocalMutationBackend>(trashRoot));
+          std::make_unique<QindaQt::Apps::FileManager::LocalMutationBackend>(
+              trashRoot, std::make_shared<QindaQt::Apps::FileManager::LocalDeviceResolver>(),
+              std::make_shared<QindaQt::Apps::FileManager::KArchiveCodec>()));
   auto clipboardController =
       std::make_unique<QindaQt::Apps::FileManager::ClipboardController>(
           *mutationController, *QGuiApplication::clipboard());
@@ -452,7 +418,8 @@ int main(int argc, char **argv) {
   NetworkComposition network = composeNetworkSurfaces(stateDirectory);
   auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
   const QString appShellError = configureAppShell(
-      *appCoordinator, *controller, *mutationController, *clipboardController);
+      *appCoordinator, *controller, *mutationController, *clipboardController,
+      QDir(trashRoot).filePath(QStringLiteral("files")));
   if (!appShellError.isEmpty()) {
     std::fprintf(stderr, "qindaqt-file-manager: %s\n",
                  qPrintable(appShellError));
@@ -460,8 +427,10 @@ int main(int argc, char **argv) {
   }
 
   publishSearchResultsInto(*searchController, *controller);
+  const QindaQt::Apps::FileManager::FileActionsComposition fileActions =
+      QindaQt::Apps::FileManager::composeFileActions(uniqueApplicationDataRoots(), *applications);
 
-  engine.setInitialProperties(
+  QVariantMap initialProperties(
       {{QStringLiteral("navigationController"),
         QVariant::fromValue(static_cast<QObject *>(controller.get()))},
        {QStringLiteral("mutationController"),
@@ -489,6 +458,8 @@ int main(int argc, char **argv) {
        {QStringLiteral("chooserMode"), parser.isSet(QStringLiteral("choose-application"))},
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
+  fileActions.insertInto(initialProperties);
+  engine.setInitialProperties(initialProperties);
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));
   if (engine.rootObjects().isEmpty()) {
     return 3;

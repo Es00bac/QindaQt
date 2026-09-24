@@ -3,12 +3,16 @@
 
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QLocale>
 #include <QMimeDatabase>
 #include <QPointer>
 #include <QThread>
 #include <QVariantList>
+#include <QVariantMap>
+
+#include <sys/stat.h>
 
 namespace QindaQt::Apps::FileManager {
 namespace {
@@ -196,6 +200,25 @@ void EntryPropertiesController::inspect(const QVariantList &entries) {
     return;
   }
   startTotalWalk(entries);
+}
+
+void EntryPropertiesController::inspectFolder(const QString &path) {
+  const QFileInfo info(path);
+  if (!info.isAbsolute() || !info.isDir()) {
+    inspect({});
+    return;
+  }
+  struct stat status {};
+  const bool stated = ::lstat(QFile::encodeName(info.absoluteFilePath()).constData(), &status) == 0;
+  inspect({QVariantMap{
+      {QStringLiteral("name"), info.fileName().isEmpty() ? info.absoluteFilePath() : info.fileName()},
+      {QStringLiteral("path"), info.absoluteFilePath()},
+      {QStringLiteral("isDirectory"), true},
+      {QStringLiteral("isSymlink"), info.isSymLink()},
+      {QStringLiteral("kindText"), QStringLiteral("Folder")},
+      {QStringLiteral("modified"), info.lastModified()},
+      {QStringLiteral("mode"), stated ? QString::number(status.st_mode) : QString()},
+      {QStringLiteral("size"), 0}}});
 }
 
 void EntryPropertiesController::clear() {

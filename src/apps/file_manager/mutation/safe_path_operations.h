@@ -30,4 +30,15 @@ struct SafeFileReadResult {
     const FileIdentity &expectedSource,
     const FileIdentity &expectedDestinationParent);
 
+// ADR-0269: New File's empty regular file and Make Link's symbolic link.
+// Both are created exclusively (an existing name, dangling link included, is
+// AlreadyExists, never replaced) in a parent opened without following links
+// that must still be `expectedParent`. A link's `target` is stored literally
+// and never resolved here.
+[[nodiscard]] MutationResult createLocalFileNoFollow(
+    const QString &destination, const FileIdentity &expectedParent);
+[[nodiscard]] MutationResult createLocalSymlinkNoFollow(
+    const QString &destination, const QString &target,
+    const FileIdentity &expectedParent);
+
 } // namespace QindaQt::Apps::FileManager
