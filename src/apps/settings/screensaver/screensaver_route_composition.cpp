@@ -46,9 +46,9 @@ public:
     // borrow it.
     Session::DesktopControls::DesktopEntryScreensaverCatalog catalog;
     Session::DesktopControls::Settings1ScreensaverPreferences preferences;
-    // The greeter mirror writes only the `[Greeter]` wallpaper keys of the
-    // same kscreenlockerrc the walk-away section's own store writes
-    // `[Daemon]` in.
+    // The lock-screen mirror writes only the `[Greeter]` wallpaper keys of
+    // the same kscreenlockerrc the walk-away section's own store writes
+    // `[Daemon]` in. Preview has no lock-screen process boundary.
     KConfigLockScreenSaverStore lockScreenSaver{
         QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
             .filePath(QStringLiteral("kscreenlockerrc"))};

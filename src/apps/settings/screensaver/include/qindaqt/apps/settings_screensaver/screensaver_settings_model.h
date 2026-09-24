@@ -54,6 +54,7 @@ class ScreensaverSettingsModel final : public QObject {
   Q_PROPERTY(bool previewAvailable READ previewAvailable NOTIFY changed)
   Q_PROPERTY(bool previewRunning READ previewRunning NOTIFY changed)
   Q_PROPERTY(QString previewSummary READ previewSummary NOTIFY changed)
+  Q_PROPERTY(QString previewErrorText READ previewErrorText NOTIFY changed)
 
 public:
   ScreensaverSettingsModel(
@@ -86,6 +87,7 @@ public:
   [[nodiscard]] bool previewAvailable() const;
   [[nodiscard]] bool previewRunning() const;
   [[nodiscard]] const QString &previewSummary() const noexcept;
+  [[nodiscard]] const QString &previewErrorText() const noexcept;
 
   Q_INVOKABLE bool setSaver(const QString &saver);
   Q_INVOKABLE bool setMinutes(int minutes);
@@ -124,6 +126,7 @@ private:
   QString m_localError;
   QString m_mirrorError;
   QString m_schemaError;
+  QString m_previewError;
   QString m_previewSummary;
   QString m_writeOwner;
   QString m_writeEpoch;

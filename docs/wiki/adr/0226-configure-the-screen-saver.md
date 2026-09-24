@@ -1,13 +1,15 @@
 # ADR-0226: configure the screen saver
 
-- **Status:** Accepted
+- **Status:** Accepted; clause 4 superseded by [ADR-0259](0259-preview-screen-savers-without-the-lock-screen.md)
 - **Date:** 2026-09-21
 - **Owners:** Desktop controls, Settings Center
 - **Supersedes:** [ADR-0215](0215-the-idle-screensaver-is-decoration-not-a-lock.md),
   for the closed token set and the Settings placement only: the saver set is
   now discovered, and configuration moved out of the Power route. The
   decoration-not-a-lock authority split stands unchanged.
-- **Superseded by:** None
+- **Superseded by:** Clause 4 superseded by [ADR-0259](0259-preview-screen-savers-without-the-lock-screen.md)
+
+> **Clause 4 update:** Settings previews now follow [ADR-0259](0259-preview-screen-savers-without-the-lock-screen.md). The original clause below remains as accepted history.
 
 ## Context
 

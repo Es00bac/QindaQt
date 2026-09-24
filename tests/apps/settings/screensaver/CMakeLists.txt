@@ -28,12 +28,16 @@ set_tests_properties(qindaqt.settings-screensaver-lock-screen-saver-store PROPER
     LABELS "settings;screensaver;screen-lock")
 
 qt_add_executable(qindaqt_screensaver_preview_tests
-    tst_screensaver_preview.cpp)
+    tst_screensaver_preview.cpp
+    tst_screensaver_preview_failures.cpp
+    tst_screensaver_preview_failures.h
+    screensaver_preview_test_support.h)
 target_link_libraries(qindaqt_screensaver_preview_tests
-    PRIVATE qindaqt_settings_screensaver Qt6::Test)
+    PRIVATE qindaqt_settings_screensaver Qt6::DBus Qt6::Quick Qt6::Test)
 qindaqt_enable_warnings(qindaqt_screensaver_preview_tests)
+find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session REQUIRED)
 add_test(NAME qindaqt.settings-screensaver-preview
-    COMMAND qindaqt_screensaver_preview_tests)
+    COMMAND ${QINDAQT_DBUS_RUN_SESSION} -- $<TARGET_FILE:qindaqt_screensaver_preview_tests>)
 set_tests_properties(qindaqt.settings-screensaver-preview PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "settings;screensaver;preview")
