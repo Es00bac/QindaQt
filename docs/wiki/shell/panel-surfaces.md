@@ -288,15 +288,16 @@ hosted at the 26px row a stock panel hands it.
 
 ## In-place customization (Meta + right-click)
 
-The desktop is customized where it is. A modifier chord on a panel's own
-material, on an applet chip, or on the desktop opens a context menu whose
-every entry is one editing gesture followed by one Apply of the user profile,
-and edit mode ("Edit Panels") turns every applet into a drag handle for
-longer sessions. The Settings
-Customize route stays for previews and for the full property panes; both
-surfaces host the same editor domain, so the profile a menu entry persists is
-byte-identical to what the route persists for the same intent (see
-[Customization editor domain](customization-editor.md#live-host-in-the-shell)
+The desktop is customized where it is, and only there. A modifier chord on a
+panel's own material, on an applet chip, or on the desktop opens a context
+menu whose every entry is one editing gesture followed by one Apply of the
+user profile, and edit mode ("Edit Panels") turns every applet into a drag
+handle for longer sessions. The Settings Customize route no longer edits: it
+switches layout presets and keeps the user's own
+([ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)).
+The shell hosts the editor domain composed exactly as the route's former
+host, which stays as the reference the live host is proven byte-identical to
+(see [Customization editor domain](customization-editor.md#live-host-in-the-shell)
 and [ADR-0213](../adr/0213-host-the-customization-editor-live-in-the-shell.md)).
 
 **Chord.** The default chord is Meta + right button; the one Settings1 key
@@ -327,17 +328,27 @@ whenever its content is a fraction taller than the popup.
 
 | Surface | Entries in order |
 | --- | --- |
-| Panel (`PanelCustomizeMenu`) | Add applet ▸ (palette admitted by the panel's orientation), Panel ▸ (Edge, Alignment, Auto-hide, Size, Length), Add panel ▸ (edge), Remove panel, Enter/Exit edit mode, Undo, Redo, Open Customize… |
-| Applet (`AppletCustomizeMenu`) | Move to start, Move to center, Move to end, Move left, Move right, Move to panel ▸, Remove "‹applet›", "‹applet›" settings ▸ (typed rows from `settingsSchema`: switches, closed choices, bounded integers) |
-| Desktop (`DesktopCustomizeMenu`) | Add panel ▸, Change wallpaper…, Desktop icons ▸ (the desktop-icons applet's typed rows), Enter/Exit edit mode, Undo, Open Customize… |
+| Panel (`PanelCustomizeMenu`) | Add applet ▸ (palette admitted by the panel's orientation), Panel ▸ (Edge, Alignment, Auto-hide, Size 20–192 px, Length, Displays ▸ This display only / All displays), Add panel ▸ (edge), Remove panel, Enter/Exit edit mode, Undo, Redo, Open Customize… |
+| Applet (`AppletCustomizeMenu`) | Move to start, Move to center, Move to end, Move left, Move right, Move to panel ▸, Remove "‹applet›", "‹applet›" settings ▸ (typed rows from `settingsSchema`: switches, closed choices, bounded integers), Duplicate "‹applet›" |
+| Desktop (`DesktopCustomizeMenu`) | Add panel ▸, Change wallpaper…, Desktop icons ▸ (Show/Hide desktop icons, then the desktop-icons applet's typed rows: switches, choices, bounded numbers such as icon size), Enter/Exit edit mode, Undo, Open Customize… |
 
 "Move to ‹zone›" appends after the zone's last applet; when the applet already
 sits there in the flat list only its zone tag changes (a
 `ConfigureAppletSettings` intent), otherwise it is a `MoveApplet` with the
 computed anchor. "Move left/right" swaps with the zone neighbour; at the zone
 edge it is a harmless no-op. Add applet inserts with the first free
-`<plugin>-instance-N` id; Add panel creates `panel-N` (fill, 32px, above) on
-the chosen edge through the engine's `AddPanel` command.
+`<plugin>-instance-N` id; Duplicate copies the applet, its whole settings map
+included, under that kind of id at the end of its zone. Add panel creates
+`panel-N` (fill, 32px, above) on the chosen edge through the engine's
+`AddPanel` command. Displays moves the panel (`MovePanel`, same edge and
+alignment) to the exact display the menu was opened on, or to `*` for every
+display; the engine refuses a display the inventory does not have. Show/Hide
+desktop icons inserts or removes the `desktop-icons` applet on the desktop
+owner (`@desktop`); the menu and the desktop surface find it by plugin, so
+an instance re-added as `desktop-icons-instance-N` keeps its settings. The
+entries W15 added (Duplicate, Displays, Show/Hide and the number rows) come
+after every earlier entry, so no keyboard position moved
+([ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)).
 
 **Adoption.** Every accepted entry writes the user store
 (`<data>/qindaqt/profiles/<id>.json`, the same file the Settings route
@@ -402,17 +413,19 @@ menu, inert applets, the bar beside the zones, zone and anchor resolution, a
 drag within the panel, onto a second panel surface and off every panel, the
 gap and marker, the applet picker),
 `qindaqt.desktop-surface-customize-menu` (including Edit Panels in every
-context-menu style), `qindaqt.shell-panel-edit-keyboard` (keyboard only while
+context-menu style, and Show/Hide desktop icons with the icon-size row),
+`qindaqt.shell-panel-edit-keyboard` (keyboard only while
 editing; Escape cancels a drag, then leaves),
 `qindaqt.shell-live-customization-controller` (every action against the real
-manifest catalog and a temporary store, the global drag point and off-target
-cancel), and the nested rows
+manifest catalog and a temporary store, including Duplicate, Displays and
+removing and re-adding the desktop icons, the global drag point and
+off-target cancel), and the nested rows
 `shell.live-customization.{menu,editmode}.{single-1080p,single-1440p-125}`
 (`tests/session/live_customization`), which start the production shell on a
 proof profile inside a private virtual KWin, drive the chord and the menus
 through the development seat with keys only, assert the persisted profile
 after add, move, remove, undo, a desktop add-panel and undo, and a
 cross-panel edit-mode drag, capture the open menus and edit mode from the
-compositor's framebuffer, and replay the same intents through the Settings
-route's own `RepositoryCustomizeEditorHost` (`qindaqt-customize-parity-tool`)
-to compare the two profiles byte for byte.
+compositor's framebuffer, and replay the same intents through the reference
+`RepositoryCustomizeEditorHost` the Settings route used to host
+(`qindaqt-customize-parity-tool`) to compare the two profiles byte for byte.

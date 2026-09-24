@@ -194,9 +194,10 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Settings Network route](apps/network-settings.md) documents the first-party
   secret-free Network1 client surface: exact-owner inventory, stale and pending
   truth, bounded scan/connect/disconnect actions, and installed-route proof.
-- [Settings Customize route](apps/customize-settings.md) documents the direct
-  profile canvas: editor-session gestures, keyboard parity, atomic user-profile
-  persistence, Settings1 selection truth, and fail-closed package boundaries.
+- [Settings Customize route](apps/customize-settings.md) documents the layout
+  preset gallery: confirmed switching, the user's own presets and edited
+  built-ins in the profile store, where layout editing went (the panels), and
+  fail-closed package boundaries.
 - [Settings Audio route](apps/audio-settings.md) documents the first-party
   Audio1 client surface: bounded device and stream inventory, default-device
   selection, shared availability/admission truth, bounded volume/mute

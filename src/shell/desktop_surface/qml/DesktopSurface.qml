@@ -44,10 +44,12 @@ Window {
     flags: Qt.FramelessWindowHint | Qt.WindowDoesNotAcceptFocus
 
     // Settings of the first resolved "desktop-icons" applet instance, with
-    // manifest defaults applied for anything missing or malformed.
+    // manifest defaults applied for anything missing or malformed. Matched
+    // by plugin, not instance id: the stock layouts call it "desktop-icons",
+    // but one re-added from the desktop menu is "desktop-icons-instance-N".
     readonly property var appletSettings: {
         for (let i = 0; i < applets.length; ++i) {
-            if (String(applets[i].id) === "desktop-icons") {
+            if (String(applets[i].plugin) === "desktop-icons") {
                 return applets[i].settings ?? {}
             }
         }

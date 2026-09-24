@@ -95,6 +95,7 @@ private Q_SLOTS:
     void chordDefaultsAndModifiers();
     void modelArithmetic();
     void survivesAPinnedDisplayGoingAway();
+    void settingsEditorParityActionsPersist();
 
 private:
     Applets::ManifestCatalog m_catalog;
@@ -280,6 +281,85 @@ void LiveCustomizationControllerTest::survivesAPinnedDisplayGoingAway()
     controller.outputGenerationChanged();
     QVERIFY2(controller.available(), qPrintable(controller.statusText()));
     QVERIFY(controller.panelIds().contains(QStringLiteral("tray")));
+}
+
+// ADR-0267: what the retired Settings editor could do and the panels could
+// not until W15 -- duplicate an applet, pin a panel to one display or show it
+// on all of them, and remove, add back and resize the desktop icons -- each
+// one gesture and one Apply through the real engine.
+void LiveCustomizationControllerTest::settingsEditorParityActionsPersist()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const auto outputs = [] {
+        QVector<ShellLayout::LogicalOutput> result = fixtureOutputs();
+        result.append({QStringLiteral("OUT-2"), QRect(1920, 0, 1920, 1080), 1.0});
+        return result;
+    };
+    LiveCustomizationController controller(m_catalog.manifests(), directory.path(),
+                                           outputs, nullptr, nullptr);
+    controller.adoptProfile(fixtureProfile());
+    QVERIFY(controller.available());
+
+    // Duplicate copies the whole settings map into a new instance at the end
+    // of the same zone.
+    QVERIFY(controller.setAppletSetting(QStringLiteral("bar"), QStringLiteral("clock-1"),
+                                        QStringLiteral("showSeconds"), true));
+    QVERIFY2(controller.duplicateApplet(QStringLiteral("bar"), QStringLiteral("clock-1")),
+             qPrintable(controller.statusText()));
+    auto written = readWritten(directory.path(), QStringLiteral("live-fixture"));
+    const auto *bar = Model::findPanel(written, QStringLiteral("bar"));
+    QVERIFY(bar != nullptr);
+    QCOMPARE(bar->applets.size(), 4);
+    const Profiles::AppletSpec copy = bar->applets.last();
+    QCOMPARE(copy.id, QStringLiteral("clock-instance-1"));
+    QCOMPARE(copy.plugin, QStringLiteral("clock"));
+    QCOMPARE(copy.settings.value(QStringLiteral("zone")).toString(), QStringLiteral("start"));
+    QCOMPARE(copy.settings.value(QStringLiteral("showSeconds")).toBool(), true);
+    QVERIFY(!controller.duplicateApplet(QStringLiteral("bar"), QStringLiteral("missing")));
+
+    // Displays: one exact display, then every display again. A display the
+    // inventory does not have, an empty id or a non-string is refused.
+    QVERIFY2(controller.configurePanel(QStringLiteral("tray"), QStringLiteral("output"),
+                                       QStringLiteral("OUT-2")),
+             qPrintable(controller.statusText()));
+    written = readWritten(directory.path(), QStringLiteral("live-fixture"));
+    QCOMPARE(Model::findPanel(written, QStringLiteral("tray"))->output, QStringLiteral("OUT-2"));
+    QVERIFY(!controller.configurePanel(QStringLiteral("tray"), QStringLiteral("output"),
+                                       QStringLiteral("OUT-9")));
+    QVERIFY(!controller.configurePanel(QStringLiteral("tray"), QStringLiteral("output"),
+                                       QString()));
+    QVERIFY(!controller.configurePanel(QStringLiteral("tray"), QStringLiteral("output"), 3));
+    QVERIFY(controller.configurePanel(QStringLiteral("tray"), QStringLiteral("output"),
+                                      QStringLiteral("*")));
+    written = readWritten(directory.path(), QStringLiteral("live-fixture"));
+    QCOMPARE(Model::findPanel(written, QStringLiteral("tray"))->output, QStringLiteral("*"));
+    // Unchanged is a no-op success, not an engine "no change" failure.
+    QVERIFY(controller.configurePanel(QStringLiteral("tray"), QStringLiteral("output"),
+                                      QStringLiteral("*")));
+
+    // Desktop icons: found by plugin, removed, added back under a new id,
+    // found again, and its bounded icon size edited.
+    QCOMPARE(controller.desktopAppletId(QStringLiteral("desktop-icons")),
+             QStringLiteral("desktop-icons"));
+    QCOMPARE(controller.desktopAppletId(QStringLiteral("clock")), QString());
+    QVERIFY2(controller.removeApplet(QStringLiteral("@desktop"), QStringLiteral("desktop-icons")),
+             qPrintable(controller.statusText()));
+    QVERIFY(readWritten(directory.path(), QStringLiteral("live-fixture")).desktopApplets.isEmpty());
+    QCOMPARE(controller.desktopAppletId(QStringLiteral("desktop-icons")), QString());
+    QVERIFY2(controller.addApplet(QStringLiteral("@desktop"), QStringLiteral("desktop"),
+                                  QStringLiteral("desktop-icons")),
+             qPrintable(controller.statusText()));
+    written = readWritten(directory.path(), QStringLiteral("live-fixture"));
+    QCOMPARE(written.desktopApplets.size(), 1);
+    const QString added = controller.desktopAppletId(QStringLiteral("desktop-icons"));
+    QCOMPARE(added, written.desktopApplets.first().id);
+    QCOMPARE(written.desktopApplets.first().plugin, QStringLiteral("desktop-icons"));
+    QVERIFY(!written.desktopApplets.first().settings.contains(QStringLiteral("zone")));
+    QVERIFY(controller.setAppletSetting(QStringLiteral("@desktop"), added,
+                                        QStringLiteral("iconSize"), 72));
+    written = readWritten(directory.path(), QStringLiteral("live-fixture"));
+    QCOMPARE(written.desktopApplets.first().settings.value(QStringLiteral("iconSize")).toInt(), 72);
 }
 
 void LiveCustomizationControllerTest::paletteAndSettingRowsFollowTheManifests()

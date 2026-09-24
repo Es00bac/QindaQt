@@ -79,13 +79,13 @@ T.ApplicationWindow {
         {
             nav: qsTr("Customize"), eyebrow: qsTr("Start broad, then refine"),
             title: qsTr("Choose a preset, then make it yours"),
-            summary: qsTr("Presets give you a complete desktop layout. Customize lets you adjust panels and applets directly, with a draft you can apply or discard."),
+            summary: qsTr("Presets give you a complete desktop layout. You change it on the panels themselves: every edit is saved straight away and can be undone."),
             diagram: "customize", hero: "",
-            shortcuts: [qsTr("Ctrl + Return — Apply"), qsTr("Ctrl + Shift + Return — Discard"), qsTr("Ctrl + Z — Undo")],
+            shortcuts: [qsTr("Meta + Shift + E — Edit Panels"), qsTr("Meta + right-click — panel, applet or desktop options"), qsTr("Escape — Done editing")],
             cards: [
-                { marker: "1", title: qsTr("Pick a useful starting point"), body: qsTr("Choose the QindaQt layout or a familiar workflow preset. Appearance and workflow are separate, so changing a layout does not force a new color theme.") },
-                { marker: "2", title: qsTr("Edit in Customize"), body: qsTr("Drag applet chips and panel items. Each completed drag is one undoable change. Press Escape or release outside a valid target to cancel only the move in progress. Press Space for keyboard move mode, then use Ctrl or Alt with the arrow keys to choose a position.") },
-                { marker: "3", title: qsTr("Apply or discard the draft"), body: qsTr("Apply saves all of your draft changes as the active layout. Discard restores the last applied layout. You can also use Undo to step back through completed changes before deciding.") }
+                { marker: "1", title: qsTr("Pick a useful starting point"), body: qsTr("In Settings, Customize lists the built-in layouts and your own presets; click one to switch. Appearance and workflow are separate, so changing a layout does not force a new color theme.") },
+                { marker: "2", title: qsTr("Edit on the panels"), body: qsTr("Right-click a panel and choose Edit Panels, then drag applets within a panel, onto another panel or onto another display. Add applet… lists what fits each zone, and Meta + right-click opens the options for a panel, an applet or the desktop.") },
+                { marker: "3", title: qsTr("Keep it as a preset"), body: qsTr("Every change is saved to the layout you are using and Undo steps back. In Customize, Save current layout as preset keeps a copy under your own name, and Restore original brings back a built-in layout you edited.") }
             ],
             actions: [{ label: qsTr("Open Customize"), description: qsTr("Open the Customize page in QindaQt Settings"), action: "customize", emphasized: true }]
         },

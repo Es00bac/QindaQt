@@ -9,6 +9,9 @@ import QtQuick.Controls as T
 // watcher. Entry order is a keyboard contract for the nested rows:
 //   0 Add applet ▸   1 Panel ▸   2 Add panel ▸   3 Remove panel
 //   4 Enter/Exit edit mode   5 Undo   6 Redo   7 Open Customize…
+// Panel ▸ holds Edge, Alignment, Auto-hide, Size, Length and Displays (the
+// last added when the Settings editor was retired, ADR-0267: new entries go
+// at the end so no earlier position moves).
 // AGENT-GUARD: never gate a row with `visible` (QQC2 Menu evicts a hidden
 // item from its content model for good) and never disable one: keyboard
 // navigation skips disabled rows and shifts every later position. Undo with
@@ -19,6 +22,8 @@ T.Menu {
 
     required property var panel
     property var controller: null
+    // The display this panel surface is on ("" where unknown, e.g. offscreen).
+    property string outputId: ""
     readonly property string panelId: String(panel.id ?? "")
     property var options: ({})
     property var paletteRows: []
@@ -139,9 +144,11 @@ T.Menu {
             Component.onCompleted: root.pinKeyboard(this)
             objectName: "panelCustomizeSize"
             title: qsTr("Size (logical px)")
+            // AGENT-CONTRACT: the bounds are the engine's and the profile
+            // schema's thickness range (editor_intent.cpp, profile_validation.cpp).
             T.SpinBox {
                 objectName: "panelCustomizeSizeInput"
-                width: 220; from: 16; to: 160; stepSize: 1
+                width: 220; from: 20; to: 192; stepSize: 1
                 editable: true
                 value: Number(root.options.thickness ?? 32)
                 Accessible.name: qsTr("Panel thickness in logical pixels")
@@ -159,6 +166,27 @@ T.Menu {
                 value: Math.round(Number(root.options.length ?? 1) * 100)
                 Accessible.name: qsTr("Panel length as a percentage of the edge")
                 onValueModified: root.controller.configurePanel(root.panelId, "length", value / 100)
+            }
+        }
+        T.Menu {
+            Component.onCompleted: root.pinKeyboard(this)
+            objectName: "panelCustomizeDisplays"
+            title: qsTr("Displays")
+            // Pin the panel to the display it was clicked on, or show it on
+            // every display ("*"); the engine refuses a display that is gone.
+            T.MenuItem {
+                objectName: "panelCustomizeDisplays:this"
+                text: qsTr("This display only")
+                checkable: true
+                checked: root.outputId !== "" && String(root.options.output ?? "") === root.outputId
+                onTriggered: root.controller.configurePanel(root.panelId, "output", root.outputId)
+            }
+            T.MenuItem {
+                objectName: "panelCustomizeDisplays:all"
+                text: qsTr("All displays")
+                checkable: true
+                checked: String(root.options.output ?? "") === "*"
+                onTriggered: root.controller.configurePanel(root.panelId, "output", "*")
             }
         }
     }

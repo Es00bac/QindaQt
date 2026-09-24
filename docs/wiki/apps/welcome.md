@@ -53,9 +53,10 @@ The seven chapters cover:
    application, plus recursive splits and page keyboard navigation;
 5. whole-group movement through the outer title, member detach through the
    preserved member title, page reorder/move/detach, and the group menu;
-6. preset selection and reversible Customize drafts, distinguishing a cancelled
-   move from whole-draft Discard and covering apply, undo, pointer, and keyboard
-   paths; and
+6. preset selection in Customize and layout editing on the panels themselves
+   (Edit Panels, Meta+right-click options, undo), with Save current layout as
+   preset and Restore original
+   ([ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)); and
 7. wallpaper, light/dark/system appearance, accessibility choices, and manual
    reopening.
 

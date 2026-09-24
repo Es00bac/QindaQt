@@ -34,7 +34,8 @@ or from the launcher. A sidebar groups the pages:
 - **Personalization**
   - *Appearance* — themes, wallpaper, and fonts; see
     [Making it yours](customization.md).
-  - *Customize* — panels, applets, and layout presets; see
+  - *Customize* — layout presets, your own saved layouts, and the panel
+    auto-hide delay (panels and applets are edited on the panels); see
     [Making it yours](customization.md).
   - *Clipboard* — turn clipboard history on or off, see how full it is, and
     clear it.

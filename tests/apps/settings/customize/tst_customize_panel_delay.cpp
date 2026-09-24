@@ -99,7 +99,8 @@ void CustomizePanelDelayTests::appliedStaleThenConfirmedPersistsAcrossProfileSwi
     QVERIFY(h.model.panelHideDelayPending());
     QCOMPARE(h.model.panelHideDelayMs(), 250);
     QVERIFY(!h.model.panelHideDelayEditable());
-    QVERIFY(!h.model.canEdit());
+    // One Settings1 write at a time: no preset switch while the delay is pending.
+    QVERIFY(!h.model.canSwitch());
     const auto delayCommit = h.transport.commits.takeFirst();
     QCOMPARE(delayCommit.operations.size(), 1);
     QCOMPARE(delayCommit.operations.first().toMap()
@@ -119,10 +120,9 @@ void CustomizePanelDelayTests::appliedStaleThenConfirmedPersistsAcrossProfileSwi
     QVERIFY(h.model.panelHideDelayEditable());
     QVERIFY(h.model.panelHideDelayStatus().contains(QStringLiteral("every layout")));
 
-    QVERIFY(h.model.selectProfile(QStringLiteral("alternate")));
+    QVERIFY(h.model.activatePreset(QStringLiteral("alternate")));
     QVERIFY(!h.model.panelHideDelayEditable());
     QCOMPARE(h.model.panelHideDelayMs(), 600);
-    QVERIFY(h.model.apply());
     QTRY_COMPARE(h.transport.commits.size(), 1);
     const auto profileCommit = h.transport.commits.takeFirst();
     Q_EMIT h.transport.commitReceived(
@@ -130,13 +130,12 @@ void CustomizePanelDelayTests::appliedStaleThenConfirmedPersistsAcrossProfileSwi
         profileCommitWire(QStringLiteral("alternate")));
     QTRY_VERIFY(!h.transport.snapshots.isEmpty());
     replySnapshot(h, QStringLiteral("alternate"), 600, 9);
-    QTRY_VERIFY(h.model.ready());
-    QCOMPARE(h.model.selectedProfileId(), QStringLiteral("alternate"));
+    QTRY_VERIFY(!h.model.busy());
+    QCOMPARE(h.model.activePresetId(), QStringLiteral("alternate"));
     QCOMPARE(h.model.panelHideDelayMs(), 600);
 
     ModelHarness reopened(true);
-    QVERIFY(reopened.establish(QStringLiteral("alternate"), {},
-                               QStringLiteral("scaled"), 600));
+    QVERIFY(reopened.establish(QStringLiteral("alternate"), 600));
     QCOMPARE(reopened.model.panelHideDelayMs(), 600);
     QVERIFY(reopened.model.panelHideDelayAvailable());
 }

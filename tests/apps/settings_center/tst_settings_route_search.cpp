@@ -58,6 +58,9 @@ void SettingsRouteSearchTest::everyBuiltInRouteHasKeywords() {
               ->keywords.contains(QStringLiteral("wifi")));
   QVERIFY(registry.route(QStringLiteral("power"))
               ->keywords.contains(QStringLiteral("battery")));
+  // W15: Customize is the layout preset page now (ADR-0267).
+  QVERIFY(registry.route(QStringLiteral("customize"))
+              ->keywords.contains(QStringLiteral("layout presets")));
 }
 
 void SettingsRouteSearchTest::searchMetadataLeavesOrderAndDigitRoutesUnchanged() {

@@ -23,6 +23,14 @@ namespace QindaQt::Apps::SettingsCustomize {
 // than the editing engine so Settings presentation cannot bypass gesture and
 // rollback policy.
 //
+// AGENT-NOTE: since ADR-0267 the Settings page no longer edits layouts (it
+// switches and saves presets; editing happens on the panels), so nothing in
+// the route constructs this host. It is kept, unchanged, as the independent
+// reference composition the live shell host is proven byte-identical to:
+// qindaqt.customize-editor-live-host-parity and the nested
+// shell.live-customization rows (qindaqt-customize-parity-tool). Moving it
+// into the test tree is a possible follow-up; do not grow it.
+//
 // AGENT-CONTRACT: All calls occur on the creating GUI thread. Query pointers
 // are borrowed, nullable on unavailability, and valid only until the next host
 // query or operation. Mutations report typed EditorOutcome failures and never

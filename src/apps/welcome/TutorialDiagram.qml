@@ -104,7 +104,7 @@ Rectangle {
         RowLayout {
             anchors.centerIn: parent; spacing: Tokens.space["4"]
             Repeater {
-                model: [qsTr("Choose a\npreset"), qsTr("Customize\npanels & applets"), qsTr("Apply")]
+                model: [qsTr("Choose a\npreset"), qsTr("Edit the\npanels"), qsTr("Save as\npreset")]
                 RowLayout {
                     id: customizeStep
                     required property string modelData

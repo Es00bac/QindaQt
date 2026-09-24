@@ -14,25 +14,21 @@ using Services::SettingsClient::ClientState;
 using Services::SettingsClient::CommitOutcome;
 using Services::SettingsProtocol::SettingsWireStatus;
 
+namespace {
+
+constexpr int SelectionReadbackDeadlineMilliseconds = 4'000;
+constexpr int StoreReloadDebounceMilliseconds = 250;
+
+} // namespace
+
 CustomizeSettingsModel::CustomizeSettingsModel(
     Services::SettingsClient::SettingsClient &client,
-    QVector<Profiles::LayoutProfile> availableProfiles,
-    QVector<Applets::AppletManifest> manifests,
-    CustomizeOutputProvider &outputProvider,
-    CustomizeWallpaperPreview &wallpaperPreview,
-    CustomizeWindowPreview &windowPreview,
-    EditorHostFactory hostFactory,
-    QString startupError,
+    PresetLocations locations,
     QObject *parent)
     : QObject(parent)
     , m_client(client)
-    , m_profiles(std::move(availableProfiles))
-    , m_manifests(std::move(manifests))
-    , m_outputProvider(outputProvider)
-    , m_wallpaperPreview(wallpaperPreview)
-    , m_windowPreview(windowPreview)
-    , m_hostFactory(std::move(hostFactory))
-    , m_startupError(std::move(startupError))
+    , m_locations(std::move(locations))
+    , m_store(m_locations.userDirectory)
 {
     Q_ASSERT(m_client.thread() == thread());
     m_delayReadbackRetry.setInterval(200);
@@ -47,10 +43,30 @@ CustomizeSettingsModel::CustomizeSettingsModel(
             "The saved hide delay could not be confirmed. Refresh to check its value."));
         m_client.refresh();
     });
+    m_selectionReadbackDeadline.setSingleShot(true);
+    m_selectionReadbackDeadline.setInterval(SelectionReadbackDeadlineMilliseconds);
+    connect(&m_selectionReadbackDeadline, &QTimer::timeout, this, [this] {
+        if (m_pendingSelection && m_pendingSelection->awaitingReadback) {
+            settleSelection(false, QStringLiteral(
+                "Settings accepted the layout change, but it could not be confirmed. "
+                "Refresh to check which layout is selected."));
+            m_client.refresh();
+        }
+    });
+    // Panel edits land in the user store while this page is open; the
+    // debounce folds the shell's write bursts into one reload.
+    m_reloadDebounce.setSingleShot(true);
+    m_reloadDebounce.setInterval(StoreReloadDebounceMilliseconds);
+    connect(&m_reloadDebounce, &QTimer::timeout, this, &CustomizeSettingsModel::reloadPresets);
+    connect(&m_storeWatch, &QFileSystemWatcher::directoryChanged, this,
+            [this] { m_reloadDebounce.start(); });
+    connect(&m_storeWatch, &QFileSystemWatcher::fileChanged, this,
+            [this] { m_reloadDebounce.start(); });
+
     connect(&m_client, &Services::SettingsClient::SettingsClient::stateChanged,
             this, &CustomizeSettingsModel::handleClientState);
     connect(&m_client, &Services::SettingsClient::SettingsClient::ownerChanged,
-            this, &CustomizeSettingsModel::handleDelayClientState);
+            this, &CustomizeSettingsModel::handleClientState);
     connect(&m_client, &Services::SettingsClient::SettingsClient::writeAdmissionChanged,
             this, &CustomizeSettingsModel::stateChanged);
     connect(&m_client, &Services::SettingsClient::SettingsClient::snapshotChanged,
@@ -59,270 +75,98 @@ CustomizeSettingsModel::CustomizeSettingsModel(
             this, &CustomizeSettingsModel::handleCommit);
     connect(&m_client, &Services::SettingsClient::SettingsClient::commitUncertain,
             this, &CustomizeSettingsModel::handleUncertain);
-    connect(&m_outputProvider, &CustomizeOutputProvider::snapshotChanged,
-            this, &CustomizeSettingsModel::handleOutputSnapshotChanged);
-
-    if (!m_startupError.isEmpty() || m_profiles.isEmpty()
-        || m_manifests.isEmpty() || !m_hostFactory) {
-        setState(State::Unavailable,
-                 !m_startupError.isEmpty()
-                     ? m_startupError
-                     : QStringLiteral("Customize catalogs are unavailable"));
-    }
+    reloadPresets();
 }
 
-bool CustomizeSettingsModel::loading() const noexcept
+bool CustomizeSettingsModel::canSwitch() const noexcept
 {
-    return m_state == State::Loading;
+    return ready() && !busy() && !m_pendingDelay
+        && m_client.canSetUserValue(QString(LayoutProfileSettingsKey));
 }
 
-bool CustomizeSettingsModel::ready() const noexcept
+bool CustomizeSettingsModel::canManage() const noexcept
 {
-    return m_state == State::Ready;
-}
-
-bool CustomizeSettingsModel::saving() const noexcept
-{
-    return m_state == State::Saving;
-}
-
-bool CustomizeSettingsModel::conflict() const noexcept
-{
-    return m_state == State::Conflict;
-}
-
-bool CustomizeSettingsModel::unavailable() const noexcept
-{
-    return m_state == State::Unavailable;
-}
-
-bool CustomizeSettingsModel::canEdit() const noexcept
-{
-    return (ready() || conflict()) && m_editor && m_editor->ready()
-        && m_client.state() == ClientState::Ready && !m_pendingDelay;
-}
-
-bool CustomizeSettingsModel::dirty() const noexcept
-{
-    return m_selectionDirty || (m_editor && m_editor->dirty());
-}
-
-bool CustomizeSettingsModel::applyAvailable() const noexcept
-{
-    return canEdit() && dirty() && !visualDragActive() && !m_outputTruthStale;
-}
-
-bool CustomizeSettingsModel::displayScopeChangeAvailable() const noexcept
-{
-    return canEdit() && !m_outputTruthStale;
-}
-
-bool CustomizeSettingsModel::primaryDisplayAvailable() const
-{
-    return !m_outputTruthStale
-        && resolvePrimaryOutput(m_outputProvider.snapshot()).ok();
-}
-
-QString CustomizeSettingsModel::displayScopeError() const
-{
-    if (m_outputTruthStale || !m_displayScopeError.isEmpty()) {
-        return m_displayScopeError;
-    }
-    return resolvePrimaryOutput(m_outputProvider.snapshot()).error;
-}
-
-bool CustomizeSettingsModel::canUndo() const noexcept
-{
-    return canEdit() && m_editor->canUndo();
-}
-
-bool CustomizeSettingsModel::canRedo() const noexcept
-{
-    return canEdit() && m_editor->canRedo();
-}
-
-bool CustomizeSettingsModel::visualDragActive() const noexcept
-{
-    return m_editor && m_editor->visualDragActive();
-}
-
-bool CustomizeSettingsModel::dropAccepted() const noexcept
-{
-    return m_lastDropAccepted;
-}
-
-QString CustomizeSettingsModel::dropReason() const
-{
-    return m_lastDropReason;
+    return ready() && !busy();
 }
 
 QString CustomizeSettingsModel::statusText() const
 {
-    if (loading()) {
-        return QStringLiteral("Loading the selected layout profile…");
+    switch (m_state) {
+    case State::Loading:
+        return QStringLiteral("Loading layout presets…");
+    case State::Unavailable:
+        return m_stateReason.isEmpty() ? QStringLiteral("Layout presets are unavailable")
+                                       : m_stateReason;
+    case State::Ready:
+        break;
     }
-    if (saving()) {
-        return QStringLiteral("Applying the profile and selection…");
+    if (m_pendingSelection) {
+        return QStringLiteral("Switching to %1…")
+            .arg(presetName(m_pendingSelection->requestedId));
     }
-    if (conflict()) {
+    if (findPreset(m_activeId) == nullptr) {
+        // The shell falls back to the default layout for a missing selection
+        // (ADR-0263); say so instead of pretending a card is active.
         return QStringLiteral(
-            "The selected profile changed elsewhere; review this draft before applying");
+                   "The selected layout “%1” is not installed, so the desktop uses "
+                   "the default. Choose a preset.")
+            .arg(m_activeId);
     }
-    if (unavailable()) {
-        return QStringLiteral("Customize is unavailable");
-    }
-    if (dirty()) {
-        return QStringLiteral("Unapplied layout changes");
-    }
-    return QStringLiteral(
-        "The running desktop follows each applied layout change");
+    return QStringLiteral("Current layout: %1").arg(presetName(m_activeId));
 }
 
-QString CustomizeSettingsModel::errorText() const
+void CustomizeSettingsModel::updateState()
 {
-    return m_error;
+    State next = State::Ready;
+    QString reason;
+    if (!m_catalogError.isEmpty()) {
+        next = State::Unavailable;
+        reason = m_catalogError;
+    } else if (m_client.state() == ClientState::Unavailable
+               || m_client.state() == ClientState::Degraded) {
+        next = State::Unavailable;
+        reason = m_client.lastError().isEmpty()
+            ? QStringLiteral("Settings1 transport is unavailable")
+            : m_client.lastError();
+    } else if (!m_selectionError.isEmpty()) {
+        next = State::Unavailable;
+        reason = m_selectionError;
+    } else if (!m_hasSelection) {
+        // AGENT-NOTE: after a confirmed baseline the page stays Ready while
+        // the client re-authenticates after each commit; canSwitch() is what
+        // follows the client's write admission.
+        next = State::Loading;
+    }
+    m_state = next;
+    m_stateReason = reason.left(512);
+    Q_EMIT stateChanged();
 }
 
-void CustomizeSettingsModel::setState(State state, QString error)
+void CustomizeSettingsModel::report(QString notice, QString error)
 {
-    const bool changed = m_state != state || m_error != error;
-    m_state = state;
+    m_notice = std::move(notice).left(512);
     m_error = std::move(error).left(512);
-    if (changed) {
-        Q_EMIT stateChanged();
-    }
-}
-
-const Profiles::LayoutProfile *CustomizeSettingsModel::findProfile(
-    const QString &id) const
-{
-    for (const auto &profile : m_profiles) {
-        if (profile.id == id) {
-            return &profile;
-        }
-    }
-    return nullptr;
-}
-
-const Applets::AppletManifest *CustomizeSettingsModel::findManifest(
-    const QString &id) const
-{
-    for (const auto &manifest : m_manifests) {
-        if (manifest.id == id) {
-            return &manifest;
-        }
-    }
-    return nullptr;
-}
-
-bool CustomizeSettingsModel::rebuild(const Profiles::LayoutProfile &profile)
-{
-    const CustomizeOutputSnapshot outputs = m_outputProvider.snapshot();
-    std::unique_ptr<CustomizeEditorHost> next = m_hostFactory(profile,
-                                                               outputs.outputs);
-    if (!next) {
-        m_editorUnavailable = true;
-        setState(State::Unavailable,
-                 QStringLiteral("The layout editor repository could not be created"));
-        return false;
-    }
-    if (!next->ready()) {
-        const QString reason = next->unavailableReason();
-        m_editor = std::move(next);
-        m_editorUnavailable = true;
-        setState(State::Unavailable,
-                 reason.isEmpty() ? QStringLiteral("The editor lease is unavailable")
-                                  : reason);
-        Q_EMIT contentChanged();
-        return false;
-    }
-    m_editor = std::move(next);
-    m_editorOutputs = outputs;
-    m_editorUnavailable = false;
-    m_outputTruthStale = false;
-    m_displayScopeError.clear();
-    m_selectedProfileId = profile.id;
-    m_keyboardMoving = false;
-    m_lastDropAccepted = false;
-    m_lastDropReason.clear();
-    clearSelectionIfMissing();
-    Q_EMIT contentChanged();
-    return true;
-}
-
-bool CustomizeSettingsModel::outputTruthCurrent()
-{
-    const CustomizeOutputSnapshot current = m_outputProvider.snapshot();
-    if (current.revision == m_editorOutputs.revision
-        && current.outputs.size() == m_editorOutputs.outputs.size()
-        && current.primaryOutputIds == m_editorOutputs.primaryOutputIds
-        && current.error == m_editorOutputs.error) {
-        bool equal = true;
-        for (qsizetype i = 0; i < current.outputs.size(); ++i) {
-            const auto &left = current.outputs.at(i);
-            const auto &right = m_editorOutputs.outputs.at(i);
-            equal = equal && left.id == right.id
-                && left.geometry == right.geometry && left.scale == right.scale;
-        }
-        if (equal) {
-            return true;
-        }
-    }
-    m_outputTruthStale = true;
-    m_displayScopeError = QStringLiteral(
-        "The display arrangement changed while editing. Discard or reload the draft before changing display scope");
-    setState(m_state, m_displayScopeError);
-    Q_EMIT selectionChanged();
-    return false;
-}
-
-void CustomizeSettingsModel::handleOutputSnapshotChanged()
-{
-    if (!m_editor) {
-        return;
-    }
-    if (dirty()) {
-        m_outputTruthStale = true;
-        m_displayScopeError = QStringLiteral(
-            "The display arrangement changed while editing. Discard or reload the draft before applying it");
-        setState(m_state, m_displayScopeError);
-        Q_EMIT selectionChanged();
-        return;
-    }
-    const auto *profile = findProfile(m_selectedProfileId);
-    if (profile != nullptr && rebuild(*profile)) {
-        setState(State::Ready);
-        // AGENT-NOTE: State can remain Ready while the primary identity changes;
-        // this shared notifier makes QML re-read display-scope availability.
-        Q_EMIT stateChanged();
-    }
+    Q_EMIT stateChanged();
 }
 
 void CustomizeSettingsModel::handleClientState()
 {
     handleDelayClientState();
-    if (!m_startupError.isEmpty()) {
-        setState(State::Unavailable, m_startupError);
-        return;
+    // AGENT-NOTE: a commit timeout reaches here first: SettingsClient
+    // publishes Degraded before it emits commitUncertain, so this is where
+    // an unanswered switch becomes uncertain. Nothing is ever replayed.
+    if (m_pendingSelection && m_client.currentOwner() != m_pendingSelection->owner) {
+        settleSelection(false, QStringLiteral(
+            "Settings restarted before the layout change was confirmed, so its outcome "
+            "is uncertain. Refresh to check which layout is selected."));
+    } else if (m_pendingSelection
+               && (m_client.state() == ClientState::Unavailable
+                   || m_client.state() == ClientState::Degraded)) {
+        settleSelection(false, QStringLiteral(
+            "The layout change is uncertain because Settings became unavailable. "
+            "Refresh to check which layout is selected."));
     }
-    switch (m_client.state()) {
-    case ClientState::Ready:
-        break;
-    case ClientState::Authenticating:
-        if (!m_waitingForCommitSnapshot && !m_pendingDelay && !conflict()) {
-            setState(m_hasBaseline ? State::Unavailable : State::Loading,
-                     m_client.lastError());
-        }
-        break;
-    case ClientState::Unavailable:
-    case ClientState::Degraded:
-        m_waitingForCommitSnapshot = false;
-        setState(State::Unavailable,
-                 m_client.lastError().isEmpty()
-                     ? QStringLiteral("Settings1 transport is unavailable")
-                     : m_client.lastError());
-        break;
-    }
+    updateState();
 }
 
 void CustomizeSettingsModel::handleSnapshot()
@@ -335,69 +179,106 @@ void CustomizeSettingsModel::handleSnapshot()
     const QVariant selected = snapshot->values.value(LayoutProfileSettingsKey);
     if (selected.metaType().id() != QMetaType::QString
         || selected.toString().trimmed().isEmpty()) {
-        setState(State::Unavailable,
-                 QStringLiteral("Settings1 returned an invalid panels.layoutProfile value"));
-        return;
-    }
-    const QString authoritativeId = selected.toString();
-    const Profiles::LayoutProfile *authoritative = findProfile(authoritativeId);
-    if (authoritative == nullptr) {
-        setState(State::Unavailable,
-                 QStringLiteral("Selected profile '%1' is not installed")
-                     .arg(authoritativeId));
-        return;
-    }
-
-    const bool lineageChanged = m_hasBaseline
-        && (m_confirmedOwner != snapshot->owner
-            || m_confirmedEpoch != snapshot->epoch);
-    m_confirmedOwner = snapshot->owner;
-    m_confirmedEpoch = snapshot->epoch;
-    m_confirmedProfileId = authoritativeId;
-
-    if (m_hasBaseline && m_editorUnavailable) {
-        m_selectionDirty = false;
-        if (rebuild(*authoritative)) {
-            setState(State::Ready);
+        m_hasSelection = false;
+        m_selectionError = QStringLiteral(
+            "Settings1 returned an invalid panels.layoutProfile value");
+        if (m_pendingSelection) {
+            settleSelection(false, m_selectionError);
         }
+        updateState();
+        Q_EMIT presetsChanged();
         return;
     }
-
-    if (!m_hasBaseline) {
-        m_hasBaseline = true;
-        m_selectionDirty = false;
-        if (rebuild(*authoritative)) {
-            setState(State::Ready);
+    m_selectionError.clear();
+    m_activeId = selected.toString();
+    m_hasSelection = true;
+    if (m_pendingSelection) {
+        if (snapshot->owner != m_pendingSelection->owner
+            || snapshot->epoch != m_pendingSelection->epoch) {
+            settleSelection(false, QStringLiteral(
+                "Settings restarted before the layout change was confirmed, so its "
+                "outcome is uncertain. Refresh to check which layout is selected."));
+        } else if (m_pendingSelection->awaitingReadback
+                   && snapshot->revision >= m_pendingSelection->readbackFloor) {
+            settleSelection(m_activeId == m_pendingSelection->requestedId, {});
         }
+        // A same-lineage snapshot older than the Applied revision is stale:
+        // keep waiting for a newer one or the bounded deadline.
+    }
+    updateState();
+    Q_EMIT presetsChanged();
+}
+
+bool CustomizeSettingsModel::activatePreset(const QString &presetId)
+{
+    if (presetId == m_activeId && !busy()) {
+        return true;
+    }
+    if (!canSwitch()) {
+        report({}, QStringLiteral("Wait for Settings to finish updating, then try again."));
+        return false;
+    }
+    if (findPreset(presetId) == nullptr) {
+        report({}, QStringLiteral("That preset is no longer available."));
+        return false;
+    }
+    report({}, {});
+    return beginSelection(presetId, {});
+}
+
+bool CustomizeSettingsModel::beginSelection(const QString &presetId,
+                                            const QString &deleteAfter)
+{
+    const auto &snapshot = m_client.snapshot();
+    if (!snapshot) {
+        report({}, QStringLiteral("Wait for Settings to finish updating, then try again."));
+        return false;
+    }
+    // AGENT-GUARD: set the pending intent before SettingsClient's synchronous
+    // admission signals. The commit reply is not the switch: only a later
+    // same owner/epoch snapshot at revisionAfter confirms it.
+    m_pendingSelection = PendingSelection{presetId, deleteAfter, snapshot->owner,
+                                          snapshot->epoch, 0, false};
+    Q_EMIT stateChanged();
+    QString error;
+    if (!m_client.setUserValue(QString(LayoutProfileSettingsKey), presetId, &error)) {
+        m_pendingSelection.reset();
+        report({}, error.isEmpty() ? QStringLiteral("Settings refused the layout change.")
+                                   : error);
+        return false;
+    }
+    return true;
+}
+
+void CustomizeSettingsModel::settleSelection(bool confirmed, const QString &message)
+{
+    if (!m_pendingSelection) {
         return;
     }
-
-    if (m_waitingForCommitSnapshot) {
-        m_waitingForCommitSnapshot = false;
-        if (!lineageChanged && authoritativeId == m_selectedProfileId) {
-            m_selectionDirty = false;
-            setState(State::Ready);
-        } else {
-            m_selectionDirty = m_selectedProfileId != authoritativeId;
-            setState(State::Conflict,
-                     lineageChanged
-                         ? QStringLiteral("Settings1 authority changed while applying")
-                         : QStringLiteral("Profile selection changed after applying"));
+    m_selectionReadbackDeadline.stop();
+    const PendingSelection pending = *m_pendingSelection;
+    m_pendingSelection.reset();
+    if (!confirmed) {
+        QString error = message.isEmpty()
+            ? QStringLiteral("The layout selection changed elsewhere before it could be confirmed.")
+            : message;
+        if (!pending.deleteAfter.isEmpty()) {
+            error += QStringLiteral(" “%1” was not deleted.").arg(presetName(pending.deleteAfter));
         }
-        Q_EMIT contentChanged();
+        report({}, error);
         return;
     }
-
-    if (m_selectionDirty || (m_editor && m_editor->dirty())) {
-        m_selectionDirty = m_selectedProfileId != authoritativeId;
-        setState(State::Conflict);
-        Q_EMIT contentChanged();
+    if (!pending.deleteAfter.isEmpty()) {
+        // The desktop has left the preset, so its file can go now.
+        const QString name = presetName(pending.deleteAfter);
+        const bool removed = removeUserCopy(
+            pending.deleteAfter,
+            QStringLiteral("Switched to %1 and deleted “%2”.")
+                .arg(presetName(pending.requestedId), name));
+        Q_UNUSED(removed);
         return;
     }
-    m_selectionDirty = false;
-    if (rebuild(*authoritative)) {
-        setState(State::Ready);
-    }
+    report(QStringLiteral("Switched to %1.").arg(presetName(pending.requestedId)));
 }
 
 void CustomizeSettingsModel::handleCommit(const CommitOutcome &outcome)
@@ -406,20 +287,24 @@ void CustomizeSettingsModel::handleCommit(const CommitOutcome &outcome)
         handleDelayCommit(outcome);
         return;
     }
-    if (!saving()) {
+    if (!m_pendingSelection) {
         return;
     }
     if (outcome.status == SettingsWireStatus::Applied) {
-        m_waitingForCommitSnapshot = true;
+        m_pendingSelection->awaitingReadback = true;
+        m_pendingSelection->readbackFloor = outcome.revisionAfter;
+        m_selectionReadbackDeadline.start();
+        Q_EMIT stateChanged();
         return;
     }
-    m_waitingForCommitSnapshot = false;
-    setState(outcome.status == SettingsWireStatus::Conflict
-                 ? State::Conflict
-                 : State::Ready,
-             outcome.message.isEmpty()
-                 ? QStringLiteral("Settings1 rejected the profile selection")
-                 : outcome.message);
+    const QString reason = outcome.message.isEmpty()
+        ? Services::SettingsProtocol::settingsWireStatusName(outcome.status)
+        : outcome.message.left(512);
+    const bool conflict = outcome.status == SettingsWireStatus::Conflict
+        || outcome.status == SettingsWireStatus::EpochMismatch;
+    settleSelection(false, conflict
+                               ? QStringLiteral("The layout selection changed elsewhere: %1").arg(reason)
+                               : QStringLiteral("Settings refused the layout change: %1").arg(reason));
 }
 
 void CustomizeSettingsModel::handleUncertain(const QString &message)
@@ -428,19 +313,19 @@ void CustomizeSettingsModel::handleUncertain(const QString &message)
         handleDelayUncertain(message);
         return;
     }
-    if (!saving()) {
+    if (!m_pendingSelection) {
         return;
     }
-    m_waitingForCommitSnapshot = false;
-    setState(State::Unavailable,
-             message.isEmpty()
-                 ? QStringLiteral("The profile selection outcome is uncertain; refresh required")
-                 : message);
+    settleSelection(false, QStringLiteral(
+        "The layout change is uncertain. Refresh to check which layout is selected; "
+        "nothing was retried."));
     m_client.refresh();
 }
 
 void CustomizeSettingsModel::retry()
 {
+    report({}, {});
+    reloadPresets();
     m_client.refresh();
 }
 
