@@ -5,6 +5,7 @@
 
 #include <QAbstractListModel>
 #include <QObject>
+#include <QTimer>
 #include <QString>
 #include <QVector>
 
@@ -108,6 +109,8 @@ private:
     QString m_writeOwner;
     QString m_writeEpoch;
     quint64 m_readbackRevision = 0;
+    QTimer m_readbackRetryTimer;
+    QTimer m_readbackDeadlineTimer;
     bool m_available = false;
     bool m_hasBaseline = false;
     bool m_pending = false;

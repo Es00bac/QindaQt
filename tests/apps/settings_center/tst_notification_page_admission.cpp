@@ -126,9 +126,15 @@ void NotificationPageAdmissionTest::refreshAndRefusalKeepBothSwitchesAuthoritati
                          .retryMilliseconds = {10}});
   NotificationScheduleModel schedule(client);
   DoNotDisturbController dnd(client);
+  QVector<QindaQt::Apps::SettingsNotifications::NotificationApplicationDescriptor>
+      applications{{ApplicationId, QStringLiteral("Policy Test App"),
+                    QStringLiteral("application-x-executable")}};
+  for (int index = 1; index < 30; ++index) {
+    const QString id = QStringLiteral("org.example.PolicyTest%1").arg(index);
+    applications.append({id, id, QStringLiteral("application-x-executable")});
+  }
   QindaQt::Apps::SettingsNotifications::NotificationApplicationSettingsModel
-      applicationPolicies(client, {{ApplicationId, QStringLiteral("Policy Test App"),
-                                   QStringLiteral("application-x-executable")}});
+      applicationPolicies(client, applications);
   QVERIFY(client.start());
   Q_EMIT transport.ownerChanged(Owner);
   QTRY_COMPARE(transport.snapshots.size(), 1);
@@ -137,7 +143,7 @@ void NotificationPageAdmissionTest::refreshAndRefusalKeepBothSwitchesAuthoritati
   QVERIFY(dnd.ready());
   QVERIFY(schedule.canEdit());
   QVERIFY(applicationPolicies.available());
-  QCOMPARE(applicationPolicies.rowCount(), 1);
+  QCOMPARE(applicationPolicies.rowCount(), 30);
 
   QQuickView view;
   view.engine()->addImportPath(QStringLiteral(QINDAQT_BUILD_QML_IMPORT_PATH));
@@ -181,6 +187,85 @@ void NotificationPageAdmissionTest::refreshAndRefusalKeepBothSwitchesAuthoritati
   QVERIFY(!scheduleSwitch->property("checked").toBool());
   QVERIFY(muteSwitch->property("checked").toBool());
   QVERIFY(soundSwitch->property("checked").toBool());
+
+  // The page focus ring must land on the actual last control even though its
+  // virtualized ListView delegate is initially absent, then return to row zero
+  // from a bottom position where row zero is outside the viewport.
+  const QString lastApplicationId = QStringLiteral("org.example.PolicyTest29");
+  QVERIFY(findQuickItem(view.rootObject(),
+      QStringLiteral("notificationSound-") + lastApplicationId) == nullptr);
+  auto *notificationList = findQuickItem(view.rootObject(),
+      QStringLiteral("settingsNotificationPoliciesList"));
+  QVERIFY(notificationList != nullptr);
+  dndSwitch->forceActiveFocus();
+  QTest::keyClick(&view, Qt::Key_Backtab);
+  QTRY_VERIFY(findQuickItem(view.rootObject(),
+      QStringLiteral("notificationSound-") + lastApplicationId) != nullptr);
+  auto *lastSoundSwitch = findQuickItem(view.rootObject(),
+      QStringLiteral("notificationSound-") + lastApplicationId);
+  QTRY_VERIFY(lastSoundSwitch->hasActiveFocus());
+  auto *firstMuteSwitch = findQuickItem(view.rootObject(),
+      QStringLiteral("notificationMute-") + ApplicationId);
+  QVERIFY(firstMuteSwitch != nullptr);
+  const QPointF firstPosition = firstMuteSwitch->mapToItem(notificationList,
+                                                            QPointF(0, 0));
+  QVERIFY(firstPosition.y() + firstMuteSwitch->height() <= 0
+          || firstPosition.y() >= notificationList->height());
+
+  auto *quietHoursEnd = findQuickItem(view.rootObject(),
+      QStringLiteral("settingsQuietHoursEnd"));
+  QVERIFY(quietHoursEnd != nullptr);
+  const auto applicationIdForRow = [](int row) {
+    return row == 0 ? ApplicationId
+                    : QStringLiteral("org.example.PolicyTest%1").arg(row);
+  };
+  const auto hasFocus = [&view](const QString &objectName) {
+    const auto *item = findQuickItem(view.rootObject(), objectName);
+    return item && item->hasActiveFocus();
+  };
+
+  for (int row = 29; row >= 0; --row) {
+    const QString id = applicationIdForRow(row);
+    const QString muteName = QStringLiteral("notificationMute-") + id;
+    const QString soundName = QStringLiteral("notificationSound-") + id;
+    QTRY_VERIFY(hasFocus(soundName));
+    QTest::keyClick(&view, Qt::Key_Backtab);
+    QTRY_VERIFY(hasFocus(muteName));
+    QTest::keyClick(&view, Qt::Key_Backtab);
+    if (row > 0) {
+      QTRY_VERIFY(hasFocus(QStringLiteral("notificationSound-") +
+                           applicationIdForRow(row - 1)));
+    } else {
+      QTRY_VERIFY(quietHoursEnd->hasActiveFocus());
+    }
+  }
+
+  QTest::keyClick(&view, Qt::Key_Tab);
+  for (int row = 0; row < 30; ++row) {
+    const QString id = applicationIdForRow(row);
+    const QString muteName = QStringLiteral("notificationMute-") + id;
+    const QString soundName = QStringLiteral("notificationSound-") + id;
+    QTRY_VERIFY(hasFocus(muteName));
+    QTest::keyClick(&view, Qt::Key_Tab);
+    QTRY_VERIFY(hasFocus(soundName));
+    QTest::keyClick(&view, Qt::Key_Tab);
+    if (row < 29) {
+      QTRY_VERIFY(hasFocus(QStringLiteral("notificationMute-") +
+                           applicationIdForRow(row + 1)));
+    } else {
+      QTRY_VERIFY(dndSwitch->hasActiveFocus());
+    }
+  }
+
+  quietHoursEnd->forceActiveFocus();
+  QTest::keyClick(&view, Qt::Key_Tab);
+  QTRY_VERIFY(hasFocus(QStringLiteral("notificationMute-") + ApplicationId));
+  muteSwitch = findQuickItem(view.rootObject(),
+      QStringLiteral("notificationMute-") + ApplicationId);
+  soundSwitch = findQuickItem(view.rootObject(),
+      QStringLiteral("notificationSound-") + ApplicationId);
+  QVERIFY(muteSwitch != nullptr);
+  QVERIFY(soundSwitch != nullptr);
 
   client.refresh();
   QTRY_COMPARE(transport.snapshots.size(), 1);

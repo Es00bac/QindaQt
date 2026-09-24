@@ -16,6 +16,9 @@ using Policy = Services::NotificationPresentationPolicy::NotificationApplication
 using PolicyMap = Services::NotificationPresentationPolicy::PerApplicationNotificationPolicies;
 using PolicyValue = Services::NotificationPresentationPolicy::PerApplicationNotificationPolicy;
 
+constexpr int ReadbackRetryMilliseconds = 200;
+constexpr int ReadbackDeadlineMilliseconds = 4'000;
+
 } // namespace
 
 NotificationApplicationSettingsModel::NotificationApplicationSettingsModel(
@@ -38,6 +41,27 @@ NotificationApplicationSettingsModel::NotificationApplicationSettingsModel(
             this, &NotificationApplicationSettingsModel::handleCommit);
     connect(&m_client, &Services::SettingsClient::SettingsClient::commitUncertain,
             this, &NotificationApplicationSettingsModel::handleUncertain);
+    m_readbackRetryTimer.setSingleShot(true);
+    connect(&m_readbackRetryTimer, &QTimer::timeout, this, [this] {
+        if (m_pending && m_waitingForReadback) {
+            m_client.refresh();
+        }
+    });
+    m_readbackDeadlineTimer.setSingleShot(true);
+    connect(&m_readbackDeadlineTimer, &QTimer::timeout, this, [this] {
+        if (!m_pending || !m_waitingForReadback) {
+            return;
+        }
+        // AGENT-GUARD: a same-lineage snapshot below Applied's revision floor
+        // is valid current state but cannot settle this write. Bound retries;
+        // timeout retires uncertainty and never resubmits the policy.
+        m_pending = false;
+        m_waitingForReadback = false;
+        m_uncertain = true;
+        m_errorText = tr("The saved application notification settings could not be confirmed in time.");
+        finishWrite();
+        Q_EMIT stateChanged();
+    });
     rebuildRows();
     applySnapshot();
 }
@@ -180,21 +204,34 @@ void NotificationApplicationSettingsModel::applySnapshot(const bool fresh)
     }
 
     if (m_pending && m_waitingForReadback && fresh) {
-        m_pending = false;
-        m_waitingForReadback = false;
-        if (!available || snapshot->owner != m_writeOwner ||
-            snapshot->epoch != m_writeEpoch || snapshot->revision < m_readbackRevision) {
-            m_uncertain = true;
-            m_errorText = tr("The saved application notification settings could not be confirmed.");
-        } else if (nextPolicies != m_requestedPolicies) {
-            m_conflict = true;
-            m_errorText = tr("The saved application notification settings differ from your choice.");
+        const bool sameLineage = snapshot.has_value() &&
+            m_client.state() == Services::SettingsClient::ClientState::Ready &&
+            snapshot->owner == m_client.currentOwner() &&
+            snapshot->owner == m_writeOwner && snapshot->epoch == m_writeEpoch;
+        if (sameLineage && snapshot->revision < m_readbackRevision) {
+            // AGENT-GUARD: SettingsClient can accept a newer-than-cached
+            // revision that is still below the Applied result floor. Keep the
+            // intent pending and fetch again; this snapshot cannot confirm or
+            // refute the write.
+            if (!m_readbackRetryTimer.isActive()) {
+                m_readbackRetryTimer.start(ReadbackRetryMilliseconds);
+            }
         } else {
-            m_conflict = false;
-            m_uncertain = false;
-            m_errorText.clear();
+            m_pending = false;
+            m_waitingForReadback = false;
+            if (!available || !sameLineage) {
+                m_uncertain = true;
+                m_errorText = tr("The saved application notification settings could not be confirmed.");
+            } else if (nextPolicies != m_requestedPolicies) {
+                m_conflict = true;
+                m_errorText = tr("The saved application notification settings differ from your choice.");
+            } else {
+                m_conflict = false;
+                m_uncertain = false;
+                m_errorText.clear();
+            }
+            finishWrite();
         }
-        finishWrite();
     }
 
     if (fresh && available && m_refreshRequested) {
@@ -249,6 +286,7 @@ void NotificationApplicationSettingsModel::handleCommit(
     if (outcome.status == SettingsWireStatus::Applied) {
         m_waitingForReadback = true;
         m_readbackRevision = outcome.revisionAfter;
+        m_readbackDeadlineTimer.start(ReadbackDeadlineMilliseconds);
     } else {
         m_pending = false;
         m_conflict = outcome.status == SettingsWireStatus::Conflict;
@@ -384,6 +422,8 @@ int NotificationApplicationSettingsModel::rowForId(
 
 void NotificationApplicationSettingsModel::finishWrite()
 {
+    m_readbackRetryTimer.stop();
+    m_readbackDeadlineTimer.stop();
     m_writeOwner.clear();
     m_writeEpoch.clear();
     m_requestedPolicies.clear();

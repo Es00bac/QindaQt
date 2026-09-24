@@ -92,10 +92,16 @@ false is omitted, so an empty object preserves current behavior.
 The strict shared codec rejects malformed or unknown records as a whole. UI
 edits show only the last confirmed values. A write becomes confirmed only
 after Applied and a same-owner, same-epoch snapshot at or above the returned
-revision exactly matches the requested object. Refusal, conflict, uncertainty,
-or malformed saved data never becomes optimistic policy; unavailable and
-uncertain states retain confirmed values and expose a refresh action where
-appropriate.
+revision exactly matches the requested object. Same-lineage snapshots below
+that floor leave the write pending and trigger another read; a four-second
+readback deadline or loss of owner/epoch authority retires it as uncertain,
+without replay. A qualifying snapshot with different values reports conflict.
+Refusal, conflict, uncertainty, or malformed saved data never becomes
+optimistic policy; unavailable and uncertain states retain confirmed values and
+expose a refresh action where appropriate. The virtualized application list
+traverses mute then sound for each row. Stable first/last focus endpoints
+position the ListView before transferring focus, so Tab and Backtab continue
+to work when the endpoint delegate is outside the viewport.
 
 The existing quiet-hours and DND controls follow the scoped
 client's write-admission signal as well as its write-in-flight state: a
