@@ -144,6 +144,12 @@ integrated in the qinda source tree, not installed into a live session:
   Windows, private-bus, nested and installed-route rows pass. Broad Settings
   passed 136/137 under load; its one global installed-route timeout passed
   alone 1/1. Live qinda-top effects remain to qualify.
+- Install checkpoint helper (`8ed0e55c`, independently accepted): a qinda-only
+  diagnostic workflow audits generated install destinations before and after
+  build, contains a future CMake stage under ignored DESTDIR, and records a
+  host-bound rollback recipe. The integrated 32/32 helper tests and strict
+  documentation gates pass. No stage or live install has run; the qinda-top
+  release uses its existing Portage package path.
 - Per-application audio routing (`5c8aae4b`): playback and recording
   streams now offer direction-matched device choices in Audio Settings. The
   picker tracks confirmed Audio1 routing, handles pending/refused/stale

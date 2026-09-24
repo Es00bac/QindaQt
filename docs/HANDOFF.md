@@ -2,6 +2,13 @@
 
 ## September 23 — Settings repair integration on qinda
 
+The independently reviewed install checkpoint helper is integrated at
+`8ed0e55c`. Its focused Python tests pass 32/32, strict MkDocs and the
+386-document validator pass, and the existing generated CMake install tree
+passes the 340-script/1,549-rule destination audit. No CMake stage or live
+service/package operation has run. The qinda-top release remains a separate
+Portage transaction pinned to the final integrated source commit.
+
 The qinda source branch integrates Default Applications (`e02cd663`), Input
 (`5bb5fb73`, `0c41a5e3`), Touch (`e3602974`), Notifications (`3785d58f`), first-day-of-week (`2b885b6c`), Appearance monospace (`fdbc50f4`), Voice (`6a2d9e2d`, `58ca80c7`), Startup
 (`1d5de5e3`, `79a037c8`), audio wheel controls (`35392d6b`,
