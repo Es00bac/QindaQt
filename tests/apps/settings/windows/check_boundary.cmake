@@ -86,10 +86,10 @@ foreach(source IN LISTS route_files)
         message(FATAL_ERROR
             "Windows Settings referenced the reserved session-restore key in ${source}")
     endif()
-    # The route-local composition root is the only D-Bus owner (like
-    # Clipboard); the model, values and pages never touch a bus.
+    # D-Bus stays in the route composition root and its single-purpose
+    # session-apply status transport; model, values, and QML never touch it.
     get_filename_component(source_name "${source}" NAME)
-    if(NOT source_name MATCHES "^windows_route_composition\\.(cpp|h)$"
+    if(NOT source_name MATCHES "^(windows_route_composition|windows_session_apply_status_client)\\.(cpp|h)$"
        AND contents MATCHES "QtDBus|QDBus")
         message(FATAL_ERROR
             "Windows Settings leaked D-Bus into the route in ${source}")

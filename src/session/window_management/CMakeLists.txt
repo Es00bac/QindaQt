@@ -11,6 +11,7 @@ add_library(QindaQt::WindowManagementBridge ALIAS qindaqt_window_management_brid
 target_sources(
     qindaqt_window_management_bridge
     PRIVATE
+        src/window_management_apply_state_service.cpp
         src/kwin_reconfigure_requester.cpp
         src/kwin_window_management_writer.cpp
         src/window_management_bridge.cpp
@@ -19,6 +20,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/session/window_management/window_management_apply_state_service.h
             include/qindaqt/session/window_management/kwin_reconfigure_requester.h
             include/qindaqt/session/window_management/kwin_window_management_writer.h
             include/qindaqt/session/window_management/window_management_bridge.h

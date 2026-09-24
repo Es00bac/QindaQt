@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/session/window_management/kwin_window_management_writer.h"
 
+#include <KConfig>
+#include <KConfigGroup>
+
 #include <QFile>
 #include <QTemporaryDir>
 #include <QTest>
@@ -26,6 +29,7 @@ class KWinWindowManagementWriterTest final : public QObject
 
 private Q_SLOTS:
     void writesBothGroupsIntoAFreshFile();
+    void readbackDetectsAConcurrentMismatch();
     void preservesForeignGroupsAndReportsNoChangeWhenEqual();
     void anUnwritablePathFails();
 };
@@ -53,6 +57,26 @@ void KWinWindowManagementWriterTest::writesBothGroupsIntoAFreshFile()
     QVERIFY2(text.contains(QLatin1String("DockingModifier=alt")), qPrintable(text));
     QVERIFY2(text.contains(QLatin1String("CloseContainerPolicy=ungroup")), qPrintable(text));
     QVERIFY2(text.contains(QLatin1String("SessionRestore=false")), qPrintable(text));
+    const KWinReadbackOutcome readback = writer.readback(preferences);
+    QVERIFY2(readback.matches, qPrintable(readback.error));
+}
+
+void KWinWindowManagementWriterTest::readbackDetectsAConcurrentMismatch()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("kwinrc"));
+    const KWinWindowManagementWriter writer(path);
+    const WindowManagementPreferences preferences{};
+    QVERIFY(writer.write(preferences).ok);
+    QVERIFY(writer.readback(preferences).matches);
+
+    KConfig config(path, KConfig::SimpleConfig);
+    config.group(QStringLiteral("Windows")).writeEntry("WindowSnapZone", 20);
+    QVERIFY(config.sync());
+    const KWinReadbackOutcome mismatch = writer.readback(preferences);
+    QVERIFY(!mismatch.matches);
+    QVERIFY(mismatch.error.contains(path));
 }
 
 void KWinWindowManagementWriterTest::preservesForeignGroupsAndReportsNoChangeWhenEqual()

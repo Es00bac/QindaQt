@@ -134,6 +134,16 @@ integrated in the qinda source tree, not installed into a live session:
   final release. The accepted candidate passed 20/20 affected rows. On the merged tree,
   23/23 focused rows and the broad Settings suite 136/136 pass. Live
   pointer and panel behavior on qinda-top remains to qualify.
+- Windows saved versus applied status (`5290e12d`, independently accepted):
+  Windows Settings keeps the confirmed Settings1 choice separate from the
+  session KWin apply result. The session reports Applied only after exact-owner
+  write/readback/reconfigure/readback; failed writes, reconfigure, owner loss
+  and retry are visible. A direct A-to-B service replacement originally left
+  stale Applied visible; the same reviewer accepted the repaired immediate
+  revocation and delayed-reply regression. Integrated build and 9/9 focused
+  Windows, private-bus, nested and installed-route rows pass. Broad Settings
+  passed 136/137 under load; its one global installed-route timeout passed
+  alone 1/1. Live qinda-top effects remain to qualify.
 - Per-application audio routing (`5c8aae4b`): playback and recording
   streams now offer direction-matched device choices in Audio Settings. The
   picker tracks confirmed Audio1 routing, handles pending/refused/stale

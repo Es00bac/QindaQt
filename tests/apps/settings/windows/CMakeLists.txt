@@ -15,6 +15,32 @@ set_tests_properties(qindaqt.settings-windows-model PROPERTIES
     ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "settings;windows;model")
 
+find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
+qt_add_executable(
+    qindaqt_windows_session_apply_status_client_tests
+    tst_windows_session_apply_status_client.cpp
+)
+target_include_directories(
+    qindaqt_windows_session_apply_status_client_tests
+    PRIVATE "${PROJECT_SOURCE_DIR}/src/apps/settings/windows"
+)
+target_compile_definitions(
+    qindaqt_windows_session_apply_status_client_tests
+    PRIVATE QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
+)
+target_link_libraries(
+    qindaqt_windows_session_apply_status_client_tests
+    PRIVATE qindaqt_settings_windows_qml qindaqt_settings_windows Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_windows_session_apply_status_client_tests)
+add_test(
+    NAME qindaqt.settings-windows-session-apply-client
+    COMMAND qindaqt_windows_session_apply_status_client_tests
+)
+set_tests_properties(qindaqt.settings-windows-session-apply-client PROPERTIES
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "settings;windows;dbus;boundary")
+
 qt_add_executable(
     qindaqt_windows_page_tests
     tst_windows_page.cpp stub_windows_settings_model.h
