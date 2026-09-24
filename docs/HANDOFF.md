@@ -57,7 +57,7 @@ registry and all 85 Settings1 keys from exact independently accepted
 `f1b81087`. Historical route-order claims in five primary pages were corrected.
 The classifications identify remaining editor/backend gaps without claiming
 hardware completion. Strict docs and repository link validation pass on the
-candidate; integrated documentation gate follows.
+integrated tree, most recently 384 pages after guided Audio and panel timing.
 The Date & Time Week Start control now reads confirmed Settings1 state
 through a shared exact write-admission preview and retains refusal/conflict/
 uncertainty. Independent exact-commit review exercised the actual QML picker

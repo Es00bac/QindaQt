@@ -2,7 +2,7 @@
 
 This is the source-backed inventory of the 21 routes registered by
 `SettingsRouteRegistry::registerBuiltInRoutes()` and
-`registerAppendedRoutes()` at commit `452a5697` (2026-09-23). Registration
+`registerAppendedRoutes()` on the integrated qinda source branch (2026-09-23). Registration
 and the [active Loader witness](../adr/0250-require-active-loader-witness-for-every-settings-route.md)
 prove that each route can construct or show its declared unavailable state.
 They do not prove physical hardware behavior or that every stored schema key
@@ -16,7 +16,7 @@ authority outside Settings1.
 | 2 | `appearance` | [Theme, wallpaper, fonts (including monospace), and window/container decoration](../apps/appearance-settings.md) | Some retained appearance schema keys have no verified runtime consumer; see catalog. |
 | 3 | `display` | [Output arrangement, mirror, orientation, resolution/scale, refresh and night light](../apps/display-settings.md) | Display1/KWin own topology; legacy `displays.*` topology keys are not another editor. HDR behavior is not established by the old `displays.hdrPolicy` default. |
 | 4 | `network` | [Wi-Fi, saved/visible networks, devices and admitted Wi-Fi/mobile radio switches](../apps/network-settings.md) | Network1 owns mutation and hardware refusal; credentials stay with the separate agent. No live radio test is claimed here. |
-| 5 | `customize` | [Panel layout profiles, applets and direct panel editing](../apps/customize-settings.md) | Panel hide delay and customization chord have runtime consumers but no verified owned editor on this base. |
+| 5 | `customize` | [Panel layout profiles, applets and direct panel editing](../apps/customize-settings.md) | Customize edits panel reveal/hide timing through the shell visibility policy; the customization chord still lacks a verified editor. |
 | 6 | `audio` | [Devices, per-app stream routing, virtual devices, mixing console and manual stereo peers](../apps/audio-settings.md) | Audio1 owns device/graph truth. Manual peers need schema-12 service on both hosts; local active links do not prove remote audibility. |
 | 7 | `bluetooth` | [Adapters, discovery, pairing replies and devices](../apps/bluetooth-settings.md) | BlueZ/service own pairing and hardware truth; stored `services.bluetooth` has no verified master-key consumer. |
 | 8 | `power` | [Supplies, profiles, brightness, lid/button policy, screen lock and idle display power](../apps/power-settings.md) | Power1, Display1, login1 and PowerDevil own effects; hardware and authorization vary by host. Screen saver selection has its own route. |
@@ -42,8 +42,8 @@ not proof that its backing service or device is present on this computer.
 ## Cross-route gaps and ownership
 
 - The [Settings1 catalog](../handbook/catalog/settings.md) identifies keys with
-  active consumers but no editor (`panels.autoHideDelayMs` and
-  `shell.customization.chord`), legacy native-authority keys, reserved keys
+  active consumers but no editor (such as `shell.customization.chord`),
+  legacy native-authority keys, reserved keys
   and storage entries with no verified consumer. Do not turn a default value
   into a user-facing switch until its consumer and outcome contract exist.
 - App-owned preferences such as Calendar view, Text Editor restore, launcher
