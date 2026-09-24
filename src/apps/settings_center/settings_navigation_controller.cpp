@@ -144,6 +144,19 @@ bool SettingsNavigationController::selectRouteDestination(
     Q_EMIT routeSelectionRejected(routeId, QStringLiteral("unknown-route"));
     return false;
   }
+  // AGENT-NOTE: asking again for the destination the open page was last
+  // sent (search -> Input > Shortcuts, then the user clicks Keyboard in the
+  // page, then searches Shortcuts again) must still reach the page, but an
+  // unchanged property emits nothing in QML. Clearing the link first makes
+  // the page observe the request again (ADR-0257). A page ignores the empty
+  // destination in between because it names no sub-page.
+  if (routeId == m_activeRouteId && !destination.isEmpty() &&
+      m_requestedDestination == destination &&
+      m_requestedSelection == selection) {
+    m_requestedDestination.clear();
+    m_requestedSelection.clear();
+    Q_EMIT requestedDeepLinkChanged();
+  }
   // The deep link moves before the route does, so the page created by the
   // route change already reads the destination it should open.
   if (m_requestedDestination != destination ||

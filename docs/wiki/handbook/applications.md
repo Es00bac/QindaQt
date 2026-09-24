@@ -53,7 +53,9 @@ or from the launcher. A sidebar groups the pages:
 
 Keyboard shortcuts: `Ctrl+1` through `Ctrl+0` jump straight to the pages in
 order, the arrow keys move through them, and `Alt+Left` returns to the
-previous page. When a service is missing or not running, its page says so
+previous page. To find a page, press `Ctrl+K` or choose *Search settings*,
+type what you are looking for, such as "wifi", "battery" or "shortcuts", and
+press Enter. When a service is missing or not running, its page says so
 plainly instead of showing dead controls.
 
 ## Text Editor

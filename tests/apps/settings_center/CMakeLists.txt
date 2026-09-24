@@ -42,6 +42,30 @@ set_tests_properties(
     LABELS "settings;navigation"
 )
 
+# ADR-0257: search keywords and destinations in the registry and controller.
+qt_add_executable(
+    qindaqt_settings_route_search_test
+    tst_settings_route_search.cpp
+)
+target_include_directories(qindaqt_settings_route_search_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(
+    qindaqt_settings_route_search_test PRIVATE
+    QindaQt::SettingsNavigation Qt6::Core Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_settings_route_search_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+)
+qindaqt_enable_warnings(qindaqt_settings_route_search_test)
+add_test(
+    NAME qindaqt.settings-route-search
+    COMMAND qindaqt_settings_route_search_test
+)
+set_tests_properties(
+    qindaqt.settings-route-search PROPERTIES
+    LABELS "settings;navigation"
+)
+
 # 3. Offscreen Settings host rows, split by layout and interaction behavior.
 qt_add_executable(qindaqt_settings_navigation_layout_test
     tst_settings_navigation_layout.cpp
@@ -188,6 +212,56 @@ add_dependencies(qindaqt_settings_navigation_interaction_test
 qindaqt_enable_warnings(qindaqt_settings_navigation_interaction_test)
 add_test(NAME qindaqt.settings-navigation-interaction COMMAND qindaqt_settings_navigation_interaction_test)
 set_tests_properties(qindaqt.settings-navigation-interaction PROPERTIES
+    LABELS "offscreen;settings;navigation"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+)
+
+# ADR-0257: the Ctrl+K search palette in the real Main.qml. Same fixture and
+# route modules as the interaction row; QindaTK resolves from Qt's QML path.
+qt_add_executable(qindaqt_settings_command_palette_test
+    tst_settings_command_palette.cpp
+    settings_navigation_page_test_support.h
+    settings_navigation_page_fixture.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/audio/stub_audio_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/network/stub_network_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/bluetooth/stub_bluetooth_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/power/stub_power_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/clipboard/stub_clipboard_settings_model.h
+    ${PROJECT_SOURCE_DIR}/tests/apps/settings/customize/stub_customize_settings_model.h
+)
+target_include_directories(qindaqt_settings_command_palette_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(qindaqt_settings_command_palette_test PRIVATE
+    QindaQt::ShellIcons qindaqt_shell_iconsplugin
+    QindaQt::SettingsNavigation qindaqt_settings_audio qindaqt_settings_appearance qindaqt_settings_display
+    qindaqt_settings_network qindaqt_settings_customize_qml qindaqt_settings_customize_qmlplugin
+    qindaqt_settings_bluetooth qindaqt_settings_power qindaqt_settings_power_backend_qml
+    qindaqt_settings_power_backend_qmlplugin qindaqt_settings_clipboard_qml
+    qindaqt_settings_clipboard_qmlplugin qindaqt_settings_windows_qml qindaqt_settings_windows_qmlplugin
+    qindaqt_settings_color_backend_qml qindaqt_settings_color_backend_qmlplugin
+    qindaqt_settings_input_backend_qml qindaqt_settings_input_backend_qmlplugin
+    qindaqt_settings_streaming_backend_qml qindaqt_settings_streaming_backend_qmlplugin
+    qindaqt_settings_datetime_qml qindaqt_settings_datetime_qmlplugin
+    qindaqt_settings_default_apps_qml qindaqt_settings_default_apps_qmlplugin
+    qindaqt_settings_about_computer_qml qindaqt_settings_about_computer_qmlplugin
+    qindaqt_settings_startup_qml qindaqt_settings_startup_qmlplugin
+    qindaqt_settings_screensaver_qml qindaqt_settings_screensaver_qmlplugin
+    qindaqt_settings_login_screen_qml qindaqt_settings_login_screen_qmlplugin
+    qindaqt_settings_voice_qml qindaqt_settings_voice_qmlplugin
+    qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml qindaqt_themes
+    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
+)
+target_compile_definitions(qindaqt_settings_command_palette_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_BUILD_ROOT="${CMAKE_BINARY_DIR}"
+    QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+    QINDAQT_SETTINGS_SOURCE_DIR="${PROJECT_SOURCE_DIR}/src/apps/settings_center"
+)
+# The interaction row already depends on qindaqt-settings and every route QML
+# module this row loads; reuse that list instead of copying it a third time.
+add_dependencies(qindaqt_settings_command_palette_test qindaqt_settings_navigation_interaction_test)
+qindaqt_enable_warnings(qindaqt_settings_command_palette_test)
+add_test(NAME qindaqt.settings-command-palette COMMAND qindaqt_settings_command_palette_test)
+set_tests_properties(qindaqt.settings-command-palette PROPERTIES
     LABELS "offscreen;settings;navigation"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
 )

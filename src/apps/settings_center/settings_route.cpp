@@ -126,10 +126,32 @@ bool SettingsRoute::isValid() const noexcept {
   if (available != unavailableReason.trimmed().isEmpty()) {
     return false;
   }
+  if (!isValidSearchKeywords(keywords) ||
+      destinations.size() > MaximumDestinationCount) {
+    return false;
+  }
+  for (qsizetype index = 0; index < destinations.size(); ++index) {
+    const SettingsRouteDestination &destination = destinations.at(index);
+    if (!destination.isValid()) {
+      return false;
+    }
+    // AGENT-GUARD: a destination id is what search hands to the page; two
+    // entries with one id would list two results that open the same place.
+    for (qsizetype earlier = 0; earlier < index; ++earlier) {
+      if (destinations.at(earlier).id == destination.id) {
+        return false;
+      }
+    }
+  }
   return true;
 }
 
 QVariantMap SettingsRoute::toVariantMap() const {
+  QVariantList destinationList;
+  destinationList.reserve(destinations.size());
+  for (const SettingsRouteDestination &destination : destinations) {
+    destinationList.append(destination.toVariantMap());
+  }
   return {
       {QStringLiteral("id"), id},
       {QStringLiteral("component"), settingsRouteComponentKey(component)},
@@ -139,6 +161,8 @@ QVariantMap SettingsRoute::toVariantMap() const {
       {QStringLiteral("category"), category},
       {QStringLiteral("available"), available},
       {QStringLiteral("unavailableReason"), unavailableReason},
+      {QStringLiteral("keywords"), keywords},
+      {QStringLiteral("destinations"), destinationList},
   };
 }
 
@@ -147,7 +171,40 @@ bool SettingsRoute::operator==(const SettingsRoute &other) const noexcept {
          title == other.title && description == other.description &&
          iconName == other.iconName && category == other.category &&
          available == other.available &&
-         unavailableReason == other.unavailableReason;
+         unavailableReason == other.unavailableReason &&
+         keywords == other.keywords && destinations == other.destinations;
+}
+
+bool isValidSearchKeywords(const QStringList &keywords) noexcept {
+  if (keywords.size() > MaximumSearchKeywordCount) {
+    return false;
+  }
+  for (const QString &keyword : keywords) {
+    if (keyword.contains(QChar::Null) || keyword.trimmed().isEmpty() ||
+        keyword.size() > MaximumSearchKeywordLength) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool SettingsRouteDestination::isValid() const noexcept {
+  if (!isValidRouteId(id)) {
+    return false;
+  }
+  if (title.contains(QChar::Null) || title.trimmed().isEmpty() ||
+      title.size() > MaximumTitleLength) {
+    return false;
+  }
+  return isValidSearchKeywords(keywords);
+}
+
+QVariantMap SettingsRouteDestination::toVariantMap() const {
+  return {
+      {QStringLiteral("id"), id},
+      {QStringLiteral("title"), title},
+      {QStringLiteral("keywords"), keywords},
+  };
 }
 
 } // namespace QindaQt::Apps::SettingsCenter
