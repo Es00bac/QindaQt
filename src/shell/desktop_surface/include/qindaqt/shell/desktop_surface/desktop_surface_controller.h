@@ -3,8 +3,10 @@
 
 #include <QHash>
 #include <QList>
+#include <QMargins>
 #include <QMetaObject>
 #include <QObject>
+#include <QString>
 #include <QVariantList>
 
 #include <memory>
@@ -78,6 +80,31 @@ public:
   // after start(): live windows receive it in place.
   void setCustomizationAccess(QObject *access);
 
+  // Depth, in logical pixels from each edge, that the shell's panels reserve
+  // on each output, keyed by QScreen::name(). Each surface's icons flow and
+  // clamp inside its output minus these insets - the desktop work area -
+  // while the surface itself keeps spanning the whole output. An output with
+  // no entry is all work area. Set before or after start(): live windows are
+  // republished in place, and an unchanged map is ignored.
+  //
+  // AGENT-CONTRACT (ADR-0261): ShellRuntimeApplication::reconcileSurfaces()
+  // is the only producer; it publishes PanelReservationInsets::fromPlan() of
+  // every accepted panel plan. This is the whole interface between panels and
+  // the desktop surface: it never reads panel windows, profiles, or
+  // QScreen::availableGeometry(), which layer-shell exclusive zones do not
+  // reach.
+  void setOutputReservations(const QHash<QString, QMargins> &reservations);
+  [[nodiscard]] const QHash<QString, QMargins> &outputReservations() const noexcept
+  {
+    return m_reservations;
+  }
+
+  // What every surface receives as `outputRects`: one global-frame
+  // {name, x, y, width, height, workArea: {x, y, width, height}} map per
+  // connected output. The work area fails open to the whole output when the
+  // insets would leave no room at all.
+  [[nodiscard]] QVariantList outputRects() const;
+
   [[nodiscard]] const QVariantList &inventory() const noexcept
   {
     return m_inventory;
@@ -96,9 +123,9 @@ public:
 private:
   void reconcile();
   void createWindow(QScreen *screen);
-  // Global-frame {name, x, y, width, height} for every connected output.
-  [[nodiscard]] QVariantList outputRects() const;
   [[nodiscard]] QString primaryOutputName() const;
+  // Pushes outputRects() and the primary name onto every live window.
+  void publishGeometry();
   // Republishes output geometry to live windows and rewatches every screen.
   void refreshOutputs();
 
@@ -108,6 +135,7 @@ private:
   QObject *m_customizationAccess = nullptr;
   QVariantList m_inventory;
   QHash<QScreen *, QQuickWindow *> m_windows;
+  QHash<QString, QMargins> m_reservations;
   std::unique_ptr<DesktopIconLayoutStore> m_layoutStore;
   QList<QMetaObject::Connection> m_screenConnections;
   bool m_started = false;

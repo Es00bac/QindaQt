@@ -199,6 +199,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/notificationsoundoutput.h
         runtime/notificationoutputselector.cpp
         runtime/notificationoutputselector.h
+        runtime/panelreservationinsets.cpp
+        runtime/panelreservationinsets.h
         runtime/powerappletcomposition.cpp
         runtime/powerappletcomposition.h
         runtime/edgegesturesubscriber.cpp

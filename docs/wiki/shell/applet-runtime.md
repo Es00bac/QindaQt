@@ -185,6 +185,15 @@ surface hosts the desktop-icons entry (see its bullet below):
   twice. Each per-output surface draws only the icons whose centre its output
   owns, icons nobody has placed flow onto the primary output, and an icon over
   no output at all falls back to the primary rather than becoming unreachable.
+  Icons stay inside each output's **work area** - the output minus the
+  exclusive zones the shell's own panels currently reserve on it, which the
+  runtime publishes after every accepted panel plan - while the surface
+  itself still spans the whole output
+  ([ADR-0261](../adr/0261-lay-desktop-icons-out-inside-the-panel-work-area.md)).
+  Unplaced icons flow below the top bar and beside side panels, a saved
+  position under a panel is drawn just clear of it without rewriting the
+  store, a hidden or overlay panel reserves nothing, and a panel or output
+  change reflows the icons live.
   A tile is dragged 1:1 with the pointer, a multi-icon drag is clamped as one
   rigid group, and a drag may cross an output seam - the dragging surface
   publishes volatile live positions through the shared store so the receiving

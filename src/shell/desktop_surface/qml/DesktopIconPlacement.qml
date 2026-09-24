@@ -3,7 +3,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
-// Where each desktop icon lives, and which output draws it (ADR-0167).
+// Where each desktop icon lives, and which output draws it (ADR-0167), kept
+// inside the part of each output the shell's panels leave free (ADR-0261).
 //
 // AGENT-CONTRACT: placements are GLOBAL layout coordinates - the frame the
 // compositor uses to lay outputs side by side - resolved from one shared
@@ -17,7 +18,9 @@ QtObject {
     required property var rows
     required property var layoutStore
     required property string screenName
-    // {name, x, y, width, height} per connected output, in the global frame.
+    // {name, x, y, width, height, workArea} per connected output, in the
+    // global frame. `workArea` ({x, y, width, height}) is the output minus the
+    // panels' exclusive zones; an entry without one is all work area.
     required property var outputRects
     required property string primaryOutputName
     required property real tileWidth
@@ -50,18 +53,36 @@ QtObject {
         }
         return ownRect
     }
-    // Union of every output: the bound a drag may travel within.
-    readonly property rect desktopBounds: {
+    readonly property var primaryWorkArea: workAreaOf(primaryRect)
+    // Bounding box of every output's work area: the bound a drag's group
+    // translation is clamped to. On one output that IS its work area, so a
+    // drag stops at a panel's edge; across outputs the box may still span a
+    // panel on a seam, and the drop is clamped by its owning output instead.
+    readonly property rect workBounds: {
         if (outputRects.length === 0)
             return Qt.rect(0, 0, surfaceWidth, surfaceHeight)
         let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity
         for (const candidate of outputRects) {
-            left = Math.min(left, candidate.x)
-            top = Math.min(top, candidate.y)
-            right = Math.max(right, candidate.x + candidate.width)
-            bottom = Math.max(bottom, candidate.y + candidate.height)
+            const area = workAreaOf(candidate)
+            left = Math.min(left, area.x)
+            top = Math.min(top, area.y)
+            right = Math.max(right, area.x + area.width)
+            bottom = Math.max(bottom, area.y + area.height)
         }
         return Qt.rect(left, top, right - left, bottom - top)
+    }
+
+    // AGENT-CONTRACT (ADR-0261): `workArea` is published by
+    // DesktopSurfaceController from the exclusive zones the shell runtime's
+    // panel plan actually requested. A missing or empty one (tests, the
+    // single-surface fallback, a shell whose first plan is not in yet) means
+    // the whole output, which is exactly the behavior before work areas.
+    function workAreaOf(output) {
+        const area = output.workArea
+        if (area === undefined || area === null
+                || !(Number(area.width) > 0) || !(Number(area.height) > 0))
+            return output
+        return area
     }
 
     // Bumped whenever the shared store changes, because store lookups are
@@ -94,7 +115,8 @@ QtObject {
     Component.onCompleted: resettle()
 
     // Resolved global position per layout key: a live drag wins, then the
-    // saved placement, then the default slot on the primary output.
+    // saved placement clamped into its output's work area, then the default
+    // slot on the primary output.
     readonly property var positions: {
         const currentRevision = placement.revision
         void currentRevision
@@ -111,7 +133,8 @@ QtObject {
             }
             const stored = placement.layoutStore.position(key)
             if (stored.x !== undefined) {
-                resolved[key] = { x: Number(stored.x), y: Number(stored.y) }
+                resolved[key] = placement.clampToWorkArea(
+                    { x: Number(stored.x), y: Number(stored.y) })
                 continue
             }
             resolved[key] = placement.defaultGlobalPosition(index)
@@ -120,14 +143,14 @@ QtObject {
     }
 
     // Default slot for the icon at listing index `slot`. Always on the primary
-    // output: an unplaced icon has to land somewhere predictable, and "the
-    // user's main screen" is that place.
+    // output, flowed inside its work area: an unplaced icon has to land
+    // somewhere predictable, and "the user's main screen" is that place.
     //
     // AGENT-GUARD: keyed on the icon's index in the listing, NOT on a running
     // count of unplaced icons. Counting only unplaced ones makes every
     // remaining icon jump one slot the moment the user places any single icon.
     function defaultGlobalPosition(slot) {
-        const area = primaryRect
+        const area = primaryWorkArea
         const rowsPerColumn = Math.max(1, Math.floor(
             (area.height - 2 * cellMargin + cellSpacing) / (tileHeight + cellSpacing)))
         const column = Math.floor(slot / rowsPerColumn)
@@ -178,12 +201,41 @@ QtObject {
         return point === undefined ? 0 : point.y - ownRect.y
     }
 
-    // Nearest FREE grid cell on the output that will own the drop, so a drop
-    // onto an occupied cell pushes outward instead of stacking icons.
-    // `movingKeys` are excluded from occupancy: they are the icons being
-    // placed by this same gesture.
+    // A tile wholly inside its owning output's work area keeps its position;
+    // one crossing a work-area edge (saved under a panel, or dropped beside a
+    // panel on a seam) lands cellMargin inside that edge, level with the
+    // default grid - so an icon saved under the top bar shows just below it.
+    //
+    // AGENT-GUARD (ADR-0261): this runs at RESOLUTION and never writes the
+    // store. A panel that later shrinks, moves or auto-hides gives the icon
+    // its saved place back, and no other icon's saved position is rewritten to
+    // make room. Do not apply it to live drag positions either: the view
+    // clamps a drag's group translation once, because clamping each icon
+    // separately collapses a group drag into a pile at an edge.
+    function clampToWorkArea(point) {
+        const area = workAreaOf(rectFor(ownerOf(point)))
+        return {
+            x: clampAxis(point.x, area.x, area.x + area.width, tileWidth),
+            y: clampAxis(point.y, area.y, area.y + area.height, tileHeight)
+        }
+    }
+    function clampAxis(value, low, high, size) {
+        if (high - low < size)
+            return low
+        if (value < low)
+            return Math.min(low + cellMargin, high - size)
+        if (value + size > high)
+            return Math.max(high - cellMargin - size, low)
+        return value
+    }
+
+    // Nearest FREE grid cell in the work area of the output that will own the
+    // drop, so a drop onto an occupied cell pushes outward instead of stacking
+    // icons, and a drop onto a panel lands beside it. `movingKeys` are
+    // excluded from occupancy: they are the icons placed by this same gesture.
     function snapGlobal(point, layoutKey, movingKeys) {
-        const area = rectFor(ownerOf(point))
+        const output = rectFor(ownerOf(point))
+        const area = workAreaOf(output)
         const cellWidth = tileWidth + cellSpacing
         const cellHeight = tileHeight + cellSpacing
         const columns = Math.max(1, Math.floor(
@@ -199,7 +251,7 @@ QtObject {
             if (key === layoutKey || movingKeys.indexOf(key) >= 0)
                 continue
             const other = positions[key]
-            if (other === undefined || ownerOf(other) !== String(area.name))
+            if (other === undefined || ownerOf(other) !== String(output.name))
                 continue
             taken[Math.round((other.x - area.x - cellMargin) / cellWidth) + ":"
                   + Math.round((other.y - area.y - cellMargin) / cellHeight)] = true
@@ -220,7 +272,7 @@ QtObject {
             }
         }
         if (best === null)
-            return point
+            return clampToWorkArea(point)
         return {
             x: area.x + cellMargin + best.column * cellWidth,
             y: area.y + cellMargin + best.line * cellHeight
