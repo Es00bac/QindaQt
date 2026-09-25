@@ -169,6 +169,8 @@ void LauncherInstallJob::onDownloadFinished(bool ok, const QString &reason) {
 void LauncherInstallJob::onInstallerFinished(const ProcessRunResult &result) {
   if (m_stage == Stage::Stopping) {
     m_log.append(describeProcessResult(result));
+    // AGENT-GUARD: after a stop only a PROVEN stop (the scope is gone) frees
+    // the installer file; the fallback's "stopped as far as tracked" keeps it.
     m_keepInstaller = !result.treeStopped;
     concludeCancelled();
     return;
@@ -177,7 +179,10 @@ void LauncherInstallJob::onInstallerFinished(const ProcessRunResult &result) {
     return;
   }
   m_log.append(describeProcessResult(result));
-  m_keepInstaller = !result.treeStopped;
+  // A normal exit whose tracked tree is gone frees the file; a timeout needs
+  // the same proof as a cancel.
+  m_keepInstaller = result.timedOut ? !result.treeStopped
+                                    : !(result.treeStopped || result.trackedStopped);
   Q_EMIT progress(0.95, QStringLiteral("Looking for %1").arg(m_name));
   const QString found = firstExistingCandidate(m_request.prefixPath,
                                                m_request.recipe.launcherExecutableCandidates);

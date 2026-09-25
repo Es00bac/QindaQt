@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "archive_listing.h"
 
+#include "link_resolution.h"
+
 #include <QHash>
 
 #include <algorithm>
@@ -68,29 +70,6 @@ ArchiveListingVerdict refuse(const QString &reason) {
   ArchiveListingVerdict verdict;
   verdict.reason = reason;
   return verdict;
-}
-
-// Resolves a relative symlink target against the link's folder; false when
-// it leaves the top folder (depth would drop below 1) or is absolute.
-bool symlinkStaysInside(const QStringList &linkSegments, const QString &target) {
-  if (target.isEmpty() || target.startsWith(QLatin1Char('/'))) {
-    return false;
-  }
-  QStringList resolved = linkSegments.mid(0, linkSegments.size() - 1);
-  for (const QString &part : target.split(QLatin1Char('/'), Qt::SkipEmptyParts)) {
-    if (part == QLatin1String(".")) {
-      continue;
-    }
-    if (part == QLatin1String("..")) {
-      if (resolved.size() <= 1) {
-        return false;
-      }
-      resolved.removeLast();
-    } else {
-      resolved.append(part);
-    }
-  }
-  return !resolved.isEmpty();
 }
 
 } // namespace
@@ -189,7 +168,8 @@ ArchiveListingVerdict validateArchiveListing(const QByteArray &verboseListing,
     if (segments.size() == 1 && entry->type != QLatin1Char('d')) {
       return refuse(QStringLiteral("The archive's top-level item is not a folder."));
     }
-    if (entry->type == QLatin1Char('l') && !symlinkStaysInside(segments, entry->linkTarget)) {
+    if (entry->type == QLatin1Char('l') &&
+        (entry->linkTarget.isEmpty() || entry->linkTarget.startsWith(QLatin1Char('/')))) {
       return refuse(QStringLiteral("The archive has a link pointing outside its folder: %1 -> %2")
                         .arg(name, entry->linkTarget));
     }
@@ -210,7 +190,36 @@ ArchiveListingVerdict validateArchiveListing(const QByteArray &verboseListing,
   if (top.isEmpty() || !nested) {
     return refuse(QStringLiteral("The archive does not contain a single folder."));
   }
+  // Links are resolved physically against the listing's own link table, so a
+  // target that climbs out THROUGH another link is caught (see
+  // link_resolution.h). The staged-tree check repeats this on disk.
+  QHash<QString, QString> links;
   for (const auto &[segments, entry] : std::as_const(entries)) {
+    if (entry.type == QLatin1Char('l')) {
+      links.insert(segments.join(QLatin1Char('/')), entry.linkTarget);
+    }
+  }
+  const LinkReader readLink = [&links](const QStringList &path) -> std::optional<QString> {
+    const auto it = links.constFind(path.join(QLatin1Char('/')));
+    return it == links.constEnd() ? std::nullopt : std::optional<QString>(it.value());
+  };
+  for (const auto &[segments, entry] : std::as_const(entries)) {
+    const QString name = segments.join(QLatin1Char('/'));
+    if (entry.type == QLatin1Char('l') &&
+        !resolveConfined(segments.mid(0, segments.size() - 1), entry.linkTarget, readLink)) {
+      return refuse(QStringLiteral("The archive has a link pointing outside its folder: %1 -> %2")
+                        .arg(name, entry.linkTarget));
+    }
+    if (entry.type == QLatin1Char('h')) {
+      const QStringList target =
+          normalizedName(entry.linkTarget).split(QLatin1Char('/'), Qt::SkipEmptyParts);
+      for (qsizetype depth = 1; depth < target.size(); ++depth) {
+        if (links.contains(target.mid(0, depth).join(QLatin1Char('/')))) {
+          return refuse(QStringLiteral("The archive has a hard link through a link: %1 -> %2")
+                            .arg(name, entry.linkTarget));
+        }
+      }
+    }
     for (qsizetype depth = 1; depth < segments.size(); ++depth) {
       const QString ancestor = segments.mid(0, depth).join(QLatin1Char('/'));
       const auto it = types.constFind(ancestor);

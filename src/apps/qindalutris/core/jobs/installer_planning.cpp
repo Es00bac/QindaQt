@@ -24,11 +24,16 @@ InstallerPlan planInstallerRun(const InstallerPlanner &planner,
 }
 
 QString describeProcessResult(const ProcessRunResult &result) {
-  QString line = QStringLiteral("Installer result: started=%1 exit=%2 crashed=%3 timedOut=%4")
-                     .arg(result.started ? QStringLiteral("yes") : QStringLiteral("no"))
+  const auto yes = [](bool value) { return value ? QStringLiteral("yes") : QStringLiteral("no"); };
+  QString line = QStringLiteral("Installer result: started=%1 exit=%2 crashed=%3 timedOut=%4 "
+                                "cancelled=%5 leftoversStopped=%6")
+                     .arg(yes(result.started))
                      .arg(result.exitCode)
-                     .arg(result.crashed ? QStringLiteral("yes") : QStringLiteral("no"),
-                          result.timedOut ? QStringLiteral("yes") : QStringLiteral("no"));
+                     .arg(yes(result.crashed), yes(result.timedOut), yes(result.cancelled),
+                          yes(result.stoppedLeftovers));
+  if (!result.stopDetail.isEmpty()) {
+    line += QStringLiteral("\nProcess tree: ") + result.stopDetail;
+  }
   if (!result.error.isEmpty()) {
     line += QStringLiteral("\nInstaller error: ") + result.error;
   }

@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include <QObject>
 #include <QString>
 #include <QStringList>
 #include <QVector>
 
 #include <optional>
-
-class QTimer;
 
 namespace QindaQt::QindaLutris {
 
@@ -25,9 +22,11 @@ namespace QindaQt::QindaLutris {
 // time); a daemon that double-forked away before it was tracked can escape
 // the fallback -- the scope has no such hole.
 // Shared by the install jobs' ProcessRunner (process_runner.h) and, next,
-// the game launcher's Force quit: both must use these helpers so there is
-// one naming scheme and one kill sequence. Linux only; threading: owner
-// thread for ProcessTreeStopper, the free functions are thread-safe.
+// the game launcher's Force quit: both must use these helpers and
+// ProcessTreeSupervisor (process_supervisor.h) so there is one naming
+// scheme and one kill sequence. Linux only; the free functions are
+// thread-safe, and the ones that block (/proc scans, systemctl) belong on a
+// worker thread, never on the GUI thread while a job runs.
 
 // One process, identified by pid AND kernel start time, so a recycled pid is
 // never signalled by mistake.
@@ -45,6 +44,10 @@ struct ProcessIdentity final {
 // Every live descendant of the given roots (bounded /proc walk).
 [[nodiscard]] QVector<ProcessIdentity> liveDescendants(const QVector<qint64> &rootPids,
                                                        int maxProcesses = 32768);
+// Every live member of a process group (bounded /proc walk). Catches
+// children orphaned by an exiting parent: they keep the group.
+[[nodiscard]] QVector<ProcessIdentity> liveGroupMembers(qint64 processGroup,
+                                                        int maxProcesses = 32768);
 // Signals the process only if it is still that same process.
 void signalProcess(const ProcessIdentity &process, int signalNumber);
 
@@ -71,7 +74,8 @@ struct UserScopeTools final {
 [[nodiscard]] bool isScopeActive(const UserScopeTools &tools, const QString &unit);
 
 struct StopTarget final {
-  qint64 mainPid = 0;            // also the process-group id (setpgid at start)
+  qint64 mainPid = 0;
+  qint64 processGroup = 0;       // the group made at start (setpgid); 0: none
   QString scopeUnit;             // empty in the fallback
   UserScopeTools tools;
   // Tracked while the tree ran; seed it with the main process's identity
@@ -85,32 +89,24 @@ struct StopTarget final {
 // the parent exits) are still tracked when a stop begins.
 void trackProcessTree(StopTarget &target);
 
-// Runs the kill sequence without blocking the event loop.
-class ProcessTreeStopper final : public QObject {
-  Q_OBJECT
-public:
-  explicit ProcessTreeStopper(QObject *parent = nullptr);
-
-  void stop(const StopTarget &target, int graceMs = 5000, int killWaitMs = 3000);
-  [[nodiscard]] bool isStopping() const { return m_phase != Phase::Idle; }
-
-  // The same sequence, blocking (destructors only). Returns treeGone.
-  static bool stopBlocking(const StopTarget &target, int graceMs = 5000, int killWaitMs = 3000);
-
-Q_SIGNALS:
-  // treeGone is false when something was still alive after SIGKILL + wait.
-  void stopped(bool treeGone, const QString &detail);
-
-private:
-  enum class Phase { Idle, Terminating, Killing };
-  void poll();
-
-  StopTarget m_target;
-  Phase m_phase = Phase::Idle;
-  QTimer *m_timer = nullptr;
-  qint64 m_deadline = 0;
-  int m_killWaitMs = 0;
-  qsizetype m_signalled = 0;
+// What a stop achieved. AGENT-GUARD: `proven` is true ONLY in scope mode,
+// when systemd reports the scope gone and every tracked process is dead.
+// The process-group fallback can at best reach `trackedGone` ("stopped as
+// far as tracked"): it cannot rule out a process that detached before it
+// was tracked, and must never claim more.
+struct TreeStopOutcome final {
+  bool proven = false;
+  bool trackedGone = false;
+  bool hadLeftovers = false; // set when stopping followed a normal exit
+  QString detail;            // for the details log
 };
+
+// SIGTERM (main process first, then scope, tracked processes and group),
+// a grace of graceMs, SIGKILL, then up to killWaitMs. BLOCKING, and it
+// spawns systemctl and scans /proc: call it only on a worker thread (see
+// ProcessTreeSupervisor) or from a destructor.
+[[nodiscard]] TreeStopOutcome stopProcessTree(StopTarget &target, int graceMs, int killWaitMs);
+[[nodiscard]] QString describeOutcome(const StopTarget &target, const TreeStopOutcome &outcome,
+                                      qsizetype signalled);
 
 } // namespace QindaQt::QindaLutris

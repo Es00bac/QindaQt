@@ -10,23 +10,29 @@
 
 namespace QindaQt::QindaLutris {
 
-// AGENT-CONTRACT: the path-escape defence for Proton archives (ADR-0275
+// AGENT-CONTRACT: the first path-escape gate for Proton archives (ADR-0275
 // section 2). The job lists the archive with
 //   LC_ALL=C tar --list --verbose --numeric-owner --quoting-style=c --gzip
 // (tarListArguments()) and extracts only when validateArchiveListing()
 // accepts. The C quoting makes every name and link target unambiguous (a
 // name may contain " -> ", spaces or newlines); numeric owners keep
 // attacker-chosen user names out of the parse.
-// AGENT-GUARD: GNU tar's own extraction defences (stripping '/', deferring
-// dangerous symlinks) are a second line only. This check refuses, before
-// anything is written:
+// AGENT-GUARD: this listing check is the FIRST of two gates; it decides
+// before anything is written, from names and link targets only. It refuses:
 //  - absolute names, any `..` segment, or more than one top-level name;
 //  - a top-level entry that is not a directory;
-//  - a symlink whose target is absolute or resolves outside the top folder;
-//  - a hard link whose target is outside the top folder;
+//  - an absolute symlink target, or one that -- resolved physically through
+//    the other links in the listing (link_resolution.h) -- leaves the top
+//    folder;
+//  - a hard link whose target is outside the top folder or passes through
+//    a symlink;
 //  - devices, FIFOs and every other special type; setuid/setgid modes;
 //  - a name listed twice, or an entry beneath a non-directory entry
 //    (the "symlink, then a directory of the same name" overwrite trick).
+// It cannot see what tar actually builds, so the SECOND gate,
+// verifyStagedBuild() (staged_tree_check.h), re-resolves every link in the
+// real extracted tree before the build is committed. GNU tar's own
+// extraction defences are a third line only.
 // Real GE-Proton builds pass: all ~1,900 of their symlinks are relative and
 // stay inside the build (checked on GE-Proton11-6-x86_64, 2026-09-25).
 

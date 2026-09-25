@@ -2,7 +2,7 @@
 #include <QDir>
 #include <QFile>
 #include <QRandomGenerator>
-#include <QScopeGuard>
+#include <QTimer>
 #include <QStandardPaths>
 #include <QTest>
 
@@ -80,6 +80,22 @@ ProcessRunSpec treeSpec(const QString &mark) {
                    .arg(mark)});
 }
 
+// The isolated test environment hides the user manager; the scope rows
+// reach the real one (and skip plainly when there is none). Scopes they
+// create are --collect'ed transient units named qindalutris-job-*.
+struct UserManagerEnvironment {
+  QByteArray runtime = qgetenv("XDG_RUNTIME_DIR");
+  QByteArray bus = qgetenv("DBUS_SESSION_BUS_ADDRESS");
+  UserManagerEnvironment() {
+    qputenv("XDG_RUNTIME_DIR", QByteArray("/run/user/") + QByteArray::number(::getuid()));
+    qunsetenv("DBUS_SESSION_BUS_ADDRESS");
+  }
+  ~UserManagerEnvironment() {
+    qputenv("XDG_RUNTIME_DIR", runtime);
+    qputenv("DBUS_SESSION_BUS_ADDRESS", bus);
+  }
+};
+
 bool waitForProcesses(const QString &mark, int expected) {
   return QTest::qWaitFor([&] { return processesWith(mark) >= expected; }, 5000);
 }
@@ -154,11 +170,34 @@ private Q_SLOTS:
     QVERIFY(!run.runner.usesSystemdScope());
     run.runner.start(treeSpec(mark));
     QVERIFY(waitForProcesses(mark, 3));
+    // The owner's thread stays free while the worker stops the tree (the
+    // TERM-ignoring child forces the full 1.5 s grace).
+    int ticks = 0;
+    QTimer ticker;
+    ticker.setInterval(50);
+    QObject::connect(&ticker, &QTimer::timeout, [&ticks] { ++ticks; });
+    ticker.start();
     run.runner.cancel();
     QVERIFY(!run.result.has_value()); // reported only once the tree is gone
     QVERIFY(run.wait());
+    QVERIFY2(ticks >= 15, qPrintable(QString::number(ticks)));
     QVERIFY(run.result->cancelled);
-    QVERIFY2(run.result->treeStopped, qPrintable(run.result->stopDetail));
+    // The fallback never claims a proven stop, only "as far as tracked".
+    QVERIFY(!run.result->treeStopped);
+    QVERIFY2(run.result->trackedStopped, qPrintable(run.result->stopDetail));
+    QVERIFY(run.result->stopDetail.contains(QStringLiteral("as far as tracked")));
+    QCOMPARE(processesWith(mark), 0);
+  }
+
+  void leftoversAfterANormalExitAreStoppedInTheFallback() {
+    const QString mark = marker();
+    Run run(ProcessContainment::ProcessGroup);
+    QVERIFY(run.go(spec(QStringLiteral("sh"), {QStringLiteral("-c"),
+                                               QStringLiteral("sleep %1 & exit 0").arg(mark)})));
+    QCOMPARE(run.result->exitCode, 0);
+    QVERIFY(!run.result->cancelled);
+    QVERIFY2(run.result->stoppedLeftovers, qPrintable(run.result->stopDetail));
+    QVERIFY(run.result->trackedStopped);
     QCOMPARE(processesWith(mark), 0);
   }
 
@@ -170,21 +209,13 @@ private Q_SLOTS:
     QVERIFY(run.go(s));
     QVERIFY(run.result->timedOut);
     QVERIFY(!run.result->cancelled);
-    QVERIFY2(run.result->treeStopped, qPrintable(run.result->stopDetail));
+    QVERIFY(!run.result->treeStopped);
+    QVERIFY2(run.result->trackedStopped, qPrintable(run.result->stopDetail));
     QCOMPARE(processesWith(mark), 0);
   }
 
   void systemdScopeStopsEvenAnOrphanedSession() {
-    // The isolated test environment hides the user manager; reach the real
-    // one for this row only, and skip plainly when there is none.
-    const QByteArray savedRuntime = qgetenv("XDG_RUNTIME_DIR");
-    const QByteArray savedBus = qgetenv("DBUS_SESSION_BUS_ADDRESS");
-    qputenv("XDG_RUNTIME_DIR", QByteArray("/run/user/") + QByteArray::number(::getuid()));
-    qunsetenv("DBUS_SESSION_BUS_ADDRESS");
-    const auto restore = qScopeGuard([&] {
-      qputenv("XDG_RUNTIME_DIR", savedRuntime);
-      qputenv("DBUS_SESSION_BUS_ADDRESS", savedBus);
-    });
+    const UserManagerEnvironment environment;
     Run run(ProcessContainment::SystemdScope);
     if (!run.runner.usesSystemdScope()) {
       QSKIP("no systemd user manager answers `systemctl --user is-system-running` here; "
@@ -211,6 +242,24 @@ private Q_SLOTS:
     QCOMPARE(run.result->standardOutput, QByteArray("scoped"));
     QCOMPARE(processesWith(mark), 0);
     QVERIFY(!isScopeActive(detectUserScopeTools(), unit));
+  }
+
+  void scopeLeftoversAfterANormalExitAreStopped() {
+    const UserManagerEnvironment environment;
+    Run run(ProcessContainment::SystemdScope);
+    if (!run.runner.usesSystemdScope()) {
+      QSKIP("no systemd user manager answers `systemctl --user is-system-running` here");
+    }
+    const QString mark = marker();
+    // A background child in its own session outlives the main process; only
+    // the still-active scope reveals it.
+    QVERIFY(run.go(spec(QStringLiteral("sh"),
+                        {QStringLiteral("-c"), QStringLiteral("(setsid sleep %1 &); exit 0").arg(mark)})));
+    QCOMPARE(run.result->exitCode, 0);
+    QVERIFY2(run.result->stoppedLeftovers, qPrintable(run.result->stopDetail));
+    QVERIFY2(run.result->treeStopped, qPrintable(run.result->stopDetail));
+    QCOMPARE(processesWith(mark), 0);
+    QVERIFY(!isScopeActive(detectUserScopeTools(), run.runner.scopeUnit()));
   }
 
   void cancelWhenIdleIsANoOp() {
