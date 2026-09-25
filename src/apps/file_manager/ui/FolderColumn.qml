@@ -34,9 +34,12 @@ ListView {
     // Bring the highlighted row into view whenever the rows change.
     onRowsChanged: Qt.callLater(root.revealHighlight)
     Component.onCompleted: root.revealHighlight()
+    // AGENT-GUARD: Qt.callLater can run after the Columns view dropped this
+    // column, when rows is already undefined; read it defensively.
     function revealHighlight() {
-        for (let i = 0; i < root.rows.length; ++i) {
-            if (root.rows[i].path === root.highlightPath) {
+        const rows = root.rows || []
+        for (let i = 0; i < rows.length; ++i) {
+            if (rows[i].path === root.highlightPath) {
                 root.positionViewAtIndex(i, ListView.Contain)
                 return
             }

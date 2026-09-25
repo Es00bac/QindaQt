@@ -13,6 +13,7 @@ Item {
     property bool reducedMotion: false
     property bool dockZoomEnabled: true
     property bool luna: false
+    property string items: "all"
 
     objectName: "quickLaunchApplet"
     implicitWidth: 48

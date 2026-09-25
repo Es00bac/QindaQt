@@ -60,7 +60,7 @@ require_declaration("src/shell/desktop_controls/qml/ActiveApplicationApplet.qml"
 require_declaration("src/shell/desktop_controls/qml/SystemMenuApplet.qml" "systemMenuButton")
 require_declaration("src/shell/desktop_controls/qml/SystemStatusApplet.qml" "systemStatusLaneIcon")
 require_declaration("src/shell/desktop_controls/qml/PlacesMenuApplet.qml" "placesMenuButton")
-require_declaration("src/shell/desktop_controls/qml/QuickLaunchApplet.qml" "quickLaunchEntryIcon")
+require_declaration("src/shell/desktop_controls/qml/DockItemTile.qml" "quickLaunchEntryIcon")
 require_declaration("src/shell/desktop_controls/qml/CommandPaletteApplet.qml" "commandPaletteButton")
 require_declaration("src/shell/desktop_controls/qml/CommandHudApplet.qml" "commandHudButton")
 require_declaration("src/shell/desktop_controls/qml/DashboardApplet.qml" "dashboardButton")

@@ -44,37 +44,39 @@ TestCase {
     }
     QtObject { id: coordinator; function activateAction(action) {} }
     QtObject {
-        id: listing
-        property var requests: []
+        id: fakeListing
+        // Mutated in place without a change signal: ColumnsView calls
+        // children() from a binding, and a notifying write would loop it.
+        readonly property var requests: []
         function children(path, showHidden, column, direction, foldersFirst) {
-            requests = requests.concat([path])
+            requests.push(path)
             return [{ name: "inner", path: path === "/" ? "/fixture" : path + "/inner",
                       isDirectory: true, isHidden: false, iconName: "folder" },
                     { name: "other.txt", path: path + "/other.txt", isDirectory: false,
                       isHidden: false, iconName: "text-x-generic" }]
         }
     }
-    Files.EntrySelection { id: selection; navigationController: navigation }
+    Files.EntrySelection { id: fixtureSelection; navigationController: navigation }
 
     Component {
         id: detailsComponent
         Files.DetailsView {
             width: 800; height: 500
-            navigationController: navigation; selection: selection; appCoordinator: coordinator
+            navigationController: navigation; selection: fixtureSelection; appCoordinator: coordinator
         }
     }
     Component {
         id: columnsComponent
         Files.ColumnsView {
-            width: 900; height: 500; active: true; columnListing: listing
-            navigationController: navigation; selection: selection; appCoordinator: coordinator
+            width: 900; height: 500; active: true; columnListing: fakeListing
+            navigationController: navigation; selection: fixtureSelection; appCoordinator: coordinator
         }
     }
     Component {
         id: galleryComponent
         Files.GalleryView {
             width: 900; height: 500; active: true
-            navigationController: navigation; selection: selection; appCoordinator: coordinator
+            navigationController: navigation; selection: fixtureSelection; appCoordinator: coordinator
         }
     }
 
@@ -92,7 +94,7 @@ TestCase {
         navigation.activated = []
         navigation.entries = [entry("docs", true, "Folder"), entry("a.txt", false, "TXT File"),
                               entry("b.txt", false, "TXT File"), entry("c.log", false, "LOG File")]
-        selection.selectOnly(0)
+        fixtureSelection.selectOnly(0)
     }
 
     function test_detailsHeadingsFollowGroupBy() {
@@ -142,7 +144,7 @@ TestCase {
         compare(view.ancestors.length, 2)
         compare(view.ancestors[1].path, "/fixture")
         compare(view.ancestors[1].childPath, "/fixture/inner")
-        verify(listing.requests.indexOf("/fixture") >= 0)
+        verify(fakeListing.requests.indexOf("/fixture") >= 0)
         view.focusView()
         const list = findChild(view, "entryColumnsView")
         tryVerify(() => list.activeFocus)
@@ -153,7 +155,7 @@ TestCase {
         compare(navigation.upRequests, 1)
         // Down moves through the browsed column as in every view.
         keyClick(Qt.Key_Down)
-        compare(selection.currentIndex, 1)
+        compare(fixtureSelection.currentIndex, 1)
         // A file in a column above opens its folder with the file selected.
         view.openFrom("/fixture", { name: "other.txt", isDirectory: false })
         compare(navigation.visited[navigation.visited.length - 1], "/fixture")
@@ -168,18 +170,18 @@ TestCase {
         // A click on the third frame makes it current and selected.
         const slot = strip.frameWidth + strip.gap
         mouseClick(strip, slot * 2 + slot / 2, strip.height / 2)
-        compare(selection.currentIndex, 2)
-        verify(selection.isSelected(2))
+        compare(fixtureSelection.currentIndex, 2)
+        verify(fixtureSelection.isSelected(2))
         // Ctrl-click adds, as in every view.
         mouseClick(strip, slot / 2, strip.height / 2, Qt.LeftButton, Qt.ControlModifier)
-        compare(selection.count(), 2)
+        compare(fixtureSelection.count(), 2)
         // The facts beside the stage name the current entry.
         const name = findChild(view, "entryFactsName")
         compare(name.text, "docs")
         // Arrows walk the folder; Return opens the current entry.
         view.focusView()
         keyClick(Qt.Key_Right)
-        compare(selection.currentIndex, 1)
+        compare(fixtureSelection.currentIndex, 1)
         keyClick(Qt.Key_Return)
         compare(navigation.activated, [1])
     }

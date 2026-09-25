@@ -171,6 +171,7 @@ execute_process(
             "QINDAQT_APPLET_POLICY=${poison}/policy.json"
             "${shell}"
             --list
+            "--profile=qindaqt"
             "--profile-dir=${data}/profiles"
             "--theme-dir=${data}/themes"
             "--applet-dir=${data}/applets"

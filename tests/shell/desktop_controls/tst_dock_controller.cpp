@@ -424,7 +424,13 @@ void DockControllerTests::permanentEndsAreRowsTheDockDoesNotStore()
   paths.directories.insert(paths.trash);
   QVERIFY(quick.openTrash());
   QCOMPARE(paths.openedFolders.constLast(), paths.trash);
-  QVERIFY(stack.launcher.transport.commits.isEmpty());
+  // Launching records a recent application; neither end ever writes the dock.
+  const QString dockKey = QindaQt::Shell::Launcher::LauncherPersistenceController::dockItemsKey();
+  for (const auto &commit : std::as_const(stack.launcher.transport.commits)) {
+    for (const QVariant &operation : commit.operations) {
+      QVERIFY(operation.toMap().value(QStringLiteral("key")).toString() != dockKey);
+    }
+  }
 }
 
 void DockControllerTests::fileManagerEndClaimsItsWindowsWhileShown()
