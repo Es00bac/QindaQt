@@ -15,11 +15,13 @@ namespace QindaQt::QindaLutris {
 // build records that pass validateTitleRecord, because the store refuses to
 // write -- and on read refuses WHOLE -- anything that does not.
 //
-// The field that matters most is protonBuild: the exact build directory
-// name the title was installed with. It is REQUIRED, never empty and never
-// a floating alias, and nothing in QindaLutris rewrites it except an
-// explicit per-title "move to another build" action. A title never moves
-// by itself.
+// The fields that matter most are protonBuild and protonBuildVersion: the
+// exact build directory name the title was installed with and that
+// build's `version` file line at the time (identity = name + version,
+// ADR-0275 section 2). Both are REQUIRED, never empty; protonBuild is never
+// a floating alias. Nothing in QindaLutris rewrites them except an explicit
+// per-title action (confirmPinnedBuild, or a "move to another build"). A
+// title never moves by itself.
 
 enum class TitleKind {
   StoreLauncher,  // Battle.net, EA app, ... installed from a store recipe
@@ -53,6 +55,7 @@ struct TitleRecord final {
   QString storeGameId; // the store's own id for the game; may be empty
   QString prefixPath;  // absolute WINEPREFIX directory
   QString protonBuild; // pinned build directory name (see contract above)
+  QString protonBuildVersion; // that build's versionText when pinned
   QString umuId;       // GAMEID; empty launches as "umu-0"
   QString umuStore;    // STORE; empty launches as "none"
   QString executable;  // absolute unix path of the Windows program
@@ -71,11 +74,28 @@ inline constexpr int kMaxWinetricksVerbs = 64;
 inline constexpr int kMaxTitlePathChars = 4096;
 inline constexpr int kMaxTitleSlugChars = 96;
 
-// Environment keys a title (or a user's extra environment) may never set,
-// because the umu launch plan owns them: WINEPREFIX, PROTONPATH, GAMEID,
-// STORE and UMU_RUNTIME_UPDATE. Letting a record set PROTONPATH would
-// reopen the floating-build hole ADR-0275 closes.
+// AGENT-CONTRACT: environment keys a title, compatibility-database advice,
+// or a user's extra environment may never set for an umu launch, because
+// the umu plan owns them:
+//   - set by the plan: WINEPREFIX, PROTONPATH, GAMEID, STORE,
+//     UMU_RUNTIME_UPDATE;
+//   - removed by the plan (umuUnsetEnvironmentKeys/Prefixes): UMU_NO_PROTON,
+//     RUNTIMEPATH, PROTON_VERB, which let umu run something other than the
+//     pinned build; LD_PRELOAD, LD_LIBRARY_PATH, LD_AUDIT and every
+//     PYTHON* key (prefix match, case-sensitive like POSIX), which steer
+//     umu-run's own Python interpreter before any container starts
+//     (PYTHONWARNINGS can even import an arbitrary module).
+// validateTitleRecord refuses them; planUmuLaunch drops them with a note.
+// Producers of environment advice (the compat DB) must filter with this.
 [[nodiscard]] bool isReservedUmuEnvironmentKey(const QString &key);
+
+// The reserved keys an umu plan REMOVES from the inherited session
+// environment rather than sets: UMU_NO_PROTON, RUNTIMEPATH, PROTON_VERB,
+// LD_PRELOAD, LD_LIBRARY_PATH, LD_AUDIT.
+[[nodiscard]] QStringList umuUnsetEnvironmentKeys();
+
+// Key prefixes an umu plan removes from the inherited environment: PYTHON.
+[[nodiscard]] QStringList umuUnsetEnvironmentPrefixes();
 
 // "title/" + a lower-case [a-z0-9-] slug of at most kMaxTitleSlugChars.
 [[nodiscard]] bool isValidTitleId(const QString &id);

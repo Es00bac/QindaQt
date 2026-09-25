@@ -3,6 +3,7 @@
 
 #include "game.h"
 #include "launch_planner.h"
+#include "proton_pin.h"
 #include "title_record.h"
 
 #include <QString>
@@ -18,14 +19,23 @@ namespace QindaQt::QindaLutris {
 //   arguments   = [executable, arguments...]
 //   environment = WINEPREFIX=<prefix>, PROTONPATH=<absolute build dir>,
 //                 GAMEID=<umuId|umu-0>, STORE=<umuStore|none>,
-//                 UMU_RUNTIME_UPDATE=0, plus the shared launch options.
-// AGENT-GUARD: PROTONPATH is ALWAYS the absolute directory of a build found
-// in LaunchToolSet::protonBuilds by resolvePinnedBuild. Never pass a pin
-// string through, never substitute, never omit it (umu would then pick its
-// own). The five reserved keys are written LAST, so neither a record's
-// environment nor the user's extra environment can override them; an
-// attempt is dropped with a note. UMU_RUNTIME_UPDATE=0 is present on every
-// plan so the Steam Runtime changes only when someone updates it on purpose.
+//                 UMU_RUNTIME_UPDATE=0, plus the shared launch options;
+//   unsetEnvironment = UMU_NO_PROTON, RUNTIMEPATH, PROTON_VERB, LD_PRELOAD,
+//                      LD_LIBRARY_PATH, LD_AUDIT; unsetEnvironmentPrefixes =
+//                      PYTHON (umu-run is a Python program).
+// gamemoderun, when requested, still wraps umu-run and adds its own
+// LD_PRELOAD of libgamemodeauto -- a system library the wrapper chooses,
+// not a value from a record, the user or the session.
+// AGENT-GUARD: PROTONPATH is ALWAYS the absolute directory of a build that
+// resolvePinnedBuild matched by name AND version in
+// LaunchToolSet::protonBuilds, and whose `proton` script is re-checked at
+// plan time (protonBuildStillPresent). Never pass a pin string through,
+// never substitute, never omit it (umu would then pick its own). The
+// reserved keys (isReservedUmuEnvironmentKey) are written or removed LAST,
+// so neither a record's environment, the user's extra environment, nor the
+// inherited session environment can override them; an attempt is dropped
+// with a note. UMU_RUNTIME_UPDATE=0 is present on every plan so the Steam
+// Runtime changes only when someone updates it on purpose.
 // Refusals carry one plain-language sentence (ADR-0275 section 5).
 
 struct UmuLaunchRequest final {
@@ -33,6 +43,7 @@ struct UmuLaunchRequest final {
   QStringList arguments;
   QString prefixPath;        // WINEPREFIX; must be absolute
   QString protonBuild;       // the pin: build name or absolute build path
+  QString protonBuildVersion; // the pinned build's version text
   QString umuId;             // GAMEID; empty => "umu-0"
   QString umuStore;          // STORE; empty => "none"
   QStringList environment;   // record-level KEY=VALUE, re-validated here
@@ -45,9 +56,10 @@ struct UmuLaunchRequest final {
 
 // Plans one umu launch. Stats the executable (and the prefix when required)
 // -- bounded, no walk -- so "the file is gone" is a refusal with a reason
-// rather than a failed spawn. Refusal order: umu missing, pin (not chosen /
-// floating alias / not installed), unusable paths, prefix missing,
-// executable missing. The working directory is the executable's directory,
+// rather than a failed spawn. Refusal order: umu missing, pin (see
+// PinnedBuildResolution::Failure; a build whose `proton` script vanished
+// since discovery counts as not installed), unusable paths, prefix
+// missing, executable missing. The working directory is the executable's directory,
 // which Windows programs commonly assume.
 [[nodiscard]] LaunchPlan planUmuLaunch(const UmuLaunchRequest &request,
                                        const LaunchOptions &options,

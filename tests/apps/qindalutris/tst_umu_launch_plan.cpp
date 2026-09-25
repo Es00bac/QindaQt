@@ -4,43 +4,37 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+#include "game_launcher.h"
+#include "proton_fixture.h"
 #include "umu_launch.h"
 
 using namespace QindaQt::QindaLutris;
 
 // ADR-0275 section 1: every Windows title launches through umu-run with its
-// exact pinned build. Plans only -- nothing is spawned; the prefix and the
-// executable are empty fixture files in a QTemporaryDir.
+// exact pinned build. Plans only -- nothing is spawned; the prefix, the
+// executable and the Proton builds are fixture files in a QTemporaryDir.
 class tst_umu_launch_plan : public QObject {
   Q_OBJECT
 
   QTemporaryDir m_dir;
   QString m_prefix;
   QString m_exe;
+  QString m_buildPath;
+  QVector<ProtonBuild> m_builds;
 
-  static const QString &buildPath() {
-    static const QString path = QStringLiteral(
-        "/usr/share/steam/compatibilitytools.d/GE-Proton11-6-x86_64");
-    return path;
+  const QString &buildPath() const { return m_buildPath; }
+
+  static QString pinnedVersion() {
+    return QStringLiteral("1756415527 GE-Proton11-6");
   }
 
-  static LaunchToolSet tools() {
+  LaunchToolSet tools() const {
     LaunchToolSet out;
     out.umuRunBinary = QStringLiteral("/usr/bin/umu-run");
     out.gamemodeRunBinary = QStringLiteral("/usr/bin/gamemoderun");
     out.mangohudBinary = QStringLiteral("/usr/bin/mangohud");
     out.wineBinary = QStringLiteral("/usr/bin/wine");
-    ProtonBuild pinned;
-    pinned.name = QStringLiteral("GE-Proton11-6-x86_64");
-    pinned.displayName = QStringLiteral("GE-Proton11-6");
-    pinned.path = buildPath();
-    pinned.origin = ProtonBuild::Origin::System;
-    ProtonBuild newer = pinned;
-    newer.name = QStringLiteral("GE-Proton11-7");
-    newer.path = QStringLiteral("/home/u/.local/share/Steam/compatibilitytools.d/GE-Proton11-7");
-    newer.origin = ProtonBuild::Origin::User;
-    newer.removable = true;
-    out.protonBuilds = {newer, pinned}; // the newer one listed FIRST
+    out.protonBuilds = m_builds; // the newer User build is listed too
     return out;
   }
 
@@ -52,6 +46,7 @@ class tst_umu_launch_plan : public QObject {
     record.store = GameStore::BattleNet;
     record.prefixPath = m_prefix;
     record.protonBuild = QStringLiteral("GE-Proton11-6-x86_64");
+    record.protonBuildVersion = pinnedVersion();
     record.umuId = QStringLiteral("umu-wow");
     record.umuStore = QStringLiteral("battlenet");
     record.executable = m_exe;
@@ -79,6 +74,15 @@ private Q_SLOTS:
     m_exe = exeDir + QStringLiteral("/Wow.exe");
     QFile file(m_exe);
     QVERIFY(file.open(QIODevice::WriteOnly));
+    file.close();
+    const QString system = m_dir.filePath(QStringLiteral("system"));
+    const QString user = m_dir.filePath(QStringLiteral("user"));
+    m_buildPath = ProtonFixture::makeBuild(
+        system, QStringLiteral("GE-Proton11-6-x86_64"), pinnedVersion().toUtf8());
+    ProtonFixture::makeBuild(user, QStringLiteral("GE-Proton11-7"));
+    m_builds = discoverProtonBuilds({{user, ProtonBuild::Origin::User},
+                                     {system, ProtonBuild::Origin::System}});
+    QCOMPARE(m_builds.size(), 2);
   }
 
   void titlePlanIsExact() {
@@ -98,6 +102,11 @@ private Q_SLOTS:
         {QStringLiteral("DXVK_ASYNC"), QStringLiteral("1")},
     };
     QCOMPARE(plan.environment, expected);
+    QCOMPARE(plan.unsetEnvironment,
+             QStringList({QStringLiteral("UMU_NO_PROTON"), QStringLiteral("RUNTIMEPATH"),
+                          QStringLiteral("PROTON_VERB"), QStringLiteral("LD_PRELOAD"),
+                          QStringLiteral("LD_LIBRARY_PATH"), QStringLiteral("LD_AUDIT")}));
+    QCOMPARE(plan.unsetEnvironmentPrefixes, QStringList({QStringLiteral("PYTHON")}));
     QVERIFY(plan.notes.isEmpty());
     QVERIFY(QDir::isAbsolutePath(plan.environment.value(QStringLiteral("PROTONPATH"))));
   }
@@ -126,7 +135,8 @@ private Q_SLOTS:
 
   void pinnedBuildMissingIsRefusedWithoutFallback() {
     LaunchToolSet onlyNewer = tools();
-    onlyNewer.protonBuilds.removeLast(); // 11-6 uninstalled; 11-7 remains
+    onlyNewer.protonBuilds.removeFirst(); // 11-6 uninstalled; 11-7 remains
+    QCOMPARE(onlyNewer.protonBuilds.first().name, QStringLiteral("GE-Proton11-7"));
     const LaunchPlan plan = planTitleLaunch(wow(), {}, onlyNewer, {});
     QVERIFY(!plan.ok);
     QCOMPARE(plan.reason,
@@ -179,6 +189,7 @@ private Q_SLOTS:
     game.winePrefix = m_dir.filePath(QStringLiteral("fresh-prefix")); // absent
     game.wineRunner = WineRunner::Proton;
     game.protonPath = QStringLiteral("GE-Proton11-6-x86_64");
+    game.protonVersion = pinnedVersion();
     const LaunchPlan plan = planGameLaunch(game, {}, tools(), {}, nullptr);
     QVERIFY2(plan.ok, qPrintable(plan.reason));
     QCOMPARE(plan.program, QStringLiteral("/usr/bin/umu-run"));
@@ -191,6 +202,7 @@ private Q_SLOTS:
 
     // A legacy entry that stored the script path still resolves exactly.
     game.protonPath = buildPath() + QStringLiteral("/proton");
+    game.protonVersion = pinnedVersion();
     QCOMPARE(planGameLaunch(game, {}, tools(), {}, nullptr)
                  .environment.value(QStringLiteral("PROTONPATH")),
              buildPath());
@@ -238,14 +250,22 @@ private Q_SLOTS:
     LaunchOptions options;
     options.extraEnvironment = {QStringLiteral("PROTONPATH=GE-Proton"),
                                 QStringLiteral("UMU_RUNTIME_UPDATE=1"),
-                                QStringLiteral("WINEPREFIX=/tmp/other")};
+                                QStringLiteral("WINEPREFIX=/tmp/other"),
+                                // Review R5: keys that bypass the pin.
+                                QStringLiteral("UMU_NO_PROTON=1"),
+                                QStringLiteral("RUNTIMEPATH=steamrt3"),
+                                QStringLiteral("PROTON_VERB=run")};
     const LaunchPlan plan = planTitleLaunch(wow(), options, tools(), {});
     QVERIFY(plan.ok);
     QCOMPARE(plan.environment.value(QStringLiteral("PROTONPATH")), buildPath());
     QCOMPARE(plan.environment.value(QStringLiteral("UMU_RUNTIME_UPDATE")),
              QStringLiteral("0"));
     QCOMPARE(plan.environment.value(QStringLiteral("WINEPREFIX")), m_prefix);
-    QCOMPARE(plan.notes.size(), 3);
+    for (const QString &key : umuUnsetEnvironmentKeys()) {
+      QVERIFY2(!plan.environment.contains(key), qPrintable(key));
+      QVERIFY(plan.unsetEnvironment.contains(key));
+    }
+    QCOMPARE(plan.notes.size(), 6);
     // A record smuggling a reserved key (the store refuses it; the planner
     // does not trust the store) is dropped the same way.
     UmuLaunchRequest request = umuRequestForTitle(wow());
@@ -253,6 +273,96 @@ private Q_SLOTS:
     const LaunchPlan smuggled = planUmuLaunch(request, {}, tools(), {});
     QCOMPARE(smuggled.environment.value(QStringLiteral("PROTONPATH")), buildPath());
     QVERIFY(!smuggled.notes.isEmpty());
+  }
+
+  // umu-run is Python: interpreter and loader steering is refused from
+  // every source and removed from the inherited session.
+  void pythonAndLoaderVariablesNeverReachUmu() {
+    LaunchOptions options;
+    options.extraEnvironment = {
+        QStringLiteral("PYTHONWARNINGS=ignore::evil.x"),
+        QStringLiteral("PYTHONPATH=/tmp/evil"), QStringLiteral("PYTHONHOME=/x"),
+        QStringLiteral("PYTHONSTARTUP=/x.py"), QStringLiteral("LD_PRELOAD=/x.so"),
+        QStringLiteral("LD_LIBRARY_PATH=/x"), QStringLiteral("LD_AUDIT=/x.so"),
+        QStringLiteral("MYPYTHONTHING=kept"), QStringLiteral("python_lower=kept")};
+    UmuLaunchRequest request = umuRequestForTitle(wow());
+    request.environment = {QStringLiteral("PYTHONINSPECT=1"),
+                           QStringLiteral("LD_PRELOAD=/advice.so"),
+                           QStringLiteral("DXVK_ASYNC=1")};
+    const LaunchPlan plan = planUmuLaunch(request, options, tools(), {});
+    QVERIFY(plan.ok);
+    for (auto it = plan.environment.constBegin(); it != plan.environment.constEnd(); ++it) {
+      QVERIFY2(!it.key().startsWith(QLatin1String("PYTHON")), qPrintable(it.key()));
+      QVERIFY2(!it.key().startsWith(QLatin1String("LD_")), qPrintable(it.key()));
+    }
+    QCOMPARE(plan.environment.value(QStringLiteral("MYPYTHONTHING")), QStringLiteral("kept"));
+    QCOMPARE(plan.environment.value(QStringLiteral("python_lower")), QStringLiteral("kept"));
+    QCOMPARE(plan.environment.value(QStringLiteral("DXVK_ASYNC")), QStringLiteral("1"));
+    QCOMPARE(plan.notes.size(), 9); // 7 user lines + 2 record lines
+    QVERIFY(plan.notes.contains(QStringLiteral(
+        "PYTHONWARNINGS cannot be used with umu launches; your value was ignored")));
+
+    QProcessEnvironment session;
+    for (const char *key : {"PYTHONWARNINGS", "PYTHONPATH", "PYTHONSAFEPATH",
+                            "PYTHONUSERBASE", "LD_PRELOAD", "LD_LIBRARY_PATH",
+                            "LD_AUDIT"}) {
+      session.insert(QString::fromLatin1(key), QStringLiteral("x"));
+    }
+    session.insert(QStringLiteral("MYPYTHONTHING"), QStringLiteral("kept"));
+    const QProcessEnvironment env = launchEnvironment(plan, session);
+    QVERIFY(env.contains(QStringLiteral("MYPYTHONTHING")));
+    for (const QString &key : env.keys()) {
+      QVERIFY2(!key.startsWith(QLatin1String("PYTHON")), qPrintable(key));
+      QVERIFY2(!key.startsWith(QLatin1String("LD_")), qPrintable(key));
+    }
+  }
+
+  // Review R5 (launcher half): the production launcher's environment drops
+  // the bypass keys a session may carry, then applies the overlays.
+  void launcherRemovesUnsetKeysFromTheSession() {
+    const LaunchPlan plan = planTitleLaunch(wow(), {}, tools(), {});
+    QVERIFY(plan.ok);
+    QProcessEnvironment session;
+    session.insert(QStringLiteral("UMU_NO_PROTON"), QStringLiteral("1"));
+    session.insert(QStringLiteral("RUNTIMEPATH"), QStringLiteral("steamrt3"));
+    session.insert(QStringLiteral("PROTON_VERB"), QStringLiteral("run"));
+    session.insert(QStringLiteral("PROTONPATH"), QStringLiteral("GE-Proton"));
+    session.insert(QStringLiteral("HOME"), QStringLiteral("/home/u"));
+    const QProcessEnvironment env = launchEnvironment(plan, session);
+    QVERIFY(!env.contains(QStringLiteral("UMU_NO_PROTON")));
+    QVERIFY(!env.contains(QStringLiteral("RUNTIMEPATH")));
+    QVERIFY(!env.contains(QStringLiteral("PROTON_VERB")));
+    QCOMPARE(env.value(QStringLiteral("PROTONPATH")), buildPath());
+    QCOMPARE(env.value(QStringLiteral("HOME")), QStringLiteral("/home/u"));
+  }
+
+  // Review R1b at plan level: an in-place change refuses; confirm re-pins.
+  void versionChangeIsRefused() {
+    TitleRecord record = wow();
+    record.protonBuildVersion = QStringLiteral("1700000000 GE-Proton11-6");
+    const LaunchPlan plan = planTitleLaunch(record, {}, tools(), {});
+    QVERIFY(!plan.ok);
+    QVERIFY(plan.reason.contains(QStringLiteral("has changed since this game was set up")));
+    record.protonBuildVersion = confirmPinnedBuild(record.protonBuild, tools().protonBuilds)->version;
+    QVERIFY(planTitleLaunch(record, {}, tools(), {}).ok);
+  }
+
+  // Review R6: the build vanished after the last refresh.
+  void buildRemovedAfterDiscoveryIsRefused() {
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    const QString root = tmp.filePath(QStringLiteral("system"));
+    const QString path = ProtonFixture::makeBuild(
+        root, QStringLiteral("GE-Proton11-6-x86_64"), pinnedVersion().toUtf8());
+    LaunchToolSet snapshot = tools();
+    snapshot.protonBuilds = discoverProtonBuilds({{root, ProtonBuild::Origin::System}});
+    QVERIFY(planTitleLaunch(wow(), {}, snapshot, {}).ok);
+    QVERIFY(QDir(path).removeRecursively());
+    const LaunchPlan plan = planTitleLaunch(wow(), {}, snapshot, {});
+    QVERIFY(!plan.ok);
+    QCOMPARE(plan.reason,
+             QStringLiteral("GE-Proton11-6-x86_64 is not installed. Reinstall it "
+                            "or choose another Proton build for this game."));
   }
 
   void umuDiscoveryPrefersTheSystemPackage() {

@@ -7,27 +7,43 @@
 #include <QJsonArray>
 #include <QSaveFile>
 
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 namespace QindaQt::QindaLutris::StoreIo {
 
 QByteArray readBoundedFile(const QString &path, qint64 maxBytes,
                            ReadStatus *status) {
-  const QFileInfo info(path);
-  if (!info.exists() && !info.isSymLink()) {
-    *status = ReadStatus::Absent;
+  // AGENT-GUARD: O_NOFOLLOW + fstat on the OPENED descriptor. A stat-then-
+  // open check could be raced by swapping in a symlink between the two;
+  // the kernel refuses a trailing symlink here (ELOOP) and the type and
+  // size checks apply to exactly the file that will be read. O_NONBLOCK
+  // keeps a planted FIFO from hanging the open; fstat then refuses it.
+  const QByteArray native = QFile::encodeName(path);
+  const int fd = ::open(native.constData(),
+                        O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK);
+  if (fd < 0) {
+    *status = errno == ENOENT ? ReadStatus::Absent : ReadStatus::Refused;
     return {};
   }
-  if (!info.isFile() || info.isSymLink() || info.size() > maxBytes) {
+  struct stat info {};
+  if (::fstat(fd, &info) != 0 || !S_ISREG(info.st_mode)
+      || qint64(info.st_size) > maxBytes) {
+    ::close(fd);
     *status = ReadStatus::Refused;
     return {};
   }
-  QFile file(path);
-  if (!file.open(QIODevice::ReadOnly)) {
+  QFile file;
+  if (!file.open(fd, QIODevice::ReadOnly, QFileDevice::AutoCloseHandle)) {
+    ::close(fd);
     *status = ReadStatus::Refused;
     return {};
   }
   const QByteArray bytes = file.read(maxBytes + 1);
   if (bytes.size() > maxBytes) {
-    *status = ReadStatus::Refused; // grew between stat and read
+    *status = ReadStatus::Refused; // grew between fstat and read
     return {};
   }
   *status = bytes.isEmpty() ? ReadStatus::Absent : ReadStatus::Ok;
@@ -35,6 +51,17 @@ QByteArray readBoundedFile(const QString &path, qint64 maxBytes,
 }
 
 bool writeAtomicJson(const QString &path, const QJsonDocument &document) {
+  // AGENT-GUARD: QSaveFile deliberately writes THROUGH a symlinked
+  // destination (it resolves the link and replaces the target). A planted
+  // titles-v1.json -> ~/anything link would then overwrite the link's
+  // target, so a destination that exists and is not a regular file -- a
+  // symlink included -- is refused before QSaveFile ever sees it.
+  const QByteArray native = QFile::encodeName(path);
+  struct stat existing {};
+  if (::lstat(native.constData(), &existing) == 0
+      && !S_ISREG(existing.st_mode)) {
+    return false;
+  }
   const QFileInfo info(path);
   QDir dir(info.absolutePath());
   if (!dir.mkpath(QStringLiteral("."))) {

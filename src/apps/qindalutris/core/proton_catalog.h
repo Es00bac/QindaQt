@@ -5,20 +5,15 @@
 #include <QStringList>
 #include <QVector>
 
-#include <optional>
-
 namespace QindaQt::QindaLutris {
 
-// AGENT-CONTRACT: the Proton catalog of ADR-0275 section 2. It answers two
-// questions and nothing else: which concrete Proton builds are installed,
-// and which exact build a pinned name means. It NEVER picks a substitute:
-// a pinned build that is not installed is a typed failure with a
-// plain-language reason, never "the nearest build" (ADR-0275 section 1 --
-// a floating PROTONPATH silently moved World of Warcraft to a build that
-// stalled it). Pure over injected roots: tests hand it QTemporaryDir trees,
-// production hands it defaultProtonRoots(). Reads are shallow, fixed-name
-// and bounded; a hostile or corrupt root yields fewer builds, never an
-// error. Callers own the returned values; nothing here caches.
+// AGENT-CONTRACT: the Proton catalog of ADR-0275 section 2 -- which Proton
+// builds are installed, and the facts about each. Pin identity and
+// resolution live in proton_pin.h; this file never chooses a build. Pure
+// over injected roots: tests hand it QTemporaryDir trees, production hands
+// it defaultProtonRoots(). Reads are shallow, fixed-name and bounded; a
+// hostile or corrupt root yields fewer builds, never an error. Callers own
+// the returned values; nothing here caches.
 
 struct ProtonBuild final {
   enum class Origin {
@@ -27,12 +22,16 @@ struct ProtonBuild final {
     Steam,  // Valve Proton under a Steam library's steamapps/common
   };
 
-  QString name;        // directory name: the identity a title pins
+  QString name;        // directory name
   QString displayName; // compatibilitytool.vdf "display_name", else name
   QString versionText; // first line of the `version` file; may be empty
   QString path;        // absolute build directory (the PROTONPATH value)
   Origin origin = Origin::User;
   bool removable = false; // true only for Origin::User
+  // False for a Steam rolling channel (isRollingProtonChannel) and for a
+  // build without a readable `version` file: identity is name + version
+  // (ADR-0275 section 2), so neither can be pinned.
+  bool pinnable = true;
 
   friend bool operator==(const ProtonBuild &, const ProtonBuild &) = default;
 };
@@ -49,7 +48,13 @@ struct ProtonRoot final {
 };
 
 inline constexpr int kMaxProtonRoots = 16;
+// Directory entries READ per root (every entry counts, matching or not), and
+// candidate build directories kept per root (only eligible names count, so
+// a Steam library with hundreds of games before "Proton*" still yields it).
+inline constexpr int kMaxProtonEntriesScannedPerRoot = 4096;
 inline constexpr int kMaxProtonDirsPerRoot = 128;
+// Builds returned, applied AFTER sorting so the cap drops the oldest-looking
+// builds of the last origin, never an arbitrary directory-order subset.
 inline constexpr int kMaxProtonBuilds = 64;
 inline constexpr int kMaxProtonBuildNameChars = 128;
 
@@ -58,27 +63,43 @@ inline constexpr int kMaxProtonBuildNameChars = 128;
 inline constexpr QLatin1StringView kSystemProtonRoot{
     "/usr/share/steam/compatibilitytools.d"};
 
-// The ADR-0275 root order: the system root, $XDG_DATA_HOME/Steam/
-// compatibilitytools.d (xdgDataHome empty => home/.local/share),
-// home/.steam/root/compatibilitytools.d, then <library>/steamapps/common for
-// each Steam library root. Pure: nothing is statted.
+// The scanned roots, in precedence order:
+//   System: /usr/share/steam/compatibilitytools.d
+//   User:   $XDG_DATA_HOME/Steam/compatibilitytools.d (xdgDataHome empty =>
+//           home/.local/share), home/.steam/root/compatibilitytools.d,
+//           and the Flatpak Steam's
+//           home/.var/app/com.valvesoftware.Steam/.local/share/Steam/… and
+//           home/.var/app/com.valvesoftware.Steam/data/Steam/…
+//           compatibilitytools.d
+//   Steam:  <library>/steamapps/common for each of steamLibraryRoots, then
+//           for the two Flatpak Steam roots above (duplicates collapse).
+// Capped at kMaxProtonRoots. Pure: nothing is statted.
 [[nodiscard]] QVector<ProtonRoot> defaultProtonRoots(
     const QString &home, const QString &xdgDataHome,
     const QStringList &steamLibraryRoots);
 
 // Every usable build under the roots. A build is a directory holding an
 // executable regular `proton` file. Roots are de-duplicated by canonical
-// path; a build name seen in an earlier root shadows later ones, so a
-// System build wins over a user copy of the same name. The result is sorted
-// by origin (System, User, Steam) and then by name, newest-looking first
-// (natural order, descending: GE-Proton11-6 before GE-Proton10-25).
+// path. Builds of the same name in different roots are ALL kept, each with
+// its own origin and path, so an exact-path pin to a shadowed copy still
+// resolves (proton_pin.h prefers System when name and version agree). The
+// result is sorted by origin (System, User, Steam), then by name newest-
+// looking first (natural order, descending: GE-Proton11-6 before
+// GE-Proton10-25), then by path; then capped at kMaxProtonBuilds.
 // AGENT-GUARD: symlinked build directories and symlinked `proton` scripts
 // are SKIPPED. A link such as compatibilitytools.d/GE-Proton -> GE-Proton11-7
 // can be retargeted by anyone, which is the silent build move this catalog
-// exists to prevent; a pinned name must always mean the same bytes. For the
-// same reason a directory whose NAME is a floating alias ("GE-Proton") is
-// skipped. Roots themselves may be symlinks (~/.steam/root usually is) and
-// are resolved.
+// exists to prevent. For the same reason a directory whose NAME is a
+// floating alias ("GE-Proton") is skipped. Roots themselves may be symlinks
+// (~/.steam/root usually is) and are resolved.
+// AGENT-CONTRACT: every directory whose name starts with '.' is skipped in
+// every root. The GE-Proton download jobs (feat/qindalutris-jobs) stage and
+// retire builds in hidden `.qindalutris-staging-*` and `.qindalutris-trash/`
+// directories inside a compatibilitytools.d while they run; a half-extracted
+// build must never be listed or pinned. A finished download is renamed to
+// the release tarball name without `.tar.gz` (e.g. GE-Proton11-6-x86_64),
+// the same directory name Portage's ge-proton-bin slots use, so a pin made
+// against either is the same name.
 [[nodiscard]] QVector<ProtonBuild> discoverProtonBuilds(
     const QVector<ProtonRoot> &roots);
 
@@ -87,51 +108,28 @@ inline constexpr QLatin1StringView kSystemProtonRoot{
 // case-insensitively. Pure syntax; knows nothing about what is installed.
 [[nodiscard]] bool isProtonAliasName(const QString &value);
 
-// True when value cannot be a pin: an alias name, or anything that is
-// neither an absolute path nor the exact name of one of knownBuilds.
-[[nodiscard]] bool isFloatingProtonAlias(const QString &value,
-                                         const QVector<ProtonBuild> &knownBuilds);
-
 // True for a string that could name a build directory: non-empty, bounded,
-// single path component, no control characters, and not an alias. Used by
-// stores that must refuse a record whose pin could never resolve.
+// single path component, no control characters, and not an alias.
 [[nodiscard]] bool isValidProtonBuildName(const QString &name);
 
-struct PinnedBuildResolution final {
-  enum class Failure {
-    None,
-    NotChosen,     // empty pin
-    FloatingAlias, // "GE-Proton" and friends
-    NotInstalled,  // a concrete pin that is not in the catalog
-  };
+// Valve's rolling channels, which Steam replaces in place: a Steam-origin
+// build whose name contains "Experimental", "Hotfix" or "Next"
+// (case-insensitive) -- "Proton - Experimental", "Proton Hotfix",
+// "Proton Next". Floating by construction; never pinnable.
+[[nodiscard]] bool isRollingProtonChannel(const QString &name,
+                                          ProtonBuild::Origin origin);
 
-  std::optional<ProtonBuild> build;
-  Failure failure = Failure::None;
-  QString reason; // one plain-language sentence when failure != None
+// The human part of a version file line: "1756415527 GE-Proton11-6" ->
+// "GE-Proton11-6" (a leading all-digit timestamp is dropped). Empty in,
+// "unknown" out.
+[[nodiscard]] QString protonVersionLabel(const QString &versionText);
 
-  [[nodiscard]] bool ok() const { return build.has_value(); }
-};
+// "Updated by Steam — not pinnable", "No version file — not pinnable", or
+// empty for a pinnable build. For lists that show every build.
+[[nodiscard]] QString protonBuildStatusLabel(const ProtonBuild &build);
 
-// Resolves a pin to exactly one build. The pin is a build name (matched
-// exactly, case-sensitively) or an absolute path, which matches a build's
-// directory or -- for hand-added entries written before ADR-0275 -- that
-// build's `proton` script. Anything else fails; there is no fallback.
-[[nodiscard]] PinnedBuildResolution resolvePinnedBuild(
-    const QString &pinned, const QVector<ProtonBuild> &builds);
-
-// The build a NEW install should pin: preferredName when installed, else
-// the first System build, else the first build, else none. Never consulted
-// for an existing title (ADR-0275: a title never moves by itself).
-[[nodiscard]] std::optional<ProtonBuild> chooseDefaultBuild(
-    const QVector<ProtonBuild> &builds, const QString &preferredName);
-
-// The pin a NEW entry records, always a build NAME: for an empty request,
-// chooseDefaultBuild's pick; otherwise the build the request resolves to
-// exactly (a name, a build directory, or its `proton` script). Nullopt when
-// the request does not resolve or nothing is installed -- the caller then
-// refuses to record the entry rather than store an unlaunchable pin.
-[[nodiscard]] std::optional<QString> pinForNewEntry(
-    const QString &requested, const QVector<ProtonBuild> &builds,
-    const QString &preferredName);
+// Re-checks, at launch time, that the build's `proton` entry point is still
+// an executable regular file and not a symlink. Bounded: one lstat.
+[[nodiscard]] bool protonBuildStillPresent(const ProtonBuild &build);
 
 } // namespace QindaQt::QindaLutris

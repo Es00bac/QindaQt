@@ -27,7 +27,8 @@ struct GameLibrary final {
 // their games vectors to keep the merge pure and trivially testable.
 // `installed` are the ADR-0275 titles (GameSource::Installed); they are not
 // title-folded against anything -- an installed launcher and a Lutris row of
-// the same name are different ways to start different things.
+// the same name are different ways to start different things -- and they
+// are merged first, so the kMaxGames cap never drops one.
 [[nodiscard]] GameLibrary mergeGameSources(QVector<Game> steam,
                                            QVector<Game> lutris,
                                            QVector<Game> desktop,

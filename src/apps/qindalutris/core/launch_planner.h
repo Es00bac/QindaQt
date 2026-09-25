@@ -79,6 +79,16 @@ struct LaunchPlan final {
   // display pin, MANGOHUD, WINEPREFIX/Proton paths, and the user's own
   // validated assignments.
   QHash<QString, QString> environment;
+  // Variables REMOVED from the inherited session environment before the
+  // overlays apply (umu plans remove UMU_NO_PROTON, RUNTIMEPATH and
+  // PROTON_VERB, which would otherwise let the session bypass the pin).
+  // AGENT-CONTRACT: every GameProcessLauncher must honour this list and the
+  // prefix list below; the production one does so through
+  // launchEnvironment() (game_launcher.h).
+  QStringList unsetEnvironment;
+  // Every inherited variable whose name starts with one of these is removed
+  // too (umu plans: "PYTHON", see isReservedUmuEnvironmentKey).
+  QStringList unsetEnvironmentPrefixes;
   // Non-fatal degradations worth one status line ("gamemode requested but
   // gamemoderun is not installed").
   QStringList notes;

@@ -44,6 +44,10 @@ GameLibrary mergeGameSources(QVector<Game> steam, QVector<Game> lutris,
     }
   };
 
+  // AGENT-GUARD: installed titles are taken FIRST, so the kMaxGames cap can
+  // never drop a game QindaLutris itself installed (ADR-0275) in favour of
+  // a discovered one.
+  take(installed);
   take(steam);
   for (const Game &game : lutris) {
     if (out.games.size() >= kMaxGames) {
@@ -60,7 +64,6 @@ GameLibrary mergeGameSources(QVector<Game> steam, QVector<Game> lutris,
   }
   take(desktop);
   take(wine);
-  take(installed);
 
   std::sort(out.games.begin(), out.games.end(), titleLess);
   out.warnings = warnings.mid(0, 32);

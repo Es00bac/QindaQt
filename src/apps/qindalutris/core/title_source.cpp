@@ -25,6 +25,7 @@ QVector<Game> gamesFromTitleRecords(const QVector<TitleRecord> &records,
     game.winePrefix = record.prefixPath;
     game.wineRunner = WineRunner::Proton;
     game.protonPath = record.protonBuild;
+    game.protonVersion = record.protonBuildVersion;
     // "title/<slug>" -> "title-<slug>": a cache key is one path component.
     QString cacheKey = record.id;
     cacheKey.replace(QLatin1Char('/'), QLatin1Char('-'));

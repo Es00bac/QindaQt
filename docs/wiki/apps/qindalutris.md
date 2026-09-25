@@ -28,10 +28,17 @@ with none of them simply shows the empty state.
 - **Windows games you add yourself.** **File → Add Windows game**
   (`Ctrl+N`) takes a title, the `.exe`, a Wine prefix, and a runner —
   Wine or Proton. The game's cover is the icon extracted from the
-  executable itself. The entry always records one Proton build by name:
-  the one you picked, or else the current default build (see
-  [Proton builds](#proton-builds)). If no Proton build is installed at all,
-  a Proton entry cannot be added.
+  executable itself. The entry always records one Proton build — its name
+  and its version — chosen in the dialog; the list starts with
+  **Default (<build>)**, preselected (see [Proton builds](#proton-builds)).
+  A Proton entry needs a prefix folder (umu creates it on first run if it
+  does not exist yet), and cannot be added when no pinnable build is
+  installed. Entries saved by older versions of QindaLutris that used
+  "Any discovered Proton", or that recorded a build without its version,
+  are pinned once to the build they would have used, and the status bar
+  says so ("Old Game is now pinned to GE-Proton11-6 (GE-Proton11-6)"). A
+  Wine entry switched to Proton in its launch options is pinned the same
+  way.
 - **Installed Windows games.** Titles QindaLutris installed or adopted are
   kept in `titles-v1.json` (see [Installed titles](#installed-titles)) and
   appear under the source id `installed`. The install and adopt flows that
@@ -53,11 +60,13 @@ behind, not directory-walk guesses.)
 disabled, the button and the text beneath it say why — "Steam is not
 installed", "umu is not installed. Install games-util/umu-launcher.",
 "GE-Proton11-6 is not installed. Reinstall it or choose another Proton
-build for this game." — instead of failing later.
+build for this game.", "Proton 9.0 has changed since this game was set up
+(was proton-9.0-2, now proton-9.0-4). Confirm the new version in
+QindaLutris before playing." — instead of failing later.
 
 (The source chips still label the `installed` source "Wine": the chip text
-is decided in QML, which this slice did not change. The detail panel and
-list model say "Installed".)
+is decided in `LibraryPage.qml`, which has not been updated yet. The
+detail panel and list model say "Installed".)
 
 ## How Windows games run
 
@@ -66,22 +75,36 @@ runner, or an installed title — runs through `umu-run` with:
 
 - `PROTONPATH` set to the **absolute directory of the game's own recorded
   build**, for example
-  `/usr/share/steam/compatibilitytools.d/GE-Proton11-6-x86_64`. Floating
-  names umu would otherwise accept — `GE-Proton`, `GE-Latest`,
+  `/usr/share/steam/compatibilitytools.d/GE-Proton11-6-x86_64`, after
+  checking at launch that the build's `proton` file is still there.
+  Floating names umu would otherwise accept — `GE-Proton`, `GE-Latest`,
   `UMU-Latest`, `UMU-Proton`, `latest`, or nothing — are refused, never
-  passed through.
+  passed through, and so are Steam's rolling channels.
 - `WINEPREFIX` set to the game's prefix, `GAMEID` to its umu id (else
   `umu-0`), `STORE` to its store (else `none`), and
   `UMU_RUNTIME_UPDATE=0` so the Steam Runtime never updates itself on
   launch.
 - The working directory set to the executable's folder.
 
+- `UMU_NO_PROTON`, `RUNTIMEPATH` and `PROTON_VERB` removed from the
+  environment the game inherits, because each lets umu run something
+  other than the recorded build; and `LD_PRELOAD`, `LD_LIBRARY_PATH`,
+  `LD_AUDIT` and every `PYTHON…` variable removed too, because `umu-run`
+  is a Python program and those steer its interpreter before anything
+  else starts. (If you turn on gamemode, `gamemoderun` still adds its own
+  library, as it always does.)
+
 **A game never moves to another build by itself.** If its build is no
 longer installed, Play is refused with a sentence naming the build; the
-app does not quietly pick a newer one. That silent move is exactly what
+app does not quietly pick a newer one. If the build is still there but its
+`version` file changed — Steam updating "Proton 9.0" in place, or a user
+replacing a directory — Play is refused with both versions named until
+you confirm the new one for that game. That silent move is exactly what
 broke World of Warcraft on 2026-09-25 (ADR-0275). Neither a title's saved
-environment nor your own extra environment can override these five
-variables; an attempt is ignored and noted in the status bar.
+environment, your own extra environment, nor the session environment can
+set or keep any of these variables; an attempt from the game's settings is
+ignored and noted in the status bar, and a saved title that sets one is
+refused.
 
 `umu-run` is found in `/usr/bin` first (the `games-util/umu-launcher`
 package), then on `PATH`, then in `~/.local/bin`. The plain **Wine** runner
@@ -89,27 +112,52 @@ for hand-added entries is unchanged: the Wine loader with `WINEPREFIX`.
 
 ## Proton builds
 
-QindaLutris lists every usable Proton build it finds, in this order:
+QindaLutris lists every usable Proton build in exactly these directories,
+in this order:
 
 1. `/usr/share/steam/compatibilitytools.d` — builds installed by Portage
    (`app-emulation/ge-proton-bin`). The app never removes these.
-2. `$XDG_DATA_HOME/Steam/compatibilitytools.d` (normally
-   `~/.local/share/Steam/…`) and `~/.steam/root/compatibilitytools.d` —
-   builds you installed yourself.
-3. Valve Proton (`steamapps/common/Proton*`) under your Steam libraries.
+2. Builds you installed yourself, in each `compatibilitytools.d` of:
+   `$XDG_DATA_HOME/Steam` (normally `~/.local/share/Steam`),
+   `~/.steam/root`, and the Flatpak Steam's
+   `~/.var/app/com.valvesoftware.Steam/.local/share/Steam` and
+   `~/.var/app/com.valvesoftware.Steam/data/Steam`.
+3. Valve Proton — directories named `Proton*` in `steamapps/common` of
+   `~/.steam/root`, `~/.local/share/Steam`, and the two Flatpak Steam
+   directories above. (Extra library folders declared in Steam's
+   `libraryfolders.vdf` are not searched for Proton yet.)
 
-A build is a directory holding an executable `proton` file; its identity is
-the directory name, with the `version` file and `compatibilitytool.vdf`
-display name shown alongside. When two roots hold the same name, the
-earlier root wins, so a Portage build beats a user copy. A **symlinked**
-build directory, or one named like a floating alias (`GE-Proton`), is not
-listed: a link can be retargeted, which would move every game pinned to it.
+A build is a directory holding an executable `proton` file. **Its identity
+is its directory name plus the first line of its `version` file**
+(ADR-0275 section 2), for example `GE-Proton11-6-x86_64` with
+`1756415527 GE-Proton11-6`; the `compatibilitytool.vdf` display name is
+shown alongside. Every copy is listed with where it came from, even when
+two directories share a name; when a Portage copy and a user copy have the
+same name *and* version, the Portage copy is the one used.
 
-The **default build** for new entries is a preferred build when one is set
-and installed, else the first Portage build, else the first build found.
-The Proton manager page (choosing the default, downloading and removing GE
-builds), the compatibility database that recommends a build per game, and
-the "move this game to another build" action are later work.
+Some builds are known to the app but can never be recorded for a game
+(the add dialog leaves them out):
+
+- Steam's rolling channels — Steam-installed builds whose names contain
+  "Experimental", "Hotfix" or "Next", such as `Proton - Experimental` —
+  shown as "Updated by Steam — not pinnable";
+- builds without a `version` file, shown as "No version file — not
+  pinnable".
+
+Not listed at all: a **symlinked** build directory or `proton` file, a
+directory named like a floating alias (`GE-Proton`), and any directory
+whose name starts with `.` — such as the `.qindalutris-staging-*` and
+`.qindalutris-trash` folders a download uses while it runs. A link can be
+retargeted, which would move every game pinned to it.
+
+The **default build** for new entries is a preferred build when one is set,
+installed and pinnable; else the newest Portage build; else the newest
+build you installed yourself; else there is none. Steam's own builds are
+never picked as a default. The Proton manager page (choosing the default,
+downloading and removing GE builds), the compatibility database that
+recommends a build per game, the button that confirms a changed build, and
+the "move this game to another build" action are later work; the
+controller already offers the confirm step (`confirmProtonBuildForSelected`).
 
 ## Installed titles
 
@@ -117,12 +165,14 @@ the "move this game to another build" action are later work.
 installed or adopted: its store, prefix, **pinned Proton build**, umu id and
 store value, executable and arguments, environment, the launcher it is
 started through, the winetricks verbs already applied, and the install
-date. The pinned build is required and must name one concrete build.
+date. The pinned build and its version are both required, and the build
+must name one concrete build.
 Like the other QindaLutris files, the document has an exact schema, is
 written atomically, and is refused whole when anything in it is unknown,
 out of range, symlinked, too large or from a newer version — the library
 then shows no installed titles rather than a guessed subset, and leaves the
-file untouched for repair.
+file untouched for repair. None of QindaLutris's files is ever written
+through a symlink.
 
 ## Launch options
 

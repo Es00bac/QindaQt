@@ -88,6 +88,7 @@ QVector<Game> gamesFromWineEntries(const QVector<WineEntryRecord> &records,
     game.winePrefix = record.prefixPath;
     game.wineRunner = record.runner;
     game.protonPath = record.protonPath;
+    game.protonVersion = record.protonVersion;
     const QFileInfo exeInfo(record.executablePath);
     if (exeInfo.isFile() && !exeInfo.isSymLink()) {
       game.installSizeBytes = quint64(exeInfo.size());

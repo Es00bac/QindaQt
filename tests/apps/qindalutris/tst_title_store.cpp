@@ -21,6 +21,7 @@ TitleRecord battleNet() {
   record.store = GameStore::BattleNet;
   record.prefixPath = QStringLiteral("/home/u/Games/battlenet");
   record.protonBuild = QStringLiteral("GE-Proton11-6-x86_64");
+  record.protonBuildVersion = QStringLiteral("1756415527 GE-Proton11-6");
   record.umuId = QStringLiteral("umu-battlenet");
   record.umuStore = QStringLiteral("battlenet");
   record.executable = QStringLiteral(
@@ -161,6 +162,13 @@ private Q_SLOTS:
                                                  QStringLiteral("protonBuild"),
                                                  bad));
     }
+    // Identity is name + version: a missing version is refused too.
+    expectRefused(root.path(), withRecordField(valid, 1,
+                                               QStringLiteral("protonBuildVersion"),
+                                               QString()));
+    expectRefused(root.path(), withRecordField(valid, 1,
+                                               QStringLiteral("protonBuildVersion"),
+                                               QJsonValue::Undefined));
     // The writer refuses the same record, so it can never be persisted.
     TitleRecord floating = worldOfWarcraft();
     floating.protonBuild = QStringLiteral("GE-Proton");
@@ -168,6 +176,10 @@ private Q_SLOTS:
              TitleStore::Error::WriteFailed);
     floating.protonBuild.clear();
     QCOMPARE(TitleStore(root.path()).writeTitles({floating}),
+             TitleStore::Error::WriteFailed);
+    TitleRecord unversioned = worldOfWarcraft();
+    unversioned.protonBuildVersion.clear();
+    QCOMPARE(TitleStore(root.path()).writeTitles({unversioned}),
              TitleStore::Error::WriteFailed);
   }
 
@@ -185,6 +197,18 @@ private Q_SLOTS:
     expectRefused(root.path(),
                   withRecordField(valid, 0, QStringLiteral("environment"),
                                   QJsonArray{QStringLiteral("PROTONPATH=GE-Proton")}));
+    // Review R5b: nor any key that lets umu bypass the pinned build.
+    for (const char *bypass : {"UMU_NO_PROTON=1", "RUNTIMEPATH=steamrt3",
+                               "PROTON_VERB=run", "UMU_RUNTIME_UPDATE=1",
+                               // umu-run's Python interpreter and loader.
+                               "PYTHONWARNINGS=ignore::evil.x",
+                               "PYTHONPATH=/tmp", "PYTHONSTARTUP=/x.py",
+                               "LD_PRELOAD=/x.so", "LD_LIBRARY_PATH=/x",
+                               "LD_AUDIT=/x.so"}) {
+      expectRefused(root.path(),
+                    withRecordField(valid, 0, QStringLiteral("environment"),
+                                    QJsonArray{QString::fromLatin1(bypass)}));
+    }
     expectRefused(root.path(),
                   withRecordField(valid, 0, QStringLiteral("environment"),
                                   QStringLiteral("DXVK_ASYNC=1")));
@@ -208,6 +232,9 @@ private Q_SLOTS:
     refuse(QStringLiteral("arguments"), 3);
     refuse(QStringLiteral("launcherTitleId"), QStringLiteral("title/world-of-warcraft"));
     refuse(QStringLiteral("winetricksApplied"), QJsonArray{QStringLiteral("rm -rf")});
+    refuse(QStringLiteral("winetricksApplied"), QJsonArray{QStringLiteral("-q")});
+    refuse(QStringLiteral("umuId"), QStringLiteral("-umu"));
+    refuse(QStringLiteral("umuStore"), QStringLiteral("-none"));
     refuse(QStringLiteral("installedAt"), QStringLiteral("2026-13-40"));
     refuse(QStringLiteral("installedAt"), QStringLiteral("yesterday"));
   }
@@ -253,6 +280,38 @@ private Q_SLOTS:
     TitleStore::Error error = TitleStore::Error::None;
     QVERIFY(store.readTitles(&error).isEmpty());
     QCOMPARE(error, TitleStore::Error::Refused);
+  }
+
+  // Review R4: a symlinked destination is never written through.
+  void writeRefusesASymlinkedDestination() {
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    const QString victim = root.filePath(QStringLiteral("victim.txt"));
+    writeRaw(victim, "precious\n");
+    const TitleStore store(root.filePath(QStringLiteral("config")));
+    QVERIFY(QDir().mkpath(root.filePath(QStringLiteral("config"))));
+    QVERIFY(QFile::link(victim, store.titlesPath()));
+    QCOMPARE(store.writeTitles({battleNet()}), TitleStore::Error::WriteFailed);
+    QFile check(victim);
+    QVERIFY(check.open(QIODevice::ReadOnly));
+    QCOMPARE(check.readAll(), QByteArray("precious\n"));
+    QVERIFY(QFileInfo(store.titlesPath()).isSymLink());
+    // A dangling link is refused on read (it is not "absent").
+    QVERIFY(QFile::remove(victim));
+    TitleStore::Error error = TitleStore::Error::None;
+    QVERIFY(store.readTitles(&error).isEmpty());
+    QCOMPARE(error, TitleStore::Error::Refused);
+    QCOMPARE(store.writeTitles({battleNet()}), TitleStore::Error::WriteFailed);
+    QVERIFY(!QFileInfo::exists(victim));
+  }
+
+  void reservedKeysMatchByPrefixAndCase() {
+    QVERIFY(isReservedUmuEnvironmentKey(QStringLiteral("PYTHONEXECUTABLE")));
+    QVERIFY(isReservedUmuEnvironmentKey(QStringLiteral("PYTHON")));
+    QVERIFY(!isReservedUmuEnvironmentKey(QStringLiteral("python_path")));
+    QVERIFY(!isReservedUmuEnvironmentKey(QStringLiteral("MYPYTHON")));
+    QVERIFY(!isReservedUmuEnvironmentKey(QStringLiteral("LD_BIND_NOW")));
+    QVERIFY(!isReservedUmuEnvironmentKey(QStringLiteral("DXVK_ASYNC")));
   }
 
   void garbageIsRefused() {

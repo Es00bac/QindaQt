@@ -6,13 +6,14 @@
 #include "../core/title_source.h"
 #include "../core/title_store.h"
 #include "../core/umu_launch.h"
+#include "../core/wine_pin_migration.h"
 #include "../core/wine_source.h"
+#include "game_image_resolver.h"
 #include "game_list_model.h"
+#include "proton_choices.h"
 
 #include <QDir>
 #include <QGuiApplication>
-#include <QIcon>
-#include <QImageReader>
 #include <QScreen>
 #include <QStandardPaths>
 
@@ -104,8 +105,8 @@ void LibraryController::loadPersistedState() {
         "The saved launch options file was not readable; using defaults");
   }
   // AGENT-NOTE: a refused titles-v1.json loads NO titles (ADR-0275 whole
-  // refusal) and is never rewritten from here: this slice only reads it, so
-  // the operator's document survives for repair instead of being replaced.
+  // refusal) and is never rewritten from here -- confirm finds no title to
+  // change -- so the operator's document survives for repair.
   error = LibraryStore::Error::None;
   m_titles = TitleStore(m_configRoot).readTitles(&error);
   if (error == LibraryStore::Error::Refused && m_statusMessage.isEmpty()) {
@@ -226,6 +227,7 @@ void LibraryController::refresh() {
   m_refreshing = true;
   Q_EMIT refreshingChanged();
   rebuildToolSet();
+  migrateWinePins();
   const SteamDiscovery steam = scanSteamLibraries(m_steamCandidates);
   const LutrisDiscovery lutris = scanLutrisDatabase(m_lutrisDbPath);
   m_desktop = scanDesktopGames(m_desktopRoots);
@@ -240,8 +242,12 @@ void LibraryController::refresh() {
   // The status line reports the refresh that just ran; a clean refresh
   // clears it. Store-refusal messages from construction stand until the
   // first refresh's own outcome replaces them.
-  const QString message =
+  QString message =
       m_library.warnings.isEmpty() ? QString() : m_library.warnings.first();
+  if (!m_pinNotes.isEmpty()) { // a one-time pin outranks a scan warning
+    message = m_pinNotes.mid(0, 3).join(QStringLiteral("; "));
+    m_pinNotes.clear();
+  }
   const bool messageChanged = message != m_statusMessage;
   m_statusMessage = message;
   if (!m_selectedGameId.isEmpty() && findGame(m_selectedGameId) == nullptr) {
@@ -403,6 +409,10 @@ void LibraryController::saveLaunchOptionsForSelected(const QVariantMap &values) 
   if (store.writeLaunchOptions(m_options) != LibraryStore::Error::None) {
     Q_EMIT storeError(QStringLiteral("could not save the launch options"));
   }
+  // A runner override to Proton on an unpinned entry records a pin now.
+  if (migrateWinePins()) {
+    refresh();
+  }
   Q_EMIT selectedGameChanged();
 }
 
@@ -419,8 +429,9 @@ bool LibraryController::addWineGame(const QString &title,
     return false;
   }
   const std::optional<WineRunner> runner = wineRunnerForId(runnerId);
-  if (!runner.has_value()) {
-    return false;
+  if (!runner.has_value()
+      || (*runner == WineRunner::Proton && prefixPath.trimmed().isEmpty())) {
+    return false; // umu needs a prefix to create or reuse
   }
   WineEntryRecord record;
   record.title = cleanTitle;
@@ -436,13 +447,14 @@ bool LibraryController::addWineGame(const QString &title,
   // ADR-0275: a new entry records ONE concrete build by name -- the caller's
   // choice, else the default -- even for Wine, so a later switch to Proton
   // has a pin. An alias or uninstalled build refuses the add.
-  const std::optional<QString> pin = pinForNewEntry(
+  const std::optional<ProtonPin> pin = pinForNewEntry(
       protonPath, m_tools.protonBuilds, m_preferredProtonBuild);
   if (!pin.has_value()
       && (*runner == WineRunner::Proton || !protonPath.trimmed().isEmpty())) {
     return false;
   }
-  record.protonPath = pin.value_or(QString());
+  record.protonPath = pin.has_value() ? pin->name : QString();
+  record.protonVersion = pin.has_value() ? pin->version : QString();
   m_wineRecords.append(record);
   persistWineEntries();
   refresh();
@@ -470,71 +482,53 @@ void LibraryController::persistWineEntries() {
   }
 }
 
-QVariantList LibraryController::protonChoices() const {
-  QVariantList out;
-  const std::optional<QString> fallback =
-      pinForNewEntry(QString(), m_tools.protonBuilds, m_preferredProtonBuild);
-  for (const ProtonBuild &build : m_tools.protonBuilds) {
-    const bool isDefault = fallback == build.name;
-    QVariantMap entry;
-    entry.insert(QStringLiteral("name"), build.displayName);
-    entry.insert(QStringLiteral("path"), build.path);
-    entry.insert(QStringLiteral("build"), build.name);
-    entry.insert(QStringLiteral("origin"), protonOriginId(build.origin));
-    entry.insert(QStringLiteral("removable"), build.removable);
-    entry.insert(QStringLiteral("isDefault"), isDefault);
-    out.insert(isDefault ? 0 : out.size(), entry); // default first
+bool LibraryController::migrateWinePins() {
+  const WinePinMigration migration = migrateWineEntryPins(
+      m_wineRecords, m_options, m_tools.protonBuilds, m_preferredProtonBuild);
+  if (!migration.changed) {
+    return false;
   }
-  return out;
+  m_wineRecords = migration.records;
+  persistWineEntries();
+  m_pinNotes += migration.notes;
+  return true;
+}
+
+QVariantList LibraryController::protonChoices() const {
+  return protonChoicesFor(
+      m_tools.protonBuilds,
+      chooseDefaultBuild(m_tools.protonBuilds, m_preferredProtonBuild));
+}
+
+bool LibraryController::confirmProtonBuildForSelected() {
+  for (TitleRecord &title : m_titles) {
+    if (title.id != m_selectedGameId) continue;
+    const std::optional<ProtonPin> pin =
+        confirmPinnedBuild(title.protonBuild, m_tools.protonBuilds);
+    if (!pin.has_value()) return false;
+    title.protonBuildVersion = pin->version;
+    if (TitleStore(m_configRoot).writeTitles(m_titles) != TitleStore::Error::None) {
+      Q_EMIT storeError(QStringLiteral("could not save the installed games"));
+    }
+    refresh();
+    return true;
+  }
+  for (WineEntryRecord &record : m_wineRecords) {
+    if (QStringLiteral("wine/") + record.slug != m_selectedGameId) continue;
+    const std::optional<ProtonPin> pin =
+        confirmPinnedBuild(record.protonPath, m_tools.protonBuilds);
+    if (!pin.has_value()) return false;
+    record.protonVersion = pin->version;
+    persistWineEntries();
+    refresh();
+    return true;
+  }
+  return false;
 }
 
 QImage LibraryController::imageForGame(const QString &gameId) const {
   const Game *game = findGame(gameId);
-  if (game == nullptr) {
-    return {};
-  }
-  if (!game->coverPath.isEmpty()) {
-    QImageReader reader(game->coverPath);
-    reader.setAllocationLimit(64); // MiB; hostile art fails, not the session
-    reader.setScaledSize(QSize(512, 512));
-    return reader.read();
-  }
-  if (!game->iconName.isEmpty()) {
-    const QIcon icon = QIcon::fromTheme(game->iconName);
-    if (!icon.isNull()) {
-      return icon.pixmap(256, 256).toImage();
-    }
-    // AGENT-NOTE: a session with no platform icon theme (bare offscreen
-    // runs, minimal sessions) leaves QIcon::fromTheme with nowhere to look.
-    // The bounded fallback below checks fixed hicolor/pixmaps paths by name;
-    // it never walks a directory and never follows a symlink.
-    for (const QString &base : QStandardPaths::standardLocations(
-             QStandardPaths::GenericDataLocation)) {
-      for (const QLatin1String size :
-           {QLatin1String("256x256"), QLatin1String("128x128"),
-            QLatin1String("64x64"), QLatin1String("48x48"),
-            QLatin1String("scalable")}) {
-        for (const QLatin1String ext :
-             {QLatin1String("png"), QLatin1String("svg")}) {
-          const QString candidate = base
-              + QStringLiteral("/icons/hicolor/") + size
-              + QStringLiteral("/apps/") + game->iconName + QLatin1Char('.') + ext;
-          const QFileInfo info(candidate);
-          if (info.isFile() && !info.isSymLink()
-              && info.size() < qint64(16) * 1024 * 1024) {
-            QImageReader reader(candidate);
-            reader.setAllocationLimit(64);
-            reader.setScaledSize(QSize(512, 512));
-            const QImage image = reader.read();
-            if (!image.isNull()) {
-              return image;
-            }
-          }
-        }
-      }
-    }
-  }
-  return {};
+  return game == nullptr ? QImage() : resolveGameImage(*game);
 }
 
 } // namespace QindaQt::QindaLutris

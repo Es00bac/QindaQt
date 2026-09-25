@@ -5,72 +5,24 @@
 #include <QTest>
 
 #include "proton_catalog.h"
+#include "proton_fixture.h"
 
 using namespace QindaQt::QindaLutris;
+using namespace ProtonFixture;
 
-// The ADR-0275 Proton catalog over synthetic roots only: fake build
-// directories holding a shell stub named `proton`. Nothing here is a real
-// Proton, and nothing is ever run.
+// ADR-0275 section 2 discovery over synthetic roots only. Nothing here is a
+// real Proton, and nothing is ever run. Pin resolution is tst_proton_pin.
 class tst_proton_catalog : public QObject {
   Q_OBJECT
 
-  static void writeFile(const QString &path, const QByteArray &bytes,
-                        bool executable = false) {
-    QVERIFY(QDir().mkpath(QFileInfo(path).absolutePath()));
-    QFile file(path);
-    QVERIFY(file.open(QIODevice::WriteOnly));
-    QCOMPARE(file.write(bytes), qint64(bytes.size()));
-    file.close();
-    if (executable) {
-      QVERIFY(QFile::setPermissions(
-          path, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner));
-    }
-  }
-
-  // A complete GE-style build the way ge-proton-bin installs it.
-  static QString makeBuild(const QString &root, const QString &name,
-                           const QByteArray &version = {},
-                           const QByteArray &displayName = {}) {
-    const QString dir = root + QLatin1Char('/') + name;
-    writeFile(dir + QStringLiteral("/proton"), "#!/bin/sh\nexit 0\n", true);
-    if (!version.isEmpty()) {
-      writeFile(dir + QStringLiteral("/version"), version);
-    }
-    if (!displayName.isEmpty()) {
-      writeFile(dir + QStringLiteral("/compatibilitytool.vdf"),
-                "\"compatibilitytools\"\n{\n  \"compat_tools\"\n  {\n"
-                "    \"" + name.toUtf8() + "\"\n    {\n"
-                "      \"install_path\" \".\"\n"
-                "      \"display_name\" \"" + displayName + "\"\n"
-                "    }\n  }\n}\n");
-    }
-    return QDir(dir).canonicalPath();
-  }
-
-  static QStringList names(const QVector<ProtonBuild> &builds) {
-    QStringList out;
-    for (const ProtonBuild &build : builds) {
-      out.append(build.name);
-    }
-    return out;
-  }
-
-  static ProtonBuild build(const QString &name, ProtonBuild::Origin origin) {
-    ProtonBuild out;
-    out.name = name;
-    out.displayName = name;
-    out.path = QStringLiteral("/roots/") + name;
-    out.origin = origin;
-    out.removable = origin == ProtonBuild::Origin::User;
-    return out;
-  }
-
 private Q_SLOTS:
-  void defaultRootsFollowTheAdrOrder() {
+  void defaultRootsNameEveryScannedRoot() {
     const QVector<ProtonRoot> roots = defaultProtonRoots(
         QStringLiteral("/home/u"), QString(),
         {QStringLiteral("/home/u/.local/share/Steam"),
          QStringLiteral("/mnt/games/SteamLibrary")});
+    const QString flatpak =
+        QStringLiteral("/home/u/.var/app/com.valvesoftware.Steam");
     const QVector<ProtonRoot> expected{
         {QStringLiteral("/usr/share/steam/compatibilitytools.d"),
          ProtonBuild::Origin::System},
@@ -78,17 +30,27 @@ private Q_SLOTS:
          ProtonBuild::Origin::User},
         {QStringLiteral("/home/u/.steam/root/compatibilitytools.d"),
          ProtonBuild::Origin::User},
+        {flatpak + QStringLiteral("/.local/share/Steam/compatibilitytools.d"),
+         ProtonBuild::Origin::User},
+        {flatpak + QStringLiteral("/data/Steam/compatibilitytools.d"),
+         ProtonBuild::Origin::User},
         {QStringLiteral("/home/u/.local/share/Steam/steamapps/common"),
          ProtonBuild::Origin::Steam},
         {QStringLiteral("/mnt/games/SteamLibrary/steamapps/common"),
          ProtonBuild::Origin::Steam},
+        {flatpak + QStringLiteral("/.local/share/Steam/steamapps/common"),
+         ProtonBuild::Origin::Steam},
+        {flatpak + QStringLiteral("/data/Steam/steamapps/common"),
+         ProtonBuild::Origin::Steam},
     };
     QCOMPARE(roots, expected);
-    // An explicit XDG_DATA_HOME replaces ~/.local/share.
-    QCOMPARE(defaultProtonRoots(QStringLiteral("/home/u"),
-                                QStringLiteral("/data"), {})
-                 .at(1).path,
-             QStringLiteral("/data/Steam/compatibilitytools.d"));
+    // An explicit XDG_DATA_HOME replaces ~/.local/share; a Flatpak library
+    // passed in as a Steam root is not listed twice.
+    const QVector<ProtonRoot> xdg = defaultProtonRoots(
+        QStringLiteral("/home/u"), QStringLiteral("/data"),
+        {flatpak + QStringLiteral("/data/Steam")});
+    QCOMPARE(xdg.at(1).path, QStringLiteral("/data/Steam/compatibilitytools.d"));
+    QCOMPARE(xdg.size(), 7);
   }
 
   void discoversAcrossOriginsSystemFirst() {
@@ -99,11 +61,10 @@ private Q_SLOTS:
     const QString steam = tmp.filePath(QStringLiteral("steam/steamapps/common"));
     const QString sysPath =
         makeBuild(system, QStringLiteral("GE-Proton11-6-x86_64"),
-                  "1756415527 GE-Proton11-6\n", "GE-Proton11-6");
-    makeBuild(system, QStringLiteral("GE-Proton10-25-x86_64"),
-              "1740000000 GE-Proton10-25\n");
+                  "1756415527 GE-Proton11-6", "GE-Proton11-6");
+    makeBuild(system, QStringLiteral("GE-Proton10-25-x86_64"));
     makeBuild(user, QStringLiteral("GE-Proton11-7"));
-    makeBuild(steam, QStringLiteral("Proton 9.0"), "1718395834 proton-9.0-2\n");
+    makeBuild(steam, QStringLiteral("Proton 9.0"), "1718395834 proton-9.0-2");
     // A game in steamapps/common with a `proton` file is still not Proton.
     makeBuild(steam, QStringLiteral("SomeGame"));
 
@@ -123,38 +84,47 @@ private Q_SLOTS:
     QCOMPARE(pinned.displayName, QStringLiteral("GE-Proton11-6"));
     QCOMPARE(pinned.versionText, QStringLiteral("1756415527 GE-Proton11-6"));
     QCOMPARE(pinned.origin, ProtonBuild::Origin::System);
+    QVERIFY(pinned.pinnable);
     QVERIFY(!pinned.removable); // Portage owns it
     QVERIFY(builds.at(2).removable);
-    QCOMPARE(builds.at(2).origin, ProtonBuild::Origin::User);
     QVERIFY(!builds.at(3).removable);
-    QCOMPARE(builds.at(3).origin, ProtonBuild::Origin::Steam);
+    QVERIFY(builds.at(3).pinnable); // a stable Valve release is pinnable
+    QCOMPARE(protonVersionLabel(builds.at(3).versionText),
+             QStringLiteral("proton-9.0-2"));
   }
 
-  void missingVersionAndVdfFallBackToTheName() {
+  void missingVersionFileIsListedButNotPinnable() {
     QTemporaryDir tmp;
     QVERIFY(tmp.isValid());
-    makeBuild(tmp.path(), QStringLiteral("GE-Proton9-1"));
+    makeBuild(tmp.path(), QStringLiteral("GE-Proton9-1"), QByteArray());
     const QVector<ProtonBuild> builds =
         discoverProtonBuilds({{tmp.path(), ProtonBuild::Origin::User}});
     QCOMPARE(builds.size(), 1);
     QCOMPARE(builds.at(0).displayName, QStringLiteral("GE-Proton9-1"));
     QVERIFY(builds.at(0).versionText.isEmpty());
+    QVERIFY(!builds.at(0).pinnable);
+    QCOMPARE(protonBuildStatusLabel(builds.at(0)),
+             QStringLiteral("No version file — not pinnable"));
   }
 
-  void duplicateNamesKeepTheFirstRoot() {
+  // Review 5c: a same-named build in a later root is KEPT with its own
+  // origin and path, so an exact-path pin to it still resolves.
+  void duplicateNamesAreAllKeptSystemFirst() {
     QTemporaryDir tmp;
     QVERIFY(tmp.isValid());
     const QString system = tmp.filePath(QStringLiteral("system"));
     const QString user = tmp.filePath(QStringLiteral("user"));
     const QString systemPath = makeBuild(system, QStringLiteral("GE-Proton11-6"));
-    makeBuild(user, QStringLiteral("GE-Proton11-6"));
+    const QString userPath = makeBuild(user, QStringLiteral("GE-Proton11-6"));
     const QVector<ProtonBuild> builds = discoverProtonBuilds({
-        {system, ProtonBuild::Origin::System},
         {user, ProtonBuild::Origin::User},
+        {system, ProtonBuild::Origin::System},
     });
-    QCOMPARE(builds.size(), 1);
+    QCOMPARE(builds.size(), 2);
     QCOMPARE(builds.at(0).path, systemPath);
     QCOMPARE(builds.at(0).origin, ProtonBuild::Origin::System);
+    QCOMPARE(builds.at(1).path, userPath);
+    QCOMPARE(builds.at(1).origin, ProtonBuild::Origin::User);
   }
 
   void theSameRootReachedTwiceCountsOnce() {
@@ -201,6 +171,71 @@ private Q_SLOTS:
     QCOMPARE(names(builds), QStringList({QStringLiteral("GE-Proton11-7")}));
   }
 
+  // The download jobs stage and retire builds in hidden directories inside
+  // a compatibilitytools.d; a half-extracted build must never be listed.
+  void hiddenDirectoriesAreSkippedInEveryRoot() {
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    const QString user = tmp.filePath(QStringLiteral("user"));
+    const QString system = tmp.filePath(QStringLiteral("system"));
+    const QString steam = tmp.filePath(QStringLiteral("steam"));
+    makeBuild(user, QStringLiteral(".qindalutris-staging-1234"));
+    makeBuild(user + QStringLiteral("/.qindalutris-trash"),
+              QStringLiteral("GE-Proton9-1"));
+    makeBuild(user, QStringLiteral(".qindalutris-trash"));
+    makeBuild(system, QStringLiteral(".hidden-build"));
+    makeBuild(steam, QStringLiteral(".Proton 9.0"));
+    makeBuild(user, QStringLiteral("GE-Proton11-6-x86_64"));
+    const QVector<ProtonBuild> builds = discoverProtonBuilds({
+        {system, ProtonBuild::Origin::System},
+        {user, ProtonBuild::Origin::User},
+        {steam, ProtonBuild::Origin::Steam},
+    });
+    QCOMPARE(names(builds), QStringList({QStringLiteral("GE-Proton11-6-x86_64")}));
+  }
+
+  // Review R3: games sorting before "Proton*" never crowd Proton out.
+  void steamLibraryWithManyGamesStillYieldsProton() {
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    const QString common = tmp.filePath(QStringLiteral("steamapps/common"));
+    for (int i = 0; i < kMaxProtonDirsPerRoot + 2; ++i) {
+      QVERIFY(QDir().mkpath(common + QStringLiteral("/A Game %1").arg(i, 3, 10,
+                                                                     QLatin1Char('0'))));
+    }
+    makeBuild(common, QStringLiteral("Proton 9.0"), "1718395834 proton-9.0-2");
+    const QVector<ProtonBuild> builds =
+        discoverProtonBuilds({{common, ProtonBuild::Origin::Steam}});
+    QCOMPARE(names(builds), QStringList({QStringLiteral("Proton 9.0")}));
+  }
+
+  // Review R1: Valve's rolling channels are listed, never pinnable.
+  void steamRollingChannelsAreNotPinnable() {
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    const QString common = tmp.filePath(QStringLiteral("steamapps/common"));
+    makeBuild(common, QStringLiteral("Proton - Experimental"),
+              "1758000000 experimental-bleeding-edge");
+    makeBuild(common, QStringLiteral("Proton Hotfix"), "1758000001 proton-hotfix");
+    makeBuild(common, QStringLiteral("Proton Next"), "1758000002 proton-next");
+    makeBuild(common, QStringLiteral("Proton 9.0"), "1718395834 proton-9.0-2");
+    const QVector<ProtonBuild> builds =
+        discoverProtonBuilds({{common, ProtonBuild::Origin::Steam}});
+    QCOMPARE(builds.size(), 4);
+    for (const ProtonBuild &b : builds) {
+      const bool rolling = b.name != QLatin1String("Proton 9.0");
+      QCOMPARE(b.pinnable, !rolling);
+      QCOMPARE(protonBuildStatusLabel(b),
+               rolling ? QStringLiteral("Updated by Steam — not pinnable")
+                       : QString());
+    }
+    QVERIFY(isRollingProtonChannel(QStringLiteral("proton-EXPERIMENTAL-x"),
+                                   ProtonBuild::Origin::Steam));
+    // Only Steam's own channels are rolling; a user build name is a name.
+    QVERIFY(!isRollingProtonChannel(QStringLiteral("GE-Proton-Next-1"),
+                                    ProtonBuild::Origin::User));
+  }
+
   void absentRootsAreEmptyNotErrors() {
     QVERIFY(discoverProtonBuilds({{QStringLiteral("/nonexistent/qindalutris"),
                                    ProtonBuild::Origin::System},
@@ -208,34 +243,29 @@ private Q_SLOTS:
                 .isEmpty());
   }
 
-  void countsAreBounded() {
+  // The build cap applies after sorting: the newest-looking survive, and a
+  // System build is never dropped for a User one.
+  void countsAreBoundedAfterSorting() {
     QTemporaryDir tmp;
     QVERIFY(tmp.isValid());
+    const QString user = tmp.filePath(QStringLiteral("user"));
+    const QString system = tmp.filePath(QStringLiteral("system"));
     for (int i = 0; i < kMaxProtonBuilds + 10; ++i) {
-      makeBuild(tmp.path(), QStringLiteral("GE-Proton1-%1").arg(i));
+      makeBuild(user, QStringLiteral("GE-Proton1-%1").arg(i));
     }
-    const QVector<ProtonBuild> builds =
-        discoverProtonBuilds({{tmp.path(), ProtonBuild::Origin::User}});
+    makeBuild(system, QStringLiteral("GE-Proton0-1"));
+    const QVector<ProtonBuild> builds = discoverProtonBuilds({
+        {user, ProtonBuild::Origin::User},
+        {system, ProtonBuild::Origin::System},
+    });
     QCOMPARE(builds.size(), kMaxProtonBuilds);
+    QCOMPARE(builds.first().name, QStringLiteral("GE-Proton0-1"));
+    QCOMPARE(builds.at(1).name,
+             QStringLiteral("GE-Proton1-%1").arg(kMaxProtonBuilds + 9));
+    QVERIFY(!names(builds).contains(QStringLiteral("GE-Proton1-0")));
   }
 
-  void aliasRefusalTable() {
-    const QVector<ProtonBuild> known{
-        build(QStringLiteral("GE-Proton11-6"), ProtonBuild::Origin::System)};
-    const QStringList floating{
-        QString(), QStringLiteral("  "), QStringLiteral("GE-Proton"),
-        QStringLiteral("ge-proton"), QStringLiteral("GE-Latest"),
-        QStringLiteral("UMU-Latest"), QStringLiteral("umu-latest"),
-        QStringLiteral("UMU-Proton"), QStringLiteral("latest"),
-        QStringLiteral("LATEST"), QStringLiteral("GE-Proton11-7"),
-        QStringLiteral("relative/path")};
-    for (const QString &value : floating) {
-      QVERIFY2(isFloatingProtonAlias(value, known), qPrintable(value));
-    }
-    QVERIFY(!isFloatingProtonAlias(QStringLiteral("GE-Proton11-6"), known));
-    QVERIFY(!isFloatingProtonAlias(
-        QStringLiteral("/usr/share/steam/compatibilitytools.d/GE-Proton11-6"),
-        known));
+  void namesAndVersionLabels() {
     QVERIFY(isProtonAliasName(QStringLiteral("Umu-Proton")));
     QVERIFY(!isProtonAliasName(QStringLiteral("GE-Proton11-6")));
     QVERIFY(isValidProtonBuildName(QStringLiteral("GE-Proton11-6-x86_64")));
@@ -246,87 +276,28 @@ private Q_SLOTS:
     QVERIFY(!isValidProtonBuildName(QStringLiteral("bad\nname")));
     QVERIFY(!isValidProtonBuildName(QString(kMaxProtonBuildNameChars + 1,
                                             QLatin1Char('x'))));
+    QCOMPARE(protonVersionLabel(QStringLiteral("1756415527 GE-Proton11-6")),
+             QStringLiteral("GE-Proton11-6"));
+    QCOMPARE(protonVersionLabel(QStringLiteral("proton-9.0-2")),
+             QStringLiteral("proton-9.0-2"));
+    QCOMPARE(protonVersionLabel(QString()), QStringLiteral("unknown"));
   }
 
-  void resolvePinnedBuildNeverSubstitutes() {
-    const QVector<ProtonBuild> builds{
-        build(QStringLiteral("GE-Proton11-7"), ProtonBuild::Origin::System),
-        build(QStringLiteral("GE-Proton11-6-x86_64"), ProtonBuild::Origin::System),
-    };
-    const PinnedBuildResolution exact =
-        resolvePinnedBuild(QStringLiteral("GE-Proton11-6-x86_64"), builds);
-    QVERIFY(exact.ok());
-    QCOMPARE(exact.build->name, QStringLiteral("GE-Proton11-6-x86_64"));
-    QCOMPARE(exact.failure, PinnedBuildResolution::Failure::None);
-
-    // The WoW case: pinned 11-6 is gone, 11-7 is installed. Refuse; never
-    // pick 11-7, never pick a prefix match.
-    const QVector<ProtonBuild> without{builds.at(0)};
-    const PinnedBuildResolution missing =
-        resolvePinnedBuild(QStringLiteral("GE-Proton11-6"), without);
-    QVERIFY(!missing.ok());
-    QCOMPARE(missing.failure, PinnedBuildResolution::Failure::NotInstalled);
-    QCOMPARE(missing.reason,
-             QStringLiteral("GE-Proton11-6 is not installed. Reinstall it or "
-                            "choose another Proton build for this game."));
-    QVERIFY(!resolvePinnedBuild(QStringLiteral("GE-Proton11"), builds).ok());
-    QVERIFY(!resolvePinnedBuild(QStringLiteral("ge-proton11-7"), builds).ok());
-
-    const PinnedBuildResolution alias =
-        resolvePinnedBuild(QStringLiteral("GE-Proton"), builds);
-    QVERIFY(!alias.ok());
-    QCOMPARE(alias.failure, PinnedBuildResolution::Failure::FloatingAlias);
-    const PinnedBuildResolution empty = resolvePinnedBuild(QString(), builds);
-    QCOMPARE(empty.failure, PinnedBuildResolution::Failure::NotChosen);
-    QCOMPARE(empty.reason, QStringLiteral("Choose a Proton build for this game."));
-
-    // Absolute pins match a build directory or (legacy) its proton script.
-    QCOMPARE(resolvePinnedBuild(QStringLiteral("/roots/GE-Proton11-7"), builds)
-                 .build->name,
-             QStringLiteral("GE-Proton11-7"));
-    QCOMPARE(resolvePinnedBuild(QStringLiteral("/roots/GE-Proton11-7/proton"),
-                                builds).build->name,
-             QStringLiteral("GE-Proton11-7"));
-    const PinnedBuildResolution gonePath =
-        resolvePinnedBuild(QStringLiteral("/old/GE-Proton9-1/proton"), builds);
-    QCOMPARE(gonePath.failure, PinnedBuildResolution::Failure::NotInstalled);
-    QVERIFY(gonePath.reason.startsWith(QStringLiteral("GE-Proton9-1 is not installed.")));
-  }
-
-  void chooseDefaultBuildOrder() {
-    const ProtonBuild sys = build(QStringLiteral("GE-Proton11-6"),
-                                  ProtonBuild::Origin::System);
-    const ProtonBuild user = build(QStringLiteral("GE-Proton11-7"),
-                                   ProtonBuild::Origin::User);
-    const ProtonBuild valve = build(QStringLiteral("Proton 9.0"),
-                                    ProtonBuild::Origin::Steam);
-    QCOMPARE(chooseDefaultBuild({user, sys, valve}, QStringLiteral("Proton 9.0")),
-             std::optional<ProtonBuild>(valve));
-    // Preferred but not installed: first System build, not the first build.
-    QCOMPARE(chooseDefaultBuild({user, sys, valve}, QStringLiteral("GE-Proton8-1")),
-             std::optional<ProtonBuild>(sys));
-    QCOMPARE(chooseDefaultBuild({user, valve}, QString()),
-             std::optional<ProtonBuild>(user));
-    QVERIFY(!chooseDefaultBuild({}, QStringLiteral("GE-Proton11-6")).has_value());
-  }
-
-  void newEntriesPinABuildName() {
-    const ProtonBuild sys = build(QStringLiteral("GE-Proton11-6"),
-                                  ProtonBuild::Origin::System);
-    const ProtonBuild user = build(QStringLiteral("GE-Proton11-7"),
-                                   ProtonBuild::Origin::User);
-    // Empty request: the default build, by name.
-    QCOMPARE(pinForNewEntry(QString(), {user, sys}, QString()),
-             std::optional<QString>(QStringLiteral("GE-Proton11-6")));
-    QCOMPARE(pinForNewEntry(QString(), {user, sys}, QStringLiteral("GE-Proton11-7")),
-             std::optional<QString>(QStringLiteral("GE-Proton11-7")));
-    // A path from protonChoices() is recorded as the build's name.
-    QCOMPARE(pinForNewEntry(user.path, {user, sys}, QString()),
-             std::optional<QString>(QStringLiteral("GE-Proton11-7")));
-    // Aliases, unknown builds, and an empty catalog record nothing.
-    QVERIFY(!pinForNewEntry(QStringLiteral("GE-Proton"), {user, sys}, QString()).has_value());
-    QVERIFY(!pinForNewEntry(QStringLiteral("GE-Proton9-1"), {user, sys}, QString()).has_value());
-    QVERIFY(!pinForNewEntry(QString(), {}, QString()).has_value());
+  // Review R6: the plan-time re-check sees a build removed after discovery.
+  void stillPresentRechecksTheScript() {
+    QTemporaryDir tmp;
+    QVERIFY(tmp.isValid());
+    makeBuild(tmp.path(), QStringLiteral("GE-Proton11-6"));
+    const QVector<ProtonBuild> builds =
+        discoverProtonBuilds({{tmp.path(), ProtonBuild::Origin::System}});
+    QCOMPARE(builds.size(), 1);
+    QVERIFY(protonBuildStillPresent(builds.first()));
+    QVERIFY(QFile::remove(builds.first().path + QStringLiteral("/proton")));
+    QVERIFY(QFile::link(tmp.filePath(QStringLiteral("x")),
+                        builds.first().path + QStringLiteral("/proton")));
+    QVERIFY(!protonBuildStillPresent(builds.first()));
+    QVERIFY(QDir(builds.first().path).removeRecursively());
+    QVERIFY(!protonBuildStillPresent(builds.first()));
   }
 };
 

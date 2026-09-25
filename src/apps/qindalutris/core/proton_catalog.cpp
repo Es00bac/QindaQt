@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "proton_catalog.h"
 
+#include "store_io.h"
+
 #include <QDir>
-#include <QFile>
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSet>
@@ -16,17 +18,11 @@ constexpr qint64 kMaxVersionFileBytes = 4096;
 constexpr qint64 kMaxToolVdfBytes = qint64(16) * 1024;
 constexpr int kMaxLabelChars = 128;
 
-// A regular, non-symlink file's first maxBytes, or empty.
+// A regular, non-symlink file's bytes (opened O_NOFOLLOW), or empty.
 QByteArray readSmallRegularFile(const QString &path, qint64 maxBytes) {
-  const QFileInfo info(path);
-  if (!info.isFile() || info.isSymLink() || info.size() > maxBytes) {
-    return {};
-  }
-  QFile file(path);
-  if (!file.open(QIODevice::ReadOnly)) {
-    return {};
-  }
-  return file.read(maxBytes);
+  StoreIo::ReadStatus status = StoreIo::ReadStatus::Refused;
+  const QByteArray bytes = StoreIo::readBoundedFile(path, maxBytes, &status);
+  return status == StoreIo::ReadStatus::Ok ? bytes : QByteArray();
 }
 
 // Keeps a label printable: control characters dropped, length capped.
@@ -121,20 +117,57 @@ bool buildLess(const ProtonBuild &a, const ProtonBuild &b) {
   if (ra != rb) {
     return ra < rb;
   }
-  return naturalCompare(a.name, b.name) > 0; // newest-looking first
+  const int byName = naturalCompare(a.name, b.name);
+  if (byName != 0) {
+    return byName > 0; // newest-looking first
+  }
+  return a.path < b.path;
 }
 
-QString failureName(const QString &pinned) {
-  // An absolute pin is reported by its last component: the user knows a
-  // build as "GE-Proton11-6", not as a directory (ADR-0275 section 5).
-  if (QDir::isAbsolutePath(pinned)) {
-    QString trimmed = QDir::cleanPath(pinned);
-    if (trimmed.endsWith(QStringLiteral("/proton"))) {
-      trimmed.chop(7);
+// Scans one canonical root with a bounded iterator: at most
+// kMaxProtonEntriesScannedPerRoot entries are read, and only eligible names
+// count toward kMaxProtonDirsPerRoot.
+void scanRoot(const QString &canonicalRoot, ProtonBuild::Origin origin,
+              QVector<ProtonBuild> *out) {
+  QDirIterator it(canonicalRoot, QDir::AllEntries | QDir::NoDotAndDotDot
+                                     | QDir::Hidden | QDir::System);
+  int scanned = 0;
+  int candidates = 0;
+  while (it.hasNext() && scanned < kMaxProtonEntriesScannedPerRoot
+         && candidates < kMaxProtonDirsPerRoot) {
+    const QFileInfo entry = it.nextFileInfo();
+    ++scanned;
+    const QString name = entry.fileName();
+    if (name.startsWith(QLatin1Char('.'))) {
+      continue; // hidden: job staging/trash, see AGENT-CONTRACT in the header
     }
-    return cleanLabel(QFileInfo(trimmed).fileName());
+    if (origin == ProtonBuild::Origin::Steam
+        && !name.startsWith(QLatin1String("Proton"))) {
+      continue; // steamapps/common holds games too
+    }
+    if (entry.isSymLink() || !entry.isDir() || !isValidProtonBuildName(name)) {
+      continue; // see AGENT-GUARD in the header
+    }
+    ++candidates;
+    const QString dir = canonicalRoot + QLatin1Char('/') + name;
+    const QFileInfo script(dir + QStringLiteral("/proton"));
+    if (!script.isFile() || script.isSymLink() || !script.isExecutable()) {
+      continue;
+    }
+    ProtonBuild build;
+    build.name = name;
+    build.path = dir;
+    build.versionText = versionTextFor(dir);
+    build.displayName = displayNameFor(dir);
+    if (build.displayName.isEmpty()) {
+      build.displayName = name;
+    }
+    build.origin = origin;
+    build.removable = origin == ProtonBuild::Origin::User;
+    build.pinnable =
+        !isRollingProtonChannel(name, origin) && !build.versionText.isEmpty();
+    out->append(build);
   }
-  return cleanLabel(pinned);
 }
 
 } // namespace
@@ -154,6 +187,9 @@ QVector<ProtonRoot> defaultProtonRoots(const QString &home,
   const QString dataHome = xdgDataHome.isEmpty()
                                ? home + QStringLiteral("/.local/share")
                                : xdgDataHome;
+  const QString flatpak = home + QStringLiteral("/.var/app/com.valvesoftware.Steam");
+  const QStringList flatpakSteam{flatpak + QStringLiteral("/.local/share/Steam"),
+                                 flatpak + QStringLiteral("/data/Steam")};
   QVector<ProtonRoot> out{
       {QString(kSystemProtonRoot), ProtonBuild::Origin::System},
       {dataHome + QStringLiteral("/Steam/compatibilitytools.d"),
@@ -161,14 +197,22 @@ QVector<ProtonRoot> defaultProtonRoots(const QString &home,
       {home + QStringLiteral("/.steam/root/compatibilitytools.d"),
        ProtonBuild::Origin::User},
   };
-  for (const QString &library : steamLibraryRoots) {
+  for (const QString &steam : flatpakSteam) {
+    out.append({steam + QStringLiteral("/compatibilitytools.d"),
+                ProtonBuild::Origin::User});
+  }
+  QStringList libraries;
+  for (const QString &library : steamLibraryRoots + flatpakSteam) {
+    if (!library.isEmpty() && !libraries.contains(library)) {
+      libraries.append(library);
+    }
+  }
+  for (const QString &library : libraries) {
     if (out.size() >= kMaxProtonRoots) {
       break;
     }
-    if (!library.isEmpty()) {
-      out.append({library + QStringLiteral("/steamapps/common"),
-                  ProtonBuild::Origin::Steam});
-    }
+    out.append({library + QStringLiteral("/steamapps/common"),
+                ProtonBuild::Origin::Steam});
   }
   return out;
 }
@@ -176,57 +220,22 @@ QVector<ProtonRoot> defaultProtonRoots(const QString &home,
 QVector<ProtonBuild> discoverProtonBuilds(const QVector<ProtonRoot> &roots) {
   QVector<ProtonBuild> out;
   QSet<QString> seenRoots;
-  QSet<QString> seenNames;
-  int rootsScanned = 0;
   for (const ProtonRoot &root : roots) {
-    if (rootsScanned >= kMaxProtonRoots || out.size() >= kMaxProtonBuilds) {
+    if (seenRoots.size() >= kMaxProtonRoots) {
       break;
     }
-    const QString canonicalRoot = QDir(root.path).canonicalPath();
-    if (root.path.isEmpty() || canonicalRoot.isEmpty()
-        || seenRoots.contains(canonicalRoot)) {
+    const QString canonicalRoot =
+        root.path.isEmpty() ? QString() : QDir(root.path).canonicalPath();
+    if (canonicalRoot.isEmpty() || seenRoots.contains(canonicalRoot)) {
       continue; // absent, or the same directory reached twice
     }
     seenRoots.insert(canonicalRoot);
-    ++rootsScanned;
-    const QFileInfoList entries = QDir(canonicalRoot).entryInfoList(
-        QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-    int considered = 0;
-    for (const QFileInfo &entry : entries) {
-      if (++considered > kMaxProtonDirsPerRoot || out.size() >= kMaxProtonBuilds) {
-        break;
-      }
-      const QString name = entry.fileName();
-      if (entry.isSymLink() || !isValidProtonBuildName(name)) {
-        continue; // see AGENT-GUARD in the header
-      }
-      if (root.origin == ProtonBuild::Origin::Steam
-          && !name.startsWith(QLatin1String("Proton"))) {
-        continue; // steamapps/common holds games too
-      }
-      const QString dir = canonicalRoot + QLatin1Char('/') + name;
-      const QFileInfo script(dir + QStringLiteral("/proton"));
-      if (!script.isFile() || script.isSymLink() || !script.isExecutable()) {
-        continue;
-      }
-      if (seenNames.contains(name)) {
-        continue; // an earlier root (System first) already owns the name
-      }
-      seenNames.insert(name);
-      ProtonBuild build;
-      build.name = name;
-      build.path = dir;
-      build.versionText = versionTextFor(dir);
-      build.displayName = displayNameFor(dir);
-      if (build.displayName.isEmpty()) {
-        build.displayName = name;
-      }
-      build.origin = root.origin;
-      build.removable = root.origin == ProtonBuild::Origin::User;
-      out.append(build);
-    }
+    scanRoot(canonicalRoot, root.origin, &out);
   }
-  std::stable_sort(out.begin(), out.end(), buildLess);
+  std::sort(out.begin(), out.end(), buildLess);
+  if (out.size() > kMaxProtonBuilds) {
+    out.resize(kMaxProtonBuilds);
+  }
   return out;
 }
 
@@ -246,22 +255,6 @@ bool isProtonAliasName(const QString &value) {
   return false;
 }
 
-bool isFloatingProtonAlias(const QString &value,
-                           const QVector<ProtonBuild> &knownBuilds) {
-  if (isProtonAliasName(value)) {
-    return true;
-  }
-  if (QDir::isAbsolutePath(value)) {
-    return false;
-  }
-  for (const ProtonBuild &build : knownBuilds) {
-    if (build.name == value) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool isValidProtonBuildName(const QString &name) {
   if (name.isEmpty() || name.size() > kMaxProtonBuildNameChars
       || name == QLatin1String(".") || name == QLatin1String("..")
@@ -276,73 +269,49 @@ bool isValidProtonBuildName(const QString &name) {
   return true;
 }
 
-PinnedBuildResolution resolvePinnedBuild(const QString &pinned,
-                                         const QVector<ProtonBuild> &builds) {
-  PinnedBuildResolution out;
-  if (pinned.trimmed().isEmpty()) {
-    out.failure = PinnedBuildResolution::Failure::NotChosen;
-    out.reason = QStringLiteral("Choose a Proton build for this game.");
-    return out;
+bool isRollingProtonChannel(const QString &name, ProtonBuild::Origin origin) {
+  if (origin != ProtonBuild::Origin::Steam) {
+    return false;
   }
-  if (isProtonAliasName(pinned)) {
-    out.failure = PinnedBuildResolution::Failure::FloatingAlias;
-    out.reason = QStringLiteral(
-        "\"%1\" is not a specific Proton build. Choose an installed build "
-        "for this game.").arg(cleanLabel(pinned));
-    return out;
-  }
-  // AGENT-GUARD: exact matches only. No prefix match, no version-family
-  // match, no "closest" build -- a substitute is the ADR-0275 bug.
-  const bool absolute = QDir::isAbsolutePath(pinned);
-  const QString cleaned = absolute ? QDir::cleanPath(pinned) : pinned;
-  for (const ProtonBuild &build : builds) {
-    const bool matches = absolute
-        ? (cleaned == build.path
-           || cleaned == build.path + QStringLiteral("/proton"))
-        : build.name == pinned;
-    if (matches) {
-      out.build = build;
-      return out;
+  for (const QLatin1String channel :
+       {QLatin1String("experimental"), QLatin1String("hotfix"),
+        QLatin1String("next")}) {
+    if (name.contains(channel, Qt::CaseInsensitive)) {
+      return true;
     }
   }
-  out.failure = PinnedBuildResolution::Failure::NotInstalled;
-  out.reason = QStringLiteral(
-      "%1 is not installed. Reinstall it or choose another Proton build for "
-      "this game.").arg(failureName(pinned));
-  return out;
+  return false;
 }
 
-std::optional<ProtonBuild> chooseDefaultBuild(const QVector<ProtonBuild> &builds,
-                                              const QString &preferredName) {
-  if (!preferredName.isEmpty()) {
-    for (const ProtonBuild &build : builds) {
-      if (build.name == preferredName) {
-        return build;
-      }
-    }
+QString protonVersionLabel(const QString &versionText) {
+  const QStringList parts =
+      versionText.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+  if (parts.isEmpty()) {
+    return QStringLiteral("unknown");
   }
-  for (const ProtonBuild &build : builds) {
-    if (build.origin == ProtonBuild::Origin::System) {
-      return build;
-    }
+  static const QRegularExpression digits(QStringLiteral("^\\d+$"));
+  if (parts.size() > 1 && digits.match(parts.first()).hasMatch()) {
+    return cleanLabel(parts.mid(1).join(QLatin1Char(' ')));
   }
-  if (!builds.isEmpty()) {
-    return builds.constFirst();
-  }
-  return std::nullopt;
+  return cleanLabel(versionText);
 }
 
-std::optional<QString> pinForNewEntry(const QString &requested,
-                                      const QVector<ProtonBuild> &builds,
-                                      const QString &preferredName) {
-  if (requested.trimmed().isEmpty()) {
-    const std::optional<ProtonBuild> fallback =
-        chooseDefaultBuild(builds, preferredName);
-    return fallback.has_value() ? std::optional<QString>(fallback->name)
-                                : std::nullopt;
+QString protonBuildStatusLabel(const ProtonBuild &build) {
+  if (isRollingProtonChannel(build.name, build.origin)) {
+    return QStringLiteral("Updated by Steam — not pinnable");
   }
-  const PinnedBuildResolution pin = resolvePinnedBuild(requested, builds);
-  return pin.ok() ? std::optional<QString>(pin.build->name) : std::nullopt;
+  if (build.versionText.isEmpty()) {
+    return QStringLiteral("No version file — not pinnable");
+  }
+  return {};
+}
+
+bool protonBuildStillPresent(const ProtonBuild &build) {
+  if (build.path.isEmpty()) {
+    return false;
+  }
+  const QFileInfo script(build.path + QStringLiteral("/proton"));
+  return script.isFile() && !script.isSymLink() && script.isExecutable();
 }
 
 } // namespace QindaQt::QindaLutris
