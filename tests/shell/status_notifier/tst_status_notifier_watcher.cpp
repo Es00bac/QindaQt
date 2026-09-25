@@ -52,19 +52,36 @@ QDBusMessage watcherCall(QDBusConnection &caller,
     return pending.reply();
 }
 
-QVariant watcherProperty(QDBusConnection &caller, const QString &name)
+// Sends one Properties call to the watcher and pumps the loop until the
+// reply arrives. An empty interface sends the header-less form.
+QDBusMessage propertiesCall(QDBusConnection &caller,
+                            const QString &interface,
+                            const QString &member,
+                            const QVariantList &arguments)
 {
     auto message = QDBusMessage::createMethodCall(
         QString::fromLatin1(kWatcherServiceName),
         QString::fromLatin1(kWatcherObjectPath),
-        QStringLiteral("org.freedesktop.D-Bus.Properties"),
-        QStringLiteral("Get"));
-    message << QVariant(QString::fromLatin1(kWatcherInterfaceName)) << QVariant(name);
+        interface,
+        member);
+    message.setArguments(arguments);
     QDBusPendingCall pending = caller.asyncCall(message);
     if (!QTest::qWaitFor([&pending]() { return pending.isFinished(); }, 5'000)) {
         return {};
     }
-    const QDBusMessage reply = pending.reply();
+    return pending.reply();
+}
+
+// AGENT-NOTE: callers must pass a connection other than the watcher's own.
+// A call to a service owned by the same connection short-circuits in-process
+// and skips QtDBus's client-side interface-name validation, which is how a
+// misspelled "org.freedesktop.D-Bus.Properties" read once passed here while
+// every real host was refused.
+QVariant watcherProperty(QDBusConnection &caller, const QString &name)
+{
+    const QDBusMessage reply = propertiesCall(
+        caller, QString::fromLatin1(kPropertiesInterfaceName), QStringLiteral("Get"),
+        {QString::fromLatin1(kWatcherInterfaceName), name});
     QVariant value = reply.arguments().value(0);
     if (value.canConvert<QDBusVariant>()) {
         value = value.value<QDBusVariant>().variant();
@@ -80,6 +97,7 @@ class StatusNotifierWatcherTests final : public QObject
 
 private slots:
     void registersBarePathAgainstCaller();
+    void servesStandardPropertiesInterface();
     void registersServiceNameResolvedThroughBus();
     void duplicateRegistrationIsIgnored();
     void rejectsMalformedRegistrations();
@@ -107,10 +125,10 @@ void StatusNotifierWatcherTests::registersBarePathAgainstCaller()
     QVERIFY2(watcher.start(&error), qPrintable(error));
     QCOMPARE(watcher.state(), WatcherServiceState::Active);
     QVERIFY(watcher.degradedReason().isEmpty());
-    QCOMPARE(qdbus_cast<int>(watcherProperty(watcherConnection,
+    QCOMPARE(qdbus_cast<int>(watcherProperty(itemConnection,
                                              QStringLiteral("ProtocolVersion"))),
              0);
-    QCOMPARE(qdbus_cast<bool>(watcherProperty(watcherConnection,
+    QCOMPARE(qdbus_cast<bool>(watcherProperty(itemConnection,
                                               QStringLiteral("IsStatusNotifierHostRegistered"))),
              false);
 
@@ -126,12 +144,70 @@ void StatusNotifierWatcherTests::registersBarePathAgainstCaller()
     QCOMPARE(watcher.registeredItemServiceIds(),
              QStringList{itemConnection.baseService()
                              + QStringLiteral("/org/qindaqt/TrayItem")});
-    QCOMPARE(qdbus_cast<QStringList>(watcherProperty(watcherConnection,
+    QCOMPARE(qdbus_cast<QStringList>(watcherProperty(itemConnection,
                                                      QStringLiteral("RegisteredStatusNotifierItems"))),
              watcher.registeredItemServiceIds());
 
     QDBusConnection::disconnectFromBus(QStringLiteral("watcher-a"));
     QDBusConnection::disconnectFromBus(QStringLiteral("item-a"));
+}
+
+// Hosts other than ours (KDE Plasma, waybar) and conformant items read the
+// watcher through the standard org.freedesktop.DBus.Properties interface. The
+// row reads from a third connection so every call crosses the private bus.
+void StatusNotifierWatcherTests::servesStandardPropertiesInterface()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto watcherConnection = connectToPrivateBus(bus.address(), QStringLiteral("watcher-p"));
+    auto readerConnection = connectToPrivateBus(bus.address(), QStringLiteral("reader-p"));
+
+    StatusNotifierWatcherService watcher(watcherConnection);
+    QVERIFY2(watcher.start(&error), qPrintable(error));
+    QCOMPARE(watcherCall(readerConnection, QStringLiteral("RegisterStatusNotifierItem"),
+                         QVariant(QStringLiteral("/StatusNotifierItem")))
+                 .type(),
+             QDBusMessage::ReplyMessage);
+
+    const QString properties = QString::fromLatin1(kPropertiesInterfaceName);
+    const QString watcherInterface = QString::fromLatin1(kWatcherInterfaceName);
+    const QDBusMessage all =
+        propertiesCall(readerConnection, properties, QStringLiteral("GetAll"), {watcherInterface});
+    QCOMPARE(all.type(), QDBusMessage::ReplyMessage);
+    const QVariantMap values = qdbus_cast<QVariantMap>(all.arguments().value(0));
+    QCOMPARE(qdbus_cast<QStringList>(values.value(QStringLiteral("RegisteredStatusNotifierItems"))),
+             QStringList{readerConnection.baseService() + QStringLiteral("/StatusNotifierItem")});
+    QCOMPARE(values.value(QStringLiteral("IsStatusNotifierHostRegistered")).toBool(), false);
+    QCOMPARE(values.value(QStringLiteral("ProtocolVersion")).toInt(), 0);
+
+    // A header-less Get (what older QindaQt monitors sent) keeps working.
+    const QDBusMessage headerless = propertiesCall(
+        readerConnection, QString(), QStringLiteral("Get"),
+        {watcherInterface, QStringLiteral("ProtocolVersion")});
+    QCOMPARE(headerless.type(), QDBusMessage::ReplyMessage);
+
+    // Watcher properties are read-only by protocol.
+    const QDBusMessage write = propertiesCall(
+        readerConnection, properties, QStringLiteral("Set"),
+        {watcherInterface, QStringLiteral("ProtocolVersion"),
+         QVariant::fromValue(QDBusVariant(QVariant(7)))});
+    QCOMPARE(write.type(), QDBusMessage::ErrorMessage);
+
+    // Introspection advertises only the standard, spec-valid name.
+    const QDBusMessage introspection = propertiesCall(
+        readerConnection, QStringLiteral("org.freedesktop.DBus.Introspectable"),
+        QStringLiteral("Introspect"), {});
+    QCOMPARE(introspection.type(), QDBusMessage::ReplyMessage);
+    const QString xml = introspection.arguments().value(0).toString();
+    QVERIFY(xml.contains(QStringLiteral("\"org.freedesktop.DBus.Properties\"")));
+    QVERIFY(!xml.contains(QStringLiteral("D-Bus.Properties")));
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("watcher-p"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("reader-p"));
 }
 
 void StatusNotifierWatcherTests::registersServiceNameResolvedThroughBus()
@@ -238,7 +314,7 @@ void StatusNotifierWatcherTests::registersHostsAndTracksHostProperty()
 
     StatusNotifierWatcherService watcher(watcherConnection);
     QVERIFY2(watcher.start(&error), qPrintable(error));
-    QCOMPARE(qdbus_cast<bool>(watcherProperty(watcherConnection,
+    QCOMPARE(qdbus_cast<bool>(watcherProperty(hostConnection,
                                               QStringLiteral("IsStatusNotifierHostRegistered"))),
              false);
 
@@ -249,7 +325,7 @@ void StatusNotifierWatcherTests::registersHostsAndTracksHostProperty()
     QCOMPARE(reply.type(), QDBusMessage::ReplyMessage);
     QCOMPARE(hostSpy.count(), 1);
     QCOMPARE(hostSpy.constFirst().at(0).toString(), hostConnection.baseService());
-    QCOMPARE(qdbus_cast<bool>(watcherProperty(watcherConnection,
+    QCOMPARE(qdbus_cast<bool>(watcherProperty(hostConnection,
                                               QStringLiteral("IsStatusNotifierHostRegistered"))),
              true);
 

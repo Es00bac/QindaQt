@@ -103,6 +103,7 @@ qt_add_executable(
     "${PROJECT_SOURCE_DIR}/src/shell/runtime/statusnotifierappletcomposition.h"
     ../status_notifier_fake_item_test_support.h
     ../status_notifier_private_bus_test_support.h
+    ../status_notifier_strict_item_test_support.h
 )
 target_include_directories(
     qindaqt_status_notifier_applet_composition_private_bus_tests

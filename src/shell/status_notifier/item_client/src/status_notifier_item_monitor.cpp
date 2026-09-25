@@ -278,15 +278,16 @@ void StatusNotifierItemMonitor::beginEpochAndPopulate()
 
 void StatusNotifierItemMonitor::fetchRegisteredItems()
 {
-    // AGENT-NOTE: the Get goes out with an EMPTY interface field: the
-    // hyphenated Properties name is rejected client-side by asyncCall's
-    // validation (and silently dropped by QDBusInterface), while member-name
-    // dispatch reaches the watcher's Properties adaptor unchanged. See the
-    // matching note in StatusNotifierItemClient::fetchDescriptor.
+    // AGENT-NOTE: the Get names org.freedesktop.DBus.Properties like every
+    // other Properties call, because the owner of the watcher name need not
+    // be our own watcher (another desktop's, or a strict GDBus one, may
+    // route by interface). Our watcher answers it through QtDBus's built-in
+    // Properties handler. See the guard in
+    // StatusNotifierItemClient::fetchDescriptor.
     auto request = QDBusMessage::createMethodCall(
         QString::fromLatin1(kWatcherServiceName),
         QString::fromLatin1(kWatcherObjectPath),
-        QString(),
+        QString::fromLatin1(kPropertiesInterfaceName),
         QStringLiteral("Get"));
     request << QVariant(QString::fromLatin1(kWatcherInterfaceName))
             << QVariant(QStringLiteral("RegisteredStatusNotifierItems"));

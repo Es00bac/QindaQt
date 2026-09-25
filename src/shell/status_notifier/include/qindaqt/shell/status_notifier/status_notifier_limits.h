@@ -49,5 +49,11 @@ inline constexpr char kWatcherServiceName[] = "org.kde.StatusNotifierWatcher";
 inline constexpr char kWatcherObjectPath[] = "/StatusNotifierWatcher";
 inline constexpr char kWatcherInterfaceName[] = "org.kde.StatusNotifierWatcher";
 inline constexpr char kItemInterfaceName[] = "org.kde.StatusNotifierItem";
+// AGENT-CONTRACT: the standard D-Bus properties interface (no hyphen). Every
+// Properties call this module's adapters send to an item or watcher names it
+// in the interface header: strict item implementations (Wine, GDBus) route by
+// interface and answer an empty header with UnknownMethod, so an item that
+// only such a host can read would never reach the tray.
+inline constexpr char kPropertiesInterfaceName[] = "org.freedesktop.DBus.Properties";
 
 } // namespace QindaQt::StatusNotifier
