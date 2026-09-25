@@ -100,6 +100,7 @@ target_sources(
         model/navigation_history.cpp
         model/navigation_status.h
         model/places_controller.cpp
+        model/recents_place.cpp
         model/preferences.cpp
         model/preferences_controller.cpp
         model/preferences_json.cpp
@@ -179,6 +180,7 @@ target_sources(
         model/workspace_chooser_client.h
         model/navigation_history.h
         model/places_controller.h
+        model/recents_place.h
         model/preferences.h
         model/preferences_controller.h
         model/preferences_json.h
@@ -338,6 +340,7 @@ qt_add_qml_module(
         ui/FileActions.qml
         ui/OpenWithDialog.qml
         ui/EntryReveal.qml
+        ui/QuickLook.qml
         ui/EntryDrag.js
     DEPENDENCIES
         QindaQt.Controls/1.0

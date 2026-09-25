@@ -95,7 +95,8 @@ public:
   // `feedback`, returns false, and launches nothing.
   Q_INVOKABLE bool open(const QString &absolutePath);
   // Hands one File Manager dialog to File Manager (ADR-0273): Get Info
-  // ("file.properties") or Open With ("file.open-with") for one entry of the
+  // ("file.properties"), Open With ("file.open-with") or (ADR-0272) Quick
+  // Look ("file.quick-look") for one entry of the
   // last listing, fenced by the identity the listing reported, or, with no
   // path, New File ("file.new-file") or Get Info in the Desktop folder
   // itself. File Manager opens on the Desktop folder, with the entry selected,

@@ -51,6 +51,10 @@ QVariantList PlacesController::places() const {
     list.append(placeMap(QStringLiteral("trash"), QStringLiteral("Trash"),
                          QDir(dataHome).filePath(QStringLiteral("Trash/files"))));
   }
+  // ADR-0272: Recents is browsed like a folder (RecentsDirectoryLister), so
+  // the sidebar navigates to its path directly; nothing can be dropped on it.
+  list.append(placeMap(QStringLiteral("recents"), QStringLiteral("Recents"),
+                       RecentsLocation::location()));
   // AGENT-NOTE (ADR-0172/ADR-0262): Applications is a place, not a folder.
   // Its path is the virtual Applications location the window browses in the
   // ordinary views, so the sidebar can emphasize it; PlacesSidebar still

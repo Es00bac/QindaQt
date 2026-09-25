@@ -65,8 +65,10 @@ ToolBar {
             objectName: "newFolderButton"
             iconName: "folder-new"
             text: qsTr("New Folder")
-            // ADR-0262: nothing can be created inside the Applications place.
+            // ADR-0262/ADR-0272: nothing can be created inside the
+            // Applications or Recents places.
             available: !root.navigationController.applicationsPlace
+                       && !root.navigationController.recentsPlace
                        && ((!root.mutationController.busy && !root.navigationController.remoteActive)
                            || (root.navigationController.remoteCreateAvailable
                                && !root.navigationController.remoteCreateBusy))

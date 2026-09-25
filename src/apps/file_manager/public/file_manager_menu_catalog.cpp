@@ -63,6 +63,24 @@ namespace {
   };
 }
 
+// ADR-0272: Quick Look and the Recents place, kept apart like the view
+// entries above.
+[[nodiscard]] QList<ActionDefinition> everydayActions()
+{
+  return {
+      // ADR-0272: Finder's Quick Look (Cmd+Y there). Space opens it too, but
+      // only from a folder view's keyboard handling (ViewportNavigation): as
+      // a menu shortcut Space would take the key from every text field.
+      action("file.quick-look", "file", QStringLiteral("Quick Look"),
+             QStringLiteral("Preview the selected item without opening it"), keys("Ctrl+Y"),
+             52),
+      // ADR-0272: the Recents place (Finder's Go > Recents, Shift+Cmd+F). It
+      // shares Applications' order and sorts right after it by id.
+      action("go.recents", "go", QStringLiteral("Recents"),
+             QStringLiteral("Show the files you used most recently"), keys("Ctrl+Shift+F"), 5),
+  };
+}
+
 } // namespace
 
 QString applicationTitle()
@@ -266,6 +284,7 @@ QList<ActionDefinition> windowActions()
              51, false, true),
   };
   actions.append(folderViewActions());
+  actions.append(everydayActions());
   return actions;
 }
 
