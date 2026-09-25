@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "qindaqt",
+  "id": "macos-inspired",
   "name": "QindaQt live customization proof",
   "description": "A deterministic fixture for the live customization nested rows, shadowing the built-in default id through a private XDG data directory exactly as a distribution profile would: a top bar whose right half is empty panel material, a bottom tray, and a desktop-icons surface.",
   "defaultTheme": "qinda-dark",

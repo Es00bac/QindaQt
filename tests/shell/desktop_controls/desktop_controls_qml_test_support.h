@@ -150,10 +150,35 @@ struct AppletHost {
     }
 };
 
+// The offscreen platform leaves focus on a popup window after it hides, where
+// a compositor would hand keyboard focus back to the panel surface. Items only
+// hold active focus in the focus window, so the host is reactivated here.
+inline void activateHost(AppletHost &host)
+{
+    host.window->requestActivate();
+    QVERIFY(QTest::qWaitForWindowActive(host.window.get()));
+}
+
+inline void reactivateHost(AppletHost &host)
+{
+    QWindow *focused = QGuiApplication::focusWindow();
+    if (focused == nullptr || !focused->isVisible())
+        activateHost(host);
+}
+
+// Right after a popup closes its window may still count as visible; this does
+// the compositor's hand-back explicitly.
+inline void returnFocusToHost(AppletHost &host)
+{
+    if (QGuiApplication::focusWindow() != host.window.get())
+        activateHost(host);
+}
+
 // Sends a key to whichever window currently holds focus (a popup window once
 // one is open), mirroring how a user types into the separate popup surface.
 inline void keyClickFocused(AppletHost &host, Qt::Key key, Qt::KeyboardModifiers modifiers = {})
 {
+    reactivateHost(host);
     QWindow *target = QGuiApplication::focusWindow();
     if (target == nullptr) {
         target = host.window.get();

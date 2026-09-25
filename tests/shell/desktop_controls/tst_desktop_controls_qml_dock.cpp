@@ -199,6 +199,9 @@ void DesktopControlsQmlDockTests::groupStackUnfoldsKeyboardNavigatesAndCloses()
   keyClickFocused(host, Qt::Key_Escape);
   QTRY_VERIFY(!stack->property("opened").toBool());
   QVERIFY(fixture.launcher.spawner.requests.isEmpty());
+  // Closing hands keyboard focus back to the tile the stack came from.
+  returnFocusToHost(host);
+  QTRY_VERIFY(tiles(host).constFirst()->hasActiveFocus());
 
   // Choosing a member launches it and folds the stack away.
   keyClickFocused(host, Qt::Key_Return);
@@ -280,6 +283,8 @@ void DesktopControlsQmlDockTests::dragMovesGroupsAndRemovesTiles()
                         QStringLiteral("editor")}));
   fixture.launcher.settleDock();
   QTRY_COMPARE(tiles(host).size(), 3);
+  // The rebuilt tiles are laid out a frame after the rows change.
+  QTRY_VERIFY(tiles(host).constLast()->width() > 0);
 
   // Group: terminal released over the middle of sheets.
   const QPointF terminal = tileCentre(host, 0);
@@ -298,6 +303,7 @@ void DesktopControlsQmlDockTests::dragMovesGroupsAndRemovesTiles()
   // Remove: editor dragged a whole tile beyond the panel's far edge. The
   // hint says so in words before release.
   QTRY_COMPARE(tiles(host).size(), 2);
+  QTRY_VERIFY(tiles(host).constLast()->width() > 0);
   const QPointF editor = tileCentre(host, 1);
   QVERIFY(invoke(drag, "dragBegin", editor));
   QVERIFY(invoke(drag, "dragUpdate", QPointF(editor.x(), -2 * tile), editor));
@@ -413,6 +419,7 @@ void DesktopControlsQmlDockTests::menuRepeatsGesturesForKeyboardUsers()
   QCOMPARE(fixture.launcher.committedDock().applicationIds(),
            QStringList({QStringLiteral("terminal"), QStringLiteral("editor")}));
   fixture.launcher.settleDock();
+  returnFocusToHost(host);
   QTRY_VERIFY(tiles(host).at(1)->hasActiveFocus());
 
   // New Group asks for a name, suggesting the application's category.

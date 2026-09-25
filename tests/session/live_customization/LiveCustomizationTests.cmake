@@ -38,7 +38,10 @@ if(TARGET qindaqt-shell AND TARGET qindaqt-customize-parity-tool)
                 --scenario "${PROJECT_SOURCE_DIR}/tests/scenarios/${scenario}.json"
                 --flow "${flow}"
                 --profile-dir "${CMAKE_CURRENT_LIST_DIR}/../fixtures/live_customization_profiles"
-                --profile-id "qindaqt"
+                # AGENT-GUARD: the fixture shadows the built-in default layout
+                # (DefaultLayoutProfileId, ADR-0263), which the shell adopts
+                # without Settings1; rename both if the default changes.
+                --profile-id "macos-inspired"
                 --theme-dir "${PROJECT_SOURCE_DIR}/data/themes"
                 --applet-dir "${PROJECT_SOURCE_DIR}/data/applets"
                 --applet-policy "${PROJECT_SOURCE_DIR}/data/applet-policy/default.json"

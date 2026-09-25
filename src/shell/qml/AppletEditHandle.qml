@@ -96,7 +96,10 @@ Item {
         // would never see the press at all.
         DragHandler {
             id: dragHandler
+            // AGENT-GUARD: gated like the shield. An enabled handler under a
+            // disabled shield still grabs presses and swallows applet clicks.
             objectName: "appletEditDrag"
+            enabled: root.editMode
             acceptedButtons: Qt.LeftButton
             target: null
             onActiveChanged: {
