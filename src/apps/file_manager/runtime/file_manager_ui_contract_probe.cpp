@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "ui_contract_probe.h"
+#include "file_manager_ui_contract_probe.h"
 
 #include <QObject>
 #include <QStringList>

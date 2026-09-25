@@ -38,7 +38,7 @@
 #include "runtime/file_manager_application.h"
 #include "runtime/mutation_ui_action_probe.h"
 #include "runtime/finder_integration.h"
-#include "runtime/ui_contract_probe.h"
+#include "runtime/file_manager_ui_contract_probe.h"
 #include "mutation/karchive_codec.h"
 #include "mutation/local_mutation_backend.h"
 #include "mutation/mutation_controller.h"

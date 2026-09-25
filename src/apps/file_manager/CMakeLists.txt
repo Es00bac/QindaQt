@@ -260,8 +260,8 @@ qt_add_executable(qindaqt-file-manager
     runtime/mutation_ui_action_probe.cpp
     runtime/selection_ui_probe.cpp
     runtime/mutation_ui_action_probe.h
-    runtime/ui_contract_probe.cpp
-    runtime/ui_contract_probe.h
+    runtime/file_manager_ui_contract_probe.cpp
+    runtime/file_manager_ui_contract_probe.h
 )
 set_source_files_properties("${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png"
     PROPERTIES QT_RESOURCE_ALIAS empty-folder.png)
