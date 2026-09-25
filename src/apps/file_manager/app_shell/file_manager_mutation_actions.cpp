@@ -10,7 +10,9 @@ namespace QindaQt::Apps::FileManager {
 
 void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinator,
                                     NavigationController &navigation,
-                                    MutationController &mutation) {
+                                    MutationController &mutation,
+                                    QObject *context) {
+  QObject *const receiver = context != nullptr ? context : &coordinator;
   const auto sync = [&coordinator, &navigation, &mutation] {
     const auto enabled = [&coordinator, &navigation](const char *id, bool value) {
       const QLatin1String actionId(id);
@@ -67,19 +69,19 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
                                     navigation.remoteMoveBusy());
   };
   QObject::connect(&mutation, &MutationController::stateChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::navigationChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::presentationChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::remoteRenameChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::remoteCreateChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::remoteCopyChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::remoteMoveChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   sync();
 }
 

@@ -66,8 +66,9 @@ experience expects: `finder`, `explorer`, or `commander`
 ([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)).
 It is kept through the strict round trip like the other hints; the File
 Manager's style setting uses the selected layout's value as its default
-until the user picks a style, and nothing reads it before that setting
-lands. A profile written before the field existed loads as `finder`.
+until the user picks a style
+([ADR-0271](../adr/0271-file-manager-styles-are-presets-over-per-tab-navigation.md)).
+A profile written before the field existed loads as `finder`.
 
 ## Desktop object
 

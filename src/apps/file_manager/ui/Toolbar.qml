@@ -12,6 +12,8 @@ ToolBar {
     required property var appCoordinator
     property alias primaryFocusItem: newFolderButton
     property alias locationBar: locationBar
+    // ADR-0271: the Explorer style's address bar (Breadcrumb.addressStyle).
+    property bool addressBar: false
     signal browseRequested();
     padding: 4
 
@@ -48,6 +50,11 @@ ToolBar {
             Layout.minimumWidth: 60
             visible: !locationBar.visible
             navigationController: root.navigationController
+            addressStyle: root.addressBar
+            onEditRequested: {
+                locationBar.visible = true
+                locationBar.activate()
+            }
         }
         LocationBar {
             id: locationBar
