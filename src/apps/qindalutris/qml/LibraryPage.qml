@@ -22,6 +22,7 @@ Item {
     property var selectedOptions: ({})
     property bool selectedPlayable: false
     property string selectedPlayReason: ""
+    property bool selectedRunning: false
 
     property string currentSourceFilter: ""
 
@@ -33,6 +34,8 @@ Item {
     signal optionsSaveRequested(var values)
     signal removeWineRequested(string gameId)
     signal addWineRequested()
+    signal forceQuitRequested(string gameId)
+    signal confirmVersionRequested()
 
     readonly property bool hasSelection: selectedGame !== null
                                          && selectedGame.id !== undefined
@@ -75,6 +78,7 @@ Item {
                     text: modelData === "steam" ? qsTr("Steam")
                         : modelData === "lutris" ? qsTr("Lutris")
                         : modelData === "desktop" ? qsTr("Native")
+                        : modelData === "installed" ? qsTr("Installed")
                         : qsTr("Wine")
                     checkable: true
                     checked: page.currentSourceFilter === modelData
@@ -145,7 +149,10 @@ Item {
                 displays: page.displays
                 playable: page.selectedPlayable
                 playReason: page.selectedPlayReason
+                running: page.selectedRunning
                 onPlayRequested: { page.playRequested() }
+                onForceQuitRequested: function(gameId) { page.forceQuitRequested(gameId) }
+                onConfirmVersionRequested: { page.confirmVersionRequested() }
                 onOptionsSaveRequested: function(values) { page.optionsSaveRequested(values) }
                 onRemoveRequested: function(gameId) { page.removeWineRequested(gameId) }
             }

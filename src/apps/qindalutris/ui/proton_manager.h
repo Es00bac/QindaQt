@@ -36,6 +36,7 @@ class ProtonManager final : public QObject {
   Q_PROPERTY(QString stageText READ stageText NOTIFY stateChanged)
   Q_PROPERTY(QString resultMessage READ resultMessage NOTIFY stateChanged)
   Q_PROPERTY(QString details READ details NOTIFY stateChanged)
+  Q_PROPERTY(bool lastSucceeded READ lastSucceeded NOTIFY stateChanged)
 public:
   ProtonManager(LibraryController *library, const CompatDatabase *database,
                 QObject *parent = nullptr);
@@ -49,6 +50,7 @@ public:
   [[nodiscard]] QString stageText() const { return m_stageText; }
   [[nodiscard]] QString resultMessage() const { return m_resultMessage; }
   [[nodiscard]] QString details() const { return m_details; }
+  [[nodiscard]] bool lastSucceeded() const { return m_lastSucceeded; }
 
   // Loads preferences and applies the effective default to the library.
   void initialize();
@@ -89,6 +91,7 @@ private:
   QString m_stageText;
   QString m_resultMessage;
   QString m_details;
+  bool m_lastSucceeded = false;
 };
 
 } // namespace QindaQt::QindaLutris
