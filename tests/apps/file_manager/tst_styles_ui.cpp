@@ -374,9 +374,14 @@ void StylesUiTests::theFolderTreeOpensFolders() {
   QVERIFY(!listOf(tree, "rows").at(files).toMap().value(QStringLiteral("open")).toBool());
 
   // Opening a row shows its subfolders; choosing one browses it.
-  QMetaObject::invokeMethod(tree, "setOpen", Q_ARG(QVariant, files), Q_ARG(QVariant, true));
+  // The tree lists /tmp, where other processes add and remove folders, and a
+  // finished folder load rebuilds it; so the row is re-found each attempt.
+  QTRY_VERIFY([&] {
+    QMetaObject::invokeMethod(tree, "setOpen", Q_ARG(QVariant, rowOf(tree, m_files)),
+                              Q_ARG(QVariant, true));
+    return rowOf(tree, m_files + QStringLiteral("/inner")) > rowOf(tree, m_files);
+  }());
   const int inner = rowOf(tree, m_files + QStringLiteral("/inner"));
-  QVERIFY(inner > files);
   QVERIFY(rowOf(tree, m_files + QStringLiteral("/alpha.txt")) < 0);
   QMetaObject::invokeMethod(tree, "openRow", Q_ARG(QVariant, inner));
   QTRY_COMPARE(w.navigation.currentPath(), m_files + QStringLiteral("/inner"));
