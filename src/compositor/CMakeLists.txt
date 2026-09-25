@@ -257,6 +257,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         kwin/kwindevelopmentoutputseam.h
         kwin/kwinoutputinventory.cpp
         kwin/kwinoutputinventory.h
+        kwin/kwinoutputmodes.cpp
+        kwin/kwinoutputmodes.h
     )
     target_compile_features(qindaqt_kwin_output_support PUBLIC cxx_std_20)
     target_include_directories(

@@ -9,6 +9,7 @@
 
 #include "display_inventory_validation_p.h"
 
+#include <algorithm>
 #include <cmath>
 #include <utility>
 
@@ -39,12 +40,59 @@ QSize currentPixelSize(const InventoryOutput &output)
     return transformed;
 }
 
-QString currentModeId(const QSize &pixelSize, quint32 refreshMilliHertz)
+// AGENT-CONTRACT: display_writer's apply_request_mapper parses exactly this
+// "current:WxH@mHz" form back into a size+refresh mode reference for every
+// advertised mode, not only the active one. Changing it breaks mode switches.
+QString modeId(const QSize &pixelSize, quint32 refreshMilliHertz)
 {
     return QStringLiteral("current:%1x%2@%3")
         .arg(pixelSize.width())
         .arg(pixelSize.height())
         .arg(refreshMilliHertz);
+}
+
+Display::Mode displayMode(const QSize &pixelSize, quint32 refreshMilliHertz,
+                          bool preferred)
+{
+    return {.id = modeId(pixelSize, refreshMilliHertz),
+            .pixelSize = pixelSize,
+            .refreshMilliHertz = refreshMilliHertz,
+            .preferred = preferred};
+}
+
+// The advertised list with the current mode guaranteed present. Without a D0
+// mode list (older compositor) the current mode is the only entry, as before.
+QList<Display::Mode> advertisedModes(const InventoryOutput &input,
+                                     const Display::Mode &current)
+{
+    if (input.modes.isEmpty()) {
+        return {current};
+    }
+    QList<Display::Mode> modes;
+    modes.reserve(input.modes.size() + 1);
+    bool currentListed = false;
+    for (const InventoryMode &mode : input.modes) {
+        modes.push_back(displayMode(mode.pixelSize, mode.refreshRateMilliHertz,
+                                    mode.preferred));
+        currentListed = currentListed || modes.constLast().id == current.id;
+    }
+    if (!currentListed) {
+        if (modes.size() >= Display::kMaxModesPerOutput) {
+            modes.removeLast();
+        }
+        modes.push_back(displayMode(current.pixelSize, current.refreshMilliHertz, false));
+    }
+    return modes;
+}
+
+const InventoryOutput *findOutput(const InventoryFrame &frame, const QString &name)
+{
+    for (const InventoryOutput &output : frame.outputs) {
+        if (output.name == name) {
+            return &output;
+        }
+    }
+    return nullptr;
 }
 
 } // namespace
@@ -97,18 +145,44 @@ InventoryProjectionResult projectInventory(const InventoryFrame &frame,
     for (qsizetype index = 0; index < frame.outputs.size(); ++index) {
         const InventoryOutput &input = frame.outputs.at(index);
         const DisplayIdentity::ResolvedOutput &identity = identities.outputs.at(index);
-        const QSize pixelSize = currentPixelSize(input);
+        // A mirror reports its source's geometry with a fitted scale, so only
+        // D0's modeSize names its real mode. An extended output keeps the
+        // geometry-derived mode unless modeSize reproduces the same geometry,
+        // so compositor rounding can never reject an otherwise valid frame.
+        const bool mirrored = input.enabled && !input.replicationSource.isEmpty();
+        const double scale = std::clamp(input.scale, Display::kMinimumScale,
+                                        Display::kMaximumScale);
+        QSize pixelSize = currentPixelSize(input);
+        if (!input.modePixelSize.isEmpty()
+            && (mirrored
+                || DisplayTopology::logicalSizeForMode(
+                       displayMode(input.modePixelSize, input.refreshRateMilliHertz, true),
+                       input.scale, input.transform)
+                    == input.geometry.size())) {
+            pixelSize = input.modePixelSize;
+        }
         if (pixelSize.isEmpty()) {
             return failure(InventoryError::ProjectionFailure,
                            QStringLiteral("current-mode-out-of-range"));
         }
-        const Display::Mode mode{.id = currentModeId(pixelSize,
-                                                     input.refreshRateMilliHertz),
-                                 .pixelSize = pixelSize,
-                                 .refreshMilliHertz = input.refreshRateMilliHertz,
-                                 .preferred = true};
-        if (DisplayTopology::logicalSizeForMode(mode, input.scale, input.transform)
-            != input.geometry.size()) {
+        const Display::Mode mode =
+            displayMode(pixelSize, input.refreshRateMilliHertz, input.modes.isEmpty());
+        QSize logicalSize = input.geometry.size();
+        QPoint position = input.geometry.topLeft();
+        QString replicationSourceStableId;
+        if (mirrored) {
+            const InventoryOutput *source = findOutput(frame, input.replicationSource);
+            if (source == nullptr || !source->enabled || !source->replicationSource.isEmpty()) {
+                return failure(InventoryError::ProjectionFailure,
+                               QStringLiteral("invalid-replication-source"));
+            }
+            const qsizetype sourceIndex = frame.outputs.indexOf(*source);
+            replicationSourceStableId = identities.outputs.at(sourceIndex).stableId;
+            position = source->geometry.topLeft();
+            // The size it would occupy once extended again at the kept scale.
+            logicalSize = DisplayTopology::logicalSizeForMode(mode, scale, input.transform);
+        } else if (DisplayTopology::logicalSizeForMode(mode, input.scale, input.transform)
+                   != input.geometry.size()) {
             return failure(InventoryError::ProjectionFailure,
                            QStringLiteral("current-mode-geometry-mismatch"));
         }
@@ -131,13 +205,13 @@ InventoryProjectionResult projectInventory(const InventoryFrame &frame,
              .modeId = mode.id,
              // Display1 canonicalizes disabled positions. The retained mode,
              // scale, and transform still let Settings build an enable draft.
-             .position = input.enabled ? input.geometry.topLeft() : QPoint{},
-             .logicalSize = input.geometry.size(),
-             .scale = input.scale,
+             .position = input.enabled ? position : QPoint{},
+             .logicalSize = logicalSize,
+             .scale = scale,
              .transform = input.transform,
              .priority = input.enabled ? enabledPriority : 0,
-             .replicationSourceStableId = {},
-             .modes = {mode},
+             .replicationSourceStableId = replicationSourceStableId,
+             .modes = advertisedModes(input, mode),
              .wireValid = true});
     }
 

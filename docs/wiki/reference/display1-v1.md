@@ -199,14 +199,20 @@ A later accepted frame starts a fresh epoch, so revisions are never compared
 across source owners.
 
 Projection is intentionally narrower than full output management. It publishes
-each connected D0 output with one synthesized current mode, requires integral
+each connected D0 output with its D0-advertised modes (or, from a compositor
+without `modes`, one synthesized current mode), requires integral
 geometry and Display1's 32-output/scale-3 limits, uses connector-fallback stable
 identity because D0 supplies no EDID/MST material, and retains runtime UUID only
 as non-persistent metadata. D0 carries a required enabled state: the first
 enabled output in D0 semantic order is primary and enabled priorities are
 canonical contiguous order; disabled outputs receive the canonical D1 disabled
 fields while retaining their current mode, scale, and transform. Replication is
-not invented.
+never invented: an enabled output whose D0 `replicationSource` names an
+enabled, non-mirroring output projects that output's stable ID, its position,
+its real mode from `modeSize`, and a scale clamped into 1.0–3.0. The current mode
+comes from `modeSize` whenever it reproduces the reported geometry, and from
+geometry otherwise
+([ADR-0274](../adr/0274-display1-reads-mirroring-and-modes-from-the-compositor-inventory.md)).
 
 The resident owns actual single-shot scheduling for D1 deadlines, a separate
 500 ms accepted-inventory topology quiet window, and typed inventory routing.
@@ -501,6 +507,7 @@ qualification.
 | Invalid transition preservation | `qindaqt.display-transaction-invalid-ordering`: wrong transaction, recovery, callback, observation, confirmation, and settle inputs across all twelve states preserve view, snapshot, active journal, and port effects exactly |
 | Journal bytes | `qindaqt.display-transaction-journal`: invariants, canonical round-trip, versions, torn/trailing/oversized bytes, no partial destination |
 | Resident inventory adapter | `qindaqt.display-service-inventory`: exact owner/schema/generation JSON, bounds, privacy-preserving connector projection, current-mode geometry, transform/fractional scale, fingerprint |
+| Inventory mirroring and modes | `qindaqt.display-service-inventory-mirroring`: captured hot-plug mirror frame, legacy-frame rejection, replication/real-mode/scale-clamp projection, service availability plus staged Extend and resolution candidates, current-mode retention under truncation, geometry-mismatched `modeSize` fallback, malformed mirror/mode members |
 | Resident lineage and transaction composition | `qindaqt.display-service-model`: add/remove/change, exact equal-generation fence, regression/owner/loss reset, hostile A/B/A seed reuse, process-unique epochs, outer-lineage plus token callback fence, stale candidate rejection, preview/confirm/revert port ownership, zero/one validated public transaction-summary projection through staged/applying/observing/awaiting/reverting/stuck/terminal states with fail-closed invalid views |
 | Startup and replacement recovery | `qindaqt.display-service-recovery`, `qindaqt.display-service-model`: valid loaded truth enters D1 recovery before readiness; rejected truth issues zero apply/clear; active truth survives owner loss under a new outer lineage; old-lineage completion is fenced |
 | Deployment surface | `qindaqt.display-service-deployment`: fail-closed invalid connection plus activation/systemd/XML names, methods, signals, and hardening metadata |

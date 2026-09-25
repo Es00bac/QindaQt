@@ -19,6 +19,21 @@ add_test(
 )
 
 qt_add_executable(
+    qindaqt_display_inventory_mirroring_tests
+    tst_display_inventory_mirroring.cpp
+    support/display_service_test_support.h
+)
+target_link_libraries(
+    qindaqt_display_inventory_mirroring_tests
+    PRIVATE QindaQt::DisplayService Qt6::Core Qt6::DBus Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_display_inventory_mirroring_tests)
+add_test(
+    NAME qindaqt.display-service-inventory-mirroring
+    COMMAND qindaqt_display_inventory_mirroring_tests
+)
+
+qt_add_executable(
     qindaqt_display_service_model_tests
     tst_display_service_model.cpp
     support/display_service_test_support.h

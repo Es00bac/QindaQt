@@ -28,6 +28,15 @@ enum class InventoryError {
     ProjectionFailure,
 };
 
+// One compositor-advertised mode in untransformed pixels.
+struct InventoryMode {
+    QSize pixelSize;
+    quint32 refreshRateMilliHertz = 0;
+    bool preferred = false;
+
+    friend bool operator==(const InventoryMode &, const InventoryMode &) = default;
+};
+
 struct InventoryOutput {
     QString name;
     QRect geometry;
@@ -41,6 +50,14 @@ struct InventoryOutput {
     QSize physicalSizeMillimeters;
     QString manufacturer;
     QString model;
+    // Optional D0 members (absent from older compositors; empty when absent).
+    // modePixelSize is the current untransformed mode. modes is the advertised
+    // list. replicationSource names another output's connector when this one
+    // mirrors it; KWin then reports the source's geometry and a fitted scale
+    // that may fall below Display1's minimum.
+    QSize modePixelSize;
+    QList<InventoryMode> modes;
+    QString replicationSource;
 
     friend bool operator==(const InventoryOutput &, const InventoryOutput &) = default;
 };

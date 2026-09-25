@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinoutputinventory.h"
+#include "kwinoutputmodes.h"
 
 #include <core/backendoutput.h>
 #include <core/output.h>
@@ -86,6 +87,48 @@ QJsonObject sizeJson(const QSize &size)
 {
     return {{QStringLiteral("width"), size.width()},
             {QStringLiteral("height"), size.height()}};
+}
+
+bool validModeSize(const QSize &size)
+{
+    return size.width() > 0 && size.height() > 0
+        && size.width() <= OutputInventoryStore::MaxModePixelDimension
+        && size.height() <= OutputInventoryStore::MaxModePixelDimension;
+}
+
+bool validModes(const QVector<OutputInventoryMode> &modes)
+{
+    if (modes.size() > OutputInventoryStore::MaxModes) {
+        return false;
+    }
+    QSet<std::pair<std::pair<int, int>, quint32>> seen;
+    for (const auto &mode : modes) {
+        const auto key = std::pair{std::pair{mode.pixelSize.width(),
+                                             mode.pixelSize.height()},
+                                   mode.refreshRateMilliHz};
+        if (!validModeSize(mode.pixelSize) || mode.refreshRateMilliHz == 0
+            || mode.refreshRateMilliHz > OutputInventoryStore::MaxRefreshRateMilliHz
+            || seen.contains(key)) {
+            return false;
+        }
+        seen.insert(key);
+    }
+    return true;
+}
+
+QJsonArray modesJson(const QVector<OutputInventoryMode> &modes)
+{
+    QJsonArray array;
+    for (const auto &mode : modes) {
+        array.append(QJsonObject{
+            {QStringLiteral("width"), mode.pixelSize.width()},
+            {QStringLiteral("height"), mode.pixelSize.height()},
+            {QStringLiteral("refreshRateMilliHz"),
+             static_cast<qint64>(mode.refreshRateMilliHz)},
+            {QStringLiteral("preferred"), mode.preferred},
+        });
+    }
+    return array;
 }
 
 bool validTransform(const QString &transform)
@@ -179,8 +222,14 @@ OutputInventoryPublishResult OutputInventoryStore::publish(
                         MaxManufacturerUtf8Bytes, false)
             && safeText(output.model, MaxModelUtf8Bytes,
                         MaxModelUtf8Bytes, false)
-            && validTransform(output.transform);
-        if (!scalarValuesValid || !textValuesValid || names.contains(output.name)
+            && validTransform(output.transform)
+            && safeText(output.replicationSource, MaxNameUtf8Bytes,
+                        MaxNameCharacters, false)
+            && output.replicationSource != output.name;
+        const bool modeValuesValid = validModes(output.modes)
+            && (output.modePixelSize.isEmpty() || validModeSize(output.modePixelSize));
+        if (!scalarValuesValid || !textValuesValid || !modeValuesValid
+            || names.contains(output.name)
             || (!output.uuid.isEmpty() && uuids.contains(output.uuid))) {
             fail(error, QStringLiteral("an output is malformed or has ambiguous identity"));
             return OutputInventoryPublishResult::Rejected;
@@ -204,7 +253,17 @@ OutputInventoryPublishResult OutputInventoryStore::publish(
              sizeJson(output.physicalSizeMillimeters)},
             {QStringLiteral("manufacturer"), output.manufacturer},
             {QStringLiteral("model"), output.model},
+            {QStringLiteral("modeSize"), sizeJson(output.modePixelSize)},
+            {QStringLiteral("modes"), modesJson(output.modes)},
+            {QStringLiteral("replicationSource"), output.replicationSource},
         });
+    }
+    for (const auto &output : candidate) {
+        if (!output.replicationSource.isEmpty()
+            && !names.contains(output.replicationSource)) {
+            fail(error, QStringLiteral("an output mirrors a connector outside the inventory"));
+            return OutputInventoryPublishResult::Rejected;
+        }
     }
 
     if (m_available && candidate == m_entries) {
@@ -329,6 +388,15 @@ void KWinOutputInventory::rebuildOutputConnections()
         m_outputConnections.append(connect(backendOutput,
                                            &KWin::BackendOutput::uuidChanged,
                                            this, changed));
+        m_outputConnections.append(connect(backendOutput,
+                                           &KWin::BackendOutput::currentModeChanged,
+                                           this, changed));
+        m_outputConnections.append(connect(backendOutput,
+                                           &KWin::BackendOutput::modesChanged,
+                                           this, changed));
+        m_outputConnections.append(connect(backendOutput,
+                                           &KWin::BackendOutput::replicationSourceChanged,
+                                           this, changed));
     }
 }
 
@@ -434,6 +502,9 @@ QVector<OutputInventoryEntry> KWinOutputInventory::sample(QString *error) const
             .physicalSizeMillimeters = physicalSize,
             .manufacturer = backendOutput->manufacturer(),
             .model = backendOutput->model(),
+            .modePixelSize = backendOutput->modeSize(),
+            .modes = sampleAdvertisedModes(*backendOutput),
+            .replicationSource = sampleReplicationSource(*backendOutput, outputs),
         });
     }
     if (error) {
