@@ -32,6 +32,11 @@ public:
     [[nodiscard]] int chordModifiers() const { return static_cast<int>(Qt::MetaModifier); }
     [[nodiscard]] bool customizeRouteAvailable() const { return true; }
 
+    Q_INVOKABLE QString desktopAppletId(const QString &plugin)
+    {
+        calls.append({QStringLiteral("desktopAppletId"), plugin});
+        return iconsId;
+    }
     Q_INVOKABLE QVariantList appletSettingRows(const QString &owner, const QString &applet)
     {
         calls.append({QStringLiteral("appletSettingRows"), owner, applet});
@@ -44,7 +49,23 @@ public:
                             {QStringLiteral("kind"), QStringLiteral("choice")},
                             {QStringLiteral("value"), QStringLiteral("left")},
                             {QStringLiteral("choices"),
-                             QStringList{QStringLiteral("left"), QStringLiteral("right")}}}};
+                             QStringList{QStringLiteral("left"), QStringLiteral("right")}}},
+                QVariantMap{{QStringLiteral("key"), QStringLiteral("iconSize")},
+                            {QStringLiteral("title"), QStringLiteral("Icon size")},
+                            {QStringLiteral("kind"), QStringLiteral("integer")},
+                            {QStringLiteral("value"), 48},
+                            {QStringLiteral("minimum"), 16},
+                            {QStringLiteral("maximum"), 128}}};
+    }
+    Q_INVOKABLE bool addApplet(const QString &owner, const QString &zone, const QString &plugin)
+    {
+        calls.append({QStringLiteral("addApplet"), owner, zone, plugin});
+        return true;
+    }
+    Q_INVOKABLE bool removeApplet(const QString &owner, const QString &applet)
+    {
+        calls.append({QStringLiteral("removeApplet"), owner, applet});
+        return true;
     }
     Q_INVOKABLE bool setAppletSetting(const QString &owner, const QString &applet,
                                       const QString &key, const QVariant &value)
@@ -86,6 +107,8 @@ public:
     }
 
     QList<QVariantList> calls;
+    // The layout's desktop-icons instance id; empty when it has none.
+    QString iconsId = QStringLiteral("desktop-icons");
 
 Q_SIGNALS:
     void editModeChanged();
@@ -125,6 +148,7 @@ private Q_SLOTS:
     void init();
     void cleanup();
     void chordOpensTheCustomizeMenuAndEntriesDispatch();
+    void showDesktopIconsAddsTheAppletWhenTheLayoutHasNone();
     void chordIsInertWithoutTheFacade();
     void contextMenuEditPanelsEntersEditMode();
 
@@ -195,9 +219,13 @@ void DesktopCustomizeMenuTests::chordOpensTheCustomizeMenuAndEntriesDispatch()
         auto *subMenu = item->property("subMenu").value<QObject *>();
         QCOMPARE(subMenu != nullptr ? subMenu->objectName() : item->objectName(), names.at(index));
     }
-    QCOMPARE(customization.calls.size(), 1);
-    QCOMPARE(customization.calls.first().first().toString(), QStringLiteral("appletSettingRows"));
-    QCOMPARE(customization.calls.first().at(1).toString(), QStringLiteral("@desktop"));
+    // The menu resolves the layout's own desktop-icons id, then its rows.
+    QCOMPARE(customization.calls.size(), 2);
+    QCOMPARE(customization.calls.first(),
+             (QVariantList{QStringLiteral("desktopAppletId"), QStringLiteral("desktop-icons")}));
+    QCOMPARE(customization.calls.at(1).first().toString(), QStringLiteral("appletSettingRows"));
+    QCOMPARE(customization.calls.at(1).at(1).toString(), QStringLiteral("@desktop"));
+    QCOMPARE(customization.calls.at(1).at(2).toString(), QStringLiteral("desktop-icons"));
 
     trigger(itemAt(subMenuAt(customize, 0), 0));
     QCOMPARE(customization.calls.last(), (QVariantList{QStringLiteral("addPanel"), QStringLiteral("top")}));
@@ -211,15 +239,18 @@ void DesktopCustomizeMenuTests::chordOpensTheCustomizeMenuAndEntriesDispatch()
     trigger(itemAt(customize, 5));
     QCOMPARE(customization.calls.last().first().toString(), QStringLiteral("openCustomize"));
 
+    // Desktop icons: Show/Hide first, then switches, choices and numbers.
     QObject *icons = subMenuAt(customize, 2);
     QVERIFY(icons != nullptr);
-    QTRY_COMPARE(icons->property("count").toInt(), 2);
-    QCOMPARE(itemAt(icons, 0)->objectName(), QStringLiteral("desktopCustomizeIcons:snapToGrid"));
-    trigger(itemAt(icons, 0));
+    QTRY_COMPARE(icons->property("count").toInt(), 4);
+    QCOMPARE(itemAt(icons, 0)->objectName(), QStringLiteral("desktopCustomizeIconsShown"));
+    QCOMPARE(itemAt(icons, 0)->property("text").toString(), QStringLiteral("Hide desktop icons"));
+    QCOMPARE(itemAt(icons, 1)->objectName(), QStringLiteral("desktopCustomizeIcons:snapToGrid"));
+    trigger(itemAt(icons, 1));
     QCOMPARE(customization.calls.last().mid(0, 4),
              (QVariantList{QStringLiteral("setAppletSetting"), QStringLiteral("@desktop"),
                            QStringLiteral("desktop-icons"), QStringLiteral("snapToGrid")}));
-    QObject *placement = subMenuAt(icons, 1);
+    QObject *placement = subMenuAt(icons, 2);
     QVERIFY(placement != nullptr);
     QTRY_COMPARE(placement->property("count").toInt(), 2);
     QCOMPARE(itemAt(placement, 1)->objectName(),
@@ -229,6 +260,58 @@ void DesktopCustomizeMenuTests::chordOpensTheCustomizeMenuAndEntriesDispatch()
              (QVariantList{QStringLiteral("setAppletSetting"), QStringLiteral("@desktop"),
                            QStringLiteral("desktop-icons"), QStringLiteral("placement"),
                            QStringLiteral("right")}));
+    // W15: the icon size is a bounded number, edited in place.
+    QObject *iconSize = subMenuAt(icons, 3);
+    QVERIFY(iconSize != nullptr);
+    QCOMPARE(iconSize->objectName(), QStringLiteral("desktopCustomizeIcons:iconSize"));
+    QObject *spinBox = itemAt(iconSize, 0);
+    QVERIFY(spinBox != nullptr);
+    QCOMPARE(spinBox->objectName(), QStringLiteral("desktopCustomizeIconsInteger:iconSize"));
+    QCOMPARE(spinBox->property("from").toInt(), 16);
+    QCOMPARE(spinBox->property("to").toInt(), 128);
+    QCOMPARE(spinBox->property("value").toInt(), 48);
+    trigger(itemAt(icons, 0));
+    QCOMPARE(customization.calls.last(),
+             (QVariantList{QStringLiteral("removeApplet"), QStringLiteral("@desktop"),
+                           QStringLiteral("desktop-icons")}));
+    QMetaObject::invokeMethod(customize, "close");
+    QTRY_VERIFY(!customize->property("opened").toBool());
+}
+
+// ADR-0267: a layout without desktop icons offers "Show desktop icons",
+// which adds the applet on the desktop through the editor; no settings rows
+// are asked for an applet that does not exist.
+void DesktopCustomizeMenuTests::showDesktopIconsAddsTheAppletWhenTheLayoutHasNone()
+{
+    StubPlaces places;
+    StubDesktopControlsAccess access(&places);
+    StubLauncher launcher;
+    StubCustomization customization;
+    customization.iconsId.clear();
+    SurfaceHost host;
+    QString error;
+    QVERIFY2(host.create(&access, &launcher,
+                         {{QStringLiteral("contextMenuStyle"), QStringLiteral("windows")}},
+                         &error),
+             qPrintable(error));
+    QTRY_VERIFY(host.window->isExposed());
+    host.window->setProperty("customizationAccess", QVariant::fromValue<QObject *>(&customization));
+
+    auto *customize = host.child<QObject>(QStringLiteral("desktopCustomizeMenu"));
+    QVERIFY(customize != nullptr);
+    host.clickWindow(Qt::RightButton, Qt::MetaModifier, QPointF(400, 300));
+    QTRY_VERIFY(customize->property("opened").toBool());
+    QCOMPARE(customization.calls.size(), 1);
+    QCOMPARE(customization.calls.first().first().toString(), QStringLiteral("desktopAppletId"));
+
+    QObject *icons = subMenuAt(customize, 2);
+    QVERIFY(icons != nullptr);
+    QTRY_COMPARE(icons->property("count").toInt(), 1);
+    QCOMPARE(itemAt(icons, 0)->property("text").toString(), QStringLiteral("Show desktop icons"));
+    trigger(itemAt(icons, 0));
+    QCOMPARE(customization.calls.last(),
+             (QVariantList{QStringLiteral("addApplet"), QStringLiteral("@desktop"),
+                           QStringLiteral("desktop"), QStringLiteral("desktop-icons")}));
     QMetaObject::invokeMethod(customize, "close");
     QTRY_VERIFY(!customize->property("opened").toBool());
 }

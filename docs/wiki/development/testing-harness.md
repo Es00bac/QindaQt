@@ -1585,9 +1585,9 @@ does not prove a live session bus, persisted appearance settings across a
 session restart, compositor-applied wallpaper/fonts/scaling, live AT-SPI, or a
 nested desktop screenshot. Those integration rows remain later gates.
 
-## Current Customize Settings canvas proof
+## Current Customize Settings preset proof
 
-The direct canvas, editor-session composition, hostile boundary, and relocated
+The layout preset page (ADR-0267), its hostile boundary, and the relocated
 package are selected with:
 
 ```sh
@@ -1595,16 +1595,22 @@ ctest --test-dir build/dev -R '^qindaqt\.settings-customize-' \
   --output-on-failure --no-tests=error
 ```
 
-The model row uses an injected Settings transport, real editing repository and
-coordinator adapter, and temporary profile store. It proves converging preview,
-one durable gesture history boundary, cancel and rejection rollback,
-pointer/keyboard insertion parity, persistence, conflict truth, and explicit
-lease-loss recovery. The page row runs warning-fatal, renders 720×720 compact
-and 1080×720 wide software scenes, checks accessible palette, panel, and zone
-identity plus keyboard activation, and verifies centered discard-dialog
-geometry. The window-lifecycle row rejects a dirty top-level close until Cancel
-or Discard resolves it and preserves both navigation and application-close
-prompts across wide-to-compact and compact-to-wide host reconstruction. The
+The presets row runs the production model over a temporary installed catalog,
+a user store that appears on first save, and an injected Settings transport.
+It proves built-ins before own presets with their provenance, a switch that
+is reported only after confirming readback (and survives a stale snapshot),
+refused and unanswered switches reported and never replayed, Save current
+layout including a panel edit written after load, every name rule and the
+50-preset bound, own-preset rename, duplicate and delete, Modified and
+Restore original, deletion of the active preset only after the fallback
+switch is confirmed, and the default preset against the Settings1 schema.
+The page row runs warning-fatal, renders 720- and 1080-wide software scenes,
+and checks the two sections, text badges, each kind's actions, switching by
+pointer and keyboard, the name dialog's validation, delete and restore
+confirmation, busy and degraded states, and the delay slider. The
+window-lifecycle row constructs the page inside the real `Main.qml` in both
+responsive hosts and proves closing the window and leaving the route never
+prompt. The panel-delay row keeps the delay's confirmed-write contract. The
 boundary row scans every C++ and QML file owned by the route. It accepts C++
 includes only from Qt/system headers, the route's own directory, or the public
 `include/` trees of its named dependencies; all other repository-relative
@@ -1620,8 +1626,8 @@ Settings runtime component and runs the common hostile Settings package script.
 It additionally requires the relocated Customize QML module, profile catalog,
 and applet manifest catalog before exercising all registered route intents.
 The selector never starts a session bus, nested compositor, host service, or
-input backend. Live shell binding, reveal behavior, live AT-SPI, and rendered
-session matrices remain downstream evidence.
+input backend. Live shell adoption of a switched preset, live AT-SPI, and
+rendered session matrices remain downstream evidence.
 
 ## Current Bluetooth Settings route proof
 

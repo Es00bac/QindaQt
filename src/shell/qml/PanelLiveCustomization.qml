@@ -123,6 +123,7 @@ Item {
         id: panelMenu
         panel: root.panelContent.panel
         controller: root.controller
+        outputId: root.outputId
     }
 
     // Edit mode: Add applet… / Undo / Done at the trailing end of the

@@ -1,19 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
-#include "qindaqt/apps/settings_customize/customize_editor_host.h"
-#include "qindaqt/apps/settings_customize/customize_output_provider.h"
-#include "qindaqt/apps/settings_customize/customize_wallpaper_preview.h"
-#include "qindaqt/apps/settings_customize/customize_window_preview.h"
+#include "qindaqt/apps/settings_customize/customize_preset_catalog.h"
+#include "qindaqt/profiles/user_profile_store.h"
 
+#include <QFileSystemWatcher>
 #include <QObject>
-#include <QVariantList>
 #include <QTimer>
+#include <QVariantList>
 
 #include <optional>
-
-#include <functional>
-#include <memory>
 
 namespace QindaQt::Services::SettingsClient {
 class SettingsClient;
@@ -24,209 +20,170 @@ namespace QindaQt::Apps::SettingsCustomize {
 
 inline constexpr QLatin1StringView LayoutProfileSettingsKey("panels.layoutProfile");
 inline constexpr QLatin1StringView PanelHideDelaySettingsKey("panels.autoHideDelayMs");
+// AGENT-CONTRACT: the layout a new user gets (ADR-0263). It must equal the
+// shell's DefaultLayoutProfileId and the panels.layoutProfile default in
+// data/settings/schema-v2.json; tst_customize_presets checks the schema.
+// Deleting the active preset switches here first (ADR-0267).
+inline constexpr QLatin1StringView DefaultLayoutPresetId("macos-inspired");
+inline constexpr int MaximumPresetNameLength = 64;
+inline constexpr int MaximumUserPresets = 50;
 
-using EditorHostFactory = std::function<std::unique_ptr<CustomizeEditorHost>(
-    const Profiles::LayoutProfile &profile,
-    const QVector<ShellLayout::LogicalOutput> &outputs)>;
+// Where presets come from: the installed profile directories (low-to-high
+// precedence, never the user store) and the writable user store, which the
+// shell also reads last and which panel edits write (ADR-0213, ADR-0266).
+struct PresetLocations final {
+    QStringList stockDirectories;
+    QString userDirectory;
+};
 
-// QObject projection for the compiled Customize page. The model owns route
-// state but receives Settings1 and editor-host dependencies explicitly; QML
-// never sees a transport, repository, or editing command.
+// QObject projection for the Settings Customize page: a gallery of layout
+// presets (ADR-0267). Clicking a preset commits the Settings1
+// panels.layoutProfile selection and the running shell adopts it live
+// (ADR-0122); the user's own presets are copies in the user profile store.
+// Layout editing itself happens on the panels, never here.
+//
+// AGENT-CONTRACT: GUI thread only; `client` is borrowed and must outlive the
+// model. Every action returns true only once its authority accepted it: a
+// store write or removal succeeded, or Settings1 accepted the selection
+// commit (the switch itself is reported only after readback confirms it).
+// QML never sees a transport, a file path, or a profile document.
 class CustomizeSettingsModel final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool loading READ loading NOTIFY stateChanged)
     Q_PROPERTY(bool ready READ ready NOTIFY stateChanged)
-    Q_PROPERTY(bool saving READ saving NOTIFY stateChanged)
-    Q_PROPERTY(bool conflict READ conflict NOTIFY stateChanged)
     Q_PROPERTY(bool unavailable READ unavailable NOTIFY stateChanged)
-    Q_PROPERTY(bool canEdit READ canEdit NOTIFY stateChanged)
-    Q_PROPERTY(bool dirty READ dirty NOTIFY contentChanged)
-    Q_PROPERTY(bool applyAvailable READ applyAvailable NOTIFY stateChanged)
-    Q_PROPERTY(bool displayScopeChangeAvailable READ displayScopeChangeAvailable NOTIFY stateChanged)
-    Q_PROPERTY(bool primaryDisplayAvailable READ primaryDisplayAvailable NOTIFY stateChanged)
-    Q_PROPERTY(QString displayScopeError READ displayScopeError NOTIFY stateChanged)
-    Q_PROPERTY(bool canUndo READ canUndo NOTIFY contentChanged)
-    Q_PROPERTY(bool canRedo READ canRedo NOTIFY contentChanged)
-    Q_PROPERTY(bool visualDragActive READ visualDragActive NOTIFY contentChanged)
-    Q_PROPERTY(bool dropAccepted READ dropAccepted NOTIFY contentChanged)
-    Q_PROPERTY(QString dropReason READ dropReason NOTIFY contentChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY stateChanged)
+    // AGENT-CONTRACT: the Settings Center's Customize departure fence
+    // (SettingsRouteHost, Main.qml) reads `dirty` from this model. Presets
+    // have no draft (every action goes straight to its authority), so it is
+    // always false and leaving or closing never prompts.
+    Q_PROPERTY(bool dirty READ dirty CONSTANT)
+    Q_PROPERTY(bool canSwitch READ canSwitch NOTIFY stateChanged)
+    Q_PROPERTY(bool canManage READ canManage NOTIFY stateChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY stateChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY stateChanged)
-    Q_PROPERTY(QString announcement READ announcement NOTIFY announcementChanged)
-    Q_PROPERTY(QString selectedProfileId READ selectedProfileId NOTIFY contentChanged)
-    Q_PROPERTY(QVariantList profiles READ profiles CONSTANT)
-    Q_PROPERTY(QVariantMap previewOutput READ previewOutput NOTIFY contentChanged)
-    Q_PROPERTY(QVariantList panels READ panels NOTIFY contentChanged)
-    Q_PROPERTY(QVariantList desktopApplets READ desktopApplets NOTIFY contentChanged)
-    Q_PROPERTY(QVariantList palette READ palette CONSTANT)
-    Q_PROPERTY(QString selectedKind READ selectedKind NOTIFY selectionChanged)
-    Q_PROPERTY(QString selectedPanelId READ selectedPanelId NOTIFY selectionChanged)
-    Q_PROPERTY(QString selectedAppletId READ selectedAppletId NOTIFY selectionChanged)
-    Q_PROPERTY(QVariantMap selectedProperties READ selectedProperties NOTIFY selectionChanged)
-    Q_PROPERTY(QString appletSettingError READ appletSettingError NOTIFY selectionChanged)
+    Q_PROPERTY(QString noticeText READ noticeText NOTIFY stateChanged)
+    Q_PROPERTY(QString activePresetId READ activePresetId NOTIFY presetsChanged)
+    Q_PROPERTY(QVariantList presets READ presets NOTIFY presetsChanged)
+    Q_PROPERTY(QString defaultPresetId READ defaultPresetId CONSTANT)
+    Q_PROPERTY(int maximumNameLength READ maximumNameLength CONSTANT)
     Q_PROPERTY(bool panelHideDelayAvailable READ panelHideDelayAvailable NOTIFY stateChanged)
     Q_PROPERTY(bool panelHideDelayEditable READ panelHideDelayEditable NOTIFY stateChanged)
     Q_PROPERTY(bool panelHideDelayPending READ panelHideDelayPending NOTIFY stateChanged)
     Q_PROPERTY(int panelHideDelayMs READ panelHideDelayMs NOTIFY stateChanged)
     Q_PROPERTY(QString panelHideDelayStatus READ panelHideDelayStatus NOTIFY stateChanged)
-    Q_PROPERTY(QObject *wallpaperPreview READ wallpaperPreview CONSTANT)
-    Q_PROPERTY(QObject *windowPreview READ windowPreview CONSTANT)
 
 public:
-    enum class State { Loading, Ready, Saving, Conflict, Unavailable };
+    enum class State { Loading, Ready, Unavailable };
     Q_ENUM(State)
 
-    // AGENT-CONTRACT: client, outputProvider, wallpaperPreview, and
-    // windowPreview must outlive this GUI-thread model. The factory returns a
-    // fresh editor host for profile selection and discard rebuilds; returning
-    // null fails closed and preserves the last confirmed selection.
-    // wallpaperPreview and windowPreview are borrowed read-only projections;
-    // the model exposes them to QML but never mutates them.
-    CustomizeSettingsModel(
-        Services::SettingsClient::SettingsClient &client,
-        QVector<Profiles::LayoutProfile> availableProfiles,
-        QVector<Applets::AppletManifest> manifests,
-        CustomizeOutputProvider &outputProvider,
-        CustomizeWallpaperPreview &wallpaperPreview,
-        CustomizeWindowPreview &windowPreview,
-        EditorHostFactory hostFactory,
-        QString startupError = {},
-        QObject *parent = nullptr);
+    CustomizeSettingsModel(Services::SettingsClient::SettingsClient &client,
+                           PresetLocations locations,
+                           QObject *parent = nullptr);
 
-    [[nodiscard]] bool loading() const noexcept;
-    [[nodiscard]] bool ready() const noexcept;
-    [[nodiscard]] bool saving() const noexcept;
-    [[nodiscard]] bool conflict() const noexcept;
-    [[nodiscard]] bool unavailable() const noexcept;
-    [[nodiscard]] bool canEdit() const noexcept;
-    [[nodiscard]] bool dirty() const noexcept;
-    [[nodiscard]] bool applyAvailable() const noexcept;
-    [[nodiscard]] bool displayScopeChangeAvailable() const noexcept;
-    [[nodiscard]] bool primaryDisplayAvailable() const;
-    [[nodiscard]] QString displayScopeError() const;
-    [[nodiscard]] bool canUndo() const noexcept;
-    [[nodiscard]] bool canRedo() const noexcept;
-    [[nodiscard]] bool visualDragActive() const noexcept;
-    [[nodiscard]] bool dropAccepted() const noexcept;
-    [[nodiscard]] QString dropReason() const;
+    [[nodiscard]] bool loading() const noexcept { return m_state == State::Loading; }
+    [[nodiscard]] bool ready() const noexcept { return m_state == State::Ready; }
+    [[nodiscard]] bool unavailable() const noexcept { return m_state == State::Unavailable; }
+    [[nodiscard]] bool busy() const noexcept { return m_pendingSelection.has_value(); }
+    [[nodiscard]] bool dirty() const noexcept { return false; }
+    [[nodiscard]] bool canSwitch() const noexcept;
+    [[nodiscard]] bool canManage() const noexcept;
     [[nodiscard]] QString statusText() const;
-    [[nodiscard]] QString errorText() const;
-    [[nodiscard]] QString announcement() const { return m_announcement; }
-    [[nodiscard]] QString selectedProfileId() const { return m_selectedProfileId; }
-    [[nodiscard]] QVariantList profiles() const;
-    [[nodiscard]] QVariantMap previewOutput() const;
-    [[nodiscard]] QVariantList panels() const;
-    [[nodiscard]] QVariantList desktopApplets() const;
-    [[nodiscard]] QVariantList palette() const;
-    [[nodiscard]] QString selectedKind() const { return m_selectedKind; }
-    [[nodiscard]] QString selectedPanelId() const { return m_selectedPanelId; }
-    [[nodiscard]] QString selectedAppletId() const { return m_selectedAppletId; }
-    [[nodiscard]] QVariantMap selectedProperties() const;
-    [[nodiscard]] QString appletSettingError() const { return m_appletSettingError; }
+    [[nodiscard]] QString errorText() const { return m_error; }
+    [[nodiscard]] QString noticeText() const { return m_notice; }
+    [[nodiscard]] QString activePresetId() const { return m_activeId; }
+    [[nodiscard]] QVariantList presets() const;
+    [[nodiscard]] QString defaultPresetId() const { return QString(DefaultLayoutPresetId); }
+    [[nodiscard]] int maximumNameLength() const noexcept { return MaximumPresetNameLength; }
     [[nodiscard]] bool panelHideDelayAvailable() const noexcept;
     [[nodiscard]] bool panelHideDelayEditable() const noexcept;
     [[nodiscard]] bool panelHideDelayPending() const noexcept;
     [[nodiscard]] int panelHideDelayMs() const noexcept;
     [[nodiscard]] QString panelHideDelayStatus() const;
-    [[nodiscard]] QObject *wallpaperPreview() const { return &m_wallpaperPreview; }
-    [[nodiscard]] QObject *windowPreview() const { return &m_windowPreview; }
 
-    Q_INVOKABLE bool selectProfile(const QString &profileId);
-    Q_INVOKABLE void selectPanel(const QString &panelId);
-    Q_INVOKABLE void selectApplet(const QString &panelId, const QString &appletId);
-    Q_INVOKABLE bool startPaletteDrag(const QString &pluginId);
-    Q_INVOKABLE bool startAppletDrag(const QString &panelId, const QString &appletId);
-    Q_INVOKABLE bool hoverDropTarget(const QString &panelId, const QString &zone,
-                                     const QString &beforeAppletId = {});
-    Q_INVOKABLE bool commitDrag();
-    Q_INVOKABLE bool cancelDrag();
-    Q_INVOKABLE bool keyboardInsert(const QString &pluginId,
-                                    const QString &panelId,
-                                    const QString &zone,
-                                    const QString &beforeAppletId = {});
-    Q_INVOKABLE bool keyboardInsertDefault(const QString &pluginId);
-    Q_INVOKABLE bool keyboardMoveMode();
-    Q_INVOKABLE bool keyboardStep(const QString &direction);
-    Q_INVOKABLE bool removeSelected();
-    Q_INVOKABLE bool duplicateSelected();
-    Q_INVOKABLE bool configureSelectedPanel(const QString &field,
-                                            const QVariant &value);
-    Q_INVOKABLE bool configureAppletSetting(const QString &key, const QVariant &value);
+    // Commits panels.layoutProfile. False when nothing was submitted.
+    Q_INVOKABLE bool activatePreset(const QString &presetId);
+    // Empty when `name` may name a new or renamed preset; otherwise the
+    // reason, for the name dialog. `renamingId` is exempt from uniqueness.
+    Q_INVOKABLE QString presetNameError(const QString &name,
+                                        const QString &renamingId = QString()) const;
+    // Copies a preset's current content (for the active one: the applied
+    // layout with every edit made on the panels) into a new own preset.
+    Q_INVOKABLE bool savePresetAs(const QString &sourceId, const QString &name);
+    Q_INVOKABLE bool duplicatePreset(const QString &presetId);
+    Q_INVOKABLE bool renamePreset(const QString &presetId, const QString &name);
+    // Own presets only. Deleting the active one first switches to the
+    // default preset and removes the file only after that switch is
+    // confirmed, so neither Settings1 nor the shell ever names a missing
+    // layout.
+    Q_INVOKABLE bool deletePreset(const QString &presetId);
+    // Modified built-ins only: removes the user copy so the installed layout
+    // shows through again (the shell adopts it through its store watcher).
+    Q_INVOKABLE bool restorePreset(const QString &presetId);
     // AGENT-CONTRACT: This writes only the existing global Settings1 delay.
     // False means no write was admitted; success still requires same-owner,
     // same-epoch readback at the commit's observed revision.
     Q_INVOKABLE bool setPanelHideDelayMs(int milliseconds);
-    Q_INVOKABLE bool undo();
-    Q_INVOKABLE bool redo();
-    Q_INVOKABLE bool apply();
-    Q_INVOKABLE bool discard();
     Q_INVOKABLE void retry();
+    // Re-reads the installed catalog and the user store. The store watcher
+    // calls it after panel edits land; copies, renames and restores call it
+    // first so they work from the newest direct edits.
+    void reloadPresets();
 
 Q_SIGNALS:
     void stateChanged();
-    void contentChanged();
-    void selectionChanged();
-    void announcementChanged();
+    void presetsChanged();
 
 private:
+    struct PendingSelection final {
+        QString requestedId;
+        QString deleteAfter;  // own preset removed once the switch is confirmed
+        QString owner;
+        QString epoch;
+        quint64 readbackFloor = 0;
+        bool awaitingReadback = false;
+    };
+
     void handleClientState();
     void handleSnapshot();
     void handleCommit(const Services::SettingsClient::CommitOutcome &outcome);
     void handleUncertain(const QString &message);
-    void handleOutputSnapshotChanged();
+    [[nodiscard]] bool beginSelection(const QString &presetId, const QString &deleteAfter);
+    void settleSelection(bool confirmed, const QString &message);
     void handleDelaySnapshot();
     void handleDelayClientState();
     void handleDelayCommit(const Services::SettingsClient::CommitOutcome &outcome);
     void handleDelayUncertain(const QString &message);
     void finishDelayUncertain(const QString &message);
     void clearDelayPending();
-    [[nodiscard]] const Profiles::LayoutProfile *findProfile(const QString &id) const;
-    [[nodiscard]] const Applets::AppletManifest *findManifest(const QString &id) const;
-    [[nodiscard]] bool rebuild(const Profiles::LayoutProfile &profile);
-    [[nodiscard]] bool settleEditorOutcome(
-        const ShellCustomizationEditor::EditorOutcome &outcome,
-        const QString &successAnnouncement = {});
-    void refreshProjection();
-    void setState(State state, QString error = {});
-    void clearSelectionIfMissing();
-    [[nodiscard]] ShellCustomizationEditor::DropTarget targetFromStrings(
-        const QString &panelId, const QString &zone,
-        const QString &beforeAppletId) const;
-    [[nodiscard]] QString nextDuplicateId(const QString &base) const;
-    [[nodiscard]] bool outputTruthCurrent();
+    void refreshStoreWatch();
+    void updateState();
+    void report(QString notice, QString error = {});
+    [[nodiscard]] const LayoutPreset *findPreset(const QString &presetId) const;
+    [[nodiscard]] QString presetName(const QString &presetId) const;
+    [[nodiscard]] bool copyPreset(const QString &sourceId, const QString &name);
+    [[nodiscard]] bool removeUserCopy(const QString &presetId, const QString &notice);
+    [[nodiscard]] QString nextUserPresetId(const QString &name) const;
+    [[nodiscard]] QString copyName(const QString &name) const;
+    [[nodiscard]] QString fallbackPresetId(const QString &excludedId) const;
+    [[nodiscard]] int ownPresetCount() const;
 
     Services::SettingsClient::SettingsClient &m_client;
-    QVector<Profiles::LayoutProfile> m_profiles;
-    QVector<Applets::AppletManifest> m_manifests;
-    CustomizeOutputProvider &m_outputProvider;
-    CustomizeWallpaperPreview &m_wallpaperPreview;
-    CustomizeWindowPreview &m_windowPreview;
-    EditorHostFactory m_hostFactory;
-    std::unique_ptr<CustomizeEditorHost> m_editor;
+    PresetLocations m_locations;
+    Profiles::UserProfileStore m_store;
+    QVector<LayoutPreset> m_presets;
+    QString m_catalogError;
+    QFileSystemWatcher m_storeWatch;
+    QTimer m_reloadDebounce;
     State m_state = State::Loading;
-    QString m_startupError;
+    QString m_stateReason;
+    QString m_selectionError;
     QString m_error;
-    QString m_confirmedProfileId;
-    QString m_selectedProfileId;
-    QString m_selectedKind;
-    QString m_selectedPanelId;
-    QString m_selectedAppletId;
-    QString m_announcement;
-    QString m_draggedName;
-    QString m_lastDropReason;
-    QString m_confirmedOwner;
-    QString m_confirmedEpoch;
-    CustomizeOutputSnapshot m_editorOutputs;
-    QString m_displayScopeError;
-    QString m_appletSettingError;
-    ShellCustomizationEditor::DropTarget m_keyboardTarget;
-    bool m_hasBaseline = false;
-    bool m_selectionDirty = false;
-    bool m_waitingForCommitSnapshot = false;
-    bool m_keyboardMoving = false;
-    bool m_lastDropAccepted = false;
-    bool m_editorUnavailable = false;
-    bool m_outputTruthStale = false;
+    QString m_notice;
+    QString m_activeId;
+    bool m_hasSelection = false;
+    std::optional<PendingSelection> m_pendingSelection;
+    QTimer m_selectionReadbackDeadline;
     struct PendingDelay final {
         int requestedMs = 0;
         QString owner;

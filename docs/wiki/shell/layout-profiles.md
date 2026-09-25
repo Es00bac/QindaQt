@@ -49,10 +49,14 @@ Customization is direct. On the desktop itself, panels are edited where they
 are: Meta+right-click menus, and panel edit mode, where applets are dragged
 within and between panels and displays
 ([ADR-0266](../adr/0266-edit-mode-drags-applets-across-panels-and-displays.md)).
-The settings window offers applets, panel fragments, and profiles that users
-drag onto highlighted monitor edges or existing panels. The editor provides preview, undo/redo,
-duplicate, reset, save-as-profile, and import/export. Every operation has a
-keyboard-accessible equivalent.
+The settings window does not edit layouts: Settings → Customize switches
+between layout presets, saves the applied layout as the user's own preset,
+and renames, duplicates, deletes or restores them
+([ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)).
+The panel editor provides undo/redo and duplicate; reset is Restore original
+in Settings and save-as-profile is Save current layout as preset.
+Import/export is not implemented yet, and keyboard-only editing on the
+panels is an open gap (the menus are keyboard-navigable once open).
 
 Panels support every monitor edge, multiple rows, partial or full length,
 above/normal/below layers, and never/dodge-active/dodge-all/maximized/intelligent
@@ -118,12 +122,8 @@ schema-v1 profile, a supplied logical output inventory, and an immutable copy
 of the session's validated applet-manifest catalog. It then publishes retained,
 immutable snapshots carrying the normalized profile, complete solved layout,
 optimistic revision, and preview status. The output inventory belongs to one
-editor session. The Settings Customize composition injects the current ordered
-logical inventory plus the exact primary output identity and its revision: a
-clean session may rebuild on change, while a dirty session fences further
-display-scope mutation and persistence until Discard or reload. Missing or
-ambiguous primary identity is never replaced with the first inventory member.
-Repository reads and commands are confined
+editor session; the shell's live host supplies the current logical outputs and
+rebuilds its session when they change. Repository reads and commands are confined
 to one editor thread. Invalid initial profiles or manifest catalogs leave the
 repository non-ready with no published snapshot or committed profile; the
 initialization error and supplied initial revision remain available at the
@@ -171,12 +171,13 @@ profile schema v1.
 
 This module does not load applet entry points, construct shell surfaces, render
 drop targets, persist user profiles, or provide settings presentation. The
-[Settings Customize route](../apps/customize-settings.md) now owns the separate
-canvas, palette, property, keyboard, and user-profile persistence composition
-over these values. The production surface host consumes the same solver
-contract from its selected profile but does not yet subscribe to provisional
-editor snapshots; live Settings-to-shell publication and the reveal affordance
-remain outstanding parts of the Shell and customization milestone.
+shell's live host composes it through the
+[customization editor domain](customization-editor.md) for the panel menus and
+edit mode; the [Settings Customize route](../apps/customize-settings.md) only
+switches and saves presets. The production surface host consumes the same
+solver contract from its selected profile but does not subscribe to
+provisional editor snapshots; the reveal affordance remains an outstanding
+part of the Shell and customization milestone.
 
 ## Shell startup selection and catalog precedence
 
@@ -193,9 +194,10 @@ a new user, and the live-adoption fallback when neither the saved nor the
 running layout survives a reload
 ([ADR-0263](../adr/0263-the-mac-style-layout-is-the-default.md)). Only an
 explicit unknown `--profile` fails startup.
-After Customize atomically saves profile content and confirms selection, the
-running shell reloads the same catalog precedence and incrementally reconciles
-the resulting surface set without a compositor or shell restart. Startup still
+After a panel edit saves profile content, or Settings confirms a new
+selection or adds, restores or removes a user-store copy, the running shell
+reloads the same catalog precedence and incrementally reconciles the
+resulting surface set without a compositor or shell restart. Startup still
 uses the bounded initial read and precedence rules above.
 
 Profile catalogs merge low-to-high precedence with the writable user store
@@ -203,7 +205,10 @@ last, so user-saved profiles override — and partial user catalogs no longer
 shadow — the installed stock profiles. The source tree participates only for
 the genuine build-tree executable. Explicit `--profile-dir` and
 `QINDAQT_PROFILE_DIR` remain isolated single-directory overrides. The shell and
-the Settings Customize route share this precedence contract.
+the Settings Customize route share this precedence contract; the route also
+keeps the two sides apart, so a profile only the user store has is the user's
+own preset and a store copy of an installed id is an edited ("Modified")
+built-in ([ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)).
 
 ## Built-in workflow families
 

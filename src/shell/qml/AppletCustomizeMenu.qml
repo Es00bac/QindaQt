@@ -7,6 +7,9 @@ import QtQuick.Controls as T
 // is a keyboard contract for the nested rows:
 //   0 Move to start   1 Move to center   2 Move to end   3 Move left
 //   4 Move right   5 Move to panel ▸   6 Remove "<applet>"   7 "<applet>" settings ▸
+//   8 Duplicate "<applet>"
+// Duplicate came last with the retired Settings editor (ADR-0267) so no
+// earlier position moved; the nested flows' APPLET_COUNT counts it.
 // Typed settings rows come from the manifest's settingsSchema through the
 // controller (boolean switches, closed choices, bounded integers).
 // AGENT-GUARD: never gate a row with `visible` (QQC2 Menu evicts it), and
@@ -202,5 +205,10 @@ T.Menu {
                                root.settingInsertionIndex("integer", index), object)
             onObjectRemoved: (index, object) => settingsMenu.removeMenu(object)
         }
+    }
+    T.MenuItem {
+        objectName: "appletCustomizeDuplicate"
+        text: qsTr("Duplicate \"%1\"").arg(root.displayName)
+        onTriggered: root.controller.duplicateApplet(root.panelId, root.appletId)
     }
 }

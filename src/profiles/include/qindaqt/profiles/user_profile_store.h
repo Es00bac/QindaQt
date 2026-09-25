@@ -16,6 +16,8 @@ enum class UserProfileStoreErrorCode {
     SerializationFailed,
     WriteFailed,
     CommitFailed,
+    NotFound,
+    RemoveFailed,
 };
 
 struct UserProfileStoreResult final {
@@ -40,6 +42,14 @@ public:
     // strict-loader round trip, and only then atomically replaces
     // `<directory>/<id>.json`. Every failure preserves prior bytes.
     [[nodiscard]] UserProfileStoreResult save(const LayoutProfile &profile) const;
+
+    // AGENT-CONTRACT: remove deletes exactly `<directory>/<id>.json` for a
+    // valid id and nothing else. A missing file is NotFound (nothing
+    // changed); a failed deletion keeps the file and reports RemoveFailed.
+    // Removing a user copy lets an installed profile with the same id show
+    // through again (catalog precedence), so Settings uses it to restore a
+    // built-in layout and to delete the user's own presets (ADR-0267).
+    [[nodiscard]] UserProfileStoreResult remove(const QString &profileId) const;
 
     [[nodiscard]] const QString &directory() const noexcept { return m_directory; }
     [[nodiscard]] static QString fileNameForId(const QString &profileId);

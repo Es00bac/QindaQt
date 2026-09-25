@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Panel-menu half of LiveCustomizationController (palette, add applet,
-// panel options, add/remove panel); split from livecustomizationcontroller.cpp
-// for source shape.
+// panel options, add/remove panel, the desktop applet lookup); split from
+// livecustomizationcontroller.cpp for source shape.
 #include "livecustomizationcontroller.h"
 
 #include "livecustomizationmodel.h"
@@ -80,9 +80,30 @@ bool LiveCustomizationController::configurePanel(const QString &panelId, const Q
         return false;
     }
     const DropTarget at = targetOf(panelId, QStringLiteral("start"));
-    // The same field-to-intent split as the Settings route's
-    // configureSelectedPanel: edge/alignment restack through MovePanel, the
-    // other five replace the whole ConfigurePanel tuple.
+    // The same field-to-intent split the retired Settings editor used:
+    // edge/alignment/output restack through MovePanel, the other five replace
+    // the whole ConfigurePanel tuple.
+    if (field == QLatin1String("output")) {
+        // "*" shows the panel on every display; an exact output id pins it to
+        // that one (the menu offers the display the panel was clicked on).
+        // The engine refuses an output the inventory does not have.
+        const QString output = value.metaType().id() == QMetaType::QString ? value.toString()
+                                                                           : QString();
+        if (output.isEmpty()) {
+            m_statusText = QStringLiteral("the display is unknown");
+            Q_EMIT changed();
+            return false;
+        }
+        if (output == spec->output) {
+            return settle(QStringLiteral("panel-output"), EditorOutcome::success(), false);
+        }
+        return settle(QStringLiteral("panel-output"),
+                      m_host->applyGesture(ShellCustomizationEditor::movePanelIntent(
+                                               panelId, output, spec->edge, spec->alignment,
+                                               std::nullopt),
+                                           at),
+                      true);
+    }
     if (field == QLatin1String("edge") || field == QLatin1String("alignment")) {
         Profiles::Edge edge = spec->edge;
         Profiles::Alignment alignment = spec->alignment;
@@ -130,6 +151,18 @@ bool LiveCustomizationController::configurePanel(const QString &panelId, const Q
                   m_host->applyGesture(
                       ShellCustomizationEditor::configureIntent(panelId, configuration), at),
                   true);
+}
+
+QString LiveCustomizationController::desktopAppletId(const QString &pluginId) const
+{
+    if (const auto *profile = m_host ? m_host->profile() : nullptr) {
+        for (const auto &applet : profile->desktopApplets) {
+            if (applet.plugin == pluginId) {
+                return applet.id;
+            }
+        }
+    }
+    return {};
 }
 
 bool LiveCustomizationController::addPanel(const QString &edge)

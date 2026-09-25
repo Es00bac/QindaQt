@@ -73,41 +73,39 @@ setting.
 
 ## Changing the layout
 
-Open **System Settings → Customize**. The page opens with a gallery of layout
-previews — small monitor thumbnails that show where each preset puts its
-panels. Pick the one that looks right: the default QindaQt layout, a minimal
-one, or layouts inspired by GNOME, Unity, XFCE, NeXTSTEP, macOS, and an
-XP-inspired worn Luna taskbar. There is one preset per distinct feel rather
-than several variations on a bar, so the thumbnails differ at a glance. These
-are starting-points in the spirit of those desktops, not recreations of them,
-and the preview below updates the moment you pick one.
+Open **System Settings → Customize** to pick a layout. The page shows each
+layout as a small monitor thumbnail of where it puts its panels: the
+built-in layouts first (the Mac-style default, QindaQt's own, a minimal one,
+and layouts inspired by GNOME, Unity, XFCE, NeXTSTEP, Windows and an
+XP-inspired worn Luna taskbar), then **My presets**. Click one and the
+desktop switches to it; the page says so once the switch is confirmed.
 
-From there the monitor lets you rework the layout directly — it mirrors what
-your desktop will look like, in your current theme:
+To change a layout, edit the panels themselves. Right-click a panel and
+choose **Edit Panels**:
 
-- **Move things.** Drag an applet between panels or between the start,
-  middle, and end zones of a panel; the target lights up before you let go.
-- **Add and remove.** Add applets from the icon palette (hover a tile to see
-  what it is), duplicate a selected applet (`Ctrl+D`), or remove it
-  (`Delete`).
-- **Reshape a panel.** Click it on the monitor and the side panel offers a
-  compass for the screen edge, alignment buttons, thickness and length
-  sliders, and a visibility choice — icons with tooltips, not walls of text.
-- **Stay safe.** Every gesture is one **Undo** step; **Redo** walks forward
-  again. `Ctrl+Return` applies the draft, `Ctrl+Shift+Return` throws it away,
-  and closing the window with unsaved changes asks first. A cancelled drag
-  never leaves a half-finished layout behind.
+- **Move things.** Drag an applet within a panel, onto another panel, or
+  onto a panel on another display; a gap shows where it will land.
+- **Add and remove.** **Add applet…** on the panel's edit bar lists what
+  fits each zone. Meta+right-click an applet to move it, open its settings,
+  **Duplicate** it or remove it.
+- **Reshape a panel.** Meta+right-click the panel: **Panel** holds its edge,
+  alignment, auto-hide, size and length, and **Displays** puts it on this
+  display only or on all of them. **Add panel** and **Remove panel** are
+  there too.
+- **The desktop.** Meta+right-click the desktop for **Desktop icons**:
+  show or hide them and set their size, placement and menu style.
+- **Undo** walks back one change at a time; **Done** or Escape leaves edit
+  mode.
 
-Keyboard editing works too: select an applet and press `Space` to start a
-move, `Ctrl+Left`/`Ctrl+Right` to step along the panel, `Alt+Left`/
-`Alt+Right` to change zone, and `Ctrl+Shift+Left`/`Ctrl+Shift+Right` to
-change panel; `Space` commits.
+Every change is saved straight away to the layout you are using. Editing a
+built-in layout keeps **your own copy**: its card then says **Modified**,
+and **Restore original** brings the built-in back. To keep a layout as it is
+now, use **Save current layout as preset…**; your presets can be renamed,
+duplicated and deleted (deleting the one in use switches to the default
+first). The page also holds the auto-hide delay for all panels.
 
-Your edits are saved as **your own copy**. The built-in presets stay
-untouched, so you can always go back and start fresh from one.
-
-A selected applet shows its own settings for inspection; editing those values
-from this page is not part of the current version.
+Editing the panels with the keyboard alone is not possible yet: the menus
+work with the keyboard once open, but opening them needs the pointer.
 
 ## What each part is
 
@@ -118,10 +116,11 @@ from this page is not part of the current version.
 - Exact preference names and defaults are enumerated in the
   [settings catalog](catalog/settings.md).
 
-For the engineering behind the editor — preview commits, atomic saves,
-conflict handling — read [the customization
-editor](../shell/customization-editor.md) and [the Customize
-route](../apps/customize-settings.md). Theme and profile file formats are
+For the engineering behind it — one gesture per edit, atomic saves,
+confirmed switching — read [the customization
+editor](../shell/customization-editor.md), [the panel
+menus](../shell/panel-surfaces.md#in-place-customization-meta-right-click) and
+[the Customize route](../apps/customize-settings.md). Theme and profile file formats are
 specified in the [theme schema](../reference/theme-schema-v1.md) and
 [profile schema](../reference/profile-schema-v1.md); fonts are covered under
 [font preferences](../architecture/font-preferences.md). Continue with

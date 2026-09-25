@@ -83,9 +83,13 @@ const char *routeKeywords(SettingsRouteComponent component) {
                              "wifi, wi-fi, wireless, wlan, ethernet, wired, "
                              "vpn, internet, hotspot, airplane mode");
   case SettingsRouteComponent::Customize:
+    // ADR-0267: the page switches and saves layout presets and holds the
+    // panel auto-hide delay; applets and panels are edited on the panels
+    // themselves, which the page explains, so "applets" still lands here.
     return QT_TRANSLATE_NOOP("SettingsSearch",
-                             "panel, taskbar, dock, applets, widgets, tray, "
-                             "layout profile");
+                             "layout presets, saved layouts, layout profile, "
+                             "panel layout, taskbar, dock, menu bar, panel "
+                             "auto-hide, hide delay, edit panels, applets");
   case SettingsRouteComponent::Audio:
     return QT_TRANSLATE_NOOP("SettingsSearch",
                              "sound, volume, speakers, headphones, "

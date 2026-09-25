@@ -38,7 +38,10 @@ bool CustomizeSettingsModel::panelHideDelayAvailable() const noexcept
 
 bool CustomizeSettingsModel::panelHideDelayEditable() const noexcept
 {
-    return panelHideDelayAvailable() && canEdit() && !dirty()
+    // Independent of the preset catalog: the delay stays editable even when
+    // no preset can be listed. One Settings1 write at a time, so never while
+    // a preset switch awaits confirmation.
+    return panelHideDelayAvailable() && !busy() && !m_pendingDelay
         && m_client.canSetUserValue(QString(PanelHideDelaySettingsKey));
 }
 
@@ -65,9 +68,8 @@ QString CustomizeSettingsModel::panelHideDelayStatus() const
     if (!panelHideDelayAvailable()) {
         return QStringLiteral("Saved hide delay is unavailable; refresh Settings to try again.");
     }
-    if (dirty()) {
-        return QStringLiteral(
-            "Apply or discard the layout draft before changing the global delay.");
+    if (busy()) {
+        return QStringLiteral("Wait for the layout switch to finish.");
     }
     if (!m_client.canSetUserValue(QString(PanelHideDelaySettingsKey))) {
         return QStringLiteral("Wait for Settings to finish refreshing.");
