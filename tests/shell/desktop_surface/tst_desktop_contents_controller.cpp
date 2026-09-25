@@ -386,6 +386,15 @@ void DesktopContentsControllerTests::fileManagerActionsReachFileManagerThroughTh
                    folder + '\0');
   QVERIFY(QFile::remove(m_record));
 
+  // ADR-0272: the Desktop's Quick Look is File Manager's, on the same route.
+  QVERIFY2(controller.runFileManagerAction(QStringLiteral("file.quick-look"),
+                                           m_root->filePath(QStringLiteral("Notes.txt"))),
+           qPrintable(controller.feedback()));
+  QTRY_COMPARE(recorded(m_record),
+               QByteArray("--select=Notes.txt") + '\0' + "--action=file.quick-look" + '\0' +
+                   folder + '\0');
+  QVERIFY(QFile::remove(m_record));
+
   QVERIFY2(controller.runFileManagerAction(QStringLiteral("file.new-file")),
            qPrintable(controller.feedback()));
   QTRY_COMPARE(recorded(m_record),

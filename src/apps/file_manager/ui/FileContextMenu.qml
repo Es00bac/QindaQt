@@ -319,6 +319,10 @@ Menu {
         text: qsTr("Get Info")
         onTriggered: root.appCoordinator.activateAction("file.properties")
     }
+    ContextActionItem {
+        objectName: "contextQuickLookAction"; contextMenu: root; actionId: "file.quick-look"
+        visible: !root.isBackground; text: qsTr("Quick Look")
+    }
     MenuItem {
         objectName: "contextShowEntryFileAction"
         visible: !root.isBackground && root.applicationsPlace && root.selectionCount === 1

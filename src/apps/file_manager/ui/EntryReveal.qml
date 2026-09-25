@@ -4,9 +4,10 @@ import QtQuick
 // "Show in folder" for this window (ADR-0273): shows a folder with the named
 // entries selected and scrolled into view, then runs one File Manager action
 // on that selection through the coordinator, exactly as its menu item would
-// (Get Info, Open With or New File). runtime/process_reveal_windows.cpp calls
-// reveal() for org.freedesktop.FileManager1 requests and for the
-// --select/--action command line.
+// (Get Info, Open With, New File or Quick Look).
+// runtime/process_reveal_windows.cpp calls reveal() for
+// org.freedesktop.FileManager1 requests and for the --select/--action command
+// line.
 //
 // AGENT-CONTRACT: C++ finds this object by its objectName "entryReveal" and
 // calls reveal(folder, names, action) through QMetaObject::invokeMethod with

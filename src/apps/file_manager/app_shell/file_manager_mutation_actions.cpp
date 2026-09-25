@@ -42,9 +42,11 @@ void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinato
     // ADR-0154: remote New Folder is available while browsing remote only
     // with a folder creator injected and no creation in flight; without
     // one, New Folder keeps disabling with the other mutations.
-    enabled("file.new-folder", (!mutation.busy() && !navigation.remoteActive()) ||
-                                    (navigation.remoteCreateAvailable() &&
-                                     !navigation.remoteCreateBusy()));
+    // ADR-0272: the Recents place is no folder to create one in.
+    enabled("file.new-folder", !navigation.recentsPlace()
+                                   && ((!mutation.busy() && !navigation.remoteActive()) ||
+                                       (navigation.remoteCreateAvailable() &&
+                                        !navigation.remoteCreateBusy())));
     // ADR-0153: same-folder remote Rename is the one current-folder mutation
     // available while browsing remote -- but only with a renamer injected
     // and no rename already in flight. Without a renamer, Rename keeps

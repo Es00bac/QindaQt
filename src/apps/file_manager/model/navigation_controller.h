@@ -8,6 +8,7 @@
 #include "listing_order.h"
 #include "navigation_history.h"
 #include "navigation_status.h"
+#include "recents_place.h"
 #include "../network/network_directory_backend.h"
 #include "../network/remote_copy_to_controller.h"
 #include "../network/remote_copier.h"
@@ -69,6 +70,9 @@ class NavigationController final : public QObject {
   Q_PROPERTY(bool remoteActive READ remoteActive NOTIFY navigationChanged FINAL)
   // ADR-0262: true while the current location is the Applications place.
   Q_PROPERTY(bool applicationsPlace READ applicationsPlace NOTIFY navigationChanged FINAL)
+  // ADR-0272: true while the current location is the Recents place, whose
+  // rows are files from many folders and which is no folder itself.
+  Q_PROPERTY(bool recentsPlace READ recentsPlace NOTIFY navigationChanged FINAL)
   // ADR-0153: true while browsing remote with a RemoteRenamer injected --
   // the action bindings use this to keep "file.rename" available remotely.
   Q_PROPERTY(bool remoteRenameAvailable READ remoteRenameAvailable NOTIFY navigationChanged FINAL)
@@ -236,6 +240,7 @@ public:
   [[nodiscard]] bool canZoomOut() const;
   [[nodiscard]] bool remoteActive() const noexcept { return m_remoteActive; }
   [[nodiscard]] bool applicationsPlace() const { return ApplicationsLocation::isLocation(currentPath()); }
+  [[nodiscard]] bool recentsPlace() const { return RecentsLocation::isLocation(currentPath()); }
   [[nodiscard]] bool remoteRenameAvailable() const noexcept {
     return m_remoteActive && m_remoteRename != nullptr;
   }

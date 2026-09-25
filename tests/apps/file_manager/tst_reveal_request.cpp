@@ -263,7 +263,9 @@ void TestRevealRequest::namesMustBeSingleEntries() {
 }
 
 void TestRevealRequest::onlyTheDocumentedActionsMayFollowAReveal() {
-  for (const char *action : {"file.properties", "file.open-with", "file.new-file"}) {
+  // ADR-0272: Quick Look too, so the Desktop can preview an icon.
+  for (const char *action : {"file.properties", "file.open-with", "file.new-file",
+                             "file.quick-look"}) {
     QVERIFY2(isRevealAction(QLatin1String(action)), action);
   }
   // A destructive or unknown action never runs from a command line.
