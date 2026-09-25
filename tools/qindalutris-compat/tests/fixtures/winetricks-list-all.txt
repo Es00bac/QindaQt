@@ -1,0 +1,8 @@
+Executing cd /usr/bin
+===== dlls =====
+arial                    MS Arial / Arial Black fonts (Microsoft, 2008) [downloadable]
+corefonts                MS Arial, Courier, Times fonts (Microsoft, 2008) [downloadable]
+vcrun2019                Visual C++ 2015-2019 libraries (Microsoft, 2019) [downloadable]
+===== settings =====
+renderer=vulkan          Set graphics renderer to Vulkan
+win10                    Set Windows version to Windows 10

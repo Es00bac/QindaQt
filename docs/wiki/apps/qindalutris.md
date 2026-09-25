@@ -199,6 +199,14 @@ atomically written style
 as the File Manager's preferences. A corrupt or newer-version file is
 refused whole and defaults apply; nothing half-read ever takes effect.
 
+## Compatibility database
+
+Which Proton build a Windows game should be pinned to, which builds to
+avoid and why, and the winetricks verbs, environment and anti-cheat status
+known for it come from one shipped, refreshable document, described in
+[QindaLutris compatibility database](qindalutris-compat-db.md)
+(ADR-0275 §3).
+
 ## Installing games and Proton builds
 
 [ADR-0275](../adr/0275-qindalutris-installs-games-and-manages-pinned-proton.md)

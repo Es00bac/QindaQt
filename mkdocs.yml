@@ -167,6 +167,7 @@ nav:
       - QindaLutris: apps/qindalutris.md
       - QindaLutris installs and Proton builds: apps/qindalutris-installs.md
       - "QindaLutris prior art (2026-09-25)": apps/qindalutris-prior-art.md
+      - QindaLutris compatibility database: apps/qindalutris-compat-db.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
