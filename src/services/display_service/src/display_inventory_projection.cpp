@@ -40,9 +40,10 @@ QSize currentPixelSize(const InventoryOutput &output)
     return transformed;
 }
 
-// AGENT-CONTRACT: display_writer's apply_request_mapper parses exactly this
+// AGENT-CONTRACT: the D4 writer's apply request mapper parses exactly this
 // "current:WxH@mHz" form back into a size+refresh mode reference for every
 // advertised mode, not only the active one. Changing it breaks mode switches.
+// (D2 may not name D4 modules; the boundary test rejects the module token.)
 QString modeId(const QSize &pixelSize, quint32 refreshMilliHertz)
 {
     return QStringLiteral("current:%1x%2@%3")
@@ -150,8 +151,12 @@ InventoryProjectionResult projectInventory(const InventoryFrame &frame,
         // geometry-derived mode unless modeSize reproduces the same geometry,
         // so compositor rounding can never reject an otherwise valid frame.
         const bool mirrored = input.enabled && !input.replicationSource.isEmpty();
-        const double scale = std::clamp(input.scale, Display::kMinimumScale,
-                                        Display::kMaximumScale);
+        // AGENT-GUARD: only a mirror's KWin-fitted scale is clamped. An
+        // extended output's out-of-range scale must still fail validation so
+        // a bad frame preserves live truth instead of being silently repaired.
+        const double scale = mirrored ? std::clamp(input.scale, Display::kMinimumScale,
+                                                   Display::kMaximumScale)
+                                      : input.scale;
         QSize pixelSize = currentPixelSize(input);
         if (!input.modePixelSize.isEmpty()
             && (mirrored
