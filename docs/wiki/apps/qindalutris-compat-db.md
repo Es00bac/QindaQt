@@ -23,7 +23,9 @@ turns into a warning that offers a move.
 The copy with the newer `generated` stamp wins. A copy that is absent,
 refused, or stamped more than 24 hours after the current time never wins; if
 both are equal the shipped copy is kept. When neither loads, the app runs
-with an empty database: no advice, never a guess.
+with an empty database: no advice, never a guess. That includes a machine
+whose clock is more than a day behind the database's `generated` stamp: it
+refuses even the shipped copy and gives no advice until the clock is right.
 
 The loader opens the file with `O_NOFOLLOW` and checks its type and size
 with `fstat` on the same descriptor it reads, so a symlink, a FIFO, a
@@ -91,7 +93,8 @@ absent when empty.
 
 A line is text of at most 1089 units: a key of at most 64 ASCII letters,
 digits and underscores (not starting with a digit), `=`, and a value with no
-`$` and no backtick. Keys are case-sensitive and must be on this list:
+`$` and no backtick. Keys are case-sensitive and must be one of these exact
+names (there are no prefix families):
 
 - exactly `WINEDLLOVERRIDES`, `WINE_FULLSCREEN_FSR`,
   `WINE_FULLSCREEN_FSR_STRENGTH`, `WINE_FULLSCREEN_FSR_MODE`,
@@ -111,9 +114,23 @@ digits and underscores (not starting with a digit), `=`, and a value with no
   `__GL_THREADED_OPTIMIZATIONS`, `__GL_SYNC_TO_VBLANK`, `__GL_VRR_ALLOWED`,
   `__GL_YIELD`, `__GL_FSAA_MODE`, `__GL_SHARPEN_ENABLE`,
   `__GL_SHARPEN_VALUE`, `__GL_ALLOW_FXAA_USAGE`;
-- any `DXVK_*` or `VKD3D_*` key whose suffix is upper-case letters, digits
-  and underscores, except one ending in `_PATH`, `_FILE` or `_DIR` or
-  containing `LOG` or `CONFIG_FILE`.
+- these DXVK switches, each read by upstream DXVK and taking a value, never
+  a path: `DXVK_HUD`, `DXVK_CONFIG` (inline options; none of DXVK's options
+  takes a path), `DXVK_ENABLE_NVAPI`, `DXVK_FILTER_DEVICE_NAME`,
+  `DXVK_FILTER_DEVICE_UUID`, `DXVK_HDR`, `DXVK_SHADER_CACHE`,
+  `DXVK_FORCE_WINDOWED`, `DXVK_NO_VR`;
+- these vkd3d-proton switches, each read by vkd3d-proton and value-only:
+  `VKD3D_CONFIG`, `VKD3D_FEATURE_LEVEL`, `VKD3D_FRAME_RATE`,
+  `VKD3D_SWAPCHAIN_LATENCY_FRAMES`, `VKD3D_SWAPCHAIN_PRESENT_MODE`,
+  `VKD3D_FILTER_DEVICE_NAME`, `VKD3D_VULKAN_DEVICE`,
+  `VKD3D_DISABLE_EXTENSIONS`.
+
+Other DXVK and vkd3d-proton variables stay out on purpose. Some take a path
+and create or read files there (`DXVK_LOG_PATH`, `DXVK_CONFIG_FILE`,
+`VKD3D_QUEUE_PROFILE`, `VKD3D_SHADER_OVERRIDE`, `VKD3D_QA_HASHES`). Others
+forward environment: `VKD3D_UNIX_ENV` and `VKD3D_UNIX_POST_ENV` set
+arbitrary Linux variables through ntdll, which would get round this list.
+`DXVK_ASYNC` and `DXVK_FRAME_RATE` are not read by upstream DXVK.
 
 Every other key refuses the document. That includes the launch planner's
 own (`PROTONPATH`, `WINEPREFIX`, `GAMEID`, `STORE`, `UMU_*`,
@@ -135,9 +152,10 @@ C++ rules at configure time. It is generated from `winetricks list-all`
 (its header records the winetricks version and date), restricted to the
 `dlls`, `fonts` and `settings` categories. Application and benchmark
 installers, the `prefix` listing, a leading `-`, `annihilate`, `prefix=`,
-`arch=`, anything starting with `list`, and winetricks' test and
-interactive verbs (`bad`, `good`, `set_userpath`, `set_mididevice`,
-`winver=`) are never in it.
+`arch=`, anything starting with `list`, winetricks' test and interactive
+verbs (`bad`, `good`, `set_userpath`, `set_mididevice`, `winver=`),
+`mimeassoc=on` (Wine file associations can reach the host desktop) and
+`remove_mono` are never in it.
 
 `keys` (all optional):
 
@@ -190,14 +208,14 @@ first, and records each source's retrieval time in `sources`:
 
 | Source | What it contributes |
 |---|---|
-| [umu-database](https://github.com/Open-Wine-Components/umu-database) CSV | umu ids, store codenames, titles, notes, executable names; a numeric umu id is the Steam appid, as its README defines |
-| [AreWeAntiCheatYet](https://areweanticheatyet.com/) `games.json` | anti-cheat status (its five states map one-to-one), anti-cheat names and notes, Steam appids |
-| Steam store app details | Steam's own name for an appid, asked only when several AreWeAntiCheatYet entries claim that appid |
-| [ProtonDB](https://www.protondb.com/) per-app summaries | `protondbTier` for at most `--protondb-limit` Steam appids already in the database |
-| Steam store Deck compatibility report | `steamDeck` for the same appids under the same limit; an undocumented endpoint the store page itself uses, so it is cached, rate-limited and skipped on any error |
-| [Lutris](https://lutris.net/) installer scripts | winetricks verb names and environment settings (including DLL overrides), only for curated games that name one installer |
-| `winetricks-verbs.txt` | the committed verb allowlist every verb must appear in |
-| `curated.toml` | everything a person has verified, each with its evidence |
+| [umu-database](https://github.com/Open-Wine-Components/umu-database) CSV (`umu-database`) | umu ids, store codenames, titles, notes, executable names; a numeric umu id is the Steam appid, as its README defines |
+| [AreWeAntiCheatYet](https://areweanticheatyet.com/) `games.json` (`areweanticheatyet`) | anti-cheat status (its five states map one-to-one), anti-cheat names and notes, Steam appids |
+| Steam store app details (`steam-appdetails`; `store.steampowered.com/api/appdetails?appids=<id>`, undocumented) | Steam's own name for an appid, asked only when several AreWeAntiCheatYet entries claim that appid |
+| ProtonDB per-appid summaries (`protondb`; `www.protondb.com/api/v1/reports/summaries/<id>.json`) | `protondbTier` for at most `--protondb-limit` Steam appids already in the database |
+| Steam Deck compatibility reports (`steam-deck`; `store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport?nAppID=<id>`, undocumented) | `steamDeck` for the same appids under the same limit; the endpoint the store page itself uses, so it is cached, rate-limited and skipped on any error |
+| [Lutris](https://lutris.net/) installer scripts (`lutris`; `lutris.net/api/installers/<slug>`) | winetricks verb names and environment settings (including DLL overrides), only for curated games that name one installer |
+| `winetricks-verbs.txt` (`winetricks`) | the committed verb allowlist every verb must appear in; its `sources` date is the list's own |
+| `curated.toml` | everything a person has verified, each with its evidence (not a fetched source, so not listed in `sources`) |
 
 When several AreWeAntiCheatYet entries claim one Steam appid (a renamed
 game listed under both names, or a wrong id), the appid goes only to the

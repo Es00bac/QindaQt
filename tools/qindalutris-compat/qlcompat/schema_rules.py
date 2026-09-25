@@ -21,11 +21,16 @@ MAX_URL = 2048
 
 VERB_FILE = Path(__file__).resolve().parents[1] / "winetricks-verbs.txt"
 
-# AGENT-GUARD: the environment is an ALLOWLIST. A key is accepted only when it
-# is listed here or is a DXVK_/VKD3D_ behaviour switch (see is_env_key). Every
-# PROTON_* flag was checked against GE-Proton11-6 and 11-7's `proton` script;
-# every __GL_* flag against NVIDIA's driver README (value-only settings, no
-# paths). Anything else -- loader, interpreter, search-path, Vulkan layer and
+# AGENT-GUARD: the environment is an ALLOWLIST of EXACT, case-sensitive names;
+# there are no prefix families. Every PROTON_* flag was checked against
+# GE-Proton11-6 and 11-7's `proton` script; every __GL_* flag against NVIDIA's
+# driver README; every DXVK_* name against upstream DXVK's getEnvVar() calls
+# (DXVK_CONFIG sets inline options, none of which takes a path); every VKD3D_*
+# name against vkd3d-proton's vkd3d_get_env_var() calls. All are value-only.
+# Deliberately absent: anything taking a path or file (DXVK_LOG_PATH,
+# VKD3D_SHADER_OVERRIDE, VKD3D_QA_HASHES, VKD3D_QUEUE_PROFILE, ...) and
+# anything forwarding environment (VKD3D_UNIX_ENV, VKD3D_UNIX_POST_ENV set
+# arbitrary Linux variables through ntdll). Anything else -- loader, interpreter, search-path, Vulkan layer and
 # ICD, Wine binary, pressure-vessel, umu and Steam variables -- refuses the
 # whole document, so a refreshed download can neither re-pin a title nor
 # make the launch run code of its choosing. Widening this list is a schema
@@ -46,8 +51,13 @@ ENV_EXACT = frozenset((
     "__GL_THREADED_OPTIMIZATIONS", "__GL_SYNC_TO_VBLANK", "__GL_VRR_ALLOWED",
     "__GL_YIELD", "__GL_FSAA_MODE", "__GL_SHARPEN_ENABLE", "__GL_SHARPEN_VALUE",
     "__GL_ALLOW_FXAA_USAGE",
+    "DXVK_HUD", "DXVK_CONFIG", "DXVK_ENABLE_NVAPI", "DXVK_FILTER_DEVICE_NAME",
+    "DXVK_FILTER_DEVICE_UUID", "DXVK_HDR", "DXVK_SHADER_CACHE", "DXVK_FORCE_WINDOWED",
+    "DXVK_NO_VR",
+    "VKD3D_CONFIG", "VKD3D_FEATURE_LEVEL", "VKD3D_FRAME_RATE",
+    "VKD3D_SWAPCHAIN_LATENCY_FRAMES", "VKD3D_SWAPCHAIN_PRESENT_MODE",
+    "VKD3D_FILTER_DEVICE_NAME", "VKD3D_VULKAN_DEVICE", "VKD3D_DISABLE_EXTENSIONS",
 ))
-ENV_PREFIXES = ("DXVK_", "VKD3D_")
 
 _GAME_ID = re.compile(r"[a-z0-9][a-z0-9._:-]{0,127}")
 _SOURCE_ID = re.compile(r"[a-z0-9][a-z0-9-]{0,63}")
@@ -58,7 +68,6 @@ _VERB = re.compile(r"[a-z0-9_=.-]{1,64}")
 _BUILD = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._+()-]{0,127}")
 _URL = re.compile(r"https://[A-Za-z0-9.-]+(:[0-9]{1,5})?([/?#][!-~]*)?")
 _ENV_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}")
-_ENV_SUFFIX = re.compile(r"[A-Z0-9_]+")
 _TIMESTAMP = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
 
 
@@ -123,14 +132,8 @@ def is_winetricks_verb(text) -> bool:
 
 
 def is_env_key(key: str) -> bool:
-    """Case-sensitive: the exact list, or a DXVK_/VKD3D_ behaviour switch."""
-    if key in ENV_EXACT:
-        return True
-    prefix = next((p for p in ENV_PREFIXES if key.startswith(p)), None)
-    if prefix is None or not _full(_ENV_SUFFIX, key[len(prefix):]):
-        return False
-    return not (key.endswith(("_PATH", "_FILE", "_DIR")) or "LOG" in key
-                or "CONFIG_FILE" in key)
+    """Case-sensitive membership of the exact allowlist."""
+    return key in ENV_EXACT
 
 
 def env_key(line: str) -> str:

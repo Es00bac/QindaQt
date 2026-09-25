@@ -174,16 +174,20 @@ bool isUmuStore(const QString &text) {
 }
 
 bool isCompatEnvironmentKey(const QString &key) {
-  // AGENT-GUARD: an ALLOWLIST, mirrored by ENV_EXACT/ENV_PREFIXES in
-  // tools/qindalutris-compat/qlcompat/schema_rules.py. Every PROTON_* flag was
-  // checked against GE-Proton11-6/11-7's `proton` script and every __GL_*
-  // flag against NVIDIA's driver README (value-only settings). Any other key
-  // -- the planner's own (PROTONPATH, WINEPREFIX, GAMEID, STORE, UMU_*),
-  // loader, interpreter, search-path, Vulkan layer/ICD, Wine binary,
-  // pressure-vessel or Steam variables -- refuses the whole document, so a
-  // refreshed download can neither re-pin a title nor make the launch run
-  // code of its choosing. Widening it is a schema change on both sides.
-  static constexpr std::array<const char *, 40> kExact{
+  // AGENT-GUARD: an ALLOWLIST of EXACT, case-sensitive names -- no prefix
+  // families -- mirrored by ENV_EXACT in tools/qindalutris-compat/qlcompat/
+  // schema_rules.py. PROTON_* flags were checked against GE-Proton11-6/11-7's
+  // `proton` script, __GL_* against NVIDIA's driver README, DXVK_* against
+  // upstream DXVK's getEnvVar() calls (DXVK_CONFIG sets inline options, none
+  // taking a path), VKD3D_* against vkd3d-proton's vkd3d_get_env_var() calls;
+  // all are value-only. Never add a variable that takes a path or file
+  // (DXVK_LOG_PATH, VKD3D_SHADER_OVERRIDE, VKD3D_QA_HASHES,
+  // VKD3D_QUEUE_PROFILE) or forwards environment (VKD3D_UNIX_ENV and
+  // VKD3D_UNIX_POST_ENV set arbitrary Linux variables through ntdll), and
+  // never the planner's own (PROTONPATH, WINEPREFIX, GAMEID, STORE, UMU_*).
+  // Any key not listed refuses the whole document, so a refreshed download
+  // can neither re-pin a title nor make the launch run code of its choosing.
+  static constexpr std::array<const char *, 57> kExact{
       "WINEDLLOVERRIDES", "WINE_FULLSCREEN_FSR", "WINE_FULLSCREEN_FSR_STRENGTH",
       "WINE_FULLSCREEN_FSR_MODE", "RADV_PERFTEST", "mesa_glthread",
       "STAGING_SHARED_MEMORY",
@@ -198,23 +202,17 @@ bool isCompatEnvironmentKey(const QString &key) {
       "__GL_SHADER_DISK_CACHE", "__GL_SHADER_DISK_CACHE_SIZE",
       "__GL_THREADED_OPTIMIZATIONS", "__GL_SYNC_TO_VBLANK", "__GL_VRR_ALLOWED",
       "__GL_YIELD", "__GL_FSAA_MODE", "__GL_SHARPEN_ENABLE", "__GL_SHARPEN_VALUE",
-      "__GL_ALLOW_FXAA_USAGE"};
+      "__GL_ALLOW_FXAA_USAGE",
+      "DXVK_HUD", "DXVK_CONFIG", "DXVK_ENABLE_NVAPI", "DXVK_FILTER_DEVICE_NAME",
+      "DXVK_FILTER_DEVICE_UUID", "DXVK_HDR", "DXVK_SHADER_CACHE", "DXVK_FORCE_WINDOWED",
+      "DXVK_NO_VR",
+      "VKD3D_CONFIG", "VKD3D_FEATURE_LEVEL", "VKD3D_FRAME_RATE",
+      "VKD3D_SWAPCHAIN_LATENCY_FRAMES", "VKD3D_SWAPCHAIN_PRESENT_MODE",
+      "VKD3D_FILTER_DEVICE_NAME", "VKD3D_VULKAN_DEVICE", "VKD3D_DISABLE_EXTENSIONS"};
   for (const char *exact : kExact) {
     if (key == QLatin1String(exact)) return true;
   }
-  // DXVK_* / VKD3D_* behaviour switches: upper-case suffix, and never a key
-  // that names a file, a directory or a log.
-  qsizetype prefix = 0;
-  if (key.startsWith(QLatin1String("DXVK_"))) prefix = 5;
-  if (key.startsWith(QLatin1String("VKD3D_"))) prefix = 6;
-  if (prefix == 0 || key.size() == prefix) return false;
-  for (qsizetype i = prefix; i < key.size(); ++i) {
-    const QChar ch = key.at(i);
-    if (!(isAsciiUpper(ch) || isAsciiDigit(ch) || ch == u'_')) return false;
-  }
-  return !(key.endsWith(QLatin1String("_PATH")) || key.endsWith(QLatin1String("_FILE"))
-           || key.endsWith(QLatin1String("_DIR")) || key.contains(QLatin1String("LOG"))
-           || key.contains(QLatin1String("CONFIG_FILE")));
+  return false;
 }
 
 bool isCompatEnvironmentAssignment(const QString &line) {

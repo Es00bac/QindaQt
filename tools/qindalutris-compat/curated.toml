@@ -9,8 +9,8 @@
 # - PCGamingWiki-derived facts are allowed only with the page in `links`
 #   and the page URL as the `source`.
 # - Winetricks verbs written here must be in winetricks-verbs.txt.
-# - Environment keys must be on the schema's allowlist (WINEDLLOVERRIDES,
-#   DXVK_*/VKD3D_* switches, listed PROTON_* flags, ...); anything else --
+# - Environment keys must be on the schema's allowlist of exact names
+#   (WINEDLLOVERRIDES, listed DXVK_/VKD3D_/PROTON_ switches, ...); anything else --
 #   PROTONPATH, loader or search-path variables -- refuses the document.
 # - A `proton.recommended` build must be listed below with status "tested".
 # - Lutris scripts carry no license: take only verb names and environment

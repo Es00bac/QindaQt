@@ -1,7 +1,7 @@
 {
  "schema": "qindalutris-compat-db",
  "version": 1,
- "generated": "2026-09-25T22:47:51Z",
+ "generated": "2026-09-25T23:01:36Z",
  "sources": [
   {
    "id": "areweanticheatyet",
@@ -35,7 +35,7 @@
   },
   {
    "id": "winetricks",
-   "retrieved": "2026-09-25T22:30:20Z",
+   "retrieved": "2026-09-25T23:00:17Z",
    "url": "https://github.com/Winetricks/winetricks"
   }
  ],

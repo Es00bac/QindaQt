@@ -52,10 +52,12 @@ env-key-unicode refused
 env-long-key refused
 env-lowercase-ld refused
 env-pythonpath refused
+env-vkd3d-unix-env-ldpreload refused
 envkey-BASH_ENV refused
 envkey-BROWSER refused
-envkey-DXVK_ASYNC ok
+envkey-DXVK_ASYNC refused
 envkey-DXVK_CONFIG_FILE refused
+envkey-DXVK_HUD ok
 envkey-DXVK_LOG_PATH refused
 envkey-ENV refused
 envkey-GCONV_PATH refused
@@ -73,6 +75,12 @@ envkey-PYTHONPATH refused
 envkey-STEAM_COMPAT_MOUNTS refused
 envkey-UMU_ZENITY refused
 envkey-VKD3D_CONFIG ok
+envkey-VKD3D_FRAME_RATE ok
+envkey-VKD3D_QA_HASHES refused
+envkey-VKD3D_QUEUE_PROFILE refused
+envkey-VKD3D_SHADER_OVERRIDE refused
+envkey-VKD3D_UNIX_ENV refused
+envkey-VKD3D_UNIX_POST_ENV refused
 envkey-VK_ADD_LAYER_PATH refused
 envkey-VK_ICD_FILENAMES refused
 envkey-WINEDLLPATH refused
@@ -156,7 +164,10 @@ verbcase-arch=win32 refused
 verbcase-bad refused
 verbcase-corefonts ok
 verbcase-list-all refused
+verbcase-mimeassoc=off ok
+verbcase-mimeassoc=on refused
 verbcase-notaverb refused
+verbcase-remove_mono refused
 verbcase-win10 ok
 version--0 refused
 version-01 refused
