@@ -3,6 +3,8 @@
 
 #include <QString>
 
+class QObject;
+
 namespace QindaQt::AppShell { class ApplicationCoordinator; }
 namespace QindaQt::Apps::FileManager {
 class ClipboardController;
@@ -20,9 +22,12 @@ class NavigationController;
 // Permanently stays. Whether one particular selection fits (a folder for Open
 // in New Window, an archive for Extract, files for Open With) is decided by the
 // window's FileActions, which sees the entries themselves.
+// ADR-0271: `context`, when given, is the connections' context object in
+// place of `coordinator`; destroying it unbinds (runtime/folder_navigations.h).
 void bindFileManagerItemActions(AppShell::ApplicationCoordinator &coordinator,
                                 NavigationController &navigation,
                                 ClipboardController &clipboard,
                                 MutationController &mutation,
-                                const QString &trashFilesDirectory);
+                                const QString &trashFilesDirectory,
+                                QObject *context = nullptr);
 } // namespace QindaQt::Apps::FileManager

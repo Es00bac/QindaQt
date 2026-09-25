@@ -96,8 +96,21 @@ QStringList Preferences::rowDensities() {
   return {QStringLiteral("comfortable"), QStringLiteral("compact")};
 }
 
+QStringList Preferences::fileManagerStyles() {
+  return {QStringLiteral("finder"), QStringLiteral("explorer"), QStringLiteral("commander")};
+}
+
+QString Preferences::styleViewMode(const QString &style) {
+  return style == QLatin1String("explorer") || style == QLatin1String("commander")
+             ? QStringLiteral("list")
+             : QStringLiteral("grid");
+}
+
 bool Preferences::isValid() const {
-  if (!defaultFolderView().isValid() || !rowDensities().contains(rowDensity) ||
+  const bool stylesValid =
+      (fileManagerStyle.isEmpty() || fileManagerStyles().contains(fileManagerStyle)) &&
+      fileManagerStyles().contains(layoutStyle);
+  if (!stylesValid || !defaultFolderView().isValid() || !rowDensities().contains(rowDensity) ||
       folderViews.size() > maximumFolderViews ||
       (defaultConnectScheme != QLatin1String("sftp") &&
        defaultConnectScheme != QLatin1String("smb"))) {

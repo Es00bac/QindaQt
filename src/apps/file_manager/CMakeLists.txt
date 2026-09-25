@@ -80,6 +80,8 @@ target_sources(
         runtime/file_manager_application.cpp
         runtime/file_manager1_service.cpp
         runtime/finder_integration.cpp
+        runtime/folder_navigations.cpp
+        runtime/layout_style_hint.cpp
         runtime/process_reveal_windows.cpp
         model/bookmarks_store.cpp
         model/clipboard_controller.cpp
@@ -155,6 +157,8 @@ target_sources(
         runtime/file_manager_application.h
         runtime/file_manager1_service.h
         runtime/finder_integration.h
+        runtime/folder_navigations.h
+        runtime/layout_style_hint.h
         runtime/process_reveal_windows.h
         model/bookmarks_store.h
         model/applications_controller.h
@@ -254,8 +258,11 @@ target_link_libraries(
     # (Settings1DockPins, ADR-0265) and the Settings1 client's D-Bus
     # transport; all three are static, so the FileManager component gains no
     # shared library.
+    # ADR-0271: the File Manager style follows the selected layout profile's
+    # workflow.fileManager hint (runtime/layout_style_hint), read through the
+    # static profile loader and the same Settings1 client.
     PRIVATE KF6::KIOCore KF6::KIOGui KF6::KIOWidgets KF6::Archive Qt6::Widgets Qt6::DBus
-            QindaQt::DockPins QindaQt::SettingsClient
+            QindaQt::DockPins QindaQt::SettingsClient qindaqt_profiles
 )
 target_compile_features(qindaqt_file_manager_support PUBLIC cxx_std_20)
 set_target_properties(qindaqt_file_manager_support PROPERTIES CXX_EXTENSIONS OFF)
@@ -265,6 +272,8 @@ qt_add_executable(qindaqt-file-manager
     main.cpp
     runtime/file_actions_composition.cpp
     runtime/file_actions_composition.h
+    runtime/navigation_composition.cpp
+    runtime/navigation_composition.h
     runtime/mutation_ui_action_probe.cpp
     runtime/selection_ui_probe.cpp
     runtime/mutation_ui_action_probe.h
@@ -342,6 +351,13 @@ qt_add_qml_module(
         ui/EntryReveal.qml
         ui/QuickLook.qml
         ui/EntryDrag.js
+        # ADR-0271: File manager styles and tabs.
+        ui/FolderPanes.qml
+        ui/FolderPane.qml
+        ui/FolderTab.qml
+        ui/FolderTree.qml
+        ui/CommandBar.qml
+        ui/FunctionKeyBar.qml
     DEPENDENCIES
         QindaQt.Controls/1.0
 )

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+class QObject;
+
 namespace QindaQt::AppShell { class ApplicationCoordinator; }
 namespace QindaQt::Apps::FileManager {
 class ClipboardController;
@@ -12,8 +14,11 @@ class NavigationController;
 // clipboard and properties action availability synced with selection count,
 // clipboard content, the mutation busy slot, and -- since S5 -- disabled
 // while navigation reports a remote (smb/sftp) location active.
+// ADR-0271: `context`, when given, is the connections' context object in
+// place of `coordinator`; destroying it unbinds (runtime/folder_navigations.h).
 void bindFileManagerTransferActions(AppShell::ApplicationCoordinator &coordinator,
                                     NavigationController &navigation,
                                     ClipboardController &clipboard,
-                                    MutationController &mutation);
+                                    MutationController &mutation,
+                                    QObject *context = nullptr);
 } // namespace QindaQt::Apps::FileManager

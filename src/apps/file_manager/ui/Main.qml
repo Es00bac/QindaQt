@@ -36,6 +36,16 @@ ApplicationWindow {
     // other columns; optional so a fixture window without them still loads.
     property var entryFacts: null
     property var columnListing: null
+    // ADR-0271: makes the controllers of every tab after the first
+    // (runtime/folder_navigations.h); without it the window has one tab.
+    property var navigationFactory: null
+    // ADR-0271: Finder, Explorer or Commander -- the user's pick, else the
+    // desktop layout's.
+    readonly property string fileManagerStyle: root.preferencesController.fileManagerStyle || "finder"
+    // The tab the user works in (FolderPanes). Everything window-wide follows
+    // it; `navigationController` is only the first tab's.
+    readonly property var activeNavigation: panes.activeNavigation
+    readonly property var activeSelection: panes.activeSelection
 
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
@@ -46,7 +56,7 @@ ApplicationWindow {
     // the ordinary views since ADR-0262, so it needs no mode of its own.)
     property bool networkMode: false
     Binding {
-        target: root.navigationController
+        target: root.activeNavigation
         property: "folderViewActive"
         value: !root.networkMode
     }
@@ -120,7 +130,7 @@ ApplicationWindow {
     }
 
     Connections {
-        target: root.navigationController
+        target: root.activeNavigation
         // Browsing anywhere leaves the Network hub; the folder views are the
         // default surface and a Places click must land there.
         function onNavigationChanged() {
@@ -128,15 +138,16 @@ ApplicationWindow {
         }
     }
 
-    EntrySelection {
-        id: entrySelection
-        objectName: "entrySelection"
-        navigationController: root.navigationController
-        onSelectedChanged: root.clipboardController.selectionCount = count()
+    Connections {
+        target: root.activeSelection
+        function onSelectedChanged() {
+            root.clipboardController.selectionCount = root.activeSelection.count()
+        }
     }
+    onActiveSelectionChanged: root.clipboardController.selectionCount = root.activeSelection.count()
 
     function activeView() {
-        return views.activeView
+        return panes.activeViews.activeView
     }
 
     // Paste lands inside the focused folder entry when one exists, otherwise
@@ -149,15 +160,15 @@ ApplicationWindow {
         const entry = root.activeView().currentEntry()
         if (entry && entry.isDirectory)
             return entry.path
-        return root.navigationController.currentPath
+        return root.activeNavigation.currentPath
     }
 
     Connections {
         target: root.coordinator
         function onActionRequested(actionId) {
-            const navigation = root.navigationController
+            const navigation = root.activeNavigation
             if (applicationsActions.handle(actionId) || fileActions.handle(actionId)
-                    || views.handle(actionId) || quickLook.handle(actionId)) {
+                    || panes.activeViews.handle(actionId) || quickLook.handle(actionId)) {
                 return
             } else if (actionId === "go.applications" || actionId === "go.recents") {
                 if (filterBar.visible) filterBar.closed()
@@ -226,7 +237,7 @@ ApplicationWindow {
         }
     }
 
-    readonly property string displayedViewMode: root.navigationController.viewMode
+    readonly property string displayedViewMode: root.activeNavigation.viewMode
     onDisplayedViewModeChanged: Qt.callLater(() => root.activeView().focusView())
 
     // A finished network transfer only changes what is on screen when it
@@ -235,10 +246,10 @@ ApplicationWindow {
         target: root.transferQueueController
         function onTransferCommitted(destinationFolder) {
             const destination = destinationFolder.toString()
-            const current = root.navigationController.currentPath
+            const current = root.activeNavigation.currentPath
             if (destination === current
                 || destination === "file://" + current)
-                root.navigationController.refresh()
+                root.activeNavigation.refresh()
         }
     }
 
@@ -248,10 +259,11 @@ ApplicationWindow {
             // While search results are on screen, re-run the bounded search
             // instead of refreshing: a plain refresh would silently drop the
             // guest listing the user is acting on.
-            if (root.navigationController.guestListingActive)
+            if (root.activeNavigation.guestListingActive)
                 root.searchController.restart()
             else
-                root.navigationController.refresh()
+                root.activeNavigation.refresh()
+            panes.refreshOtherPane()
         }
     }
 
@@ -281,24 +293,31 @@ ApplicationWindow {
             id: toolbar
             Layout.fillWidth: true
             visible: !root.networkMode
-            navigationController: root.navigationController
+            navigationController: root.activeNavigation
             mutationController: root.mutationController
             appCoordinator: root.coordinator
+            addressBar: root.fileManagerStyle === "explorer"
             onBrowseRequested: root.activeView().focusView()
         }
 
+        CommandBar {
+            Layout.fillWidth: true
+            visible: !root.networkMode && root.fileManagerStyle === "explorer"
+            appCoordinator: root.coordinator
+            navigationController: root.activeNavigation
+        }
 
         FilterBar {
             id: filterBar
             Layout.fillWidth: true
             visible: false
-            navigationController: root.navigationController
+            navigationController: root.activeNavigation
             searchController: root.searchController
             onClosed: {
                 root.searchController.cancel()
-                if (root.navigationController.guestListingActive)
-                    root.navigationController.clearGuestListing()
-                root.navigationController.setNameFilter("")
+                if (root.activeNavigation.guestListingActive)
+                    root.activeNavigation.clearGuestListing()
+                root.activeNavigation.setNameFilter("")
                 visible = false
                 root.activeView().focusView()
             }
@@ -318,38 +337,31 @@ ApplicationWindow {
                 PlacesSidebar {
                     Layout.preferredWidth: root.width < 680 ? 148 : 196
                     Layout.fillHeight: true
-                    navigationController: root.navigationController
+                    navigationController: root.activeNavigation
                     placesController: root.placesController
                     networkLocationsController: root.networkLocationsController
                     appCoordinator: root.coordinator
                     mutationController: root.mutationController
                     clipboardController: root.clipboardController
+                    showFolderTree: root.fileManagerStyle === "explorer"
+                    columnListing: root.columnListing
                 }
 
-                StackLayout {
+                // ADR-0271: one pane or Commander's two, each with its tabs.
+                FolderPanes {
+                    id: panes
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    currentIndex: root.navigationController.statusKey === "ready" ? 0 : 1
-
-                    FolderViewStack {
-                        id: views
-                        navigationController: root.navigationController
-                        selection: entrySelection
-                        appCoordinator: root.coordinator
-                        mutationController: root.mutationController
-                        clipboardController: root.clipboardController
-                        fileActions: fileActions
-                        preferencesController: root.preferencesController
-                        folderViews: windowServices.folderViews
-                        entryFacts: root.entryFacts
-                        columnListing: root.columnListing
-                    }
-
-                    StatePane {
-                        statusKey: root.navigationController.statusKey
-                        statusMessage: root.navigationController.statusMessage
-                        onRetryRequested: root.navigationController.refresh()
-                    }
+                    navigationController: root.navigationController
+                    navigationFactory: root.navigationFactory
+                    dualPane: root.fileManagerStyle === "commander"
+                    appCoordinator: root.coordinator
+                    mutationController: root.mutationController
+                    clipboardController: root.clipboardController
+                    fileActions: fileActions
+                    preferencesController: root.preferencesController
+                    entryFacts: root.entryFacts
+                    columnListing: root.columnListing
                 }
             }
 
@@ -358,7 +370,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 networkLocationsController: root.networkLocationsController
                 discoveryController: root.discoveryController
-                onOpenRequested: (url) => root.navigationController.navigateTo(url)
+                onOpenRequested: (url) => root.activeNavigation.navigateTo(url)
                 onConnectRequested: root.coordinator.activateAction("network.connect")
                 onSaveRequested: (url) => windowServices.openConnectDialog(url)
             }
@@ -367,15 +379,22 @@ ApplicationWindow {
         FolderStatusBar {
             Layout.fillWidth: true
             visible: !root.networkMode
-            navigationController: root.navigationController
-            selection: entrySelection
+            navigationController: root.activeNavigation
+            selection: root.activeSelection
+            appCoordinator: root.coordinator
+        }
+
+        FunctionKeyBar {
+            Layout.fillWidth: true
+            visible: !root.networkMode && panes.twoPanes
+            functionKeys: panes.functionKeys
             appCoordinator: root.coordinator
         }
 
         StatusBanners {
             Layout.fillWidth: true
             chooserMode: root.chooserMode
-            navigationController: root.navigationController
+            navigationController: root.activeNavigation
             mutationController: root.mutationController
             placesController: root.placesController
             transferQueueController: root.transferQueueController
@@ -396,10 +415,11 @@ ApplicationWindow {
     MutationDialogs {
         id: mutationDialogs
         anchors.fill: parent
-        navigationController: root.navigationController
+        navigationController: root.activeNavigation
         mutationController: root.mutationController
         transferQueueController: root.transferQueueController
         confirmTrash: root.preferencesController.confirmTrash
+        transferTarget: panes.otherPanePath
     }
 
     PropertiesDialog {
@@ -411,12 +431,12 @@ ApplicationWindow {
     FileActions {
         id: fileActions
         anchors.fill: parent
-        navigationController: root.navigationController
+        navigationController: root.activeNavigation
         mutationController: root.mutationController
         clipboardController: root.clipboardController
         propertiesController: root.propertiesController
         placesController: root.placesController
-        selection: entrySelection
+        selection: root.activeSelection
         openWithController: root.openWithController
         folderLaunchController: root.folderLaunchController
         fileTemplates: root.fileTemplates
@@ -428,9 +448,9 @@ ApplicationWindow {
         anchors.fill: parent
         applicationsController: root.applicationsController
         dockPins: root.dockPins
-        navigationController: root.navigationController
-        selection: entrySelection
-        views: views
+        navigationController: root.activeNavigation
+        selection: root.activeSelection
+        views: panes.activeViews
     }
 
     // ADR-0272: Space, Ctrl+Y and the File menu preview the selection here.
@@ -438,9 +458,9 @@ ApplicationWindow {
         id: quickLook
         objectName: "quickLook"
         anchors.fill: parent
-        selection: entrySelection
-        views: views
-        navigationController: root.navigationController
+        selection: root.activeSelection
+        views: panes.activeViews
+        navigationController: root.activeNavigation
         entryFacts: root.entryFacts
         preferencesController: root.preferencesController
     }
@@ -448,9 +468,9 @@ ApplicationWindow {
     // ADR-0273: org.freedesktop.FileManager1 and --select reveal entries here.
     EntryReveal {
         objectName: "entryReveal"
-        navigationController: root.navigationController
-        selection: entrySelection
-        views: views
+        navigationController: root.activeNavigation
+        selection: root.activeSelection
+        views: panes.activeViews
         coordinator: root.coordinator
     }
 
@@ -461,7 +481,7 @@ ApplicationWindow {
     WindowServices {
         id: windowServices
         anchors.fill: parent
-        navigationController: root.navigationController
+        navigationController: root.activeNavigation
         networkLocationsController: root.networkLocationsController
         preferencesController: root.preferencesController
         discoveryController: root.discoveryController

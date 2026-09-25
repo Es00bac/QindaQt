@@ -20,13 +20,19 @@ namespace {
           QStringLiteral("confirmTrash")};
 }
 
+// AGENT-NOTE: fileManagerStyle and layoutStyle (ADR-0271) joined v2 in the
+// same unreleased round that introduced v2 (ADR-0270), so no v2 document
+// without them was ever written by a released build and no v3 is needed.
+// Any key added after v2 ships needs a new version.
 [[nodiscard]] QStringList version2Keys() {
   return version1Keys() + QStringList{QStringLiteral("groupBy"),
                                       QStringLiteral("detailsColumns"),
                                       QStringLiteral("relativeDates"),
                                       QStringLiteral("rowDensity"),
                                       QStringLiteral("showExtensions"),
-                                      QStringLiteral("folderViews")};
+                                      QStringLiteral("folderViews"),
+                                      QStringLiteral("fileManagerStyle"),
+                                      QStringLiteral("layoutStyle")};
 }
 
 [[nodiscard]] QStringList columnKeys() {
@@ -175,6 +181,8 @@ QJsonObject encode(const Preferences &preferences) {
       {QStringLiteral("rowDensity"), preferences.rowDensity},
       {QStringLiteral("showExtensions"), preferences.showExtensions},
       {QStringLiteral("folderViews"), folderViews},
+      {QStringLiteral("fileManagerStyle"), preferences.fileManagerStyle},
+      {QStringLiteral("layoutStyle"), preferences.layoutStyle},
   };
   return {{QStringLiteral("version"), 2}, {QStringLiteral("preferences"), values}};
 }
@@ -210,6 +218,8 @@ std::optional<Preferences> decode(const QJsonObject &document, int version,
     loaded.rowDensity = reader.text("rowDensity");
     loaded.showExtensions = reader.flag("showExtensions");
     loaded.folderViews = readFolderViews(reader.array("folderViews"), reader);
+    loaded.fileManagerStyle = reader.text("fileManagerStyle");
+    loaded.layoutStyle = reader.text("layoutStyle");
   }
   if (!reader.shaped()) {
     return refuse(diagnostic, "Preference state has an invalid shape");

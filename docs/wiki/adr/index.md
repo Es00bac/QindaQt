@@ -271,5 +271,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0268: Familiar desktop experiences are layout and theme pairs](0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)
 - [ADR-0269: Open With widens the bounded launch, and KArchive backs Compress and Extract](0269-open-with-widens-the-bounded-launch-and-karchive-backs-archives.md)
 - [ADR-0270: File Manager views move to QindaTK](0270-file-manager-views-move-to-qindatk.md)
+- [ADR-0271: File Manager styles are presets over per-tab navigation](0271-file-manager-styles-are-presets-over-per-tab-navigation.md)
 - [ADR-0272: Quick Look and a Recents place read existing authorities](0272-quick-look-and-recents-in-the-file-manager.md)
 - [ADR-0273: Integrate the File Manager with the desktop like Finder](0273-integrate-the-file-manager-with-the-desktop-like-finder.md)

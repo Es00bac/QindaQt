@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+class QObject;
+
 namespace QindaQt::AppShell { class ApplicationCoordinator; }
 namespace QindaQt::Apps::FileManager {
 class MutationController;
@@ -18,7 +20,10 @@ class NavigationController;
 // independent of the current folder (ADR-0137 Consequences), so they are
 // gated only by the mutation-busy slot -- never by
 // NavigationController::remoteActive.
+// ADR-0271: `context`, when given, is the connections' context object in
+// place of `coordinator`; destroying it unbinds (runtime/folder_navigations.h).
 void bindFileManagerMutationActions(AppShell::ApplicationCoordinator &coordinator,
                                     NavigationController &navigation,
-                                    MutationController &mutation);
+                                    MutationController &mutation,
+                                    QObject *context = nullptr);
 } // namespace QindaQt::Apps::FileManager
