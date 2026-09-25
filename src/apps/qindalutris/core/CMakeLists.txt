@@ -29,6 +29,8 @@ qt_add_library(qindaqt_qindalutris_model STATIC
     compat_db_parse.cpp
     compat_db_rules.cpp
     compat_db_rules.h
+    compat_json_scan.cpp
+    compat_json_scan.h
 )
 add_library(QindaQt::QindaLutrisModel ALIAS qindaqt_qindalutris_model)
 
@@ -61,3 +63,26 @@ cmake_path(ABSOLUTE_PATH qindalutris_compat_datadir
     BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}" NORMALIZE)
 target_compile_definitions(qindaqt_qindalutris_model PRIVATE
     "QINDALUTRIS_COMPAT_DB_SHIPPED_PATH=\"${qindalutris_compat_datadir}/qindalutris/compat-db-v1.json\"")
+
+# AGENT-CONTRACT: tools/qindalutris-compat/winetricks-verbs.txt is the single
+# winetricks verb allowlist for BOTH compat-db-v1 validators. The Python side
+# reads it directly; here it becomes a generated include for
+# compat_db_rules.cpp. Editing the list re-runs configure.
+set(qindalutris_verb_list "${PROJECT_SOURCE_DIR}/tools/qindalutris-compat/winetricks-verbs.txt")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${qindalutris_verb_list}")
+file(STRINGS "${qindalutris_verb_list}" qindalutris_verb_lines)
+set(qindalutris_verb_entries "")
+foreach(qindalutris_verb IN LISTS qindalutris_verb_lines)
+    string(STRIP "${qindalutris_verb}" qindalutris_verb)
+    if(qindalutris_verb STREQUAL "" OR qindalutris_verb MATCHES "^#")
+        continue()
+    endif()
+    if(NOT qindalutris_verb MATCHES "^[a-z0-9_=.-]+$")
+        message(FATAL_ERROR "${qindalutris_verb_list}: bad verb line '${qindalutris_verb}'")
+    endif()
+    string(APPEND qindalutris_verb_entries "    \"${qindalutris_verb}\",\n")
+endforeach()
+set(qindalutris_generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(CONFIGURE OUTPUT "${qindalutris_generated_dir}/compat_winetricks_verbs.inc"
+    CONTENT "// GENERATED from tools/qindalutris-compat/winetricks-verbs.txt by\n// src/apps/qindalutris/core/CMakeLists.txt. Do not edit.\n${qindalutris_verb_entries}" @ONLY)
+target_include_directories(qindaqt_qindalutris_model PRIVATE "${qindalutris_generated_dir}")

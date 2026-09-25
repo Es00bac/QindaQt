@@ -30,13 +30,16 @@ inline constexpr int kCompatSchemaVersion = 1;
 [[nodiscard]] bool isSteamAppId(const QString &text);  // [1-9][0-9]{0,9}
 [[nodiscard]] bool isStoreId(const QString &text);     // [A-Za-z0-9._:-]{1,128}
 [[nodiscard]] bool isExeName(const QString &text);     // text<=128, no / or backslash
-[[nodiscard]] bool isWinetricksVerb(const QString &text); // [a-z0-9_=.-]{1,64}
+// [a-z0-9_=.-]{1,64} AND listed in tools/qindalutris-compat/winetricks-verbs.txt.
+[[nodiscard]] bool isWinetricksVerb(const QString &text);
 [[nodiscard]] bool isHttpsUrl(const QString &text);
 [[nodiscard]] bool isUmuStore(const QString &text);
-// isValidEnvironmentAssignment, plus an ASCII identifier key that is not
-// one the launch planner owns (the pin, the prefix, umu identity) or a
-// loader/search-path variable.
+// Case-sensitive environment key allowlist (see compat_db_rules.cpp).
+[[nodiscard]] bool isCompatEnvironmentKey(const QString &key);
+// KEY=VALUE: text of at most 1089 units, an ASCII identifier key of at most
+// 64 on the allowlist, and a value with no '$' or backtick.
 [[nodiscard]] bool isCompatEnvironmentAssignment(const QString &line);
+[[nodiscard]] QString compatEnvironmentKey(const QString &line);
 
 // "YYYY-MM-DDTHH:MM:SSZ" exactly; invalid QDateTime on any deviation.
 [[nodiscard]] QDateTime parseTimestamp(const QString &text);

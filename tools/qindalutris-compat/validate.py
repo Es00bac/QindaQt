@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Validate a compat-db-v1 document with the rules QindaLutris applies.
 
-    validate.py FILE [FILE...]
+    validate.py [--now YYYY-MM-DDTHH:MM:SSZ] FILE [FILE...]
+
+--now injects the clock the "not more than 24 h in the future" rule uses
+(default: the real UTC time).
 
 Exit status 0 when every file is accepted, 1 when any is refused. The rules
 live in qlcompat/schema.py, the twin of the C++ parser (AGENT-CONTRACT there).
@@ -19,9 +22,16 @@ from qlcompat import schema  # noqa: E402
 
 
 def main(argv=None) -> int:
-    paths = sys.argv[1:] if argv is None else argv
+    paths = list(sys.argv[1:] if argv is None else argv)
+    now = None
+    if len(paths) >= 2 and paths[0] == "--now":
+        now = schema.parse_timestamp(paths[1])
+        if now is None:
+            print("validate.py: --now must look like 2026-09-25T00:00:00Z", file=sys.stderr)
+            return 2
+        paths = paths[2:]
     if not paths:
-        print("usage: validate.py FILE [FILE...]", file=sys.stderr)
+        print("usage: validate.py [--now STAMP] FILE [FILE...]", file=sys.stderr)
         return 2
     status = 0
     for name in paths:
@@ -31,7 +41,7 @@ def main(argv=None) -> int:
                 raise schema.Refused("not a regular file (symlinks are refused)")
             if path.stat().st_size > schema.MAX_DB_BYTES:
                 raise schema.Refused("document too large")
-            document = schema.load_bytes(path.read_bytes())
+            document = schema.load_bytes(path.read_bytes(), now)
         except (schema.Refused, OSError) as error:
             print(f"{name}: refused: {error}", file=sys.stderr)
             status = 1

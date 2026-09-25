@@ -39,7 +39,8 @@ qindaqt_add_qindalutris_test(wine-source tst_wine_source.cpp)
 # loaded by both suites so the C++ parser and qlcompat/schema.py cannot drift.
 qindaqt_add_qindalutris_test(compat-db tst_compat_db.cpp)
 qindaqt_add_qindalutris_test(compat-lookup tst_compat_lookup.cpp)
-foreach(qindalutris_compat_test compat-db compat-lookup)
+qindaqt_add_qindalutris_test(compat-rules tst_compat_rules.cpp)
+foreach(qindalutris_compat_test compat-db compat-lookup compat-rules)
     target_compile_definitions(qindaqt_qindalutris_${qindalutris_compat_test}_tests PRIVATE
         "QINDALUTRIS_COMPAT_FIXTURES=\"${CMAKE_CURRENT_SOURCE_DIR}/data/compat\""
         "QINDALUTRIS_COMPAT_SNAPSHOT=\"${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json\"")
@@ -59,6 +60,24 @@ add_test(
         "${PROJECT_SOURCE_DIR}/tools/qindalutris-compat/validate.py"
         "${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json"
 )
+# Differential test: the reviewer's mutation cases plus the allowlist cases,
+# judged by BOTH validators against expected.txt.
+qt_add_executable(qindaqt_qindalutris_compat_judge compat_differential/compat_judge.cpp)
+target_link_libraries(qindaqt_qindalutris_compat_judge PRIVATE QindaQt::QindaLutrisModel)
+target_compile_features(qindaqt_qindalutris_compat_judge PRIVATE cxx_std_20)
+set_target_properties(qindaqt_qindalutris_compat_judge PROPERTIES CXX_EXTENSIONS OFF AUTOUIC OFF)
+qindaqt_enable_warnings(qindaqt_qindalutris_compat_judge)
+add_test(
+    NAME qindaqt.qindalutris-compat-differential
+    COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/compat_differential/run_differential.py"
+        --judge $<TARGET_FILE:qindaqt_qindalutris_compat_judge>
+        --repo "${PROJECT_SOURCE_DIR}"
+        --work "${CMAKE_CURRENT_BINARY_DIR}/compat-differential-cases"
+)
+set_tests_properties(qindaqt.qindalutris-compat-differential
+    PROPERTIES LABELS "apps;qindalutris;tools" TIMEOUT 300
+    ENVIRONMENT "${qindalutris_test_env}")
 set_tests_properties(qindaqt.qindalutris-compat-generator qindaqt.qindalutris-compat-snapshot
     PROPERTIES LABELS "apps;qindalutris;tools" TIMEOUT 120
     ENVIRONMENT "${qindalutris_test_env}")

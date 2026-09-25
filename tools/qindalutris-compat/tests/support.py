@@ -17,6 +17,8 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 SHARED = REPO / "tests" / "apps" / "qindalutris" / "data" / "compat"
 SNAPSHOT = REPO / "src" / "apps" / "qindalutris" / "compat" / "compat-db-v1.json"
 STAMP = "2026-09-20T10:00:00Z"
+# The clock the shared fixtures are judged against (newer.json is 2026-10-01).
+FIXTURE_NOW = "2026-10-02T00:00:00Z"
 
 
 def fixture_bytes(name: str) -> bytes:
@@ -30,7 +32,6 @@ def seeded_cache(directory: Path) -> Fetcher:
         "umu-database.csv": "umu-database.csv",
         "areweanticheatyet-games.json": "areweanticheatyet.json",
         "lutris-battlenet.json": "lutris-battlenet.json",
-        "winetricks-list-all.txt": "winetricks-list-all.txt",
     }
     for name, source in seeds.items():
         fetcher.store(name, CachedResponse("https://example.org/" + name, 200, STAMP,
@@ -44,6 +45,11 @@ def seeded_cache(directory: Path) -> Fetcher:
     fetcher.store("steamdeck-359550.json", CachedResponse(
         "https://store.steampowered.com/y", 200, "2026-09-22T00:00:00Z",
         b'{"success": 1, "results": []}'))
+    for appid, name in (("359550", "Rainbow Six Siege"), ("961200", "Predecessor")):
+        body = ('{"%s": {"success": true, "data": {"steam_appid": %s, "name": "%s"}}}'
+                % (appid, appid, name)).encode()
+        fetcher.store(f"steam-appdetails-{appid}.json", CachedResponse(
+            "https://store.steampowered.com/z", 200, "2026-09-23T00:00:00Z", body))
     fetcher.store("protondb-359550.json", CachedResponse(
         "https://www.protondb.com/y", 404, "2026-09-21T00:00:00Z", None))
     return fetcher

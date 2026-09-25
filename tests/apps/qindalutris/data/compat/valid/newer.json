@@ -15,7 +15,7 @@
   }
  ],
  "defaults": {
-  "recommendedBuild": "GE-Proton11-7-x86_64"
+  "recommendedBuild": "Proton 9.0 (Beta)"
  },
  "builds": {
   "GE-Proton11-6-x86_64": {
@@ -27,7 +27,7 @@
    "notes": "WoW render-loop stalls"
   },
   "Proton 9.0 (Beta)": {
-   "status": "untested",
+   "status": "tested",
    "notes": ""
   }
  },

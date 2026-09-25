@@ -4,6 +4,8 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+#include <sys/stat.h>
+
 #include "compat_db.h"
 
 using namespace QindaQt::QindaLutris;
@@ -14,12 +16,16 @@ using namespace QindaQt::QindaLutris;
 // (tools/qindalutris-compat/tests), so both sides judge the same bytes.
 namespace {
 
+// The fixed clock every fixture is judged against (newer.json is stamped
+// 2026-10-01, which must not count as "in the future").
+const QDateTime kNow(QDate(2026, 10, 2), QTime(0, 0), QTimeZone::UTC);
+
 QString fixture(const QString &name) {
   return QStringLiteral(QINDALUTRIS_COMPAT_FIXTURES) + QLatin1Char('/') + name;
 }
 
 CompatDatabase load(const QString &path, CompatLoadError *error) {
-  return loadCompatDatabase(path, error);
+  return loadCompatDatabase(path, error, kNow);
 }
 
 bool writeFile(const QString &path, const QByteArray &bytes) {
@@ -92,7 +98,7 @@ private Q_SLOTS:
     QTest::addColumn<QString>("path");
     const QDir dir(fixture(QStringLiteral("refused")));
     const QStringList names = dir.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
-    QVERIFY(names.size() >= 40);
+    QVERIFY(names.size() >= 60);
     for (const QString &name : names) {
       QTest::newRow(qPrintable(name)) << dir.filePath(name);
     }
@@ -151,14 +157,14 @@ private Q_SLOTS:
     CompatLoadError error = CompatLoadError::None;
     QVERIFY(!load(path, &error).isLoaded());
     QCOMPARE(error, CompatLoadError::Refused);
-    QVERIFY(!parseCompatDocument(bytes).has_value());
+    QVERIFY(!parseCompatDocument(bytes, kNow).has_value());
     bytes.chop(1);
-    QVERIFY(parseCompatDocument(bytes).has_value());
+    QVERIFY(parseCompatDocument(bytes, kNow).has_value());
   }
 
   void tooManyGamesIsRefused() {
-    QVERIFY(parseCompatDocument(minimalWithGames(3)).has_value());
-    QVERIFY(!parseCompatDocument(minimalWithGames(kMaxCompatGames + 1)).has_value());
+    QVERIFY(parseCompatDocument(minimalWithGames(3), kNow).has_value());
+    QVERIFY(!parseCompatDocument(minimalWithGames(kMaxCompatGames + 1), kNow).has_value());
   }
 
   void newerGeneratedStampWins() {
@@ -166,9 +172,9 @@ private Q_SLOTS:
     const CompatDatabase older = load(fixture(QStringLiteral("valid/basic.json")), &error);
     const CompatDatabase newer = load(fixture(QStringLiteral("valid/newer.json")), &error);
     QVERIFY(older.isLoaded() && newer.isLoaded());
-    QCOMPARE(chooseNewer(older, newer).generated(), newer.generated());
-    QCOMPARE(chooseNewer(newer, older).generated(), newer.generated());
-    QCOMPARE(chooseNewer(older, newer).recommendedBuild(), QStringLiteral("GE-Proton11-7-x86_64"));
+    QCOMPARE(chooseNewer(older, newer, kNow).generated(), newer.generated());
+    QCOMPARE(chooseNewer(newer, older, kNow).generated(), newer.generated());
+    QCOMPARE(chooseNewer(older, newer, kNow).recommendedBuild(), QStringLiteral("Proton 9.0 (Beta)"));
   }
 
   void refusedOrAbsentCopyNeverWins() {
@@ -176,12 +182,12 @@ private Q_SLOTS:
     const CompatDatabase shipped = load(fixture(QStringLiteral("valid/basic.json")), &error);
     const CompatDatabase refused = load(fixture(QStringLiteral("refused/wrong-schema.json")), &error);
     QCOMPARE(error, CompatLoadError::Refused);
-    QCOMPARE(chooseNewer(shipped, refused).generated(), shipped.generated());
-    QCOMPARE(chooseNewer(refused, shipped).generated(), shipped.generated());
-    QVERIFY(!chooseNewer(CompatDatabase(), CompatDatabase()).isLoaded());
+    QCOMPARE(chooseNewer(shipped, refused, kNow).generated(), shipped.generated());
+    QCOMPARE(chooseNewer(refused, shipped, kNow).generated(), shipped.generated());
+    QVERIFY(!chooseNewer(CompatDatabase(), CompatDatabase(), kNow).isLoaded());
     // A tie keeps the shipped copy (the overlay package is the vetted one).
     const CompatDatabase same = load(fixture(QStringLiteral("valid/basic.json")), &error);
-    QCOMPARE(chooseNewer(shipped, same).generated(), shipped.generated());
+    QCOMPARE(chooseNewer(shipped, same, kNow).generated(), shipped.generated());
   }
 
   void effectiveDatabaseReadsBothInjectedPaths() {
@@ -190,14 +196,14 @@ private Q_SLOTS:
     const QString refreshed = refreshedCompatDatabasePath(home.path());
     QCOMPARE(refreshed, home.path() + QStringLiteral("/qindalutris/compat-db-v1.json"));
     const QString shipped = fixture(QStringLiteral("valid/basic.json"));
-    QCOMPARE(loadEffectiveCompatDatabase(shipped, refreshed).generated(),
+    QCOMPARE(loadEffectiveCompatDatabase(shipped, refreshed, kNow).generated(),
              QDateTime(QDate(2026, 9, 25), QTime(12, 0), QTimeZone::UTC));
     QVERIFY(QDir().mkpath(home.filePath(QStringLiteral("qindalutris"))));
     QVERIFY(QFile::copy(fixture(QStringLiteral("valid/newer.json")), refreshed));
-    QCOMPARE(loadEffectiveCompatDatabase(shipped, refreshed).generated(),
+    QCOMPARE(loadEffectiveCompatDatabase(shipped, refreshed, kNow).generated(),
              QDateTime(QDate(2026, 10, 1), QTime(0, 0), QTimeZone::UTC));
     QVERIFY(!loadEffectiveCompatDatabase(home.filePath(QStringLiteral("x")),
-                                         home.filePath(QStringLiteral("y"))).isLoaded());
+                                         home.filePath(QStringLiteral("y")), kNow).isLoaded());
   }
 
   void shippedPathIsUnderTheInstallDatadir() {
@@ -205,11 +211,23 @@ private Q_SLOTS:
     QVERIFY(shippedCompatDatabasePath().endsWith(QStringLiteral("/qindalutris/compat-db-v1.json")));
   }
 
+  void fifoIsRefusedWithoutBlocking() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString fifo = dir.filePath(QStringLiteral("compat-db-v1.json"));
+    QCOMPARE(::mkfifo(QFile::encodeName(fifo).constData(), 0600), 0);
+    CompatLoadError error = CompatLoadError::None;
+    QVERIFY(!load(fifo, &error).isLoaded());
+    QCOMPARE(error, CompatLoadError::Refused);
+  }
+
   // AGENT-GUARD: the committed snapshot is what ships; if the generator and
-  // this parser drift apart, this row fails before a release does.
+  // this parser drift apart, this row fails before a release does. Judged
+  // against the real clock, as the app will.
   void committedSnapshotLoads() {
     CompatLoadError error = CompatLoadError::Refused;
-    const CompatDatabase db = load(QStringLiteral(QINDALUTRIS_COMPAT_SNAPSHOT), &error);
+    const CompatDatabase db =
+        loadCompatDatabase(QStringLiteral(QINDALUTRIS_COMPAT_SNAPSHOT), &error);
     QCOMPARE(error, CompatLoadError::None);
     QVERIFY(db.games().size() > 1000);
     QCOMPARE(db.recommendedBuild(), QStringLiteral("GE-Proton11-6-x86_64"));

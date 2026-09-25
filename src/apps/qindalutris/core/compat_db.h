@@ -16,11 +16,12 @@ namespace QindaQt::QindaLutris {
 // AGENT-CONTRACT: the compatibility database `compat-db-v1` (ADR-0275 §3,
 // schema in docs/wiki/apps/qindalutris-compat-db.md). Producer:
 // tools/qindalutris-compat/generate.py, whose validator
-// tools/qindalutris-compat/qlcompat/schema.py enforces the SAME rules as
-// compat_db_parse.cpp -- a rule changed on one side must change on the
-// other in the same commit, and the committed snapshot
-// src/apps/qindalutris/compat/compat-db-v1.json is loaded by both test
-// suites to catch drift. A document failing any rule is refused WHOLE: the
+// tools/qindalutris-compat/qlcompat/schema.py (+ schema_rules.py) enforces
+// the SAME rules as compat_db_parse.cpp, compat_db_rules.cpp and
+// compat_json_scan.cpp -- a rule changed on one side must change on the
+// other in the same commit. Both sides judge the shared fixtures, the
+// differential cases under tests/apps/qindalutris/compat_differential and
+// the committed snapshot src/apps/qindalutris/compat/compat-db-v1.json. A document failing any rule is refused WHOLE: the
 // caller gets an empty database ("no advice"), never a partial one.
 
 inline constexpr qint64 kMaxCompatDbBytes = qint64(32) * 1024 * 1024;
@@ -34,6 +35,9 @@ inline constexpr int kMaxCompatTextChars = 2048;
 inline constexpr int kMaxCompatUrlChars = 2048;
 inline constexpr int kMaxCompatArgumentChars = 512;
 inline constexpr int kMaxCompatVerbChars = 64;
+// `generated` and every `sources[].retrieved` may be at most this far ahead
+// of the clock the document is judged against.
+inline constexpr qint64 kCompatFutureSlackSeconds = qint64(24) * 60 * 60;
 
 enum class CompatBuildStatus { Untested, Tested, KnownIssues };
 enum class AntiCheatStatus {
@@ -90,7 +94,7 @@ struct CompatGame {
   CompatGameKeys keys;
   QString recommendedBuild; // empty = use the database default
   QVector<CompatAvoid> avoid;
-  QStringList environment; // KEY=VALUE, planner-reserved keys refused
+  QStringList environment; // KEY=VALUE, allowlisted keys only, each once
   QStringList winetricks;  // verbs, applied via `umu-run winetricks <verbs>`
   QStringList arguments;
   AntiCheatStatus antiCheat = AntiCheatStatus::Unknown;
@@ -182,24 +186,31 @@ private:
 
 enum class CompatLoadError { None, Absent, Refused };
 
-// Parses the bytes of one document; nullopt = refused whole.
+// Parses the bytes of one document; nullopt = refused whole. `now` is the
+// injected clock for the future-stamp rule (tests pass a fixed one).
 [[nodiscard]] std::optional<CompatDocument> parseCompatDocument(
-    const QByteArray &bytes);
+    const QByteArray &bytes, const QDateTime &now = QDateTime::currentDateTimeUtc());
 
-// Reads one document from disk. Refuses a symlink, a non-regular file, and
-// a file over kMaxCompatDbBytes before parsing. Blocking file I/O: call off
-// the UI thread for large documents.
-[[nodiscard]] CompatDatabase loadCompatDatabase(const QString &path,
-                                                CompatLoadError *error);
+// Reads one document from disk. The file is opened with O_NOFOLLOW and
+// checked with fstat on the open descriptor, so a symlink, a non-regular
+// file, or a file over kMaxCompatDbBytes is refused before a byte is parsed
+// and cannot be swapped in between the check and the read. Blocking file
+// I/O: call off the UI thread for large documents.
+[[nodiscard]] CompatDatabase loadCompatDatabase(
+    const QString &path, CompatLoadError *error,
+    const QDateTime &now = QDateTime::currentDateTimeUtc());
 
 // ADR-0275 §3: the copy with the newer `generated` stamp wins; an unloaded
-// (absent or refused) copy never wins; a tie keeps the shipped copy.
-[[nodiscard]] CompatDatabase chooseNewer(const CompatDatabase &shipped,
-                                         const CompatDatabase &refreshed);
+// (absent or refused) copy, or one stamped more than 24 h after `now`, never
+// wins; a tie keeps the shipped copy.
+[[nodiscard]] CompatDatabase chooseNewer(
+    const CompatDatabase &shipped, const CompatDatabase &refreshed,
+    const QDateTime &now = QDateTime::currentDateTimeUtc());
 
-// Loads both copies and applies chooseNewer. Paths are injected.
+// Loads both copies and applies chooseNewer. Paths and clock are injected.
 [[nodiscard]] CompatDatabase loadEffectiveCompatDatabase(
-    const QString &shippedPath, const QString &refreshedPath);
+    const QString &shippedPath, const QString &refreshedPath,
+    const QDateTime &now = QDateTime::currentDateTimeUtc());
 
 // `<datadir>/qindalutris/compat-db-v1.json` of the install prefix the model
 // was configured for (normally /usr/share/qindalutris/compat-db-v1.json).

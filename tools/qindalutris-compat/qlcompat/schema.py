@@ -1,19 +1,24 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The compat-db-v1 validator.
+"""The compat-db-v1 validator: document structure and cross-field rules.
 
-AGENT-CONTRACT: this module is the Python twin of
-src/apps/qindalutris/core/compat_db_parse.cpp and compat_db_rules.cpp. Every
-rule here exists there and vice versa; change both in the same commit and
-update docs/wiki/apps/qindalutris-compat-db.md. Lengths are UTF-16 code units
-(u16len) because the C++ side measures QString::size(). The committed
-snapshot is loaded by both test suites, so drift fails a gate.
+AGENT-CONTRACT: this module (with schema_rules.py) is the Python twin of
+src/apps/qindalutris/core/compat_db_parse.cpp, compat_json_scan.cpp and
+compat_db_rules.cpp. Every rule here exists there and vice versa; change
+both in the same commit and update docs/wiki/apps/qindalutris-compat-db.md.
+The shared fixtures and the differential cases under
+tests/apps/qindalutris/ are judged by both sides, so drift fails a gate.
 """
 
 from __future__ import annotations
 
 import datetime
-import re
-import unicodedata
+import json
+
+from .schema_rules import (  # noqa: F401  (re-exported for the generator)
+    MAX_ENV_LINE, MAX_TEXT, MAX_URL, WINETRICKS_HEADER, WINETRICKS_VERBS, env_key,
+    is_build_name, is_env_assignment, is_env_key, is_exe_name, is_game_id,
+    is_https_url, is_source_id, is_steam_app_id, is_store_id, is_text, is_umu_id,
+    is_verb_shape, is_winetricks_verb, parse_timestamp, u16len)
 
 SCHEMA_NAME = "qindalutris-compat-db"
 SCHEMA_VERSION = 1
@@ -24,12 +29,12 @@ MAX_SOURCES = 32
 MAX_BUILDS = 256
 MAX_LIST = 64
 MAX_ENV = 32  # kMaxExtraEnvironmentEntries
-MAX_ENV_LINE = 1024 + 65  # kMaxEnvironmentValueChars + 65
 MAX_TITLE = 256  # kMaxGameTitleChars
-MAX_TEXT = 2048
-MAX_URL = 2048
 MAX_ARGUMENT = 512
 MAX_BUILD_NAME = 128
+# A document stamped further ahead than this is refused: a wrong clock or a
+# forged stamp must not let one copy win chooseNewer forever.
+FUTURE_SLACK = datetime.timedelta(hours=24)
 
 STORES = ("egs", "gog", "amazon", "ubisoft", "ea", "battlenet", "humble",
           "itchio", "zoomplatform")
@@ -41,89 +46,10 @@ ANTICHEAT_STATUSES = ("supported", "running", "broken", "denied", "planned",
 PROTONDB_TIERS = ("platinum", "gold", "silver", "bronze", "borked", "native",
                   "pending", "unknown")
 STEAM_DECK_CATEGORIES = ("verified", "playable", "unsupported", "unknown")
-# AGENT-GUARD: keys the launch planner owns, plus loader/search paths. A
-# database that could set PROTONPATH would re-pin titles on refresh.
-RESERVED_ENV = frozenset((
-    "PROTONPATH", "WINEPREFIX", "GAMEID", "STORE", "UMU_ID",
-    "UMU_RUNTIME_UPDATE", "PROTON_VERB", "STEAM_COMPAT_DATA_PATH",
-    "STEAM_COMPAT_CLIENT_INSTALL_PATH", "PATH", "HOME", "WINE"))
-
-_GAME_ID = re.compile(r"[a-z0-9][a-z0-9._:-]{0,127}")
-_SOURCE_ID = re.compile(r"[a-z0-9][a-z0-9-]{0,63}")
-_UMU_ID = re.compile(r"umu-[A-Za-z0-9._-]{1,124}")
-_STEAM_ID = re.compile(r"[1-9][0-9]{0,9}")
-_STORE_ID = re.compile(r"[A-Za-z0-9._:-]{1,128}")
-_VERB = re.compile(r"[a-z0-9_=.-]{1,64}")
-_BUILD = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._+()-]{0,127}")
-_URL = re.compile(r"https://[A-Za-z0-9.-]+(:[0-9]{1,5})?([/?#][!-~]*)?")
-_ENV_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}")
-_TIMESTAMP = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
 
 
 class Refused(ValueError):
     """The document breaks a rule; the whole document is refused."""
-
-
-def u16len(text: str) -> int:
-    # surrogatepass: a lone surrogate from a JSON \\ud800 escape is one
-    # UTF-16 unit, as in QString, instead of an encoding crash.
-    return len(text.encode("utf-16-le", "surrogatepass")) // 2
-
-
-def is_text(text, max_len: int, allow_empty: bool = False) -> bool:
-    if not isinstance(text, str) or u16len(text) > max_len:
-        return False
-    if not allow_empty and not text:
-        return False
-    return not any(unicodedata.category(ch) == "Cc" for ch in text)
-
-
-def _full(pattern: re.Pattern, text) -> bool:
-    return isinstance(text, str) and pattern.fullmatch(text) is not None
-
-
-def is_game_id(text) -> bool: return _full(_GAME_ID, text)
-def is_source_id(text) -> bool: return _full(_SOURCE_ID, text)
-def is_umu_id(text) -> bool: return _full(_UMU_ID, text)
-def is_steam_app_id(text) -> bool: return _full(_STEAM_ID, text)
-def is_store_id(text) -> bool: return _full(_STORE_ID, text)
-def is_winetricks_verb(text) -> bool: return _full(_VERB, text)
-
-
-def is_build_name(text) -> bool:
-    return _full(_BUILD, text) and not text.endswith(" ")
-
-
-def is_https_url(text) -> bool:
-    return _full(_URL, text) and len(text) <= MAX_URL
-
-
-def is_exe_name(text) -> bool:
-    return is_text(text, 128) and "/" not in text and "\\" not in text
-
-
-def is_env_assignment(line) -> bool:
-    """isValidEnvironmentAssignment plus the database's stricter key rule."""
-    if not isinstance(line, str) or u16len(line) > MAX_ENV_LINE:
-        return False
-    equals = line.find("=")
-    if equals <= 0 or not is_text(line, MAX_ENV_LINE):
-        return False
-    key = line[:equals]
-    if not _full(_ENV_KEY, key) or key in RESERVED_ENV:
-        return False
-    return not key.startswith("LD_")
-
-
-def parse_timestamp(text):
-    """The exact "YYYY-MM-DDTHH:MM:SSZ" form; None on any deviation."""
-    if not _full(_TIMESTAMP, text):
-        return None
-    try:
-        return datetime.datetime.strptime(text, "%Y-%m-%dT%H:%M:%SZ").replace(
-            tzinfo=datetime.timezone.utc)
-    except ValueError:
-        return None
 
 
 def _require(condition: bool, where: str) -> None:
@@ -161,7 +87,8 @@ def _check_keys(keys, where):
                            "titles"), where)
     if "umuId" in keys:
         _require(is_umu_id(keys["umuId"]), f"{where}.umuId")
-    _string_list(keys.get("steamAppIds", _MISSING), MAX_LIST, is_steam_app_id, f"{where}.steamAppIds")
+    _string_list(keys.get("steamAppIds", _MISSING), MAX_LIST, is_steam_app_id,
+                 f"{where}.steamAppIds")
     _string_list(keys.get("exeNames", _MISSING), MAX_LIST, is_exe_name, f"{where}.exeNames")
     _string_list(keys.get("titles", _MISSING), MAX_LIST, lambda t: is_text(t, MAX_TITLE),
                  f"{where}.titles")
@@ -173,23 +100,36 @@ def _check_keys(keys, where):
         _require(len(ids) > 0, f"{where}.storeIds.{store}: empty")
 
 
-def _check_proton(proton, where):
+def _is_tested(builds: dict, name) -> bool:
+    return isinstance(name, str) and builds.get(name, {}).get("status") == "tested"
+
+
+def _check_proton(proton, builds, where):
     _exact_keys(proton, (), ("recommended", "avoid"), where)
     if "recommended" in proton:
         _require(is_build_name(proton["recommended"]), f"{where}.recommended")
+        # A pin may only name a build the database lists as tested.
+        _require(_is_tested(builds, proton["recommended"]),
+                 f"{where}.recommended: not a tested build")
     avoid = proton.get("avoid", [])
     _require(isinstance(avoid, list) and len(avoid) <= MAX_LIST, f"{where}.avoid")
-    builds = set()
+    seen = set()
     for item in avoid:
         _exact_keys(item, ("build", "reason", "source"), (), f"{where}.avoid")
         _require(is_build_name(item["build"]), f"{where}.avoid.build")
         _require(is_text(item["reason"], MAX_TEXT), f"{where}.avoid.reason")
         _require(is_text(item["source"], MAX_TEXT), f"{where}.avoid.source")
-        _require(item["build"] not in builds, f"{where}.avoid: duplicate build")
-        builds.add(item["build"])
+        _require(item["build"] not in seen, f"{where}.avoid: duplicate build")
+        seen.add(item["build"])
 
 
-def check_game(game, where="game"):
+def _check_environment(value, where):
+    lines = _string_list(value, MAX_ENV, is_env_assignment, where)
+    keys = [env_key(line) for line in lines]
+    _require(len(keys) == len(set(keys)), f"{where}: a key is set twice")
+
+
+def check_game(game, builds: dict, where="game"):
     _exact_keys(game, ("id", "title", "keys"),
                 ("proton", "environment", "winetricks", "arguments", "antiCheat",
                  "protondbTier", "steamDeck", "umuStore", "notes", "links"), where)
@@ -198,7 +138,7 @@ def check_game(game, where="game"):
     _require(is_text(game["title"], MAX_TITLE), f"{where}.title")
     _check_keys(game["keys"], f"{where}.keys")
     if "proton" in game:
-        _check_proton(game["proton"], f"{where}.proton")
+        _check_proton(game["proton"], builds, f"{where}.proton")
     if "antiCheat" in game:
         anti = game["antiCheat"]
         _exact_keys(anti, ("status",), ("notes",), f"{where}.antiCheat")
@@ -215,22 +155,30 @@ def check_game(game, where="game"):
                      f"{where}.steamDeck.notes")
     if "umuStore" in game:
         _require(game["umuStore"] in UMU_STORES, f"{where}.umuStore")
-    _string_list(game.get("environment", _MISSING), MAX_ENV, is_env_assignment, f"{where}.environment")
-    _string_list(game.get("winetricks", _MISSING), MAX_LIST, is_winetricks_verb, f"{where}.winetricks")
-    _string_list(game.get("arguments", _MISSING), MAX_LIST, lambda t: is_text(t, MAX_ARGUMENT),
-                 f"{where}.arguments")
-    _string_list(game.get("notes", _MISSING), MAX_LIST, lambda t: is_text(t, MAX_TEXT), f"{where}.notes")
+    _check_environment(game.get("environment", _MISSING), f"{where}.environment")
+    _string_list(game.get("winetricks", _MISSING), MAX_LIST, is_winetricks_verb,
+                 f"{where}.winetricks")
+    _string_list(game.get("arguments", _MISSING), MAX_LIST,
+                 lambda t: is_text(t, MAX_ARGUMENT), f"{where}.arguments")
+    _string_list(game.get("notes", _MISSING), MAX_LIST, lambda t: is_text(t, MAX_TEXT),
+                 f"{where}.notes")
     _string_list(game.get("links", _MISSING), MAX_LIST, is_https_url, f"{where}.links")
 
 
-def _check_header(doc):
+def _check_stamp(text, now, where):
+    stamp = parse_timestamp(text)
+    _require(stamp is not None, where)
+    _require(stamp <= now + FUTURE_SLACK, f"{where}: more than 24 h in the future")
+
+
+def _check_header(doc, now):
     _exact_keys(doc, ("schema", "version", "generated", "sources", "defaults",
                       "builds", "games"), (), "document")
     _require(doc["schema"] == SCHEMA_NAME, "schema")
     version = doc["version"]
     _require(isinstance(version, (int, float)) and not isinstance(version, bool)
              and version == SCHEMA_VERSION, "version")
-    _require(parse_timestamp(doc["generated"]) is not None, "generated")
+    _check_stamp(doc["generated"], now, "generated")
     sources = doc["sources"]
     _require(isinstance(sources, list) and len(sources) <= MAX_SOURCES, "sources")
     ids = set()
@@ -238,7 +186,7 @@ def _check_header(doc):
         _exact_keys(source, ("id", "url", "retrieved"), (), "sources")
         _require(is_source_id(source["id"]) and source["id"] not in ids, "sources.id")
         _require(is_https_url(source["url"]), "sources.url")
-        _require(parse_timestamp(source["retrieved"]) is not None, "sources.retrieved")
+        _check_stamp(source["retrieved"], now, "sources.retrieved")
         ids.add(source["id"])
     builds = doc["builds"]
     _require(isinstance(builds, dict) and len(builds) <= MAX_BUILDS, "builds")
@@ -250,8 +198,8 @@ def _check_header(doc):
     defaults = doc["defaults"]
     _exact_keys(defaults, ("recommendedBuild",), (), "defaults")
     recommended = defaults["recommendedBuild"]
-    _require(isinstance(recommended, str) and (recommended == "" or recommended in builds),
-             "defaults.recommendedBuild")
+    _require(recommended == "" or _is_tested(builds, recommended),
+             "defaults.recommendedBuild: not empty and not a tested build")
 
 
 def _check_strong_keys(games):
@@ -274,14 +222,22 @@ def _check_strong_keys(games):
                                           f"{owner} and {game['id']}")
 
 
-def validate_document(doc, byte_size: int | None = None) -> None:
-    """Raise Refused on the first broken rule; return None when valid."""
+def utc_now() -> datetime.datetime:
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def validate_document(doc, byte_size: int | None = None, now=None) -> None:
+    """Raise Refused on the first broken rule; return None when valid.
+
+    `now` is the injected clock (UTC datetime); default the real one.
+    """
+    now = now or utc_now()
     _require(byte_size is None or byte_size <= MAX_DB_BYTES, "document too large")
-    _check_header(doc)
+    _check_header(doc, now)
     games = doc["games"]
     _require(isinstance(games, list) and len(games) <= MAX_GAMES, "games")
     for game in games:
-        check_game(game)
+        check_game(game, doc["builds"])
     _check_strong_keys(games)
 
 
@@ -289,13 +245,28 @@ def _refuse_constant(name):
     raise Refused(f"non-finite number {name}")
 
 
-def load_bytes(data: bytes):
+def _refuse_duplicates(pairs):
+    # AGENT-CONTRACT: duplicate object keys refuse the document on both
+    # sides (compat_json_scan.cpp does the same on the raw bytes).
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise Refused(f"duplicate object key {key!r}")
+        result[key] = value
+    return result
+
+
+def load_bytes(data: bytes, now=None):
     """Parse and validate one document's bytes; raise Refused if invalid."""
-    import json
     _require(len(data) <= MAX_DB_BYTES, "document too large")
     try:
-        doc = json.loads(data.decode("utf-8"), parse_constant=_refuse_constant)
-    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as error:
+        # Strict UTF-8 without BOM skipping: a BOM is refused, as in C++.
+        doc = json.loads(data.decode("utf-8"), parse_constant=_refuse_constant,
+                         object_pairs_hook=_refuse_duplicates)
+    except (UnicodeDecodeError, RecursionError, ValueError) as error:
+        # ValueError covers JSONDecodeError and the int-digit limit.
+        if isinstance(error, Refused):
+            raise
         raise Refused(f"not JSON: {error}") from None
-    validate_document(doc, len(data))
+    validate_document(doc, len(data), now)
     return doc

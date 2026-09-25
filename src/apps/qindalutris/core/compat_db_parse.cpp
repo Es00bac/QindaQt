@@ -2,6 +2,7 @@
 #include "compat_db.h"
 
 #include "compat_db_rules.h"
+#include "compat_json_scan.h"
 #include "game.h"
 
 #include <QJsonArray>
@@ -10,7 +11,8 @@
 #include <QSet>
 
 // AGENT-CONTRACT: every rule in this file has a twin in
-// tools/qindalutris-compat/qlcompat/schema.py (the generator's validator).
+// tools/qindalutris-compat/qlcompat/schema.py and schema_rules.py (the
+// generator's validator); the byte-level rules live in compat_json_scan.cpp.
 // Keep the two in step, and keep docs/wiki/apps/qindalutris-compat-db.md
 // describing both. Parsing is all-or-nothing: each helper returns false on
 // the first out-of-set value and the caller discards the whole document.
@@ -68,6 +70,21 @@ bool stringField(const QJsonValue &value, const auto &accept, QString *out) {
 const auto kIsTitle = [](const QString &t) { return isText(t, kMaxGameTitleChars, false); };
 const auto kIsNote = [](const QString &t) { return isText(t, kMaxCompatTextChars, false); };
 
+using Builds = QHash<QString, CompatBuildInfo>;
+
+// A pin -- the database default or a game's recommendation -- may only name
+// a build the same document lists as tested.
+bool isTestedBuild(const Builds &builds, const QString &name) {
+  const auto it = builds.constFind(name);
+  return it != builds.constEnd() && it->status == CompatBuildStatus::Tested;
+}
+
+// A stamp more than 24 h ahead of the injected clock is a wrong clock or a
+// forgery; it must not let a copy win chooseNewer (qlcompat FUTURE_SLACK).
+bool notFuture(const QDateTime &stamp, const QDateTime &now) {
+  return stamp.isValid() && stamp <= now.addSecs(kCompatFutureSlackSeconds);
+}
+
 bool parseKeys(const QJsonValue &value, CompatGameKeys *keys) {
   if (!value.isObject()) return false;
   const QJsonObject object = value.toObject();
@@ -101,13 +118,14 @@ bool parseKeys(const QJsonValue &value, CompatGameKeys *keys) {
   return true;
 }
 
-bool parseProton(const QJsonValue &value, CompatGame *game) {
+bool parseProton(const QJsonValue &value, const Builds &known, CompatGame *game) {
   if (!value.isObject()) return false;
   const QJsonObject object = value.toObject();
   if (!exactKeys(object, {}, {"recommended", "avoid"})) return false;
   const QJsonValue recommended = object.value(QStringLiteral("recommended"));
   if (!recommended.isUndefined()
-      && !stringField(recommended, isValidCompatBuildName, &game->recommendedBuild)) {
+      && (!stringField(recommended, isValidCompatBuildName, &game->recommendedBuild)
+          || !isTestedBuild(known, game->recommendedBuild))) {
     return false;
   }
   const QJsonValue avoid = object.value(QStringLiteral("avoid"));
@@ -157,7 +175,17 @@ bool parseSteamDeck(const QJsonValue &value, CompatGame *game) {
                       &game->steamDeckNotes);
 }
 
-bool parseGame(const QJsonValue &value, CompatGame *game) {
+bool uniqueEnvironmentKeys(const QStringList &environment) {
+  QSet<QString> keys;
+  for (const QString &line : environment) {
+    const QString key = compatEnvironmentKey(line);
+    if (keys.contains(key)) return false;
+    keys.insert(key);
+  }
+  return true;
+}
+
+bool parseGame(const QJsonValue &value, const Builds &known, CompatGame *game) {
   if (!value.isObject()) return false;
   const QJsonObject object = value.toObject();
   if (!exactKeys(object, {"id", "title", "keys"},
@@ -169,7 +197,7 @@ bool parseGame(const QJsonValue &value, CompatGame *game) {
     return false;
   }
   const QJsonValue proton = object.value(QStringLiteral("proton"));
-  if (!proton.isUndefined() && !parseProton(proton, game)) return false;
+  if (!proton.isUndefined() && !parseProton(proton, known, game)) return false;
   const QJsonValue antiCheat = object.value(QStringLiteral("antiCheat"));
   if (!antiCheat.isUndefined() && !parseAntiCheat(antiCheat, game)) return false;
   const QJsonValue tier = object.value(QStringLiteral("protondbTier"));
@@ -190,6 +218,7 @@ bool parseGame(const QJsonValue &value, CompatGame *game) {
   };
   return optionalList(object, "environment", kMaxExtraEnvironmentEntries,
                       isCompatEnvironmentAssignment, &game->environment)
+      && uniqueEnvironmentKeys(game->environment)
       && optionalList(object, "winetricks", kMaxCompatListEntries,
                       isWinetricksVerb, &game->winetricks)
       && optionalList(object, "arguments", kMaxCompatListEntries, isArgument,
@@ -199,7 +228,8 @@ bool parseGame(const QJsonValue &value, CompatGame *game) {
                       &game->links);
 }
 
-bool parseSources(const QJsonValue &value, QVector<CompatSource> *sources) {
+bool parseSources(const QJsonValue &value, const QDateTime &now,
+                  QVector<CompatSource> *sources) {
   if (!value.isArray() || value.toArray().size() > kMaxCompatSources) return false;
   QSet<QString> ids;
   for (const QJsonValue &entry : value.toArray()) {
@@ -217,6 +247,7 @@ bool parseSources(const QJsonValue &value, QVector<CompatSource> *sources) {
       return false;
     }
     source.retrieved = parseTimestamp(retrieved);
+    if (!notFuture(source.retrieved, now)) return false;
     ids.insert(source.id);
     sources->append(source);
   }
@@ -245,7 +276,7 @@ bool parseBuilds(const QJsonValue &value, QHash<QString, CompatBuildInfo> *build
   return true;
 }
 
-bool parseHeader(const QJsonObject &root, CompatDocument *document) {
+bool parseHeader(const QJsonObject &root, const QDateTime &now, CompatDocument *document) {
   if (!exactKeys(root, {"schema", "version", "generated", "sources", "defaults",
                         "builds", "games"})
       || root.value(QStringLiteral("schema")) != QLatin1String(kCompatSchemaName)
@@ -256,8 +287,8 @@ bool parseHeader(const QJsonObject &root, CompatDocument *document) {
   const QJsonValue generated = root.value(QStringLiteral("generated"));
   document->generated = generated.isString() ? parseTimestamp(generated.toString())
                                              : QDateTime();
-  if (!document->generated.isValid()
-      || !parseSources(root.value(QStringLiteral("sources")), &document->sources)
+  if (!notFuture(document->generated, now)
+      || !parseSources(root.value(QStringLiteral("sources")), now, &document->sources)
       || !parseBuilds(root.value(QStringLiteral("builds")), &document->builds)) {
     return false;
   }
@@ -268,15 +299,18 @@ bool parseHeader(const QJsonObject &root, CompatDocument *document) {
   const QJsonValue recommended = defaults.toObject().value(QStringLiteral("recommendedBuild"));
   if (!recommended.isString()) return false;
   document->recommendedBuild = recommended.toString();
-  // The default pin must be a build the database itself describes.
+  // The default pin must be a build the database itself lists as tested.
   return document->recommendedBuild.isEmpty()
-      || document->builds.contains(document->recommendedBuild);
+      || isTestedBuild(document->builds, document->recommendedBuild);
 }
 
 } // namespace
 
-std::optional<CompatDocument> parseCompatDocument(const QByteArray &bytes) {
-  if (bytes.size() > kMaxCompatDbBytes) return std::nullopt;
+std::optional<CompatDocument> parseCompatDocument(const QByteArray &bytes,
+                                                  const QDateTime &now) {
+  if (bytes.size() > kMaxCompatDbBytes || !CompatJson::isStrictJson(bytes)) {
+    return std::nullopt;
+  }
   QJsonParseError parseError{};
   const QJsonDocument json = QJsonDocument::fromJson(bytes, &parseError);
   if (parseError.error != QJsonParseError::NoError || !json.isObject()) {
@@ -284,14 +318,14 @@ std::optional<CompatDocument> parseCompatDocument(const QByteArray &bytes) {
   }
   const QJsonObject root = json.object();
   CompatDocument document;
-  if (!parseHeader(root, &document)) return std::nullopt;
+  if (!parseHeader(root, now, &document)) return std::nullopt;
   const QJsonValue games = root.value(QStringLiteral("games"));
   if (!games.isArray() || games.toArray().size() > kMaxCompatGames) return std::nullopt;
   const QJsonArray array = games.toArray();
   document.games.reserve(array.size());
   for (const QJsonValue &entry : array) {
     CompatGame game;
-    if (!parseGame(entry, &game)) return std::nullopt;
+    if (!parseGame(entry, document.builds, &game)) return std::nullopt;
     document.games.append(std::move(game));
   }
   return document;
