@@ -165,6 +165,7 @@ nav:
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
       - QindaLutris: apps/qindalutris.md
+      - QindaLutris installs and Proton builds: apps/qindalutris-installs.md
       - "QindaLutris prior art (2026-09-25)": apps/qindalutris-prior-art.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
   - Contributing:

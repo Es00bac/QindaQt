@@ -199,6 +199,17 @@ atomically written style
 as the File Manager's preferences. A corrupt or newer-version file is
 refused whole and defaults apply; nothing half-read ever takes effect.
 
+## Installing games and Proton builds
+
+[ADR-0275](../adr/0275-qindalutris-installs-games-and-manages-pinned-proton.md)
+makes QindaLutris an installer as well as a library: one-click store
+launchers, any Windows setup file, and GE-Proton builds downloaded and
+removed the way Steam manages them, each title pinned to one exact build.
+The job machinery, download allowlist, store recipes and failure messages
+are described in [QindaLutris installs and Proton builds](qindalutris-installs.md).
+Until those jobs are wired into the window, the boundary below still
+describes what the shipped application does.
+
 ## What QindaLutris deliberately does not do
 
 It does not configure or write to Steam or Lutris, and never touches their
