@@ -60,6 +60,8 @@ public:
   // pinned to the build its own `version` file names when that is installed.
   Q_INVOKABLE bool adoptExistingLauncher(const QString &recipeId, const QString &prefixPath);
   Q_INVOKABLE void cancel();
+  // "Copy details" (ADR-0275 section 5): puts a job's log on the clipboard.
+  Q_INVOKABLE void copyText(const QString &text) const;
 
 Q_SIGNALS:
   void storesChanged();

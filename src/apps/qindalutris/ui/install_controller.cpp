@@ -9,9 +9,11 @@
 #include "store_recipes.h"
 #include "umu_installer_planner.h"
 
+#include <QClipboard>
 #include <QDate>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QVariantMap>
 
 namespace QindaQt::QindaLutris {
@@ -322,6 +324,12 @@ bool InstallController::adoptExistingLauncher(const QString &recipeId, const QSt
             : error,
          {}, {});
   return ok;
+}
+
+void InstallController::copyText(const QString &text) const {
+  if (QClipboard *clipboard = QGuiApplication::clipboard()) {
+    clipboard->setText(text);
+  }
 }
 
 void InstallController::cancel() {

@@ -97,32 +97,133 @@ Tk.AppWindow {
         onActivated: actionId => coordinator.activateAction(actionId)
     }
 
-    LibraryPage {
-        id: page
-        objectName: "libraryPage"
+    // 0 = Library, 1 = Get games, 2 = Proton (ADR-0275).
+    property int pageIndex: 0
+
+    Tk.Flex {
         anchors.fill: parent
-        gameModel: Library.gameModel
-        totalCount: Library.totalCount
-        shownCount: Library.gameModel.shownCount
-        availableSources: Library.sourcesPresent
-        displays: Library.displays
-        selectedGame: Library.selectedGame
-        selectedPlayable: Library.selectedPlayable
-        selectedPlayReason: Library.selectedPlayReason
+        direction: Tk.Flex.Column
 
-        onSelectRequested: function(gameId) { Library.selectGame(gameId) }
-        onPlayRequested: { Library.playSelected() }
-        onRefreshRequested: { Library.refresh() }
-        onSearchChanged: function(text) { Library.gameModel.searchText = text }
-        onSourceFilterChanged: function(sourceId) { Library.gameModel.sourceFilter = sourceId }
-        onOptionsSaveRequested: function(values) { Library.saveLaunchOptionsForSelected(values) }
-        onRemoveWineRequested: function(gameId) { Library.removeWineGame(gameId) }
-        onAddWineRequested: { window.openAddWine() }
-
-        function pullOptions() {
-            page.selectedOptions = Library.launchOptionsForSelected()
+        Tk.Flex {
+            direction: Tk.Flex.Row
+            align: Tk.Flex.Center
+            padding: Tk.Theme.space.sm
+            Tk.Flex.alignSelf: Tk.Flex.Stretch
+            Tk.Segmented {
+                id: nav
+                objectName: "pageSwitcher"
+                model: [qsTr("Library"), qsTr("Get games"), qsTr("Proton")]
+                currentIndex: window.pageIndex
+                tooltip: qsTr("Switch between your games, getting new ones, and Proton")
+                onActivated: function(index) { window.pageIndex = index }
+            }
         }
-        Component.onCompleted: pullOptions()
+
+        Item {
+            Tk.Flex.grow: 1
+            Tk.Flex.basis: 0
+            Tk.Flex.alignSelf: Tk.Flex.Stretch
+
+            LibraryPage {
+                id: page
+                objectName: "libraryPage"
+                anchors.fill: parent
+                visible: window.pageIndex === 0
+                gameModel: Library.gameModel
+                totalCount: Library.totalCount
+                shownCount: Library.gameModel.shownCount
+                availableSources: Library.sourcesPresent
+                displays: Library.displays
+                selectedGame: Library.selectedGame
+                selectedPlayable: Library.selectedPlayable
+                selectedPlayReason: Library.selectedPlayReason
+                selectedRunning: Running.runningIds.indexOf(Library.selectedGameId) >= 0
+
+                onSelectRequested: function(gameId) { Library.selectGame(gameId) }
+                onPlayRequested: { Library.playSelected() }
+                onRefreshRequested: { Library.refresh() }
+                onSearchChanged: function(text) { Library.gameModel.searchText = text }
+                onSourceFilterChanged: function(sourceId) { Library.gameModel.sourceFilter = sourceId }
+                onOptionsSaveRequested: function(values) { Library.saveLaunchOptionsForSelected(values) }
+                onRemoveWineRequested: function(gameId) { Library.removeWineGame(gameId) }
+                onAddWineRequested: { window.openAddWine() }
+                onForceQuitRequested: function(gameId) { Running.forceQuit(gameId) }
+                onConfirmVersionRequested: {
+                    if (!Library.confirmProtonBuildForSelected()) {
+                        window.flash(qsTr("That Proton build is not installed any more — choose another one in Proton"))
+                    }
+                }
+
+                function pullOptions() {
+                    page.selectedOptions = Library.launchOptionsForSelected()
+                }
+                Component.onCompleted: pullOptions()
+            }
+
+            GetGamesPage {
+                objectName: "getGamesPage"
+                anchors.fill: parent
+                visible: window.pageIndex === 1
+                stores: Installs.stores
+                busy: Installs.busy
+                progress: Installs.progress
+                stageText: Installs.stageText
+                resultMessage: Installs.resultMessage
+                resultNote: Installs.resultNote
+                succeeded: Installs.lastSucceeded
+                details: Installs.details
+                candidates: Installs.setupCandidates
+
+                onInstallStoreRequested: function(recipeId) { Installs.installStore(recipeId) }
+                onAdoptStoreRequested: function(recipeId, prefixPath) {
+                    Installs.adoptExistingLauncher(recipeId, prefixPath)
+                }
+                onOpenTitleRequested: function(titleId) {
+                    Library.selectGame(titleId)
+                    window.pageIndex = 0
+                }
+                onInstallSetupRequested: function(title, path) { Installs.installSetupFile(title, path) }
+                onCandidateChosen: function(path) { Installs.confirmSetupCandidate(path) }
+                onCancelRequested: { Installs.cancel() }
+                onCopyDetailsRequested: function(text) {
+                    Installs.copyText(text)
+                    window.flash(qsTr("Details copied"))
+                }
+            }
+
+            ProtonPage {
+                objectName: "protonPage"
+                anchors.fill: parent
+                visible: window.pageIndex === 2
+                builds: Protons.builds
+                releases: Protons.releases
+                busy: Protons.busy
+                progress: Protons.progress
+                stageText: Protons.stageText
+                resultMessage: Protons.resultMessage
+                succeeded: Protons.lastSucceeded
+                details: Protons.details
+
+                onMakeDefaultRequested: function(name) { Protons.setDefaultBuild(name) }
+                onRemoveRequested: function(name) { Protons.removeBuild(name) }
+                onCheckReleasesRequested: { Protons.checkForReleases() }
+                onInstallReleaseRequested: function(toolName) { Protons.installRelease(toolName) }
+                onCancelRequested: { Protons.cancel() }
+                onCopyDetailsRequested: function(text) {
+                    Installs.copyText(text)
+                    window.flash(qsTr("Details copied"))
+                }
+            }
+        }
+    }
+
+    Connections {
+        target: Running
+        function onChanged() {
+            if (Running.message.length > 0) {
+                window.flash(Running.message)
+            }
+        }
     }
 
     Parts.AddWineDialog {
