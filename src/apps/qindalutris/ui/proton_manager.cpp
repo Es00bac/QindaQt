@@ -100,7 +100,11 @@ QSet<QString> ProtonManager::pinnedBuildNames() const {
 }
 
 QVariantList ProtonManager::builds() const {
-  const QString defaultName = defaultBuild();
+  // The default is ONE directory: two copies may share a name (a system slot
+  // and an older user copy), and only the one chooseDefaultBuild picked is it.
+  const auto chosen =
+      chooseDefaultBuild(m_library->toolSet().protonBuilds, m_library->preferredProtonBuild());
+  const QString defaultPath = chosen ? chosen->path : QString();
   QHash<QString, int> usage;
   for (const TitleRecord &title : m_library->titles()) {
     ++usage[title.protonBuild];
@@ -119,7 +123,7 @@ QVariantList ProtonManager::builds() const {
     row.insert(QStringLiteral("status"),
                known ? statusId(m_database->buildStatus(build.name)) : QStringLiteral("untested"));
     row.insert(QStringLiteral("notes"), known ? m_database->buildNotes(build.name) : QString());
-    row.insert(QStringLiteral("isDefault"), build.name == defaultName);
+    row.insert(QStringLiteral("isDefault"), build.path == defaultPath);
     row.insert(QStringLiteral("usedBy"), usage.value(build.name));
     rows.append(row);
   }
@@ -148,8 +152,8 @@ QVariantList ProtonManager::releases() const {
 }
 
 void ProtonManager::finish(bool ok, const QString &message, const QString &details) {
-  Q_UNUSED(ok)
   m_busy = false;
+  m_lastSucceeded = ok;
   m_resultMessage = message;
   m_details = details;
   Q_EMIT stateChanged();

@@ -248,7 +248,25 @@ The composition root wires them to QML as three singletons beside `Library`:
 
 Installers go through `ui/umu_installer_planner`, which applies exactly the
 same umu rules as game launches (`umuRunEnvironment`, the same unset list).
-The interface pages for these flows are the next step.
+The window switches between three pages (`Library`, `Get games`, `Proton`):
+
+- **Get games** (`qml/GetGamesPage.qml`): one card per store with exactly
+  one action for its state — *Install*, *Add to library* (a copy already on
+  this computer), or *Open* — a setup-file card that ends by asking which
+  program starts the game, and an honest *Not supported* notice for
+  Microsoft Store / Game Pass that points to stores and cloud play that do
+  work.
+- **Proton** (`qml/ProtonPage.qml`): each build with *Tested by QindaQt*,
+  *Known issues*, *Not tested* or *Updated by Steam*, where it came from,
+  how many games use it, *Make default*, and removal only for unused user
+  builds; *Check for builds* lists GE-Proton releases to add.
+- The game detail gains **Force quit** while a game runs, **Use the new
+  version** when its pinned build changed on disk, and the **Run in its own
+  screen** switch.
+
+Every job shows progress with Cancel, then one sentence and *Copy details*
+(`qml/parts/JobProgress.qml`). `--page get-games|proton` opens a page
+directly, for `--grab` verification.
 
 ## What QindaLutris deliberately does not do
 

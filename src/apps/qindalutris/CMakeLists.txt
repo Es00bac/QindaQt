@@ -16,11 +16,14 @@ qt_add_qml_module(qindalutris
     QML_FILES
         qml/Main.qml
         qml/LibraryPage.qml
+        qml/GetGamesPage.qml
+        qml/ProtonPage.qml
         qml/parts/CoverGrid.qml
         qml/parts/CoverTile.qml
         qml/parts/GameDetail.qml
         qml/parts/AddWineDialog.qml
         qml/parts/AppMenuBar.qml
+        qml/parts/JobProgress.qml
 )
 
 target_link_libraries(qindalutris

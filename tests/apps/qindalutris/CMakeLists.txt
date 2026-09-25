@@ -150,6 +150,14 @@ add_test(
 set_tests_properties(qindaqt.qindalutris-page-offscreen
     PROPERTIES LABELS "apps;qindalutris;qml;offscreen" TIMEOUT 60
     ENVIRONMENT "${qindalutris_test_env}")
+add_test(
+    NAME qindaqt.qindalutris-install-pages-offscreen
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_install_pages.qml"
+)
+set_tests_properties(qindaqt.qindalutris-install-pages-offscreen
+    PROPERTIES LABELS "apps;qindalutris;qml;offscreen" TIMEOUT 60
+    ENVIRONMENT "${qindalutris_test_env}")
 
 # The --grab verification path: the real application renders one frame
 # offscreen into the artifacts directory, proving the window constructs
