@@ -238,7 +238,16 @@ ApplicationWindow {
     }
 
     readonly property string displayedViewMode: root.activeNavigation.viewMode
-    onDisplayedViewModeChanged: Qt.callLater(() => root.activeView().focusView())
+    // AGENT-GUARD: a folder with a view of its own changes the mode while
+    // the Explorer tree (or any sidebar row) drives navigation; keep the
+    // keyboard there, or its next Return lands on the file view.
+    onDisplayedViewModeChanged: Qt.callLater(() => {
+        for (let item = root.activeFocusItem; item; item = item.parent) {
+            if (item === placesSidebar)
+                return
+        }
+        root.activeView().focusView()
+    })
 
     // A finished network transfer only changes what is on screen when it
     // landed in the folder being browsed; the queue itself never navigates.
@@ -335,6 +344,7 @@ ApplicationWindow {
                 spacing: 0
 
                 PlacesSidebar {
+                    id: placesSidebar
                     Layout.preferredWidth: root.width < 680 ? 148 : 196
                     Layout.fillHeight: true
                     navigationController: root.activeNavigation

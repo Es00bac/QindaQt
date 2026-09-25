@@ -71,7 +71,8 @@ void TestEntryFacts::countsAFoldersVisibleItemsInTheBackground() {
   // Unknown until the one background read lands; then from the cache.
   QCOMPARE(facts.itemCount(folder, QStringLiteral("1")), QString());
   QTRY_COMPARE(facts.itemCount(folder, QStringLiteral("1")), QStringLiteral("3"));
-  QVERIFY(revisions.count() >= 1);
+  // The revision is published on a 50 ms debounce after the answer lands.
+  QTRY_VERIFY(revisions.count() >= 1);
   QCOMPARE(facts.itemCount(temporary.filePath(QStringLiteral("missing")), QStringLiteral("1")),
            QString());
 }
