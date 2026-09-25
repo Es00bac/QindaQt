@@ -5,6 +5,20 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 24 — Code-first round: desktop menu, Finder-style File Manager, dock, edit mode, presets, decorations (plan W7, W9–W20)
+
+Integrated on main from `round/code-first-20260924`: **W7** File Manager menu when no application is
+active (ADR-0260), **W9** Applications as a File Manager place (ADR-0262), **W17** Mac-style default layout
+(ADR-0263) and **W18** gear Settings icon and Nest mark, **W19** fifteen data-driven window button styles and
+title-bar options (ADR-0264), **W13** dock drag and drop, groups, pinning and permanent File Manager/Trash
+ends (ADR-0265), **W14** edit mode on the panels (ADR-0266), **W15** Settings Customize as layout presets
+with user presets (ADR-0267), **W20** familiar desktop experiences (ADR-0268), **W10** right-click set, Open
+With and archives (ADR-0269), **W11** Icons/Details/Columns/Gallery views on QindaTK (ADR-0270), **W11s**
+Finder/Explorer/Commander styles and tabs (ADR-0271), **W16** Quick Look, type-to-select and Recents
+(ADR-0272), **W12** FileManager1 and Keep in Dock (ADR-0273). Independent review waived by the owner; gates
+are the full build and full ctest (see Handoff). The package needs KArchive. Live checks on qinda-top
+remain for all of the above after a fresh login.
+
 ## September 24 — Settings search, meters, key caps, Network applet, desktop icons (plan W1–W5, W8)
 
 Integrated on main: **W1** Ctrl+K search in Settings (`11ecca24`, ADR-0257), **W8** desktop icons laid
