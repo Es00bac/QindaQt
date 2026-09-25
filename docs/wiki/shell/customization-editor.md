@@ -1,11 +1,14 @@
 # Customization editor domain
 
-The customization editor domain is the presentation-independent half of the
-Customize editor. It turns pointer and keyboard gestures into commands for the
+The customization editor domain is the presentation-independent half of
+layout editing. It turns pointer and keyboard gestures into commands for the
 existing `shell_customization` transaction engine and persists applied layouts
 as user profiles. It contains no QML, no window, and no shell-surface code;
-its hosts -- the Settings window and, since ADR-0213, the shell runtime --
-own the repository, the process, and the presentation.
+its host -- the shell runtime, since ADR-0213 -- owns the repository, the
+process, and the presentation. The Settings Customize route hosted it too
+until [ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)
+made that route a layout preset switcher; its host class remains as the
+parity reference below.
 
 - Module: `src/shell_customization_editor` (public headers under
   `include/qindaqt/shell_customization_editor`)
@@ -144,18 +147,19 @@ preserves dirty truth, rejects further edit/apply work, and returns the typed
 Revert by constructing a fresh repository from the last applied profile. The
 editor never auto-saves, never writes `panels.configuration`, and does not own
 profile selection; committing `panels.layoutProfile` through the public
-Settings1 client stays with the Settings window. Applying a profile takes
-effect at the next shell start until the live-binding slice lands.
+Settings1 client stays with the Settings window's preset page. The shell
+adopts every applied profile live (ADR-0122, ADR-0213).
 
 ## Live host in the shell
 
 `LiveEditorHost` (ADR-0213) composes `LayoutEditingRepository(profile,
 outputs, manifests)` → `CoordinatorEditingEngine(repository, manifests)` →
 `EditorSession(engine, UserProfileStore(directory))` with the same arguments,
-in the same order, as the Settings route's `RepositoryCustomizeEditorHost`.
-That composition is the parity contract: the intent sequence a menu entry or
-an edit-mode drop sends produces the same command sequence, the same undo
-step, and the same persisted bytes as the route would for the same intent.
+in the same order, as `RepositoryCustomizeEditorHost`, the Settings route's
+former host, kept since ADR-0267 only as this reference. That composition is
+the parity contract: the intent sequence a menu entry or an edit-mode drop
+sends produces the same command sequence, the same undo step, and the same
+persisted bytes as the reference host does for the same intent.
 The host adds `rebuild(profile, outputs)` for the shell's adoption and
 output-hotplug paths (undo history does not survive a rebuild by design) and
 otherwise exposes the session's gesture, point-operation, undo/redo and Apply
@@ -181,7 +185,7 @@ atomic persistence round-tripped through `ProfileLoader`
 accessibility identity (`qindaqt.customize-editor-accessibility`), the live
 host over the real engine including the panel intents and a byte comparison
 against an independently composed trio (`qindaqt.customize-editor-live-host`),
-and the same comparison against the Settings route's own
+and the same comparison against the reference
 `RepositoryCustomizeEditorHost` for a full menu script
 (`qindaqt.customize-editor-live-host-parity`, full tree only). All suites
 use in-memory or temporary-directory fixtures: no GUI, compositor, session
@@ -199,11 +203,13 @@ retaining one durable undo boundary; Apply under a foreign lease returns
 foreign preview followed by cancel/release, edit, and Undo adopts the retained
 committed baseline and returns exact/clean.
 
-The installed [Settings Customize route](../apps/customize-settings.md) now
-composes this public boundary into a direct canvas, audited palette, property
-panes, keyboard outline, Settings1 profile draft/apply flow, and offscreen plus
-package proof. It preserves this module's gesture, rollback, lease, persistence,
-and dirty-state authority rather than duplicating engine policy in QML. Live
-shell preview/application, reveal affordances for always-hidden panels,
-installed-session behavior, and the nested rendered matrix remain later slices
-of the customization architecture.
+The shell's live host is this module's only production composition: panel,
+applet and desktop menus and edit mode on the desktop
+([Production panel surfaces](panel-surfaces.md#in-place-customization-meta-right-click)).
+The [Settings Customize route](../apps/customize-settings.md) switches and
+saves layout presets through the profiles store and Settings1 and composes
+nothing from this module; its `RepositoryCustomizeEditorHost` is kept only as
+the reference composition for the parity rows above
+([ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)).
+Reveal affordances for always-hidden panels and keyboard-only editing on the
+panels remain later slices of the customization architecture.

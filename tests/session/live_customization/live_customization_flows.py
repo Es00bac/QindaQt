@@ -21,8 +21,8 @@ from shade_control import wait_for
 
 # Panel menu entries (PanelCustomizeMenu.qml): keyboard positions and count.
 PANEL_ADD_APPLET, PANEL_EDIT_MODE, PANEL_UNDO, PANEL_COUNT = 0, 4, 5, 8
-# Applet menu entries (AppletCustomizeMenu.qml).
-APPLET_MOVE_END, APPLET_REMOVE, APPLET_COUNT = 2, 6, 8
+# Applet menu entries (AppletCustomizeMenu.qml); Duplicate is entry 8 (W15).
+APPLET_MOVE_END, APPLET_REMOVE, APPLET_COUNT = 2, 6, 9
 # Desktop menu entries (DesktopCustomizeMenu.qml); Add panel has four edges.
 DESKTOP_ADD_PANEL, DESKTOP_UNDO, DESKTOP_COUNT, DESKTOP_EDGES = 0, 4, 6, 4
 # PanelContent's along-axis inset plus a margin into the first chip.

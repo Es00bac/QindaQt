@@ -3,6 +3,7 @@
 
 #include "qindaqt/profiles/profile_catalog.h"
 #include "qindaqt/profiles/profile_loader.h"
+#include "qindaqt/profiles/user_profile_store.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -31,6 +32,7 @@ private slots:
     void everyBuiltInProfileHasOneNotificationCenter();
     void stockProfileResolvesNonemptyDesktopInventory();
     void theDefaultProfilePlacesTheStreamingApplet();
+    void userStoreRemovesExactlyItsOwnFile();
 };
 
 void ProfileTests::loadsEveryBuiltInProfile()
@@ -337,6 +339,38 @@ void ProfileTests::theDefaultProfilePlacesTheStreamingApplet()
 
     QCOMPARE(obsCount, 1);
     QCOMPARE(zone, QStringLiteral("end"));
+}
+
+// ADR-0267: Settings deletes a user preset and restores a built-in layout by
+// removing the user copy. Only `<id>.json` may go, and a refusal changes
+// nothing.
+void ProfileTests::userStoreRemovesExactlyItsOwnFile()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const UserProfileStore store(directory.path());
+    QVERIFY(store.save(validProfile()).ok());
+    QFile neighbour(directory.filePath(QStringLiteral("neighbour.json")));
+    QVERIFY(neighbour.open(QIODevice::WriteOnly));
+    neighbour.write("{}");
+    neighbour.close();
+
+    QCOMPARE(store.remove(QStringLiteral("../fixture")).code,
+             UserProfileStoreErrorCode::InvalidProfileId);
+    QCOMPARE(store.remove(QString()).code, UserProfileStoreErrorCode::EmptyProfileId);
+    QCOMPARE(store.remove(QStringLiteral("absent")).code, UserProfileStoreErrorCode::NotFound);
+    QVERIFY(QFile::exists(directory.filePath(QStringLiteral("fixture.json"))));
+
+    const UserProfileStoreResult removed = store.remove(QStringLiteral("fixture"));
+    QVERIFY2(removed.ok(), qPrintable(removed.message));
+    QCOMPARE(removed.path, directory.filePath(QStringLiteral("fixture.json")));
+    QVERIFY(!QFile::exists(removed.path));
+    QVERIFY(QFile::exists(neighbour.fileName()));
+    QCOMPARE(store.remove(QStringLiteral("fixture")).code, UserProfileStoreErrorCode::NotFound);
+
+    const UserProfileStore unplaced(QStringLiteral("  "));
+    QCOMPARE(unplaced.remove(QStringLiteral("fixture")).code,
+             UserProfileStoreErrorCode::DirectoryUnavailable);
 }
 
 QTEST_GUILESS_MAIN(ProfileTests)

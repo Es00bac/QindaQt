@@ -13,6 +13,7 @@
 #include <QQmlExtensionPlugin>
 #include <QQmlEngine>
 #include <QQmlPropertyMap>
+#include <QQuickItem>
 #include <QQuickWindow>
 #include <QtTest>
 
@@ -26,13 +27,17 @@ using QindaQt::Apps::SettingsCustomize::TestSupport::StubCustomizeSettingsModel;
 
 namespace {
 
-QObject *visibleDialog(QObject *root)
+QQuickItem *findItem(QQuickItem *root, const QString &name)
 {
-    const auto dialogs = root->findChildren<QObject *>(
-        QStringLiteral("customizeDiscardDialog"));
-    for (QObject *dialog : dialogs) {
-        if (dialog->property("visible").toBool()) {
-            return dialog;
+    if (root == nullptr) {
+        return nullptr;
+    }
+    if (root->objectName() == name) {
+        return root;
+    }
+    for (QQuickItem *child : root->childItems()) {
+        if (auto *match = findItem(child, name); match != nullptr) {
+            return match;
         }
     }
     return nullptr;
@@ -128,86 +133,76 @@ public:
 
 } // namespace
 
+// ADR-0267: the preset page holds no draft, so the Settings Center's
+// Customize departure fence (SettingsRouteHost, Main.qml) never engages: the
+// model's dirty flag is always false. These rows construct the page inside
+// the real Main.qml in both responsive hosts and prove that closing the
+// window or leaving the route never prompts or bounces back.
 class CustomizeWindowLifecycleTests final : public QObject {
     Q_OBJECT
 
 private slots:
-    void dirtyWindowCloseRequiresDecision();
-    void pendingDepartureSurvivesResponsiveHostSwitch();
-    void pendingApplicationCloseSurvivesResponsiveHostSwitch();
+    void initTestCase();
+    void presetPageConstructsInBothHosts();
+    void closingTheWindowNeverPrompts();
+    void leavingTheRouteNeverBouncesBack();
 };
 
-void CustomizeWindowLifecycleTests::dirtyWindowCloseRequiresDecision()
+void CustomizeWindowLifecycleTests::initTestCase()
 {
-    WindowHarness harness;
-    QVERIFY2(harness.window != nullptr, qPrintable(harness.failure));
-    harness.window->resize(720, 520);
-    harness.window->show();
-    QVERIFY(QTest::qWaitForWindowExposed(harness.window));
-    harness.customize.setDirty(true);
-
-    QVERIFY(!harness.window->close());
-    QTRY_VERIFY(harness.window->isVisible());
-    QTRY_VERIFY(visibleDialog(harness.root.get()) != nullptr);
-    QVERIFY(QMetaObject::invokeMethod(visibleDialog(harness.root.get()), "reject"));
-    QTRY_VERIFY(harness.window->isVisible());
-    QVERIFY(harness.customize.dirty());
+    // One row closes its window for real; the harness keeps running.
+    QGuiApplication::setQuitOnLastWindowClosed(false);
 }
 
-void CustomizeWindowLifecycleTests::pendingDepartureSurvivesResponsiveHostSwitch()
+void CustomizeWindowLifecycleTests::presetPageConstructsInBothHosts()
 {
     WindowHarness harness;
     QVERIFY2(harness.window != nullptr, qPrintable(harness.failure));
     harness.window->resize(720, 520);
     harness.window->show();
     QVERIFY(QTest::qWaitForWindowExposed(harness.window));
-    harness.customize.setDirty(true);
+    auto *wide = harness.root->findChild<QQuickItem *>(QStringLiteral("wideSettingsRouteHost"));
+    QVERIFY(wide != nullptr);
+    QTRY_VERIFY(findItem(wide, QStringLiteral("customizeProfileCard_fixture")) != nullptr);
 
-    QVERIFY(harness.navigation.selectRoute(QStringLiteral("notifications")));
-    QTRY_VERIFY(visibleDialog(harness.root.get()) != nullptr);
     harness.window->resize(440, 360);
     QTRY_VERIFY(harness.root->property("isCompact").toBool());
-    QTRY_VERIFY(visibleDialog(harness.root.get()) != nullptr);
-    QVERIFY(QMetaObject::invokeMethod(visibleDialog(harness.root.get()), "reject"));
-    QTRY_COMPARE(harness.navigation.activeRouteId(), QStringLiteral("customize"));
-    QVERIFY(harness.customize.dirty());
+    auto *compact = harness.root->findChild<QQuickItem *>(
+        QStringLiteral("compactSettingsRouteHost"));
+    QVERIFY(compact != nullptr);
+    QTRY_VERIFY(findItem(compact, QStringLiteral("customizeProfileCard_fixture")) != nullptr);
 }
 
-void CustomizeWindowLifecycleTests::pendingApplicationCloseSurvivesResponsiveHostSwitch()
+void CustomizeWindowLifecycleTests::closingTheWindowNeverPrompts()
 {
-    const auto verifyDirection = [](const QSize &initialSize,
-                                    const QSize &resizedSize,
-                                    const char *targetHostName) {
-        WindowHarness harness;
-        QVERIFY2(harness.window != nullptr, qPrintable(harness.failure));
-        harness.window->resize(initialSize);
-        harness.window->show();
-        QVERIFY(QTest::qWaitForWindowExposed(harness.window));
-        harness.customize.setDirty(true);
+    WindowHarness harness;
+    QVERIFY2(harness.window != nullptr, qPrintable(harness.failure));
+    harness.window->resize(720, 520);
+    harness.window->show();
+    QVERIFY(QTest::qWaitForWindowExposed(harness.window));
+    QVERIFY(!harness.customize.property("dirty").toBool());
 
-        QVERIFY(!harness.window->close());
-        QTRY_VERIFY(visibleDialog(harness.root.get()) != nullptr);
-        QVERIFY(harness.root->property("applicationClosePending").toBool());
-        harness.window->resize(resizedSize);
-        QTRY_COMPARE(harness.window->size(), resizedSize);
-        auto *targetHost = harness.root->findChild<QObject *>(
-            QString::fromLatin1(targetHostName));
-        QVERIFY(targetHost != nullptr);
-        QTRY_VERIFY(visibleDialog(targetHost) != nullptr);
-        QVERIFY(harness.root->property("applicationClosePending").toBool());
-        QVERIFY(harness.window->isVisible());
-        QVERIFY(harness.customize.dirty());
+    QVERIFY(harness.window->close());
+    QVERIFY(!harness.root->property("applicationClosePending").toBool());
+    QTRY_VERIFY(!harness.window->isVisible());
+}
 
-        QVERIFY(QMetaObject::invokeMethod(visibleDialog(targetHost), "reject"));
-        QTRY_VERIFY(!harness.root->property("applicationClosePending").toBool());
-        QTRY_VERIFY(harness.window->isVisible());
-        QVERIFY(harness.customize.dirty());
-    };
+void CustomizeWindowLifecycleTests::leavingTheRouteNeverBouncesBack()
+{
+    WindowHarness harness;
+    QVERIFY2(harness.window != nullptr, qPrintable(harness.failure));
+    harness.window->resize(720, 520);
+    harness.window->show();
+    QVERIFY(QTest::qWaitForWindowExposed(harness.window));
 
-    verifyDirection(QSize{720, 520}, QSize{440, 360},
-                    "compactSettingsRouteHost");
-    verifyDirection(QSize{440, 360}, QSize{720, 520},
-                    "wideSettingsRouteHost");
+    QVERIFY(harness.navigation.selectRoute(QStringLiteral("notifications")));
+    QTest::qWait(50);
+    QCOMPARE(harness.navigation.activeRouteId(), QStringLiteral("notifications"));
+    auto *customizeLoader = harness.root->findChild<QObject *>(
+        QStringLiteral("wideSettingsRouteCustomizeLoader"));
+    QVERIFY(customizeLoader != nullptr);
+    QTRY_VERIFY(!customizeLoader->property("active").toBool());
+    QVERIFY(harness.window->isVisible());
 }
 
 QTEST_MAIN(CustomizeWindowLifecycleTests)

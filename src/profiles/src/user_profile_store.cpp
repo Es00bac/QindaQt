@@ -5,6 +5,7 @@
 #include "qindaqt/profiles/profile_validation.h"
 
 #include <QDir>
+#include <QFile>
 #include <QIODevice>
 #include <QJsonDocument>
 #include <QSaveFile>
@@ -119,6 +120,38 @@ UserProfileStoreResult UserProfileStore::save(const LayoutProfile &profile) cons
                            .arg(path, file.errorString()));
     }
 
+    UserProfileStoreResult result;
+    result.path = path;
+    return result;
+}
+
+UserProfileStoreResult UserProfileStore::remove(const QString &profileId) const
+{
+    if (profileId.isEmpty()) {
+        return failure(UserProfileStoreErrorCode::EmptyProfileId,
+                       QStringLiteral("profile id must not be empty"));
+    }
+    if (!isValidProfileId(profileId)) {
+        return failure(UserProfileStoreErrorCode::InvalidProfileId,
+                       QStringLiteral("profile id '%1' cannot be used as a file name")
+                           .arg(profileId));
+    }
+    if (m_directory.trimmed().isEmpty()) {
+        // AGENT-GUARD: same reason as save(): never resolve against the
+        // process current directory.
+        return failure(UserProfileStoreErrorCode::DirectoryUnavailable,
+                       QStringLiteral("the user profile directory is empty"));
+    }
+    const QString path = QDir{m_directory}.filePath(fileNameForId(profileId));
+    QFile file{path};
+    if (!file.exists()) {
+        return failure(UserProfileStoreErrorCode::NotFound,
+                       QStringLiteral("no saved copy of profile '%1' exists").arg(profileId));
+    }
+    if (!file.remove()) {
+        return failure(UserProfileStoreErrorCode::RemoveFailed,
+                       QStringLiteral("cannot remove '%1': %2").arg(path, file.errorString()));
+    }
     UserProfileStoreResult result;
     result.path = path;
     return result;

@@ -139,7 +139,7 @@ void SettingsRouteRegistry::registerBuiltInRoutes() {
       .component = SettingsRouteComponent::Customize,
       .title = QCoreApplication::translate("SettingsCenter", "Customize"),
       .description = QCoreApplication::translate(
-          "SettingsCenter", "Panels, applets, placement, and layout profiles"),
+          "SettingsCenter", "Layout presets, saved layouts, and panel auto-hide"),
       .iconName = QStringLiteral("preferences-desktop-plasma"),
       .category =
           QCoreApplication::translate("SettingsCenter", "Personalization"),
