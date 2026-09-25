@@ -107,7 +107,9 @@ It is produced by a generator that merges:
 
 - umu-database and the umu-protonfixes ids;
 - AreWeAntiCheatYet;
-- ProtonDB tiers from the public data dumps;
+- ProtonDB tiers from its per-appid summary endpoint, and Valve's Steam
+  Deck compatibility reports (Verified / Playable / Unsupported with the
+  individual test results), both cached, rate-limited and capped;
 - winetricks verbs and environment variables from Lutris install scripts;
 - a hand-curated overrides file, where observations like the WoW/11-7 stall
   and PCGamingWiki fixes are recorded with their evidence.
@@ -155,6 +157,35 @@ current build as known-bad, the app shows a warning that offers the move.
 - **Microsoft Store** purchases (UWP/MSIX, DRM-bound to Windows) cannot run
   under Wine or Proton. The app says so plainly and shows whether the same
   title is sold on a store that works.
+
+### 4a. Games that run inside a store launcher share its pin
+
+A game started through a store launcher (World of Warcraft and Warcraft III
+through Battle.net) runs in the launcher's Wine session, so it runs on the
+**launcher's** pinned build whatever its own database record recommends. The
+launcher's pin must therefore satisfy every game installed through it: the
+app combines the games' recommended builds and `avoid` lists and warns when
+no single build satisfies all of them, rather than silently picking one.
+Where one build fixes a game but regresses another, the fix is a new,
+separately tested build that satisfies both — as GE-Proton11-6 plus the
+upstream crypt32 fix did for WoW and Warcraft III on 2026-09-25.
+
+### 4b. Every running title can be stopped completely
+
+Each launch runs in its own transient systemd user scope. **Force quit**
+stops that scope, which ends the game, the store launcher, Wine's services
+and umu's container together; a hung Windows window can therefore always be
+closed from QindaLutris, the task list or the dock. Proton's own
+`wineserver -k` cannot reach a session inside umu's container, which is why
+the scope, not Wine, is the authority.
+
+### 4c. A game can run on its own screen
+
+A per-title **Run in its own screen** option starts the title under
+gamescope. Games that switch display modes are isolated there, so an
+emulated mode change (Warcraft III switching to 720p) can never leave the
+launcher or the desktop drawn at the wrong size. The database may recommend
+the option for a title; the user can always turn it off.
 
 ### 5. Idiot-proofing is a requirement
 
