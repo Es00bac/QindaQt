@@ -10,7 +10,9 @@ namespace QindaQt::Apps::FileManager {
 
 void bindFileManagerApplicationActions(AppShell::ApplicationCoordinator &coordinator,
                                        NavigationController &navigation,
-                                       ClipboardController &clipboard) {
+                                       ClipboardController &clipboard,
+                                       QObject *context) {
+  QObject *const receiver = context != nullptr ? context : &coordinator;
   const auto sync = [&coordinator, &navigation, &clipboard] {
     const bool place = navigation.applicationsPlace() && navigation.folderViewActive();
     const int selected = place ? clipboard.selectionCount() : 0;
@@ -27,11 +29,11 @@ void bindFileManagerApplicationActions(AppShell::ApplicationCoordinator &coordin
         place && navigation.sortColumn() == QLatin1String("kind"));
     Q_UNUSED(checked);
   };
-  QObject::connect(&clipboard, &ClipboardController::stateChanged, &coordinator, sync);
+  QObject::connect(&clipboard, &ClipboardController::stateChanged, receiver, sync);
   QObject::connect(&navigation, &NavigationController::navigationChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::presentationChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   sync();
 }
 

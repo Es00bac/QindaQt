@@ -1,31 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app_shell/file_manager_action_catalog.h"
-#include "app_shell/file_manager_application_actions.h"
-#include "app_shell/file_manager_browsing_actions.h"
-#include "app_shell/file_manager_item_actions.h"
-#include "app_shell/file_manager_mutation_actions.h"
-#include "app_shell/file_manager_transfer_actions.h"
 #include "model/applications_controller.h"
-#include "model/applications_place.h"
-#include "model/applications_place_order.h"
 #include "model/bookmarks_store.h"
 #include "model/clipboard_controller.h"
 #include "model/column_listing.h"
 #include "model/entry_facts.h"
 #include "model/entry_properties.h"
-#include "model/launch_intent.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
 #include "model/places_controller.h"
 #include "model/preferences_controller.h"
 #include "model/preferences_store.h"
 #include "model/search_controller.h"
-#include "network/kio_network_directory_backend.h"
-#include "network/kio_fuse_remote_file_opener.h"
-#include "network/kio_remote_copier.h"
-#include "network/kio_remote_folder_creator.h"
-#include "network/kio_remote_mover.h"
-#include "network/kio_remote_renamer.h"
 #include "network/avahi_service_discovery.h"
 #include "network/discovery_controller.h"
 #include "network/kio_transfer_worker.h"
@@ -38,8 +24,10 @@
 #include "preview/theme_icon_provider.h"
 #include "runtime/file_actions_composition.h"
 #include "runtime/file_manager_application.h"
+#include "runtime/layout_style_hint.h"
 #include "runtime/mutation_ui_action_probe.h"
 #include "runtime/finder_integration.h"
+#include "runtime/navigation_composition.h"
 #include "runtime/file_manager_ui_contract_probe.h"
 #include "mutation/karchive_codec.h"
 #include "mutation/local_mutation_backend.h"
@@ -66,12 +54,13 @@
 
 namespace {
 
+// ADR-0271: the navigation-dependent action states are bound by
+// FolderNavigations (runtime/navigation_composition.cpp), which moves them to
+// whichever tab the user works in.
 [[nodiscard]] QString configureAppShell(
     QindaQt::AppShell::ApplicationCoordinator &coordinator,
     QindaQt::Apps::FileManager::NavigationController &navigation,
-    QindaQt::Apps::FileManager::MutationController &mutation,
-    QindaQt::Apps::FileManager::ClipboardController &clipboard,
-    const QString &trashFilesDirectory) {
+    QindaQt::Apps::FileManager::MutationController &mutation) {
   coordinator.setApplicationName(QStringLiteral("QindaQt File Manager"));
   coordinator.setWindowTitle(
       QStringLiteral("QindaQt File Manager — %1").arg(navigation.currentPath()));
@@ -82,15 +71,6 @@ namespace {
   if (!catalogResult.ok()) {
     return catalogResult.message;
   }
-  QindaQt::Apps::FileManager::bindFileManagerBrowsingActions(coordinator, navigation);
-  QindaQt::Apps::FileManager::bindFileManagerTransferActions(coordinator, navigation,
-                                                             clipboard, mutation);
-  QindaQt::Apps::FileManager::bindFileManagerMutationActions(coordinator, navigation,
-                                                             mutation);
-  QindaQt::Apps::FileManager::bindFileManagerApplicationActions(coordinator, navigation,
-                                                                clipboard);
-  QindaQt::Apps::FileManager::bindFileManagerItemActions(coordinator, navigation, clipboard,
-                                                         mutation, trashFilesDirectory);
   QObject::connect(
       &coordinator,
       &QindaQt::AppShell::ApplicationCoordinator::quitDecisionRequested,
@@ -200,24 +180,6 @@ composeMutationController(const QString &trashRoot) {
       .filePath(QStringLiteral("systemd/user"));
 }
 
-// A search result set only becomes the visible listing while the window still
-// shows the folder the search started in; otherwise the stale results would
-// masquerade as the new location's contents.
-void publishSearchResultsInto(QindaQt::Apps::FileManager::SearchController &search,
-                              QindaQt::Apps::FileManager::NavigationController &navigation) {
-  QObject::connect(
-      &search, &QindaQt::Apps::FileManager::SearchController::searchReady,
-      &navigation,
-      [&search, &navigation](
-          quint64, const QVector<QindaQt::Apps::FileManager::DirectoryEntry> &entries,
-          const QString &statusText) {
-        if (search.rootPath() != navigation.currentPath()) {
-          return;
-        }
-        navigation.showGuestListing(entries, statusText);
-      });
-}
-
 // The five owners the network and preference surfaces need, composed
 // together so the composition root stays within the function-length budget
 // and so their wiring -- units follow the saved locations, discovery follows
@@ -269,11 +231,15 @@ struct NetworkComposition final {
 }
 
 // The listing's image providers, which the engine owns: thumbnails (ADR-0111),
-// the Gallery view's one large preview (ADR-0270) and theme icons. Both
-// preview caches follow the listing generation, so a new listing cancels
-// every obsolete decode.
-void installImageProviders(QQmlApplicationEngine &engine,
-                           QindaQt::Apps::FileManager::NavigationController &navigation) {
+// the Gallery view's one large preview (ADR-0270) and theme icons. The two
+// preview caches follow the active controller's listing generation
+// (FolderNavigations, ADR-0271), so a new listing cancels obsolete decodes.
+struct PreviewCaches final {
+  QindaQt::Apps::FileManager::PreviewProvider *previews;
+  QindaQt::Apps::FileManager::PreviewProvider *gallery;
+};
+
+[[nodiscard]] PreviewCaches installImageProviders(QQmlApplicationEngine &engine) {
   using QindaQt::Apps::FileManager::LocalPreviewDecoder;
   using QindaQt::Apps::FileManager::PreviewProvider;
   auto *previews = new PreviewProvider(std::make_unique<LocalPreviewDecoder>());
@@ -283,12 +249,7 @@ void installImageProviders(QQmlApplicationEngine &engine,
   engine.addImageProvider(QStringLiteral("gallery-previews"), gallery);
   engine.addImageProvider(QStringLiteral("theme-icons"),
                           new QindaQt::Apps::FileManager::ThemeIconProvider());
-  QObject::connect(&navigation,
-                   &QindaQt::Apps::FileManager::NavigationController::entriesChanged, &engine,
-                   [previews, gallery, &navigation] {
-                     previews->setGeneration(navigation.listingGeneration());
-                     gallery->setGeneration(navigation.listingGeneration());
-                   });
+  return {previews, gallery};
 }
 
 // Runs whichever --check-* probe mode was requested. Returns the process
@@ -407,22 +368,8 @@ int main(int argc, char **argv) {
           uniqueApplicationDataRoots());
   applicationsController->setChooserMode(parser.isSet(QStringLiteral("choose-application")));
   auto *applications = applicationsController.get();
-  auto controller = std::make_unique<QindaQt::Apps::FileManager::NavigationController>(
-      std::make_unique<QindaQt::Apps::FileManager::ApplicationsDirectoryLister>(
-          std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
-          [applications] { applications->refresh(); return applications->listing(); }),
-      std::make_unique<QindaQt::Apps::FileManager::ApplicationsFileLauncher>(
-          std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>(),
-          [applications](const QString &id) { return applications->open(id); }),
-      std::make_unique<QindaQt::Apps::FileManager::KioNetworkDirectoryBackend>(),
-      std::make_unique<QindaQt::Apps::FileManager::KioFuseRemoteFileOpener>(),
-      std::make_unique<QindaQt::Apps::FileManager::KioRemoteRenamer>(),
-      std::make_unique<QindaQt::Apps::FileManager::KioRemoteFolderCreator>(),
-      std::make_unique<QindaQt::Apps::FileManager::KioRemoteCopier>(),
-      std::make_unique<QindaQt::Apps::FileManager::KioRemoteMover>());
-  installImageProviders(engine, *controller);
-  // ADR-0262: Applications keeps its own sort (A to Z) apart from folders'.
-  QindaQt::Apps::FileManager::ApplicationsPlaceOrder applicationsOrder(*controller);
+  auto controller = QindaQt::Apps::FileManager::composeNavigation(*applications);
+  const PreviewCaches previews = installImageProviders(engine);
   // ADR-0165/ADR-0262: a workspace picker opens straight into Applications.
   controller->navigateTo(applications->chooserMode() ? applications->location() : startPath);
 
@@ -447,16 +394,17 @@ int main(int argc, char **argv) {
           std::make_unique<QindaQt::Apps::FileManager::BookmarksStore>(stateDirectory));
   NetworkComposition network = composeNetworkSurfaces(stateDirectory);
   auto appCoordinator = std::make_unique<QindaQt::AppShell::ApplicationCoordinator>();
-  const QString appShellError = configureAppShell(
-      *appCoordinator, *controller, *mutationController, *clipboardController,
-      QDir(trashRoot).filePath(QStringLiteral("files")));
+  const QString appShellError =
+      configureAppShell(*appCoordinator, *controller, *mutationController);
   if (!appShellError.isEmpty()) {
     std::fprintf(stderr, "qindaqt-file-manager: %s\n",
                  qPrintable(appShellError));
     return 3;
   }
-
-  publishSearchResultsInto(*searchController, *controller);
+  const auto navigations = QindaQt::Apps::FileManager::composeFolderNavigations(
+      *controller, *applications,
+      {*appCoordinator, *mutationController, *clipboardController, *searchController,
+       *previews.previews, *previews.gallery, QDir(trashRoot).filePath(QStringLiteral("files"))});
   const QindaQt::Apps::FileManager::FileActionsComposition fileActions =
       QindaQt::Apps::FileManager::composeFileActions(uniqueApplicationDataRoots(), *applications);
 
@@ -494,6 +442,8 @@ int main(int argc, char **argv) {
                            QVariant::fromValue(static_cast<QObject *>(entryFacts.get())));
   initialProperties.insert(QStringLiteral("columnListing"),
                            QVariant::fromValue(static_cast<QObject *>(columnListing.get())));
+  initialProperties.insert(QStringLiteral("navigationFactory"),
+                           QVariant::fromValue(static_cast<QObject *>(navigations.get())));
   engine.setInitialProperties(initialProperties);
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));
   if (engine.rootObjects().isEmpty()) {
@@ -520,6 +470,13 @@ int main(int argc, char **argv) {
   [[maybe_unused]] const auto finder = QindaQt::Apps::FileManager::composeFinderIntegration(
       parser, engine.rootObjects().constFirst(), *controller, *appCoordinator, startPath,
       applications->chooserMode());
+  // ADR-0271: the desktop layout's File Manager style, until the user picks
+  // one. Settings1 answers asynchronously, so starting it here, after the
+  // probes and beside the other session-bus clients, costs the window nothing.
+  const auto layoutStyle = QindaQt::Apps::FileManager::LayoutStyleHint::forSession();
+  QObject::connect(layoutStyle.get(), &QindaQt::Apps::FileManager::LayoutStyleHint::hintChanged,
+                   network.preferences.get(),
+                   &QindaQt::Apps::FileManager::PreferencesController::setLayoutStyleHint);
   const int exitCode = application->exec();
   destroyRoots();
   return exitCode;

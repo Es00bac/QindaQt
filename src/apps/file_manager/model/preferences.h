@@ -92,6 +92,18 @@ struct Preferences final {
   // permanent and always confirms.
   bool confirmTrash = true;
 
+  // ADR-0271: the File Manager style, one of fileManagerStyles(). Empty means
+  // "match the desktop layout": the selected layout profile's
+  // workflow.fileManager hint decides (PreferencesController), Finder
+  // without one.
+  QString fileManagerStyle;
+  // AGENT-NOTE: bookkeeping, not a knob. The layout hint whose preset (its
+  // starting view, styleViewMode()) was last written into defaultViewMode,
+  // so a layout's preset is applied once when the layout changes and a
+  // later "Open folders as" choice still sticks. "finder" matches the
+  // first-run defaults, so a first run under a Finder layout writes nothing.
+  QString layoutStyle = QStringLiteral("finder");
+
   [[nodiscard]] bool operator==(const Preferences &) const = default;
 
   [[nodiscard]] static QStringList viewModes();
@@ -101,6 +113,11 @@ struct Preferences final {
   [[nodiscard]] static QStringList groupKeys();
   [[nodiscard]] static QStringList columnKeys();
   [[nodiscard]] static QStringList rowDensities();
+  // ADR-0271: "finder", "explorer", "commander".
+  [[nodiscard]] static QStringList fileManagerStyles();
+  // The view a style starts folders in, its preset: Details for Explorer
+  // and Commander, Icons for Finder (and anything unknown).
+  [[nodiscard]] static QString styleViewMode(const QString &style);
   // True when every field holds one of the accepted values above.
   [[nodiscard]] bool isValid() const;
 

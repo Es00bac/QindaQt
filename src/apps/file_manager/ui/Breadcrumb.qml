@@ -6,7 +6,13 @@ import QtQuick.Layouts
 Control {
     id: root
     required property var navigationController
-    readonly property int segmentLimit: width < 350 ? 2 : 3
+    // ADR-0271: the Explorer style's address bar -- a framed field that shows
+    // as much of the path as fits and turns into the location field when its
+    // empty part is clicked (editRequested).
+    property bool addressStyle: false
+    signal editRequested()
+    readonly property int segmentLimit: addressStyle ? Math.max(2, Math.floor(width / 110))
+                                                     : width < 350 ? 2 : 3
     readonly property var visibleSegments: navigationController.breadcrumb.slice(-segmentLimit)
     readonly property var hiddenSegments: navigationController.breadcrumb.slice(0,
         Math.max(0, navigationController.breadcrumb.length - segmentLimit))
@@ -15,6 +21,13 @@ Control {
 
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Current folder: %1").arg(navigationController.currentPath)
+    background: Rectangle {
+        visible: root.addressStyle
+        radius: 4
+        color: root.palette.base
+        border.width: 1
+        border.color: root.palette.mid
+    }
 
     contentItem: RowLayout {
         spacing: 4
@@ -47,7 +60,7 @@ Control {
                 required property var modelData
                 required property int index
                 objectName: "breadcrumbSegment_" + (root.hiddenSegments.length + index)
-                Layout.fillWidth: true
+                Layout.fillWidth: !root.addressStyle
                 Layout.maximumWidth: 180
                 Layout.minimumWidth: 24
                 implicitWidth: Math.min(180, implicitContentWidth + 16)
@@ -74,6 +87,13 @@ Control {
                 }
                 onClicked: root.navigationController.navigateTo(modelData.path)
             }
+        }
+        Item {
+            objectName: "breadcrumbAddressSpace"
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: root.addressStyle
+            TapHandler { onTapped: root.editRequested() }
         }
     }
 }

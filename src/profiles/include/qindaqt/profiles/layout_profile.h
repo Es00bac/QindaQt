@@ -45,9 +45,9 @@ struct WorkflowSpec {
     // The File Manager arrangement the layout's experience expects: "finder",
     // "explorer", or "commander" (ADR-0268). A hint like the others; a value
     // a consumer does not know means the default, Finder.
-    // AGENT-CONTRACT: placeholder for W11s. The File Manager's style setting
-    // (ADR-0271) uses the selected layout's hint as its default until the
-    // user picks a style; nothing reads it before W11s lands.
+    // AGENT-CONTRACT: the File Manager's style setting (ADR-0271) uses the
+    // selected layout's hint as its style until the user picks one; it reads
+    // it through apps/file_manager/runtime/layout_style_hint.
     QString fileManager = QStringLiteral("finder");
 
     [[nodiscard]] QVariantMap toVariantMap() const;

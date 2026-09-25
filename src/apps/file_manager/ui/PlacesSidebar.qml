@@ -22,6 +22,10 @@ Control {
     // fixture tests may leave them null (drops then refuse politely).
     property var mutationController: null
     property var clipboardController: null
+    // ADR-0271: the Explorer style's folder tree under the places, read
+    // through ColumnListing.
+    property bool showFolderTree: false
+    property var columnListing: null
 
     implicitWidth: 196
     padding: 8
@@ -146,6 +150,26 @@ Control {
                                     drop.accepted = false
                             }
                         }
+                    }
+                }
+
+                Label {
+                    Layout.topMargin: 8
+                    visible: root.showFolderTree
+                    text: qsTr("Folders")
+                    color: root.palette.placeholderText
+                    Accessible.ignored: true
+                }
+
+                Loader {
+                    Layout.fillWidth: true
+                    active: root.showFolderTree
+                    visible: active
+                    sourceComponent: FolderTree {
+                        navigationController: root.navigationController
+                        columnListing: root.columnListing
+                        homePath: root.placesController.places.length > 0
+                            ? root.placesController.places[0].path : ""
                     }
                 }
 

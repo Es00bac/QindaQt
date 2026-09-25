@@ -300,6 +300,50 @@ costs what its visible rows cost.
 **Theme.** The File Manager publishes no QST tokens (ADR-0116), so
 `ToolkitTheme.qml` feeds the window palette into `Tk.Theme`'s base roles.
 
+## Styles and tabs
+
+[ADR-0271](../adr/0271-file-manager-styles-are-presets-over-per-tab-navigation.md)
+adds one setting, Preferences ▸ General ▸ **File manager style**, and tabs.
+A style is a preset: it turns on chrome and writes its starting view into
+"Open folders as"; folders with a view of their own keep it.
+
+| Style | What the window shows |
+| --- | --- |
+| Finder | today's window: places sidebar, the four views, no extra bars |
+| Explorer | a **folder tree** under the places (`FolderTree.qml`), the breadcrumb as a framed **address bar** (click its empty part, or Ctrl+L, to type a path), a compact **command bar** (`CommandBar.qml`: New, Cut, Copy, Paste, Rename, Delete, Sort, View); Details |
+| Commander | **two panes** side by side (`FolderPanes.qml`), each with its own folder, view and tabs, the active one's header bold in the selection colours; **Tab** switches panes; Copy To and Move To start at the other pane's folder; a bottom **function-key bar** (`FunctionKeyBar.qml`) and keys F3 View (Open), F4 Edit (Open With), F5 Copy, F6 Move, F7 New Folder, F8 Delete (Move to Trash); Details |
+
+**Match the desktop layout** (the default choice) uses the selected layout
+profile's `workflow.fileManager` hint
+([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)):
+Mac-like layouts are Finder, Windows-like ones (Windows 3.1's tree beside the
+list included) Explorer. `runtime/layout_style_hint` reads Settings1
+`panels.layoutProfile` live and the profile catalog once;
+`PreferencesController.fileManagerStyle` is the pick or, without one, the
+hint (Finder when there is none). While following the layout, its preset is
+written once per layout change, so a later "Open folders as" sticks.
+
+**Tabs.** Ctrl+T opens a tab at the current folder, Ctrl+W closes the current
+tab (the last tab of a single pane closes the window), Ctrl+Tab and
+Ctrl+Shift+Tab move between tabs, a middle click on a tab closes it, and a
+file dropped on a tab moves (Ctrl copies) into that tab's folder. The tab bar
+shows once a pane has two tabs. In Commander each pane has its own tabs.
+
+**Every tab browses with its own `NavigationController`**, with its own
+`EntrySelection`, `FolderViewSettings` and views (`FolderTab.qml`), so it keeps
+its folder, history, selection and scroll while another is in front.
+`runtime/folder_navigations` makes the controllers after the window's first
+(`main.cpp`'s) and moves every window-wide binding -- the AppShell action
+states, search results, preview fencing -- to the tab the user works in.
+Main.qml reaches that tab only through `FolderPanes.activeNavigation`,
+`activeSelection` and `activeViews`. The first tab's controller is never
+released; closing that tab only hides it.
+
+Caveats: F5 is Refresh in the shared catalog, so a Commander pane claims F3-F8
+at ShortcutOverride (Ctrl+R still refreshes); only the active tab fences
+previews, so a background pane that re-reads its folder shows icons until the
+user works in it; tabs have keys and a tab bar but no menu entries yet.
+
 ## Bounded visual previews
 
 The private `PreviewDecoder` seam and engine-owned `PreviewProvider` keep image
@@ -873,11 +917,13 @@ same `StateFile` primitive. When no v2 document exists, the ADR-0198
 default) and the next write is v2; v1 is never written again, and a refused v2
 never falls back to it. v2 adds Group By, the Details columns, relative dates,
 row density, filename extensions and up to 64 remembered folder views, and is
-bounded at 128 KiB.
+bounded at 128 KiB. ADR-0271 adds the File manager style (`fileManagerStyle`,
+empty to match the desktop layout) and `layoutStyle`, the layout style whose
+preset was last applied; both joined v2 before it shipped.
 
 | Page | Settings |
 | --- | --- |
-| General | default view (Icons, Details, Columns, Gallery), show hidden files |
+| General | File manager style (match the desktop layout, Finder, Explorer, Commander; ADR-0271), default view (Icons, Details, Columns, Gallery), show hidden files |
 | Views | sort column, sort order, Group By, icon size, folders before files, relative dates, compact rows, filename extensions |
 | Network | look for nearby servers, default Connect-to-server scheme, what mounting at login costs |
 | Trash | ask before moving items to Trash |
@@ -900,8 +946,9 @@ Three rules make the file safe to trust.
 - **A refused write changes nothing visible**, so the window always shows what
   the next launch will read.
 
-`PreferencesController` applies nothing itself; `FolderViewSettings.qml`
-binds it to `NavigationController` (and remembers per-folder views), so a change reaches the window already on
+`PreferencesController` applies nothing to the window itself; each tab's
+`FolderViewSettings.qml` binds it to that tab's `NavigationController` (and
+remembers per-folder views), so a change reaches the window already on
 screen without either class depending on the other. That apply step is
 idempotent on purpose: `setSortColumn()` *flips* the direction when called
 with the column that is already active, and a needless re-sort moves the view
@@ -1429,6 +1476,10 @@ installed activation file.
   QindaTK views, the Details column chooser, Group By, per-folder views with
   Use as Defaults, and `preferences-v2` with its v1 migration (ADR-0270).
   Next: File Manager styles (Finder, Explorer, Commander) and tabs (W11s).
+- **W11s styles and tabs (written 2026-09-24, awaiting the round build)** —
+  the File manager style setting and its layout default, the folder tree,
+  address bar and command bar, Commander's two panes and function keys, and
+  tabs with a navigation controller each (ADR-0271).
 
 ## Bounded deferrals
 
@@ -1484,6 +1535,16 @@ levels, the Gallery strip) and `qindaqt.file-manager-views-ui` (production
 switcher and View menu, Details sorting, grouping and columns, per-folder
 views and Use as Defaults); `qindaqt.file-manager-preferences-store` and
 `-controller` cover `preferences-v2`, its limits and the v1 migration.
+
+The ADR-0271 rows (`tests/apps/file_manager/StylesTests.cmake`) are
+`qindaqt.file-manager-folder-navigations` (a controller per tab; the action
+states follow the active one and fall back to the first on release),
+`qindaqt.file-manager-layout-style-hint` (the stock profiles' hints, directory
+precedence, Settings1's selected layout over a scripted transport) and
+`qindaqt.file-manager-styles-ui` (production `Main.qml`: each style's chrome
+and starting view, tabs with their own folder and history, Commander's Tab,
+F5 Copy To at the other pane and F7, the Explorer tree's rows and keys); the
+preference rows also cover the style, its preset and the layout default.
 
 The S5 network-browsing rows are `qindaqt.file-manager-network-location`
 (allowlist/canonicalization: supported/unsupported schemes, credential and

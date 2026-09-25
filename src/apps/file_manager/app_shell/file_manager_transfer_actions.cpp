@@ -12,7 +12,9 @@ namespace QindaQt::Apps::FileManager {
 void bindFileManagerTransferActions(AppShell::ApplicationCoordinator &coordinator,
                                     NavigationController &navigation,
                                     ClipboardController &clipboard,
-                                    MutationController &mutation) {
+                                    MutationController &mutation,
+                                    QObject *context) {
+  QObject *const receiver = context != nullptr ? context : &coordinator;
   const auto sync = [&coordinator, &navigation, &clipboard, &mutation] {
     const auto enabled = [&coordinator](const char *id, bool value) {
       const auto result = coordinator.setActionEnabled(QLatin1String(id), value);
@@ -34,13 +36,13 @@ void bindFileManagerTransferActions(AppShell::ApplicationCoordinator &coordinato
                                    && (hasSelection || !navigation.applicationsPlace()));
   };
   QObject::connect(&clipboard, &ClipboardController::stateChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&mutation, &MutationController::stateChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::navigationChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::presentationChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   sync();
 }
 

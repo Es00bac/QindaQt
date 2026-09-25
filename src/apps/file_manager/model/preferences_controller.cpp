@@ -237,7 +237,53 @@ bool PreferencesController::useAsDefaults(const QVariantMap &view) {
   return commit(candidate);
 }
 
-void PreferencesController::restoreDefaults() { commit(Preferences{}); }
+QString PreferencesController::fileManagerStyle() const {
+  return m_preferences.fileManagerStyle.isEmpty() ? layoutStyleHint()
+                                                  : m_preferences.fileManagerStyle;
+}
+
+QString PreferencesController::layoutStyleHint() const {
+  return Preferences::fileManagerStyles().contains(m_layoutHint) ? m_layoutHint
+                                                                 : QStringLiteral("finder");
+}
+
+void PreferencesController::setFileManagerStyle(const QString &style) {
+  Preferences candidate = m_preferences;
+  candidate.fileManagerStyle = style;
+  // A style outside the set is refused whole by the store, preset included.
+  candidate.defaultViewMode =
+      Preferences::styleViewMode(style.isEmpty() ? layoutStyleHint() : style);
+  if (style.isEmpty()) {
+    candidate.layoutStyle = layoutStyleHint();
+  }
+  commit(candidate);
+}
+
+void PreferencesController::setLayoutStyleHint(const QString &hint) {
+  if (m_layoutHint == hint) {
+    return;
+  }
+  m_layoutHint = hint;
+  const QString style = layoutStyleHint();
+  if (m_preferences.fileManagerStyle.isEmpty() && m_preferences.layoutStyle != style) {
+    Preferences candidate = m_preferences;
+    candidate.layoutStyle = style;
+    candidate.defaultViewMode = Preferences::styleViewMode(style);
+    if (commit(candidate)) {
+      return; // commit() announced the change
+    }
+  }
+  // The effective style may have changed even when nothing was written.
+  Q_EMIT preferencesChanged();
+}
+
+void PreferencesController::restoreDefaults() {
+  // The defaults include matching the desktop layout, preset applied.
+  Preferences defaults;
+  defaults.layoutStyle = layoutStyleHint();
+  defaults.defaultViewMode = Preferences::styleViewMode(defaults.layoutStyle);
+  commit(defaults);
+}
 
 void PreferencesController::clearStoreError() { setStoreError({}); }
 

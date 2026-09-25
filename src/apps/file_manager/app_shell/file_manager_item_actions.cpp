@@ -15,7 +15,9 @@ void bindFileManagerItemActions(AppShell::ApplicationCoordinator &coordinator,
                                 NavigationController &navigation,
                                 ClipboardController &clipboard,
                                 MutationController &mutation,
-                                const QString &trashFilesDirectory) {
+                                const QString &trashFilesDirectory,
+                                QObject *context) {
+  QObject *const receiver = context != nullptr ? context : &coordinator;
   const QString trash =
       trashFilesDirectory.isEmpty() ? QString() : QDir::cleanPath(trashFilesDirectory);
   const auto sync = [&coordinator, &navigation, &clipboard, &mutation, trash] {
@@ -43,10 +45,10 @@ void bindFileManagerItemActions(AppShell::ApplicationCoordinator &coordinator,
     enabled("file.new-file", writable);
     enabled("file.open-terminal", local);
   };
-  QObject::connect(&clipboard, &ClipboardController::stateChanged, &coordinator, sync);
-  QObject::connect(&mutation, &MutationController::stateChanged, &coordinator, sync);
-  QObject::connect(&navigation, &NavigationController::navigationChanged, &coordinator, sync);
-  QObject::connect(&navigation, &NavigationController::presentationChanged, &coordinator, sync);
+  QObject::connect(&clipboard, &ClipboardController::stateChanged, receiver, sync);
+  QObject::connect(&mutation, &MutationController::stateChanged, receiver, sync);
+  QObject::connect(&navigation, &NavigationController::navigationChanged, receiver, sync);
+  QObject::connect(&navigation, &NavigationController::presentationChanged, receiver, sync);
   sync();
 }
 

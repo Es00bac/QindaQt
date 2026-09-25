@@ -5,7 +5,9 @@
 
 namespace QindaQt::Apps::FileManager {
 void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinator,
-                                   NavigationController &navigation) {
+                                   NavigationController &navigation,
+                                   QObject *context) {
+  QObject *const receiver = context != nullptr ? context : &coordinator;
   const auto sync = [&coordinator, &navigation] {
     // ADR-0262: the Applications place is titled by name, never by address.
     coordinator.setWindowTitle(QStringLiteral("QindaQt File Manager — %1")
@@ -49,9 +51,9 @@ void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinato
     checked("view.show-hidden", navigation.showHidden());
   };
   QObject::connect(&navigation, &NavigationController::navigationChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   QObject::connect(&navigation, &NavigationController::presentationChanged,
-                   &coordinator, sync);
+                   receiver, sync);
   sync();
 }
 } // namespace QindaQt::Apps::FileManager

@@ -35,6 +35,9 @@ private slots:
   void remembersAFolderViewOnlyWhenItChanges();
   void useAsDefaultsPromotesAFolderView();
   void refusesAMalformedFolderView();
+  // ADR-0271: the File manager style.
+  void pickingAStyleAppliesItsPreset();
+  void followsTheLayoutUntilAStyleIsPicked();
 };
 
 void TestPreferencesController::startsAtTheDefaultsAndPersistsAChange() {
@@ -247,6 +250,99 @@ void TestPreferencesController::refusesAMalformedFolderView() {
   QCOMPARE(changed.count(), 0);
   QVERIFY(!controller->storeError().isEmpty());
   QVERIFY(!controller->folderView(QStringLiteral("/a")).value(QStringLiteral("remembered")).toBool());
+}
+
+void TestPreferencesController::pickingAStyleAppliesItsPreset() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const QString directory = temporary.filePath(QStringLiteral("state"));
+  auto controller = controllerIn(directory);
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("finder"));
+  QVERIFY(controller->fileManagerStyleChoice().isEmpty());
+  QCOMPARE(controller->fileManagerStyles(),
+           QStringList({QStringLiteral("finder"), QStringLiteral("explorer"),
+                        QStringLiteral("commander")}));
+
+  // One write: the style and its starting view.
+  QSignalSpy changed(controller.get(), &PreferencesController::preferencesChanged);
+  controller->setFileManagerStyle(QStringLiteral("explorer"));
+  QCOMPARE(changed.count(), 1);
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("explorer"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("list"));
+  controller->setFileManagerStyle(QStringLiteral("commander"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("list"));
+  auto reopened = controllerIn(directory);
+  QCOMPARE(reopened->fileManagerStyleChoice(), QStringLiteral("commander"));
+  QCOMPARE(reopened->defaultViewMode(), QStringLiteral("list"));
+
+  // "Open folders as" stays the user's own after the preset.
+  controller->setDefaultViewMode(QStringLiteral("columns"));
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("commander"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("columns"));
+  controller->setFileManagerStyle(QStringLiteral("finder"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("grid"));
+
+  // A style outside the set is refused whole, preset included.
+  changed.clear();
+  controller->setFileManagerStyle(QStringLiteral("norton"));
+  QCOMPARE(changed.count(), 0);
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("finder"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("grid"));
+  QVERIFY(!controller->storeError().isEmpty());
+}
+
+void TestPreferencesController::followsTheLayoutUntilAStyleIsPicked() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const QString directory = temporary.filePath(QStringLiteral("state"));
+  auto controller = controllerIn(directory);
+  QSignalSpy changed(controller.get(), &PreferencesController::preferencesChanged);
+
+  // A Windows-like layout: Explorer, and its preset written once.
+  controller->setLayoutStyleHint(QStringLiteral("explorer"));
+  QCOMPARE(changed.count(), 1);
+  QCOMPARE(controller->layoutStyleHint(), QStringLiteral("explorer"));
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("explorer"));
+  QVERIFY(controller->fileManagerStyleChoice().isEmpty());
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("list"));
+  QCOMPARE(controller->values().layoutStyle, QStringLiteral("explorer"));
+
+  // A later "Open folders as" sticks, here and on the next launch under the
+  // same layout.
+  controller->setDefaultViewMode(QStringLiteral("grid"));
+  auto reopened = controllerIn(directory);
+  reopened->setLayoutStyleHint(QStringLiteral("explorer"));
+  QCOMPARE(reopened->fileManagerStyle(), QStringLiteral("explorer"));
+  QCOMPARE(reopened->defaultViewMode(), QStringLiteral("grid"));
+  reopened.reset();
+
+  // Another layout brings its own style and preset.
+  controller->setLayoutStyleHint(QStringLiteral("commander"));
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("commander"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("list"));
+  // An unknown hint, or none, is Finder.
+  controller->setLayoutStyleHint(QStringLiteral("nautilus"));
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("finder"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("grid"));
+
+  // A pick outlasts every layout change...
+  controller->setLayoutStyleHint(QStringLiteral("explorer"));
+  controller->setFileManagerStyle(QStringLiteral("finder"));
+  controller->setLayoutStyleHint(QStringLiteral("commander"));
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("finder"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("grid"));
+  // ...until "Match the desktop layout" is chosen again, which applies the
+  // layout's preset at once.
+  controller->setFileManagerStyle(QString());
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("commander"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("list"));
+
+  // Restore Defaults matches the layout, preset applied.
+  controller->setDefaultViewMode(QStringLiteral("gallery"));
+  controller->restoreDefaults();
+  QVERIFY(controller->fileManagerStyleChoice().isEmpty());
+  QCOMPARE(controller->fileManagerStyle(), QStringLiteral("commander"));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("list"));
 }
 
 QTEST_MAIN(TestPreferencesController)

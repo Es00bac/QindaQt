@@ -46,7 +46,11 @@ QString missingUiContractObject(QObject *root) {
       QStringLiteral("preferencesTrashPage"),
       // ADR-0269: the right-click set's own dialogs.
       QStringLiteral("openWithDialog"), QStringLiteral("deleteConfirmationDialog"),
-      QStringLiteral("newFileDialog")};
+      QStringLiteral("newFileDialog"),
+      // ADR-0271: the panes and each style's own bars.
+      QStringLiteral("folderPanes"), QStringLiteral("leftPane"), QStringLiteral("rightPane"),
+      QStringLiteral("commandBar"), QStringLiteral("functionKeyBar"),
+      QStringLiteral("preferenceStyleBox")};
   for (const QString &objectName : requiredObjects) {
     if (!root->findChild<QObject *>(objectName)) {
       return objectName;
