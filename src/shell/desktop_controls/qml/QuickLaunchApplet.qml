@@ -38,8 +38,24 @@ Item {
 
     // Worn Luna dressing (ADR-0124): instance-level opt-in from the profile.
     property bool luna: false
+    // ADR-0268: which of the dock's items this instance shows (profile
+    // setting `items`). "file-manager" and "trash" are the Mac-style dock's
+    // permanent ends, one fixed tile each that is never stored, moved, or
+    // removed; "others" is every stored item but those two, for the dock that
+    // holds both ends; anything else is the whole dock.
+    property string items: "all"
+    readonly property bool fixedEnd: items === "file-manager" || items === "trash"
     readonly property bool ready: access !== null && Tokens.ready
-    readonly property var rows: ready ? access.rows : []
+    readonly property string fileManagerEntry:
+        ready ? String(access.fileManagerRow?.entryId ?? "") : ""
+    readonly property var rows: !ready ? []
+        : items === "file-manager"
+            ? (fileManagerEntry !== "" ? [access.fileManagerRow] : [])
+        : items === "trash" ? (access.trashRow ? [access.trashRow] : [])
+        : items === "others"
+            ? access.rows.filter(row => String(row.kind) !== "trash"
+                                 && String(row.entryId) !== fileManagerEntry)
+        : access.rows
     readonly property bool showRows: ready && rows.length > 0
     readonly property int iconExtent: dockMode
         ? Math.min(40, Math.max(16, resolvedDockTileSize - 8))
@@ -147,6 +163,8 @@ Item {
             stackPopup.show(row, item)
         else if (kind === "application")
             access.activate(String(row.entryId))
+        else if (Boolean(row.fixed))
+            access.openTrash()
         else
             access.activateItem(Number(row.index))
     }
@@ -195,7 +213,7 @@ Item {
     DragHandler {
         id: tileDrag
         target: null
-        enabled: root.showRows && Boolean(root.access.editable)
+        enabled: root.showRows && Boolean(root.access.editable) && !root.fixedEnd
         acceptedButtons: Qt.LeftButton
         onActiveChanged: {
             if (active)
@@ -213,7 +231,7 @@ Item {
         y: root.showRows ? 0 : root.height / 2 - root.emptyDropReach
         width: root.showRows ? root.width : root.emptyDropReach * 2
         height: root.showRows ? root.height : root.emptyDropReach * 2
-        enabled: root.ready
+        enabled: root.ready && !root.fixedEnd
         onEntered: (drag) => {
             const kind = gestures.dropKind(drag)
             drag.accepted = kind !== "" && Boolean(root.access.editable)
@@ -290,11 +308,12 @@ Item {
         id: itemMenu
         vertical: root.vertical
         visualCount: root.rows.length
-        trashInDock: root.ready && Boolean(root.access.trashInDock)
+        // A dock split into slices keeps its Trash at its end.
+        trashInDock: root.ready && (Boolean(root.access.trashInDock) || root.items !== "all")
         onOpenRequested: root.activateRow(itemMenu.visualIndex, itemMenu.anchorTile)
         onOpenNewWindowRequested: root.access.openNewWindow(String(itemMenu.row.entryId))
-        onOpenInFileManagerRequested:
-            root.access.openInFileManager(Number(itemMenu.row.index))
+        onOpenInFileManagerRequested: Boolean(itemMenu.row.fixed)
+            ? root.access.openTrash() : root.access.openInFileManager(Number(itemMenu.row.index))
         onEmptyTrashRequested: promptPopup.ask("emptyTrash", Number(itemMenu.row.index), "",
                                                itemMenu.anchorTile)
         onNewGroupRequested: {
@@ -337,8 +356,10 @@ Item {
     ControlPopupFrame {
         id: feedbackPopup
         objectName: "quickLaunchFeedbackPopup"
-        // The group/folder popup shows the same line inline while it is open.
+        // The group/folder popup shows the same line inline while it is open;
+        // a permanent end leaves the shared line to its dock's other slices.
         visible: root.ready && Boolean(root.access.feedbackPresent) && !stackPopup.visible
+                 && !root.fixedEnd
         heading: root.dockMode ? qsTr("Dock") : qsTr("Quick launch")
         feedback: root.ready ? String(root.access.feedback) : ""
         initialFocusItem: dismiss

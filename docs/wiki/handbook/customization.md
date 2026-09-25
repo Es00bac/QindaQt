@@ -19,7 +19,7 @@ top, and everything you try is previewed live on the page before you save.
 
 ### Themes
 
-Six themes ship with QindaQt:
+Among the themes that ship with QindaQt:
 
 | Theme | Character |
 | --- | --- |
@@ -27,8 +27,12 @@ Six themes ship with QindaQt:
 | QindaQt Pearl | The light counterpart: pale ceramic and apricot |
 | QindaQt Velvet | Between the two, for late evenings |
 | Qinda High Contrast | Maximum separation for readability |
-| Qinda macOS | A mist-and-sage take on the familiar Mac look |
-| QindaQt Bliss | An opt-in XP-era option: Tahoma, squared corners, XP-face surfaces, Luna blue accents, and a worn Luna title bar |
+| Qinda Mist | A mist-and-sage take on the familiar Mac look |
+| Qinda Classic Blue | An XP-era option: squared corners, beige surfaces, blue title bars, and blue tile buttons |
+| Qinda Daylight | A bright, softly translucent modern look with wide flat window buttons |
+| Qinda Marigold | Warm greys with a yellow title tab that rolls the window up on double-click |
+| Qinda Classic Grey | Bevelled greys and a navy title bar; minimizing turns a window into a desktop icon |
+| Qinda Graphite | Mid greys, black title bars, and bold square buttons |
 
 The separate **Qinda Seven** package adds Saffron, Glacier, Orchid, Forge,
 Fern, Nocturne, and Signal. Each has a paired window and container decoration
@@ -75,10 +79,24 @@ setting.
 
 Open **System Settings → Customize** to pick a layout. The page shows each
 layout as a small monitor thumbnail of where it puts its panels: the
-built-in layouts first (the Mac-style default, QindaQt's own, a minimal one,
-and layouts inspired by GNOME, Unity, XFCE, NeXTSTEP, Windows and an
-XP-inspired worn Luna taskbar), then **My presets**. Click one and the
-desktop switches to it; the page says so once the switch is confirmed.
+built-in layouts first (the default Menu and Dock, QindaQt's own, a minimal one,
+layouts inspired by GNOME, Unity and XFCE, and five familiar desktops), then
+**My presets**. Click one and the desktop switches to it; the page says so once
+the switch is confirmed. Each familiar desktop pairs with a theme; choosing the
+layout keeps your current theme, so pick its theme in Appearance for the whole
+feel:
+
+| Layout | Feels like | Pair it with |
+| --- | --- | --- |
+| Menu and Dock | A Mac: menu bar on top, dock below with the File Manager first and the Trash last | Qinda Mist |
+| Classic Taskbar | XP: start button, quick launch, window buttons, tray | Qinda Classic Blue |
+| Centered Taskbar | Windows 11, without advertising or account prompts | Qinda Daylight |
+| Corner Bar | BeOS: yellow title tabs and a bar in the top-right corner | Qinda Marigold |
+| Program Groups | Windows 3.1: program groups on a top bar, windows that minimize to desktop icons | Qinda Classic Grey |
+| Workspace Dock | NeXTSTEP: a dock column down the right edge | Qinda Graphite |
+
+Menus stay inside windows in every one of these except Menu and Dock. These are
+starting points in the spirit of those desktops, not recreations of them.
 
 To change a layout, edit the panels themselves. Right-click a panel and
 choose **Edit Panels**:

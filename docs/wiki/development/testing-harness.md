@@ -3784,7 +3784,13 @@ scales the surface alpha, the highlight adds the catch light and the border
 strength dims the identity frame. `qindaqt.shell-capture-matrix` captures
 every stock profile under `qinda-glass-dark` and `qinda-paper` beside its
 existing rows, so panel and popup dressings are recorded over a translucent
-dark and an opaque light theme.
+dark and an opaque light theme, and each desktop experience with the theme
+it pairs with ([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)).
+`qindaqt.profile-formats` pins those pairs, the vendor-free names, the
+Mac-style dock's permanent ends and the `workflow.fileManager` hint;
+`qindaqt.theme-formats` and `qindaqt.decoration-title-options` pin each
+experience theme's button style and the theme-authored double-click,
+minimize-to-icon and clean title bar.
 
 `qindaqt.member-handle-layout` exercises the contained-window handlebar at its
 108-logical-pixel supported minimum and at a roomy width. It covers classic

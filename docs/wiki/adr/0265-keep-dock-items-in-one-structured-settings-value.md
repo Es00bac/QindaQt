@@ -107,3 +107,7 @@ Revisit if Settings1 gains multi-key transactions, if docks need per-panel
 item sets, or if groups need nesting.
 
 See [Dock items](../shell/dock-items.md).
+
+[ADR-0268](0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)
+gives the Mac-style dock permanent File Manager and Trash ends as quick-launch
+slices (`items`) without changing this value.

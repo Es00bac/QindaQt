@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "qinda-bliss",
-  "name": "QindaQt Bliss",
+  "name": "Qinda Classic Blue",
   "variant": "light",
   "iconTheme": "QindaQt",
-  "fontFamily": "Tahoma",
+  "fontFamily": "Noto Sans",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 4,
   "motionDuration": 140,
@@ -23,13 +23,14 @@
   "decoration": {
     "buttonPlacement": "right",
     "tabDirection": "left-to-right",
-    "buttonStyle": "glyph",
+    "buttonStyle": "blue-tiles",
     "hoverGlyphs": true,
     "titleBarColor": "#2B6FD4",
     "titleBarInactiveColor": "#7E96B8",
     "closeColor": "#2D6BE4",
     "minimizeColor": "#E23B3B",
     "maximizeColor": "#3DA53D",
-    "restoreColor": "#E87BD0"
+    "restoreColor": "#E87BD0",
+    "titleWear": false
   }
 }

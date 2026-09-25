@@ -41,6 +41,9 @@ hard-coding theme-specific palette values.
 | `closeColor`, `minimizeColor`, `maximizeColor` | Optional valid Qt colors |
 | `titleBarColor`, `titleBarInactiveColor` | Optional valid Qt colors; authoring `titleBarColor` selects the Luna title-bar presentation below |
 | `restoreColor` | Optional valid Qt color; colors the maximized glyph square alongside the three colors above |
+| `titleDoubleClick` | Optional `maximize`, `roll-up`, or `minimize`: what a title double-click does; absent leaves KWin's own action ([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)) |
+| `minimizeAction` | `minimize` (default) or `roll-up`: with `roll-up` the roll-up control takes minimize's place, so minimizing rolls the window up to its icon on the desktop (ADR-0203) |
+| `titleWear` | Boolean, default `true`; `false` paints an authored title bar clean instead of weathered |
 
 All decoration fields beyond the two directions are optional presentation
 hints. Absent fields keep the classic rendering: a theme that authors none
@@ -51,6 +54,13 @@ gradient title bar with a white Trebuchet MS caption and a deterministic
 weathering pass — rust undercoat chips, speckles, and drips whose seed is
 the caption hash plus the bar width, never focus — while an inactive window
 paints `titleBarInactiveColor` ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)).
+With `titleWear: false` the authored bar is filled flat in its color instead,
+with the theme's font, no drop shadow, and caption ink chosen by the bar's
+lightness (white on a dark bar, `text` on a light one), following the
+decoration corner radius. A decoration document that authors a title color
+still paints it weathered. `titleDoubleClick` is the default behind
+Appearance's **Default** double-click choice; the user's explicit choice
+wins ([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)).
 The `glyph` button style draws right-positioned outline game-console
 glyphs — circle, triangle, maximized square, and cross — colored by
 `minimizeColor`, `maximizeColor`, `restoreColor`, and `closeColor`, with
@@ -73,8 +83,11 @@ value and never reopens the selected JSON document. It installs that theme
 before panel QML and always retains `hicolor` as the final fallback. An invalid
 hint rejects the catalog at startup and never becomes a path.
 
-The built-in catalog currently supplies QindaQt Pearl, QindaQt Velvet,
-QindaQt Smoked Plum, Qinda High Contrast, Qinda macOS, and QindaQt Bliss.
+The built-in schema v1 catalog supplies QindaQt Pearl, QindaQt Velvet,
+QindaQt Smoked Plum, Qinda High Contrast, Qinda Mist (id `qinda-macos`), and
+Qinda Classic Blue (id `qinda-bliss`); the desktop-experience themes Qinda
+Daylight, Qinda Marigold, Qinda Classic Grey, and Qinda Graphite are schema v2
+([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)).
 Every built-in authors a decoration block, and the catalog intentionally spans
 multiple window-manager arrangements; the unauthored fallback below exists for
 external and older packages, not as the built-in default.
@@ -83,13 +96,14 @@ Nightfall/Porcelain pair draws its dark surfaces from graphite and ink-blue
 night tones and its action role from restrained amber; the light counterpart
 uses cool porcelain surfaces with a dark burnt-amber action. The wallpaper
 catalog's QindaPunk artwork keeps its green visor as an image detail rather
-than a UI palette authority. Qinda macOS uses a mist-and-sage QindaQt
+than a UI palette authority. Qinda Mist uses a mist-and-sage QindaQt
 palette, left-side traffic lights whose `x`, `_`, and `[]` glyphs appear on
-hover, and right-to-left container tabs. QindaQt Bliss is the opt-in
-XP-influenced option set ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)):
-a light Tahoma theme with squared 4-pixel corners, an XP-face canvas, white
-raised surfaces, a Luna blue accent, right-side glyph window buttons, and a
-worn Luna title bar. Future state, elevation, focus,
+hover, and right-to-left container tabs. Qinda Classic Blue is the
+XP-influenced option set ([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md),
+[ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)):
+a light Noto Sans theme with squared 4-pixel corners, a warm beige canvas,
+white raised surfaces, a blue accent, right-side `blue-tiles` window buttons,
+and a clean blue title bar. Future state, elevation, focus,
 wallpaper, and typography tokens must be added compatibly or through a
 new schema version with migration tests.
 

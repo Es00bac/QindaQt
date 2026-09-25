@@ -31,6 +31,15 @@ struct DecorationSpec {
     QColor titleBarColor;
     QColor titleBarInactiveColor;
     QColor restoreColor;
+    // Title-bar behaviour a theme may author (ADR-0268), so a desktop
+    // experience can carry it. Empty titleDoubleClick leaves KWin's own
+    // double-click; minimizeAction `roll-up` puts the ADR-0203 roll-up to the
+    // icon in minimize's place; titleWear false paints an authored title bar
+    // clean instead of weathered (ADR-0124). A user's Appearance choice still
+    // wins where one exists (appearance.windowTitleDoubleClick).
+    QString titleDoubleClick;
+    QString minimizeAction = QStringLiteral("minimize");
+    bool titleWear = true;
 
     [[nodiscard]] QVariantMap toVariantMap() const;
 };

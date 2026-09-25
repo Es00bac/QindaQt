@@ -54,8 +54,8 @@ void clearNamedButtonStyle(ChromeStyle *style)
 }
 
 // A theme or document names its style. Pre-W19 names keep the built-in
-// container plates they always had (Bliss authors "glyph" and its
-// containers stay flat symbols, ADR-0129); a W19 name paints named buttons.
+// container plates they always had (a theme authoring "glyph" keeps flat
+// symbol containers, ADR-0129); a W19 name paints named buttons.
 void applyAuthoredButtonStyle(ChromeStyle *style, const QString &name)
 {
     const bool legacy = name == QLatin1String("symbols") || name == QLatin1String("glyph")

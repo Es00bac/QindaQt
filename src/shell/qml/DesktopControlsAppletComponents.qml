@@ -120,6 +120,21 @@ QtObject {
             reducedMotion: root.reducedMotion
             dockZoomEnabled: root.dockZoomEnabled
             luna: (root.appletSettings.presentation ?? "standard") === "luna"
+            // ADR-0268: the profile's slice of the dock for this instance.
+            items: String(root.appletSettings.items ?? "all")
+            // A permanent File Manager tile holds the dock's claim on the
+            // File Manager's windows while it exists (one icon per app).
+            property var heldFileManagerEnd: null
+            Component.onCompleted: {
+                if (items === "file-manager" && access !== null && access !== undefined) {
+                    heldFileManagerEnd = access
+                    access.holdFileManagerEnd(true)
+                }
+            }
+            Component.onDestruction: {
+                if (heldFileManagerEnd)
+                    heldFileManagerEnd.holdFileManagerEnd(false)
+            }
         }
     }
 

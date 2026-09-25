@@ -18,6 +18,10 @@ constexpr const char *requiredColors[] = {
     "canvas", "surface", "surfaceRaised", "border", "text", "textMuted", "accent", "accentText", "danger"};
 constexpr const char *buttonPlacements[] = {"left", "right"};
 constexpr const char *tabDirections[] = {"left-to-right", "right-to-left"};
+// ADR-0268: title-bar behaviour a theme may author. The double-click actions
+// are appearance.windowTitleDoubleClick's own (chrome_preferences.cpp).
+constexpr const char *titleDoubleClicks[] = {"maximize", "roll-up", "minimize"};
+constexpr const char *minimizeActions[] = {"minimize", "roll-up"};
 
 LoadResult failure(const QString &origin, const QString &message)
 {
@@ -284,6 +288,12 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
         decoration.value(QStringLiteral("buttonStyle")).toString(theme.decoration.buttonStyle);
     theme.decoration.hoverGlyphs =
         decoration.value(QStringLiteral("hoverGlyphs")).toBool(theme.decoration.hoverGlyphs);
+    theme.decoration.titleDoubleClick =
+        decoration.value(QStringLiteral("titleDoubleClick")).toString();
+    theme.decoration.minimizeAction = decoration.value(QStringLiteral("minimizeAction"))
+                                          .toString(theme.decoration.minimizeAction);
+    theme.decoration.titleWear =
+        decoration.value(QStringLiteral("titleWear")).toBool(theme.decoration.titleWear);
 
     if ((theme.schemaVersion != 1 && theme.schemaVersion != 2) || theme.id.isEmpty()
         || theme.name.isEmpty() || theme.variant.isEmpty()) {
@@ -299,7 +309,10 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
     }
     if (!contains(theme.decoration.buttonPlacement, buttonPlacements)
         || !contains(theme.decoration.tabDirection, tabDirections)
-        || !DecorationThemeTokens::buttonStyles().contains(theme.decoration.buttonStyle)) {
+        || !DecorationThemeTokens::buttonStyles().contains(theme.decoration.buttonStyle)
+        || !(theme.decoration.titleDoubleClick.isEmpty()
+             || contains(theme.decoration.titleDoubleClick, titleDoubleClicks))
+        || !contains(theme.decoration.minimizeAction, minimizeActions)) {
         return failure(origin, QStringLiteral("theme decoration contains an unknown enum value"));
     }
 

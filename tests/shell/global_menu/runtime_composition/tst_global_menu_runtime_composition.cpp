@@ -219,7 +219,8 @@ layoutHostingFollowsResolvedGlobalMenuInstances()
     const QSet<QString> windowAttached{
         QStringLiteral("gnome-inspired"), QStringLiteral("minimal"),
         QStringLiteral("nextstep-inspired"), QStringLiteral("qinda-bliss"),
-        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired")};
+        QStringLiteral("windows-modern"), QStringLiteral("xfce-inspired"),
+        QStringLiteral("beos-inspired"), QStringLiteral("win31-inspired")};
     QSet<QString> seen;
     const Profiles::LayoutProfile *defaultProfile = nullptr;
     for (const auto &profile : profiles.profiles()) {

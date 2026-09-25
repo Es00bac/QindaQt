@@ -2,21 +2,23 @@
   "schemaVersion": 1,
   "id": "nextstep-inspired",
   "name": "Workspace Dock",
-  "description": "A column of square tiles down the right edge: the menu tile on top, application and window tiles in the middle, workspace and utility tiles at the foot. No horizontal bar anywhere.",
-  "defaultTheme": "qinda-paper",
+  "description": "A column of square tiles down the right edge: the system tile and the applications tile on top, application and window tiles in the middle, where a minimized window waits as its own tile, and workspace and utility tiles at the foot. Menus stay in their windows; no horizontal bar anywhere.",
+  "defaultTheme": "qinda-graphite",
   "workflow": {
     "overview": "dock-grid",
     "workspacePolicy": "static",
     "launcher": "tile-dock",
     "menu": "window-local",
     "taskList": "dock-tiles",
-    "globalMenu": false
+    "globalMenu": false,
+    "fileManager": "finder"
   },
   "panels": [
     {
       "id": "workspace-dock", "edge": "right", "layer": "above", "hideMode": "never",
       "alignment": "start", "rows": 1, "thickness": 72, "length": 0.62,
       "applets": [
+        {"id": "system", "plugin": "system-menu", "settings": {"zone": "start"}},
         {"id": "applications", "plugin": "launcher", "settings": {"zone": "start"}},
         {"id": "apps", "plugin": "application-tiles", "settings": {"zone": "center"}},
         {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center"}},

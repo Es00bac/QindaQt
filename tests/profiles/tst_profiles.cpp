@@ -7,6 +7,7 @@
 
 #include <QFile>
 #include <QJsonDocument>
+#include <QRegularExpression>
 #include <QSet>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -33,13 +34,16 @@ private slots:
     void stockProfileResolvesNonemptyDesktopInventory();
     void theDefaultProfilePlacesTheStreamingApplet();
     void userStoreRemovesExactlyItsOwnFile();
+    void familiarExperiencesPairTheirThemesAndMenus();
+    void macDockKeepsTheFileManagerFirstAndTheTrashLast();
+    void fileManagerHintDefaultsRoundTripsAndRejectsBlank();
 };
 
 void ProfileTests::loadsEveryBuiltInProfile()
 {
     const QString directory = QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles");
     const auto results = ProfileLoader::fromDirectory(directory);
-    QVERIFY2(results.size() >= 9, "The built-in profile set unexpectedly shrank");
+    QVERIFY2(results.size() >= 11, "The built-in profile set unexpectedly shrank");
 
     QSet<QString> ids;
     for (const auto &result : results) {
@@ -371,6 +375,132 @@ void ProfileTests::userStoreRemovesExactlyItsOwnFile()
     const UserProfileStore unplaced(QStringLiteral("  "));
     QCOMPARE(unplaced.remove(QStringLiteral("fixture")).code,
              UserProfileStoreErrorCode::DirectoryUnavailable);
+}
+
+// ADR-0268: a desktop experience is a layout, the theme it pairs with (which
+// carries the W19 button style), whether the global menu shows, and the File
+// Manager arrangement it expects. What the user reads names no vendor.
+void ProfileTests::familiarExperiencesPairTheirThemesAndMenus()
+{
+    const struct {
+        const char *profile;
+        const char *theme;
+        bool globalMenu;
+        const char *fileManager;
+    } experiences[] = {
+        {"macos-inspired", "qinda-macos", true, "finder"},
+        {"qinda-bliss", "qinda-bliss", false, "explorer"},
+        {"windows-modern", "qinda-daylight", false, "explorer"},
+        {"beos-inspired", "qinda-marigold", false, "finder"},
+        {"win31-inspired", "qinda-classic-grey", false, "explorer"},
+        {"nextstep-inspired", "qinda-graphite", false, "finder"},
+    };
+    for (const auto &experience : experiences) {
+        const QString id = QString::fromLatin1(experience.profile);
+        const auto result = ProfileLoader::fromFile(
+            QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/") + id + QStringLiteral(".json"));
+        QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
+        QCOMPARE(result.profile.id, id);
+        QCOMPARE(result.profile.defaultTheme, QString::fromLatin1(experience.theme));
+        QCOMPARE(result.profile.workflow.globalMenu, experience.globalMenu);
+        QCOMPARE(result.profile.workflow.fileManager, QString::fromLatin1(experience.fileManager));
+    }
+
+    // "Windows" mid-sentence is the product; a sentence may still begin with
+    // the plural of window.
+    const QRegularExpression product(QStringLiteral("[a-z,] Windows\\b"));
+    const auto results = ProfileLoader::fromDirectory(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"));
+    for (const auto &result : results) {
+        QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
+        const QString &name = result.profile.name;
+        const QString &description = result.profile.description;
+        QVERIFY2(!name.contains(QStringLiteral("Windows"))
+                     && !product.match(description).hasMatch(),
+                 qPrintable(result.profile.id));
+        for (const char *mark : {"Microsoft", "Luna", "Bliss", "macOS", "Apple", "Finder",
+                                 "BeOS", "NeXT"}) {
+            const QString word = QString::fromLatin1(mark);
+            QVERIFY2(!name.contains(word) && !description.contains(word),
+                     qPrintable(result.profile.id + QStringLiteral(" names ") + word));
+        }
+    }
+
+    // Program Groups has no task bar: a minimized window becomes a desktop
+    // icon (its theme's minimize rolls up, ADR-0203), so no task list shows.
+    const auto classic = ProfileLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/win31-inspired.json"));
+    QVERIFY2(classic.ok, qPrintable(classic.error.diagnostic()));
+    QCOMPARE(classic.profile.workflow.taskList, QStringLiteral("hidden"));
+    // Corner Bar holds the top-right corner only.
+    const auto corner = ProfileLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/beos-inspired.json"));
+    QVERIFY2(corner.ok, qPrintable(corner.error.diagnostic()));
+    QCOMPARE(corner.profile.panels.size(), 1);
+    QCOMPARE(static_cast<int>(corner.profile.panels.constFirst().edge),
+             static_cast<int>(Edge::Top));
+    QCOMPARE(static_cast<int>(corner.profile.panels.constFirst().alignment),
+             static_cast<int>(Alignment::End));
+    QVERIFY(corner.profile.panels.constFirst().length < 1.0);
+}
+
+// ADR-0268 (plan W12): the Mac-style dock keeps the File Manager as its
+// permanent first tile and the Trash as its permanent last, and the menu bar
+// keeps the system menu (the Nest mark, ADR-0263's W18) at its far left.
+void ProfileTests::macDockKeepsTheFileManagerFirstAndTheTrashLast()
+{
+    const auto result = ProfileLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles/macos-inspired.json"));
+    QVERIFY2(result.ok, qPrintable(result.error.diagnostic()));
+    QCOMPARE(result.profile.panels.size(), 2);
+    QCOMPARE(result.profile.panels.constFirst().applets.constFirst().plugin,
+             QStringLiteral("system-menu"));
+    const PanelSpec &dock = result.profile.panels.at(1);
+    QCOMPARE(dock.id, QStringLiteral("dock"));
+    QStringList order;
+    for (const auto &applet : dock.applets) {
+        order.append(applet.plugin + QLatin1Char(':')
+                     + applet.settings.value(QStringLiteral("items")).toString());
+    }
+    QCOMPARE(order, QStringList({QStringLiteral("quick-launch:file-manager"),
+                                 QStringLiteral("launcher:"),
+                                 QStringLiteral("quick-launch:others"),
+                                 QStringLiteral("task-list:"),
+                                 QStringLiteral("quick-launch:trash")}));
+}
+
+void ProfileTests::fileManagerHintDefaultsRoundTripsAndRejectsBlank()
+{
+    // Absent: the File Manager's own default arrangement, Finder.
+    QJsonObject profile = validProfileObject();
+    const auto absent = ProfileLoader::fromJson(encode(profile), QStringLiteral("absent"));
+    QVERIFY2(absent.ok, qPrintable(absent.error.diagnostic()));
+    QCOMPARE(absent.profile.workflow.fileManager, QStringLiteral("finder"));
+
+    // Present: kept through the strict serializer, so a saved copy of the
+    // layout keeps it (AGENT-CONTRACT: W11s reads it as the default style).
+    profile.insert(QStringLiteral("workflow"),
+                   QJsonObject{{QStringLiteral("fileManager"), QStringLiteral("commander")}});
+    const auto present = ProfileLoader::fromJson(encode(profile), QStringLiteral("present"));
+    QVERIFY2(present.ok, qPrintable(present.error.diagnostic()));
+    QCOMPARE(present.profile.workflow.fileManager, QStringLiteral("commander"));
+    const auto roundTrip = ProfileLoader::fromJson(
+        QJsonDocument(present.profile.toJson()).toJson(), QStringLiteral("round-trip"));
+    QVERIFY2(roundTrip.ok, qPrintable(roundTrip.error.diagnostic()));
+    QCOMPARE(roundTrip.profile.workflow.fileManager, QStringLiteral("commander"));
+
+    // Blank or mistyped: rejected like every other workflow hint.
+    profile.insert(QStringLiteral("workflow"),
+                   QJsonObject{{QStringLiteral("fileManager"), QStringLiteral(" ")}});
+    const auto blank = ProfileLoader::fromJson(encode(profile), QStringLiteral("blank"));
+    QVERIFY(!blank.ok);
+    QCOMPARE(blank.error.code, ProfileErrorCode::InvalidValue);
+    QCOMPARE(blank.error.path, QStringLiteral("/workflow/fileManager"));
+    profile.insert(QStringLiteral("workflow"),
+                   QJsonObject{{QStringLiteral("fileManager"), true}});
+    const auto mistyped = ProfileLoader::fromJson(encode(profile), QStringLiteral("mistyped"));
+    QVERIFY(!mistyped.ok);
+    QCOMPARE(mistyped.error.code, ProfileErrorCode::InvalidFieldType);
 }
 
 QTEST_GUILESS_MAIN(ProfileTests)

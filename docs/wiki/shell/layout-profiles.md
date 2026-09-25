@@ -212,28 +212,32 @@ built-in ([ADR-0267](../adr/0267-settings-switches-layout-presets-and-editing-ha
 
 ## Built-in workflow families
 
-QindaQt ships **one stock profile per distinct feel** — nine of them. Each one
-is a different idea about where the shell lives, not a reshuffle of the same
-bar, and each pairs with its own default theme
-([ADR-0223](../adr/0223-one-stock-profile-per-distinct-feel.md)):
+QindaQt ships **one stock profile per distinct feel** — eleven of them. Each
+one is a different idea about where the shell lives, not a reshuffle of the
+same bar, and each pairs with its own default theme
+([ADR-0223](../adr/0223-one-stock-profile-per-distinct-feel.md),
+[ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)):
 
 | Profile | Feel | Panels | Default theme |
 | --- | --- | --- | --- |
 | `qindaqt` | The signature layout: three edges, three jobs | top 26 px ledger (focused window + its menu + clock), left 52 px shelf (windows and containers), bottom-right 34 px instrument strip on `overlay`/`dodge-active` | `qinda-dark` |
-| `qinda-bliss` | Worn XP Luna | one bottom 40 px taskbar: start menu, quick launch, task buttons, tray, clock, show desktop, plus desktop icons | `qinda-bliss` |
-| `macos-inspired` | Menu bar and dock | 24 px global menu bar — the thinnest stock panel — plus a centred 72 px dock that hides intelligently; desktop icons on the **right** with the mac context menu | `qinda-macos` |
+| `qinda-bliss` | Classic Taskbar (XP-like) | one bottom 40 px taskbar: start menu, quick launch, task buttons, tray, clock, show desktop, plus desktop icons | `qinda-bliss` (Qinda Classic Blue) |
+| `macos-inspired` | Menu and Dock | 24 px global menu bar — the thinnest stock panel — with the system menu at its far left, plus a centred 72 px dock that hides intelligently and always begins with the File Manager and ends with the Trash; desktop icons on the **right** with the mac context menu | `qinda-macos` (Qinda Mist) |
 | `gnome-inspired` | Overview | one 38 px top bar, clock **centred**, no task bar at all: windows live in the overview | `qinda-slate` |
 | `unity-inspired` | Command rail | 28 px top bar with the focused window's name, its menu and the HUD, plus a 64 px left rail that hides behind any window | `qinda-dusk` |
 | `xfce-inspired` | Compact and flexible | 34 px top panel with Applications and Places menus and **ungrouped** window buttons, plus a small bottom launcher dock that ducks the active window | `qinda-light` |
-| `nextstep-inspired` | Workspace dock | one 72 px column of square tiles down the **right** edge, 62 % of it, and no horizontal bar anywhere | `qinda-paper` |
-| `windows-modern` | Centred taskbar | one 48 px bottom bar whose start button and glyph-only task tiles stay centred, with the **modern** Windows start panel (search, pinned grid, All apps); widgets left, status right | `qinda-glass-light` |
+| `nextstep-inspired` | Workspace Dock (NeXT-like) | one 72 px column of square tiles down the **right** edge, 62 % of it, with the system tile on top and no horizontal bar anywhere; a minimized window waits as its tile | `qinda-graphite` |
+| `windows-modern` | Centered Taskbar (Windows 11-like) | one 48 px bottom bar whose start button and glyph-only task tiles stay centred, with the **modern** start panel (search, pinned grid, All apps; no advertising, promoted apps, web results or account prompts); widgets left, status right | `qinda-daylight` |
+| `beos-inspired` | Corner Bar (BeOS-like) | one 32 px bar across the right half of the top edge: applications menu, a button per application, status, tray, clock; with its theme, yellow title tabs that roll up on double-click | `qinda-marigold` |
+| `win31-inspired` | Program Groups (Windows 3.1-like) | one 34 px top bar: applications menu and the dock's groups as program groups, status, tray, clock; no task bar, and with its theme a minimized window becomes an icon on the desktop | `qinda-classic-grey` |
 | `minimal` | Nothing until you ask | one always-hidden 32 px strip, a third of the width, holding the command palette and four glyphs: no clock, no task buttons, no workspace switcher | `qinda-glass-dark` |
 
 Panel thickness, edge, alignment, length, layer, and hide mode all differ
 between them, and every applet instance carries an explicit `zone`. A profile
 declares only settings the runtime actually honours — `zone`, `dockMode`,
-`presentation`, `grouping`, and the desktop-icons keys — so a stock layout
-never ships a value that reads as configuration and does nothing.
+`presentation`, `grouping`, the quick-launch `items` slice, and the
+desktop-icons keys — so a stock layout never ships a value that reads as
+configuration and does nothing.
 
 Panel thickness also respects each applet's declared minimum cross extent. The
 `launcher` applet asks for 32 logical pixels, so every panel hosting one is at
@@ -251,6 +255,46 @@ Only layouts that resolve a global-menu applet own the AppMenu registrar;
 every other layout keeps application menus inside their windows, and a live
 layout switch moves the registrar with it
 ([ADR-0130](../adr/0130-window-attached-menus-without-a-global-menu.md)).
+Among the stock layouts only Menu and Dock, QindaQt and Command Rail show the
+global menu.
+
+## Familiar desktop experiences
+
+Six layouts are familiar desktops for people switching to QindaQt: Menu and
+Dock (Mac-like), Classic Taskbar (XP-like), Centered Taskbar (Windows
+11-like), Corner Bar (BeOS-like), Program Groups (Windows 3.1-like) and
+Workspace Dock (NeXT-like). Each experience is the profile, the theme its
+`defaultTheme` names (which carries the W19 button style), whether the global
+menu shows, and the File Manager arrangement it expects
+([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)).
+They are original: names, colors, glyphs and shapes are QindaQt's own, and no
+name a user reads is another vendor's; ids stay as they were.
+
+| Layout | Theme | Buttons | Title bar | File Manager |
+| --- | --- | --- | --- | --- |
+| Menu and Dock | Qinda Mist | traffic lights, left | theme surface | `finder` |
+| Classic Taskbar | Qinda Classic Blue | `blue-tiles`, right | clean blue | `explorer` |
+| Centered Taskbar | Qinda Daylight | `wide`, right | theme surface, 8 px corners | `explorer` |
+| Corner Bar | Qinda Marigold | `tab`, left | clean yellow tab; double-click rolls up | `finder` |
+| Program Groups | Qinda Classic Grey | `bevel`, right | clean navy; minimize rolls up to an icon | `explorer` |
+| Workspace Dock | Qinda Graphite | `bold`, right | clean black | `finder` |
+
+- **Title-bar behaviour lives in the theme.** A theme's `decoration` block may
+  author `titleDoubleClick`, `minimizeAction` and `titleWear`
+  ([theme schema](../reference/theme-schema-v1.md)); the Appearance
+  double-click option still overrides. Iconify and roll-up are the existing
+  roll-up to the window's icon ([ADR-0203](../adr/0203-an-ordinary-window-rolls-up-to-its-icon.md)).
+- **The pairing is advisory.** Choosing a layout does not change the saved
+  theme ([ADR-0074](../adr/0074-compose-shell-preferences-through-settings1.md));
+  the profile's `defaultTheme` applies when no theme is saved, and the
+  handbook names each layout's theme.
+- **The File Manager hint.** `workflow.fileManager` names the arrangement
+  (`finder`, `explorer`, `commander`) the File Manager's style setting uses
+  as its default until the user picks one; nothing reads it until that
+  setting lands (plan W11s).
+- **The Mac-style dock's ends.** Its dock holds a permanent File Manager tile
+  first and a permanent Trash tile last around the stored items
+  ([Dock items](dock-items.md#permanent-ends)).
 
 These profiles reproduce workflows with original QindaQt code and assets. They
 do not claim extension compatibility with those desktops or copy proprietary
@@ -261,7 +305,9 @@ branding.
 The QindaQt smart shelf and macOS-inspired dock use one canonical `task-list`
 instance, the launcher trigger, and the compiled `quick-launch` dock items
 ([Dock items](dock-items.md)) in
-their center zone. Their existing applet presentation setting `dockMode: true`
+their center zone; the macOS-inspired dock splits the quick-launch items into
+a permanent File Manager end, the stored items, and a permanent Trash end
+after the task strip (ADR-0268). Their existing applet presentation setting `dockMode: true`
 selects dock treatment after profile resolution; it is not a schema field and
 does not alter task-list, launcher, or pin persistence. A copied or renamed
 center-bottom panel retains the treatment when its applets retain that setting;
@@ -287,7 +333,8 @@ the published QST accessibility projection.
 
 ## Worn Luna taskbar material
 
-The Bliss profile's one bottom panel carries the id `bliss-taskbar`;
+The Classic Taskbar profile's (`qinda-bliss`) one bottom panel carries the id
+`bliss-taskbar`;
 `PanelContent` derives its `lunaMode` from that panel id — the same
 presentation-derivation precedent as the dock `dockMode` setting — and
 selects an opaque Luna gradient material with a gloss line instead of the
