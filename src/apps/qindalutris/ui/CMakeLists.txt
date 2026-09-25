@@ -5,10 +5,14 @@
 # tests link it without dragging in a window.
 qt_add_library(qindaqt_qindalutris_view STATIC
     game_icon_provider.h
+    game_image_resolver.cpp
+    game_image_resolver.h
     game_list_model.cpp
     game_list_model.h
     library_controller.cpp
     library_controller.h
+    proton_choices.cpp
+    proton_choices.h
     qindalutris_actions.cpp
     qindalutris_actions.h
 )

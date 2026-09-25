@@ -5,6 +5,7 @@
 #include <QTest>
 
 #include "launch_planner.h"
+#include "proton_fixture.h"
 
 using namespace QindaQt::QindaLutris;
 
@@ -53,7 +54,8 @@ LaunchToolSet fullTools() {
   build.path = QStringLiteral(
       "/usr/share/steam/compatibilitytools.d/GE-Proton11-6-x86_64");
   build.origin = ProtonBuild::Origin::System;
-  tools.protonBuilds = {build};
+  build.versionText = QStringLiteral("1756415527 GE-Proton11-6");
+  tools.protonBuilds = {build}; // no files behind it: refusal rows only
   return tools;
 }
 
@@ -114,20 +116,24 @@ private Q_SLOTS:
     QFile file(exe);
     QVERIFY(file.open(QIODevice::WriteOnly));
     file.close();
+    const QString root = dir.filePath(QStringLiteral("compat"));
+    const QString buildPath = ProtonFixture::makeBuild(
+        root, QStringLiteral("GE-Proton11-6-x86_64"), "1756415527 GE-Proton11-6");
+    LaunchToolSet tools = fullTools();
+    tools.protonBuilds =
+        discoverProtonBuilds({{root, ProtonBuild::Origin::System}});
     Game game = wineGame();
     game.installPath = exe;
     game.winePrefix = dir.filePath(QStringLiteral("prefix")); // not created
     game.protonPath = QStringLiteral("GE-Proton11-6-x86_64");
+    game.protonVersion = QStringLiteral("1756415527 GE-Proton11-6");
     LaunchOptions options;
     options.runnerOverride = WineRunner::Proton;
-    const LaunchPlan plan =
-        planGameLaunch(game, options, fullTools(), {}, nullptr);
+    const LaunchPlan plan = planGameLaunch(game, options, tools, {}, nullptr);
     QVERIFY2(plan.ok, qPrintable(plan.reason));
     QCOMPARE(plan.program, QStringLiteral("/usr/bin/umu-run"));
     QCOMPARE(plan.arguments, QStringList({exe}));
-    QCOMPARE(plan.environment.value(QStringLiteral("PROTONPATH")),
-             QStringLiteral(
-                 "/usr/share/steam/compatibilitytools.d/GE-Proton11-6-x86_64"));
+    QCOMPARE(plan.environment.value(QStringLiteral("PROTONPATH")), buildPath);
     QCOMPARE(plan.environment.value(QStringLiteral("WINEPREFIX")),
              game.winePrefix);
     QVERIFY(!plan.environment.contains(QStringLiteral("STEAM_COMPAT_DATA_PATH")));

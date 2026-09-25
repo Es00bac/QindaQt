@@ -38,6 +38,7 @@ QJsonObject wineRecordToJson(const WineEntryRecord &record) {
   object.insert(QStringLiteral("prefix"), record.prefixPath);
   object.insert(QStringLiteral("runner"), wineRunnerId(record.runner));
   object.insert(QStringLiteral("proton"), record.protonPath);
+  object.insert(QStringLiteral("protonVersion"), record.protonVersion);
   return object;
 }
 
@@ -68,6 +69,13 @@ bool wineRecordFromJson(const QJsonValue &value, WineEntryRecord *record) {
   out.protonPath = boundedString(object.value(QStringLiteral("proton")),
                                  4096, &ok);
   if (!ok) return false;
+  // ADR-0275 addition: optional so entries written before it still load;
+  // present with the wrong type refuses the document like any other key.
+  const QJsonValue version = object.value(QStringLiteral("protonVersion"));
+  if (!version.isUndefined()) {
+    out.protonVersion = StoreIo::boundedLine(version, 256, &ok);
+    if (!ok) return false;
+  }
   *record = out;
   return true;
 }

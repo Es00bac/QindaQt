@@ -20,8 +20,11 @@ bool fail(QString *why, const QString &text) {
   return false;
 }
 
+// Env-value tokens (GAMEID, STORE). The first character is alphanumeric so
+// a value can never read as an option if a tool ever passes it as argv.
 bool isToken(const QString &text, int maxChars) {
-  static const QRegularExpression pattern(QStringLiteral("^[A-Za-z0-9._-]+$"));
+  static const QRegularExpression pattern(
+      QStringLiteral("^[A-Za-z0-9][A-Za-z0-9._-]*$"));
   return !text.isEmpty() && text.size() <= maxChars && pattern.match(text).hasMatch();
 }
 
@@ -85,7 +88,25 @@ bool isReservedUmuEnvironmentKey(const QString &key) {
       return true;
     }
   }
+  if (umuUnsetEnvironmentKeys().contains(key)) {
+    return true;
+  }
+  for (const QString &prefix : umuUnsetEnvironmentPrefixes()) {
+    if (key.startsWith(prefix)) {
+      return true;
+    }
+  }
   return false;
+}
+
+QStringList umuUnsetEnvironmentKeys() {
+  return {QStringLiteral("UMU_NO_PROTON"), QStringLiteral("RUNTIMEPATH"),
+          QStringLiteral("PROTON_VERB"),   QStringLiteral("LD_PRELOAD"),
+          QStringLiteral("LD_LIBRARY_PATH"), QStringLiteral("LD_AUDIT")};
+}
+
+QStringList umuUnsetEnvironmentPrefixes() {
+  return {QStringLiteral("PYTHON")};
 }
 
 bool isValidTitleId(const QString &id) {
@@ -140,6 +161,11 @@ bool validateTitleRecord(const TitleRecord &record, QString *why) {
     return fail(why, QStringLiteral(
         "protonBuild must name one concrete build, never empty or an alias"));
   }
+  if (record.protonBuildVersion.trimmed().isEmpty()
+      || !StoreIo::isCleanLine(record.protonBuildVersion, 256)) {
+    return fail(why, QStringLiteral(
+        "protonBuildVersion must record the build's version text"));
+  }
   if (!record.umuId.isEmpty() && !isToken(record.umuId, 64)) {
     return fail(why, QStringLiteral("umuId is not a plain token"));
   }
@@ -176,7 +202,9 @@ bool validateTitleRecord(const TitleRecord &record, QString *why) {
   if (record.winetricksApplied.size() > kMaxWinetricksVerbs) {
     return fail(why, QStringLiteral("too many winetricks verbs"));
   }
-  static const QRegularExpression verb(QStringLiteral("^[a-z0-9_.=-]{1,64}$"));
+  // No leading '-': verbs are passed to winetricks as argv.
+  static const QRegularExpression verb(
+      QStringLiteral("^[a-z0-9_][a-z0-9_.=-]{0,63}$"));
   for (const QString &applied : record.winetricksApplied) {
     if (!verb.match(applied).hasMatch()) {
       return fail(why, QStringLiteral("a winetricks verb is malformed"));

@@ -59,11 +59,13 @@ struct Game {
   // Manual Wine entries and Installed titles:
   QString winePrefix;
   WineRunner wineRunner = WineRunner::Wine; // Installed titles: always Proton
-  // The pinned Proton build (ADR-0275): a build directory name, or -- for
-  // hand-added entries saved before ADR-0275 -- an absolute path of a build
-  // or its `proton` script. Empty means NO build is chosen; a Proton launch
-  // then refuses. It never means "any Proton".
+  // The pinned Proton build (ADR-0275; see proton_pin.h): a build directory
+  // name, or -- for hand-added entries saved before ADR-0275 -- an absolute
+  // path of a build or its `proton` script, plus the build's version text
+  // when it was pinned. Empty protonPath means NO build is chosen; a Proton
+  // launch then refuses. It never means "any Proton".
   QString protonPath;
+  QString protonVersion;
   // Install size is only ever shown when honestly known (ADR-0231): manual
   // Wine entries report the executable's byte size. Nullopt everywhere else;
   // the UI must say "not tracked", never invent a number.

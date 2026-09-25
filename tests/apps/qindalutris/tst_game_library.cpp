@@ -58,6 +58,27 @@ private Q_SLOTS:
     QVERIFY(out.warnings.isEmpty());
   }
 
+  // Installed titles are merged first, so the kMaxGames cap never drops a
+  // game QindaLutris itself installed.
+  void installedTitlesSurviveTheCap() {
+    QVector<Game> steam;
+    for (int i = 0; i < kMaxGames; ++i) {
+      steam.append(makeGame(QStringLiteral("steam/%1").arg(i),
+                            QStringLiteral("Game %1").arg(i), GameSource::Steam));
+    }
+    const GameLibrary out = mergeGameSources(
+        steam, {}, {}, {},
+        {makeGame(QStringLiteral("title/wow"), QStringLiteral("World of Warcraft"),
+                  GameSource::Installed)},
+        {});
+    QCOMPARE(out.games.size(), kMaxGames);
+    bool found = false;
+    for (const Game &game : out.games) {
+      found = found || game.id == QLatin1String("title/wow");
+    }
+    QVERIFY(found);
+  }
+
   // The ADR-0275 source id round-trips like the others.
   void installedSourceId() {
     QCOMPARE(gameSourceId(GameSource::Installed), QStringLiteral("installed"));

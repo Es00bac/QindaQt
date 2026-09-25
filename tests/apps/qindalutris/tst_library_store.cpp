@@ -29,10 +29,11 @@ private Q_SLOTS:
     const QVector<WineEntryRecord> records{
         {QStringLiteral("alpha-1234abcd"), QStringLiteral("Alpha Game"),
          QStringLiteral("/games/alpha/game.exe"),
-         QStringLiteral("/games/alpha/prefix"), WineRunner::Wine, {}},
+         QStringLiteral("/games/alpha/prefix"), WineRunner::Wine, {}, {}},
         {QStringLiteral("beta-5678efab"), QStringLiteral("Beta Game"),
          QStringLiteral("/games/beta/run.exe"), QString(),
-         WineRunner::Proton, QStringLiteral("/steam/common/Proton 9/proton")},
+         WineRunner::Proton, QStringLiteral("GE-Proton11-6"),
+         QStringLiteral("1756415527 GE-Proton11-6")},
     };
     QCOMPARE(store.writeWineEntries(records), LibraryStore::Error::None);
     LibraryStore::Error error = LibraryStore::Error::None;
@@ -103,6 +104,51 @@ private Q_SLOTS:
     LibraryStore::Error error = LibraryStore::Error::None;
     QVERIFY(store.readWineEntries(&error).isEmpty());
     QCOMPARE(error, LibraryStore::Error::Refused);
+  }
+
+  // Wine entries saved before ADR-0275 recorded versions still load;
+  // a present protonVersion of the wrong type refuses the document.
+  void legacyWineEntryWithoutVersionLoads() {
+    QTemporaryDir home;
+    QVERIFY(home.isValid());
+    const LibraryStore store(home.path());
+    QFile file(store.wineEntriesPath());
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("{\"version\":1,\"entries\":[{\"title\":\"Old\",\"slug\":\"old-1\","
+               "\"executable\":\"/g/old.exe\",\"prefix\":\"/g/p\",\"runner\":\"proton\","
+               "\"proton\":\"\"}]}");
+    file.close();
+    LibraryStore::Error error = LibraryStore::Error::None;
+    const QVector<WineEntryRecord> records = store.readWineEntries(&error);
+    QCOMPARE(error, LibraryStore::Error::None);
+    QCOMPARE(records.size(), 1);
+    QVERIFY(records.first().protonPath.isEmpty());
+    QVERIFY(records.first().protonVersion.isEmpty());
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    file.write("{\"version\":1,\"entries\":[{\"title\":\"Old\",\"slug\":\"old-1\","
+               "\"executable\":\"/g/old.exe\",\"prefix\":\"\",\"runner\":\"proton\","
+               "\"proton\":\"GE-Proton9-1\",\"protonVersion\":7}]}");
+    file.close();
+    QVERIFY(store.readWineEntries(&error).isEmpty());
+    QCOMPARE(error, LibraryStore::Error::Refused);
+  }
+
+  // The shared writer refuses a symlinked destination for this store too.
+  void writeRefusesASymlinkedDestination() {
+    QTemporaryDir home;
+    QVERIFY(home.isValid());
+    const QString victim = home.path() + QStringLiteral("/victim.txt");
+    QFile real(victim);
+    QVERIFY(real.open(QIODevice::WriteOnly));
+    real.write("precious");
+    real.close();
+    const LibraryStore store(home.path());
+    QVERIFY(QFile::link(victim, store.launchOptionsPath()));
+    QCOMPARE(store.writeLaunchOptions({}), LibraryStore::Error::WriteFailed);
+    QVERIFY(QFile::link(victim, store.wineEntriesPath()));
+    QCOMPARE(store.writeWineEntries({}), LibraryStore::Error::WriteFailed);
+    QVERIFY(real.open(QIODevice::ReadOnly));
+    QCOMPARE(real.readAll(), QByteArray("precious"));
   }
 
   void environmentAssignmentValidation() {

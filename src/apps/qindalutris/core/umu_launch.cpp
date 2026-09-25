@@ -12,6 +12,12 @@ namespace {
 
 constexpr int kMaxUmuPathChars = 4096;
 
+// The reserved keys the plan SETS (the rest of the reserved set is removed).
+const QStringList kPlanSetKeys{
+    QStringLiteral("WINEPREFIX"), QStringLiteral("PROTONPATH"),
+    QStringLiteral("GAMEID"), QStringLiteral("STORE"),
+    QStringLiteral("UMU_RUNTIME_UPDATE")};
+
 LaunchPlan refused(const QString &reason) {
   LaunchPlan plan;
   plan.reason = reason;
@@ -37,10 +43,15 @@ LaunchPlan planUmuLaunch(const UmuLaunchRequest &request,
     return refused(QStringLiteral(
         "umu is not installed. Install games-util/umu-launcher."));
   }
-  const PinnedBuildResolution pin =
-      resolvePinnedBuild(request.protonBuild, tools.protonBuilds);
+  const PinnedBuildResolution pin = resolvePinnedBuild(
+      {request.protonBuild, request.protonBuildVersion}, tools.protonBuilds);
   if (!pin.ok()) {
     return refused(pin.reason); // AGENT-GUARD: no fallback build, ever
+  }
+  // The catalog is a snapshot from the last refresh; the build may have
+  // been removed since. Re-check the one entry point umu will run.
+  if (!protonBuildStillPresent(*pin.build)) {
+    return refused(protonNotInstalledReason(request.protonBuild));
   }
   if (!usableAbsolutePath(request.executable)
       || !usableAbsolutePath(request.prefixPath)) {
@@ -91,15 +102,23 @@ LaunchPlan planUmuLaunch(const UmuLaunchRequest &request,
   applyLaunchOptions(options, tools, displays,
                      /*allowMangohudWrapper=*/false, &plan);
   for (const QString &line : options.extraEnvironment) {
-    if (isValidEnvironmentAssignment(line)
-        && isReservedUmuEnvironmentKey(keyOf(line))) {
-      plan.notes.append(QStringLiteral(
-          "%1 is set by QindaLutris for this game; your value was ignored")
-                            .arg(keyOf(line)));
+    if (!isValidEnvironmentAssignment(line)
+        || !isReservedUmuEnvironmentKey(keyOf(line))) {
+      continue;
     }
+    const QString key = keyOf(line);
+    plan.environment.remove(key); // applyLaunchOptions inserted it
+    plan.notes.append(
+        kPlanSetKeys.contains(key)
+            ? QStringLiteral("%1 is set by QindaLutris for this game; your "
+                             "value was ignored").arg(key)
+            : QStringLiteral("%1 cannot be used with umu launches; your value "
+                             "was ignored").arg(key));
   }
 
   // Written last so nothing above can override them (see header guard).
+  plan.unsetEnvironment = umuUnsetEnvironmentKeys();
+  plan.unsetEnvironmentPrefixes = umuUnsetEnvironmentPrefixes();
   plan.environment.insert(QStringLiteral("WINEPREFIX"), request.prefixPath);
   plan.environment.insert(QStringLiteral("PROTONPATH"), pin.build->path);
   plan.environment.insert(QStringLiteral("GAMEID"),
@@ -120,6 +139,7 @@ UmuLaunchRequest umuRequestForTitle(const TitleRecord &title) {
   request.arguments = title.arguments;
   request.prefixPath = title.prefixPath;
   request.protonBuild = title.protonBuild;
+  request.protonBuildVersion = title.protonBuildVersion;
   request.umuId = title.umuId;
   request.umuStore = title.umuStore;
   request.environment = title.environment;

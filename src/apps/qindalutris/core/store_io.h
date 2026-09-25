@@ -23,14 +23,18 @@ enum class ReadStatus {
   Refused, // not a regular file, a symlink, oversized, or unreadable
 };
 
-// AGENT-GUARD: refuses symlinks and documents over maxBytes before a byte is
-// parsed. A zero-byte file reports Absent, which is what the original
-// LibraryStore reader did; keep that so both stores agree.
+// AGENT-GUARD: refuses symlinks (opened O_NOFOLLOW, so there is no
+// check-then-open race), non-regular files and documents over maxBytes
+// before a byte is parsed. A zero-byte file reports Absent, which is what
+// the original LibraryStore reader did; keep that so both stores agree.
+// POSIX only, like the rest of QindaQt.
 [[nodiscard]] QByteArray readBoundedFile(const QString &path, qint64 maxBytes,
                                          ReadStatus *status);
 
 // AGENT-GUARD: commits through QSaveFile in the destination directory, so a
 // crash leaves either the old document or the new one, never a torn one.
+// Refuses (false) when the destination exists and is not a regular file --
+// in particular a symlink, which QSaveFile would otherwise write through.
 [[nodiscard]] bool writeAtomicJson(const QString &path,
                                    const QJsonDocument &document);
 

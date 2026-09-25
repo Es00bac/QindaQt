@@ -20,7 +20,8 @@ const QStringList &recordKeys() {
       QStringLiteral("id"),          QStringLiteral("title"),
       QStringLiteral("kind"),        QStringLiteral("store"),
       QStringLiteral("storeGameId"), QStringLiteral("prefixPath"),
-      QStringLiteral("protonBuild"), QStringLiteral("umuId"),
+      QStringLiteral("protonBuild"), QStringLiteral("protonBuildVersion"),
+      QStringLiteral("umuId"),
       QStringLiteral("umuStore"),    QStringLiteral("executable"),
       QStringLiteral("arguments"),   QStringLiteral("environment"),
       QStringLiteral("launcherTitleId"),
@@ -51,6 +52,7 @@ QJsonObject toJson(const TitleRecord &record) {
   object.insert(QStringLiteral("storeGameId"), record.storeGameId);
   object.insert(QStringLiteral("prefixPath"), record.prefixPath);
   object.insert(QStringLiteral("protonBuild"), record.protonBuild);
+  object.insert(QStringLiteral("protonBuildVersion"), record.protonBuildVersion);
   object.insert(QStringLiteral("umuId"), record.umuId);
   object.insert(QStringLiteral("umuStore"), record.umuStore);
   object.insert(QStringLiteral("executable"), record.executable);
@@ -99,6 +101,7 @@ bool fromJson(const QJsonValue &value, TitleRecord *record) {
   out.storeGameId = line("storeGameId", 256);
   out.prefixPath = line("prefixPath", kMaxTitlePathChars);
   out.protonBuild = line("protonBuild", kMaxProtonBuildNameChars);
+  out.protonBuildVersion = line("protonBuildVersion", 256);
   out.umuId = line("umuId", 64);
   out.umuStore = line("umuStore", 32);
   out.executable = line("executable", kMaxTitlePathChars);

@@ -35,6 +35,7 @@ qindaqt_add_qindalutris_test(launch-planner tst_launch_planner.cpp)
 qindaqt_add_qindalutris_test(wine-source tst_wine_source.cpp)
 # ADR-0275: pinned Proton builds, installed titles, umu launch plans.
 qindaqt_add_qindalutris_test(proton-catalog tst_proton_catalog.cpp)
+qindaqt_add_qindalutris_test(proton-pin tst_proton_pin.cpp)
 qindaqt_add_qindalutris_test(title-store tst_title_store.cpp)
 qindaqt_add_qindalutris_test(umu-launch-plan tst_umu_launch_plan.cpp)
 

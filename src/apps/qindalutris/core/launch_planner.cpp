@@ -202,6 +202,7 @@ LaunchPlan planGameLaunch(const Game &game, const LaunchOptions &options,
       request.executable = game.installPath;
       request.prefixPath = prefix;
       request.protonBuild = game.protonPath;
+      request.protonBuildVersion = game.protonVersion;
       // AGENT-NOTE: a hand-added prefix may not exist yet; umu creates it
       // on first run, as `proton run` did. Installed titles require theirs.
       request.prefixMustExist = false;

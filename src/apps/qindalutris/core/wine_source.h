@@ -27,6 +27,9 @@ struct WineEntryRecord final {
   // added since ADR-0275, or the absolute `proton` script path older
   // entries stored. Empty = no build chosen; a Proton launch refuses.
   QString protonPath;
+  // The pinned build's version text (identity = name + version). Empty in
+  // entries saved before it was recorded; wine_pin_migration fills it once.
+  QString protonVersion;
 
   friend bool operator==(const WineEntryRecord &, const WineEntryRecord &) = default;
 };

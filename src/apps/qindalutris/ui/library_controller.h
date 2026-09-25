@@ -5,7 +5,7 @@
 #include "../core/game_launcher.h"
 #include "../core/game_library.h"
 #include "../core/library_store.h"
-#include "../core/proton_catalog.h"
+#include "../core/proton_pin.h"
 #include "../core/title_record.h"
 
 #include <QAbstractItemModel>
@@ -89,11 +89,15 @@ public:
                                const QString &prefixPath, const QString &runnerId,
                                const QString &protonPath);
   Q_INVOKABLE void removeWineGame(const QString &gameId);
-  // Installed Proton builds for the add dialog, default first:
-  // [{name: display label, path: absolute build dir, build: directory name,
-  //   origin: "system"|"user"|"steam", removable, isDefault}]. The dialog
-  // hands `path` back to addWineGame, which records the build NAME.
+  // Every catalog build for the add dialog, default first; row shape in
+  // proton_choices.h. The dialog hands `path` back to addWineGame, which
+  // records the build NAME and VERSION (ADR-0275 identity).
   Q_INVOKABLE QVariantList protonChoices() const;
+  // The explicit re-pin after "<build> has changed since this game was set
+  // up": records the selected hand-added entry's or installed title's pinned
+  // build as it is NOW (confirmPinnedBuild) and persists it. False when the
+  // selection has no pin that names an installed, pinnable build.
+  Q_INVOKABLE bool confirmProtonBuildForSelected();
 
   // Cover/icon resolution for the image provider. Null when neither exists.
   [[nodiscard]] QImage imageForGame(const QString &gameId) const;
@@ -112,6 +116,7 @@ private:
   void rebuildToolSet();
   void rebuildDisplays();
   void persistWineEntries();
+  bool migrateWinePins(); // true when records changed (see wine_pin_migration.h)
   [[nodiscard]] const Game *findGame(const QString &gameId) const;
   [[nodiscard]] const TitleRecord *findTitle(const QString &titleId) const;
   [[nodiscard]] LaunchOptions optionsFor(const QString &gameId) const;
@@ -136,7 +141,8 @@ private:
   std::unique_ptr<QProcessGameLauncher> m_ownedLauncher;
   GameProcessLauncher *m_launcher = nullptr;
   QVector<WineEntryRecord> m_wineRecords;
-  QVector<TitleRecord> m_titles; // titles-v1.json; read-only in this slice
+  QVector<TitleRecord> m_titles; // titles-v1.json; written only on confirm
+  QStringList m_pinNotes;         // migration notes for the next status line
   QHash<QString, LaunchOptions> m_options;
   QString m_selectedGameId;
   QString m_statusMessage;

@@ -16,10 +16,22 @@ Tk.Dialog {
     primaryText: qsTr("Add game")
     secondaryText: qsTr("Cancel")
 
+    // ADR-0275: every entry records ONE concrete build. The controller
+    // lists the default build first; it is offered as "Default (<build>)"
+    // and preselected. Builds that cannot be pinned (Steam's rolling
+    // channels, builds without a version file) are left out.
     readonly property var protonModel: {
-        let entries = [{ name: qsTr("Any discovered Proton"), path: "" }]
+        let entries = []
         for (const proton of dialog.protonChoices) {
-            entries.push(proton)
+            if (!proton.pinnable) {
+                continue
+            }
+            entries.push(proton.isDefault
+                ? { name: qsTr("Default (%1)").arg(proton.name), path: proton.path }
+                : proton)
+        }
+        if (entries.length === 0) {
+            entries.push({ name: qsTr("No Proton build installed"), path: "" })
         }
         return entries
     }
