@@ -40,6 +40,11 @@ ControlPopupFrame {
     readonly property var stackItems: isGroup ? (stackRow.members ?? []) : entries
     readonly property int unfoldDirection: resolvedPanelEdge === "top" ? -1 : 1
 
+    // Closing returns keyboard focus to the tile the stack unfolded from, so
+    // Escape leaves a keyboard user where they were. It only sets the panel
+    // window's focus item; it never activates the panel window.
+    onClosed: if (anchorItem !== null) anchorItem.forceActiveFocus(Qt.PopupFocusReason)
+
     function show(row, anchor) {
         stackRow = row
         entries = String(row.kind ?? "") === "folder" && access !== null

@@ -146,6 +146,17 @@ Item {
                             : rows.length === 0 ? qsTr("Nothing is kept in the dock")
                             : qsTr("%1 items").arg(rows.length)
 
+    // AGENT-GUARD: a dock change rebuilds every tile (new rows array), which
+    // destroys the focused one. A keyboard move asks for focus on the moved
+    // tile; the request outlives the local preview and the Settings1 confirm
+    // rebuilds, then expires so a later rebuild never pulls focus back.
+    property int keyboardFocusPosition: -1
+    Timer {
+        id: keyboardFocusExpiry
+        interval: 3000
+        onTriggered: root.keyboardFocusPosition = -1
+    }
+
     function focusIndex(index) {
         if (index < 0 || index >= repeater.count)
             return
@@ -190,7 +201,11 @@ Item {
         slotExtent: root.slotExtent
         tileExtent: root.tileExtent
         crossExtent: root.vertical ? root.width : root.height
-        onFocusRequested: (position) => Qt.callLater(root.focusIndex, position)
+        onFocusRequested: (position) => {
+            root.keyboardFocusPosition = position
+            keyboardFocusExpiry.restart()
+            Qt.callLater(root.focusIndex, position)
+        }
     }
 
     ShellIcons.Icon {
@@ -290,6 +305,7 @@ Item {
                 Keys.onRightPressed: if (!root.vertical) root.focusIndex(index + 1)
                 Keys.onUpPressed: if (root.vertical) root.focusIndex(index - 1)
                 Keys.onDownPressed: if (root.vertical) root.focusIndex(index + 1)
+                Component.onCompleted: if (index === root.keyboardFocusPosition) forceActiveFocus(Qt.OtherFocusReason)
             }
         }
     }
