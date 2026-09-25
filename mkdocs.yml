@@ -428,3 +428,4 @@ nav:
       - "ADR-0272: Quick Look and a Recents place read existing authorities": adr/0272-quick-look-and-recents-in-the-file-manager.md
       - "ADR-0273: Integrate the File Manager with the desktop like Finder": adr/0273-integrate-the-file-manager-with-the-desktop-like-finder.md
       - "ADR-0274: Display1 reads mirroring and modes from the compositor inventory": adr/0274-display1-reads-mirroring-and-modes-from-the-compositor-inventory.md
+      - "ADR-0275: QindaLutris installs Windows games and manages pinned Proton builds": adr/0275-qindalutris-installs-games-and-manages-pinned-proton.md

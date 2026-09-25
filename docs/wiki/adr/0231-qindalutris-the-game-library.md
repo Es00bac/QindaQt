@@ -4,7 +4,7 @@
 - **Date:** 2026-09-21
 - **Owners:** Bundled applications
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** ADR-0275, in part (install, download and the Proton launch path)
 
 ## Context
 
