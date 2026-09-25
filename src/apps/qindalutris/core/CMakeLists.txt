@@ -47,3 +47,7 @@ target_compile_features(qindaqt_qindalutris_model PUBLIC cxx_std_20)
 set_target_properties(qindaqt_qindalutris_model
     PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON AUTOUIC OFF)
 qindaqt_enable_warnings(qindaqt_qindalutris_model)
+
+# Install jobs and store recipes (ADR-0275); a sibling library, not a
+# dependency of the model.
+add_subdirectory(jobs)
