@@ -39,6 +39,8 @@ qt_add_library(qindaqt_qindalutris_model STATIC
     title_source.h
     umu_launch.cpp
     umu_launch.h
+    preferences_store.cpp
+    preferences_store.h
     wine_pin_migration.cpp
     wine_pin_migration.h
     compat_db.cpp

@@ -84,6 +84,7 @@ QJsonObject optionsToJson(const LaunchOptions &options) {
   QJsonObject object;
   object.insert(QStringLiteral("gamemode"), options.gamemode);
   object.insert(QStringLiteral("mangohud"), options.mangohud);
+  object.insert(QStringLiteral("ownScreen"), options.ownScreen);
   object.insert(QStringLiteral("display"), options.targetDisplay);
   object.insert(QStringLiteral("environment"),
                 QJsonArray::fromStringList(options.extraEnvironment));
@@ -111,6 +112,7 @@ bool optionsFromJson(const QJsonValue &value, LaunchOptions *options) {
   LaunchOptions out;
   if (!boolField("gamemode", &out.gamemode)) return false;
   if (!boolField("mangohud", &out.mangohud)) return false;
+  if (!boolField("ownScreen", &out.ownScreen)) return false;
   bool ok = false;
   const QJsonValue display = object.value(QStringLiteral("display"));
   if (!display.isUndefined()) {

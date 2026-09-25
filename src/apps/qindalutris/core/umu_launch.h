@@ -6,6 +6,7 @@
 #include "proton_pin.h"
 #include "title_record.h"
 
+#include <QHash>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -69,6 +70,17 @@ struct UmuLaunchRequest final {
 // The request a stored title makes. launcherTitleId does not change the
 // plan: a launcher-started game's record already names the executable and
 // arguments that start it inside the shared prefix.
+// AGENT-CONTRACT: the ONLY definition of the five variables every umu run
+// sets (ADR-0275 section 1): WINEPREFIX, PROTONPATH (the absolute directory
+// of the resolved build -- never a pin string or alias), GAMEID (umuId, or
+// "umu-0"), STORE (umuStore, or "none") and UMU_RUNTIME_UPDATE=0. Game
+// launches (planUmuLaunch) and installer runs (the composition root's
+// InstallerPlanner) both write these LAST, after any other overlay.
+[[nodiscard]] QHash<QString, QString> umuRunEnvironment(const QString &prefixPath,
+                                                         const QString &buildPath,
+                                                         const QString &umuId,
+                                                         const QString &umuStore);
+
 [[nodiscard]] UmuLaunchRequest umuRequestForTitle(const TitleRecord &title);
 
 // planUmuLaunch(umuRequestForTitle(title), ...). The controller's path for

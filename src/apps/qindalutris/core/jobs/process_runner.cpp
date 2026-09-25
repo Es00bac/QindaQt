@@ -7,6 +7,8 @@
 #include <QStandardPaths>
 #include <QTimer>
 
+#include <algorithm>
+
 #include <unistd.h>
 
 namespace QindaQt::QindaLutris {
@@ -103,7 +105,10 @@ void QProcessRunner::start(const ProcessRunSpec &spec) {
 
   QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
   for (const QString &key : environment.keys()) {
-    if (isReservedVariable(key)) {
+    const bool unsetByPrefix = std::any_of(
+        spec.unsetEnvironmentPrefixes.cbegin(), spec.unsetEnvironmentPrefixes.cend(),
+        [&key](const QString &prefix) { return !prefix.isEmpty() && key.startsWith(prefix); });
+    if (isReservedVariable(key) || unsetByPrefix || spec.unsetEnvironment.contains(key)) {
       environment.remove(key);
     }
   }

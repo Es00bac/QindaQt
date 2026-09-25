@@ -119,18 +119,26 @@ LaunchPlan planUmuLaunch(const UmuLaunchRequest &request,
   // Written last so nothing above can override them (see header guard).
   plan.unsetEnvironment = umuUnsetEnvironmentKeys();
   plan.unsetEnvironmentPrefixes = umuUnsetEnvironmentPrefixes();
-  plan.environment.insert(QStringLiteral("WINEPREFIX"), request.prefixPath);
-  plan.environment.insert(QStringLiteral("PROTONPATH"), pin.build->path);
-  plan.environment.insert(QStringLiteral("GAMEID"),
-                          request.umuId.isEmpty() ? QStringLiteral("umu-0")
-                                                  : request.umuId);
-  plan.environment.insert(QStringLiteral("STORE"),
-                          request.umuStore.isEmpty() ? QStringLiteral("none")
-                                                     : request.umuStore);
-  plan.environment.insert(QStringLiteral("UMU_RUNTIME_UPDATE"),
-                          QStringLiteral("0"));
+  const QHash<QString, QString> umu = umuRunEnvironment(
+      request.prefixPath, pin.build->path, request.umuId, request.umuStore);
+  for (auto it = umu.cbegin(); it != umu.cend(); ++it) {
+    plan.environment.insert(it.key(), it.value());
+  }
   plan.ok = true;
   return plan;
+}
+
+QHash<QString, QString> umuRunEnvironment(const QString &prefixPath,
+                                          const QString &buildPath,
+                                          const QString &umuId,
+                                          const QString &umuStore) {
+  return {
+      {QStringLiteral("WINEPREFIX"), prefixPath},
+      {QStringLiteral("PROTONPATH"), buildPath},
+      {QStringLiteral("GAMEID"), umuId.isEmpty() ? QStringLiteral("umu-0") : umuId},
+      {QStringLiteral("STORE"), umuStore.isEmpty() ? QStringLiteral("none") : umuStore},
+      {QStringLiteral("UMU_RUNTIME_UPDATE"), QStringLiteral("0")},
+  };
 }
 
 UmuLaunchRequest umuRequestForTitle(const TitleRecord &title) {

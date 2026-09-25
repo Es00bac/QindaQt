@@ -99,6 +99,14 @@ public:
   // selection has no pin that names an installed, pinnable build.
   Q_INVOKABLE bool confirmProtonBuildForSelected();
 
+  // Read-only views for the install and Proton-manager controllers, which
+  // share this root's discovery instead of scanning twice (ADR-0275).
+  [[nodiscard]] const LaunchToolSet &toolSet() const { return m_tools; }
+  [[nodiscard]] QString configRoot() const { return m_configRoot; }
+  [[nodiscard]] QString preferredProtonBuild() const { return m_preferredProtonBuild; }
+  [[nodiscard]] const QVector<TitleRecord> &titles() const { return m_titles; }
+  [[nodiscard]] const QVector<WineEntryRecord> &wineRecords() const { return m_wineRecords; }
+
   // Cover/icon resolution for the image provider. Null when neither exists.
   [[nodiscard]] QImage imageForGame(const QString &gameId) const;
 
@@ -109,6 +117,9 @@ Q_SIGNALS:
   void displaysChanged();
   void selectedGameChanged();
   void launchFailed(const QString &message);
+  // A plan was handed to the process launcher successfully (Force quit and
+  // the running-games view key their tracking on this).
+  void gameLaunched(const QString &gameId);
   void storeError(const QString &message);
 
 private:
