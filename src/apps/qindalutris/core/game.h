@@ -80,6 +80,10 @@ struct Game {
 struct LaunchOptions {
   bool gamemode = false;          // prefix with gamemoderun when installed
   bool mangohud = false;          // MANGOHUD=1 (+ mangohud wrapper off-Steam)
+  // "Run in its own screen" (ADR-0275 section 4c): wrap the game in
+  // gamescope sized to the target display, so a game that switches display
+  // modes cannot leave its launcher or the desktop at the wrong size.
+  bool ownScreen = false;
   QString targetDisplay;          // stable display key; empty = compositor default
   QStringList extraEnvironment;   // validated KEY=VALUE entries
   // Manual Wine entries may switch runner/prefix after the fact.

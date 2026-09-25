@@ -204,6 +204,9 @@ void LibraryController::rebuildDisplays() {
                                   screen->model())
                              .trimmed();
     target.sdlDisplayIndex = i;
+    const QSize pixels = screen->size() * screen->devicePixelRatio();
+    target.widthPx = pixels.width();
+    target.heightPx = pixels.height();
     m_displays.append(target);
   }
 }
@@ -219,6 +222,7 @@ void LibraryController::rebuildToolSet() {
       QStandardPaths::findExecutable(QStringLiteral("gamemoderun"));
   m_tools.mangohudBinary =
       QStandardPaths::findExecutable(QStringLiteral("mangohud"));
+  m_tools.gamescopeBinary = QStandardPaths::findExecutable(QStringLiteral("gamescope"));
   m_tools.umuRunBinary = discoverUmuRun(m_umuSearchPath);
   m_tools.protonBuilds = discoverProtonBuilds(m_protonRoots);
 }
@@ -353,6 +357,7 @@ void LibraryController::playSelected() {
                             : outcome.diagnostic);
     return;
   }
+  Q_EMIT gameLaunched(game->id);
   if (!plan.notes.isEmpty()) {
     m_statusMessage = plan.notes.first();
     Q_EMIT statusMessageChanged();
@@ -364,6 +369,7 @@ QVariantMap LibraryController::launchOptionsForSelected() const {
   const LaunchOptions options = optionsFor(m_selectedGameId);
   out.insert(QStringLiteral("gamemode"), options.gamemode);
   out.insert(QStringLiteral("mangohud"), options.mangohud);
+  out.insert(QStringLiteral("ownScreen"), options.ownScreen);
   out.insert(QStringLiteral("display"), options.targetDisplay);
   out.insert(QStringLiteral("environment"),
              options.extraEnvironment.join(QLatin1Char('\n')));
@@ -381,6 +387,7 @@ void LibraryController::saveLaunchOptionsForSelected(const QVariantMap &values) 
   LaunchOptions options;
   options.gamemode = values.value(QStringLiteral("gamemode")).toBool();
   options.mangohud = values.value(QStringLiteral("mangohud")).toBool();
+  options.ownScreen = values.value(QStringLiteral("ownScreen")).toBool();
   options.targetDisplay =
       values.value(QStringLiteral("display")).toString().left(256);
   const QString environment =
