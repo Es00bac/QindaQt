@@ -413,7 +413,7 @@ execute_process(
             "QINDAQT_THEME_DIR=${poison}/themes"
             "QINDAQT_APPLET_DIR=${poison}/applets"
             "QINDAQT_APPLET_POLICY=${poison}/policy.json"
-            "${shell}" --list
+            "${shell}" --list "--profile=qindaqt"
             "--profile-dir=${installed_data}/profiles"
             "--theme-dir=${installed_data}/themes"
             "--applet-dir=${installed_data}/applets"

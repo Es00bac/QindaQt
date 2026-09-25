@@ -5,8 +5,9 @@ namespace QindaQt::Themes {
 
 QStringList DecorationThemeTokens::buttonStyles()
 {
-    // The four shipped styles first, then the W19 styles (ADR-0264).
-    return {QStringLiteral("symbols"), QStringLiteral("traffic-lights"),
+    // The painter table order: the traffic-light fallback first, then the
+    // other shipped styles, then the W19 styles (ADR-0264).
+    return {QStringLiteral("traffic-lights"), QStringLiteral("symbols"),
             QStringLiteral("glyph"), QStringLiteral("flat"),
             QStringLiteral("gel"), QStringLiteral("bevel"),
             QStringLiteral("blue-tiles"), QStringLiteral("wide"),
