@@ -268,5 +268,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0265: Keep the dock's items in one structured Settings1 value](0265-keep-dock-items-in-one-structured-settings-value.md)
 - [ADR-0266: Edit mode drags applets across panels and displays](0266-edit-mode-drags-applets-across-panels-and-displays.md)
 - [ADR-0267: Settings switches layout presets; editing happens on the panels](0267-settings-switches-layout-presets-and-editing-happens-on-the-panels.md)
+- [ADR-0268: Familiar desktop experiences are layout and theme pairs](0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)
 - [ADR-0269: Open With widens the bounded launch, and KArchive backs Compress and Extract](0269-open-with-widens-the-bounded-launch-and-karchive-backs-archives.md)
 - [ADR-0273: Integrate the File Manager with the desktop like Finder](0273-integrate-the-file-manager-with-the-desktop-like-finder.md)

@@ -38,7 +38,8 @@ QVariantMap WorkflowSpec::toVariantMap() const
             {QStringLiteral("launcher"), launcher},
             {QStringLiteral("menu"), menu},
             {QStringLiteral("taskList"), taskList},
-            {QStringLiteral("globalMenu"), globalMenu}};
+            {QStringLiteral("globalMenu"), globalMenu},
+            {QStringLiteral("fileManager"), fileManager}};
 }
 
 QVariantMap LayoutProfile::toVariantMap() const

@@ -211,6 +211,11 @@ void DecorationDocumentTests::lunaDocumentKeepsWornBarsOverLunaThemes()
     const auto glassed = resolveWindowChrome(bliss, glass, ChromePreferences{});
     QVERIFY(!glassed.wornLuna());
     QVERIFY(glassed.titleOpacity < 1.0);
+    // ADR-0268: Classic Blue paints its own bar clean, but the classic
+    // document still brings its weathered bar over it.
+    QVERIFY(!resolveWindowChrome(bliss, std::nullopt, ChromePreferences{}).titleWorn);
+    QVERIFY(resolveWindowChrome(bliss, luna, ChromePreferences{}).titleWorn);
+    QVERIFY(slate.titleWorn);
 }
 
 QTEST_GUILESS_MAIN(DecorationDocumentTests)

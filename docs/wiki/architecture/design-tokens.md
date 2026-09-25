@@ -180,10 +180,12 @@ would step outside the gate.
 
 ## WCAG pair scope
 
-The built-in-data gate covers exactly the twelve shipped themes: QindaQt
-Pearl, QindaQt Velvet, QindaQt Smoked Plum, Qinda High Contrast, Qinda macOS,
-QindaQt Bliss, and the schema v2 Qinda Glass (light and dark), Qinda Slate,
-Qinda Paper, Qinda Aurora, and Qinda Studio. A second row proves every
+The built-in-data gate covers exactly the sixteen shipped themes: QindaQt
+Pearl, QindaQt Velvet, QindaQt Smoked Plum, Qinda High Contrast, Qinda Mist,
+Qinda Classic Blue, the schema v2 Qinda Glass (light and dark), Qinda Slate,
+Qinda Paper, Qinda Aurora, and Qinda Studio, and the desktop-experience
+themes Qinda Daylight, Qinda Marigold, Qinda Classic Grey, and Qinda Graphite
+([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)). A second row proves every
 published surface material keeps both text roles at 4.5:1 over black and
 over white at its published opacity.
 QST-1 uses the

@@ -459,6 +459,12 @@ bool readWorkflow(const QJsonObject &root,
                           origin,
                           &workflow->taskList,
                           error)
+        && optionalString(object,
+                          QStringLiteral("fileManager"),
+                          path,
+                          origin,
+                          &workflow->fileManager,
+                          error)
         && optionalBoolean(object,
                            QStringLiteral("globalMenu"),
                            path,

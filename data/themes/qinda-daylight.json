@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-daylight",
+  "name": "Qinda Daylight",
+  "variant": "light",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Inter",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 8,
+  "motionDuration": 160,
+  "blurEnabled": true,
+  "colors": {
+    "canvas": "#E4E9EF",
+    "surface": "#F3F5F8",
+    "surfaceRaised": "#FFFFFF",
+    "border": "#A3ADB8",
+    "text": "#1B2430",
+    "textMuted": "#4E5A68",
+    "accent": "#1F66C9",
+    "accentText": "#FFFFFF",
+    "danger": "#C42B3A"
+  },
+  "decoration": {
+    "buttonPlacement": "right",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "wide",
+    "hoverGlyphs": false,
+    "closeColor": "#C42B3A",
+    "minimizeColor": "#4E5A68",
+    "maximizeColor": "#4E5A68"
+  },
+  "surfaces": {
+    "panel": {
+      "opacity": 0.82,
+      "blur": true,
+      "tint": "#F3F5F8",
+      "border": 0.6,
+      "highlight": false,
+      "shadow": 0.9
+    },
+    "popup": {
+      "opacity": 0.9,
+      "blur": true,
+      "tint": "#F3F5F8",
+      "highlight": false
+    },
+    "menu": {
+      "opacity": 0.94,
+      "blur": true,
+      "highlight": false
+    },
+    "containerChrome": {
+      "opacity": 1.0,
+      "blur": false,
+      "shadow": 1.0
+    },
+    "decoration": {
+      "opacity": 1.0,
+      "blur": false,
+      "shadow": 1.0
+    },
+    "desktopIcons": {
+      "opacity": 0.0,
+      "blur": false,
+      "border": 0.0
+    }
+  },
+  "radii": {
+    "panel": 8,
+    "popup": 8,
+    "menu": 6,
+    "containerChrome": 8,
+    "decoration": 8
+  },
+  "motion": {
+    "popup": {
+      "duration": 160,
+      "easing": "decelerate"
+    },
+    "menu": {
+      "duration": 110,
+      "easing": "decelerate"
+    },
+    "rollup": {
+      "duration": 180,
+      "easing": "standard"
+    },
+    "hover": {
+      "duration": 80,
+      "easing": "standard"
+    }
+  },
+  "accent": {
+    "mode": "fixed"
+  }
+}

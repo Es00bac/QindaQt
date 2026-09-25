@@ -144,3 +144,8 @@ unless the decoration accepts the press.
 KWin regains native shading, or a theme wants to author the title-bar
 options itself (they are preferences today; decoration documents do not carry
 them).
+
+[ADR-0268](0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)
+lets a theme author the title double-click, a minimize that rolls up, and a
+clean title bar; `theme` for `appearance.windowTitleDoubleClick` now means the
+theme's action, else KWin's.

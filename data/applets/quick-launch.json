@@ -43,7 +43,8 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "presentation": {"type": "string", "enum": ["standard", "luna"], "default": "standard"}
+      "presentation": {"type": "string", "enum": ["standard", "luna"], "default": "standard"},
+      "items": {"type": "string", "enum": ["all", "others", "file-manager", "trash"], "default": "all"}
     }
   }
 }

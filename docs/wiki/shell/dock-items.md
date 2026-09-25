@@ -18,11 +18,37 @@ and the task strip's own reordering are described in
 | File | Its type's icon | Opens with the default application | Open, Move, Remove from Dock |
 | Trash | `user-trash` | Opens the Trash in the File Manager | Open, Open in File Manager, Empty Trash…, Move, Remove from Dock |
 
-Every menu ends with **Show Trash in Dock** while the dock has no Trash item.
+Every menu ends with **Show Trash in Dock** while the dock has no Trash item
+(a dock that has a permanent Trash end never offers it).
 Applications that are no longer installed keep their stored place but show no
 tile, like the launcher's stale pins. The launcher's Pinned section, the start
 menu's pinned grid, and application tiles all list the dock's applications,
 group members included.
+
+## Permanent ends
+
+A quick-launch instance can show a slice of the dock, chosen by its profile
+setting `items`
+([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)):
+
+| `items` | Shows |
+| --- | --- |
+| `all` (default) | Every stored item, as above |
+| `file-manager` | One permanent File Manager tile |
+| `trash` | One permanent Trash tile |
+| `others` | Every stored item except the File Manager and the Trash |
+
+The Menu and Dock layout uses them to keep the File Manager first and the
+Trash last, like Finder and the Trash on a Mac: its dock reads File Manager,
+Applications, the stored items, the running applications, Trash. Permanent
+tiles are not stored in `panels.dockItems` (their row `index` is -1 and
+`fixed` is true), so nothing moves, groups, or removes them and they take no
+drops; their menus keep Open, Open New Window, Open in File Manager, and
+Empty Trash…. The File Manager tile starts the File Manager or brings it
+forward, and while it is shown its windows are claimed like a pinned
+application's, so the File Manager has one icon. If the File Manager is not
+installed, its end shows nothing. A stored File Manager or Trash stays in the
+value and reappears in any layout that shows the whole dock.
 
 ## Gestures
 
@@ -113,7 +139,7 @@ picks the change up from Settings1 like any other writer's.
 | Value, bounds, codec, migration | `src/services/dock_items` (`DockItems`) |
 | Pin helper for other processes | `src/services/dock_items` (`Settings1DockPins`) |
 | Persistence and pinned projection | `src/shell/launcher/src/launcher_persistence.*` |
-| Dock facade | `src/shell/desktop_controls/src/quick_launch_controller.cpp`, `quick_launch_dock_edits.cpp` |
+| Dock facade | `src/shell/desktop_controls/src/quick_launch_controller.cpp`, `quick_launch_dock_edits.cpp` (permanent end rows, `openTrash`, `holdFileManagerEnd`) |
 | File Manager seam | `dock_path_port.h`, `file_manager_dock_paths.*` |
 | Presentation | `QuickLaunchApplet.qml`, `DockItemTile.qml`, `DockItemMenu.qml`, `DockStackPopup.qml`, `DockPromptPopup.qml`, `DockGestures.qml`, `DockDropGeometry.js` |
 
@@ -129,8 +155,8 @@ ctest --test-dir build/dev -R 'dock|launcher-persistence|launcher-settings-contr
 | `qindaqt.services-dock-pins` | Whole-value writes, migration on first pin, readback, refusal and conflict without replay, stale readback |
 | `qindaqt.launcher-persistence` | Dock commits, migration, malformed dock, refusal revert |
 | `qindaqt.launcher-settings-contract` | The shipped schema stores the dock value on disk and across a service restart |
-| `qindaqt.desktop-controls-dock` | Rows, drops, groups, removal, File Manager seam, running indicators, Keep in Dock, feedback |
-| `qindaqt.desktop-controls-offscreen-dock` | Tiles and accessible text, stacks, drag to move/group/remove, drops with a live gap, keyboard menu |
+| `qindaqt.desktop-controls-dock` | Rows, drops, groups, removal, File Manager seam, running indicators, Keep in Dock, feedback, permanent ends and their window claims |
+| `qindaqt.desktop-controls-offscreen-dock` | Tiles and accessible text, stacks, drag to move/group/remove, drops with a live gap, keyboard menu, `items` slices |
 | `qindaqt.panel-geometry-offscreen` | Claimed task tiles in the dock fit arithmetic |
 
 Dragging with a real pointer, drops from the File Manager across windows, and

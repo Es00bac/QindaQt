@@ -5,7 +5,11 @@
 - **Owners:** Themes, Compositor decorations, Shell presentation
 - **Supersedes:** None
 - **Superseded by:** [ADR-0218](0218-use-qindatk-and-poppler-for-the-viewer.md)
-  for decision8 only: packaged MIME defaults replace login-time user seeding.
+  for decision8 only: packaged MIME defaults replace login-time user seeding;
+  [ADR-0268](0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)
+  for decision 2's name, font and glyph buttons (now Qinda Classic Blue with
+  blue tiles) and decision 3's always-weathered bar (a theme may paint it
+  clean).
 
 ## Context
 

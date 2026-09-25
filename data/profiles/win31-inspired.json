@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "win31-inspired",
+  "name": "Program Groups",
+  "description": "A top bar holds the applications menu and your program groups, the dock's groups of applications, each opening into its programs, with the status area, the tray, and the clock at the right. There is no task bar, and menus stay in their windows. With its Qinda Classic Grey theme, minimizing a window turns it into an icon on the desktop.",
+  "defaultTheme": "qinda-classic-grey",
+  "workflow": {
+    "overview": "disabled",
+    "workspacePolicy": "static",
+    "launcher": "program-groups",
+    "menu": "window-local",
+    "taskList": "hidden",
+    "globalMenu": false,
+    "fileManager": "explorer"
+  },
+  "panels": [
+    {
+      "id": "program-groups", "edge": "top", "layer": "above", "hideMode": "never",
+      "alignment": "fill", "rows": 1, "thickness": 34, "length": 1.0,
+      "applets": [
+        {"id": "applications", "plugin": "launcher", "settings": {"zone": "start"}},
+        {"id": "groups", "plugin": "quick-launch", "settings": {"zone": "start"}},
+        {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
+        {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
+        {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "clock", "plugin": "clock", "settings": {"zone": "end"}}
+      ]
+    }
+  ],
+  "desktop": {
+    "applets": [
+      {
+        "id": "desktop-icons",
+        "plugin": "desktop-icons",
+        "settings": {"placement": "left", "contextMenuStyle": "windows", "applicationsMenuModifier": "shift"}
+      }
+    ]
+  }
+}

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "qinda-bliss",
-  "name": "QindaQt Bliss",
-  "description": "A worn Luna taskbar with a green start menu, quick launch, task buttons, tray, clock, and desktop icons.",
+  "name": "Classic Taskbar",
+  "description": "One bottom taskbar in the classic blue: a green start button and its two-column start menu, quick launch, a button for every window, the notification tray, the clock, and show desktop, with desktop icons on the left. Menus stay in their windows.",
   "defaultTheme": "qinda-bliss",
   "workflow": {
     "overview": "disabled",
@@ -10,7 +10,8 @@
     "launcher": "start-menu",
     "menu": "start-menu",
     "taskList": "buttons",
-    "globalMenu": false
+    "globalMenu": false,
+    "fileManager": "explorer"
   },
   "panels": [
     {

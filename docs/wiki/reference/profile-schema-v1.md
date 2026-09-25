@@ -55,10 +55,19 @@ does not make the layout module an owner of applet identity or settings.
 | `menu` | string | `global` |
 | `taskList` | string | `grouped` |
 | `globalMenu` | boolean | `true` |
+| `fileManager` | string | `finder` |
 
 Workflow strings must not be blank. They are presentation hints in the
 foundation implementation; their complete behavior will be specified as the
 corresponding controllers land.
+
+`fileManager` names the File Manager arrangement the layout's desktop
+experience expects: `finder`, `explorer`, or `commander`
+([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)).
+It is kept through the strict round trip like the other hints; the File
+Manager's style setting uses the selected layout's value as its default
+until the user picks a style, and nothing reads it before that setting
+lands. A profile written before the field existed loads as `finder`.
 
 ## Desktop object
 

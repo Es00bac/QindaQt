@@ -57,7 +57,11 @@ a color theme pairs with and the user may swap.
 | Qinda Paper | Warm opaque paper, small radii, light shadow | Paper: flat symbols on the right, plain handles |
 | Qinda Aurora | Deep teal glass with a tinted blur and the widest corners | Aurora: traffic lights on the left |
 | Qinda Studio | Opaque console dark, sharp corners, square badges | Studio: console glyphs on the right |
-| Luna Classic (document only) | The worn Luna bar on any palette | Glyphs on the right, square badges |
+| Weathered Blue (document only, id `luna-classic`) | The weathered blue bar on any palette | Glyphs on the right, square badges |
+| Qinda Daylight | Light, translucent panels, 8 px corners (Centered Taskbar) | Inline: wide flat cells on the right |
+| Qinda Marigold | Warm greys with a yellow title tab (Corner Bar) | Inline: tab boxes on the left; double-click rolls up |
+| Qinda Classic Grey | Bevelled greys, navy title bar (Program Groups) | Inline: bevel squares on the right; minimize rolls up to an icon |
+| Qinda Graphite | Mid greys, black title bar (Workspace Dock) | Inline: bold grey squares on the right |
 
 The six schema v1 themes keep their authored chrome and paint every surface
 opaque. Text never sits on a material the contrast gate has not checked:
@@ -80,10 +84,15 @@ shape vocabulary rather than merely recoloring one image. The original PNGs
 are 1672 × 941 pixels. Generation provenance and full prompts are preserved
 with the assets in `data/wallpapers/ARTWORK.md`.
 
-QindaQt Bliss is an opt-in XP-influenced option set, not a change to the
-default identity: its Tahoma-era theme, worn Luna title bar, and taskbar
-appear only when a user selects the Bliss theme or layout profile
-([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md)).
+Qinda Classic Blue and the Classic Taskbar layout (ids `qinda-bliss`) are an
+opt-in XP-influenced option set, not a change to the default identity: their
+blue title bars, blue-tile buttons, and taskbar appear only when a user
+selects that theme or layout
+([ADR-0124](../adr/0124-add-qindaqt-bliss-luna-option-set.md),
+[ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)).
+The other familiar-desktop experiences follow the same rule: original names,
+colors, glyphs, and shapes, never another vendor's
+([Layout profiles](layout-profiles.md#familiar-desktop-experiences)).
 
 The packaged default theme pair uses `qinda-punk.png` as its companion
 wallpaper when the default appearance has no explicit wallpaper choice. Use

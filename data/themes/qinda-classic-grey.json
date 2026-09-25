@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-classic-grey",
+  "name": "Qinda Classic Grey",
+  "variant": "light",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Noto Sans",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 2,
+  "motionDuration": 110,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#E6E4DE",
+    "surface": "#D4D2CB",
+    "surfaceRaised": "#F7F6F3",
+    "border": "#7A7870",
+    "text": "#111111",
+    "textMuted": "#3E3D39",
+    "accent": "#1D3F95",
+    "accentText": "#FFFFFF",
+    "danger": "#A4161A"
+  },
+  "decoration": {
+    "buttonPlacement": "right",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "bevel",
+    "hoverGlyphs": false,
+    "titleBarColor": "#1F3C8C",
+    "titleBarInactiveColor": "#F4F3EF",
+    "closeColor": "#A4161A",
+    "minimizeColor": "#3E3D39",
+    "maximizeColor": "#3E3D39",
+    "minimizeAction": "roll-up",
+    "titleWear": false
+  },
+  "radii": {
+    "decoration": 2
+  }
+}

@@ -18,7 +18,9 @@ private slots:
     void loadsEveryBuiltInTheme();
     void requiresSemanticColorTokens();
     void qindaMacosDefinesDecorationFlow();
-    void qindaBlissDefinesWornLunaChrome();
+    void qindaBlissDefinesTheClassicBlueChrome();
+    void experienceThemesAuthorTheirTitleBehaviour();
+    void titleBehaviourDefaultsAndRejectsUnknownValues();
     void everyBuiltInThemeAuthorsAWindowDecoration();
     void rejectsInvalidDecorationValues();
     void acceptsNamedButtonStylesAndRejectsUnknownOnes();
@@ -33,7 +35,7 @@ private slots:
 void ThemeTests::loadsEveryBuiltInTheme()
 {
     const auto results = ThemeLoader::fromDirectory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(results.size(), 12);
+    QCOMPARE(results.size(), 16);
     int schemaV2 = 0;
     for (const auto &result : results) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -41,18 +43,22 @@ void ThemeTests::loadsEveryBuiltInTheme()
         schemaV2 += result.theme.schemaVersion == 2 ? 1 : 0;
     }
     // ADR-0206: the six theming-v2 themes author surfaces; the six originals
-    // stay schema v1 and load unchanged.
-    QCOMPARE(schemaV2, 6);
+    // stay schema v1 and load unchanged. ADR-0268 adds four v2 experience
+    // themes (Daylight, Marigold, Classic Grey, Graphite).
+    QCOMPARE(schemaV2, 10);
 }
 
-void ThemeTests::qindaBlissDefinesWornLunaChrome()
+void ThemeTests::qindaBlissDefinesTheClassicBlueChrome()
 {
+    // ADR-0268: the XP-like experience's theme keeps its id and blue title
+    // colors, paints the bar clean, and uses the W19 blue tiles.
     const auto result = ThemeLoader::fromFile(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-bliss.json"));
     QVERIFY2(result.ok, qPrintable(result.error));
-    QCOMPARE(result.theme.name, QStringLiteral("QindaQt Bliss"));
+    QCOMPARE(result.theme.name, QStringLiteral("Qinda Classic Blue"));
     QCOMPARE(result.theme.decoration.buttonPlacement, QStringLiteral("right"));
-    QCOMPARE(result.theme.decoration.buttonStyle, QStringLiteral("glyph"));
+    QCOMPARE(result.theme.decoration.buttonStyle, QStringLiteral("blue-tiles"));
+    QVERIFY(!result.theme.decoration.titleWear);
     QVERIFY(result.theme.decoration.titleBarColor.isValid());
     QVERIFY(result.theme.decoration.titleBarInactiveColor.isValid());
     QVERIFY(result.theme.decoration.restoreColor.isValid());
@@ -93,7 +99,7 @@ void ThemeTests::qindaMacosDefinesDecorationFlow()
     const auto result = ThemeLoader::fromFile(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-macos.json"));
     QVERIFY2(result.ok, qPrintable(result.error));
-    QCOMPARE(result.theme.name, QStringLiteral("Qinda macOS"));
+    QCOMPARE(result.theme.name, QStringLiteral("Qinda Mist"));
     QCOMPARE(result.theme.decoration.buttonPlacement, QStringLiteral("left"));
     QCOMPARE(result.theme.decoration.tabDirection, QStringLiteral("right-to-left"));
     QCOMPARE(result.theme.decoration.buttonStyle, QStringLiteral("traffic-lights"));
@@ -143,6 +149,96 @@ void ThemeTests::acceptsNamedButtonStylesAndRejectsUnknownOnes()
                                                QStringLiteral("fixture"));
     QVERIFY(!unknown.ok);
     QVERIFY(unknown.error.contains(QStringLiteral("decoration")));
+}
+
+// ADR-0268: each experience theme carries its W19 button style and the
+// title-bar behaviour its desktop expects; no theme name is a vendor's.
+void ThemeTests::experienceThemesAuthorTheirTitleBehaviour()
+{
+    const struct {
+        const char *id;
+        const char *style;
+        const char *doubleClick;
+        const char *minimize;
+        bool wear;
+    } experiences[] = {
+        {"qinda-bliss", "blue-tiles", "", "minimize", false},
+        {"qinda-daylight", "wide", "", "minimize", true},
+        {"qinda-marigold", "tab", "roll-up", "minimize", false},
+        {"qinda-classic-grey", "bevel", "", "roll-up", false},
+        {"qinda-graphite", "bold", "", "minimize", false},
+    };
+    for (const auto &experience : experiences) {
+        const QString id = QString::fromLatin1(experience.id);
+        const auto result = ThemeLoader::fromFile(
+            QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/") + id + QStringLiteral(".json"));
+        QVERIFY2(result.ok, qPrintable(result.error));
+        const auto &decoration = result.theme.decoration;
+        QCOMPARE(decoration.buttonStyle, QString::fromLatin1(experience.style));
+        QCOMPARE(decoration.titleDoubleClick, QString::fromLatin1(experience.doubleClick));
+        QCOMPARE(decoration.minimizeAction, QString::fromLatin1(experience.minimize));
+        QCOMPARE(decoration.titleWear, experience.wear);
+        // The keys round-trip only where the document authors them.
+        const auto map = decoration.toVariantMap();
+        QCOMPARE(map.contains(QStringLiteral("titleDoubleClick")),
+                 !decoration.titleDoubleClick.isEmpty());
+        QCOMPARE(map.contains(QStringLiteral("minimizeAction")),
+                 decoration.minimizeAction != QLatin1String("minimize"));
+        QCOMPARE(map.contains(QStringLiteral("titleWear")), !decoration.titleWear);
+    }
+
+    const auto results = ThemeLoader::fromDirectory(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
+    for (const auto &result : results) {
+        QVERIFY2(result.ok, qPrintable(result.error));
+        for (const char *mark : {"Windows", "Microsoft", "Luna", "Bliss", "macOS", "Apple",
+                                 "BeOS", "NeXT"}) {
+            QVERIFY2(!result.theme.name.contains(QString::fromLatin1(mark)),
+                     qPrintable(result.theme.id + QStringLiteral(" names ")
+                                + QString::fromLatin1(mark)));
+        }
+    }
+}
+
+void ThemeTests::titleBehaviourDefaultsAndRejectsUnknownValues()
+{
+    const auto theme = [](const QByteArray &decoration) {
+        return QByteArray(R"json({
+            "schemaVersion": 1, "id": "behaving", "name": "Behaving", "variant": "dark",
+            "colors": {
+                "canvas": "#101010", "surface": "#202020", "surfaceRaised": "#303030",
+                "border": "#404040", "text": "#ffffff", "textMuted": "#aaaaaa",
+                "accent": "#80c0b0", "accentText": "#102020", "danger": "#ff6060"
+            },
+            "decoration": )json")
+            + decoration + "}";
+    };
+    // Absent keys: KWin's own double-click, a real minimize, the weathered
+    // bar ADR-0124 paints for an authored title color.
+    const auto plain = ThemeLoader::fromJson(theme(R"({"buttonStyle": "glyph"})"),
+                                             QStringLiteral("fixture"));
+    QVERIFY2(plain.ok, qPrintable(plain.error));
+    QVERIFY(plain.theme.decoration.titleDoubleClick.isEmpty());
+    QCOMPARE(plain.theme.decoration.minimizeAction, QStringLiteral("minimize"));
+    QVERIFY(plain.theme.decoration.titleWear);
+    const auto map = plain.theme.decoration.toVariantMap();
+    QVERIFY(!map.contains(QStringLiteral("titleDoubleClick")));
+    QVERIFY(!map.contains(QStringLiteral("minimizeAction")));
+    QVERIFY(!map.contains(QStringLiteral("titleWear")));
+
+    for (const char *action : {"maximize", "roll-up", "minimize"}) {
+        const auto chosen = ThemeLoader::fromJson(
+            theme(QByteArray(R"({"titleDoubleClick": ")") + action + "\"}"),
+            QStringLiteral("fixture"));
+        QVERIFY2(chosen.ok, qPrintable(chosen.error));
+        QCOMPARE(chosen.theme.decoration.titleDoubleClick, QString::fromLatin1(action));
+    }
+    for (const char *invalid : {R"({"titleDoubleClick": "shade"})",
+                                R"({"minimizeAction": "hide"})"}) {
+        const auto rejected = ThemeLoader::fromJson(theme(invalid), QStringLiteral("fixture"));
+        QVERIFY2(!rejected.ok, invalid);
+        QVERIFY(rejected.error.contains(QStringLiteral("decoration")));
+    }
 }
 
 void ThemeTests::requiresSemanticColorTokens()
