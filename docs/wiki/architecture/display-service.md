@@ -89,7 +89,11 @@ current unique D-Bus owner, calls `Outputs` on that unique name, and treats
 late replies after owner replacement, caps JSON at 4 MiB before parsing, then
 converts the complete schema-1 response into bounded values. D0 permits 64
 outputs and scale through 16; Display1 deliberately rejects any sample outside
-its stricter 32-output and 1.0–3.0 limits. Geometry must be exactly integral
+its stricter 32-output and 1.0–3.0 limits, with one exception: an output that
+names a `replicationSource` may carry KWin's fitted mirror scale below 1.0,
+which projection clamps into range. The mirror becomes
+`replicationSourceStableId` and D0 `modes` become the Display1 mode list
+([ADR-0274](../adr/0274-display1-reads-mirroring-and-modes-from-the-compositor-inventory.md)). Geometry must be exactly integral
 because the Display1 v1 topology values are integral.
 
 One accepted source lineage is `(uniqueOwner, outputGeneration, complete typed

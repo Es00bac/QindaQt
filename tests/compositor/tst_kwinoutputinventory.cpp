@@ -44,6 +44,8 @@ private Q_SLOTS:
     void rejectsAmbiguityAndPreservesPriorGeneration();
     void acceptsWireBoundsAndUnconstrainedPriorities();
     void rejectsOverflowWithoutPublishing();
+    void publishesModesAndMirrorSource();
+    void rejectsMalformedModesAndMirrorSources();
 };
 
 void KWinOutputInventoryTest::publishesStableCompleteProjection()
@@ -130,6 +132,93 @@ void KWinOutputInventoryTest::rejectsOverflowWithoutPublishing()
     QCOMPARE(store.publish({output()}),
              OutputInventoryPublishResult::GenerationExhausted);
     QVERIFY(!store.available());
+}
+
+void KWinOutputInventoryTest::publishesModesAndMirrorSource()
+{
+    // The laptop panel mirrors a taller external monitor. KWin reports the
+    // source's logical geometry and a fitted 0.9 scale for the mirror, so the
+    // real mode must travel separately from geometry.
+    auto external = output(QStringLiteral("DP-1"));
+    external.geometry = QRectF(0, 0, 1920, 1200);
+    external.visibilityGeometry = QRect(0, 0, 1920, 1200);
+    external.scale = 1.0;
+    external.modePixelSize = QSize(1920, 1200);
+    external.modes = {{QSize(1920, 1200), 59'885, true},
+                      {QSize(1920, 1080), 60'000, false}};
+    auto panel = output(QStringLiteral("eDP-1"));
+    panel.uuid = QStringLiteral("uuid-2");
+    panel.geometry = external.geometry;
+    panel.visibilityGeometry = external.visibilityGeometry;
+    panel.scale = 0.9;
+    panel.modePixelSize = QSize(1920, 1080);
+    panel.modes = {{QSize(1920, 1080), 60'000, true}};
+    panel.replicationSource = QStringLiteral("DP-1");
+
+    OutputInventoryStore store;
+    QString error;
+    QCOMPARE(store.publish({external, panel}, &error),
+             OutputInventoryPublishResult::Published);
+    const auto outputs = json(store.responseJson()).value(QStringLiteral("outputs")).toArray();
+    const auto first = outputs.at(0).toObject();
+    QCOMPARE(first.value(QStringLiteral("replicationSource")).toString(), QString());
+    const auto modes = first.value(QStringLiteral("modes")).toArray();
+    QCOMPARE(modes.size(), 2);
+    QCOMPARE(modes.at(0).toObject().value(QStringLiteral("height")).toInt(), 1200);
+    QCOMPARE(modes.at(0).toObject().value(QStringLiteral("refreshRateMilliHz")).toInteger(),
+             qint64(59'885));
+    QVERIFY(modes.at(0).toObject().value(QStringLiteral("preferred")).toBool());
+    QVERIFY(!modes.at(1).toObject().value(QStringLiteral("preferred")).toBool());
+    const auto second = outputs.at(1).toObject();
+    QCOMPARE(second.value(QStringLiteral("replicationSource")).toString(),
+             QStringLiteral("DP-1"));
+    QCOMPARE(second.value(QStringLiteral("modeSize")).toObject()
+                 .value(QStringLiteral("height")).toInt(),
+             1080);
+
+    // Switching mirror to extend is a projection change on its own.
+    panel.replicationSource.clear();
+    QCOMPARE(store.publish({external, panel}, &error),
+             OutputInventoryPublishResult::Published);
+    QCOMPARE(store.generation(), quint64(2));
+}
+
+void KWinOutputInventoryTest::rejectsMalformedModesAndMirrorSources()
+{
+    auto other = output(QStringLiteral("DP-2"));
+    other.uuid = QStringLiteral("uuid-2");
+    OutputInventoryStore store;
+    QString error;
+    QCOMPARE(store.publish({output(), other}, &error),
+             OutputInventoryPublishResult::Published);
+    const auto prior = store.responseJson();
+
+    auto mirror = other;
+    mirror.replicationSource = QStringLiteral("HDMI-A-9");
+    QCOMPARE(store.publish({output(), mirror}, &error),
+             OutputInventoryPublishResult::Rejected);
+    mirror.replicationSource = mirror.name;
+    QCOMPARE(store.publish({output(), mirror}, &error),
+             OutputInventoryPublishResult::Rejected);
+
+    auto modes = other;
+    modes.modes = {{QSize(1920, 1080), 60'000, false}, {QSize(1920, 1080), 60'000, true}};
+    QCOMPARE(store.publish({output(), modes}, &error),
+             OutputInventoryPublishResult::Rejected);
+    modes.modes = {{QSize(0, 1080), 60'000, false}};
+    QCOMPARE(store.publish({output(), modes}, &error),
+             OutputInventoryPublishResult::Rejected);
+    modes.modes = {{QSize(1920, 1080), 0, false}};
+    QCOMPARE(store.publish({output(), modes}, &error),
+             OutputInventoryPublishResult::Rejected);
+    modes.modes.clear();
+    for (qsizetype index = 0; index <= OutputInventoryStore::MaxModes; ++index) {
+        modes.modes.append({QSize(640 + static_cast<int>(index), 480), 60'000, false});
+    }
+    QCOMPARE(store.publish({output(), modes}, &error),
+             OutputInventoryPublishResult::Rejected);
+    QCOMPARE(store.generation(), quint64(1));
+    QCOMPARE(store.responseJson(), prior);
 }
 
 QTEST_GUILESS_MAIN(KWinOutputInventoryTest)

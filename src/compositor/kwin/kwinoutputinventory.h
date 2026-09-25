@@ -17,6 +17,18 @@ class LogicalOutput;
 
 namespace QindaQt::Compositor::KWinIntegration {
 
+// One advertised hardware mode in untransformed pixels. Size plus refresh is
+// the identity Display1's writer resolves back to a KWin output-device mode.
+struct OutputInventoryMode final
+{
+    QSize pixelSize;
+    quint32 refreshRateMilliHz = 0;
+    bool preferred = false;
+
+    friend bool operator==(const OutputInventoryMode &,
+                           const OutputInventoryMode &) = default;
+};
+
 struct OutputInventoryEntry final
 {
     QString name;
@@ -35,6 +47,15 @@ struct OutputInventoryEntry final
     QSize physicalSizeMillimeters;
     QString manufacturer;
     QString model;
+    // Current hardware mode in untransformed pixels. A mirrored output's
+    // logical geometry is its source's, and KWin fits it with a synthetic
+    // scale, so geometry * scale does not recover the real mode.
+    QSize modePixelSize;
+    // Advertised modes in KWin order, deduplicated by size and refresh.
+    QVector<OutputInventoryMode> modes;
+    // Connector name of the output this one mirrors; empty when extended.
+    // Must name another entry in the same projection.
+    QString replicationSource;
 
     friend bool operator==(const OutputInventoryEntry &,
                            const OutputInventoryEntry &) = default;
@@ -73,6 +94,13 @@ public:
     static constexpr qreal MaxLogicalCoordinateMagnitude = 1'000'000.0;
     static constexpr qreal MaximumScale =
         ShellVisibilityProtocol::WireLimits::MaxOutputScale;
+    // AGENT-CONTRACT: equals Display1 kMaxModesPerOutput
+    // (display_protocol/display_limits.h). The sampler truncates to it while
+    // keeping the current mode, so Display1 never rejects a long EDID list.
+    static constexpr qsizetype MaxModes = 128;
+    // AGENT-CONTRACT: equals Display1 kMaxPixelDimension/kMaxRefreshMilliHertz.
+    static constexpr int MaxModePixelDimension = 16'384;
+    static constexpr quint32 MaxRefreshRateMilliHz = 1'000'000;
 
     explicit OutputInventoryStore(OutputGenerationSeed seed = {});
 

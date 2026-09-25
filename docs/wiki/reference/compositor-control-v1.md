@@ -77,7 +77,15 @@ Output transforms use these protocol strings: `normal`, `rotate-90`,
 `name`, `geometry`, `scale`, `refreshRateMilliHz`, `transform`, and `internal`,
 and 1.1 additively supplies `uuid`, unconstrained unsigned 32-bit `priority`,
 `physicalSizeMm`, `manufacturer`, and `model`. `0x0` physical size means KWin
-does not know it; it is not a measurement. Ordering is KWin's semantic
+does not know it; it is not a measurement. 1.2 additively supplies `modeSize`
+(current mode, untransformed pixels), `modes` (at most 128 advertised
+`{width, height, refreshRateMilliHz, preferred}` entries, unique by size and
+refresh, always including the current mode), and `replicationSource` (the
+connector name of the output this one mirrors, or empty). A mirror reports its
+source's geometry and a KWin-fitted scale, so only `modeSize` names its real
+mode. A `replicationSource` naming itself or a connector outside the sample
+rejects the whole sample
+([ADR-0274](../adr/0274-display1-reads-mirroring-and-modes-from-the-compositor-inventory.md)). Ordering is KWin's semantic
 `Workspace::outputOrder`, including its stable order for equal priorities.
 Names must be unique and nonempty; nonempty UUIDs must also be unique.
 Output names share the shell wire's 512-UTF-16-unit identifier bound. UUID and

@@ -123,7 +123,10 @@ inline InventoryOutput output(QString name = QStringLiteral("DP-1"),
             .compositorPriority = 0,
             .physicalSizeMillimeters = QSize(600, 340),
             .manufacturer = QStringLiteral("Qinda"),
-            .model = QStringLiteral("Reference Display")};
+            .model = QStringLiteral("Reference Display"),
+            .modePixelSize = {},
+            .modes = {},
+            .replicationSource = {}};
 }
 
 inline InventoryFrame frame(quint64 generation, QList<InventoryOutput> outputs,

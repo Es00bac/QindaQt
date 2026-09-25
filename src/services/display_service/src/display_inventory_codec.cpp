@@ -137,6 +137,78 @@ bool sizeValue(const QJsonObject &object, QSize &size)
     return true;
 }
 
+bool modeSizeValue(const QJsonObject &object, QSize &size)
+{
+    qint64 width = 0;
+    qint64 height = 0;
+    if (!integerMember(object, QStringLiteral("width"), 0, Display::kMaxPixelDimension,
+                       width)
+        || !integerMember(object, QStringLiteral("height"), 0,
+                          Display::kMaxPixelDimension, height)
+        || (width == 0) != (height == 0)) {
+        return false;
+    }
+    size = QSize(static_cast<int>(width), static_cast<int>(height));
+    return true;
+}
+
+bool decodeModes(const QJsonValue &value, QList<InventoryMode> &modes)
+{
+    if (!value.isArray() || value.toArray().size() > Display::kMaxModesPerOutput) {
+        return false;
+    }
+    QSet<std::pair<std::pair<int, int>, quint32>> seen;
+    for (const QJsonValue &item : value.toArray()) {
+        if (!item.isObject()) {
+            return false;
+        }
+        const QJsonObject object = item.toObject();
+        InventoryMode mode;
+        qint64 refresh = 0;
+        if (!modeSizeValue(object, mode.pixelSize) || mode.pixelSize.isEmpty()
+            || !integerMember(object, QStringLiteral("refreshRateMilliHz"), 1,
+                              Display::kMaxRefreshMilliHertz, refresh)
+            || !boolMember(object, QStringLiteral("preferred"), mode.preferred)) {
+            return false;
+        }
+        mode.refreshRateMilliHertz = static_cast<quint32>(refresh);
+        const auto key = std::pair{std::pair{mode.pixelSize.width(), mode.pixelSize.height()},
+                                   mode.refreshRateMilliHertz};
+        if (seen.contains(key)) {
+            return false;
+        }
+        seen.insert(key);
+        modes.push_back(mode);
+    }
+    return true;
+}
+
+// AGENT-CONTRACT: modeSize, modes, and replicationSource are additive
+// schema-1 members published by the KWin plugin (kwinoutputinventory.cpp).
+// Absence means an older compositor and keeps the pre-mirroring projection.
+bool decodeOptionalMembers(const QJsonObject &object, InventoryOutput &output)
+{
+    if (object.contains(QStringLiteral("modeSize"))
+        && (!object.value(QStringLiteral("modeSize")).isObject()
+            || !modeSizeValue(object.value(QStringLiteral("modeSize")).toObject(),
+                              output.modePixelSize))) {
+        return false;
+    }
+    if (object.contains(QStringLiteral("modes"))
+        && !decodeModes(object.value(QStringLiteral("modes")), output.modes)) {
+        return false;
+    }
+    if (object.contains(QStringLiteral("replicationSource"))
+        && (!stringMember(object, QStringLiteral("replicationSource"),
+                          output.replicationSource)
+            || !Display::isBoundedText(output.replicationSource,
+                                       Display::kMaxConnectorNameUtf8Bytes)
+            || output.replicationSource == output.name)) {
+        return false;
+    }
+    return true;
+}
+
 bool decodeOutput(const QJsonValue &value, InventoryOutput &output)
 {
     if (!value.isObject()) {
@@ -166,11 +238,19 @@ bool decodeOutput(const QJsonValue &value, InventoryOutput &output)
                       output.physicalSizeMillimeters)
         || !stringMember(object, QStringLiteral("manufacturer"),
                          output.manufacturer)
-        || !stringMember(object, QStringLiteral("model"), output.model)) {
+        || !stringMember(object, QStringLiteral("model"), output.model)
+        || !decodeOptionalMembers(object, output)) {
         return false;
     }
     output.scale = object.value(QStringLiteral("scale")).toDouble();
-    if (!std::isfinite(output.scale) || output.scale < Display::kMinimumScale
+    // AGENT-GUARD: KWin fits a mirrored output to its source with a synthetic
+    // scale (0.9 for a 1080p panel mirroring a 1200p monitor). Rejecting it
+    // withdrew the whole inventory and left Settings unable to undo mirroring;
+    // projection clamps it instead. Extended outputs keep the Display1 range.
+    const bool scaleInRange = output.replicationSource.isEmpty()
+        ? output.scale >= Display::kMinimumScale
+        : output.scale > 0.0;
+    if (!std::isfinite(output.scale) || !scaleInRange
         || output.scale > Display::kMaximumScale || output.name.isEmpty()
         || !Display::isBoundedText(output.name,
                                    Display::kMaxConnectorNameUtf8Bytes)
@@ -254,6 +334,11 @@ InventoryDecodeResult decodeCompositorInventory(const QByteArrayView payload,
             runtimeUuids.insert(output.runtimeCompositorUuid);
         }
         outputs.push_back(std::move(output));
+    }
+    for (const InventoryOutput &output : std::as_const(outputs)) {
+        if (!output.replicationSource.isEmpty() && !names.contains(output.replicationSource)) {
+            return failure(InventoryError::InvalidOutput, "unknown-replication-source");
+        }
     }
     return {.frame = {.uniqueOwner = uniqueOwner,
                       .outputGeneration = generation,
