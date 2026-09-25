@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Focused rows for QindaLutris (ADR-0231): fixture-backed model rows, the
+# Focused rows for QindaLutris (ADR-0231, ADR-0275): fixture-backed model rows, the
 # store contract, the launch planner, and the QML page over a stub model.
 # Everything runs against synthetic fixtures in a private HOME -- never the
 # operator's real Steam, Lutris, or desktop data.
@@ -33,6 +33,11 @@ qindaqt_add_qindalutris_test(game-library tst_game_library.cpp)
 qindaqt_add_qindalutris_test(library-store tst_library_store.cpp)
 qindaqt_add_qindalutris_test(launch-planner tst_launch_planner.cpp)
 qindaqt_add_qindalutris_test(wine-source tst_wine_source.cpp)
+# ADR-0275: pinned Proton builds, installed titles, umu launch plans.
+qindaqt_add_qindalutris_test(proton-catalog tst_proton_catalog.cpp)
+qindaqt_add_qindalutris_test(proton-pin tst_proton_pin.cpp)
+qindaqt_add_qindalutris_test(title-store tst_title_store.cpp)
+qindaqt_add_qindalutris_test(umu-launch-plan tst_umu_launch_plan.cpp)
 
 qindaqt_add_qindalutris_test(lutris-source tst_lutris_source.cpp)
 # The Lutris fixture builds its own database, so this row links Qt Sql too.

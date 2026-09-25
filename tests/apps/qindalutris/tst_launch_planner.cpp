@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include <QFile>
+#include <QFileInfo>
+#include <QTemporaryDir>
 #include <QTest>
 
 #include "launch_planner.h"
+#include "proton_fixture.h"
 
 using namespace QindaQt::QindaLutris;
 
@@ -43,8 +47,15 @@ LaunchToolSet fullTools() {
   tools.wineBinary = QStringLiteral("/usr/bin/wine");
   tools.gamemodeRunBinary = QStringLiteral("/usr/bin/gamemoderun");
   tools.mangohudBinary = QStringLiteral("/usr/bin/mangohud");
-  tools.protons = {{QStringLiteral("Proton 9.0"),
-                    QStringLiteral("/steam/common/Proton 9.0/proton")}};
+  tools.umuRunBinary = QStringLiteral("/usr/bin/umu-run");
+  ProtonBuild build;
+  build.name = QStringLiteral("GE-Proton11-6-x86_64");
+  build.displayName = QStringLiteral("GE-Proton11-6");
+  build.path = QStringLiteral(
+      "/usr/share/steam/compatibilitytools.d/GE-Proton11-6-x86_64");
+  build.origin = ProtonBuild::Origin::System;
+  build.versionText = QStringLiteral("1756415527 GE-Proton11-6");
+  tools.protonBuilds = {build}; // no files behind it: refusal rows only
   return tools;
 }
 
@@ -95,24 +106,62 @@ private Q_SLOTS:
              QStringLiteral("/games/alpha/prefix"));
   }
 
-  void protonPlanUsesCompatPath() {
+  // ADR-0275 changed this row: a Proton entry used to run `<proton> run`
+  // with STEAM_COMPAT_DATA_PATH and "any discovered Proton". It now runs
+  // through umu-run with its own pinned build as PROTONPATH.
+  void protonEntryLaunchesThroughUmuWithItsPin() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString exe = dir.filePath(QStringLiteral("game.exe"));
+    QFile file(exe);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.close();
+    const QString root = dir.filePath(QStringLiteral("compat"));
+    const QString buildPath = ProtonFixture::makeBuild(
+        root, QStringLiteral("GE-Proton11-6-x86_64"), "1756415527 GE-Proton11-6");
+    LaunchToolSet tools = fullTools();
+    tools.protonBuilds =
+        discoverProtonBuilds({{root, ProtonBuild::Origin::System}});
+    Game game = wineGame();
+    game.installPath = exe;
+    game.winePrefix = dir.filePath(QStringLiteral("prefix")); // not created
+    game.protonPath = QStringLiteral("GE-Proton11-6-x86_64");
+    game.protonVersion = QStringLiteral("1756415527 GE-Proton11-6");
     LaunchOptions options;
     options.runnerOverride = WineRunner::Proton;
-    const LaunchPlan plan =
-        planGameLaunch(wineGame(), options, fullTools(), {}, nullptr);
-    QVERIFY(plan.ok);
-    QCOMPARE(plan.program, QStringLiteral("/steam/common/Proton 9.0/proton"));
-    QCOMPARE(plan.arguments,
-             QStringList({QStringLiteral("run"),
-                          QStringLiteral("/games/alpha/game.exe")}));
-    QCOMPARE(plan.environment.value(QStringLiteral("STEAM_COMPAT_DATA_PATH")),
-             QStringLiteral("/games/alpha/prefix"));
+    const LaunchPlan plan = planGameLaunch(game, options, tools, {}, nullptr);
+    QVERIFY2(plan.ok, qPrintable(plan.reason));
+    QCOMPARE(plan.program, QStringLiteral("/usr/bin/umu-run"));
+    QCOMPARE(plan.arguments, QStringList({exe}));
+    QCOMPARE(plan.environment.value(QStringLiteral("PROTONPATH")), buildPath);
+    QCOMPARE(plan.environment.value(QStringLiteral("WINEPREFIX")),
+             game.winePrefix);
+    QVERIFY(!plan.environment.contains(QStringLiteral("STEAM_COMPAT_DATA_PATH")));
+  }
+
+  void protonEntryWithoutAPinIsRefused() {
+    Game game = wineGame();
+    game.wineRunner = WineRunner::Proton;
+    game.protonPath.clear();
+    const LaunchPlan plan = planGameLaunch(game, {}, fullTools(), {}, nullptr);
+    QVERIFY(!plan.ok);
+    QCOMPARE(plan.reason, QStringLiteral("Choose a Proton build for this game."));
+  }
+
+  void installedTitleNeedsItsRecord() {
+    Game game;
+    game.id = QStringLiteral("title/alpha");
+    game.source = GameSource::Installed;
+    const LaunchPlan plan = planGameLaunch(game, {}, fullTools(), {}, nullptr);
+    QVERIFY(!plan.ok);
+    QVERIFY(!plan.reason.isEmpty());
   }
 
   void protonWithoutPrefixFails() {
     Game game = wineGame();
     game.winePrefix.clear();
     game.wineRunner = WineRunner::Proton;
+    game.protonPath = QStringLiteral("GE-Proton11-6-x86_64");
     const LaunchPlan plan =
         planGameLaunch(game, {}, fullTools(), {}, nullptr);
     QVERIFY(!plan.ok);
@@ -197,7 +246,6 @@ private Q_SLOTS:
       QVERIFY(!arg.contains(QLatin1Char('\n')));
     }
   }
-};
 
   void wineLoaderDiscoveryPrefersAPlainLoaderThenTheNewestVersioned() {
     // Searching only for "wine" reported "Wine is not installed" on a machine
@@ -247,9 +295,7 @@ private Q_SLOTS:
     QCOMPARE(discoverWineLoader({other.path(), dir.path()}),
              QFileInfo(dir.filePath(QStringLiteral("wine"))).absoluteFilePath());
   }
+};
 
 QTEST_GUILESS_MAIN(tst_launch_planner)
 #include "tst_launch_planner.moc"
-#include <QTemporaryDir>
-#include <QFile>
-#include <QFileInfo>

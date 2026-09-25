@@ -22,7 +22,7 @@ private Q_SLOTS:
 
     const QVector<WineEntryRecord> records{
         {QStringLiteral("alpha-1234abcd"), QStringLiteral("Alpha"),
-         exe.fileName(), QStringLiteral("/prefix"), WineRunner::Wine, {}},
+         exe.fileName(), QStringLiteral("/prefix"), WineRunner::Wine, {}, {}},
     };
     const QVector<Game> games =
         gamesFromWineEntries(records, home.path() + QStringLiteral("/cache"));
@@ -42,7 +42,7 @@ private Q_SLOTS:
     const QVector<WineEntryRecord> records{
         {QStringLiteral("gone-1234abcd"), QStringLiteral("Gone"),
          home.path() + QStringLiteral("/missing.exe"), QString(),
-         WineRunner::Proton, {}},
+         WineRunner::Proton, {}, {}},
     };
     const QVector<Game> games =
         gamesFromWineEntries(records, home.path() + QStringLiteral("/cache"));

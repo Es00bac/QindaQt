@@ -24,6 +24,23 @@ qt_add_library(qindaqt_qindalutris_model STATIC
     launch_planner.h
     game_launcher.cpp
     game_launcher.h
+    # ADR-0275: pinned Proton builds, installed titles, umu launches.
+    store_io.cpp
+    store_io.h
+    proton_catalog.cpp
+    proton_catalog.h
+    proton_pin.cpp
+    proton_pin.h
+    title_record.cpp
+    title_record.h
+    title_store.cpp
+    title_store.h
+    title_source.cpp
+    title_source.h
+    umu_launch.cpp
+    umu_launch.h
+    wine_pin_migration.cpp
+    wine_pin_migration.h
 )
 add_library(QindaQt::QindaLutrisModel ALIAS qindaqt_qindalutris_model)
 
