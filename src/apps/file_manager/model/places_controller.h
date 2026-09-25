@@ -2,6 +2,7 @@
 #pragma once
 
 #include "bookmarks_store.h"
+#include "recents_place.h"
 
 #include <QObject>
 #include <QVariantList>
@@ -23,6 +24,8 @@ class PlacesController final : public QObject {
   Q_PROPERTY(QVariantList places READ places NOTIFY placesChanged FINAL)
   Q_PROPERTY(QVariantList bookmarks READ bookmarks NOTIFY bookmarksChanged FINAL)
   Q_PROPERTY(QString storeError READ storeError NOTIFY storeErrorChanged FINAL)
+  // ADR-0272: where Main.qml's "go.recents" navigates.
+  Q_PROPERTY(QString recentsLocation READ recentsLocation CONSTANT FINAL)
 
 public:
   PlacesController(std::unique_ptr<BookmarksStore> store,
@@ -35,6 +38,7 @@ public:
   [[nodiscard]] QVariantList places() const;
   [[nodiscard]] QVariantList bookmarks() const;
   [[nodiscard]] QString storeError() const;
+  [[nodiscard]] QString recentsLocation() const { return RecentsLocation::location(); }
 
   // Test seam independent of QML's QVariantList marshalling.
   [[nodiscard]] QVector<Bookmark> bookmarkValues() const;

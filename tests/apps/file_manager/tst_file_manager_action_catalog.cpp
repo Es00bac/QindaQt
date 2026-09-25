@@ -26,7 +26,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 60);
+  QCOMPARE(actions.size(), 62);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -72,7 +72,9 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("view.columns-mode"), QStringLiteral("view.gallery-mode"),
       QStringLiteral("view.show-columns"), QStringLiteral("view.use-as-defaults"),
       QStringLiteral("view.group-none"), QStringLiteral("view.group-kind"),
-      QStringLiteral("view.group-date"), QStringLiteral("view.group-size")};
+      QStringLiteral("view.group-date"), QStringLiteral("view.group-size"),
+      // ADR-0272: Quick Look and the Recents place.
+      QStringLiteral("file.quick-look"), QStringLiteral("go.recents")};
   QCOMPARE(identities, expected);
 
   const auto trash = std::find_if(actions.cbegin(), actions.cend(), [](const auto &action) {
@@ -272,6 +274,10 @@ void TestFileManagerActionCatalog::rightClickSetIsCataloguedWithDistinctShortcut
       {"edit.copy-path", "edit", "Ctrl+Alt+C", false},
       {"view.sort-name", "view", "Ctrl+Alt+1", false},
       {"view.sort-modified", "view", "Ctrl+Alt+4", false},
+      // ADR-0272: Finder's Cmd+Y and Shift+Cmd+F. Space reaches Quick Look
+      // through the views' keyboard handling, never as a menu shortcut.
+      {"file.quick-look", "file", "Ctrl+Y", false},
+      {"go.recents", "go", "Ctrl+Shift+F", false},
   };
   for (const auto &row : expected) {
     const auto action = find(row.id);

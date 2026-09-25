@@ -128,7 +128,8 @@ public:
   // Opens the folder holding one listed local item in QindaQt File Manager
   // with that item selected, then runs `action` on it there: empty to only
   // select it, "file.properties" for the Desktop's Get Info,
-  // "file.open-with" for its Open With. The item must still be the object
+  // "file.open-with" for its Open With, "file.quick-look" (ADR-0272) for its
+  // Quick Look. The item must still be the object
   // `listed` names (the openLocalFolder identity rule) and its folder must
   // resolve once to a readable, enterable directory. Any other action is
   // UnsupportedAction. The program and launch rules, refusals and success

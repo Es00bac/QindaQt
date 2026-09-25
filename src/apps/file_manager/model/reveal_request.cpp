@@ -75,7 +75,8 @@ bool isRevealableName(const QString &name) {
 bool isRevealAction(const QString &actionId) {
   return actionId == QLatin1String("file.properties") ||
          actionId == QLatin1String("file.open-with") ||
-         actionId == QLatin1String("file.new-file");
+         actionId == QLatin1String("file.new-file") ||
+         actionId == QLatin1String("file.quick-look");
 }
 
 RevealPlan planReveal(RevealKind kind, const QStringList &uris) {

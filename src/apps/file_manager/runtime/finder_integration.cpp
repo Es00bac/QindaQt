@@ -18,7 +18,7 @@ void registerFinderOptions(QCommandLineParser &parser) {
                     QStringLiteral("Select this entry of the folder; repeatable (ADR-0273)"),
                     QStringLiteral("name")});
   parser.addOption({QStringLiteral("action"),
-                    QStringLiteral("Then run Get Info, Open With or New File (ADR-0273)"),
+                    QStringLiteral("Then run Get Info, Open With, New File or Quick Look (ADR-0273)"),
                     QStringLiteral("id")});
   parser.addOption(
       {QStringLiteral("service"),

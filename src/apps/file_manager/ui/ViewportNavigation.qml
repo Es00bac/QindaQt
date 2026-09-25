@@ -14,6 +14,10 @@ Item {
     property real rowHeight: 44
     property string prefix: ""
     signal contextMenuRequested()
+    // ADR-0272: Space with no name being typed. The owning view answers it
+    // with the catalog's "file.quick-look", so Space and the menu item share
+    // one route.
+    signal quickLookRequested()
 
     Timer { id: prefixExpiry; interval: 1000; onTriggered: root.prefix = "" }
 
@@ -52,9 +56,14 @@ Item {
             selection.moveTo(target, event.modifiers)
             ensureCurrentVisible()
             prefix = ""
-        } else if (event.key === Qt.Key_Space) {
-            if (event.modifiers & Qt.ControlModifier) selection.toggle(selection.currentIndex)
-            else selection.selectOnly(selection.currentIndex)
+        } else if (event.key === Qt.Key_Space && (event.modifiers & Qt.ControlModifier)) {
+            selection.toggle(selection.currentIndex)
+        } else if (event.key === Qt.Key_Space && prefix.length === 0) {
+            // Finder's Space: preview the selection, or the focused entry
+            // when nothing is selected (Ctrl+arrows move focus alone).
+            if (selection.currentIndex >= 0 && selection.selectedEntries().length === 0)
+                selection.selectOnly(selection.currentIndex)
+            quickLookRequested()
         } else if (event.key === Qt.Key_Menu
                    || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) {
             contextMenuRequested()
@@ -68,6 +77,8 @@ Item {
         event.accepted = true
     }
 
+    // Type-to-select (every view): a space typed while a name is being typed
+    // belongs to the name ("my notes"), and only then; see Key_Space above.
     function selectPrefix(text) {
         const entries = selection.entries
         const typed = text.toLocaleLowerCase()

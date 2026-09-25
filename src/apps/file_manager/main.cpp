@@ -19,6 +19,7 @@
 #include "model/places_controller.h"
 #include "model/preferences_controller.h"
 #include "model/preferences_store.h"
+#include "model/recents_place.h"
 #include "model/search_controller.h"
 #include "network/kio_network_directory_backend.h"
 #include "network/kio_fuse_remote_file_opener.h"
@@ -330,6 +331,20 @@ void installImageProviders(QQmlApplicationEngine &engine,
   return std::nullopt;
 }
 
+// The window's lister: local folders, plus the two virtual places browsed
+// like folders -- Applications (ADR-0262), scanned whenever it is listed, and
+// Recents (ADR-0272), read from the desktop's recently-used store. The
+// controller must outlive the lister.
+[[nodiscard]] QindaQt::Apps::FileManager::DirectoryListerPtr
+composeFolderLister(QindaQt::Apps::FileManager::ApplicationsController &applications) {
+  using namespace QindaQt::Apps::FileManager;
+  return std::make_unique<RecentsDirectoryLister>(
+      std::make_unique<ApplicationsDirectoryLister>(
+          std::make_unique<LocalDirectoryLister>(),
+          [&applications] { applications.refresh(); return applications.listing(); }),
+      recentlyUsedStorePath());
+}
+
 } // namespace
 
 // AGENT-CONTRACT: F1 font bootstrap — the single guarded composition-root
@@ -408,9 +423,7 @@ int main(int argc, char **argv) {
   applicationsController->setChooserMode(parser.isSet(QStringLiteral("choose-application")));
   auto *applications = applicationsController.get();
   auto controller = std::make_unique<QindaQt::Apps::FileManager::NavigationController>(
-      std::make_unique<QindaQt::Apps::FileManager::ApplicationsDirectoryLister>(
-          std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>(),
-          [applications] { applications->refresh(); return applications->listing(); }),
+      composeFolderLister(*applications),
       std::make_unique<QindaQt::Apps::FileManager::ApplicationsFileLauncher>(
           std::make_unique<QindaQt::Apps::FileManager::DesktopFileLauncher>(),
           [applications](const QString &id) { return applications->open(id); }),

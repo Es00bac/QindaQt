@@ -118,8 +118,8 @@ toolbar for remote locations that support creation, and disables while their
 creation operation is pending.
 Tooltips and accessible labels explain every icon action.
 
-The places sidebar offers fixed places (Home, File System, Trash) and the
-user's bookmarks. `Ctrl+D` bookmarks the current folder; each bookmark row
+The places sidebar offers fixed places (Home, File System, Trash, Recents,
+Applications, Network) and the user's bookmarks. `Ctrl+D` bookmarks the current folder; each bookmark row
 has an icon button to remove it. Places retain both recognizable icons and labels;
 Places, saved Network locations and Bookmarks share one scrollable viewport,
 so a long network inventory cannot push bookmarks outside a short window.
@@ -181,6 +181,8 @@ state at roomy sizes, while compact windows retain the accessible state card.
 | `edit.select-all` | `Ctrl+A` | Select every visible entry |
 | `go.home` | `Alt+Home` | Open the home folder |
 | `bookmark.add` | `Ctrl+D` | Bookmark the current folder |
+| `file.quick-look` | `Ctrl+Y`, `Space` (when a view has focus) | Quick Look: preview the selection (ADR-0272) |
+| `go.recents` | `Ctrl+Shift+F` | Open the Recents place (ADR-0272) |
 | `entryListView` / `entryGridView` | `Return`/`Enter` | Open the selected entry |
 
 The status bar reports the visible item or selection count and provides zoom
@@ -194,7 +196,9 @@ Ctrl+wheel accumulates fine wheel/trackpad deltas into zoom steps and does not
 also scroll. Resizing or zooming keeps the current item visible without
 changing its selection identity. Keyboard focus starts in the file view when
 the folder is ready; Page Up/Down move by the visible page, and typing a name
-selects a matching item (repeated initial letters cycle matches).
+selects a matching item in every view (repeated initial letters cycle matches;
+a space typed within a name belongs to it). Space with no name being typed
+opens Quick Look, and Ctrl+Space toggles the focused item's selection.
 
 `Ctrl+F` opens **Filter this folder by name**. It performs a case-insensitive
 literal substring match over the current loaded listing, including visible
@@ -299,6 +303,44 @@ costs what its visible rows cost.
 
 **Theme.** The File Manager publishes no QST tokens (ADR-0116), so
 `ToolkitTheme.qml` feeds the window palette into `Tk.Theme`'s base roles.
+
+## Quick Look, type-to-select and Recents
+
+[ADR-0272](../adr/0272-quick-look-and-recents-in-the-file-manager.md) adds
+Finder's everyday features on top of the four views' shared hooks.
+
+**Quick Look** (`QuickLook.qml`) is the catalog command `file.quick-look`:
+File ▸ Quick Look, `Ctrl+Y`, the selection's right-click menu, and `Space` in
+every view (`ViewportNavigation.quickLookRequested`; never a menu shortcut, so
+text fields keep Space). It opens a `Tk.Popover` centred over the window: the
+selected entry's icon in a `Tk.Thumbnail`, covered by the `gallery-previews`
+picture once one decodes, beside `EntryFactsPane`. `Space` or `Escape` closes
+it and returns the keyboard to the view; the arrow keys step to the previous
+or next entry in the folder's order, moving the window's selection and
+scrolling the view to it. Browsing elsewhere closes it. Nothing is requested
+or read while it is closed. The Desktop reaches it through the File Manager's
+boundary: `file.quick-look` is a reveal action, so
+`FileBoundary::revealLocalItem(…, "file.quick-look")` opens the File Manager
+on the icon's folder with the icon's item selected and runs Quick Look there.
+
+**Type-to-select** works in Icons, Details, Columns and Gallery alike: typed
+letters within one second build a name and select the first entry starting
+with it; repeating one letter cycles through its matches; arrows and
+navigation start over. A space typed within a name is part of it.
+
+**Recents** is a place like Applications (ADR-0262): its address is
+`recents:`, and `RecentsDirectoryLister` answers it from the desktop's one
+recently-used store, `$XDG_DATA_HOME/recently-used.xbel` (written by GTK and
+KDE applications; the File Manager only reads it). The 300 most recently used
+local files and folders that still exist are listed, each as the entry its
+own folder lists, so opening, Quick Look, Get Info and item operations work as
+anywhere else. A missing store shows an empty place; a damaged, foreign or
+oversized (over 16 MiB) one shows the error card. Recents has no parent and a
+single breadcrumb; it is in the sidebar (clock icon, not a drop target) and at
+Go ▸ Recents (`Ctrl+Shift+F`). New Folder, New File, Paste, Bookmark, Open
+Terminal Here, recursive search and Get Info with nothing selected are
+disabled there. It takes the window's sort like any folder; sort it by Date
+Modified to keep it that way (per-folder views, ADR-0270).
 
 ## Bounded visual previews
 
@@ -602,8 +644,8 @@ window already shows the folder or has shown nothing yet. Every other request
 starts a new File Manager process with the reveal command line: one
 `--select=<name>` per entry, `--action=<id>` when an action follows, then the
 folder as the single positional argument. The action may only be
-`file.properties` (Get Info), `file.open-with` or `file.new-file`; any other
-is ignored. The new process validates the folder like any folder argument,
+`file.properties` (Get Info), `file.open-with`, `file.new-file` or
+`file.quick-look` (ADR-0272); any other is ignored. The new process validates the folder like any folder argument,
 ignores a name that is not an entry of it, selects and scrolls to the
 entries, and activates the action through its coordinator exactly as the
 menu item would. When none of the named entries is there any more, the
@@ -1198,7 +1240,8 @@ boundaries](../architecture/module-boundaries.md)).
 - `revealLocalItem(absolutePath, listed, action, programCandidates, start)`
   opens the folder holding one listed local item in File Manager with the
   item selected, then runs `action` there: nothing, `file.properties` for the
-  desktop's Get Info, or `file.open-with` for its Open With (ADR-0273). The
+  desktop's Get Info, `file.open-with` for its Open With (ADR-0273), or
+  `file.quick-look` for its Quick Look (ADR-0272). The
   identity, program, launch and refusal rules are `openLocalFolder`'s. The
   item may be any kind of entry, a dangling link included; its folder must be
   a readable, enterable directory, and `canonicalPath` reports that folder.
@@ -1429,6 +1472,10 @@ installed activation file.
   QindaTK views, the Details column chooser, Group By, per-folder views with
   Use as Defaults, and `preferences-v2` with its v1 migration (ADR-0270).
   Next: File Manager styles (Finder, Explorer, Commander) and tabs (W11s).
+- **W16 everyday features (written 2026-09-24, awaiting the round build)** --
+  Quick Look, type-to-select that keeps spaces, the Recents place over the
+  desktop's recently-used store, and Quick Look for the Desktop through the
+  File Manager boundary (ADR-0272).
 
 ## Bounded deferrals
 
@@ -1484,6 +1531,18 @@ levels, the Gallery strip) and `qindaqt.file-manager-views-ui` (production
 switcher and View menu, Details sorting, grouping and columns, per-folder
 views and Use as Defaults); `qindaqt.file-manager-preferences-store` and
 `-controller` cover `preferences-v2`, its limits and the v1 migration.
+
+The ADR-0272 rows (`tests/apps/file_manager/EverydayTests.cmake`) are
+`qindaqt.file-manager-recents-place` (reading a fixture recently-used store:
+newest first, duplicates, skipped and missing paths, the row limit, damaged,
+foreign and oversized stores, and browsing Recents through
+`NavigationController`) and `qindaqt.file-manager-everyday-ui` (production
+`Main.qml`: Space, the arrows, Space and Escape in Quick Look in all four
+views, `Ctrl+Y` and the catalog's enabled state, type-to-select with spaces in
+all four views, and the Recents place from the sidebar and Go menu with its
+disabled folder actions). `qindaqt.file-manager-reveal-request` and the
+Desktop's `tst_desktop_contents_controller` cover `file.quick-look` as a
+reveal action.
 
 The S5 network-browsing rows are `qindaqt.file-manager-network-location`
 (allowlist/canonicalization: supported/unsupported schemes, credential and
