@@ -53,7 +53,7 @@ class WithholdingPropertiesAdaptor final
     : public QDBusAbstractAdaptor
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.D-Bus.Properties")
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.DBus.Properties")
 
 public:
     explicit WithholdingPropertiesAdaptor(WithholdingPropertiesObject *parent)

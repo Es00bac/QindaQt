@@ -212,7 +212,7 @@ ctest --test-dir build/dev \
 | `qindaqt.status-notifier-applet-qml-keyboard-offscreen` | Real Tab/Backtab traversal, Space/Return activation and Shift+F10/Menu context opening with exact generation-fenced arguments, Escape dismissal. |
 | `qindaqt.status-notifier-applet-qml-accessibility-offscreen` | Accessible roles/names/descriptions and enabled honesty for delegates, overflow chip, feedback alert, and state surfaces. |
 | `qindaqt.status-notifier-applet-boundary-policy` | Static source gate with eight poison probes: direct D-Bus wire authority (interfaces, session/system bus, service watcher, pending calls), QProcess, Wayland/KWin/LayerShell, private headers, sibling-module reach-through; plus the shell-composition pair (adapter/watcher boundary only, no registry/item-client/icon internals, no own bus connections) with its own poison case. |
-| `qindaqt.status-notifier-applet-composition-private-bus` | The real production composition (watcher service + host registration + monitor adapter + controller) over an ephemeral private bus with the scripted fake item: empty→ready population, exactly one recorded wire `Activate` through the controller, malformed-replacement degradation with last-known-good retention, the acknowledgement transition back to `ready`, owner-loss clearing to `empty`, `IsStatusNotifierHostRegistered` reading true for a third-party connection (ADR-0166; former-red), a real Wine item shape (empty `IconName`, pixmap-only, `/NO_DBUSMENU`) reaching `ready` and rendering from its pixmap rather than the placeholder, and the explicit `status-items.read` denial withholding all observation and claiming no host name. |
+| `qindaqt.status-notifier-applet-composition-private-bus` | The real production composition (watcher service + host registration + monitor adapter + controller) over an ephemeral private bus with the scripted fake item: empty→ready population, exactly one recorded wire `Activate` through the controller, malformed-replacement degradation with last-known-good retention, the acknowledgement transition back to `ready`, owner-loss clearing to `empty`, `IsStatusNotifierHostRegistered` reading true for a third-party connection (ADR-0166; former-red), a real Wine item shape (empty `IconName`, pixmap-only, `/NO_DBUSMENU`) reaching `ready` and rendering from its pixmap rather than the placeholder, a strict Wine-modelled item (a virtual object with Wine's exact property set: `WindowId` typed `i`, no `IconThemePath`/overlay/attention keys) that refuses any header-less Properties call, registers only after the host is up, and must still reach `ready` drawn from its pixmap (former-red: the client once sent `GetAll` without an interface header), and the explicit `status-items.read` denial withholding all observation and claiming no host name. |
 | `qindaqt.status-notifier-host-registration` | The host role in isolation: the conventional `org.kde.StatusNotifierHost-<pid>` shape, a live watcher reporting no host until one registers and the host's unique name then appearing in the watcher's host set, registration against a watcher that starts later, the claim dropping and re-registering across watcher loss and replacement, and fail-closed behavior on a disconnected bus. |
 | `qindaqt.status-notifier-applet-production-panel-keyboard-offscreen` | The source production dispatcher (`PanelAppletRow` → `AppletChip` → `BuiltinAppletContent`) hosting the compiled module under `QT_FATAL_WARNINGS=1` with host display/bus variables unset: an empty tray has zero extent and no amber marker; Tab reaches a real item delegate, Return dispatches the exact generation-fenced key, accessible role/name truth, the context menu's `popupType` is `Popup.Window`, and Escape closes it without invoking an application action. |
 | `qindaqt.status-notifier-applet-installed-package` | Staged component artifacts, exhaustive backing/plugin/consumer RUNPATH inspection, genuine stage relocation with `LD_LIBRARY_PATH` unset, generation-fence contract and staged-module instantiation at the installed boundary. |
@@ -382,8 +382,11 @@ for writes.
 `RegisteredStatusNotifierItems` / `IsStatusNotifierHostRegistered` /
 `ProtocolVersion` properties, and the four protocol signals
 (`StatusNotifierItemRegistered`, `StatusNotifierItemUnregistered`,
-`StatusNotifierHostRegistered`, `StatusNotifierHostUnregistered`). Ownership
-rules follow ADR-0032 exactly:
+`StatusNotifierHostRegistered`, `StatusNotifierHostUnregistered`). The
+properties are served by QtDBus's built-in `org.freedesktop.DBus.Properties`
+handler (`Get`/`GetAll` answer, `Set` is refused because every property is
+read-only), which is how KDE Plasma, waybar, conformant items, and the shell's
+own monitor read them. Ownership rules follow ADR-0032 exactly:
 
 - Every item is keyed to the caller's bus **unique name**. A bare object-path
   argument registers against the caller; a service-name argument is resolved
@@ -406,8 +409,15 @@ rules follow ADR-0032 exactly:
 `org.kde.StatusNotifierItem` object. It fetches the full property set
 (Category, Id, Title, Status, WindowId, IconName, IconPixmap, OverlayIconName,
 AttentionIconName, AttentionPixmap, AttentionMovieName, ToolTip, ItemIsMenu,
-Menu), decodes hostile input defensively, and validates through the foundation
-admission gate. Pixmap structs are decoded by manual wire iteration rather
+Menu) with one `GetAll` that names `org.freedesktop.DBus.Properties` in the
+message header, as KDE Plasma's host does, decodes hostile input defensively,
+and validates through the foundation admission gate. The header is load-bearing:
+strict item implementations such as Wine's and GDBus's route by interface and
+answer a header-less call with `UnknownMethod`. Until 2026-09-25 the client
+sent the call without it, so every Wine/Proton and GDBus item registered with
+the watcher yet never appeared, while Qt-based items (which dispatch by member
+name) did. The monitor's `RegisteredStatusNotifierItems` read names the same
+interface. Pixmap structs are decoded by manual wire iteration rather
 than registered-type demarshalling, so a hostile payload can never crash the
 decoder inside libdbus. Unknown properties are ignored.
 Presentation-bearing recognized properties with unexpected types fail the
@@ -495,9 +505,11 @@ fixture, never the host bus):
 - `qindaqt.status-notifier-watcher`: fake items and hosts registering by bare
   object path and by service name, unique-name keying, owner-loss retirement
   of items and hosts (including the host-unregistered wire signal), protocol
-  properties and signals, idempotent degraded startup, and refusal to claim a
-  name another watcher owns (`NameOwnedElsewhere` with a truthful degraded
-  reason).
+  properties and signals, the standard `org.freedesktop.DBus.Properties`
+  `Get`/`GetAll` (and `Set` refusal) read from a third connection with
+  introspection advertising only that spec-valid interface name, idempotent
+  degraded startup, and refusal to claim a name another watcher owns
+  (`NameOwnedElsewhere` with a truthful degraded reason).
 - `qindaqt.status-notifier-item-client`: descriptor fetches over the private
   bus, New*-signal refetch coalescing, hostile payloads (oversized pixmaps,
   malformed wire shapes, wrong-typed string facts, bad tooltips, and
