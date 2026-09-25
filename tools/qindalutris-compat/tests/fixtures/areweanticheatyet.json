@@ -1,0 +1,8 @@
+[
+ {"name": "Borderlands 3", "slug": "borderlands-3", "status": "Supported", "anticheats": ["Easy Anti-Cheat"], "notes": [["Works online", "https://example.org/note"]], "storeIds": {"steam": "397540", "epic": {"namespace": "x", "slug": "y"}}, "native": false, "reference": ""},
+ {"name": "World of Warcraft", "slug": "wow", "status": "Running", "anticheats": ["Warden"], "notes": [], "storeIds": {}, "native": false},
+ {"name": "Genshin Impact", "slug": "genshin-impact", "status": "Weird", "anticheats": [], "notes": [], "storeIds": {}},
+ {"name": "Rainbow Six Siege", "slug": "r6", "status": "Supported", "anticheats": ["BattlEye"], "notes": [], "storeIds": {"steam": "359550"}},
+ {"name": "Rainbow Six Siege X", "slug": "r6x", "status": "Broken", "anticheats": ["BattlEye"], "notes": [], "storeIds": {"steam": "359550"}},
+ {"name": "Bad Slug", "slug": "Bad Slug!", "status": "Broken"}
+]

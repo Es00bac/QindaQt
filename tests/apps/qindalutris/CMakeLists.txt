@@ -34,6 +34,35 @@ qindaqt_add_qindalutris_test(library-store tst_library_store.cpp)
 qindaqt_add_qindalutris_test(launch-planner tst_launch_planner.cpp)
 qindaqt_add_qindalutris_test(wine-source tst_wine_source.cpp)
 
+# The compatibility database (ADR-0275 §3). The fixtures under data/compat are
+# shared with the generator's Python tests, and the committed snapshot is
+# loaded by both suites so the C++ parser and qlcompat/schema.py cannot drift.
+qindaqt_add_qindalutris_test(compat-db tst_compat_db.cpp)
+qindaqt_add_qindalutris_test(compat-lookup tst_compat_lookup.cpp)
+foreach(qindalutris_compat_test compat-db compat-lookup)
+    target_compile_definitions(qindaqt_qindalutris_${qindalutris_compat_test}_tests PRIVATE
+        "QINDALUTRIS_COMPAT_FIXTURES=\"${CMAKE_CURRENT_SOURCE_DIR}/data/compat\""
+        "QINDALUTRIS_COMPAT_SNAPSHOT=\"${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json\"")
+endforeach()
+set_tests_properties(qindaqt.qindalutris-compat-db PROPERTIES TIMEOUT 90)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(
+    NAME qindaqt.qindalutris-compat-generator
+    COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+        -s "${PROJECT_SOURCE_DIR}/tools/qindalutris-compat/tests"
+        -t "${PROJECT_SOURCE_DIR}/tools/qindalutris-compat"
+)
+add_test(
+    NAME qindaqt.qindalutris-compat-snapshot
+    COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tools/qindalutris-compat/validate.py"
+        "${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json"
+)
+set_tests_properties(qindaqt.qindalutris-compat-generator qindaqt.qindalutris-compat-snapshot
+    PROPERTIES LABELS "apps;qindalutris;tools" TIMEOUT 120
+    ENVIRONMENT "${qindalutris_test_env}")
+
 qindaqt_add_qindalutris_test(lutris-source tst_lutris_source.cpp)
 # The Lutris fixture builds its own database, so this row links Qt Sql too.
 target_link_libraries(qindaqt_qindalutris_lutris-source_tests PRIVATE Qt6::Sql)

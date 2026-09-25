@@ -1,0 +1,17 @@
+{
+ "schema": "qindalutris-compat-db",
+ "version": 1,
+ "generated": "2026-09-01 00:00:00",
+ "sources": [],
+ "defaults": {
+  "recommendedBuild": ""
+ },
+ "builds": {},
+ "games": [
+  {
+   "id": "g",
+   "title": "G",
+   "keys": {}
+  }
+ ]
+}
