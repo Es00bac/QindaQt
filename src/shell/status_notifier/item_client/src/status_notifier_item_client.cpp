@@ -340,7 +340,7 @@ StatusNotifierItemClient::StatusNotifierItemClient(QDBusConnection connection,
     const QString interface = QString::fromLatin1(kItemInterfaceName);
     m_connection.connect(service, path, interface, QStringLiteral("NewMenu"),
                          this, SLOT(handleNewMenu()));
-    m_connection.connect(service, path, QStringLiteral("org.freedesktop.DBus.Properties"),
+    m_connection.connect(service, path, QString::fromLatin1(kPropertiesInterfaceName),
                          QStringLiteral("PropertiesChanged"), this,
                          SLOT(handlePropertiesChanged(QString,QVariantMap,QStringList)));
     m_connection.connect(service, path, interface, QStringLiteral("NewTitle"),
@@ -374,19 +374,21 @@ void StatusNotifierItemClient::fetchDescriptor()
     m_fetchInFlight = true;
     const quint64 serial = ++m_fetchSerial;
 
-    // AGENT-NOTE: The GetAll call goes out with an EMPTY interface field.
-    // "org.freedesktop.D-Bus.Properties" is not a spec-valid interface name
-    // (hyphens), so QDBusConnection::asyncCall rejects it client-side and
-    // QDBusInterface silently drops it; with an empty interface the daemon
-    // and Qt's dispatcher match by member name and reach the callee's
-    // Properties adaptor, which is how every real StatusNotifier item serves
-    // the call. Qt's server side also cannot serve Get/GetAll for plain
-    // ExportAllProperties objects (UnknownInterface) — real items own a
-    // QDBusAbstractAdaptor, so requiring one is correct, not hostile.
+    // AGENT-GUARD: GetAll must carry the interface header
+    // org.freedesktop.DBus.Properties (kPropertiesInterfaceName), exactly as
+    // KDE Plasma's host sends it. An empty header is tolerated only by
+    // member-name dispatchers such as QtDBus; strict items route by interface
+    // and refuse it, so their icons silently never appear. Observed live on
+    // 2026-09-25: Wine's item (Battle.net) answered UnknownMethod `Method
+    // "GetAll" with signature "s" on interface "(null)" doesn't exist` and a
+    // GDBus item answered `Object does not exist at path
+    // "/StatusNotifierItem"`, while the same call with the header returned
+    // Wine's ten properties. Pinned by the composition row
+    // projectsAStrictWineItemRegisteredAfterHostStart.
     auto request = QDBusMessage::createMethodCall(
         m_key.uniqueName,
         m_key.objectPath,
-        QString(),
+        QString::fromLatin1(kPropertiesInterfaceName),
         QStringLiteral("GetAll"));
     request << QVariant(QString::fromLatin1(kItemInterfaceName));
     QPointer<QDBusPendingCallWatcher> watcher =

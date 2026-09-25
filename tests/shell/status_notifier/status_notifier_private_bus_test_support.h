@@ -183,16 +183,18 @@ inline QDBusConnection connectToPrivateBus(const QString &address, const QString
     return QDBusConnection::connectToBus(address, name);
 }
 
-// QtDBus advertises org.freedesktop.D-Bus.Properties for ExportAllProperties
-// registrations but never dispatches Get/GetAll/Set to them; a
-// QDBusAbstractAdaptor child plus the ExportAdaptors flag is required (same
-// trap as the production watcher; see its AGENT-NOTE). Real tray items serve
-// the interface via generated adaptors, so the fake must too or readers time
-// out on every property fetch.
+// Hand-written org.freedesktop.DBus.Properties for the lenient fakes. QtDBus
+// dispatches a Properties call to an adaptor declared under that exact name
+// before its built-in handler, for both the standard and an empty interface
+// header, so this adaptor (not the typed Q_PROPERTYs) answers every read.
+// That is what lets a row stage hostile wire shapes through the
+// "wireOverrides" dynamic property and serve objects registered without
+// ExportAllProperties. It accepts an empty header like any QtDBus item does;
+// the strict interface-routing shape is StrictWineStatusNotifierItem.
 class FakePropertiesAdaptor final : public QDBusAbstractAdaptor
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.D-Bus.Properties")
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.DBus.Properties")
 
 public:
     explicit FakePropertiesAdaptor(QObject *parent)

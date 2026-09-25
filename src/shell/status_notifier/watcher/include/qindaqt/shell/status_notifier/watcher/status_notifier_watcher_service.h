@@ -17,7 +17,6 @@ namespace QindaQt::StatusNotifier
 {
 
 class StatusNotifierWatcherObject;
-class StatusNotifierWatcherPropertiesAdaptor;
 
 enum class WatcherServiceState : quint32 {
     Stopped = 0,

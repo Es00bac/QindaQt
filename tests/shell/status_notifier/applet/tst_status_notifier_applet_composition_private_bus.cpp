@@ -13,6 +13,7 @@
 
 #include "status_notifier_fake_item_test_support.h"
 #include "status_notifier_private_bus_test_support.h"
+#include "status_notifier_strict_item_test_support.h"
 
 #include <QDBusMessage>
 #include <QDBusPendingCall>
@@ -123,6 +124,7 @@ private slots:
     void composesPopulationDispatchOwnerLossAndAcknowledgement();
     void announcesAHostSoConformantItemsPresentThemselves();
     void projectsAPixmapOnlyItemWithNoExportedMenu();
+    void projectsAStrictWineItemRegisteredAfterHostStart();
     void withholdsObservationWhenReadDenied();
 };
 
@@ -408,6 +410,92 @@ void StatusNotifierAppletCompositionPrivateBusTests::
 
     QDBusConnection::disconnectFromBus(QStringLiteral("composition-wine"));
     QDBusConnection::disconnectFromBus(QStringLiteral("composition-wine-item"));
+}
+
+// Live regression (2026-09-25): Wine and GDBus items registered, the watcher
+// broadcast them, and the tray still stayed empty, because the item client
+// sent GetAll without an interface header and strict items refuse that. The
+// lenient fake above is served by QtDBus and accepts header-less calls, so it
+// could not see the defect; this strict item routes by interface like Wine,
+// and registers only after the host is up, as a game launched mid-session does.
+void StatusNotifierAppletCompositionPrivateBusTests::
+    projectsAStrictWineItemRegisteredAfterHostStart()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("dbus-daemon")).isEmpty()) {
+        QSKIP("dbus-daemon is unavailable");
+    }
+    PrivateSessionBus bus;
+    QString error;
+    QVERIFY2(bus.start(&error), qPrintable(error));
+    auto compositionConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("composition-strict"));
+    auto itemConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("composition-strict-item"));
+    auto probeConnection =
+        connectToPrivateBus(bus.address(), QStringLiteral("composition-strict-probe"));
+
+    Applets::ManifestCatalog catalog;
+    AppletHost::CapabilityPolicy policy;
+    QVERIFY(loadCatalogAndPolicy(
+        &catalog, &policy,
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/applet-policy/default.json")));
+
+    {
+        Shell::StatusNotifierAppletComposition composition(
+            catalog, policy, compositionConnection, {});
+        auto *controller = composition.access();
+        QVERIFY(controller != nullptr);
+        QTRY_COMPARE_WITH_TIMEOUT(controller->phaseText(), QStringLiteral("empty"),
+                                  5'000);
+        bool ok = false;
+        QTRY_VERIFY_WITH_TIMEOUT(readHostRegistered(probeConnection, &ok), 5'000);
+        QVERIFY(ok);
+
+        StrictWineStatusNotifierItem item;
+        QVERIFY(item.registerOn(itemConnection, QStringLiteral("/StatusNotifierItem")));
+
+        // Control: the fake really is strict. A header-less GetAll gets
+        // Wine's UnknownMethod; the named interface gets the property set.
+        const auto getAll = [&](const QString &interface) {
+            auto message = QDBusMessage::createMethodCall(
+                itemConnection.baseService(), QStringLiteral("/StatusNotifierItem"),
+                interface, QStringLiteral("GetAll"));
+            message << QString::fromLatin1(kItemInterfaceName);
+            QDBusPendingCall pending = probeConnection.asyncCall(message);
+            while (!pending.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+            }
+            return pending.reply();
+        };
+        const QDBusMessage refused = getAll(QString());
+        QCOMPARE(refused.type(), QDBusMessage::ErrorMessage);
+        QCOMPARE(refused.errorName(),
+                 QStringLiteral("org.freedesktop.DBus.Error.UnknownMethod"));
+        QCOMPARE(getAll(QString::fromLatin1(kPropertiesInterfaceName)).type(),
+                 QDBusMessage::ReplyMessage);
+        item.emptyInterfaceRejections = 0;
+
+        registerItemOnWatcher(itemConnection, QStringLiteral("/StatusNotifierItem"));
+
+        QTRY_COMPARE_WITH_TIMEOUT(controller->phaseText(), QStringLiteral("ready"),
+                                  5'000);
+        QCOMPARE(item.emptyInterfaceRejections, 0);
+        QCOMPARE(controller->itemCount(), 1);
+        const auto row = controller->itemRows().constFirst()
+                             .value<StatusNotifierApplet::StatusNotifierItemRow>();
+        QCOMPARE(row.uniqueName, itemConnection.baseService());
+        QCOMPARE(row.identity, QStringLiteral("wine-0x100fe-0"));
+        QCOMPARE(row.title, QStringLiteral("Battle.net"));
+        QCOMPARE(row.hasMenu, false);
+        QCOMPARE(row.iconIsPlaceholder, false);
+        QVERIFY(row.iconDataUrl.startsWith(QStringLiteral("data:image/png;base64,")));
+
+        itemConnection.unregisterObject(QStringLiteral("/StatusNotifierItem"));
+    }
+
+    QDBusConnection::disconnectFromBus(QStringLiteral("composition-strict"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("composition-strict-item"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("composition-strict-probe"));
 }
 
 QTEST_GUILESS_MAIN(StatusNotifierAppletCompositionPrivateBusTests)
