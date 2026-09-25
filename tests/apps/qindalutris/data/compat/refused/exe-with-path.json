@@ -1,0 +1,21 @@
+{
+ "schema": "qindalutris-compat-db",
+ "version": 1,
+ "generated": "2026-09-01T00:00:00Z",
+ "sources": [],
+ "defaults": {
+  "recommendedBuild": ""
+ },
+ "builds": {},
+ "games": [
+  {
+   "id": "g",
+   "title": "G",
+   "keys": {
+    "exeNames": [
+     "bin/Wow.exe"
+    ]
+   }
+  }
+ ]
+}

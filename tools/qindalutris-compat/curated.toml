@@ -1,0 +1,151 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Curated compatibility facts for QindaLutris (ADR-0275 §3). Highest
+# precedence: a field set here replaces what any upstream source says.
+#
+# Rules (enforced by qlcompat/curated.py; see README.md):
+# - Every game, build, avoid entry and anti-cheat verdict carries `source`:
+#   a URL or a dated, reproducible observation. No source, no fact.
+# - PCGamingWiki-derived facts are allowed only with the page in `links`
+#   and the page URL as the `source`.
+# - Winetricks verbs written here must be in winetricks-verbs.txt.
+# - Environment keys must be on the schema's allowlist of exact names
+#   (WINEDLLOVERRIDES, listed DXVK_/VKD3D_/PROTON_ switches, ...); anything else --
+#   PROTONPATH, loader or search-path variables -- refuses the document.
+# - A `proton.recommended` build must be listed below with status "tested".
+# - Lutris scripts carry no license: take only verb names and environment
+#   settings from them, and the Lutris page is linked as attribution.
+
+[defaults]
+recommendedBuild = "GE-Proton11-6-x86_64"
+source = "Operator's machines qinda-top and qinda, 2026-09-25: the newest build with no known regression in the curated games (ADR-0275)."
+
+[builds."GE-Proton11-6-x86_64"]
+status = "tested"
+notes = "World of Warcraft retail (DirectX 12) runs smoothly on a Vega integrated GPU (qinda-top, 2026-09-25). Warcraft III: Reforged cannot log in (a crypt32 bug whose upstream Wine fix is included in GE-Proton11-7)."
+source = "Measured on qinda-top 2026-09-25: 0-2% of 50 ms samples without a present (ADR-0275); Warcraft III login failure observed on qinda-top 2026-09-25"
+
+[builds."GE-Proton11-7-x86_64"]
+status = "known-issues"
+notes = "World of Warcraft's render loop stalls for about 1.2 s every 2 s (qinda-top, 2026-09-25)."
+source = "Measured on qinda-top 2026-09-25: 55% of 50 ms samples without a present (ADR-0275)."
+
+[builds."GE-Proton11-6-wc3crypt32-x86_64"]
+status = "untested"
+notes = "GE-Proton11-6 with crypt32.dll taken from the official GE-Proton11-7 release, which includes the upstream Wine crypt32 fix. Warcraft III: Reforged logs in and runs (qinda-top, 2026-09-25); World of Warcraft not yet re-verified on it."
+source = "Built and verified with Warcraft III: Reforged on qinda-top 2026-09-25 (integrator); fix: Wine commits 2012949a, 02bb0a34, eef8e97d, c7cc9be8"
+
+# TODO(integrator): GE-Proton11-6-wc3crypt32-x86_64 stays "untested" until the
+# overlay packages it and World of Warcraft is re-verified on it. Then set its
+# status to "tested" and restore
+#   [games.proton] recommended = "GE-Proton11-6-wc3crypt32-x86_64"
+# on warcraft-iii-reforged (and on battlenet-launcher, whose build WC3 runs on).
+
+# ---------------------------------------------------------------- games ---
+
+[[games]]
+id = "world-of-warcraft"
+title = "World of Warcraft"
+source = "Operator brief for ADR-0275, 2026-09-25: Battle.net product code wow; retail and Classic executables Wow.exe and WowClassic.exe."
+match = { awacy = "wow" }
+umuStore = "battlenet"
+keys = { storeIds = { battlenet = ["wow"] }, exeNames = ["Wow.exe", "WowClassic.exe"] }
+notes = ["Pinned to GE-Proton11-6 after GE-Proton11-7 made the game unplayable on 2026-09-25."]
+links = ["https://www.pcgamingwiki.com/wiki/World_of_Warcraft"]
+# The Lutris script launches through Battle.net.exe; its args belong to the
+# launcher and its env is HUD/cache settings, so only verbs are read (none).
+lutris = { slug = "world-of-warcraft", installer = "world-of-warcraft-battlenet", take = ["winetricks"] }
+
+[games.proton]
+recommended = "GE-Proton11-6-x86_64"
+
+[[games.proton.avoid]]
+build = "GE-Proton11-7-x86_64"
+reason = "Freezes the game for about a second every two seconds (render loop stalls; measured 2026-09-25 on qinda-top, 55% of frames stalled vs 0–2% on 11-6)"
+source = "qinda-top measurement 2026-09-25, recorded in ADR-0275"
+
+[games.antiCheat]
+status = "running"
+notes = "Anti-cheat: Warden. The game runs under Proton with Warden active."
+source = "https://areweanticheatyet.com/game/wow"
+
+[[games]]
+id = "battlenet-launcher"
+title = "Battle.net"
+source = "Executable names: the launcher's own files, as installed by https://lutris.net/api/installers/battlenet (battlenet-standard) and started by world-of-warcraft-battlenet; fullscreen note observed with Warcraft III on qinda-top 2026-09-25"
+keys = { titles = ["Battle.net Launcher"], exeNames = ["Battle.net Launcher.exe", "Battle.net.exe"] }
+notes = ["A game started from Battle.net in exclusive fullscreen can leave its emulated display mode behind on exit, because Proton does not restore it; Battle.net is then drawn stretched and ignores input. Prefer each game's windowed fullscreen mode."]
+# wine.overrides locationapi=d becomes WINEDLLOVERRIDES. Of the script's env,
+# STAGING_SHARED_MEMORY=1 is imported; its HUD and shader-cache settings and
+# the $GAMEDIR paths are skipped by the importer.
+lutris = { slug = "battlenet", installer = "battlenet-standard", take = ["winetricks", "environment", "dlloverrides"] }
+
+[games.proton]
+recommended = "GE-Proton11-6-x86_64"
+
+[[games]]
+id = "ea-app"
+title = "EA app"
+source = "https://lutris.net/api/installers/ea-app (installer ea-app-standard); executable name is the launcher's own file"
+keys = { exeNames = ["EALauncher.exe"] }
+lutris = { slug = "ea-app", installer = "ea-app-standard", take = ["winetricks"] }
+
+[[games]]
+id = "ubisoft-connect"
+title = "Ubisoft Connect"
+source = "https://lutris.net/api/installers/ubisoft-connect (installer ubisoft-connect-latest); executable name is the launcher's own file"
+keys = { exeNames = ["UbisoftConnect.exe"] }
+lutris = { slug = "ubisoft-connect", installer = "ubisoft-connect-latest", take = ["winetricks"] }
+
+[[games]]
+id = "epic-games-launcher"
+title = "Epic Games Launcher"
+source = "https://lutris.net/api/installers/epic-games-store (installer epic-games-store-standard); executable name is the launcher's own file"
+keys = { titles = ["Epic Games Store"], exeNames = ["EpicGamesLauncher.exe"] }
+# The script's MESA_GL_VERSION_OVERRIDE (with its -opengl argument) serves the
+# Wine runner's OpenGL path; under Proton the launcher renders through DXVK,
+# so only the verbs are taken.
+lutris = { slug = "epic-games-store", installer = "epic-games-store-standard", take = ["winetricks"] }
+
+[[games]]
+id = "gog-galaxy"
+title = "GOG Galaxy"
+source = "https://lutris.net/api/installers/gog-galaxy (installer gog-galaxy-windows); executable name is the client's own file"
+keys = { exeNames = ["GalaxyClient.exe"] }
+lutris = { slug = "gog-galaxy", installer = "gog-galaxy-windows", take = ["winetricks", "environment", "dlloverrides"] }
+
+[[games]]
+id = "amazon-games"
+title = "Amazon Games"
+source = "https://lutris.net/api/installers/amazon-games-app (installer amazon-games-app-latest)"
+keys = { titles = ["Amazon Games App"] }
+# The script's game.exe is a desktop .lnk, so no executable name is taken.
+lutris = { slug = "amazon-games-app", installer = "amazon-games-app-latest", take = ["winetricks"] }
+
+[[games]]
+id = "warcraft-iii-reforged"
+title = "Warcraft III: Reforged"
+source = "Observed on qinda-top 2026-09-25 (integrator): Battle.net product code w3; executables _retail_/x86_64/Warcraft III.exe and Warcraft III Launcher.exe; login failure and fullscreen behaviour reproduced there."
+match = { awacy = "warcraft-iii-reforged" }
+umuStore = "battlenet"
+keys = { storeIds = { battlenet = ["w3"] }, exeNames = ["Warcraft III.exe", "Warcraft III Launcher.exe"] }
+notes = [
+  "On Proton 11 builds without the upstream Wine crypt32 fix (GE-Proton11-6, Valve Proton 11) login fails with \"There was an error handling this request. Please check your VPN\": Wine's crypt32 rejects the game's 88-byte CERT_CHAIN_ENGINE_CONFIG in CertCreateCertificateChainEngine. The fix (Wine commits 2012949a, 02bb0a34, eef8e97d, c7cc9be8) is included in GE-Proton11-7.",
+  "The game is started from Battle.net and therefore runs on Battle.net's Proton build. GE-Proton11-7 is not recommended for it even though it has the fix: it stalls World of Warcraft, which shares that launcher.",
+  "Use Windowed Fullscreen (War3Preferences.txt windowmode=1; 0 = windowed, 2 = fullscreen). True fullscreen switches to an emulated display mode that Proton does not restore on exit, leaving Battle.net stretched and ignoring input.",
+]
+links = [
+  "https://gitlab.winehq.org/wine/wine/-/commit/2012949a",
+  "https://gitlab.winehq.org/wine/wine/-/commit/02bb0a34",
+  "https://gitlab.winehq.org/wine/wine/-/commit/eef8e97d",
+  "https://gitlab.winehq.org/wine/wine/-/commit/c7cc9be8",
+  "https://github.com/GloriousEggroll/proton-ge-custom/issues/763",
+  "https://github.com/FerMPY/wc3-reforged-proton-fix",
+]
+
+# No `recommended` yet: see the TODO(integrator) above the games.
+
+[[games.proton.avoid]]
+build = "GE-Proton11-6-x86_64"
+reason = "Login fails with \"There was an error handling this request. Please check your VPN\" (a Wine crypt32 bug; the upstream fix is included in GE-Proton11-7)"
+source = "Observed on qinda-top 2026-09-25; Wine commits 2012949a, 02bb0a34, eef8e97d, c7cc9be8; https://github.com/GloriousEggroll/proton-ge-custom/issues/763"

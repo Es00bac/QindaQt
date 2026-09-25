@@ -39,6 +39,54 @@ qindaqt_add_qindalutris_test(proton-pin tst_proton_pin.cpp)
 qindaqt_add_qindalutris_test(title-store tst_title_store.cpp)
 qindaqt_add_qindalutris_test(umu-launch-plan tst_umu_launch_plan.cpp)
 
+# The compatibility database (ADR-0275 §3). The fixtures under data/compat are
+# shared with the generator's Python tests, and the committed snapshot is
+# loaded by both suites so the C++ parser and qlcompat/schema.py cannot drift.
+qindaqt_add_qindalutris_test(compat-db tst_compat_db.cpp)
+qindaqt_add_qindalutris_test(compat-lookup tst_compat_lookup.cpp)
+qindaqt_add_qindalutris_test(compat-rules tst_compat_rules.cpp)
+foreach(qindalutris_compat_test compat-db compat-lookup compat-rules)
+    target_compile_definitions(qindaqt_qindalutris_${qindalutris_compat_test}_tests PRIVATE
+        "QINDALUTRIS_COMPAT_FIXTURES=\"${CMAKE_CURRENT_SOURCE_DIR}/data/compat\""
+        "QINDALUTRIS_COMPAT_SNAPSHOT=\"${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json\"")
+endforeach()
+set_tests_properties(qindaqt.qindalutris-compat-db PROPERTIES TIMEOUT 90)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(
+    NAME qindaqt.qindalutris-compat-generator
+    COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+        -s "${PROJECT_SOURCE_DIR}/tools/qindalutris-compat/tests"
+        -t "${PROJECT_SOURCE_DIR}/tools/qindalutris-compat"
+)
+add_test(
+    NAME qindaqt.qindalutris-compat-snapshot
+    COMMAND "${Python3_EXECUTABLE}"
+        "${PROJECT_SOURCE_DIR}/tools/qindalutris-compat/validate.py"
+        "${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json"
+)
+# Differential test: the reviewer's mutation cases plus the allowlist cases,
+# judged by BOTH validators against expected.txt.
+qt_add_executable(qindaqt_qindalutris_compat_judge compat_differential/compat_judge.cpp)
+target_link_libraries(qindaqt_qindalutris_compat_judge PRIVATE QindaQt::QindaLutrisModel)
+target_compile_features(qindaqt_qindalutris_compat_judge PRIVATE cxx_std_20)
+set_target_properties(qindaqt_qindalutris_compat_judge PROPERTIES CXX_EXTENSIONS OFF AUTOUIC OFF)
+qindaqt_enable_warnings(qindaqt_qindalutris_compat_judge)
+add_test(
+    NAME qindaqt.qindalutris-compat-differential
+    COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/compat_differential/run_differential.py"
+        --judge $<TARGET_FILE:qindaqt_qindalutris_compat_judge>
+        --repo "${PROJECT_SOURCE_DIR}"
+        --work "${CMAKE_CURRENT_BINARY_DIR}/compat-differential-cases"
+)
+set_tests_properties(qindaqt.qindalutris-compat-differential
+    PROPERTIES LABELS "apps;qindalutris;tools" TIMEOUT 300
+    ENVIRONMENT "${qindalutris_test_env}")
+set_tests_properties(qindaqt.qindalutris-compat-generator qindaqt.qindalutris-compat-snapshot
+    PROPERTIES LABELS "apps;qindalutris;tools" TIMEOUT 120
+    ENVIRONMENT "${qindalutris_test_env}")
+
 qindaqt_add_qindalutris_test(lutris-source tst_lutris_source.cpp)
 # The Lutris fixture builds its own database, so this row links Qt Sql too.
 target_link_libraries(qindaqt_qindalutris_lutris-source_tests PRIVATE Qt6::Sql)
