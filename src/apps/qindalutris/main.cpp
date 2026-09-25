@@ -62,6 +62,11 @@ int main(int argc, char **argv) {
       QGuiApplication::translate("main", "Window size as WxH."),
       QStringLiteral("WxH"));
   parser.addOption(sizeOption);
+  const QCommandLineOption pageOption(
+      QStringLiteral("page"),
+      QGuiApplication::translate("main", "Open on a page: library, get-games or proton."),
+      QStringLiteral("page"));
+  parser.addOption(pageOption);
   parser.process(app);
 
   LibraryController library;
@@ -113,6 +118,12 @@ int main(int argc, char **argv) {
             windowGuard->setProperty("inWindowMenuVisible", visible);
           }
         });
+  }
+  if (window != nullptr && parser.isSet(pageOption)) {
+    const QString page = parser.value(pageOption);
+    window->setProperty("pageIndex", page == QLatin1String("get-games") ? 1
+                                     : page == QLatin1String("proton")  ? 2
+                                                                        : 0);
   }
   if (window != nullptr && parser.isSet(sizeOption)) {
     const QStringList parts = parser.value(sizeOption).split(QLatin1Char('x'));
