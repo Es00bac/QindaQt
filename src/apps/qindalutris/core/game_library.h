@@ -8,7 +8,7 @@
 
 namespace QindaQt::QindaLutris {
 
-// AGENT-CONTRACT: the merge rule of ADR-0231. Four independently optional
+// AGENT-CONTRACT: the merge rule of ADR-0231. Independently optional
 // sources contribute games; the result is one deterministic, title-sorted
 // list. A Lutris row whose normalized title matches a Steam game's is folded
 // into the STEAM record (the Steam record carries the honest install anchor
@@ -23,12 +23,16 @@ struct GameLibrary final {
   QStringList warnings;
 };
 
-// Merges the four already-read source results. Inputs are taken by value of
+// Merges the already-read source results. Inputs are taken by value of
 // their games vectors to keep the merge pure and trivially testable.
+// `installed` are the ADR-0275 titles (GameSource::Installed); they are not
+// title-folded against anything -- an installed launcher and a Lutris row of
+// the same name are different ways to start different things.
 [[nodiscard]] GameLibrary mergeGameSources(QVector<Game> steam,
                                            QVector<Game> lutris,
                                            QVector<Game> desktop,
                                            QVector<Game> wine,
+                                           QVector<Game> installed,
                                            QStringList warnings);
 
 } // namespace QindaQt::QindaLutris

@@ -3,7 +3,7 @@
 
 #include "desktop_source.h"
 #include "game.h"
-#include "steam_source.h"
+#include "proton_catalog.h"
 
 #include <QHash>
 #include <QString>
@@ -46,7 +46,12 @@ struct LaunchToolSet final {
   QString wineBinary;
   QString gamemodeRunBinary;   // gamemoderun wrapper
   QString mangohudBinary;      // mangohud wrapper (OpenGL; Vulkan uses env)
-  QVector<ProtonInstall> protons;
+  // umu-run (games-util/umu-launcher), resolved by discoverUmuRun over
+  // defaultUmuSearchPath (umu_launch.h); empty = not installed.
+  QString umuRunBinary;
+  // Every installed Proton build (discoverProtonBuilds). Pins resolve
+  // against exactly this list; nothing falls back outside it.
+  QVector<ProtonBuild> protonBuilds;
 
   friend bool operator==(const LaunchToolSet &, const LaunchToolSet &) = default;
 };
@@ -81,8 +86,23 @@ struct LaunchPlan final {
   friend bool operator==(const LaunchPlan &, const LaunchPlan &) = default;
 };
 
+// Applies the per-game options every launch path shares: the SDL display
+// pin, MANGOHUD=1, the user's re-validated extra environment, and the
+// gamemoderun / mangohud wrappers around plan->program. allowMangohudWrapper
+// is false where the wrapper would wrap the wrong process (the Steam client;
+// umu-run, whose container does not pass the wrapper's LD_PRELOAD to the
+// game -- MANGOHUD=1 reaches DXVK/VKD3D there instead). Shared by
+// planGameLaunch and planUmuLaunch so the behaviours cannot drift.
+void applyLaunchOptions(const LaunchOptions &options, const LaunchToolSet &tools,
+                        const QVector<DisplayTarget> &displays,
+                        bool allowMangohudWrapper, LaunchPlan *plan);
+
 // Plans one launch. desktopDiscovery is required only for Desktop games and
-// supplies the retained document text for the shared Exec planner.
+// supplies the retained document text for the shared Exec planner. A Wine
+// entry whose runner is Proton is planned through planUmuLaunch with its
+// pinned build (ADR-0275). An Installed title needs its TitleRecord, which a
+// Game does not carry: plan it with planTitleLaunch (umu_launch.h); passed
+// here it is refused with a reason, never guessed.
 [[nodiscard]] LaunchPlan planGameLaunch(
     const Game &game, const LaunchOptions &options,
     const LaunchToolSet &tools, const QVector<DisplayTarget> &displays,

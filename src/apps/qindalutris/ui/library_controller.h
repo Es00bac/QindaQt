@@ -5,6 +5,8 @@
 #include "../core/game_launcher.h"
 #include "../core/game_library.h"
 #include "../core/library_store.h"
+#include "../core/proton_catalog.h"
+#include "../core/title_record.h"
 
 #include <QAbstractItemModel>
 #include <QHash>
@@ -51,7 +53,16 @@ public:
   void setConfigRoot(const QString &path);
   void setCoverCacheDir(const QString &path);
   void setProcessLauncher(GameProcessLauncher *launcher); // borrowed
-  void setSteamRootsForProton(const QStringList &roots);
+  // Roots searched for Proton builds (ADR-0275), in precedence order.
+  // Defaults to defaultProtonRoots(home, $XDG_DATA_HOME, Steam candidates).
+  void setProtonRoots(const QVector<ProtonRoot> &roots);
+  // Directories searched for umu-run, highest preference first. Defaults to
+  // defaultUmuSearchPath(home, PATH): /usr/bin, PATH, ~/.local/bin.
+  void setUmuSearchPath(const QStringList &directories);
+  // The build name new hand-added entries pin when the caller names none
+  // (the compatibility database's recommendation, once that lands).
+  // chooseDefaultBuild falls back to the first System build.
+  void setPreferredProtonBuild(const QString &name);
   // Directories searched for the Wine loader, highest preference first.
   // Defaults to PATH. An injection point rather than a way to set the binary
   // directly, so a test exercises the real discovery against its own fixture
@@ -78,7 +89,10 @@ public:
                                const QString &prefixPath, const QString &runnerId,
                                const QString &protonPath);
   Q_INVOKABLE void removeWineGame(const QString &gameId);
-  // Proton choices for the add dialog / options: [{name, path}] or empty.
+  // Installed Proton builds for the add dialog, default first:
+  // [{name: display label, path: absolute build dir, build: directory name,
+  //   origin: "system"|"user"|"steam", removable, isDefault}]. The dialog
+  // hands `path` back to addWineGame, which records the build NAME.
   Q_INVOKABLE QVariantList protonChoices() const;
 
   // Cover/icon resolution for the image provider. Null when neither exists.
@@ -99,6 +113,7 @@ private:
   void rebuildDisplays();
   void persistWineEntries();
   [[nodiscard]] const Game *findGame(const QString &gameId) const;
+  [[nodiscard]] const TitleRecord *findTitle(const QString &titleId) const;
   [[nodiscard]] LaunchOptions optionsFor(const QString &gameId) const;
   [[nodiscard]] LaunchPlan planFor(const Game &game) const;
 
@@ -107,7 +122,9 @@ private:
   QStringList m_desktopRoots;
   QString m_configRoot;
   QString m_coverCacheDir;
-  QStringList m_protonRoots;
+  QVector<ProtonRoot> m_protonRoots;
+  QStringList m_umuSearchPath;
+  QString m_preferredProtonBuild;
 
   GameListModel *m_model = nullptr;    // owned child
   GameFilterModel *m_filter = nullptr; // owned child
@@ -119,6 +136,7 @@ private:
   std::unique_ptr<QProcessGameLauncher> m_ownedLauncher;
   GameProcessLauncher *m_launcher = nullptr;
   QVector<WineEntryRecord> m_wineRecords;
+  QVector<TitleRecord> m_titles; // titles-v1.json; read-only in this slice
   QHash<QString, LaunchOptions> m_options;
   QString m_selectedGameId;
   QString m_statusMessage;

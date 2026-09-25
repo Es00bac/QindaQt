@@ -19,7 +19,7 @@ bool titleLess(const Game &a, const Game &b) {
 
 GameLibrary mergeGameSources(QVector<Game> steam, QVector<Game> lutris,
                              QVector<Game> desktop, QVector<Game> wine,
-                             QStringList warnings) {
+                             QVector<Game> installed, QStringList warnings) {
   GameLibrary out;
   // AGENT-GUARD: the de-dup key is the normalized title, and Steam claims
   // the row. Keep the Steam set complete BEFORE folding: two Steam games
@@ -60,6 +60,7 @@ GameLibrary mergeGameSources(QVector<Game> steam, QVector<Game> lutris,
   }
   take(desktop);
   take(wine);
+  take(installed);
 
   std::sort(out.games.begin(), out.games.end(), titleLess);
   out.warnings = warnings.mid(0, 32);
