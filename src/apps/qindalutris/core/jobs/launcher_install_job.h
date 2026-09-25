@@ -57,19 +57,22 @@ struct LauncherInstallResult final {
 // odd exit codes, so presence of the launcher decides success; the code only
 // shapes the message. Cancel stops the running stage; a partly-written prefix
 // is left in place (it may already hold the user's data) and the downloaded
-// installer is removed. Seams are borrowed and dedicated to this job while
-// it runs. Threading: owner thread only.
+// installer is removed only once its process tree is confirmed gone.
+// finished() is always queued, never emitted from inside start()/cancel(),
+// and isRunning() stays true until it is delivered. Seams are borrowed and
+// dedicated to this job while it runs. Threading: owner thread only.
 class LauncherInstallJob final : public QObject {
   Q_OBJECT
 public:
-  enum class Stage { Idle, Preflight, Downloading, Installing };
+  enum class Stage { Idle, Preflight, Downloading, Installing, Stopping, Concluding };
 
   LauncherInstallJob(Downloader *downloader, InstallerRunner *runner, const SystemProbe *probe,
                      InstallerPlanner planner, QObject *parent = nullptr);
   ~LauncherInstallJob() override;
 
   void start(const LauncherInstallRequest &request);
-  // Emits finished(cancelled) before returning when a job was running.
+  // Stops the running stage; finished(cancelled) follows asynchronously --
+  // after the installer's whole process tree is gone when it was running.
   void cancel();
 
   [[nodiscard]] Stage stage() const { return m_stage; }
@@ -87,6 +90,7 @@ private:
   void succeed(const QString &executable, const QString &note);
   void fail(const QString &plain, const QString &detail);
   void conclude(LauncherInstallResult result);
+  void concludeCancelled();
 
   Downloader *m_downloader = nullptr;
   InstallerRunner *m_runner = nullptr;
@@ -97,7 +101,8 @@ private:
   QString m_umuRun;
   QString m_installerFile;
   Stage m_stage = Stage::Idle;
-  bool m_concluding = false;
+  bool m_keepInstaller = false;
+  quint64 m_generation = 0;
   JobLog m_log;
 };
 

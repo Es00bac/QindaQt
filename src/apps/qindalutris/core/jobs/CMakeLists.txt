@@ -19,8 +19,12 @@ qt_add_library(qindaqt_qindalutris_jobs STATIC
     downloader.h
     network_downloader.cpp
     network_downloader.h
+    process_tree.cpp
+    process_tree.h
     process_runner.cpp
     process_runner.h
+    archive_listing.cpp
+    archive_listing.h
     ge_proton_releases.cpp
     ge_proton_releases.h
     proton_install_job.cpp

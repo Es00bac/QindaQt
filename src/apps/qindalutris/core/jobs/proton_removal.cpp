@@ -6,6 +6,7 @@
 #include "job_log.h"
 
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QUuid>
 
@@ -36,10 +37,10 @@ void note(JobLog *log, const QString &text) {
 } // namespace
 
 QStringList ProtonRemovalRequest::defaultSystemRoots() {
-  return {QStringLiteral("/usr"), QStringLiteral("/opt"), QStringLiteral("/etc"),
-          QStringLiteral("/var"), QStringLiteral("/lib"), QStringLiteral("/lib64"),
-          QStringLiteral("/bin"), QStringLiteral("/sbin"), QStringLiteral("/boot"),
-          QStringLiteral("/nix"), QStringLiteral("/gnu")};
+  return {QStringLiteral("/usr"),       QStringLiteral("/opt"),      QStringLiteral("/etc"),
+          QStringLiteral("/lib"),       QStringLiteral("/lib64"),    QStringLiteral("/bin"),
+          QStringLiteral("/sbin"),      QStringLiteral("/boot"),     QStringLiteral("/nix/store"),
+          QStringLiteral("/gnu/store"), QStringLiteral("/snap")};
 }
 
 std::optional<QString> checkProtonRemoval(const ProtonRemovalRequest &request) {
@@ -51,19 +52,26 @@ std::optional<QString> checkProtonRemoval(const ProtonRemovalRequest &request) {
     return QStringLiteral("QindaLutris does not know where that Proton build is, so "
                           "nothing was removed.");
   }
-  const QString root = canonicalOrClean(request.userRoot);
-  if (root == QLatin1String("/")) {
+  const QString build = QDir::cleanPath(request.userRoot) + QLatin1Char('/') + name;
+  const QStringList buildPaths{build, canonicalOrClean(build),
+                               canonicalOrClean(request.userRoot) + QLatin1Char('/') + name};
+  if (QDir::cleanPath(request.userRoot) == QLatin1String("/") ||
+      canonicalOrClean(request.userRoot) == QLatin1String("/")) {
     return QStringLiteral("%1 belongs to the system, so QindaLutris cannot remove it.").arg(name);
   }
   for (const QString &systemRoot : request.systemRoots) {
-    if (systemRoot.isEmpty()) {
+    if (systemRoot.isEmpty() || QDir::isRelativePath(systemRoot)) {
       continue;
     }
-    if (isWithin(root, canonicalOrClean(systemRoot)) ||
-        isWithin(QDir::cleanPath(request.userRoot), QDir::cleanPath(systemRoot))) {
-      return QStringLiteral("%1 was installed by the system's package manager, so "
-                            "QindaLutris cannot remove it.")
-          .arg(name);
+    const QStringList systemPaths{QDir::cleanPath(systemRoot), canonicalOrClean(systemRoot)};
+    for (const QString &candidate : buildPaths) {
+      for (const QString &systemPath : systemPaths) {
+        if (isWithin(candidate, systemPath)) {
+          return QStringLiteral("%1 was installed by the system's package manager, so "
+                                "QindaLutris cannot remove it.")
+              .arg(name);
+        }
+      }
     }
   }
   if (request.pinnedBuildNames.contains(name)) {
@@ -109,21 +117,29 @@ ProtonRemovalResult removeProtonBuild(const ProtonRemovalRequest &request, JobLo
     return result;
   }
   note(log, QStringLiteral("Moved %1 to trash").arg(source));
-  if (!QDir(parked).removeRecursively()) {
-    // The build is already gone from the root; the leftover is swept later.
-    note(log, QStringLiteral("Some trashed files remain in %1").arg(parked));
+  result.ok = true; // gone from the root: no catalog lists it any more
+  QString leftover;
+  result.complete = removeTreeForcibly(parked, &leftover);
+  if (!result.complete) {
+    note(log, QStringLiteral("Trash not fully deleted: %1").arg(leftover));
+    result.message = QStringLiteral("%1 was removed, but some of its files could not be "
+                                    "deleted and still use disk space.")
+                         .arg(request.buildName);
+    return result;
   }
-  result.ok = true;
   result.message = QStringLiteral("%1 was removed.").arg(request.buildName);
   return result;
 }
 
-void sweepProtonTrash(const QString &userRoot) {
-  const QString trash = QDir::cleanPath(userRoot) + QLatin1Char('/') + kTrashName;
-  if (userRoot.isEmpty() || isSymlink(trash) || !QFileInfo(trash).isDir()) {
-    return;
+bool sweepProtonTrash(const QString &userRoot) {
+  if (userRoot.isEmpty() || QDir::isRelativePath(userRoot)) {
+    return false;
   }
-  QDir(trash).removeRecursively();
+  const QString trash = QDir::cleanPath(userRoot) + QLatin1Char('/') + kTrashName;
+  if (isSymlink(trash)) {
+    return QFile::remove(trash); // never followed
+  }
+  return removeTreeForcibly(trash);
 }
 
 } // namespace QindaQt::QindaLutris

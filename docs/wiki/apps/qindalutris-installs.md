@@ -25,6 +25,10 @@ job ends in **one plain sentence**, never a code or a path:
 | Download failed | The Battle.net installer could not be downloaded. Check your internet connection and try again. |
 | Installer failed | The Battle.net installer stopped with an error, and Battle.net was not installed. |
 | Checksum mismatch | The downloaded Proton build did not pass its safety check, so it was not installed. Try again later. |
+| Unsafe archive | The downloaded Proton build was not in the expected shape, so it was not installed. |
+| Proton space | There is not enough free disk space to install GE-Proton11-6-x86_64: it needs at least 2.0 GB, and only 1.0 GB is free. Free up some space, then try again. |
+| No atomic rename | The folder for Proton builds is on a disk that cannot install them safely. Keep your Steam folder on a Linux disk such as ext4 or btrfs. |
+| tar failed | The Proton build could not be unpacked, so it was not installed. Try again, or copy the details for someone helping you. |
 | Build in use | GE-Proton11-7-x86_64 is still used by at least one of your games, so it was not removed. Move those games to another Proton build first. |
 
 Behind **Copy details**, each job keeps a bounded, timestamped log of every
@@ -54,38 +58,74 @@ before it is followed.
 The production downloader writes to `<file>.part` and renames it into place
 only after the transfer completes at the announced length. It enforces a
 2 GiB size cap, a 60-second stall timeout, a 3-hour total timeout and at
-most 8 redirects. It does not resume: a failed transfer is discarded.
+most 8 redirects (its own count; Qt's limit is set one higher so the
+guard answers first). Stalls, early disconnects, redirect loops and
+insecure redirects each get their own reason in the details log. It does
+not resume: a failed transfer is discarded. Its URL policy can be replaced
+only through a test-only hook, so tests can run it against a local server.
+
+## Stopping a job completely
+
+Installers and `tar` run through `QProcessRunner`, which starts every
+process inside its own transient systemd user scope
+(`systemd-run --user --scope --quiet --collect --unit=qindalutris-job-<id>`).
+Cancelling, or reaching a time limit, sends SIGTERM to the whole scope
+(and to umu-run itself, which forwards it), waits up to 5 seconds, then
+sends SIGKILL, and reports the job stopped only when the scope and every
+tracked process are gone. This matters because umu starts the Steam
+Runtime in a new session: killing umu-run alone would leave Wine and the
+installer running. Without a user systemd manager the runner falls back to
+the child's own process group plus tracking of its descendants in `/proc`;
+a program that detaches itself before it is tracked can escape that
+fallback, which the scope cannot. The downloaded installer, or Proton's
+staging folder, is deleted only after the tree is confirmed gone; if it
+cannot be confirmed, the file is kept and the details log says so. No
+`PYTHON*` variable ever reaches a job process, because umu is written in
+Python. The same helpers (`process_tree.h`) are meant for the game
+launcher's Force quit ([ADR-0275](../adr/0275-qindalutris-installs-games-and-manages-pinned-proton.md) §4b).
 
 ## Proton builds
 
 **Download.** The Proton manager lists releases from the GitHub releases
 API for `GloriousEggroll/proton-ge-custom`. A release is offered only when it
-has both `GE-Proton<N>-<M>-x86_64.tar.gz` and its `.sha512sum`. The build's
+has both `GE-Proton<N>-<M>-x86_64.tar.gz` and its `.sha512sum`, named after
+the release tag and served from exactly
+`https://github.com/GloriousEggroll/proton-ge-custom/releases/download/<tag>/`;
+the install job checks this again, so a fork or another host is never
+used. The build's
 name is the tarball name without `.tar.gz` (for example
 `GE-Proton11-6-x86_64`), the same directory name Portage's
 `app-emulation/ge-proton-bin` installs. Installing:
 
 1. refuses when `<root>/<name>` already exists (a build is never replaced);
-2. downloads the tarball and checksum into a hidden
+2. checks free space: four times the tarball size (a build unpacks to about
+   2.9 times its download; 3 GiB when the size is unknown);
+3. downloads the tarball and checksum into a hidden
    `.qindalutris-staging-*` directory inside the target root;
-3. verifies SHA-512 in slices, so the window stays responsive;
-4. lists the archive with `tar --list` and refuses it unless every entry
-   lies inside one top-level directory named `<name>` (no absolute paths,
-   no `..`);
-5. extracts it with `tar --extract --no-same-owner` into staging;
-6. moves `<name>` into place with a no-replace atomic rename.
+4. verifies SHA-512 in slices, so the window stays responsive;
+5. lists the archive with `tar --list --verbose` and refuses it unless every
+   entry lies inside one top-level folder named `<name>`: no absolute paths
+   or `..`, no symbolic link pointing outside the folder, no hard link to
+   outside it, no devices, FIFOs or setuid files, no name listed twice and
+   nothing written through a link;
+6. extracts it with `tar --extract --no-same-owner --no-same-permissions`
+   into staging;
+7. moves `<name>` into place with a no-replace atomic rename.
 
 The target root defaults to `$XDG_DATA_HOME/Steam/compatibilitytools.d`
 (normally `~/.local/share/Steam/compatibilitytools.d`). Any failure or
-cancel removes the staging directory; nothing half-extracted is ever
-visible.
+cancel removes the staging directory, read-only folders included, once
+`tar` is confirmed stopped; nothing half-extracted is ever visible.
 
 **Remove.** Only builds directly inside the user root can be removed.
-Removal is refused when any title is pinned to the build, when the root is
-under a system directory (`/usr`, `/opt`, and the like — those builds
-belong to Portage), or when the entry is a symbolic link. The build is first
-renamed into `.qindalutris-trash/` (so it disappears at once) and then
-deleted; leftovers from an interrupted removal are swept on the next run.
+Removal is refused when any title is pinned to the build, when the build
+lies under a system directory such as `/usr` or `/opt` (compared both as
+written and after resolving links — those builds belong to Portage), or
+when the entry is a symbolic link. `/var` is not a system directory here,
+because some systems keep home folders under `/var/home`. The build is
+first renamed into `.qindalutris-trash/` (so it disappears at once) and
+then deleted, read-only folders included. If anything cannot be deleted
+the result says so plainly; leftovers are swept on a later run.
 
 ## Store launcher recipes
 
@@ -104,14 +144,19 @@ documented the vendor installer shows its own window.
 
 Every launcher runs as umu id `umu-0` (umu-database has no entry for the
 launchers themselves). Prefixes default to `~/Games/<prefix>`. Windows
-paths map to `<prefix>/drive_c/...`; Proton names the Windows user
-`steamuser`.
+paths on drive C: map to `<prefix>/drive_c/...` (other drive letters are
+never guessed); Proton names the Windows user `steamuser`. Where a
+launcher lives in a versioned folder (the EA app), the highest version
+wins, compared numerically.
 
 ## Launcher install job
 
 1. **Preflight**: a pinned Proton build (a directory holding `proton`, never
    a floating alias), `umu-run`, a Vulkan driver, and the recipe's free-space
-   floor. Each missing piece names the package that provides it.
+   floor. Each missing piece names the package that provides it. A Vulkan
+   driver counts only if its manifest names a 64-bit hardware driver:
+   software renderers (lavapipe, SwiftShader) and 32-bit-only manifests are
+   ignored.
 2. **Adopt**: if the prefix already holds the launcher (for example an
    existing `~/Games/battlenet`), it is registered without reinstalling.
 3. **Download** the vendor installer (allowlisted HTTPS only).
@@ -123,7 +168,9 @@ decides: a non-zero code with the launcher present is a success with a
 note. Proton keeps umu running until the prefix's programs exit, so an
 installer that opens its launcher at the end finishes when the user closes
 it (the progress text says so). The downloaded installer is deleted
-afterwards; cancelling leaves the prefix in place.
+afterwards; cancelling stops the whole installer tree first and leaves the
+prefix in place. Every job reports its result from the event loop, never
+from inside `start()` or `cancel()`.
 
 ## Setup-file install job
 
@@ -143,6 +190,7 @@ match the title, then by size. The user's installer file is never deleted.
 |---|---|---|
 | `Downloader` / `NetworkDownloader` | `downloader.h`, `network_downloader.h` | this package |
 | `ProcessRunner` / `QProcessRunner` (also `InstallerRunner`) | `process_runner.h` | this package |
+| scope naming and whole-tree stop (`ProcessTreeStopper`) | `process_tree.h` | this package; reused by Force quit |
 | `SystemProbe` / `HostSystemProbe` | `install_preflight.h` | this package |
 | `InstallerPlanner` (`InstallerPlanRequest` → `InstallerPlan`) | `installer_planning.h` | the umu launch-plan builder |
 | pinned build names for removal | `ProtonRemovalRequest::pinnedBuildNames` | the TitleRecord store |
@@ -154,11 +202,14 @@ because staging and trash directories live there while a job runs.
 ## Tests
 
 `tests/apps/qindalutris/tst_download_allowlist.cpp`,
-`tst_download_guard.cpp`, `tst_ge_proton_releases.cpp`,
-`tst_proton_install_job.cpp`, `tst_proton_removal.cpp`,
-`tst_process_runner.cpp`, `tst_store_recipes.cpp`,
+`tst_download_guard.cpp`, `tst_network_downloader.cpp` (a local HTTP
+server), `tst_ge_proton_releases.cpp`, `tst_archive_listing.cpp`,
+`tst_proton_install_job.cpp`, `tst_proton_install_cancel.cpp`,
+`tst_proton_removal.cpp`, `tst_process_runner.cpp` (process trees with
+`setsid` grandchildren; the systemd scope row runs only where a user
+manager answers), `tst_store_recipes.cpp`, `tst_install_preflight.cpp`,
 `tst_launcher_install_job.cpp` and
 `tst_setup_file_install_job.cpp` (label `jobs`). They use scripted fakes
-(`job_fakes.h`) and never reach the network, umu, Wine or a vendor
+(`job_fakes.h`, `proton_job_fixture.h`) and never reach the internet, umu, Wine or a vendor
 installer; the Proton rows run the host's `tar` on archives they build
 themselves in an isolated home.

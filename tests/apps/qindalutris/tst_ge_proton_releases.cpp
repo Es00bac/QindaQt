@@ -157,39 +157,54 @@ private Q_SLOTS:
     QVERIFY(!sha512HexOfFile(dir.filePath(QStringLiteral("missing"))).has_value());
   }
 
-  void listingWithOneTopFolderIsAccepted() {
-    const auto verdict = validateSingleTopLevelListing(
-        "GE-Proton11-6-x86_64/\nGE-Proton11-6-x86_64/proton\nGE-Proton11-6-x86_64/files/lib/x.so\n");
-    QVERIFY(verdict.ok);
-    QCOMPARE(verdict.topLevel, QStringLiteral("GE-Proton11-6-x86_64"));
-    QVERIFY(validateSingleTopLevelListing("./\n./top/\n./top/a\n").ok);
+  void attackerForkAndCrossHostAssetsAreSkipped() {
+    // The reviewer's case: a fork's tarball plus a checksum on another
+    // allowlisted host must never become an installable release.
+    const QString tag = QStringLiteral("GE-Proton99-1");
+    const QJsonArray assets{
+        asset(tag, tag + QStringLiteral("-x86_64.tar.gz"), 1,
+              QStringLiteral("https://github.com/attacker/fork/releases/download/")),
+        asset(tag, tag + QStringLiteral("-x86_64.sha512sum"), 1,
+              QStringLiteral("https://download.amazongames.com/"))};
+    QVERIFY(parseGeProtonReleases(document({release(tag, assets)})).releases.isEmpty());
+
+    const QJsonArray crossHost{asset(tag, tag + QStringLiteral("-x86_64.tar.gz")),
+                               asset(tag, tag + QStringLiteral("-x86_64.sha512sum"), 1,
+                                     QStringLiteral("https://objects.githubusercontent.com/"))};
+    QVERIFY(parseGeProtonReleases(document({release(tag, crossHost)})).releases.isEmpty());
+
+    const QJsonArray otherTagFolder{
+        asset(QStringLiteral("GE-Proton1-1"), tag + QStringLiteral("-x86_64.tar.gz")),
+        asset(tag, tag + QStringLiteral("-x86_64.sha512sum"))};
+    QVERIFY(parseGeProtonReleases(document({release(tag, otherTagFolder)})).releases.isEmpty());
   }
 
-  void listingEscapesAreRefused_data() {
-    QTest::addColumn<QByteArray>("listing");
-    QTest::newRow("absolute") << QByteArray("top/\ntop/a\n/etc/passwd\n");
-    QTest::newRow("leading dotdot") << QByteArray("top/\ntop/a\n../escape.txt\n");
-    QTest::newRow("inner dotdot") << QByteArray("top/\ntop/../../escape\n");
-    QTest::newRow("second top") << QByteArray("top/\ntop/a\nother/b\n");
-    QTest::newRow("sibling file") << QByteArray("top/\ntop/a\nREADME\n");
-    QTest::newRow("single file") << QByteArray("proton\n");
-    QTest::newRow("empty") << QByteArray();
-  }
-  void listingEscapesAreRefused() {
-    QFETCH(QByteArray, listing);
-    const auto verdict = validateSingleTopLevelListing(listing);
-    QVERIFY(!verdict.ok);
-    QVERIFY(!verdict.reason.isEmpty());
-    QVERIFY(verdict.topLevel.isEmpty());
-  }
+  void upstreamCheckGuardsHandBuiltReleases() {
+    const QString tag = QStringLiteral("GE-Proton11-6");
+    const auto parsed = parseGeProtonReleases(
+        document({release(tag, archPair(tag, QStringLiteral("x86_64")))}));
+    const GeProtonRelease good = parsed.releases.value(0);
+    QVERIFY(isUpstreamGeProtonRelease(good));
 
-  void listingEntryCountIsBounded() {
-    QByteArray listing("top/\n");
-    for (int i = 0; i < 10; ++i) {
-      listing += "top/f" + QByteArray::number(i) + "\n";
-    }
-    QVERIFY(!validateSingleTopLevelListing(listing, 5).ok);
-    QVERIFY(validateSingleTopLevelListing(listing, 50).ok);
+    GeProtonRelease r = good;
+    r.tarballUrl = QUrl(QStringLiteral("https://github.com/attacker/fork/releases/download/GE-Proton11-6/"
+                                       "GE-Proton11-6-x86_64.tar.gz"));
+    QVERIFY(!isUpstreamGeProtonRelease(r));
+    r = good;
+    r.checksumUrl = QUrl(QStringLiteral("https://download.amazongames.com/GE-Proton11-6-x86_64.sha512sum"));
+    QVERIFY(!isUpstreamGeProtonRelease(r));
+    r = good;
+    r.toolName = QStringLiteral("GE-Proton11-7-x86_64");
+    QVERIFY(!isUpstreamGeProtonRelease(r));
+    r = good;
+    r.tarballName = QStringLiteral("other.tar.gz");
+    QVERIFY(!isUpstreamGeProtonRelease(r));
+    r = good;
+    r.tagName = QStringLiteral("Proton-11");
+    QVERIFY(!isUpstreamGeProtonRelease(r));
+    QCOMPARE(geProtonAssetUrl(tag, QStringLiteral("f.tar.gz")).toString(),
+             QStringLiteral("https://github.com/GloriousEggroll/proton-ge-custom/releases/download/"
+                            "GE-Proton11-6/f.tar.gz"));
   }
 };
 

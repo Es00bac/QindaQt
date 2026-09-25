@@ -2,6 +2,7 @@
 #pragma once
 
 #include "ge_proton_releases.h"
+#include "install_preflight.h"
 #include "job_log.h"
 #include "process_runner.h"
 
@@ -30,15 +31,26 @@ struct ProtonJobResult final {
 // section 2 (the same directory as ~/.local/share/Steam/compatibilitytools.d).
 [[nodiscard]] QString defaultUserCompatToolsRoot();
 
+// Free space the job requires in the target root: the tarball plus the
+// unpacked build. Measured on GE-Proton11-6-x86_64: 534 MB compressed,
+// 1.52 GB unpacked (2.85x), so 4x the tarball; 3 GiB when the API gave no
+// size.
+[[nodiscard]] qint64 protonInstallSpaceNeeded(qint64 tarballBytes);
+
 // AGENT-CONTRACT: the "download a GE-Proton release" job of ADR-0275
-// section 2. Stages: refuse an existing <root>/<toolName> -> download the
+// section 2. Stages: refuse a release not tied to upstream
+// (isUpstreamGeProtonRelease) or an existing <root>/<toolName> -> check free
+// space (SystemProbe) -> download the
 // tarball and its .sha512sum into a hidden staging directory INSIDE the
 // target root (so the final rename is atomic on one filesystem) -> verify
-// SHA-512, streamed in slices so the UI stays live -> `tar --list` and refuse
-// any listing that escapes one top-level directory named toolName -> `tar
-// --extract` into staging -> renameNoReplace(staging/<toolName>,
-// <root>/<toolName>). Every failure and cancel removes the staging directory;
-// nothing half-extracted is ever visible under the root.
+// SHA-512, streamed in slices so the UI stays live -> `tar --list --verbose`
+// checked by validateArchiveListing (archive_listing.h), which must also name
+// toolName as the one top folder -> `tar --extract` into staging ->
+// renameNoReplace(staging/<toolName>, <root>/<toolName>). Every failure and
+// cancel removes staging with removeTreeForcibly -- only after the tar
+// process tree is confirmed gone; nothing half-extracted is ever visible
+// under the root. finished() is always queued (never emitted from inside
+// start() or cancel()), and isRunning() stays true until it is delivered.
 // AGENT-CONTRACT (with the Proton catalog): staging directories are named
 // `.qindalutris-staging-*` and the removal trash `.qindalutris-trash`;
 // catalog scanners must ignore dot-directories.
@@ -48,15 +60,15 @@ class ProtonInstallJob final : public QObject {
   Q_OBJECT
 public:
   ProtonInstallJob(QString targetRoot, Downloader *downloader, ProcessRunner *runner,
-                   QObject *parent = nullptr);
+                   const SystemProbe *probe, QObject *parent = nullptr);
   ~ProtonInstallJob() override;
 
   // Absolute tar program; default resolves `tar` on PATH at start().
   void setTarProgram(const QString &program) { m_tarProgram = program; }
 
   void start(const GeProtonRelease &release);
-  // Stops the running stage, removes staging, and emits finished(cancelled)
-  // before returning.
+  // Stops the running stage (the whole tar tree when unpacking), removes
+  // staging, then emits finished(cancelled).
   void cancel();
 
   [[nodiscard]] bool isRunning() const { return m_stage != Stage::Idle; }
@@ -67,7 +79,16 @@ Q_SIGNALS:
   void finished(const QindaQt::QindaLutris::ProtonJobResult &result);
 
 private:
-  enum class Stage { Idle, DownloadingArchive, DownloadingChecksum, Hashing, Listing, Extracting };
+  enum class Stage {
+    Idle,
+    DownloadingArchive,
+    DownloadingChecksum,
+    Hashing,
+    Listing,
+    Extracting,
+    Stopping,   // waiting for the tar tree to die after cancel
+    Concluding, // result queued
+  };
 
   void onDownloadProgress(qint64 received, qint64 total);
   void onDownloadFinished(bool ok, const QString &reason);
@@ -79,11 +100,13 @@ private:
   void commit();
   void fail(const QString &plain, const QString &detail);
   void conclude(ProtonJobResult result);
+  void finishCancel(const ProcessRunResult *stoppedRun);
   void report(double fraction, const QString &stageText);
 
   QString m_root;
   Downloader *m_downloader = nullptr;
   ProcessRunner *m_runner = nullptr;
+  const SystemProbe *m_probe = nullptr;
   QString m_tarProgram;
   QString m_resolvedTar;
   GeProtonRelease m_release;
@@ -94,6 +117,8 @@ private:
   QByteArray m_expectedHash;
   QTimer m_hashTimer;
   double m_reported = 0.0;
+  bool m_keepStaging = false;
+  quint64 m_generation = 0;
   JobLog m_log;
 };
 

@@ -40,8 +40,9 @@ struct Fixture {
 
   bool run() {
     job.start(request);
-    return QTest::qWaitFor([this] { return result.has_value(); }, 5000);
+    return !result.has_value() && wait(); // never synchronous
   }
+  bool wait() { return QTest::qWaitFor([this] { return result.has_value(); }, 5000); }
 };
 
 QStringList paths(const QVector<ExecutableCandidate> &candidates) {
@@ -136,7 +137,7 @@ private Q_SLOTS:
     f.request.installerPath = f.dir.filePath(QStringLiteral("Downloads/game.zip"));
     writeFile(f.request.installerPath, 64);
     f.job.start(f.request);
-    QVERIFY(f.result.has_value());
+    QVERIFY(f.wait());
     QVERIFY(!f.result->ok);
     QVERIFY(f.result->message.contains(QStringLiteral(".exe or .msi")));
     QVERIFY(f.runner.specs.isEmpty());
@@ -146,7 +147,7 @@ private Q_SLOTS:
     Fixture f;
     f.probe.umu.clear();
     f.job.start(f.request);
-    QVERIFY(f.result.has_value());
+    QVERIFY(f.wait());
     QVERIFY(f.result->message.contains(QStringLiteral("umu")));
     QVERIFY(!QFileInfo::exists(f.request.prefixPath));
   }
@@ -157,6 +158,8 @@ private Q_SLOTS:
     f.job.start(f.request);
     QVERIFY(f.job.isRunning());
     f.job.cancel();
+    QVERIFY(f.job.isRunning()); // until the tree is gone and the result delivered
+    QVERIFY(f.wait());
     QVERIFY(f.result->cancelled);
     QCOMPARE(f.runner.cancels, 1);
     QVERIFY(!f.job.isRunning());

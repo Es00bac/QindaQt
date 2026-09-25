@@ -41,8 +41,9 @@ struct SetupFileInstallResult final {
 // installer through the injected planner + InstallerRunner -> snapshot again
 // -> rank the new executables. Success means "at least one candidate"; the
 // UI then asks the user to confirm which is the game. The installer file is
-// the user's and is never deleted. Cancel stops the installer and leaves the
-// prefix in place. Seams are borrowed and dedicated to this job while it
+// the user's and is never deleted. Cancel stops the installer's whole tree
+// and leaves the prefix in place. finished() is always queued, and
+// isRunning() stays true until it is delivered. Seams are borrowed and dedicated to this job while it
 // runs. Threading: owner thread only; the two snapshots are bounded
 // synchronous walks.
 class SetupFileInstallJob final : public QObject {
@@ -53,9 +54,11 @@ public:
   ~SetupFileInstallJob() override;
 
   void start(const SetupFileInstallRequest &request);
+  // Stops the installer's whole tree; finished(cancelled) follows
+  // asynchronously once it is gone.
   void cancel();
 
-  [[nodiscard]] bool isRunning() const { return m_running; }
+  [[nodiscard]] bool isRunning() const { return m_stage != Stage::Idle; }
   [[nodiscard]] QString detailsText() const { return m_log.text(); }
 
 Q_SIGNALS:
@@ -63,17 +66,19 @@ Q_SIGNALS:
   void finished(const QindaQt::QindaLutris::SetupFileInstallResult &result);
 
 private:
+  enum class Stage { Idle, Installing, Stopping, Concluding };
   void onInstallerFinished(const ProcessRunResult &result);
   void fail(const QString &plain, const QString &detail);
   void conclude(SetupFileInstallResult result);
+  void concludeCancelled();
 
   InstallerRunner *m_runner = nullptr;
   const SystemProbe *m_probe = nullptr;
   InstallerPlanner m_planner;
   SetupFileInstallRequest m_request;
   ExecutableSnapshot m_before;
-  bool m_running = false;
-  bool m_installing = false;
+  Stage m_stage = Stage::Idle;
+  quint64 m_generation = 0;
   JobLog m_log;
 };
 
