@@ -8,7 +8,6 @@
 #include <QProcess>
 #include <QStandardPaths>
 #include <QThread>
-#include <QTimer>
 #include <QUuid>
 
 #include <csignal>
@@ -23,6 +22,7 @@ constexpr int kSystemctlTimeoutMs = 2000;
 
 struct StatLine {
   qint64 ppid = 0;
+  qint64 pgrp = 0;
   quint64 startTime = 0;
   bool zombie = false;
 };
@@ -47,6 +47,7 @@ std::optional<StatLine> readStat(qint64 pid) {
   StatLine line;
   line.zombie = fields.at(0) == "Z" || fields.at(0) == "X";
   line.ppid = fields.at(1).toLongLong();
+  line.pgrp = fields.at(2).toLongLong();
   line.startTime = fields.at(19).toULongLong();
   return line;
 }
@@ -84,7 +85,11 @@ void refreshKnownImpl(StopTarget &target) {
   for (const ProcessIdentity &process : std::as_const(target.known)) {
     roots.append(process.pid);
   }
-  for (const ProcessIdentity &child : liveDescendants(roots)) {
+  QVector<ProcessIdentity> found = liveDescendants(roots);
+  if (target.processGroup > 1) {
+    found += liveGroupMembers(target.processGroup);
+  }
+  for (const ProcessIdentity &child : std::as_const(found)) {
     if (!target.known.contains(child)) {
       target.known.append(child);
     }
@@ -104,28 +109,18 @@ void signalTree(const StopTarget &target, int signalNumber, const QString &signa
   for (const ProcessIdentity &process : target.known) {
     signalProcess(process, signalNumber);
   }
-  if (target.mainPid > 1) {
-    ::kill(static_cast<pid_t>(-target.mainPid), signalNumber); // its process group
+  if (target.processGroup > 1) {
+    ::kill(static_cast<pid_t>(-target.processGroup), signalNumber);
   }
 }
 
-bool treeGone(const StopTarget &target) {
+bool trackedGone(const StopTarget &target) {
   for (const ProcessIdentity &process : target.known) {
     if (isProcessAlive(process)) {
       return false;
     }
   }
-  return target.scopeUnit.isEmpty() || !isScopeActive(target.tools, target.scopeUnit);
-}
-
-QString describe(const StopTarget &target, bool gone, qsizetype signalled) {
-  return QStringLiteral("%1 (%2 processes signalled, %3 alive%4)")
-      .arg(gone ? QStringLiteral("process tree stopped")
-                : QStringLiteral("some processes may still be running"))
-      .arg(signalled)
-      .arg(target.known.size())
-      .arg(target.scopeUnit.isEmpty() ? QStringLiteral(", process-group fallback")
-                                      : QStringLiteral(", scope ") + target.scopeUnit);
+  return true;
 }
 
 } // namespace
@@ -183,6 +178,27 @@ QVector<ProcessIdentity> liveDescendants(const QVector<qint64> &rootPids, int ma
   return out;
 }
 
+QVector<ProcessIdentity> liveGroupMembers(qint64 processGroup, int maxProcesses) {
+  QVector<ProcessIdentity> out;
+  if (processGroup <= 1) {
+    return out;
+  }
+  const QStringList entries = QDir(QStringLiteral("/proc")).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+  int seen = 0;
+  for (const QString &entry : entries) {
+    bool numeric = false;
+    const qint64 pid = entry.toLongLong(&numeric);
+    if (!numeric || ++seen > maxProcesses) {
+      continue;
+    }
+    const auto stat = readStat(pid);
+    if (stat && !stat->zombie && stat->pgrp == processGroup) {
+      out.append({pid, stat->startTime});
+    }
+  }
+  return out;
+}
+
 void signalProcess(const ProcessIdentity &process, int signalNumber) {
   if (process.pid > 1 && isProcessAlive(process)) {
     ::kill(static_cast<pid_t>(process.pid), signalNumber);
@@ -235,63 +251,50 @@ bool isScopeActive(const UserScopeTools &tools, const QString &unit) {
   return busy.contains(state.output);
 }
 
-ProcessTreeStopper::ProcessTreeStopper(QObject *parent)
-    : QObject(parent), m_timer(new QTimer(this)) {
-  m_timer->setInterval(kPollMs);
-  connect(m_timer, &QTimer::timeout, this, &ProcessTreeStopper::poll);
-}
-
-void ProcessTreeStopper::stop(const StopTarget &target, int graceMs, int killWaitMs) {
-  m_target = target;
-  trackProcessTree(m_target);
-  m_signalled = m_target.known.size();
-  signalTree(m_target, SIGTERM, QStringLiteral("SIGTERM"));
-  m_phase = Phase::Terminating;
-  m_killWaitMs = killWaitMs;
-  m_deadline = QDateTime::currentMSecsSinceEpoch() + graceMs;
-  m_timer->start();
-}
-
-void ProcessTreeStopper::poll() {
-  trackProcessTree(m_target);
-  if (treeGone(m_target)) {
-    m_timer->stop();
-    m_phase = Phase::Idle;
-    Q_EMIT stopped(true, describe(m_target, true, m_signalled));
-    return;
-  }
-  if (QDateTime::currentMSecsSinceEpoch() < m_deadline) {
-    return;
-  }
-  if (m_phase == Phase::Terminating) {
-    signalTree(m_target, SIGKILL, QStringLiteral("SIGKILL"));
-    m_phase = Phase::Killing;
-    m_deadline = QDateTime::currentMSecsSinceEpoch() + m_killWaitMs;
-    return;
-  }
-  m_timer->stop();
-  m_phase = Phase::Idle;
-  Q_EMIT stopped(false, describe(m_target, false, m_signalled));
-}
-
-bool ProcessTreeStopper::stopBlocking(const StopTarget &target, int graceMs, int killWaitMs) {
-  StopTarget tree = target;
-  trackProcessTree(tree);
-  signalTree(tree, SIGTERM, QStringLiteral("SIGTERM"));
-  for (int phase = 0; phase < 2; ++phase) {
-    const qint64 deadline = QDateTime::currentMSecsSinceEpoch() + (phase == 0 ? graceMs : killWaitMs);
+TreeStopOutcome stopProcessTree(StopTarget &target, int graceMs, int killWaitMs) {
+  TreeStopOutcome outcome;
+  trackProcessTree(target);
+  const qsizetype signalled = target.known.size();
+  signalTree(target, SIGTERM, QStringLiteral("SIGTERM"));
+  bool gone = false;
+  for (int phase = 0; phase < 2 && !gone; ++phase) {
+    const qint64 deadline =
+        QDateTime::currentMSecsSinceEpoch() + (phase == 0 ? graceMs : killWaitMs);
     while (QDateTime::currentMSecsSinceEpoch() < deadline) {
-      trackProcessTree(tree);
-      if (treeGone(tree)) {
-        return true;
+      trackProcessTree(target);
+      if (trackedGone(target) &&
+          (target.scopeUnit.isEmpty() || !isScopeActive(target.tools, target.scopeUnit))) {
+        gone = true;
+        break;
       }
       QThread::msleep(kPollMs);
     }
-    if (phase == 0) {
-      signalTree(tree, SIGKILL, QStringLiteral("SIGKILL"));
+    if (!gone && phase == 0) {
+      signalTree(target, SIGKILL, QStringLiteral("SIGKILL"));
     }
   }
-  return treeGone(tree);
+  outcome.trackedGone = trackedGone(target);
+  outcome.proven = !target.scopeUnit.isEmpty() && outcome.trackedGone &&
+                   !isScopeActive(target.tools, target.scopeUnit);
+  outcome.detail = describeOutcome(target, outcome, signalled);
+  return outcome;
+}
+
+QString describeOutcome(const StopTarget &target, const TreeStopOutcome &outcome,
+                        qsizetype signalled) {
+  QString state;
+  if (outcome.proven) {
+    state = QStringLiteral("process tree stopped (scope %1 gone)").arg(target.scopeUnit);
+  } else if (outcome.trackedGone && target.scopeUnit.isEmpty()) {
+    state = QStringLiteral("stopped as far as tracked (process-group fallback: a process that "
+                           "detached before it was tracked cannot be ruled out)");
+  } else {
+    state = QStringLiteral("some processes may still be running");
+  }
+  return QStringLiteral("%1; %2 processes signalled, %3 still alive")
+      .arg(state)
+      .arg(signalled)
+      .arg(target.known.size());
 }
 
 } // namespace QindaQt::QindaLutris

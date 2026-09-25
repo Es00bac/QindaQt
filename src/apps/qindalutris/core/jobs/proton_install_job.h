@@ -12,6 +12,7 @@
 #include <QTimer>
 
 #include <memory>
+#include <thread>
 
 class QTemporaryDir;
 
@@ -46,7 +47,9 @@ struct ProtonJobResult final {
 // SHA-512, streamed in slices so the UI stays live -> `tar --list --verbose`
 // checked by validateArchiveListing (archive_listing.h), which must also name
 // toolName as the one top folder -> `tar --extract` into staging ->
-// renameNoReplace(staging/<toolName>, <root>/<toolName>). Every failure and
+// verifyStagedBuild (staged_tree_check.h, on a worker thread) re-resolves
+// every link in the REAL tree -> renameNoReplace(staging/<toolName>,
+// <root>/<toolName>). Every failure and
 // cancel removes staging with removeTreeForcibly -- only after the tar
 // process tree is confirmed gone; nothing half-extracted is ever visible
 // under the root. finished() is always queued (never emitted from inside
@@ -86,7 +89,8 @@ private:
     Hashing,
     Listing,
     Extracting,
-    Stopping,   // waiting for the tar tree to die after cancel
+    Verifying,  // verifyStagedBuild() on a worker thread
+    Stopping,   // waiting for the tar tree / verifier after cancel
     Concluding, // result queued
   };
 
@@ -97,6 +101,8 @@ private:
   void hashSlice();
   void beginListing();
   void beginExtracting();
+  void beginVerifying();
+  void onVerified(bool ok, const QString &reason);
   void commit();
   void fail(const QString &plain, const QString &detail);
   void conclude(ProtonJobResult result);
@@ -118,6 +124,7 @@ private:
   QTimer m_hashTimer;
   double m_reported = 0.0;
   bool m_keepStaging = false;
+  std::thread m_verifier;
   quint64 m_generation = 0;
   JobLog m_log;
 };

@@ -79,16 +79,25 @@ private:
   }
 };
 
+// The protected test seam: only a subclass may supply another URL policy.
+class LocalHttpDownloader final : public NetworkDownloader {
+public:
+  explicit LocalHttpDownloader(DownloadLimits limits)
+      : NetworkDownloader(limits,
+                          [](const QUrl &url) {
+                            return url.scheme() == QLatin1String("http") &&
+                                   url.host() == QLatin1String("127.0.0.1");
+                          },
+                          nullptr) {}
+};
+
 struct Download {
   QTemporaryDir dir{QDir::homePath() + QStringLiteral("/net-XXXXXX")};
   QString destination = dir.filePath(QStringLiteral("file.bin"));
   std::optional<std::pair<bool, QString>> result;
-  NetworkDownloader downloader;
+  LocalHttpDownloader downloader;
 
   explicit Download(DownloadLimits limits = {}) : downloader(limits) {
-    downloader.setUrlPolicyForTesting([](const QUrl &url) {
-      return url.scheme() == QLatin1String("http") && url.host() == QLatin1String("127.0.0.1");
-    });
     QObject::connect(&downloader, &Downloader::finished,
                      [this](bool ok, const QString &reason) { result = std::make_pair(ok, reason); });
   }
@@ -176,7 +185,11 @@ private Q_SLOTS:
     Download d;
     QVERIFY(d.run(server.url(QStringLiteral("/short"))));
     QVERIFY(!d.result->first);
-    QVERIFY2(d.result->second.contains(QStringLiteral("400")), qPrintable(d.result->second));
+    // Either Qt sees the early close, or the length check does.
+    QVERIFY2(d.result->second ==
+                     QStringLiteral("The server closed the connection before the download finished.") ||
+                 d.result->second.contains(QStringLiteral("cut short (400 of 1000")),
+             qPrintable(d.result->second));
     QVERIFY(d.leftNothing());
   }
 

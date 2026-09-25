@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "process_supervisor.h"
 #include "process_tree.h"
 
 #include <QByteArray>
@@ -40,10 +41,16 @@ struct ProcessRunResult final {
   bool timedOut = false;
   bool cancelled = false;
   bool crashed = false;
-  // After a timeout or cancel: true only when the WHOLE process tree was
-  // confirmed gone. False means something may still run; callers must not
-  // delete files the tree might still use.
-  bool treeStopped = true;
+  // PROVEN: systemd reports the job's scope gone and every tracked process
+  // is dead. Never true in the process-group fallback, which cannot prove
+  // it. Callers must not delete files the tree might use unless proven.
+  bool treeStopped = false;
+  // Every tracked process (descendants and process-group members) is dead:
+  // "stopped as far as tracked". The fallback's best answer.
+  bool trackedStopped = false;
+  // A normal exit left processes of the tree running; they were stopped
+  // (TERM -> grace -> KILL) before finished() was reported.
+  bool stoppedLeftovers = false;
   int exitCode = -1;
   QByteArray standardOutput;
   QByteArray standardError;
@@ -59,6 +66,10 @@ struct ProcessRunResult final {
 //    then arrives with cancelled = true once the tree is gone or the SIGKILL
 //    escalation ended (treeStopped says which). cancel() when idle is a no-op.
 //  - a timeout stops the tree the same way (timedOut = true).
+//  - after a normal exit, leftovers of the tree (background children, a
+//    still-active scope) are stopped the same way BEFORE finished().
+//  - no blocking call runs on the owner's thread while a job runs; tree
+//    tracking and stopping happen on ProcessTreeSupervisor's worker.
 // Threading: confined to the owning thread.
 class ProcessRunner : public QObject {
   Q_OBJECT
@@ -93,6 +104,8 @@ public:
   void start(const ProcessRunSpec &spec) override;
   void cancel() override;
 
+  // Built once per runner: probes `systemctl --user is-system-running`
+  // (bounded, ~2 s max) -- construct runners before a job starts.
   // Grace between SIGTERM and SIGKILL, and the wait after SIGKILL.
   void setStopTimings(int graceMs, int killWaitMs);
   [[nodiscard]] bool usesSystemdScope() const { return m_tools.available(); }
@@ -103,22 +116,22 @@ private:
   void collect();
   void onProcessFinished();
   void beginStop();
-  void onStopped(bool treeGone, const QString &detail);
+  void onSettled(const TreeStopOutcome &outcome);
   void releaseProcess();
   void emitLater(ProcessRunResult result);
 
   UserScopeTools m_tools;
   QProcess *m_process = nullptr;
   QTimer *m_timeout = nullptr;
-  QTimer *m_tracker = nullptr;
-  ProcessTreeStopper *m_stopper = nullptr;
+  ProcessTreeSupervisor *m_supervisor = nullptr;
   StopTarget m_target;
   ProcessRunResult m_result;
   qsizetype m_limit = 0;
   quint64 m_generation = 0;
   int m_graceMs = 5000;
   int m_killWaitMs = 3000;
-  bool m_stopping = false;
+  bool m_stopping = false; // cancel/timeout requested
+  bool m_exited = false;   // main process ended; waiting for the supervisor
 };
 
 } // namespace QindaQt::QindaLutris
