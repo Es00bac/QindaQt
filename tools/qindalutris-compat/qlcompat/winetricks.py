@@ -1,9 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""winetricks: the authoritative verb list every imported verb is checked on.
+"""winetricks: the committed verb allowlist and how it is refreshed.
 
-`winetricks list-all` prints category banners ("===== dlls =====") and one
-verb per line, the verb being the first whitespace-separated token. The list
-is cached like any fetch so --offline runs validate against the same list.
+tools/qindalutris-compat/winetricks-verbs.txt is the single list of verbs a
+compat-db-v1 document may name. Both validators read it: this package at
+import time (schema.py) and the C++ parser through a header CMake generates
+from the same file at configure time. It is produced from `winetricks
+list-all`, which prints category banners ("===== dlls =====") and one verb
+per line (the first whitespace-separated token), restricted to the dlls,
+fonts and settings categories: apps and benchmarks install programs, and
+the prefix category only lists existing prefixes.
+
 protontricks wraps winetricks and takes the same verbs, which is how Steam
 users apply them; QindaLutris runs them as `umu-run winetricks <verbs>`.
 """
@@ -11,30 +17,64 @@ users apply them; QindaLutris runs them as `umu-run winetricks <verbs>`.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 
 from . import schema
-from .fetch import CachedResponse, Fetcher, utc_stamp
+from .fetch import utc_stamp
 
 SOURCE_ID = "winetricks"
 SOURCE_URL = "https://github.com/Winetricks/winetricks"
-CACHE_NAME = "winetricks-list-all.txt"
+CATEGORIES = ("dlls", "fonts", "settings")
+# Present in the settings category but never valid database advice: test
+# verbs, interactive prompts, and a verb with an empty value.
+EXCLUDED = frozenset(("bad", "good", "set_userpath", "set_mididevice", "winver="))
 
 
-def parse_list(text: str) -> set[str]:
-    verbs = set()
+def is_forbidden(verb: str) -> bool:
+    """Verbs that must never enter the allowlist, whatever winetricks says."""
+    return (verb.startswith("-") or verb == "annihilate" or verb.startswith("prefix=")
+            or verb.startswith("arch=") or verb.startswith("list") or verb in EXCLUDED)
+
+
+def parse_list_all(text: str) -> dict[str, set[str]]:
+    """`winetricks list-all` output as {category: verbs}."""
+    categories: dict[str, set[str]] = {}
+    current = None
     for line in text.splitlines():
-        if not line.strip() or line.startswith("=====") or line.startswith("Executing"):
-            continue
-        verb = line.split()[0]
-        if schema.is_winetricks_verb(verb):
-            verbs.add(verb)
-    return verbs
+        banner = re.fullmatch(r"===== (\S+) =====", line.strip())
+        if banner:
+            current = categories.setdefault(banner.group(1), set())
+        elif current is not None and line.strip() and not line.startswith("Executing"):
+            current.add(line.split()[0])
+    return categories
 
 
-def _run_list_all(binary: str) -> str | None:
+def allowlist_from(text: str) -> list[str]:
+    categories = parse_list_all(text)
+    verbs = set().union(*(categories.get(c, set()) for c in CATEGORIES))
+    return sorted(v for v in verbs if schema.is_verb_shape(v) and not is_forbidden(v))
+
+
+def render_file(verbs: list[str], version: str, generated: str) -> str:
+    header = [
+        "# SPDX-License-Identifier: GPL-3.0-or-later",
+        "# compat-db-v1 winetricks verb allowlist (ADR-0275 section 3).",
+        "# AGENT-CONTRACT: the one source of truth for BOTH validators --",
+        "# qlcompat/schema.py reads it and src/apps/qindalutris/core/CMakeLists.txt",
+        "# turns it into a header for compat_db_rules.cpp. Do not edit by hand;",
+        "# regenerate with: generate.py --update-winetricks-verbs",
+        f"# categories: {' '.join(CATEGORIES)}",
+        f"# winetricks-version: {version}",
+        f"# generated: {generated}",
+    ]
+    return "\n".join(header + verbs) + "\n"
+
+
+def _run(binary: str, *args: str) -> str | None:
     path = shutil.which(binary)
     if path is None:
         return None
@@ -44,48 +84,42 @@ def _run_list_all(binary: str) -> str | None:
         env = dict(os.environ, WINEPREFIX=os.path.join(scratch, "unused-prefix"),
                    WINEDEBUG="-all")
         try:
-            done = subprocess.run([path, "list-all"], env=env, capture_output=True,
+            done = subprocess.run([path, *args], env=env, capture_output=True,
                                   text=True, timeout=120, check=False)
         except (OSError, subprocess.TimeoutExpired):
             return None
     return done.stdout if done.returncode == 0 and done.stdout else None
 
 
-def load_verbs(fetcher: Fetcher, binary: str, list_file: str | None,
-               log) -> tuple[set[str] | None, str | None]:
-    """The verb set and when it was taken; (None, None) if unavailable."""
-    if list_file:
-        with open(list_file, encoding="utf-8") as handle:
-            return parse_list(handle.read()), None
-    cached = fetcher.cached(CACHE_NAME)
-    if not fetcher.offline and (cached is None or fetcher.refresh):
-        text = _run_list_all(binary)
-        if text is not None:
-            cached = CachedResponse(SOURCE_URL, 200, utc_stamp(), text.encode("utf-8"))
-            fetcher.store(CACHE_NAME, cached)
-    if cached is None or not cached.ok:
-        log("winetricks: no verb list (winetricks missing and nothing cached); "
-            "verbs are checked for charset only")
-        return None, None
-    return parse_list(cached.body.decode("utf-8")), cached.retrieved
+def update_file(binary: str, path: Path, log) -> int:
+    """Regenerate the allowlist from the installed winetricks."""
+    listing = _run(binary, "list-all")
+    version = (_run(binary, "--version") or "").strip().splitlines()
+    if listing is None or not version:
+        log(f"winetricks: `{binary} list-all` failed; allowlist unchanged")
+        return 1
+    verbs = allowlist_from(listing)
+    stamp = version[-1].split()[0]
+    path.write_text(render_file(verbs, stamp, utc_stamp()), encoding="utf-8")
+    log(f"winetricks: wrote {len(verbs)} verbs from winetricks {stamp} to {path}")
+    return 0
 
 
-def filter_records(registry, verbs: set[str] | None,
+def filter_records(registry, verbs: frozenset[str],
                    curated_verbs: dict[str, list[str]], log) -> None:
-    """Drop imported verbs winetricks does not know; refuse unknown curated ones.
+    """Drop imported verbs outside the allowlist; refuse curated ones.
 
-    A curated verb is a human claim with evidence, so a typo there stops the
-    generator; an imported verb that winetricks has retired is dropped with
-    a log line.
+    A curated verb is a human claim with evidence, so one outside the
+    allowlist stops the generator; an imported one is dropped with a log line.
     """
     for record in registry.sorted():
         kept = []
         for verb in record.winetricks:
-            known = schema.is_winetricks_verb(verb) and (verbs is None or verb in verbs)
-            if known:
+            if verb in verbs:
                 kept.append(verb)
-            elif verb in curated_verbs.get(record.id, ()) and verbs is not None:
-                raise ValueError(f"curated game {record.id}: unknown winetricks verb {verb!r}")
+            elif verb in curated_verbs.get(record.id, ()):
+                raise ValueError(f"curated game {record.id}: winetricks verb {verb!r} "
+                                 "is not in winetricks-verbs.txt")
             else:
-                log(f"winetricks: {record.id} drops unknown verb {verb!r}")
+                log(f"winetricks: {record.id} drops verb {verb!r} (not in the allowlist)")
         record.winetricks = kept

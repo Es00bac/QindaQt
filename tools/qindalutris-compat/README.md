@@ -25,9 +25,27 @@ cd tools/qindalutris-compat
   A source with no cached copy is left out, and so is its `sources` entry.
 - `--generated 2026-09-25T00:00:00Z` fixes the document stamp. With the same
   cache, `curated.toml` and stamp the output is byte-identical.
-- Verbs are checked against `winetricks list-all` (run with a throwaway
-  `WINEPREFIX`, so it never touches `~/.wine`); `--winetricks-list FILE`
-  uses a saved listing instead.
+- Requests to one host are at least a second apart; a 429 or 503 answer is
+  retried after its `Retry-After` (capped at two minutes, four attempts),
+  then the cached copy is used.
+- Every warning (a dropped verb, a withheld Steam appid, an unreadable
+  report) is printed as it happens and counted on the final line.
+- Verbs are checked against the committed `winetricks-verbs.txt`, never a
+  live listing, so both validators agree.
+
+## Refresh the winetricks verb allowlist
+
+```sh
+./generate.py --update-winetricks-verbs [--winetricks /usr/bin/winetricks]
+```
+
+This runs `winetricks list-all` with a throwaway `WINEPREFIX` (it never
+touches `~/.wine`), keeps the `dlls`, `fonts` and `settings` categories,
+drops the verbs that must never be advice (a leading `-`, `annihilate`,
+`prefix=`, `arch=`, `list*`, `bad`, `good`, `set_userpath`,
+`set_mididevice`, `winver=`), and records the winetricks version and date
+in the header. Commit the file with the snapshot it validated; re-run
+CMake, which regenerates the C++ copy from it.
 
 ## Add a curated fact
 
@@ -39,9 +57,13 @@ one must say where it comes from:
   someone could repeat ("measured on qinda-top 2026-09-25 ...");
 - a PCGamingWiki fact also puts the page in the game's `links`, and uses
   the page URL as `source`;
-- winetricks verbs must exist in `winetricks list-all`;
-- `PROTONPATH`, `WINEPREFIX`, `GAMEID`, `STORE`, `PATH`, `HOME`, `WINE` and
-  `LD_*` are refused: the launch planner owns them.
+- winetricks verbs must be in `winetricks-verbs.txt`;
+- environment keys must be on the schema's allowlist (see the wiki page):
+  `WINEDLLOVERRIDES`, `DXVK_*`/`VKD3D_*` switches, listed `PROTON_*` and
+  `__GL_*` flags, and a few Wine/Mesa settings -- anything else refuses the
+  whole document;
+- `[games.proton] recommended` must name a build listed here with status
+  `tested`; an untested build can be described and avoided, never pinned.
 
 A game table accepts `id`, `title`, `source`, `umuStore`, `keys` (as in the
 schema), `environment`, `winetricks`, `arguments`, `notes`, `links`,
@@ -54,9 +76,13 @@ schema), `environment`, `winetricks`, `arguments`, `notes`, `links`,
 - `lutris = { slug = "<lutris game slug>", installer = "<installer slug>",
   take = [...] }` reads one published Wine installer from
   `https://lutris.net/api/installers/<slug>`. `take` chooses among
-  `winetricks`, `environment`, `dlloverrides` (becomes one
-  `WINEDLLOVERRIDES`), `arguments` and `exe`. Lutris variables such as
-  `$GAMEDIR`, HUD and shader-cache settings are never imported.
+  `winetricks`, `environment` and `dlloverrides` (becomes one
+  `WINEDLLOVERRIDES`). Lutris scripts carry no license, so only these
+  uncopyrightable facts are taken (ADR-0275 §7) and the game's Lutris page
+  is linked as attribution; arguments and executable names are written in
+  the curated entry itself with their own evidence. Lutris variables such
+  as `$GAMEDIR`, HUD and shader-cache settings and non-allowlisted keys are
+  never imported.
 
 A field the curated entry sets replaces the imported value; notes and links
 are added to.
@@ -67,13 +93,16 @@ Then regenerate, validate, and run the tests:
 python3 -m unittest discover -s tests -t .
 ```
 
-(ctest runs the same suite as `qindaqt.qindalutris-compat-generator`, and
-`qindaqt.qindalutris-compat-snapshot` validates the committed snapshot.)
+(ctest runs the same suite as `qindaqt.qindalutris-compat-generator`;
+`qindaqt.qindalutris-compat-snapshot` validates the committed snapshot and
+`qindaqt.qindalutris-compat-differential` judges 172 mutation cases with
+both validators.)
 
 ## Release flow
 
-1. Regenerate with `--refresh`, review `curated.toml`, and read the diff of
-   the snapshot (one game per line).
+1. Optionally refresh `winetricks-verbs.txt`, then regenerate with
+   `--refresh`, review `curated.toml` (including its TODOs), read the
+   warnings, and read the diff of the snapshot (one game per line).
 2. `./validate.py` the snapshot, then build and run
    `ctest -L qindalutris`: the C++ parser must load it too.
 3. Commit the snapshot together with any `curated.toml` change.

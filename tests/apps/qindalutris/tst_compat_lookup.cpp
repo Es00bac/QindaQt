@@ -14,7 +14,8 @@ namespace {
 CompatDatabase basic() {
   CompatLoadError error = CompatLoadError::Refused;
   return loadCompatDatabase(
-      QStringLiteral(QINDALUTRIS_COMPAT_FIXTURES "/valid/basic.json"), &error);
+      QStringLiteral(QINDALUTRIS_COMPAT_FIXTURES "/valid/basic.json"), &error,
+      QDateTime(QDate(2026, 10, 2), QTime(0, 0), QTimeZone::UTC));
 }
 
 QString matchedId(const CompatDatabase &db, const GameKeys &keys) {

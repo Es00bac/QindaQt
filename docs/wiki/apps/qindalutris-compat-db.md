@@ -20,17 +20,32 @@ turns into a warning that offers a move.
 | Refreshed | `$XDG_DATA_HOME/qindalutris/compat-db-v1.json` | the app's manual "check for newer information" |
 | Source snapshot | `src/apps/qindalutris/compat/compat-db-v1.json` | `tools/qindalutris-compat/generate.py` |
 
-The copy with the newer `generated` stamp wins. A copy that is absent or
-refused never wins; if both are equal the shipped copy is kept. When neither
-loads, the app runs with an empty database: no advice, never a guess.
+The copy with the newer `generated` stamp wins. A copy that is absent,
+refused, or stamped more than 24 hours after the current time never wins; if
+both are equal the shipped copy is kept. When neither loads, the app runs
+with an empty database: no advice, never a guess.
+
+The loader opens the file with `O_NOFOLLOW` and checks its type and size
+with `fstat` on the same descriptor it reads, so a symlink, a FIFO, a
+directory or an oversized file is refused before a byte is parsed.
 
 ## Schema `compat-db-v1`
 
-One UTF-8 JSON object, at most **32 MiB**. Every object has an exact key
-set: an unknown key, a missing required key, a wrong type or any value
-outside its set refuses the **whole document**. Lengths are counted in
-UTF-16 code units. "Text" means a string with no control character (Unicode
-category Cc, which includes newline and tab).
+One JSON object, at most **32 MiB**. Every object has an exact key set: an
+unknown key, a missing required key, a wrong type or any value outside its
+set refuses the **whole document**. Lengths are counted in UTF-16 code
+units. "Text" means a string with no control character (Unicode category
+Cc, which includes newline and tab).
+
+The bytes themselves must be one strict RFC 8259 JSON text: strict UTF-8
+with no byte-order mark, only space, tab, LF and CR as whitespace, the RFC
+number grammar (so `1.`, `.1e1`, `01` and `+1` are refused), and **no object
+with two equal keys**, compared after unescaping. Python checks duplicates
+with an `object_pairs_hook`; the C++ side runs a strict scanner over the raw
+bytes (`compat_json_scan.cpp`) before `QJsonDocument`, which would otherwise
+skip a BOM, accept those number forms and silently keep the last duplicate.
+Nesting is capped at 512 levels by the scanner; deeper input could never
+match the schema anyway.
 
 ### Top level (all keys required)
 
@@ -38,9 +53,9 @@ category Cc, which includes newline and tab).
 |---|---|
 | `schema` | exactly `"qindalutris-compat-db"` |
 | `version` | the number `1` (a later schema is a new file, `compat-db-v2.json`) |
-| `generated` | `YYYY-MM-DDTHH:MM:SSZ`, a real UTC date and time |
-| `sources` | list of at most 32 `{id, url, retrieved}`; `id` matches `[a-z0-9][a-z0-9-]{0,63}` and is unique; `url` is an https URL; `retrieved` is a timestamp like `generated` |
-| `defaults` | `{recommendedBuild}`: `""` or a key of `builds` |
+| `generated` | `YYYY-MM-DDTHH:MM:SSZ`, a real UTC date and time, at most 24 hours after the clock the document is judged against |
+| `sources` | list of at most 32 `{id, url, retrieved}`; `id` matches `[a-z0-9][a-z0-9-]{0,63}` and is unique; `url` is an https URL; `retrieved` is a timestamp with the same rules as `generated` |
+| `defaults` | `{recommendedBuild}`: `""` or a key of `builds` whose status is `tested` |
 | `builds` | object of at most 256 entries: build name → `{status, notes}`; `status` is `tested`, `known-issues` or `untested`; `notes` is text of at most 2048 (may be empty) |
 | `games` | list of at most 100000 game objects |
 
@@ -61,9 +76,9 @@ absent when empty.
 | `id` | `[a-z0-9][a-z0-9._:-]{0,127}`, unique; stable across regenerations |
 | `title` | text, 1–256 |
 | `keys` | object; see below |
-| `proton` | `{recommended?, avoid?}`: `recommended` is a build name; `avoid` is a list of at most 64 `{build, reason, source}` with a unique build name, `reason` and `source` text of 1–2048 |
-| `environment` | at most 32 `KEY=VALUE` lines; the key is an ASCII identifier of at most 64, the line at most 1089 long with no control character. Reserved keys are refused: `PROTONPATH`, `WINEPREFIX`, `GAMEID`, `STORE`, `UMU_ID`, `UMU_RUNTIME_UPDATE`, `PROTON_VERB`, `STEAM_COMPAT_DATA_PATH`, `STEAM_COMPAT_CLIENT_INSTALL_PATH`, `PATH`, `HOME`, `WINE` and every `LD_*` |
-| `winetricks` | at most 64 verbs matching `[a-z0-9_=.-]{1,64}` |
+| `proton` | `{recommended?, avoid?}`: `recommended` must be a key of `builds` whose status is `tested`; `avoid` is a list of at most 64 `{build, reason, source}` with a unique, valid build name (any build, listed or not), `reason` and `source` text of 1–2048 |
+| `environment` | at most 32 `KEY=VALUE` lines, each key at most once; see [the environment allowlist](#the-environment-allowlist) |
+| `winetricks` | at most 64 verbs, each listed in `tools/qindalutris-compat/winetricks-verbs.txt`; see [the verb allowlist](#the-winetricks-verb-allowlist) |
 | `arguments` | at most 64 text arguments of 1–512 |
 | `antiCheat` | `{status, notes?}`: `status` is `supported`, `running`, `broken`, `denied`, `planned`, `none` or `unknown`; `notes` text of 1–2048 |
 | `protondbTier` | `platinum`, `gold`, `silver`, `bronze`, `borked`, `native`, `pending` or `unknown` |
@@ -71,6 +86,58 @@ absent when empty.
 | `umuStore` | umu's `STORE` value: `amazon`, `battlenet`, `ea`, `egs`, `gog`, `humble`, `itchio`, `steam`, `ubisoft`, `umu`, `zoomplatform` or `none` |
 | `notes` | at most 64 text notes of 1–2048 |
 | `links` | at most 64 https URLs |
+
+### The environment allowlist
+
+A line is text of at most 1089 units: a key of at most 64 ASCII letters,
+digits and underscores (not starting with a digit), `=`, and a value with no
+`$` and no backtick. Keys are case-sensitive and must be on this list:
+
+- exactly `WINEDLLOVERRIDES`, `WINE_FULLSCREEN_FSR`,
+  `WINE_FULLSCREEN_FSR_STRENGTH`, `WINE_FULLSCREEN_FSR_MODE`,
+  `RADV_PERFTEST`, `mesa_glthread`, `STAGING_SHARED_MEMORY`;
+- these Proton behaviour flags, each present in the `proton` script of
+  GE-Proton11-6 and 11-7: `PROTON_NO_WM_DECORATION`, `PROTON_USE_WINED3D`,
+  `PROTON_USE_WINED3D11`, `PROTON_NO_ESYNC`, `PROTON_NO_FSYNC`,
+  `PROTON_NO_NTSYNC`, `PROTON_FORCE_LARGE_ADDRESS_AWARE`,
+  `PROTON_HIDE_NVIDIA_GPU`, `PROTON_HIDE_INTEL_GPU`, `PROTON_ENABLE_WAYLAND`,
+  `PROTON_USE_XALIA`, `PROTON_PREFER_SDL`, `PROTON_ENABLE_HDR`,
+  `PROTON_DISABLE_NVAPI`, `PROTON_FORCE_NVAPI`, `PROTON_NO_D3D10`,
+  `PROTON_NO_D3D11`, `PROTON_DXVK_D3D8`, `PROTON_HEAP_DELAY_FREE`,
+  `PROTON_HEAP_ZERO_MEMORY`, `PROTON_OLD_GL_STRING`, `PROTON_NO_XIM`,
+  `PROTON_SET_GAME_DRIVE`;
+- these NVIDIA OpenGL settings, all value-only in NVIDIA's driver README:
+  `__GL_SHADER_DISK_CACHE`, `__GL_SHADER_DISK_CACHE_SIZE`,
+  `__GL_THREADED_OPTIMIZATIONS`, `__GL_SYNC_TO_VBLANK`, `__GL_VRR_ALLOWED`,
+  `__GL_YIELD`, `__GL_FSAA_MODE`, `__GL_SHARPEN_ENABLE`,
+  `__GL_SHARPEN_VALUE`, `__GL_ALLOW_FXAA_USAGE`;
+- any `DXVK_*` or `VKD3D_*` key whose suffix is upper-case letters, digits
+  and underscores, except one ending in `_PATH`, `_FILE` or `_DIR` or
+  containing `LOG` or `CONFIG_FILE`.
+
+Every other key refuses the document. That includes the launch planner's
+own (`PROTONPATH`, `WINEPREFIX`, `GAMEID`, `STORE`, `UMU_*`,
+`PROTON_VERB`), loaders and interpreters (`LD_*`, `PYTHON*`, `BASH_ENV`,
+`ENV`, `PERL5OPT`, `NODE_OPTIONS`), Wine binaries and search paths
+(`WINE`, `WINELOADER`, `WINESERVER`, `WINEDLLPATH`, `PATH`, `GCONV_PATH`,
+`LIBGL_DRIVERS_PATH`, `GIO_MODULE_DIR`), Vulkan and EGL layers and drivers
+(`VK_*`, `__EGL_VENDOR_LIBRARY_FILENAMES`), `PRESSURE_VESSEL_*`,
+`STEAM_COMPAT_*`, `PROTON_LOG*` and `BROWSER`. A refreshed download can
+therefore neither re-pin a title nor make its launch run code of its
+choosing. Widening the list is a schema change made on both sides at once.
+
+### The winetricks verb allowlist
+
+`tools/qindalutris-compat/winetricks-verbs.txt` is the only list of verbs a
+document may name, and the single source both validators read: Python loads
+it directly, and CMake turns it into `compat_winetricks_verbs.inc` for the
+C++ rules at configure time. It is generated from `winetricks list-all`
+(its header records the winetricks version and date), restricted to the
+`dlls`, `fonts` and `settings` categories. Application and benchmark
+installers, the `prefix` listing, a leading `-`, `annihilate`, `prefix=`,
+`arch=`, anything starting with `list`, and winetricks' test and
+interactive verbs (`bad`, `good`, `set_userpath`, `set_mididevice`,
+`winver=`) are never in it.
 
 `keys` (all optional):
 
@@ -125,15 +192,33 @@ first, and records each source's retrieval time in `sources`:
 |---|---|
 | [umu-database](https://github.com/Open-Wine-Components/umu-database) CSV | umu ids, store codenames, titles, notes, executable names; a numeric umu id is the Steam appid, as its README defines |
 | [AreWeAntiCheatYet](https://areweanticheatyet.com/) `games.json` | anti-cheat status (its five states map one-to-one), anti-cheat names and notes, Steam appids |
+| Steam store app details | Steam's own name for an appid, asked only when several AreWeAntiCheatYet entries claim that appid |
 | [ProtonDB](https://www.protondb.com/) per-app summaries | `protondbTier` for at most `--protondb-limit` Steam appids already in the database |
 | Steam store Deck compatibility report | `steamDeck` for the same appids under the same limit; an undocumented endpoint the store page itself uses, so it is cached, rate-limited and skipped on any error |
-| [Lutris](https://lutris.net/) installer scripts | winetricks verbs, environment, DLL overrides, arguments and executables, only for curated games that name one installer |
-| winetricks `list-all` | the verb list every imported verb must appear in |
+| [Lutris](https://lutris.net/) installer scripts | winetricks verb names and environment settings (including DLL overrides), only for curated games that name one installer |
+| `winetricks-verbs.txt` | the committed verb allowlist every verb must appear in |
 | `curated.toml` | everything a person has verified, each with its evidence |
 
-ADR-0275 names ProtonDB's public data dumps; the generator reads the
-per-appid summary endpoint instead, because it is small, cacheable and
-bounded by a flag, where a dump is a bulk download of every report.
+When several AreWeAntiCheatYet entries claim one Steam appid (a renamed
+game listed under both names, or a wrong id), the appid goes only to the
+entry whose name matches Steam's own name for it; when none or several
+match, no entry keys that appid, and a withheld entry may not reach it
+through a title either. Entries whose slugs are percent-encoded or
+non-ASCII keep an id derived from the decoded slug plus a short hash. Every
+such decision is printed and counted among the generator's warnings.
+
+Valve's Steam Deck results arrive as tokens such as
+`#SteamDeckVerified_TestResult_InterfaceTextIsNotLegible`; known tokens are
+turned into sentences from a table, and an unknown one into the words of
+its whole name after `_TestResult_`. Passed checks are not recorded.
+
+**Data licensing** (ADR-0275 §7). PCGamingWiki is only linked, never
+copied. Lutris install scripts carry no license, so only uncopyrightable
+facts are taken from them -- winetricks verb names and environment
+settings -- and each such game links its Lutris page as attribution.
+ProtonDB data is under the ODbL: the `protondb` source entry and the per-game
+ProtonDB link are the attribution, and any screen that shows a tier must
+label it as ProtonDB's community rating.
 
 protontricks accepts the same verbs as winetricks and is how Steam users
 apply them to a Steam game. QindaLutris applies them itself, once per
@@ -144,17 +229,23 @@ The refresh, curation and release procedure is in
 
 ## The two validators
 
-The C++ parser (`src/apps/qindalutris/core/compat_db_parse.cpp` and
-`compat_db_rules.cpp`) and the generator's validator
-(`tools/qindalutris-compat/qlcompat/schema.py`) implement the rules above
-one for one; an `AGENT-CONTRACT` marker on each side names the other. Both
-test suites judge the same fixtures in
-`tests/apps/qindalutris/data/compat/{valid,refused}` and load the committed
-snapshot, so a rule changed on one side only fails a gate.
+The C++ parser (`src/apps/qindalutris/core/compat_db_parse.cpp`,
+`compat_db_rules.cpp` and `compat_json_scan.cpp`) and the generator's
+validator (`tools/qindalutris-compat/qlcompat/schema.py` and
+`schema_rules.py`) implement the rules above one for one; an
+`AGENT-CONTRACT` marker on each side names the other. Both judge against an
+injected clock (`validate.py --now`, the `now` argument of
+`parseCompatDocument`/`loadCompatDatabase`/`chooseNewer`). Both test suites
+judge the same fixtures in `tests/apps/qindalutris/data/compat/{valid,refused}`,
+the same rules tables (`tst_compat_rules.cpp` and `test_rules.py`), the
+differential cases, and the committed snapshot, so a rule changed on one
+side only fails a gate.
 
 | Test | What it proves |
 |---|---|
-| `qindaqt.qindalutris-compat-db` | every field (including `steamDeck`) loads; every refused fixture is refused whole; absent, symlink, directory, oversize and 100001-game documents; newer-wins; the committed snapshot loads |
+| `qindaqt.qindalutris-compat-db` | every field (including `steamDeck`) loads; every refused fixture is refused whole; absent, symlink, FIFO, directory, oversize and 100001-game documents; newer-wins; the committed snapshot loads |
+| `qindaqt.qindalutris-compat-rules` | the environment and verb allowlists key by key, pins on tested builds only, the 24-hour future rule and `chooseNewer`, and the byte-level JSON rules |
+| `qindaqt.qindalutris-compat-differential` | 172 mutation cases (the independent review's 121 plus allowlist and clock cases) judged by both validators, which must agree with each other and with `compat_differential/expected.txt` |
 | `qindaqt.qindalutris-compat-lookup` | key precedence table, ambiguity withheld, basename and alias matching, avoid reasons, recommended build, build status |
 | `qindaqt.qindalutris-compat-generator` | the Python validator on the shared fixtures, each importer on offline copies of the real formats, deterministic offline generation, curated evidence rules |
 | `qindaqt.qindalutris-compat-snapshot` | `validate.py` accepts the committed snapshot |

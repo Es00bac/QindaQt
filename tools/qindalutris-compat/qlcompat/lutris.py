@@ -8,17 +8,20 @@ the one installer version to trust; only `wine`-runner scripts are read, and
 only the facts the curated entry lists in `take`:
 
 - winetricks:  installer tasks {name: winetricks, app: "<verb> <verb>"}
-- environment: script.system.env, minus Lutris variables ($GAMEDIR...) and
-               the non-compatibility keys in SKIP_ENV
+- environment: script.system.env, minus Lutris variables ($GAMEDIR...), the
+               non-compatibility keys in SKIP_ENV and any key outside the
+               schema's environment allowlist
 - dlloverrides: script.wine.overrides as one WINEDLLOVERRIDES assignment
-- arguments:   script.game.args, split like a shell would
-- exe:         the basename of script.game.exe
+
+AGENT-NOTE: Lutris scripts carry no license, so ADR-0275 section 7 limits
+what is taken to uncopyrightable facts -- verb names and environment
+settings -- and the game's Lutris page is always added to its links as
+attribution. Arguments and executable paths are deliberately not imported.
 """
 
 from __future__ import annotations
 
 import json
-import shlex
 
 from . import schema
 from .fetch import Fetcher
@@ -26,7 +29,7 @@ from .fetch import Fetcher
 URL_TEMPLATE = "https://lutris.net/api/installers/{slug}"
 SOURCE_URL = "https://lutris.net/api/installers/"
 SOURCE_ID = "lutris"
-TAKE = frozenset(("winetricks", "environment", "dlloverrides", "arguments", "exe"))
+TAKE = frozenset(("winetricks", "environment", "dlloverrides"))
 
 # HUDs, shader-cache locations and config-file paths: Lutris conveniences,
 # not compatibility fixes, and mostly paths inside a Lutris game directory.
@@ -85,14 +88,8 @@ def _dll_overrides(script: dict) -> list[str]:
 
 
 def extract(script: dict, take: set[str]) -> dict[str, list[str]]:
-    game = script.get("game") or {}
     facts = {"winetricks": _winetricks(script), "environment": _environment(script),
-             "dlloverrides": _dll_overrides(script), "arguments": [], "exe": []}
-    if isinstance(game.get("args"), str):
-        facts["arguments"] = shlex.split(game["args"])
-    exe = str(game.get("exe", "")).replace("\\", "/").rsplit("/", 1)[-1]
-    if exe.lower().endswith(".exe") and "$" not in exe:
-        facts["exe"] = [exe]
+             "dlloverrides": _dll_overrides(script)}
     return {key: value for key, value in facts.items() if key in take}
 
 

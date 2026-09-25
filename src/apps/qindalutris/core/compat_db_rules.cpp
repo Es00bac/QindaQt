@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "compat_db_rules.h"
 
-#include "library_store.h"
+#include "game.h"
 
+#include <QSet>
 #include <QTimeZone>
 
 #include <array>
@@ -124,7 +125,20 @@ bool isWinetricksVerb(const QString &text) {
   const auto ok = [](QChar ch) {
     return isAsciiLower(ch) || isAsciiDigit(ch) || inSet(ch, "_=.-");
   };
-  return charset(text, 1, kMaxCompatVerbChars, ok, ok);
+  if (!charset(text, 1, kMaxCompatVerbChars, ok, ok)) return false;
+  // AGENT-CONTRACT: the allowlist is tools/qindalutris-compat/
+  // winetricks-verbs.txt, turned into compat_winetricks_verbs.inc by
+  // core/CMakeLists.txt at configure time; qlcompat/schema_rules.py reads the
+  // same file. Never add verbs here by hand.
+  static const QSet<QString> kVerbs = [] {
+    static constexpr const char *kList[] = {
+#include "compat_winetricks_verbs.inc"
+    };
+    QSet<QString> verbs;
+    for (const char *verb : kList) verbs.insert(QLatin1String(verb));
+    return verbs;
+  }();
+  return kVerbs.contains(text);
 }
 
 bool isHttpsUrl(const QString &text) {
@@ -159,26 +173,64 @@ bool isUmuStore(const QString &text) {
   return false;
 }
 
+bool isCompatEnvironmentKey(const QString &key) {
+  // AGENT-GUARD: an ALLOWLIST, mirrored by ENV_EXACT/ENV_PREFIXES in
+  // tools/qindalutris-compat/qlcompat/schema_rules.py. Every PROTON_* flag was
+  // checked against GE-Proton11-6/11-7's `proton` script and every __GL_*
+  // flag against NVIDIA's driver README (value-only settings). Any other key
+  // -- the planner's own (PROTONPATH, WINEPREFIX, GAMEID, STORE, UMU_*),
+  // loader, interpreter, search-path, Vulkan layer/ICD, Wine binary,
+  // pressure-vessel or Steam variables -- refuses the whole document, so a
+  // refreshed download can neither re-pin a title nor make the launch run
+  // code of its choosing. Widening it is a schema change on both sides.
+  static constexpr std::array<const char *, 40> kExact{
+      "WINEDLLOVERRIDES", "WINE_FULLSCREEN_FSR", "WINE_FULLSCREEN_FSR_STRENGTH",
+      "WINE_FULLSCREEN_FSR_MODE", "RADV_PERFTEST", "mesa_glthread",
+      "STAGING_SHARED_MEMORY",
+      "PROTON_NO_WM_DECORATION", "PROTON_USE_WINED3D", "PROTON_USE_WINED3D11",
+      "PROTON_NO_ESYNC", "PROTON_NO_FSYNC", "PROTON_NO_NTSYNC",
+      "PROTON_FORCE_LARGE_ADDRESS_AWARE", "PROTON_HIDE_NVIDIA_GPU",
+      "PROTON_HIDE_INTEL_GPU", "PROTON_ENABLE_WAYLAND", "PROTON_USE_XALIA",
+      "PROTON_PREFER_SDL", "PROTON_ENABLE_HDR", "PROTON_DISABLE_NVAPI",
+      "PROTON_FORCE_NVAPI", "PROTON_NO_D3D10", "PROTON_NO_D3D11", "PROTON_DXVK_D3D8",
+      "PROTON_HEAP_DELAY_FREE", "PROTON_HEAP_ZERO_MEMORY", "PROTON_OLD_GL_STRING",
+      "PROTON_NO_XIM", "PROTON_SET_GAME_DRIVE",
+      "__GL_SHADER_DISK_CACHE", "__GL_SHADER_DISK_CACHE_SIZE",
+      "__GL_THREADED_OPTIMIZATIONS", "__GL_SYNC_TO_VBLANK", "__GL_VRR_ALLOWED",
+      "__GL_YIELD", "__GL_FSAA_MODE", "__GL_SHARPEN_ENABLE", "__GL_SHARPEN_VALUE",
+      "__GL_ALLOW_FXAA_USAGE"};
+  for (const char *exact : kExact) {
+    if (key == QLatin1String(exact)) return true;
+  }
+  // DXVK_* / VKD3D_* behaviour switches: upper-case suffix, and never a key
+  // that names a file, a directory or a log.
+  qsizetype prefix = 0;
+  if (key.startsWith(QLatin1String("DXVK_"))) prefix = 5;
+  if (key.startsWith(QLatin1String("VKD3D_"))) prefix = 6;
+  if (prefix == 0 || key.size() == prefix) return false;
+  for (qsizetype i = prefix; i < key.size(); ++i) {
+    const QChar ch = key.at(i);
+    if (!(isAsciiUpper(ch) || isAsciiDigit(ch) || ch == u'_')) return false;
+  }
+  return !(key.endsWith(QLatin1String("_PATH")) || key.endsWith(QLatin1String("_FILE"))
+           || key.endsWith(QLatin1String("_DIR")) || key.contains(QLatin1String("LOG"))
+           || key.contains(QLatin1String("CONFIG_FILE")));
+}
+
 bool isCompatEnvironmentAssignment(const QString &line) {
-  if (!isValidEnvironmentAssignment(line)) return false;
-  const QString key = line.left(line.indexOf(QLatin1Char('=')));
-  if (!charset(key, 1, 64, [](QChar ch) { return isAsciiUpper(ch) || isAsciiLower(ch) || ch == u'_'; },
-               [](QChar ch) { return isAsciiAlnum(ch) || ch == u'_'; })) {
-    return false;
-  }
-  // AGENT-GUARD: these keys belong to the launch planner (ADR-0275 §1). A
-  // database -- including a refreshed download -- that could set PROTONPATH
-  // would re-pin every matched title behind the user's back, and one that
-  // could set LD_PRELOAD or PATH would run arbitrary code. Refuse the whole
-  // document rather than filter, so a hostile refresh gains nothing.
-  static constexpr std::array<const char *, 12> kReserved{
-      "PROTONPATH", "WINEPREFIX", "GAMEID", "STORE", "UMU_ID",
-      "UMU_RUNTIME_UPDATE", "PROTON_VERB", "STEAM_COMPAT_DATA_PATH",
-      "STEAM_COMPAT_CLIENT_INSTALL_PATH", "PATH", "HOME", "WINE"};
-  for (const char *reserved : kReserved) {
-    if (key == QLatin1String(reserved)) return false;
-  }
-  return !key.startsWith(QLatin1String("LD_"));
+  if (!isText(line, kMaxEnvironmentValueChars + 65, false)) return false;
+  const qsizetype equals = line.indexOf(QLatin1Char('='));
+  if (equals <= 0) return false;
+  const QString key = line.left(equals);
+  const auto keyFirst = [](QChar ch) { return isAsciiUpper(ch) || isAsciiLower(ch) || ch == u'_'; };
+  const auto keyRest = [](QChar ch) { return isAsciiAlnum(ch) || ch == u'_'; };
+  if (!charset(key, 1, 64, keyFirst, keyRest) || !isCompatEnvironmentKey(key)) return false;
+  const QStringView value = QStringView(line).sliced(equals + 1);
+  return !value.contains(u'$') && !value.contains(u'`');
+}
+
+QString compatEnvironmentKey(const QString &line) {
+  return line.left(line.indexOf(QLatin1Char('=')));
 }
 
 QDateTime parseTimestamp(const QString &text) {

@@ -21,7 +21,7 @@ import generate  # noqa: E402  (tools/qindalutris-compat is the test top level)
 def _args(**overrides):
     values = dict(out="unused", generated="2026-09-25T00:00:00Z", protondb_limit=10,
                   curated=str(FIXTURES / "curated.toml"), winetricks="winetricks-absent",
-                  winetricks_list=None)
+                  update_winetricks_verbs=False)
     values.update(overrides)
     return type("Args", (), values)()
 
@@ -52,7 +52,10 @@ class OfflineGeneration(unittest.TestCase):
         doc = self._generate()
         self.assertEqual({s["id"]: s["retrieved"] for s in doc["sources"]}, {
             "areweanticheatyet": STAMP, "lutris": STAMP, "protondb": "2026-09-21T00:00:00Z",
-            "steam-deck": "2026-09-22T00:00:00Z", "umu-database": STAMP, "winetricks": STAMP})
+            "steam-appdetails": "2026-09-23T00:00:00Z", "steam-deck": "2026-09-22T00:00:00Z",
+            "umu-database": STAMP,
+            # The verb list's own date, from the committed file's header.
+            "winetricks": schema.WINETRICKS_HEADER["generated"]})
 
     def test_curated_facts_win_and_pull_in_upstream_records(self):
         games = {g["id"]: g for g in self._generate()["games"]}
@@ -70,18 +73,26 @@ class OfflineGeneration(unittest.TestCase):
         self.assertIn("https://store.steampowered.com/app/397540/", bl3["links"])
         self.assertIn("Borderlands 3", [bl3["title"]] + bl3["keys"].get("titles", []))
 
-    def test_lutris_facts_are_validated_against_winetricks(self):
+    def test_lutris_gives_only_verbs_and_environment_with_attribution(self):
         launcher = {g["id"]: g for g in self._generate()["games"]}["battlenet-launcher"]
         self.assertEqual(launcher["winetricks"], ["corefonts", "arial"])
         self.assertEqual(launcher["environment"], [
             "STAGING_SHARED_MEMORY=1", "WINEDLLOVERRIDES=locationapi=d;nvapi,nvapi64=d"])
-        self.assertEqual(launcher["keys"]["exeNames"], ["Battle.net Launcher.exe"])
+        self.assertNotIn("arguments", launcher)
+        self.assertNotIn("exeNames", launcher["keys"])
         self.assertIn("https://lutris.net/games/battlenet/", launcher["links"])
+
+    def test_generator_warnings_are_collected_and_counted(self):
+        warnings = generate.Warnings(io.StringIO())
+        generate.generate(_args(), Fetcher(self.cache, offline=True), warnings)
+        self.assertTrue(any("claimed by" in line for line in warnings.lines))
+        self.assertEqual(len(warnings.lines), len(warnings.stream.getvalue().splitlines()))
 
     def test_empty_cache_offline_still_yields_curated_only_document(self):
         fetcher = Fetcher(Path(self.temp.name) / "empty", offline=True)
         doc = generate.generate(_args(), fetcher, log=lambda _: None)
-        self.assertEqual(doc["sources"], [])
+        # Only the committed verb list remains as a source.
+        self.assertEqual([s["id"] for s in doc["sources"]], ["winetricks"])
         self.assertEqual(sorted(g["id"] for g in doc["games"]),
                          ["battlenet-launcher", "borderlands-3", "world-of-warcraft"])
 
@@ -90,8 +101,7 @@ class OfflineGeneration(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             status = generate.main(["--out", str(out), "--cache-dir", str(self.cache),
                                     "--offline", "--generated", "2026-09-25T00:00:00Z",
-                                    "--curated", str(FIXTURES / "curated.toml"),
-                                    "--winetricks", "winetricks-absent"])
+                                    "--curated", str(FIXTURES / "curated.toml")])
         self.assertEqual(status, 0)
         schema.load_bytes(out.read_bytes())
 
@@ -117,8 +127,11 @@ class CuratedRules(unittest.TestCase):
 
     def test_schema_breaking_curated_values_are_refused(self):
         base = '[defaults]\nsource = "x"\n[[games]]\nid = "g"\ntitle = "G"\nsource = "s"\n'
-        for extra in ('environment = ["PROTONPATH=/opt"]', 'links = ["http://x.org"]',
-                      'winetricks = ["Bad"]', 'unknown = 1'):
+        for extra in ('environment = ["PROTONPATH=/opt"]', 'environment = ["PYTHONPATH=/x"]',
+                      'links = ["http://x.org"]', 'winetricks = ["Bad"]',
+                      'winetricks = ["annihilate"]', 'unknown = 1',
+                      'lutris = { slug = "a", installer = "b", take = ["arguments"] }',
+                      '[games.proton]\nrecommended = "Not-Tested"'):
             with self.subTest(extra):
                 with self.assertRaises(curated.CuratedError):
                     self._load(base + extra + "\n")
@@ -129,6 +142,31 @@ class CuratedRules(unittest.TestCase):
 
 
 class Fetching(unittest.TestCase):
+    def test_too_many_requests_honours_retry_after(self):
+        with tempfile.TemporaryDirectory() as cache:
+            calls, sleeps = [], []
+
+            def limited(request, timeout):
+                calls.append(request.full_url)
+                if len(calls) < 3:
+                    raise urllib.error.HTTPError(request.full_url, 429, "slow down",
+                                                 {"Retry-After": "7"}, None)
+                return io.BytesIO(b"finally")
+            fetcher = Fetcher(Path(cache), min_interval=0, opener=limited,
+                              log=lambda _: None, sleep=sleeps.append)
+            self.assertEqual(fetcher.get("https://example.org/r", "r").body, b"finally")
+            self.assertEqual(len(calls), 3)
+            self.assertEqual([s for s in sleeps if s > 0], [7.0, 7.0])
+
+    def test_persistent_rate_limit_falls_back_to_cache(self):
+        with tempfile.TemporaryDirectory() as cache:
+            def limited(request, timeout):
+                raise urllib.error.HTTPError(request.full_url, 429, "slow down", {}, None)
+            fetcher = Fetcher(Path(cache), refresh=True, min_interval=0, opener=limited,
+                              log=lambda _: None, sleep=lambda _: None)
+            fetcher.store("r", CachedResponse("https://example.org/r", 200, STAMP, b"old"))
+            self.assertEqual(fetcher.get("https://example.org/r", "r").body, b"old")
+
     def test_http_is_refused_and_errors_fall_back_to_cache(self):
         with tempfile.TemporaryDirectory() as cache:
             def failing(request, timeout):
@@ -162,7 +200,10 @@ class CommittedSnapshot(unittest.TestCase):
         wow = games["world-of-warcraft"]
         self.assertEqual(wow["proton"]["avoid"][0]["build"], "GE-Proton11-7-x86_64")
         wc3 = games["warcraft-iii-reforged"]
-        self.assertEqual(wc3["proton"]["recommended"], "GE-Proton11-6-wc3crypt32-x86_64")
+        # Not recommended until the build is tested (TODO in curated.toml).
+        self.assertNotIn("recommended", wc3["proton"])
+        self.assertEqual(wc3["proton"]["avoid"][0]["build"], "GE-Proton11-6-x86_64")
+        self.assertEqual(doc["builds"]["GE-Proton11-6-wc3crypt32-x86_64"]["status"], "untested")
         self.assertEqual(emit.dumps(doc), SNAPSHOT.read_text(encoding="utf-8"))
 
 

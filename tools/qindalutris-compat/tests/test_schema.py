@@ -12,12 +12,14 @@ import copy
 import json
 import unittest
 
-from tests.support import SHARED
+from tests.support import FIXTURE_NOW, SHARED
 from qlcompat import schema
+
+NOW = schema.parse_timestamp(FIXTURE_NOW)
 
 
 def _load(path):
-    return schema.load_bytes(path.read_bytes())
+    return schema.load_bytes(path.read_bytes(), NOW)
 
 
 class SharedFixtures(unittest.TestCase):
@@ -30,7 +32,7 @@ class SharedFixtures(unittest.TestCase):
 
     def test_every_refused_fixture_is_refused(self):
         paths = sorted((SHARED / "refused").glob("*.json"))
-        self.assertGreaterEqual(len(paths), 40)
+        self.assertGreaterEqual(len(paths), 60)
         for path in paths:
             with self.subTest(path.name):
                 with self.assertRaises(schema.Refused):
@@ -64,13 +66,10 @@ class Bounds(unittest.TestCase):
         with self.assertRaises(schema.Refused):
             schema.validate_document(doc)
 
-    def test_environment_rules(self):
-        self.assertTrue(schema.is_env_assignment("WINEDLLOVERRIDES=locationapi=d"))
-        self.assertTrue(schema.is_env_assignment("EMPTY="))
-        for bad in ("PROTONPATH=/x", "STORE=egs", "LD_LIBRARY_PATH=/x", "PATH=/x",
-                    "=x", "1A=x", "A-B=x", "A=\x1b", "Ünï=1"):
-            with self.subTest(bad):
-                self.assertFalse(schema.is_env_assignment(bad))
+    def test_int_digit_limit_is_a_refusal_not_a_crash(self):
+        data = (SHARED / "refused" / "huge-integer.json").read_bytes()
+        with self.assertRaises(schema.Refused):
+            schema.load_bytes(data, NOW)
 
     def test_timestamps_are_exact(self):
         self.assertIsNotNone(schema.parse_timestamp("2026-09-25T23:59:59Z"))

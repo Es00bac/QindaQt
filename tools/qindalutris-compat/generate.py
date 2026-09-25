@@ -23,12 +23,24 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from qlcompat import (awacy, curated, emit, protondb, schema, steamdeck, umu,  # noqa: E402
-                      winetricks)
+from qlcompat import (awacy, curated, emit, protondb, schema, steamdeck,  # noqa: E402
+                      schema_rules, steamstore, umu, winetricks)
 from qlcompat.fetch import Fetcher, utc_stamp  # noqa: E402
 from qlcompat.model import Registry  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
+
+
+class Warnings:
+    """Every generator warning, printed as it happens and counted at the end."""
+
+    def __init__(self, stream=None):
+        self.lines: list[str] = []
+        self.stream = stream
+
+    def __call__(self, message: str) -> None:
+        self.lines.append(message)
+        print(message, file=self.stream or sys.stderr)
 
 
 def _log(message: str) -> None:
@@ -42,7 +54,8 @@ def _default_cache() -> Path:
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--out", required=True, help="output JSON file")
+    parser.add_argument("--out", help="output JSON file (required unless "
+                        "--update-winetricks-verbs)")
     parser.add_argument("--cache-dir", type=Path, default=_default_cache())
     parser.add_argument("--offline", action="store_true",
                         help="use cached copies only; never touch the network")
@@ -55,14 +68,17 @@ def parse_args(argv):
                         "of the Steam Deck report (default 300)")
     parser.add_argument("--curated", default=str(HERE / "curated.toml"))
     parser.add_argument("--winetricks", default="winetricks",
-                        help="winetricks binary used for `list-all`")
-    parser.add_argument("--winetricks-list", help="a saved `winetricks list-all` "
-                        "output to validate verbs against instead")
+                        help="winetricks binary used by --update-winetricks-verbs")
+    parser.add_argument("--update-winetricks-verbs", action="store_true",
+                        help="regenerate winetricks-verbs.txt from `winetricks "
+                        "list-all` and exit")
     args = parser.parse_args(argv)
     if args.generated is None:
         args.generated = utc_stamp()
     if schema.parse_timestamp(args.generated) is None:
         parser.error("--generated must look like 2026-09-25T00:00:00Z")
+    if not args.out and not args.update_winetricks_verbs:
+        parser.error("--out is required")
     return args
 
 
@@ -82,9 +98,11 @@ def generate(args, fetcher: Fetcher, log=_log) -> dict:
     else:
         log("umu-database: unavailable; continuing without it")
     response = fetcher.get(awacy.URL, "areweanticheatyet-games.json")
+    names = steamstore.SteamNames(fetcher)
     if response is not None and response.ok:
-        log(f"areweanticheatyet: {awacy.apply(registry, response.body, log)} entries")
+        log(f"areweanticheatyet: {awacy.apply(registry, response.body, log, names)} entries")
         _source(sources, awacy.SOURCE_ID, awacy.URL, response.retrieved)
+        _source(sources, steamstore.SOURCE_ID, steamstore.SOURCE_URL, names.newest)
     else:
         log("areweanticheatyet: unavailable; continuing without it")
     stamp = curated.apply(registry, curated_data, fetcher, log)
@@ -93,34 +111,43 @@ def generate(args, fetcher: Fetcher, log=_log) -> dict:
     _source(sources, protondb.SOURCE_ID, protondb.SOURCE_URL, stamp)
     stamp = steamdeck.apply(registry, fetcher, args.protondb_limit, log)
     _source(sources, steamdeck.SOURCE_ID, steamdeck.SOURCE_URL, stamp)
-    verbs, stamp = winetricks.load_verbs(fetcher, args.winetricks, args.winetricks_list, log)
     curated_verbs = {g["id"]: g.get("winetricks", []) for g in curated_data.get("games", [])}
-    winetricks.filter_records(registry, verbs, curated_verbs, log)
-    _source(sources, winetricks.SOURCE_ID, winetricks.SOURCE_URL, stamp)
+    winetricks.filter_records(registry, schema.WINETRICKS_VERBS, curated_verbs, log)
+    _source(sources, winetricks.SOURCE_ID, winetricks.SOURCE_URL,
+            schema.WINETRICKS_HEADER.get("generated"))
     document = emit.build_document(registry, args.generated, sources,
                                    curated_data.get("defaults", {}),
                                    curated_data.get("builds", {}), log)
-    schema.validate_document(document)
+    schema.validate_document(document, now=_generated_clock(args.generated))
     return document
+
+
+def _generated_clock(generated: str):
+    """Validate as of the later of now and the stamp being written."""
+    return max(schema.utc_now(), schema.parse_timestamp(generated))
 
 
 def main(argv=None) -> int:
     args = parse_args(argv)
+    if args.update_winetricks_verbs:
+        return winetricks.update_file(args.winetricks, schema_rules.VERB_FILE, _log)
     fetcher = Fetcher(args.cache_dir, offline=args.offline, refresh=args.refresh)
+    warnings = Warnings()
     try:
-        document = generate(args, fetcher)
+        document = generate(args, fetcher, warnings)
     except (curated.CuratedError, schema.Refused, ValueError, OSError) as error:
         _log(f"generate: {error}")
         return 1
     text = emit.dumps(document)
-    schema.load_bytes(text.encode("utf-8"))  # the bytes we write must validate too
+    # The bytes we write must validate too.
+    schema.load_bytes(text.encode("utf-8"), _generated_clock(args.generated))
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     temporary = out.with_name(out.name + ".tmp")
     temporary.write_text(text, encoding="utf-8")
     temporary.replace(out)
     _log(f"wrote {out}: {len(document['games'])} games, {len(text.encode())} bytes, "
-         f"{fetcher.network_requests} network requests")
+         f"{fetcher.network_requests} network requests, {len(warnings.lines)} warnings")
     return 0
 
 

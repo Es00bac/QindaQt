@@ -35,7 +35,7 @@ def _evidence(table: dict, where: str) -> None:
           f"{where}: every curated fact needs a non-empty `source`")
 
 
-def _check_game(game: dict) -> None:
+def _check_game(game: dict, builds: dict) -> None:
     where = f"curated game {game.get('id')!r}"
     _need(isinstance(game, dict) and set(game) <= GAME_KEYS, f"{where}: unknown keys")
     _need(schema.is_game_id(game.get("id")), f"{where}: bad id")
@@ -61,7 +61,7 @@ def _check_game(game: dict) -> None:
     if "antiCheat" in game:
         probe["antiCheat"] = {k: v for k, v in game["antiCheat"].items() if k != "source"}
     try:
-        schema.check_game(probe, where)
+        schema.check_game(probe, builds, where)
     except schema.Refused as error:
         raise CuratedError(str(error)) from None
 
@@ -76,11 +76,13 @@ def load(path: str) -> dict:
         _need(schema.is_build_name(name), f"curated build {name!r}: bad name")
         _need(build.get("status") in schema.BUILD_STATUSES, f"curated build {name}: status")
         _evidence(build, f"curated build {name}")
-    _need(defaults.get("recommendedBuild", "") in ("", *data.get("builds", {})),
-          "curated defaults.recommendedBuild must be a curated build")
+    builds = data.get("builds", {})
+    recommended = defaults.get("recommendedBuild", "")
+    _need(recommended == "" or builds.get(recommended, {}).get("status") == "tested",
+          "curated defaults.recommendedBuild must be a tested curated build")
     ids = set()
     for game in data.get("games", []):
-        _check_game(game)
+        _check_game(game, builds)
         _need(game["id"] not in ids, f"curated game {game['id']}: duplicate id")
         ids.add(game["id"])
     return data
@@ -134,10 +136,6 @@ def _apply_lutris(record: GameRecord, facts: dict[str, list[str]], game: dict) -
         record.winetricks = facts["winetricks"]
     if ("environment" in facts or "dlloverrides" in facts) and "environment" not in game:
         record.environment = facts.get("environment", []) + facts.get("dlloverrides", [])
-    if "arguments" in facts and "arguments" not in game:
-        record.arguments = facts["arguments"]
-    for exe in facts.get("exe", []):
-        record.add_exe(exe)
 
 
 def apply(registry: Registry, data: dict, fetcher: Fetcher, log) -> str | None:
@@ -153,6 +151,7 @@ def apply(registry: Registry, data: dict, fetcher: Fetcher, log) -> str | None:
             facts, stamp = lutris.fetch_facts(fetcher, spec["slug"], spec["installer"],
                                               set(spec["take"]), log)
             _apply_lutris(record, facts, game)
+            # Attribution for the facts taken (ADR-0275 section 7).
             record.extend("links", [f"https://lutris.net/games/{spec['slug']}/"])
             if stamp:
                 newest = max(newest or stamp, stamp)

@@ -30,7 +30,7 @@ source = "test fixture"
 id = "battlenet-launcher"
 title = "Battle.net"
 source = "test fixture"
-lutris = { slug = "battlenet", installer = "battlenet-standard", take = ["winetricks", "environment", "dlloverrides", "arguments", "exe"] }
+lutris = { slug = "battlenet", installer = "battlenet-standard", take = ["winetricks", "environment", "dlloverrides"] }
 
 [[games]]
 id = "borderlands-3"
