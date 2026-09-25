@@ -82,18 +82,13 @@ bool StatusNotifierWatcherService::start(QString *errorMessage)
     }
 
     m_object = std::make_unique<StatusNotifierWatcherObject>(*this);
-    // AGENT-GUARD: the Properties adaptor must be created before
-    // registerObject and ExportAdaptors must stay in the options, otherwise
-    // Properties.Get on the watcher fails with UnknownInterface (see the
-    // adaptor's AGENT-NOTE). Ownership is QObject parent-child (the adaptor
-    // is a child of m_object); do not wrap it in a second owning pointer or
-    // m_object.reset() in stop() double-deletes it.
-    new StatusNotifierWatcherPropertiesAdaptor(m_object.get());
     m_objectRegistered = m_connection.registerObject(
         QString::fromLatin1(kWatcherObjectPath),
         m_object.get(),
-        QDBusConnection::ExportAdaptors | QDBusConnection::ExportAllSlots
-            | QDBusConnection::ExportAllProperties);
+        // AGENT-GUARD: ExportAllProperties is what lets QtDBus answer
+        // org.freedesktop.DBus.Properties.Get/GetAll for the watcher's
+        // properties; without it every host's read fails.
+        QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllProperties);
     if (!m_objectRegistered) {
         const QString message = m_connection.lastError().message();
         if (errorMessage != nullptr) {
