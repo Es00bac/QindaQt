@@ -24,6 +24,11 @@ qt_add_library(qindaqt_qindalutris_model STATIC
     launch_planner.h
     game_launcher.cpp
     game_launcher.h
+    compat_db.cpp
+    compat_db.h
+    compat_db_parse.cpp
+    compat_db_rules.cpp
+    compat_db_rules.h
 )
 add_library(QindaQt::QindaLutrisModel ALIAS qindaqt_qindalutris_model)
 
@@ -47,3 +52,12 @@ target_compile_features(qindaqt_qindalutris_model PUBLIC cxx_std_20)
 set_target_properties(qindaqt_qindalutris_model
     PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON AUTOUIC OFF)
 qindaqt_enable_warnings(qindaqt_qindalutris_model)
+
+# AGENT-CONTRACT: the shipped compatibility database path is derived from the
+# same install datadir that src/apps/qindalutris/CMakeLists.txt installs
+# compat/compat-db-v1.json into (ADR-0275 §3), so reader and installer agree.
+set(qindalutris_compat_datadir "${CMAKE_INSTALL_DATADIR}")
+cmake_path(ABSOLUTE_PATH qindalutris_compat_datadir
+    BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}" NORMALIZE)
+target_compile_definitions(qindaqt_qindalutris_model PRIVATE
+    "QINDALUTRIS_COMPAT_DB_SHIPPED_PATH=\"${qindalutris_compat_datadir}/qindalutris/compat-db-v1.json\"")

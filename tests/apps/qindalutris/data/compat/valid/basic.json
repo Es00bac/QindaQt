@@ -1,0 +1,190 @@
+{
+ "schema": "qindalutris-compat-db",
+ "version": 1,
+ "generated": "2026-09-25T12:00:00Z",
+ "sources": [
+  {
+   "id": "umu-database",
+   "url": "https://raw.githubusercontent.com/Open-Wine-Components/umu-database/main/umu-database.csv",
+   "retrieved": "2026-09-25T11:00:00Z"
+  },
+  {
+   "id": "protondb",
+   "url": "https://www.protondb.com/",
+   "retrieved": "2026-09-25T11:05:00Z"
+  }
+ ],
+ "defaults": {
+  "recommendedBuild": "GE-Proton11-6-x86_64"
+ },
+ "builds": {
+  "GE-Proton11-6-x86_64": {
+   "status": "tested",
+   "notes": "WoW retail DX12 smooth on Vega iGPU 2026-09-25"
+  },
+  "GE-Proton11-7-x86_64": {
+   "status": "known-issues",
+   "notes": "WoW render-loop stalls"
+  },
+  "Proton 9.0 (Beta)": {
+   "status": "untested",
+   "notes": ""
+  }
+ },
+ "games": [
+  {
+   "id": "world-of-warcraft",
+   "title": "World of Warcraft",
+   "keys": {
+    "storeIds": {
+     "battlenet": [
+      "wow"
+     ]
+    },
+    "exeNames": [
+     "Wow.exe",
+     "WowClassic.exe"
+    ]
+   },
+   "proton": {
+    "recommended": "GE-Proton11-6-x86_64",
+    "avoid": [
+     {
+      "build": "GE-Proton11-7-x86_64",
+      "reason": "Freezes the game for about a second every two seconds",
+      "source": "qinda-top measurement 2026-09-25"
+     }
+    ]
+   },
+   "environment": [
+    "DXVK_ASYNC=1",
+    "WINEDLLOVERRIDES=locationapi=d"
+   ],
+   "winetricks": [
+    "corefonts",
+    "renderer=vulkan"
+   ],
+   "arguments": [
+    "--exec=launch WoW"
+   ],
+   "antiCheat": {
+    "status": "running",
+    "notes": "Anti-cheat: Warden."
+   },
+   "protondbTier": "unknown",
+   "umuStore": "battlenet",
+   "notes": [
+    "Pinned after 11-7."
+   ],
+   "links": [
+    "https://areweanticheatyet.com/game/wow",
+    "https://www.pcgamingwiki.com/wiki/World_of_Warcraft"
+   ],
+   "steamDeck": {
+    "category": "unknown"
+   }
+  },
+  {
+   "id": "umu-397540",
+   "title": "Borderlands 3",
+   "keys": {
+    "umuId": "umu-397540",
+    "steamAppIds": [
+     "397540"
+    ],
+    "storeIds": {
+     "egs": [
+      "Catnip"
+     ]
+    }
+   },
+   "protondbTier": "gold",
+   "umuStore": "egs",
+   "steamDeck": {
+    "category": "playable",
+    "notes": [
+     "Interface text is not legible"
+    ]
+   }
+  },
+  {
+   "id": "exe-alpha",
+   "title": "Alpha Game",
+   "keys": {
+    "exeNames": [
+     "Shared.exe",
+     "alpha.exe"
+    ]
+   }
+  },
+  {
+   "id": "exe-beta",
+   "title": "Beta Game",
+   "keys": {
+    "exeNames": [
+     "shared.EXE"
+    ]
+   }
+  },
+  {
+   "id": "dup-title-one",
+   "title": "Twin Title",
+   "keys": {}
+  },
+  {
+   "id": "dup-title-two",
+   "title": "Twin: Title",
+   "keys": {}
+  },
+  {
+   "id": "half-life-2-update",
+   "title": "Half-Life 2: Update",
+   "keys": {
+    "titles": [
+     "HL2 Update"
+    ]
+   }
+  },
+  {
+   "id": "p-umu",
+   "title": "Precedence Umu",
+   "keys": {
+    "umuId": "umu-precedence"
+   }
+  },
+  {
+   "id": "p-store",
+   "title": "Precedence Store",
+   "keys": {
+    "storeIds": {
+     "gog": [
+      "1207658883"
+     ]
+    }
+   }
+  },
+  {
+   "id": "p-steam",
+   "title": "Precedence Steam",
+   "keys": {
+    "steamAppIds": [
+     "4000"
+    ]
+   }
+  },
+  {
+   "id": "p-exe",
+   "title": "Precedence Exe",
+   "keys": {
+    "exeNames": [
+     "PrecedenceGame.exe"
+    ]
+   }
+  },
+  {
+   "id": "p-title",
+   "title": "Precedence Title",
+   "keys": {}
+  }
+ ]
+}
