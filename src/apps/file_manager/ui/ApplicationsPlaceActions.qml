@@ -15,14 +15,9 @@ Item {
     // runtime/application_dock_pins; null without Settings1 (probes, tests).
     property var dockPins: null
     required property var navigationController
-    // The window's EntrySelection and its two views (Main.qml's instances).
+    // The window's EntrySelection and FolderViewStack (Main.qml's instances).
     required property var selection
-    required property var iconView
-    required property var detailsView
-
-    function activeView() {
-        return root.navigationController.viewMode === "grid" ? root.iconView : root.detailsView
-    }
+    required property var views
 
     // Returns true when actionId belongs to the Applications place and was
     // handled here; every other action stays with Main.qml's dispatch.
@@ -65,10 +60,9 @@ Item {
         if (index < 0)
             return
         root.selection.selectOnly(index)
-        const view = root.activeView()
+        const view = root.views.activeView
         view.focusView()
-        view.focusItem.forceLayout()
-        view.focusItem.positionViewAtIndex(index, ListView.Contain)
+        view.revealIndex(index)
     }
 
     // Keep in Dock acts on the one selected application, and on nothing

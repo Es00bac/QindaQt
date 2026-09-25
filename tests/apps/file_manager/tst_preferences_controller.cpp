@@ -30,6 +30,11 @@ private slots:
   void refusesAValueOutsideItsSetWithoutChangingAnything();
   void restoreDefaultsReturnsEverything();
   void aRefusedWriteLeavesThePublishedValuesAlone();
+  // ADR-0270: preferences-v2 and per-folder views.
+  void persistsTheDetailsPresentation();
+  void remembersAFolderViewOnlyWhenItChanges();
+  void useAsDefaultsPromotesAFolderView();
+  void refusesAMalformedFolderView();
 };
 
 void TestPreferencesController::startsAtTheDefaultsAndPersistsAChange() {
@@ -87,7 +92,7 @@ void TestPreferencesController::refusesAValueOutsideItsSetWithoutChangingAnythin
   auto controller = controllerIn(temporary.filePath(QStringLiteral("state")));
   QSignalSpy changed(controller.get(), &PreferencesController::preferencesChanged);
 
-  controller->setDefaultViewMode(QStringLiteral("columns"));
+  controller->setDefaultViewMode(QStringLiteral("carousel"));
   controller->setSortColumn(QStringLiteral("owner"));
   controller->setIconSize(57);
   controller->setDefaultConnectScheme(QStringLiteral("ftp"));
@@ -128,6 +133,120 @@ void TestPreferencesController::aRefusedWriteLeavesThePublishedValuesAlone() {
   QCOMPARE(changed.count(), 0);
   QCOMPARE(controller->showHidden(), false);
   QVERIFY(!controller->storeError().isEmpty());
+}
+
+namespace {
+
+[[nodiscard]] QVariantMap viewMap(const QString &mode, int iconSize,
+                                  const QVariantList &columns) {
+  return {{QStringLiteral("viewMode"), mode},
+          {QStringLiteral("sortColumn"), QStringLiteral("size")},
+          {QStringLiteral("sortDirection"), QStringLiteral("descending")},
+          {QStringLiteral("groupBy"), QStringLiteral("kind")},
+          {QStringLiteral("iconSize"), iconSize},
+          {QStringLiteral("columns"), columns}};
+}
+
+[[nodiscard]] QVariantList nameAndSize(int sizeWidth) {
+  return {QVariantMap{{QStringLiteral("key"), QStringLiteral("name")}, {QStringLiteral("width"), 0}},
+          QVariantMap{{QStringLiteral("key"), QStringLiteral("size")},
+                      {QStringLiteral("width"), sizeWidth}}};
+}
+
+} // namespace
+
+void TestPreferencesController::persistsTheDetailsPresentation() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const QString directory = temporary.filePath(QStringLiteral("state"));
+  auto controller = controllerIn(directory);
+  QCOMPARE(controller->groupKeys(), Preferences::groupKeys());
+  QCOMPARE(controller->columnKeys(), Preferences::columnKeys());
+
+  QSignalSpy changed(controller.get(), &PreferencesController::preferencesChanged);
+  controller->setGroupBy(QStringLiteral("date"));
+  controller->setDetailsColumns(nameAndSize(120));
+  controller->setRelativeDates(true);
+  controller->setRowDensity(QStringLiteral("compact"));
+  controller->setShowExtensions(false);
+  QCOMPARE(changed.count(), 5);
+
+  const auto reopened = controllerIn(directory);
+  QCOMPARE(reopened->groupBy(), QStringLiteral("date"));
+  QCOMPARE(reopened->relativeDates(), true);
+  QCOMPARE(reopened->rowDensity(), QStringLiteral("compact"));
+  QCOMPARE(reopened->showExtensions(), false);
+  const QVariantList columns = reopened->detailsColumns();
+  QCOMPARE(columns.size(), 2);
+  QCOMPARE(columns.at(1).toMap().value(QStringLiteral("width")).toInt(), 120);
+}
+
+void TestPreferencesController::remembersAFolderViewOnlyWhenItChanges() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const QString directory = temporary.filePath(QStringLiteral("state"));
+  auto controller = controllerIn(directory);
+  const QString pictures = QStringLiteral("/home/user/Pictures");
+  QVERIFY(!controller->folderView(pictures).value(QStringLiteral("remembered")).toBool());
+
+  QSignalSpy changed(controller.get(), &PreferencesController::preferencesChanged);
+  QVERIFY(controller->rememberFolderView(pictures, viewMap(QStringLiteral("gallery"), 128,
+                                                           nameAndSize(0))));
+  QCOMPARE(changed.count(), 1);
+  // The same view again writes nothing: the window asks after every change.
+  QVERIFY(controller->rememberFolderView(pictures, viewMap(QStringLiteral("gallery"), 128,
+                                                           nameAndSize(0))));
+  QCOMPARE(changed.count(), 1);
+
+  const QVariantMap view = controllerIn(directory)->folderView(pictures);
+  QVERIFY(view.value(QStringLiteral("remembered")).toBool());
+  QCOMPARE(view.value(QStringLiteral("viewMode")).toString(), QStringLiteral("gallery"));
+  QCOMPARE(view.value(QStringLiteral("iconSize")).toInt(), 128);
+  // A folder the user never touched shows the defaults.
+  const QVariantMap other = controller->folderView(QStringLiteral("/home/user/Documents"));
+  QCOMPARE(other.value(QStringLiteral("viewMode")).toString(), QStringLiteral("grid"));
+  QVERIFY(!other.value(QStringLiteral("remembered")).toBool());
+}
+
+void TestPreferencesController::useAsDefaultsPromotesAFolderView() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  auto controller = controllerIn(temporary.filePath(QStringLiteral("state")));
+  const QVariantMap details = viewMap(QStringLiteral("list"), 48, nameAndSize(0));
+  QVERIFY(controller->rememberFolderView(QStringLiteral("/a"), details));
+  QVERIFY(controller->rememberFolderView(QStringLiteral("/b"), details));
+  QVERIFY(controller->rememberFolderView(
+      QStringLiteral("/c"), viewMap(QStringLiteral("columns"), 48, nameAndSize(0))));
+
+  QVERIFY(controller->useAsDefaults(details));
+  QCOMPARE(controller->defaultViewMode(), QStringLiteral("list"));
+  QCOMPARE(controller->sortColumn(), QStringLiteral("size"));
+  QCOMPARE(controller->sortDirection(), QStringLiteral("descending"));
+  QCOMPARE(controller->groupBy(), QStringLiteral("kind"));
+  QCOMPARE(controller->iconSize(), 48);
+  // Folders whose own view now equals the defaults follow them from here on;
+  // one with a different view keeps it, and an untouched one gets the new
+  // defaults.
+  QVERIFY(!controller->folderView(QStringLiteral("/a")).value(QStringLiteral("remembered")).toBool());
+  QVERIFY(!controller->folderView(QStringLiteral("/b")).value(QStringLiteral("remembered")).toBool());
+  QCOMPARE(controller->folderView(QStringLiteral("/c")).value(QStringLiteral("viewMode")).toString(),
+           QStringLiteral("columns"));
+  QCOMPARE(controller->folderView(QStringLiteral("/new")).value(QStringLiteral("viewMode")).toString(),
+           QStringLiteral("list"));
+}
+
+void TestPreferencesController::refusesAMalformedFolderView() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  auto controller = controllerIn(temporary.filePath(QStringLiteral("state")));
+  QSignalSpy changed(controller.get(), &PreferencesController::preferencesChanged);
+  QVariantMap view = viewMap(QStringLiteral("gallery"), 57, nameAndSize(0));
+  QVERIFY(!controller->rememberFolderView(QStringLiteral("/a"), view));
+  view = viewMap(QStringLiteral("gallery"), 64, nameAndSize(12));
+  QVERIFY(!controller->rememberFolderView(QStringLiteral("/a"), view));
+  QCOMPARE(changed.count(), 0);
+  QVERIFY(!controller->storeError().isEmpty());
+  QVERIFY(!controller->folderView(QStringLiteral("/a")).value(QStringLiteral("remembered")).toBool());
 }
 
 QTEST_MAIN(TestPreferencesController)

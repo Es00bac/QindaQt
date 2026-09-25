@@ -83,6 +83,8 @@ target_sources(
         runtime/process_reveal_windows.cpp
         model/bookmarks_store.cpp
         model/clipboard_controller.cpp
+        model/column_listing.cpp
+        model/entry_facts.cpp
         model/entry_properties.cpp
         model/file_templates.cpp
         model/folder_launch_controller.cpp
@@ -100,6 +102,7 @@ target_sources(
         model/places_controller.cpp
         model/preferences.cpp
         model/preferences_controller.cpp
+        model/preferences_json.cpp
         model/preferences_store.cpp
         model/search_controller.cpp
         model/state_file.cpp
@@ -159,7 +162,9 @@ target_sources(
         model/applications_place.h
         model/applications_place_order.h
         model/clipboard_controller.h
+        model/column_listing.h
         model/directory_lister.h
+        model/entry_facts.h
         model/entry_properties.h
         model/entry_presentation.h
         model/file_manager_types.h
@@ -176,6 +181,7 @@ target_sources(
         model/places_controller.h
         model/preferences.h
         model/preferences_controller.h
+        model/preferences_json.h
         model/preferences_store.h
         model/search_controller.h
         model/state_file.h
@@ -285,9 +291,23 @@ qt_add_qml_module(
         ui/PlacesSidebar.qml
         ui/EntrySelection.qml
         ui/SelectionBand.qml
-        ui/EntryList.qml
-        ui/EntryListDelegate.qml
-        ui/EntryGrid.qml
+        # ADR-0270: the four QindaTK views and what they share.
+        ui/FolderViewStack.qml
+        ui/FolderViewSettings.qml
+        ui/ToolkitTheme.qml
+        ui/IconsView.qml
+        ui/IconTile.qml
+        ui/DetailsView.qml
+        ui/DetailsColumnSet.qml
+        ui/DetailsNameCell.qml
+        ui/ColumnChooser.qml
+        ui/ColumnsView.qml
+        ui/ColumnsCurrent.qml
+        ui/FolderColumn.qml
+        ui/GalleryView.qml
+        ui/GalleryStrip.qml
+        ui/EntryFactsPane.qml
+        ui/EntryText.js
         ui/ViewportScrollBar.qml
         ui/ViewportNavigation.qml
         ui/ZoomWheelHandler.qml
@@ -297,7 +317,6 @@ qt_add_qml_module(
         ui/MutationDialogs.qml
         ui/StatusBanners.qml
         ui/ExportedMenuBar.qml
-        ui/PresentationDefaults.qml
         ui/WindowServices.qml
         ui/NetworkHub.qml
         ui/NearbyServersSection.qml
@@ -328,6 +347,10 @@ qt_add_qml_module(
 # the non-visual seams (AppShell coordinator/catalog, menu export, F1 font
 # bootstrap). No QindaQt.Tokens/Controls QML modules, no theme catalog, no
 # per-app palette.
+# ADR-0270: its four folder views import QindaTK (dev-libs/qindatk, with
+# Thumbnail, Filmstrip, Segmented and DataTable) from Qt's QML import path,
+# as the System Monitor does, themed from the same platform palette
+# (ui/ToolkitTheme.qml). Nothing links QindaTK.
 set(qindaqt_file_manager_install_bindir "${CMAKE_INSTALL_BINDIR}")
 cmake_path(
     ABSOLUTE_PATH qindaqt_file_manager_install_bindir

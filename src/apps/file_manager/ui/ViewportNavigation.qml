@@ -2,7 +2,9 @@
 import QtQuick
 
 // Shared presentation-only keyboard behavior; EntrySelection remains the
-// authority for identity, selection ranges and mutation snapshots.
+// authority for identity, selection ranges and mutation snapshots. Counts
+// come from the selection's cached listing (ADR-0270), never from the view,
+// whose rows may include headings.
 Item {
     id: root
     required property var view
@@ -15,8 +17,15 @@ Item {
 
     Timer { id: prefixExpiry; interval: 1000; onTriggered: root.prefix = "" }
 
+    // A view whose rows are not its entries (the Details table's group
+    // headings, the Gallery's strip) declares revealIndex(entryIndex); a
+    // plain ListView or GridView is positioned directly.
     function ensureCurrentVisible() {
         if (view.visible && selection.currentIndex >= 0) {
+            if (typeof view.revealIndex === "function") {
+                view.revealIndex(selection.currentIndex)
+                return
+            }
             view.forceLayout()
             view.positionViewAtIndex(selection.currentIndex, ListView.Contain)
         }
@@ -28,17 +37,18 @@ Item {
             navigationController.goUp()
         } else if ([Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right,
                     Qt.Key_Home, Qt.Key_End, Qt.Key_PageUp, Qt.Key_PageDown].indexOf(event.key) >= 0) {
+            const count = selection.entries.length
             const page = Math.max(1, Math.floor(view.height / rowHeight)) * columns
             let target = selection.currentIndex
             if (event.key === Qt.Key_Home) target = 0
-            else if (event.key === Qt.Key_End) target = view.count - 1
+            else if (event.key === Qt.Key_End) target = count - 1
             else if (event.key === Qt.Key_Up) target -= columns
             else if (event.key === Qt.Key_Down) target += columns
             else if (event.key === Qt.Key_Left) target -= 1
             else if (event.key === Qt.Key_Right) target += 1
             else if (event.key === Qt.Key_PageUp) target -= page
             else target += page
-            target = Math.max(0, Math.min(view.count - 1, target))
+            target = Math.max(0, Math.min(count - 1, target))
             selection.moveTo(target, event.modifiers)
             ensureCurrentVisible()
             prefix = ""
@@ -59,7 +69,7 @@ Item {
     }
 
     function selectPrefix(text) {
-        const entries = navigationController.entries
+        const entries = selection.entries
         const typed = text.toLocaleLowerCase()
         // Repeated initial letters cycle matches; extending a prefix keeps
         // the current matching item, so typing "doc" does not skip it.

@@ -35,7 +35,7 @@ ApplicationsPlaceOrder::Order ApplicationsPlaceOrder::current() const {
 void ApplicationsPlaceOrder::apply(const Order &order) {
   // AGENT-GUARD: setSortColumn() flips the direction when given the active
   // column (the header-click rule), so each call is skipped unless it moves
-  // toward the wanted order -- the same idempotence PresentationDefaults.qml
+  // toward the wanted order -- the same idempotence FolderViewSettings.qml
   // keeps. A column change lands on ascending; one more call makes it
   // descending.
   if (order.column.isEmpty()) {

@@ -30,18 +30,18 @@ ThemeIconProvider::ThemeIconProvider()
 
 QPixmap ThemeIconProvider::requestPixmap(const QString &id, QSize *size,
                                          const QSize &requestedSize) {
-  const int requested = requestedSize.isValid()
-      ? std::max(requestedSize.width(), requestedSize.height())
-      : 64;
-  const int edge = std::clamp(requested, 1,
-                              static_cast<int>(maximumIconPixels));
   const qsizetype queryStart = id.indexOf(QLatin1Char('?'));
   const QString name = queryStart < 0 ? id : id.left(queryStart);
-  QColor tint;
-  if (queryStart >= 0) {
-    tint = parseTint(QUrlQuery(id.mid(queryStart + 1))
-                         .queryItemValue(QStringLiteral("color")));
-  }
+  const QUrlQuery query(queryStart < 0 ? QString() : id.mid(queryStart + 1));
+  const QColor tint = parseTint(query.queryItemValue(QStringLiteral("color")));
+  // ADR-0270: a "size" query stands in for Image.sourceSize where the item
+  // drawing the icon (a QindaTK Thumbnail) does not expose one.
+  const int hinted = query.queryItemValue(QStringLiteral("size")).toInt();
+  const int requested = requestedSize.isValid()
+      ? std::max(requestedSize.width(), requestedSize.height())
+      : (hinted > 0 ? hinted : 64);
+  const int edge = std::clamp(requested, 1,
+                              static_cast<int>(maximumIconPixels));
   QIcon icon = QIcon::fromTheme(name);
   // Only a resolved -symbolic request is monochrome by convention and may be
   // recolored; full-color icons and the octet-stream fallback keep their own
@@ -56,12 +56,11 @@ QPixmap ThemeIconProvider::requestPixmap(const QString &id, QSize *size,
     pixmap.fill(Qt::transparent);
   }
   if (symbolic && !pixmap.isNull()) {
-    if (!tint.isValid()) {
-      tint = QGuiApplication::palette().color(QPalette::WindowText);
-    }
     QPainter painter(&pixmap);
     painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    painter.fillRect(pixmap.rect(), tint);
+    painter.fillRect(pixmap.rect(), tint.isValid()
+                                        ? tint
+                                        : QGuiApplication::palette().color(QPalette::WindowText));
     painter.end();
   }
   if (size) {

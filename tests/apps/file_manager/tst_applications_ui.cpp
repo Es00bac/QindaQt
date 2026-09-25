@@ -300,47 +300,50 @@ void ApplicationsUiTests::filterDetailsViewAndGroupByCategory()
     QTest::keyClick(w.window, Qt::Key_Escape);
     QTRY_COMPARE(w.navigation->entries().size(), 5);
 
-    // Details view: the Kind column is the category.
+    // Details view (ADR-0270's Tk.DataTable): the Kind column is the category.
     QTest::keyClick(w.window, Qt::Key_1, Qt::ControlModifier);
     QTRY_COMPARE(w.navigation->viewMode(), QStringLiteral("list"));
     auto *list = w.item("entryListView");
     QTRY_COMPARE(list->property("count").toInt(), 5);
-    auto *kindHeader = w.item("sortHeader_kind");
-    QVERIFY(kindHeader);
-    QVERIFY(kindHeader->property("text").toString().startsWith(QStringLiteral("Category")));
+    auto *details = w.window->findChild<QObject *>(QStringLiteral("detailsView"));
+    QVERIFY(details);
+    auto *columns = details->findChild<QObject *>(QStringLiteral("detailsColumnSet"));
+    QVERIFY(columns);
+    const auto kindTitle = [columns] {
+      QVariant title;
+      QMetaObject::invokeMethod(columns, "titleOf", Q_RETURN_ARG(QVariant, title),
+                                Q_ARG(QVariant, QStringLiteral("kind")));
+      return title.toString();
+    };
+    QCOMPARE(kindTitle(), QStringLiteral("Category"));
 
     // View > Group by Category (Ctrl+G) is the category sort with headings.
     QVERIFY(w.actionEnabled(QStringLiteral("view.group-by-category")));
+    // Group By proper is for folders: Applications groups by category.
+    QVERIFY(!w.actionEnabled(QStringLiteral("view.group-kind")));
     list->forceActiveFocus();
     QTest::keyClick(w.window, Qt::Key_G, Qt::ControlModifier);
     QTRY_COMPARE(w.navigation->sortColumn(), QStringLiteral("kind"));
-    auto *section = list->property("section").value<QObject *>();
-    QVERIFY(section);
-    QTRY_COMPARE(section->property("property").toString(), QStringLiteral("kindText"));
-    QTRY_VERIFY([&] {
-        int headings = 0;
-        for (QQuickItem *child : list->property("contentItem").value<QQuickItem *>()->childItems()) {
-            headings += child->property("section").isValid() && child->isVisible() ? 1 : 0;
-        }
-        return headings == 5;
-    }());
+    QTRY_COMPARE(details->property("headingCount").toInt(), 5);
     QTest::keyClick(w.window, Qt::Key_G, Qt::ControlModifier);
     QTRY_COMPARE(w.navigation->sortColumn(), QStringLiteral("name"));
-    QTRY_VERIFY(section->property("property").toString().isEmpty());
+    QTRY_COMPARE(details->property("headingCount").toInt(), 0);
 
-    // Leaving Applications while grouped restores the folder header and the
-    // folder's own sort, and disables grouping; coming back keeps it grouped.
+    // Leaving Applications while grouped restores the folder's column title
+    // and its own sort, and disables grouping; coming back keeps it grouped,
+    // in the Details view the place was given.
     QTest::keyClick(w.window, Qt::Key_G, Qt::ControlModifier);
     QTRY_COMPARE(w.navigation->sortColumn(), QStringLiteral("kind"));
     w.navigation->navigateTo(m_temporary->path());
-    QTRY_VERIFY(kindHeader->property("text").toString().startsWith(QStringLiteral("Kind")));
+    QTRY_COMPARE(kindTitle(), QStringLiteral("Kind"));
     QCOMPARE(w.navigation->sortColumn(), QStringLiteral("name"));
-    QTRY_VERIFY(section->property("property").toString().isEmpty());
+    QTRY_COMPARE(details->property("headingCount").toInt(), 0);
     QVERIFY(!w.actionEnabled(QStringLiteral("view.group-by-category")));
     w.navigation->goBack();
     QTRY_VERIFY(w.navigation->applicationsPlace());
     QCOMPARE(w.navigation->sortColumn(), QStringLiteral("kind"));
-    QTRY_COMPARE(section->property("property").toString(), QStringLiteral("kindText"));
+    QTRY_COMPARE(w.navigation->viewMode(), QStringLiteral("list"));
+    QTRY_COMPARE(details->property("headingCount").toInt(), 5);
 }
 
 void ApplicationsUiTests::contextMenuOffersApplicationActions()

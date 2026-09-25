@@ -48,6 +48,10 @@ namespace {
   entry.isReadable = true;
   entry.size = item.isDir() ? 0 : static_cast<qint64>(item.size());
   entry.lastModified = item.time(KFileItem::ModificationTime);
+  // ADR-0270: the server's own times, when it reports them; owner and group
+  // stay unknown because KIO names them rather than numbering them.
+  entry.created = item.time(KFileItem::CreationTime);
+  entry.accessed = item.time(KFileItem::AccessTime);
   // AGENT-GUARD: identity fields (device/inode/size/mtime-ns/mode) stay at
   // their zero default. Remote entries carry no local mutation identity --
   // MutationController's identity check would refuse them anyway, and

@@ -82,6 +82,38 @@ TestCase {
         selection.moveTo(2, Qt.ControlModifier | Qt.ShiftModifier)
         compare(names(), "a,c,d")
     }
+    // ADR-0270: the one click policy all four views share.
+    function test_clickPolicyIsSharedByEveryView() {
+        selection.click(1, Qt.LeftButton, Qt.NoModifier)
+        compare(names(), "b")
+        selection.click(3, Qt.LeftButton, Qt.ShiftModifier)
+        compare(names(), "b,c,d")
+        selection.click(0, Qt.LeftButton, Qt.ControlModifier)
+        compare(names(), "a,b,c,d")
+        // A right-click on a selected entry keeps the batch and focuses it.
+        selection.click(2, Qt.RightButton, Qt.NoModifier)
+        compare(names(), "a,b,c,d")
+        compare(selection.currentIndex, 2)
+        // A right-click elsewhere selects just that entry.
+        selection.selectOnly(0)
+        selection.click(3, Qt.RightButton, Qt.NoModifier)
+        compare(names(), "d")
+        // A touch-and-hold keeps a batch that contains its entry.
+        selection.selectAll()
+        selection.target(1)
+        compare(selection.count(), 4)
+        selection.selectOnly(0)
+        selection.target(2)
+        compare(names(), "c")
+    }
+    // The cached listing follows the controller's exactly.
+    function test_entriesAreTheListingOnce() {
+        compare(selection.entries.length, 4)
+        compare(selection.indexOfKey(selection.key(navigation.entries[2])), 2)
+        navigation.entries = [entry("z",9)].concat(navigation.entries)
+        compare(selection.entries.length, 5)
+        compare(selection.indexOfKey(selection.key(navigation.entries[3])), 3)
+    }
     function test_recursiveHardLinksRemainSeparateEntries() {
         const first = Object.assign(entry("same.txt", 7), {path: "/one/a/same.txt"})
         const second = Object.assign(entry("same.txt", 7), {path: "/one/b/same.txt"})

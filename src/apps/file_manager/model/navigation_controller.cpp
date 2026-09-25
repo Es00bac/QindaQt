@@ -4,6 +4,7 @@
 #include "entry_presentation.h"
 #include "preview/local_preview.h"
 
+#include <QDate>
 #include <QDir>
 #include <QStringList>
 #include <QVariantMap>
@@ -371,14 +372,25 @@ void NavigationController::setDirectoriesFirst(bool directoriesFirst) {
 }
 
 void NavigationController::setViewMode(const QString &mode) {
-  if (mode != QStringLiteral("list") && mode != QStringLiteral("grid")) {
-    return;
-  }
-  if (m_viewMode == mode) {
+  static const QStringList modes{QStringLiteral("list"), QStringLiteral("grid"),
+                                 QStringLiteral("columns"), QStringLiteral("gallery")};
+  if (!modes.contains(mode) || m_viewMode == mode) {
     return;
   }
   m_viewMode = mode;
   emit presentationChanged();
+}
+
+void NavigationController::setGroupBy(const QString &groupKey) {
+  bool ok = false;
+  const EntryGroup group = entryGroupFromKey(groupKey, &ok);
+  if (!ok || m_order.group == group) {
+    return;
+  }
+  m_order.group = group;
+  rebuildVisibleEntries();
+  emit presentationChanged();
+  emit entriesChanged();
 }
 
 void NavigationController::setNameFilter(const QString &filter) {
@@ -445,11 +457,15 @@ QVariantList NavigationController::entries() const {
   // Marshalling lives in EntryPresentation (model/entry_presentation.h) so
   // this controller stays under the project's source-size invariant; the
   // identity-field AGENT-GUARD moved with it.
+  const QDate today = QDate::currentDate();
   return EntryPresentation::entryListToVariants(
       m_entries, m_listingGeneration,
       [this](const DirectoryEntry &entry) { return entryIconName(entry); },
       [this](const DirectoryEntry &entry, quint64 generation) {
         return previewUrl(entry, generation);
+      },
+      [this, &today](const DirectoryEntry &entry) {
+        return entryGroupFor(entry, m_order.group, today).label;
       });
 }
 
@@ -632,10 +648,7 @@ void NavigationController::rebuildVisibleEntries() {
     }
     m_entries.append(entry);
   }
-  std::sort(m_entries.begin(), m_entries.end(),
-            [this](const DirectoryEntry &a, const DirectoryEntry &b) {
-              return listingEntryLessThan(a, b, m_order);
-            });
+  sortListing(m_entries, m_order, QDate::currentDate());
   // AGENT-GUARD: Presentation-only changes must retain a failed listing's
   // diagnostic. No matches is a Ready projection, never an empty directory.
   if (m_status != NavigationStatus::Ready && m_status != NavigationStatus::Empty) {
@@ -647,22 +660,9 @@ void NavigationController::rebuildVisibleEntries() {
     m_statusMessage = m_guestStatusText;
     return;
   }
-  QStringList notices;
-  if (!m_nameFilter.isEmpty() && m_status == NavigationStatus::Ready) {
-    notices.append(m_entries.isEmpty()
-                       ? QStringLiteral("No matching items")
-                       : m_entries.size() == 1
-                             ? QStringLiteral("1 matching item")
-                             : QStringLiteral("%1 matching items").arg(m_entries.size()));
-  }
-  if (m_truncated) {
-    notices.append(
-        QStringLiteral("Showing the first %1 entries").arg(m_listedEntries.size()));
-  }
-  if (m_hiddenFilteredCount > 0) {
-    notices.append(QStringLiteral("%1 hidden").arg(m_hiddenFilteredCount));
-  }
-  m_statusMessage = notices.join(QStringLiteral("; "));
+  m_statusMessage = EntryPresentation::listingNotices(
+      !m_nameFilter.isEmpty() && m_status == NavigationStatus::Ready, m_entries.size(),
+      m_truncated, m_listedEntries.size(), m_hiddenFilteredCount);
 }
 
 } // namespace QindaQt::Apps::FileManager
