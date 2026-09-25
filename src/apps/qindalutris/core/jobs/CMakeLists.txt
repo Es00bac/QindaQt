@@ -7,6 +7,7 @@
 # installer planner and the pinned-build set in through narrow seams
 # (installer_planning.h, proton_removal.h). Tests link this directly.
 find_package(Qt6 REQUIRED COMPONENTS Core Network)
+find_package(Threads REQUIRED)
 
 qt_add_library(qindaqt_qindalutris_jobs STATIC
     job_log.cpp
@@ -21,10 +22,16 @@ qt_add_library(qindaqt_qindalutris_jobs STATIC
     network_downloader.h
     process_tree.cpp
     process_tree.h
+    process_supervisor.cpp
+    process_supervisor.h
     process_runner.cpp
     process_runner.h
     archive_listing.cpp
     archive_listing.h
+    link_resolution.cpp
+    link_resolution.h
+    staged_tree_check.cpp
+    staged_tree_check.h
     ge_proton_releases.cpp
     ge_proton_releases.h
     proton_install_job.cpp
@@ -54,6 +61,8 @@ target_link_libraries(qindaqt_qindalutris_jobs
     PUBLIC
         Qt6::Core
         Qt6::Network
+    PRIVATE
+        Threads::Threads
 )
 target_compile_features(qindaqt_qindalutris_jobs PUBLIC cxx_std_20)
 set_target_properties(qindaqt_qindalutris_jobs
