@@ -1,0 +1,12 @@
+[
+ {"name": "Borderlands 3", "slug": "borderlands-3", "status": "Supported", "anticheats": ["Easy Anti-Cheat"], "notes": [["Works online", "https://example.org/note"], ["Show your support!", "https://example.org/support"]], "storeIds": {"steam": "397540", "epic": {"namespace": "x", "slug": "y"}}, "native": false, "reference": ""},
+ {"name": "World of Warcraft", "slug": "wow", "status": "Running", "anticheats": ["Warden"], "notes": [], "storeIds": {}, "native": false},
+ {"name": "Genshin Impact", "slug": "genshin-impact", "status": "Weird", "anticheats": [], "notes": [], "storeIds": {}},
+ {"name": "Rainbow Six Siege", "slug": "r6", "status": "Denied", "anticheats": ["BattlEye"], "notes": [], "storeIds": {"steam": "359550"}},
+ {"name": "Rainbow Six Siege X", "slug": "r6x", "status": "Broken", "anticheats": ["BattlEye"], "notes": [], "storeIds": {"steam": "359550"}},
+ {"name": "Final Fantasy XIV", "slug": "final-fantasy-xiv", "status": "Running", "anticheats": [], "notes": [], "storeIds": {"steam": "961200"}},
+ {"name": "Predecessor", "slug": "predecessor", "status": "Supported", "anticheats": ["Easy Anti-Cheat"], "notes": [], "storeIds": {"steam": "961200"}},
+ {"name": "s&box", "slug": "s%26box", "status": "Supported", "anticheats": [], "notes": [], "storeIds": {}},
+ {"name": "Lightnite", "slug": "light⚡️nite", "status": "Broken", "anticheats": [], "notes": [], "storeIds": {}},
+ {"name": "", "slug": "no-name", "status": "Broken"}
+]

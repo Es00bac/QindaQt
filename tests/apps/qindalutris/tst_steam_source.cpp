@@ -107,21 +107,8 @@ private Q_SLOTS:
     QVERIFY(out.games.at(0).coverPath.endsWith(
         QStringLiteral("library_600x900.jpg")));
   }
-
-  // Proton discovery finds steamapps/common/Proton* executables only.
-  void protonDiscovery() {
-    QTemporaryDir home;
-    QVERIFY(home.isValid());
-    const QString root = home.path();
-    const QString script = root + QStringLiteral("/steamapps/common/Proton 9.0/proton");
-    writeFile(script, "#!/bin/sh\n");
-    QFile::setPermissions(script, QFile::permissions(script) | QFile::ExeUser);
-    writeFile(root + QStringLiteral("/steamapps/common/NotProton/proton"),
-              "#!/bin/sh\n");
-    const QVector<ProtonInstall> protons = discoverProtonInstalls({root});
-    QCOMPARE(protons.size(), 1);
-    QCOMPARE(protons.at(0).name, QStringLiteral("Proton 9.0"));
-  }
+  // Proton discovery moved to proton_catalog (ADR-0275); its rows live in
+  // tst_proton_catalog.cpp.
 };
 
 QTEST_GUILESS_MAIN(tst_steam_source)

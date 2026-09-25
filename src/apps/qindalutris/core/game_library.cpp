@@ -19,7 +19,7 @@ bool titleLess(const Game &a, const Game &b) {
 
 GameLibrary mergeGameSources(QVector<Game> steam, QVector<Game> lutris,
                              QVector<Game> desktop, QVector<Game> wine,
-                             QStringList warnings) {
+                             QVector<Game> installed, QStringList warnings) {
   GameLibrary out;
   // AGENT-GUARD: the de-dup key is the normalized title, and Steam claims
   // the row. Keep the Steam set complete BEFORE folding: two Steam games
@@ -44,6 +44,10 @@ GameLibrary mergeGameSources(QVector<Game> steam, QVector<Game> lutris,
     }
   };
 
+  // AGENT-GUARD: installed titles are taken FIRST, so the kMaxGames cap can
+  // never drop a game QindaLutris itself installed (ADR-0275) in favour of
+  // a discovered one.
+  take(installed);
   take(steam);
   for (const Game &game : lutris) {
     if (out.games.size() >= kMaxGames) {

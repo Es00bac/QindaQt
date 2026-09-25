@@ -3,6 +3,7 @@
 
 #include "launch_planner.h"
 
+#include <QProcessEnvironment>
 #include <QString>
 
 namespace QindaQt::QindaLutris {
@@ -19,6 +20,13 @@ struct LaunchOutcome final {
 
   friend bool operator==(const LaunchOutcome &, const LaunchOutcome &) = default;
 };
+
+// The environment a plan's process starts with: base minus
+// plan.unsetEnvironment and every key starting with one of
+// plan.unsetEnvironmentPrefixes, then plan.environment inserted. Pure, so the unset
+// contract is testable without starting a process.
+[[nodiscard]] QProcessEnvironment launchEnvironment(
+    const LaunchPlan &plan, const QProcessEnvironment &base);
 
 class GameProcessLauncher {
 public:

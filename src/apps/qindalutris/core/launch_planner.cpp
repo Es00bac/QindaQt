@@ -2,6 +2,8 @@
 #include "launch_planner.h"
 
 #include "library_store.h"
+#include "umu_launch.h"
+
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -21,10 +23,17 @@ bool cleanPathValue(const QString &path) {
   return true;
 }
 
-void applySharedOptions(const Game &game, const LaunchOptions &options,
-                        const LaunchToolSet &tools,
+LaunchPlan failed(const QString &reason) {
+  LaunchPlan plan;
+  plan.reason = reason;
+  return plan;
+}
+
+} // namespace
+
+void applyLaunchOptions(const LaunchOptions &options, const LaunchToolSet &tools,
                         const QVector<DisplayTarget> &displays,
-                        LaunchPlan *plan) {
+                        bool allowMangohudWrapper, LaunchPlan *plan) {
   // The display pin is advisory and SDL-flavoured (ADR-0231): Wayland has no
   // mandatory protocol for placing a foreign window on an output, and the
   // SDL display index is the one convention games and their launchers
@@ -60,14 +69,38 @@ void applySharedOptions(const Game &game, const LaunchOptions &options,
   // gamemode wraps outermost; the mangohud wrapper sits between it and the
   // game (OpenGL needs its LD_PRELOAD; Vulkan reads MANGOHUD=1). On Steam
   // the wrapper would wrap the client, so Steam launches use env only.
-  const bool wantsWrapper =
-      options.mangohud && game.source != GameSource::Steam;
+  const bool wantsWrapper = options.mangohud && allowMangohudWrapper;
   if (wantsWrapper && !tools.mangohudBinary.isEmpty()) {
     plan->arguments.prepend(plan->program);
     plan->program = tools.mangohudBinary;
   } else if (wantsWrapper) {
     plan->notes.append(QStringLiteral(
         "MangoHud's wrapper is not installed; relying on MANGOHUD=1"));
+  }
+  // gamescope wraps the game (and any mangohud wrapper) but sits inside
+  // gamemode. Never around the Steam or Lutris client: they own their games.
+  const QString base = QFileInfo(plan->program).fileName();
+  const bool clientLaunch = base == QLatin1String("steam") || base == QLatin1String("lutris");
+  if (options.ownScreen && !clientLaunch) {
+    if (!tools.gamescopeBinary.isEmpty()) {
+      QStringList wrapped{QStringLiteral("-f")};
+      const DisplayTarget *screen = nullptr;
+      for (const DisplayTarget &display : displays) {
+        if (display.key == options.targetDisplay || screen == nullptr) {
+          screen = &display;
+        }
+      }
+      if (screen != nullptr && screen->widthPx > 0 && screen->heightPx > 0) {
+        wrapped << QStringLiteral("-W") << QString::number(screen->widthPx)
+                << QStringLiteral("-H") << QString::number(screen->heightPx);
+      }
+      wrapped << QStringLiteral("--") << plan->program;
+      plan->arguments = wrapped + plan->arguments;
+      plan->program = tools.gamescopeBinary;
+    } else {
+      plan->notes.append(QStringLiteral(
+          "\"Run in its own screen\" needs gamescope (gui-wm/gamescope); starting normally"));
+    }
   }
   if (options.gamemode) {
     if (!tools.gamemodeRunBinary.isEmpty()) {
@@ -79,14 +112,6 @@ void applySharedOptions(const Game &game, const LaunchOptions &options,
     }
   }
 }
-
-LaunchPlan failed(const QString &reason) {
-  LaunchPlan plan;
-  plan.reason = reason;
-  return plan;
-}
-
-} // namespace
 
 QString discoverWineLoader(const QStringList &searchDirectories) {
   // A plain loader is the user's own selection when it exists.
@@ -196,31 +221,27 @@ LaunchPlan planGameLaunch(const Game &game, const LaunchOptions &options,
         plan.environment.insert(QStringLiteral("WINEPREFIX"), prefix);
       }
     } else {
-      QString script;
-      for (const ProtonInstall &proton : tools.protons) {
-        if (!game.protonPath.isEmpty() && proton.protonScript != game.protonPath) {
-          continue;
-        }
-        script = proton.protonScript;
-        break;
-      }
-      if (script.isEmpty()) {
-        return failed(game.protonPath.isEmpty()
-                          ? QStringLiteral("no Proton installation was found")
-                          : QStringLiteral("the chosen Proton is not installed"));
-      }
-      if (prefix.isEmpty()) {
-        return failed(QStringLiteral("Proton needs a prefix directory"));
-      }
-      plan.program = script;
-      plan.arguments = {QStringLiteral("run"), game.installPath};
-      plan.environment.insert(QStringLiteral("STEAM_COMPAT_DATA_PATH"), prefix);
+      // ADR-0275: Proton means umu-run with the entry's own pinned build,
+      // never `proton run` and never "whichever Proton is around".
+      UmuLaunchRequest request;
+      request.executable = game.installPath;
+      request.prefixPath = prefix;
+      request.protonBuild = game.protonPath;
+      request.protonBuildVersion = game.protonVersion;
+      // AGENT-NOTE: a hand-added prefix may not exist yet; umu creates it
+      // on first run, as `proton run` did. Installed titles require theirs.
+      request.prefixMustExist = false;
+      return planUmuLaunch(request, options, tools, displays);
     }
     break;
   }
+  case GameSource::Installed:
+    return failed(QStringLiteral(
+        "This game's install record is not available. Refresh the library."));
   }
 
-  applySharedOptions(game, options, tools, displays, &plan);
+  applyLaunchOptions(options, tools, displays,
+                     game.source != GameSource::Steam, &plan);
   plan.ok = true;
   return plan;
 }

@@ -14,10 +14,20 @@ Tk.Panel {
     property var displays: []
     property bool playable: false
     property string playReason: ""
+    // ADR-0275 section 4b: true while QindaLutris is tracking this game's scope.
+    property bool running: false
 
     signal playRequested()
     signal optionsSaveRequested(var values)
     signal removeRequested(string gameId)
+    signal forceQuitRequested(string gameId)
+    signal confirmVersionRequested()
+
+    // The pinned build changed on disk (a Steam update, a reinstall): the
+    // planner refuses with "has changed since this game was set up" and the
+    // user may explicitly accept the new version (ADR-0275 section 2).
+    readonly property bool versionChanged: !playable
+                                           && playReason.indexOf("has changed since") >= 0
 
     readonly property bool isWine: game.sourceId === "wine"
     readonly property var displayModel: {
@@ -40,6 +50,7 @@ Tk.Panel {
     function loadDraft() {
         gamemodeSwitch.checked = options.gamemode === true
         mangohudSwitch.checked = options.mangohud === true
+        ownScreenSwitch.checked = options.ownScreen === true
         environmentArea.text = options.environment !== undefined ? options.environment : ""
         displayCombo.currentIndex = detail.displayIndexFor(
                     options.display !== undefined ? options.display : "")
@@ -113,6 +124,25 @@ Tk.Panel {
                 wrapMode: Text.Wrap
                 Tk.Flex.alignSelf: Tk.Flex.Stretch
             }
+            Tk.Button {
+                objectName: "confirmVersionButton"
+                visible: detail.versionChanged
+                text: qsTr("Use the new version")
+                iconName: "refresh-cw"
+                tooltip: qsTr("Keep this game on its Proton build as it is now installed")
+                onClicked: detail.confirmVersionRequested()
+                Tk.Flex.alignSelf: Tk.Flex.Stretch
+            }
+            Tk.Button {
+                objectName: "forceQuitButton"
+                visible: detail.running
+                text: qsTr("Force quit")
+                iconName: "circle-x"
+                variant: "danger"
+                tooltip: qsTr("Stop the game, its launcher and everything it started")
+                onClicked: detail.forceQuitRequested(detail.game.id)
+                Tk.Flex.alignSelf: Tk.Flex.Stretch
+            }
 
             Tk.SectionHeader {
                 title: qsTr("Launch options")
@@ -156,6 +186,20 @@ Tk.Panel {
                     id: mangohudSwitch
                     objectName: "mangohudSwitch"
                     tooltip: qsTr("Show the MangoHud performance overlay")
+                }
+            }
+            Tk.Flex {
+                direction: Tk.Flex.Row
+                align: Tk.Flex.Center
+                gap: Tk.Theme.space.sm
+                Tk.Caption {
+                    text: qsTr("Run in its own screen")
+                    Tk.Flex.grow: 1
+                }
+                Tk.Switch {
+                    id: ownScreenSwitch
+                    objectName: "ownScreenSwitch"
+                    tooltip: qsTr("Keep resolution changes inside the game's own screen (gamescope)")
                 }
             }
             Tk.Caption {
@@ -210,6 +254,7 @@ Tk.Panel {
                     const values = {
                         gamemode: gamemodeSwitch.checked,
                         mangohud: mangohudSwitch.checked,
+                        ownScreen: ownScreenSwitch.checked,
                         display: detail.displayModel[displayCombo.currentIndex].key,
                         environment: environmentArea.text,
                         runner: detail.isWine

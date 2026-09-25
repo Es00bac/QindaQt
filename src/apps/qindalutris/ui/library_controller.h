@@ -5,6 +5,8 @@
 #include "../core/game_launcher.h"
 #include "../core/game_library.h"
 #include "../core/library_store.h"
+#include "../core/proton_pin.h"
+#include "../core/title_record.h"
 
 #include <QAbstractItemModel>
 #include <QHash>
@@ -51,7 +53,16 @@ public:
   void setConfigRoot(const QString &path);
   void setCoverCacheDir(const QString &path);
   void setProcessLauncher(GameProcessLauncher *launcher); // borrowed
-  void setSteamRootsForProton(const QStringList &roots);
+  // Roots searched for Proton builds (ADR-0275), in precedence order.
+  // Defaults to defaultProtonRoots(home, $XDG_DATA_HOME, Steam candidates).
+  void setProtonRoots(const QVector<ProtonRoot> &roots);
+  // Directories searched for umu-run, highest preference first. Defaults to
+  // defaultUmuSearchPath(home, PATH): /usr/bin, PATH, ~/.local/bin.
+  void setUmuSearchPath(const QStringList &directories);
+  // The build name new hand-added entries pin when the caller names none
+  // (the compatibility database's recommendation, once that lands).
+  // chooseDefaultBuild falls back to the first System build.
+  void setPreferredProtonBuild(const QString &name);
   // Directories searched for the Wine loader, highest preference first.
   // Defaults to PATH. An injection point rather than a way to set the binary
   // directly, so a test exercises the real discovery against its own fixture
@@ -78,8 +89,23 @@ public:
                                const QString &prefixPath, const QString &runnerId,
                                const QString &protonPath);
   Q_INVOKABLE void removeWineGame(const QString &gameId);
-  // Proton choices for the add dialog / options: [{name, path}] or empty.
+  // Every catalog build for the add dialog, default first; row shape in
+  // proton_choices.h. The dialog hands `path` back to addWineGame, which
+  // records the build NAME and VERSION (ADR-0275 identity).
   Q_INVOKABLE QVariantList protonChoices() const;
+  // The explicit re-pin after "<build> has changed since this game was set
+  // up": records the selected hand-added entry's or installed title's pinned
+  // build as it is NOW (confirmPinnedBuild) and persists it. False when the
+  // selection has no pin that names an installed, pinnable build.
+  Q_INVOKABLE bool confirmProtonBuildForSelected();
+
+  // Read-only views for the install and Proton-manager controllers, which
+  // share this root's discovery instead of scanning twice (ADR-0275).
+  [[nodiscard]] const LaunchToolSet &toolSet() const { return m_tools; }
+  [[nodiscard]] QString configRoot() const { return m_configRoot; }
+  [[nodiscard]] QString preferredProtonBuild() const { return m_preferredProtonBuild; }
+  [[nodiscard]] const QVector<TitleRecord> &titles() const { return m_titles; }
+  [[nodiscard]] const QVector<WineEntryRecord> &wineRecords() const { return m_wineRecords; }
 
   // Cover/icon resolution for the image provider. Null when neither exists.
   [[nodiscard]] QImage imageForGame(const QString &gameId) const;
@@ -91,6 +117,9 @@ Q_SIGNALS:
   void displaysChanged();
   void selectedGameChanged();
   void launchFailed(const QString &message);
+  // A plan was handed to the process launcher successfully (Force quit and
+  // the running-games view key their tracking on this).
+  void gameLaunched(const QString &gameId);
   void storeError(const QString &message);
 
 private:
@@ -98,7 +127,9 @@ private:
   void rebuildToolSet();
   void rebuildDisplays();
   void persistWineEntries();
+  bool migrateWinePins(); // true when records changed (see wine_pin_migration.h)
   [[nodiscard]] const Game *findGame(const QString &gameId) const;
+  [[nodiscard]] const TitleRecord *findTitle(const QString &titleId) const;
   [[nodiscard]] LaunchOptions optionsFor(const QString &gameId) const;
   [[nodiscard]] LaunchPlan planFor(const Game &game) const;
 
@@ -107,7 +138,9 @@ private:
   QStringList m_desktopRoots;
   QString m_configRoot;
   QString m_coverCacheDir;
-  QStringList m_protonRoots;
+  QVector<ProtonRoot> m_protonRoots;
+  QStringList m_umuSearchPath;
+  QString m_preferredProtonBuild;
 
   GameListModel *m_model = nullptr;    // owned child
   GameFilterModel *m_filter = nullptr; // owned child
@@ -119,6 +152,8 @@ private:
   std::unique_ptr<QProcessGameLauncher> m_ownedLauncher;
   GameProcessLauncher *m_launcher = nullptr;
   QVector<WineEntryRecord> m_wineRecords;
+  QVector<TitleRecord> m_titles; // titles-v1.json; written only on confirm
+  QStringList m_pinNotes;         // migration notes for the next status line
   QHash<QString, LaunchOptions> m_options;
   QString m_selectedGameId;
   QString m_statusMessage;

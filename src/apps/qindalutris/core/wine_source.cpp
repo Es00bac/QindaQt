@@ -16,10 +16,14 @@ namespace {
 // PNG we write is additionally capped so a cache write stays cheap.
 constexpr qint64 kMaxCoverWriteBytes = qint64(4) * 1024 * 1024;
 
-QString coverPathFor(const WineEntryRecord &record, const QString &cacheDir,
+QString coverPathFor(const QString &cacheKey, const QString &cacheDir,
                      const QFileInfo &exeInfo) {
+  if (cacheKey.isEmpty() || cacheKey.contains(QLatin1Char('/'))
+      || cacheKey.startsWith(QLatin1Char('.'))) {
+    return {};
+  }
   const QString coverPath =
-      cacheDir + QLatin1Char('/') + record.slug + QStringLiteral(".png");
+      cacheDir + QLatin1Char('/') + cacheKey + QStringLiteral(".png");
   const QFileInfo coverInfo(coverPath);
   if (coverInfo.isFile() && coverInfo.lastModified() >= exeInfo.lastModified()) {
     return coverPath; // Fresh cache hit: no decode at all.
@@ -45,6 +49,16 @@ QString coverPathFor(const WineEntryRecord &record, const QString &cacheDir,
 }
 
 } // namespace
+
+QString executableCoverPath(const QString &cacheKey,
+                            const QString &executablePath,
+                            const QString &cacheDir) {
+  const QFileInfo exeInfo(executablePath);
+  if (!exeInfo.isFile() || exeInfo.isSymLink()) {
+    return {};
+  }
+  return coverPathFor(cacheKey, cacheDir, exeInfo);
+}
 
 QString wineSlugFor(const QString &title, const QString &executablePath) {
   QString base = normalizedTitleForMatch(title);
@@ -74,10 +88,11 @@ QVector<Game> gamesFromWineEntries(const QVector<WineEntryRecord> &records,
     game.winePrefix = record.prefixPath;
     game.wineRunner = record.runner;
     game.protonPath = record.protonPath;
+    game.protonVersion = record.protonVersion;
     const QFileInfo exeInfo(record.executablePath);
     if (exeInfo.isFile() && !exeInfo.isSymLink()) {
       game.installSizeBytes = quint64(exeInfo.size());
-      game.coverPath = coverPathFor(record, cacheDir, exeInfo);
+      game.coverPath = coverPathFor(record.slug, cacheDir, exeInfo);
     }
     out.append(game);
   }

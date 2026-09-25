@@ -1,71 +1,33 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "library_store.h"
 
-#include <QDir>
-#include <QFileInfo>
+#include "store_io.h"
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSaveFile>
 
 namespace QindaQt::QindaLutris {
 namespace {
 
 constexpr int kMaxOptionEntries = kMaxGames;
 
-// AGENT-GUARD: every read path refuses symlinks and oversized documents
-// before a byte is parsed, and every write commits through QSaveFile in the
-// same directory. A partially written store must never masquerade as state.
-QByteArray readBoundedJson(const QString &path, bool *ok) {
-  *ok = false;
-  const QFileInfo info(path);
-  if (!info.exists()) {
-    return {}; // Absent: caller maps to Error::Absent.
-  }
-  if (!info.isFile() || info.isSymLink() || info.size() > kMaxStoreBytes) {
-    *ok = false;
-    return QByteArray(1, '\0'); // distinguish Refused from Absent
-  }
-  QFile file(path);
-  if (!file.open(QIODevice::ReadOnly)) {
-    return QByteArray(1, '\0');
-  }
-  *ok = true;
-  return file.read(kMaxStoreBytes + 1);
-}
+// AGENT-NOTE: byte-level reading, atomic writing and bounded strings live in
+// store_io.h, shared with the ADR-0275 title store; this file owns only the
+// two ADR-0231 schemas.
+using StoreIo::boundedString;
 
-bool writeAtomicJson(const QString &path, const QJsonDocument &document) {
-  const QFileInfo info(path);
-  QDir dir(info.absolutePath());
-  if (!dir.mkpath(QStringLiteral("."))) {
-    return false;
+// Maps the shared reader onto this store's error vocabulary; returns the
+// bytes only when they are worth parsing.
+QByteArray readDocument(const QString &path, LibraryStore::Error *error) {
+  StoreIo::ReadStatus status = StoreIo::ReadStatus::Refused;
+  const QByteArray bytes = StoreIo::readBoundedFile(path, kMaxStoreBytes, &status);
+  switch (status) {
+  case StoreIo::ReadStatus::Ok: *error = LibraryStore::Error::None; break;
+  case StoreIo::ReadStatus::Absent: *error = LibraryStore::Error::Absent; break;
+  case StoreIo::ReadStatus::Refused: *error = LibraryStore::Error::Refused; break;
   }
-  QSaveFile file(path);
-  if (!file.open(QIODevice::WriteOnly)) {
-    return false;
-  }
-  file.write(document.toJson(QJsonDocument::Compact));
-  return file.commit();
-}
-
-QString boundedString(const QJsonValue &value, int maxChars, bool *ok) {
-  if (!value.isString()) {
-    *ok = false;
-    return {};
-  }
-  const QString text = value.toString();
-  if (text.size() > maxChars) {
-    *ok = false;
-    return {};
-  }
-  for (const QChar ch : text) {
-    if (ch.category() == QChar::Other_Control && ch != QLatin1Char('\n')) {
-      *ok = false;
-      return {};
-    }
-  }
-  *ok = true;
-  return text;
+  return bytes;
 }
 
 QJsonObject wineRecordToJson(const WineEntryRecord &record) {
@@ -76,6 +38,7 @@ QJsonObject wineRecordToJson(const WineEntryRecord &record) {
   object.insert(QStringLiteral("prefix"), record.prefixPath);
   object.insert(QStringLiteral("runner"), wineRunnerId(record.runner));
   object.insert(QStringLiteral("proton"), record.protonPath);
+  object.insert(QStringLiteral("protonVersion"), record.protonVersion);
   return object;
 }
 
@@ -106,6 +69,13 @@ bool wineRecordFromJson(const QJsonValue &value, WineEntryRecord *record) {
   out.protonPath = boundedString(object.value(QStringLiteral("proton")),
                                  4096, &ok);
   if (!ok) return false;
+  // ADR-0275 addition: optional so entries written before it still load;
+  // present with the wrong type refuses the document like any other key.
+  const QJsonValue version = object.value(QStringLiteral("protonVersion"));
+  if (!version.isUndefined()) {
+    out.protonVersion = StoreIo::boundedLine(version, 256, &ok);
+    if (!ok) return false;
+  }
   *record = out;
   return true;
 }
@@ -114,6 +84,7 @@ QJsonObject optionsToJson(const LaunchOptions &options) {
   QJsonObject object;
   object.insert(QStringLiteral("gamemode"), options.gamemode);
   object.insert(QStringLiteral("mangohud"), options.mangohud);
+  object.insert(QStringLiteral("ownScreen"), options.ownScreen);
   object.insert(QStringLiteral("display"), options.targetDisplay);
   object.insert(QStringLiteral("environment"),
                 QJsonArray::fromStringList(options.extraEnvironment));
@@ -141,6 +112,7 @@ bool optionsFromJson(const QJsonValue &value, LaunchOptions *options) {
   LaunchOptions out;
   if (!boolField("gamemode", &out.gamemode)) return false;
   if (!boolField("mangohud", &out.mangohud)) return false;
+  if (!boolField("ownScreen", &out.ownScreen)) return false;
   bool ok = false;
   const QJsonValue display = object.value(QStringLiteral("display"));
   if (!display.isUndefined()) {
@@ -212,14 +184,8 @@ QString LibraryStore::launchOptionsPath() const {
 }
 
 QVector<WineEntryRecord> LibraryStore::readWineEntries(Error *error) const {
-  bool ok = false;
-  const QByteArray bytes = readBoundedJson(wineEntriesPath(), &ok);
-  if (bytes.isEmpty()) {
-    *error = Error::Absent;
-    return {};
-  }
-  if (!ok) {
-    *error = Error::Refused;
+  const QByteArray bytes = readDocument(wineEntriesPath(), error);
+  if (*error != Error::None) {
     return {};
   }
   const QJsonDocument document = QJsonDocument::fromJson(bytes);
@@ -261,19 +227,13 @@ LibraryStore::Error LibraryStore::writeWineEntries(
   QJsonObject root;
   root.insert(QStringLiteral("version"), 1);
   root.insert(QStringLiteral("entries"), entries);
-  return writeAtomicJson(wineEntriesPath(), QJsonDocument(root))
+  return StoreIo::writeAtomicJson(wineEntriesPath(), QJsonDocument(root))
              ? Error::None : Error::WriteFailed;
 }
 
 QHash<QString, LaunchOptions> LibraryStore::readLaunchOptions(Error *error) const {
-  bool ok = false;
-  const QByteArray bytes = readBoundedJson(launchOptionsPath(), &ok);
-  if (bytes.isEmpty()) {
-    *error = Error::Absent;
-    return {};
-  }
-  if (!ok) {
-    *error = Error::Refused;
+  const QByteArray bytes = readDocument(launchOptionsPath(), error);
+  if (*error != Error::None) {
     return {};
   }
   const QJsonDocument document = QJsonDocument::fromJson(bytes);
@@ -318,7 +278,7 @@ LibraryStore::Error LibraryStore::writeLaunchOptions(
   QJsonObject root;
   root.insert(QStringLiteral("version"), 1);
   root.insert(QStringLiteral("games"), games);
-  return writeAtomicJson(launchOptionsPath(), QJsonDocument(root))
+  return StoreIo::writeAtomicJson(launchOptionsPath(), QJsonDocument(root))
              ? Error::None : Error::WriteFailed;
 }
 

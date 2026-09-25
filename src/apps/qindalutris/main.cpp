@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "compat_db.h"
 #include "game_icon_provider.h"
+#include "install_controller.h"
 #include "library_controller.h"
+#include "proton_manager.h"
 #include "qindalutris_actions.h"
+#include "running_games.h"
+#include "scoped_game_launcher.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -57,9 +62,26 @@ int main(int argc, char **argv) {
       QGuiApplication::translate("main", "Window size as WxH."),
       QStringLiteral("WxH"));
   parser.addOption(sizeOption);
+  const QCommandLineOption pageOption(
+      QStringLiteral("page"),
+      QGuiApplication::translate("main", "Open on a page: library, get-games or proton."),
+      QStringLiteral("page"));
+  parser.addOption(pageOption);
   parser.process(app);
 
   LibraryController library;
+  // ADR-0275 composition: games start in their own systemd scope (Force
+  // quit), the shipped/refreshed compatibility database advises installs,
+  // and the Proton manager applies the effective default build before the
+  // first scan.
+  ScopedGameLauncher gameLauncher;
+  library.setProcessLauncher(&gameLauncher);
+  const CompatDatabase compat = loadEffectiveCompatDatabase(
+      shippedCompatDatabasePath(), defaultRefreshedCompatDatabasePath());
+  ProtonManager protons(&library, &compat);
+  protons.initialize();
+  InstallController installs(&library, &compat);
+  RunningGames running(&library, &gameLauncher);
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   coordinator.setApplicationName(
       QGuiApplication::translate("main", "QindaLutris"));
@@ -70,6 +92,9 @@ int main(int argc, char **argv) {
   }
 
   qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Library", &library);
+  qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Installs", &installs);
+  qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Protons", &protons);
+  qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Running", &running);
 
   QQmlApplicationEngine qml;
   // AGENT-GUARD: addImageProvider takes ownership; the provider must outlive
@@ -93,6 +118,12 @@ int main(int argc, char **argv) {
             windowGuard->setProperty("inWindowMenuVisible", visible);
           }
         });
+  }
+  if (window != nullptr && parser.isSet(pageOption)) {
+    const QString page = parser.value(pageOption);
+    window->setProperty("pageIndex", page == QLatin1String("get-games") ? 1
+                                     : page == QLatin1String("proton")  ? 2
+                                                                        : 0);
   }
   if (window != nullptr && parser.isSet(sizeOption)) {
     const QStringList parts = parser.value(sizeOption).split(QLatin1Char('x'));

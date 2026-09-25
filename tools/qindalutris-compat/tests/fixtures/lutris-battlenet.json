@@ -1,0 +1,8 @@
+{"count": 2, "next": null, "previous": null, "results": [
+ {"slug": "battlenet-draft", "runner": "wine", "published": true, "draft": true, "script": {"installer": [{"task": {"name": "winetricks", "app": "vcrun2019"}}]}},
+ {"slug": "battlenet-standard", "runner": "wine", "published": true, "draft": false, "script": {
+   "game": {"exe": "drive_c/Program Files (x86)/Battle.net/Battle.net Launcher.exe", "args": "--in-process \"--lang enUS\"", "prefix": "$GAMEDIR"},
+   "installer": [{"task": {"name": "create_prefix"}}, {"task": {"name": "winetricks", "app": "corefonts  arial"}}, {"task": {"name": "winetricks", "app": "corefonts"}}],
+   "system": {"env": {"DXVK_HUD": "compiler", "DXVK_STATE_CACHE_PATH": "$GAMEDIR", "STAGING_SHARED_MEMORY": 1, "PROTONPATH": "/evil", "__GL_SHADER_DISK_CACHE": 1}},
+   "wine": {"overrides": {"locationapi": "d", "nvapi,nvapi64": "disabled", "odd": "sometimes"}}}}
+]}
