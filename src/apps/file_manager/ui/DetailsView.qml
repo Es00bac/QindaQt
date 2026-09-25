@@ -143,6 +143,7 @@ Control {
 
     ViewportNavigation {
         id: keyboardNavigation
+        onQuickLookRequested: root.appCoordinator.activateAction("file.quick-look")
         view: keyTarget
         selection: root.selection
         navigationController: root.navigationController

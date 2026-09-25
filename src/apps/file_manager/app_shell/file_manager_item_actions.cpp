@@ -31,7 +31,12 @@ void bindFileManagerItemActions(AppShell::ApplicationCoordinator &coordinator,
     const bool inTrash = local && !trash.isEmpty() &&
         QDir::cleanPath(navigation.currentPath()) == trash;
     const bool writable = local && !inTrash && !mutation.busy();
-    enabled("file.open", selected);
+    // ADR-0272: Quick Look previews whatever is selected, in any place.
+    for (const char *id : {"file.open", "file.quick-look"}) {
+      enabled(id, selected);
+    }
+    // ADR-0272: Recents lists local files but is no folder to create in.
+    const bool folder = !navigation.recentsPlace();
     for (const char *id : {"file.open-with", "file.open-new-window", "edit.copy-path",
                            "file.add-to-sidebar"}) {
       enabled(id, local && selected);
@@ -42,8 +47,8 @@ void bindFileManagerItemActions(AppShell::ApplicationCoordinator &coordinator,
     }
     enabled("file.delete", local && selected && !mutation.busy());
     enabled("file.put-back", inTrash && selected && !mutation.busy());
-    enabled("file.new-file", writable);
-    enabled("file.open-terminal", local);
+    enabled("file.new-file", writable && folder);
+    enabled("file.open-terminal", local && folder);
   };
   QObject::connect(&clipboard, &ClipboardController::stateChanged, receiver, sync);
   QObject::connect(&mutation, &MutationController::stateChanged, receiver, sync);

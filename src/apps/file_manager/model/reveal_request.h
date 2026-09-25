@@ -59,9 +59,9 @@ inline constexpr qsizetype maximumRevealWindows = 8;
 
 // AGENT-CONTRACT: the File Manager actions a reveal may run once shown, all
 // catalog ids (public/file_manager_menu_catalog): "file.properties" (Get
-// Info), "file.open-with" and "file.new-file". The Desktop hands its dialogs
-// to File Manager through them (FileBoundary::revealLocalItem and
-// runLocalFolderAction). Any other id, a destructive one above all, is
+// Info), "file.open-with", "file.new-file" and (ADR-0272) "file.quick-look".
+// The Desktop hands its dialogs and previews to File Manager through them
+// (FileBoundary::revealLocalItem and runLocalFolderAction). Any other id, a destructive one above all, is
 // refused by the boundary and ignored by main.cpp.
 [[nodiscard]] bool isRevealAction(const QString &actionId);
 

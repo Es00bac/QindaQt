@@ -40,7 +40,8 @@ a folder, history, listing and selection of their own at the same time.
      buttons are catalog actions.
    - **Commander**: two panes side by side (new, `FolderPanes`), each with
      its own folder, view and tabs; Tab switches panes; Copy To and Move To
-     start at the other pane's folder; a bottom bar and keys F3 View (Open),
+     start at the other pane's folder; a bottom bar and keys F3 View (Quick
+     Look, ADR-0272),
      F4 Edit (Open With), F5 Copy, F6 Move, F7 New Folder, F8 Delete
      (Move to Trash).
 2. **The layout's hint is the style until the user picks one.**
@@ -88,5 +89,4 @@ a folder, history, listing and selection of their own at the same time.
 
 - The File Manager gains file watching (hidden tabs and the tree would then
   follow changes made elsewhere).
-- A viewer (Quick Look) should own F3 in Commander.
 - Tabs need menu entries or a per-window restore of their folders.

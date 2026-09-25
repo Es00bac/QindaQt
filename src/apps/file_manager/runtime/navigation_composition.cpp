@@ -12,6 +12,7 @@
 #include "model/launch_intent.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
+#include "model/recents_place.h"
 #include "model/search_controller.h"
 #include "network/kio_fuse_remote_file_opener.h"
 #include "network/kio_network_directory_backend.h"
@@ -57,10 +58,15 @@ void followListingGeneration(PreviewProvider &previews, PreviewProvider &gallery
 
 std::unique_ptr<NavigationController> composeNavigation(ApplicationsController &applications) {
   ApplicationsController *const place = &applications;
+  // Local folders, plus the two virtual places browsed like folders:
+  // Applications (ADR-0262), scanned whenever it is listed, and Recents
+  // (ADR-0272), read from the desktop's recently-used store.
   auto navigation = std::make_unique<NavigationController>(
-      std::make_unique<ApplicationsDirectoryLister>(
-          std::make_unique<LocalDirectoryLister>(),
-          [place] { place->refresh(); return place->listing(); }),
+      std::make_unique<RecentsDirectoryLister>(
+          std::make_unique<ApplicationsDirectoryLister>(
+              std::make_unique<LocalDirectoryLister>(),
+              [place] { place->refresh(); return place->listing(); }),
+          recentlyUsedStorePath()),
       std::make_unique<ApplicationsFileLauncher>(
           std::make_unique<DesktopFileLauncher>(),
           [place](const QString &id) { return place->open(id); }),

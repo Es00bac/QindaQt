@@ -50,10 +50,9 @@ RowLayout {
     // AGENT-CONTRACT: Commander's function keys, in the bar's order. Each runs
     // its catalog action through the coordinator, exactly as its menu item
     // does; F5 and F6 open Copy To / Move To at the other pane
-    // (MutationDialogs.transferTarget). F3 opens the selection until a
-    // viewer (Quick Look) claims the key.
+    // (MutationDialogs.transferTarget); F3 is Quick Look (ADR-0272).
     readonly property var functionKeys: [
-        { "key": Qt.Key_F3, "label": "F3", "text": qsTr("View"), "action": "file.open" },
+        { "key": Qt.Key_F3, "label": "F3", "text": qsTr("View"), "action": "file.quick-look" },
         { "key": Qt.Key_F4, "label": "F4", "text": qsTr("Edit"), "action": "file.open-with" },
         { "key": Qt.Key_F5, "label": "F5", "text": qsTr("Copy"), "action": "file.copy" },
         { "key": Qt.Key_F6, "label": "F6", "text": qsTr("Move"), "action": "file.move" },

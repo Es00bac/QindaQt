@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "navigation_history.h"
 #include "applications_location.h"
+#include "recents_place.h"
 
 #include <QDir>
 #include <QStringList>
@@ -60,8 +61,10 @@ std::optional<QString> NavigationHistory::goForward() {
 
 std::optional<QString>
 NavigationHistory::parentOf(const QString &absolutePath) {
-  // ADR-0262: the Applications place is a root of its own, not a folder of /.
-  if (ApplicationsLocation::isLocation(absolutePath)) {
+  // ADR-0262/ADR-0272: the Applications and Recents places are roots of
+  // their own, not folders of /.
+  if (ApplicationsLocation::isLocation(absolutePath)
+      || RecentsLocation::isLocation(absolutePath)) {
     return std::nullopt;
   }
   const QString cleaned = QDir::cleanPath(absolutePath);
@@ -81,6 +84,10 @@ NavigationHistory::breadcrumbFor(const QString &absolutePath) {
   QVector<BreadcrumbSegment> segments;
   if (ApplicationsLocation::isLocation(absolutePath)) {
     segments.append({QStringLiteral("Applications"), absolutePath});
+    return segments;
+  }
+  if (RecentsLocation::isLocation(absolutePath)) {
+    segments.append({QStringLiteral("Recents"), absolutePath});
     return segments;
   }
   const QString cleaned = QDir::cleanPath(absolutePath);

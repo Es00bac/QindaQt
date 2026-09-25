@@ -106,6 +106,7 @@ Control {
                         iconName: modelData.id === "home" ? "user-home"
                             : modelData.id === "trash" ? "user-trash"
                             : modelData.id === "applications" ? "folder-applications"
+                            : modelData.id === "recents" ? "clock"
                             : modelData.id === "network" ? "network-workgroup" : "drive-harddisk"
 
                         // Places with no directory behind them open through their Go
@@ -129,6 +130,8 @@ Control {
                             ? qsTr("Show saved network locations")
                             : modelData.id === "applications"
                             ? qsTr("Browse installed applications")
+                            : modelData.id === "recents"
+                            ? qsTr("Show the files you used most recently")
                             : qsTr("Open %1").arg(modelData.path)
                         onClicked: modelData.id === "network"
                             ? root.appCoordinator.activateAction("go.network")
@@ -138,7 +141,9 @@ Control {
 
                         DropArea {
                             anchors.fill: parent
-                            enabled: modelData.id !== "trash" && !routePlace
+                            // ADR-0272: Recents is no folder to drop into.
+                            enabled: modelData.id !== "trash" && modelData.id !== "recents"
+                                     && !routePlace
                             onEntered: (drag) => drag.accepted = EntryDrag.canAccept(drag)
                             onDropped: (drop) => {
                                 const action = EntryDrag.dispatch(

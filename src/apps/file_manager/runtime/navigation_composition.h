@@ -21,7 +21,8 @@ class PreviewProvider;
 class SearchController;
 
 // Production NavigationController: the local lister and launcher behind the
-// Applications place's seams (ADR-0262), the KIO network seams, and its own
+// Applications (ADR-0262) and Recents (ADR-0272) places' seams, the KIO
+// network seams, and its own
 // ApplicationsPlaceOrder as a child. main.cpp builds the window's first
 // controller with it and FolderNavigations every later one (ADR-0271).
 // `applications` must outlive the result.
