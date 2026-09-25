@@ -301,11 +301,13 @@ void EverydayUiTests::typeToSelectWorksInEveryViewAndKeepsSpaces() {
     QVERIFY2(showView(view.mode, view.key, view.focus), view.mode);
     // Home clears any name being typed, as every arrow key does.
     QTest::keyClick(w.window, Qt::Key_Home);
-    QTest::keyClicks(w.window, QStringLiteral("g"));
+    QTest::keyClick(w.window, 'g');
     QTRY_COMPARE(w.currentName(), QStringLiteral("gamma.txt"));
     QTest::keyClick(w.window, Qt::Key_Home);
     // A space inside a typed name is part of the name, not Quick Look.
-    QTest::keyClicks(w.window, QStringLiteral("my p"));
+    for (const char c : {'m', 'y', ' ', 'p'}) {
+      QTest::keyClick(w.window, c);
+    }
     QTRY_COMPARE(w.currentName(), QStringLiteral("my pictures.txt"));
     QVERIFY2(!w.quickLookShowing(), view.mode);
     QTest::keyClick(w.window, Qt::Key_Home);
