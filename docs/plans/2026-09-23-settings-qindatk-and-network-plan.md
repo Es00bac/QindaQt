@@ -2,10 +2,10 @@
 
 - **Date:** 2026-09-23
 - **Author:** Claude (Opus 5.5), for Jarrod
-- **Status:** In progress (2026-09-24). **Installed on qinda-top:** W0 and W6 (desktop
-  `0.1.0_pre20260924-r1`); QindaTK r5 on both machines. **Integrated on qinda main, awaiting release:** W1,
-  W2+W3, W4, W5, W8. **Being built:** W7, W9. **Queued:** W17, W18, W19, W13, W20, W14, W15, W11, W10, W16, W12. Independent review waived by
-  Jarrod on 2026-09-24. See the overnight log for detail.
+- **Status:** Complete (2026-09-25). W0–W20 and W11s are integrated on qinda main (`476de567`) and
+  installed on qinda-top as desktop `0.1.0_pre20260924-r3` (QindaTK r5 on both machines). Live checks after
+  a fresh login remain. One caveat: the File Manager UI-actions check segfaulted twice under full-suite
+  load and did not reproduce in eight focused runs. See the overnight log and docs/HANDOFF.md.
 - **Source base:** hub `qinda:~/git/container-wm.git` `main` at `2e415cad` (the r4
   source `d492ee80` plus documentation-only commits). QindaTK hub `main` at `89d5ca3`.
   Overlay hub `QindaGentoo` `master` at `ac4658a`.
