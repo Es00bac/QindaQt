@@ -9,6 +9,7 @@ QString gameSourceId(GameSource source) {
   case GameSource::Lutris: return QStringLiteral("lutris");
   case GameSource::Desktop: return QStringLiteral("desktop");
   case GameSource::Wine: return QStringLiteral("wine");
+  case GameSource::Installed: return QStringLiteral("installed");
   }
   Q_UNREACHABLE();
 }
@@ -18,7 +19,19 @@ std::optional<GameSource> gameSourceForId(const QString &id) {
   if (id == QLatin1String("lutris")) return GameSource::Lutris;
   if (id == QLatin1String("desktop")) return GameSource::Desktop;
   if (id == QLatin1String("wine")) return GameSource::Wine;
+  if (id == QLatin1String("installed")) return GameSource::Installed;
   return std::nullopt;
+}
+
+QString gameSourceLabel(GameSource source) {
+  switch (source) {
+  case GameSource::Steam: return QStringLiteral("Steam");
+  case GameSource::Lutris: return QStringLiteral("Lutris");
+  case GameSource::Desktop: return QStringLiteral("Native");
+  case GameSource::Wine: return QStringLiteral("Wine");
+  case GameSource::Installed: return QStringLiteral("Installed");
+  }
+  Q_UNREACHABLE();
 }
 
 QString wineRunnerId(WineRunner runner) {

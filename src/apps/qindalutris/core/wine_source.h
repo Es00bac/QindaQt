@@ -23,7 +23,10 @@ struct WineEntryRecord final {
   QString executablePath;
   QString prefixPath;
   WineRunner runner = WineRunner::Wine;
-  QString protonPath; // empty = any discovered Proton
+  // The pinned Proton build (ADR-0275): a build directory name for entries
+  // added since ADR-0275, or the absolute `proton` script path older
+  // entries stored. Empty = no build chosen; a Proton launch refuses.
+  QString protonPath;
 
   friend bool operator==(const WineEntryRecord &, const WineEntryRecord &) = default;
 };
@@ -35,6 +38,15 @@ struct WineEntryRecord final {
 // injected; extraction failures leave the cover empty, never an error.
 [[nodiscard]] QVector<Game> gamesFromWineEntries(
     const QVector<WineEntryRecord> &records, const QString &cacheDir);
+
+// The cached cover for a Windows executable: its PE icon, extracted into
+// cacheDir as "<cacheKey>.png" when absent or older than the executable.
+// cacheKey must be a single path component. Empty when the file is missing,
+// not a PE, or has no icon -- never an error. Shared by hand-added entries
+// and installed titles (title_source.h).
+[[nodiscard]] QString executableCoverPath(const QString &cacheKey,
+                                          const QString &executablePath,
+                                          const QString &cacheDir);
 
 // The deterministic slug for a new entry: normalized title plus a short
 // hash of the executable path so two executables sharing a title stay

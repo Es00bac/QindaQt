@@ -21,13 +21,20 @@ enum class GameSource {
   Lutris,  // installed = 1 rows of Lutris's pga.db
   Desktop, // a Categories=Game .desktop entry (native Linux game)
   Wine,    // hand-added Windows executable + prefix
+  // A title QindaLutris installed or adopted (ADR-0275): one TitleRecord in
+  // titles-v1.json, launched through umu with its pinned Proton build.
+  Installed,
 };
 
-[[nodiscard]] QString gameSourceId(GameSource source); // "steam" | "lutris" | "desktop" | "wine"
+[[nodiscard]] QString gameSourceId(GameSource source); // "steam" | "lutris" | "desktop" | "wine" | "installed"
 [[nodiscard]] std::optional<GameSource> gameSourceForId(const QString &id);
+// The user-facing source name ("Steam", "Lutris", "Native", "Wine",
+// "Installed"), shared by the list model and the detail panel.
+[[nodiscard]] QString gameSourceLabel(GameSource source);
 
-// How a manual Wine entry is started. Proton runs through a discovered
-// Proton installation's `proton` script; Wine through the `wine` binary.
+// How a manual Wine entry is started. Proton runs through umu-run with the
+// entry's pinned build as PROTONPATH (ADR-0275); Wine through the Wine
+// loader.
 enum class WineRunner {
   Wine,
   Proton,
@@ -38,7 +45,7 @@ enum class WineRunner {
 
 // One discovered game. `id` is stable across refreshes and is the launch
 // option store key: "steam/<appid>", "lutris/<pga id>", "desktop/<entry id>",
-// "wine/<slug>". A Lutris row that names the same title as a Steam game is
+// "wine/<slug>", "title/<slug>" (Installed: the TitleRecord id). A Lutris row that names the same title as a Steam game is
 // folded into the Steam record (ADR-0231), so its id never appears.
 struct Game {
   QString id;
@@ -49,10 +56,14 @@ struct Game {
   QString coverPath;   // local cover image when one was found; may be empty
   QString iconName;    // desktop-entry icon name (Desktop source only)
   quint64 appId = 0;   // Steam appid when source is Steam
-  // Manual Wine entries only:
+  // Manual Wine entries and Installed titles:
   QString winePrefix;
-  WineRunner wineRunner = WineRunner::Wine;
-  QString protonPath; // empty means "any discovered Proton"
+  WineRunner wineRunner = WineRunner::Wine; // Installed titles: always Proton
+  // The pinned Proton build (ADR-0275): a build directory name, or -- for
+  // hand-added entries saved before ADR-0275 -- an absolute path of a build
+  // or its `proton` script. Empty means NO build is chosen; a Proton launch
+  // then refuses. It never means "any Proton".
+  QString protonPath;
   // Install size is only ever shown when honestly known (ADR-0231): manual
   // Wine entries report the executable's byte size. Nullopt everywhere else;
   // the UI must say "not tracked", never invent a number.

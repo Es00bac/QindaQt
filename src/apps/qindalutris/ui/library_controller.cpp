@@ -3,6 +3,9 @@
 
 #include "../core/steam_source.h"
 #include "../core/lutris_source.h"
+#include "../core/title_source.h"
+#include "../core/title_store.h"
+#include "../core/umu_launch.h"
 #include "../core/wine_source.h"
 #include "game_list_model.h"
 
@@ -20,16 +23,6 @@ QString xdgOr(const QStandardPaths::StandardLocation location,
               const QString &fallback) {
   const QStringList paths = QStandardPaths::standardLocations(location);
   return paths.isEmpty() ? fallback : paths.first();
-}
-
-QString sourceLabelFor(GameSource source) {
-  switch (source) {
-  case GameSource::Steam: return QStringLiteral("Steam");
-  case GameSource::Lutris: return QStringLiteral("Lutris");
-  case GameSource::Desktop: return QStringLiteral("Native");
-  case GameSource::Wine: return QStringLiteral("Wine");
-  }
-  Q_UNREACHABLE();
 }
 
 QString sizeText(const Game &game) {
@@ -77,7 +70,9 @@ LibraryController::LibraryController(QObject *parent) : QObject(parent) {
   m_coverCacheDir = xdgOr(QStandardPaths::GenericCacheLocation,
                           home + QStringLiteral("/.cache"))
                         + QStringLiteral("/qindaqt/qindalutris/covers");
-  m_protonRoots = m_steamCandidates;
+  m_protonRoots = defaultProtonRoots(
+      home, qEnvironmentVariable("XDG_DATA_HOME"), m_steamCandidates);
+  m_umuSearchPath = defaultUmuSearchPath(home, m_wineSearchPath);
 
   rebuildDisplays();
   connect(qApp, &QGuiApplication::screenAdded, this, [this] {
@@ -107,6 +102,15 @@ void LibraryController::loadPersistedState() {
   if (error == LibraryStore::Error::Refused && m_statusMessage.isEmpty()) {
     m_statusMessage = QStringLiteral(
         "The saved launch options file was not readable; using defaults");
+  }
+  // AGENT-NOTE: a refused titles-v1.json loads NO titles (ADR-0275 whole
+  // refusal) and is never rewritten from here: this slice only reads it, so
+  // the operator's document survives for repair instead of being replaced.
+  error = LibraryStore::Error::None;
+  m_titles = TitleStore(m_configRoot).readTitles(&error);
+  if (error == LibraryStore::Error::Refused && m_statusMessage.isEmpty()) {
+    m_statusMessage = QStringLiteral(
+        "The installed games file was not readable; those games are hidden");
   }
 }
 
@@ -143,8 +147,16 @@ void LibraryController::setProcessLauncher(GameProcessLauncher *launcher) {
   m_launcher = launcher != nullptr ? launcher : m_ownedLauncher.get();
 }
 
-void LibraryController::setSteamRootsForProton(const QStringList &roots) {
+void LibraryController::setProtonRoots(const QVector<ProtonRoot> &roots) {
   m_protonRoots = roots;
+}
+
+void LibraryController::setUmuSearchPath(const QStringList &directories) {
+  m_umuSearchPath = directories;
+}
+
+void LibraryController::setPreferredProtonBuild(const QString &name) {
+  m_preferredProtonBuild = name;
 }
 
 QAbstractItemModel *LibraryController::gameModel() {
@@ -157,12 +169,10 @@ int LibraryController::totalCount() const {
 
 QStringList LibraryController::sourcesPresent() const {
   QStringList out;
-  bool seen[4] = {false, false, false, false};
   for (const Game &game : m_library.games) {
-    const int index = int(game.source);
-    if (!seen[index]) {
-      seen[index] = true;
-      out.append(gameSourceId(game.source));
+    const QString id = gameSourceId(game.source);
+    if (!out.contains(id)) {
+      out.append(id);
     }
   }
   return out;
@@ -208,7 +218,8 @@ void LibraryController::rebuildToolSet() {
       QStandardPaths::findExecutable(QStringLiteral("gamemoderun"));
   m_tools.mangohudBinary =
       QStandardPaths::findExecutable(QStringLiteral("mangohud"));
-  m_tools.protons = discoverProtonInstalls(m_protonRoots);
+  m_tools.umuRunBinary = discoverUmuRun(m_umuSearchPath);
+  m_tools.protonBuilds = discoverProtonBuilds(m_protonRoots);
 }
 
 void LibraryController::refresh() {
@@ -219,7 +230,10 @@ void LibraryController::refresh() {
   const LutrisDiscovery lutris = scanLutrisDatabase(m_lutrisDbPath);
   m_desktop = scanDesktopGames(m_desktopRoots);
   const QVector<Game> wine = gamesFromWineEntries(m_wineRecords, m_coverCacheDir);
+  const QVector<Game> installed =
+      gamesFromTitleRecords(m_titles, m_coverCacheDir);
   m_library = mergeGameSources(steam.games, lutris.games, m_desktop.games, wine,
+                               installed,
                                steam.warnings + lutris.warnings
                                    + m_desktop.warnings);
   m_model->setGames(m_library.games);
@@ -251,6 +265,15 @@ const Game *LibraryController::findGame(const QString &gameId) const {
   return nullptr;
 }
 
+const TitleRecord *LibraryController::findTitle(const QString &titleId) const {
+  for (const TitleRecord &title : m_titles) {
+    if (title.id == titleId) {
+      return &title;
+    }
+  }
+  return nullptr;
+}
+
 void LibraryController::selectGame(const QString &gameId) {
   if (m_selectedGameId == gameId) {
     return;
@@ -268,13 +291,14 @@ QVariantMap LibraryController::selectedGame() const {
   out.insert(QStringLiteral("id"), game->id);
   out.insert(QStringLiteral("title"), game->title);
   out.insert(QStringLiteral("sourceId"), gameSourceId(game->source));
-  out.insert(QStringLiteral("sourceLabel"), sourceLabelFor(game->source));
+  out.insert(QStringLiteral("sourceLabel"), gameSourceLabel(game->source));
   out.insert(QStringLiteral("installPath"), game->installPath);
   out.insert(QStringLiteral("sizeText"), sizeText(*game));
   out.insert(QStringLiteral("coverUrl"),
              QStringLiteral("image://gameicon/") + game->id);
   out.insert(QStringLiteral("winePrefix"), game->winePrefix);
   out.insert(QStringLiteral("wineRunner"), wineRunnerId(game->wineRunner));
+  out.insert(QStringLiteral("protonBuild"), game->protonPath);
   return out;
 }
 
@@ -283,6 +307,12 @@ LaunchOptions LibraryController::optionsFor(const QString &gameId) const {
 }
 
 LaunchPlan LibraryController::planFor(const Game &game) const {
+  // AGENT-CONTRACT: Installed titles plan from their TitleRecord (ADR-0275);
+  // planGameLaunch refuses them because a Game does not carry the record.
+  if (const TitleRecord *title = game.source == GameSource::Installed
+                                    ? findTitle(game.id) : nullptr) {
+    return planTitleLaunch(*title, optionsFor(game.id), m_tools, m_displays);
+  }
   return planGameLaunch(game, optionsFor(game.id), m_tools, m_displays,
                         &m_desktop);
 }
@@ -403,7 +433,16 @@ bool LibraryController::addWineGame(const QString &title,
   record.executablePath = executablePath;
   record.prefixPath = prefixPath;
   record.runner = *runner;
-  record.protonPath = protonPath;
+  // ADR-0275: a new entry records ONE concrete build by name -- the caller's
+  // choice, else the default -- even for Wine, so a later switch to Proton
+  // has a pin. An alias or uninstalled build refuses the add.
+  const std::optional<QString> pin = pinForNewEntry(
+      protonPath, m_tools.protonBuilds, m_preferredProtonBuild);
+  if (!pin.has_value()
+      && (*runner == WineRunner::Proton || !protonPath.trimmed().isEmpty())) {
+    return false;
+  }
+  record.protonPath = pin.value_or(QString());
   m_wineRecords.append(record);
   persistWineEntries();
   refresh();
@@ -433,11 +472,18 @@ void LibraryController::persistWineEntries() {
 
 QVariantList LibraryController::protonChoices() const {
   QVariantList out;
-  for (const ProtonInstall &proton : m_tools.protons) {
+  const std::optional<QString> fallback =
+      pinForNewEntry(QString(), m_tools.protonBuilds, m_preferredProtonBuild);
+  for (const ProtonBuild &build : m_tools.protonBuilds) {
+    const bool isDefault = fallback == build.name;
     QVariantMap entry;
-    entry.insert(QStringLiteral("name"), proton.name);
-    entry.insert(QStringLiteral("path"), proton.protonScript);
-    out.append(entry);
+    entry.insert(QStringLiteral("name"), build.displayName);
+    entry.insert(QStringLiteral("path"), build.path);
+    entry.insert(QStringLiteral("build"), build.name);
+    entry.insert(QStringLiteral("origin"), protonOriginId(build.origin));
+    entry.insert(QStringLiteral("removable"), build.removable);
+    entry.insert(QStringLiteral("isDefault"), isDefault);
+    out.insert(isDefault ? 0 : out.size(), entry); // default first
   }
   return out;
 }
