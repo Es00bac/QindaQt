@@ -157,11 +157,14 @@ ApplicationWindow {
         function onActionRequested(actionId) {
             const navigation = root.navigationController
             if (applicationsActions.handle(actionId) || fileActions.handle(actionId)
-                    || views.handle(actionId)) {
+                    || views.handle(actionId) || quickLook.handle(actionId)) {
                 return
-            } else if (actionId === "go.applications") {
+            } else if (actionId === "go.applications" || actionId === "go.recents") {
                 if (filterBar.visible) filterBar.closed()
-                navigation.navigateTo(root.applicationsController.location)
+                root.networkMode = false
+                navigation.navigateTo(actionId === "go.recents"
+                                      ? root.placesController.recentsLocation
+                                      : root.applicationsController.location)
                 return
             } else if (actionId === "go.network") {
                 if (filterBar.visible) filterBar.closed()
@@ -428,6 +431,18 @@ ApplicationWindow {
         navigationController: root.navigationController
         selection: entrySelection
         views: views
+    }
+
+    // ADR-0272: Space, Ctrl+Y and the File menu preview the selection here.
+    QuickLook {
+        id: quickLook
+        objectName: "quickLook"
+        anchors.fill: parent
+        selection: entrySelection
+        views: views
+        navigationController: root.navigationController
+        entryFacts: root.entryFacts
+        preferencesController: root.preferencesController
     }
 
     // ADR-0273: org.freedesktop.FileManager1 and --select reveal entries here.

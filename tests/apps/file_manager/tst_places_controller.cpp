@@ -54,6 +54,9 @@ void TestPlacesController::fixedPlacesArePublishedInOrder() {
     expected.append(placeMap(QStringLiteral("trash"), QStringLiteral("Trash"),
                              QDir(dataHome).filePath(QStringLiteral("Trash/files"))));
   }
+  // ADR-0272: Recents is browsed like a folder at its virtual location.
+  expected.append(placeMap(QStringLiteral("recents"), QStringLiteral("Recents"),
+                           QStringLiteral("recents:")));
   // ADR-0262: Applications carries its virtual location (the window browses
   // it in the ordinary views); Network keeps an empty path because no
   // navigable location stands behind it. Both still open through their

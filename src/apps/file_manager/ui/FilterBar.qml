@@ -72,8 +72,10 @@ Control {
         CheckBox {
             id: subfoldersToggle
             objectName: "filterSubfoldersToggle"
-            // ADR-0262: the Applications place has no subfolders to search.
+            // ADR-0262/ADR-0272: the Applications and Recents places have no
+            // subfolders to search.
             enabled: !root.navigationController.applicationsPlace
+                     && !root.navigationController.recentsPlace
             text: qsTr("Subfolders")
             Accessible.name: qsTr("Include subfolders (recursive search)")
             onToggled: {
