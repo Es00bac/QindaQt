@@ -5,19 +5,35 @@
 # tests link it without dragging in a window.
 qt_add_library(qindaqt_qindalutris_view STATIC
     game_icon_provider.h
+    game_image_resolver.cpp
+    game_image_resolver.h
     game_list_model.cpp
     game_list_model.h
+    install_controller.cpp
+    install_controller.h
     library_controller.cpp
     library_controller.h
+    proton_choices.cpp
+    proton_choices.h
+    proton_manager.cpp
+    proton_manager.h
     qindalutris_actions.cpp
     qindalutris_actions.h
+    running_games.cpp
+    running_games.h
+    scoped_game_launcher.cpp
+    scoped_game_launcher.h
+    title_factory.cpp
+    title_factory.h
+    umu_installer_planner.cpp
+    umu_installer_planner.h
 )
 add_library(QindaQt::QindaLutrisView ALIAS qindaqt_qindalutris_view)
 
 target_include_directories(qindaqt_qindalutris_view
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(qindaqt_qindalutris_view
-    PUBLIC QindaQt::QindaLutrisModel QindaQt::AppShell Qt6::Core Qt6::Gui
+    PUBLIC QindaQt::QindaLutrisModel QindaQt::QindaLutrisJobs QindaQt::AppShell Qt6::Core Qt6::Gui
     PRIVATE Qt6::Qml Qt6::Quick
 )
 target_compile_features(qindaqt_qindalutris_view PUBLIC cxx_std_20)

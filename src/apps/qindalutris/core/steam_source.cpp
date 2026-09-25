@@ -13,8 +13,6 @@ namespace QindaQt::QindaLutris {
 namespace {
 
 constexpr int kMaxWarnings = 32;
-constexpr int kMaxProtonInstalls = 16;
-constexpr int kMaxCompatToolDirs = 64;
 
 void addWarning(QStringList *warnings, const QString &text) {
   if (warnings->size() < kMaxWarnings) {
@@ -181,42 +179,6 @@ SteamDiscovery scanSteamLibraries(const QStringList &candidateRoots) {
       break;
     }
     scanManifestsInto(roots.at(i), rootOwners.at(i), &out);
-  }
-  return out;
-}
-
-QVector<ProtonInstall> discoverProtonInstalls(const QStringList &steamRoots) {
-  QVector<ProtonInstall> out;
-  const auto consider = [&out](const QFileInfo &entry, const QString &script) {
-    if (out.size() >= kMaxProtonInstalls) {
-      return;
-    }
-    const QFileInfo scriptInfo(script);
-    if (scriptInfo.isFile() && scriptInfo.isExecutable()
-        && !scriptInfo.isSymLink()) {
-      out.append({entry.fileName(), scriptInfo.canonicalFilePath()});
-    }
-  };
-  for (const QString &root : steamRoots) {
-    const QDir common(root + QStringLiteral("/steamapps/common"));
-    const QFileInfoList commons =
-        common.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-    for (const QFileInfo &entry : commons) {
-      if (!entry.fileName().startsWith(QLatin1String("Proton"))) {
-        continue;
-      }
-      consider(entry, entry.absoluteFilePath() + QStringLiteral("/proton"));
-    }
-    const QDir compat(root + QStringLiteral("/compatibilitytools.d"));
-    const QFileInfoList tools =
-        compat.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-    int seen = 0;
-    for (const QFileInfo &entry : tools) {
-      if (++seen > kMaxCompatToolDirs) {
-        break;
-      }
-      consider(entry, entry.absoluteFilePath() + QStringLiteral("/proton"));
-    }
   }
   return out;
 }

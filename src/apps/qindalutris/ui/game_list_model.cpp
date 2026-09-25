@@ -2,19 +2,6 @@
 #include "game_list_model.h"
 
 namespace QindaQt::QindaLutris {
-namespace {
-
-QString sourceLabel(GameSource source) {
-  switch (source) {
-  case GameSource::Steam: return QStringLiteral("Steam");
-  case GameSource::Lutris: return QStringLiteral("Lutris");
-  case GameSource::Desktop: return QStringLiteral("Native");
-  case GameSource::Wine: return QStringLiteral("Wine");
-  }
-  Q_UNREACHABLE();
-}
-
-} // namespace
 
 GameListModel::GameListModel(QObject *parent) : QAbstractListModel(parent) {}
 
@@ -31,7 +18,7 @@ QVariant GameListModel::data(const QModelIndex &index, int role) const {
   case GameIdRole: return game.id;
   case TitleRole: return game.title;
   case SourceIdRole: return gameSourceId(game.source);
-  case SourceLabelRole: return sourceLabel(game.source);
+  case SourceLabelRole: return gameSourceLabel(game.source);
   case CoverUrlRole:
     // No art exists at all -> empty source (the tile's placeholder glyph);
     // art that exists but fails to decode is the tile's honest alert.

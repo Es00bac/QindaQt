@@ -1,0 +1,28 @@
+{
+ "schema": "qindalutris-compat-db",
+ "version": 1,
+ "generated": "2026-09-01T00:00:00Z",
+ "sources": [
+  {
+   "id": "x",
+   "url": "https://x.org/",
+   "retrieved": "2026-09-01T00:00:00Z"
+  },
+  {
+   "id": "x",
+   "url": "https://x.org/",
+   "retrieved": "2026-09-01T00:00:00Z"
+  }
+ ],
+ "defaults": {
+  "recommendedBuild": ""
+ },
+ "builds": {},
+ "games": [
+  {
+   "id": "g",
+   "title": "G",
+   "keys": {}
+  }
+ ]
+}

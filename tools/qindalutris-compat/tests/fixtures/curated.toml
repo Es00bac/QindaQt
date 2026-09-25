@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Test-only curated overrides for tools/qindalutris-compat/tests.
+
+[defaults]
+recommendedBuild = "GE-Proton11-6-x86_64"
+source = "test fixture"
+
+[builds."GE-Proton11-6-x86_64"]
+status = "tested"
+notes = "fixture build"
+source = "test fixture"
+
+[[games]]
+id = "world-of-warcraft"
+title = "World of Warcraft"
+source = "test fixture"
+match = { awacy = "wow" }
+umuStore = "battlenet"
+keys = { storeIds = { battlenet = ["wow"] }, exeNames = ["Wow.exe"] }
+
+[games.proton]
+recommended = "GE-Proton11-6-x86_64"
+
+[[games.proton.avoid]]
+build = "GE-Proton11-7-x86_64"
+reason = "Stalls"
+source = "test fixture"
+
+[[games]]
+id = "battlenet-launcher"
+title = "Battle.net"
+source = "test fixture"
+lutris = { slug = "battlenet", installer = "battlenet-standard", take = ["winetricks", "environment", "dlloverrides"] }
+
+[[games]]
+id = "borderlands-3"
+title = "Borderlands 3"
+source = "test fixture"
+keys = { steamAppIds = ["397540"] }
+winetricks = ["win10"]

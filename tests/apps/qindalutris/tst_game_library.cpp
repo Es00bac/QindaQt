@@ -29,7 +29,7 @@ private Q_SLOTS:
                   GameSource::Lutris),
          makeGame(QStringLiteral("lutris/4"), QStringLiteral("Other Game"),
                   GameSource::Lutris)},
-        {}, {}, {});
+        {}, {}, {}, {});
     QCOMPARE(out.games.size(), 2);
     QCOMPARE(out.games.at(0).id, QStringLiteral("steam/10"));
     QCOMPARE(out.games.at(1).id, QStringLiteral("lutris/4"));
@@ -47,15 +47,44 @@ private Q_SLOTS:
                   GameSource::Steam)},
         {makeGame(QStringLiteral("lutris/1"), QStringLiteral("TWIN!!"),
                   GameSource::Lutris)},
-        {}, {}, {});
+        {}, {}, {}, {});
     QCOMPARE(out.games.size(), 2);
   }
 
   // No source at all is an honest empty library, never an error.
   void emptyEverything() {
-    const GameLibrary out = mergeGameSources({}, {}, {}, {}, {});
+    const GameLibrary out = mergeGameSources({}, {}, {}, {}, {}, {});
     QVERIFY(out.games.isEmpty());
     QVERIFY(out.warnings.isEmpty());
+  }
+
+  // Installed titles are merged first, so the kMaxGames cap never drops a
+  // game QindaLutris itself installed.
+  void installedTitlesSurviveTheCap() {
+    QVector<Game> steam;
+    for (int i = 0; i < kMaxGames; ++i) {
+      steam.append(makeGame(QStringLiteral("steam/%1").arg(i),
+                            QStringLiteral("Game %1").arg(i), GameSource::Steam));
+    }
+    const GameLibrary out = mergeGameSources(
+        steam, {}, {}, {},
+        {makeGame(QStringLiteral("title/wow"), QStringLiteral("World of Warcraft"),
+                  GameSource::Installed)},
+        {});
+    QCOMPARE(out.games.size(), kMaxGames);
+    bool found = false;
+    for (const Game &game : out.games) {
+      found = found || game.id == QLatin1String("title/wow");
+    }
+    QVERIFY(found);
+  }
+
+  // The ADR-0275 source id round-trips like the others.
+  void installedSourceId() {
+    QCOMPARE(gameSourceId(GameSource::Installed), QStringLiteral("installed"));
+    QCOMPARE(gameSourceForId(QStringLiteral("installed")),
+             std::optional<GameSource>(GameSource::Installed));
+    QVERIFY(!gameSourceForId(QStringLiteral("Installed")).has_value());
   }
 
   // Output is title-sorted and deterministic.
@@ -68,11 +97,15 @@ private Q_SLOTS:
                   GameSource::Desktop)},
         {makeGame(QStringLiteral("wine/m"), QStringLiteral("Middle"),
                   GameSource::Wine)},
+        {makeGame(QStringLiteral("title/beta"), QStringLiteral("Beta"),
+                  GameSource::Installed)},
         {});
-    QCOMPARE(out.games.size(), 3);
+    QCOMPARE(out.games.size(), 4);
     QCOMPARE(out.games.at(0).title, QStringLiteral("Alpha"));
-    QCOMPARE(out.games.at(1).title, QStringLiteral("Middle"));
-    QCOMPARE(out.games.at(2).title, QStringLiteral("Zeta"));
+    QCOMPARE(out.games.at(1).title, QStringLiteral("Beta"));
+    QCOMPARE(out.games.at(1).source, GameSource::Installed);
+    QCOMPARE(out.games.at(2).title, QStringLiteral("Middle"));
+    QCOMPARE(out.games.at(3).title, QStringLiteral("Zeta"));
   }
 };
 
