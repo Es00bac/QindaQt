@@ -3,8 +3,9 @@ import QtQuick
 
 // The window's non-visual owners and its two secondary windows: the
 // Connect-to-server dialog (ADR-0194), the Preferences window (ADR-0198), the
-// binding that applies the presentation preferences to this window, and the
-// one that starts and stops discovery (ADR-0200).
+// per-folder view settings that apply the presentation preferences to this
+// window (ADR-0270), and the binding that starts and stops discovery
+// (ADR-0200).
 //
 // Extracted from Main.qml so the window stays within the source-shape budget.
 // Main drives it through openConnectDialog()/openPreferences() rather than
@@ -17,6 +18,9 @@ Item {
     required property var preferencesController
     required property var discoveryController
     required property var mountManager
+
+    // ADR-0270: the folder's view (FolderViewSettings), for the view stack.
+    readonly property alias folderViews: folderViewSettings
 
     // Opens the Connect-to-server dialog, empty or pre-filled from a
     // canonical address.
@@ -41,7 +45,9 @@ Item {
         onSaved: (url) => root.navigationController.navigateTo(url)
     }
 
-    PresentationDefaults {
+    FolderViewSettings {
+        id: folderViewSettings
+        objectName: "folderViewSettings"
         preferencesController: root.preferencesController
         navigationController: root.navigationController
     }

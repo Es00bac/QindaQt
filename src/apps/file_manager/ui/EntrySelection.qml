@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 
-// One window owns selection; list/grid are projections of this state.
+// One window owns selection; the four views are projections of this state.
 QtObject {
     id: root
     required property var navigationController
+    // AGENT-NOTE (ADR-0270): the one JavaScript copy of the visible listing,
+    // taken once per listing change. Reading navigationController.entries
+    // marshals every row again, so views, delegates and this object read
+    // `entries` and `indexByKey` instead: a per-row read of the controller
+    // made a 10,000-entry folder cost O(n) for every visible delegate.
+    property var entries: []
+    property var indexByKey: ({})
     property var selected: ({})
     property string folder: ""
     property string currentKey: ""
@@ -22,20 +29,18 @@ QtObject {
         return entry ? JSON.stringify([entry.path, entry.name, entry.device, entry.inode]) : ""
     }
     function indexOfKey(value) {
-        const entries = navigationController.entries
-        for (let i = 0; i < entries.length; ++i)
-            if (key(entries[i]) === value) return i
-        return -1
+        const index = root.indexByKey[value]
+        return index === undefined ? -1 : index
     }
     function focusIndex(index) {
-        currentKey = key(navigationController.entries[index])
+        currentKey = key(root.entries[index])
     }
     function isSelected(index) {
-        return selected[key(navigationController.entries[index])] !== undefined
+        return selected[key(root.entries[index])] !== undefined
     }
     function count() { return Object.keys(selected).length }
     function selectOnly(index) {
-        const entry = navigationController.entries[index]
+        const entry = root.entries[index]
         const next = ({})
         if (entry) next[key(entry)] = entry
         selected = next
@@ -43,7 +48,7 @@ QtObject {
         anchorKey = currentKey
     }
     function toggle(index) {
-        const entry = navigationController.entries[index]
+        const entry = root.entries[index]
         if (!entry) return
         const next = Object.assign({}, selected)
         const id = key(entry)
@@ -54,7 +59,7 @@ QtObject {
         anchorKey = currentKey
     }
     function rangeTo(index, additive = false) {
-        const entries = navigationController.entries
+        const entries = root.entries
         if (index < 0 || index >= entries.length) return
         let anchor = indexOfKey(anchorKey)
         if (anchor < 0) {
@@ -73,7 +78,7 @@ QtObject {
     // and no modifier replaces the set. An empty array with no modifier is
     // an empty-space click and clears the selection.
     function applyIndexSet(indexes, modifiers) {
-        const entries = navigationController.entries
+        const entries = root.entries
         const valid = indexes.filter(index => index >= 0 && index < entries.length)
         if (modifiers & Qt.ControlModifier) {
             const next = Object.assign({}, selected)
@@ -99,13 +104,35 @@ QtObject {
     }
     function selectAll() {
         const next = ({})
-        for (const entry of navigationController.entries) next[key(entry)] = entry
+        for (const entry of root.entries) next[key(entry)] = entry
         selected = next
     }
     function moveTo(index, modifiers) {
         if (modifiers & Qt.ShiftModifier) rangeTo(index, Boolean(modifiers & Qt.ControlModifier))
         else if (modifiers & Qt.ControlModifier) focusIndex(index)
         else selectOnly(index)
+    }
+    // The one click policy every view's entries share (ADR-0270): a plain
+    // click selects only this entry, Shift extends from the anchor (adding
+    // the range with Control), Control toggles, and a right-click on an entry
+    // that is already selected keeps the batch for the context menu.
+    function click(index, button, modifiers) {
+        if (button === Qt.RightButton && isSelected(index)) {
+            // keep the batch
+        } else if (modifiers & Qt.ShiftModifier) {
+            rangeTo(index, Boolean(modifiers & Qt.ControlModifier))
+        } else if (modifiers & Qt.ControlModifier) {
+            toggle(index)
+        } else {
+            selectOnly(index)
+        }
+        focusIndex(index)
+    }
+    // A touch-and-hold on an entry targets it for the context menu, keeping
+    // a batch that already contains it.
+    function target(index) {
+        if (!isSelected(index)) selectOnly(index)
+        focusIndex(index)
     }
     function reconcile() {
         // AGENT-GUARD: Navigation changes the authority of every row. Clear
@@ -116,8 +143,14 @@ QtObject {
             currentKey = ""
             anchorKey = ""
         }
+        const entries = navigationController.entries
+        const byKey = ({})
+        for (let i = 0; i < entries.length; ++i)
+            byKey[key(entries[i])] = i
+        root.indexByKey = byKey
+        root.entries = entries
         const next = ({})
-        for (const entry of navigationController.entries) {
+        for (const entry of entries) {
             const id = key(entry)
             if (selected[id] !== undefined) next[id] = selected[id]
         }
@@ -129,7 +162,7 @@ QtObject {
         // AGENT-CONTRACT: Retain listing-time identity for mutation checks.
         // Never refresh a selected entry's identity from a replacement row.
         if (folder !== navigationController.currentPath) return []
-        return navigationController.entries.filter(entry => selected[key(entry)] !== undefined)
+        return root.entries.filter(entry => selected[key(entry)] !== undefined)
             .map(entry => selected[key(entry)])
     }
 }

@@ -2,8 +2,8 @@
 import QtQuick
 import QtQuick.Controls
 
-// Shared right-click/keyboard context menu for both the Icon and Details
-// views, so the two stay consistent instead of each hand-declaring its own
+// Shared right-click/keyboard context menu for the four views (ADR-0270), so
+// they stay consistent instead of each hand-declaring its own
 // item list. Every catalog item dispatches through the existing AppShell
 // action catalog/coordinator (root.appCoordinator.activateAction) — the same
 // path the toolbar and menu bar already use — so this adds no new mutation
@@ -83,7 +83,7 @@ Menu {
     // QQC2 creates the entry that stands for a sub-menu itself, so its
     // visibility cannot be bound declaratively; it is set each time the menu
     // opens, and named (contextOpenWithMenu, contextNewFileMenu,
-    // contextSortMenu, contextViewMenu) so tests can find it.
+    // contextSortMenu, contextViewMenu, contextGroupMenu) so tests can find it.
     function showSubMenu(menu, name, shown) {
         for (let i = 0; i < root.count; ++i) {
             const item = root.itemAt(i)
@@ -108,6 +108,7 @@ Menu {
         root.showSubMenu(newFileMenu, "contextNewFileMenu", newFile)
         root.showSubMenu(sortMenu, "contextSortMenu", root.isBackground)
         root.showSubMenu(viewMenu, "contextViewMenu", root.isBackground)
+        root.showSubMenu(groupMenu, "contextGroupMenu", root.isBackground && !root.applicationsPlace)
     }
 
     // The same menus' checked truth, for checkable actions set in C++.
@@ -141,7 +142,7 @@ Menu {
         // remains focused. backgroundPasteOverride is the narrow, self-
         // clearing seam Main.qml exposes for exactly that one case; reaching
         // it through Window.window (rather than a new property threaded down
-        // from Main.qml) needs no change to the EntryGrid/EntryList wiring.
+        // from Main.qml) needs no change to the views' wiring.
         onTriggered: {
             const window = backgroundPasteItem.Window.window
             if (window)
@@ -179,9 +180,25 @@ Menu {
         title: qsTr("View")
         contextMenu: root
         current: root.navigationController.viewMode
+        // ADR-0270: the four views, and (for folders) Group By.
         choices: [
             { name: "contextIconViewAction", text: qsTr("Icon View"), actionId: "view.grid-mode", value: "grid" },
-            { name: "contextDetailsViewAction", text: qsTr("Details View"), actionId: "view.details-mode", value: "list" }
+            { name: "contextDetailsViewAction", text: qsTr("Details View"), actionId: "view.details-mode", value: "list" },
+            { name: "contextColumnsViewAction", text: qsTr("Columns View"), actionId: "view.columns-mode", value: "columns" },
+            { name: "contextGalleryViewAction", text: qsTr("Gallery View"), actionId: "view.gallery-mode", value: "gallery" }
+        ]
+    }
+    ContextChoiceMenu {
+        id: groupMenu
+        objectName: "contextGroupSubMenu"
+        title: qsTr("Group By")
+        contextMenu: root
+        current: root.navigationController.groupBy
+        choices: [
+            { name: "contextGroupNoneAction", text: qsTr("None"), actionId: "view.group-none", value: "none" },
+            { name: "contextGroupKindAction", text: qsTr("Kind"), actionId: "view.group-kind", value: "kind" },
+            { name: "contextGroupDateAction", text: qsTr("Date Modified"), actionId: "view.group-date", value: "date" },
+            { name: "contextGroupSizeAction", text: qsTr("Size"), actionId: "view.group-size", value: "size" }
         ]
     }
     MenuItem {

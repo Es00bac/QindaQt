@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "model/local_directory_lister.h"
 
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
@@ -35,6 +36,7 @@ private slots:
   void regularFileIsNotADirectory();
   void unreadableDirectoryIsPermissionDenied();
   void emptyDirectoryListsCleanly();
+  void publishesTheDetailsColumnsStatFacts();
 };
 
 void TestLocalDirectoryLister::listsAndSortsDirectoriesBeforeFilesCaseInsensitively() {
@@ -157,6 +159,25 @@ void TestLocalDirectoryLister::emptyDirectoryListsCleanly() {
   QVERIFY(result.ok());
   QVERIFY(result.entries.isEmpty());
   QVERIFY(!result.truncated);
+}
+
+// ADR-0270: the Details view's Date Accessed, Date Created, Owner and Group
+// come from the stat the listing already made.
+void TestLocalDirectoryLister::publishesTheDetailsColumnsStatFacts() {
+  QTemporaryDir dir;
+  QVERIFY(dir.isValid());
+  QVERIFY(writeFile(dir.filePath(QStringLiteral("file.txt")), QByteArray("data")));
+  const auto result = LocalDirectoryLister().list(dir.path());
+  QVERIFY(result.ok());
+  QCOMPARE(result.entries.size(), 1);
+  const auto &entry = result.entries.first();
+  QVERIFY(entry.accessed.isValid());
+#ifdef Q_OS_UNIX
+  QCOMPARE(entry.ownerId, static_cast<qint64>(::getuid()));
+  QVERIFY(entry.groupId >= 0);
+#endif
+  // Birth time is filesystem-dependent: valid, or unknown -- never invented.
+  QVERIFY(!entry.created.isValid() || entry.created <= QDateTime::currentDateTime().addSecs(5));
 }
 
 QTEST_APPLESS_MAIN(TestLocalDirectoryLister)

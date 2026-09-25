@@ -84,7 +84,8 @@ The focused File Manager suite includes an injected production-window input
 row (`qindaqt.file-manager-browsing-ui`) at 480×360/light, 1280×800/dark and
 1920×1080/high contrast, plus `qindaqt.file-manager-viewport` for scrollbar
 thumb drag, keyboard paging/type selection, plain-wheel scrolling and
-Ctrl-wheel zoom. Fixtures remain below private temporary roots and use a
+Ctrl-wheel zoom, and `qindaqt.file-manager-views-ui` for the four QindaTK
+views (ADR-0270). Fixtures remain below private temporary roots and use a
 recording file launcher; input is delivered to the test window, never uinput.
 The model rows check bounded filename filtering and icon zoom without relisting
 or replacing selected file/preview identities. These rows complement native

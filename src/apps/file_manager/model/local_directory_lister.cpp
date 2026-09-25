@@ -27,6 +27,15 @@ namespace {
 
 } // namespace
 
+void LocalDirectoryLister::fillStatFacts(const QFileInfo &info, DirectoryEntry &entry) {
+  // QFileInfo reports an unknown owner or group as uint(-2).
+  constexpr uint unknownId = static_cast<uint>(-2);
+  entry.created = info.birthTime();
+  entry.accessed = info.lastRead();
+  entry.ownerId = info.ownerId() == unknownId ? -1 : static_cast<qint64>(info.ownerId());
+  entry.groupId = info.groupId() == unknownId ? -1 : static_cast<qint64>(info.groupId());
+}
+
 ListingResult LocalDirectoryLister::list(const QString &absolutePath) const {
   ListingResult result;
   result.path = absolutePath;
@@ -74,6 +83,7 @@ ListingResult LocalDirectoryLister::list(const QString &absolutePath) const {
     entry.isReadable = info.isReadable();
     entry.size = entry.isDirectory ? 0 : info.size();
     entry.lastModified = info.lastModified();
+    fillStatFacts(info, entry);
     if (const auto identity = LocalMutationBackend::identityForPath(entry.absolutePath)) {
       entry.device = identity->device;
       entry.inode = identity->inode;

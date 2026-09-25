@@ -2,6 +2,7 @@
 #include "search_controller.h"
 
 #include "../mutation/local_mutation_backend.h"
+#include "local_directory_lister.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -69,6 +70,7 @@ protected:
         entry.isReadable = info.isReadable();
         entry.size = entry.isDirectory ? 0 : info.size();
         entry.lastModified = info.lastModified();
+        LocalDirectoryLister::fillStatFacts(info, entry);
         if (const auto identity =
                 LocalMutationBackend::identityForPath(entry.absolutePath)) {
           entry.device = identity->device;

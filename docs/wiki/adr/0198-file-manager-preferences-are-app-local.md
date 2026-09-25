@@ -5,7 +5,8 @@
 - **Owners:** File Manager
 - **Supersedes:** ADR-0090's deferral of sort column/direction, hidden
   visibility, view mode and icon zoom to a later Settings1 schema decision
-- **Superseded by:** None
+- **Superseded by:** [ADR-0270](0270-file-manager-views-move-to-qindatk.md) for the
+  schema only (`preferences-v2`, migrated from v1); the store and its rules stand.
 
 ## Context
 

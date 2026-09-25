@@ -344,7 +344,7 @@ void TestNetworkHubUi::aCommittedTransferRefreshesOnlyTheFolderOnScreen() {
 
 // ADR-0198: the whole chain, through production QML -- the action opens the
 // window, the window renders, a control writes through PreferencesController,
-// the store keeps it, and PresentationDefaults applies it to the folder that
+// the store keeps it, and FolderViewSettings applies it to the folder that
 // is already on screen.
 void TestNetworkHubUi::preferencesOpenRenderAndReachTheFolderOnScreen() {
   QTemporaryDir temporary;

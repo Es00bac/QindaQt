@@ -58,7 +58,10 @@ write-in-place through the platform KIOFuse service is recorded in
 
 File Manager's presentation is stock Qt 6 QML (`QtQuick`, `QtQuick.Controls`,
 `QtQuick.Layouts`) styled by the platform theme palette; it no longer imports
-`QindaQt.Tokens` or `QindaQt.Controls` (ADR-0116). It still composes the
+`QindaQt.Tokens` or `QindaQt.Controls` (ADR-0116). Its four folder views --
+Icons, Details, Columns and Gallery -- are QindaTK, themed from that same
+palette ([ADR-0270](../adr/0270-file-manager-views-move-to-qindatk.md); see
+[Four views on QindaTK](#four-views-on-qindatk)). It still composes the
 public `QindaQt.AppShell 1.0` window/action/lifecycle boundary. File Manager
 retains all navigation and filesystem policy; AppShell owns only the standard
 menu, shortcut dispatch, focus reporting, and close-decision protocol (see
@@ -129,7 +132,7 @@ the sidebar narrows from 196 to 148 pixels below 680 pixels window width. Bookma
 `BookmarksStore` (ADR-0090); a bookmark whose folder vanished simply lands on
 the ordinary "missing" state card.
 
-The main pane defaults to a spacious icon grid. Both views support rubber-band
+The main pane defaults to a spacious icon grid. Every view supports rubber-band
 (marquee) selection: dragging on empty viewport space draws a band and selects
 every crossed entry on release, with the usual modifier policy (a plain band
 replaces the selection, Shift unions, Control toggles); a band-free click on
@@ -139,12 +142,10 @@ supports additive Ctrl+Shift ranges just like the icon grid, with the same
 behavior from the keyboard. Selection identity includes each entry's path so
 same-name hard links in different recursive-search folders stay distinct.
 Details mode
-alternates row backgrounds (odd rows carry the palette's `alternateBase`, even
-rows stay transparent, hover is a translucent highlight tint on either parity,
-and the selection highlight always wins) so adjacent rows are easy to tell
-apart. Details mode exposes a clickable
-sort header (Name, Size, Kind, Modified); metadata columns progressively hide
-below the available width, preserving the filename and size. Clicking the active column reverses its
+alternates row backgrounds (the table's striped rows; hover is a translucent
+accent tint and the selection tint always wins) so adjacent rows are easy to
+tell apart. Details mode exposes a clickable sort header for every sortable
+column the folder shows (ADR-0270). Clicking the active column reverses its
 direction; directories sort first by default. Hidden entries (dot names) are
 filtered out of the published listing by default; `Ctrl+H` or the toolbar
 toggle shows them at their sorted positions, and the status notice reports
@@ -164,6 +165,10 @@ state at roomy sizes, while compact windows retain the accessible state card.
 | `view.focus-location` | `Ctrl+L` | Swap the breadcrumb for the editable location field |
 | `view.show-hidden` | `Ctrl+H` | Show or hide dot-name entries (checkable) |
 | `view.details-mode` / `view.grid-mode` | `Ctrl+1` / `Ctrl+2` | Select Details / Icon view directly |
+| `view.columns-mode` / `view.gallery-mode` | `Ctrl+3` / `Ctrl+4` | Select Columns / Gallery view directly (ADR-0270) |
+| `view.show-columns` | `Ctrl+J` | Open the Details column chooser |
+| `view.use-as-defaults` | `Ctrl+Shift+J` | Make this folder's view the defaults |
+| `view.group-none` / `-kind` / `-date` / `-size` | `Ctrl+Alt+0`, `Ctrl+Alt+5` … `Ctrl+Alt+7` | Group By none, kind, date modified or size |
 | `view.zoom-in` / `view.zoom-out` | `Ctrl++` (`Ctrl+=` also accepted) / `Ctrl+-`, or `Ctrl+wheel` | Increase / decrease icon size in the current view |
 | `view.zoom-reset` | `Ctrl+0` | Restore the default icon size |
 | `view.filter` | `Ctrl+F` | Focus the current-folder filename filter |
@@ -182,7 +187,7 @@ The status bar reports the visible item or selection count and provides zoom
 buttons plus a reset percentage. Zoom uses seven bounded, session-local icon
 sizes (16, 24, 32, 48, 64, 96, 128 logical pixels; 64 is the default). Details rows scale
 their icons and height proportionally. Zoom leaves the view mode unchanged;
-`Ctrl+1`/`Ctrl+2` select a mode explicitly. These catalog commands are not
+`Ctrl+1` … `Ctrl+4` select a view explicitly. These catalog commands are not
 checkable toggles: repeating the current view does nothing. Folder Options
 uses exclusive view choices to indicate the current mode. Plain wheel input scrolls, while
 Ctrl+wheel accumulates fine wheel/trackpad deltas into zoom steps and does not
@@ -212,7 +217,7 @@ plain filter. Clearing the query also discards the recursive result set.
 Closing the filter or navigating elsewhere cancels its pending debounce and
 worker so a delayed search cannot replace the new view.
 
-Selection is shared between list and grid views. Ctrl-click toggles individual
+Selection is shared by all four views. Ctrl-click toggles individual
 files; Shift-click and Shift+arrows select a range; Ctrl+A selects all visible
 entries. Plain arrows select the destination, while Ctrl+arrows move only the
 focus outline. Grid Up/Down move by a row. Right-clicking an already selected
@@ -222,7 +227,7 @@ Sorting and refreshing keep the same selected files, identified by name,
 path, device and inode. Filtering drops entries that are no longer visible; revealing
 them again does not silently reselect them. Opening another folder clears the
 selection. The focus outline may start at the first item, but that alone does
-not select it for a file operation. Switching list/grid preserves both focus
+not select it for a file operation. Switching views preserves both focus
 and selection. Batch dispatch retains the selected entries' original identity
 snapshots so a changed file is checked by the mutation backend rather than
 silently substituting newly observed data.
@@ -236,6 +241,64 @@ from stock Qt Quick Controls instead of an empty or frozen-looking list. A
 ready folder whose entries are all hidden stays in the Ready state with an
 empty list and the "N hidden" notice rather than claiming the folder is
 empty.
+
+## Four views on QindaTK
+
+[ADR-0270](../adr/0270-file-manager-views-move-to-qindatk.md) moves the folder
+views to QindaTK. `FolderViewStack.qml` holds four views of the one
+`NavigationController` listing and the one `EntrySelection`, so every place --
+folders, search results, network locations, Trash and Applications -- works in
+every view with the same selection, rubber band, drag and drop, keyboard,
+filter, zoom and right-click set (`FileContextMenu`, ADR-0269).
+
+| View | `viewMode` | What it is |
+| --- | --- | --- |
+| Icons | `grid` | `Tk.Thumbnail` tiles; a real preview from the bounded pipeline covers the theme icon once it decodes |
+| Details | `list` | a virtualised `Tk.DataTable`: sortable, resizable, chosen and ordered columns, Group By headings |
+| Columns | `columns` | the folders above the browsed one (read-only, from `ColumnListing`), the browsed folder, and a preview column: a folder's contents or a file's picture and facts. Left/Right move up and down a level |
+| Gallery | `gallery` | a large preview of the current entry, its key facts, and a `Tk.Filmstrip` window of the folder that follows the current entry |
+
+A `Tk.Segmented` switcher in the toolbar (Icons, Details, Columns, Gallery),
+the View menu (Ctrl+1 … Ctrl+4) and the background menu's View ▸ choose them;
+below 600 px the switcher gives way to the menu and keys. Views' shared hooks
+(`FolderViewStack.activeView`: `focusView()`, `currentEntry()`,
+`selectedEntries()`, `revealIndex()`; `EntrySelection.entries`, `currentIndex`)
+are what `EntryReveal`, `ApplicationsPlaceActions` and later features use.
+
+**Details.** Columns: Name (always first), Size, Kind, Date Modified, Date
+Created, Date Accessed, Permissions, Owner, Group, Extension, Path (added
+automatically for search results), Items (folders) and Dimensions (previewable
+images). Right-click the header or View ▸ Show Columns (Ctrl+J) opens the
+column chooser: show, hide and order columns, Group By, folders first,
+relative dates, compact rows and filename extensions. Header seams resize
+columns; widths and order are part of the folder's view. Owner, Group, Items
+and Dimensions are read by `EntryFacts` for visible rows only, cached and on
+one worker thread; they show a dash until known and are not sortable.
+`Tk.DataTable` tracks one current row, so its current row stays unused and the
+Name cell carries each row's selection tint, focus outline, heading, clicks,
+drag and folder drop target.
+
+**Group By** (none, kind, date modified, size) is part of `ListingOrder`, so
+groups are contiguous in the index space every view and file operation share;
+Details draws a heading where the group changes. Applications keeps Group by
+Category (ADR-0262) instead.
+
+**Per-folder views.** Changing a folder's view, order, grouping, zoom or
+Details columns while in it remembers them for that folder (at most 64, most
+recent first). As in Finder, a folder with a view of its own opens in it and
+any other folder keeps the window's view; walking the Columns view never
+leaves Columns. The defaults are what a window starts with and reach the open
+window when they change, unless its folder has its own view. View ▸ Use as
+Defaults (Ctrl+Shift+J) makes the folder's view the defaults.
+`FolderViewSettings.qml` owns this; see [Preferences](#preferences).
+
+**Large folders.** Every view is virtualised; `EntrySelection` copies the
+listing once per change (reading `NavigationController.entries` marshals every
+row), and lazily read facts cover visible rows only, so a 20,000-entry folder
+costs what its visible rows cost.
+
+**Theme.** The File Manager publishes no QST tokens (ADR-0116), so
+`ToolkitTheme.qml` feeds the window palette into `Tk.Theme`'s base roles.
 
 ## Bounded visual previews
 
@@ -251,7 +314,10 @@ descriptor before/after decoding and the current path afterward. Cache hits
 also recheck identity, and generation checks fence publication. Cancellation is
 cooperative around the codec call; destruction cancels and joins workers.
 Symlinks retain icons and are not previewed. Sorting and selection keep their
-existing independent identities and do not gain preview policy.
+existing independent identities and do not gain preview policy. The Gallery
+and Columns views' large preview is a second provider, `gallery-previews`,
+with a 1024-pixel bound and the same input limits, identity checks and
+generation fencing (ADR-0270); it is requested only while that view is shown.
 
 ## S1 local mutation and recovery
 
@@ -287,8 +353,8 @@ controller.
 ### Background and selection context menus
 
 `FileContextMenu.qml` is the one shared right-click/keyboard context menu
-`EntryGrid` and `EntryList` both instantiate, so Icon and Details behave
-identically instead of each declaring its own item list. Right-clicking (or
+all four views (ADR-0270) instantiate, so Icons, Details, Columns and
+Gallery behave identically instead of each declaring its own item list. Right-clicking (or
 invoking the context-menu key on) empty folder space shows only background
 actions: New Folder, New File ▸ (an empty file, then one entry per template),
 Paste (only when the clipboard actually holds something), Open Terminal Here,
@@ -800,14 +866,19 @@ provider hides the section rather than showing an empty one.
 ### Preferences
 
 `Ctrl+,` (or File ▸ Preferences) opens a separate non-modal window with four
-pages. Its nine settings live in `preferences-v1.json`, in the same app-local
-state directory as the bookmarks and the saved locations, over the same
-`StateFile` primitive.
+pages. Its settings live in `preferences-v2.json` (ADR-0270), in the same
+app-local state directory as the bookmarks and the saved locations, over the
+same `StateFile` primitive. When no v2 document exists, the ADR-0198
+`preferences-v1.json` is read and migrated (everything v1 lacked starts at its
+default) and the next write is v2; v1 is never written again, and a refused v2
+never falls back to it. v2 adds Group By, the Details columns, relative dates,
+row density, filename extensions and up to 64 remembered folder views, and is
+bounded at 128 KiB.
 
 | Page | Settings |
 | --- | --- |
-| General | default view mode, show hidden files |
-| Views | sort column, sort order, icon size, folders before files |
+| General | default view (Icons, Details, Columns, Gallery), show hidden files |
+| Views | sort column, sort order, Group By, icon size, folders before files, relative dates, compact rows, filename extensions |
 | Network | look for nearby servers, default Connect-to-server scheme, what mounting at login costs |
 | Trash | ask before moving items to Trash |
 
@@ -829,8 +900,8 @@ Three rules make the file safe to trust.
 - **A refused write changes nothing visible**, so the window always shows what
   the next launch will read.
 
-`PreferencesController` applies nothing itself; `PresentationDefaults.qml`
-binds it to `NavigationController`, so a change reaches the window already on
+`PreferencesController` applies nothing itself; `FolderViewSettings.qml`
+binds it to `NavigationController` (and remembers per-folder views), so a change reaches the window already on
 screen without either class depending on the other. That apply step is
 idempotent on purpose: `setSortColumn()` *flips* the direction when called
 with the column that is already active, and a needless re-sort moves the view
@@ -1030,7 +1101,7 @@ banners, the Nearby section, and the preferences window with all four pages.
   `--select`/`--action` reveal and the FileManager1 service once the window
   has loaded, and never in a `--check-*` probe.
 - QML (`ui/Main.qml` and its `Toolbar`/`Breadcrumb`/`LocationBar`/
-  `PlacesSidebar`/`EntrySelection`/`EntryList`/`EntryGrid`/`StatePane`/
+  `PlacesSidebar`/`EntrySelection`/`FolderViewStack` and its four views/`StatePane`/
   `StatusBanners`/`NetworkHub`/`NetworkLocationCard`/`ConnectToServerDialog`/
   `TransferQueueBanner` collaborators) owns only presentation: layout, keyboard routing to the
   controller's invokable methods, accessible names/roles, and the
@@ -1162,8 +1233,11 @@ Trash operation against fixture identity obtained from `listLocalFolder`.
 
 ## Stock-controls presentation and accessibility boundary
 
-Per [ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md), every
-`ui/` file imports only `QtQuick`, `QtQuick.Controls`, and `QtQuick.Layouts`.
+Per [ADR-0116](../adr/0116-build-bundled-applications-on-stock-qt6.md), the
+window's chrome imports only `QtQuick`, `QtQuick.Controls`, and
+`QtQuick.Layouts`; the folder views also import `QindaTK`
+([ADR-0270](../adr/0270-file-manager-views-move-to-qindatk.md)), themed from
+the platform palette by `ToolkitTheme.qml`.
 Colors, fonts, and control metrics come from the Qt platform theme: QML
 components read their `Control` root's `palette`, and `main.cpp` publishes no
 QST generation, loads no theme catalog, and binds no appearance controller.
@@ -1174,7 +1248,7 @@ removed. Entry icons resolve through the application-owned
 returns a transparent placeholder rather than a warning when a name is
 missing.
 
-The folder list and grid, sort headers, breadcrumb buttons, location field,
+The four folder views, the Details table's headers, breadcrumb buttons, location field,
 places and bookmark rows, toolbar buttons, and every state card expose
 accessible names/roles/descriptions through `Accessible.role`/`.name` on each
 QML item and the stock Qt Quick Controls accessibility contracts. List entries
@@ -1351,12 +1425,15 @@ installed activation file.
   Still open in this area: a per-location remote user name, in-place versus
   copy-on-open, a QindaQt-owned conflict dialog, drag-and-drop across the
   boundary, remote thumbnails, and a connection-timeout/retry policy.
+- **W11 views (written 2026-09-24, awaiting the round build)** — the four
+  QindaTK views, the Details column chooser, Group By, per-folder views with
+  Use as Defaults, and `preferences-v2` with its v1 migration (ADR-0270).
+  Next: File Manager styles (Finder, Explorer, Commander) and tabs (W11s).
 
 ## Bounded deferrals
 
-- Sort column/direction, hidden visibility, list/grid mode, icon zoom, and
-  filename filtering are session-local; persisting them is a Settings1 schema decision deferred per
-  ADR-0090.
+- Filename filtering is session-local. Sort, hidden visibility, view and zoom
+  are preferences (ADR-0198), and per folder since ADR-0270.
 - Batch operations are not covered by undo or Restore Last (one-level,
   single-item recovery is unchanged from S1).
 - Per-volume Trash, mounts, additional preview formats, and portal-mediated
@@ -1397,6 +1474,16 @@ and production QML with temporary local files, then delivers keyboard and wheel
 input at compact, desktop and 1080p sizes under light and dark platform color
 schemes. It validates the file clipboard only through the production action seam
 (see below); mounted volumes remain explicit S4 work.
+
+The ADR-0270 view rows (`tests/apps/file_manager/ViewsTests.cmake`) are
+`qindaqt.file-manager-listing-groups` (new sort columns and Group By),
+`qindaqt.file-manager-entry-facts` (lazily read facts and `ColumnListing`),
+`qindaqt.file-manager-views-qml` (Details headings and column edits, Columns
+levels, the Gallery strip) and `qindaqt.file-manager-views-ui` (production
+`Main.qml`: selection, keyboard and context menu in all four views, the
+switcher and View menu, Details sorting, grouping and columns, per-folder
+views and Use as Defaults); `qindaqt.file-manager-preferences-store` and
+`-controller` cover `preferences-v2`, its limits and the v1 migration.
 
 The S5 network-browsing rows are `qindaqt.file-manager-network-location`
 (allowlist/canonicalization: supported/unsupported schemes, credential and
