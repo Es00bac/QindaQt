@@ -108,6 +108,8 @@ void TestPreferencesStore::roundTripsEveryPreference() {
   written.relativeDates = true;
   written.rowDensity = QStringLiteral("compact");
   written.showExtensions = false;
+  written.fileManagerStyle = QStringLiteral("commander");
+  written.layoutStyle = QStringLiteral("explorer");
   QVERIFY(store.store(written).ok());
 
   const auto loaded = store.load();
@@ -120,7 +122,7 @@ void TestPreferencesStore::roundTripsEveryPreference() {
   QVERIFY(file.open(QIODevice::ReadOnly));
   const QJsonObject object = QJsonDocument::fromJson(file.readAll()).object();
   QCOMPARE(object.value(QStringLiteral("version")).toInt(), 2);
-  QCOMPARE(object.value(QStringLiteral("preferences")).toObject().size(), 15);
+  QCOMPARE(object.value(QStringLiteral("preferences")).toObject().size(), 17);
 }
 
 void TestPreferencesStore::refusesAnUnknownOrMissingKey() {
@@ -326,6 +328,14 @@ void TestPreferencesStore::refusesUnboundedOrInconsistentViews() {
   Preferences badGroup;
   badGroup.groupBy = QStringLiteral("colour");
   QVERIFY(refused(badGroup));
+  // ADR-0271: a style is one of the three, or empty to match the layout; the
+  // layout's applied style is always one of the three.
+  Preferences badStyle;
+  badStyle.fileManagerStyle = QStringLiteral("norton");
+  QVERIFY(refused(badStyle));
+  Preferences badLayoutStyle;
+  badLayoutStyle.layoutStyle = QString();
+  QVERIFY(refused(badLayoutStyle));
 }
 
 void TestPreferencesStore::rememberingKeepsTheMostRecentAndForgetsTheDefaults() {

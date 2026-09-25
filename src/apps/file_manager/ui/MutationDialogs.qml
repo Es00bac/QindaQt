@@ -11,6 +11,9 @@ Item {
     // ADR-0198: only the recoverable home Trash may skip its confirmation.
     // Empty Trash is permanent and always asks, whatever this says.
     property bool confirmTrash: true
+    // ADR-0271: where Copy To and Move To start. The Commander style sets it
+    // to the other pane's folder; empty means the folder being browsed.
+    property string transferTarget: ""
     property var selectedEntry: null
     property var selectedItems: []
     property string destinationKind: "copy"
@@ -40,9 +43,11 @@ Item {
             selectedItems = selection
             selectedEntry = selection[0]
             destinationKind = actionId === "file.copy" ? "copy" : "move"
+            const folder = root.transferTarget.length > 0
+                ? root.transferTarget : navigationController.currentPath
             destinationPath.text = selection.length > 1
-                ? navigationController.currentPath
-                : navigationController.currentPath + "/" + selectedEntry.name
+                ? folder
+                : folder + "/" + selectedEntry.name
             destinationDialog.open()
         } else if (actionId === "file.trash") {
             if (selection.length < 1) return

@@ -43,6 +43,13 @@ class PreferencesController final : public QObject {
   Q_PROPERTY(bool relativeDates READ relativeDates NOTIFY preferencesChanged FINAL)
   Q_PROPERTY(QString rowDensity READ rowDensity NOTIFY preferencesChanged FINAL)
   Q_PROPERTY(bool showExtensions READ showExtensions NOTIFY preferencesChanged FINAL)
+  // ADR-0271: the style the window uses -- the user's pick, or while they
+  // have not picked one (fileManagerStyleChoice is empty) the desktop
+  // layout's hint (layoutStyleHint), Finder without one.
+  Q_PROPERTY(QString fileManagerStyle READ fileManagerStyle NOTIFY preferencesChanged FINAL)
+  Q_PROPERTY(QString fileManagerStyleChoice READ fileManagerStyleChoice NOTIFY preferencesChanged
+                 FINAL)
+  Q_PROPERTY(QString layoutStyleHint READ layoutStyleHint NOTIFY preferencesChanged FINAL)
   Q_PROPERTY(QString storeError READ storeError NOTIFY storeErrorChanged FINAL)
   // The accepted values, so the window's pickers cannot drift from the schema.
   Q_PROPERTY(QStringList viewModes READ viewModes CONSTANT FINAL)
@@ -53,6 +60,7 @@ class PreferencesController final : public QObject {
   Q_PROPERTY(QStringList groupKeys READ groupKeys CONSTANT FINAL)
   Q_PROPERTY(QStringList columnKeys READ columnKeys CONSTANT FINAL)
   Q_PROPERTY(QStringList rowDensities READ rowDensities CONSTANT FINAL)
+  Q_PROPERTY(QStringList fileManagerStyles READ fileManagerStyles CONSTANT FINAL)
 
 public:
   explicit PreferencesController(std::unique_ptr<PreferencesStore> store,
@@ -73,6 +81,17 @@ public:
   Q_INVOKABLE void setRelativeDates(bool relativeDates);
   Q_INVOKABLE void setRowDensity(const QString &rowDensity);
   Q_INVOKABLE void setShowExtensions(bool showExtensions);
+  // ADR-0271: picks a style ("finder", "explorer", "commander"), or "" to
+  // match the desktop layout again, and applies the picked style's preset in
+  // the same write: its starting view becomes "Open folders as". Folders
+  // with a view of their own keep it.
+  Q_INVOKABLE void setFileManagerStyle(const QString &style);
+  // The selected layout profile's workflow.fileManager hint, from the
+  // composition root (runtime/layout_style_hint.h); never persisted. While
+  // no style is picked, a hint the window has not yet applied writes its
+  // preset once, so a later "Open folders as" choice still sticks. An
+  // unknown or empty hint means Finder.
+  void setLayoutStyleHint(const QString &hint);
 
   // ADR-0270: per-folder views. A view crosses to QML as {viewMode,
   // sortColumn, sortDirection, groupBy, iconSize, columns: [{key, width}]}.
@@ -112,6 +131,14 @@ public:
   [[nodiscard]] QStringList groupKeys() const { return Preferences::groupKeys(); }
   [[nodiscard]] QStringList columnKeys() const { return Preferences::columnKeys(); }
   [[nodiscard]] QStringList rowDensities() const { return Preferences::rowDensities(); }
+  [[nodiscard]] QString fileManagerStyle() const;
+  [[nodiscard]] QString fileManagerStyleChoice() const {
+    return m_preferences.fileManagerStyle;
+  }
+  [[nodiscard]] QString layoutStyleHint() const;
+  [[nodiscard]] QStringList fileManagerStyles() const {
+    return Preferences::fileManagerStyles();
+  }
   [[nodiscard]] QString storeError() const { return m_storeError; }
   [[nodiscard]] QStringList viewModes() const { return Preferences::viewModes(); }
   [[nodiscard]] QStringList sortColumns() const { return Preferences::sortColumns(); }
@@ -135,6 +162,7 @@ private:
   std::unique_ptr<PreferencesStore> m_store;
   Preferences m_preferences;
   QString m_storeError;
+  QString m_layoutHint;
 };
 
 } // namespace QindaQt::Apps::FileManager

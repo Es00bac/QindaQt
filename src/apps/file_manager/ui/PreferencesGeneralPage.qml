@@ -20,6 +20,25 @@ ColumnLayout {
         columnSpacing: 12
         rowSpacing: 8
 
+        // ADR-0271: the File manager style. Picking one also sets "Open
+        // folders as" to the style's starting view; "Match the desktop
+        // layout" follows the layout chosen in Settings.
+        Label { text: qsTr("File manager style"); Accessible.ignored: true }
+        ComboBox {
+            objectName: "preferenceStyleBox"
+            Layout.fillWidth: true
+            readonly property var names: ({ "finder": qsTr("Finder"), "explorer": qsTr("Explorer"),
+                                            "commander": qsTr("Commander") })
+            readonly property var choices: [""].concat(root.preferencesController.fileManagerStyles)
+            textRole: "text"
+            valueRole: "value"
+            model: choices.map(style => ({ "value": style, "text": style.length > 0 ? names[style]
+                : qsTr("Match the desktop layout (%1)").arg(names[root.preferencesController.layoutStyleHint]) }))
+            currentIndex: choices.indexOf(root.preferencesController.fileManagerStyleChoice)
+            Accessible.name: qsTr("File manager style")
+            onActivated: root.preferencesController.setFileManagerStyle(currentValue)
+        }
+
         Label { text: qsTr("Open folders as"); Accessible.ignored: true }
         // ADR-0270: the four views by name; "list" and "grid" are the
         // historical keys of Details and Icons.
@@ -35,6 +54,16 @@ ColumnLayout {
             Accessible.name: qsTr("Open folders as")
             onActivated: root.preferencesController.setDefaultViewMode(currentValue)
         }
+    }
+
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("Finder: places and views, as always. Explorer: a folder tree, an address "
+                 + "bar and a command bar, in Details. Commander: two folders side by side, "
+                 + "Tab between them, function keys along the bottom.")
+        color: root.palette.placeholderText
+        wrapMode: Text.WordWrap
+        Accessible.ignored: true
     }
 
     CheckBox {

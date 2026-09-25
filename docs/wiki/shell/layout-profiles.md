@@ -290,8 +290,10 @@ name a user reads is another vendor's; ids stay as they were.
   handbook names each layout's theme.
 - **The File Manager hint.** `workflow.fileManager` names the arrangement
   (`finder`, `explorer`, `commander`) the File Manager's style setting uses
-  as its default until the user picks one; nothing reads it until that
-  setting lands (plan W11s).
+  as its default until the user picks one
+  ([ADR-0271](../adr/0271-file-manager-styles-are-presets-over-per-tab-navigation.md));
+  the File Manager reads the selected layout's value from Settings1
+  `panels.layoutProfile` and the catalog.
 - **The Mac-style dock's ends.** Its dock holds a permanent File Manager tile
   first and a permanent Trash tile last around the stored items
   ([Dock items](dock-items.md#permanent-ends)).
