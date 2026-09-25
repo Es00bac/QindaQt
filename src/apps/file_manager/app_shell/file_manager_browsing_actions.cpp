@@ -9,9 +9,11 @@ void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinato
                                    QObject *context) {
   QObject *const receiver = context != nullptr ? context : &coordinator;
   const auto sync = [&coordinator, &navigation] {
-    // ADR-0262: the Applications place is titled by name, never by address.
+    // ADR-0262/ADR-0272: the Applications and Recents places are titled by
+    // name, never by address.
     coordinator.setWindowTitle(QStringLiteral("QindaQt File Manager — %1")
         .arg(navigation.applicationsPlace() ? QStringLiteral("Applications")
+             : navigation.recentsPlace()    ? QStringLiteral("Recents")
                                             : navigation.currentPath()));
     const auto enabled = [&coordinator, &navigation](const char *id, bool value) {
       const QLatin1String actionId(id);
@@ -46,8 +48,9 @@ void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinato
     for (const char *id : {"view.group-none", "view.group-kind", "view.group-date",
                            "view.group-size"})
       enabled(id, !navigation.applicationsPlace());
-    // A bookmark names a folder; the Applications place is reached from Places.
-    enabled("bookmark.add", !navigation.applicationsPlace());
+    // A bookmark names a folder; the Applications and Recents places are
+    // reached from Places.
+    enabled("bookmark.add", !navigation.applicationsPlace() && !navigation.recentsPlace());
     checked("view.show-hidden", navigation.showHidden());
   };
   QObject::connect(&navigation, &NavigationController::navigationChanged,

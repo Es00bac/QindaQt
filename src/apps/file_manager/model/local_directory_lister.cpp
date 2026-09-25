@@ -36,6 +36,27 @@ void LocalDirectoryLister::fillStatFacts(const QFileInfo &info, DirectoryEntry &
   entry.groupId = info.groupId() == unknownId ? -1 : static_cast<qint64>(info.groupId());
 }
 
+DirectoryEntry LocalDirectoryLister::entryFor(const QFileInfo &info) {
+  DirectoryEntry entry;
+  entry.name = info.fileName();
+  entry.absolutePath = info.absoluteFilePath();
+  entry.isDirectory = info.isDir();
+  entry.isSymlink = info.isSymLink();
+  entry.isHidden = entry.name.startsWith(QLatin1Char('.'));
+  entry.isReadable = info.isReadable();
+  entry.size = entry.isDirectory ? 0 : info.size();
+  entry.lastModified = info.lastModified();
+  fillStatFacts(info, entry);
+  if (const auto identity = LocalMutationBackend::identityForPath(entry.absolutePath)) {
+    entry.device = identity->device;
+    entry.inode = identity->inode;
+    entry.identitySize = identity->size;
+    entry.modifiedNanoseconds = identity->modifiedNanoseconds;
+    entry.mode = identity->mode;
+  }
+  return entry;
+}
+
 ListingResult LocalDirectoryLister::list(const QString &absolutePath) const {
   ListingResult result;
   result.path = absolutePath;
@@ -74,24 +95,7 @@ ListingResult LocalDirectoryLister::list(const QString &absolutePath) const {
       result.truncated = true;
       break;
     }
-    DirectoryEntry entry;
-    entry.name = info.fileName();
-    entry.absolutePath = info.absoluteFilePath();
-    entry.isDirectory = info.isDir();
-    entry.isSymlink = info.isSymLink();
-    entry.isHidden = entry.name.startsWith(QLatin1Char('.'));
-    entry.isReadable = info.isReadable();
-    entry.size = entry.isDirectory ? 0 : info.size();
-    entry.lastModified = info.lastModified();
-    fillStatFacts(info, entry);
-    if (const auto identity = LocalMutationBackend::identityForPath(entry.absolutePath)) {
-      entry.device = identity->device;
-      entry.inode = identity->inode;
-      entry.identitySize = identity->size;
-      entry.modifiedNanoseconds = identity->modifiedNanoseconds;
-      entry.mode = identity->mode;
-    }
-    result.entries.append(std::move(entry));
+    result.entries.append(entryFor(info));
   }
   std::sort(result.entries.begin(), result.entries.end(), lessThan);
   return result;

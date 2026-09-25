@@ -29,11 +29,15 @@ void bindFileManagerTransferActions(AppShell::ApplicationCoordinator &coordinato
     const bool hasSelection = navigation.folderViewActive() && clipboard.selectionCount() > 0;
     enabled("edit.cut", idle && hasSelection);
     enabled("edit.copy", idle && hasSelection);
-    enabled("edit.paste", idle && clipboard.canPaste());
+    // ADR-0272: Recents rows are ordinary files, but Recents is no folder to
+    // paste into or to describe.
+    const bool folder = !navigation.recentsPlace();
+    enabled("edit.paste", idle && folder && clipboard.canPaste());
     // ADR-0269: Get Info with nothing selected describes the browsed folder,
     // which the Applications place does not have.
     enabled("file.properties", navigation.folderViewActive() && !navigation.remoteActive()
-                                   && (hasSelection || !navigation.applicationsPlace()));
+                                   && (hasSelection
+                                       || (!navigation.applicationsPlace() && folder)));
   };
   QObject::connect(&clipboard, &ClipboardController::stateChanged,
                    receiver, sync);
