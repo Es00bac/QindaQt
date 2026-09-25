@@ -21,13 +21,19 @@ ColumnLayout {
         rowSpacing: 8
 
         Label { text: qsTr("Open folders as"); Accessible.ignored: true }
+        // ADR-0270: the four views by name; "list" and "grid" are the
+        // historical keys of Details and Icons.
         ComboBox {
             objectName: "preferenceViewModeBox"
             Layout.fillWidth: true
-            model: root.preferencesController.viewModes
-            currentIndex: model.indexOf(root.preferencesController.defaultViewMode)
+            readonly property var names: ({ "grid": qsTr("Icons"), "list": qsTr("Details"),
+                                            "columns": qsTr("Columns"), "gallery": qsTr("Gallery") })
+            textRole: "text"
+            valueRole: "value"
+            model: root.preferencesController.viewModes.map(mode => ({ "value": mode, "text": names[mode] }))
+            currentIndex: root.preferencesController.viewModes.indexOf(root.preferencesController.defaultViewMode)
             Accessible.name: qsTr("Open folders as")
-            onActivated: root.preferencesController.setDefaultViewMode(currentText)
+            onActivated: root.preferencesController.setDefaultViewMode(currentValue)
         }
     }
 
@@ -42,7 +48,8 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         text: qsTr("These are what a new window starts with. Changing one also "
-                 + "applies it to the window that is already open.")
+                 + "applies it to the window that is already open, except in folders "
+                 + "you gave a view of their own.")
         color: root.palette.placeholderText
         wrapMode: Text.WordWrap
         Accessible.ignored: true

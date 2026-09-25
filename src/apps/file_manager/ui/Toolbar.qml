@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QindaTK as Tk
 
 ToolBar {
     id: root
@@ -72,13 +73,38 @@ ToolBar {
             Accessible.description: qsTr("Create a folder in the current location")
             onClicked: root.appCoordinator.activateAction("file.new-folder")
         }
-        IconButton {
-            objectName: "toggleViewModeButton"
-            iconName: root.navigationController.viewMode === "grid" ? "view-list-details" : "view-grid"
-            text: root.navigationController.viewMode === "grid" ? qsTr("Details View") : qsTr("Icon View")
-            Accessible.description: qsTr("Switch between the detailed list and the icon grid")
-            onClicked: root.appCoordinator.activateAction(root.navigationController.viewMode === "grid"
-                ? "view.details-mode" : "view.grid-mode")
+        // ADR-0270: the four views, in Finder's order. Each segment is named
+        // by its text (a segment has no other accessible name), so the icons
+        // join the words only where there is room, and below 600 px the
+        // switcher gives way to the View menu and Ctrl+1 to Ctrl+4.
+        Tk.Segmented {
+            id: viewSwitcher
+            objectName: "viewSwitcher"
+            visible: root.width >= 600
+            small: true
+            tooltip: qsTr("View")
+            readonly property var modes: ["grid", "list", "columns", "gallery"]
+            readonly property var actions: ["view.grid-mode", "view.details-mode",
+                                            "view.columns-mode", "view.gallery-mode"]
+            readonly property bool roomy: root.width >= 820
+            model: [
+                { "text": qsTr("Icons"), "iconName": roomy ? "layout-grid" : "",
+                  "value": "grid", "tooltip": qsTr("Icons (Ctrl+2)") },
+                { "text": qsTr("Details"), "iconName": roomy ? "list" : "",
+                  "value": "list", "tooltip": qsTr("Details (Ctrl+1)") },
+                { "text": qsTr("Columns"), "iconName": roomy ? "columns-3" : "",
+                  "value": "columns", "tooltip": qsTr("Columns (Ctrl+3)") },
+                { "text": qsTr("Gallery"), "iconName": roomy ? "images" : "",
+                  "value": "gallery", "tooltip": qsTr("Gallery (Ctrl+4)") }
+            ]
+            currentIndex: Math.max(0, modes.indexOf(root.navigationController.viewMode))
+            // A click assigns currentIndex itself; the binding comes back so
+            // the menu, the keys and a folder's own view keep it truthful.
+            onActivated: (index) => {
+                root.appCoordinator.activateAction(viewSwitcher.actions[index])
+                viewSwitcher.currentIndex = Qt.binding(() =>
+                    Math.max(0, viewSwitcher.modes.indexOf(root.navigationController.viewMode)))
+            }
         }
         IconButton {
             objectName: "filterFolderButton"
@@ -113,19 +139,19 @@ ToolBar {
                     onTriggered: root.appCoordinator.activateAction("view.refresh")
                 }
                 MenuSeparator {}
-                MenuItem {
-                    text: qsTr("Details View")
-                    checkable: true
-                    autoExclusive: true
-                    checked: root.navigationController.viewMode === "list"
-                    onTriggered: root.appCoordinator.activateAction("view.details-mode")
-                }
-                MenuItem {
-                    text: qsTr("Icon View")
-                    checkable: true
-                    autoExclusive: true
-                    checked: root.navigationController.viewMode === "grid"
-                    onTriggered: root.appCoordinator.activateAction("view.grid-mode")
+                Repeater {
+                    model: [{ "mode": "grid", "text": qsTr("Icon View"), "action": "view.grid-mode" },
+                        { "mode": "list", "text": qsTr("Details View"), "action": "view.details-mode" },
+                        { "mode": "columns", "text": qsTr("Columns View"), "action": "view.columns-mode" },
+                        { "mode": "gallery", "text": qsTr("Gallery View"), "action": "view.gallery-mode" }]
+                    MenuItem {
+                        required property var modelData
+                        text: modelData.text
+                        checkable: true
+                        autoExclusive: true
+                        checked: root.navigationController.viewMode === modelData.mode
+                        onTriggered: root.appCoordinator.activateAction(modelData.action)
+                    }
                 }
                 MenuItem {
                     text: qsTr("Zoom In")

@@ -5,7 +5,9 @@ import QtQuick.Layouts
 
 // ADR-0116: stock Qt Quick Controls only — no QindaQt.Tokens/Controls imports
 // and no palette literals; appearance comes from the Qt platform theme
-// (ADR-0115) with QT_QUICK_CONTROLS_STYLE=Fusion set by the session.
+// (ADR-0115) with QT_QUICK_CONTROLS_STYLE=Fusion set by the session. The
+// folder views are QindaTK (ADR-0270), themed from that same palette
+// (ToolkitTheme).
 // The AppShell seams stay non-visual: the window binds the injected
 // ApplicationCoordinator for the action catalog, in-window menus, quit
 // arbitration, focus reporting, and the degraded-integration notice.
@@ -30,6 +32,10 @@ ApplicationWindow {
     property var openWithController: null
     property var folderLaunchController: null
     property var fileTemplates: null
+    // ADR-0270: the Details view's lazily read facts and the Columns view's
+    // other columns; optional so a fixture window without them still loads.
+    property var entryFacts: null
+    property var columnListing: null
 
     property bool closeAuthorized: false
     property bool inWindowMenuVisible: true
@@ -130,7 +136,7 @@ ApplicationWindow {
     }
 
     function activeView() {
-        return root.navigationController.viewMode === "grid" ? entryGrid : entryList
+        return views.activeView
     }
 
     // Paste lands inside the focused folder entry when one exists, otherwise
@@ -150,7 +156,8 @@ ApplicationWindow {
         target: root.coordinator
         function onActionRequested(actionId) {
             const navigation = root.navigationController
-            if (applicationsActions.handle(actionId) || fileActions.handle(actionId)) {
+            if (applicationsActions.handle(actionId) || fileActions.handle(actionId)
+                    || views.handle(actionId)) {
                 return
             } else if (actionId === "go.applications") {
                 if (filterBar.visible) filterBar.closed()
@@ -178,10 +185,6 @@ ApplicationWindow {
                 navigation.refresh()
             } else if (actionId === "view.show-hidden") {
                 navigation.setShowHidden(!navigation.showHidden)
-            } else if (actionId === "view.grid-mode") {
-                navigation.setViewMode("grid")
-            } else if (actionId === "view.details-mode") {
-                navigation.setViewMode("list")
             } else if (actionId === "view.zoom-in") {
                 navigation.zoomBy(1)
             } else if (actionId === "view.zoom-out") {
@@ -325,32 +328,18 @@ ApplicationWindow {
                     Layout.fillHeight: true
                     currentIndex: root.navigationController.statusKey === "ready" ? 0 : 1
 
-                    StackLayout {
-                        currentIndex: root.navigationController.viewMode === "grid" ? 1 : 0
-
-                        EntryList {
-                            id: entryList
-                            iconSize: root.navigationController.iconSize
-                            onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
-                            selection: entrySelection
-                            navigationController: root.navigationController
-                            appCoordinator: root.coordinator
-                            mutationController: root.mutationController
-                            clipboardController: root.clipboardController
-                            fileActions: fileActions
-                        }
-
-                        EntryGrid {
-                            id: entryGrid
-                            iconSize: root.navigationController.iconSize
-                            onZoomRequested: (steps) => root.navigationController.zoomBy(steps)
-                            selection: entrySelection
-                            navigationController: root.navigationController
-                            appCoordinator: root.coordinator
-                            mutationController: root.mutationController
-                            clipboardController: root.clipboardController
-                            fileActions: fileActions
-                        }
+                    FolderViewStack {
+                        id: views
+                        navigationController: root.navigationController
+                        selection: entrySelection
+                        appCoordinator: root.coordinator
+                        mutationController: root.mutationController
+                        clipboardController: root.clipboardController
+                        fileActions: fileActions
+                        preferencesController: root.preferencesController
+                        folderViews: windowServices.folderViews
+                        entryFacts: root.entryFacts
+                        columnListing: root.columnListing
                     }
 
                     StatePane {
@@ -438,8 +427,7 @@ ApplicationWindow {
         dockPins: root.dockPins
         navigationController: root.navigationController
         selection: entrySelection
-        iconView: entryGrid
-        detailsView: entryList
+        views: views
     }
 
     // ADR-0273: org.freedesktop.FileManager1 and --select reveal entries here.
@@ -447,9 +435,12 @@ ApplicationWindow {
         objectName: "entryReveal"
         navigationController: root.navigationController
         selection: entrySelection
-        iconView: entryGrid
-        detailsView: entryList
+        views: views
         coordinator: root.coordinator
+    }
+
+    ToolkitTheme {
+        palette: root.palette
     }
 
     WindowServices {

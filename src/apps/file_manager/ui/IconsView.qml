@@ -3,9 +3,11 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "EntryDrag.js" as EntryDrag
-import QindaQt.Tokens 1.0
 import QindaQt.Controls 1.0 as C
 
+// Icons (ADR-0270): a grid of Tk.Thumbnail tiles (IconTile.qml). Selection,
+// keyboard, rubber band, drag and drop and the context menu are the window's
+// shared ones, exactly as in the other three views.
 Control {
     id: root
 
@@ -18,25 +20,24 @@ Control {
     property var clipboardController: null
     // ADR-0269: the window's FileActions, for the context menu's right-click set.
     property var fileActions: null
+    // ADR-0270: Show filename extensions lives in the preferences.
+    property bool showExtensions: true
 
     property int iconSize: 64
-    readonly property int rowIconSize: Math.max(20, Math.round(iconSize * 0.4375))
-    // Rows grow to the touch row height while the last input was a finger (ADR-0193).
-    readonly property int rowHeight: Math.max(rowIconSize + 16, Tokens.touch.rowHeight ?? 0)
     signal zoomRequested(int steps)
 
     ViewportNavigation {
         id: keyboardNavigation
-        view: listView
+        view: gridView
         selection: root.selection
         navigationController: root.navigationController
-        columns: 1
-        rowHeight: root.rowHeight
+        columns: Math.max(1, Math.floor(gridView.width / gridView.cellWidth))
+        rowHeight: gridView.cellHeight
         // Keyboard invocation (Menu key / Shift+F10) follows the focused
         // item: with a valid current entry, select it first if nothing is
-        // already selected (mirroring the existing mouse-click behavior in
-        // EntryListDelegate), then target that selection; with no current
-        // entry (an empty folder), target the background instead.
+        // already selected (mirroring the mouse-click behavior below), then
+        // target that selection; with no current entry (an empty folder),
+        // target the background instead.
         onContextMenuRequested: {
             if (root.selection.currentIndex >= 0) {
                 if (root.selection.selectedEntries().length === 0)
@@ -50,13 +51,12 @@ Control {
     }
     onIconSizeChanged: keyboardNavigation.scheduleReveal()
 
-    readonly property alias focusItem: listView
+    readonly property alias focusItem: gridView
 
-    function focusView() { listView.forceActiveFocus() }
+    function focusView() { gridView.forceActiveFocus() }
 
     function currentEntry() {
-        return listView.currentIndex >= 0
-            ? root.navigationController.entries[listView.currentIndex] : null
+        return gridView.currentIndex >= 0 ? root.selection.entries[gridView.currentIndex] : null
     }
 
     function selectedEntries() {
@@ -68,69 +68,25 @@ Control {
     }
 
     function activateCurrent() {
-        if (listView.currentIndex >= 0) {
-            root.navigationController.activate(listView.currentIndex)
+        if (gridView.currentIndex >= 0) {
+            root.navigationController.activate(gridView.currentIndex)
         }
     }
 
-    // Listing notices remain outside the scrolling entries.
+    function revealIndex(index) {
+        gridView.forceLayout()
+        gridView.positionViewAtIndex(index, GridView.Contain)
+    }
+
+    function popupFor(count) {
+        contextMenu.selectionCount = count
+        contextMenu.popup()
+    }
+
     padding: 8
 
     contentItem: ColumnLayout {
         spacing: 0
-
-        RowLayout {
-            id: headerRow
-            Layout.fillWidth: true
-            Layout.rightMargin: 16
-            spacing: 0
-
-            // AGENT-NOTE: The sort headers are statically declared buttons, not
-            // a Repeater, because model-instantiated delegates are not
-            // reachable through QObject::findChild from the QML root; the
-            // --check-ui-contract gate and the UI action probe resolve
-            // sortHeader_* by objectName. The column set is fixed by
-            // ListingOrder (model/listing_order.h).
-            component SortHeaderButton: Button {
-                required property string key
-                required property string label
-                property bool stretch: false
-
-                Layout.fillWidth: stretch
-                Layout.preferredWidth: stretch ? -1 : 112
-                flat: root.navigationController.sortColumn !== key
-                text: label + (root.navigationController.sortColumn === key
-                    ? (root.navigationController.sortDirection === "ascending" ? " ▲" : " ▼") : "")
-                Accessible.description: qsTr("Sort by %1").arg(label)
-                onClicked: root.navigationController.setSortColumn(key)
-            }
-
-            SortHeaderButton {
-                objectName: "sortHeader_name"
-                key: "name"
-                label: qsTr("Name")
-                stretch: true
-            }
-            SortHeaderButton {
-                objectName: "sortHeader_size"
-                key: "size"
-                label: qsTr("Size")
-            }
-            SortHeaderButton {
-                objectName: "sortHeader_kind"
-                visible: root.width > 580
-                key: "kind"
-                // ADR-0262: an application's Kind is its category.
-                label: root.navigationController.applicationsPlace === true
-                    ? qsTr("Category") : qsTr("Kind")
-            }
-            SortHeaderButton {
-                objectName: "sortHeader_modified"
-                visible: root.width > 440
-                key: "modified"
-                label: qsTr("Modified")
-            }
-        }
 
         Item {
             id: viewport
@@ -154,32 +110,30 @@ Control {
                 }
             }
 
-            // Background right-click: ListView/Flickable only claims
+            // Background right-click: GridView/Flickable only claims
             // Qt.LeftButton by default, so a right-click that misses every
             // delegate's own MouseArea falls through to this one.
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.RightButton
                 onClicked: {
-                    listView.forceActiveFocus()
-                    contextMenu.selectionCount = 0
-                    contextMenu.popup()
+                    gridView.forceActiveFocus()
+                    root.popupFor(0)
                 }
             }
 
             C.TouchContextArea {
-                objectName: "entryListTouchContext"
+                objectName: "entryGridTouchContext"
                 anchors.fill: parent
                 onContextRequested: {
-                    listView.forceActiveFocus()
-                    contextMenu.selectionCount = 0
-                    contextMenu.popup()
+                    gridView.forceActiveFocus()
+                    root.popupFor(0)
                 }
             }
 
-            ListView {
-                id: listView
-                objectName: "entryListView"
+            GridView {
+                id: gridView
+                objectName: "entryGridView"
                 anchors.fill: parent
                 anchors.rightMargin: 16
                 clip: true
@@ -191,29 +145,15 @@ Control {
                 keyNavigationEnabled: false
                 currentIndex: root.selection.currentIndex
                 function selectEntry(index) { root.selection.selectOnly(index) }
-                model: root.navigationController.entries
-                // ADR-0262: Group by Category is the category sort in the
-                // Applications place; each category then gets a heading row.
-                section.property: root.navigationController.applicationsPlace === true
-                    && root.navigationController.sortColumn === "kind" ? "kindText" : ""
-                section.delegate: Label {
-                    required property string section
-                    width: ListView.view ? ListView.view.width : 0
-                    topPadding: 10
-                    bottomPadding: 4
-                    leftPadding: 12
-                    text: section
-                    font.bold: true
-                    color: root.palette.placeholderText
-                    Accessible.role: Accessible.Heading
-                    Accessible.name: section
-                }
+                cellWidth: Math.max(1, width / Math.max(1, Math.floor(width / (root.iconSize + 72))))
+                cellHeight: root.iconSize + 80
+                model: root.selection.entries
 
                 ScrollBar.vertical: ViewportScrollBar {
-                    objectName: "entryListScrollBar"
+                    objectName: "entryGridScrollBar"
                     parent: viewport
-                    x: listView.width + 4
-                    height: listView.height
+                    x: gridView.width + 4
+                    height: gridView.height
                 }
                 ZoomWheelHandler { onZoomRequested: (steps) => root.zoomRequested(steps) }
 
@@ -223,7 +163,7 @@ Control {
                 SelectionBand {
                     id: selectionBand
                     anchors.fill: parent
-                    view: listView
+                    view: gridView
                     onFinished: (indexes, modifiers) =>
                         root.selection.applyIndexSet(indexes, modifiers)
                 }
@@ -235,27 +175,22 @@ Control {
                 Keys.onEnterPressed: root.activateCurrent()
                 Keys.onPressed: (event) => keyboardNavigation.handle(event)
 
-                delegate: EntryListDelegate {
+                delegate: IconTile {
                     selection: root.selection
-                    viewPalette: root.palette
-                    rowHeight: root.rowHeight
-                    rowIconSize: root.rowIconSize
-                    viewWidth: root.width
+                    view: gridView
+                    iconSize: root.iconSize
+                    showExtensions: root.showExtensions
                     mutationController: root.mutationController
                     clipboardController: root.clipboardController
-                    onActivated: { root.activateCurrent(); }
-                    onContextMenuRequested: {
-                        contextMenu.selectionCount = root.selection.selectedEntries().length
-                        contextMenu.popup()
-                    }
+                    onActivated: root.activateCurrent()
+                    onContextMenuRequested: root.popupFor(root.selection.selectedEntries().length)
                 }
             }
-
         }
 
         FileContextMenu {
             id: contextMenu
-            objectName: "listContextMenu"
+            objectName: "gridContextMenu"
             appCoordinator: root.appCoordinator
             navigationController: root.navigationController
             clipboardController: root.clipboardController
@@ -264,7 +199,6 @@ Control {
         }
 
         Label {
-            objectName: "truncationNotice"
             Layout.fillWidth: true
             Layout.topMargin: 4
             visible: root.navigationController.statusMessage.length > 0

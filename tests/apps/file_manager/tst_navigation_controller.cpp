@@ -79,7 +79,8 @@ private slots:
   void directoriesFirstCanBeDisabled();
   void formattedFieldsArePublishedPerEntry();
   void indexOfNameFollowsTheVisibleListing();
-  void viewModeAcceptsOnlyListAndGrid();
+  void viewModeAcceptsTheFourViews();
+  void groupByOrdersGroupMajorAndLabelsEachEntry();
   void previewGenerationChangesOnlyWhenListingReloads();
 };
 
@@ -525,7 +526,7 @@ void TestNavigationController::indexOfNameFollowsTheVisibleListing() {
   QCOMPARE(controller.indexOfName(QStringLiteral(".hidden")), 2);
 }
 
-void TestNavigationController::viewModeAcceptsOnlyListAndGrid() {
+void TestNavigationController::viewModeAcceptsTheFourViews() {
   auto lister = std::make_unique<FakeDirectoryLister>();
   lister->setResult(QStringLiteral("/home"), okListing(QStringLiteral("/home"), {}));
   NavigationController controller(std::move(lister), std::make_unique<FakeFileLauncher>());
@@ -538,14 +539,65 @@ void TestNavigationController::viewModeAcceptsOnlyListAndGrid() {
 
   // Same value and unknown modes are ignored without republishing.
   controller.setViewMode(QStringLiteral("list"));
-  controller.setViewMode(QStringLiteral("columns"));
+  controller.setViewMode(QStringLiteral("carousel"));
   controller.setViewMode(QString());
   QCOMPARE(controller.viewMode(), QStringLiteral("list"));
   QCOMPARE(presentationSpy.count(), 1);
 
+  // ADR-0270: Columns and Gallery join Details ("list") and Icons ("grid").
+  controller.setViewMode(QStringLiteral("columns"));
+  QCOMPARE(controller.viewMode(), QStringLiteral("columns"));
+  controller.setViewMode(QStringLiteral("gallery"));
+  QCOMPARE(controller.viewMode(), QStringLiteral("gallery"));
   controller.setViewMode(QStringLiteral("grid"));
   QCOMPARE(controller.viewMode(), QStringLiteral("grid"));
-  QCOMPARE(presentationSpy.count(), 2);
+  QCOMPARE(presentationSpy.count(), 4);
+}
+
+void TestNavigationController::groupByOrdersGroupMajorAndLabelsEachEntry() {
+  auto lister = std::make_unique<FakeDirectoryLister>();
+  lister->setResult(QStringLiteral("/home"),
+                    okListing(QStringLiteral("/home"),
+                              {makeFile(QStringLiteral("b.txt"), QStringLiteral("/home/b.txt")),
+                               makeFile(QStringLiteral("a.png"), QStringLiteral("/home/a.png")),
+                               makeDirectory(QStringLiteral("docs"), QStringLiteral("/home/docs")),
+                               makeFile(QStringLiteral("a.txt"), QStringLiteral("/home/a.txt"))}));
+  NavigationController controller(std::move(lister), std::make_unique<FakeFileLauncher>());
+  controller.navigateTo(QStringLiteral("/home"));
+  QCOMPARE(controller.groupBy(), QStringLiteral("none"));
+  const QVariantList ungrouped = controller.entries();
+  QVERIFY(ungrouped.first().toMap().value(QStringLiteral("group")).toString().isEmpty());
+
+  QSignalSpy entriesSpy(&controller, &NavigationController::entriesChanged);
+  QSignalSpy presentationSpy(&controller, &NavigationController::presentationChanged);
+  controller.setGroupBy(QStringLiteral("kind"));
+  QCOMPARE(controller.groupBy(), QStringLiteral("kind"));
+  QCOMPARE(entriesSpy.count(), 1);
+  QCOMPARE(presentationSpy.count(), 1);
+  // Folders, then PNG, then TXT -- names A to Z inside each group.
+  QCOMPARE(controller.indexOfName(QStringLiteral("docs")), 0);
+  QCOMPARE(controller.indexOfName(QStringLiteral("a.png")), 1);
+  QCOMPARE(controller.indexOfName(QStringLiteral("a.txt")), 2);
+  QCOMPARE(controller.indexOfName(QStringLiteral("b.txt")), 3);
+  const QVariantList grouped = controller.entries();
+  QCOMPARE(grouped.at(1).toMap().value(QStringLiteral("group")).toString(),
+           QStringLiteral("PNG File"));
+  QCOMPARE(grouped.at(3).toMap().value(QStringLiteral("group")).toString(),
+           QStringLiteral("TXT File"));
+
+  // The same group again and an unknown key change nothing.
+  controller.setGroupBy(QStringLiteral("kind"));
+  controller.setGroupBy(QStringLiteral("colour"));
+  QCOMPARE(controller.groupBy(), QStringLiteral("kind"));
+  QCOMPARE(entriesSpy.count(), 1);
+
+  // Reversing the sort reverses names inside the groups, not the groups.
+  controller.setSortColumn(QStringLiteral("name"));
+  QCOMPARE(controller.indexOfName(QStringLiteral("docs")), 0);
+  QCOMPARE(controller.indexOfName(QStringLiteral("b.txt")), 2);
+  controller.setGroupBy(QStringLiteral("none"));
+  QCOMPARE(controller.indexOfName(QStringLiteral("docs")), 0);
+  QCOMPARE(controller.indexOfName(QStringLiteral("b.txt")), 1);
 }
 
 void TestNavigationController::previewGenerationChangesOnlyWhenListingReloads() {

@@ -52,6 +52,8 @@ class NavigationController final : public QObject {
   Q_PROPERTY(bool directoriesFirst READ directoriesFirst NOTIFY presentationChanged FINAL)
   Q_PROPERTY(bool showHidden READ showHidden NOTIFY presentationChanged FINAL)
   Q_PROPERTY(QString viewMode READ viewMode NOTIFY presentationChanged FINAL)
+  // ADR-0270: Group By ("none", "kind", "date", "size"), part of the order.
+  Q_PROPERTY(QString groupBy READ groupBy NOTIFY presentationChanged FINAL)
   Q_PROPERTY(bool folderViewActive READ folderViewActive WRITE setFolderViewActive
                  NOTIFY presentationChanged FINAL)
   Q_PROPERTY(QString nameFilter READ nameFilter NOTIFY presentationChanged FINAL)
@@ -194,8 +196,12 @@ public:
   Q_INVOKABLE void setSortColumn(const QString &columnKey);
   Q_INVOKABLE void setShowHidden(bool showHidden);
   Q_INVOKABLE void setDirectoriesFirst(bool directoriesFirst);
-  // Accepted values are "list" and "grid"; anything else is ignored.
+  // Accepted values are "list" (Details), "grid" (Icons), "columns" and
+  // "gallery" (ADR-0270); anything else is ignored.
   Q_INVOKABLE void setViewMode(const QString &mode);
+  // Groups the listing by an entryGroupKey(); unknown keys are ignored. Like
+  // sorting, it re-orders the already-listed entries without re-reading.
+  Q_INVOKABLE void setGroupBy(const QString &groupKey);
   // GUI-thread, session-local literal filename matching; no I/O or recursion.
   // Truncates to the bound without splitting UTF-16 pairs. Actual directory
   // navigation clears the filter; refresh and presentation changes retain it.
@@ -221,6 +227,7 @@ public:
   [[nodiscard]] bool directoriesFirst() const;
   [[nodiscard]] bool showHidden() const;
   [[nodiscard]] QString viewMode() const;
+  [[nodiscard]] QString groupBy() const { return entryGroupKey(m_order.group); }
   [[nodiscard]] QString nameFilter() const;
   [[nodiscard]] bool guestListingActive() const { return m_guestActive; }
   [[nodiscard]] int nameFilterLengthLimit() const { return maximumNameFilterLength; }

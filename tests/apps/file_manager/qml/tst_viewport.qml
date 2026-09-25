@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 import QtTest
+import QindaTK as Tk
 import "../../../../src/apps/file_manager/ui" as Files
 
 TestCase {
@@ -23,6 +24,7 @@ TestCase {
         property int maximumNameFilterLength: 256
         property bool guestListingActive: false
         property bool showHidden: false
+        property string groupBy: "none"
         signal navigationChanged()
         function goUp() {}
         function activate(index) {}
@@ -48,9 +50,11 @@ TestCase {
     SignalSpy { id: locationClosed; signalName: "closed" }
     QtObject { id: coordinator; function activateAction(action) {} }
     Files.EntrySelection { id: fixtureSelection; navigationController: navigation }
+    // ADR-0270: Icons (a GridView of Tk.Thumbnail tiles) and Details (a
+    // Tk.DataTable) keep the viewport behaviour the old grid and list had.
     Component {
         id: gridComponent
-        Files.EntryGrid {
+        Files.IconsView {
             width: 640; height: 360
             navigationController: navigation
             selection: fixtureSelection
@@ -59,7 +63,7 @@ TestCase {
     }
     Component {
         id: listComponent
-        Files.EntryList {
+        Files.DetailsView {
             width: 640; height: 360
             navigationController: navigation
             selection: fixtureSelection
@@ -110,15 +114,22 @@ TestCase {
         fixtureSelection.selectOnly(0)
     }
     function cleanup() { zoomSpy.target = null; if (browser) browser.destroy(); browser = null }
+    // `view` is the flickable holding the entries: the Icons GridView, or the
+    // Details table's own row list (DetailsView.bodyList).
     function open(mode) {
         browser = (mode === "Grid" ? gridComponent : listComponent).createObject(testCase)
         verify(browser !== null)
-        view = findChild(browser, "entry" + mode + "View")
+        view = mode === "Grid" ? findChild(browser, "entryGridView") : browser.bodyList
         verify(view !== null)
         browser.focusView()
         zoomSpy.target = browser
         zoomSpy.clear()
         waitForRendering(browser)
+    }
+    // The delegate showing the current entry.
+    function currentDelegate() {
+        return view.currentItem ? view.currentItem
+            : delegateByIndex(browser.rowModel.rowOf[fixtureSelection.currentIndex])
     }
     function test_scrollAndZoom_data() { return [{tag:"Grid"}, {tag:"List"}] }
     function test_locationWaitsForListing() {
@@ -208,15 +219,17 @@ TestCase {
         browser.iconSize = 128
         waitForRendering(browser)
         compare(fixtureSelection.currentKey, selectedKey)
-        verify(view.currentItem.y >= view.contentY - 1, "item=" + view.currentItem.y + " scroll=" + view.contentY)
-        verify(view.currentItem.y + view.currentItem.height <= view.contentY + view.height + 1)
+        tryVerify(() => currentDelegate() !== null)
+        verify(currentDelegate().y >= view.contentY - 1, "item=" + currentDelegate().y + " scroll=" + view.contentY)
+        verify(currentDelegate().y + currentDelegate().height <= view.contentY + view.height + 1)
         // Manual scroll does not snap back to the focused row on the next frame.
         view.contentY = 0
         wait(50)
         compare(view.contentY, 0)
         browser.width = 500
         waitForRendering(browser)
-        verify(view.currentItem.y >= view.contentY - 1, "item=" + view.currentItem.y + " scroll=" + view.contentY)
+        tryVerify(() => currentDelegate() !== null)
+        verify(currentDelegate().y >= view.contentY - 1, "item=" + currentDelegate().y + " scroll=" + view.contentY)
     }
     function test_bookmarkOverflow() {
         places.bookmarks = Array.from({length: 30}, (_, index) =>
@@ -283,30 +296,33 @@ TestCase {
         compare(fixtureSelection.count(), 1)
         verify(fixtureSelection.isSelected(0))
     }
-    function test_detailsRowsAlternateBackground() {
+    function findNamed(item, name) {
+        if (item.objectName === name)
+            return item
+        for (let i = 0; i < item.children.length; ++i) {
+            const found = findNamed(item.children[i], name)
+            if (found)
+                return found
+        }
+        return null
+    }
+    // ADR-0270: the table stripes its rows; the window's selection (any
+    // number of rows) is the Name cell's translucent tint across the row,
+    // and the table's own single current row stays unused.
+    function test_detailsSelectionTintsWholeRows() {
+        navigation.entries = navigation.entries.slice(0, 3)
         open("List")
-        fixtureSelection.selected = ({})
-        const even = delegateByIndex(0)
-        const odd = delegateByIndex(1)
-        verify(even !== null && odd !== null)
-        // Even rows rest transparent; odd rows carry the palette's
-        // alternateBase so adjacent rows are easy to tell apart.
-        compare(String(even.color), "#00000000")
-        compare(String(odd.color), String(browser.palette.alternateBase))
-        // Hover is a translucent highlight tint on either parity.
-        const highlight = browser.palette.highlight
-        const hoverTint = Qt.rgba(highlight.r, highlight.g, highlight.b, 0.20)
-        mouseMove(odd, 4, 4)
-        tryCompare(odd, "color", hoverTint)
-        mouseMove(even, 4, 4)
-        tryCompare(even, "color", hoverTint)
-        // Move the pointer into empty trailing viewport space (only two
-        // fixture entries) so the hover highlight clears entirely.
-        const band = findChild(browser, "selectionBand")
-        mouseMove(band, band.width - 4, band.height - 4)
-        tryCompare(even, "color", "#00000000")
-        // Selection still wins over both stripes and hover.
-        fixtureSelection.selectOnly(1)
-        tryCompare(odd, "color", browser.palette.highlight)
+        fixtureSelection.selectOnly(0)
+        fixtureSelection.toggle(2)
+        const table = findChild(browser, "detailsTable")
+        compare(table.currentIndex, -1)
+        tryVerify(() => delegateByIndex(2) !== null)
+        const tint = findNamed(delegateByIndex(2), "detailsRowTint")
+        verify(tint !== null)
+        compare(String(tint.color), String(Tk.Theme.color.selection))
+        const plain = findNamed(delegateByIndex(1), "detailsRowTint")
+        compare(String(plain.color), "#00000000")
+        // The tint spans the row, not just the Name cell.
+        compare(tint.width, table.width)
     }
 }

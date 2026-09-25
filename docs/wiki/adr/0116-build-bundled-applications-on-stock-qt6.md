@@ -5,7 +5,8 @@
 - **Owners:** First-party applications
 - **Supersedes:** the bundled-application scope of [ADR-0013](0013-own-qst1-semantic-tokens.md), [ADR-0027](0027-extract-a-narrow-first-party-application-shell.md), [ADR-0080](0080-resolve-first-party-appearance-from-settings.md) (application-surface clauses), and [ADR-0109](0109-use-pearl-and-smoked-plum-app-materials.md)
 - **Superseded by:** [ADR-0218](0218-use-qindatk-and-poppler-for-the-viewer.md)
-  for the new Viewer only; the four applications named here retain this policy.
+  for the new Viewer only; the four applications named here retain this policy,
+  except the File Manager folder views, which [ADR-0270](0270-file-manager-views-move-to-qindatk.md) moves to QindaTK.
 
 ## Context
 

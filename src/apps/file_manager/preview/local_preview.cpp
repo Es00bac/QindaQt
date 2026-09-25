@@ -6,6 +6,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMimeDatabase>
+#include <algorithm>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -28,6 +29,8 @@ bool previewIdentityMatches(const DirectoryEntry &entry) {
              0 &&
          matches(current, entry);
 }
+LocalPreviewDecoder::LocalPreviewDecoder(int maximumEdge)
+    : m_maximumEdge(std::clamp(maximumEdge, 16, galleryEdge)) {}
 QImage LocalPreviewDecoder::decode(const DirectoryEntry &entry,
                                    const std::atomic_bool &cancelled) const {
   if (cancelled || entry.isDirectory || entry.isSymlink ||
@@ -66,7 +69,7 @@ QImage LocalPreviewDecoder::decode(const DirectoryEntry &entry,
           maximumPixels)
     return {};
   reader.setAutoTransform(true);
-  reader.setScaledSize(dimensions.scaled(192, 192, Qt::KeepAspectRatio));
+  reader.setScaledSize(dimensions.scaled(m_maximumEdge, m_maximumEdge, Qt::KeepAspectRatio));
   if (cancelled)
     return {};
   QImage result = reader.read();
@@ -78,7 +81,8 @@ QImage LocalPreviewDecoder::decode(const DirectoryEntry &entry,
           0 ||
       !matches(pathNow, entry))
     return {};
-  return result.scaled(192, 192, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+  return result.scaled(m_maximumEdge, m_maximumEdge, Qt::KeepAspectRatio,
+                       Qt::SmoothTransformation);
 }
 QString entryIconName(const DirectoryEntry &entry) {
   // ADR-0262: an application row carries its own theme icon (never previewed:

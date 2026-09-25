@@ -10,6 +10,8 @@
 #include "model/applications_place_order.h"
 #include "model/bookmarks_store.h"
 #include "model/clipboard_controller.h"
+#include "model/column_listing.h"
+#include "model/entry_facts.h"
 #include "model/entry_properties.h"
 #include "model/launch_intent.h"
 #include "model/local_directory_lister.h"
@@ -266,6 +268,29 @@ struct NetworkComposition final {
   return composed;
 }
 
+// The listing's image providers, which the engine owns: thumbnails (ADR-0111),
+// the Gallery view's one large preview (ADR-0270) and theme icons. Both
+// preview caches follow the listing generation, so a new listing cancels
+// every obsolete decode.
+void installImageProviders(QQmlApplicationEngine &engine,
+                           QindaQt::Apps::FileManager::NavigationController &navigation) {
+  using QindaQt::Apps::FileManager::LocalPreviewDecoder;
+  using QindaQt::Apps::FileManager::PreviewProvider;
+  auto *previews = new PreviewProvider(std::make_unique<LocalPreviewDecoder>());
+  auto *gallery = new PreviewProvider(
+      std::make_unique<LocalPreviewDecoder>(LocalPreviewDecoder::galleryEdge));
+  engine.addImageProvider(QStringLiteral("previews"), previews);
+  engine.addImageProvider(QStringLiteral("gallery-previews"), gallery);
+  engine.addImageProvider(QStringLiteral("theme-icons"),
+                          new QindaQt::Apps::FileManager::ThemeIconProvider());
+  QObject::connect(&navigation,
+                   &QindaQt::Apps::FileManager::NavigationController::entriesChanged, &engine,
+                   [previews, gallery, &navigation] {
+                     previews->setGeneration(navigation.listingGeneration());
+                     gallery->setGeneration(navigation.listingGeneration());
+                   });
+}
+
 // Runs whichever --check-* probe mode was requested. Returns the process
 // exit code when one ran, or nullopt when the window should simply be shown.
 // Kept out of main() so the composition root stays within the function-length
@@ -395,13 +420,7 @@ int main(int argc, char **argv) {
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteFolderCreator>(),
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteCopier>(),
       std::make_unique<QindaQt::Apps::FileManager::KioRemoteMover>());
-  auto *previews = new QindaQt::Apps::FileManager::PreviewProvider(
-      std::make_unique<QindaQt::Apps::FileManager::LocalPreviewDecoder>());
-  engine.addImageProvider(QStringLiteral("previews"), previews);
-  engine.addImageProvider(QStringLiteral("theme-icons"),
-                          new QindaQt::Apps::FileManager::ThemeIconProvider());
-  QObject::connect(controller.get(), &QindaQt::Apps::FileManager::NavigationController::entriesChanged,
-                   &engine, [previews, &controller] { previews->setGeneration(controller->listingGeneration()); });
+  installImageProviders(engine, *controller);
   // ADR-0262: Applications keeps its own sort (A to Z) apart from folders'.
   QindaQt::Apps::FileManager::ApplicationsPlaceOrder applicationsOrder(*controller);
   // ADR-0165/ADR-0262: a workspace picker opens straight into Applications.
@@ -418,6 +437,10 @@ int main(int argc, char **argv) {
       std::make_unique<QindaQt::Apps::FileManager::EntryPropertiesController>();
   auto searchController =
       std::make_unique<QindaQt::Apps::FileManager::SearchController>();
+  // ADR-0270: lazily read Details facts, and the Columns view's other columns.
+  auto entryFacts = std::make_unique<QindaQt::Apps::FileManager::EntryFacts>();
+  auto columnListing = std::make_unique<QindaQt::Apps::FileManager::ColumnListing>(
+      std::make_unique<QindaQt::Apps::FileManager::LocalDirectoryLister>());
   const QString stateDirectory = fileManagerStateDirectory();
   auto placesController =
       std::make_unique<QindaQt::Apps::FileManager::PlacesController>(
@@ -467,6 +490,10 @@ int main(int argc, char **argv) {
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
   fileActions.insertInto(initialProperties);
+  initialProperties.insert(QStringLiteral("entryFacts"),
+                           QVariant::fromValue(static_cast<QObject *>(entryFacts.get())));
+  initialProperties.insert(QStringLiteral("columnListing"),
+                           QVariant::fromValue(static_cast<QObject *>(columnListing.get())));
   engine.setInitialProperties(initialProperties);
   engine.loadFromModule(QStringLiteral("QindaQt.FileManagerApp"), QStringLiteral("Main"));
   if (engine.rootObjects().isEmpty()) {

@@ -5,6 +5,8 @@
 #include "model/applications_place.h"
 #include "model/applications_place_order.h"
 #include "model/clipboard_controller.h"
+#include "model/column_listing.h"
+#include "model/entry_facts.h"
 #include "model/entry_properties.h"
 #include "model/local_directory_lister.h"
 #include "model/navigation_controller.h"
@@ -109,13 +111,22 @@ int main(int argc, char **argv) {
       ? QStringList{sourceRoot + "/data/icons", QStringLiteral("/usr/share/icons")}
       : QStringList{sourceRoot + "/data/icons"});
   QIcon::setThemeName(QStringLiteral("QindaQt"));
+  // Declared before the engine, so they outlive the QML that uses them.
+  EntryFacts entryFacts;
+  ColumnListing columnListing(std::make_unique<LocalDirectoryLister>());
   QQmlApplicationEngine engine;
   auto *provider = new PreviewProvider(std::make_unique<LocalPreviewDecoder>());
+  // ADR-0270: the Gallery view's larger previews, as main.cpp registers them.
+  auto *gallery = new PreviewProvider(
+      std::make_unique<LocalPreviewDecoder>(LocalPreviewDecoder::galleryEdge));
   engine.addImageProvider("previews", provider);
+  engine.addImageProvider("gallery-previews", gallery);
   engine.addImageProvider("theme-icons", new ThemeIconProvider());
   QObject::connect(
-      &navigation, &NavigationController::entriesChanged, &engine,
-      [&] { provider->setGeneration(navigation.listingGeneration()); });
+      &navigation, &NavigationController::entriesChanged, &engine, [&] {
+        provider->setGeneration(navigation.listingGeneration());
+        gallery->setGeneration(navigation.listingGeneration());
+      });
   navigation.navigateTo(applicationsPlace ? ApplicationsController::location() : folder);
   // Idempotent: setSortColumn() flips the direction of the active column.
   const auto applyPresentation = [&navigation] {
@@ -142,6 +153,8 @@ int main(int argc, char **argv) {
         QVariant::fromValue(static_cast<QObject *>(&places))},
        {"applicationsController",
         QVariant::fromValue(static_cast<QObject *>(&applications))},
+       {"entryFacts", QVariant::fromValue(static_cast<QObject *>(&entryFacts))},
+       {"columnListing", QVariant::fromValue(static_cast<QObject *>(&columnListing))},
        {"coordinator",
         QVariant::fromValue(static_cast<QObject *>(&coordinator))}}};
   support.insertInto(initialProperties);
@@ -155,8 +168,9 @@ int main(int argc, char **argv) {
     return 8;
   window->resize(QString::fromLocal8Bit(argv[4]).toInt(),
                  QString::fromLocal8Bit(argv[5]).toInt());
-  // PresentationDefaults.qml applied the fixture's default preferences when
-  // the window completed; the requested view, zoom and sort win over them.
+  // FolderViewSettings.qml applied the fixture folder's view when the window
+  // completed; the requested view (grid, list, columns or gallery), zoom and
+  // sort win over it.
   applyPresentation();
   // Optional capture state: select one row, then run one catalog action
   // (for example file.properties for Get Info) exactly as a user would.

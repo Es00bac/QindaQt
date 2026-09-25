@@ -26,7 +26,7 @@ Control {
             color: root.palette.placeholderText
             text: root.selection.count() > 0
                 ? qsTr("%1 selected").arg(root.selection.count())
-                : qsTr("%1 items").arg(root.navigationController.entries.length)
+                : qsTr("%1 items").arg(root.selection.entries.length)
             elide: Text.ElideRight
         }
         IconButton {

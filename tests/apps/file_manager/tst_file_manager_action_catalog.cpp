@@ -18,6 +18,7 @@ private slots:
   void catalogIsValidStableAndKeyboardComplete();
   void s2ViewEditGoActionsAreCatalogued();
   void rightClickSetIsCataloguedWithDistinctShortcuts();
+  void viewsColumnsAndGroupsAreCatalogued();
 };
 
 void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
@@ -25,7 +26,7 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
   QindaQt::AppShell::ActionRegistry registry;
   const auto result = registry.replaceActions(actions);
   QVERIFY2(result.ok(), qPrintable(result.message));
-  QCOMPARE(actions.size(), 52);
+  QCOMPARE(actions.size(), 60);
 
   QSet<QString> identities;
   for (const auto &action : actions) {
@@ -65,7 +66,13 @@ void TestFileManagerActionCatalog::catalogIsValidStableAndKeyboardComplete() {
       QStringLiteral("view.sort-size"), QStringLiteral("view.sort-kind"),
       QStringLiteral("view.sort-modified"),
       // ADR-0273: Keep in Dock.
-      QStringLiteral("application.keep-in-dock")};
+      QStringLiteral("application.keep-in-dock"),
+      // ADR-0270: the Columns and Gallery views, the column chooser, per-folder
+      // defaults and Group By.
+      QStringLiteral("view.columns-mode"), QStringLiteral("view.gallery-mode"),
+      QStringLiteral("view.show-columns"), QStringLiteral("view.use-as-defaults"),
+      QStringLiteral("view.group-none"), QStringLiteral("view.group-kind"),
+      QStringLiteral("view.group-date"), QStringLiteral("view.group-size")};
   QCOMPARE(identities, expected);
 
   const auto trash = std::find_if(actions.cbegin(), actions.cend(), [](const auto &action) {
@@ -280,6 +287,44 @@ void TestFileManagerActionCatalog::rightClickSetIsCataloguedWithDistinctShortcut
     if (action.menuId == QLatin1String("file") && action.id != QLatin1String("app.preferences")) {
       QVERIFY2(action.order >= 0 && action.order < 60, qPrintable(action.id));
     }
+  }
+}
+
+void TestFileManagerActionCatalog::viewsColumnsAndGroupsAreCatalogued() {
+  const auto actions = fileManagerActionCatalog();
+  const auto find = [&actions](const char *id) {
+    return std::find_if(actions.cbegin(), actions.cend(), [id](const auto &action) {
+      return action.id == QLatin1String(id);
+    });
+  };
+  const struct {
+    const char *id;
+    const char *label;
+    const char *shortcut;
+  } expected[] = {
+      // The two views the catalog always had keep their keys (Ctrl+1 Details,
+      // Ctrl+2 Icons); Finder's other two take the next numbers.
+      {"view.details-mode", "Details View", "Ctrl+1"},
+      {"view.grid-mode", "Icon View", "Ctrl+2"},
+      {"view.columns-mode", "Columns View", "Ctrl+3"},
+      {"view.gallery-mode", "Gallery View", "Ctrl+4"},
+      {"view.show-columns", "Show Columns…", "Ctrl+J"},
+      {"view.use-as-defaults", "Use as Defaults", "Ctrl+Shift+J"},
+      {"view.group-none", "Don't Group", "Ctrl+Alt+0"},
+      {"view.group-kind", "Group by Kind", "Ctrl+Alt+5"},
+      {"view.group-date", "Group by Date Modified", "Ctrl+Alt+6"},
+      {"view.group-size", "Group by Size", "Ctrl+Alt+7"},
+  };
+  for (const auto &row : expected) {
+    const auto action = find(row.id);
+    QVERIFY2(action != actions.cend(), row.id);
+    QCOMPARE(action->menuId, QStringLiteral("view"));
+    QCOMPARE(action->label, QString::fromUtf8(row.label));
+    QCOMPARE(action->shortcut, QKeySequence(QString::fromLatin1(row.shortcut)));
+    // AGENT-GUARD: choices are commands; a checkable Action would uncheck
+    // itself when the current view or group is chosen again.
+    QVERIFY2(!action->checkable, row.id);
+    QVERIFY2(!action->destructive, row.id);
   }
 }
 

@@ -98,7 +98,10 @@ bool verifySelectionUi(QObject *root, NavigationController *navigation,
     if (names().size() != 1) return reject(QStringLiteral("list arrow did not replace selection"));
     navigation->navigateTo(fixtureRoot); pump();
     if (!names().isEmpty()) return reject(QStringLiteral("navigation retained selected files"));
-    navigation->setSortColumn(QStringLiteral("name"));
+    // ADR-0270: the fixture root shows its own (default) view again, so its
+    // sort may already be by name; asking again would reverse it.
+    if (navigation->sortColumn() != QLatin1String("name"))
+        navigation->setSortColumn(QStringLiteral("name"));
     if (!QDir(directory).removeRecursively()) return reject(QStringLiteral("selection fixture cleanup"));
     navigation->refresh();
     return true;

@@ -17,7 +17,8 @@ public:
   ThemeIconProvider();
 
   // id is a freedesktop icon name (for example "folder" or
-  // "list-add-symbolic"), optionally followed by a "?color=#rrggbb" query.
+  // "list-add-symbolic"), optionally followed by a "?color=#rrggbb" query
+  // and (ADR-0270) a "size=N" edge used when no sourceSize is requested.
   // A resolved "-symbolic" name is monochrome by convention and is tinted:
   // with the query color when it is valid (callers pass a palette color so a
   // live theme change re-resolves the URL), otherwise with the application

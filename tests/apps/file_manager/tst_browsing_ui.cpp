@@ -330,7 +330,9 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
     // just inside row 2 (both entries fit in rows 0-1) is the equivalent
     // guaranteed-empty target there.
     const qreal cellWidth = isGrid ? view->property("cellWidth").toReal() : view->width();
-    const qreal cellHeight = isGrid ? view->property("cellHeight").toReal() : 44.0;
+    // Details rows: the view's own row height (ADR-0270's DetailsView keeps
+    // the 44 px the old list had at the default zoom).
+    const qreal cellHeight = view->property(isGrid ? "cellHeight" : "rowHeight").toReal();
     const qreal backgroundY = isGrid ? cellHeight + 20 : cellHeight * 2 + 10;
     QVERIFY(view->height() > backgroundY + 10);
     const QPointF backgroundLocal(cellWidth / 2, backgroundY);
@@ -401,7 +403,8 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
   list->forceActiveFocus();
   QTRY_VERIFY(list->hasActiveFocus());
   QTRY_VERIFY(list->height() > 0);
-  const qreal rowHeight = 44.0;
+  const qreal rowHeight = list->property("rowHeight").toReal();
+  QCOMPARE(rowHeight, 44.0);
   const qreal listWidth = list->width();
 
   // New Folder: the context menu's action id reaches the same
@@ -444,7 +447,9 @@ void BrowsingUiTests::contextMenusTargetBackgroundAndSelection() {
 
   // Directories sort first, case-insensitively — "dest" (row 0),
   // "Made-via-context-menu" (row 1), then the file "source.txt" (row 2).
+  // ADR-0270: a folder without a view of its own keeps the window's view.
   navigation.navigateTo(dispatchFolder);
+  QTRY_COMPARE(navigation.viewMode(), QStringLiteral("list"));
   QTRY_COMPARE(navigation.entries().size(), 3);
   QCOMPARE(navigation.entries().at(0).toMap().value("name").toString(), QStringLiteral("dest"));
   list->forceActiveFocus();
