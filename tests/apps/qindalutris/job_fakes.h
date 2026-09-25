@@ -104,6 +104,8 @@ public:
     ProcessRunResult ok;
     ok.started = true;
     ok.exitCode = 0;
+    ok.treeStopped = true; // as a scope-backed production run reports
+    ok.trackedStopped = true;
     return ok;
   }();
   std::function<void(const ProcessRunSpec &)> sideEffect;
@@ -141,6 +143,7 @@ public:
       stopped.started = true;
       stopped.cancelled = true;
       stopped.treeStopped = treeStopsOnCancel;
+      stopped.trackedStopped = treeStopsOnCancel;
       stopped.stopDetail = QStringLiteral("fake tree stop");
       Q_EMIT finished(stopped);
     });

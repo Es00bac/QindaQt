@@ -9,7 +9,11 @@
 namespace QindaQt::QindaLutris {
 
 NetworkDownloader::NetworkDownloader(DownloadLimits limits, QObject *parent)
-    : Downloader(parent), m_limits(limits), m_guard(limits) {
+    : NetworkDownloader(limits, {}, parent) {}
+
+NetworkDownloader::NetworkDownloader(DownloadLimits limits, DownloadUrlPolicy policy,
+                                     QObject *parent)
+    : Downloader(parent), m_guard(limits, std::move(policy)) {
   m_deadline.setSingleShot(true);
   connect(&m_deadline, &QTimer::timeout, this, [this] {
     fail(QStringLiteral("The download took too long and was stopped."));
@@ -20,10 +24,6 @@ NetworkDownloader::~NetworkDownloader() {
   if (m_active) {
     cancel();
   }
-}
-
-void NetworkDownloader::setUrlPolicyForTesting(DownloadUrlPolicy policy) {
-  m_guard = DownloadGuard(m_limits, std::move(policy));
 }
 
 void NetworkDownloader::finishLater(bool ok, const QString &reason) {
@@ -148,9 +148,7 @@ void NetworkDownloader::onFinished() {
     fail(QStringLiteral("The server stopped sending data, so the download was stopped."));
     return;
   case QNetworkReply::RemoteHostClosedError:
-    fail(QStringLiteral("The server closed the connection before the download finished "
-                        "(%1 bytes received).")
-             .arg(m_received));
+    fail(QStringLiteral("The server closed the connection before the download finished."));
     return;
   case QNetworkReply::TooManyRedirectsError:
     fail(QStringLiteral("The server redirected too many times."));

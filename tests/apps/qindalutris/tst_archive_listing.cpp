@@ -74,6 +74,17 @@ private Q_SLOTS:
         << base() + symlinkLine(kTop + "/lnk", "../../../../tmp/outside") << QByteArray() << "pointing outside";
     QTest::newRow("symlink to parent of top")
         << base() + symlinkLine(kTop + "/up", "..") << QByteArray() << "pointing outside";
+    QTest::newRow("lexically inside, physically outside (reviewer)")
+        << base() + dir(kTop + "/a") + dir(kTop + "/a/b") + dir(kTop + "/a/b/c") + dir(kTop + "/a/b/c/d") +
+               dir(kTop + "/a/b/c/d/e2") + symlinkLine(kTop + "/a/b/c/d/e2/s", "../../../../..") +
+               symlinkLine(kTop + "/a/b/c/d/e2/esc", "s/../../../outside")
+        << QByteArray() << "pointing outside";
+    QTest::newRow("link loop") << base() + symlinkLine(kTop + "/x", "y") + symlinkLine(kTop + "/y", "x/z")
+                               << QByteArray() << "pointing outside";
+    QTest::newRow("hardlink through a symlink")
+        << base() + dir(kTop + "/files") + symlinkLine(kTop + "/l", "files") +
+               hardlinkLine(kTop + "/h", kTop + "/l/proton")
+        << QByteArray() << "through a link";
     QTest::newRow("hardlink outside")
         << base() + hardlinkLine(kTop + "/h", "tmp/claude-1000/review-jobs/outside/secret") << QByteArray()
         << "hard link";

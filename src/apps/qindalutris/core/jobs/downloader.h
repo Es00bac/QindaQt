@@ -53,7 +53,8 @@ struct DownloadLimits final {
 // reason when the transfer must stop.
 // Which URLs may be fetched. Production is always isAllowedDownloadUrl; a
 // different policy exists ONLY so tests can talk to a local plain-HTTP
-// server (see NetworkDownloader::setUrlPolicyForTesting).
+// server (the protected NetworkDownloader constructor; production code
+// cannot reach it).
 using DownloadUrlPolicy = std::function<bool(const QUrl &)>;
 
 class DownloadGuard final {

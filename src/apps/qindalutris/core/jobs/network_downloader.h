@@ -18,18 +18,21 @@ namespace QindaQt::QindaLutris {
 // and are renamed into place only after the guard accepts the completed
 // length. TLS verification is Qt's default and is never relaxed. No resume:
 // a failed transfer is discarded whole.
-class NetworkDownloader final : public Downloader {
+class NetworkDownloader : public Downloader {
   Q_OBJECT
 public:
+  // Production: the URL policy is always isAllowedDownloadUrl.
   explicit NetworkDownloader(DownloadLimits limits = {}, QObject *parent = nullptr);
   ~NetworkDownloader() override;
 
   void start(const QUrl &url, const QString &destinationFile) override;
   void cancel() override;
 
-  // AGENT-GUARD: tests only. Production never calls this, so the HTTPS
-  // allowlist (isAllowedDownloadUrl) stays the only policy in the app.
-  void setUrlPolicyForTesting(DownloadUrlPolicy policy);
+protected:
+  // AGENT-GUARD: the test seam. Only a subclass can supply another URL
+  // policy (tests use it to reach a local plain-HTTP server); no public API
+  // can weaken the HTTPS allowlist of a production downloader.
+  NetworkDownloader(DownloadLimits limits, DownloadUrlPolicy policy, QObject *parent);
 
 private:
   void onRedirected(const QUrl &target);
@@ -41,7 +44,6 @@ private:
   void abortReply();
 
   QNetworkAccessManager m_network;
-  DownloadLimits m_limits;
   DownloadGuard m_guard;
   QPointer<QNetworkReply> m_reply;
   QFile m_part;

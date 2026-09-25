@@ -59,10 +59,12 @@ The production downloader writes to `<file>.part` and renames it into place
 only after the transfer completes at the announced length. It enforces a
 2 GiB size cap, a 60-second stall timeout, a 3-hour total timeout and at
 most 8 redirects (its own count; Qt's limit is set one higher so the
-guard answers first). Stalls, early disconnects, redirect loops and
-insecure redirects each get their own reason in the details log. It does
-not resume: a failed transfer is discarded. Its URL policy can be replaced
-only through a test-only hook, so tests can run it against a local server.
+guard answers first). Stalls, early disconnects ("The server closed the
+connection before the download finished."), redirect loops and insecure
+redirects each get their own reason in the details log. It does not
+resume: a failed transfer is discarded. Its URL policy can be replaced
+only through a protected constructor that tests reach from a subclass, so
+no public call can weaken the allowlist.
 
 ## Stopping a job completely
 
@@ -74,12 +76,21 @@ Cancelling, or reaching a time limit, sends SIGTERM to the whole scope
 sends SIGKILL, and reports the job stopped only when the scope and every
 tracked process are gone. This matters because umu starts the Steam
 Runtime in a new session: killing umu-run alone would leave Wine and the
-installer running. Without a user systemd manager the runner falls back to
-the child's own process group plus tracking of its descendants in `/proc`;
-a program that detaches itself before it is tracked can escape that
-fallback, which the scope cannot. The downloaded installer, or Proton's
-staging folder, is deleted only after the tree is confirmed gone; if it
-cannot be confirmed, the file is kept and the details log says so. No
+installer running. When a program exits normally but leaves processes of
+its tree behind (a background child, a still-active scope), those are
+stopped the same way before the job reports its result.
+
+Without a user systemd manager the runner falls back to the child's own
+process group plus tracking of its descendants and group members in
+`/proc`. That fallback can only report "stopped as far as tracked": a
+program that detaches itself before it is tracked can escape it, which the
+scope cannot. A result therefore says separately whether the stop was
+proven (scope gone) or only tracked. The downloaded vendor installer is
+deleted after a cancel or timeout only when the stop is proven; Proton's
+staging folder is deleted once its `tar` is stopped as far as tracked,
+because `tar` never detaches. Whatever is kept is named in the details
+log. Tree tracking, `systemctl` queries and the stop sequence all run on a
+worker thread, so the window never waits on them while a job runs. No
 `PYTHON*` variable ever reaches a job process, because umu is written in
 Python. The same helpers (`process_tree.h`) are meant for the game
 launcher's Force quit ([ADR-0275](../adr/0275-qindalutris-installs-games-and-manages-pinned-proton.md) §4b).
@@ -106,11 +117,24 @@ name is the tarball name without `.tar.gz` (for example
 5. lists the archive with `tar --list --verbose` and refuses it unless every
    entry lies inside one top-level folder named `<name>`: no absolute paths
    or `..`, no symbolic link pointing outside the folder, no hard link to
-   outside it, no devices, FIFOs or setuid files, no name listed twice and
-   nothing written through a link;
+   outside it or through a symbolic link, no devices, FIFOs or setuid files,
+   no name listed twice and nothing written through a link;
 6. extracts it with `tar --extract --no-same-owner --no-same-permissions`
    into staging;
-7. moves `<name>` into place with a no-replace atomic rename.
+7. checks the real unpacked tree on a worker thread: a walk that never
+   follows links finds only folders, files and symbolic links (no special
+   or setuid files); every symbolic link, followed on disk one link at a
+   time, stays inside `<name>`; and every file with several hard links has
+   all of them inside `<name>`;
+8. moves `<name>` into place with a no-replace atomic rename.
+
+Links are always resolved the way the kernel follows them, not by reading
+the text: `e/s -> ../..` followed by `e/x -> s/../..` looks inside but
+climbs out through `s`, and is refused by both the listing check and the
+unpacked-tree check. What is guaranteed for a committed build: no link in
+it, followed on disk, leads outside the build, and no file in it shares its
+data with a file outside. Links that point at something missing inside the
+build are allowed, since they cannot be followed out.
 
 The target root defaults to `$XDG_DATA_HOME/Steam/compatibilitytools.d`
 (normally `~/.local/share/Steam/compatibilitytools.d`). Any failure or
@@ -190,7 +214,7 @@ match the title, then by size. The user's installer file is never deleted.
 |---|---|---|
 | `Downloader` / `NetworkDownloader` | `downloader.h`, `network_downloader.h` | this package |
 | `ProcessRunner` / `QProcessRunner` (also `InstallerRunner`) | `process_runner.h` | this package |
-| scope naming and whole-tree stop (`ProcessTreeStopper`) | `process_tree.h` | this package; reused by Force quit |
+| scope naming and whole-tree stop (`ProcessTreeSupervisor`, `stopProcessTree`) | `process_tree.h`, `process_supervisor.h` | this package; reused by Force quit |
 | `SystemProbe` / `HostSystemProbe` | `install_preflight.h` | this package |
 | `InstallerPlanner` (`InstallerPlanRequest` → `InstallerPlan`) | `installer_planning.h` | the umu launch-plan builder |
 | pinned build names for removal | `ProtonRemovalRequest::pinnedBuildNames` | the TitleRecord store |
@@ -204,10 +228,11 @@ because staging and trash directories live there while a job runs.
 `tests/apps/qindalutris/tst_download_allowlist.cpp`,
 `tst_download_guard.cpp`, `tst_network_downloader.cpp` (a local HTTP
 server), `tst_ge_proton_releases.cpp`, `tst_archive_listing.cpp`,
+`tst_staged_tree_check.cpp`,
 `tst_proton_install_job.cpp`, `tst_proton_install_cancel.cpp`,
 `tst_proton_removal.cpp`, `tst_process_runner.cpp` (process trees with
-`setsid` grandchildren; the systemd scope row runs only where a user
-manager answers), `tst_store_recipes.cpp`, `tst_install_preflight.cpp`,
+`setsid` grandchildren and leftovers after a normal exit; the systemd
+scope rows run only where a user manager answers), `tst_store_recipes.cpp`, `tst_install_preflight.cpp`,
 `tst_launcher_install_job.cpp` and
 `tst_setup_file_install_job.cpp` (label `jobs`). They use scripted fakes
 (`job_fakes.h`, `proton_job_fixture.h`) and never reach the internet, umu, Wine or a vendor

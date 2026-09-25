@@ -4,10 +4,12 @@
 #include "archive_listing.h"
 #include "downloader.h"
 #include "fs_ops.h"
+#include "staged_tree_check.h"
 
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QMetaObject>
 #include <QTemporaryDir>
 
 #include <algorithm>
@@ -74,6 +76,9 @@ ProtonInstallJob::ProtonInstallJob(QString targetRoot, Downloader *downloader,
 
 ProtonInstallJob::~ProtonInstallJob() {
   ++m_generation; // no queued result after destruction
+  if (m_verifier.joinable()) {
+    m_verifier.join(); // bounded walk; it only reads staging
+  }
   m_hashTimer.stop();
   if (m_stage == Stage::DownloadingArchive || m_stage == Stage::DownloadingChecksum) {
     m_downloader->cancel();
@@ -285,7 +290,9 @@ void ProtonInstallJob::onProcessFinished(const ProcessRunResult &result) {
                                .arg(result.exitCode)
                                .arg(result.error, firstLines(result.standardError, 20),
                                     result.stopDetail);
-    m_keepStaging = (result.timedOut || result.cancelled) && !result.treeStopped;
+    // AGENT-NOTE: tar never detaches, so "stopped as far as tracked" is
+    // enough to delete its staging, unlike a vendor installer's file.
+    m_keepStaging = !result.trackedStopped;
     fail(kUnpackFailed, detail);
     return;
   }
@@ -309,6 +316,48 @@ void ProtonInstallJob::onProcessFinished(const ProcessRunResult &result) {
     beginExtracting();
     return;
   }
+  beginVerifying();
+}
+
+void ProtonInstallJob::beginVerifying() {
+  m_stage = Stage::Verifying;
+  const QString into = extractDirectory(*m_staging);
+  const QString tool = m_release.toolName;
+  const quint64 generation = m_generation;
+  if (m_verifier.joinable()) {
+    m_verifier.join();
+  }
+  m_verifier = std::thread([this, into, tool, generation] {
+    const StagedTreeVerdict verdict = verifyStagedBuild(into, tool);
+    // Safe: the destructor joins this thread before `this` goes away.
+    QMetaObject::invokeMethod(
+        this,
+        [this, generation, verdict] {
+          if (generation == m_generation) {
+            onVerified(verdict.ok, verdict.reason);
+          }
+        },
+        Qt::QueuedConnection);
+  });
+  report(0.95, QStringLiteral("Checking the unpacked build"));
+}
+
+void ProtonInstallJob::onVerified(bool ok, const QString &reason) {
+  if (m_verifier.joinable()) {
+    m_verifier.join();
+  }
+  if (m_stage == Stage::Stopping) {
+    finishCancel(nullptr);
+    return;
+  }
+  if (m_stage != Stage::Verifying) {
+    return;
+  }
+  if (!ok) {
+    fail(kUnsafeArchive, reason);
+    return;
+  }
+  m_log.append(QStringLiteral("Unpacked build verified."));
   commit();
 }
 
@@ -367,6 +416,10 @@ void ProtonInstallJob::cancel() {
     return;
   }
   m_log.append(QStringLiteral("Cancelled by the user."));
+  if (m_stage == Stage::Verifying) {
+    m_stage = Stage::Stopping; // onVerified() finishes once the walk ends
+    return;
+  }
   if (m_stage == Stage::Listing || m_stage == Stage::Extracting) {
     m_stage = Stage::Stopping; // finishCancel() runs once tar's tree is gone
     m_runner->cancel();
@@ -378,7 +431,7 @@ void ProtonInstallJob::cancel() {
 void ProtonInstallJob::finishCancel(const ProcessRunResult *stoppedRun) {
   if (stoppedRun != nullptr) {
     m_log.append(stoppedRun->stopDetail);
-    if (!stoppedRun->treeStopped) {
+    if (!stoppedRun->trackedStopped) {
       m_log.append(QStringLiteral("tar could not be confirmed stopped; staging kept."));
     }
   }
@@ -386,7 +439,7 @@ void ProtonInstallJob::finishCancel(const ProcessRunResult *stoppedRun) {
   result.cancelled = true;
   result.toolName = m_release.toolName;
   result.message = QStringLiteral("Installing %1 was cancelled.").arg(m_release.toolName);
-  m_keepStaging = stoppedRun != nullptr && !stoppedRun->treeStopped;
+  m_keepStaging = stoppedRun != nullptr && !stoppedRun->trackedStopped;
   conclude(result);
 }
 

@@ -42,6 +42,8 @@ private Q_SLOTS:
     ProtonFixture f;
     writeFile(f.source + QStringLiteral("/files/lib/libwine.so.1.0"), 128);
     QVERIFY(QFile::link(QStringLiteral("libwine.so.1.0"), f.source + QStringLiteral("/files/lib/libwine.so.1")));
+    QVERIFY(QFile::link(QStringLiteral("files/lib"), f.source + QStringLiteral("/lib")));
+    QVERIFY(QFile::link(QStringLiteral("../lib/libwine.so.1"), f.source + QStringLiteral("/files/chained.so")));
     QCOMPARE(::link(QFile::encodeName(f.source + QStringLiteral("/files/lib/libwine.so.1.0")).constData(),
                     QFile::encodeName(f.source + QStringLiteral("/files/lib/copy.so")).constData()),
              0);
@@ -54,7 +56,10 @@ private Q_SLOTS:
                                                                 QFileDevice::WriteOwner | QFileDevice::ExeOwner);
     QVERIFY(f.run());
     QVERIFY2(f.result->ok, qPrintable(f.job.detailsText()));
+    QVERIFY(f.job.detailsText().contains(QStringLiteral("Unpacked build verified")));
     const QString installed = f.result->installedPath;
+    QCOMPARE(QFileInfo(installed + QStringLiteral("/files/chained.so")).canonicalFilePath(),
+             installed + QStringLiteral("/files/lib/libwine.so.1.0"));
     QCOMPARE(QFileInfo(installed + QStringLiteral("/files/lib/libwine.so.1")).symLinkTarget(),
              installed + QStringLiteral("/files/lib/libwine.so.1.0"));
 
@@ -115,6 +120,20 @@ private Q_SLOTS:
     QVERIFY(f.run());
     QVERIFY(!f.result->ok);
     QVERIFY(f.job.detailsText().contains(QStringLiteral("pointing outside")));
+    QVERIFY(f.rootEntries().isEmpty());
+  }
+
+  void lexicallyInsidePhysicallyOutsideLinkIsRefused() {
+    // The reviewer's lexical_escape archive, built from real links.
+    ProtonFixture f;
+    QDir().mkpath(f.source + QStringLiteral("/a/b/c/d/e2"));
+    QVERIFY(QFile::link(QStringLiteral("../../../../.."), f.source + QStringLiteral("/a/b/c/d/e2/s")));
+    QVERIFY(QFile::link(QStringLiteral("s/../../../outside"), f.source + QStringLiteral("/a/b/c/d/e2/esc")));
+    f.serveBuild();
+    QVERIFY(f.run());
+    QVERIFY(!f.result->ok);
+    QVERIFY(f.result->message.contains(QStringLiteral("expected shape")));
+    QVERIFY2(f.job.detailsText().contains(QStringLiteral("esc")), qPrintable(f.job.detailsText()));
     QVERIFY(f.rootEntries().isEmpty());
   }
 

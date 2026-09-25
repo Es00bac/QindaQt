@@ -39,32 +39,29 @@ ProcessRunner::ProcessRunner(QObject *parent) : QObject(parent) {}
 ProcessRunner::~ProcessRunner() = default;
 
 QProcessRunner::QProcessRunner(ProcessContainment containment, QObject *parent)
-    : ProcessRunner(parent), m_timeout(new QTimer(this)), m_tracker(new QTimer(this)),
-      m_stopper(new ProcessTreeStopper(this)) {
+    : ProcessRunner(parent), m_timeout(new QTimer(this)),
+      m_supervisor(new ProcessTreeSupervisor(this)) {
   if (containment != ProcessContainment::ProcessGroup) {
     m_tools = detectUserScopeTools();
   }
   m_timeout->setSingleShot(true);
   connect(m_timeout, &QTimer::timeout, this, [this] {
-    if (m_process != nullptr && !m_stopping) {
+    if (m_process != nullptr && !m_stopping && !m_exited) {
       m_result.timedOut = true;
       m_result.error = QStringLiteral("The program took too long and was stopped.");
       beginStop();
     }
   });
-  m_tracker->setInterval(kTrackIntervalMs);
-  connect(m_tracker, &QTimer::timeout, this, [this] { trackProcessTree(m_target); });
-  connect(m_stopper, &ProcessTreeStopper::stopped, this, &QProcessRunner::onStopped);
+  connect(m_supervisor, &ProcessTreeSupervisor::settled, this, &QProcessRunner::onSettled);
 }
 
 QProcessRunner::~QProcessRunner() {
   ++m_generation;
-  if (m_process != nullptr) {
-    m_timeout->stop();
-    m_tracker->stop();
-    (void)ProcessTreeStopper::stopBlocking(m_target, m_graceMs, m_killWaitMs);
-    releaseProcess();
-  }
+  // The supervisor's destructor stops a still-running tree (blocking,
+  // bounded) and joins its worker; only then is the dead main process reaped.
+  delete m_supervisor;
+  m_supervisor = nullptr;
+  releaseProcess();
 }
 
 void QProcessRunner::setStopTimings(int graceMs, int killWaitMs) {
@@ -92,6 +89,8 @@ void QProcessRunner::start(const ProcessRunSpec &spec) {
   m_result = {};
   m_limit = spec.maxOutputBytes;
   m_target = {};
+  m_stopping = false;
+  m_exited = false;
   const QString program = resolveProgram(spec.program);
   if (program.isEmpty() || spec.timeoutMs <= 0) {
     ProcessRunResult refused;
@@ -134,10 +133,10 @@ void QProcessRunner::start(const ProcessRunSpec &spec) {
   connect(m_process, &QProcess::readyReadStandardOutput, this, &QProcessRunner::collect);
   connect(m_process, &QProcess::readyReadStandardError, this, &QProcessRunner::collect);
   connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
-    if (error == QProcess::FailedToStart && m_process != nullptr && !m_stopping) {
+    if (error == QProcess::FailedToStart && m_process != nullptr && !m_stopping &&
+        !m_supervisor->isWatching()) {
       m_result.error = m_process->errorString();
       m_timeout->stop();
-      m_tracker->stop();
       releaseProcess();
       emitLater(m_result);
     }
@@ -150,10 +149,11 @@ void QProcessRunner::start(const ProcessRunSpec &spec) {
   }
   m_process->closeWriteChannel();
   m_target.mainPid = m_process->processId();
+  m_target.processGroup = m_target.mainPid; // setpgid(0, 0) in the child
   if (const auto main = liveProcessIdentity(m_target.mainPid)) {
     m_target.known = {*main};
   }
-  m_tracker->start();
+  m_supervisor->watch(m_target, m_graceMs, m_killWaitMs);
 }
 
 void QProcessRunner::collect() {
@@ -177,37 +177,38 @@ void QProcessRunner::onProcessFinished() {
     return;
   }
   collect();
-  if (m_stopping) {
-    return; // the stopper decides when the whole tree is gone
+  if (m_stopping || m_exited) {
+    return; // the supervisor decides when the whole tree is gone
   }
+  m_exited = true;
   m_timeout->stop();
-  m_tracker->stop();
   m_result.started = true;
   m_result.crashed = m_process->exitStatus() == QProcess::CrashExit;
   m_result.exitCode = m_process->exitCode();
-  releaseProcess();
-  emitLater(m_result);
+  m_supervisor->mainProcessExited(); // leftovers are stopped before finished()
 }
 
 void QProcessRunner::beginStop() {
   m_stopping = true;
   m_timeout->stop();
-  m_tracker->stop();
-  m_stopper->stop(m_target, m_graceMs, m_killWaitMs);
+  m_supervisor->requestStop();
 }
 
-void QProcessRunner::onStopped(bool treeGone, const QString &detail) {
-  if (!m_stopping || m_process == nullptr) {
+void QProcessRunner::onSettled(const TreeStopOutcome &outcome) {
+  if (m_process == nullptr) {
     return;
   }
-  m_stopping = false;
   collect();
   m_result.started = true;
-  m_result.treeStopped = treeGone;
-  m_result.stopDetail = detail;
-  if (m_process->state() == QProcess::NotRunning) {
+  m_result.treeStopped = outcome.proven;
+  m_result.trackedStopped = outcome.trackedGone;
+  m_result.stoppedLeftovers = outcome.hadLeftovers;
+  m_result.stopDetail = outcome.detail;
+  if (m_stopping && m_process->state() == QProcess::NotRunning) {
     m_result.exitCode = m_process->exitCode();
   }
+  m_stopping = false;
+  m_exited = false;
   releaseProcess();
   emitLater(m_result);
 }
@@ -228,8 +229,8 @@ void QProcessRunner::releaseProcess() {
 }
 
 void QProcessRunner::cancel() {
-  if (m_process == nullptr || m_stopping) {
-    return;
+  if (m_process == nullptr || m_stopping || m_exited) {
+    return; // idle, already stopping, or already cleaning up after an exit
   }
   m_result.cancelled = true;
   m_result.error = QStringLiteral("Stopped because the job was cancelled.");
