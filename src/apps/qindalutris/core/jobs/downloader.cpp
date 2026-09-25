@@ -8,7 +8,12 @@ namespace QindaQt::QindaLutris {
 Downloader::Downloader(QObject *parent) : QObject(parent) {}
 Downloader::~Downloader() = default;
 
-DownloadGuard::DownloadGuard(DownloadLimits limits) : m_limits(limits) {}
+DownloadGuard::DownloadGuard(DownloadLimits limits, DownloadUrlPolicy policy)
+    : m_limits(limits), m_policy(std::move(policy)) {}
+
+bool DownloadGuard::allowed(const QUrl &url) const {
+  return m_policy ? m_policy(url) : isAllowedDownloadUrl(url);
+}
 
 void DownloadGuard::reset() {
   m_redirects = 0;
@@ -16,7 +21,7 @@ void DownloadGuard::reset() {
 }
 
 std::optional<QString> DownloadGuard::checkStart(const QUrl &url) const {
-  if (!isAllowedDownloadUrl(url)) {
+  if (!allowed(url)) {
     return QStringLiteral("The address %1 is not on the list of places "
                           "QindaLutris may download from.")
         .arg(url.toDisplayString(QUrl::RemoveUserInfo));
@@ -29,7 +34,7 @@ std::optional<QString> DownloadGuard::checkRedirect(const QUrl &target) {
   if (m_redirects > m_limits.maxRedirects) {
     return QStringLiteral("The server redirected too many times.");
   }
-  if (!isAllowedDownloadUrl(target)) {
+  if (!allowed(target)) {
     return QStringLiteral("The server redirected to %1, which is not on the "
                           "list of places QindaLutris may download from.")
         .arg(target.toDisplayString(QUrl::RemoveUserInfo));

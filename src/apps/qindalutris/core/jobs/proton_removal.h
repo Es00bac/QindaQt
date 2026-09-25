@@ -15,14 +15,18 @@ class JobLog;
 // Removal is refused (with one plain sentence) when:
 //  - the build name is unsafe or the build is not a real directory directly
 //    under the user root (a symlink is refused, never followed);
-//  - the root is, or lies under, a system root -- builds there belong to
-//    Portage and the app never removes them;
+//  - the build (by its literal or canonical path) lies under a system root
+//    (literal or canonical) -- builds there belong to Portage and the app
+//    never removes them. AGENT-GUARD: /var is deliberately NOT a system
+//    root: Fedora Atomic and similar systems canonicalize /home to
+//    /var/home, and the user's own builds live there;
 //  - the caller-supplied pinned set names the build. The caller (the
 //    TitleRecord store) is the authority on pins; this code never guesses.
 // Removal first renames the build into `<root>/.qindalutris-trash/` (atomic,
 // so the build disappears from every scanner at once), then deletes the
-// trashed copy. A deletion interrupted by a crash leaves only trash, which
-// sweepProtonTrash() clears on the next run.
+// trashed copy with removeTreeForcibly() (read-only folders included). A
+// deletion interrupted by a crash, or one that could not finish, leaves only
+// trash, which sweepProtonTrash() clears on a later run.
 struct ProtonRemovalRequest final {
   QString userRoot;  // e.g. defaultUserCompatToolsRoot()
   QString buildName; // directory name, e.g. "GE-Proton11-7-x86_64"
@@ -33,8 +37,9 @@ struct ProtonRemovalRequest final {
 };
 
 struct ProtonRemovalResult final {
-  bool ok = false;
-  QString message; // ONE plain sentence
+  bool ok = false;       // the build is gone from the root (no longer usable)
+  bool complete = false; // ...and every file of it was deleted
+  QString message;       // ONE plain sentence
 };
 
 // Pure-ish policy check (reads file metadata only). nullopt means allowed.
@@ -46,6 +51,7 @@ struct ProtonRemovalResult final {
                                                     JobLog *log = nullptr);
 
 // Deletes leftovers of interrupted removals. Safe to call at any time.
-void sweepProtonTrash(const QString &userRoot);
+// Returns true when no trash remains.
+bool sweepProtonTrash(const QString &userRoot);
 
 } // namespace QindaQt::QindaLutris

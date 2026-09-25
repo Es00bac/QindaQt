@@ -5,9 +5,13 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLocale>
 #include <QStandardPaths>
 #include <QStorageInfo>
+
+#include <algorithm>
 
 namespace QindaQt::QindaLutris {
 
@@ -29,14 +33,40 @@ QString HostSystemProbe::umuRunBinary() const {
   return QStandardPaths::findExecutable(QStringLiteral("umu-run"));
 }
 
+bool isUsableVulkanIcdManifest(const QByteArray &json, const QString &fileName) {
+  const QJsonObject icd = QJsonDocument::fromJson(json).object().value(QStringLiteral("ICD")).toObject();
+  const QString library = icd.value(QStringLiteral("library_path")).toString();
+  if (library.isEmpty()) {
+    return false;
+  }
+  const QString haystack = (QFileInfo(library).fileName() + QLatin1Char(' ') + fileName).toLower();
+  for (const char *software : {"lvp", "lavapipe", "swiftshader"}) {
+    if (haystack.contains(QLatin1String(software))) {
+      return false;
+    }
+  }
+  const QJsonValue arch = icd.value(QStringLiteral("library_arch"));
+  if (arch.isString()) {
+    return arch.toString() != QLatin1String("32");
+  }
+  const QString name = fileName.toLower();
+  return !name.contains(QLatin1String(".i686.")) && !name.contains(QLatin1String(".i386."));
+}
+
 bool HostSystemProbe::hasVulkanDriver() const {
+  const auto usable = [](const QString &file) {
+    QFile manifest(file);
+    return manifest.open(QIODevice::ReadOnly) &&
+           isUsableVulkanIcdManifest(manifest.read(64 * 1024), QFileInfo(file).fileName());
+  };
   for (const char *variable : {"VK_DRIVER_FILES", "VK_ICD_FILENAMES"}) {
     const QString value = qEnvironmentVariable(variable);
-    for (const QString &file : value.split(QLatin1Char(':'), Qt::SkipEmptyParts)) {
-      if (QFileInfo(file).isFile()) {
-        return true;
-      }
+    if (value.isEmpty()) {
+      continue;
     }
+    // An explicit override is the loader's whole list; honour only it.
+    const QStringList files = value.split(QLatin1Char(':'), Qt::SkipEmptyParts);
+    return std::any_of(files.cbegin(), files.cend(), usable);
   }
   QStringList roots;
   for (const QString &base : QStandardPaths::standardLocations(QStandardPaths::GenericConfigLocation)) {
@@ -47,8 +77,12 @@ bool HostSystemProbe::hasVulkanDriver() const {
     roots.append(base + QStringLiteral("/vulkan/icd.d"));
   }
   for (const QString &root : std::as_const(roots)) {
-    if (!QDir(root).entryList({QStringLiteral("*.json")}, QDir::Files | QDir::Readable).isEmpty()) {
-      return true;
+    const QFileInfoList manifests =
+        QDir(root).entryInfoList({QStringLiteral("*.json")}, QDir::Files | QDir::Readable);
+    for (const QFileInfo &manifest : manifests) {
+      if (usable(manifest.filePath())) {
+        return true;
+      }
     }
   }
   return false;

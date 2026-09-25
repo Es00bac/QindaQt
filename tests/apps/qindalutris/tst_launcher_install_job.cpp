@@ -42,8 +42,9 @@ struct Fixture {
 
   bool run() {
     job.start(request);
-    return QTest::qWaitFor([this] { return result.has_value(); }, 5000);
+    return !result.has_value() && wait(); // never synchronous
   }
+  bool wait() { return QTest::qWaitFor([this] { return result.has_value(); }, 5000); }
 
   QString installerFile() const {
     return request.downloadDirectory + QLatin1Char('/') + request.recipe.installerFileName;
@@ -144,7 +145,7 @@ private Q_SLOTS:
     f.job.start(f.request);
     QCOMPARE(f.job.stage(), LauncherInstallJob::Stage::Downloading);
     f.job.cancel();
-    QVERIFY(f.result.has_value());
+    QVERIFY(f.wait());
     QVERIFY(f.result->cancelled);
     QVERIFY(!f.result->ok);
     QCOMPARE(f.downloader.cancels, 1);
@@ -158,9 +159,27 @@ private Q_SLOTS:
     f.runner.hang = true;
     f.job.start(f.request);
     QVERIFY(QTest::qWaitFor([&f] { return f.job.stage() == LauncherInstallJob::Stage::Installing; }, 5000));
+    QVERIFY(QFile::exists(f.installerFile()));
     f.job.cancel();
+    QCOMPARE(f.job.stage(), LauncherInstallJob::Stage::Stopping);
+    QVERIFY(QFile::exists(f.installerFile())); // tree not yet confirmed gone
+    QVERIFY(f.wait());
     QVERIFY(f.result->cancelled);
     QCOMPARE(f.runner.cancels, 1);
+    QVERIFY(!QFile::exists(f.installerFile()));
+  }
+
+  void installerKeptWhenItsTreeCouldNotBeStopped() {
+    Fixture f;
+    f.runner.hang = true;
+    f.runner.treeStopsOnCancel = false;
+    f.job.start(f.request);
+    QVERIFY(QTest::qWaitFor([&f] { return f.job.stage() == LauncherInstallJob::Stage::Installing; }, 5000));
+    f.job.cancel();
+    QVERIFY(f.wait());
+    QVERIFY(f.result->cancelled);
+    QVERIFY(QFile::exists(f.installerFile()));
+    QVERIFY(f.job.detailsText().contains(QStringLiteral("Installer kept")));
   }
 
   void downloadFailureIsPlain() {
@@ -198,7 +217,8 @@ private Q_SLOTS:
       QFile::remove(f.request.protonBuildPath + QStringLiteral("/proton"));
     }
     f.job.start(f.request);
-    QVERIFY(f.result.has_value()); // preflight answers before any download
+    QVERIFY(!f.result.has_value()); // queued, so callers may connect after start()
+    QVERIFY(f.wait());
     QVERIFY(!f.result->ok);
     QVERIFY2(f.result->message.contains(expected), qPrintable(f.result->message));
     QVERIFY(f.downloader.requested.isEmpty());
@@ -212,7 +232,7 @@ private Q_SLOTS:
                                       f.request.recipe.launcherExecutableCandidates.last()),
               16);
     f.job.start(f.request);
-    QVERIFY(f.result.has_value());
+    QVERIFY(f.wait());
     QVERIFY(f.result->ok);
     QVERIFY(f.result->note.contains(QStringLiteral("already installed")));
     QVERIFY(f.downloader.requested.isEmpty());
@@ -232,7 +252,7 @@ private Q_SLOTS:
     Fixture f;
     f.request.recipe.installerUrl = QUrl(QStringLiteral("https://evil.example/Battle.net-Setup.exe"));
     f.job.start(f.request);
-    QVERIFY(f.result.has_value());
+    QVERIFY(f.wait());
     QVERIFY(!f.result->ok);
     QVERIFY(f.job.detailsText().contains(QStringLiteral("allowlist")));
     QVERIFY(f.downloader.requested.isEmpty());

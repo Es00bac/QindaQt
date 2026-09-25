@@ -25,13 +25,22 @@ public:
 
 // Production probe: QStorageInfo, PATH lookup, and the Vulkan loader's ICD
 // manifest directories (XDG config/data dirs, /etc, /usr/share) or an
-// explicit VK_DRIVER_FILES / VK_ICD_FILENAMES override.
+// explicit VK_DRIVER_FILES / VK_ICD_FILENAMES override; each manifest must
+// pass isUsableVulkanIcdManifest().
 class HostSystemProbe final : public SystemProbe {
 public:
   [[nodiscard]] std::optional<qint64> availableBytes(const QString &path) const override;
   [[nodiscard]] QString umuRunBinary() const override;
   [[nodiscard]] bool hasVulkanDriver() const override;
 };
+
+// AGENT-NOTE: heuristic for "a working Vulkan driver" (ADR-0275 section 5).
+// A manifest counts only when it names a library_path, is not a software
+// rasterizer (lavapipe `lvp`, SwiftShader) -- games on those are unplayable
+// and the user needs their real GPU driver -- and is not 32-bit only
+// (library_arch "32", or an .i686/.i386 manifest name without an arch
+// field): Proton's 64-bit side needs a 64-bit driver. Pure.
+[[nodiscard]] bool isUsableVulkanIcdManifest(const QByteArray &json, const QString &fileName);
 
 struct PreflightRequest final {
   QString displayName;     // "Battle.net", or the game title

@@ -5,6 +5,7 @@
 #include <QString>
 #include <QUrl>
 
+#include <functional>
 #include <optional>
 
 namespace QindaQt::QindaLutris {
@@ -13,7 +14,8 @@ namespace QindaQt::QindaLutris {
 // on this interface; production wires NetworkDownloader, tests a scripted
 // fake. Semantics every implementation must keep:
 //  - start() must not be called while a download is active; it never emits
-//    synchronously (finished() always arrives from the event loop).
+//    synchronously (finished() always arrives from the event loop), so
+//    callers may connect after start().
 //  - exactly one finished() follows each start(), unless cancel() is called
 //    first; after cancel() no further signal is emitted for that download.
 //  - on finished(true) destinationFile exists and is complete; on
@@ -49,9 +51,14 @@ struct DownloadLimits final {
 // without a network or a TLS test server. NetworkDownloader only feeds it
 // observations; it never decides on its own. Each check returns a plain
 // reason when the transfer must stop.
+// Which URLs may be fetched. Production is always isAllowedDownloadUrl; a
+// different policy exists ONLY so tests can talk to a local plain-HTTP
+// server (see NetworkDownloader::setUrlPolicyForTesting).
+using DownloadUrlPolicy = std::function<bool(const QUrl &)>;
+
 class DownloadGuard final {
 public:
-  explicit DownloadGuard(DownloadLimits limits = {});
+  explicit DownloadGuard(DownloadLimits limits = {}, DownloadUrlPolicy policy = {});
 
   void reset();
   [[nodiscard]] const DownloadLimits &limits() const { return m_limits; }
@@ -67,7 +74,10 @@ public:
   [[nodiscard]] std::optional<QString> checkCompletion(qint64 received) const;
 
 private:
+  [[nodiscard]] bool allowed(const QUrl &url) const;
+
   DownloadLimits m_limits;
+  DownloadUrlPolicy m_policy;
   int m_redirects = 0;
   qint64 m_announced = -1;
 };

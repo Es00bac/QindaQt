@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QTimer>
 
 namespace QindaQt::QindaLutris {
 
@@ -16,17 +17,17 @@ SetupFileInstallJob::SetupFileInstallJob(InstallerRunner *runner, const SystemPr
 }
 
 SetupFileInstallJob::~SetupFileInstallJob() {
-  if (m_running) {
-    cancel();
+  ++m_generation; // no queued result after destruction
+  if (m_stage == Stage::Installing) {
+    m_runner->cancel(); // the runner stops the whole tree on its own
   }
 }
 
 void SetupFileInstallJob::start(const SetupFileInstallRequest &request) {
-  if (m_running) {
+  if (isRunning()) {
     return;
   }
-  m_running = true;
-  m_installing = false;
+  m_stage = Stage::Concluding; // any early fail() concludes from here
   m_request = request;
   m_request.title = request.title.trimmed();
   if (m_request.title.isEmpty()) {
@@ -102,17 +103,21 @@ void SetupFileInstallJob::start(const SetupFileInstallRequest &request) {
   }
   m_log.append(QStringLiteral("Running: %1 %2")
                    .arg(plan.spec.program, plan.spec.arguments.join(QLatin1Char(' '))));
-  m_installing = true;
+  m_stage = Stage::Installing;
+  m_runner->start(plan.spec);
   Q_EMIT progress(0.1, QStringLiteral("Installing %1. Follow the setup window to the end.")
                            .arg(m_request.title));
-  m_runner->start(plan.spec);
 }
 
 void SetupFileInstallJob::onInstallerFinished(const ProcessRunResult &result) {
-  if (!m_running || !m_installing) {
+  if (m_stage == Stage::Stopping) {
+    m_log.append(describeProcessResult(result));
+    concludeCancelled();
     return;
   }
-  m_installing = false;
+  if (m_stage != Stage::Installing) {
+    return;
+  }
   m_log.append(describeProcessResult(result));
   Q_EMIT progress(0.9, QStringLiteral("Looking for the game"));
   const ExecutableSnapshot after = scanPrefixExecutables(m_request.prefixPath);
@@ -162,14 +167,15 @@ void SetupFileInstallJob::fail(const QString &plain, const QString &detail) {
 }
 
 void SetupFileInstallJob::cancel() {
-  if (!m_running) {
+  if (m_stage != Stage::Installing) {
     return;
   }
-  if (m_installing) {
-    m_installing = false;
-    m_runner->cancel();
-  }
   m_log.append(QStringLiteral("Cancelled by the user."));
+  m_stage = Stage::Stopping;
+  m_runner->cancel();
+}
+
+void SetupFileInstallJob::concludeCancelled() {
   SetupFileInstallResult result;
   result.cancelled = true;
   result.message = QStringLiteral("Installing %1 was cancelled.").arg(m_request.title);
@@ -177,13 +183,19 @@ void SetupFileInstallJob::cancel() {
 }
 
 void SetupFileInstallJob::conclude(SetupFileInstallResult result) {
-  m_running = false;
+  m_stage = Stage::Concluding;
   result.title = m_request.title;
   result.prefixPath = m_request.prefixPath;
   result.protonBuildName = m_request.protonBuildName;
   result.umuId = m_request.umuId;
   result.umuStore = m_request.umuStore;
-  Q_EMIT finished(result);
+  const quint64 generation = ++m_generation;
+  QTimer::singleShot(0, this, [this, generation, result] {
+    if (generation == m_generation) {
+      m_stage = Stage::Idle;
+      Q_EMIT finished(result);
+    }
+  });
 }
 
 } // namespace QindaQt::QindaLutris

@@ -127,9 +127,23 @@ public:
     });
   }
 
+  // Mirrors the production contract: cancel() stops the "tree" and then
+  // reports finished(cancelled) from the event loop.
+  bool treeStopsOnCancel = true;
   void cancel() override {
-    ++m_generation;
     ++cancels;
+    const quint64 generation = ++m_generation;
+    QTimer::singleShot(0, this, [this, generation] {
+      if (generation != m_generation) {
+        return;
+      }
+      ProcessRunResult stopped;
+      stopped.started = true;
+      stopped.cancelled = true;
+      stopped.treeStopped = treeStopsOnCancel;
+      stopped.stopDetail = QStringLiteral("fake tree stop");
+      Q_EMIT finished(stopped);
+    });
   }
 
 private:

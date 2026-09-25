@@ -72,17 +72,16 @@ inline constexpr int kMaxReleases = 100;
 // Streams the file through QCryptographicHash; nullopt when unreadable.
 [[nodiscard]] std::optional<QByteArray> sha512HexOfFile(const QString &path);
 
-// The verdict on `tar --list` output for an archive that must unpack into
-// exactly one top-level directory. AGENT-GUARD: this is the path-escape
-// defence -- any absolute name, any `..` segment, or a second top-level
-// name refuses the whole archive before extraction starts.
-struct ArchiveListingVerdict final {
-  bool ok = false;
-  QString topLevel;
-  QString reason;
-};
-inline constexpr qsizetype kMaxArchiveEntries = 200000;
-[[nodiscard]] ArchiveListingVerdict validateSingleTopLevelListing(
-    const QByteArray &listing, qsizetype maxEntries = kMaxArchiveEntries);
+// AGENT-CONTRACT: releases are tied to upstream. Both URLs must be exactly
+//   https://github.com/GloriousEggroll/proton-ge-custom/releases/download/<tag>/<file>
+// and the files must be <tag>-<arch>.tar.gz / .sha512sum (or the
+// pre-architecture <tag>.tar.gz / .sha512sum). GitHub's redirect to
+// objects/release-assets.githubusercontent.com is followed by the downloader
+// under the allowlist. Enforced by the parser AND by ProtonInstallJob::start,
+// so a hand-built release entry cannot point at a fork or another host.
+inline constexpr char kGeProtonDownloadPrefix[] =
+    "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/";
+[[nodiscard]] QUrl geProtonAssetUrl(const QString &tag, const QString &fileName);
+[[nodiscard]] bool isUpstreamGeProtonRelease(const GeProtonRelease &release);
 
 } // namespace QindaQt::QindaLutris

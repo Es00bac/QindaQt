@@ -26,19 +26,21 @@ struct Asset {
   qint64 size = -1;
 };
 
-std::optional<Asset> findAsset(const QJsonArray &assets, const QString &name) {
+// The asset must sit at exactly the upstream download URL for its tag.
+std::optional<Asset> findAsset(const QJsonArray &assets, const QString &tag, const QString &name) {
   for (const QJsonValue &value : assets) {
     const QJsonObject asset = value.toObject();
     if (asset.value(QStringLiteral("name")).toString() != name) {
       continue;
     }
     const QString urlText = asset.value(QStringLiteral("browser_download_url")).toString();
-    if (!isAllowedDownloadUrl(urlText)) {
+    const QUrl expected = geProtonAssetUrl(tag, name);
+    if (!isAllowedDownloadUrl(urlText) || QUrl(urlText, QUrl::StrictMode) != expected) {
       return std::nullopt;
     }
     Asset found;
     found.name = name;
-    found.url = QUrl(urlText, QUrl::StrictMode);
+    found.url = expected;
     found.size = static_cast<qint64>(asset.value(QStringLiteral("size")).toDouble(-1));
     return found;
   }
@@ -115,8 +117,8 @@ GeProtonReleaseList parseGeProtonReleases(const QByteArray &json,
       if (!isSafeToolName(stem)) {
         continue;
       }
-      const auto tarball = findAsset(assets, stem + kTarSuffix);
-      const auto checksum = findAsset(assets, stem + kSumSuffix);
+      const auto tarball = findAsset(assets, release.tagName, stem + kTarSuffix);
+      const auto checksum = findAsset(assets, release.tagName, stem + kSumSuffix);
       if (!tarball || !checksum) {
         continue;
       }
@@ -177,59 +179,27 @@ std::optional<QByteArray> sha512HexOfFile(const QString &path) {
   return hash.result().toHex();
 }
 
-ArchiveListingVerdict validateSingleTopLevelListing(const QByteArray &listing,
-                                                    qsizetype maxEntries) {
-  const auto refuse = [](const QString &reason) {
-    ArchiveListingVerdict refused;
-    refused.reason = reason;
-    return refused;
-  };
-  QString topLevel;
-  qsizetype entries = 0;
-  bool nested = false;
-  const QList<QByteArray> lines = listing.split('\n');
-  for (const QByteArray &raw : lines) {
-    if (raw.isEmpty()) {
-      continue;
-    }
-    if (++entries > maxEntries) {
-      return refuse(QStringLiteral("The archive has too many files."));
-    }
-    QString name = QString::fromUtf8(raw);
-    if (name.startsWith(QLatin1Char('/'))) {
-      return refuse(QStringLiteral("The archive contains an absolute path: %1").arg(name));
-    }
-    while (name.startsWith(QLatin1String("./"))) {
-      name.remove(0, 2);
-    }
-    const QStringList segments = name.split(QLatin1Char('/'), Qt::SkipEmptyParts);
-    if (segments.isEmpty() || name == QLatin1String(".")) {
-      continue;
-    }
-    for (const QString &segment : segments) {
-      if (segment == QLatin1String("..")) {
-        return refuse(QStringLiteral("The archive tries to write outside its folder: %1").arg(name));
-      }
-    }
-    const QString &top = segments.first();
-    if (top == QLatin1String(".")) {
-      return refuse(QStringLiteral("The archive has an unusual layout: %1").arg(name));
-    }
-    if (topLevel.isEmpty()) {
-      topLevel = top;
-    } else if (topLevel != top) {
-      return refuse(QStringLiteral("The archive has more than one top-level item (%1 and %2).")
-                        .arg(topLevel, top));
-    }
-    nested = nested || segments.size() > 1;
+QUrl geProtonAssetUrl(const QString &tag, const QString &fileName) {
+  return QUrl(QString::fromLatin1(kGeProtonDownloadPrefix) + tag + QLatin1Char('/') + fileName,
+              QUrl::StrictMode);
+}
+
+bool isUpstreamGeProtonRelease(const GeProtonRelease &release) {
+  const QString &tag = release.tagName;
+  if (!tag.startsWith(QLatin1String("GE-Proton")) || !isSafeToolName(tag)) {
+    return false;
   }
-  if (topLevel.isEmpty() || !nested) {
-    return refuse(QStringLiteral("The archive does not contain a single folder."));
+  static const QStringList suffixes{QStringLiteral("-x86_64"), QStringLiteral("-aarch64"), QString()};
+  bool named = false;
+  for (const QString &suffix : suffixes) {
+    named = named || release.toolName == tag + suffix;
   }
-  ArchiveListingVerdict verdict;
-  verdict.ok = true;
-  verdict.topLevel = topLevel;
-  return verdict;
+  return named && isSafeToolName(release.toolName) &&
+         release.tarballName == release.toolName + kTarSuffix &&
+         release.checksumName == release.toolName + kSumSuffix &&
+         release.tarballUrl == geProtonAssetUrl(tag, release.tarballName) &&
+         release.checksumUrl == geProtonAssetUrl(tag, release.checksumName) &&
+         isAllowedDownloadUrl(release.tarballUrl) && isAllowedDownloadUrl(release.checksumUrl);
 }
 
 } // namespace QindaQt::QindaLutris

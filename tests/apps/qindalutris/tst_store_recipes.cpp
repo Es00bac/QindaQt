@@ -110,7 +110,7 @@ private Q_SLOTS:
         << QStringLiteral("/games/bn/drive_c/users/steamuser/AppData/Local/Amazon Games/App/Amazon Games.exe");
     QTest::newRow("forward slashes") << QStringLiteral("c:/Games/x.exe")
                                      << QStringLiteral("/games/bn/drive_c/Games/x.exe");
-    QTest::newRow("other drive") << QStringLiteral("D:\\x.exe") << QStringLiteral("/games/bn/drive_d/x.exe");
+    QTest::newRow("other drive is never guessed") << QStringLiteral("D:\\x.exe") << QString();
     QTest::newRow("doubled separators") << QStringLiteral("C:\\\\a\\\\b.exe")
                                         << QStringLiteral("/games/bn/drive_c/a/b.exe");
     QTest::newRow("relative") << QStringLiteral("Program Files\\x.exe") << QString();
@@ -124,6 +124,17 @@ private Q_SLOTS:
     QFETCH(QString, windows);
     QFETCH(QString, unix);
     QCOMPARE(windowsPathToPrefixPath(QStringLiteral("/games/bn/"), windows), unix);
+  }
+
+  void versionOrder() {
+    QVERIFY(versionGreater(QStringLiteral("13.1"), QStringLiteral("9.9")));
+    QVERIFY(versionGreater(QStringLiteral("13.10"), QStringLiteral("13.9")));
+    QVERIFY(!versionGreater(QStringLiteral("13.9"), QStringLiteral("13.10")));
+    QVERIFY(versionGreater(QStringLiteral("1.0.1"), QStringLiteral("1.0")));
+    QVERIFY(versionGreater(QStringLiteral("b"), QStringLiteral("A")));
+    QVERIFY(!versionGreater(QStringLiteral("007"), QStringLiteral("7")));
+    QVERIFY(!versionGreater(QStringLiteral("7"), QStringLiteral("007")));
+    QVERIFY(versionGreater(QStringLiteral("99999999999999999999"), QStringLiteral("9")));
   }
 
   void relativePrefixIsRefused() {
@@ -142,6 +153,11 @@ private Q_SLOTS:
     const QString base = prefix + QStringLiteral("/drive_c/Program Files/Electronic Arts/EA Desktop/");
     writeFile(base + QStringLiteral("13.100.0.1/EA Desktop/EALauncher.exe"), 8);
     writeFile(base + QStringLiteral("13.200.0.1/EA Desktop/EALauncher.exe"), 8);
+    QCOMPARE(firstExistingCandidate(prefix, ea.launcherExecutableCandidates),
+             base + QStringLiteral("13.200.0.1/EA Desktop/EALauncher.exe"));
+
+    // Versions compare numerically: 13.x beats 9.x although "9" > "1".
+    writeFile(base + QStringLiteral("9.900.0.1/EA Desktop/EALauncher.exe"), 8);
     QCOMPARE(firstExistingCandidate(prefix, ea.launcherExecutableCandidates),
              base + QStringLiteral("13.200.0.1/EA Desktop/EALauncher.exe"));
 

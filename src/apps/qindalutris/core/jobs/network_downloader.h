@@ -27,6 +27,10 @@ public:
   void start(const QUrl &url, const QString &destinationFile) override;
   void cancel() override;
 
+  // AGENT-GUARD: tests only. Production never calls this, so the HTTPS
+  // allowlist (isAllowedDownloadUrl) stays the only policy in the app.
+  void setUrlPolicyForTesting(DownloadUrlPolicy policy);
+
 private:
   void onRedirected(const QUrl &target);
   void onReadyRead();
@@ -37,6 +41,7 @@ private:
   void abortReply();
 
   QNetworkAccessManager m_network;
+  DownloadLimits m_limits;
   DownloadGuard m_guard;
   QPointer<QNetworkReply> m_reply;
   QFile m_part;

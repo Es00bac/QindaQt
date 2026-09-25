@@ -9,7 +9,7 @@
 namespace QindaQt::QindaLutris {
 
 NetworkDownloader::NetworkDownloader(DownloadLimits limits, QObject *parent)
-    : Downloader(parent), m_guard(limits) {
+    : Downloader(parent), m_limits(limits), m_guard(limits) {
   m_deadline.setSingleShot(true);
   connect(&m_deadline, &QTimer::timeout, this, [this] {
     fail(QStringLiteral("The download took too long and was stopped."));
@@ -20,6 +20,10 @@ NetworkDownloader::~NetworkDownloader() {
   if (m_active) {
     cancel();
   }
+}
+
+void NetworkDownloader::setUrlPolicyForTesting(DownloadUrlPolicy policy) {
+  m_guard = DownloadGuard(m_limits, std::move(policy));
 }
 
 void NetworkDownloader::finishLater(bool ok, const QString &reason) {
@@ -59,7 +63,9 @@ void NetworkDownloader::start(const QUrl &url, const QString &destinationFile) {
   QNetworkRequest request(url);
   request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                        QNetworkRequest::UserVerifiedRedirectPolicy);
-  request.setMaximumRedirectsAllowed(m_guard.limits().maxRedirects);
+  // The guard's hop count is the effective limit; Qt's is one higher so it
+  // never answers first with its own, vaguer error.
+  request.setMaximumRedirectsAllowed(m_guard.limits().maxRedirects + 1);
   request.setTransferTimeout(std::chrono::milliseconds(m_guard.limits().stallTimeoutMs));
   request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("QindaLutris"));
 
@@ -106,7 +112,15 @@ bool NetworkDownloader::acceptHeadersOnce() {
 }
 
 void NetworkDownloader::onReadyRead() {
-  if (!m_active || m_reply.isNull() || !acceptHeadersOnce()) {
+  if (!m_active || m_reply.isNull()) {
+    return;
+  }
+  const int status = m_reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+  if (status >= 300 && status < 400) {
+    (void)m_reply->readAll(); // a redirect's own body; the guard judges the hop
+    return;
+  }
+  if (!acceptHeadersOnce()) {
     return;
   }
   const QByteArray chunk = m_reply->readAll();
@@ -126,9 +140,26 @@ void NetworkDownloader::onFinished() {
     return;
   }
   const QNetworkReply::NetworkError error = m_reply->error();
-  if (error == QNetworkReply::OperationCanceledError) {
-    fail(QStringLiteral("The download stalled and was stopped."));
+  switch (error) {
+  case QNetworkReply::NoError:
+    break;
+  case QNetworkReply::OperationCanceledError: // Qt's transfer timeout
+  case QNetworkReply::TimeoutError:
+    fail(QStringLiteral("The server stopped sending data, so the download was stopped."));
     return;
+  case QNetworkReply::RemoteHostClosedError:
+    fail(QStringLiteral("The server closed the connection before the download finished "
+                        "(%1 bytes received).")
+             .arg(m_received));
+    return;
+  case QNetworkReply::TooManyRedirectsError:
+    fail(QStringLiteral("The server redirected too many times."));
+    return;
+  case QNetworkReply::InsecureRedirectError:
+    fail(QStringLiteral("The server redirected to an insecure address."));
+    return;
+  default:
+    break;
   }
   if (error != QNetworkReply::NoError) {
     const int status =

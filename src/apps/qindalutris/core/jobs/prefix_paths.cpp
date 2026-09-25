@@ -31,7 +31,7 @@ void expandInto(const QString &base, const QStringList &rest, int maxMatches,
     return;
   }
   QStringList names = QDir(base).entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-  std::sort(names.begin(), names.end(), std::greater<>());
+  std::sort(names.begin(), names.end(), versionGreater);
   int visited = 0;
   for (const QString &name : std::as_const(names)) {
     if (++visited > kMaxEntriesPerLevel) {
@@ -47,14 +47,56 @@ void expandInto(const QString &base, const QStringList &rest, int maxMatches,
 
 } // namespace
 
+bool versionGreater(const QString &a, const QString &b) {
+  qsizetype i = 0;
+  qsizetype j = 0;
+  while (i < a.size() && j < b.size()) {
+    if (a.at(i).isDigit() && b.at(j).isDigit()) {
+      qsizetype ei = i;
+      qsizetype ej = j;
+      while (ei < a.size() && a.at(ei).isDigit()) {
+        ++ei;
+      }
+      while (ej < b.size() && b.at(ej).isDigit()) {
+        ++ej;
+      }
+      // Compare digit runs without overflow: strip zeros, then length, then text.
+      QStringView x = QStringView(a).mid(i, ei - i);
+      QStringView y = QStringView(b).mid(j, ej - j);
+      while (x.size() > 1 && x.front() == QLatin1Char('0')) {
+        x = x.mid(1);
+      }
+      while (y.size() > 1 && y.front() == QLatin1Char('0')) {
+        y = y.mid(1);
+      }
+      if (x.size() != y.size()) {
+        return x.size() > y.size();
+      }
+      if (const int c = x.compare(y); c != 0) {
+        return c > 0;
+      }
+      i = ei;
+      j = ej;
+      continue;
+    }
+    const QChar ca = a.at(i).toLower();
+    const QChar cb = b.at(j).toLower();
+    if (ca != cb) {
+      return ca > cb;
+    }
+    ++i;
+    ++j;
+  }
+  return (a.size() - i) > (b.size() - j);
+}
+
 QString windowsPathToPrefixPath(const QString &prefixDir, const QString &windowsPath) {
   if (prefixDir.isEmpty() || QDir::isRelativePath(prefixDir) || windowsPath.size() < 3 ||
       prefixDir.split(QLatin1Char('/')).contains(QStringLiteral("*"))) {
     return {};
   }
   const QChar drive = windowsPath.at(0).toLower();
-  if (drive < QLatin1Char('a') || drive > QLatin1Char('z') ||
-      windowsPath.at(1) != QLatin1Char(':')) {
+  if (drive != QLatin1Char('c') || windowsPath.at(1) != QLatin1Char(':')) {
     return {};
   }
   const QChar separator = windowsPath.at(2);
@@ -72,7 +114,7 @@ QString windowsPathToPrefixPath(const QString &prefixDir, const QString &windows
       return {};
     }
   }
-  return QDir::cleanPath(prefixDir) + QStringLiteral("/drive_") + drive + QLatin1Char('/') +
+  return QDir::cleanPath(prefixDir) + QStringLiteral("/drive_c/") +
          segments.join(QLatin1Char('/'));
 }
 

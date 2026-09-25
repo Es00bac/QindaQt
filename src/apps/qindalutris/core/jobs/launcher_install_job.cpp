@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFile>
 #include <QStandardPaths>
+#include <QTimer>
 
 #include <algorithm>
 
@@ -30,8 +31,13 @@ LauncherInstallJob::LauncherInstallJob(Downloader *downloader, InstallerRunner *
 }
 
 LauncherInstallJob::~LauncherInstallJob() {
-  if (isRunning()) {
-    cancel();
+  ++m_generation; // no queued result after destruction
+  if (m_stage == Stage::Downloading) {
+    m_downloader->cancel();
+  } else if (m_stage == Stage::Installing) {
+    // The runner outlives us and stops the whole tree on its own; the
+    // installer file stays (the tree may still use it) for the cache.
+    m_runner->cancel();
   }
 }
 
@@ -46,6 +52,7 @@ void LauncherInstallJob::start(const LauncherInstallRequest &request) {
   }
   m_installerFile.clear();
   m_umuRun.clear();
+  m_keepInstaller = false;
   m_stage = Stage::Preflight;
   m_log.reset(QStringLiteral("QindaLutris launcher install: %1 (%2)")
                   .arg(m_name, request.recipe.id));
@@ -105,8 +112,8 @@ void LauncherInstallJob::start(const LauncherInstallRequest &request) {
   m_installerFile = QDir(request.downloadDirectory).filePath(request.recipe.installerFileName);
   m_stage = Stage::Downloading;
   m_log.append(QStringLiteral("Downloading %1").arg(request.recipe.installerUrl.toString()));
-  Q_EMIT progress(0.05, QStringLiteral("Downloading the %1 installer").arg(m_name));
   m_downloader->start(request.recipe.installerUrl, m_installerFile);
+  Q_EMIT progress(0.05, QStringLiteral("Downloading the %1 installer").arg(m_name));
 }
 
 void LauncherInstallJob::onDownloadProgress(qint64 received, qint64 total) {
@@ -153,17 +160,24 @@ void LauncherInstallJob::onDownloadFinished(bool ok, const QString &reason) {
   m_log.append(QStringLiteral("Running: %1 %2")
                    .arg(plan.spec.program, plan.spec.arguments.join(QLatin1Char(' '))));
   m_stage = Stage::Installing;
+  m_runner->start(plan.spec);
   Q_EMIT progress(0.5, QStringLiteral("Installing %1. If a window opens, follow it to "
                                       "the end; when %1 itself opens, close it to finish.")
                            .arg(m_name));
-  m_runner->start(plan.spec);
 }
 
 void LauncherInstallJob::onInstallerFinished(const ProcessRunResult &result) {
+  if (m_stage == Stage::Stopping) {
+    m_log.append(describeProcessResult(result));
+    m_keepInstaller = !result.treeStopped;
+    concludeCancelled();
+    return;
+  }
   if (m_stage != Stage::Installing) {
     return;
   }
   m_log.append(describeProcessResult(result));
+  m_keepInstaller = !result.treeStopped;
   Q_EMIT progress(0.95, QStringLiteral("Looking for %1").arg(m_name));
   const QString found = firstExistingCandidate(m_request.prefixPath,
                                                m_request.recipe.launcherExecutableCandidates);
@@ -227,10 +241,21 @@ void LauncherInstallJob::fail(const QString &plain, const QString &detail) {
 }
 
 void LauncherInstallJob::cancel() {
-  if (!isRunning() || m_concluding) {
+  if (m_stage == Stage::Idle || m_stage == Stage::Stopping || m_stage == Stage::Concluding) {
     return;
   }
   m_log.append(QStringLiteral("Cancelled by the user."));
+  if (m_stage == Stage::Installing) {
+    // AGENT-GUARD: the installer file stays until the runner confirms the
+    // whole tree (umu, pressure-vessel, Wine, the installer) is gone.
+    m_stage = Stage::Stopping;
+    m_runner->cancel();
+    return;
+  }
+  concludeCancelled();
+}
+
+void LauncherInstallJob::concludeCancelled() {
   LauncherInstallResult result;
   result.cancelled = true;
   result.message = QStringLiteral("Installing %1 was cancelled.").arg(m_name);
@@ -238,20 +263,28 @@ void LauncherInstallJob::cancel() {
 }
 
 void LauncherInstallJob::conclude(LauncherInstallResult result) {
-  m_concluding = true;
   const Stage was = m_stage;
-  m_stage = Stage::Idle;
+  m_stage = Stage::Concluding;
   if (was == Stage::Downloading) {
     m_downloader->cancel();
-  } else if (was == Stage::Installing && result.cancelled) {
-    m_runner->cancel();
   }
   if (!m_installerFile.isEmpty()) {
-    QFile::remove(m_installerFile);
-    QFile::remove(m_installerFile + QStringLiteral(".part"));
+    if (m_keepInstaller) {
+      m_log.append(QStringLiteral("Installer kept at %1: its process tree was not confirmed "
+                                  "stopped.")
+                       .arg(m_installerFile));
+    } else {
+      QFile::remove(m_installerFile);
+      QFile::remove(m_installerFile + QStringLiteral(".part"));
+    }
   }
-  m_concluding = false;
-  Q_EMIT finished(result);
+  const quint64 generation = ++m_generation;
+  QTimer::singleShot(0, this, [this, generation, result] {
+    if (generation == m_generation) {
+      m_stage = Stage::Idle;
+      Q_EMIT finished(result);
+    }
+  });
 }
 
 } // namespace QindaQt::QindaLutris
