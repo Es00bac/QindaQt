@@ -21,9 +21,17 @@ class StatusNotifierWatcherService;
 // ExportAllProperties): Get/GetAll answer under the standard interface header
 // and under an empty one, and Set is refused because every property is
 // read-only. That is how Plasma, waybar and our own monitor read the watcher.
-// Do not add a hand-written Properties adaptor: an earlier one was declared
-// under the misspelled "org.freedesktop.D-Bus.Properties", which only
-// advertised an invalid interface name in introspection.
+// An earlier hand-written adaptor, declared under the misspelled
+// "org.freedesktop.D-Bus.Properties", advertised an invalid interface name
+// and was a remote crash: a header-less Set reached its Set slot, which
+// called QDBusContext::sendErrorReply, but QtDBus sets the call context only
+// on the adaptor's parent, so the reply dereferenced a null context and any
+// session-bus peer could segfault the shell.
+//
+// AGENT-GUARD: do not re-add a Properties adaptor, and never derive a
+// QDBusAbstractAdaptor from QDBusContext: QtDBus never gives an adaptor a
+// call context, so sendErrorReply/message()/setDelayedReply there crash.
+// Pinned by the watcher row servesStandardPropertiesInterface.
 class StatusNotifierWatcherObject final : public QObject, protected QDBusContext
 {
     Q_OBJECT

@@ -190,12 +190,25 @@ void StatusNotifierWatcherTests::servesStandardPropertiesInterface()
         {watcherInterface, QStringLiteral("ProtocolVersion")});
     QCOMPARE(headerless.type(), QDBusMessage::ReplyMessage);
 
-    // Watcher properties are read-only by protocol.
-    const QDBusMessage write = propertiesCall(
-        readerConnection, properties, QStringLiteral("Set"),
-        {watcherInterface, QStringLiteral("ProtocolVersion"),
-         QVariant::fromValue(QDBusVariant(QVariant(7)))});
-    QCOMPARE(write.type(), QDBusMessage::ErrorMessage);
+    // Watcher properties are read-only by protocol, under either header.
+    // AGENT-NOTE: former-red. On fe2c4ec0 a header-less Set reached a
+    // hand-written QDBusContext adaptor that replied through a context QtDBus
+    // never set, and any session-bus peer could segfault the shell.
+    const QString readOnly = QStringLiteral("org.freedesktop.DBus.Error.PropertyReadOnly");
+    const QVariantList setArguments{watcherInterface, QStringLiteral("ProtocolVersion"),
+                                    QVariant::fromValue(QDBusVariant(QVariant(7)))};
+    QCOMPARE(propertiesCall(readerConnection, properties, QStringLiteral("Set"), setArguments)
+                 .errorName(),
+             readOnly);
+    QCOMPARE(propertiesCall(readerConnection, QString(), QStringLiteral("Set"), setArguments)
+                 .errorName(),
+             readOnly);
+    // The watcher survived: a later read still gets a real reply.
+    QCOMPARE(propertiesCall(readerConnection, properties, QStringLiteral("Get"),
+                            {watcherInterface, QStringLiteral("ProtocolVersion")})
+                 .type(),
+             QDBusMessage::ReplyMessage);
+    QCOMPARE(watcher.state(), WatcherServiceState::Active);
 
     // Introspection advertises only the standard, spec-valid name.
     const QDBusMessage introspection = propertiesCall(

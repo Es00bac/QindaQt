@@ -386,7 +386,11 @@ for writes.
 properties are served by QtDBus's built-in `org.freedesktop.DBus.Properties`
 handler (`Get`/`GetAll` answer, `Set` is refused because every property is
 read-only), which is how KDE Plasma, waybar, conformant items, and the shell's
-own monitor read them. Ownership rules follow ADR-0032 exactly:
+own monitor read them. Until 2026-09-25 a hand-written adaptor under the
+misspelled `org.freedesktop.D-Bus.Properties` answered header-less calls
+instead, and a header-less `Set` from any session-bus peer crashed the shell
+through that adaptor's missing call context; it is gone and must not return.
+Ownership rules follow ADR-0032 exactly:
 
 - Every item is keyed to the caller's bus **unique name**. A bare object-path
   argument registers against the caller; a service-name argument is resolved
@@ -506,7 +510,9 @@ fixture, never the host bus):
   object path and by service name, unique-name keying, owner-loss retirement
   of items and hosts (including the host-unregistered wire signal), protocol
   properties and signals, the standard `org.freedesktop.DBus.Properties`
-  `Get`/`GetAll` (and `Set` refusal) read from a third connection with
+  `Get`/`GetAll` and `PropertyReadOnly` refusal of `Set` under both the
+  standard and an empty header (former-red: the empty-header `Set` crashed the
+  watcher), read from a third connection with
   introspection advertising only that spec-valid interface name, idempotent
   degraded startup, and refusal to claim a name another watcher owns
   (`NameOwnedElsewhere` with a truthful degraded reason).
