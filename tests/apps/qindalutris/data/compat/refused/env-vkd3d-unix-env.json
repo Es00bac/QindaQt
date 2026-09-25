@@ -13,7 +13,7 @@
    "title": "G",
    "keys": {},
    "environment": [
-    "DXVK_HUD"
+    "VKD3D_UNIX_ENV=LD_PRELOAD=/tmp/x.so"
    ]
   }
  ]

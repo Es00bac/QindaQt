@@ -30,8 +30,11 @@ SOURCE_ID = "winetricks"
 SOURCE_URL = "https://github.com/Winetricks/winetricks"
 CATEGORIES = ("dlls", "fonts", "settings")
 # Present in the settings category but never valid database advice: test
-# verbs, interactive prompts, and a verb with an empty value.
-EXCLUDED = frozenset(("bad", "good", "set_userpath", "set_mididevice", "winver="))
+# verbs, interactive prompts, a verb with an empty value, Wine file
+# associations (mimeassoc=on can register handlers on the host desktop) and
+# removing Wine's own Mono runtime.
+EXCLUDED = frozenset(("bad", "good", "set_userpath", "set_mididevice", "winver=",
+                      "mimeassoc=on", "remove_mono"))
 
 
 def is_forbidden(verb: str) -> bool:

@@ -45,17 +45,25 @@ REFUSED_ENV_KEYS = (
     "NODE_OPTIONS", "DXVK_LOG_PATH", "DXVK_LOG_LEVEL", "DXVK_CONFIG_FILE",
     "DXVK_STATE_CACHE_PATH", "VKD3D_SHADER_CACHE_PATH", "VKD3D_LOG_FILE", "PROTON_LOG",
     "PROTON_LOG_DIR", "PROTON_VERB", "PROTON_CRASH_REPORT_DIR", "PROTON_ENABLE_NVAPI",
-    "MESA_GLTHREAD", "dxvk_async", "DXVK_", "__GL_WRITE_TEXT_SECTION",
-    "__GL_SHADER_DISK_CACHE_PATH")
+    "MESA_GLTHREAD", "dxvk_hud", "DXVK_", "__GL_WRITE_TEXT_SECTION",
+    "__GL_SHADER_DISK_CACHE_PATH",
+    # vkd3d-proton: environment forwarding, and switches that take paths.
+    "VKD3D_UNIX_ENV", "VKD3D_UNIX_POST_ENV", "VKD3D_QUEUE_PROFILE", "VKD3D_SHADER_OVERRIDE",
+    "VKD3D_QA_HASHES", "VKD3D_SHADER_DUMP_PATH", "VKD3D_PROFILE_PATH", "VKD3D_DEBUG",
+    # Not read by upstream DXVK, or debug/path switches.
+    "DXVK_ASYNC", "DXVK_FRAME_RATE", "DXVK_DEBUG", "DXVK_SHADER_CACHE_PATH",
+    "DXVK_SHADER_DUMP_PATH", "DXVK_CAPTURE_FRAMES")
 ACCEPTED_ENV = (
-    "WINEDLLOVERRIDES=locationapi=d;nvapi,nvapi64=d", "DXVK_ASYNC=1", "DXVK_HUD=fps",
-    "DXVK_FRAME_RATE=60", "VKD3D_CONFIG=dxr11", "VKD3D_FEATURE_LEVEL=12_1",
+    "WINEDLLOVERRIDES=locationapi=d;nvapi,nvapi64=d", "DXVK_HUD=fps",
+    "DXVK_CONFIG=dxgi.syncInterval = 0", "DXVK_ENABLE_NVAPI=1", "VKD3D_CONFIG=dxr11",
+    "VKD3D_FEATURE_LEVEL=12_1", "VKD3D_FRAME_RATE=60", "VKD3D_SWAPCHAIN_LATENCY_FRAMES=1",
     "PROTON_NO_ESYNC=1", "PROTON_NO_WM_DECORATION=1", "PROTON_ENABLE_WAYLAND=1",
     "PROTON_FORCE_NVAPI=1", "WINE_FULLSCREEN_FSR=1", "WINE_FULLSCREEN_FSR_STRENGTH=2",
     "RADV_PERFTEST=gpl", "mesa_glthread=true", "STAGING_SHARED_MEMORY=1",
-    "__GL_SHADER_DISK_CACHE=1", "__GL_THREADED_OPTIMIZATIONS=1", "DXVK_ASYNC=")
+    "__GL_SHADER_DISK_CACHE=1", "__GL_THREADED_OPTIMIZATIONS=1", "DXVK_HUD=")
 VERBS = (("corefonts", True), ("win10", True), ("d3dcompiler_47", True),
-         ("renderer=vulkan", True), ("vd=off", True), ("annihilate", False), ("-q", False),
+         ("renderer=vulkan", True), ("vd=off", True), ("mimeassoc=off", True),
+         ("mimeassoc=on", False), ("remove_mono", False), ("annihilate", False), ("-q", False),
          ("--self-update", False), ("prefix=evil", False), ("arch=win32", False),
          ("list-all", False), ("list", False), ("apps", False), ("7zip", False),
          ("steam", False), ("bad", False), ("winver=", False), ("notaverb", False),
@@ -79,8 +87,8 @@ class Rules(unittest.TestCase):
     def test_environment_values_cannot_expand_or_repeat(self):
         for line in ("DXVK_HUD=$HOME", "DXVK_HUD=`id`", "DXVK_HUD=a\x01"):
             self.assertFalse(accepted(document({"environment": [line]})), line)
-        self.assertFalse(accepted(document({"environment": ["DXVK_ASYNC=1", "DXVK_ASYNC=0"]})))
-        self.assertTrue(accepted(document({"environment": ["DXVK_ASYNC=1", "DXVK_HUD=0"]})))
+        self.assertFalse(accepted(document({"environment": ["DXVK_HUD=1", "DXVK_HUD=0"]})))
+        self.assertTrue(accepted(document({"environment": ["DXVK_CONFIG=a", "DXVK_HUD=0"]})))
         longest = "DXVK_HUD=" + "x" * (1089 - 9)
         self.assertTrue(accepted(document({"environment": [longest]})))
         self.assertFalse(accepted(document({"environment": [longest + "x"]})))

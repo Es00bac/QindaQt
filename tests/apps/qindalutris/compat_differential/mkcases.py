@@ -11,6 +11,7 @@ case with both validators and compares them with expected.txt.
 """
 import json, copy, pathlib, sys
 R = pathlib.Path(sys.argv[2])
+sys.path.insert(0, str(R / "tools" / "qindalutris-compat"))
 out = pathlib.Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 for f in out.glob("*"): f.unlink()
@@ -135,12 +136,18 @@ for key in ["PYTHONPATH", "PYTHONHOME", "BASH_ENV", "ENV", "WINELOADER", "WINESE
             "PRESSURE_VESSEL_FILESYSTEMS_RW", "UMU_ZENITY", "STEAM_COMPAT_MOUNTS", "path",
             "BROWSER", "PERL5OPT", "NODE_OPTIONS", "DXVK_LOG_PATH", "DXVK_CONFIG_FILE",
             "PROTON_LOG", "PROTON_VERB", "DXVK_ASYNC", "VKD3D_CONFIG", "PROTON_NO_ESYNC",
-            "WINE_FULLSCREEN_FSR", "mesa_glthread", "MESA_GLTHREAD"]:
+            "WINE_FULLSCREEN_FSR", "mesa_glthread", "MESA_GLTHREAD",
+            # vkd3d-proton environment forwarding and path-taking switches.
+            "VKD3D_UNIX_ENV", "VKD3D_UNIX_POST_ENV", "VKD3D_QUEUE_PROFILE",
+            "VKD3D_SHADER_OVERRIDE", "VKD3D_QA_HASHES", "DXVK_HUD", "VKD3D_FRAME_RATE"]:
     w("envkey-" + key, doc(game(environment=[key + "=1"])))
 w("env-dollar", doc(game(environment=["DXVK_HUD=$HOME"])))
 w("env-backtick", doc(game(environment=["DXVK_HUD=`id`"])))
-w("env-dup-key", doc(game(environment=["DXVK_ASYNC=1", "DXVK_ASYNC=0"])))
-for verb in ["corefonts", "win10", "arch=win32", "list-all", "7zip", "bad", "-q", "notaverb"]:
+w("env-dup-key", doc(game(environment=["DXVK_HUD=1", "DXVK_HUD=0"])))
+# The forwarding variables must be refused whatever they carry.
+w("env-vkd3d-unix-env-ldpreload", doc(game(environment=["VKD3D_UNIX_ENV=LD_PRELOAD=/tmp/x.so"])))
+for verb in ["corefonts", "win10", "arch=win32", "list-all", "7zip", "bad", "-q", "notaverb",
+             "mimeassoc=on", "mimeassoc=off", "remove_mono"]:
     w("verbcase-" + verb, doc(game(winetricks=[verb])))
 w("recommended-untested", doc(game(proton={"recommended": "U"}),
                               builds={"U": {"status": "untested", "notes": ""}}))
@@ -148,12 +155,14 @@ w("recommended-tested", doc(game(proton={"recommended": "T"}),
                             builds={"T": {"status": "tested", "notes": ""}}))
 w("generated-plus-25h", doc(generated="2026-09-26T01:00:00Z"))
 w("generated-plus-23h", doc(generated="2026-09-25T23:00:00Z"))
+# 33 distinct names from the environment allowlist (both validators list them).
+ALLOWED_KEYS = sorted(__import__("importlib").import_module("qlcompat.schema_rules").ENV_EXACT)
 # The reviewer's length/count env cases use keys the allowlist now refuses,
 # so the bounds are exercised again with an allowlisted key.
 w("env-allowed-1089", doc(game(environment=["DXVK_HUD=" + "x" * 1080])))
 w("env-allowed-1090", doc(game(environment=["DXVK_HUD=" + "x" * 1081])))
 w("env-allowed-1089-astral", doc(game(environment=["DXVK_HUD=" + "x" * 1078 + "\U0001F600"])))
 w("env-allowed-1090-astral", doc(game(environment=["DXVK_HUD=" + "x" * 1079 + "\U0001F600"])))
-w("env-allowed-32", doc(game(environment=[f"DXVK_K{i}=1" for i in range(32)])))
-w("env-allowed-33", doc(game(environment=[f"DXVK_K{i}=1" for i in range(33)])))
-w("env-allowed-empty-value", doc(game(environment=["DXVK_ASYNC="])))
+w("env-allowed-32", doc(game(environment=[f"{k}=1" for k in ALLOWED_KEYS[:32]])))
+w("env-allowed-33", doc(game(environment=[f"{k}=1" for k in ALLOWED_KEYS[:33]])))
+w("env-allowed-empty-value", doc(game(environment=["DXVK_HUD="])))

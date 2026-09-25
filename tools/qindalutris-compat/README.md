@@ -43,7 +43,7 @@ This runs `winetricks list-all` with a throwaway `WINEPREFIX` (it never
 touches `~/.wine`), keeps the `dlls`, `fonts` and `settings` categories,
 drops the verbs that must never be advice (a leading `-`, `annihilate`,
 `prefix=`, `arch=`, `list*`, `bad`, `good`, `set_userpath`,
-`set_mididevice`, `winver=`), and records the winetricks version and date
+`set_mididevice`, `winver=`, `mimeassoc=on`, `remove_mono`), and records the winetricks version and date
 in the header. Commit the file with the snapshot it validated; re-run
 CMake, which regenerates the C++ copy from it.
 
@@ -58,10 +58,10 @@ one must say where it comes from:
 - a PCGamingWiki fact also puts the page in the game's `links`, and uses
   the page URL as `source`;
 - winetricks verbs must be in `winetricks-verbs.txt`;
-- environment keys must be on the schema's allowlist (see the wiki page):
-  `WINEDLLOVERRIDES`, `DXVK_*`/`VKD3D_*` switches, listed `PROTON_*` and
-  `__GL_*` flags, and a few Wine/Mesa settings -- anything else refuses the
-  whole document;
+- environment keys must be on the schema's allowlist of exact names (see
+  the wiki page): `WINEDLLOVERRIDES`, listed value-only `DXVK_*`,
+  `VKD3D_*`, `PROTON_*` and `__GL_*` switches, and a few Wine/Mesa settings
+  -- anything else refuses the whole document;
 - `[games.proton] recommended` must name a build listed here with status
   `tested`; an untested build can be described and avoided, never pinned.
 

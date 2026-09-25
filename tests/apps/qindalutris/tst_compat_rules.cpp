@@ -62,8 +62,14 @@ private Q_SLOTS:
           "NODE_OPTIONS", "DXVK_LOG_PATH", "DXVK_LOG_LEVEL", "DXVK_CONFIG_FILE",
           "DXVK_STATE_CACHE_PATH", "VKD3D_SHADER_CACHE_PATH", "VKD3D_LOG_FILE",
           "PROTON_LOG", "PROTON_LOG_DIR", "PROTON_VERB", "PROTON_CRASH_REPORT_DIR",
-          "PROTON_ENABLE_NVAPI", "MESA_GLTHREAD", "dxvk_async", "DXVK_", "__GL_WRITE_TEXT_SECTION",
-          "__GL_SHADER_DISK_CACHE_PATH"}) {
+          "PROTON_ENABLE_NVAPI", "MESA_GLTHREAD", "dxvk_hud", "DXVK_", "__GL_WRITE_TEXT_SECTION",
+          "__GL_SHADER_DISK_CACHE_PATH",
+          // vkd3d-proton: environment forwarding, and switches that take paths.
+          "VKD3D_UNIX_ENV", "VKD3D_UNIX_POST_ENV", "VKD3D_QUEUE_PROFILE", "VKD3D_SHADER_OVERRIDE",
+          "VKD3D_QA_HASHES", "VKD3D_SHADER_DUMP_PATH", "VKD3D_PROFILE_PATH", "VKD3D_DEBUG",
+          // Not read by upstream DXVK, or debug/path switches.
+          "DXVK_ASYNC", "DXVK_FRAME_RATE", "DXVK_DEBUG", "DXVK_SHADER_CACHE_PATH",
+          "DXVK_SHADER_DUMP_PATH", "DXVK_CAPTURE_FRAMES"}) {
       QTest::newRow(key) << (QLatin1String(key) + QStringLiteral("=1"));
     }
   }
@@ -75,12 +81,13 @@ private Q_SLOTS:
   void allowlistedEnvironmentIsAccepted_data() {
     QTest::addColumn<QString>("line");
     for (const char *line :
-         {"WINEDLLOVERRIDES=locationapi=d;nvapi,nvapi64=d", "DXVK_ASYNC=1", "DXVK_HUD=fps",
-          "DXVK_FRAME_RATE=60", "VKD3D_CONFIG=dxr11", "VKD3D_FEATURE_LEVEL=12_1",
+         {"WINEDLLOVERRIDES=locationapi=d;nvapi,nvapi64=d", "DXVK_HUD=fps",
+          "DXVK_CONFIG=dxgi.syncInterval = 0", "DXVK_ENABLE_NVAPI=1", "VKD3D_CONFIG=dxr11",
+          "VKD3D_FEATURE_LEVEL=12_1", "VKD3D_FRAME_RATE=60", "VKD3D_SWAPCHAIN_LATENCY_FRAMES=1",
           "PROTON_NO_ESYNC=1", "PROTON_NO_WM_DECORATION=1", "PROTON_ENABLE_WAYLAND=1",
           "PROTON_FORCE_NVAPI=1", "WINE_FULLSCREEN_FSR=1", "WINE_FULLSCREEN_FSR_STRENGTH=2",
           "RADV_PERFTEST=gpl", "mesa_glthread=true", "STAGING_SHARED_MEMORY=1",
-          "__GL_SHADER_DISK_CACHE=1", "__GL_THREADED_OPTIMIZATIONS=1", "DXVK_ASYNC="}) {
+          "__GL_SHADER_DISK_CACHE=1", "__GL_THREADED_OPTIMIZATIONS=1", "DXVK_HUD="}) {
       QTest::newRow(line) << QString::fromLatin1(line);
     }
   }
@@ -93,8 +100,8 @@ private Q_SLOTS:
     QVERIFY(!accepted(document(environment(QStringLiteral("DXVK_HUD=$HOME")))));
     QVERIFY(!accepted(document(environment(QStringLiteral("DXVK_HUD=`id`")))));
     QVERIFY(!accepted(document(environment(QStringLiteral("DXVK_HUD=a\u0001")))));
-    QVERIFY(!accepted(document(gameWith(R"("environment":["DXVK_ASYNC=1","DXVK_ASYNC=0"])"))));
-    QVERIFY(accepted(document(gameWith(R"("environment":["DXVK_ASYNC=1","DXVK_HUD=0"])"))));
+    QVERIFY(!accepted(document(gameWith(R"("environment":["DXVK_HUD=1","DXVK_HUD=0"])"))));
+    QVERIFY(accepted(document(gameWith(R"("environment":["DXVK_CONFIG=a","DXVK_HUD=0"])"))));
     const QString longest = QStringLiteral("DXVK_HUD=") + QString(1089 - 9, QLatin1Char('x'));
     QVERIFY(accepted(document(environment(longest))));
     QVERIFY(!accepted(document(environment(longest + QLatin1Char('x')))));
@@ -111,6 +118,9 @@ private Q_SLOTS:
     row("d3dcompiler_47", true);
     row("renderer=vulkan", true);
     row("vd=off", true);
+    row("mimeassoc=off", true);
+    row("mimeassoc=on", false); // Wine file associations can reach the host desktop
+    row("remove_mono", false);
     row("annihilate", false);
     row("-q", false);
     row("--self-update", false);

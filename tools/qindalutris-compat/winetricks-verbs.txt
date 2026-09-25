@@ -6,7 +6,7 @@
 # regenerate with: generate.py --update-winetricks-verbs
 # categories: dlls fonts settings
 # winetricks-version: 20260125
-# generated: 2026-09-25T22:30:20Z
+# generated: 2026-09-25T23:00:17Z
 allcodecs
 alldlls=builtin
 alldlls=default
@@ -296,7 +296,6 @@ mfc80
 mfc90
 micross
 mimeassoc=off
-mimeassoc=on
 msaa
 msacm32
 msasn1
@@ -357,7 +356,6 @@ quartz
 quartz_feb2010
 quicktime72
 quicktime76
-remove_mono
 renderer=gdi
 renderer=gl
 renderer=no3d
