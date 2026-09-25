@@ -19,8 +19,16 @@ class LocalPreviewDecoder final : public PreviewDecoder {
 public:
   static constexpr qint64 maximumBytes = 32 * 1024 * 1024;
   static constexpr qint64 maximumPixels = 40 * 1000 * 1000;
+  // ADR-0111's thumbnail bound, and (ADR-0270) the Gallery view's one large
+  // preview. The input limits above are the same for both.
+  static constexpr int thumbnailEdge = 192;
+  static constexpr int galleryEdge = 1024;
+  explicit LocalPreviewDecoder(int maximumEdge = thumbnailEdge);
   QImage decode(const DirectoryEntry &entry,
                 const std::atomic_bool &cancelled) const override;
+
+private:
+  int m_maximumEdge;
 };
 bool previewIdentityMatches(const DirectoryEntry &entry);
 QString previewUrl(const DirectoryEntry &entry, quint64 generation);

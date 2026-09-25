@@ -8,14 +8,31 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+#include <utility>
+
 using namespace QindaQt::Apps::FileManager;
 
 namespace {
 
-[[nodiscard]] bool writeRaw(const QString &directory, const QByteArray &bytes) {
+// Writes the ADR-0198 document, which load() migrates while no
+// preferences-v2 exists (ADR-0270).
+[[nodiscard]] bool writeRaw(const QString &directory, const QByteArray &bytes,
+                            const QString &name = QStringLiteral("preferences-v1.json")) {
   QDir().mkpath(directory);
-  QFile file(QDir(directory).filePath(QStringLiteral("preferences-v1.json")));
+  QFile file(QDir(directory).filePath(name));
   return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
+}
+
+[[nodiscard]] FolderView galleryView() {
+  FolderView view;
+  view.viewMode = QStringLiteral("gallery");
+  view.sortColumn = QStringLiteral("modified");
+  view.sortDirection = QStringLiteral("descending");
+  view.groupBy = QStringLiteral("date");
+  view.iconSize = 96;
+  view.columns = {{QStringLiteral("name"), 0}, {QStringLiteral("dimensions"), 120},
+                  {QStringLiteral("size"), 0}};
+  return view;
 }
 
 [[nodiscard]] QByteArray documentWith(const QString &key, const QString &jsonValue) {
@@ -52,6 +69,12 @@ private slots:
   void refusesAValueOutsideItsSet();
   void refusesAWrongType();
   void defaultsMatchTheApplicationsOwn();
+  // ADR-0270: preferences-v2.
+  void migratesAVersion1DocumentAndWritesVersion2();
+  void aRefusedVersion2DocumentNeverFallsBackToVersion1();
+  void roundTripsRememberedFolderViews();
+  void refusesUnboundedOrInconsistentViews();
+  void rememberingKeepsTheMostRecentAndForgetsTheDefaults();
 };
 
 void TestPreferencesStore::firstRunIsAbsentWithTheDocumentedDefaults() {
@@ -79,17 +102,25 @@ void TestPreferencesStore::roundTripsEveryPreference() {
   written.discoverNearbyServers = true;
   written.defaultConnectScheme = QStringLiteral("smb");
   written.confirmTrash = false;
+  written.groupBy = QStringLiteral("kind");
+  written.detailsColumns = {{QStringLiteral("name"), 0}, {QStringLiteral("owner"), 90},
+                            {QStringLiteral("created"), 0}};
+  written.relativeDates = true;
+  written.rowDensity = QStringLiteral("compact");
+  written.showExtensions = false;
   QVERIFY(store.store(written).ok());
 
   const auto loaded = store.load();
   QVERIFY2(loaded.ok(), qPrintable(loaded.diagnostic));
+  QVERIFY(!loaded.migrated);
   QCOMPARE(loaded.preferences, written);
 
   QFile file(store.filePath());
+  QVERIFY(store.filePath().endsWith(QStringLiteral("preferences-v2.json")));
   QVERIFY(file.open(QIODevice::ReadOnly));
   const QJsonObject object = QJsonDocument::fromJson(file.readAll()).object();
-  QCOMPARE(object.value(QStringLiteral("version")).toInt(), 1);
-  QCOMPARE(object.value(QStringLiteral("preferences")).toObject().size(), 9);
+  QCOMPARE(object.value(QStringLiteral("version")).toInt(), 2);
+  QCOMPARE(object.value(QStringLiteral("preferences")).toObject().size(), 15);
 }
 
 void TestPreferencesStore::refusesAnUnknownOrMissingKey() {
@@ -121,8 +152,9 @@ void TestPreferencesStore::refusesAnUnknownOrMissingKey() {
 void TestPreferencesStore::refusesAValueOutsideItsSet_data() {
   QTest::addColumn<QString>("key");
   QTest::addColumn<QString>("jsonValue");
+  // ADR-0270: "columns" and "gallery" are views now; this one is not.
   QTest::newRow("view mode") << QStringLiteral("defaultViewMode")
-                             << QStringLiteral("\"columns\"");
+                             << QStringLiteral("\"carousel\"");
   QTest::newRow("sort column") << QStringLiteral("sortColumn")
                                << QStringLiteral("\"owner\"");
   QTest::newRow("sort direction") << QStringLiteral("sortDirection")
@@ -179,7 +211,142 @@ void TestPreferencesStore::defaultsMatchTheApplicationsOwn() {
   QCOMPARE(defaults.iconSize, 64);
   QCOMPARE(defaults.discoverNearbyServers, false);
   QCOMPARE(defaults.confirmTrash, true);
+  // ADR-0270: no grouping, the four Details columns it always had, absolute
+  // dates, comfortable rows, whole names, and no folder of its own.
+  QCOMPARE(defaults.groupBy, QStringLiteral("none"));
+  QCOMPARE(defaults.detailsColumns.size(), 4);
+  QCOMPARE(defaults.detailsColumns.constFirst().key, QStringLiteral("name"));
+  QCOMPARE(defaults.relativeDates, false);
+  QCOMPARE(defaults.rowDensity, QStringLiteral("comfortable"));
+  QCOMPARE(defaults.showExtensions, true);
+  QVERIFY(defaults.folderViews.isEmpty());
   QVERIFY(defaults.isValid());
+}
+
+void TestPreferencesStore::migratesAVersion1DocumentAndWritesVersion2() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const QString directory = temporary.filePath(QStringLiteral("state"));
+  const PreferencesStore store(directory);
+  QByteArray version1 = documentWith(QStringLiteral("defaultViewMode"), QStringLiteral("\"list\""));
+  version1.replace("\"iconSize\":64", "\"iconSize\":128");
+  QVERIFY(writeRaw(directory, version1));
+
+  const auto migrated = store.load();
+  QVERIFY2(migrated.ok(), qPrintable(migrated.diagnostic));
+  QVERIFY(migrated.migrated);
+  QCOMPARE(migrated.preferences.defaultViewMode, QStringLiteral("list"));
+  QCOMPARE(migrated.preferences.iconSize, 128);
+  // Everything v1 did not have starts at its default.
+  QCOMPARE(migrated.preferences.groupBy, QStringLiteral("none"));
+  QCOMPARE(migrated.preferences.detailsColumns, FolderView::defaultColumns());
+  QVERIFY(migrated.preferences.folderViews.isEmpty());
+
+  // The next write is v2; the v1 document stays for an older build.
+  QVERIFY(store.store(migrated.preferences).ok());
+  QVERIFY(QFile::exists(QDir(directory).filePath(QStringLiteral("preferences-v2.json"))));
+  QVERIFY(QFile::exists(QDir(directory).filePath(QStringLiteral("preferences-v1.json"))));
+  const auto reloaded = store.load();
+  QVERIFY2(reloaded.ok(), qPrintable(reloaded.diagnostic));
+  QVERIFY(!reloaded.migrated);
+  QCOMPARE(reloaded.preferences, migrated.preferences);
+}
+
+void TestPreferencesStore::aRefusedVersion2DocumentNeverFallsBackToVersion1() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const QString directory = temporary.filePath(QStringLiteral("state"));
+  const PreferencesStore store(directory);
+  QVERIFY(writeRaw(directory, documentWith(QStringLiteral("showHidden"), QStringLiteral("true"))));
+  QVERIFY(writeRaw(directory, QByteArray("{\"version\":2,\"preferences\":{}}"),
+                   QStringLiteral("preferences-v2.json")));
+  // AGENT-GUARD: falling back would silently resurrect the old settings.
+  const auto loaded = store.load();
+  QCOMPARE(loaded.error, PreferencesError::Malformed);
+  QCOMPARE(loaded.preferences, Preferences{});
+}
+
+void TestPreferencesStore::roundTripsRememberedFolderViews() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const PreferencesStore store(temporary.filePath(QStringLiteral("state")));
+  Preferences written;
+  written.rememberFolderView(QStringLiteral("/home/user/Pictures"), galleryView());
+  FolderView applications;
+  applications.viewMode = QStringLiteral("list");
+  written.rememberFolderView(QStringLiteral("applications:"), applications);
+  written.rememberFolderView(QStringLiteral("smb://server/share"), galleryView());
+  QCOMPARE(written.folderViews.size(), 3);
+  QVERIFY(store.store(written).ok());
+
+  const auto loaded = store.load();
+  QVERIFY2(loaded.ok(), qPrintable(loaded.diagnostic));
+  QCOMPARE(loaded.preferences, written);
+  QCOMPARE(loaded.preferences.folderViewFor(QStringLiteral("/home/user/Pictures")), galleryView());
+  QCOMPARE(loaded.preferences.folderViewFor(QStringLiteral("/elsewhere")),
+           loaded.preferences.defaultFolderView());
+  QVERIFY(loaded.preferences.remembers(QStringLiteral("applications:")));
+}
+
+void TestPreferencesStore::refusesUnboundedOrInconsistentViews() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const PreferencesStore store(temporary.filePath(QStringLiteral("state")));
+  const auto refused = [&store](const Preferences &preferences) {
+    return store.store(preferences).error == PreferencesError::Malformed;
+  };
+
+  Preferences tooMany;
+  for (int i = 0; i <= Preferences::maximumFolderViews; ++i) {
+    tooMany.folderViews.append({QStringLiteral("/folder/%1").arg(i), galleryView()});
+  }
+  QVERIFY(refused(tooMany));
+
+  Preferences duplicate;
+  duplicate.folderViews = {{QStringLiteral("/same"), galleryView()},
+                           {QStringLiteral("/same"), galleryView()}};
+  QVERIFY(refused(duplicate));
+
+  const auto withColumns = [](QList<DetailsColumn> columns) {
+    Preferences preferences;
+    preferences.detailsColumns = std::move(columns);
+    return preferences;
+  };
+  // Name leads, every key once, known keys only, and a width is 0 or 40-1000.
+  QVERIFY(refused(withColumns({{QStringLiteral("size"), 0}, {QStringLiteral("name"), 0}})));
+  QVERIFY(refused(withColumns({{QStringLiteral("name"), 0}, {QStringLiteral("size"), 0},
+                               {QStringLiteral("size"), 0}})));
+  QVERIFY(refused(withColumns({{QStringLiteral("name"), 0}, {QStringLiteral("colour"), 0}})));
+  QVERIFY(refused(withColumns({{QStringLiteral("name"), 0}, {QStringLiteral("size"), 20}})));
+  QVERIFY(refused(withColumns({})));
+
+  Preferences badDensity;
+  badDensity.rowDensity = QStringLiteral("roomy");
+  QVERIFY(refused(badDensity));
+  Preferences badGroup;
+  badGroup.groupBy = QStringLiteral("colour");
+  QVERIFY(refused(badGroup));
+}
+
+void TestPreferencesStore::rememberingKeepsTheMostRecentAndForgetsTheDefaults() {
+  Preferences preferences;
+  for (int i = 0; i < Preferences::maximumFolderViews + 5; ++i) {
+    preferences.rememberFolderView(QStringLiteral("/folder/%1").arg(i), galleryView());
+  }
+  // The oldest are forgotten first; the newest leads.
+  QCOMPARE(preferences.folderViews.size(), Preferences::maximumFolderViews);
+  QCOMPARE(preferences.folderViews.constFirst().location,
+           QStringLiteral("/folder/%1").arg(Preferences::maximumFolderViews + 4));
+  QVERIFY(!preferences.remembers(QStringLiteral("/folder/0")));
+
+  // Remembering again moves a folder to the front.
+  preferences.rememberFolderView(QStringLiteral("/folder/10"), galleryView());
+  QCOMPARE(preferences.folderViews.constFirst().location, QStringLiteral("/folder/10"));
+
+  // A view equal to the defaults is forgotten, so the folder follows them.
+  preferences.rememberFolderView(QStringLiteral("/folder/10"), preferences.defaultFolderView());
+  QVERIFY(!preferences.remembers(QStringLiteral("/folder/10")));
+  QVERIFY(preferences.isValid());
 }
 
 QTEST_APPLESS_MAIN(TestPreferencesStore)

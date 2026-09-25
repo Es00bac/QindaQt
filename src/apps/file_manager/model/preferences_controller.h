@@ -6,6 +6,8 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
+#include <QVariantMap>
 
 #include <memory>
 
@@ -34,6 +36,13 @@ class PreferencesController final : public QObject {
   Q_PROPERTY(bool discoverNearbyServers READ discoverNearbyServers NOTIFY preferencesChanged FINAL)
   Q_PROPERTY(QString defaultConnectScheme READ defaultConnectScheme NOTIFY preferencesChanged FINAL)
   Q_PROPERTY(bool confirmTrash READ confirmTrash NOTIFY preferencesChanged FINAL)
+  // ADR-0270 (preferences-v2): the rest of the default folder view and the
+  // Details view's window-wide presentation.
+  Q_PROPERTY(QString groupBy READ groupBy NOTIFY preferencesChanged FINAL)
+  Q_PROPERTY(QVariantList detailsColumns READ detailsColumns NOTIFY preferencesChanged FINAL)
+  Q_PROPERTY(bool relativeDates READ relativeDates NOTIFY preferencesChanged FINAL)
+  Q_PROPERTY(QString rowDensity READ rowDensity NOTIFY preferencesChanged FINAL)
+  Q_PROPERTY(bool showExtensions READ showExtensions NOTIFY preferencesChanged FINAL)
   Q_PROPERTY(QString storeError READ storeError NOTIFY storeErrorChanged FINAL)
   // The accepted values, so the window's pickers cannot drift from the schema.
   Q_PROPERTY(QStringList viewModes READ viewModes CONSTANT FINAL)
@@ -41,6 +50,9 @@ class PreferencesController final : public QObject {
   Q_PROPERTY(QStringList sortDirections READ sortDirections CONSTANT FINAL)
   Q_PROPERTY(QVariantList iconSizes READ iconSizes CONSTANT FINAL)
   Q_PROPERTY(QStringList schemes READ schemes CONSTANT FINAL)
+  Q_PROPERTY(QStringList groupKeys READ groupKeys CONSTANT FINAL)
+  Q_PROPERTY(QStringList columnKeys READ columnKeys CONSTANT FINAL)
+  Q_PROPERTY(QStringList rowDensities READ rowDensities CONSTANT FINAL)
 
 public:
   explicit PreferencesController(std::unique_ptr<PreferencesStore> store,
@@ -55,6 +67,26 @@ public:
   Q_INVOKABLE void setDiscoverNearbyServers(bool discover);
   Q_INVOKABLE void setDefaultConnectScheme(const QString &scheme);
   Q_INVOKABLE void setConfirmTrash(bool confirmTrash);
+  Q_INVOKABLE void setGroupBy(const QString &groupBy);
+  // [{key, width}], Name first (see Preferences::columnKeys()).
+  Q_INVOKABLE void setDetailsColumns(const QVariantList &columns);
+  Q_INVOKABLE void setRelativeDates(bool relativeDates);
+  Q_INVOKABLE void setRowDensity(const QString &rowDensity);
+  Q_INVOKABLE void setShowExtensions(bool showExtensions);
+
+  // ADR-0270: per-folder views. A view crosses to QML as {viewMode,
+  // sortColumn, sortDirection, groupBy, iconSize, columns: [{key, width}]}.
+  // folderView() is `location`'s own view when remembered, else the
+  // defaults, plus `remembered`; defaultFolderView() is the defaults alone.
+  Q_INVOKABLE [[nodiscard]] QVariantMap folderView(const QString &location) const;
+  Q_INVOKABLE [[nodiscard]] QVariantMap defaultFolderView() const;
+  // Remembers the view the user gave `location` (a view equal to the
+  // defaults forgets it instead). Returns false when refused; nothing is
+  // written when `location` already shows exactly this view.
+  Q_INVOKABLE bool rememberFolderView(const QString &location, const QVariantMap &view);
+  // Makes `view` the defaults ("Use as Defaults") and forgets every folder
+  // whose own view now equals them.
+  Q_INVOKABLE bool useAsDefaults(const QVariantMap &view);
   // Returns every value to the documented default and persists that.
   Q_INVOKABLE void restoreDefaults();
   Q_INVOKABLE void clearStoreError();
@@ -72,6 +104,14 @@ public:
     return m_preferences.defaultConnectScheme;
   }
   [[nodiscard]] bool confirmTrash() const { return m_preferences.confirmTrash; }
+  [[nodiscard]] QString groupBy() const { return m_preferences.groupBy; }
+  [[nodiscard]] QVariantList detailsColumns() const;
+  [[nodiscard]] bool relativeDates() const { return m_preferences.relativeDates; }
+  [[nodiscard]] QString rowDensity() const { return m_preferences.rowDensity; }
+  [[nodiscard]] bool showExtensions() const { return m_preferences.showExtensions; }
+  [[nodiscard]] QStringList groupKeys() const { return Preferences::groupKeys(); }
+  [[nodiscard]] QStringList columnKeys() const { return Preferences::columnKeys(); }
+  [[nodiscard]] QStringList rowDensities() const { return Preferences::rowDensities(); }
   [[nodiscard]] QString storeError() const { return m_storeError; }
   [[nodiscard]] QStringList viewModes() const { return Preferences::viewModes(); }
   [[nodiscard]] QStringList sortColumns() const { return Preferences::sortColumns(); }

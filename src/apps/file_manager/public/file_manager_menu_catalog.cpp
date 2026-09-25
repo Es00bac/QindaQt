@@ -31,6 +31,38 @@ namespace {
           .checkable = checkable};
 }
 
+// ADR-0270: the View menu's folder-view entries, kept apart so
+// windowActions() stays within the function-length budget.
+[[nodiscard]] QList<ActionDefinition> folderViewActions()
+{
+  return {
+      // Finder's other two views take the next two numbers; the
+      // two this catalog always had keep theirs (Ctrl+1 Details, Ctrl+2 Icons).
+      action("view.columns-mode", "view", QStringLiteral("Columns View"),
+             QStringLiteral("Show this folder as columns, one for each folder level"),
+             keys("Ctrl+3"), 4),
+      action("view.gallery-mode", "view", QStringLiteral("Gallery View"),
+             QStringLiteral("Show a large preview above a strip of this folder's items"),
+             keys("Ctrl+4"), 4),
+      // The Details column chooser, per-folder views and Group By.
+      // Like the sort choices these are commands, never checkable Actions.
+      action("view.show-columns", "view", QStringLiteral("Show Columns…"),
+             QStringLiteral("Choose and order the Details view's columns"), keys("Ctrl+J"), 14),
+      action("view.use-as-defaults", "view", QStringLiteral("Use as Defaults"),
+             QStringLiteral("Make this folder's view the one every other folder starts with"),
+             keys("Ctrl+Shift+J"), 15),
+      action("view.group-none", "view", QStringLiteral("Don't Group"),
+             QStringLiteral("Show this folder without groups"), keys("Ctrl+Alt+0"), 16),
+      action("view.group-kind", "view", QStringLiteral("Group by Kind"),
+             QStringLiteral("Group this folder's items by kind"), keys("Ctrl+Alt+5"), 17),
+      action("view.group-date", "view", QStringLiteral("Group by Date Modified"),
+             QStringLiteral("Group this folder's items by when they last changed"),
+             keys("Ctrl+Alt+6"), 18),
+      action("view.group-size", "view", QStringLiteral("Group by Size"),
+             QStringLiteral("Group this folder's items by size"), keys("Ctrl+Alt+7"), 19),
+  };
+}
+
 } // namespace
 
 QString applicationTitle()
@@ -71,7 +103,7 @@ QList<ActionDefinition> windowActions()
   // AGENT-NOTE: this order is File Manager's historical catalog order; the
   // AppShell registry sorts by menu and `order`, so reordering here changes
   // nothing visible, but keeping it makes review diffs line up.
-  return {
+  QList<ActionDefinition> actions{
       // ADR-0269: Open is one action for files, folders and (ADR-0262)
       // Applications rows alike; it replaced "application.open". The File
       // menu's orders are spaced in groups of ten -- open, create, change,
@@ -233,6 +265,8 @@ QList<ActionDefinition> windowActions()
              QStringLiteral("Keep the selected application in the dock"), keys("Ctrl+Alt+D"),
              51, false, true),
   };
+  actions.append(folderViewActions());
+  return actions;
 }
 
 QList<ActionDefinition> applicationActions()

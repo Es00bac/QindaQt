@@ -33,10 +33,17 @@ void bindFileManagerBrowsingActions(AppShell::ApplicationCoordinator &coordinato
     // disabled instead of presenting a dead end (ADR-0137).
     enabled("view.filter", !navigation.remoteActive());
     for (const char *id : {"view.refresh", "view.show-hidden", "view.grid-mode",
-                           "view.details-mode", "view.zoom-reset", "edit.select-all",
-                           "view.sort-name", "view.sort-size", "view.sort-kind",
-                           "view.sort-modified"})
+                           "view.details-mode", "view.columns-mode", "view.gallery-mode",
+                           "view.zoom-reset", "edit.select-all", "view.sort-name",
+                           "view.sort-size", "view.sort-kind", "view.sort-modified",
+                           "view.use-as-defaults"})
       enabled(id, true);
+    // ADR-0270: the column chooser is the Details view's; Group By is for
+    // folders (Applications groups by category instead, ADR-0262).
+    enabled("view.show-columns", navigation.viewMode() == QLatin1String("list"));
+    for (const char *id : {"view.group-none", "view.group-kind", "view.group-date",
+                           "view.group-size"})
+      enabled(id, !navigation.applicationsPlace());
     // A bookmark names a folder; the Applications place is reached from Places.
     enabled("bookmark.add", !navigation.applicationsPlace());
     checked("view.show-hidden", navigation.showHidden());

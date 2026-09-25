@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <QLocale>
 #include <QString>
+#include <QStringList>
 #include <QVariantList>
 #include <QVariantMap>
 #include <QVector>
@@ -53,16 +54,41 @@ namespace EntryPresentation {
   return QStringLiteral("%1 File").arg(suffix.toUpper());
 }
 
+// The listing's status notice ("3 matching items; 2 hidden"), kept here
+// with the other presentation text so NavigationController stays within its
+// source-size budget.
+[[nodiscard]] inline QString listingNotices(bool filterActive, qsizetype visibleCount,
+                                            bool truncated, qsizetype listedCount,
+                                            int hiddenCount) {
+  QStringList notices;
+  if (filterActive) {
+    notices.append(visibleCount == 0 ? QStringLiteral("No matching items")
+                   : visibleCount == 1
+                       ? QStringLiteral("1 matching item")
+                       : QStringLiteral("%1 matching items").arg(visibleCount));
+  }
+  if (truncated) {
+    notices.append(QStringLiteral("Showing the first %1 entries").arg(listedCount));
+  }
+  if (hiddenCount > 0) {
+    notices.append(QStringLiteral("%1 hidden").arg(hiddenCount));
+  }
+  return notices.join(QStringLiteral("; "));
+}
+
 // Marshals the visible listing for QML. entryIconName/previewUrl stay in
 // their owning modules; this helper owns only the plain QVariant mapping.
+// `groupLabel` names the entry's Group By heading (ADR-0270), empty when the
+// listing is not grouped.
 // AGENT-GUARD: The identity fields cross QVariant -> JavaScript -> QVariant
 // before mutation dispatch. Decimal strings preserve all 64 bits; JS Number
 // would round current-epoch nanoseconds and make every UI mutation fail its
 // optimistic identity check.
-template <typename IconNameFn, typename PreviewUrlFn>
+template <typename IconNameFn, typename PreviewUrlFn, typename GroupLabelFn>
 [[nodiscard]] QVariantList
 entryListToVariants(const QVector<DirectoryEntry> &entries, quint64 generation,
-                    IconNameFn entryIconName, PreviewUrlFn previewUrl) {
+                    IconNameFn entryIconName, PreviewUrlFn previewUrl,
+                    GroupLabelFn groupLabel) {
   QVariantList list;
   list.reserve(entries.size());
   for (const DirectoryEntry &entry : entries) {
@@ -86,6 +112,13 @@ entryListToVariants(const QVector<DirectoryEntry> &entries, quint64 generation,
         {QStringLiteral("modifiedNanoseconds"),
          QString::number(entry.modifiedNanoseconds)},
         {QStringLiteral("mode"), QString::number(entry.mode)},
+        // ADR-0270: the Details view's listing-time columns; an invalid date
+        // or a -1 id is unknown and shows as a dash.
+        {QStringLiteral("created"), entry.created},
+        {QStringLiteral("accessed"), entry.accessed},
+        {QStringLiteral("ownerId"), entry.ownerId},
+        {QStringLiteral("groupId"), entry.groupId},
+        {QStringLiteral("group"), groupLabel(entry)},
         // ADR-0262: application rows open through ApplicationsController;
         // "launchable" is false only for a row whose note explains why not.
         {QStringLiteral("applicationId"), entry.applicationId},

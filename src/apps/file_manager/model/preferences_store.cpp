@@ -1,30 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "preferences_store.h"
 
+#include "preferences_json.h"
 #include "state_file.h"
 
 #include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSet>
-#include <QStringList>
 
 #include <utility>
 
 namespace QindaQt::Apps::FileManager {
 namespace {
 
-constexpr auto preferencesFileName = "preferences-v1.json";
-
-// AGENT-GUARD: this list is the schema. Adding a name here without bumping to
-// preferences-v2 makes every older document Malformed on the next launch.
-[[nodiscard]] QStringList preferenceKeys() {
-  return {QStringLiteral("defaultViewMode"),       QStringLiteral("showHidden"),
-          QStringLiteral("directoriesFirst"),      QStringLiteral("sortColumn"),
-          QStringLiteral("sortDirection"),         QStringLiteral("iconSize"),
-          QStringLiteral("discoverNearbyServers"), QStringLiteral("defaultConnectScheme"),
-          QStringLiteral("confirmTrash")};
-}
+constexpr auto preferencesFileName = "preferences-v2.json";
+constexpr auto version1FileName = "preferences-v1.json";
 
 PreferencesLoadResult loadFailure(const PreferencesError error,
                                   const QString &diagnostic) {
@@ -44,7 +34,17 @@ PreferencesWriteResult writeFailure(const PreferencesError error,
                    PreferencesStore::maximumBytes);
 }
 
-[[nodiscard]] PreferencesLoadResult loadFailureFor(const StateFile::ReadResult &read) {
+[[nodiscard]] StateFile version1FileFor(const QString &directory) {
+  return StateFile(directory, QByteArray(version1FileName),
+                   PreferencesStore::maximumVersion1Bytes);
+}
+
+[[nodiscard]] QString tooLargeMessage(qint64 bound) {
+  return QStringLiteral("Preference state exceeds %1 KiB").arg(bound / 1024);
+}
+
+[[nodiscard]] PreferencesLoadResult loadFailureFor(const StateFile::ReadResult &read,
+                                                   qint64 bound) {
   switch (read.error) {
   case StateFile::Error::Absent:
     return loadFailure(PreferencesError::Absent, QString());
@@ -55,8 +55,7 @@ PreferencesWriteResult writeFailure(const PreferencesError error,
     return loadFailure(PreferencesError::Malformed,
                        QStringLiteral("Preference state is not a regular file"));
   case StateFile::Error::TooLarge:
-    return loadFailure(PreferencesError::TooLarge,
-                       QStringLiteral("Preference state exceeds 16 KiB"));
+    return loadFailure(PreferencesError::TooLarge, tooLargeMessage(bound));
   case StateFile::Error::ReadFailed:
   case StateFile::Error::WriteFailed:
   case StateFile::Error::None:
@@ -77,7 +76,7 @@ writeFailureFor(const StateFile::WriteResult &written) {
                         QStringLiteral("Preference state target is unsafe"));
   case StateFile::Error::TooLarge:
     return writeFailure(PreferencesError::TooLarge,
-                        QStringLiteral("Preference state exceeds 16 KiB"));
+                        tooLargeMessage(PreferencesStore::maximumBytes));
   case StateFile::Error::WriteFailed:
   case StateFile::Error::ReadFailed:
   case StateFile::Error::Absent:
@@ -85,6 +84,26 @@ writeFailureFor(const StateFile::WriteResult &written) {
     break;
   }
   return writeFailure(PreferencesError::WriteFailed, written.systemDiagnostic);
+}
+
+// Parses one document's bytes as `version`.
+[[nodiscard]] PreferencesLoadResult parse(const QByteArray &bytes, int version) {
+  QJsonParseError parseError;
+  const QJsonDocument document = QJsonDocument::fromJson(bytes, &parseError);
+  if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+    return loadFailure(PreferencesError::Malformed,
+                       QStringLiteral("Preference state is malformed JSON"));
+  }
+  QString diagnostic;
+  const std::optional<Preferences> decoded =
+      PreferencesJson::decode(document.object(), version, &diagnostic);
+  if (!decoded) {
+    return loadFailure(PreferencesError::Malformed, diagnostic);
+  }
+  PreferencesLoadResult result;
+  result.preferences = *decoded;
+  result.migrated = version == 1;
+  return result;
 }
 
 } // namespace
@@ -98,69 +117,18 @@ QString PreferencesStore::filePath() const {
 
 PreferencesLoadResult PreferencesStore::load() const {
   const StateFile::ReadResult read = stateFileFor(m_stateDirectory).read();
-  if (!read.ok()) {
-    return loadFailureFor(read);
+  if (read.ok()) {
+    return parse(read.bytes, 2);
   }
-  QJsonParseError parseError;
-  const QJsonDocument document = QJsonDocument::fromJson(read.bytes, &parseError);
-  if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-    return loadFailure(PreferencesError::Malformed,
-                       QStringLiteral("Preference state is malformed JSON"));
+  if (read.error != StateFile::Error::Absent) {
+    return loadFailureFor(read, maximumBytes);
   }
-  const QJsonObject object = document.object();
-  const QSet<QString> expectedKeys{QStringLiteral("version"),
-                                   QStringLiteral("preferences")};
-  const QStringList objectKeys = object.keys();
-  if (QSet<QString>(objectKeys.begin(), objectKeys.end()) != expectedKeys ||
-      object.value(QStringLiteral("version")).toDouble() != 1.0 ||
-      !object.value(QStringLiteral("preferences")).isObject()) {
-    return loadFailure(PreferencesError::Malformed,
-                       QStringLiteral("Preference state has an invalid schema"));
+  // No v2 yet: the ADR-0198 document, if there is one, is migrated.
+  const StateFile::ReadResult legacy = version1FileFor(m_stateDirectory).read();
+  if (!legacy.ok()) {
+    return loadFailureFor(legacy, maximumVersion1Bytes);
   }
-  const QJsonObject values = object.value(QStringLiteral("preferences")).toObject();
-  const QStringList expected = preferenceKeys();
-  const QStringList present = values.keys();
-  if (QSet<QString>(present.begin(), present.end()) !=
-      QSet<QString>(expected.begin(), expected.end())) {
-    return loadFailure(PreferencesError::Malformed,
-                       QStringLiteral("Preference state has an invalid schema"));
-  }
-  const auto stringAt = [&values](const QString &key, bool *ok) {
-    const QJsonValue value = values.value(key);
-    *ok = *ok && value.isString();
-    return value.toString();
-  };
-  const auto boolAt = [&values](const QString &key, bool *ok) {
-    const QJsonValue value = values.value(key);
-    *ok = *ok && value.isBool();
-    return value.toBool();
-  };
-  bool shaped = true;
-  Preferences loaded;
-  loaded.defaultViewMode = stringAt(QStringLiteral("defaultViewMode"), &shaped);
-  loaded.showHidden = boolAt(QStringLiteral("showHidden"), &shaped);
-  loaded.directoriesFirst = boolAt(QStringLiteral("directoriesFirst"), &shaped);
-  loaded.sortColumn = stringAt(QStringLiteral("sortColumn"), &shaped);
-  loaded.sortDirection = stringAt(QStringLiteral("sortDirection"), &shaped);
-  const QJsonValue iconSize = values.value(QStringLiteral("iconSize"));
-  shaped = shaped && iconSize.isDouble();
-  loaded.iconSize = iconSize.toInt();
-  loaded.discoverNearbyServers =
-      boolAt(QStringLiteral("discoverNearbyServers"), &shaped);
-  loaded.defaultConnectScheme =
-      stringAt(QStringLiteral("defaultConnectScheme"), &shaped);
-  loaded.confirmTrash = boolAt(QStringLiteral("confirmTrash"), &shaped);
-  if (!shaped) {
-    return loadFailure(PreferencesError::Malformed,
-                       QStringLiteral("Preference state has an invalid shape"));
-  }
-  if (!loaded.isValid()) {
-    return loadFailure(PreferencesError::Malformed,
-                       QStringLiteral("Preference state contains an unknown value"));
-  }
-  PreferencesLoadResult result;
-  result.preferences = loaded;
-  return result;
+  return parse(legacy.bytes, 1);
 }
 
 PreferencesWriteResult PreferencesStore::store(const Preferences &preferences) const {
@@ -168,21 +136,7 @@ PreferencesWriteResult PreferencesStore::store(const Preferences &preferences) c
     return writeFailure(PreferencesError::Malformed,
                         QStringLiteral("Preference values are out of range"));
   }
-  const QJsonObject values{
-      {QStringLiteral("defaultViewMode"), preferences.defaultViewMode},
-      {QStringLiteral("showHidden"), preferences.showHidden},
-      {QStringLiteral("directoriesFirst"), preferences.directoriesFirst},
-      {QStringLiteral("sortColumn"), preferences.sortColumn},
-      {QStringLiteral("sortDirection"), preferences.sortDirection},
-      {QStringLiteral("iconSize"), preferences.iconSize},
-      {QStringLiteral("discoverNearbyServers"), preferences.discoverNearbyServers},
-      {QStringLiteral("defaultConnectScheme"), preferences.defaultConnectScheme},
-      {QStringLiteral("confirmTrash"), preferences.confirmTrash},
-  };
-  const QJsonDocument document(QJsonObject{
-      {QStringLiteral("version"), 1},
-      {QStringLiteral("preferences"), values},
-  });
+  const QJsonDocument document(PreferencesJson::encode(preferences));
   const StateFile::WriteResult written =
       stateFileFor(m_stateDirectory).write(document.toJson(QJsonDocument::Compact));
   if (!written.ok()) {

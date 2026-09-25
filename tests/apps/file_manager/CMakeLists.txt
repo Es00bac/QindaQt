@@ -615,6 +615,7 @@ qt_add_resources(qindaqt_file_manager_applications_ui_tests file_manager_applica
 # ADR-0269: the right-click set's rows live in their own file (after the
 # artwork's resource alias above is set).
 include("${CMAKE_CURRENT_SOURCE_DIR}/FileActionsTests.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/ViewsTests.cmake")
 
 # AGENT-GUARD: these rows construct a QGuiApplication, so they must name a
 # platform. Without this they default to xcb and abort before their first

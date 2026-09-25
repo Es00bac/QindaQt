@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick
 
-// Rubber-band (marquee) selection shared by the Icon and Details views. The
+// Rubber-band (marquee) selection shared by the four views. The
 // owning view layers this above the entry view: presses that land on a
 // delegate are declined (mouse.accepted = false) so the delegate's ordinary
 // click/drag handling below is unaffected, while presses on empty viewport
@@ -20,6 +20,10 @@ Item {
     objectName: "selectionBand"
 
     required property var view
+    // ADR-0270: maps a delegate's own index to an entry index, or -1 for a
+    // row that is not an entry (a Details group heading). Null keeps the
+    // delegate index, as the Icons and Columns views' delegates are entries.
+    property var mapIndex: null
     signal finished(var indexes, int modifiers)
 
     readonly property bool dragging: bandArea.pressed
@@ -30,9 +34,9 @@ Item {
     property real bandWidth: 0
     property real bandHeight: 0
 
-    // Delegate roots of the flickable view; both EntryGrid and EntryList
-    // declare `required property int index` on their delegate, so the model
-    // index is readable from here as an ordinary property.
+    // Delegate roots of the flickable view; every view's delegate (and the
+    // Details table's rows) declares `required property int index`, so the
+    // model index is readable from here as an ordinary property.
     function delegatesUnder(x, y, width, height) {
         const hits = []
         const content = root.view.contentItem
@@ -48,8 +52,11 @@ Item {
             const overlapY = Math.min(y + height, pos.y + child.height) - Math.max(y, pos.y)
             // A few pixels of overlap are accidental (antialiased edges); a
             // real marquee crossing counts only meaningful intersections.
-            if (overlapX > 2 && overlapY > 2)
-                hits.push(child.index)
+            if (overlapX > 2 && overlapY > 2) {
+                const index = root.mapIndex ? root.mapIndex(child.index) : child.index
+                if (index >= 0)
+                    hits.push(index)
+            }
         }
         hits.sort((a, b) => a - b)
         return hits

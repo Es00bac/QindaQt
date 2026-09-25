@@ -11,11 +11,15 @@ QString missingUiContractObject(QObject *root) {
       QStringLiteral("newFolderButton"), QStringLiteral("entryListView"),
       QStringLiteral("entryGridView"), QStringLiteral("locationField"),
       QStringLiteral("locationToggleButton"), QStringLiteral("toggleHiddenButton"),
-      QStringLiteral("toggleViewModeButton"), QStringLiteral("placesSidebar"),
+      QStringLiteral("placesSidebar"),
       QStringLiteral("addBookmarkButton"), QStringLiteral("bookmarkList"),
-      QStringLiteral("bookmarkStoreBanner"), QStringLiteral("sortHeader_name"),
-      QStringLiteral("sortHeader_size"), QStringLiteral("sortHeader_kind"),
-      QStringLiteral("sortHeader_modified"),
+      QStringLiteral("bookmarkStoreBanner"),
+      // ADR-0270: the four QindaTK views, their switcher and the Details
+      // table with its column chooser (the table's header cells are
+      // Repeater delegates, which findChild cannot reach).
+      QStringLiteral("viewSwitcher"), QStringLiteral("detailsTable"),
+      QStringLiteral("columnChooser"), QStringLiteral("entryColumnsView"),
+      QStringLiteral("entryGalleryView"),
       QStringLiteral("mutationProgressCard"), QStringLiteral("mutationFailureCard"),
       QStringLiteral("mutationResultCard"), QStringLiteral("newFolderDialog"),
       QStringLiteral("renameDialog"), QStringLiteral("destinationDialog"),

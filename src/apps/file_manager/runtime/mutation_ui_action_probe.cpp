@@ -88,16 +88,19 @@ namespace {
   return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray{};
 }
 
-// Clicks a production sort-header button through its QQC2 clicked() signal so
-// the probe covers the QML onClicked -> setSortColumn wiring, not just the
-// controller. A missing signal fails the probe rather than silently degrading
-// to a controller-only sort check.
-[[nodiscard]] bool clickObject(QObject *object, const QString &description,
+// Asks the production Details table to sort, exactly as a header click does:
+// Tk.DataTable only emits sortRequested(key, order) and never sorts, so this
+// covers the DetailsView onSortRequested -> setSortColumn wiring, not just
+// the controller (ADR-0270). A missing signal fails the probe rather than
+// silently degrading to a controller-only sort check.
+[[nodiscard]] bool requestSort(QObject *table, const QString &key, Qt::SortOrder order,
                                QString *error) {
-  if (!object ||
-      object->metaObject()->indexOfMethod(QMetaObject::normalizedSignature("clicked()")) < 0 ||
-      !QMetaObject::invokeMethod(object, "clicked", Qt::DirectConnection)) {
-    return fail(error, QStringLiteral("could not click %1").arg(description));
+  if (!table ||
+      table->metaObject()->indexOfMethod(
+          QMetaObject::normalizedSignature("sortRequested(QString,int)")) < 0 ||
+      !QMetaObject::invokeMethod(table, "sortRequested", Qt::DirectConnection,
+                                 Q_ARG(QString, key), Q_ARG(int, int(order)))) {
+    return fail(error, QStringLiteral("could not ask the Details table to sort by %1").arg(key));
   }
   QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
   return true;
@@ -308,18 +311,17 @@ bool verifyMutationUiActions(
     return fail(error, QStringLiteral("the Show Hidden action did not round-trip"));
   }
 
-  QObject *sortHeaderSize =
-      root->findChild<QObject *>(QStringLiteral("sortHeader_size"));
+  QObject *detailsTable = root->findChild<QObject *>(QStringLiteral("detailsTable"));
   // Sizes: qml-copy.txt and qml-moved.txt hold 12 bytes, qml-batch.txt 21, so
   // ascending puts the batch file last and descending puts it first; equal
   // sizes keep the ascending name tiebreak.
-  if (!clickObject(sortHeaderSize, QStringLiteral("the size sort header"), error) ||
+  if (!requestSort(detailsTable, QStringLiteral("size"), Qt::AscendingOrder, error) ||
       navigation->sortColumn() != QLatin1String("size") ||
       navigation->sortDirection() != QLatin1String("ascending") ||
       navigation->indexOfName(QStringLiteral("qml-batch.txt")) != 2) {
     return fail(error, QStringLiteral("the size sort header did not reorder ascending"));
   }
-  if (!clickObject(sortHeaderSize, QStringLiteral("the size sort header"), error) ||
+  if (!requestSort(detailsTable, QStringLiteral("size"), Qt::DescendingOrder, error) ||
       navigation->sortDirection() != QLatin1String("descending") ||
       navigation->indexOfName(QStringLiteral("qml-batch.txt")) != 0) {
     return fail(error, QStringLiteral("the size sort header did not toggle descending"));

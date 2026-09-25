@@ -17,8 +17,8 @@ QtObject {
 
     required property var navigationController
     required property var selection
-    required property var iconView
-    required property var detailsView
+    // The window's FolderViewStack; the entries are revealed in its active view.
+    required property var views
     required property var coordinator
 
     function reveal(folder, names, action) {
@@ -45,10 +45,9 @@ QtObject {
             indexes.sort((left, right) => left - right)
             root.selection.applyIndexSet(indexes, Qt.NoModifier)
             // The same reveal ApplicationsPlaceActions.revealFile() performs.
-            const view = navigation.viewMode === "grid" ? root.iconView : root.detailsView
+            const view = root.views.activeView
             view.focusView()
-            view.focusItem.forceLayout()
-            view.focusItem.positionViewAtIndex(indexes[0], ListView.Contain)
+            view.revealIndex(indexes[0])
         }
         // The action's own enabled state decides, as for its menu item: Open
         // With needs a selected file, Get Info describes the selection or,
