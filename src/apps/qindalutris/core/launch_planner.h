@@ -46,6 +46,7 @@ struct LaunchToolSet final {
   QString wineBinary;
   QString gamemodeRunBinary;   // gamemoderun wrapper
   QString mangohudBinary;      // mangohud wrapper (OpenGL; Vulkan uses env)
+  QString gamescopeBinary;     // "Run in its own screen" (ADR-0275 section 4c)
   // umu-run (games-util/umu-launcher), resolved by discoverUmuRun over
   // defaultUmuSearchPath (umu_launch.h); empty = not installed.
   QString umuRunBinary;
@@ -64,6 +65,9 @@ struct DisplayTarget final {
   QString key;
   QString label;
   int sdlDisplayIndex = -1;
+  // Physical pixels, for gamescope's -W/-H; 0 when unknown.
+  int widthPx = 0;
+  int heightPx = 0;
 
   friend bool operator==(const DisplayTarget &, const DisplayTarget &) = default;
 };

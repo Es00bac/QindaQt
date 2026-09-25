@@ -77,6 +77,31 @@ void applyLaunchOptions(const LaunchOptions &options, const LaunchToolSet &tools
     plan->notes.append(QStringLiteral(
         "MangoHud's wrapper is not installed; relying on MANGOHUD=1"));
   }
+  // gamescope wraps the game (and any mangohud wrapper) but sits inside
+  // gamemode. Never around the Steam or Lutris client: they own their games.
+  const QString base = QFileInfo(plan->program).fileName();
+  const bool clientLaunch = base == QLatin1String("steam") || base == QLatin1String("lutris");
+  if (options.ownScreen && !clientLaunch) {
+    if (!tools.gamescopeBinary.isEmpty()) {
+      QStringList wrapped{QStringLiteral("-f")};
+      const DisplayTarget *screen = nullptr;
+      for (const DisplayTarget &display : displays) {
+        if (display.key == options.targetDisplay || screen == nullptr) {
+          screen = &display;
+        }
+      }
+      if (screen != nullptr && screen->widthPx > 0 && screen->heightPx > 0) {
+        wrapped << QStringLiteral("-W") << QString::number(screen->widthPx)
+                << QStringLiteral("-H") << QString::number(screen->heightPx);
+      }
+      wrapped << QStringLiteral("--") << plan->program;
+      plan->arguments = wrapped + plan->arguments;
+      plan->program = tools.gamescopeBinary;
+    } else {
+      plan->notes.append(QStringLiteral(
+          "\"Run in its own screen\" needs gamescope (gui-wm/gamescope); starting normally"));
+    }
+  }
   if (options.gamemode) {
     if (!tools.gamemodeRunBinary.isEmpty()) {
       plan->arguments.prepend(plan->program);

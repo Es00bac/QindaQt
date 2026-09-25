@@ -165,3 +165,27 @@ add_test(
 set_tests_properties(qindaqt.qindalutris-grab-offscreen
     PROPERTIES LABELS "apps;qindalutris;grab;offscreen" TIMEOUT 90
     ENVIRONMENT "${qindalutris_test_env}")
+
+# ADR-0275 composition-root wiring: the installer adapter over umu's rules,
+# "Run in its own screen", title creation from installs, preferences, and
+# scoped launches with Force quit (the last row reaches the real user manager
+# and skips cleanly without one).
+function(qindaqt_add_qindalutris_wiring_test name source)
+    qt_add_executable(qindaqt_qindalutris_${name}_tests ${source})
+    target_link_libraries(qindaqt_qindalutris_${name}_tests
+        PRIVATE QindaQt::QindaLutrisView Qt6::Test)
+    target_compile_features(qindaqt_qindalutris_${name}_tests PRIVATE cxx_std_20)
+    set_target_properties(qindaqt_qindalutris_${name}_tests
+        PROPERTIES CXX_EXTENSIONS OFF AUTOUIC OFF)
+    qindaqt_enable_warnings(qindaqt_qindalutris_${name}_tests)
+    add_test(NAME qindaqt.qindalutris-${name} COMMAND qindaqt_qindalutris_${name}_tests)
+    set_tests_properties(qindaqt.qindalutris-${name}
+        PROPERTIES LABELS "apps;qindalutris;wiring" TIMEOUT 90
+        ENVIRONMENT "${qindalutris_test_env}")
+endfunction()
+
+qindaqt_add_qindalutris_wiring_test(wiring-planner tst_wiring_planner.cpp)
+qindaqt_add_qindalutris_wiring_test(title-factory tst_title_factory.cpp)
+target_compile_definitions(qindaqt_qindalutris_title-factory_tests PRIVATE
+    "QINDALUTRIS_COMPAT_SNAPSHOT=\"${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json\"")
+qindaqt_add_qindalutris_wiring_test(running-games tst_running_games.cpp)
