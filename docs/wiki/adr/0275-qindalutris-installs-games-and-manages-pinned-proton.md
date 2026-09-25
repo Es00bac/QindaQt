@@ -110,6 +110,10 @@ It is produced by a generator that merges:
 - ProtonDB tiers from its per-appid summary endpoint, and Valve's Steam
   Deck compatibility reports (Verified / Playable / Unsupported with the
   individual test results), both cached, rate-limited and capped;
+- Steam store app details, used only to resolve which of several upstream
+  records really owns a Steam appid (these Steam endpoints are undocumented,
+  so they are cached lookups that degrade to "no advice", never a
+  dependency);
 - winetricks verbs and environment variables from Lutris install scripts;
 - a hand-curated overrides file, where observations like the WoW/11-7 stall
   and PCGamingWiki fixes are recorded with their evidence.
