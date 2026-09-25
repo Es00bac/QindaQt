@@ -36,18 +36,9 @@ inline constexpr qint64 kMaxSteamFileBytes = qint64(1024) * 1024;
 // (appcache/librarycache/<appid>/), which is per-install, not per-library.
 [[nodiscard]] SteamDiscovery scanSteamLibraries(const QStringList &candidateRoots);
 
-// One runnable Proton installation: a directory whose `proton` script is an
-// executable regular file. Discovery is shallow and fixed-shape:
-// <root>/steamapps/common/Proton*/proton and <root>/compatibilitytools.d/
-// <name>/proton, both entry-capped. Empty when Steam (or Proton) is absent.
-struct ProtonInstall final {
-  QString name;        // directory name, e.g. "Proton 9.0 (Beta)"
-  QString protonScript; // absolute path of the `proton` entry point
-
-  friend bool operator==(const ProtonInstall &, const ProtonInstall &) = default;
-};
-
-[[nodiscard]] QVector<ProtonInstall> discoverProtonInstalls(
-    const QStringList &steamRoots);
+// AGENT-NOTE: Proton discovery moved to proton_catalog.h (ADR-0275). The
+// former ProtonInstall/discoverProtonInstalls pair here matched builds by
+// script path and let an unpinned entry take "any discovered Proton"; the
+// catalog identifies builds by directory name and never substitutes.
 
 } // namespace QindaQt::QindaLutris
