@@ -177,7 +177,7 @@ through a symlink.
 ## Launch options
 
 Every game has its own options, kept between sessions: which **display**
-the game opens on, **gamemode**, **MangoHud**, and **extra environment**
+the game opens on, **gamemode**, **MangoHud**, **Run in its own screen**, and **extra environment**
 variables (`KEY=VALUE`, one per line; invalid lines are ignored on save).
 Hand-added Windows games additionally let you switch runner (Wine ↔
 Proton) and edit the prefix after the fact; the recorded Proton build stays
@@ -192,9 +192,16 @@ game opens on the compositor's default and the status bar says so. gamemode
 and MangoHud degrade the same honest way — requested but not installed
 means the game still launches, with a note in the status bar.
 
+**Run in its own screen** (ADR-0275 §4c) starts the game inside gamescope,
+sized to the chosen display (`gamemoderun gamescope -f -W <w> -H <h> --
+umu-run …`), so a game that switches display modes — Warcraft III going to
+720p — cannot leave its launcher or the desktop drawn at the wrong size. It
+never wraps the Steam or Lutris client, and without gamescope
+(`gui-wm/gamescope`) the game starts normally with a note.
+
 Options are stored app-locally under
 `~/.config/qindaqt/qindalutris/` (launch-options-v1.json,
-wine-entries-v1.json and titles-v1.json), in the same exact-schema,
+wine-entries-v1.json, titles-v1.json and preferences-v1.json), in the same exact-schema,
 atomically written style
 as the File Manager's preferences. A corrupt or newer-version file is
 refused whole and defaults apply; nothing half-read ever takes effect.
@@ -215,15 +222,41 @@ launchers, any Windows setup file, and GE-Proton builds downloaded and
 removed the way Steam manages them, each title pinned to one exact build.
 The job machinery, download allowlist, store recipes and failure messages
 are described in [QindaLutris installs and Proton builds](qindalutris-installs.md).
-Until those jobs are wired into the window, the boundary below still
-describes what the shipped application does.
+
+The composition root wires them to QML as three singletons beside `Library`:
+
+- **`Installs`** (`ui/install_controller`): the store tiles (installed,
+  adoptable, notes), one-click store launcher installs, setup-file installs
+  with a "which program is the game?" confirmation, and **adopting** an
+  existing prefix such as `~/Games/battlenet` in place, pinned to the build
+  its own `version` file names. A finished install becomes a
+  `titles-v1.json` record through `ui/title_factory`, which picks the pin
+  once — the database's recommendation for the title when it is installed
+  and not on the title's avoid list, else the effective default — and
+  never moves it afterwards.
+- **`Protons`** (`ui/proton_manager`): every discovered build with the
+  database's status and how many titles use it, GE-Proton release
+  downloads, removal of unpinned user builds, and the user's default build
+  for new installs (`preferences-v1.json`; empty means the database's
+  recommendation, then the newest system build).
+- **`Running`** (`ui/running_games`): games QindaLutris started run in their
+  own systemd user scope (`ui/scoped_game_launcher`,
+  `qindalutris-game-<uuid>.scope`); the list of running games is polled
+  asynchronously and **Force quit** stops the whole scope — game, launcher,
+  Wine services and umu's container — through the jobs package's process
+  supervisor. Steam and Lutris clients are never scoped.
+
+Installers go through `ui/umu_installer_planner`, which applies exactly the
+same umu rules as game launches (`umuRunEnvironment`, the same unset list).
+The interface pages for these flows are the next step.
 
 ## What QindaLutris deliberately does not do
 
 It does not configure or write to Steam or Lutris, and never touches their
 directories. ADR-0275 lets it install Windows games, download GE-Proton
-releases and refresh its compatibility database; none of those flows is
-built yet, so today it still downloads nothing. It never runs as root and
+releases and refresh its compatibility database, only from the jobs
+package's HTTPS allowlist; the database refresh has no published location
+yet, so that one flow is not wired. It never runs as root and
 never invokes Portage. It does not run games through a shell:
 every launch is one program and an argument vector, planned the same
 bounded way the shell launcher plans desktop entries. And it never turns a

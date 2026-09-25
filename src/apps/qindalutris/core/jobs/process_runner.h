@@ -25,6 +25,11 @@ struct ProcessRunSpec final {
   QString program;
   QStringList arguments;
   QHash<QString, QString> environment; // overlays; never a replacement
+  // Removed from the inherited environment before the overlays apply: exact
+  // keys, and every key starting with one of the prefixes. The umu planner
+  // fills these with the same reserved set game launches strip (ADR-0275).
+  QStringList unsetEnvironment;
+  QStringList unsetEnvironmentPrefixes;
   QString workingDirectory;            // empty: inherit
   // AGENT-GUARD: every run is bounded. A spec with timeoutMs <= 0 is refused
   // by the production runner rather than run forever.
