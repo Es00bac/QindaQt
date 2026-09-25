@@ -1,5 +1,26 @@
 # Integration handoff
 
+## September 24 — code-first round (W7, W9–W20) integration
+
+Main carries the code-first round branch `round/code-first-20260924`: W7 desktop menu (ADR-0260), W9
+Applications place (ADR-0262), W17 Mac-style default layout (ADR-0263), W18 gear icon and Nest mark, W19
+window button styles (ADR-0264), W13 dock drag, groups, pinning and Trash (ADR-0265), W14 edit mode
+(ADR-0266), W15 layout presets (ADR-0267), W20 familiar desktop experiences (ADR-0268), W10 right-click set,
+Open With and archives (ADR-0269), W11 views on QindaTK (ADR-0270), W11s Finder/Explorer/Commander styles
+(ADR-0271), W16 Quick Look, type-to-select and Recents (ADR-0272), W12 FileManager1 and Keep in Dock
+(ADR-0273). The first full run found defects the code-first process had hidden; the repairs are
+`c62e3f0c`, `85df6cca`, `140344fe`, `87112de3` (edit-mode drag handle swallowed applet clicks, Explorer tree
+lost keyboard focus, dock focus through rebuilds and stack close, staged tests and fixtures pinned to their
+profile after the W17 default change). Gates on the round tree: full build; full ctest 1120/1155, and every
+remaining row is the main baseline (design-tokens consumer, installed-plugin discovery, touch OSK gtk-entry
+x2, OBS bridge x2), the known privileged-autostart notification-live x6, a Wayland socket path over 108
+bytes in the deep merge worktree (kwin-shell-window-actions), or load (rerun green: desktop.virtual
+package contract and dependents, audio/bluetooth installed packages, runtime closure, secret service,
+electron shade, WirePlumber runtime). File Manager 77/77 three times at -j12. Caveat:
+`qindaqt.file-manager-mutation-ui-actions-offscreen` segfaulted twice under full-suite load and did not
+reproduce in eight focused runs. mkdocs strict and validate-docs pass. Next: desktop package
+0.1.0_pre20260924-r3 (adds `kde-frameworks/karchive:6`), installed on qinda-top through Portage.
+
 ## September 24 — W1, W2/W3, W4, W5, W8 integration batch
 
 Main carries W1 (`11ecca24` + reviews `32deef08`), W8 (`212af0a8`), W2/W3 (`20c278d5`), W4
