@@ -217,6 +217,42 @@ the option for a title; the user can always turn it off.
   `titles-v1.json`, recording store, prefix, pinned build, umu id and
   launcher linkage. The ADR-0231 documents keep their schemas.
 
+### 7. What the ecosystem survey changed
+
+A survey of more than 35 Linux-gaming projects (recorded in
+[QindaLutris prior art](../apps/qindalutris-prior-art.md)) adds these
+requirements:
+
+- **Snapshots and one-click rollback.** Before any change to a title — moving
+  its Proton build, installing a dependency, updating its launcher — the app
+  snapshots the title's prefix and records the known-good combination (umu,
+  Proton build, fixes applied). After a failed or crashing launch that follows
+  a change, it offers **Go back to the version that worked**. Rolling back the
+  Proton build alone is not enough, because Proton refuses a prefix that a
+  newer build has already touched.
+- **A verdict card before install.** Plain-language levels in the style of
+  CrossOver, tied to the pinned build and the date it was tested, expanding
+  into the evidence: anti-cheat status, Valve's Steam Deck result with its
+  checks, and the ProtonDB tier labelled as a community rating. Titles whose
+  anti-cheat refuses Linux (for example Vanguard, Ricochet, FACEIT, EA
+  Javelin) show **Can't run on Linux** with Install disabled.
+- **Self-checking store recipes.** Each launcher shows Installed or Needs
+  repair, with a Repair action; config changes a recipe needs are scripted, never
+  printed as instructions.
+- **A "Fix a problem" menu.** Force quit (§4b), reset the launcher while
+  keeping saves, and show what went wrong; umu's own errors are always
+  surfaced, never swallowed.
+- **Honest fallbacks.** Microsoft Store and Game Pass titles stay unsupported
+  (§4); the app points to cloud play where it exists (Xbox Cloud Gaming,
+  GeForce NOW) instead of attempting an install.
+- **Data licensing.** PCGamingWiki is link-out only (its text is
+  CC BY-NC-SA and its API now needs a bot login). Lutris install scripts carry
+  no license, so only uncopyrightable facts (winetricks verb names,
+  environment variable settings) are taken from them, with attribution. ProtonDB
+  data is attributed as the ODbL requires.
+- **No shader-cache distribution.** DXVK 2.7 removed its state cache; the app
+  keeps a persistent per-title cache instead.
+
 ## Consequences
 
 - A known-good game keeps its known-good Proton build across every update on
