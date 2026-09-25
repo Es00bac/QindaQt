@@ -110,7 +110,10 @@ inventoryOutput(Display::Transform transform = Display::Transform::Normal) {
           .compositorPriority = 0,
           .physicalSizeMillimeters = QSize(600, 340),
           .manufacturer = QStringLiteral("Qinda"),
-          .model = QStringLiteral("Reference Display")};
+          .model = QStringLiteral("Reference Display"),
+          .modePixelSize = {},
+          .modes = {},
+          .replicationSource = {}};
 }
 
 inline DisplayService::InventoryFrame
