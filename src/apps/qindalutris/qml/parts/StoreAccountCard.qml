@@ -105,7 +105,9 @@ Tk.Card {
             objectName: "webSignIn-" + card.account.id
             active: card.signingIn && card.webSignInAvailable
             visible: active
-            height: 560
+            // Tk.Flex sizes children from Flex.basis or implicitHeight, never
+            // `height`; a Loader's implicitHeight is its item's (0 here).
+            Tk.Flex.basis: active ? 560 : 0
             Tk.Flex.alignSelf: Tk.Flex.Stretch
             source: "WebSignIn.qml"
             onLoaded: {

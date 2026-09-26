@@ -117,7 +117,11 @@ private Q_SLOTS:
     auto library = makeLibrary();
     StoreAccounts accounts(library.get(), false, factory());
     FakeRunner *gog = m_runners[1];
-    gog->respond = [](const ProcessRunSpec &) { return ok("null"); };
+    gog->respond = [](const ProcessRunSpec &spec) {
+      return spec.arguments.contains(QStringLiteral("--code"))
+                 ? ok("{\"access_token\": \"tok-abcdefgh123\", \"user_id\": \"1\"}")
+                 : ok("null");
+    };
     accounts.finishSignIn(
         QStringLiteral("gog"),
         QStringLiteral("https://embed.gog.com/on_login_success?origin=client&code=SeCrEt-code-123"));
@@ -128,6 +132,17 @@ private Q_SLOTS:
       QVERIFY(!value.toMap().value(QStringLiteral("message")).toString().contains(
           QStringLiteral("SeCrEt")));
     }
+  }
+
+  void gogRefusedCodeIsNotASignIn() {
+    auto library = makeLibrary();
+    StoreAccounts accounts(library.get(), false, factory());
+    m_runners[1]->respond = [](const ProcessRunSpec &) { return ok("{\"error\": true}"); };
+    accounts.finishSignIn(QStringLiteral("gog"), QStringLiteral("abcdefgh123"));
+    QTRY_VERIFY(idle(accounts, QStringLiteral("gog")));
+    QCOMPARE(m_runners[1]->specs.size(), 1); // no status/library after a refusal
+    QVERIFY(row(accounts, QStringLiteral("gog")).value(QStringLiteral("message")).toString()
+                .startsWith(QStringLiteral("Sign-in did not work")));
   }
 
   void unusablePasteIsOneSentence() {

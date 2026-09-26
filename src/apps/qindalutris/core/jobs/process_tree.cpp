@@ -213,7 +213,7 @@ QStringList systemdRunScopeArguments(const QString &unit, const QString &program
                                      const QStringList &arguments) {
   QStringList out{QStringLiteral("--user"), QStringLiteral("--scope"), QStringLiteral("--quiet"),
                   QStringLiteral("--collect"), QStringLiteral("--unit=") + unit,
-                  QStringLiteral("--"), program};
+                  QStringLiteral("--description=QindaLutris"), QStringLiteral("--"), program};
   out.append(arguments);
   return out;
 }

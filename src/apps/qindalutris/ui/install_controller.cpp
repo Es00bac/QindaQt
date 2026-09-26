@@ -465,6 +465,13 @@ void InstallController::onStoreGameFinished(const StoreGameInstallResult &result
   PendingStoreGame pending = *m_storeGame;
   m_storeGame.reset();
   pending.facts.executable = result.install.executable;
+  // An empty folder is enough: Proton fills it on first start. It must exist
+  // so a later Play refuses a deleted prefix instead of silently remaking it.
+  if (!QDir().mkpath(pending.facts.prefixPath)) {
+    finish(false, QStringLiteral("QindaLutris could not create this game's Wine folder."), {},
+           details);
+    return;
+  }
   m_details = details;
   completeInstall(pending.facts, pending.buildName, pending.buildVersion, pending.advice,
                   result.message, {});

@@ -230,6 +230,12 @@ private Q_SLOTS:
     QVERIFY(sugar.has_value());
     QCOMPARE(sugar->executable, QStringLiteral("/g/rocketleague/Binaries/Win64/RocketLeague.exe"));
     QVERIFY(!parseEpicInstalled(epic, QStringLiteral("Evil")).has_value());
+    // legendary itself strips leading separators from a manifest's launch_exe.
+    const auto slashed = parseEpicInstalled(
+        "[{\"app_name\": \"S\", \"install_path\": \"/g/s\", \"executable\": \"\\\\Bin\\\\s.exe\"}]",
+        QStringLiteral("S"));
+    QVERIFY(slashed.has_value());
+    QCOMPARE(slashed->executable, QStringLiteral("/g/s/Bin/s.exe"));
     QVERIFY(!parseEpicInstalled(epic, QStringLiteral("Missing")).has_value());
 
     const QByteArray amazon = "[INFO] launching\n{\"command\": {\"instruction\": \"/g/Some Game/"

@@ -56,6 +56,10 @@ void signalProcess(const ProcessIdentity &process, int signalNumber);
 // Arguments for `systemd-run` that run program+arguments in scope `unit`.
 // The scope inherits systemd-run's environment, so QProcess overlays still
 // reach the program (systemd-run --scope execs it in place).
+// AGENT-GUARD: the scope's description is the fixed "QindaLutris". Without
+// --description systemd uses the command line, which the user journal
+// records ("Started ...") -- and store sign-in runs carry one-time codes in
+// argv (store_clients.h). No argv element may ever reach the unit.
 [[nodiscard]] QStringList systemdRunScopeArguments(const QString &unit, const QString &program,
                                                    const QStringList &arguments);
 // Arguments for `systemctl`: --user kill --signal=<name> <unit>.scope

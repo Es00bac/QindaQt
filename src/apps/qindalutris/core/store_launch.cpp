@@ -99,9 +99,7 @@ LaunchPlan planStoreGameLaunch(const TitleRecord &title, const LaunchOptions &op
         "This game's store entry is damaged. Remove it and install it again."));
   }
   UmuLaunchRequest request = umuRequestForTitle(title);
-  request.arguments.clear();
-  // A new store game's prefix is made by umu on its first start.
-  request.prefixMustExist = false;
+  request.arguments.clear(); // prefixMustExist stays true: the install made it
   LaunchPlan plan = planUmuLaunch(request, options, tools, displays);
   if (!plan.ok) {
     return plan;
