@@ -21,6 +21,15 @@ namespace QindaQt::QindaLutris {
 [[nodiscard]] InstallerPlan planUmuInstallerRun(const InstallerPlanRequest &request,
                                                 const LaunchToolSet &tools);
 
+// The database's one-time fixes for a new title (ADR-0275 section 3):
+// `umu-run winetricks <verbs...>` in the title's prefix, under exactly the
+// same umu rules and build checks as planUmuInstallerRun. Verbs must already
+// be database-validated (allowlisted); an empty list, a verb starting with
+// '-', or any failed build/prefix check is refused.
+[[nodiscard]] InstallerPlan planUmuWinetricksRun(const InstallerPlanRequest &context,
+                                                 const QStringList &verbs,
+                                                 const LaunchToolSet &tools);
+
 // A planner bound to the current tool set. `tools` is called for every
 // plan, so a refresh that re-discovers builds is honoured by the next run.
 [[nodiscard]] InstallerPlanner makeUmuInstallerPlanner(

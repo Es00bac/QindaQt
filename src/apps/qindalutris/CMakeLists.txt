@@ -24,6 +24,7 @@ qt_add_qml_module(qindalutris
         qml/parts/AddWineDialog.qml
         qml/parts/AppMenuBar.qml
         qml/parts/JobProgress.qml
+        qml/parts/VerdictCard.qml
 )
 
 target_link_libraries(qindalutris

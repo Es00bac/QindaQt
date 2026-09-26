@@ -16,6 +16,8 @@ Tk.Panel {
     property string playReason: ""
     // ADR-0275 section 4b: true while QindaLutris is tracking this game's scope.
     property bool running: false
+    // The verdict card map (Installs.verdictForGame); hidden when unknown.
+    property var verdict: ({})
 
     signal playRequested()
     signal optionsSaveRequested(var values)
@@ -131,6 +133,11 @@ Tk.Panel {
                 iconName: "refresh-cw"
                 tooltip: qsTr("Keep this game on its Proton build as it is now installed")
                 onClicked: detail.confirmVersionRequested()
+                Tk.Flex.alignSelf: Tk.Flex.Stretch
+            }
+            VerdictCard {
+                objectName: "verdictCard"
+                verdict: detail.verdict
                 Tk.Flex.alignSelf: Tk.Flex.Stretch
             }
             Tk.Button {

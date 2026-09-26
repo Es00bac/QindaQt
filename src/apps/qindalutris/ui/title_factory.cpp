@@ -140,6 +140,7 @@ std::optional<TitleRecord> makeTitleRecord(const NewTitle &facts, const ProtonBu
   record.umuStore = facts.umuStore;
   record.executable = QDir::cleanPath(facts.executable);
   record.installedAt = today;
+  record.winetricksApplied = facts.winetricksApplied;
   if (advice) {
     if (record.umuId.isEmpty() || record.umuId == QLatin1String("umu-0")) {
       record.umuId = advice->game.keys.umuId;

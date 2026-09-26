@@ -111,6 +111,23 @@ private slots:
     QVERIFY(plan.spec.program.isEmpty());
   }
 
+  void winetricksFixesRunInThePrefixUnderTheSameRules() {
+    InstallerPlanRequest context = request();
+    context.installerPath.clear(); // no installer is involved
+    const InstallerPlan plan = planUmuWinetricksRun(
+        context, {QStringLiteral("corefonts"), QStringLiteral("win10")}, tools());
+    QVERIFY2(plan.ok, qPrintable(plan.reason));
+    QCOMPARE(plan.spec.arguments, (QStringList{QStringLiteral("winetricks"),
+                                               QStringLiteral("corefonts"), QStringLiteral("win10")}));
+    QCOMPARE(plan.spec.workingDirectory, context.prefixPath);
+    QCOMPARE(plan.spec.environment.value(QStringLiteral("UMU_RUNTIME_UPDATE")), QStringLiteral("0"));
+    QVERIFY(!planUmuWinetricksRun(context, {}, tools()).ok);
+    QVERIFY(!planUmuWinetricksRun(context, {QStringLiteral("--self-update")}, tools()).ok);
+    InstallerPlanRequest wrongBuild = context;
+    wrongBuild.protonBuildName = QStringLiteral("GE-Proton11-7-x86_64");
+    QVERIFY(!planUmuWinetricksRun(wrongBuild, {QStringLiteral("corefonts")}, tools()).ok);
+  }
+
   void ownScreenWrapsTheGameInGamescope() {
     LaunchPlan plan;
     plan.ok = true;

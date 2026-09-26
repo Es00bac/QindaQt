@@ -6,6 +6,7 @@
 #include "proton_fixture.h"
 #include "title_factory.h"
 #include "title_store.h"
+#include "compat_advice_view.h"
 
 using namespace QindaQt::QindaLutris;
 using Origin = ProtonBuild::Origin;
@@ -140,6 +141,30 @@ private slots:
     QFile file(path);
     QVERIFY(file.open(QIODevice::ReadOnly));
     QCOMPARE(file.readAll(), QByteArray("{\"version\": 99}"));
+  }
+
+  void verdictsSpeakPlainly() {
+    // WoW has an avoid entry -> fixes; an unknown title -> not known yet.
+    const QVariantMap wow = adviceToVariant(
+        adviceForGame(&m_db, QStringLiteral("World of Warcraft"), QStringLiteral("Wow.exe")));
+    QCOMPARE(wow.value(QStringLiteral("verdict")).toString(), QStringLiteral("fixes"));
+    QVERIFY(wow.value(QStringLiteral("canRun")).toBool());
+    QCOMPARE(wow.value(QStringLiteral("avoid")).toList().size(), 1);
+    const QVariantMap unknown = adviceToVariant(std::nullopt);
+    QCOMPARE(unknown.value(QStringLiteral("verdictText")).toString(), QStringLiteral("Not known yet"));
+    QVERIFY(!unknown.value(QStringLiteral("found")).toBool());
+    // A Steam game whose anti-cheat does not work on Linux: Install disabled.
+    GameKeys keys;
+    keys.steamAppId = QStringLiteral("624910"); // 3on3 FreeStyle, AWACY "broken"
+    const QVariantMap blocked = adviceToVariant(m_db.lookup(keys));
+    QCOMPARE(blocked.value(QStringLiteral("verdict")).toString(), QStringLiteral("blocked"));
+    QCOMPARE(blocked.value(QStringLiteral("verdictText")).toString(), QStringLiteral("Can't run on Linux"));
+    QVERIFY(!blocked.value(QStringLiteral("canRun")).toBool());
+    // Library maps key Steam games by the appid inside their id.
+    const GameKeys fromLibrary = keysForLibraryGame(
+        {{QStringLiteral("id"), QStringLiteral("steam/624910")},
+         {QStringLiteral("title"), QStringLiteral("3on3 FreeStyle")}});
+    QCOMPARE(fromLibrary.steamAppId, QStringLiteral("624910"));
   }
 
   void preferencesRoundTripAndRefuseWhole() {
