@@ -40,6 +40,12 @@ qt_add_library(qindaqt_qindalutris_jobs STATIC
     proton_removal.h
     prefix_paths.cpp
     prefix_paths.h
+    store_clients.cpp
+    store_clients.h
+    store_clients_detail.h
+    store_client_parsers.cpp
+    store_game_install_job.cpp
+    store_game_install_job.h
     store_recipes.cpp
     store_recipes.h
     install_preflight.cpp

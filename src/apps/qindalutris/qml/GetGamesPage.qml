@@ -23,6 +23,23 @@ Item {
     property string details: ""
     // After a setup-file install: rows path, name, sizeBytes.
     property var candidates: []
+    // Store accounts (Accounts): rows id, name, available, signedIn,
+    // userName, busy, message, gameCount; owned games by store id.
+    property var accounts: []
+    property var ownedGamesByStore: ({})
+    property bool webSignInAvailable: false
+    // The account whose sign-in page is open, and that page.
+    property string signInStore: ""
+    property url signInUrl: ""
+
+    function showSignIn(storeId, url) {
+        page.signInStore = storeId
+        page.signInUrl = url
+    }
+    function closeSignIn() {
+        page.signInStore = ""
+        page.signInUrl = ""
+    }
 
     signal installStoreRequested(string recipeId)
     signal adoptStoreRequested(string recipeId, string prefixPath)
@@ -31,6 +48,12 @@ Item {
     signal candidateChosen(string executablePath)
     signal cancelRequested()
     signal copyDetailsRequested(string details)
+    signal signInRequested(string storeId)
+    signal signInFinished(string storeId, string text)
+    signal signOutRequested(string storeId)
+    signal refreshAccountRequested(string storeId)
+    signal installOwnedRequested(string storeId, string gameId, string title)
+    signal openExternallyRequested(url address)
 
     Tk.Scroll {
         anchors.fill: parent
@@ -108,7 +131,47 @@ Item {
             }
 
             Tk.SectionHeader {
-                title: qsTr("Stores")
+                title: qsTr("Your store accounts")
+                Tk.Flex.alignSelf: Tk.Flex.Stretch
+            }
+            Tk.Caption {
+                text: qsTr("Sign in to Epic, GOG or Amazon once, then install any game you own "
+                           + "with one button. You sign in on the store's own page; QindaLutris "
+                           + "never sees your password.")
+                wrapMode: Text.Wrap
+                Tk.Flex.alignSelf: Tk.Flex.Stretch
+            }
+            Repeater {
+                model: page.accounts
+                delegate: Parts.StoreAccountCard {
+                    id: accountCard
+                    required property var modelData
+                    objectName: "accountCard-" + modelData.id
+                    account: modelData
+                    games: page.ownedGamesByStore[modelData.id] !== undefined
+                           ? page.ownedGamesByStore[modelData.id] : []
+                    installBusy: page.busy
+                    webSignInAvailable: page.webSignInAvailable
+                    signInUrl: page.signInStore === modelData.id ? page.signInUrl : ""
+                    Tk.Flex.alignSelf: Tk.Flex.Stretch
+                    onSignInRequested: page.signInRequested(accountCard.modelData.id)
+                    onSignInCancelled: page.closeSignIn()
+                    onSignInFinished: function(text) {
+                        page.closeSignIn()
+                        page.signInFinished(accountCard.modelData.id, text)
+                    }
+                    onSignOutRequested: page.signOutRequested(accountCard.modelData.id)
+                    onRefreshRequested: page.refreshAccountRequested(accountCard.modelData.id)
+                    onInstallRequested: function(gameId, title) {
+                        page.installOwnedRequested(accountCard.modelData.id, gameId, title)
+                    }
+                    onOpenTitleRequested: function(titleId) { page.openTitleRequested(titleId) }
+                    onOpenExternally: function(address) { page.openExternallyRequested(address) }
+                }
+            }
+
+            Tk.SectionHeader {
+                title: qsTr("Store apps")
                 Tk.Flex.alignSelf: Tk.Flex.Stretch
             }
             Repeater {

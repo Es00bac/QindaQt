@@ -173,8 +173,16 @@ void QProcessRunner::collect() {
     }
     sink.append(chunk);
   };
-  take(m_process->readAllStandardOutput(), m_result.standardOutput);
-  take(m_process->readAllStandardError(), m_result.standardError);
+  const QByteArray out = m_process->readAllStandardOutput();
+  const QByteArray err = m_process->readAllStandardError();
+  if (!out.isEmpty()) {
+    Q_EMIT outputReceived(out);
+  }
+  if (!err.isEmpty()) {
+    Q_EMIT outputReceived(err);
+  }
+  take(out, m_result.standardOutput);
+  take(err, m_result.standardError);
 }
 
 void QProcessRunner::onProcessFinished() {

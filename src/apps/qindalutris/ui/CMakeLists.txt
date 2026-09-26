@@ -27,6 +27,8 @@ qt_add_library(qindaqt_qindalutris_view STATIC
     running_games.h
     scoped_game_launcher.cpp
     scoped_game_launcher.h
+    store_accounts.cpp
+    store_accounts.h
     title_factory.cpp
     title_factory.h
     umu_installer_planner.cpp

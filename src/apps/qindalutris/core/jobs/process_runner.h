@@ -87,6 +87,10 @@ public:
 
 Q_SIGNALS:
   void finished(const QindaQt::QindaLutris::ProcessRunResult &result);
+  // Everything the program writes (stdout and stderr), as it arrives and
+  // before the result's maxOutputBytes cut -- for progress lines of long
+  // runs. Runners that cannot stream may never emit it.
+  void outputReceived(const QByteArray &chunk);
 };
 
 // How QProcessRunner contains the tree it starts.

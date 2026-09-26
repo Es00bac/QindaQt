@@ -11,6 +11,7 @@
 #include "game_image_resolver.h"
 #include "game_list_model.h"
 #include "proton_choices.h"
+#include "store_accounts.h"
 
 #include <QDir>
 #include <QGuiApplication>
@@ -225,6 +226,7 @@ void LibraryController::rebuildToolSet() {
   m_tools.gamescopeBinary = QStandardPaths::findExecutable(QStringLiteral("gamescope"));
   m_tools.umuRunBinary = discoverUmuRun(m_umuSearchPath);
   m_tools.protonBuilds = discoverProtonBuilds(m_protonRoots);
+  m_tools.storeClients = discoverStoreClients(m_configRoot);
 }
 
 void LibraryController::refresh() {

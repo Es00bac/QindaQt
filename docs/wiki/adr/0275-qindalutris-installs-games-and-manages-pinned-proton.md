@@ -257,6 +257,45 @@ requirements:
 - **No shader-cache distribution.** DXVK 2.7 removed its state cache; the app
   keeps a persistent per-title cache instead.
 
+### 8. How built-in store sign-in works
+
+Amended 2026-09-25 when the Epic, GOG and Amazon sign-in shipped.
+
+- **Private client configuration.** `legendary`, `gogdl` and `nile` read and
+  write only `<QindaLutris config>/stores` (`LEGENDARY_CONFIG_PATH`,
+  `GOGDL_CONFIG_PATH`, `NILE_CONFIG_PATH`, and gogdl's
+  `--auth-config-path`), never the user's own `~/.config/legendary` and the
+  like, so a hand-made setup can neither leak into QindaLutris nor redirect
+  it.
+- **Sign-in is the store's own page.** Epic and GOG finish on a known address
+  that carries a one-time code; Amazon first asks `nile` for the address,
+  because the code only works with the device identity nile generated. With
+  QtWebEngine installed the page is embedded (the default profile, off the
+  record); without it the user's browser opens and the user pastes the
+  final address or Epic's page text. QindaLutris never types, stores or
+  shows a password. The code is exchanged by the client itself
+  (`legendary auth --code`, `gogdl auth --code`, `nile register`).
+- **Codes and tokens are secrets.** They reach a client only as argv and are
+  never written to a job log, a details text, a status line or a note. GOG's
+  access token lives in memory only while its library pages load.
+- **Owned games** come from `legendary list --json` (third-party titles sold
+  on Epic but run by the EA app or Ubisoft Connect are left to those
+  launchers), `nile library sync` + `list --json`, and GOG's
+  `embed.gog.com/account/getFilteredProducts` pages (Windows games only).
+- **Installing an owned game** downloads it with the client into
+  `~/Games/<store name>/`, shows the client's own progress, locates the
+  program the client installed (Epic: `list-installed`; Amazon: nile's
+  launch dry run; GOG: `goggame-<id>.info`), and then follows the same path
+  as every install: a new prefix under `~/Games/Prefixes/`, the build chosen
+  now and pinned, the database's one-time fixes.
+- **Playing** starts the client with `--no-wine --wrapper <w>`, where `<w>` is
+  exactly the part of the ordinary umu plan in front of the game's program
+  (umu-run, plus gamescope or gamemoderun when asked for). The store client
+  supplies the game's own launch options and, for Epic, its online token; it
+  never chooses Wine, so the pin, the five umu variables and the refusals
+  are the same as for any title. A launch never updates a game. Updating and
+  uninstalling store games are explicit actions still to come.
+
 ## Consequences
 
 - A known-good game keeps its known-good Proton build across every update on

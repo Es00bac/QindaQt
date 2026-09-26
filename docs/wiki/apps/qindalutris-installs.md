@@ -173,6 +173,36 @@ never guessed); Proton names the Windows user `steamuser`. Where a
 launcher lives in a versioned folder (the EA app), the highest version
 wins, compared numerically.
 
+## Store accounts (Epic, GOG, Amazon)
+
+`Accounts` (`ui/store_accounts.h`) signs in, lists owned games and signs
+out; `Installs.installOwnedGame` downloads one (`StoreGameInstallJob`) and
+registers it (ADR-0275 §8). Everything the clients are asked to do is a pure
+spec in `core/jobs/store_clients.h`:
+
+| Step | Epic (`legendary`) | GOG (`gogdl`) | Amazon (`nile`) |
+|---|---|---|---|
+| sign-in page | `epicgames.com/id/login?redirectUrl=…/id/api/redirect…` | `auth.gog.com/auth?…redirect_uri=embed.gog.com/on_login_success…` | from `nile auth --login --non-interactive` |
+| code is in | the page text (`authorizationCode`) | the address (`code`) | the address (`openid.oa2.authorization_code`) |
+| exchange | `auth --code` | `--auth-config-path F auth --code` | `register --code --client-id --code-verifier --serial` |
+| status | `status --json --offline` | `--auth-config-path F auth` | `auth --status` |
+| owned games | `list --json` | `getFilteredProducts` pages | `library sync`, `library list --json` |
+| install | `-y install ID --base-path D --platform Windows --skip-sdl` | `download ID --platform windows --path D --skip-dlcs` | `install ID --base-path D` |
+| find program | `list-installed --json` | `goggame-ID.info` | `launch ID --json` (dry run) |
+| play | `launch ID --no-wine --wrapper W --skip-version-check` | `launch DIR ID --platform windows --no-wine --wrapper W` | `launch ID --no-wine --wrapper W` |
+
+Every run strips `PYTHON*`, `LD_PRELOAD`, `LD_AUDIT` and `LD_LIBRARY_PATH`
+from the inherited environment (the clients are Python programs). Store
+game ids must match `[A-Za-z0-9][A-Za-z0-9._:-]{0,127}` before they become
+argv. Download progress comes from the clients' `= Progress:` lines through
+`ProcessRunner::outputReceived`; the last 40 lines of client output go into
+"Copy details". Sign-in and status runs are marked `carriesSecrets` and
+their output is parsed and dropped.
+
+The embedded sign-in page (`qml/parts/WebSignIn.qml`) is built only when
+CMake finds `Qt6::WebEngineQuick`; otherwise the card offers "Open the
+sign-in page" plus a paste field.
+
 ## Launcher install job
 
 1. **Preflight**: a pinned Proton build (a directory holding `proton`, never
@@ -232,7 +262,7 @@ server), `tst_ge_proton_releases.cpp`, `tst_archive_listing.cpp`,
 `tst_proton_install_job.cpp`, `tst_proton_install_cancel.cpp`,
 `tst_proton_removal.cpp`, `tst_process_runner.cpp` (process trees with
 `setsid` grandchildren and leftovers after a normal exit; the systemd
-scope rows run only where a user manager answers), `tst_store_recipes.cpp`, `tst_install_preflight.cpp`,
+scope rows run only where a user manager answers), `tst_store_recipes.cpp`, `tst_store_clients.cpp`, `tst_store_game_install_job.cpp`, `tst_store_launch.cpp`, `tst_store_accounts.cpp`, `tst_install_preflight.cpp`,
 `tst_launcher_install_job.cpp` and
 `tst_setup_file_install_job.cpp` (label `jobs`). They use scripted fakes
 (`job_fakes.h`, `proton_job_fixture.h`) and never reach the internet, umu, Wine or a vendor
