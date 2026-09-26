@@ -25,8 +25,9 @@ bool sameDirectory(const QString &a, const QString &b) {
 
 } // namespace
 
-InstallerPlan planUmuInstallerRun(const InstallerPlanRequest &request,
-                                  const LaunchToolSet &tools) {
+// One umu run: installer (needsInstallerFile) or an in-prefix tool.
+static InstallerPlan planRun(const InstallerPlanRequest &request, const LaunchToolSet &tools,
+                      bool needsInstallerFile) {
   const QString umuRun =
       !request.umuRunBinary.isEmpty() ? request.umuRunBinary : tools.umuRunBinary;
   if (umuRun.isEmpty()) {
@@ -57,20 +58,43 @@ InstallerPlan planUmuInstallerRun(const InstallerPlanRequest &request,
     return refused(QStringLiteral("There is nothing to run for this installer."));
   }
   const QFileInfo installer(request.installerPath);
-  if (!installer.isAbsolute() || !installer.isFile()) {
+  if (needsInstallerFile && (!installer.isAbsolute() || !installer.isFile())) {
     return refused(QStringLiteral("The installer file is missing."));
   }
 
   InstallerPlan plan;
   plan.spec.program = umuRun;
   plan.spec.arguments = request.windowsCommand;
-  plan.spec.workingDirectory = installer.absolutePath();
+  plan.spec.workingDirectory =
+      needsInstallerFile ? installer.absolutePath() : request.prefixPath;
   plan.spec.unsetEnvironment = umuUnsetEnvironmentKeys();
   plan.spec.unsetEnvironmentPrefixes = umuUnsetEnvironmentPrefixes();
   plan.spec.environment = umuRunEnvironment(request.prefixPath, build->path,
                                             request.umuId, request.umuStore);
   plan.ok = true;
   return plan;
+}
+
+InstallerPlan planUmuInstallerRun(const InstallerPlanRequest &request,
+                                  const LaunchToolSet &tools) {
+  return planRun(request, tools, /*needsInstallerFile=*/true);
+}
+
+InstallerPlan planUmuWinetricksRun(const InstallerPlanRequest &context,
+                                   const QStringList &verbs, const LaunchToolSet &tools) {
+  if (verbs.isEmpty()) {
+    return refused(QStringLiteral("There are no fixes to apply."));
+  }
+  for (const QString &verb : verbs) {
+    // AGENT-GUARD: defence in depth over the database's verb allowlist: an
+    // option-shaped word would change what winetricks does, not add a fix.
+    if (verb.isEmpty() || verb.startsWith(QLatin1Char('-'))) {
+      return refused(QStringLiteral("A fix from the compatibility database was not usable."));
+    }
+  }
+  InstallerPlanRequest request = context;
+  request.windowsCommand = QStringList{QStringLiteral("winetricks")} + verbs;
+  return planRun(request, tools, /*needsInstallerFile=*/false);
 }
 
 InstallerPlanner makeUmuInstallerPlanner(std::function<LaunchToolSet()> tools) {

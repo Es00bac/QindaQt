@@ -261,8 +261,20 @@ The window switches between three pages (`Library`, `Get games`, `Proton`):
   how many games use it, *Make default*, and removal only for unused user
   builds; *Check for builds* lists GE-Proton releases to add.
 - The game detail gains **Force quit** while a game runs, **Use the new
-  version** when its pinned build changed on disk, and the **Run in its own
-  screen** switch.
+  version** when its pinned build changed on disk, the **Run in its own
+  screen** switch, and a **Compatibility** card (`ui/compat_advice_view`,
+  `qml/parts/VerdictCard.qml`): one plain verdict first — *Works well*,
+  *Works with fixes QindaLutris applies*, *Not known yet* or *Can't run on
+  Linux* (anti-cheat that refuses Linux) — then anti-cheat, Steam Deck and
+  the ProtonDB community rating (credited, ODbL), the fixes, and builds to
+  avoid with their reasons.
+
+After a store launcher or setup-file install, the database's one-time
+winetricks fixes for that title run automatically (`ui/fix_applier`:
+`umu-run winetricks <verbs>` in the prefix, planned by
+`planUmuWinetricksRun` under the same umu rules, scoped and cancellable)
+before the title is registered; `winetricksApplied` records exactly what
+ran, and a failed fix still registers the game with a plain note.
 
 Every job shows progress with Cancel, then one sentence and *Copy details*
 (`qml/parts/JobProgress.qml`). `--page get-games|proton` opens a page
