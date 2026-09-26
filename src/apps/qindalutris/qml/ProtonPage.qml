@@ -22,7 +22,13 @@ Item {
     property string resultMessage: ""
     property bool succeeded: false
     property string details: ""
+    // CompatInfo: the compatibility information in use.
+    property string compatDate: ""
+    property int compatGames: 0
+    property bool compatBusy: false
+    property string compatMessage: ""
 
+    signal checkCompatRequested()
     signal makeDefaultRequested(string name)
     signal removeRequested(string name)
     signal checkReleasesRequested()
@@ -65,6 +71,44 @@ Item {
                            + "games you install from now on.")
                 wrapMode: Text.Wrap
                 Tk.Flex.alignSelf: Tk.Flex.Stretch
+            }
+
+            Tk.Card {
+                objectName: "compatInfoCard"
+                Tk.Flex.alignSelf: Tk.Flex.Stretch
+                Tk.Flex {
+                    direction: Tk.Flex.Row
+                    align: Tk.Flex.Center
+                    gap: Tk.Theme.space.md
+                    width: parent.width
+                    Tk.Flex {
+                        direction: Tk.Flex.Column
+                        gap: Tk.Theme.space.xs
+                        Tk.Flex.grow: 1
+                        Tk.Flex.basis: 0
+                        Tk.Label {
+                            text: qsTr("Game compatibility information")
+                            font.weight: Font.DemiBold
+                        }
+                        Tk.Caption {
+                            objectName: "compatInfoText"
+                            text: page.compatBusy ? qsTr("Checking…")
+                                : page.compatMessage.length > 0 ? page.compatMessage
+                                : page.compatDate.length > 0
+                                  ? qsTr("%1 games, from %2.").arg(page.compatGames).arg(page.compatDate)
+                                  : qsTr("Not available.")
+                            wrapMode: Text.Wrap
+                            Tk.Flex.alignSelf: Tk.Flex.Stretch
+                        }
+                    }
+                    Tk.Button {
+                        objectName: "compatCheckButton"
+                        enabled: !page.compatBusy
+                        text: qsTr("Check for newer")
+                        iconName: "refresh-cw"
+                        onClicked: page.checkCompatRequested()
+                    }
+                }
             }
 
             Parts.JobProgress {

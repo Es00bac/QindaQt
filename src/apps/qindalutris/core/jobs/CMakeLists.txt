@@ -14,6 +14,8 @@ qt_add_library(qindaqt_qindalutris_jobs STATIC
     job_log.h
     fs_ops.cpp
     fs_ops.h
+    compat_refresh_job.cpp
+    compat_refresh_job.h
     download_allowlist.cpp
     download_allowlist.h
     downloader.cpp

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "compat_db.h"
+#include "compat_refresher.h"
 #include "game_icon_provider.h"
 #include "install_controller.h"
 #include "library_controller.h"
@@ -88,13 +89,18 @@ int main(int argc, char **argv) {
   // first scan.
   ScopedGameLauncher gameLauncher;
   library.setProcessLauncher(&gameLauncher);
-  const CompatDatabase compat = loadEffectiveCompatDatabase(
+  CompatDatabase compat = loadEffectiveCompatDatabase(
       shippedCompatDatabasePath(), defaultRefreshedCompatDatabasePath());
   ProtonManager protons(&library, &compat);
   protons.initialize();
   InstallController installs(&library, &compat);
   RunningGames running(&library, &gameLauncher);
   StoreAccounts accounts(&library, webSignIn);
+  CompatRefresher compatInfo(&compat, defaultRefreshedCompatDatabasePath());
+  // Build statuses and store verdicts read the database on demand; tell the
+  // Proton page to re-read after a refresh.
+  QObject::connect(&compatInfo, &CompatRefresher::changed, &protons,
+                   &ProtonManager::buildsChanged);
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   coordinator.setApplicationName(
       QGuiApplication::translate("main", "QindaLutris"));
@@ -109,6 +115,7 @@ int main(int argc, char **argv) {
   qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Protons", &protons);
   qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Running", &running);
   qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Accounts", &accounts);
+  qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "CompatInfo", &compatInfo);
 
   QQmlApplicationEngine qml;
   // AGENT-GUARD: addImageProvider takes ownership; the provider must outlive

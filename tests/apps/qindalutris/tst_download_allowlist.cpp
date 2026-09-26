@@ -36,8 +36,8 @@ private Q_SLOTS:
         "https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases?per_page=5");
     QTest::newRow("explicit 443") << QStringLiteral("https://github.com:443/x");
     QTest::newRow("upper-case scheme and host") << QStringLiteral("HTTPS://DOWNLOADER.BATTLE.NET/x");
-    QTest::newRow("compat db placeholder")
-        << QStringLiteral("https://%1/compat-db-v1.json").arg(QString::fromLatin1(kCompatDbRefreshHost));
+    QTest::newRow("compat db release") << QStringLiteral(
+        "https://github.com/Es00bac/QindaQt/releases/download/compat-db/compat-db-v1.json");
   }
   void allowedUrls() {
     QFETCH(QString, url);
@@ -84,12 +84,12 @@ private Q_SLOTS:
 
   void tableIsExactAndLowerCase() {
     const QStringList hosts = allowedDownloadHosts();
-    QCOMPARE(hosts.size(), 12);
+    QCOMPARE(hosts.size(), 11);
     for (const QString &host : hosts) {
       QCOMPARE(host, host.toLower());
       QVERIFY(!host.contains(QLatin1Char('*')));
     }
-    QVERIFY(hosts.contains(QString::fromLatin1(kCompatDbRefreshHost)));
+    QVERIFY(!hosts.contains(QStringLiteral("compat-db.qindaqt.invalid")));
   }
 };
 

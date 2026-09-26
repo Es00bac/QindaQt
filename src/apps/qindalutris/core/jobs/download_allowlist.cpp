@@ -7,7 +7,8 @@ const QStringList &allowedDownloadHosts() {
   // AGENT-NOTE: vendor hosts verified live on 2026-09-25 (see the recipe
   // table in store_recipes.cpp for the exact URLs and their redirects).
   static const QStringList hosts{
-      // GE-Proton releases and their release API.
+      // GE-Proton releases and their release API; the QindaQt compatibility
+      // database release (compat_refresh_job.h).
       QStringLiteral("github.com"),
       QStringLiteral("objects.githubusercontent.com"),
       QStringLiteral("release-assets.githubusercontent.com"),
@@ -25,8 +26,6 @@ const QStringList &allowedDownloadHosts() {
       QStringLiteral("webinstallers.gog-statics.com"),
       // Amazon Games.
       QStringLiteral("download.amazongames.com"),
-      // Compatibility database refresh (placeholder until decided).
-      QString::fromLatin1(kCompatDbRefreshHost),
   };
   return hosts;
 }

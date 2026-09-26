@@ -245,6 +245,16 @@ prefix, as `umu-run winetricks <verbs>`.
 The refresh, curation and release procedure is in
 `tools/qindalutris-compat/README.md`.
 
+"Check for newer" on the Proton page (`CompatInfo`,
+`ui/compat_refresher.h`; the download is `core/jobs/compat_refresh_job.h`)
+fetches `compat-db-v1.json` and its `.sha512sum` from the QindaQt project's
+GitHub release tagged `compat-db`
+(`https://github.com/Es00bac/QindaQt/releases/download/compat-db/`), refuses
+it unless the SHA-512 matches and the document loads under the rules above,
+and keeps it only when its `generated` stamp is newer than the copy in use.
+A kept copy is written atomically to the refreshed path and used at once;
+nothing is fetched on a timer.
+
 ## The two validators
 
 The C++ parser (`src/apps/qindalutris/core/compat_db_parse.cpp`,

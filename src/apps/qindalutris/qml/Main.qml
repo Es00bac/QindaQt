@@ -221,7 +221,12 @@ Tk.AppWindow {
                 resultMessage: Protons.resultMessage
                 succeeded: Protons.lastSucceeded
                 details: Protons.details
+                compatDate: CompatInfo.dateText
+                compatGames: CompatInfo.gameCount
+                compatBusy: CompatInfo.busy
+                compatMessage: CompatInfo.message
 
+                onCheckCompatRequested: { CompatInfo.checkForNewer() }
                 onMakeDefaultRequested: function(name) { Protons.setDefaultBuild(name) }
                 onRemoveRequested: function(name) { Protons.removeBuild(name) }
                 onCheckReleasesRequested: { Protons.checkForReleases() }

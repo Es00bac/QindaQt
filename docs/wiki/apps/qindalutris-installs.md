@@ -53,7 +53,7 @@ before it is followed.
 | Epic Games Launcher | `launcher-public-service-prod06.ol.epicgames.com`, `epicgames-download1.akamaized.net` |
 | GOG Galaxy | `webinstallers.gog-statics.com` |
 | Amazon Games | `download.amazongames.com` |
-| Compatibility database refresh | `compat-db.qindaqt.invalid` (placeholder until the host is decided) |
+| Compatibility database refresh | `github.com` (the QindaQt project's `compat-db` release; see [compatibility database](qindalutris-compat-db.md)) |
 
 The production downloader writes to `<file>.part` and renames it into place
 only after the transfer completes at the announced length. It enforces a

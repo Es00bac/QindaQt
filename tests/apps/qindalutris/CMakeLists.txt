@@ -201,3 +201,4 @@ target_compile_definitions(qindaqt_qindalutris_title-factory_tests PRIVATE
     "QINDALUTRIS_COMPAT_SNAPSHOT=\"${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json\"")
 qindaqt_add_qindalutris_wiring_test(running-games tst_running_games.cpp)
 qindaqt_add_qindalutris_wiring_test(store-accounts tst_store_accounts.cpp)
+qindaqt_add_qindalutris_wiring_test(compat-refresh tst_compat_refresh.cpp)
