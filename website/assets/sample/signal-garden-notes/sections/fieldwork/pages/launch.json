@@ -1,0 +1,29 @@
+{
+  "id": "launch",
+  "title": "Launch checklist",
+  "background": "dotted",
+  "ink": [],
+  "blocks": {
+    "blocks": [
+      {
+        "type": "text",
+        "text": "LAUNCH CHECKLIST\nFriday is the go / no-go moment for supplier deposits."
+      },
+      {
+        "type": "check",
+        "text": "Sign off the accessible route",
+        "checked": false
+      },
+      {
+        "type": "check",
+        "text": "Approve weather cover",
+        "checked": false
+      },
+      {
+        "type": "check",
+        "text": "Send makers their run-of-show",
+        "checked": false
+      }
+    ]
+  }
+}

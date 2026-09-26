@@ -1,0 +1,33 @@
+{
+  "id": "walkthrough",
+  "title": "Courtyard walkthrough",
+  "background": "dotted",
+  "ink": [],
+  "blocks": {
+    "blocks": [
+      {
+        "type": "text",
+        "text": "COURTYARD WALKTHROUGH  /  18 SEPTEMBER\nThe entrance should feel like a small discovery, not a queue. Keep the first light station visible from the gate."
+      },
+      {
+        "type": "check",
+        "text": "Confirm step-free route and turning space",
+        "checked": true
+      },
+      {
+        "type": "check",
+        "text": "Test low-glare markers after sunset",
+        "checked": false
+      },
+      {
+        "type": "check",
+        "text": "Reserve covered power distribution",
+        "checked": false
+      },
+      {
+        "type": "text",
+        "text": "Idea: invite each guest to leave one word on the closing wall. Those words become the opening of next year's brief."
+      }
+    ]
+  }
+}

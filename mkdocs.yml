@@ -124,6 +124,7 @@ nav:
       - "Settings completeness audit": reference/settings-completeness.md
   - Development:
       - Implementation roadmap: development/implementation-roadmap.md
+      - Showcase website: development/showcase-website.md
       - Coding practices: development/coding-practices.md
       - Gentoo app installation: development/gentoo-apps.md
       - Gentoo desktop installation: development/gentoo-desktop.md

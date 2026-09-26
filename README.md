@@ -23,6 +23,10 @@ Start with the [handbook](docs/wiki/handbook/index.md) for everyday use. The
 [project wiki](docs/wiki/index.md) also covers architecture, configuration,
 building, and testing.
 
+The [showcase website](website/README.md) introduces the desktop with clean
+captures, layout and wallpaper previews, narrated tours, and a nested
+QindaOffice page. It is a static site you can preview locally without a build.
+
 ## Development status
 
 QindaQt is under active development. The compositor, window containers, shell,
