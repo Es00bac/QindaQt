@@ -133,7 +133,8 @@ struct StoreClientRun final {
                                                              const QString &gameId);
 
 inline constexpr int kStoreAuthTimeoutMs = 90 * 1000;
-inline constexpr int kStoreLibraryTimeoutMs = 3 * 60 * 1000;
+// A first `legendary list` of a large library fetches metadata per game.
+inline constexpr int kStoreLibraryTimeoutMs = 15 * 60 * 1000;
 inline constexpr int kStoreInstallTimeoutMs = 24 * 60 * 60 * 1000;
 
 // ---- Parsers ------------------------------------------------------------

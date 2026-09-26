@@ -141,29 +141,34 @@ Item {
                 wrapMode: Text.Wrap
                 Tk.Flex.alignSelf: Tk.Flex.Stretch
             }
+            // AGENT-GUARD: the model is the COUNT, not the array. Accounts
+            // publishes a new array on every step of every store; an array
+            // model would rebuild each card -- and a sign-in page the user is
+            // halfway through -- whenever another store finished a refresh.
             Repeater {
-                model: page.accounts
+                model: page.accounts.length
                 delegate: Parts.StoreAccountCard {
                     id: accountCard
-                    required property var modelData
-                    objectName: "accountCard-" + modelData.id
-                    account: modelData
-                    games: page.ownedGamesByStore[modelData.id] !== undefined
-                           ? page.ownedGamesByStore[modelData.id] : []
+                    required property int index
+                    readonly property string storeId: account.id !== undefined ? account.id : ""
+                    objectName: "accountCard-" + storeId
+                    account: page.accounts[index] !== undefined ? page.accounts[index] : ({})
+                    games: page.ownedGamesByStore[storeId] !== undefined
+                           ? page.ownedGamesByStore[storeId] : []
                     installBusy: page.busy
                     webSignInAvailable: page.webSignInAvailable
-                    signInUrl: page.signInStore === modelData.id ? page.signInUrl : ""
+                    signInUrl: page.signInStore === storeId ? page.signInUrl : ""
                     Tk.Flex.alignSelf: Tk.Flex.Stretch
-                    onSignInRequested: page.signInRequested(accountCard.modelData.id)
+                    onSignInRequested: page.signInRequested(accountCard.storeId)
                     onSignInCancelled: page.closeSignIn()
                     onSignInFinished: function(text) {
                         page.closeSignIn()
-                        page.signInFinished(accountCard.modelData.id, text)
+                        page.signInFinished(accountCard.storeId, text)
                     }
-                    onSignOutRequested: page.signOutRequested(accountCard.modelData.id)
-                    onRefreshRequested: page.refreshAccountRequested(accountCard.modelData.id)
+                    onSignOutRequested: page.signOutRequested(accountCard.storeId)
+                    onRefreshRequested: page.refreshAccountRequested(accountCard.storeId)
                     onInstallRequested: function(gameId, title) {
-                        page.installOwnedRequested(accountCard.modelData.id, gameId, title)
+                        page.installOwnedRequested(accountCard.storeId, gameId, title)
                     }
                     onOpenTitleRequested: function(titleId) { page.openTitleRequested(titleId) }
                     onOpenExternally: function(address) { page.openExternallyRequested(address) }

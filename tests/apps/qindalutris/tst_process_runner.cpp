@@ -274,7 +274,15 @@ private Q_SLOTS:
                                       {QStringLiteral("a b")}),
              QStringList({QStringLiteral("--user"), QStringLiteral("--scope"), QStringLiteral("--quiet"),
                           QStringLiteral("--collect"), QStringLiteral("--unit=qindalutris-job-x"),
+                          QStringLiteral("--description=QindaLutris"),
                           QStringLiteral("--"), QStringLiteral("/usr/bin/umu-run"), QStringLiteral("a b")}));
+    // A secret in argv never reaches the unit's description (journal).
+    const QStringList secret = systemdRunScopeArguments(
+        QStringLiteral("u"), QStringLiteral("/usr/bin/nile"),
+        {QStringLiteral("register"), QStringLiteral("--code"), QStringLiteral("SECRET")});
+    for (const QString &argument : secret.mid(0, secret.indexOf(QStringLiteral("--")))) {
+      QVERIFY(!argument.contains(QStringLiteral("SECRET")));
+    }
     QCOMPARE(systemctlKillArguments(QStringLiteral("u"), QStringLiteral("SIGKILL")),
              QStringList({QStringLiteral("--user"), QStringLiteral("kill"), QStringLiteral("--signal=SIGKILL"),
                           QStringLiteral("u.scope")}));

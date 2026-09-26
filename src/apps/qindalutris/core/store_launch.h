@@ -18,7 +18,8 @@ namespace QindaQt::QindaLutris {
 // game's program: umu-run, plus gamescope / gamemoderun when the user asked
 // for them. So a store game gets the same pinned build, the same five umu
 // variables, the same reserved-key removal and the same refusals as every
-// other title (planUmuLaunch runs first and its refusals are returned
+// other title (planUmuLaunch runs first and its refusals -- including a
+// missing prefix, which Installs.installOwnedGame creates -- are returned
 // unchanged). The client inherits the plan's environment and passes it to
 // the wrapper; StoreClientSet::environment is added so only QindaLutris's
 // own client configuration is ever read.

@@ -59,11 +59,16 @@ inline QUrl httpsUrl(const QString &text) {
              : QUrl();
 }
 
-// "a\\b/c.exe" under root, refusing absolute or `..` paths. Empty on refusal.
+// "a\\b/c.exe" under root (leading separators dropped), refusing `..`.
+// Empty on refusal.
 inline QString joinInside(const QString &root, const QString &relative) {
   QString path = relative;
   path.replace(QLatin1Char('\\'), QLatin1Char('/'));
-  if (path.isEmpty() || path.startsWith(QLatin1Char('/')) ||
+  // legendary does the same (`.lstrip('/')`): manifests may start with one.
+  while (path.startsWith(QLatin1Char('/'))) {
+    path.remove(0, 1);
+  }
+  if (path.isEmpty() ||
       path.split(QLatin1Char('/')).contains(QStringLiteral(".."))) {
     return {};
   }

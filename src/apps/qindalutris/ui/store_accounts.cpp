@@ -216,7 +216,11 @@ void StoreAccounts::finishSignIn(const QString &storeId, const QString &text) {
                         root, *code, account->amazonStart);
   account->amazonStart.reset();
   enqueue(*account, run, [this, account](const ProcessRunResult &result) {
-    if (!succeeded(result)) {
+    // gogdl prints {"error": true} and exits 0 when GOG refuses the code.
+    const bool exchanged =
+        succeeded(result) && (account->client != StoreClient::Gog ||
+                              parseAccountStatus(StoreClient::Gog, result.standardOutput).signedIn);
+    if (!exchanged) {
       settle(*account, QStringLiteral("Sign-in did not work. The code may have expired; "
                                       "sign in again."));
       return;
@@ -232,6 +236,8 @@ void StoreAccounts::signOut(const QString &storeId) {
   }
   const QString root = storesRootFor(m_library->configRoot());
   const auto signedOut = [this, account] {
+    ++account->gogGeneration; // a GOG page still loading must not refill the list
+    account->fetching = false;
     account->signedIn = false;
     account->userName.clear();
     account->games.clear();
@@ -248,6 +254,8 @@ void StoreAccounts::signOut(const QString &storeId) {
 }
 
 void StoreAccounts::queueStatusAndLibrary(Account &account) {
+  ++account.gogGeneration; // supersede any GOG page chain still loading
+  account.fetching = false;
   const QString root = storesRootFor(m_library->configRoot());
   const StoreClientRun status = accountStatusRun(
       account.client, storeClientBinaries(m_library->toolSet().storeClients), root);
@@ -304,6 +312,7 @@ void StoreAccounts::fetchGogPage(Account &account, const QString &token, int pag
   request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                        QNetworkRequest::ManualRedirectPolicy);
   account.fetching = true;
+  const quint64 generation = account.gogGeneration;
   QNetworkReply *reply = m_network->get(request);
   connect(reply, &QNetworkReply::downloadProgress, reply, [reply](qint64 received, qint64) {
     if (received > kMaxGogPageBytes) {
@@ -311,8 +320,11 @@ void StoreAccounts::fetchGogPage(Account &account, const QString &token, int pag
     }
   });
   connect(reply, &QNetworkReply::finished, this,
-          [this, &account, reply, token, page, gathered]() mutable {
+          [this, &account, reply, token, page, gathered, generation]() mutable {
             reply->deleteLater();
+            if (generation != account.gogGeneration) {
+              return; // superseded by a newer refresh or a sign-out
+            }
             account.fetching = false;
             const int status =
                 reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();

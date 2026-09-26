@@ -47,7 +47,7 @@ class tst_store_launch : public QObject {
     record.kind = TitleKind::StoreGame;
     record.store = store;
     record.storeGameId = id;
-    record.prefixPath = m_prefix; // not created: umu makes it on first start
+    record.prefixPath = m_prefix;
     record.protonBuild = QStringLiteral("GE-Proton11-6-x86_64");
     record.protonBuildVersion = QStringLiteral("1756415527 GE-Proton11-6");
     record.umuStore = gameStoreId(store);
@@ -60,6 +60,7 @@ private Q_SLOTS:
   void initTestCase() {
     QVERIFY(m_dir.isValid());
     m_prefix = m_dir.filePath(QStringLiteral("Games/Prefixes/some-game"));
+    QVERIFY(QDir().mkpath(m_prefix)); // Installs.installOwnedGame makes it
     m_gameDir = m_dir.filePath(QStringLiteral("Games/GOG/Some Game"));
     QVERIFY(QDir().mkpath(m_gameDir + QStringLiteral("/bin")));
     m_exe = m_gameDir + QStringLiteral("/bin/game.exe");
@@ -144,6 +145,14 @@ private Q_SLOTS:
     unpinned.protonBuildVersion = QStringLiteral("1 something else");
     plan = planTitleLaunch(unpinned, {}, tools(), {});
     QVERIFY(!plan.ok); // the umu plan's own pin refusal, unchanged
+  }
+
+  void deletedPrefixIsRefusedNotRemade() {
+    TitleRecord record = title(GameStore::Egs, QStringLiteral("App"));
+    record.prefixPath = m_dir.filePath(QStringLiteral("Games/Prefixes/deleted"));
+    const LaunchPlan plan = planTitleLaunch(record, {}, tools(), {});
+    QVERIFY(!plan.ok);
+    QVERIFY(plan.reason.contains(QStringLiteral("prefix is missing")));
   }
 
   void titleArgumentsAreNotPassedToTheClient() {

@@ -95,6 +95,7 @@ private:
     QVector<OwnedStoreGame> games;
     std::optional<AmazonSignInStart> amazonStart;
     bool fetching = false; // a GOG library page request is in flight
+    quint64 gogGeneration = 0; // bumped to drop stale GOG page replies
   };
 
   Account *accountFor(const QString &storeId);
