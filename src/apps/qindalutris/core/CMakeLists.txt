@@ -37,6 +37,8 @@ qt_add_library(qindaqt_qindalutris_model STATIC
     title_store.h
     title_source.cpp
     title_source.h
+    store_launch.cpp
+    store_launch.h
     umu_launch.cpp
     umu_launch.h
     preferences_store.cpp

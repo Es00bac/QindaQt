@@ -2,6 +2,7 @@
 #include "umu_launch.h"
 
 #include "library_store.h"
+#include "store_launch.h"
 #include "store_io.h"
 
 #include <QDir>
@@ -159,6 +160,9 @@ LaunchPlan planTitleLaunch(const TitleRecord &title,
                            const LaunchOptions &options,
                            const LaunchToolSet &tools,
                            const QVector<DisplayTarget> &displays) {
+  if (title.kind == TitleKind::StoreGame && launchesThroughStoreClient(title.store)) {
+    return planStoreGameLaunch(title, options, tools, displays);
+  }
   return planUmuLaunch(umuRequestForTitle(title), options, tools, displays);
 }
 

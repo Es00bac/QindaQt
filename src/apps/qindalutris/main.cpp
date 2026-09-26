@@ -7,6 +7,7 @@
 #include "qindalutris_actions.h"
 #include "running_games.h"
 #include "scoped_game_launcher.h"
+#include "store_accounts.h"
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -24,9 +25,20 @@
 
 #include <memory>
 
+#if defined(QINDALUTRIS_WEB_SIGN_IN)
+#include <QtWebEngineQuick/qtwebenginequickglobal.h>
+#endif
+
 using namespace QindaQt::QindaLutris;
 
 int main(int argc, char **argv) {
+#if defined(QINDALUTRIS_WEB_SIGN_IN)
+  // Must run before the application object exists (Qt WebEngine rule).
+  QtWebEngineQuick::initialize();
+  constexpr bool webSignIn = true;
+#else
+  constexpr bool webSignIn = false;
+#endif
   QGuiApplication app(argc, argv);
   QGuiApplication::setApplicationName(QStringLiteral("qindalutris"));
   QGuiApplication::setApplicationDisplayName(
@@ -82,6 +94,7 @@ int main(int argc, char **argv) {
   protons.initialize();
   InstallController installs(&library, &compat);
   RunningGames running(&library, &gameLauncher);
+  StoreAccounts accounts(&library, webSignIn);
   QindaQt::AppShell::ApplicationCoordinator coordinator;
   coordinator.setApplicationName(
       QGuiApplication::translate("main", "QindaLutris"));
@@ -95,6 +108,7 @@ int main(int argc, char **argv) {
   qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Installs", &installs);
   qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Protons", &protons);
   qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Running", &running);
+  qmlRegisterSingletonInstance("QindaQt.QindaLutris", 1, 0, "Accounts", &accounts);
 
   QQmlApplicationEngine qml;
   // AGENT-GUARD: addImageProvider takes ownership; the provider must outlive
@@ -133,6 +147,9 @@ int main(int argc, char **argv) {
   }
 
   library.refresh();
+  if (!parser.isSet(grabOption)) {
+    accounts.refreshAll(); // store sign-in state and owned games, in the background
+  }
 
   if (parser.isSet(grabOption)) {
     if (window == nullptr) {

@@ -4,6 +4,7 @@
 #include "compat_db.h"
 #include "install_preflight.h"
 #include "setup_file_install_job.h"
+#include "store_game_install_job.h"
 #include "title_factory.h"
 
 #include <QObject>
@@ -61,6 +62,11 @@ public:
   // Registers an existing prefix that already contains the recipe's launcher,
   // pinned to the build its own `version` file names when that is installed.
   Q_INVOKABLE bool adoptExistingLauncher(const QString &recipeId, const QString &prefixPath);
+  // Downloads a game the user owns on Epic, GOG or Amazon (Accounts rows)
+  // with the store's client, then registers it like any other install:
+  // a new prefix, the build chosen now, the database's fixes.
+  Q_INVOKABLE void installOwnedGame(const QString &storeId, const QString &gameId,
+                                    const QString &title);
   Q_INVOKABLE void cancel();
   // "Copy details" (ADR-0275 section 5): puts a job's log on the clipboard.
   Q_INVOKABLE void copyText(const QString &text) const;
@@ -78,6 +84,7 @@ private:
   void finish(bool ok, const QString &message, const QString &note, const QString &details);
   void onLauncherFinished(const LauncherInstallResult &result);
   void onSetupFinished(const SetupFileInstallResult &result);
+  void onStoreGameFinished(const StoreGameInstallResult &result);
   [[nodiscard]] bool registerTitle(const NewTitle &facts, const QString &buildName,
                                    const QString &buildVersion, QString *error);
   [[nodiscard]] QStringList takenTitleIds() const;
@@ -95,6 +102,14 @@ private:
   std::unique_ptr<QProcessRunner> m_runner;
   LauncherInstallJob *m_launcherJob = nullptr; // owned child
   SetupFileInstallJob *m_setupJob = nullptr;   // owned child
+  StoreGameInstallJob *m_storeJob = nullptr;   // owned child
+  struct PendingStoreGame {
+    NewTitle facts;
+    QString buildName;
+    QString buildVersion;
+    std::optional<CompatAdvice> advice;
+  };
+  std::optional<PendingStoreGame> m_storeGame;
   FixApplier *m_fixes = nullptr;                // owned child
   struct PendingTitle {
     NewTitle facts;

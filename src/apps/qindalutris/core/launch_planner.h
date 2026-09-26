@@ -40,6 +40,21 @@ namespace QindaQt::QindaLutris {
 // then means what it says.
 [[nodiscard]] QString discoverWineLoader(const QStringList &searchDirectories);
 
+// The store clients that install and start Epic, GOG and Amazon games
+// (ADR-0275 section 8), resolved by composition like every other tool;
+// empty means "not installed".
+struct StoreClientSet final {
+  QString legendaryBinary; // Epic Games Store (games-util/legendary)
+  QString gogdlBinary;     // GOG (games-util/gogdl-bin)
+  QString nileBinary;      // Amazon Games (games-util/nile-bin)
+  // Overlays for every client run: QindaLutris's own client configuration
+  // directories (storeClientEnvironment, store_clients.h), so a user's own
+  // command-line setup of the same tools can never redirect a launch.
+  QHash<QString, QString> environment;
+
+  friend bool operator==(const StoreClientSet &, const StoreClientSet &) = default;
+};
+
 struct LaunchToolSet final {
   QString steamBinary;
   QString lutrisBinary;
@@ -53,6 +68,7 @@ struct LaunchToolSet final {
   // Every installed Proton build (discoverProtonBuilds). Pins resolve
   // against exactly this list; nothing falls back outside it.
   QVector<ProtonBuild> protonBuilds;
+  StoreClientSet storeClients;
 
   friend bool operator==(const LaunchToolSet &, const LaunchToolSet &) = default;
 };

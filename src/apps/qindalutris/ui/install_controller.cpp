@@ -8,6 +8,7 @@
 #include "network_downloader.h"
 #include "prefix_paths.h"
 #include "process_runner.h"
+#include "store_accounts.h"
 #include "store_recipes.h"
 #include "umu_installer_planner.h"
 
@@ -50,6 +51,15 @@ InstallController::InstallController(LibraryController *library, const CompatDat
   connect(m_launcherJob, &LauncherInstallJob::finished, this,
           &InstallController::onLauncherFinished);
   connect(m_setupJob, &SetupFileInstallJob::finished, this, &InstallController::onSetupFinished);
+  m_storeJob = new StoreGameInstallJob(m_runner.get(), this);
+  connect(m_storeJob, &StoreGameInstallJob::progressChanged, this,
+          [this](double fraction, const QString &text) {
+            m_progress = fraction < 0 ? 0.0 : fraction;
+            m_stageText = text;
+            Q_EMIT stateChanged();
+          });
+  connect(m_storeJob, &StoreGameInstallJob::finished, this,
+          &InstallController::onStoreGameFinished);
   m_fixes = new FixApplier(tools, this);
   connect(m_fixes, &FixApplier::finished, this, &InstallController::onFixesFinished);
   connect(m_library, &LibraryController::libraryChanged, this,
@@ -61,6 +71,7 @@ InstallController::InstallController(LibraryController *library, const CompatDat
 InstallController::~InstallController() {
   delete m_launcherJob;
   delete m_setupJob;
+  delete m_storeJob;
   delete m_fixes;
 }
 
@@ -400,12 +411,74 @@ void InstallController::copyText(const QString &text) const {
   }
 }
 
+void InstallController::installOwnedGame(const QString &storeId, const QString &gameId,
+                                         const QString &title) {
+  const std::optional<StoreClient> client = storeClientForId(storeId);
+  const std::optional<GameStore> store = gameStoreForId(storeId);
+  if (m_busy || !client || !store) {
+    return;
+  }
+  const auto advice = adviceForGame(m_database, title, {});
+  const auto build = chooseBuildForNewTitle(m_library->toolSet().protonBuilds,
+                                            m_library->preferredProtonBuild(), m_database, advice);
+  if (!build) {
+    finish(false,
+           QStringLiteral("No suitable Proton build is installed. Install "
+                          "app-emulation/ge-proton-bin or add one in the Proton manager."),
+           {}, {});
+    return;
+  }
+  const QString slug = slugFor(makeTitleId(title, takenTitleIds()));
+  PendingStoreGame pending;
+  pending.facts.title = title;
+  pending.facts.kind = TitleKind::StoreGame;
+  pending.facts.store = *store;
+  pending.facts.storeGameId = gameId;
+  pending.facts.prefixPath =
+      QDir(defaultGamesDirectory()).filePath(QStringLiteral("Prefixes/") + slug);
+  pending.facts.umuStore = storeId; // umu-protonfixes knows egs, gog and amazon
+  pending.facts.umuId = advice ? advice->game.keys.umuId : QString();
+  pending.buildName = build->name;
+  pending.buildVersion = build->versionText;
+  pending.advice = advice;
+  m_storeGame = pending;
+  begin(QStringLiteral("Downloading %1…").arg(title));
+  StoreGameInstallRequest request;
+  request.client = *client;
+  request.binaries = storeClientBinaries(m_library->toolSet().storeClients);
+  request.storesRoot = storesRootFor(m_library->configRoot());
+  request.gameId = gameId;
+  request.title = title;
+  request.baseDir = QDir(defaultGamesDirectory()).filePath(storeClientDisplayName(*client));
+  QDir().mkpath(request.baseDir);
+  QDir().mkpath(request.storesRoot);
+  m_storeJob->start(request);
+}
+
+void InstallController::onStoreGameFinished(const StoreGameInstallResult &result) {
+  const QString details = m_storeJob->detailsText();
+  if (!result.ok || !m_storeGame) {
+    m_storeGame.reset();
+    finish(false, result.message, {}, details);
+    return;
+  }
+  PendingStoreGame pending = *m_storeGame;
+  m_storeGame.reset();
+  pending.facts.executable = result.install.executable;
+  m_details = details;
+  completeInstall(pending.facts, pending.buildName, pending.buildVersion, pending.advice,
+                  result.message, {});
+}
+
 void InstallController::cancel() {
   if (m_launcherJob->isRunning()) {
     m_launcherJob->cancel();
   }
   if (m_setupJob->isRunning()) {
     m_setupJob->cancel();
+  }
+  if (m_storeJob->isRunning()) {
+    m_storeJob->cancel();
   }
   if (m_fixes->isRunning()) {
     m_fixes->cancel(); // the title is still registered, without the fixes

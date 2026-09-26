@@ -6,6 +6,17 @@ add_subdirectory(ui)
 
 qt_add_executable(qindalutris main.cpp)
 
+# ADR-0275 section 8: store sign-in embeds the store's own page when
+# QtWebEngine is installed (built on qinda, shipped as a binary package);
+# without it the app falls back to the user's browser plus a paste field.
+find_package(Qt6 QUIET OPTIONAL_COMPONENTS WebEngineQuick)
+set(qindalutris_web_qml)
+if(TARGET Qt6::WebEngineQuick)
+    set(qindalutris_web_qml qml/parts/WebSignIn.qml)
+    target_link_libraries(qindalutris PRIVATE Qt6::WebEngineQuick)
+    target_compile_definitions(qindalutris PRIVATE QINDALUTRIS_WEB_SIGN_IN=1)
+endif()
+
 # AGENT-CONTRACT: the interface is QML built on QindaTK (dev-libs/qindatk),
 # the same contract the System Monitor follows (ADR-0220): QindaTK supplies
 # the controls and the QindaTK.QindaQt bridge feeds the desktop's QST-1
@@ -25,6 +36,8 @@ qt_add_qml_module(qindalutris
         qml/parts/AppMenuBar.qml
         qml/parts/JobProgress.qml
         qml/parts/VerdictCard.qml
+        qml/parts/StoreAccountCard.qml
+        ${qindalutris_web_qml}
 )
 
 target_link_libraries(qindalutris

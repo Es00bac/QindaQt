@@ -83,7 +83,9 @@ struct UmuLaunchRequest final {
 
 [[nodiscard]] UmuLaunchRequest umuRequestForTitle(const TitleRecord &title);
 
-// planUmuLaunch(umuRequestForTitle(title), ...). The controller's path for
+// planUmuLaunch(umuRequestForTitle(title), ...) -- or, for an Epic, GOG or
+// Amazon StoreGame, planStoreGameLaunch (store_launch.h), which wraps that
+// same plan in the store's client. The controller's path for
 // GameSource::Installed. Runner/prefix overrides in options do not apply to
 // titles: their prefix and build are recorded, and moving either is an
 // explicit action, not a launch option.

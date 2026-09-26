@@ -109,6 +109,10 @@ public:
     return ok;
   }();
   std::function<void(const ProcessRunSpec &)> sideEffect;
+  // Per-run scripting: output streamed (outputReceived) before finishing,
+  // and a result chosen by the spec instead of `result`.
+  std::function<QByteArray(const ProcessRunSpec &)> stream;
+  std::function<ProcessRunResult(const ProcessRunSpec &)> respond;
   bool hang = false;
   int cancels = 0;
 
@@ -125,7 +129,13 @@ public:
       if (sideEffect) {
         sideEffect(spec);
       }
-      Q_EMIT finished(result);
+      if (stream) {
+        const QByteArray chunk = stream(spec);
+        if (!chunk.isEmpty()) {
+          Q_EMIT outputReceived(chunk);
+        }
+      }
+      Q_EMIT finished(respond ? respond(spec) : result);
     });
   }
 

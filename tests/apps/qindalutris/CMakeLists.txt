@@ -38,6 +38,7 @@ qindaqt_add_qindalutris_test(proton-catalog tst_proton_catalog.cpp)
 qindaqt_add_qindalutris_test(proton-pin tst_proton_pin.cpp)
 qindaqt_add_qindalutris_test(title-store tst_title_store.cpp)
 qindaqt_add_qindalutris_test(umu-launch-plan tst_umu_launch_plan.cpp)
+qindaqt_add_qindalutris_test(store-launch tst_store_launch.cpp)
 
 # The compatibility database (ADR-0275 §3). The fixtures under data/compat are
 # shared with the generator's Python tests, and the committed snapshot is
@@ -122,6 +123,8 @@ qindaqt_add_qindalutris_jobs_test(proton-install-cancel tst_proton_install_cance
 qindaqt_add_qindalutris_jobs_test(proton-removal tst_proton_removal.cpp)
 qindaqt_add_qindalutris_jobs_test(process-runner tst_process_runner.cpp)
 qindaqt_add_qindalutris_jobs_test(store-recipes tst_store_recipes.cpp)
+qindaqt_add_qindalutris_jobs_test(store-clients tst_store_clients.cpp)
+qindaqt_add_qindalutris_jobs_test(store-game-install-job tst_store_game_install_job.cpp)
 qindaqt_add_qindalutris_jobs_test(install-preflight tst_install_preflight.cpp)
 qindaqt_add_qindalutris_jobs_test(launcher-install-job tst_launcher_install_job.cpp)
 qindaqt_add_qindalutris_jobs_test(setup-file-install-job tst_setup_file_install_job.cpp)
@@ -197,3 +200,4 @@ qindaqt_add_qindalutris_wiring_test(title-factory tst_title_factory.cpp)
 target_compile_definitions(qindaqt_qindalutris_title-factory_tests PRIVATE
     "QINDALUTRIS_COMPAT_SNAPSHOT=\"${PROJECT_SOURCE_DIR}/src/apps/qindalutris/compat/compat-db-v1.json\"")
 qindaqt_add_qindalutris_wiring_test(running-games tst_running_games.cpp)
+qindaqt_add_qindalutris_wiring_test(store-accounts tst_store_accounts.cpp)

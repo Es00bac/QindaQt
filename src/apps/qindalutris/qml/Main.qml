@@ -162,6 +162,7 @@ Tk.AppWindow {
             }
 
             GetGamesPage {
+                id: getGamesPage
                 objectName: "getGamesPage"
                 anchors.fill: parent
                 visible: window.pageIndex === 1
@@ -174,6 +175,9 @@ Tk.AppWindow {
                 succeeded: Installs.lastSucceeded
                 details: Installs.details
                 candidates: Installs.setupCandidates
+                accounts: Accounts.accounts
+                ownedGamesByStore: Accounts.ownedGamesByStore
+                webSignInAvailable: Accounts.webSignInAvailable
 
                 onInstallStoreRequested: function(recipeId) { Installs.installStore(recipeId) }
                 onAdoptStoreRequested: function(recipeId, prefixPath) {
@@ -189,6 +193,19 @@ Tk.AppWindow {
                 onCopyDetailsRequested: function(text) {
                     Installs.copyText(text)
                     window.flash(qsTr("Details copied"))
+                }
+                onSignInRequested: function(storeId) { Accounts.beginSignIn(storeId) }
+                onSignInFinished: function(storeId, text) { Accounts.finishSignIn(storeId, text) }
+                onSignOutRequested: function(storeId) { Accounts.signOut(storeId) }
+                onRefreshAccountRequested: function(storeId) { Accounts.refresh(storeId) }
+                onInstallOwnedRequested: function(storeId, gameId, title) {
+                    Installs.installOwnedGame(storeId, gameId, title)
+                }
+                onOpenExternallyRequested: function(address) { Qt.openUrlExternally(address) }
+
+                Connections {
+                    target: Accounts
+                    function onSignInReady(storeId, url) { getGamesPage.showSignIn(storeId, url) }
                 }
             }
 
