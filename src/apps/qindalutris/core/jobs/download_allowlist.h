@@ -15,10 +15,8 @@ namespace QindaQt::QindaLutris {
 // Adding a host is a reviewed change to this table plus the wiki page
 // docs/wiki/apps/qindalutris-installs.md -- never a runtime setting.
 
-// AGENT-NOTE: placeholder for the compatibility-database refresh location
-// (ADR-0275 section 3). `.invalid` is an RFC 2606 reserved TLD, so until the
-// real host is decided the entry can never resolve or match a live server.
-inline constexpr char kCompatDbRefreshHost[] = "compat-db.qindaqt.invalid";
+// The compatibility-database refresh is a GitHub release file of the QindaQt
+// project (compat_refresh_job.h), so it needs no host of its own.
 
 // The fixed host table, lower-case, in documentation order.
 [[nodiscard]] const QStringList &allowedDownloadHosts();

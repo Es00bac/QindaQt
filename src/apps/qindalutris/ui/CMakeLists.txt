@@ -6,6 +6,8 @@
 qt_add_library(qindaqt_qindalutris_view STATIC
     compat_advice_view.cpp
     compat_advice_view.h
+    compat_refresher.cpp
+    compat_refresher.h
     fix_applier.cpp
     fix_applier.h
     game_icon_provider.h

@@ -109,6 +109,14 @@ both validators.)
 4. Bump the overlay package `games-util/qindalutris-compat-db-YYYYMMDD`
    (the date of `generated`) to install it with the CMake component
    `QindaLutrisCompatDb` into `/usr/share/qindalutris/`.
+5. Publish it for "Check for newer" (the Proton page): replace the two assets
+   of the GitHub release tagged `compat-db` on `Es00bac/QindaQt` with
+   `compat-db-v1.json` and `compat-db-v1.json.sha512sum`
+   (`sha512sum compat-db-v1.json > compat-db-v1.json.sha512sum`, run in the
+   snapshot's directory so the file name has no path). The app downloads
+   `https://github.com/Es00bac/QindaQt/releases/download/compat-db/<file>`,
+   checks the SHA-512, loads the document with the same rules as the shipped
+   copy, and keeps it only when its `generated` stamp is newer.
 
 The two validators (`qlcompat/schema.py` and the C++ parser) must stay in
 step; each carries an `AGENT-CONTRACT` naming the other.
