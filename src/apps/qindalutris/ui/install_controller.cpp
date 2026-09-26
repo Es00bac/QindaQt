@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "install_controller.h"
 
+#include "compat_advice_view.h"
+#include "fix_applier.h"
 #include "launcher_install_job.h"
 #include "library_controller.h"
 #include "network_downloader.h"
@@ -48,6 +50,8 @@ InstallController::InstallController(LibraryController *library, const CompatDat
   connect(m_launcherJob, &LauncherInstallJob::finished, this,
           &InstallController::onLauncherFinished);
   connect(m_setupJob, &SetupFileInstallJob::finished, this, &InstallController::onSetupFinished);
+  m_fixes = new FixApplier(tools, this);
+  connect(m_fixes, &FixApplier::finished, this, &InstallController::onFixesFinished);
   connect(m_library, &LibraryController::libraryChanged, this,
           &InstallController::storesChanged);
 }
@@ -57,6 +61,7 @@ InstallController::InstallController(LibraryController *library, const CompatDat
 InstallController::~InstallController() {
   delete m_launcherJob;
   delete m_setupJob;
+  delete m_fixes;
 }
 
 QVariantList InstallController::stores() const {
@@ -168,12 +173,64 @@ void InstallController::onLauncherFinished(const LauncherInstallResult &result) 
       buildVersion = build.versionText;
     }
   }
+  m_details = details;
+  completeInstall(facts, result.launcher.protonBuildName, buildVersion,
+                  adviceForRecipe(m_database, *recipe), result.message, result.note);
+}
+
+void InstallController::completeInstall(NewTitle facts, const QString &buildName,
+                                        const QString &buildVersion,
+                                        const std::optional<CompatAdvice> &advice,
+                                        const QString &message, const QString &note) {
+  const QStringList verbs = advice ? advice->game.winetricks : QStringList{};
+  if (!verbs.isEmpty()) {
+    InstallerPlanRequest context;
+    context.umuRunBinary = m_library->toolSet().umuRunBinary;
+    context.protonBuildName = buildName;
+    for (const ProtonBuild &build : m_library->toolSet().protonBuilds) {
+      if (build.name == buildName && build.versionText == buildVersion && build.pinnable) {
+        context.protonBuildPath = build.path;
+      }
+    }
+    context.prefixPath = facts.prefixPath;
+    context.umuId = facts.umuId;
+    context.umuStore = facts.umuStore;
+    QString reason;
+    if (m_fixes->start(context, verbs, &reason)) {
+      m_pending = PendingTitle{facts, buildName, buildVersion, verbs, message, note};
+      m_busy = true;
+      m_stageText = verbs.size() == 1
+                        ? QStringLiteral("Applying 1 recommended fix…")
+                        : QStringLiteral("Applying %1 recommended fixes…").arg(verbs.size());
+      Q_EMIT stateChanged();
+      return;
+    }
+    m_details += QStringLiteral("\nfixes not started: %1").arg(reason);
+  }
   QString error;
-  if (!registerTitle(facts, result.launcher.protonBuildName, buildVersion, &error)) {
-    finish(false, error, {}, details);
+  const bool ok = registerTitle(facts, buildName, buildVersion, &error);
+  finish(ok, ok ? message : error, note, m_details);
+}
+
+void InstallController::onFixesFinished(bool ok, const QString &details) {
+  if (!m_pending) {
     return;
   }
-  finish(true, result.message, result.note, details);
+  PendingTitle pending = *m_pending;
+  m_pending.reset();
+  m_details += QStringLiteral("\n") + details;
+  if (ok) {
+    pending.facts.winetricksApplied = pending.verbs;
+  }
+  QString error;
+  const bool registered =
+      registerTitle(pending.facts, pending.buildName, pending.buildVersion, &error);
+  QString note = pending.note;
+  if (!ok) {
+    note = QStringLiteral("Some recommended fixes could not be applied; the game may still "
+                          "work. “Copy details” has what happened.");
+  }
+  finish(registered, registered ? pending.message : error, note, m_details);
 }
 
 bool InstallController::registerTitle(const NewTitle &facts, const QString &buildName,
@@ -278,14 +335,13 @@ bool InstallController::confirmSetupCandidate(const QString &executablePath) {
       version = build.versionText;
     }
   }
-  QString error;
-  const bool ok = registerTitle(facts, m_setupResult.protonBuildName, version, &error);
-  finish(ok, ok ? QStringLiteral("%1 is ready to play.").arg(facts.title) : error, {},
-         m_details);
-  if (ok) {
-    m_setupResult = {};
-  }
-  return ok;
+  const QString buildName = m_setupResult.protonBuildName;
+  m_setupResult = {};
+  m_candidateRows.clear();
+  completeInstall(facts, buildName, version,
+                  adviceForGame(m_database, facts.title, facts.executable),
+                  QStringLiteral("%1 is ready to play.").arg(facts.title), {});
+  return true;
 }
 
 bool InstallController::adoptExistingLauncher(const QString &recipeId, const QString &prefixPath) {
@@ -326,6 +382,18 @@ bool InstallController::adoptExistingLauncher(const QString &recipeId, const QSt
   return ok;
 }
 
+QVariantMap InstallController::verdictForGame(const QVariantMap &game) const {
+  if (m_database == nullptr || !m_database->isLoaded()) {
+    return adviceToVariant(std::nullopt);
+  }
+  return adviceToVariant(m_database->lookup(keysForLibraryGame(game)));
+}
+
+QVariantMap InstallController::verdictForStore(const QString &recipeId) const {
+  const auto recipe = findStoreRecipe(recipeId);
+  return adviceToVariant(recipe ? adviceForRecipe(m_database, *recipe) : std::nullopt);
+}
+
 void InstallController::copyText(const QString &text) const {
   if (QClipboard *clipboard = QGuiApplication::clipboard()) {
     clipboard->setText(text);
@@ -338,6 +406,9 @@ void InstallController::cancel() {
   }
   if (m_setupJob->isRunning()) {
     m_setupJob->cancel();
+  }
+  if (m_fixes->isRunning()) {
+    m_fixes->cancel(); // the title is still registered, without the fixes
   }
   m_stageText = QStringLiteral("Stopping…");
   Q_EMIT stateChanged();

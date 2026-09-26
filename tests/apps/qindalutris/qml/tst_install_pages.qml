@@ -3,6 +3,7 @@ import QtQuick
 import QtTest
 import QindaTK as Tk
 import "../../../../src/apps/qindalutris/qml" as App
+import "../../../../src/apps/qindalutris/qml/parts" as Parts
 
 // The Get games and Proton pages over stub rows (ADR-0275): each store card
 // offers exactly one honest action for its state, a job shows progress then
@@ -42,6 +43,15 @@ Item {
               origin: "user", pinnable: true, removable: true, label: "", status: "untested",
               notes: "", isDefault: false, usedBy: 1 }
         ]
+    }
+
+    Parts.VerdictCard {
+        id: verdictCard
+        width: 320
+        verdict: ({ found: true, verdict: "blocked", verdictText: "Can't run on Linux",
+                    canRun: false, antiCheat: "Its anti-cheat does not work on Linux",
+                    steamDeck: "", protondb: "Borked (community rating)", fixes: [],
+                    avoid: [], sources: "QindaQt compatibility database; community rating from ProtonDB (ODbL)" })
     }
 
     SignalSpy { id: installSpy; target: games; signalName: "installStoreRequested" }
@@ -128,6 +138,17 @@ Item {
             const notice = one(games, "microsoftStoreNotice")
             verify(notice.visible)
             verify(notice.text.indexOf("cannot run on Linux") >= 0)
+        }
+
+        function test_verdictCardLeadsWithOnePlainVerdict() {
+            verify(verdictCard.visible)
+            const badge = one(verdictCard, "verdictBadge")
+            compare(badge.text, "Can't run on Linux")
+            compare(badge.variant, "danger")
+            verify(one(verdictCard, "verdictSources").text.indexOf("ProtonDB (ODbL)") >= 0)
+            verdictCard.verdict = ({ found: false })
+            wait(30)
+            verify(!verdictCard.visible)
         }
 
         function test_protonListMarksOneDefaultAndProtectsBuildsInUse() {

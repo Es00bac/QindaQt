@@ -56,6 +56,7 @@ struct NewTitle final {
   QString executable;
   QString umuId;
   QString umuStore;
+  QStringList winetricksApplied; // verbs already applied in the prefix
 };
 
 // Builds and validates the record. Database environment is filtered with

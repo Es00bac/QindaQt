@@ -10,9 +10,11 @@
 #include <QVariantList>
 
 #include <memory>
+#include <optional>
 
 namespace QindaQt::QindaLutris {
 
+class FixApplier;
 class LibraryController;
 class LauncherInstallJob;
 class NetworkDownloader;
@@ -62,6 +64,10 @@ public:
   Q_INVOKABLE void cancel();
   // "Copy details" (ADR-0275 section 5): puts a job's log on the clipboard.
   Q_INVOKABLE void copyText(const QString &text) const;
+  // The verdict card (compat_advice_view.h) for a library game map
+  // (Library.selectedGame) or for a store launcher recipe.
+  Q_INVOKABLE QVariantMap verdictForGame(const QVariantMap &game) const;
+  Q_INVOKABLE QVariantMap verdictForStore(const QString &recipeId) const;
 
 Q_SIGNALS:
   void storesChanged();
@@ -75,6 +81,12 @@ private:
   [[nodiscard]] bool registerTitle(const NewTitle &facts, const QString &buildName,
                                    const QString &buildVersion, QString *error);
   [[nodiscard]] QStringList takenTitleIds() const;
+  // After a successful install: applies the database's one-time fixes when
+  // there are any (FixApplier), then registers the title.
+  void completeInstall(NewTitle facts, const QString &buildName, const QString &buildVersion,
+                       const std::optional<CompatAdvice> &advice, const QString &message,
+                       const QString &note);
+  void onFixesFinished(bool ok, const QString &details);
 
   LibraryController *m_library = nullptr;
   const CompatDatabase *m_database = nullptr;
@@ -83,6 +95,16 @@ private:
   std::unique_ptr<QProcessRunner> m_runner;
   LauncherInstallJob *m_launcherJob = nullptr; // owned child
   SetupFileInstallJob *m_setupJob = nullptr;   // owned child
+  FixApplier *m_fixes = nullptr;                // owned child
+  struct PendingTitle {
+    NewTitle facts;
+    QString buildName;
+    QString buildVersion;
+    QStringList verbs;
+    QString message;
+    QString note;
+  };
+  std::optional<PendingTitle> m_pending; // waiting for fixes to finish
   QString m_pendingRecipe;
   SetupFileInstallResult m_setupResult;
   QVariantList m_candidateRows;
