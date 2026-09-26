@@ -1,0 +1,19 @@
+{
+  "name": "Signal Garden field notes",
+  "sections": [
+    {
+      "id": "fieldwork",
+      "name": "Fieldwork",
+      "pages": [
+        {
+          "id": "walkthrough",
+          "title": "Courtyard walkthrough"
+        },
+        {
+          "id": "launch",
+          "title": "Launch checklist"
+        }
+      ]
+    }
+  ]
+}

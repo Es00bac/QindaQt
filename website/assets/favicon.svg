@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">QindaQt</title>
+  <rect width="64" height="64" rx="18" fill="#071b2b"/>
+  <rect x="8" y="8" width="48" height="48" rx="14" fill="none" stroke="#79dfd4" stroke-width="3"/>
+  <path d="M43 44a17 17 0 1 1 4-12c0 4-1.4 7.7-3.7 10.6l5.3 5.4h-6.9l-2.5-2.6A17 17 0 0 1 30 48a17 17 0 0 1-17-17 17 17 0 0 1 17-17 17 17 0 0 1 17 17" fill="none" stroke="#79dfd4" stroke-width="5" stroke-linecap="round"/>
+</svg>

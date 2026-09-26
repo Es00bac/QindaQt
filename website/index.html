@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e9e3d1">
+  <meta name="description" content="Meet QindaQt: a free, open source Qt desktop with windows that can stay independent or become tabs and splits, expressive themes, flexible layouts, and native apps.">
+  <title>QindaQt — a desktop that fits you</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/base.css">
+  <link rel="stylesheet" href="assets/home.css">
+  <link rel="stylesheet" href="assets/identity.css">
+  <script src="assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="./" aria-label="QindaQt home"><span class="brand-mark" aria-hidden="true">Q</span><span>Qinda<span class="brand-accent">Qt</span></span></a>
+      <button class="nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false">Menu <span aria-hidden="true">☰</span></button>
+      <nav id="site-nav" class="site-nav" aria-label="Main navigation">
+        <a href="#how-it-works">The idea</a>
+        <a href="#layouts">Layouts</a>
+        <a href="#themes">Themes</a>
+        <a href="#apps">Apps</a>
+        <a href="office/">Office <span class="nav-arrow" aria-hidden="true">↗</span></a>
+      </nav>
+      <a class="header-cta" href="#get-qindaqt">Get QindaQt <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="shell hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="eyebrow-dot"></span> QindaQt · Free and open source · Wayland</p>
+          <h1 id="hero-title">Move the<br>windows.<em>Keep the flow.</em></h1>
+          <p class="hero-lede">An expressive Qt desktop where windows can become tabs and splits, layouts change with you, and the everyday tools feel at home.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#how-it-works">Explore the desktop <span aria-hidden="true">↗</span></a>
+            <a class="button button-ghost" href="#watch">Watch the tour <span aria-hidden="true">▶</span></a>
+          </div>
+          <p class="hero-caption">Field guides: Cyber Pengu &amp; Ducke. Artwork straight from QindaQt's world.</p>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-orbit hero-orbit-one" aria-hidden="true"></div>
+          <div class="hero-orbit hero-orbit-two" aria-hidden="true"></div>
+          <div class="hero-screen"><img src="assets/images/desktop-welcome.webp" alt="The real QindaQt desktop with its welcome guide, top panel, dock, and cyberpunk wallpaper" width="1440" height="900" fetchpriority="high"><span class="screen-label">Captured in QindaQt</span></div>
+          <img class="hero-mascots" src="assets/images/cyber-pengu-ducke.png" alt="Cyber Pengu, a jade-visored penguin in graphite armor and amber boots, with Ducke, a sunglasses-wearing rubber duck sidekick" width="1360" height="1157">
+          <div class="hero-note"><span class="note-sparkle" aria-hidden="true">✦</span><span><strong>Cyber Pengu says:</strong><br>Start here. Move everything later.</span></div>
+        </div>
+      </div>
+      <div class="hero-bottom shell"><span>Scroll to meet the desktop</span><span aria-hidden="true">↓</span></div>
+    </section>
+
+    <section class="proof-strip" aria-label="QindaQt highlights"><div class="shell proof-grid">
+      <p><strong>01</strong><span>Group windows when it helps</span></p>
+      <p><strong>02</strong><span>Switch the whole layout</span></p>
+      <p><strong>03</strong><span>Theme the whole experience</span></p>
+      <p><strong>04</strong><span>Work in native apps</span></p>
+    </div></section>
+
+    <section id="how-it-works" class="section section-window shell" aria-labelledby="window-title">
+      <div class="section-intro"><div><p class="eyebrow">A different kind of window management</p><h2 id="window-title">Your windows work <em>together.</em></h2></div><p>Keep every window independent. When a task grows, hold <kbd>Meta</kbd> + <kbd>Shift</kbd> and drag one window onto another. Drop in the middle for tabs or at an edge for a split. Move the resulting container as one.</p></div>
+      <div class="window-stage">
+        <div class="stage-copy"><p class="stage-kicker">TRY THE IDEA</p><h3>One frame. More room to think.</h3><p>Click through this illustrated interaction. QindaQt gives you a preview before a real drop, and you can pull a member back out whenever you want.</p><div class="mode-buttons" role="group" aria-label="Illustrated window arrangements">
+          <button type="button" data-window-mode="separate" aria-pressed="false">Separate</button>
+          <button type="button" data-window-mode="split" aria-pressed="true">Split</button>
+          <button type="button" data-window-mode="tabs" aria-pressed="false">Tabs</button>
+        </div><p id="mode-description" class="mode-description" aria-live="polite">A shared frame holds two applications side by side. Drag the divider to give either one more space.</p></div>
+        <div class="demo-desktop" data-mode="split" data-tab="notes" aria-label="Illustration of QindaQt window grouping">
+          <div class="demo-topbar"><span class="demo-q">Q</span><span>File&nbsp;&nbsp; Edit&nbsp;&nbsp; View</span><span class="demo-clock">● &nbsp; 9:41</span></div>
+          <div class="demo-windows">
+            <div class="demo-title"><span class="traffic"><i></i><i></i><i></i></span><span class="demo-title-copy">Project space</span><span class="demo-tabs"><button type="button" data-demo-tab="notes" aria-pressed="true">Notes</button><button type="button" data-demo-tab="files" aria-pressed="false">Files</button></span></div>
+            <div class="demo-members"><div class="demo-member demo-member-notes"><div class="member-strip">Notes <span>×</span></div><div class="paper"><span class="paper-tag">TODAY</span><strong>Good ideas<br>need space.</strong><i></i><i></i><i class="short"></i></div></div><div class="demo-member demo-member-files"><div class="member-strip">Files <span>×</span></div><div class="file-grid"><span>▣<small>Design</small></span><span>▣<small>Research</small></span><span>▣<small>Assets</small></span><span>▣<small>Notes</small></span></div></div></div>
+          </div><div class="demo-dock"><span>▦</span><span>◧</span><span>⌘</span><span>◉</span></div>
+        </div>
+      </div>
+      <div class="feature-mini-grid"><article><span class="mini-icon">↗</span><h3>Opt in as you go</h3><p>Ordinary windows stay ordinary until you choose to group them.</p></article><article><span class="mini-icon">⌑</span><h3>Pages inside pages</h3><p>Mix tabs and recursive splits to fit the task in front of you.</p></article><article><span class="mini-icon">↩</span><h3>Take a window back</h3><p>Drag a member’s title strip out and it becomes independent again.</p></article></div>
+      <aside class="mascot-tip" id="pengu-tip" data-mood="split"><img src="assets/images/cyber-pengu-ducke.png" alt="" width="1360" height="1157" loading="lazy"><p><strong>Cyber Pengu’s field note</strong><span id="pengu-line" aria-live="polite">Drag to an edge: the windows share a frame and keep working side by side.</span></p></aside>
+    </section>
+
+    <section id="layouts" class="section layout-section" aria-labelledby="layout-title"><div class="shell">
+      <div class="section-intro"><div><p class="eyebrow">The layout is yours to choose</p><h2 id="layout-title">A place for <em>every workflow.</em></h2></div><p>A top menu and dock, a compact taskbar, a side dock, or something quieter. Switch presets in Settings, then edit panels right where they live.</p></div>
+      <div class="layout-browser"><div class="layout-list" role="group" aria-label="Choose a layout preview">
+        <button type="button" class="active" data-layout="signature" data-image="profile-signature.webp" data-title="QindaQt" data-detail="The signature QindaQt arrangement." aria-pressed="true"><span>01</span><strong>QindaQt</strong><small>Signature</small></button>
+        <button type="button" data-layout="menu" data-image="profile-menu-dock.webp" data-title="Menu and Dock" data-detail="A menu bar on top and a dock below." aria-pressed="false"><span>02</span><strong>Menu and Dock</strong><small>Familiar</small></button>
+        <button type="button" data-layout="classic" data-image="profile-classic.webp" data-title="Classic Taskbar" data-detail="A familiar single taskbar for a classic flow." aria-pressed="false"><span>03</span><strong>Classic Taskbar</strong><small>Retro</small></button>
+        <button type="button" data-layout="centered" data-image="profile-centered.webp" data-title="Centered Taskbar" data-detail="A clean centered taskbar for a modern flow." aria-pressed="false"><span>04</span><strong>Centered Taskbar</strong><small>Modern</small></button>
+        <button type="button" data-layout="workspace" data-image="profile-workspace-dock.webp" data-title="Workspace Dock" data-detail="A right-edge dock that leaves the desktop open." aria-pressed="false"><span>05</span><strong>Workspace Dock</strong><small>Focused</small></button>
+        <button type="button" data-layout="corner" data-image="profile-corner-bar.webp" data-title="Corner Bar" data-detail="A compact corner panel with its own character." aria-pressed="false"><span>06</span><strong>Corner Bar</strong><small>Playful</small></button>
+      </div><figure class="layout-preview"><div class="preview-frame"><img id="layout-image" src="assets/images/profile-signature.webp" alt="Rendered QindaQt signature layout preview" width="1440" height="900" loading="lazy"></div><figcaption><span><strong id="layout-name">QindaQt</strong><small id="layout-detail">The signature QindaQt arrangement.</small></span><span class="preview-tag">Shell render · preview</span></figcaption></figure></div>
+      <p class="layout-footnote">QindaQt also ships Overview, Command Rail, Compact Flexible, Minimal, and Program Groups profiles. Presets can be saved as your own and restored later.</p>
+    </div></section>
+
+    <section id="themes" class="section themes-section shell" aria-labelledby="theme-title"><div class="section-intro"><div><p class="eyebrow">Color has a point of view</p><h2 id="theme-title">Make it feel <em>like yours.</em></h2></div><p>Choose a theme, wallpaper, and fonts in Appearance. Preview before you apply. Panels, controls, window frames, and native apps follow the same visual language.</p></div>
+      <div class="theme-feature"><div class="theme-scene"><img id="theme-image" src="assets/images/compile-club.webp" alt="Compile Club QindaQt wallpaper featuring Cyber Pengu and Ducke" width="1672" height="941" loading="lazy"><div class="theme-scene-caption"><span>WALLPAPER COLLECTION</span><strong id="theme-name">Compile Club</strong></div></div><div class="theme-side"><p class="stage-kicker">SIX BUNDLED WALLPAPERS</p><h3>From mineral calm to cyberpunk mischief.</h3><p>Click to change the scene. Pair it with Smoked Plum, Pearl, Velvet, High Contrast, Mist, Classic Blue, or the other shipped themes.</p><div class="wallpaper-choices" role="group" aria-label="Choose a wallpaper">
+        <button type="button" class="active" data-wallpaper="compile-club.webp" data-label="Compile Club" aria-pressed="true"><img src="assets/images/compile-club.webp" alt="" loading="lazy"><span>Compile Club</span></button>
+        <button type="button" data-wallpaper="qinda-punk.webp" data-label="Qinda Punk" aria-pressed="false"><img src="assets/images/qinda-punk.webp" alt="" loading="lazy"><span>Qinda Punk</span></button>
+        <button type="button" data-wallpaper="jade-fold.webp" data-label="Jade Fold" aria-pressed="false"><img src="assets/images/jade-fold.webp" alt="" loading="lazy"><span>Jade Fold</span></button>
+        <button type="button" data-wallpaper="porcelain-dawn.webp" data-label="Porcelain Dawn" aria-pressed="false"><img src="assets/images/porcelain-dawn.webp" alt="" loading="lazy"><span>Porcelain Dawn</span></button>
+        <button type="button" data-wallpaper="ink-tide.webp" data-label="Ink Tide" aria-pressed="false"><img src="assets/images/ink-tide.webp" alt="" loading="lazy"><span>Ink Tide</span></button>
+        <button type="button" data-wallpaper="qinda-bliss.webp" data-label="Qinda Bliss" aria-pressed="false"><img src="assets/images/qinda-bliss.webp" alt="" loading="lazy"><span>Qinda Bliss</span></button>
+      </div></div></div>
+      <div class="theme-comparison"><div class="theme-comparison-heading"><p class="stage-kicker">SAME LAYOUT · FOUR THEMES</p><h3>The whole desktop changes with the palette.</h3><span>QindaQt shell renders</span></div><div class="theme-cards">
+        <figure><img src="assets/images/theme-smoked-plum.webp" alt="QindaQt shell rendered in the dark Smoked Plum theme" width="1440" height="900" loading="lazy"><figcaption><i class="swatch swatch-plum"></i>Smoked Plum</figcaption></figure>
+        <figure><img src="assets/images/theme-pearl.webp" alt="QindaQt shell rendered in the light Pearl theme" width="1440" height="900" loading="lazy"><figcaption><i class="swatch swatch-pearl"></i>Pearl</figcaption></figure>
+        <figure><img src="assets/images/theme-velvet.webp" alt="QindaQt shell rendered in the Velvet theme" width="1440" height="900" loading="lazy"><figcaption><i class="swatch swatch-velvet"></i>Velvet</figcaption></figure>
+        <figure><img src="assets/images/theme-high-contrast.webp" alt="QindaQt shell rendered in the High Contrast theme" width="1440" height="900" loading="lazy"><figcaption><i class="swatch swatch-contrast"></i>High Contrast</figcaption></figure>
+      </div></div>
+      <aside class="mascot-tip mascot-tip-ducke"><img src="assets/images/cyber-pengu-ducke.png" alt="" width="1360" height="1157" loading="lazy"><p><strong>Ducke’s pick</strong><span id="ducke-line" aria-live="polite">I brought the fan. He brought the coffee.</span></p></aside>
+    </section>
+
+    <section id="apps" class="section apps-section" aria-labelledby="apps-title"><div class="shell"><div class="section-intro"><div><p class="eyebrow">Made for the desktop they live on</p><h2 id="apps-title">The everyday tools <em>belong here.</em></h2></div><p>Start with the Welcome guide, find what you need in File Manager, and tune the experience in Settings. Text Editor, Terminal, Viewer, QindaMPV, and System Monitor round out the desktop.</p></div><div class="app-grid">
+      <article class="app-card app-card-wide"><img src="assets/images/desktop-files.webp" alt="QindaQt File Manager showing the bundled wallpaper collection" width="1440" height="900" loading="lazy"><div><span>01 · FIND IT</span><h3>File Manager</h3><p>Your folders, desktop files, bookmarks, and applications in one native place.</p></div></article>
+      <article class="app-card"><img src="assets/images/desktop-settings.webp" alt="QindaQt Settings showing notification controls" width="1440" height="900" loading="lazy"><div><span>02 · MAKE IT YOURS</span><h3>System Settings</h3><p>Appearance, layouts, displays, sound, network, power, and more.</p></div></article>
+      <article class="app-card app-card-text"><div class="app-card-pattern" aria-hidden="true"><span>&lt;/&gt;</span><span>▣</span><span>▶</span><span>◫</span></div><div><span>03 · KEEP GOING</span><h3>More native tools</h3><p>Write plain text, work in a terminal, view images and PDFs, play media, and watch your system.</p></div></article>
+    </div></div></section>
+
+    <section id="watch" class="section watch-section shell" aria-labelledby="watch-title"><div class="section-intro"><div><p class="eyebrow">See the story in motion</p><h2 id="watch-title">Watch it <em>actually work.</em></h2></div><p>Cyber Pengu and Ducke guide real QindaQt sessions. See a Meta+Shift drag make a window split, a layout switch in Settings, and a budget change recalculate in QindaOffice.</p></div><div class="video-grid"><article><video controls preload="metadata" playsinline poster="assets/images/desktop-welcome.webp"><source src="assets/video/desktop-tour.mp4" type="video/mp4"><track kind="captions" src="assets/video/desktop-tour.vtt" srclang="en" label="English" default>Your browser does not support video.</video><div class="video-copy"><span>01 / THE DESKTOP · LIVE CAPTURE</span><h3>Meet QindaQt</h3><p>Real windows become a split; Settings changes the layout. <a href="assets/video/desktop-tour.mp4" target="_blank" rel="noopener">Watch full size ↗</a></p></div></article><article><video controls preload="metadata" playsinline poster="assets/images/office-write.webp"><source src="assets/video/office-tour.mp4" type="video/mp4"><track kind="captions" src="assets/video/office-tour.vtt" srclang="en" label="English" default>Your browser does not support video.</video><div class="video-copy"><span>02 / THE SUITE · LIVE CAPTURE</span><h3>Meet QindaOffice</h3><p>A document edit, recalculating workbook, chart, slides, and notebook. <a href="assets/video/office-tour.mp4" target="_blank" rel="noopener">Watch full size ↗</a></p></div></article></div></section>
+
+    <section class="office-teaser"><div class="shell office-teaser-inner"><div><p class="eyebrow">Companion project / QindaOffice</p><h2>What happens after <em>the idea?</em></h2><p>Follow a real sample project from an event brief into a budget, a four slide pitch, and field notes. Every file opens in its native Office app, and the whole project is yours to download.</p><a class="button button-primary" href="office/">Follow the project <span aria-hidden="true">↗</span></a></div><div class="office-teaser-visual"><img src="assets/images/office-write.webp" alt="Signal Garden event brief open in QindaWrite on QindaQt" width="1440" height="900" loading="lazy"><span>Real document / QindaWrite / Signal Garden</span></div></div></section>
+
+    <section id="get-qindaqt" class="section get-section shell"><div class="get-card"><img src="assets/images/cyber-pengu-ducke.png" alt="" width="1360" height="1157" loading="lazy"><div><p class="eyebrow">Ready to look around?</p><h2>Come build a desktop<br>that feels like <em>home.</em></h2><p>QindaQt is free and open source, and it is still under active development. The source, handbook, Gentoo packaging, and current status are open for you to explore.</p><div class="get-links"><a class="button button-light" href="https://github.com/Es00bac/QindaQt">Explore the source <span aria-hidden="true">↗</span></a><a class="text-link" href="https://github.com/Es00bac/QindaQt/blob/main/docs/wiki/handbook/index.md">Read the handbook <span aria-hidden="true">↗</span></a></div></div></div></section>
+  </main>
+
+  <footer class="site-footer"><div class="shell footer-main"><div><a class="brand" href="./"><span class="brand-mark" aria-hidden="true">Q</span><span>Qinda<span class="brand-accent">Qt</span></span></a><p>Pronounced “kinda cute.” Built to let your desktop feel like yours.</p></div><div><strong>Explore</strong><a href="#how-it-works">Window containers</a><a href="#layouts">Layouts</a><a href="#themes">Themes</a><a href="office/">QindaOffice</a></div><div><strong>Project</strong><a href="https://github.com/Es00bac/QindaQt">Source code</a><a href="https://github.com/Es00bac/QindaQt/blob/main/docs/wiki/handbook/index.md">Handbook</a><a href="https://github.com/Es00bac/QindaGentoo">Gentoo overlay</a><a href="https://github.com/Es00bac/QindaQt/issues">Issues</a></div></div><div class="shell footer-bottom"><span>© QindaQt contributors · GPL-3.0-or-later</span><span>Made for the way you work. <span aria-hidden="true">✦</span></span></div></footer>
+</body>
+</html>

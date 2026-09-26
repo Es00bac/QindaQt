@@ -140,6 +140,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
   sessions, virtual outputs, visual baselines, and the required display matrix.
 - [Implementation roadmap](development/implementation-roadmap.md) distinguishes
   completed foundation/compositor work from the upcoming desktop milestones.
+- [Showcase website](development/showcase-website.md) records the public
+  desktop and Office site, media provenance, and verification boundary.
 - [Profile schema v1](reference/profile-schema-v1.md) and
   [theme schema v1](reference/theme-schema-v1.md) document the data currently
   accepted by the loaders.
