@@ -4,6 +4,10 @@
 # and the cover image provider. A library (not part of the executable) so
 # tests link it without dragging in a window.
 qt_add_library(qindaqt_qindalutris_view STATIC
+    compat_advice_view.cpp
+    compat_advice_view.h
+    fix_applier.cpp
+    fix_applier.h
     game_icon_provider.h
     game_image_resolver.cpp
     game_image_resolver.h

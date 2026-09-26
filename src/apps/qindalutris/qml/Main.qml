@@ -138,6 +138,7 @@ Tk.AppWindow {
                 selectedPlayable: Library.selectedPlayable
                 selectedPlayReason: Library.selectedPlayReason
                 selectedRunning: Running.runningIds.indexOf(Library.selectedGameId) >= 0
+                selectedVerdict: Installs.verdictForGame(Library.selectedGame)
 
                 onSelectRequested: function(gameId) { Library.selectGame(gameId) }
                 onPlayRequested: { Library.playSelected() }

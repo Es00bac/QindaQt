@@ -23,6 +23,7 @@ Item {
     property bool selectedPlayable: false
     property string selectedPlayReason: ""
     property bool selectedRunning: false
+    property var selectedVerdict: ({})
 
     property string currentSourceFilter: ""
 
@@ -150,6 +151,7 @@ Item {
                 playable: page.selectedPlayable
                 playReason: page.selectedPlayReason
                 running: page.selectedRunning
+                verdict: page.selectedVerdict
                 onPlayRequested: { page.playRequested() }
                 onForceQuitRequested: function(gameId) { page.forceQuitRequested(gameId) }
                 onConfirmVersionRequested: { page.confirmVersionRequested() }
