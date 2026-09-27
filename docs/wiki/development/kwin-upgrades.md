@@ -53,3 +53,35 @@ If the new session fails its installed smoke, return to the text console and
 install the retained prior KWin stack and QindaQt binary package as one rollback
 transaction. Do not mix the prior plugin with the new KWin process. Capture the
 failed package versions and nested reproduction before retrying the upgrade.
+
+## Corner Bar input regression
+
+The Corner Bar cutout requires the patched KWin library as well as the
+QindaQt decoration (ADR-0277). A painted transparent strip alone is not
+acceptance evidence. The test-only patch
+`compositor/tests/transparent-decoration-input.patch` extends upstream
+`testDecorationInput` at the exact pinned source revision. Apply it after the
+production patch series in an isolated KWin source tree, configure that tree
+with `BUILD_TESTING=ON`, and build the `testDecorationInput` target. Test
+configuration additionally needs KWayland and KPipeWire development packages.
+
+Run it through the private-home/private-bus wrapper:
+
+```sh
+python3 compositor/tests/run-decoration-input.py \
+  /path/to/kwin-build/bin/testDecorationInput
+```
+
+The virtual compositor maps two real Wayland clients. The upper decoration
+publishes the process-local cutout contract; a pointer press and release in
+that region must reach the lower client's surface without moving the upper
+window. A retained title point still targets the upper decoration. Removing
+the property, or supplying an invalid type, restores ordinary input. The
+fixture tests the compositor contract independently of decoration painting;
+QindaQt's painter/plugin tests separately cover published geometry and shape.
+The test-only patch is deliberately outside the production patch series.
+
+For a negative control, retain the unpatched library from the same exact KWin
+release in an ignored directory and pass `--library-path` pointing there. The
+cutout assertion must fail with that library. Do not substitute a different
+KWin ABI. Never replace or restart the physical compositor to run this test.
