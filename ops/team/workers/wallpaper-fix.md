@@ -1,6 +1,6 @@
 # Wallpaper fix
 
-- Status: working — implement a user folder wallpaper gallery and reliable chooser.
+- Status: idle — wallpaper gallery implementation handed off and integrated; available for focused delivery regressions.
 - Base: 36a87ddf
 - Worktree: /home/cabewse/work_space/container-wm-wallpaper
 - Branch: fix/user-wallpaper-gallery
@@ -13,3 +13,5 @@
 - 2026-09-27T18:24:00Z — Candidate fa90f55e pushed; standalone native catalog tests pass5/5 (Qt6.11.1), documentation validator418docs and whitespace check pass. Root runs warmed native/QML build. Reviewer requested imported-card selection assertion; added to actual acceptance regression. Production implementation stays122lines and separate from the existing appearance controller.
 
 - 2026-09-27T18:26:00Z — Manager native suite passes11/12rows, including model, installed route and shell controller; actual gallery selection regression passes. Negative dialog fixture used nonexistent path, which Qt correctly refuses before acceptance; repaired4d229a8d to select an existing invalid image. Awaiting manager rerun and exact reviewer result; no production repair needed.
+
+- 2026-09-27T18:28:00Z — Manager confirms final page gate passed0.82s exit0; all12selected rows now pass, native Settings build passed,418documentation validator and strictMkDocs passed. Exact4d229a8d accepted and integrated26ea670b; package r5 delivery belongs to manager. Handoff complete; no active implementation claim.
