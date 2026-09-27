@@ -39,12 +39,18 @@ the same fixture with the original exact-ABI library fails the cutout assertion.
 All nine resident endpoints are present, watchdog timers active and pending
 report queues empty on both machines. Strict MkDocs and link validation pass.
 
-The screenshot-reported Settings preview repair is independently reviewed and
-integrated: the client backdrop leaves the Corner Bar cutout transparent, the
-preview shares the live contour-shadow texture, and decoration painting excludes
-the client rectangle so rounded titles stop at the client seam. Six rendered
-pixel cases pass, including HiDPI. Native validation and pinned r7 delivery are
-the remaining release gates.
+The screenshot-reported Settings preview repair is now installed on **both hosts**
+as desktop `0.1.0_pre20260927-r7`, source `6a9ca787`, overlay `3ffb419`.
+The client backdrop leaves the Corner Bar cutout transparent, the preview shares
+the live contour-shadow texture, and decoration painting excludes the client
+rectangle so rounded titles stop at the client seam. Independent source/archive
+review, six rendered-pixel cases, four native integrated CTest rows, strict docs
+and link validation pass. The installed workstation preview was visually checked.
+Both hosts verify 1,643/1,643 desktop package files; six installed artifacts match.
+All 21 installed Settings routes plus Wallpaper, private installed session boots,
+nine resident endpoints, active watchdog timers and empty pending report queues
+pass on both hosts. Reopen Settings to load r7. Existing sessions remain intact;
+the earlier compositor/decoration fixes activate at the next normal login.
 
 ## September 27 — User-folder wallpaper gallery
 
