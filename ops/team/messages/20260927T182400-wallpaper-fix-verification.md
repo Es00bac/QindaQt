@@ -1,0 +1,3 @@
+# Wallpaper candidate verification
+
+Candidate fa90f55e plus this focused review assertion: standalone system Qt6.11.1 moc/c++ compile passed, catalog test5/5 in69ms, tools/validate-docs418documents passed and git diff --check passed. Native full Appearance/QML gates are running under manager ownership on qinda. The actual accepted-dialog test additionally verifies that the custom card appears and reselects the copied file after No wallpaper. No new large production source file; local catalog has122lines. Existing large page test is extended only for its existing wallpaper behavior fixture, avoiding unrelated harness duplication.

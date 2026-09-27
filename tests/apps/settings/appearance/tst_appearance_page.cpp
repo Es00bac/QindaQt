@@ -489,6 +489,17 @@ void AppearancePageTests::acceptedFileDialogImportsAndSelectsWallpaper()
     QCOMPARE(gallery.wallpapers().size(), 1);
     QVERIFY(QFileInfo::exists(source));
     QCOMPARE(QImage(imported), image);
+    QQuickItem *customCard = nullptr;
+    const auto cards = scene.root->findChildren<QQuickItem *>(QStringLiteral("bundledWallpaperButton"));
+    for (QQuickItem *card : cards) {
+        if (card->property("modelData").toMap().value(QStringLiteral("value")).toString() == imported)
+            customCard = card;
+    }
+    QVERIFY(customCard != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(item(scene.root, "noWallpaperButton"), "clicked"));
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper")).toString(), QString{});
+    QVERIFY(QMetaObject::invokeMethod(customCard, "clicked"));
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper")).toString(), imported);
     auto *apply = item(scene.root, "appearanceApplyButton");
     QVERIFY(apply != nullptr);
     QCOMPARE(apply->property("text").toString(), QStringLiteral("Set wallpaper"));
