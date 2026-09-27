@@ -2,7 +2,7 @@
 
 - Role: Program Manager
 - Provider: OpenAI Codex
-- Status: working — capture both physical sessions, integrate reviewed repair, deliver through QindaGentoo on both hosts
+- Status: working — finalize verified two-host delivery record and synchronize repository hubs
 - Base: 64ae95c3
 - Worktree: container-wm-performance
 
@@ -21,3 +21,5 @@
 - 2026-09-27T17:41:00+00:00 — Both actual installed private boots passed. Shell-only reload preserved physical compositor/supervisor/notification identities. Laptop CPU45.5→2.2%,6s task6333→7 andidentity6308→1. qinda still80.9% shell CPU with60WindowsChanged/6s; newprofile73.66%realpath and exactmissinghicolorWine-fallbackpath. Same implementer repairing existence-first probing, no persistentcache. Eighteen identity-fenced dead private-bus portals cleaned after measurements, hostportalPIDs preserved.
 
 - 2026-09-27T17:43:00+00:00 — Independently accepted7f5b8431 integrated; manager rebuild shell+four icon tests passes4/4 in1.08s. User confirms noticeable improvement afterfirstshellreload. Finalr4 delivery will include reviewed existence-first lookup and contained test staging; existing-file confinement staysfresh.
+
+- 2026-09-27T18:03:30+00:00 — Final signed r4 installed on both hosts,1642/1642 package files and five artifact hashes match; both running shells match final binary. Both installed private boots pass. Final10s shell CPU laptop4.6%,qinda10.9%; user confirms both smoother. All nine bus owners healthy, timers active, queues empty. Final shell reload preserved9/9 and5/5 captured application identities plus physical compositor/supervisor/notification hosts. Physical login activation and multi-day observation remain explicit boundaries. Final documentation and source synchronization underway.
