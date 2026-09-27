@@ -1,5 +1,30 @@
 # Integration handoff
 
+## September 27 — Active long-session performance and recovery repair
+
+The user reports progressively degraded dock animations (worst on the older
+laptop session), visible reloads on ordinary window changes, and a broken
+workstation login. Physical sessions were preserved for baseline measurements.
+
+- Laptop: 6 seconds of metadata-only bus tracing saw 6,333 task invalidations
+  and 6,308 active-identity invalidations against 25 `WindowsChanged` signals.
+  A separate 10-second sample recorded 3,962.76 ms combined shell/compositor CPU,
+  53,772 page faults and zero major faults, with no current memory pressure.
+- Workstation: shell profiling attributed 75.89% of sampled cycles to
+  `realpath`; live stacks ran through Qt canonical-file lookup and QV4 sequence
+  length access. Its 5-second bus trace saw 285 task and 280 identity hints.
+- Source investigation finds ownership invalidation on every panel surface
+  commit and task getters rebuilding all row/icon metadata for every QML read.
+  These are confirmed amplification paths, not proof of an unbounded memory leak
+  or a complete explanation of the session-age curve.
+
+Reviewed task-row candidate `7d2a1601` is integrated; the manager rebuilt and
+reran its three focused tests on qinda (3/3, exit 0). The compositor and stable
+keyed-delegate changes are still candidates. Recovery candidate Gabbee `f7ec6b2`
+is independently reviewing: expanded core coverage, manager-owned session
+environment rather than stale pin files, and local incident delivery on qinda.
+Do not claim packages or current physical processes contain these repairs yet.
+
 ## September 27 — Physical-session repair and FormRow live-loop fix
 
 The qinda physical session exposed a shared `FormRow` polish loop: its
