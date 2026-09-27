@@ -12,6 +12,7 @@ target_sources(
     qindaqt_decoration_painter
     PRIVATE
         src/decoration_painter.cpp
+        src/decoration_shadow.cpp
         src/decoration_chrome_map.cpp
         src/decoration_buttons.cpp
         src/decoration_button_painter.cpp
@@ -25,6 +26,7 @@ target_sources(
         BASE_DIRS include
         FILES
             include/qindaqt/decoration_painter/decoration_painter.h
+            include/qindaqt/decoration_painter/decoration_shadow.h
             include/qindaqt/decoration_painter/decoration_button_style.h
 )
 target_link_libraries(

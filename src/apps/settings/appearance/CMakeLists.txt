@@ -69,6 +69,7 @@ qt_add_qml_module(
     SOURCES
         include/qindaqt/apps/settings_appearance/appearance_window_preview.h
         appearance_window_preview.cpp
+        appearance_preview_window.cpp
         include/qindaqt/apps/settings_appearance/appearance_container_preview.h
         appearance_container_preview.cpp
     QML_FILES

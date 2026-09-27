@@ -300,3 +300,10 @@ confirmed. Missing packages fall back to the color theme's icon family without
 rewriting the saved choice. Discovery checks at most 32 roots, 1,024 entries and
 128 themes, limits indexes to 256 KiB, and rejects path escapes. Reopen Settings
 to refresh the installed catalog. See [ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md).
+
+The window preview paints only the real client area beneath the title and
+subtracts the shared transparent-title region. Corner Bar's empty strip and
+rounded tab corners reveal the canvas/wallpaper instead of an opaque backing.
+Its shadow uses the same pure texture and nine-patch geometry as the live
+KDecoration adapter, including authored extent, opacity, radius and tab width;
+it does not approximate the window as a full-width rectangle.

@@ -685,3 +685,8 @@ live-stress, documentation, and final-audit commands are maintained in the
 [testing harness](../development/testing-harness.md) rather than represented by
 a frozen test count from the shared registry. Live cross-output DPI migration
 and physical input/GPU rendering remain later qualification gates.
+
+The pure shadow texture and nine-patch layout live in DecorationPainter. The
+KDecoration adapter wraps that value unchanged; the Settings preview paints
+its eight cells directly. This shares the exact Corner Bar contour across
+live windows and previews without importing KWin into Settings.

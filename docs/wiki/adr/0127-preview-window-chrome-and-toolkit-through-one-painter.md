@@ -34,7 +34,7 @@ that reads like a book.
    caption painters. The KDecoration plugin gathers live window state and
    calls these functions; the compositor's `decorationPaletteProperties` is
    `DecorationChrome::toVariantMap()`; `qindaqt_decoration_visuals` keeps
-   only the nine-patch shadow. The painter is the contract: a preview cannot
+   only the KDecoration adapter for the shared nine-patch shadow texture. The painter is the contract: a preview cannot
    drift from what the compositor draws because both call the same code.
 2. **A preview window in the Appearance route.** `AppearanceWindowPreview`
    (a `QQuickPaintedItem` in `QindaQt.SettingsApp.Appearance`) paints the
