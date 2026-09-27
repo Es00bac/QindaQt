@@ -1,7 +1,7 @@
 # Shell performance Codex
 
 - Role: Shell performance implementer
-- Status: available — repair verified locally; manager installed-stage proof and exact review pending
+- Status: available — read-only orphan audit handed off; ready for bounded integration regression help
 - Base: `64ae95c336c03a2de54775962ff42622fae1d156`
 - Worktree: `/home/cabewse/work_space/container-wm-performance-worker`
 - Branch: `fix/shell-icon-performance`
@@ -22,3 +22,7 @@
 - 2026-09-27T11:07:48-06:00 — Manager integrated gate reported missing KeyedRowModel in direct-file staged consumer and second context-menu open failure. Claimed repairs on preserved branch; investigating explicit module import and retained popup close lifecycle.
 
 - 2026-09-27T11:13:57-06:00 — Production direct-file module import repair `e37f01f9` pushed. Keyboard cause proven: offscreen retains hidden popup as focusWindow; waiting Menu.closed plus exact parent focusWindow restores synthetic input while asserting same retained menu. Final six compiled CTest rows pass (including original five); strict docs and 417 links pass. Installed gate could not reach consumer locally because component install requires unbuilt qindaqt-shell; manager full native tree owns staged/relocated proof.
+
+- 2026-09-27T11:21:24-06:00 — Claimed bounded manager audit of PPID1 portal processes on laptop and old Weston on qinda. Read-only process/selected-environment/socket/memory inspection; no termination, live-session changes, or shared build mutation authorized.
+
+- 2026-09-27T11:26:37-06:00 — Audited 18 same-identity dead private-bus portal backends, mapped site-capture log origins, quantified PSS/private/swap without attributing dock degradation. Evidence retained in ignored build/orphan-audit.json; Weston left untouched because listener/host bus remain live. Website child-lifetime gap reported separately; no product or process mutations.
