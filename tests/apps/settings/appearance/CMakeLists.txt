@@ -172,6 +172,8 @@ add_test(NAME qindaqt.appearance-user-wallpaper-catalog
     COMMAND qindaqt_user_wallpaper_catalog_tests)
 
 qt_add_executable(qindaqt_appearance_window_silhouette_tests tst_appearance_window_silhouette.cpp)
+target_include_directories(qindaqt_appearance_window_silhouette_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/apps/settings/appearance/include")
 target_link_libraries(qindaqt_appearance_window_silhouette_tests PRIVATE
     qindaqt_settings_appearance_qml QindaQt::DecorationPainter Qt6::Widgets Qt6::Quick Qt6::Test)
 qindaqt_enable_warnings(qindaqt_appearance_window_silhouette_tests)

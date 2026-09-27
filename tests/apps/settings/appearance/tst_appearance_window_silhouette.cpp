@@ -12,6 +12,7 @@ DecorationChrome chromeFor(const QString &buttons, qreal radius, qreal opacity =
     DecorationChrome chrome;
     chrome.buttonStyle = buttons;
     chrome.appIcon = false;
+    chrome.titleWorn = false;
     chrome.titleBar = QColor("#e6b440");
     chrome.surface = QColor("#dddddd");
     chrome.surfaceRaised = QColor("#dddddd");
