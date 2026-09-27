@@ -11,25 +11,34 @@ import QindaTK as Tk
 QtObject {
     id: root
 
-    // The window's palette (ApplicationWindow.palette).
-    required property var palette
+    required property var window
 
-    readonly property var roles: ({
-        "bg": root.palette.window,
-        "surface": root.palette.window,
-        "panel": root.palette.base,
-        "border": root.palette.mid,
-        "text": root.palette.text,
-        "textMuted": root.palette.placeholderText,
-        "accent": root.palette.highlight,
-        "accentContrast": root.palette.highlightedText,
-        "dark": 0.2126 * root.palette.window.r + 0.7152 * root.palette.window.g
-                + 0.0722 * root.palette.window.b < 0.5
-    })
+    function syncPalette() {
+        // AGENT-GUARD: Read roles afresh on the owning window's notification.
+        // Qt can replace its inherited application palette without notifying
+        // bindings through a var holding that same palette object. Caching a
+        // role map here left dark file-view colors inside light Qt chrome.
+        const palette = root.window.palette
+        Tk.Theme.applyRoles({
+            "bg": palette.window,
+            "surface": palette.window,
+            "panel": palette.base,
+            "border": palette.mid,
+            "text": palette.text,
+            "textMuted": palette.placeholderText,
+            "accent": palette.highlight,
+            "accentContrast": palette.highlightedText,
+            "dark": 0.2126 * palette.window.r + 0.7152 * palette.window.g
+                    + 0.0722 * palette.window.b < 0.5
+        })
+    }
 
-    onRolesChanged: Tk.Theme.applyRoles(root.roles)
+    property Connections paletteChanges: Connections {
+        target: root.window
+        function onPaletteChanged() { root.syncPalette() }
+    }
     Component.onCompleted: {
-        Tk.Theme.applyRoles(root.roles)
+        root.syncPalette()
         // The application font (F1 font preferences); an empty family keeps
         // the toolkit's own.
         const font = Qt.application.font

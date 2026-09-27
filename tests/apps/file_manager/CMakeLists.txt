@@ -637,3 +637,16 @@ set_tests_properties(
     qindaqt.file-manager-transfer-router
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
+qt_add_executable(qindaqt_file_manager_toolkit_palette_tests tst_toolkit_palette.cpp)
+target_link_libraries(qindaqt_file_manager_toolkit_palette_tests PRIVATE
+    Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+target_compile_definitions(qindaqt_file_manager_toolkit_palette_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+qindaqt_enable_warnings(qindaqt_file_manager_toolkit_palette_tests)
+add_test(NAME qindaqt.file-manager-toolkit-palette
+         COMMAND qindaqt_file_manager_toolkit_palette_tests)
+set_tests_properties(qindaqt.file-manager-toolkit-palette PROPERTIES
+    LABELS "file-manager;offscreen;appearance"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion;QT_FATAL_WARNINGS=1"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
