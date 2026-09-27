@@ -361,6 +361,16 @@ missing icons. Read denial still publishes empty lists without resolving names
 or icons. The focused row-snapshot regression exercises QV4 reads with 1, 12,
 and 64 windows and verifies atomic freshness on the next publication.
 
+The compiled strip feeds those snapshots through `KeyedRowModel`, a GUI-thread
+presentation adapter exported by the TaskList applet module. Its `rowData`
+role updates in place by `(taskId, windowId)` identity; insertions, removals,
+and reorders preserve every surviving delegate. It owns at most 4,096 copied
+rows, rejects duplicate/empty identities, and has no transport or authority.
+DesktopControls reuses this adapter through its existing TaskList dependency.
+Only genuinely new dock tiles fade in with the short motion token; reduced
+motion is immediate. Retained rows never restart that fade, and removal retires
+intent targets immediately. See [ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md).
+
 Presentation phases are the T0 projection plus the read-denial state:
 `loading` (no accepted generation — cold start is Loading and the T1 producer
 degrades explicitly once owner discovery resolves, so Loading cannot persist

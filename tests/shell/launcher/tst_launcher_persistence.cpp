@@ -131,6 +131,9 @@ private Q_SLOTS:
     void unknownSchemaKeyFailsClosed();
     void uncertainCommitsAreNeverReplayed();
     void transportLossClearsTruthAndRefusesNewWrites();
+    void successfulResyncRetainsDisplayWithoutWriteAdmission();
+    void resyncRevokesOnLossOrMalformedReply_data();
+    void resyncRevokesOnLossOrMalformedReply();
     void writesAreSerialized();
     void recentListStaysBounded();
 };
@@ -443,6 +446,70 @@ void LauncherPersistenceTests::transportLossClearsTruthAndRefusesNewWrites()
     QCOMPARE(wired.controller.pin(QStringLiteral("new.app")),
              PersistenceMutation::Unavailable);
     QVERIFY(wired.transport.commits.isEmpty());
+}
+
+void LauncherPersistenceTests::successfulResyncRetainsDisplayWithoutWriteAdmission()
+{
+    WiredController wired;
+    wired.publishBaseline({{LauncherPersistenceController::dockItemsKey(),
+                            dockValue({QStringLiteral("kept.app")})}});
+    QCOMPARE(wired.controller.recordLaunch(QStringLiteral("kept.app")),
+             PersistenceMutation::Applied);
+    const QVariant recent = wired.committedValue(LauncherPersistenceController::recentKey());
+    QSignalSpy pins(&wired.controller, &LauncherPersistenceController::pinnedChanged);
+    wired.transport.replyLastCommit(FakeSettingsTransport::commitWire(
+        SettingsWireStatus::Applied, kEpoch, 0, 1,
+        {{LauncherPersistenceController::recentKey(), recent}}));
+    QCOMPARE(wired.client.state(), ClientState::Authenticating);
+    QVERIFY(!wired.controller.persistenceReady());
+    QCOMPARE(wired.controller.pinned().ids(), QStringList{QStringLiteral("kept.app")});
+    QCOMPARE(wired.controller.pin(QStringLiteral("other.app")), PersistenceMutation::Unavailable);
+    QCOMPARE(pins.size(), 0);
+    QTRY_COMPARE(wired.transport.snapshots.size(), 2);
+    // A confirmed empty dock is still authoritative and removes the tile.
+    wired.transport.replyLastSnapshot(FakeSettingsTransport::snapshotWire(
+        kEpoch, 1, {{LauncherPersistenceController::dockItemsKey(), dockValue({})},
+                    {LauncherPersistenceController::recentKey(), recent}}));
+    QVERIFY(wired.controller.persistenceReady());
+    QVERIFY(wired.controller.pinned().ids().isEmpty());
+    QCOMPARE(pins.size(), 1);
+}
+
+void LauncherPersistenceTests::resyncRevokesOnLossOrMalformedReply_data()
+{
+    QTest::addColumn<QString>("failure");
+    QTest::newRow("owner-replacement-without-state-change") << QStringLiteral("owner");
+    QTest::newRow("transport-loss") << QStringLiteral("bus");
+    QTest::newRow("malformed-snapshot") << QStringLiteral("malformed");
+}
+
+void LauncherPersistenceTests::resyncRevokesOnLossOrMalformedReply()
+{
+    QFETCH(QString, failure);
+    WiredController wired;
+    wired.publishBaseline({{LauncherPersistenceController::dockItemsKey(),
+                            dockValue({QStringLiteral("kept.app")})}});
+    QCOMPARE(wired.controller.recordLaunch(QStringLiteral("kept.app")),
+             PersistenceMutation::Applied);
+    const QVariant recent = wired.committedValue(LauncherPersistenceController::recentKey());
+    wired.transport.replyLastCommit(FakeSettingsTransport::commitWire(
+        SettingsWireStatus::Applied, kEpoch, 0, 1,
+        {{LauncherPersistenceController::recentKey(), recent}}));
+    QCOMPARE(wired.client.state(), ClientState::Authenticating);
+    QVERIFY(!wired.controller.pinned().ids().isEmpty());
+    QTRY_COMPARE(wired.transport.snapshots.size(), 2);
+    if (failure == QLatin1StringView("owner")) {
+        wired.transport.announceOwner(QStringLiteral(":1.100"));
+        QCOMPARE(wired.client.state(), ClientState::Authenticating);
+    } else if (failure == QLatin1StringView("bus")) {
+        Q_EMIT wired.transport.busDisconnected();
+    } else {
+        wired.transport.replyLastSnapshot({});
+        QCOMPARE(wired.client.state(), ClientState::Degraded);
+    }
+    QVERIFY(wired.controller.pinned().ids().isEmpty());
+    QVERIFY(wired.controller.recent().ids().isEmpty());
+    QVERIFY(!wired.controller.persistenceReady());
 }
 
 void LauncherPersistenceTests::writesAreSerialized()

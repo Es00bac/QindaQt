@@ -185,7 +185,14 @@ immediately; a confirmed rejection (including `UnknownKey`) reverts the model
 to the last confirmed value and keeps the reason visible until the next
 explicit write; an uncertain commit is never replayed and converges through
 the resync snapshot; Settings1 owner or transport loss clears pinned/recent
-truth and refuses new writes. The client serializes writes, so a mutation during an
+truth and refuses new writes. A validated commit's temporary `Authenticating`
+refresh retains display values only while the confirmed snapshot still belongs
+to `currentOwner()`. Write admission remains disabled until the fresh snapshot
+is Ready. A replacement owner (even with no state-enum transition), transport
+loss, or malformed resync clears the values; a confirmed empty dock also
+clears them. This prevents successful recent-app writes and dock edits from
+briefly emptying every dock tile ([ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md)).
+The client serializes writes, so a mutation during an
 in-flight write is refused as `Busy` rather than queued.
 
 Registering the launcher key set in the Settings1 schema is a

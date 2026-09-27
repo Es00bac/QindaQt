@@ -26,6 +26,29 @@ T.Button {
     property int tileExtent: 60
     property int iconExtent: 40
     property bool reducedMotion: false
+    // Only a genuinely inserted delegate fades in. Keyed row updates retain
+    // this object, so title/focus/running changes never replay the animation.
+    property real revealProgress: 1.0
+    NumberAnimation {
+        id: revealAnimation
+        target: tile
+        property: "revealProgress"
+        to: 1.0
+        duration: Tokens.motion.short
+        easing.type: Easing.OutCubic
+    }
+    Component.onCompleted: {
+        if (dockMode && !reducedMotion) {
+            revealProgress = 0.0
+            revealAnimation.start()
+        }
+    }
+    onReducedMotionChanged: {
+        if (reducedMotion) {
+            revealAnimation.stop()
+            revealProgress = 1.0
+        }
+    }
     property bool luna: false
     property bool launchEnabled: true
     // Magnification factor from the strip (1.0 = rest).
@@ -65,7 +88,7 @@ T.Button {
     focusPolicy: Qt.TabFocus
     hoverEnabled: true
     enabled: launchEnabled || kind !== "application"
-    opacity: removing ? 0.45 : 1.0
+    opacity: revealProgress * (removing ? 0.45 : 1.0)
     z: dragHeld ? 2 : 0
     transform: Translate {
         x: tile.vertical ? 0 : tile.mainShift
