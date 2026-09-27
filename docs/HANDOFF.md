@@ -39,11 +39,12 @@ the same fixture with the original exact-ABI library fails the cutout assertion.
 All nine resident endpoints are present, watchdog timers active and pending
 report queues empty on both machines. Strict MkDocs and link validation pass.
 
-A subsequent screenshot review found an additional **Settings preview** defect:
-its client backdrop fills the full frame beneath the Corner Bar cutout and it
-omits the contour shadow. The preview repair is active and will be delivered in
-a separate pinned package revision; r6's installed production fixes above remain
-verified. The preview must not be described as fully faithful until that lands.
+The screenshot-reported Settings preview repair is independently reviewed and
+integrated: the client backdrop leaves the Corner Bar cutout transparent, the
+preview shares the live contour-shadow texture, and decoration painting excludes
+the client rectangle so rounded titles stop at the client seam. Six rendered
+pixel cases pass, including HiDPI. Native validation and pinned r7 delivery are
+the remaining release gates.
 
 ## September 27 — User-folder wallpaper gallery
 

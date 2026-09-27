@@ -14,11 +14,10 @@ native and installed verification. Real corner click-through has positive and
 negative native evidence; new compositor/decoration code activates at the next
 normal login. Existing physical sessions remain intact.
 
-The additional screenshot-reported **Settings preview silhouette/shadow** defect
-is being corrected separately. The preview currently fills transparent title
-space with a full-frame backdrop. Close that remaining UI-fidelity item through
-review, focused visual verification and a pinned update on both machines. See
-the current [delivery and evidence record](HANDOFF.md).
+The additional Settings preview repair is reviewed and integrated: transparent
+cutout, shared contour shadow and clipping at the client seam. Finish native
+validation and pinned r7 delivery on both machines. See the current
+[delivery and evidence record](HANDOFF.md).
 
 ## September 27 — Add custom wallpapers through a user folder
 
