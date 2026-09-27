@@ -15,6 +15,16 @@ reviewed patch through a pinned overlay KWin revision and fix the rectangular
 decoration shadow, with native input and rendering evidence before claiming
 completion on both hosts. Preserve current sessions during installation.
 
+## September 27 — Correct light appearances and provide six full icon families
+
+Integrated and independently reviewed: File Manager inherited palette refresh,
+caption contrast repair, independent installed icon selector, and live shell/file
+icon updates. Six full icon families are being reviewed in QindaThemes, covering
+installed applications on both hosts, common Linux desktop/creative applications,
+Qinda projects, file formats, custom folders and action/status/device symbols.
+Native appearance tests pass; final compositor/platform gates and pinned overlay
+installation on both hosts remain open. See the current [handoff](HANDOFF.md).
+
 ## September 27 — Add custom wallpapers through a user folder
 
 Delivered source `26ea670b` through overlay `3fc245c`, signed desktop r5,

@@ -1,5 +1,27 @@
 # Integration handoff
 
+## September 27 — Corner shape, light palettes and complete icon choices
+
+Reviewed shadow candidate `419fe44e`, caption contrast `1edc1fb6`, File Manager
+palette repair `64e9fd1e`, and icon-choice chain `930f68fc` → `88e0ef76` →
+`8c0bc557` are integrated. File Manager now reads fresh inherited palette roles
+on the window palette notification, fixing dark tiles/white labels left over
+in light BeOS-like and NeXT appearances. The regression changes the actual
+QGuiApplication palette repeatedly rather than only assigning a local color.
+Independent icon choice uses Settings1 Apply/Revert and preserves existing shell
+and File Manager delegates while invalidating their image URLs on confirmed
+changes. See [ADR-0280](wiki/adr/0280-independent-installed-icon-theme-choice.md).
+
+The native combined appearance gate passes 12/12 rows, including real existing
+File Manager icon refresh, palette adoption, shell icon resolution, settings
+model/page and application controller. The decoration shadow/painter and built-in
+contrast gates also pass; all 216 effective caption combinations meet 4.5:1.
+The seven external palette packs pass the same foreground/background audit.
+Strict MkDocs and 419-document link/navigation validation pass. Expanded native
+platform-theme fixture coverage and native compositor pointer delivery remain
+active gates. Packaging and installation on both hosts are pending; existing
+physical sessions are preserved. Do not describe this entry as delivered yet.
+
 ## September 27 — User-folder wallpaper gallery
 
 Source `26ea670bf6892c456758c0e4845b9f86c57fb85f` integrates independently
