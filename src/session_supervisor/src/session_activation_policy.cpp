@@ -5,9 +5,14 @@
 
 namespace QindaQt::SessionSupervisor {
 SessionActivationScope activationScopeForCompositor(
-    const QString &executable, const QStringList &arguments)
+    const QString &executable, const QStringList &arguments, const QString &processName)
 {
-    if (QFileInfo(executable).fileName() != QStringLiteral("kwin_wayland"))
+    const QString expected = QStringLiteral("kwin_wayland");
+    const bool hasIdentity = !executable.isEmpty()
+        ? QFileInfo(executable).fileName() == expected
+        : processName == expected && !arguments.isEmpty()
+            && QFileInfo(arguments.constFirst()).fileName() == expected;
+    if (!hasIdentity)
         return SessionActivationScope::Private;
     bool physical = false;
     for (const QString &argument : arguments.mid(1)) {
@@ -38,7 +43,7 @@ SessionActivationScope witnessedSessionActivationScope(const qint64 compositorPi
     const QString root = QStringLiteral("/proc/%1/").arg(compositorPid);
     const QString executable = QFileInfo(root + QStringLiteral("exe")).symLinkTarget();
     QFile commandLine(root + QStringLiteral("cmdline"));
-    if (executable.isEmpty() || !commandLine.open(QIODevice::ReadOnly))
+    if (!commandLine.open(QIODevice::ReadOnly))
         return SessionActivationScope::Private;
     constexpr qint64 maximumBytes = 64 * 1024;
     const QByteArray bytes = commandLine.read(maximumBytes + 1);
@@ -47,6 +52,20 @@ SessionActivationScope witnessedSessionActivationScope(const qint64 compositorPi
     QStringList arguments;
     for (const QByteArray &argument : bytes.chopped(1).split('\0'))
         arguments.append(QString::fromLocal8Bit(argument));
-    return activationScopeForCompositor(executable, arguments);
+    QString processName;
+    if (executable.isEmpty()) {
+        // AGENT-NOTE: cap_sys_nice makes installed KWin nondumpable, hiding
+        // /proc/PID/exe even from its same-UID child. comm and argv[0] remain
+        // readable; require both rather than disabling physical login setup.
+        QFile comm(root + QStringLiteral("comm"));
+        if (!comm.open(QIODevice::ReadOnly)) return SessionActivationScope::Private;
+        const QByteArray name = comm.read(17);
+        // Linux comm is at most 15 bytes plus one newline. Never accept a
+        // partial/truncated identity or arbitrary whitespace normalization.
+        if (name.isEmpty() || name.size() > 16 || !name.endsWith('\n'))
+            return SessionActivationScope::Private;
+        processName = QString::fromLocal8Bit(name.chopped(1));
+    }
+    return activationScopeForCompositor(executable, arguments, processName);
 }
 }

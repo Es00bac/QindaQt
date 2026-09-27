@@ -43,6 +43,20 @@ private Q_SLOTS:
         QCOMPARE(activationScopeForCompositor(executable, arguments),
                  physical ? SessionActivationScope::PhysicalDesktop : SessionActivationScope::Private);
     }
+    void nondumpableKwinRequiresBothRemainingIdentityWitnesses() {
+        const QStringList physical{"kwin_wayland", "--drm", "--exit-with-session", "qindaqt-session"};
+        QCOMPARE(activationScopeForCompositor({}, physical, QStringLiteral("kwin_wayland")),
+                 SessionActivationScope::PhysicalDesktop);
+        QCOMPARE(activationScopeForCompositor({}, physical, QStringLiteral("bash")),
+                 SessionActivationScope::Private);
+        QCOMPARE(activationScopeForCompositor({}, physical), SessionActivationScope::Private);
+        QCOMPARE(activationScopeForCompositor({}, {"bash", "--drm"}, QStringLiteral("kwin_wayland")),
+                 SessionActivationScope::Private);
+        QCOMPARE(activationScopeForCompositor("/usr/bin/bash", physical, QStringLiteral("kwin_wayland")),
+                 SessionActivationScope::Private);
+        QCOMPARE(activationScopeForCompositor({}, {"kwin_wayland", "--virtual"}, QStringLiteral("kwin_wayland")),
+                 SessionActivationScope::Private);
+    }
     void unavailableWitnessFailsClosed() {
         QCOMPARE(witnessedSessionActivationScope(1), SessionActivationScope::Private);
         QCOMPARE(witnessedSessionActivationScope(QCoreApplication::applicationPid()),

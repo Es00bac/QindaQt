@@ -21,6 +21,10 @@ The session application determines activation scope from its existing direct
 parent lifetime witness. Only a `kwin_wayland` executable with explicit `--drm`
 backend evidence before its child payload is physical. Nested backend flags,
 conflicting evidence, unknown parents, and unreadable evidence are private.
+Installed KWin may carry `cap_sys_nice`, making its `/proc/PID/exe` symlink
+unreadable even to the same UID. In that case bounded `comm` and `argv[0]`
+basename must both be `kwin_wayland`. A readable non-KWin executable never
+falls back. The existing parent-death witness still owns lifetime identity.
 
 Private scope is the default for activation and resident-refresh helpers. It
 skips broker activation publication and all shared-manager mutations. An explicit

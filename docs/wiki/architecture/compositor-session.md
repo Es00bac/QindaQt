@@ -664,6 +664,10 @@ lifetime-witnessed direct parent. Only an executable named `kwin_wayland` with
 an explicit `--drm` option before its child payload can publish activation state
 or refresh shared resident services. Virtual, windowed, X11, Wayland-display,
 unknown, unreadable, and conflicting backend evidence all remain private.
+When capability-bearing KWin hides `/proc/PID/exe`, both its bounded `comm`
+name and the basename of `argv[0]` must instead equal `kwin_wayland`; a readable
+conflicting executable is never overridden. This is an accidental-interference
+guard, not a security boundary against same-user code.
 Private scope is also the helper API default, and skips **both** broker
 `UpdateActivationEnvironment` and manager `SetEnvironment`/`RestartUnit` calls.
 This protects a nested process even if it inherits the physical desktop's bus.
