@@ -1,5 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+add_test(
+    NAME session.installed-plugin-stage
+    COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_installed_plugin_discovery_unit.py"
+)
+set_tests_properties(session.installed-plugin-stage PROPERTIES LABELS "unit;install")
+
 # This installed-boundary row depends on the plugin and probe targets created by
 # the enclosing session test configuration. Keep it included at that boundary.
 if(NOT IS_ABSOLUTE "${KDE_INSTALL_BINDIR}"

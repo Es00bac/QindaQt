@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import configparser
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -49,11 +50,17 @@ def stage_install(arguments: argparse.Namespace) -> tuple[Path, Path, Path]:
         "--install",
         str(build_directory),
         "--prefix",
-        str(install_prefix),
+        "/",
     ]
     if arguments.configuration:
         command.extend(["--config", arguments.configuration])
-    completed = subprocess.run(command, text=True, capture_output=True, check=False)
+    # AGENT-GUARD: --prefix alone cannot redirect absolute destinations such
+    # as /etc/xdg/autostart. DESTDIR contains the entire install, while prefix /
+    # preserves the relative artifact paths used by this relocation proof.
+    environment = dict(os.environ, DESTDIR=str(install_prefix))
+    completed = subprocess.run(
+        command, env=environment, text=True, capture_output=True, check=False
+    )
     if completed.returncode != 0:
         raise RuntimeError(
             "staged installation failed:\n" + completed.stdout + completed.stderr
