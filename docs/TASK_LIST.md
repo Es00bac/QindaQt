@@ -5,6 +5,16 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 27 — Make Corner Bar input and shadows follow its visible shape
+
+Active repair: the empty title-row area beside the BeOS-like Corner Bar tab
+must pass clicks to the underlying window, and its shadow must follow the
+visible tab/body contour. Both installed KWin binaries lack the downstream
+cutout property marker even though ADR-0277 requires the patch. Deliver the
+reviewed patch through a pinned overlay KWin revision and fix the rectangular
+decoration shadow, with native input and rendering evidence before claiming
+completion on both hosts. Preserve current sessions during installation.
+
 ## September 27 — Add custom wallpapers through a user folder
 
 Delivered source `26ea670b` through overlay `3fc245c`, signed desktop r5,

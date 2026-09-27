@@ -2,7 +2,7 @@
 
 - Role: Program Manager
 - Provider: OpenAI Codex
-- Status: idle — wallpaper chooser and user-folder gallery delivered and verified on both hosts
+- Status: working — deliver real Corner Bar click-through and contour shadows on both hosts
 - Base: 64ae95c3
 - Worktree: container-wm-performance
 
@@ -31,3 +31,5 @@
 - 2026-09-27T18:26:38+00:00 — Integrated independently reviewed wallpaper candidate4d229a8d into26ea670b. Native build and12selectedCTest rows have passing evidence after2test-fixture repairs; actual dialog import/gallery reselection covered. Overlay3fc245c r5 published; qinda Portage build/install active, laptop uses same signed binary next.
 
 - 2026-09-27T18:41:10+00:00 — Both hosts installed signed desktop r5, source26ea670b/overlay3fc245c. Each verifies1642/1642 package files; Settings executable, compiledAppearance library and2QML files hash-identical. All21actual installed routes plus explicitWallpaper destination construct withoutQML warnings under isolated buses onboth. All9residentendpoints present,watchdogtimersactive,reportqueuesempty. Existing applications/session untouched; reopenSettings activateschooser. Delivery complete.
+
+- 2026-09-27T18:51:11+00:00 — User reports invisible full-width Corner Bar input and rectangular shadow. Hub fetched at46816db4. Both installed libkwin6.6.6 binaries lack downstream cutout marker; overlay lacks6.6.6 patchedrecipe. Isolated corner_input owns patch/nativeproof, corner_shape owns decoration geometry/shadow; manager owns packaging, integration and cross-host adoption. No forced session restart.
