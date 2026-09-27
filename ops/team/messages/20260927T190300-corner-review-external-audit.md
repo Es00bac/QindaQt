@@ -1,0 +1,5 @@
+# External themes and input review checkpoint
+
+Read-only audit of qinda `~/work_SPaC3/QindaThemes/data` covered Saffron, Nocturne, Forge, Fern, Glacier, Orchid and Signal. Each original palette passes 4.5:1 for default and muted text on canvas/surface/raised surface, and active/inactive captions selected by current painter logic. All seven KDE `.colors` files pass 4.5:1 for every `Foreground*` key against both `BackgroundNormal` and `BackgroundAlternate` in every `Colors:*` section. No concrete external palette defect found. This does not claim screenshot inspection or a complete rendered-control audit.
+
+Exact input candidate `9f1a51ffc6fbd6d43267fd5a0779e29f945ca374` has no static blocking finding: it asserts real lower Wayland surface enter and two delivered button signals, retained upper decoration hit, no upper frame movement, and property removal/type fallback. Private runtime cleanup and negative-control library selection are bounded. Native positive and negative evidence are still required before final acceptance.
