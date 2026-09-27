@@ -55,7 +55,7 @@ index 0b802a8..500d814 100644
 +    QTRY_COMPARE(buttons.count(), 2);
 +    QCOMPARE(pointer->enteredSurface(), belowSurface.get());
 +    QCOMPARE(above->frameGeometry(), originalFrame);
-+    QVERIFY(!above->isInteractiveMoveResize());
++    QVERIFY(workspace()->moveResizeWindow() != above);
 +
 +    // A retained painted title still belongs to the upper decoration.
 +    MOTION(retainedPoint);
