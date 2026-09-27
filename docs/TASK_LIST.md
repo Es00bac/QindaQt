@@ -13,7 +13,11 @@ width back into the breakpoint. This closes the live Voice/Appearance Settings
 freeze observed as a 358×49 ↔ 492×89 Qt Quick polish loop and adds a focused
 container/row-width mismatch regression. Controls behavior passes 1/1 and the
 416-document validator passes. Packaging and live installed verification are
-the remaining delivery steps.
+complete: the signed `0.1.0_pre20260927-r1` package is installed on both hosts
+with exact binary parity and clean package integrity, and a fresh physical
+Voice Settings process is warning-clean and idle after startup. The current
+qinda login predates the repaired supervisor and needs one logout/login before
+its shell process graph can be qualified.
 
 ## September 26 — Keep private desktops from disconnecting live dictation
 
