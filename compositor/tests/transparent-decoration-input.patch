@@ -24,7 +24,7 @@ index 0b802a8..500d814 100644
 +    auto [above, aboveSurface, aboveToplevel, aboveDecoration] = showWindow();
 +    QVERIFY(above);
 +    QVERIFY(above->isDecorated());
-+    above->move(QPoint(100, qRound(below->bufferGeometry().top()) + 10));
++    above->move(QPoint(100, below->bufferGeometry().top() + 10));
 +    above->setKeepAbove(true);
 +    const auto originalFrame = above->frameGeometry();
 +    auto *chrome = above->decoration();
