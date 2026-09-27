@@ -14,7 +14,9 @@ ColumnLayout {
     id: root
 
     required property var appearanceSettings
+    property var windowDecorationSettings: null
     required property bool editorBusy
+    property bool detailsOpen: false
     readonly property var draftValues: appearanceSettings.draft
     property Item firstThemeCard: null
     readonly property Item firstFocusTarget: firstThemeCard
@@ -115,28 +117,35 @@ ColumnLayout {
                 Accessible.description: qsTr("Select the %1 theme").arg(
                                             themeCard.modelData.name)
                 onToggled: {
-                    if (themeCard.checked) {
-                        root.setDraft("appearance.theme", themeCard.modelData.id)
-                        if (themeCard.modelData.variant === "light")
-                            root.setDraft("appearance.colorScheme", "light")
-                        else if (themeCard.modelData.variant === "dark"
-                                 || themeCard.modelData.variant === "dusk")
-                            root.setDraft("appearance.colorScheme", "dark")
-                    }
+                    if (themeCard.checked)
+                        root.appearanceSettings.selectTheme(themeCard.modelData.id)
                 }
             }
         }
     }
 
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("A theme includes its color scheme, window and container decorations, title bar buttons, and their arrangement.")
+        wrapMode: Text.Wrap
+        muted: true
+        Accessible.name: text
+    }
+
+    Button {
+        objectName: "appearanceThemeDetailsButton"
+        text: root.detailsOpen ? qsTr("Hide theme details") : qsTr("Fine tune this theme")
+        emphasized: false
+        accessibleDescription: qsTr("Customize the theme's window and container details")
+        onClicked: root.detailsOpen = !root.detailsOpen
+    }
+
     FormRow {
         Layout.fillWidth: true
-        label: qsTr("Color scheme")
+        visible: root.detailsOpen
+        label: qsTr("Color scheme preference")
         description: ""
         editor: schemeButtons
-        T.ToolTip.visible: schemeHover.hovered
-        T.ToolTip.delay: 600
-        T.ToolTip.text: qsTr("Light or dark pick a matching theme; System follows the platform")
-        HoverHandler { id: schemeHover }
 
         SegmentedChoiceRow {
             id: schemeButtons
@@ -146,11 +155,21 @@ ColumnLayout {
                 { token: "light", label: qsTr("Light") },
                 { token: "dark", label: qsTr("Dark") }
             ]
-            currentValue: root.draftValue("appearance.colorScheme")
+            currentValue: root.draftValue("appearance.colorScheme") ?? "system"
             editable: root.appearanceSettings.canEdit && !root.editorBusy
-            descriptionPrefix: qsTr("Preferred color scheme")
-            onChoicePicked: token => root.setDraft(
-                                "appearance.colorScheme", token)
+            descriptionPrefix: qsTr("Preferred color scheme override")
+            onChoicePicked: token => root.setDraft("appearance.colorScheme", token)
+        }
+    }
+
+    Loader {
+        objectName: "appearanceThemeDetails"
+        Layout.fillWidth: true
+        active: root.detailsOpen
+        sourceComponent: AppearanceWindowsSection {
+            appearanceSettings: root.appearanceSettings
+            windowDecorationSettings: root.windowDecorationSettings
+            editorBusy: root.editorBusy
         }
     }
 

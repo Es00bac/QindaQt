@@ -316,6 +316,9 @@ void AppearancePageTests::toggleHandlersForwardAuthoritativeCheckedValues()
     QCOMPARE(scene.model->draftValues.constLast().toBool(), false);
 
     QVERIFY(activateDestination(scene, QStringLiteral("themes")) != nullptr);
+    auto *details = item(scene.root, "appearanceThemeDetailsButton");
+    QVERIFY(details != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(details, "click"));
     QQuickItem *darkScheme = nullptr;
     QTRY_VERIFY((darkScheme = item(scene.root, "appearanceSchemeButton_dark")) != nullptr);
     QVERIFY(QMetaObject::invokeMethod(darkScheme, "click"));
@@ -720,7 +723,10 @@ void AppearancePageTests::windowsDestinationPreviewsBothChromeSetsAndForwardsCho
 
     // ADR-0129: one destination shows both chrome sets, each through its
     // real renderer, and forwards arrangement choices to the one draft.
-    QVERIFY(activateDestination(scene, QStringLiteral("windows")) != nullptr);
+    QVERIFY(activateDestination(scene, QStringLiteral("themes")) != nullptr);
+    auto *details = item(scene.root, QStringLiteral("appearanceThemeDetailsButton"));
+    QVERIFY(details != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(details, "click"));
     QQuickItem *windowPreview = nullptr;
     QTRY_VERIFY((windowPreview = item(scene.root, "appearanceWindowChromePreview")) != nullptr);
     auto *containerPreview = item(scene.root, "appearanceContainerChromePreview");

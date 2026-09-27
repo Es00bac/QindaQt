@@ -1,7 +1,56 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
 
+#include <algorithm>
+
 namespace QindaQt::Apps::SettingsAppearance {
+
+bool AppearanceSettingsModel::selectTheme(const QString &themeId)
+{
+    if (!canEdit()) {
+        return false;
+    }
+    const auto &themes = m_preview.themes();
+    const auto selected = std::find_if(themes.cbegin(), themes.cend(),
+                                       [&themeId](const Themes::ThemeSpec &theme) {
+                                           return theme.id == themeId;
+                                       });
+    if (selected == themes.cend()) {
+        return false;
+    }
+
+    AppearanceValues next = m_draft;
+    next.themeId = themeId;
+    if (selected->variant == QLatin1String("light")) {
+        next.colorScheme = ColorSchemePreference::Light;
+    } else if (selected->variant == QLatin1String("dark")
+               || selected->variant == QLatin1String("dusk")) {
+        next.colorScheme = ColorSchemePreference::Dark;
+    }
+    // AGENT-GUARD: A chrome override left by the previous theme can make a
+    // newly selected card preview one frame yet apply another. The theme's
+    // decoration document and authored button layout must win together.
+    next.chrome = Decoration::ChromePreferences{};
+    if (next == m_draft) {
+        return true;
+    }
+    m_draft = next;
+    const QVariantMap draftMap = m_draft.toVariantMap();
+    const QVariantMap confirmedMap = m_confirmed.toVariantMap();
+    QStringList pairedKeys{QString(AppearanceKeys::Theme),
+                           QString(AppearanceKeys::ColorScheme)};
+    pairedKeys.append(Decoration::ChromePreferences::settingsKeys());
+    pairedKeys.append(Decoration::ChromePreferences::decorationKeys());
+    for (const QString &key : pairedKeys) {
+        if (draftMap.value(key) == confirmedMap.value(key)) {
+            m_dirtyKeys.remove(key);
+        } else {
+            m_dirtyKeys.insert(key);
+        }
+    }
+    refreshValidationAndPreview();
+    return true;
+}
 
 bool AppearanceSettingsModel::setDraftValue(const QString &key,
                                             const QVariant &value)

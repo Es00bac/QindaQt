@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-corner-violet",
+  "name": "Qinda Lilac",
+  "variant": "light",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Noto Sans",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 12,
+  "motionDuration": 130,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#D6CEDC",
+    "surface": "#E6DFEA",
+    "surfaceRaised": "#F8F2FA",
+    "border": "#8A778F",
+    "text": "#261B2B",
+    "textMuted": "#53475A",
+    "accent": "#684183",
+    "accentText": "#FFFFFF",
+    "danger": "#A52C43"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "tab",
+    "hoverGlyphs": false,
+    "titleBarColor": "#D9B7EB",
+    "titleBarInactiveColor": "#D7C8DB",
+    "closeColor": "#A52C43",
+    "minimizeColor": "#734E7D",
+    "maximizeColor": "#4E755A",
+    "titleDoubleClick": "roll-up",
+    "titleWear": false
+  },
+  "radii": {
+    "decoration": 12
+  }
+}
