@@ -5,6 +5,14 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 27 — Add custom wallpapers through a user folder
+
+Active focused repair: the image chooser must copy a selected image into a
+user-configurable wallpaper folder, show it in the gallery and expose an
+obvious action to apply it. Preserve source files, existing bundled choices,
+and Settings1 Apply/Revert semantics. Delivery must use the same reviewed
+source and Portage package on qinda and qinda-top.
+
 ## September 27 — Keep aged sessions responsive and recover core services on both hosts
 
 Delivered repair: preserved the degraded physical sessions while measuring the
