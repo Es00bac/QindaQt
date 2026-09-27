@@ -101,6 +101,7 @@ class StubAppearanceModel final : public QObject {
                    NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap fieldErrors MEMBER fieldErrors NOTIFY draftChanged)
     Q_PROPERTY(QVariantList installedThemes MEMBER installedThemes CONSTANT)
+    Q_PROPERTY(QObject *userWallpaperCatalog MEMBER userWallpaperCatalog CONSTANT)
     Q_PROPERTY(QVariantList bundledWallpapers MEMBER bundledWallpapers CONSTANT)
     Q_PROPERTY(QStringList installedMonospaceFamilies MEMBER installedMonospaceFamilies CONSTANT)
     Q_PROPERTY(QString resolvedThemeId MEMBER resolvedThemeId NOTIFY draftChanged)
@@ -234,6 +235,7 @@ public:
     QString confirmedMonospaceFamily = QStringLiteral("Noto Sans Mono");
     QVariantMap fieldErrors;
     QVariantList installedThemes;
+    QObject *userWallpaperCatalog = nullptr;
     QVariantList bundledWallpapers;
     QStringList installedMonospaceFamilies{QStringLiteral("Noto Sans Mono"),
                                            QStringLiteral("Liberation Mono")};

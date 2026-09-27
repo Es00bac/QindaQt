@@ -79,6 +79,7 @@ AppearanceSettingsModel::AppearanceSettingsModel(
       m_preview(std::move(installedThemes)),
       m_platformScheme(platformScheme),
       m_bundledWallpapers(std::move(bundledWallpapers)),
+      m_userWallpaperCatalog(this),
       m_previewFacade(previewFacade)
 {
     Q_ASSERT(m_client.thread() == thread());

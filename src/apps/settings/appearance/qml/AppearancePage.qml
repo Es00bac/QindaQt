@@ -333,7 +333,7 @@ T.Page {
                 visible: !root.appearanceSettings.saving
                 available: root.appearanceSettings.applyAvailable
                 emphasized: true
-                text: qsTr("Apply")
+                text: root.currentDestination === "wallpaper" ? qsTr("Set wallpaper") : qsTr("Apply")
                 onClicked: root.appearanceSettings.applyDraft()
             }
 

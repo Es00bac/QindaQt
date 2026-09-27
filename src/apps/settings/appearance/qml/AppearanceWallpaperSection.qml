@@ -14,6 +14,7 @@ ColumnLayout {
 
     required property var appearanceSettings
     required property bool editorBusy
+    readonly property var gallery: appearanceSettings.userWallpaperCatalog ?? null
     readonly property var draftValues: appearanceSettings.draft
     readonly property Item firstFocusTarget: wallpaperChoices.children.length > 0
                                            ? wallpaperChoices.children[0] : null
@@ -67,7 +68,7 @@ ColumnLayout {
         }
 
         Repeater {
-            model: root.appearanceSettings.bundledWallpapers ?? []
+            model: (root.appearanceSettings.bundledWallpapers ?? []).concat(root.gallery?.wallpapers ?? [])
 
             Button {
                 id: wallpaperButton
@@ -78,7 +79,7 @@ ColumnLayout {
                 text: modelData.name
                 emphasized: root.draftValue("appearance.wallpaper") === modelData.value
                 available: root.appearanceSettings.canEdit && !root.editorBusy
-                accessibleDescription: qsTr("Select this bundled wallpaper")
+                accessibleDescription: qsTr("Select this wallpaper")
                 onClicked: root.setDraft("appearance.wallpaper", modelData.value)
 
                 contentItem: ColumnLayout {
@@ -109,7 +110,7 @@ ColumnLayout {
     FormRow {
         Layout.fillWidth: true
         label: qsTr("Image file")
-        description: qsTr("Choose an image from your computer, or leave it empty for no wallpaper")
+        description: qsTr("Add an image to your gallery, then choose Set wallpaper to apply it")
         errorMessage: root.appearanceSettings.fieldErrors["appearance.wallpaper"] ?? ""
         editor: wallpaperField
 
@@ -165,9 +166,31 @@ ColumnLayout {
             }
             Button {
                 objectName: "appearanceChooseWallpaperButton"
-                text: qsTr("Choose…")
+                text: qsTr("Add image…")
                 available: root.appearanceSettings.canEdit && !root.editorBusy
                 onClicked: wallpaperDialog.open()
+            }
+        }
+    }
+
+    FormRow {
+        Layout.fillWidth: true
+        label: qsTr("Wallpaper folder")
+        description: root.gallery?.folder ?? ""
+        errorMessage: root.gallery?.error ?? ""
+        editor: folderButtons
+        RowLayout {
+            id: folderButtons
+            Button {
+                objectName: "appearanceWallpaperFolderButton"
+                text: qsTr("Choose folder…")
+                available: !root.editorBusy
+                onClicked: wallpaperFolderDialog.open()
+            }
+            Button {
+                text: qsTr("Refresh")
+                available: !root.editorBusy
+                onClicked: root.gallery?.refresh()
             }
         }
     }
@@ -193,11 +216,22 @@ ColumnLayout {
         }
     }
 
+    FolderDialog {
+        id: wallpaperFolderDialog
+        title: qsTr("Choose wallpaper folder")
+        onAccepted: root.gallery?.setFolder(selectedFolder)
+    }
+
     FileDialog {
         id: wallpaperDialog
+        objectName: "appearanceWallpaperDialog"
         title: qsTr("Choose wallpaper")
         fileMode: FileDialog.OpenFile
         nameFilters: [qsTr("Images (*.png *.jpg *.jpeg *.webp *.bmp)"), qsTr("All files (*)")]
-        onAccepted: root.setDraft("appearance.wallpaper", selectedFile.toLocalFile())
+        onAccepted: {
+            const path = root.gallery?.importImage(selectedFile) ?? ""
+            if (path.length > 0)
+                root.setDraft("appearance.wallpaper", path)
+        }
     }
 }

@@ -36,6 +36,18 @@ path field adopts draft changes that come from the bundled grid, the "No
 wallpaper" choice, the file dialog, Revert, or a baseline rebase while
 leaving the user's own in-progress typing untouched.
 
+The wallpaper gallery combines bundled images with a user folder, defaulting to
+`Pictures/Wallpapers` (using the XDG Pictures location). **Add image…** copies a
+readable local image into that folder, selects its copied path in the draft,
+and displays it in the gallery. **Set wallpaper** uses the existing shared
+Apply transaction; Revert restores the prior selection without deleting imported
+files. Imports preserve originals and use numbered names on collision.
+**Choose folder…** changes the local gallery preference; **Refresh** rescans,
+and ordinary file additions/removals are also watched while Settings is open.
+The folder preference lives in `$XDG_CONFIG_HOME/qindaqt/wallpaper-gallery.ini`
+and changes immediately, independently of the appearance draft. See
+[ADR-0279](../adr/0279-keep-custom-wallpapers-in-a-user-folder.md).
+
 The Themes preview and palette row are presentation-only. Its chrome is
 `DecorationChrome::fromTheme` (the derivation the QindaQt compositor publishes)
 painted by the shared decoration painter, and its client area is the Fusion

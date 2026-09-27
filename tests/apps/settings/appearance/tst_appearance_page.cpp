@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "stub_appearance_model.h"
+#include "qindaqt/apps/settings_appearance/user_wallpaper_catalog.h"
 #include "qindaqt/apps/settings_appearance/appearance_qml_composition.h"
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_deriver.h"
@@ -185,6 +186,7 @@ private slots:
     void qtToolkitCardReflectsThePlatformThemeProjection();
     void fontTypingWallpaperPreviewAndKeyboardScrollingStayUsable();
     void wallpaperFieldFollowsExternalDraftChangesAndPreviewUsesFileUrls();
+    void acceptedFileDialogImportsAndSelectsWallpaper();
 
 private:
     static void makeReady(StubAppearanceModel &model, bool dirty)
@@ -460,6 +462,40 @@ void AppearancePageTests::fontTypingWallpaperPreviewAndKeyboardScrollingStayUsab
     QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
 }
 
+
+
+void AppearancePageTests::acceptedFileDialogImportsAndSelectsWallpaper()
+{
+    QTemporaryDir temp;
+    const QString source = temp.filePath(QStringLiteral("wall # café.png"));
+    QImage image(4, 4, QImage::Format_RGB32);
+    image.fill(Qt::green);
+    QVERIFY(image.save(source));
+    QindaQt::Apps::SettingsAppearance::UserWallpaperCatalog gallery(
+        nullptr, temp.filePath("prefs.ini"), temp.filePath("gallery"));
+    const auto scene = createScene([&](StubAppearanceModel &model) {
+        model.userWallpaperCatalog = &gallery;
+        model.draft = defaultDraftMap();
+        makeReady(model, false);
+    });
+    QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
+    QVERIFY(activateDestination(scene, QStringLiteral("wallpaper")) != nullptr);
+    QObject *dialog = scene.root->findChild<QObject *>(QStringLiteral("appearanceWallpaperDialog"));
+    QVERIFY(dialog != nullptr);
+    QVERIFY(dialog->setProperty("selectedFile", QUrl::fromLocalFile(source)));
+    QVERIFY(QMetaObject::invokeMethod(dialog, "accepted"));
+    const QString imported = temp.filePath(QStringLiteral("gallery/wall # café.png"));
+    QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper")).toString(), imported);
+    QCOMPARE(gallery.wallpapers().size(), 1);
+    QVERIFY(QFileInfo::exists(source));
+    QCOMPARE(QImage(imported), image);
+    auto *apply = item(scene.root, "appearanceApplyButton");
+    QVERIFY(apply != nullptr);
+    QCOMPARE(apply->property("text").toString(), QStringLiteral("Set wallpaper"));
+    QVERIFY(dialog->setProperty("selectedFile", QUrl::fromLocalFile(temp.filePath("missing.png"))));
+    QVERIFY(QMetaObject::invokeMethod(dialog, "accepted"));
+    QCOMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper")).toString(), imported);
+}
 
 void AppearancePageTests::wallpaperFieldFollowsExternalDraftChangesAndPreviewUsesFileUrls()
 {
