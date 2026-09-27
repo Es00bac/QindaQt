@@ -1,6 +1,6 @@
 # Corner contour reviewer
 
-- Status: idle — overlay and all assigned exact candidates accepted
+- Status: idle — final preview contour repair accepted; manager owns native delivery gate
 - Base: `46816db4`
 - Worktree: `/home/cabewse/work_space/container-wm-corner-review`
 - Ownership: own review board/messages only
@@ -23,3 +23,7 @@
 - 2026-09-27T19:21:30Z — Review handoff complete; all receipts pushed to hub. Offered package/artifact verification to manager; no open blocking findings.
 
 - 2026-09-27T19:24:00Z — Accepted overlayc9afe6b: exact full archive/Manifest match, exactKWin patch, pinnediconcommit, zero10242-file ownership overlap and correctdeliveryatoms. Bounded audit complete; manager owns installation/activation.
+
+- 2026-09-27T19:42:10Z — Claimed bounded independent preview review at managerbase926bfc6a. Confirmed existingpaintWindow fills fullroundedframe behindtitle and omitscontourshadow; awaiting exactrepaircandidate.
+
+- 2026-09-27T19:54:30Z — Accepted finalpreview4f21effb after independent6/6 executedpixelgate, unchanged64shadowtextureevidence and source review. Below-seamcapturefinding repaired; nativecombinedrerun/package remainsmanagerowned.
