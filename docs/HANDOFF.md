@@ -1,6 +1,6 @@
 # Integration handoff
 
-## September 27 — Active long-session performance and recovery repair
+## September 27 — Delivered long-session performance and recovery repair
 
 The user reports progressively degraded dock animations (worst on the older
 laptop session), visible reloads on ordinary window changes, and a broken
@@ -50,29 +50,57 @@ and a delivered `systemd automatic restart observed` maintenance incident.
 Both report queues drained to zero. This verifies one representative real
 crash on each host; other covered services use tested owner-loss policies,
 and hangs retaining their bus name and Settings GUI processes are not covered.
-QindaQt r3 (`a91690f9`, overlay `343ea0a`) is installed on both hosts,
-with 1,642/1,642 files verified and matching shell/session/launcher/plugin
-hashes. Both installed launchers passed private native boots (the laptop
-needed the missing `xdpyinfo` test prerequisite installed through Portage).
-The separately reviewed installed-stage repair `b50a4278` contains absolute
-configuration destinations with DESTDIR; its real-CMake unit checks and
-native installed discovery pass. Seven additional ABI/Viewer gates pass.
+Final QindaQt `0.1.0_pre20260927-r4` is installed through Portage on both
+hosts, pinned to source `c25c680f0d452b4e2e06e9e8f2ab8152c21f7522` by
+QindaGentoo `ad13d76b9bddc63028db0cc0d33516771827f51e`. The workstation
+built the signed binary and the laptop consumed that binary. Both verify
+1,642/1,642 package files; shell, supervisor, launcher and both plugin hashes
+match. Both running shell executables match the installed SHA256
+`f11f8ac1ed5b609584521d74092975e4bf655799640cb019f1f4319167582f7d`.
+Both actual installed launchers passed private native boots (the laptop's
+missing `xdpyinfo` test prerequisite was installed through Portage).
+The reviewed installed-stage repair `b50a4278` contains absolute configuration
+destinations with DESTDIR; its real-CMake checks and native installed discovery
+pass. Seven additional ABI/Viewer gates pass. Source and overlay revisions are
+preserved on qinda's hubs and published repositories; the archive review
+confirmed byte-for-byte source provenance and immutable prior revisions.
 
-Shell-only adoption preserved each physical compositor, supervisor and
-notification host. Laptop shell PID 1414130 -> 2017578; workstation
-2851922 -> 3004734. The laptop measured 2.2% shell / 5.7% compositor CPU
-(10 seconds), with 7 task / 1 identity hint / 6 window updates in 6 seconds.
-The workstation measured 80.9% shell / 31.9% compositor CPU, with 60 task /
-0 identity hints / 60 window updates in 6 seconds. These are snapshots, not
-a multi-day trend or FPS measurement. The workstation still has a hot path:
-73.66% sampled cycles include realpath, with a live missing Wine-fallback
-icon probe under hicolor. Existence-first icon lookup candidate `7f5b8431`
-is independently accepted and integrated; all four icon rows pass after
-the manager rebuild (1.08 seconds). Its 649-directory/1,000-miss benchmark drops canonicalization
-calls from 3,900,003 to 3 and elapsed time from 35.5 to 3.2 seconds while
-retaining fresh checks for existing files. The user confirms the shell now
-feels noticeably better; final workstation runtime evidence remains required. Current
-physical compositor activation remains pending; no logout/login was forced.
+The first shell-only adoption removed the signal amplification and reduced
+laptop shell CPU from 45.5% to 2.2% in separate ten-second samples. Its six-second
+trace fell from 6,333 task / 6,308 identity hints to 7 / 1. The workstation
+still used 80.9% shell CPU despite eliminating owner-change feedback; live
+profiling attributed 73.66% of samples to realpath, including a missing
+Wine-fallback icon under hicolor. Reviewed repair `7f5b8431` rejects missing
+candidates before canonicalizing paths, retaining fresh confinement checks for
+existing files. Its 649-directory/1,000-miss benchmark reduces canonicalization
+calls from 3,900,003 to 3 and elapsed time from 35.5 to 3.2 seconds. Four
+integrated icon gates pass, covering missing/create/remove/escape transitions.
+
+After final r4 shell adoption and completion of compilation, ten-second CPU
+samples measured laptop shell **4.6%** / compositor **9.3%**, workstation shell
+**10.9%** / compositor **27.8%** (percent of one core). Separate six-second
+traces saw laptop 61 task / 1 identity / 60 window updates and workstation
+62 task / 2 identity / 60 window updates. The feedback amplification remains
+absent despite actual window activity. These are workload-dependent snapshots,
+not a controlled FPS benchmark or a multi-day trend. The user independently
+confirmed that both the laptop and workstation now feel noticeably smoother.
+
+Final shell PIDs are laptop 2029080 and workstation 3044134. Each physical
+compositor, supervisor and notification host retained its identity across both
+shell reloads; all captured application identities survived the final reload
+(9/9 laptop, 5/5 workstation). Final checks find all nine Settings, Voice,
+Audio, Clipboard, Display, Network, Bluetooth, Power and appearance-portal bus
+owners present on each machine, active watchdog timers and zero queued reports.
+Three redundant workstation user-unit overrides were backed up and retired;
+effective unit settings before and after are identical to the packaged policy.
+
+**Activation and observation boundary:** installed compositor and supervisor
+fixes take effect at the next normal physical login. No physical logout/login
+was forced or verified; both current processes predate these repairs. Private
+installed boots passed on both hosts. Multi-day performance, real physical
+login/logout qualification and hangs retaining a bus name remain unproven.
+The previous repair session's claim that shell CPU alone proved a supervisor
+problem is superseded by the measured icon-lookup diagnosis above.
 
 After these measurements, 18 laptop KDE portal processes from ended private
 website captures were terminated using boot/PID/start/executable/dead-bus

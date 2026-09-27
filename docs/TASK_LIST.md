@@ -7,7 +7,7 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## September 27 — Keep aged sessions responsive and recover core services on both hosts
 
-Active repair: preserve the degraded physical sessions while measuring the
+Delivered repair: preserved the degraded physical sessions while measuring the
 laptop (about 33 hours old) and workstation (about two hours old), eliminate
 panel repaint/invalidation feedback, avoid repeated task-row icon resolution,
 and retain dock delegates across ordinary window changes. Independently reviewed
@@ -21,21 +21,28 @@ records the presentation boundary. Combined gates identified direct-file module
 loading and an offscreen retained-popup focus fixture gap; both were repaired
 and independently rereviewed (`e37f01f9`, `292cd361`). Native repaint retry and
 staged/relocated package consumer and four offscreen applet rows pass.
-Signed r3 is installed and its shell is live on both hosts; private installed
-boots and package integrity pass. Laptop CPU and update traffic are greatly
-reduced without compositor restart. Workstation owner-change feedback is
-gone, but actual window updates still trigger costly missing-icon probes;
-that measured hot path is repaired in independently accepted `7f5b8431`.
-Its four integrated icon gates pass; final package/live verification follows.
+Signed r4, pinned to `c25c680f` through overlay `ad13d76b`, is installed
+on both hosts with matching live shell hashes, 1,642/1,642 good package files
+and passing actual installed private boots. Workstation profiling after the
+first shell reload exposed costly missing-icon probes; reviewed `7f5b8431`
+repairs that path and passes all four integrated icon gates. Final ten-second
+shell CPU samples are 4.6% laptop and 10.9% workstation, compared with initial
+45.5% laptop and 80.9% workstation before the final icon repair. The user's
+live observations on both machines confirm smoother docks. Application identities and
+physical compositor/supervisor processes survived the final shell reload.
 
 The cross-host recovery audit also found stale environment-file overrides at
 login, omitted core services, and qinda reports blocked by loopback SSH. Gabbee
 repair `141e044` passed independent review and 84 focused tests and is installed
 on both hosts as signed Portage package `0.1.0_p20260927`. Each host passed one
 real power-service crash/restart/report check; qinda drained its previously stuck
-reports and laptop Clipboard is restored. Final missing-icon repair delivery
-and workstation performance proof remain required. A fresh physical
-logout/login and multi-day observation are not yet evidence.
+reports and laptop Clipboard is restored. Final checks show all nine service
+bus owners present, active watchdog timers and empty report queues on both.
+Source, overlay, installation and immediate live verification are complete.
+The installed compositor and supervisor require the next normal physical login
+to activate; physical login/logout qualification and multi-day observation
+remain open evidence, not completed acceptance claims. See the
+[delivery record](HANDOFF.md#september-27--delivered-long-session-performance-and-recovery-repair).
 
 ## September 27 — Keep Settings responsive at FormRow's breakpoint
 
