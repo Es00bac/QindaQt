@@ -217,6 +217,14 @@ qindaqt_add_task_list_applet_test(
     task_list_operation_test_support.h
 )
 qindaqt_add_task_list_applet_test(
+    qindaqt_task_list_applet_row_snapshot_tests
+    tst_task_list_applet_row_snapshots.cpp
+    qindaqt.task-list-applet-row-snapshots
+    "shell;task-list"
+    task_list_applet_test_fakes.h
+    task_list_operation_test_support.h
+)
+qindaqt_add_task_list_applet_test(
     qindaqt_task_list_applet_ungrouped_tests
     tst_task_list_applet_ungrouped.cpp
     qindaqt.task-list-applet-ungrouped

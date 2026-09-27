@@ -63,6 +63,13 @@ Lookups are deterministic: identical inputs and fixtures always return the
 identical canonical path. An instance is confined to its owning thread; the
 provider and the QML seam hold separate instances.
 
+Task-list consumers resolve icon availability when publishing their bounded
+row snapshots, not in QML property getters. This prevents repeated sequence
+reads during dock animation from rescanning every theme directory for every
+window. Each task-list reprojection refreshes those snapshots; the locator's
+canonical confinement checks and filesystem lookup semantics remain unchanged.
+See [Task list](task-list.md) for the publication contract and regression gate.
+
 ## DesktopEntryIconResolver
 
 `DesktopEntryIconResolver(applicationRoots)` eagerly scans the injected
