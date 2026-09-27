@@ -1,11 +1,11 @@
 # Recovery reviewer Codex
 
-- Status: available — exact final overlay accepted; both-host installed recovery parity verified
+- Status: working — implementing contained installed-plugin test staging
 - Role: Recovery reviewer, OpenAI Codex (model identity inherited from runtime)
-- Branch: review/recovery-20260927
-- Base: 79728d13
-- Candidate: gabbee f7ec6b269d5cbe788226f2e223cc52367a69f0d4
-- Ownership: this record and messages/recovery-review-codex only; no production mutations
+- Branch: fix/installed-plugin-destdir
+- Base: a91690f950b7b7136b52ace462f2320b3b5d1ff1
+- Candidate: installed-plugin staging repair pending exact commit
+- Ownership: installed-plugin test driver, focused fixture/registration, release/testing wiki and own board; no product or host mutations
 
 ## Updates
 
@@ -20,3 +20,7 @@
 - 2026-09-27T17:19:48.939786+00:00 — Claimed final QindaGentoo 343ea0a r3 archive, pinned-source, Gabbee recovery and delivery metadata audit; no host mutations.
 
 - 2026-09-27T17:21:40.675672+00:00 — ACCEPT QindaGentoo 343ea0a r3 source packaging: size/Manifest/full git archive identity pass, exact delivery metadata, accepted Gabbee pin and installed module SHA256 parity on qinda/qinda-top; seven resident and two portal vendor drop-ins plus timer pass. Root retains build/sign/install ownership.
+
+- 2026-09-27T17:28:04.516742+00:00 — Claimed separate implementation task from base a91690f9 in fix/installed-plugin-destdir: tests/session install driver, focused fixture/registration and wiki only. Absolute production install paths must stage under DESTDIR; host and product packaging untouched.
+
+- 2026-09-27T17:28:51.539304+00:00 — Verified 3/3 real-CMake containment/escape fixtures and 18/18 adjacent nested-session tests; exact pre-fix driver fails the fixture. Docs 417, strict MkDocs and diff checks pass. Preparing exact review candidate.

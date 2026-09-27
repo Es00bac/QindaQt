@@ -79,8 +79,10 @@ ctest --test-dir build/release-checkpoint \
 ```
 
 The first nested row must observe the plugin's live service. The second stages
-an install and proves that the installed launcher discovers the relocated
-plugin. Also run the focused tests for every changed module and the repository
+an install with `DESTDIR` and prefix `/`, including absolute destinations
+such as `/etc/xdg/autostart`, and proves that the installed launcher discovers
+the relocated plugin without `--plugin-root`. The `session.installed-plugin-stage`
+fixture separately checks absolute/relative path containment without a compositor. Also run the focused tests for every changed module and the repository
 documentation gates.
 
 The native CI lane uses Gentoo's generic `desktop/systemd` profile and the

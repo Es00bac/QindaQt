@@ -4041,3 +4041,16 @@ first owner's admission. Destroying and recreating the final original panel
 separately proves revocation and recovery. These assertions exercise production
 KWin hooks and session-bus signals; they do not measure physical GPU frame
 pacing or establish a long-session memory trend.
+
+
+## Installed-plugin staging containment
+
+The `session.installed-plugin-discovery` release gate stages its full install
+with `DESTDIR` set to a validated child of its build tree and install prefix `/`.
+This contains absolute production destinations such as `/etc/xdg/autostart`
+without changing product install rules or requiring privileges. Relative
+launcher/plugin lookup stays rooted at the stage, and the native launch still
+omits `--plugin-root`. `session.installed-plugin-stage` uses a minimal real CMake
+fixture to prove relative artifacts and an absolute destination remain staged,
+including when the caller already has a different `DESTDIR`; it also checks
+cleanup and artifact escape refusals. See the [release gates](releases.md).
