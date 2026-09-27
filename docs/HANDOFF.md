@@ -50,8 +50,37 @@ and a delivered `systemd automatic restart observed` maintenance incident.
 Both report queues drained to zero. This verifies one representative real
 crash on each host; other covered services use tested owner-loss policies,
 and hangs retaining their bus name and Settings GUI processes are not covered.
-QindaQt desktop packaging and current physical compositor activation remain
-pending; no physical logout/login has been forced.
+QindaQt r3 (`a91690f9`, overlay `343ea0a`) is installed on both hosts,
+with 1,642/1,642 files verified and matching shell/session/launcher/plugin
+hashes. Both installed launchers passed private native boots (the laptop
+needed the missing `xdpyinfo` test prerequisite installed through Portage).
+The separately reviewed installed-stage repair `b50a4278` contains absolute
+configuration destinations with DESTDIR; its real-CMake unit checks and
+native installed discovery pass. Seven additional ABI/Viewer gates pass.
+
+Shell-only adoption preserved each physical compositor, supervisor and
+notification host. Laptop shell PID 1414130 -> 2017578; workstation
+2851922 -> 3004734. The laptop measured 2.2% shell / 5.7% compositor CPU
+(10 seconds), with 7 task / 1 identity hint / 6 window updates in 6 seconds.
+The workstation measured 80.9% shell / 31.9% compositor CPU, with 60 task /
+0 identity hints / 60 window updates in 6 seconds. These are snapshots, not
+a multi-day trend or FPS measurement. The workstation still has a hot path:
+73.66% sampled cycles include realpath, with a live missing Wine-fallback
+icon probe under hicolor. Existence-first icon lookup candidate `7f5b8431`
+is independently accepted and integrated; all four icon rows pass after
+the manager rebuild (1.08 seconds). Its 649-directory/1,000-miss benchmark drops canonicalization
+calls from 3,900,003 to 3 and elapsed time from 35.5 to 3.2 seconds while
+retaining fresh checks for existing files. The user confirms the shell now
+feels noticeably better; final workstation runtime evidence remains required. Current
+physical compositor activation remains pending; no logout/login was forced.
+
+After these measurements, 18 laptop KDE portal processes from ended private
+website captures were terminated using boot/PID/start/executable/dead-bus
+fences. All three host portal PIDs were preserved. Their measured PSS was
+25 MiB plus 101 MiB swapped; summed RSS overcounted shared pages and is not
+proof of the reported slowdown. The separate dirty website lane owns the
+remaining capture-child lifecycle gap; its files were preserved. See the
+[orphan audit](../ops/team/messages/20260927T112600-shell-performance-orphan-audit.md).
 
 ## September 27 — Physical-session repair and FormRow live-loop fix
 

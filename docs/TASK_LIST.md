@@ -21,16 +21,21 @@ records the presentation boundary. Combined gates identified direct-file module
 loading and an offscreen retained-popup focus fixture gap; both were repaired
 and independently rereviewed (`e37f01f9`, `292cd361`). Native repaint retry and
 staged/relocated package consumer and four offscreen applet rows pass.
-Signed package delivery follows.
+Signed r3 is installed and its shell is live on both hosts; private installed
+boots and package integrity pass. Laptop CPU and update traffic are greatly
+reduced without compositor restart. Workstation owner-change feedback is
+gone, but actual window updates still trigger costly missing-icon probes;
+that measured hot path is repaired in independently accepted `7f5b8431`.
+Its four integrated icon gates pass; final package/live verification follows.
 
 The cross-host recovery audit also found stale environment-file overrides at
 login, omitted core services, and qinda reports blocked by loopback SSH. Gabbee
 repair `141e044` passed independent review and 84 focused tests and is installed
 on both hosts as signed Portage package `0.1.0_p20260927`. Each host passed one
 real power-service crash/restart/report check; qinda drained its previously stuck
-reports and laptop Clipboard is restored. The QindaQt package and combined
-performance gates remain required. A fresh physical logout/login and
-multi-day observation are not yet evidence.
+reports and laptop Clipboard is restored. Final missing-icon repair delivery
+and workstation performance proof remain required. A fresh physical
+logout/login and multi-day observation are not yet evidence.
 
 ## September 27 — Keep Settings responsive at FormRow's breakpoint
 
