@@ -2,7 +2,7 @@
 
 - Role: Program Manager
 - Provider: OpenAI Codex
-- Status: working — deliver the remaining Settings preview silhouette correction on both hosts
+- Status: available — appearance and preview release delivered and verified on both hosts
 - Base: 64ae95c3
 - Worktree: container-wm-performance
 
@@ -37,3 +37,5 @@
 - 2026-09-27T19:22:56+00:00 — Integrated all reviewed production candidates; combined native20/20 and strict419-document build pass. Native actual pointer proof passes3/3 and original exact-ABI library fails expected cutout assertion. QindaThemes e530b03 accepted and main; overlayc9afe6b pins desktopr6/source4c704e12 plusicons andpatchedKWinr1. KWinr1 nowinstalledboth; iconsinstalledqinda; desktopr6building. Physicalsessionspreserved.
 
 - 2026-09-27T19:42:52+00:00 — R6 installedboth; desktop1643/compositor647/icons10302 checksallpass, native20/20 andbothinstalledprivateboots/routespass. Settings1+shellrefreshed; actualFileManagerlight/darkcapturecoherent;9owners+timershealthy,queuesempty. UserrequestedcomparisonrevealsfullframepreviewbackdropfillsCornerBarcutoutandmissingshadow. Isolatedpreviewrepair/reviewactive; nextr7deliveryretainsallverifiedr6work.
+
+- 2026-09-27T20:11:55+00:00 — Delivered reviewed preview source6a9ca787 through overlay3ffb419 as desktopr7 on both hosts. Native4/4, six rendered cases, package1643/1643 each, matching six artifacts, installed routes/private boots and resident health pass. Workstation installed preview visually checked. Existing sessions preserved; normal next login activates earlier compositor fixes. Task closed.

@@ -14,9 +14,11 @@ native and installed verification. Real corner click-through has positive and
 negative native evidence; new compositor/decoration code activates at the next
 normal login. Existing physical sessions remain intact.
 
-The additional Settings preview repair is reviewed and integrated: transparent
-cutout, shared contour shadow and clipping at the client seam. Finish native
-validation and pinned r7 delivery on both machines. See the current
+The additional Settings preview repair is delivered on both hosts as desktop r7,
+source `6a9ca787`, overlay `3ffb419`: transparent cutout, shared contour shadow
+and clipping at the client seam. Independent review, native rendered checks,
+matching installed artifacts, package integrity, Settings routes, private startup
+and resident health checks pass. Reopen Settings. See the current
 [delivery and evidence record](HANDOFF.md).
 
 ## September 27 — Add custom wallpapers through a user folder
