@@ -19,6 +19,9 @@ class DecorationVisualsTest final : public QObject
     void shadowHasBoundedNinePatchGeometry();
     void maximizedStyleHasNoOuterMaterial();
     void groupedMembersHaveNoResizeOnlyBorders();
+    void cornerTabShadowFollowsSilhouette();
+    void cornerTabShadowTracksGeometry();
+    void rectangularAndMemberShadowsStayCompact();
 };
 
 void DecorationVisualsTest::normalStyleUsesThemeBoundary()
@@ -102,5 +105,71 @@ void DecorationVisualsTest::groupedMembersHaveNoResizeOnlyBorders()
     QCOMPARE(decorationResizeOnlyBorders(true, true), QMarginsF{});
 }
 
-QTEST_GUILESS_MAIN(DecorationVisualsTest)
+void DecorationVisualsTest::cornerTabShadowFollowsSilhouette()
+{
+    DecorationChrome chrome;
+    chrome.buttonStyle = QStringLiteral("tab");
+    DecorationFrameVisual frame;
+    frame.size = QSizeF(640, 480);
+    frame.caption = QStringLiteral("Short title");
+    const auto style = decorationVisualStyle(QColor("#526170"), QColor("#192939"), false);
+    const auto shadow = createDecorationShadow(style, chrome, frame);
+    QVERIFY(shadow);
+    const QImage texture = shadow->shadow();
+    const int extent = qCeil(style.shadowExtent);
+    const int tab = qCeil(decorationTitleTabWidth(chrome, frame));
+    const int title = qCeil(decorationTitleHeight(chrome));
+    QVERIFY(tab < 500);
+    // The empty strip has no phantom full-width upper edge. The real tab,
+    // its vertical edge, and the body shoulder each cast their own shadow.
+    QCOMPARE(texture.pixelColor(extent + 500, extent - 2).alpha(), 0);
+    QVERIFY(texture.pixelColor(extent + tab / 2, extent - 2).alpha() > 0);
+    QVERIFY(texture.pixelColor(extent + tab + 2, extent + title / 2).alpha() > 0);
+    QVERIFY(texture.pixelColor(extent + 500, extent + title - 2).alpha() > 0);
+    QCOMPARE(texture.pixelColor(extent + 30, extent + title + 2).alpha(), 0);
+    QCOMPARE(texture.width(), 640 + 2 * extent);
+    QVERIFY(texture.height() < 120);
+    // Fixed corners consume exactly the physical width: no horizontal
+    // stretching can smear the notch; only the opaque body row stretches.
+    QCOMPARE(shadow->topLeftGeometry().width() + shadow->topGeometry().width()
+                 + shadow->topRightGeometry().width(), qreal(texture.width()));
+    QVERIFY(shadow->innerShadowRect().top() >= extent + title);
+}
+
+void DecorationVisualsTest::cornerTabShadowTracksGeometry()
+{
+    DecorationChrome chrome;
+    chrome.buttonStyle = QStringLiteral("tab");
+    DecorationFrameVisual frame;
+    frame.size = QSizeF(640, 480);
+    frame.caption = QStringLiteral("A");
+    const auto style = decorationVisualStyle(QColor("#526170"), QColor("#192939"), false);
+    const auto first = createDecorationShadow(style, chrome, frame);
+    frame.caption = QStringLiteral("A substantially longer caption changes the tab");
+    const auto wider = createDecorationShadow(style, chrome, frame);
+    QVERIFY(first->shadow() != wider->shadow());
+    frame.size.setWidth(800);
+    QCOMPARE(createDecorationShadow(style, chrome, frame)->shadow().width(), 824);
+    frame.maximized = true;
+    QVERIFY(!createDecorationShadow(decorationVisualStyle(QColor("#526170"),
+        QColor("#192939"), true), chrome, frame));
+}
+
+void DecorationVisualsTest::rectangularAndMemberShadowsStayCompact()
+{
+    DecorationChrome chrome;
+    DecorationFrameVisual frame;
+    frame.size = QSizeF(640, 480);
+    const auto style = decorationVisualStyle(QColor("#526170"), QColor("#192939"), false);
+    const auto ordinary = createDecorationShadow(style);
+    QCOMPARE(createDecorationShadow(style, chrome, frame)->shadow(), ordinary->shadow());
+    chrome.buttonStyle = QStringLiteral("tab");
+    chrome.buttonSide = QStringLiteral("right");
+    QCOMPARE(createDecorationShadow(style, chrome, frame)->shadow(), ordinary->shadow());
+    chrome.buttonSide.clear();
+    frame.memberHandle = true;
+    QCOMPARE(createDecorationShadow(style, chrome, frame)->shadow(), ordinary->shadow());
+}
+
+QTEST_MAIN(DecorationVisualsTest)
 #include "tst_decorationvisuals.moc"

@@ -626,6 +626,15 @@ content. Maximized windows retain the flush screen-edge geometry and publish no
 outer frame or shadow. Palette, scale, activation, and maximize changes refresh
 the native material in place.
 
+Corner Bar uses the shared painter's caption-dependent tab width for its shadow
+as well as its painted outline and input cutout (ADR-0277). Its shadow texture
+keeps the complete top silhouette at the actual window width, including the
+vertical tab edge and the lower body shoulder. Only an opaque body row stretches
+vertically; stretching a conventional rectangular shadow would recreate the
+invisible full-width bar. Width, height, caption, icon, font, and theme changes
+refresh this shallow texture. Ordinary rectangular titles and grouped-member
+handles retain the compact shared shadow, and maximized windows remain shadowless.
+
 The focused plugin test loads the factory and metadata, while the staged-install
 test proves that both compositor and decoration artifacts are installed and
 that a fresh isolated `kwinrc` receives the default. The nested Hybrid-unload

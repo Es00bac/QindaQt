@@ -61,6 +61,8 @@ bool QindaDecoration::init()
 
     connect(window(), &KDecoration3::DecoratedWindow::widthChanged,
             this, &QindaDecoration::updateGeometry);
+    connect(window(), &KDecoration3::DecoratedWindow::heightChanged,
+            this, &QindaDecoration::updateGeometry);
     connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged,
             this, &QindaDecoration::updateGeometry);
     // AGENT-GUARD: the title text, icon and font change the BeOS tab width.
@@ -397,7 +399,7 @@ void QindaDecoration::updateVisualStyle()
     if (containerMember()) {
         style.cornerRadius = DecorationMemberCornerRadius;
     }
-    setShadow(createDecorationShadow(style));
+    setShadow(createDecorationShadow(style, chromeState(), frameState()));
     update();
 }
 
