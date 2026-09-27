@@ -1,6 +1,6 @@
 # Corner contour reviewer
 
-- Status: working — independent review of Corner Bar shadow and input candidates
+- Status: idle — overlay and all assigned exact candidates accepted
 - Base: `46816db4`
 - Worktree: `/home/cabewse/work_space/container-wm-corner-review`
 - Ownership: own review board/messages only
@@ -19,3 +19,7 @@
 - 2026-09-27T19:18:10Z — Accepted exact test-only native fixture4071579d; schema-correct empty icon string and invalidation key preserve existing assertions. Manager rerun pending.
 - 2026-09-27T19:20:30Z — Accepted exact QindaThemes e530b032 after independent deterministic generation, six icon tests, diff check and visual comparison inspection. Native input final fixture/evidence remains pending.
 - 2026-09-27T19:21:05Z — Accepted final native cutout fixturef2f984f3 after exactsource review and directpositive3/3 plus originalsameABI negativefailure logs. All assigned exactcandidates reviewed; offering bounded package/artifact help to manager.
+
+- 2026-09-27T19:21:30Z — Review handoff complete; all receipts pushed to hub. Offered package/artifact verification to manager; no open blocking findings.
+
+- 2026-09-27T19:24:00Z — Accepted overlayc9afe6b: exact full archive/Manifest match, exactKWin patch, pinnediconcommit, zero10242-file ownership overlap and correctdeliveryatoms. Bounded audit complete; manager owns installation/activation.
