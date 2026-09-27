@@ -85,3 +85,13 @@ For a negative control, retain the unpatched library from the same exact KWin
 release in an ignored directory and pass `--library-path` pointing there. The
 cutout assertion must fail with that library. Do not substitute a different
 KWin ABI. Never replace or restart the physical compositor to run this test.
+
+On 2026-09-27 the pinned native fixture passed with the packaged patched
+KWin library (three QtTest rows including setup/cleanup, 116 ms). With the
+retained unpatched library from the same 6.6.6 release, it failed exactly at
+`!above->hitTest(cutoutPoint)` (118 ms). The positive also received both actual
+Wayland button events on the lower client and retained the upper frame. The
+fixture uses `Test::waylandSync()` after motion and button delivery to flush
+the private client/server transport before assertions; polling QObject state
+alone does not establish that transport boundary. This qualifies the KWin
+input contract, not physical-session activation of a newly installed library.

@@ -1,6 +1,6 @@
 # Corner input worker
 
-- Status: waiting — candidate 9f1a51ff preserved; native positive/negative gate awaits manager-owned KWin build
+- Status: waiting — native positive and negative gates verified; final exact candidate awaits review
 - Base: 46816db4
 - Worktree: /home/cabewse/work_space/container-wm-corner-input
 - Owned paths: compositor/patches, focused native input tests and documentation
@@ -13,3 +13,4 @@
 - 2026-09-27T19:10:00Z — Native compile found protected Window predicate; changed test to public workspace move/resize owner invariant, retaining exact upper geometry and actual lower-client delivery assertions. Manager reruns native gate.
 - 2026-09-27T19:11:00Z — Removed redundant qRound from integral buffer geometry top; avoids Qt6 ambiguous overload.
 - 2026-09-27T19:15:00Z — Moved client pointer creation before mapped-window waits so the Wayland bind reaches the server before injected motion; removed redundant qRound on integral top margin. Manager reruns actual positive gate.
+- 2026-09-27T19:20:00Z — Native real-window proof passes patched KWin (3/3 rows,116ms); exact same executable with retained unpatched6.6.6 library fails cutout assertion (2pass/1expectedfail,118ms). Added explicit private Wayland sync after motion/buttons; both lower-client button events observed and upper frame unchanged.

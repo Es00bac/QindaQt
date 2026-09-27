@@ -1,5 +1,5 @@
 diff --git a/autotests/integration/decoration_input_test.cpp b/autotests/integration/decoration_input_test.cpp
-index 0b802a8..500d814 100644
+index 0b802a8..99ea814 100644
 --- a/autotests/integration/decoration_input_test.cpp
 +++ b/autotests/integration/decoration_input_test.cpp
 @@ -50,6 +50,7 @@ private Q_SLOTS:
@@ -10,7 +10,7 @@ index 0b802a8..500d814 100644
      void testAxis_data();
      void testAxis();
      void testDoubleClickOnAllDesktops();
-@@ -156,6 +157,67 @@ void DecorationInputTest::cleanup()
+@@ -156,6 +157,70 @@ void DecorationInputTest::cleanup()
      Test::destroyWaylandConnection();
  }
  
@@ -48,10 +48,13 @@ index 0b802a8..500d814 100644
 +    QVERIFY(!above->hitTest(cutoutPoint));
 +    QVERIFY(above->hitTest(retainedPoint));
 +    MOTION(cutoutPoint);
++    QCOMPARE(input()->pointer()->focus(), below);
++    QVERIFY(Test::waylandSync());
 +    QTRY_COMPARE(pointer->enteredSurface(), belowSurface.get());
 +    QVERIFY(!input()->pointer()->decoration());
 +    PRESS;
 +    RELEASE;
++    QVERIFY(Test::waylandSync());
 +    QTRY_COMPARE(buttons.count(), 2);
 +    QCOMPARE(pointer->enteredSurface(), belowSurface.get());
 +    QCOMPARE(above->frameGeometry(), originalFrame);
