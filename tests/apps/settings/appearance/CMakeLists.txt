@@ -163,3 +163,10 @@ set_tests_properties(
     ENVIRONMENT
         "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1"
 )
+
+qt_add_executable(qindaqt_user_wallpaper_catalog_tests tst_user_wallpaper_catalog.cpp)
+target_link_libraries(qindaqt_user_wallpaper_catalog_tests
+    PRIVATE qindaqt_settings_appearance Qt6::Test)
+qindaqt_enable_warnings(qindaqt_user_wallpaper_catalog_tests)
+add_test(NAME qindaqt.appearance-user-wallpaper-catalog
+    COMMAND qindaqt_user_wallpaper_catalog_tests)

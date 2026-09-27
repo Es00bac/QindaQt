@@ -1,0 +1,11 @@
+# Wallpaper fix
+
+- Status: working — implement a user folder wallpaper gallery and reliable chooser.
+- Base: 36a87ddf
+- Worktree: /home/cabewse/work_space/container-wm-wallpaper
+- Branch: fix/user-wallpaper-gallery
+- Ownership: Settings Appearance wallpaper implementation, focused tests, appearance documentation.
+
+## Updates
+
+- 2026-09-27T18:15:00Z — Claimed wallpaper chooser and folder gallery; preserve shared Apply/Revert authority.

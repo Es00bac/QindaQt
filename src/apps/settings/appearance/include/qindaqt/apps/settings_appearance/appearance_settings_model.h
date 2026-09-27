@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/apps/settings_appearance/appearance_preview.h"
+#include "qindaqt/apps/settings_appearance/user_wallpaper_catalog.h"
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 
 #include "qindaqt/design_tokens/token_facade.h"
@@ -59,6 +60,7 @@ class AppearanceSettingsModel final : public QObject {
     Q_PROPERTY(QVariantMap fieldErrors READ fieldErrors NOTIFY draftChanged)
     Q_PROPERTY(QVariantList installedThemes READ installedThemes CONSTANT)
     Q_PROPERTY(QVariantList bundledWallpapers READ bundledWallpapers CONSTANT)
+    Q_PROPERTY(QObject *userWallpaperCatalog READ userWallpaperCatalog CONSTANT)
     Q_PROPERTY(QStringList installedMonospaceFamilies READ installedMonospaceFamilies CONSTANT)
     Q_PROPERTY(QString resolvedThemeId READ resolvedThemeId NOTIFY previewChanged)
     Q_PROPERTY(bool configuredThemeInstalled READ configuredThemeInstalled
@@ -129,6 +131,7 @@ public:
     [[nodiscard]] QVariantMap fieldErrors() const;
     [[nodiscard]] QVariantList installedThemes() const;
     [[nodiscard]] QVariantList bundledWallpapers() const;
+    [[nodiscard]] QObject *userWallpaperCatalog() { return &m_userWallpaperCatalog; }
     [[nodiscard]] QStringList installedMonospaceFamilies() const;
     [[nodiscard]] QString resolvedThemeId() const;
     [[nodiscard]] bool configuredThemeInstalled() const;
@@ -216,6 +219,7 @@ private:
     QVector<Themes::DecorationThemeSpec> m_decorations;
     Qt::ColorScheme m_platformScheme;
     QVariantList m_bundledWallpapers;
+    UserWallpaperCatalog m_userWallpaperCatalog;
     QStringList m_installedMonospaceFamilies;
     QPointer<DesignTokens::TokenFacade> m_previewFacade;
 

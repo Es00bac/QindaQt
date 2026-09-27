@@ -20,6 +20,7 @@ target_sources(
         appearance_theme_catalog.cpp
         window_decoration_controller.cpp
         wallpaper_catalog.cpp
+        user_wallpaper_catalog.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -31,6 +32,7 @@ target_sources(
             include/qindaqt/apps/settings_appearance/appearance_theme_catalog.h
             include/qindaqt/apps/settings_appearance/window_decoration_controller.h
             include/qindaqt/apps/settings_appearance/wallpaper_catalog.h
+            include/qindaqt/apps/settings_appearance/user_wallpaper_catalog.h
 )
 target_link_libraries(
     qindaqt_settings_appearance
