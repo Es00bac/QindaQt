@@ -70,6 +70,8 @@ private slots:
         const int title = qRound(decorationTitleHeight(chrome));
         QVERIFY(sample(pixels, 430, 96 + title - 3) != canvas);
         QVERIFY(sample(pixels, 65, 93) != canvas);
+        // Rounded title paint must stop at the actual client seam.
+        QCOMPARE(sample(pixels, 65, 96 + title + 3), QColor("#dddddd"));
         // Turning shadow off removes shoulder shadow, not the actual title.
         auto flat = chrome;
         flat.shadowOpacity = 0;
@@ -79,7 +81,10 @@ private slots:
     }
     void ordinaryTitleAndAuthoredOpacity() {
         auto chrome = chromeFor("symbols", 10);
-        QVERIFY(sample(render(chrome), 430, 99) != QColor("#ee88ee"));
+        const auto pixels = render(chrome);
+        QVERIFY(sample(pixels, 430, 99) != QColor("#ee88ee"));
+        QCOMPARE(sample(pixels, 350, 96 + qRound(decorationTitleHeight(chrome)) + 3),
+                 QColor("#dddddd"));
         chrome.titleOpacity = 0;
         chrome.titleHighlight = false;
         chrome.titleTint = QColor();

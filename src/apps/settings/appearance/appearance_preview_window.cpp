@@ -26,8 +26,7 @@ void AppearanceWindowPreview::paintWindow(QPainter &painter, const QRectF &frame
     state.active = active;
     state.icon = QIcon::fromTheme(QStringLiteral("text-x-generic"));
     paintDecorationShadow(painter, decorationVisualStyleFor(chrome, false), chrome, state);
-    // Client area first: the decoration's rounded title sits on top of it
-    // exactly as KWin composes a decorated window.
+    // Client and decoration have disjoint paint regions, matching KWin.
     // The chrome's own radius and title height (ADR-0207, ADR-0264), so the
     // client area meets the title exactly where the live window's does.
     const qreal radius = decorationFrameRadius(chrome, false);
@@ -64,6 +63,14 @@ void AppearanceWindowPreview::paintWindow(QPainter &painter, const QRectF &frame
         }
     }
     painter.restore();
+    // AGENT-CONTRACT: KWin clips decoration painting outside the client.
+    // Rounded title materials extend below their seam internally; without
+    // this same clip the preview paints a pill over the application content.
+    QPainterPath decorationRegion;
+    decorationRegion.addRect(QRectF(QPointF(), size));
+    QPainterPath clientRegion;
+    clientRegion.addRect(client);
+    painter.setClipPath(decorationRegion.subtracted(clientRegion), Qt::IntersectClip);
     paintDecoration(painter, chrome, state, layoutDecorationButtons(chrome, size));
     painter.restore();
 }
