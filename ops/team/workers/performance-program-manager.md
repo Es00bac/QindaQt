@@ -2,7 +2,7 @@
 
 - Role: Program Manager
 - Provider: OpenAI Codex
-- Status: working — deliver simple user-folder wallpaper gallery and chooser repair on both hosts
+- Status: idle — wallpaper chooser and user-folder gallery delivered and verified on both hosts
 - Base: 64ae95c3
 - Worktree: container-wm-performance
 
@@ -29,3 +29,5 @@
 - 2026-09-27T18:19:00+00:00 — User requests focused wallpaper chooser/custom gallery fix on both machines. Hub fetched, integration tree clean at36a87ddf. Wallpaper implementer owns isolated fix/user-wallpaper-gallery; manager owns packaging, integration and two-host verification. Existing performance/recovery repair retained.
 
 - 2026-09-27T18:26:38+00:00 — Integrated independently reviewed wallpaper candidate4d229a8d into26ea670b. Native build and12selectedCTest rows have passing evidence after2test-fixture repairs; actual dialog import/gallery reselection covered. Overlay3fc245c r5 published; qinda Portage build/install active, laptop uses same signed binary next.
+
+- 2026-09-27T18:41:10+00:00 — Both hosts installed signed desktop r5, source26ea670b/overlay3fc245c. Each verifies1642/1642 package files; Settings executable, compiledAppearance library and2QML files hash-identical. All21actual installed routes plus explicitWallpaper destination construct withoutQML warnings under isolated buses onboth. All9residentendpoints present,watchdogtimersactive,reportqueuesempty. Existing applications/session untouched; reopenSettings activateschooser. Delivery complete.
