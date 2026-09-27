@@ -5,25 +5,20 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
-## September 27 — Make Corner Bar input and shadows follow its visible shape
+## September 27 — Correct Corner Bar, light appearances and full icon themes
 
-Active repair: the empty title-row area beside the BeOS-like Corner Bar tab
-must pass clicks to the underlying window, and its shadow must follow the
-visible tab/body contour. Both installed KWin binaries lack the downstream
-cutout property marker even though ADR-0277 requires the patch. Deliver the
-reviewed patch through a pinned overlay KWin revision and fix the rectangular
-decoration shadow, with native input and rendering evidence before claiming
-completion on both hosts. Preserve current sessions during installation.
+Installed on both hosts: desktop r6/source `4c704e12`, patched KWin `6.6.6-r1`,
+and six QindaThemes icon families/source `e530b03`, pinned by overlay `c9afe6b`.
+The File Manager palette, caption contrast and live icon selection repairs pass
+native and installed verification. Real corner click-through has positive and
+negative native evidence; new compositor/decoration code activates at the next
+normal login. Existing physical sessions remain intact.
 
-## September 27 — Correct light appearances and provide six full icon families
-
-Integrated and independently reviewed: File Manager inherited palette refresh,
-caption contrast repair, independent installed icon selector, and live shell/file
-icon updates. Six full icon families are being reviewed in QindaThemes, covering
-installed applications on both hosts, common Linux desktop/creative applications,
-Qinda projects, file formats, custom folders and action/status/device symbols.
-Native appearance tests pass; final compositor/platform gates and pinned overlay
-installation on both hosts remain open. See the current [handoff](HANDOFF.md).
+The additional screenshot-reported **Settings preview silhouette/shadow** defect
+is being corrected separately. The preview currently fills transparent title
+space with a full-frame backdrop. Close that remaining UI-fidelity item through
+review, focused visual verification and a pinned update on both machines. See
+the current [delivery and evidence record](HANDOFF.md).
 
 ## September 27 — Add custom wallpapers through a user folder
 
