@@ -225,6 +225,14 @@ qindaqt_add_task_list_applet_test(
     task_list_operation_test_support.h
 )
 qindaqt_add_task_list_applet_test(
+    qindaqt_keyed_row_model_tests
+    tst_keyed_row_model.cpp
+    qindaqt.task-list-keyed-row-model
+    "shell;task-list;offscreen"
+)
+set_tests_properties(qindaqt.task-list-keyed-row-model PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1")
+qindaqt_add_task_list_applet_test(
     qindaqt_task_list_applet_ungrouped_tests
     tst_task_list_applet_ungrouped.cpp
     qindaqt.task-list-applet-ungrouped

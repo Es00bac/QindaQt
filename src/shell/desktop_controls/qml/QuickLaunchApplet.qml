@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
+import QindaQt.Shell.TaskList 1.0 as Tasks
 
 // The dock (ADR-0265; "quick launch" on a taskbar): the launcher-owned dock
 // value as tiles — pinned applications, folders, files, groups, and Trash.
@@ -277,15 +278,18 @@ Item {
 
         Repeater {
             id: repeater
-            model: root.rows
+            model: Tasks.KeyedRowModel {
+                identityRoles: ["presentationId"]
+                sourceRows: root.rows
+            }
 
             DockItemTile {
                 id: tileDelegate
 
-                required property var modelData
+                required property var rowData
                 required property int index
 
-                row: modelData
+                row: rowData
                 visualIndex: index
                 vertical: root.vertical
                 dockMode: root.dockMode

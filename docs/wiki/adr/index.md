@@ -279,3 +279,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0276: Isolate private desktops from host activation](0276-isolate-private-desktops-from-host-activation.md)
 - [ADR-0277: One theme choice and a real corner-tab input cutout](0277-theme-choice-and-corner-tab-input.md)
+
+- [ADR-0278: Retain dock delegates by presentation identity](0278-retain-dock-delegates-by-presentation-identity.md)

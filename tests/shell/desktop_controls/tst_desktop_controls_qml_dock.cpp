@@ -283,8 +283,12 @@ void DesktopControlsQmlDockTests::dragMovesGroupsAndRemovesTiles()
                         QStringLiteral("editor")}));
   fixture.launcher.settleDock();
   QTRY_COMPARE(tiles(host).size(), 3);
-  // The rebuilt tiles are laid out a frame after the rows change.
-  QTRY_VERIFY(tiles(host).constLast()->width() > 0);
+  // Retained tiles keep their width and drag transition while GridLayout
+  // moves them next frame. Wait for real centres, not width>0 (which was
+  // only an accidental wait when the old Repeater destroyed every tile).
+  for (int index = 0; index < 3; ++index) {
+    QTRY_VERIFY(qAbs(tileCentre(host, index).x() - (index * slot + tile / 2)) < 0.1);
+  }
 
   // Group: terminal released over the middle of sheets.
   const QPointF terminal = tileCentre(host, 0);

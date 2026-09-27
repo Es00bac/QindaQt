@@ -67,6 +67,7 @@ QVariantMap pathRow(const DockItem &item, int index)
       {QStringLiteral("kind"), kindName(item.kind)},
       {QStringLiteral("entryId"), QString{}},
       {QStringLiteral("path"), item.path},
+      {QStringLiteral("presentationId"), kindName(item.kind) + QLatin1Char(':') + item.path},
       {QStringLiteral("displayText"), label},
       {QStringLiteral("iconName"),
        item.kind == DockItemKind::Trash ? QStringLiteral("user-trash")
@@ -166,6 +167,7 @@ QVariantMap QuickLaunchController::applicationRow(const QString &entryId, int in
       {QStringLiteral("index"), index},
       {QStringLiteral("kind"), QStringLiteral("application")},
       {QStringLiteral("entryId"), entryId},
+      {QStringLiteral("presentationId"), QStringLiteral("application:") + entryId},
       {QStringLiteral("path"), QString{}},
       {QStringLiteral("displayText"), displayText},
       {QStringLiteral("iconName"), presentation.value(QStringLiteral("iconName"))},
@@ -267,6 +269,10 @@ void QuickLaunchController::rebuild()
       rows.append(QVariantMap{
           {QStringLiteral("index"), index},
           {QStringLiteral("kind"), QStringLiteral("group")},
+          // Stored applications are globally unique in a dock. The first
+          // member anchors this group's identity across rename/reorder/run
+          // changes; replacing that member legitimately replaces the tile.
+          {QStringLiteral("presentationId"), QStringLiteral("group:") + item.applications.first()},
           {QStringLiteral("entryId"), QString{}},
           {QStringLiteral("path"), QString{}},
           {QStringLiteral("displayText"), item.name},
