@@ -2,7 +2,7 @@
 
 - Role: Program Manager
 - Provider: OpenAI Codex
-- Status: working — finalize verified two-host delivery record and synchronize repository hubs
+- Status: idle — two-host repair delivered and verified; physical login activation and multi-day observation remain recorded
 - Base: 64ae95c3
 - Worktree: container-wm-performance
 
@@ -23,3 +23,5 @@
 - 2026-09-27T17:43:00+00:00 — Independently accepted7f5b8431 integrated; manager rebuild shell+four icon tests passes4/4 in1.08s. User confirms noticeable improvement afterfirstshellreload. Finalr4 delivery will include reviewed existence-first lookup and contained test staging; existing-file confinement staysfresh.
 
 - 2026-09-27T18:03:30+00:00 — Final signed r4 installed on both hosts,1642/1642 package files and five artifact hashes match; both running shells match final binary. Both installed private boots pass. Final10s shell CPU laptop4.6%,qinda10.9%; user confirms both smoother. All nine bus owners healthy, timers active, queues empty. Final shell reload preserved9/9 and5/5 captured application identities plus physical compositor/supervisor/notification hosts. Physical login activation and multi-day observation remain explicit boundaries. Final documentation and source synchronization underway.
+
+- 2026-09-27T18:05:09+00:00 — Delivery receipt072c3be2 reached qinda hub/main, hotfix branch, working checkout and public main. Final417-document validator, whitespace check and strictMkDocs6.24s pass. Both system overlays matchad13d76b. No further implementation or installation gate remains in this repair; next normal physical login activates installed compositor/supervisor.
