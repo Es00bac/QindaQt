@@ -18,12 +18,26 @@ workstation login. Physical sessions were preserved for baseline measurements.
   These are confirmed amplification paths, not proof of an unbounded memory leak
   or a complete explanation of the session-age curve.
 
-Reviewed task-row candidate `7d2a1601` is integrated; the manager rebuilt and
-reran its three focused tests on qinda (3/3, exit 0). The compositor and stable
-keyed-delegate changes are still candidates. Recovery candidate Gabbee `f7ec6b2`
-is independently reviewing: expanded core coverage, manager-owned session
-environment rather than stale pin files, and local incident delivery on qinda.
-Do not claim packages or current physical processes contain these repairs yet.
+Reviewed task-row candidate `7d2a1601` and compositor candidate `152ab42d`
+are integrated. Manager row-cache gates pass 3/3; the integrated compositor
+native gates are running. Stable keyed delegates remain under verification.
+
+Gabbee repair `141e044` passed independent review and 84 focused tests, is on
+the hub's main branch, and ships as `0.1.0_p20260927` via QindaGentoo `feb1753`.
+Both hosts installed the same signed package through Portage; installed module
+SHA256 is `583f6723cb00838ba73163e8319320b21c98739e8a7985078a2f0d5906c1aebe`.
+Both user managers reloaded the pin-free drop-ins. Workstation pending reports
+fell from two to zero and reached its local maintenance inbox; laptop Clipboard
+was explicitly reset/started once after the source repair and is active.
+
+Controlled installed recovery: one power-service process kill on each host
+recovered automatically with a new PID, `NRestarts` 0 -> 1, active/success state,
+and a delivered `systemd automatic restart observed` maintenance incident.
+Both report queues drained to zero. This verifies one representative real
+crash on each host; other covered services use tested owner-loss policies,
+and hangs retaining their bus name and Settings GUI processes are not covered.
+QindaQt desktop packaging and current physical compositor activation remain
+pending; no physical logout/login has been forced.
 
 ## September 27 — Physical-session repair and FormRow live-loop fix
 
