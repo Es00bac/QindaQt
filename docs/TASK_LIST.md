@@ -12,13 +12,16 @@ laptop (about 33 hours old) and workstation (about two hours old), eliminate
 panel repaint/invalidation feedback, avoid repeated task-row icon resolution,
 and retain dock delegates across ordinary window changes. Independently reviewed
 row-publication candidate `7d2a1601` is integrated; manager rerun passes 3/3.
-The compositor feedback and retained-delegate candidates remain under verification.
+Reviewed compositor feedback candidate `152ab42d` is also integrated;
+retained dock delegates remain under verification.
 
 The cross-host recovery audit also found stale environment-file overrides at
 login, omitted core services, and qinda reports blocked by loopback SSH. Gabbee
-candidate `f7ec6b2` addresses these with 83 focused tests; exact independent
-review, combined gates, immutable overlay pins, signed packages and installed
-readback on both hosts remain required. A fresh physical logout/login and
+repair `141e044` passed independent review and 84 focused tests and is installed
+on both hosts as signed Portage package `0.1.0_p20260927`. Each host passed one
+real power-service crash/restart/report check; qinda drained its previously stuck
+reports and laptop Clipboard is restored. The QindaQt package and combined
+performance gates remain required. A fresh physical logout/login and
 multi-day observation are not yet evidence.
 
 ## September 27 — Keep Settings responsive at FormRow's breakpoint
