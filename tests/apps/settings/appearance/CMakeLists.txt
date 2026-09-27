@@ -170,3 +170,11 @@ target_link_libraries(qindaqt_user_wallpaper_catalog_tests
 qindaqt_enable_warnings(qindaqt_user_wallpaper_catalog_tests)
 add_test(NAME qindaqt.appearance-user-wallpaper-catalog
     COMMAND qindaqt_user_wallpaper_catalog_tests)
+
+qt_add_executable(qindaqt_appearance_window_silhouette_tests tst_appearance_window_silhouette.cpp)
+target_link_libraries(qindaqt_appearance_window_silhouette_tests PRIVATE
+    qindaqt_settings_appearance_qml QindaQt::DecorationPainter Qt6::Widgets Qt6::Quick Qt6::Test)
+qindaqt_enable_warnings(qindaqt_appearance_window_silhouette_tests)
+add_test(NAME qindaqt.appearance-window-silhouette COMMAND qindaqt_appearance_window_silhouette_tests)
+set_tests_properties(qindaqt.appearance-window-silhouette PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QPA_PLATFORMTHEME=generic")
