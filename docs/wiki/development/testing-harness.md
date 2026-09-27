@@ -4030,3 +4030,14 @@ environment before activating consumers. Sharing the real session bus does not
 grant a virtual compositor permission to change its activation environment.
 See [Private desktop isolation](../architecture/compositor-session.md#private-desktop-isolation)
 for the physical-compositor witness and focused regression gates.
+
+## Panel ownership feedback regression
+
+`compositor.kwin-shell-window-actions` includes a private virtual KWin proof
+that 80 raster panel repaints produce zero directed identity/task invalidations
+while the owner remains unchanged. A second process commits a conflicting dock
+role, both authenticated reads fail closed, and client teardown restores the
+first owner's admission. Destroying and recreating the final original panel
+separately proves revocation and recovery. These assertions exercise production
+KWin hooks and session-bus signals; they do not measure physical GPU frame
+pacing or establish a long-session memory trend.
