@@ -209,10 +209,10 @@ void AppearanceValuesTests::scopedKeysMatchSchemaKeys()
     // list with itself. Every client-scoped key must be defined by the
     // authority that will validate its optimistic commits.
     const auto keys = AppearanceKeys::scopedKeys();
-    // Eleven appearance keys plus the chrome arrangement keys (ADR-0129), the
+    // Twelve appearance keys plus the chrome arrangement keys (ADR-0129), the
     // two decoration document choices (ADR-0207) and the two accessibility
     // switches the route offers (ADR-0206).
-    QCOMPARE(keys.size(), 11 + QindaQt::Decoration::ChromePreferences::settingsKeys().size()
+    QCOMPARE(keys.size(), 12 + QindaQt::Decoration::ChromePreferences::settingsKeys().size()
                               + QindaQt::Decoration::ChromePreferences::decorationKeys().size()
                               + 2);
     QVERIFY(keys.contains(QStringLiteral("accessibility.reducedTransparency")));
