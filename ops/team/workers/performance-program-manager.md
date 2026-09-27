@@ -2,7 +2,7 @@
 
 - Role: Program Manager
 - Provider: OpenAI Codex
-- Status: idle — two-host repair delivered and verified; physical login activation and multi-day observation remain recorded
+- Status: working — deliver simple user-folder wallpaper gallery and chooser repair on both hosts
 - Base: 64ae95c3
 - Worktree: container-wm-performance
 
@@ -25,3 +25,5 @@
 - 2026-09-27T18:03:30+00:00 — Final signed r4 installed on both hosts,1642/1642 package files and five artifact hashes match; both running shells match final binary. Both installed private boots pass. Final10s shell CPU laptop4.6%,qinda10.9%; user confirms both smoother. All nine bus owners healthy, timers active, queues empty. Final shell reload preserved9/9 and5/5 captured application identities plus physical compositor/supervisor/notification hosts. Physical login activation and multi-day observation remain explicit boundaries. Final documentation and source synchronization underway.
 
 - 2026-09-27T18:05:09+00:00 — Delivery receipt072c3be2 reached qinda hub/main, hotfix branch, working checkout and public main. Final417-document validator, whitespace check and strictMkDocs6.24s pass. Both system overlays matchad13d76b. No further implementation or installation gate remains in this repair; next normal physical login activates installed compositor/supervisor.
+
+- 2026-09-27T18:19:00+00:00 — User requests focused wallpaper chooser/custom gallery fix on both machines. Hub fetched, integration tree clean at36a87ddf. Wallpaper implementer owns isolated fix/user-wallpaper-gallery; manager owns packaging, integration and two-host verification. Existing performance/recovery repair retained.
