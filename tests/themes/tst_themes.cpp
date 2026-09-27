@@ -9,6 +9,8 @@
 #include <QJsonObject>
 #include <QtTest>
 
+#include <utility>
+
 using namespace QindaQt::Themes;
 
 class ThemeTests final : public QObject {
@@ -30,22 +32,42 @@ private slots:
     void schemaV1DocumentsRejectSchemaV2Keys();
     void rejectsInvalidSchemaV2Values();
     void everyBuiltInThemeRoundTripsItsOwnDocument();
+    void cornerBarVariantsKeepTabBehaviorWithDistinctColorsAndRadii();
 };
 
 void ThemeTests::loadsEveryBuiltInTheme()
 {
     const auto results = ThemeLoader::fromDirectory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(results.size(), 16);
+    QCOMPARE(results.size(), 18);
     int schemaV2 = 0;
     for (const auto &result : results) {
         QVERIFY2(result.ok, qPrintable(result.error));
         QVERIFY(result.theme.colors.value(QStringLiteral("text")).isValid());
         schemaV2 += result.theme.schemaVersion == 2 ? 1 : 0;
     }
-    // ADR-0206: the six theming-v2 themes author surfaces; the six originals
-    // stay schema v1 and load unchanged. ADR-0268 adds four v2 experience
-    // themes (Daylight, Marigold, Classic Grey, Graphite).
-    QCOMPARE(schemaV2, 10);
+    // ADR-0206: six theming-v2 themes, six schema-v1 originals, four
+    // experience themes, and two Corner Bar color/radius variants.
+    QCOMPARE(schemaV2, 12);
+}
+
+void ThemeTests::cornerBarVariantsKeepTabBehaviorWithDistinctColorsAndRadii()
+{
+    QSet<QString> titleColors;
+    for (const auto &[id, radius] : {
+             std::pair{"qinda-marigold", 2},
+             std::pair{"qinda-corner-teal", 8},
+             std::pair{"qinda-corner-violet", 12}}) {
+        const auto result = ThemeLoader::fromFile(
+            QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/%1.json")
+                .arg(QString::fromLatin1(id)));
+        QVERIFY2(result.ok, qPrintable(result.error));
+        QCOMPARE(result.theme.decoration.buttonStyle, QStringLiteral("tab"));
+        QCOMPARE(result.theme.decoration.buttonPlacement, QStringLiteral("left"));
+        QCOMPARE(result.theme.decoration.titleDoubleClick, QStringLiteral("roll-up"));
+        QCOMPARE(result.theme.surfaceRadius(QString(SurfaceNames::Decoration)), radius);
+        titleColors.insert(result.theme.decoration.titleBarColor.name());
+    }
+    QCOMPARE(titleColors.size(), 3);
 }
 
 void ThemeTests::qindaBlissDefinesTheClassicBlueChrome()

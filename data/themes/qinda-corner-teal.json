@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-corner-teal",
+  "name": "Qinda Sea Glass",
+  "variant": "light",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Noto Sans",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 8,
+  "motionDuration": 130,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#C7D7D3",
+    "surface": "#DCE8E3",
+    "surfaceRaised": "#F0F7F1",
+    "border": "#648681",
+    "text": "#142523",
+    "textMuted": "#355350",
+    "accent": "#126A73",
+    "accentText": "#FFFFFF",
+    "danger": "#A52D2D"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "tab",
+    "hoverGlyphs": false,
+    "titleBarColor": "#55C3B6",
+    "titleBarInactiveColor": "#ACD5CD",
+    "closeColor": "#A52D2D",
+    "minimizeColor": "#526A34",
+    "maximizeColor": "#216C58",
+    "titleDoubleClick": "roll-up",
+    "titleWear": false
+  },
+  "radii": {
+    "decoration": 8
+  }
+}

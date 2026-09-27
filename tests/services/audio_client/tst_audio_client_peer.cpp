@@ -39,6 +39,12 @@ void AudioClientPeerTests::peerReplyLineage_data()
     QTest::newRow("enable-newer-service-revision")
         << OperationKind::SetVbanEnabled << quint64(11) << quint64(3)
         << quint64(4) << OperationStatus::Succeeded << OperationStatus::Succeeded;
+    QTest::newRow("console-send-newer-service-revision")
+        << OperationKind::SetStripSend << quint64(11) << quint64(3)
+        << quint64(4) << OperationStatus::Succeeded << OperationStatus::Succeeded;
+    QTest::newRow("console-send-regressing-initiation")
+        << OperationKind::SetStripSend << quint64(11) << quint64(1)
+        << quint64(4) << OperationStatus::Succeeded << OperationStatus::Uncertain;
     QTest::newRow("enable-regressing-initiation")
         << OperationKind::SetVbanEnabled << quint64(11) << quint64(1)
         << quint64(4) << OperationStatus::Succeeded << OperationStatus::Uncertain;
@@ -73,7 +79,8 @@ void AudioClientPeerTests::peerReplyLineage()
     client.start();
     transport.announceOwner(QStringLiteral(":1.90"));
     Snapshot snapshot = clientSnapshot();
-    snapshot.capabilities |= Capability::Console | Capability::ManageVbanStreams;
+    snapshot.capabilities |= Capability::Console | Capability::ManageVbanStreams
+        | Capability::SetConsoleRouting;
     transport.reply(transport.fetches[0], snapshot);
     QCOMPARE(client.state(), ClientState::Ready);
     quint64 requestId = 0;
@@ -89,6 +96,8 @@ void AudioClientPeerTests::peerReplyLineage()
         requestId = client.deleteVbanStream(QStringLiteral("Desk"));
     } else if (kind == OperationKind::SetVbanEnabled) {
         requestId = client.setVbanEnabled(QStringLiteral("Desk"), true);
+    } else if (kind == OperationKind::SetStripSend) {
+        requestId = client.setStripSend(QStringLiteral("strip.virtual.1"), 5, true, 0.0);
     } else {
         requestId = client.setMute({.epoch = 11, .serial = 10}, true);
     }

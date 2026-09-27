@@ -159,6 +159,7 @@ private slots:
     void cleanup();
     void loadingThenReadyWithConfirmedBaseline();
     void draftValidationGatesApplyAndCancelRestores();
+    void themeChoiceResetsChromeAndPairsScheme();
     void applySequencesPerKeyCommitsInOrder();
     void monospaceDraftSavesWithoutChangingInterfaceFont();
     void conflictStopsSequenceAndRequiresExplicitReapply();
@@ -303,6 +304,38 @@ void AppearanceSettingsModelTests::draftValidationGatesApplyAndCancelRestores()
              QStringLiteral("qinda-dark"));
     // Cancel without dirt or outside Ready is refused, not silently ignored.
     QVERIFY(!model->cancelDraft());
+}
+
+void AppearanceSettingsModelTests::themeChoiceResetsChromeAndPairsScheme()
+{
+    auto *model = makeModel(Qt::ColorScheme::Dark);
+    QVERIFY(model != nullptr);
+    QVERIFY(model->setDraftValue(QStringLiteral("appearance.windowButtonSide"),
+                                 QStringLiteral("right")));
+    QVERIFY(model->setDraftValue(QStringLiteral("appearance.containerButtonStyle"),
+                                 QStringLiteral("glyph")));
+    QVERIFY(model->setDraftValue(QStringLiteral("appearance.windowDecoration"),
+                                 QStringLiteral("slate")));
+    QVERIFY(model->setDraftValue(QLatin1String(AppearanceKeys::Wallpaper),
+                                 QStringLiteral("/tmp/theme-choice-wallpaper.png")));
+    QVERIFY(!model->selectTheme(QStringLiteral("missing-theme")));
+    QVERIFY(model->selectTheme(QStringLiteral("qinda-light")));
+    const QVariantMap draft = model->draft();
+    QCOMPARE(draft.value(QLatin1String(AppearanceKeys::Theme)).toString(),
+             QStringLiteral("qinda-light"));
+    QCOMPARE(draft.value(QLatin1String(AppearanceKeys::ColorScheme)).toString(),
+             QStringLiteral("light"));
+    QCOMPARE(draft.value(QStringLiteral("appearance.windowButtonSide")).toString(),
+             QStringLiteral("theme"));
+    QCOMPARE(draft.value(QStringLiteral("appearance.containerButtonStyle")).toString(),
+             QStringLiteral("theme"));
+    QCOMPARE(draft.value(QStringLiteral("appearance.windowDecoration")).toString(),
+             QStringLiteral("theme"));
+    QCOMPARE(draft.value(QLatin1String(AppearanceKeys::Wallpaper)).toString(),
+             QStringLiteral("/tmp/theme-choice-wallpaper.png"));
+    QVERIFY(model->draftDirty());
+    QVERIFY(model->cancelDraft());
+    QVERIFY(!model->draftDirty());
 }
 
 void AppearanceSettingsModelTests::applySequencesPerKeyCommitsInOrder()

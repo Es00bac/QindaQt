@@ -20,8 +20,8 @@ One page covers the appearance preference set stored through Settings1:
 
 | Group | Controls | Settings1 keys |
 | --- | --- | --- |
-| Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome through the decoration painter the compositor uses, around the real Fusion controls ordinary Qt applications get, over the draft wallpaper; sixteen built-in theme cards, each a rendered thumbnail of that theme's chrome with its paired decoration document and its panel material (ADR-0206); the system/light/dark scheme choice; the **Translucency** and **Motion** switches; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme`, `accessibility.reducedTransparency`, `accessibility.reducedMotion` |
-| Windows | A separate catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; a **Window decoration** chooser of decoration documents (ADR-0207) painted by the decoration painter; QindaQt-only application-window controls and shared-painter preview while QindaQt is selected; a **Container decoration** chooser painted by the compositor's container renderer; and an independently truthful two-window container preview with button and tab controls (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowDecoration`, `appearance.containerDecoration`, `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs`, and the ADR-0264 title-bar options `appearance.windowButtonSize`, `appearance.windowButtonSpacing`, `appearance.windowTitleHeight`, `appearance.windowCornerRadius`, `appearance.windowTitleWeight`, `appearance.windowAppIcon`, `appearance.windowRollUpButton`, `appearance.windowTitleDoubleClick`, `appearance.containerButtonSize`, `appearance.containerButtonSpacing`, `appearance.containerTitleDoubleClick` |
+| Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome around Fusion controls, over the draft wallpaper; eighteen theme cards that choose the theme, matching light/dark scheme, and authored window/container chrome together, including three Corner Bar color and radius treatments; **Fine tune this theme** opens the advanced controls described below; the **Translucency** and **Motion** switches; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme`, chrome keys below, `accessibility.reducedTransparency`, `accessibility.reducedMotion` |
+| Advanced theme details | A catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; a **Window decoration** chooser of decoration documents (ADR-0207) painted by the shared painter; QindaQt-only application-window controls and preview while QindaQt is selected; a **Container decoration** chooser and two-window container preview (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowDecoration`, `appearance.containerDecoration`, `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs`, and the ADR-0264 title-bar options `appearance.windowButtonSize`, `appearance.windowButtonSpacing`, `appearance.windowTitleHeight`, `appearance.windowCornerRadius`, `appearance.windowTitleWeight`, `appearance.windowAppIcon`, `appearance.windowRollUpButton`, `appearance.windowTitleDoubleClick`, `appearance.containerButtonSize`, `appearance.containerButtonSpacing`, `appearance.containerTitleDoubleClick` |
 | Wallpaper | Bundled previews (any of png/jpg/jpeg/webp/bmp beneath the wallpaper data directories, ADR-0228), native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
 | Fonts | Independent interface and installed fixed-width family pickers with live samples and saved/draft monospace state, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.monospaceFamily`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
@@ -31,7 +31,7 @@ second, stored-only scale control.
 
 The Wallpaper destination's preview and the path field read the route
 model's projections, never their own resolution: the preview paints the same
-`previewWallpaper` file URL the Themes and Windows destinations use, and the
+`previewWallpaper` file URL the Themes preview and advanced chrome previews use, and the
 path field adopts draft changes that come from the bundled grid, the "No
 wallpaper" choice, the file dialog, Revert, or a baseline rebase while
 leaving the user's own in-progress typing untouched.
@@ -45,7 +45,7 @@ an unrelated active KDecoration plugin. The preview follows the draft: a theme
 card, scheme, or font change shows before Apply. Without a widgets application
 (headless tests) the client area degrades to flat palette rows.
 
-The Windows destination reads the real KWin decoration selection separately.
+The advanced details in Themes read the real KWin decoration selection separately.
 It discovers valid Aurorae theme directories from the standard XDG data roots
 and supported native plugins from Qt's plugin roots. Applying one choice
 preserves unrelated `kwinrc` keys and synchronously requests KWin reconfigure.
@@ -94,8 +94,8 @@ The page is QST/Controls-only: QindaQt.Controls primitives, QST-1 semantic
 roles, `Accessible` names/descriptions/roles on every control, radio
 semantics for the scheme and enum choices, an explicit initial focus on the
 first theme card, and a visible focus chain through the draft action row. A
-single `QindaQt.Controls` tab strip above the form selects Themes, Windows,
-Wallpaper, or Fonts at every width — glyph-first tabs on one shared rule with an accent
+single `QindaQt.Controls` tab strip above the form selects Themes, Wallpaper,
+or Fonts at every width — glyph-first tabs on one shared rule with an accent
 indicator, each explained by a tooltip and accessible description rather
 than a paragraph — so Appearance does not introduce a second vertical
 navigator beside the Settings Center's route sidebar. The form has a visible vertical

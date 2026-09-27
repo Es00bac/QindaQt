@@ -63,11 +63,14 @@ bool QindaDecoration::init()
             this, &QindaDecoration::updateGeometry);
     connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged,
             this, &QindaDecoration::updateGeometry);
+    // AGENT-GUARD: the title text, icon and font change the BeOS tab width.
+    // Repaint alone leaves the KWin input cutout at the old width.
     connect(window(), &KDecoration3::DecoratedWindow::captionChanged,
-            this, qOverload<>(&QindaDecoration::update));
-    // The title may show the application icon (ADR-0264).
+            this, &QindaDecoration::updateGeometry);
     connect(window(), &KDecoration3::DecoratedWindow::iconChanged,
-            this, qOverload<>(&QindaDecoration::update));
+            this, &QindaDecoration::updateGeometry);
+    connect(settings().get(), &KDecoration3::DecorationSettings::fontChanged,
+            this, &QindaDecoration::updateGeometry);
     connect(window(), &KDecoration3::DecoratedWindow::activeChanged,
             this, &QindaDecoration::updateVisualStyle);
     connect(window(), &KDecoration3::DecoratedWindow::paletteChanged,
@@ -258,10 +261,10 @@ void QindaDecoration::createButtons()
     // the left; the right edge reads minimize, maximize, close), and the
     // visible set. The outer-chrome model reverses only tab visual placement,
     // never these actions or member identity.
-    auto *stoplights = new KDecoration3::DecorationButtonGroup(
-        right ? KDecoration3::DecorationButtonGroup::Position::Right
-              : KDecoration3::DecorationButtonGroup::Position::Left,
-        this, &QindaButton::create);
+    // AGENT-GUARD: The Position constructor imports KWin's configured button
+    // list. We author the full theme arrangement below, so using it paints a
+    // second set whose side varies with each machine's kwinrc.
+    auto *stoplights = new KDecoration3::DecorationButtonGroup(this);
     for (const auto kind : decorationButtonKinds(chrome)) {
         if (member && kind == DecorationButtonKind::RollUp) {
             // A handlebar never offers roll-up: its wheel rolls the container.
@@ -283,10 +286,7 @@ void QindaDecoration::createButtons()
     if (member) {
         // Contained windows (ADR-0131) add a "more" control at the opposite
         // end; it opens the QindaQt window menu with every other action.
-        auto *more = new KDecoration3::DecorationButtonGroup(
-            right ? KDecoration3::DecorationButtonGroup::Position::Left
-                  : KDecoration3::DecorationButtonGroup::Position::Right,
-            this, &QindaButton::create);
+        auto *more = new KDecoration3::DecorationButtonGroup(this);
         if (auto *button = QindaButton::create(KDecoration3::DecorationButtonType::Custom,
                                                this, more)) {
             connect(button, &KDecoration3::DecorationButton::clicked, this,

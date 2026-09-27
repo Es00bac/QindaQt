@@ -13,6 +13,7 @@
 #include <QStringList>
 #include <QMarginsF>
 #include <QRectF>
+#include <QRegion>
 #include <QSizeF>
 #include <QString>
 #include <QVariantMap>
@@ -187,6 +188,13 @@ struct DecorationFrameVisual {
     // The window's application icon, painted when chrome.appIcon is set.
     QIcon icon;
 };
+
+// AGENT-CONTRACT: The painter and KDecoration input cutout use one tab width.
+// A full-width result means the style has no transparent cutout.
+[[nodiscard]] qreal decorationTitleTabWidth(const DecorationChrome &chrome,
+                                            const DecorationFrameVisual &frame);
+[[nodiscard]] QRegion decorationTransparentTitleRegion(const DecorationChrome &chrome,
+                                                        const DecorationFrameVisual &frame);
 
 [[nodiscard]] DecorationVisualStyle decorationVisualStyle(const QColor &border,
                                                           const QColor &surface,

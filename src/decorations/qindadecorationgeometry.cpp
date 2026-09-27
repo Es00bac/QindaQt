@@ -4,6 +4,8 @@
 #include <KDecoration3/DecoratedWindow>
 #include <KDecoration3/DecorationButtonGroup>
 
+#include <QRegion>
+
 namespace QindaQt::Decoration {
 
 void QindaDecoration::updateGeometry()
@@ -34,6 +36,7 @@ void QindaDecoration::updateGeometry()
                       : QRegion());
 
     if (member) {
+        setProperty("qindaqtTransparentDecorationRegion", QRegion{});
         const bool right = effectiveButtonSide(chrome)
             == DecorationButtonSide::Right;
         const DecorationMemberHandleLayout layout = layoutMemberHandle(chrome, size());
@@ -78,7 +81,14 @@ void QindaDecoration::updateGeometry()
         return;
     }
 
-    setTitleBar(QRectF(0.0, 0.0, size().width(), titleHeight));
+    // AGENT-CONTRACT: the patched KWin 6.6.6 input shape subtracts this
+    // region when titleBarChanged fires. The same painter calculation sets
+    // both the visible tab edge and the click-through area beside it.
+    const auto frame = frameState();
+    const qreal tabWidth = decorationTitleTabWidth(chrome, frame);
+    setProperty("qindaqtTransparentDecorationRegion",
+                decorationTransparentTitleRegion(chrome, frame));
+    setTitleBar(QRectF(0.0, 0.0, tabWidth, titleHeight));
 
     // Button geometry comes from the shared painter's layout so the preview
     // and the live decoration place every cluster identically (ADR-0129).

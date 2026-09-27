@@ -61,27 +61,6 @@ qreal captionIconExtent(const QRectF &captionRect)
     return std::min(16.0, captionRect.height() - 6.0);
 }
 
-// ADR-0264: a tab style's title reaches from the left edge past its buttons
-// and caption; every other style spans the whole width. With the buttons
-// moved to the right edge the tab spans the bar, so they stay on it.
-qreal titleTabWidth(const DecorationChrome &chrome, const DecorationFrameVisual &frame)
-{
-    const qreal width = frame.size.width();
-    if (!decorationButtonStyle(chrome.buttonStyle).titleTab
-        || effectiveButtonSide(chrome) == DecorationButtonSide::Right) {
-        return width;
-    }
-    const QRectF caption = decorationCaptionRect(chrome, frame.size,
-                                                 layoutDecorationButtons(chrome, frame.size));
-    QFont font = frame.font;
-    font.setWeight(captionWeight(chrome));
-    qreal right = caption.left() + QFontMetricsF(font).horizontalAdvance(frame.caption) + 14.0;
-    if (chrome.appIcon && !frame.icon.isNull()) {
-        right += captionIconExtent(caption) + 6.0;
-    }
-    return std::clamp(right, std::min(width, 120.0), width);
-}
-
 // A tab title's outline: the tab over the body, one closed path, so no
 // frame line crosses the transparent strip beside the tab.
 void paintTabFrame(QPainter &painter, const QRectF &bounds, qreal titleHeight, qreal tabWidth,
@@ -107,6 +86,47 @@ void paintTabFrame(QPainter &painter, const QRectF &bounds, qreal titleHeight, q
 }
 
 } // namespace
+
+// ADR-0264: a tab style's title reaches from the left edge past its buttons
+// and caption; every other style spans the whole width. With the buttons
+// moved to the right edge the tab spans the bar, so they stay on it.
+qreal decorationTitleTabWidth(const DecorationChrome &chrome,
+                              const DecorationFrameVisual &frame)
+{
+    const qreal width = frame.size.width();
+    if (!decorationButtonStyle(chrome.buttonStyle).titleTab
+        || effectiveButtonSide(chrome) == DecorationButtonSide::Right) {
+        return width;
+    }
+    const QRectF caption = decorationCaptionRect(chrome, frame.size,
+                                                 layoutDecorationButtons(chrome, frame.size));
+    QFont font = frame.font;
+    font.setWeight(captionWeight(chrome));
+    qreal right = caption.left() + QFontMetricsF(font).horizontalAdvance(frame.caption) + 14.0;
+    if (chrome.appIcon && !frame.icon.isNull()) {
+        right += captionIconExtent(caption) + 6.0;
+    }
+    return std::clamp(right, std::min(width, 120.0), width);
+}
+
+QRegion decorationTransparentTitleRegion(const DecorationChrome &chrome,
+                                         const DecorationFrameVisual &frame)
+{
+    // Round towards the painted tab so anti-aliased edge pixels remain its
+    // input. Only the unpainted part of the title row passes clicks through.
+    const qreal tabWidth = decorationTitleTabWidth(chrome, frame);
+    if (tabWidth >= frame.size.width()) {
+        return {};
+    }
+    const int left = static_cast<int>(std::ceil(tabWidth));
+    const QMarginsF resize = decorationResizeOnlyBorders(frame.maximized, false);
+    const int right = static_cast<int>(std::ceil(frame.size.width() + resize.right()));
+    const int top = -static_cast<int>(std::ceil(resize.top()));
+    return left < right
+        ? QRegion(QRect(left, top, right - left,
+                        static_cast<int>(std::ceil(decorationTitleHeight(chrome))) - top))
+        : QRegion{};
+}
 
 HybridChrome::ChromePalette chromePaletteForTheme(const Themes::ThemeSpec &theme)
 {
@@ -337,7 +357,7 @@ void paintDecorationTitle(QPainter &painter, const DecorationChrome &chrome,
     const bool worn = chrome.wornLuna() && chrome.titleWorn;
     // ADR-0264: a tab style fills only its tab; the strip beside it stays
     // clear. Every other style's bar spans the full width, as it shipped.
-    const qreal barWidth = titleTabWidth(chrome, frame);
+    const qreal barWidth = decorationTitleTabWidth(chrome, frame);
     if (worn) {
         paintWornLunaTitle(painter, QRectF(0.0, 0.0, barWidth, titleHeight),
                            title, decorationWearSeed(frame.caption, frame.size.width()));

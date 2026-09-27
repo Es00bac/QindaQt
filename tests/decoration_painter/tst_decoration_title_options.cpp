@@ -8,6 +8,7 @@
 #include <QTest>
 
 #include <algorithm>
+#include <cmath>
 
 // The ADR-0264 title-bar options and style metrics: Settings1 tokens and
 // their resolution into the published window chrome and the container
@@ -54,6 +55,7 @@ private slots:
     void rollUpSitsAtTheInnerEndAndNeverOnAHandlebar();
     void containerOptionsResolveIntoTheContainerStyle();
     void themeAuthoredBehaviourAndFinishResolve();
+    void titleTabCutoutTracksPaintedGeometry();
 };
 
 void DecorationTitleOptionTests::styleNamesMatchTheThemeAndSettingsTokens()
@@ -196,6 +198,31 @@ void DecorationTitleOptionTests::styleMetricsAndOptionsDriveTheLayout()
     // A cell never outgrows its bar.
     lights.buttonScale = 2.0;
     QCOMPARE(decorationButtonCell(lights).height(), 20.0);
+}
+
+void DecorationTitleOptionTests::titleTabCutoutTracksPaintedGeometry()
+{
+    DecorationFrameVisual frame;
+    frame.size = QSizeF(520.0, 340.0);
+    frame.caption = QStringLiteral("A short title");
+    frame.font = QFont(QStringLiteral("Noto Sans"), 10);
+    auto tab = classicChrome(QStringLiteral("tab"));
+    tab.buttonSide = QStringLiteral("left");
+    const qreal paintedWidth = decorationTitleTabWidth(tab, frame);
+    QVERIFY(paintedWidth >= 120.0);
+    QVERIFY(paintedWidth < frame.size.width());
+    const QRegion cutout = decorationTransparentTitleRegion(tab, frame);
+    QVERIFY(!cutout.contains(QPoint(3, 4)));
+    QVERIFY(!cutout.contains(QPoint(static_cast<int>(paintedWidth) - 1, 4)));
+    QVERIFY(cutout.contains(QPoint(static_cast<int>(std::ceil(paintedWidth)) + 1, 4)));
+    QVERIFY(cutout.contains(QPoint(static_cast<int>(std::ceil(paintedWidth)) + 1, -2)));
+    QVERIFY(!cutout.contains(QPoint(500, static_cast<int>(decorationTitleHeight(tab)) + 1)));
+
+    frame.caption = QStringLiteral("A much longer title that reaches across most of the window");
+    QVERIFY(decorationTitleTabWidth(tab, frame) > paintedWidth);
+    tab.buttonSide = QStringLiteral("right");
+    QCOMPARE(decorationTitleTabWidth(tab, frame), frame.size.width());
+    QVERIFY(decorationTransparentTitleRegion(tab, frame).isEmpty());
 }
 
 void DecorationTitleOptionTests::rollUpSitsAtTheInnerEndAndNeverOnAHandlebar()
