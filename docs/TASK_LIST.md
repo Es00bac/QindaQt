@@ -12,8 +12,16 @@ laptop (about 33 hours old) and workstation (about two hours old), eliminate
 panel repaint/invalidation feedback, avoid repeated task-row icon resolution,
 and retain dock delegates across ordinary window changes. Independently reviewed
 row-publication candidate `7d2a1601` is integrated; manager rerun passes 3/3.
-Reviewed compositor feedback candidate `152ab42d` is also integrated;
-retained dock delegates remain under verification.
+Reviewed compositor feedback candidate `152ab42d` and retained-delegate /
+confirmed-save candidate `8414e435` are integrated. The dock now preserves
+objects, focus and preview identity through ordinary updates and same-owner
+Settings refresh, and only new tiles fade in (reduced motion honored).
+[ADR-0278](wiki/adr/0278-retain-dock-delegates-by-presentation-identity.md)
+records the presentation boundary. Combined gates identified direct-file module
+loading and an offscreen retained-popup focus fixture gap; both were repaired
+and independently rereviewed (`e37f01f9`, `292cd361`). Native repaint retry and
+staged/relocated package consumer and four offscreen applet rows pass.
+Signed package delivery follows.
 
 The cross-host recovery audit also found stale environment-file overrides at
 login, omitted core services, and qinda reports blocked by loopback SSH. Gabbee
