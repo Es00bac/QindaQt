@@ -1,7 +1,7 @@
 # Shell performance Codex
 
 - Role: Shell performance implementer
-- Status: working — investigating remaining workstation icon canonicalization hotspot after installed shell reload
+- Status: available — missing-icon candidate handed off; ready for exact review or integration regression repair
 - Base: `64ae95c336c03a2de54775962ff42622fae1d156`
 - Worktree: `/home/cabewse/work_space/container-wm-performance-worker`
 - Branch: `fix/shell-icon-performance`
@@ -30,3 +30,5 @@
 - 2026-09-27T11:37:28-06:00 — Claimed remaining workstation shell hotspot; manager measured laptop improvement but qinda still 80.9% CPU. Preserved worker history and merged exact origin/main 83717eaf; tracing icon projection callers pending symbolized live stack, no live process/build mutations.
 
 - 2026-09-27T11:41:11-06:00 — Locator metadata-first repair passes four compiled icon rows (73 QtTest cases), strict docs and 417 links. Fortified-realpath counter over 1,000 missing queries/649 real theme directories: parent 3,900,003 calls, 35,514 ms; fixed 3 calls, 3,167 ms (11.2x). Freshness/confined existing paths preserved; ready for exact review and manager live qualification.
+
+- 2026-09-27T11:41:50-06:00 — Handed off exact candidate 7f5b8431a8111ef43985d1e54caf231440cbbfac; pushed to qinda. Four icon gates, freshness stress, docs and instrumented parent/candidate benchmark complete. Manager owns live performance, package integration and cleanup decisions. Available for bounded review repairs.
