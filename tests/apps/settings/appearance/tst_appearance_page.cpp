@@ -489,13 +489,10 @@ void AppearancePageTests::acceptedFileDialogImportsAndSelectsWallpaper()
     QCOMPARE(gallery.wallpapers().size(), 1);
     QVERIFY(QFileInfo::exists(source));
     QCOMPARE(QImage(imported), image);
-    QQuickItem *customCard = nullptr;
-    const auto cards = scene.root->findChildren<QQuickItem *>(QStringLiteral("bundledWallpaperButton"));
-    for (QQuickItem *card : cards) {
-        if (card->property("modelData").toMap().value(QStringLiteral("value")).toString() == imported)
-            customCard = card;
-    }
-    QVERIFY(customCard != nullptr);
+    // Repeater delegates belong to the visual tree, not necessarily the
+    // QObject parent tree. This scene has exactly one custom gallery entry.
+    QTRY_VERIFY(item(scene.root, "bundledWallpaperButton") != nullptr);
+    auto *customCard = item(scene.root, "bundledWallpaperButton");
     QVERIFY(QMetaObject::invokeMethod(item(scene.root, "noWallpaperButton"), "clicked"));
     QTRY_COMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper")).toString(), QString{});
     QVERIFY(QMetaObject::invokeMethod(customCard, "clicked"));
