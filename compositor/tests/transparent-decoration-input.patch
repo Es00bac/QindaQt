@@ -18,6 +18,9 @@ index 0b802a8..500d814 100644
 +{
 +    // Exercise the downstream QindaQt contract through real stacked Wayland
 +    // surfaces. A geometry/painter assertion alone cannot prove click-through.
++    auto pointer = std::unique_ptr<KWayland::Client::Pointer>(Test::waylandSeat()->createPointer());
++    QVERIFY(pointer->isValid());
++    QSignalSpy buttons(pointer.get(), &KWayland::Client::Pointer::buttonStateChanged);
 +    auto [below, belowSurface, belowToplevel, belowDecoration] = showWindow();
 +    QVERIFY(below);
 +    below->move(QPoint(100, 100));
@@ -28,7 +31,7 @@ index 0b802a8..500d814 100644
 +    above->setKeepAbove(true);
 +    const auto originalFrame = above->frameGeometry();
 +    auto *chrome = above->decoration();
-+    const int titleHeight = qRound(above->frameMargins().top());
++    const int titleHeight = above->frameMargins().top();
 +    QVERIFY(titleHeight > 4);
 +    const QPointF cutoutPoint = above->frameGeometry().topLeft()
 +        + QPointF(400, titleHeight / 2.0);
@@ -37,9 +40,6 @@ index 0b802a8..500d814 100644
 +    QVERIFY(below->bufferGeometry().contains(cutoutPoint));
 +    QVERIFY(above->hitTest(cutoutPoint));
 +
-+    auto pointer = std::unique_ptr<KWayland::Client::Pointer>(Test::waylandSeat()->createPointer());
-+    QVERIFY(pointer->isValid());
-+    QSignalSpy buttons(pointer.get(), &KWayland::Client::Pointer::buttonStateChanged);
 +    quint32 timestamp = 1;
 +    // The decoration publishes its cutout before notifying titleBarChanged.
 +    chrome->setProperty("qindaqtTransparentDecorationRegion",
