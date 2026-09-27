@@ -7,6 +7,8 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0 as C
 import QindaQt.Shell.Icons 1.0 as ShellIcons
 import QindaQt.Tokens 1.0
+// Direct-file installed consumers need the module's C++ type registration too.
+import QindaQt.Shell.TaskList 1.0 as TaskListTypes
 
 // Compiled task-list panel strip. The controller is the composed shell facade
 // injected above QML as `access`; this file owns no state, no transport, and
@@ -440,7 +442,7 @@ Item {
 
         Repeater {
             id: entryRepeater
-            model: KeyedRowModel {
+            model: TaskListTypes.KeyedRowModel {
                 identityRoles: ["taskId", "windowId"]
                 sourceRows: root.stripVisible ? root.taskRows : []
             }
