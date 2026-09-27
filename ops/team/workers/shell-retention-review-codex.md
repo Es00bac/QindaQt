@@ -1,6 +1,6 @@
 # Shell retention independent reviewer
 
-- Status: idle — ACCEPT exact keyboard fixture repair `292cd361adb15f9d3ace5a1cb2f4a3e277e03238`; same-reviewer repair loop complete.
+- Status: idle — ACCEPT exact installed-plugin stage repair `b50a42786be74b11be6b4f716baf0250e11e4ecd`; native manager gate remains pending.
 
 ## Updates
 
@@ -11,3 +11,5 @@
 - 2026-09-27T11:13:53-06:00 — Claimed and completed same-reviewer follow-up of the one-file self-module import repair. Aliased import uses existing QML_ELEMENT/static-plugin path, no bypass. Independently reran dock compiled and retained-delegate gates: 2/2 pass, exit 0. Native installed/staged/relocated proof and separately pending keyboard fixture remain manager/implementer-owned.
 
 - 2026-09-27T11:15:29-06:00 — Claimed and completed exact keyboard repair review. Independently passed keyboard-offscreen row (exit 0). Added popup closure/identity/focus assertions preserve action checks and compensate offscreen focus exactly as existing launcher fixture; no production behavior change. Native installed/physical qualification remains manager-owned.
+
+- 2026-09-27T11:30:50-06:00 — Claimed/completed independent stage-driver review in isolated checkout. DESTDIR is subprocess-local and preserves validated cleanup, relative artifact fences and no-plugin-root discovery proof. Fresh 3/3 real-CMake fixtures and 20/20 adjacent nested units pass; exact parent driver fails fixture safely. Docs 417/strict MkDocs pass. Handed ACCEPT to manager and implementer; available for bounded native-gate reproduction help.
