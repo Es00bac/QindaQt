@@ -86,13 +86,55 @@ void KWinShellPanelOwnerSource::track(KWin::LayerSurfaceV1Interface *surface)
     m_surfaces.append(surface);
     if (surface->surface()) {
         connect(surface->surface(), &KWin::SurfaceInterface::committed,
-                this, &KWinShellPanelOwnerSource::shellPanelOwnerChanged);
+                this, &KWinShellPanelOwnerSource::refreshPanelOwner);
+    }
+    if (auto *waylandSurface = surface->surface()) {
+        connect(waylandSurface, &KWin::SurfaceInterface::aboutToBeDestroyed,
+                this, [this, surface] {
+                    m_surfaces.removeAll(surface);
+                    refreshPanelOwner();
+                });
+        if (auto *client = waylandSurface->client()) {
+            // AGENT-GUARD: KWin marks tearingDown only AFTER this signal.
+            // Remove all this client's roles before publishing revocation;
+            // otherwise synchronous authorization could still admit its PID.
+            connect(client, &KWin::ClientConnection::aboutToBeDestroyed,
+                    this, &KWinShellPanelOwnerSource::retireClient,
+                    Qt::UniqueConnection);
+        }
     }
     connect(surface, &KWin::LayerSurfaceV1Interface::aboutToBeDestroyed,
             this, [this, surface] {
+                if (surface->surface()) {
+                    disconnect(surface->surface(), nullptr, this, nullptr);
+                }
                 m_surfaces.removeAll(surface);
-                Q_EMIT shellPanelOwnerChanged();
+                refreshPanelOwner();
             });
+}
+
+void KWinShellPanelOwnerSource::retireClient()
+{
+    const auto *client = qobject_cast<KWin::ClientConnection *>(sender());
+    m_surfaces.removeIf([client](const auto &tracked) {
+        return !tracked || !tracked->surface()
+            || tracked->surface()->client() == client;
+    });
+    refreshPanelOwner();
+}
+
+void KWinShellPanelOwnerSource::refreshPanelOwner()
+{
+    const auto owner = shellPanelProcessId();
+    // AGENT-GUARD: A panel commits on every animation frame. Publishing an
+    // unchanged authority makes the shell reread and redraw, creating a
+    // compositor/shell feedback loop. Authorization still scans live roles;
+    // this retained value suppresses only redundant change notifications.
+    if (owner == m_lastPublishedOwner) {
+        return;
+    }
+    m_lastPublishedOwner = owner;
+    Q_EMIT shellPanelOwnerChanged();
 }
 
 std::optional<qint64> KWinShellPanelOwnerSource::shellPanelProcessId() const
