@@ -9,6 +9,12 @@
       "constraints": { "nonEmpty": true }
     },
     {
+      "key": "appearance.iconTheme",
+      "domain": "appearance",
+      "type": "string",
+      "default": ""
+    },
+    {
       "key": "appearance.colorScheme",
       "domain": "appearance",
       "type": "string",

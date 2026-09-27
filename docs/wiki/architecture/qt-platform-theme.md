@@ -86,3 +86,10 @@ Native Wayland tray/menu interaction remains a combined session gate.
 No test or package merge by itself proves that already running applications
 have loaded a newly installed plugin. Session/application restart remains the
 boundary for adopting new code.
+
+The native appearance controller subscribes to `appearance.iconTheme` as well
+as color preferences. A confirmed installed override replaces only the resolved
+theme's icon id; empty means Follow theme and unavailable packages fall back.
+QIcon and the platform `SystemIconThemeName` update from this confirmed state.
+Owner loss retains the last confirmed presentation, as specified by
+[ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md).

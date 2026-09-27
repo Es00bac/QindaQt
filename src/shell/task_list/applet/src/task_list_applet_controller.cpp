@@ -63,6 +63,8 @@ TaskListAppletController::TaskListAppletController(
   reproject();
 }
 
+void TaskListAppletController::refreshIconPresentation() { reproject(); }
+
 QString TaskListAppletController::phaseText() const {
   return taskListAppletPhaseText(m_projection.phase);
 }

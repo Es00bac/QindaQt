@@ -132,6 +132,30 @@ ColumnLayout {
         Accessible.name: text
     }
 
+    FormRow {
+        Layout.fillWidth: true
+        label: qsTr("Icons")
+        description: ""
+        errorMessage: root.appearanceSettings.fieldErrors["appearance.iconTheme"] ?? ""
+        editor: iconThemeChoice
+        ComboBox {
+            id: iconThemeChoice
+            objectName: "appearanceIconThemeChoice"
+            model: root.appearanceSettings.installedIconThemes ?? [{id: "", name: qsTr("Follow theme")}]
+            textRole: "name"
+            valueRole: "id"
+            currentIndex: {
+                const selected = root.draftValue("appearance.iconTheme") ?? ""
+                for (let i = 0; i < model.length; ++i)
+                    if (model[i].id === selected) return i
+                return 0
+            }
+            enabled: root.appearanceSettings.canEdit && !root.editorBusy
+            onActivated: root.setDraft("appearance.iconTheme", currentValue)
+            Accessible.name: qsTr("Icon theme")
+        }
+    }
+
     Button {
         objectName: "appearanceThemeDetailsButton"
         text: root.detailsOpen ? qsTr("Hide theme details") : qsTr("Fine tune this theme")

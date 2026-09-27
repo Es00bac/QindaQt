@@ -130,6 +130,8 @@ private:
                                          QString *error);
     [[nodiscard]] bool initializeTokens(QString *error);
     [[nodiscard]] bool initializeIcons(QString *error);
+    [[nodiscard]] QString effectiveIconTheme() const;
+    void refreshIcons();
     [[nodiscard]] bool initializeLauncherRuntime(QString *error);
     // Registers the Meta-key action and points it at the launcher applet.
     // Called only once the composition has started, because it borrows
@@ -285,6 +287,7 @@ private:
     std::unique_ptr<KGlobalAccelShortcutRegistrar> m_launcherShortcutRegistrar;
     std::unique_ptr<LauncherShortcutProducer> m_launcherShortcut;
     std::unique_ptr<GlobalMenuAppletComposition> m_globalMenuApplet;
+    QString m_iconTheme;
     std::unique_ptr<TaskListAppletComposition> m_taskListApplet;
     // AGENT-GUARD: the overview borrows m_taskListApplet->access() and the
     // registrar below it. Members are destroyed in reverse declaration order,

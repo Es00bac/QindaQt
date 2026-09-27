@@ -2,6 +2,11 @@
 #include <QGuiApplication>
 #include <QStyleHints>
 #include <QtTest>
+#include <QTemporaryDir>
+#include <QFile>
+#include <QDir>
+#include <QIcon>
+#include <QScopeGuard>
 #include <qindaqt/app_appearance/application_appearance_controller.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/settings_client/settings_transport.h>
@@ -65,6 +70,7 @@ private slots:
   void snapshotUpdatesInvalidRetainsAndSystemRefreshes();
   void explicitOverrideIgnoresSettings();
   void explicitPaletteStillHonorsReadability();
+  void confirmedIconThemeUpdatesAndOwnerLossRetains();
 };
 
 static QStringList themeDirectories() {
@@ -162,6 +168,45 @@ void ApplicationAppearanceControllerTest::explicitPaletteStillHonorsReadability(
   QVERIFY(controller.accessibilityInputs().highContrast);
   transport.announce(QString());
   QCOMPARE(controller.accessibilityInputs().basePointSize, 14.0);
+}
+
+void ApplicationAppearanceControllerTest::confirmedIconThemeUpdatesAndOwnerLossRetains() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const QByteArray oldDataHome = qgetenv("XDG_DATA_HOME");
+  const QString oldIconTheme = QIcon::themeName();
+  const auto restore = qScopeGuard([&] {
+    if (oldDataHome.isNull()) qunsetenv("XDG_DATA_HOME"); else qputenv("XDG_DATA_HOME", oldDataHome);
+    QIcon::setThemeName(oldIconTheme);
+  });
+  qputenv("XDG_DATA_HOME", temporary.path().toUtf8());
+  QVERIFY(QDir().mkpath(temporary.path() + "/icons/Choice"));
+  QFile index(temporary.path() + "/icons/Choice/index.theme");
+  QVERIFY(index.open(QIODevice::WriteOnly));
+  index.write("[Icon Theme]\nName=Choice\n");
+  index.close();
+  FakeTransport transport;
+  SettingsClient client(transport, {"appearance.theme", "appearance.colorScheme", "appearance.iconTheme"});
+  ApplicationAppearanceController controller(client, themeDirectories(), "qinda-dark");
+  transport.extra.insert("appearance.iconTheme", "Choice");
+  QVERIFY(client.start());
+  transport.announce(":1.55");
+  QTRY_VERIFY(transport.lastToken != 0);
+  transport.reply("qinda-dark", "system");
+  QTRY_COMPARE(controller.theme().iconTheme, "Choice");
+  QCOMPARE(QIcon::themeName(), "Choice");
+  transport.announce({});
+  QCOMPARE(controller.theme().iconTheme, "Choice");
+  transport.announce(":1.56");
+  QTRY_COMPARE(transport.lastOwner, ":1.56");
+  transport.extra.insert("appearance.iconTheme", "Missing");
+  transport.reply("qinda-dark", "system", 2);
+  QTRY_COMPARE(controller.theme().iconTheme, "QindaQt");
+  transport.invalidate(3);
+  QTRY_VERIFY(client.state() != ClientState::Ready);
+  transport.extra.insert("appearance.iconTheme", "../escape");
+  transport.reply("qinda-dark", "system", 3);
+  QCOMPARE(controller.theme().iconTheme, "QindaQt");
 }
 
 QTEST_MAIN(ApplicationAppearanceControllerTest)

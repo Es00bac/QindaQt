@@ -522,6 +522,12 @@ TaskListAppletComposition::desktopEntryResolver() const
     };
 }
 
+void TaskListAppletComposition::setIconThemes(const QStringList &roots, const QStringList &themes)
+{
+    m_iconThemeLocator = std::make_unique<Icons::IconThemeLocator>(roots, themes);
+    if (m_access) m_access->refreshIconPresentation();
+}
+
 bool TaskListAppletComposition::start(QString *error)
 {
     if (!m_ownedProducer) {

@@ -117,6 +117,9 @@ public:
       QObject *parent = nullptr);
   ~TaskListAppletController() override = default;
 
+  // GUI-thread icon catalog change: rebuild cached presentation once while
+  // retaining task identities and operation revisions. Never called per read.
+  void refreshIconPresentation();
   [[nodiscard]] QString phaseText() const;
   [[nodiscard]] QString phaseReasonText() const;
   [[nodiscard]] QVariantList entryRows() const;

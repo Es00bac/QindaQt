@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
+#include "qindaqt/themes/icon_theme_catalog.h"
+#include <algorithm>
 
 #include "qindaqt/decoration_painter/decoration_painter.h"
 
@@ -12,6 +14,16 @@
 #include <QPalette>
 
 namespace QindaQt::Apps::SettingsAppearance {
+
+QVariantList AppearanceSettingsModel::installedIconThemes() const
+{
+    QVariantList choices{QVariantMap{{QStringLiteral("id"), QString{}},
+                                    {QStringLiteral("name"), tr("Follow theme")}}};
+    for (const auto &entry : Themes::installedIconThemes(Themes::standardIconThemeRoots()))
+        choices.append(QVariantMap{{QStringLiteral("id"), entry.id},
+                                    {QStringLiteral("name"), entry.name}});
+    return choices;
+}
 
 QVariantList AppearanceSettingsModel::installedThemes() const
 {
@@ -280,6 +292,17 @@ void AppearanceSettingsModel::refreshValidationAndPreview()
 {
     m_validation = validateAppearanceDraft(m_draft, installedThemeIds(),
                                            m_installedMonospaceFamilies);
+    if (!m_draft.iconTheme.isEmpty() && m_draft.iconTheme != m_confirmed.iconTheme) {
+        const auto choices = installedIconThemes();
+        const bool installed = std::any_of(choices.cbegin(), choices.cend(), [this](const auto &entry) {
+            return entry.toMap().value(QStringLiteral("id")).toString() == m_draft.iconTheme;
+        });
+        if (!installed) {
+            m_validation.valid = false;
+            m_validation.fieldErrors.insert(QString(AppearanceKeys::IconTheme), tr("Choose an installed icon theme"));
+        }
+    }
+
     m_resolution = m_preview.resolve(m_draft, m_platformScheme);
     publishPreviewTokens();
     // AGENT-NOTE: applyAvailable is a composite of state, draft dirt, and

@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     const QDBusConnection bus = QDBusConnection::sessionBus();
     QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(bus);
     QindaQt::Services::SettingsClient::SettingsClient settingsClient(
-        settingsTransport, QStringList{QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme")});
+        settingsTransport, QStringList{QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme"), QStringLiteral("appearance.iconTheme")});
     QString settingsError;
     if (!settingsClient.start(&settingsError)) {
         qWarning("qindaqt-osk: Settings1 unavailable: %s", qPrintable(settingsError));

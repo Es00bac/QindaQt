@@ -7,6 +7,7 @@ target_sources(
     PRIVATE
         src/decoration_theme_loader.cpp
         src/decoration_theme_spec.cpp
+        src/icon_theme_catalog.cpp
         src/theme_catalog.cpp
         src/theme_loader.cpp
         src/theme_spec.cpp
@@ -16,6 +17,7 @@ target_sources(
         FILES
             include/qindaqt/themes/decoration_theme_loader.h
             include/qindaqt/themes/decoration_theme_spec.h
+            include/qindaqt/themes/icon_theme_catalog.h
             include/qindaqt/themes/theme_catalog.h
             include/qindaqt/themes/theme_loader.h
             include/qindaqt/themes/theme_spec.h

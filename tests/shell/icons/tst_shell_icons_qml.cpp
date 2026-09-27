@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <qindaqt/shell/icons/icon_runtime.h>
+#include <qindaqt/shell/icons/icon_image_provider.h>
+#include <qindaqt/shell/icons/icon_lookup.h>
 
 #include <qindaqt/design_tokens/token_facade.h>
 #include <qindaqt/themes/theme_loader.h>
@@ -28,6 +30,7 @@ class ShellIconsQmlTest : public QObject
 private slots:
     void initTestCase();
     void resolvedAndFallbackRows();
+    void installedThemeChangesExistingIconWithoutReplacingIt();
 
 private:
     bool publishTokens(QQmlEngine &engine, QString *error);
@@ -138,6 +141,46 @@ void ShellIconsQmlTest::resolvedAndFallbackRows()
     QCOMPARE(glyph->property("text").toString(), QStringLiteral("T"));
     QCOMPARE(root->property("missingAccessibleName").toString(),
              QStringLiteral("Terminal"));
+}
+
+void ShellIconsQmlTest::installedThemeChangesExistingIconWithoutReplacingIt()
+{
+    const QString theme = m_icons1 + QStringLiteral("/replacement");
+    QVERIFY(QDir().mkpath(theme + QStringLiteral("/16")));
+    QVERIFY(ShellIconsTest::writeTextFile(theme + QStringLiteral("/index.theme"),
+        QStringLiteral("[Icon Theme]\nName=Replacement\nDirectories=16\n[16]\nSize=16\nType=Fixed\n")));
+    QVERIFY(ShellIconsTest::writePng(theme + QStringLiteral("/16/exact.png"), 16, Qt::magenta));
+    QQmlEngine engine;
+    engine.addImportPath(QStringLiteral(QINDAQT_SHELL_ICONS_QML_IMPORT_PATH));
+    QString error;
+    QVERIFY2(publishTokens(engine, &error), qPrintable(error));
+    QVERIFY(IconRuntime::install(engine, {m_icons1}, {QStringLiteral("fixturetheme")}));
+    QQmlComponent component(&engine);
+    component.setData("import QtQuick\nimport QindaQt.Shell.Icons 1.0\nIcon { name: \"exact\"; size: 16 }",
+                      QUrl(QStringLiteral("inline:live-choice.qml")));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> icon(component.create());
+    QVERIFY(icon);
+    QObject *image = icon->findChild<QObject *>(QStringLiteral("iconImage"));
+    QVERIFY(image);
+    const QUrl before = image->property("source").toUrl();
+    auto *provider = dynamic_cast<IconImageProvider *>(engine.imageProvider("qindaqt-icon"));
+    QVERIFY(provider);
+    const QImage first = provider->requestImage("exact?size=16", nullptr, {});
+    auto *lookup = engine.singletonInstance<IconLookup *>("QindaQt.Shell.Icons", "IconLookup");
+    QVERIFY(lookup);
+    QSignalSpy revisions(lookup, &IconLookup::revisionChanged);
+    QVERIFY(IconRuntime::update(engine, {m_icons1}, {QStringLiteral("replacement")}));
+    QCOMPARE(engine.imageProvider("qindaqt-icon"), provider);
+    QCOMPARE(icon->findChild<QObject *>(QStringLiteral("iconImage")), image);
+    QTRY_VERIFY(image->property("source").toUrl() != before);
+    QTRY_COMPARE(image->property("status").toInt(), 1);
+    const QImage second = provider->requestImage("exact?size=16", nullptr, {});
+    QVERIFY(first != second);
+    QCOMPARE(second.pixelColor(8, 8), QColor(Qt::magenta));
+    QCOMPARE(revisions.count(), 1);
+    QVERIFY(IconRuntime::update(engine, {m_icons1}, {QStringLiteral("replacement")}));
+    QCOMPARE(revisions.count(), 1);
 }
 
 QTEST_MAIN(ShellIconsQmlTest)

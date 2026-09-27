@@ -27,6 +27,21 @@ bool install(QQmlEngine &engine, const QStringList &iconRoots,
                             new IconImageProvider(iconRoots, themeNames));
     IconLookup::installForEngine(
         &engine, std::make_shared<IconThemeLocator>(iconRoots, themeNames));
+    engine.setProperty("qindaqtIconRoots", iconRoots);
+    engine.setProperty("qindaqtIconThemes", themeNames);
+    return true;
+}
+
+bool update(QQmlEngine &engine, const QStringList &iconRoots, const QStringList &themeNames)
+{
+    auto *provider = dynamic_cast<IconImageProvider *>(engine.imageProvider(QLatin1String("qindaqt-icon")));
+    if (!provider) return false;
+    if (engine.property("qindaqtIconRoots").toStringList() == iconRoots
+        && engine.property("qindaqtIconThemes").toStringList() == themeNames) return true;
+    provider->setThemes(iconRoots, themeNames);
+    engine.setProperty("qindaqtIconRoots", iconRoots);
+    engine.setProperty("qindaqtIconThemes", themeNames);
+    IconLookup::installForEngine(&engine, std::make_shared<IconThemeLocator>(iconRoots, themeNames));
     return true;
 }
 

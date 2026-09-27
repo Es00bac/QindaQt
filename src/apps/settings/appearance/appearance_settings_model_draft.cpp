@@ -80,6 +80,9 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
     if (key == QLatin1String(AppearanceKeys::Theme)) {
         if (value.metaType().id() != QMetaType::QString) return false;
         next.themeId = value.toString();
+    } else if (key == QLatin1String(AppearanceKeys::IconTheme)) {
+        if (value.metaType().id() != QMetaType::QString) return false;
+        next.iconTheme = value.toString();
     } else if (key == QLatin1String(AppearanceKeys::ColorScheme)) {
         if (value.metaType().id() != QMetaType::QString) return false;
         const auto scheme = colorSchemeFromToken(value.toString());

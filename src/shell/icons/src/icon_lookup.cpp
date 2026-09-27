@@ -50,7 +50,12 @@ void IconLookup::installForEngine(QQmlEngine *engine,
             engineLocators().remove(engine);
         });
     }
-    engineLocators().insert(engine, std::move(locator));
+    engineLocators().insert(engine, locator);
+    for (auto *instance : engine->findChildren<IconLookup *>(QString(), Qt::FindDirectChildrenOnly)) {
+        instance->m_locator = locator;
+        ++instance->m_revision;
+        emit instance->revisionChanged();
+    }
 }
 
 IconLookup::IconLookup(std::shared_ptr<IconThemeLocator> locator, QQmlEngine *parent)

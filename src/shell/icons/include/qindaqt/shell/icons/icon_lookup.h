@@ -26,6 +26,7 @@ class IconThemeLocator;
 class IconLookup : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(quint64 revision READ revision NOTIFY revisionChanged)
     QML_ELEMENT
     QML_SINGLETON
     QML_UNCREATABLE("IconLookup is installed by IconRuntime::install")
@@ -33,6 +34,8 @@ class IconLookup : public QObject
 public:
     // Qt singleton factory: one instance per engine, owned by the engine.
     static IconLookup *create(QQmlEngine *engine, QJSEngine *scriptEngine);
+
+    [[nodiscard]] quint64 revision() const { return m_revision; }
 
     // Same validation, chain order, and confinement as the image provider.
     Q_INVOKABLE [[nodiscard]] bool hasIcon(const QString &name, int size, double scale,
@@ -42,10 +45,14 @@ public:
     static void installForEngine(QQmlEngine *engine,
                                  std::shared_ptr<IconThemeLocator> locator);
 
+signals:
+    void revisionChanged();
+
 private:
     explicit IconLookup(std::shared_ptr<IconThemeLocator> locator, QQmlEngine *parent);
 
     std::shared_ptr<IconThemeLocator> m_locator;
+    quint64 m_revision = 0;
 };
 
 } // namespace QindaQt::Shell::Icons

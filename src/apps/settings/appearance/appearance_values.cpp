@@ -2,6 +2,7 @@
 #include "qindaqt/apps/settings_appearance/appearance_values.h"
 
 #include <QtGlobal>
+#include "qindaqt/themes/icon_theme_catalog.h"
 
 #include <cmath>
 #include <utility>
@@ -49,7 +50,7 @@ constexpr double MaximumUiScale = 3.0;
 
 QStringList AppearanceKeys::scopedKeys()
 {
-    QStringList keys{QLatin1String(Theme), QLatin1String(ColorScheme),
+    QStringList keys{QLatin1String(Theme), QLatin1String(IconTheme), QLatin1String(ColorScheme),
                      QLatin1String(FontFamily), QLatin1String(FontMonospaceFamily),
                      QLatin1String(FontPointSize),
                      QLatin1String(FontAntialiasing), QLatin1String(FontHinting),
@@ -166,6 +167,9 @@ AppearanceValues::fromVariantMap(const QVariantMap &values, QString *error)
         return true;
     };
 
+    if (!requireString(AppearanceKeys::IconTheme, &decoded.iconTheme)) return std::nullopt;
+    if (!decoded.iconTheme.isEmpty() && !Themes::safeIconThemeId(decoded.iconTheme))
+        return fail(AppearanceKeys::IconTheme, QStringLiteral("Invalid icon theme identifier"));
     if (!requireString(AppearanceKeys::Theme, &decoded.themeId)) {
         return std::nullopt;
     }
@@ -303,6 +307,7 @@ AppearanceValues::fromVariantMap(const QVariantMap &values, QString *error)
 QVariantMap AppearanceValues::toVariantMap() const
 {
     QVariantMap map{{QLatin1String(AppearanceKeys::Theme), themeId},
+            {QLatin1String(AppearanceKeys::IconTheme), iconTheme},
             {QLatin1String(AppearanceKeys::ColorScheme),
              colorSchemeToken(colorScheme)},
             {QLatin1String(AppearanceKeys::FontFamily), fontFamily},
@@ -344,6 +349,8 @@ validateAppearanceDraft(const AppearanceValues &values,
                QStringLiteral("Theme '%1' is not installed")
                    .arg(values.themeId));
     }
+    if (!values.iconTheme.isEmpty() && !Themes::safeIconThemeId(values.iconTheme))
+        reject(AppearanceKeys::IconTheme, QStringLiteral("Choose an installed icon theme"));
     if (values.fontFamily.isEmpty()) {
         reject(AppearanceKeys::FontFamily,
                QStringLiteral("Enter a font family name"));

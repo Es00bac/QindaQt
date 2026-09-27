@@ -3,6 +3,8 @@
 
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/themes/theme_loader.h>
+#include <qindaqt/themes/icon_theme_catalog.h>
+#include <QIcon>
 
 #include <QCoreApplication>
 #include <QDir>
@@ -125,18 +127,37 @@ bool ApplicationAppearanceController::selectTheme(const QString &themeId,
       *error = loaded.error;
     return false;
   }
-  if (loaded.theme.id == m_theme.id)
+  if (loaded.theme.id == m_theme.id) {
+    if (applyIconTheme()) emit appearanceChanged();
     return true;
+  }
   m_theme = loaded.theme;
+  m_authoredIconTheme = loaded.theme.iconTheme;
+  applyIconTheme();
   if (!m_fontFamily.isEmpty()) m_theme.fontFamily = m_fontFamily;
   if (!m_monoFontFamily.isEmpty()) m_theme.monoFontFamily = m_monoFontFamily;
   emit appearanceChanged();
   return true;
 }
 
+bool ApplicationAppearanceController::applyIconTheme() {
+  const QString selected = Themes::resolveIconTheme(m_iconPreference, m_authoredIconTheme,
+                                                    Themes::standardIconThemeRoots());
+  const bool changed = m_theme.iconTheme != selected;
+  m_theme.iconTheme = selected;
+  if (QIcon::themeName() != selected) QIcon::setThemeName(selected);
+  return changed;
+}
+
 void ApplicationAppearanceController::applySnapshot() {
   if (!m_settings.snapshot()) return;
   const auto &values = m_settings.snapshot()->values;
+  const QVariant icon = values.value(QStringLiteral("appearance.iconTheme"));
+  if (icon.metaType().id() == QMetaType::QString
+      && (icon.toString().isEmpty() || Themes::safeIconThemeId(icon.toString()))) {
+    m_iconPreference = icon.toString();
+    if (applyIconTheme()) emit appearanceChanged();
+  }
   auto inputs = m_accessibility;
   const auto number = [&values](const char *key, double &target) {
     const auto value = values.value(QLatin1String(key));

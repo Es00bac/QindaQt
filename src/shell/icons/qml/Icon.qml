@@ -42,7 +42,7 @@ Item {
     readonly property real effectiveScale: root.Window.window !== null
         ? Math.max(1, Math.min(4, root.Window.window.devicePixelRatio))
         : 1
-    readonly property bool resolved: root.effectiveName.length > 0
+    readonly property bool resolved: IconLookup.revision >= 0 && root.effectiveName.length > 0
         && IconLookup.hasIcon(root.effectiveName, root.effectiveSize,
                               root.effectiveScale, root.symbolic)
 
@@ -59,7 +59,8 @@ Item {
         visible: root.resolved
         source: root.resolved
             ? "image://qindaqt-icon/" + root.effectiveName
-                + "?size=" + root.effectiveSize
+                + "?revision=" + IconLookup.revision
+                + "&size=" + root.effectiveSize
                 + "&scale=" + root.effectiveScale
                 + (root.symbolic ? "&symbolic=1" : "")
                 + (root.color.a > 0 ? "&color=" + encodeURIComponent(root.color.toString()) : "")

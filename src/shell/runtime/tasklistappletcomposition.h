@@ -76,6 +76,7 @@ public:
 
     [[nodiscard]] bool start(QString *error = nullptr);
     void stop();
+    void setIconThemes(const QStringList &roots, const QStringList &themes);
     [[nodiscard]] ShellTaskListApplet::TaskListAppletController *access() const noexcept;
     // The icon-name policy this composition already owns (ADR-0230: desktop
     // entry first, then the compositor's PE-extracted cache, then nothing).

@@ -58,6 +58,7 @@ class AppearanceSettingsModel final : public QObject {
     Q_PROPERTY(QString confirmedMonospaceFamily READ confirmedMonospaceFamily
                    NOTIFY draftChanged)
     Q_PROPERTY(QVariantMap fieldErrors READ fieldErrors NOTIFY draftChanged)
+    Q_PROPERTY(QVariantList installedIconThemes READ installedIconThemes CONSTANT)
     Q_PROPERTY(QVariantList installedThemes READ installedThemes CONSTANT)
     Q_PROPERTY(QVariantList bundledWallpapers READ bundledWallpapers CONSTANT)
     Q_PROPERTY(QObject *userWallpaperCatalog READ userWallpaperCatalog CONSTANT)
@@ -130,6 +131,7 @@ public:
     [[nodiscard]] QString confirmedMonospaceFamily() const;
     [[nodiscard]] QVariantMap fieldErrors() const;
     [[nodiscard]] QVariantList installedThemes() const;
+    [[nodiscard]] QVariantList installedIconThemes() const;
     [[nodiscard]] QVariantList bundledWallpapers() const;
     [[nodiscard]] QObject *userWallpaperCatalog() { return &m_userWallpaperCatalog; }
     [[nodiscard]] QStringList installedMonospaceFamilies() const;
