@@ -11,3 +11,5 @@
 - 2026-09-27T16:38:49.651731+00:00 — Claimed read-only audit; physical services will not be restarted or crash-injected.
 
 - 2026-09-27T16:44:19.975456+00:00 — Verified cross-host source/hash parity, missing coverage, laptop Clipboard start-limit block, workstation loopback SSH delivery failure, and stale EnvironmentFile login override. Implemented Gabbee f7ec6b2 in isolated gabbee-recovery worktree; 83/83 focused tests pass. Exact candidate pushed; available to repair review findings.
+
+- 2026-09-27T16:45:47.912472+00:00 — Claimed and completed independent review of shell candidate 7d2a1601 in detached container-wm-performance-review; verified all 90 production task-list/test files byte-identical to tested worker tree and independently reran all 3 focused CTest gates, exit 0. ACCEPT narrow snapshot repair; no claim of physical sustained-frame-rate qualification. Offering exact Gabbee repair/review support.
