@@ -307,3 +307,5 @@ rounded tab corners reveal the canvas/wallpaper instead of an opaque backing.
 Its shadow uses the same pure texture and nine-patch geometry as the live
 KDecoration adapter, including authored extent, opacity, radius and tab width;
 it does not approximate the window as a full-width rectangle.
+
+The preview clips final decoration painting to the floating-point frame minus the client rectangle, matching KWin composition. Rounded title materials cannot extend below the client seam; side and bottom borders remain in the decoration region.
