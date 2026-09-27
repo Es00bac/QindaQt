@@ -427,8 +427,8 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().request.expectedRevision, revision);
   QCOMPARE(port.lastCall().revision, revision);
 
-  // AGENT-GUARD: Reprojection rebuilds delegates; re-fetch rows after it or a
-  // held QQuickItem* dangles. The pending row skips further dispatch.
+  // Reprojection retains delegate identity; pending state still disables
+  // further dispatch until the operation reaches its terminal result.
   QQuickItem *pendingRow = entryButtonFor(root, QStringLiteral("w2"));
   QVERIFY(pendingRow != nullptr);
   QVERIFY(!pendingRow->isEnabled());
@@ -461,6 +461,8 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
       return static_cast<QObject *>(nullptr);
     }
     row->forceActiveFocus();
+    if (!row->hasActiveFocus())
+      return static_cast<QObject *>(nullptr);
     QTest::keyClick(&window, Qt::Key_Menu);
     auto *menu =
         row->findChild<QObject *>(QStringLiteral("taskListContextMenu"));
@@ -477,6 +479,7 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
 
   QObject *menu = openMenuOn(QStringLiteral("c1"));
   QVERIFY(menu != nullptr);
+  QSignalSpy containerMenuClosed(menu, SIGNAL(closed()));
   QTRY_VERIFY(menu->property("visible").toBool());
   QVERIFY(triggerItem(menu, QStringLiteral("taskListContextMinimize")));
   QTRY_COMPARE(port.calls.size(), 3);
@@ -484,6 +487,15 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().request.taskId, QStringLiteral("c1"));
   QCOMPARE(port.lastCall().request.expectedRevision, revision);
   commitLast();
+  // The retained popup now completes Qt's real exit transition. Previously
+  // delegate destruction forcibly closed it before this next synthetic key.
+  QTRY_COMPARE(containerMenuClosed.size(), 1);
+  // Offscreen has no compositor to reactivate the parent after a retained
+  // Popup.Window hides: focusWindow otherwise remains that hidden window.
+  window.requestActivate();
+  QTRY_COMPARE(QGuiApplication::focusWindow(), &window);
+  QCOMPARE(entryButtonFor(root, QStringLiteral("c1"))->findChild<QObject *>(
+               QStringLiteral("taskListContextMenu")), menu);
 
   menu = openMenuOn(QStringLiteral("c1"));
   QVERIFY(menu != nullptr);
@@ -494,9 +506,13 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().firstId, QStringLiteral("c1"));
   QCOMPARE(port.lastCall().revision, revision);
   commitLast();
+  QTRY_COMPARE(containerMenuClosed.size(), 2);
+  window.requestActivate();
+  QTRY_COMPARE(QGuiApplication::focusWindow(), &window);
 
   menu = openMenuOn(QStringLiteral("w1"));
   QVERIFY(menu != nullptr);
+  QSignalSpy windowMenuClosed(menu, SIGNAL(closed()));
   QTRY_VERIFY(menu->property("visible").toBool());
   auto *ungroupItem =
       menu->findChild<QQuickItem *>(
@@ -509,6 +525,9 @@ void TaskListAppletQmlTests::keyboardTraversalAndContextMenuDispatch() {
   QCOMPARE(port.lastCall().request.taskId, QStringLiteral("w1"));
   QCOMPARE(port.lastCall().request.expectedRevision, revision);
   commitLast();
+  QTRY_COMPARE(windowMenuClosed.size(), 1);
+  window.requestActivate();
+  QTRY_COMPARE(QGuiApplication::focusWindow(), &window);
 
   menu = openMenuOn(QStringLiteral("w1"));
   QVERIFY(menu != nullptr);

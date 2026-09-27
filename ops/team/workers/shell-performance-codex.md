@@ -1,7 +1,7 @@
 # Shell performance Codex
 
 - Role: Shell performance implementer
-- Status: available — retained-delegate candidate verified; awaiting exact review and available for repairs
+- Status: available — repair verified locally; manager installed-stage proof and exact review pending
 - Base: `64ae95c336c03a2de54775962ff42622fae1d156`
 - Worktree: `/home/cabewse/work_space/container-wm-performance-worker`
 - Branch: `fix/shell-icon-performance`
@@ -18,3 +18,7 @@
 - 2026-09-27T10:59:55-06:00 — Stable-delegate and same-owner persistence repair gates pass: five compiled CTest rows, three static boundary/icon rows, strict MkDocs and417-document links. Confirmed recent-app writes no longer empty dock during same-owner refresh; owner replacement (including same-state), bus loss, malformed reply and confirmed empty still revoke. Ready for exact review and manager integration/live packaging.
 
 - 2026-09-27T11:00:57-06:00 — Handed off exact candidate `8414e435456f4ad6f27a03cd8c6fcc0383ad40df`, pushed to qinda. Five compiled rows (51 QtTest cases), three static rows, strict docs and 417 links pass. Read queue; offered bounded combined-tree dock/import/persistence/profile regression help and exact-review repairs.
+
+- 2026-09-27T11:07:48-06:00 — Manager integrated gate reported missing KeyedRowModel in direct-file staged consumer and second context-menu open failure. Claimed repairs on preserved branch; investigating explicit module import and retained popup close lifecycle.
+
+- 2026-09-27T11:13:57-06:00 — Production direct-file module import repair `e37f01f9` pushed. Keyboard cause proven: offscreen retains hidden popup as focusWindow; waiting Menu.closed plus exact parent focusWindow restores synthetic input while asserting same retained menu. Final six compiled CTest rows pass (including original five); strict docs and 417 links pass. Installed gate could not reach consumer locally because component install requires unbuilt qindaqt-shell; manager full native tree owns staged/relocated proof.
