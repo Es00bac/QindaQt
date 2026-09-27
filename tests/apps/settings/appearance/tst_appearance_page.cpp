@@ -500,7 +500,13 @@ void AppearancePageTests::acceptedFileDialogImportsAndSelectsWallpaper()
     auto *apply = item(scene.root, "appearanceApplyButton");
     QVERIFY(apply != nullptr);
     QCOMPARE(apply->property("text").toString(), QStringLiteral("Set wallpaper"));
-    QVERIFY(dialog->setProperty("selectedFile", QUrl::fromLocalFile(temp.filePath("missing.png"))));
+    QFile invalid(temp.filePath("invalid.png"));
+    QVERIFY(invalid.open(QIODevice::WriteOnly));
+    invalid.write("not an image");
+    invalid.close();
+    // Qt's dialog rejects nonexistent selections before acceptance. Exercise
+    // the import boundary with an existing invalid image instead.
+    QVERIFY(dialog->setProperty("selectedFile", QUrl::fromLocalFile(invalid.fileName())));
     QVERIFY(QMetaObject::invokeMethod(dialog, "accepted"));
     QCOMPARE(scene.model->draft.value(QStringLiteral("appearance.wallpaper")).toString(), imported);
 }
