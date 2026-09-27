@@ -280,6 +280,8 @@ private:
   ApplicationNameResolver m_applicationNameResolver;
   ShellTaskList::TaskListScope m_scope;
   TaskListAppletProjection m_projection;
+  QVariantList m_entryRows;
+  QVariantList m_windowRows;
   int m_presentationLimit = kMaxPresentedTaskEntries;
   QStringList m_userTaskOrder;
 
