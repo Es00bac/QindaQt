@@ -58,6 +58,8 @@ if(TARGET qindaqt_compositor AND TARGET qindaqt-wm)
         qt_add_executable(
             qindaqt_shell_window_actions_live_probe
             shellwindowactionsliveprobe.cpp
+            shellpanelownerliveproof.cpp
+            shellpanelownerliveproof.h
             shellwindowactionsliveclients.cpp
             shellwindowactionsliveclients.h
             shellwindowactionslivecontract.cpp

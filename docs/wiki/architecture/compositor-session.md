@@ -357,7 +357,15 @@ Its controller receives credential, panel-owner, registry, rate/clock, and
 executor collaborators explicitly. A request is admitted only while all
 committed `dock` layer roles have one Wayland-client PID and the session-bus
 daemon reports that exact PID for the caller's unique name. Authority vanishes
-when the panels unbind or conflicting owners overlap. Before that PID join the
+when the panels unbind or conflicting owners overlap. Ownership notifications compare the
+effective optional PID on commits and role/client teardown: repaints from an
+unchanged owner do not invalidate task or active-window snapshots. Request
+admission still scans live committed roles rather than trusting the notification
+cache. One client teardown subscription and role-scoped surface disconnection
+keep panel recreation from accumulating callbacks. The private
+`compositor.kwin-shell-window-actions` regression paints 80 panel frames, checks
+zero identity/task invalidations, and exercises conflicting-client teardown and
+last-panel destruction/recreation. Before that PID join the
 controller reads only constant-time raw field lengths; unauthenticated and
 unbound replies are fixed, compact, and echo no caller field. After
 authentication it rate-admits, enforces the 64/128/20-character

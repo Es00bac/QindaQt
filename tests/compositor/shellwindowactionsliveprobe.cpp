@@ -3,6 +3,7 @@
 #include "qindaqt/shell_window_actions_client/shell_window_actions_client.h"
 #include "shellwindowactionsliveclients.h"
 #include "shellwindowactionslivecontract.h"
+#include "shellpanelownerliveproof.h"
 
 #include <LayerShellQt/Window>
 
@@ -256,6 +257,9 @@ public:
                            [](const QJsonObject &, const Inventory &) { return true; }, true)) {
             return finish(false, m_failure);
         }
+        if (!QindaQt::Compositor::TestSupport::provePanelOwnerFeedback(m_panel, &m_failure)) {
+            return finish(false, m_failure);
+        }
         return finish(true);
     }
 
@@ -264,6 +268,7 @@ private:
 
     bool mapPanel()
     {
+        m_panel.setSurfaceType(QSurface::RasterSurface);
         m_panel.setTitle(QStringLiteral("QindaQt authenticated action panel"));
         m_panel.setFlags(Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus);
         auto *const layer = LayerShellQt::Window::get(&m_panel);
@@ -492,6 +497,9 @@ int main(int argc, char **argv)
 {
     QGuiApplication application(argc, argv);
     const QStringList arguments = application.arguments();
+    if (arguments.contains(QStringLiteral("--panel-owner-peer"))) {
+        return QindaQt::Compositor::TestSupport::runPanelOwnerPeer(application);
+    }
     if (arguments.size() >= 3 && arguments[1] == QStringLiteral("--window")) {
         return runShellWindowActionsLiveWindow(
             application, arguments[2], arguments.contains(QStringLiteral("--appmenu")));
