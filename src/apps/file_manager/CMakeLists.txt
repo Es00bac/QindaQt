@@ -468,3 +468,6 @@ install(
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/Tokens"
     COMPONENT FileManager
 )
+
+# Confirmed icon-family presentation uses the shared appearance policy.
+target_link_libraries(qindaqt-file-manager PRIVATE QindaQt::AppAppearance)

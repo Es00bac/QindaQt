@@ -61,7 +61,7 @@ Dialog {
                 Layout.preferredWidth: 48
                 Layout.preferredHeight: 48
                 sourceSize: Qt.size(48, 48)
-                source: root.info.iconName ? "image://theme-icons/" + root.info.iconName : ""
+                source: root.info.iconName ? "image://theme-icons/" + root.info.iconName + "?theme=" + encodeURIComponent(typeof fileManagerIconAppearance === "undefined" ? "" : fileManagerIconAppearance.iconTheme) : ""
                 Accessible.ignored: true
             }
             ColumnLayout {

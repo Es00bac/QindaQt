@@ -59,7 +59,7 @@ Item {
     function frameSource(entry) {
         const previewable = /\.(png|jpe?g|bmp|webp)$/i.test(String(entry.name || ""))
         return previewable && entry.previewUrl ? entry.previewUrl
-                                               : EntryText.iconUrl(entry, root.frameSize)
+                                               : EntryText.iconUrl(entry, root.frameSize, typeof fileManagerIconAppearance === "undefined" ? null : fileManagerIconAppearance)
     }
     function indexAt(x) {
         if (root.windowEntries.length === 0)

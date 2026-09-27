@@ -268,7 +268,7 @@ Control {
                     height: width
                     visible: !previewImage.real
                     sourceSize: Qt.size(width, height)
-                    source: root.current ? EntryText.iconUrl(root.current, width) : ""
+                    source: root.current ? EntryText.iconUrl(root.current, width, typeof fileManagerIconAppearance === "undefined" ? null : fileManagerIconAppearance) : ""
                 }
                 Image {
                     id: previewImage

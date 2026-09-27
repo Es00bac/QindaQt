@@ -21,7 +21,7 @@ ToolButton {
         // the provider only accepts the opaque #rrggbb form (palette colors
         // are opaque) and otherwise falls back to the app palette itself.
         source: "image://theme-icons/" + control.iconName + "-symbolic"
-                + "?color=" + encodeURIComponent(control.palette.buttonText.toString())
+                + "?color=" + encodeURIComponent(control.palette.buttonText.toString()) + "&theme=" + encodeURIComponent(typeof fileManagerIconAppearance === "undefined" ? "" : fileManagerIconAppearance.iconTheme)
         sourceSize: Qt.size(20, 20)
         opacity: control.enabled ? 1.0 : 0.45
         Accessible.ignored: true

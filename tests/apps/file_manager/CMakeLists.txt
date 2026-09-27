@@ -500,6 +500,7 @@ qindaqt_add_file_manager_test(
     tst_theme_icon_provider.cpp
     qindaqt.file-manager-theme-icon-provider
 )
+target_link_libraries(qindaqt_file_manager_theme_icon_provider_tests PRIVATE Qt6::Quick Qt6::Qml)
 target_compile_definitions(qindaqt_file_manager_theme_icon_provider_tests PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 set_tests_properties(qindaqt.file-manager-theme-icon-provider PROPERTIES

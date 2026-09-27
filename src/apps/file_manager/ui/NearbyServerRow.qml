@@ -31,7 +31,7 @@ Control {
         Image {
             Layout.preferredWidth: 24
             Layout.preferredHeight: 24
-            source: "image://theme-icons/network-server"
+            source: "image://theme-icons/network-server" + "?theme=" + encodeURIComponent(typeof fileManagerIconAppearance === "undefined" ? "" : fileManagerIconAppearance.iconTheme)
             sourceSize: Qt.size(24, 24)
             Accessible.ignored: true
         }

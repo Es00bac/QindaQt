@@ -74,7 +74,7 @@ Item {
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: root.iconSize + 16
             Layout.preferredHeight: root.iconSize + 16
-            source: EntryText.iconUrl(root.modelData, root.iconSize)
+            source: EntryText.iconUrl(root.modelData, root.iconSize, typeof fileManagerIconAppearance === "undefined" ? null : fileManagerIconAppearance)
             placeholderIcon: EntryText.glyphFor(root.modelData)
             crop: false
             selected: root.entrySelected
@@ -107,7 +107,7 @@ Item {
                 width: 20
                 height: 20
                 sourceSize: Qt.size(20, 20)
-                source: "image://theme-icons/emblem-symbolic-link"
+                source: "image://theme-icons/emblem-symbolic-link" + "?theme=" + encodeURIComponent(typeof fileManagerIconAppearance === "undefined" ? "" : fileManagerIconAppearance.iconTheme)
                 Accessible.ignored: true
             }
         }

@@ -3,6 +3,13 @@
 #include <QIcon>
 #include <QPalette>
 #include <QtTest>
+#include <QQmlEngine>
+#include <QQmlContext>
+#include <QQmlComponent>
+#include <QTemporaryDir>
+#include <QDir>
+#include <QFile>
+#include <QScopeGuard>
 using namespace QindaQt::Apps::FileManager;
 namespace {
 constexpr int kEdge = 64;
@@ -24,9 +31,18 @@ constexpr int kEdge = 64;
   return false;
 }
 } // namespace
+class IconChoiceState final : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(QString iconTheme MEMBER iconTheme NOTIFY changed)
+public:
+  QString iconTheme;
+signals:
+  void changed();
+};
 class ThemeIconProviderTest : public QObject {
   Q_OBJECT
 private slots:
+  void liveChoiceRefreshesTheExistingImage();
   void symbolicFollowsThePalette();
   void symbolicHonorsAnExplicitQueryColor();
   void symbolicRejectsAMalformedQueryColor();
@@ -34,6 +50,58 @@ private slots:
   void unresolvedNamesRenderTheColoredFallback();
   void unresolvedSymbolicNamesDoNotTintTheFallback();
 };
+void ThemeIconProviderTest::liveChoiceRefreshesTheExistingImage() {
+  QTemporaryDir temporary;
+  QVERIFY(temporary.isValid());
+  const QStringList oldPaths = QIcon::themeSearchPaths();
+  const QString oldTheme = QIcon::themeName();
+  const auto restore = qScopeGuard([&] {
+    QIcon::setThemeSearchPaths(oldPaths);
+    QIcon::setThemeName(oldTheme);
+  });
+  for (const auto &name : {QStringLiteral("First"), QStringLiteral("Second")}) {
+    const QString root = temporary.path() + "/" + name;
+    QVERIFY(QDir().mkpath(root + "/32"));
+    QFile index(root + "/index.theme");
+    QVERIFY(index.open(QIODevice::WriteOnly));
+    index.write("[Icon Theme]\nName=Fixture\nDirectories=32\n[32]\nSize=32\nType=Fixed\n");
+    index.close();
+    QImage pixels(32, 32, QImage::Format_ARGB32);
+    pixels.fill(name == "First" ? Qt::red : Qt::blue);
+    QVERIFY(pixels.save(root + "/32/folder.png"));
+  }
+  QIcon::setThemeSearchPaths({temporary.path()});
+  QIcon::setThemeName("First");
+  IconChoiceState appearance;
+  appearance.iconTheme = "First";
+  QQmlEngine engine;
+  engine.rootContext()->setContextProperty("fileManagerIconAppearance", &appearance);
+  auto *provider = new ThemeIconProvider;
+  engine.addImageProvider("theme-icons", provider);
+  QQmlComponent component(&engine, QUrl::fromLocalFile(
+      QStringLiteral(QINDAQT_SOURCE_DIR "/src/apps/file_manager/ui/PlaceButton.qml")));
+  QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+  std::unique_ptr<QObject> button(component.createWithInitialProperties({{"iconName", "folder"}}));
+  QVERIFY2(button, qPrintable(component.errorString()));
+  QObject *image = nullptr;
+  for (auto *child : button->findChildren<QObject *>()) {
+    if (child->property("source").toUrl().toString().startsWith("image://theme-icons/")) {
+      image = child;
+      break;
+    }
+  }
+  QVERIFY(image);
+  const QUrl before = image->property("source").toUrl();
+  QTRY_COMPARE(image->property("status").toInt(), 1);
+  QVERIFY(paintsColor(provider->requestPixmap("folder", nullptr, {32, 32}), Qt::red, 0));
+  QIcon::setThemeName("Second");
+  appearance.iconTheme = "Second";
+  emit appearance.changed();
+  QTRY_VERIFY(image->property("source").toUrl() != before);
+  QTRY_COMPARE(image->property("status").toInt(), 1);
+  QVERIFY(button->findChildren<QObject *>().contains(image));
+  QVERIFY(paintsColor(provider->requestPixmap("folder", nullptr, {32, 32}), Qt::blue, 0));
+}
 void ThemeIconProviderTest::symbolicFollowsThePalette() {
   // The dark-theme contract: the authored #211D27 stroke would vanish on a
   // dark window, so the provider retints symbolic glyphs to the palette
