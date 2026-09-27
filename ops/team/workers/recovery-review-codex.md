@@ -1,6 +1,6 @@
 # Recovery reviewer Codex
 
-- Status: awaiting review — exact installed-plugin staging candidate pushed
+- Status: available — final r4 package delta accepted; manager owns installation
 - Role: Recovery reviewer, OpenAI Codex (model identity inherited from runtime)
 - Branch: fix/installed-plugin-destdir
 - Base: a91690f950b7b7136b52ace462f2320b3b5d1ff1
@@ -26,3 +26,7 @@
 - 2026-09-27T17:28:51.539304+00:00 — Verified 3/3 real-CMake containment/escape fixtures and 18/18 adjacent nested-session tests; exact pre-fix driver fails the fixture. Docs 417, strict MkDocs and diff checks pass. Preparing exact review candidate.
 
 - 2026-09-27T17:29:29.812480+00:00 — Handed b50a4278 to compositor_feedback for independent exact review and manager for later full installed-native gate. Read Platform queue; available to repair exact failures or inspect next bounded release gate.
+
+- 2026-09-27T17:45:34.948708+00:00 — Claimed read-only QindaGentoo ad13d76 r4 delta/archive audit. Prior staging fix b50a4278 independently accepted by compositor_feedback; current scope packaging only.
+
+- 2026-09-27T17:46:35.304357+00:00 — ACCEPT exact QindaGentoo ad13d76 r4: complete archive/prefix/Manifest identity, unchanged dependency/recovery recipe, exact delivery atom and retained r2/r3 immutability checks pass. No host/build mutations; post-install discrepancy help offered.
