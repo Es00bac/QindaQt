@@ -22,6 +22,7 @@ public:
     QString theme = QStringLiteral("qinda-light");
     QString scheme = QStringLiteral("light");
     QString epoch = QStringLiteral("fixture-one");
+    QString iconTheme;
     quint64 revision = 1;
     double pointSize = 17.0;
     int reads = 0;
@@ -30,6 +31,7 @@ public slots:
     QVariantMap GetSnapshot(const QStringList &keys) {
         ++reads;
         const QVariantMap all{{"appearance.theme", theme}, {"appearance.colorScheme", scheme},
+            {"appearance.iconTheme", iconTheme},
             {"fonts.family", QStringLiteral("DejaVu Sans")}, {"fonts.monospaceFamily", QStringLiteral("DejaVu Sans Mono")},
             {"fonts.pointSize", pointSize}, {"accessibility.textScale", 1.0},
             {"accessibility.highContrast", false}, {"accessibility.reducedMotion", false},
@@ -58,7 +60,7 @@ class NativeThemeTest final : public QObject {
     }
     void changed() {
         auto message = QDBusMessage::createSignal(WireContract::ObjectPath, WireContract::InterfaceName, WireContract::SettingsChangedSignal);
-        message << fixture.epoch << ++fixture.revision << QStringList{QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme"), QStringLiteral("fonts.pointSize")};
+        message << fixture.epoch << ++fixture.revision << QStringList{QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme"), QStringLiteral("appearance.iconTheme"), QStringLiteral("fonts.pointSize")};
         QVERIFY(bus.send(message));
     }
 private slots:
