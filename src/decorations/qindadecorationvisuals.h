@@ -18,4 +18,12 @@ namespace QindaQt::Decoration {
 [[nodiscard]] std::shared_ptr<KDecoration3::DecorationShadow>
 createDecorationShadow(const DecorationVisualStyle &style);
 
+// The frame and chrome use logical decoration coordinates. Rectangular and
+// member frames retain the shared small texture; a short tab gets a full-width
+// top strip so its notch cannot be stretched across the transparent title area.
+[[nodiscard]] std::shared_ptr<KDecoration3::DecorationShadow>
+createDecorationShadow(const DecorationVisualStyle &style,
+                       const DecorationChrome &chrome,
+                       const DecorationFrameVisual &frame);
+
 } // namespace QindaQt::Decoration
