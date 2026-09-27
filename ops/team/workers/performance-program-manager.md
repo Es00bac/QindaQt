@@ -2,7 +2,7 @@
 
 - Role: Program Manager
 - Provider: OpenAI Codex
-- Status: working — install reviewed corner, light-palette and six-icon-family updates on both hosts
+- Status: working — deliver the remaining Settings preview silhouette correction on both hosts
 - Base: 64ae95c3
 - Worktree: container-wm-performance
 
@@ -35,3 +35,5 @@
 - 2026-09-27T18:51:11+00:00 — User reports invisible full-width Corner Bar input and rectangular shadow. Hub fetched at46816db4. Both installed libkwin6.6.6 binaries lack downstream cutout marker; overlay lacks6.6.6 patchedrecipe. Isolated corner_input owns patch/nativeproof, corner_shape owns decoration geometry/shadow; manager owns packaging, integration and cross-host adoption. No forced session restart.
 
 - 2026-09-27T19:22:56+00:00 — Integrated all reviewed production candidates; combined native20/20 and strict419-document build pass. Native actual pointer proof passes3/3 and original exact-ABI library fails expected cutout assertion. QindaThemes e530b03 accepted and main; overlayc9afe6b pins desktopr6/source4c704e12 plusicons andpatchedKWinr1. KWinr1 nowinstalledboth; iconsinstalledqinda; desktopr6building. Physicalsessionspreserved.
+
+- 2026-09-27T19:42:52+00:00 — R6 installedboth; desktop1643/compositor647/icons10302 checksallpass, native20/20 andbothinstalledprivateboots/routespass. Settings1+shellrefreshed; actualFileManagerlight/darkcapturecoherent;9owners+timershealthy,queuesempty. UserrequestedcomparisonrevealsfullframepreviewbackdropfillsCornerBarcutoutandmissingshadow. Isolatedpreviewrepair/reviewactive; nextr7deliveryretainsallverifiedr6work.

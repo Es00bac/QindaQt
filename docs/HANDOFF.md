@@ -2,25 +2,48 @@
 
 ## September 27 — Corner shape, light palettes and complete icon choices
 
-Reviewed shadow candidate `419fe44e`, caption contrast `1edc1fb6`, File Manager
-palette repair `64e9fd1e`, and icon-choice chain `930f68fc` → `88e0ef76` →
-`8c0bc557` are integrated. File Manager now reads fresh inherited palette roles
-on the window palette notification, fixing dark tiles/white labels left over
-in light BeOS-like and NeXT appearances. The regression changes the actual
-QGuiApplication palette repeatedly rather than only assigning a local color.
-Independent icon choice uses Settings1 Apply/Revert and preserves existing shell
-and File Manager delegates while invalidating their image URLs on confirmed
-changes. See [ADR-0280](wiki/adr/0280-independent-installed-icon-theme-choice.md).
+Desktop `0.1.0_pre20260927-r6` (source `4c704e12`), patched KWin
+`6.6.6-r1`, and `qinda-icons-1.0.0_p20260927` (QindaThemes `e530b03`)
+are installed on both qinda and qinda-top through overlay `c9afe6b`. Qinda
+built signed packages; the laptop consumed those binaries. Each host verifies
+1,643/1,643 desktop files, 647/647 compositor files and 10,302/10,302 icon-package
+files. Six key installed binaries/libraries/QML artifacts match between hosts.
+The running shells match the installed executable; Settings1 was reactivated
+and exposes the new icon key. Physical compositor/supervisor identities remain
+unchanged; the patched compositor and new decoration plugin activate at the next
+normal login. No user application was forcibly closed.
 
-The native combined appearance gate passes 12/12 rows, including real existing
-File Manager icon refresh, palette adoption, shell icon resolution, settings
-model/page and application controller. The decoration shadow/painter and built-in
-contrast gates also pass; all 216 effective caption combinations meet 4.5:1.
-The seven external palette packs pass the same foreground/background audit.
-Strict MkDocs and 419-document link/navigation validation pass. Expanded native
-platform-theme fixture coverage and native compositor pointer delivery remain
-active gates. Packaging and installation on both hosts are pending; existing
-physical sessions are preserved. Do not describe this entry as delivered yet.
+Reviewed repairs include contour-aware Corner Bar shadows, caption contrast,
+File Manager inherited-palette refresh, and independent icon choice with live
+shell/File Manager cache invalidation. File Manager now adopts the current
+palette on real application-level changes; fresh installed windows were visually
+inspected in the workstation's light and laptop's dark themes. All 216 effective
+caption combinations and the seven external palette packs pass contrast checks.
+See [ADR-0280](wiki/adr/0280-independent-installed-icon-theme-choice.md).
+
+Six icon families—Kith, Facet, Contour, Copperplate, Arcade and Orbit—each contain
+316 canonical designs and 537 aliases, with color and symbolic variants. Coverage
+includes observed desktop names on both hosts, Qinda projects, common Linux and
+creative applications, folders, file formats and action/status/device icons.
+Independent generation/render/install review passes; installed Qt resolves and
+renders all six families in a 432-render size check on each host. Choose them in
+Settings → Appearance → Themes → Icons, then Apply. Follow theme remains default.
+
+The integrated native appearance/platform suite passes 20/20 rows. All 21 actual
+installed Settings routes and the Wallpaper destination construct on both hosts;
+actual installed launcher/compositor/decoration private boots pass on both. An
+initial workstation boot probe pointed to a missing helper and timed out; its
+private compositor was identity-fenced and stopped, the helper was supplied,
+and the real probe passed. Native pointer delivery passes 3/3 with patched KWin;
+the same fixture with the original exact-ABI library fails the cutout assertion.
+All nine resident endpoints are present, watchdog timers active and pending
+report queues empty on both machines. Strict MkDocs and link validation pass.
+
+A subsequent screenshot review found an additional **Settings preview** defect:
+its client backdrop fills the full frame beneath the Corner Bar cutout and it
+omits the contour shadow. The preview repair is active and will be delivered in
+a separate pinned package revision; r6's installed production fixes above remain
+verified. The preview must not be described as fully faithful until that lands.
 
 ## September 27 — User-folder wallpaper gallery
 
