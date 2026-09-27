@@ -32,6 +32,11 @@
       demoDescription.textContent = descriptions[button.dataset.windowMode];
       penguLine.textContent = penguNotes[button.dataset.windowMode];
       penguTip.dataset.mood = button.dataset.windowMode;
+      penguTip.querySelector('img').src = button.dataset.windowMode === 'tabs'
+        ? 'assets/images/cyber-pengu-ducke-react.webp'
+        : button.dataset.windowMode === 'split'
+          ? 'assets/images/cyber-pengu-ducke-point.webp'
+          : 'assets/images/cyber-pengu-ducke.webp';
     });
   });
   document.querySelectorAll('[data-demo-tab]').forEach(button => {
@@ -60,6 +65,22 @@
     });
   });
 
+  const cornerImage = document.querySelector('#corner-press-image');
+  const cornerName = document.querySelector('#corner-press-name');
+  const cornerRadius = document.querySelector('#corner-press-radius');
+  document.querySelectorAll('[data-corner-image]').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('[data-corner-image]').forEach(item => {
+        item.classList.toggle('active', item === button);
+        item.setAttribute('aria-pressed', String(item === button));
+      });
+      cornerImage.src = `assets/images/${button.dataset.cornerImage}`;
+      cornerImage.alt = `Live Corner Bar desktop in the ${button.dataset.cornerName} theme`;
+      cornerName.textContent = button.dataset.cornerName.toUpperCase();
+      cornerRadius.textContent = button.dataset.cornerRadius;
+    });
+  });
+
   const themeImage = document.querySelector('#theme-image');
   const themeName = document.querySelector('#theme-name');
   const duckeLine = document.querySelector('#ducke-line');
@@ -81,8 +102,10 @@
       themeImage.alt = `${button.dataset.label} QindaQt wallpaper`;
       themeName.textContent = button.dataset.label;
       duckeLine.textContent = duckeNotes[button.dataset.label];
-      duckeLine.closest('.mascot-tip')?.classList.remove('guide-pop');
-      requestAnimationFrame(() => duckeLine.closest('.mascot-tip')?.classList.add('guide-pop'));
+      duckeLine.closest('.mascot-tip')?.querySelector('img')?.setAttribute(
+        'src', button.dataset.label === 'Compile Club'
+          ? 'assets/images/cyber-pengu-ducke-point.webp'
+          : 'assets/images/cyber-pengu-ducke-react.webp');
     });
   });
 })();

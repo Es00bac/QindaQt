@@ -5,9 +5,9 @@ WEBVTT
 The Audio page begins with devices and application streams. Here I open Mixer: a real console with five hardware and three virtual input strips.
 
 2
-00:00:12.083 --> 00:00:24.967
-Each strip has a fader, mute, solo, processing rack and A/B sends. The console scrolls from inputs to physical and virtual output buses.
+00:00:12.083 --> 00:00:27.800
+A real test tone enters Virtual Input. I enable its B1 send and the live signal reaches a virtual output bus in an isolated PipeWire graph.
 
 3
-00:00:25.167 --> 00:00:41.050
+00:00:28.000 --> 00:00:43.883
 Other computers configures a manual stereo peer. Save the route, review receive permission, then enable it. Check audibility at the far end.

@@ -128,9 +128,6 @@ main, .site-footer { margin-left: 196px; }
 .mode-buttons button[aria-pressed="true"] { background: var(--jade); border-color: var(--jade); color: var(--ink); }
 .mascot-tip { border: 1px solid #608580; border-radius: 3px; background: #1d3a43; }
 .mascot-tip strong { color: var(--jade); }
-.mascot-tip[data-mood="tabs"] img { animation: guide-lean 1.8s ease-in-out infinite alternate; }
-.mascot-tip[data-mood="separate"] img { animation: guide-step 2.4s ease-in-out infinite alternate; }
-.guide-pop img { animation: guide-step .7s ease-in-out 2; }
 @keyframes guide-lean { from { transform: translateX(-5px) rotate(-7deg); } to { transform: translateX(5px) rotate(7deg); } }
 @keyframes guide-step { from { transform: translateY(4px) rotate(-4deg); } to { transform: translateY(-8px) rotate(3deg); } }
 .themes-section { background: #172731; color: var(--white); }
@@ -224,5 +221,4 @@ main, .site-footer { margin-left: 196px; }
   .theme-side { padding: 20px; }
   .button { width: auto; }
 }
-.mascot-tip img { animation: none; }
 @media (prefers-reduced-motion: reduce) { .host-pose { animation: none !important; } .host-idle { opacity: 1; } .host-point, .host-react { opacity: 0; } }

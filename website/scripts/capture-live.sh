@@ -32,7 +32,11 @@ EOF
 chmod +x "$run_dir/session.sh"
 
 socket="qinda-showcase-$$"
-qindaqt-wm --virtual --socket "$socket" --width 1440 --height 900 \
+plugin_args=()
+if [[ -n ${QINDA_SITE_PLUGIN_ROOT:-} ]]; then
+    plugin_args=(--plugin-root "$QINDA_SITE_PLUGIN_ROOT")
+fi
+qindaqt-wm "${plugin_args[@]}" --virtual --socket "$socket" --width 1440 --height 900 \
     --no-lockscreen --no-global-shortcuts --session "$run_dir/session.sh" \
     > "$stage/wm.log" 2>&1 &
 wm=$!
