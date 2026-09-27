@@ -29,6 +29,23 @@ Item {
     LayoutMirroring.enabled: rtl
     LayoutMirroring.childrenInherit: true
 
+    // The row is deliberately narrower than its stable container. FormRow's
+    // responsive choice must follow the container and must not feed its two
+    // different implicit sizes back into that choice.
+    Item {
+        objectName: "breakpointFormRowHost"
+        width: 520
+        height: 0
+        visible: false
+
+        C.FormRow {
+            objectName: "breakpointFormRow"
+            width: 358
+            label: qsTr("Breakpoint probe")
+            editor: C.Switch { text: qsTr("Enabled") }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16

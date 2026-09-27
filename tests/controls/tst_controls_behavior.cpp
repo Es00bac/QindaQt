@@ -85,6 +85,7 @@ private slots:
     void activatesCardActionsFromKeyboard();
     void busyButtonPreservesAvailabilityAndSuppressesActivation();
     void formRowForwardsLabelRequiredAndErrorSemantics();
+    void formRowBreakpointFollowsStableContainer();
     void stateCardAnnouncesDynamicSemanticTransitions();
     void rtlMirrorsSwitchAndSliderGeometry();
     void themeCardRejectsPartialAndHostilePreviews();
@@ -223,6 +224,21 @@ void ControlsBehaviorTests::exposesStaticComponentContractsAndFocusRing()
     QVERIFY(focusRing->property("focusVisible").toBool());
     QVERIFY(focusRing->isVisible());
     QCOMPARE(objectColor(focusRing), QColor(Qt::transparent));
+}
+
+void ControlsBehaviorTests::formRowBreakpointFollowsStableContainer()
+{
+    auto scene = createScene(QStringLiteral("qinda-dark.json"));
+    auto *host = item(scene.root, "breakpointFormRowHost");
+    auto *row = item(scene.root, "breakpointFormRow");
+    QVERIFY(host != nullptr);
+    QVERIFY(row != nullptr);
+    QCOMPARE(host->width(), 520.0);
+    QCOMPARE(row->width(), 358.0);
+    QVERIFY(row->property("wide").toBool());
+
+    host->setWidth(440.0);
+    QTRY_VERIFY(!row->property("wide").toBool());
 }
 
 void ControlsBehaviorTests::opensAndSelectsTokenizedComboPopup()
