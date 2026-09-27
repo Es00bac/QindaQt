@@ -5,7 +5,11 @@ the documented window-container gesture, profiles, appearance, first-party
 applications, and the separately packaged QindaOffice suite. The QindaOffice
 page lives at `/office/`; future companion projects can use sibling paths.
 Shared styles and navigation remain under `website/assets/`. The presentation
-uses a print field-guide visual language instead of echoing the shell's chrome.
+uses a graphite, sea-glass, and apricot workspace design with a fixed rail,
+compact annotations, and large live captures. The eleven shell profiles are
+starting points; the site shows their paired appearance themes and wallpapers.
+Audio1 has a separate deep dive at `/audio/` with a live console capture,
+captioned film, and an interactive explanatory signal-path diagram.
 
 The site's behavior claims follow the [handbook](../handbook/index.md),
 especially [Using the desktop](../handbook/desktop.md),
@@ -19,12 +23,14 @@ The [website README](https://github.com/Es00bac/QindaQt/blob/main/website/README
 records the local server,
 capture method, media provenance, mascot prompt, and film generation. Live
 screenshots come from an isolated virtual QindaQt session with an empty Desktop
-directory; profile comparisons are explicitly labeled renders from
+directory; five profile comparisons are live captures with paired themes,
+while the remaining previews are explicitly labeled renders from
 `qindaqt-shell-preview`. The HTML window demo is an illustration of the real
-tab/split/detach contract. Two captioned films use actual screen recordings
+tab/split/detach contract. Three captioned films use actual screen recordings
 from the private virtual session: the desktop film shows a real Meta+Shift
 split and a live layout change; the Office film operates the sample files in
-installed apps. Cyber Pengu and Ducke are animated guides in each chapter,
+installed apps; the Audio1 film walks actual Settings controls. Cyber Pengu
+and Ducke switch wallpaper-matched speaking and gesture poses in each chapter,
 voiced with distinct Kokoro voices. No personal desktop capture or model
 weights are in the website tree.
 

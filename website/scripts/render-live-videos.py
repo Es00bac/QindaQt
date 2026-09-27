@@ -25,7 +25,11 @@ SITE = ROOT / "website"
 LIVE = ROOT / "build/site-capture/live"
 STAGE = ROOT / "build/site-capture/live-film"
 OUTPUT = SITE / "assets/video"
-ART = SITE / "assets/images/cyber-pengu-ducke.png"
+POSES = {
+    "idle": SITE / "assets/images/cyber-pengu-ducke.webp",
+    "point": SITE / "assets/images/cyber-pengu-ducke-point.webp",
+    "react": SITE / "assets/images/cyber-pengu-ducke-react.webp",
+}
 REGULAR = "/usr/share/fonts/dejavu/DejaVuSans.ttf"
 BOLD = "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"
 FPS = 12
@@ -84,6 +88,20 @@ FILMS: dict[str, list[Scene]] = {
               "The courtyard walkthrough and launch checklist live in QindaNote. The step-free route is marked done. The low-glare night test is still waiting.",
               "A checklist with context", (241, 298)),
     ],
+    "audio-tour": [
+        Scene("audio-devices", "START WITH REAL DEVICES", "pengu",
+              "The Audio page begins with devices and application streams. Here I open Mixer. It is a real console, with five hardware and three virtual input strips.",
+              "The Audio page begins with devices and application streams. Here I open Mixer: a real console with five hardware and three virtual input strips.",
+              "Open the console", (846, 245)),
+        Scene("audio-mixer", "TRACE THE MIX", "ducke",
+              "Each strip has its own fader, mute, solo, processing rack and sends to A and B buses. I scroll past the inputs to the physical and virtual output buses. That's where separate mixes go.",
+              "Each strip has a fader, mute, solo, processing rack and A/B sends. The console scrolls from inputs to physical and virtual output buses.",
+              "Follow the signal", (849, 480)),
+        Scene("audio-peers", "REACH ANOTHER COMPUTER", "pengu",
+              "Other computers is where you configure a manual stereo peer. Save a destination and bus, review the receive permission, then explicitly enable the stream. An active local route still needs an audible check at the far end.",
+              "Other computers configures a manual stereo peer. Save the route, review receive permission, then enable it. Check audibility at the far end.",
+              "A deliberate connection", (1092, 245)),
+    ],
 }
 
 
@@ -99,31 +117,17 @@ def timestamp(seconds: float) -> str:
     return f"{hours:02}:{minutes:02}:{whole:02}.{value:03}"
 
 
-def mascot_parts() -> dict[str, Image.Image]:
-    art = Image.open(ART).convert("RGBA")
-    pengu = art.crop((355, 35, 1360, 1157))
-    mask = pengu.getchannel("A")
-    ImageDraw.Draw(mask).polygon([(0, 530), (165, 530), (135, 680),
-                                  (150, 850), (100, 1122), (0, 1122)], fill=0)
-    pengu.putalpha(mask)
-    ducke = art.crop((0, 570, 530, 1125))
-    mask = ducke.getchannel("A")
-    ImageDraw.Draw(mask).polygon([(455, 0), (530, 0), (530, 120),
-                                  (505, 120), (475, 70)], fill=0)
-    ducke.putalpha(mask)
-    return {"pengu": pengu, "ducke": ducke}
-
-
-def add_character(canvas: Image.Image, art: Image.Image, *, x: int, y: int,
-                  width: int, angle: float) -> None:
-    height = round(art.height * width / art.width)
-    pose = art.resize((width, height), Image.Resampling.LANCZOS)
-    pose = pose.rotate(angle, Image.Resampling.BICUBIC, expand=True)
-    canvas.alpha_composite(pose, (x, y))
+def mascot_poses() -> dict[str, Image.Image]:
+    # AGENT-NOTE: Three wallpaper-matched key poses give the hosts a speaking
+    # beak, a pointing gesture and Ducke's spinning fan; a translated still
+    # was not character animation. Keep their shared canvas aligned.
+    return {name: Image.open(path).convert("RGBA").resize((370, 315), Image.Resampling.LANCZOS)
+            for name, path in POSES.items()}
 
 
 def draw_frame(screen: Image.Image, scene: Scene, index: int, count: int,
-               chapter: int, chapters: int, parts: dict[str, Image.Image]) -> Image.Image:
+               chapter: int, chapters: int, poses: dict[str, Image.Image],
+               voice_level: float) -> Image.Image:
     progress = index / max(1, count - 1)
     canvas = Image.new("RGBA", (WIDTH, HEIGHT), "#102934")
     canvas.alpha_composite(screen.convert("RGBA"), (0, 0))
@@ -147,24 +151,14 @@ def draw_frame(screen: Image.Image, scene: Scene, index: int, count: int,
         color = (142, 231, 203, round(150 * active)) if scene.speaker == "pengu" else (241, 168, 88, round(170 * active))
         draw.ellipse((fx-radius, fy-radius, fx+radius, fy+radius), outline=color, width=4)
 
-    # The two separate cutouts move independently. The speaking host leans in;
-    # the other reacts, and Ducke's fan gets short motion streaks.
-    bounce = math.sin(index * .65)
-    if scene.speaker == "pengu":
-        add_character(canvas, parts["ducke"], x=1210, y=727 + round(bounce * 5),
-                      width=145, angle=-4 + bounce * 3)
-        add_character(canvas, parts["pengu"], x=1320, y=555 + round(bounce * 7),
-                      width=280, angle=1.8 * bounce)
-    else:
-        add_character(canvas, parts["pengu"], x=1235, y=634 + round(bounce * 4),
-                      width=210, angle=2 * bounce)
-        add_character(canvas, parts["ducke"], x=1350, y=624 + round(bounce * 9),
-                      width=238, angle=-3.5 * bounce)
-        draw = ImageDraw.Draw(canvas, "RGBA")
-        for offset in range(3):
-            draw.arc((1350 - offset*9, 687 - offset*8, 1430 + offset*8, 768 + offset*9),
-                     120 + index*18, 215 + index*18,
-                     fill=(150, 231, 204, 120-offset*27), width=2)
+    # Key poses switch with the actual narration envelope: beaks open on
+    # voiced syllables, Pengu points at a control, and Ducke spins his fan.
+    # The gesture holds briefly when the screen focus ring appears.
+    speaking = voice_level > .15 and (index // 3) % 2 == 0
+    pose_name = ("point" if scene.speaker == "pengu" else "react") \
+        if speaking or .63 < progress < .78 else "idle"
+    entrance = min(0, round((progress - .13) * 90))
+    canvas.alpha_composite(poses[pose_name], (1222 - entrance, 580))
 
     draw = ImageDraw.Draw(canvas, "RGBA")
     bubble = (1260, 380, 1584, 504)
@@ -175,7 +169,7 @@ def draw_frame(screen: Image.Image, scene: Scene, index: int, count: int,
     draw.text((1281, 399), name, font=font_small, fill="#177b69" if scene.speaker == "pengu" else "#b65b2e")
     draw.text((1280, 433), scene.cue, font=font_body, fill="#172f3d")
     for bar in range(4):
-        amplitude = 7 + (10 + bar * 3) * abs(math.sin(index*.45 + bar))
+        amplitude = 7 + (12 + bar * 3) * voice_level
         draw.rounded_rectangle((1282 + bar*18, 481-amplitude, 1290 + bar*18, 481),
                                radius=3, fill="#d27439")
 
@@ -201,7 +195,7 @@ def synthesize(scene: Scene, audio_path: Path, kokoro: Kokoro) -> float:
 
 
 def render_scene(scene: Scene, number: int, total: int, audio: Path,
-                 film_stage: Path, parts: dict[str, Image.Image]) -> tuple[Path, float]:
+                 film_stage: Path, poses: dict[str, Image.Image]) -> tuple[Path, float]:
     speech, rate = sf.read(audio)
     duration = len(speech) / rate + .8
     capture = LIVE / scene.capture
@@ -209,6 +203,13 @@ def render_scene(scene: Scene, number: int, total: int, audio: Path,
     frames = sorted(capture.glob("*.png"))
     assert frames and len(frames) == len(times), scene.capture
     count = math.ceil(duration * FPS)
+    levels = []
+    for frame_index in range(count):
+        start = int(frame_index / FPS * rate)
+        end = min(len(speech), int((frame_index + 1) / FPS * rate))
+        segment = speech[start:end]
+        levels.append(float((sum(segment * segment) / max(1, len(segment))) ** .5))
+    peak_level = max(levels, default=1) or 1
     clip = film_stage / f"{number:02}.mp4"
     command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
                "-f", "rawvideo", "-pixel_format", "rgb24", "-video_size", f"{WIDTH}x{HEIGHT}",
@@ -229,7 +230,8 @@ def render_scene(scene: Scene, number: int, total: int, audio: Path,
                 screen = Image.open(frames[source_index]).convert("RGB")
                 last_index = source_index
             assert screen is not None
-            frame = draw_frame(screen, scene, frame_index, count, number, total, parts)
+            frame = draw_frame(screen, scene, frame_index, count, number, total,
+                               poses, levels[frame_index] / peak_level)
             process.stdin.write(frame.tobytes())
     finally:
         process.stdin.close()
@@ -248,7 +250,7 @@ def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     STAGE.mkdir(parents=True, exist_ok=True)
     kokoro = Kokoro(str(args.model), str(args.voices))
-    parts = mascot_parts()
+    poses = mascot_poses()
     for film, scenes in FILMS.items():
         if args.film and film != args.film:
             continue
@@ -264,7 +266,7 @@ def main() -> None:
                 print(f"{film} / {scene.capture}: audio {duration:.1f}s", flush=True)
                 continue
             clip, duration = render_scene(scene, number, len(scenes), audio_path,
-                                          film_stage, parts)
+                                          film_stage, poses)
             clips.append(clip)
             captions.extend([str(number),
                              f"{timestamp(elapsed)} --> {timestamp(elapsed + duration - .2)}",

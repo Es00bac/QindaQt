@@ -25,12 +25,24 @@ export XDG_CACHE_HOME="$run_dir/cache"
 export XDG_STATE_HOME="$run_dir/state"
 export XDG_CURRENT_DESKTOP=QindaQt
 printf 'XDG_DESKTOP_DIR="%s"\n' "$run_dir/Desktop" > "$run_dir/config/user-dirs.dirs"
-cat > "$run_dir/session.sh" <<'EOF'
+if [[ ${QINDA_SCENE:-} == audio-* ]]; then
+    mkdir -p "$run_dir/config/qindaqt"
+    printf '{"schemaVersion":2,"layer":"user-overrides","values":{"shell.shortcutNoteDismissed":true}}\n' \
+        > "$run_dir/config/qindaqt/settings-v2.json"
+    cat > "$run_dir/session.sh" <<'EOF'
+#!/usr/bin/env bash
+exec qindaqt-session --no-autostart --no-polkit-agent \
+    --no-powerdevil --no-input-method-daemon --welcome /bin/true \
+    --profile qindaqt --theme qinda-dark
+EOF
+else
+    cat > "$run_dir/session.sh" <<'EOF'
 #!/usr/bin/env bash
 exec qindaqt-session --no-autostart --no-polkit-agent \
     --no-powerdevil --no-input-method-daemon \
     --profile macos-inspired --theme qinda-dark
 EOF
+fi
 chmod +x "$run_dir/session.sh"
 
 socket="qinda-record-$$"

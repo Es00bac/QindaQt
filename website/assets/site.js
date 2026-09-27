@@ -45,6 +45,7 @@
   const layoutImage = document.querySelector('#layout-image');
   const layoutName = document.querySelector('#layout-name');
   const layoutDetail = document.querySelector('#layout-detail');
+  const layoutKind = document.querySelector('#layout-kind');
   document.querySelectorAll('[data-layout]').forEach(button => {
     button.addEventListener('click', () => {
       document.querySelectorAll('[data-layout]').forEach(item => {
@@ -52,9 +53,10 @@
         item.setAttribute('aria-pressed', String(item === button));
       });
       layoutImage.src = `assets/images/${button.dataset.image}`;
-      layoutImage.alt = `Rendered ${button.dataset.title} layout preview`;
+      layoutImage.alt = `${button.dataset.kind === 'Live capture' ? 'Live QindaQt capture of' : 'Rendered preview of'} the ${button.dataset.title} layout`;
       layoutName.textContent = button.dataset.title;
       layoutDetail.textContent = button.dataset.detail;
+      layoutKind.textContent = button.dataset.kind === 'Live capture' ? 'Captured in QindaQt' : 'Shell render · preview';
     });
   });
 

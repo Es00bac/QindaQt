@@ -1,0 +1,13 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:11.883
+The Audio page begins with devices and application streams. Here I open Mixer: a real console with five hardware and three virtual input strips.
+
+2
+00:00:12.083 --> 00:00:24.967
+Each strip has a fader, mute, solo, processing rack and A/B sends. The console scrolls from inputs to physical and virtual output buses.
+
+3
+00:00:25.167 --> 00:00:41.050
+Other computers configures a manual stereo peer. Save the route, review receive permission, then enable it. Check audibility at the far end.
