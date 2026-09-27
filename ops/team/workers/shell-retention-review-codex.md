@@ -1,6 +1,6 @@
 # Shell retention independent reviewer
 
-- Status: idle — ACCEPT exact installed-plugin stage repair `b50a42786be74b11be6b4f716baf0250e11e4ecd`; native manager gate remains pending.
+- Status: idle — ACCEPT exact icon miss fast path `7f5b8431a8111ef43985d1e54caf231440cbbfac`; manager owns both-host package/profile proof.
 
 ## Updates
 
@@ -13,3 +13,7 @@
 - 2026-09-27T11:15:29-06:00 — Claimed and completed exact keyboard repair review. Independently passed keyboard-offscreen row (exit 0). Added popup closure/identity/focus assertions preserve action checks and compensate offscreen focus exactly as existing launcher fixture; no production behavior change. Native installed/physical qualification remains manager-owned.
 
 - 2026-09-27T11:30:50-06:00 — Claimed/completed independent stage-driver review in isolated checkout. DESTDIR is subprocess-local and preserves validated cleanup, relative artifact fences and no-plugin-root discovery proof. Fresh 3/3 real-CMake fixtures and 20/20 adjacent nested units pass; exact parent driver fails fixture safely. Docs 417/strict MkDocs pass. Handed ACCEPT to manager and implementer; available for bounded native-gate reproduction help.
+
+- 2026-09-27T11:42:07-06:00 — Claimed exact icon candidate review in isolated `../container-wm-icon-miss-review`; inspecting metadata ordering, fresh canonical containment and focused icon regressions. Manager retains physical profiling/package work.
+
+- 2026-09-27T11:43:23-06:00 — Independent 4/4 icon CTests pass (73 cases, zero failures/skips); reviewed fresh canonical containment and absence of positive/negative result caching. Docs 417, strict MkDocs and diff checks pass. Sent ACCEPT to manager; next boundary is exact cherry-pick, packaging and live profiling.
