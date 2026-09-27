@@ -14,7 +14,14 @@ T.Control {
     property string errorMessage: ""
     property bool required: false
     property int labelWidth: 220
-    readonly property bool wide: width >= 480
+    // AGENT-GUARD: Do not derive this breakpoint from FormRow's own width.
+    // The one-column and two-column layouts have different implicit widths;
+    // near the breakpoint, using `width` feeds that difference back into the
+    // parent layout and alternates forever between both shapes. The visual
+    // parent is the stable allocation boundary for a row in every supported
+    // composition.
+    readonly property real layoutWidth: parent !== null ? parent.width : width
+    readonly property bool wide: layoutWidth >= 480
     readonly property string editorAccessibleName: required
                                                    ? qsTr("%1, required").arg(label)
                                                    : label
@@ -66,6 +73,7 @@ T.Control {
     }
 
     contentItem: GridLayout {
+        objectName: "formRowContentLayout"
         columns: control.wide ? 2 : 1
         columnSpacing: Tokens.space["5"]
         rowSpacing: Tokens.space["2"]
