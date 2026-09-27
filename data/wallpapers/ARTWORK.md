@@ -12,6 +12,11 @@ Generated with the built-in imagegen tool for this project. These are original
 generated assets, not photographs or third-party branded artwork. The native
 files are 1672 × 941 PNGs; the requested 4K size was not returned by the tool.
 Keep that native resolution claim explicit rather than calling an upscale 4K.
+The Compile Club PNG received a local imagegen edit to move the coffee mug
+handle to the side held by Cyber Pengu's flipper. The website's transparent
+mascot art and its pointing and reacting key poses were generated from that
+corrected identity, preserving Cyber Pengu's visor, armor, beak, and amber
+boots and Ducke's sunglasses and fan.
 
 ## Generation prompts
 

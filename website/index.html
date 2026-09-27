@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#e9e3d1">
+  <meta name="theme-color" content="#111b26">
   <meta name="description" content="Meet QindaQt: a free, open source Qt desktop with windows that can stay independent or become tabs and splits, expressive themes, flexible layouts, and native apps.">
   <title>QindaQt — a desktop that fits you</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -19,8 +19,9 @@
       <a class="brand" href="./" aria-label="QindaQt home"><span class="brand-mark" aria-hidden="true">Q</span><span>Qinda<span class="brand-accent">Qt</span></span></a>
       <button class="nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false">Menu <span aria-hidden="true">☰</span></button>
       <nav id="site-nav" class="site-nav" aria-label="Main navigation">
-        <a href="#how-it-works">The idea</a>
         <a href="#layouts">Layouts</a>
+        <a href="#how-it-works">Windows</a>
+        <a href="audio/">Audio</a>
         <a href="#themes">Themes</a>
         <a href="#apps">Apps</a>
         <a href="office/">Office <span class="nav-arrow" aria-hidden="true">↗</span></a>
@@ -35,19 +36,19 @@
       <div class="shell hero-layout">
         <div class="hero-copy">
           <p class="eyebrow"><span class="eyebrow-dot"></span> QindaQt · Free and open source · Wayland</p>
-          <h1 id="hero-title">Move the<br>windows.<em>Keep the flow.</em></h1>
-          <p class="hero-lede">An expressive Qt desktop where windows can become tabs and splits, layouts change with you, and the everyday tools feel at home.</p>
+          <h1 id="hero-title">Eleven ways<br>to start.<em>Make it yours.</em></h1>
+          <p class="hero-lede">Begin with a Windows-style taskbar, a BeOS corner bar, a NeXT-style dock, or eight other profiles. Then move panels, change their contents, choose a theme, and make your own arrangement. QindaQt also lets you reshape windows, route sound, and work in native apps.</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="#how-it-works">Explore the desktop <span aria-hidden="true">↗</span></a>
+            <a class="button button-primary" href="#layouts">Explore the layouts <span aria-hidden="true">↗</span></a>
             <a class="button button-ghost" href="#watch">Watch the tour <span aria-hidden="true">▶</span></a>
           </div>
-          <p class="hero-caption">Field guides: Cyber Pengu &amp; Ducke. Artwork straight from QindaQt's world.</p>
+          <p class="hero-caption">Cyber Pengu and Ducke guide you through their actual desktop.</p>
         </div>
         <div class="hero-visual">
           <div class="hero-orbit hero-orbit-one" aria-hidden="true"></div>
           <div class="hero-orbit hero-orbit-two" aria-hidden="true"></div>
           <div class="hero-screen"><img src="assets/images/desktop-welcome.webp" alt="The real QindaQt desktop with its welcome guide, top panel, dock, and cyberpunk wallpaper" width="1440" height="900" fetchpriority="high"><span class="screen-label">Captured in QindaQt</span></div>
-          <img class="hero-mascots" src="assets/images/cyber-pengu-ducke.png" alt="Cyber Pengu, a jade-visored penguin in graphite armor and amber boots, with Ducke, a sunglasses-wearing rubber duck sidekick" width="1360" height="1157">
+          <div class="hero-hosts" role="img" aria-label="Animated Cyber Pengu and Ducke, the QindaQt wallpaper mascots, pointing and reacting to the desktop"><img class="host-pose host-idle" src="assets/images/cyber-pengu-ducke.webp" alt="" width="1360" height="1157"><img class="host-pose host-point" src="assets/images/cyber-pengu-ducke-point.webp" alt="" width="1360" height="1157"><img class="host-pose host-react" src="assets/images/cyber-pengu-ducke-react.webp" alt="" width="1360" height="1157"></div>
           <div class="hero-note"><span class="note-sparkle" aria-hidden="true">✦</span><span><strong>Cyber Pengu says:</strong><br>Start here. Move everything later.</span></div>
         </div>
       </div>
@@ -55,11 +56,36 @@
     </section>
 
     <section class="proof-strip" aria-label="QindaQt highlights"><div class="shell proof-grid">
-      <p><strong>01</strong><span>Group windows when it helps</span></p>
-      <p><strong>02</strong><span>Switch the whole layout</span></p>
-      <p><strong>03</strong><span>Theme the whole experience</span></p>
-      <p><strong>04</strong><span>Work in native apps</span></p>
+      <p><strong>11</strong><span>Desktop profiles to start from</span></p>
+      <p><strong>08</strong><span>Mixing buses you can route to</span></p>
+      <p><strong>03</strong><span>Ways to hold windows: separate, split, tabs</span></p>
+      <p><strong>04</strong><span>Office apps, one working project</span></p>
     </div></section>
+
+    <section id="layouts" class="section layout-section" aria-labelledby="layout-title"><div class="shell">
+      <div class="section-intro"><div><p class="eyebrow">The layout is yours to choose</p><h2 id="layout-title">Choose the shape of <em>your desktop.</em></h2></div><p>Windows-style taskbars, BeOS-inspired corner controls, a NeXT-style workspace dock, and eight more. Switch the whole arrangement in Settings, then edit panels right where they live.</p></div>
+      <div class="layout-triptych" aria-label="Three contrasting QindaQt desktop profiles">
+        <figure><img src="assets/images/layout-live-qinda-bliss.webp" alt="Live Classic Taskbar with Qinda Classic Blue window theme and Qinda Bliss wallpaper" width="1440" height="900" loading="lazy"><figcaption><span>01 / WINDOWS CLASSIC</span><strong>Classic Taskbar</strong><small>Classic Blue · Qinda Bliss · live</small></figcaption></figure>
+        <figure><img src="assets/images/layout-live-beos-inspired.webp" alt="Live BeOS-inspired Corner Bar with Marigold window theme and Porcelain Dawn wallpaper" width="1440" height="900" loading="lazy"><figcaption><span>02 / BEOS INSPIRED</span><strong>Corner Bar</strong><small>Marigold · Porcelain Dawn · live</small></figcaption></figure>
+        <figure><img src="assets/images/layout-live-nextstep-inspired.webp" alt="Live NeXT-inspired Workspace Dock with Graphite window theme and Ink Tide wallpaper" width="1440" height="900" loading="lazy"><figcaption><span>03 / NEXT INSPIRED</span><strong>Workspace Dock</strong><small>Graphite · Ink Tide · live</small></figcaption></figure>
+      </div>
+      <div class="layout-browser"><div class="layout-list" role="group" aria-label="Choose a layout preview">
+        <button type="button" class="active" data-layout="qindaqt" data-image="profile-qindaqt.webp" data-title="QindaQt" data-detail="Top panel and dock. The QindaQt starting point." aria-pressed="true"><span>01</span><strong>QindaQt</strong><small>Signature</small></button>
+        <button type="button" data-layout="qinda-bliss" data-image="layout-live-qinda-bliss.webp" data-kind="Live capture" data-title="Classic Taskbar" data-detail="A single familiar taskbar and the Qinda Classic Blue palette." aria-pressed="false"><span>02</span><strong>Classic Taskbar</strong><small>Windows classic</small></button>
+        <button type="button" data-layout="windows-modern" data-image="layout-live-windows-modern.webp" data-kind="Live capture" data-title="Centered Taskbar" data-detail="Centered launchers and a contemporary taskbar." aria-pressed="false"><span>03</span><strong>Centered Taskbar</strong><small>Windows modern</small></button>
+        <button type="button" data-layout="beos-inspired" data-image="layout-live-beos-inspired.webp" data-kind="Live capture" data-title="Corner Bar" data-detail="A compact corner panel and Marigold personality." aria-pressed="false"><span>04</span><strong>Corner Bar</strong><small>BeOS inspired</small></button>
+        <button type="button" data-layout="nextstep-inspired" data-image="layout-live-nextstep-inspired.webp" data-kind="Live capture" data-title="Workspace Dock" data-detail="A right-edge workspace dock with Graphite styling." aria-pressed="false"><span>05</span><strong>Workspace Dock</strong><small>NeXT inspired</small></button>
+        <button type="button" data-layout="win31-inspired" data-image="layout-live-win31-inspired.webp" data-kind="Live capture" data-title="Program Groups" data-detail="Program-group navigation in Classic Grey." aria-pressed="false"><span>06</span><strong>Program Groups</strong><small>Windows 3.1 inspired</small></button>
+        <button type="button" data-layout="macos-inspired" data-image="profile-macos-inspired.webp" data-title="Menu and Dock" data-detail="A top menu with a bottom dock." aria-pressed="false"><span>07</span><strong>Menu and Dock</strong><small>macOS inspired</small></button>
+        <button type="button" data-layout="gnome-inspired" data-image="profile-gnome-inspired.webp" data-title="Overview" data-detail="A workspace-first overview arrangement." aria-pressed="false"><span>08</span><strong>Overview</strong><small>GNOME inspired</small></button>
+        <button type="button" data-layout="unity-inspired" data-image="profile-unity-inspired.webp" data-title="Command Rail" data-detail="A side command rail for launch and switch." aria-pressed="false"><span>09</span><strong>Command Rail</strong><small>Unity inspired</small></button>
+        <button type="button" data-layout="xfce-inspired" data-image="profile-xfce-inspired.webp" data-title="Compact Flexible" data-detail="A lean panel arrangement that leaves room to work." aria-pressed="false"><span>10</span><strong>Compact Flexible</strong><small>Xfce inspired</small></button>
+        <button type="button" data-layout="minimal" data-image="profile-minimal.webp" data-title="Minimal" data-detail="A reduced shell for a distraction-light desktop." aria-pressed="false"><span>11</span><strong>Minimal</strong><small>Quiet</small></button>
+      </div><figure class="layout-preview"><div class="preview-frame"><img id="layout-image" src="assets/images/profile-qindaqt.webp" alt="Rendered QindaQt layout preview" width="1440" height="900" loading="lazy"></div><figcaption><span><strong id="layout-name">QindaQt</strong><small id="layout-detail">Top panel and dock. The QindaQt starting point.</small></span><span class="preview-tag" id="layout-kind">Shell render · preview</span></figcaption></figure></div>
+      <p class="layout-footnote">All eleven are starting points. Move, add, resize, and restyle panels in Settings; save a custom profile when the arrangement feels right.</p>
+    </div></section>
+
+    <section id="audio" class="audio-feature section" aria-labelledby="audio-title"><div class="shell audio-feature-grid"><div class="audio-feature-copy"><p class="eyebrow">A real audio control room</p><h2 id="audio-title">Put every sound <em>where it belongs.</em></h2><p>QindaQt's Audio1 engine gives applications, physical inputs, virtual inputs, and outputs a common routing surface. Work with eight input strips, eight buses, per-send gain, live meters, processing racks, recording, and manual computer-to-computer stereo streams.</p><a class="button button-primary" href="audio/">Explore the audio engine <span aria-hidden="true">↗</span></a><p class="audio-feature-note">5 physical + 3 virtual inputs · A1–A5 physical buses · B1–B3 virtual buses</p></div><div class="audio-feature-diagram" role="img" aria-label="Illustration: input strips pass through processing and a routing matrix to physical and virtual buses"><div class="audio-diagram-label">AUDIO1 / SIGNAL PATH <span>LIVE CONTROL CONCEPT</span></div><div class="audio-diagram-row"><span>INPUTS</span><b>Hardware 1–5</b><b>Virtual 1–3</b></div><div class="audio-diagram-row"><span>PROCESS</span><b>Gate · Denoise · EQ</b><b>Compressor · Limiter</b></div><div class="audio-diagram-row audio-diagram-route"><span>ROUTE</span><b>Per-send gain</b><b>8 × 8 matrix</b></div><div class="audio-diagram-row"><span>BUSES</span><b>A1 · A2 · A3 · A4 · A5</b><b>B1 · B2 · B3</b></div><div class="audio-diagram-label">MODEL DIAGRAM · NOT A LIVE METER</div></div></div></section>
 
     <section id="how-it-works" class="section section-window shell" aria-labelledby="window-title">
       <div class="section-intro"><div><p class="eyebrow">A different kind of window management</p><h2 id="window-title">Your windows work <em>together.</em></h2></div><p>Keep every window independent. When a task grows, hold <kbd>Meta</kbd> + <kbd>Shift</kbd> and drag one window onto another. Drop in the middle for tabs or at an edge for a split. Move the resulting container as one.</p></div>
@@ -78,21 +104,8 @@
         </div>
       </div>
       <div class="feature-mini-grid"><article><span class="mini-icon">↗</span><h3>Opt in as you go</h3><p>Ordinary windows stay ordinary until you choose to group them.</p></article><article><span class="mini-icon">⌑</span><h3>Pages inside pages</h3><p>Mix tabs and recursive splits to fit the task in front of you.</p></article><article><span class="mini-icon">↩</span><h3>Take a window back</h3><p>Drag a member’s title strip out and it becomes independent again.</p></article></div>
-      <aside class="mascot-tip" id="pengu-tip" data-mood="split"><img src="assets/images/cyber-pengu-ducke.png" alt="" width="1360" height="1157" loading="lazy"><p><strong>Cyber Pengu’s field note</strong><span id="pengu-line" aria-live="polite">Drag to an edge: the windows share a frame and keep working side by side.</span></p></aside>
+      <aside class="mascot-tip" id="pengu-tip" data-mood="split"><img src="assets/images/cyber-pengu-ducke-point.webp" alt="" width="1360" height="1157" loading="lazy"><p><strong>Cyber Pengu’s field note</strong><span id="pengu-line" aria-live="polite">Drag to an edge: the windows share a frame and keep working side by side.</span></p></aside>
     </section>
-
-    <section id="layouts" class="section layout-section" aria-labelledby="layout-title"><div class="shell">
-      <div class="section-intro"><div><p class="eyebrow">The layout is yours to choose</p><h2 id="layout-title">A place for <em>every workflow.</em></h2></div><p>A top menu and dock, a compact taskbar, a side dock, or something quieter. Switch presets in Settings, then edit panels right where they live.</p></div>
-      <div class="layout-browser"><div class="layout-list" role="group" aria-label="Choose a layout preview">
-        <button type="button" class="active" data-layout="signature" data-image="profile-signature.webp" data-title="QindaQt" data-detail="The signature QindaQt arrangement." aria-pressed="true"><span>01</span><strong>QindaQt</strong><small>Signature</small></button>
-        <button type="button" data-layout="menu" data-image="profile-menu-dock.webp" data-title="Menu and Dock" data-detail="A menu bar on top and a dock below." aria-pressed="false"><span>02</span><strong>Menu and Dock</strong><small>Familiar</small></button>
-        <button type="button" data-layout="classic" data-image="profile-classic.webp" data-title="Classic Taskbar" data-detail="A familiar single taskbar for a classic flow." aria-pressed="false"><span>03</span><strong>Classic Taskbar</strong><small>Retro</small></button>
-        <button type="button" data-layout="centered" data-image="profile-centered.webp" data-title="Centered Taskbar" data-detail="A clean centered taskbar for a modern flow." aria-pressed="false"><span>04</span><strong>Centered Taskbar</strong><small>Modern</small></button>
-        <button type="button" data-layout="workspace" data-image="profile-workspace-dock.webp" data-title="Workspace Dock" data-detail="A right-edge dock that leaves the desktop open." aria-pressed="false"><span>05</span><strong>Workspace Dock</strong><small>Focused</small></button>
-        <button type="button" data-layout="corner" data-image="profile-corner-bar.webp" data-title="Corner Bar" data-detail="A compact corner panel with its own character." aria-pressed="false"><span>06</span><strong>Corner Bar</strong><small>Playful</small></button>
-      </div><figure class="layout-preview"><div class="preview-frame"><img id="layout-image" src="assets/images/profile-signature.webp" alt="Rendered QindaQt signature layout preview" width="1440" height="900" loading="lazy"></div><figcaption><span><strong id="layout-name">QindaQt</strong><small id="layout-detail">The signature QindaQt arrangement.</small></span><span class="preview-tag">Shell render · preview</span></figcaption></figure></div>
-      <p class="layout-footnote">QindaQt also ships Overview, Command Rail, Compact Flexible, Minimal, and Program Groups profiles. Presets can be saved as your own and restored later.</p>
-    </div></section>
 
     <section id="themes" class="section themes-section shell" aria-labelledby="theme-title"><div class="section-intro"><div><p class="eyebrow">Color has a point of view</p><h2 id="theme-title">Make it feel <em>like yours.</em></h2></div><p>Choose a theme, wallpaper, and fonts in Appearance. Preview before you apply. Panels, controls, window frames, and native apps follow the same visual language.</p></div>
       <div class="theme-feature"><div class="theme-scene"><img id="theme-image" src="assets/images/compile-club.webp" alt="Compile Club QindaQt wallpaper featuring Cyber Pengu and Ducke" width="1672" height="941" loading="lazy"><div class="theme-scene-caption"><span>WALLPAPER COLLECTION</span><strong id="theme-name">Compile Club</strong></div></div><div class="theme-side"><p class="stage-kicker">SIX BUNDLED WALLPAPERS</p><h3>From mineral calm to cyberpunk mischief.</h3><p>Click to change the scene. Pair it with Smoked Plum, Pearl, Velvet, High Contrast, Mist, Classic Blue, or the other shipped themes.</p><div class="wallpaper-choices" role="group" aria-label="Choose a wallpaper">
@@ -109,12 +122,12 @@
         <figure><img src="assets/images/theme-velvet.webp" alt="QindaQt shell rendered in the Velvet theme" width="1440" height="900" loading="lazy"><figcaption><i class="swatch swatch-velvet"></i>Velvet</figcaption></figure>
         <figure><img src="assets/images/theme-high-contrast.webp" alt="QindaQt shell rendered in the High Contrast theme" width="1440" height="900" loading="lazy"><figcaption><i class="swatch swatch-contrast"></i>High Contrast</figcaption></figure>
       </div></div>
-      <aside class="mascot-tip mascot-tip-ducke"><img src="assets/images/cyber-pengu-ducke.png" alt="" width="1360" height="1157" loading="lazy"><p><strong>Ducke’s pick</strong><span id="ducke-line" aria-live="polite">I brought the fan. He brought the coffee.</span></p></aside>
+      <aside class="mascot-tip mascot-tip-ducke"><img src="assets/images/cyber-pengu-ducke-react.webp" alt="" width="1360" height="1157" loading="lazy"><p><strong>Ducke’s pick</strong><span id="ducke-line" aria-live="polite">I brought the fan. He brought the coffee.</span></p></aside>
     </section>
 
     <section id="apps" class="section apps-section" aria-labelledby="apps-title"><div class="shell"><div class="section-intro"><div><p class="eyebrow">Made for the desktop they live on</p><h2 id="apps-title">The everyday tools <em>belong here.</em></h2></div><p>Start with the Welcome guide, find what you need in File Manager, and tune the experience in Settings. Text Editor, Terminal, Viewer, QindaMPV, and System Monitor round out the desktop.</p></div><div class="app-grid">
       <article class="app-card app-card-wide"><img src="assets/images/desktop-files.webp" alt="QindaQt File Manager showing the bundled wallpaper collection" width="1440" height="900" loading="lazy"><div><span>01 · FIND IT</span><h3>File Manager</h3><p>Your folders, desktop files, bookmarks, and applications in one native place.</p></div></article>
-      <article class="app-card"><img src="assets/images/desktop-settings.webp" alt="QindaQt Settings showing notification controls" width="1440" height="900" loading="lazy"><div><span>02 · MAKE IT YOURS</span><h3>System Settings</h3><p>Appearance, layouts, displays, sound, network, power, and more.</p></div></article>
+      <article class="app-card"><img src="assets/images/desktop-settings.webp" alt="QindaQt Settings showing layout presets and the Customize page" width="1440" height="900" loading="lazy"><div><span>02 · MAKE IT YOURS</span><h3>System Settings</h3><p>Appearance, layouts, displays, sound, network, power, and more.</p></div></article>
       <article class="app-card app-card-text"><div class="app-card-pattern" aria-hidden="true"><span>&lt;/&gt;</span><span>▣</span><span>▶</span><span>◫</span></div><div><span>03 · KEEP GOING</span><h3>More native tools</h3><p>Write plain text, work in a terminal, view images and PDFs, play media, and watch your system.</p></div></article>
     </div></div></section>
 

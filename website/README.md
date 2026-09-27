@@ -7,7 +7,7 @@ python3 -m http.server 8765 --directory website
 ```
 
 Open `http://localhost:8765/`. QindaOffice has its own nested page at
-`/office/`; later companion projects can add sibling directories while sharing
+`/office/`, and Audio1 has a deep dive at `/audio/`; later companion projects can add sibling directories while sharing
 `assets/base.css`, `assets/identity.css`, and the same header/footer pattern. There is no site build step,
 framework runtime, tracking script, or remote font request. The source links
 point to GitHub; installation is intentionally directed to each repository's
@@ -24,7 +24,11 @@ captions, and basic image/button markup.
   session and XDG configuration, data, cache, and Desktop directories under
   ignored `build/site-capture/`; it disables normal autostart. It never copies
   a capture of the owner's live desktop or personal files into the site.
-- `profile-*.webp` are deterministic renders from QindaQt's
+- `layout-live-*.webp` show five live profile captures, including Classic
+  Taskbar, Centered Taskbar, Corner Bar, Workspace Dock, and Program Groups.
+  The capture script starts Settings1 in the private session and selects each
+  profile's catalog default theme, color scheme, and paired wallpaper.
+  `profile-*.webp` are deterministic renders from QindaQt's
   `qindaqt-shell-preview` against this checkout's profile/theme catalogs.
   The site labels them “Shell render · preview” so they are not mistaken for
   live session screenshots. Source command pattern:
@@ -50,6 +54,12 @@ captions, and basic image/button markup.
   duck in black sunglasses and mechanical armor with the fan. Remove all
   workshop, server, floor, shadows beyond the characters, text, and props not
   carried by them. Keep clean edges. Do not redesign or add text.”
+- `cyber-pengu-ducke-point.webp` and `cyber-pengu-ducke-react.webp` are
+  additional generated key poses referenced to that cutout. They change beak,
+  flipper, expression, and Ducke's fan rather than moving an unchanged image.
+  The home hero and films sequence those poses; reduced-motion users see the
+  resting pose. The Compile Club source wallpaper and cutout were corrected so
+  the coffee mug handle is on the flipper's side.
 - The illustrated window arrangement on the home page is HTML/CSS, not a
   screenshot. It follows the handbook's documented tab/split/detach behavior.
 
@@ -81,7 +91,7 @@ live screenshots are the acceptance evidence.
 
 ## Narrated films
 
-`scripts/record-live.sh` drives the installed desktop and Office apps inside
+`scripts/record-live.sh` drives the installed desktop, Audio1 console, and Office apps inside
 a scenario-gated virtual QindaQt session. It uses the compositor's private
 development input interface to click, drag, and operate public sample files;
 it never sends input to the owner's desktop. It records frame sequences with
@@ -92,13 +102,16 @@ changes a cell in the XLSX budget so formulas recalculate, opens the workbook
 chart, advances the native slides with speaker notes, and changes notebook
 pages. The sample files are copied to `/tmp` before the recording and removed
 afterward.
+The Audio1 sequence navigates Settings' Devices, Mixer, output buses, and
+Other computers controls. Its illustration of the signal path on `/audio/`
+is labeled as a model; the film and screenshot show live controls.
 
 `scripts/render-live-videos.py` is the storyboard, narration, caption generator,
-and reproducible film edit. It overlays moving cutouts of Cyber Pengu and
-Ducke from the site's wallpaper-referenced mascot illustration. They respond
+and reproducible film edit. It sequences three wallpaper-matched key poses of
+Cyber Pengu and Ducke using the narration envelope. They respond
 to the work in every chapter; brief focus rings and speech cues point to real
 controls and outcomes. The app UI under them is live footage. WebVTT captions
-ship beside the two MP4s.
+ship beside the three MP4s.
 
 The character narration uses two contrasting [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M)
 voices (`bm_george` for Cyber Pengu and `am_puck` for Ducke), voiced with

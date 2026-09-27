@@ -251,6 +251,37 @@ def main() -> None:
         pause(1.1)
     app_scene("office-note", ["qindanote", "--new-instance", str(SAMPLE / "signal-garden-notes")], note)
 
+    def audio_devices() -> None:
+        move(846, 245)
+        pause(.8)
+        click(846, 245)  # Open the real Mixer tab from Devices.
+        pause(1.1)
+    app_scene("audio-devices", ["qindaqt-settings", "--page", "audio"], audio_devices)
+
+    def audio_mixer() -> None:
+        move(846, 245)
+        pause(.4)
+        click(846, 245)
+        pause(1.3)
+        move(1205, 623)
+        pause(.4)
+        inject([{"type": "pointer-axis", "axis": "vertical", "delta": 250.0}])
+        pause(1.1)
+        inject([{"type": "pointer-axis", "axis": "vertical", "delta": 250.0}])
+        pause(1.1)  # Follow the eight strips down to the physical and virtual buses.
+    app_scene("audio-mixer", ["qindaqt-settings", "--page", "audio"], audio_mixer)
+
+    def audio_peers() -> None:
+        move(1092, 245)
+        pause(.4)
+        click(1092, 245)  # Other computers is a separate Audio tab.
+        pause(1.4)
+        move(1205, 632)
+        pause(.4)
+        inject([{"type": "pointer-axis", "axis": "vertical", "delta": 180.0}])
+        pause(1.0)
+    app_scene("audio-peers", ["qindaqt-settings", "--page", "audio"], audio_peers)
+
 
 if __name__ == "__main__":
     main()

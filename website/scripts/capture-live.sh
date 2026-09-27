@@ -56,6 +56,15 @@ sleep 4
 capture() {
     local name=$1
     spectacle -b -n -f -o "$stage/images/$name.png" > "$stage/$name.log" 2>&1
+    if [[ $name == office-write ]]; then
+        # AGENT-GUARD: QindaWrite can map its window before the DOCX is painted.
+        # A blank page must never replace the published working-document still.
+        local minimum
+        minimum=$(ffmpeg -hide_banner -loglevel error -i "$stage/images/$name.png" \
+            -vf 'crop=580:480:420:340,signalstats,metadata=print:key=lavfi.signalstats.YMIN:file=-' \
+            -frames:v 1 -f null - 2>&1 | sed -n 's/^lavfi.signalstats.YMIN=//p' | head -1)
+        [[ -n $minimum && $minimum -lt 200 ]] || return 1
+    fi
     ffmpeg -hide_banner -loglevel error -y -i "$stage/images/$name.png" \
         -quality 82 "$repo/website/assets/images/$name.webp"
 }
@@ -65,7 +74,16 @@ show_app() {
     "$@" > "$stage/$name-app.log" 2>&1 &
     app=$!
     sleep 5
-    capture "$name"
+    if [[ $name == office-write ]]; then
+        local ready=0
+        for _ in {1..12}; do
+            if capture "$name"; then ready=1; break; fi
+            sleep 2
+        done
+        [[ $ready == 1 ]] || { echo 'QindaWrite document did not become visible' >&2; return 1; }
+    else
+        capture "$name"
+    fi
     kill "$app" 2>/dev/null || true
     wait "$app" 2>/dev/null || true
     app=''
