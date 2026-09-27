@@ -18,7 +18,7 @@ The source manifest pins one immutable upstream state:
 | Tag object | `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff` |
 | Commit | `9bf2235fad10de9048c634e376bf12e56b3023e6` |
 | Tree | `88f96f8cde49c51552d82f60fd461b6e8b950685` |
-| Current downstream patches | Zero |
+| Current downstream patches | One: subtract the QindaQt decoration's transparent title-tab cutout from KWin input |
 | KWin CMake target | `KWin::kwin`, found with version `6.6.6 EXACT` |
 | Plugin factory ABI/IID | `KWin::PluginFactory`, `org.kde.kwin.PluginFactoryInterface6.6.6` |
 
@@ -41,8 +41,9 @@ Pin checks are:
 ```
 
 The verifier also supports `--fetch NEW_DIRECTORY` and `--verify CHECKOUT`.
-Patch filenames and SHA-256 values become mandatory if the currently empty
-series gains entries. [ADR-0001](../adr/0001-use-kwin-as-compositor-base.md)
+The patch filename and SHA-256 are checked from
+`compositor/patches/series.json`. [ADR-0277](../adr/0277-theme-choice-and-corner-tab-input.md)
+records the corner-tab input contract. [ADR-0001](../adr/0001-use-kwin-as-compositor-base.md)
 records this maintenance model. Follow the [KWin upgrade
 procedure](../development/kwin-upgrades.md) for any patch-release change; the
 [release procedure](../development/releases.md) requires a fresh native build

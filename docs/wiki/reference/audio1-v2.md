@@ -161,6 +161,13 @@ than initiation. Once a mutation has been dispatched, timeout or authority loss
 returns `Uncertain`; clients refetch but never replay it. A late result for an
 old owner, request ID, epoch, revision, or operation kind is ignored or treated
 as malformed.
+For operations that name a console element, preset, or manual peer rather than
+a device handle, the service may have published a newer snapshot before it
+admits the request. The client accepts a non-regressing initiating revision
+within the same owner and epoch and still requires a non-regressing observed
+revision. Handle-targeting operations retain the exact initiating-revision
+fence. This distinction prevents a successful virtual-bus send from appearing
+as an uncertain change when a new PipeWire node arrives during the click.
 
 The public Qt client returns a nonzero request ID before it emits that request's
 completion. Local rejection, busy/unsupported classification, transport reply,

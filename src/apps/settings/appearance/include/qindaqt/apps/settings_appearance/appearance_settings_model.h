@@ -149,6 +149,10 @@ public:
     // Coerces and stores one draft field. Returns false without changing the
     // draft when the key is unknown or the value does not fit the field type.
     Q_INVOKABLE bool setDraftValue(const QString &key, const QVariant &value);
+    // One theme-card choice replaces the theme, its light/dark preference,
+    // and every window/container chrome override in the same draft change.
+    // Existing advanced edits remain possible after this choice.
+    Q_INVOKABLE bool selectTheme(const QString &themeId);
     // Discards the whole draft and returns to last confirmed values. Rejected
     // while a commit sequence is in flight so cancel cannot fake success.
     Q_INVOKABLE bool cancelDraft();
