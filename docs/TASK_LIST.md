@@ -5,6 +5,16 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 27 — Keep Settings responsive at FormRow's breakpoint
+
+Integrated `e39909ba`: `FormRow` chooses its responsive one/two-column layout
+from its stable visual container instead of feeding its own changing implicit
+width back into the breakpoint. This closes the live Voice/Appearance Settings
+freeze observed as a 358×49 ↔ 492×89 Qt Quick polish loop and adds a focused
+container/row-width mismatch regression. Controls behavior passes 1/1 and the
+416-document validator passes. Packaging and live installed verification are
+the remaining delivery steps.
+
 ## September 26 — Keep private desktops from disconnecting live dictation
 
 Integrated the independently reviewed session activation isolation repair

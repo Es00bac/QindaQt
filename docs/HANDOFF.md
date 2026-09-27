@@ -1,5 +1,26 @@
 # Integration handoff
 
+## September 27 — Physical-session repair and FormRow live-loop fix
+
+The qinda physical session exposed a shared `FormRow` polish loop: its
+one/two-column breakpoint read the row's own layout-dependent width, alternating
+between 358×49 and 492×89, consuming one CPU core and preventing Settings from
+answering compositor pings. Live Qt layout logging and debugger stacks pinned
+the loop to `FormRow`'s `contentItem`. Integrated commit `e39909ba` derives the
+breakpoint from the stable visual container, adds an explicit mismatched-width
+regression row, and updates the Controls contract. Focused Controls behavior is
+1/1 and `tools/validate-docs` validates 416 documents/navigation; MkDocs was not
+installed on the host.
+
+The same repair session installed QindaQt `0.1.0_pre20260927` at source
+`90e6b331`, QindaTK r12, and Gabbee `0.1.0_p20260926`; restarted every resident
+QindaQt service, reactivated Settings1/Voice1, reloaded the QindaQt decoration
+through Breeze, and restarted the shell under its supervisor. This restored the
+saved wallpaper/applets and loaded the duplicate-button fix. Overlay commit
+`07bf266` packages Gabbee's bounded watchdog system-wide instead of leaving it
+as laptop-only user configuration. The FormRow fix still requires the next
+desktop package revision recorded after this handoff.
+
 ## September 26 — Private session isolation and live dictation recovery
 
 Candidate `58d1e338` was independently accepted by reviewer `223e926f` and
