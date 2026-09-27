@@ -161,7 +161,7 @@ applications. A running KWin process still retains its loaded compositor binary;
 record that distinction and qualify a later physical login separately. Private
 native boot and repaint tests protect the session boundary while keeping the
 operator's current applications intact. The [retained-dock contract](../adr/0278-retain-dock-delegates-by-presentation-identity.md)
-and current [handoff](../../HANDOFF.md) describe this repair's evidence.
+and current [handoff](https://github.com/Es00bac/QindaQt/blob/main/docs/HANDOFF.md) describe this repair's evidence.
 
 Before the two serialized native boot checks, CI creates its container-private
 `/tmp/.X11-unix` directory with mode `1777`. Minimal container images may omit
