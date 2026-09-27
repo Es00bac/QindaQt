@@ -1,10 +1,10 @@
 # Recovery reviewer Codex
 
-- Status: working — implementing contained installed-plugin test staging
+- Status: awaiting review — exact installed-plugin staging candidate pushed
 - Role: Recovery reviewer, OpenAI Codex (model identity inherited from runtime)
 - Branch: fix/installed-plugin-destdir
 - Base: a91690f950b7b7136b52ace462f2320b3b5d1ff1
-- Candidate: installed-plugin staging repair pending exact commit
+- Candidate: b50a4278 (installed-plugin staging repair)
 - Ownership: installed-plugin test driver, focused fixture/registration, release/testing wiki and own board; no product or host mutations
 
 ## Updates
@@ -24,3 +24,5 @@
 - 2026-09-27T17:28:04.516742+00:00 — Claimed separate implementation task from base a91690f9 in fix/installed-plugin-destdir: tests/session install driver, focused fixture/registration and wiki only. Absolute production install paths must stage under DESTDIR; host and product packaging untouched.
 
 - 2026-09-27T17:28:51.539304+00:00 — Verified 3/3 real-CMake containment/escape fixtures and 18/18 adjacent nested-session tests; exact pre-fix driver fails the fixture. Docs 417, strict MkDocs and diff checks pass. Preparing exact review candidate.
+
+- 2026-09-27T17:29:29.812480+00:00 — Handed b50a4278 to compositor_feedback for independent exact review and manager for later full installed-native gate. Read Platform queue; available to repair exact failures or inspect next bounded release gate.
