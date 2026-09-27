@@ -1696,3 +1696,15 @@ name and a cancelled Extract), `qindaqt.file-manager-file-actions-ui`
 archive, the background and Trash, and each action from the catalog to its
 controller), and `qindaqt.settings-default-apps-mime-types` (the store's
 per-type reads and writes).
+
+### Live palette adoption
+
+The QindaTK file views re-read the owning ApplicationWindow's palette whenever
+`paletteChanged` fires. A cached map of roles is insufficient: Qt can replace
+an inherited application palette while the palette object retains its identity,
+leaving QML bindings through a `var` map stale. The view bridge therefore applies
+fresh background, text, muted, panel and selection roles on each notification,
+matching the stock Qt navigation chrome in both light and dark sessions.
+`qindaqt.file-manager-toolkit-palette` changes QGuiApplication's palette through
+repeated dark/light transitions and checks the file-view roles; explicit window
+color assignments alone do not reproduce this failure.

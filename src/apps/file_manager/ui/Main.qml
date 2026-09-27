@@ -485,7 +485,7 @@ ApplicationWindow {
     }
 
     ToolkitTheme {
-        palette: root.palette
+        window: root
     }
 
     WindowServices {
