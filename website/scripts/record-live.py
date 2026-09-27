@@ -8,10 +8,13 @@ never connects to the owner's desktop. PNG frames remain in ignored build/.
 from __future__ import annotations
 
 import json
+import math
 import os
+import struct
 import subprocess
 import threading
 import time
+import wave
 from pathlib import Path
 
 from demo_input import inject
@@ -20,6 +23,14 @@ from demo_input import inject
 ROOT = Path(__file__).resolve().parents[2]
 STAGE = ROOT / "build/site-capture/live"
 SAMPLE = Path(os.environ["QINDA_SHOWCASE_SAMPLES"])
+SETTINGS_BIN = os.environ.get("QINDA_SITE_SETTINGS_BIN", "qindaqt-settings")
+
+
+def selected(name: str) -> bool:
+    scene = os.environ.get("QINDA_SCENE", "")
+    return (not scene or scene == name
+            or (scene == "desktop-office" and not name.startswith("audio-"))
+            or (scene == "audio-set" and name.startswith("audio-")))
 
 
 def move(x: int, y: int) -> None:
@@ -98,7 +109,7 @@ class Capture:
 
 
 def app_scene(name: str, command: list[str], action) -> None:
-    if os.environ.get("QINDA_SCENE") and os.environ["QINDA_SCENE"] != name:
+    if not selected(name):
         return
     log = (STAGE / f"{name}-app.log").open("w")
     app = subprocess.Popen(command, stdout=log, stderr=log)
@@ -121,7 +132,7 @@ def app_scene(name: str, command: list[str], action) -> None:
 
 def main() -> None:
     STAGE.mkdir(parents=True, exist_ok=True)
-    if not os.environ.get("QINDA_SCENE") or os.environ["QINDA_SCENE"] == "desktop-welcome":
+    if selected("desktop-welcome"):
         with Capture("desktop-welcome"):
             move(367, 329)
             pause(.45)
@@ -160,7 +171,7 @@ def main() -> None:
         pause(.75)
     app_scene("desktop-files", ["qindaqt-file-manager", "/usr/share/qindaqt/wallpapers"], files)
 
-    if not os.environ.get("QINDA_SCENE") or os.environ["QINDA_SCENE"] == "desktop-windows":
+    if selected("desktop-windows"):
         logs = [(STAGE / f"desktop-windows-{name}.log").open("w")
                 for name in ("files", "settings")]
         apps = [subprocess.Popen(["qindaqt-file-manager", "/usr/share/qindaqt/wallpapers"],
@@ -218,7 +229,16 @@ def main() -> None:
         move(555, 677)  # Project balance, visibly recalculated.
         pause(.45)
         click(555, 677)
+        pause(.8)
+        click(452, 357)  # The experiment breaches the $8,600 ceiling.
         pause(.5)
+        paste("1")
+        move(239, 126)
+        pause(.4)
+        click(239, 126)  # Revert to the affordable plan before the pitch.
+        pause(1.2)
+        move(555, 677)
+        pause(.6)
     app_scene("office-calc", ["qindacalc", "--new-instance", str(SAMPLE / "signal-garden-budget.xlsx")], calc)
 
     def chart() -> None:
@@ -256,20 +276,54 @@ def main() -> None:
         pause(.8)
         click(846, 245)  # Open the real Mixer tab from Devices.
         pause(1.1)
-    app_scene("audio-devices", ["qindaqt-settings", "--page", "audio"], audio_devices)
+    app_scene("audio-devices", [SETTINGS_BIN, "--page", "audio"], audio_devices)
 
     def audio_mixer() -> None:
         move(846, 245)
         pause(.4)
         click(846, 245)
         pause(1.3)
+        with (STAGE / "private-audio-graph.json").open("w") as graph:
+            subprocess.run(["pw-dump"], stdout=graph, check=True)
         move(1205, 623)
         pause(.4)
-        inject([{"type": "pointer-axis", "axis": "vertical", "delta": 250.0}])
+        inject([{"type": "pointer-axis", "axis": "vertical", "delta": 100.0}])
         pause(1.1)
-        inject([{"type": "pointer-axis", "axis": "vertical", "delta": 250.0}])
-        pause(1.1)  # Follow the eight strips down to the physical and virtual buses.
-    app_scene("audio-mixer", ["qindaqt-settings", "--page", "audio"], audio_mixer)
+        # A known low-level tone enters a real Audio1 virtual input in the
+        # private PipeWire server. Its meter and the B1 bus must rise only
+        # after the on-camera send is enabled; no hardware route is touched.
+        tone = STAGE / "routing-tone.wav"
+        with wave.open(str(tone), "wb") as output:
+            output.setnchannels(2)
+            output.setsampwidth(2)
+            output.setframerate(48_000)
+            frames = bytearray()
+            for sample in range(48_000 * 9):
+                value = round(4200 * math.sin(2 * math.pi * 440 * sample / 48_000))
+                frames.extend(struct.pack("<hh", value, value))
+            output.writeframes(frames)
+        player = subprocess.Popen(["pw-play", "--target",
+                                   "qindaqt.console.strip.virtual.1", str(tone)],
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            pause(.9)
+            move(663, 330)
+            pause(.4)
+            click(663, 330)  # Virtual Input -> B1, a real saved matrix send.
+            pause(1.8)
+            with (STAGE / "private-audio-routed-graph.json").open("w") as graph:
+                subprocess.run(["pw-dump"], stdout=graph, check=True)
+            move(1205, 623)
+            inject([{"type": "pointer-axis", "axis": "vertical", "delta": 150.0}])
+            pause(2.0)  # Follow the live signal down to its virtual bus.
+        finally:
+            player.terminate()
+            try:
+                player.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                player.kill()
+                player.wait()
+    app_scene("audio-mixer", [SETTINGS_BIN, "--page", "audio"], audio_mixer)
 
     def audio_peers() -> None:
         move(1092, 245)
@@ -280,7 +334,7 @@ def main() -> None:
         pause(.4)
         inject([{"type": "pointer-axis", "axis": "vertical", "delta": 180.0}])
         pause(1.0)
-    app_scene("audio-peers", ["qindaqt-settings", "--page", "audio"], audio_peers)
+    app_scene("audio-peers", [SETTINGS_BIN, "--page", "audio"], audio_peers)
 
 
 if __name__ == "__main__":

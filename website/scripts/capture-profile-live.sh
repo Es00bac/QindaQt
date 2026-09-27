@@ -6,15 +6,19 @@ cd "$repo"
 profile=${1:?Usage: capture-profile-live.sh profile-id}
 [[ $profile =~ ^[a-z0-9-]+$ && -f data/profiles/$profile.json ]]
 if [[ ${QINDA_SITE_INNER:-} != 1 ]]; then
-    QINDA_SITE_INNER=1 dbus-run-session -- bash "$0" "$profile"
+    QINDA_SITE_INNER=1 dbus-run-session -- bash "$0" "$profile" "${2:-}"
     exit
 fi
-theme=$(python3 - "$profile" <<'PY'
+paired_theme=$(python3 - "$profile" <<'PY'
 import json, sys
 from pathlib import Path
 print(json.loads((Path('data/profiles') / f'{sys.argv[1]}.json').read_text())['defaultTheme'])
 PY
 )
+theme=${2:-$paired_theme}
+[[ $theme =~ ^[a-z0-9-]+$ ]]
+theme_source=${QINDA_SITE_THEME_SOURCE:-$repo/data/themes}
+[[ -f "$theme_source/$theme.json" ]]
 stage="$repo/build/site-capture/profile-live-$profile"
 mkdir -p "$stage"
 run_dir=$(mktemp -d "$repo/build/site-capture/profile-run.XXXXXX")
@@ -29,6 +33,8 @@ cleanup() {
 }
 trap cleanup EXIT
 mkdir -p "$run_dir/config" "$run_dir/data" "$run_dir/cache" "$run_dir/state" "$run_dir/Desktop"
+mkdir -p "$run_dir/data/qindaqt/themes"
+cp "$theme_source/$theme.json" "$run_dir/data/qindaqt/themes/$theme.json"
 export XDG_CONFIG_HOME="$run_dir/config" XDG_DATA_HOME="$run_dir/data"
 export XDG_CACHE_HOME="$run_dir/cache" XDG_STATE_HOME="$run_dir/state"
 export XDG_CURRENT_DESKTOP=QindaQt
@@ -36,18 +42,23 @@ printf 'XDG_DESKTOP_DIR="%s"\n' "$run_dir/Desktop" > "$run_dir/config/user-dirs.
 # AGENT-CONTRACT: A layout preset does not change the saved appearance.
 # Seed the documented paired theme and a fitting bundled wallpaper in this
 # private Settings1 store, so each capture demonstrates the complete look.
-python3 - "$profile" "$theme" "$run_dir/config/qindaqt/settings-v2.json" <<'PY'
+python3 - "$profile" "$theme" "$theme_source" "$run_dir/config/qindaqt/settings-v2.json" <<'PY'
 import json, sys
 from pathlib import Path
-profile, theme, target = sys.argv[1:]
+profile, theme, theme_source, target = sys.argv[1:]
 wallpapers = {
     'qinda-bliss': 'qinda-bliss',
     'windows-modern': 'porcelain-dawn',
     'beos-inspired': 'porcelain-dawn',
     'nextstep-inspired': 'ink-tide',
     'win31-inspired': 'qinda-bliss',
+    'macos-inspired': 'jade-fold',
+    'gnome-inspired': 'ink-tide',
+    'unity-inspired': 'qinda-punk',
+    'xfce-inspired': 'porcelain-dawn',
+    'minimal': 'ink-tide',
 }
-variant = json.loads((Path('data/themes') / f'{theme}.json').read_text())['variant']
+variant = json.loads((Path(theme_source) / f'{theme}.json').read_text())['variant']
 values = {'appearance.theme': theme,
           'appearance.colorScheme': 'light' if variant == 'light' else 'dark',
           'appearance.wallpaper': f"qindaqt:{wallpapers.get(profile, 'compile-club')}",
@@ -67,7 +78,11 @@ exec qindaqt-session --no-autostart --no-polkit-agent --no-powerdevil \
 EOF
 chmod +x "$run_dir/session.sh"
 socket="qinda-site-profile-$$"
-qindaqt-wm --virtual --socket "$socket" --width 1440 --height 900 \
+plugin_args=()
+if [[ -n ${QINDA_SITE_PLUGIN_ROOT:-} ]]; then
+    plugin_args=(--plugin-root "$QINDA_SITE_PLUGIN_ROOT")
+fi
+qindaqt-wm "${plugin_args[@]}" --virtual --socket "$socket" --width 1440 --height 900 \
     --no-lockscreen --no-global-shortcuts --session "$run_dir/session.sh" \
     > "$stage/wm.log" 2>&1 &
 wm=$!
@@ -83,4 +98,4 @@ app=$!
 sleep 3
 spectacle -b -n -f -o "$stage/capture.png" > "$stage/spectacle.log" 2>&1
 ffmpeg -hide_banner -loglevel error -y -i "$stage/capture.png" \
-    -quality 82 "$repo/website/assets/images/layout-live-$profile.webp"
+    -quality 82 "$repo/website/assets/images/layout-live-$profile${2:+-$theme}.webp"
