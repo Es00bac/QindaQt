@@ -7,11 +7,18 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## September 27 — Add custom wallpapers through a user folder
 
-Active focused repair: the image chooser must copy a selected image into a
-user-configurable wallpaper folder, show it in the gallery and expose an
-obvious action to apply it. Preserve source files, existing bundled choices,
-and Settings1 Apply/Revert semantics. Delivery must use the same reviewed
-source and Portage package on qinda and qinda-top.
+Delivered source `26ea670b` through overlay `3fc245c`, signed desktop r5,
+on both qinda and qinda-top. **Add image…** safely copies the chosen file to
+Pictures/Wallpapers (or the folder selected with **Choose folder…**), adds it
+to the live gallery and selects its draft. **Set wallpaper** applies through
+the existing Settings1 boundary; source files and existing bundled choices
+are preserved. External file additions/removals refresh the gallery.
+
+Independent source/archive review, focused native checks, matching installed
+artifacts, package integrity and all 21 actual installed Settings routes plus
+Wallpaper destination checks pass on both hosts. Reopen Settings for this
+update; no desktop restart is required. See the
+[delivery record](HANDOFF.md#september-27--user-folder-wallpaper-gallery).
 
 ## September 27 — Keep aged sessions responsive and recover core services on both hosts
 

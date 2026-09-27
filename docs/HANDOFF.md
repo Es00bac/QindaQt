@@ -5,7 +5,16 @@
 Source `26ea670bf6892c456758c0e4845b9f86c57fb85f` integrates independently
 reviewed candidate `4d229a8d` (production from `fa90f55e`). QindaGentoo
 `3fc245c` pins this source as desktop `0.1.0_pre20260927-r5`; source and overlay
-are pushed to qinda hubs and public remotes. Installation verification is underway.
+are pushed to qinda hubs and public remotes. Both hosts installed r5 through
+Portage: workstation built the signed binary; laptop consumed it. Both verify
+1,642/1,642 package files. Installed Settings executable, compiled Appearance
+library and both changed QML files match byte for byte; Settings SHA256 is
+`08c73bdabb947080b7210804585e247051fcf6f3eec842b58679704cf949ffdf`.
+All 21 actual installed Settings routes plus the explicit Wallpaper destination
+construct without QML warnings under isolated buses on both hosts. All nine
+checked resident service endpoints remain present, watchdog timers active,
+and report queues empty. No session or existing application was restarted.
+Reopen Settings to load the updated chooser; a logout is unnecessary.
 
 The native FileDialog accepted handler previously called `toLocalFile()` on a
 QML URL, preventing selection. It now passes the QUrl to a small Appearance-owned
