@@ -175,6 +175,21 @@ Item {
     // compositor with captures.
     property int previewIndex: -1
     property string previewTaskId: ""
+    property string previewWindowId: ""
+    onTaskRowsChanged: {
+        if (previewIndex < 0)
+            return
+        // Retained delegates can move while a preview is open. Follow the
+        // same identity, never the row that inherited its previous index.
+        const index = taskRows.findIndex(row => String(row.taskId) === previewTaskId
+            && String(row.windowId ?? "") === previewWindowId)
+        if (index < 0) {
+            closePreview()
+        } else {
+            previewIndex = index
+            previewTitle = String(taskRows[index].accessibleName)
+        }
+    }
     property int previewToken: 0
     property string previewTitle: ""
     readonly property bool previewVisible: previewIndex >= 0
@@ -203,6 +218,7 @@ Item {
         }
         previewIndex = index
         previewTaskId = String(rows[index].taskId)
+        previewWindowId = String(rows[index].windowId ?? "")
         previewTitle = String(rows[index].accessibleName)
         previewToken = 0
         previewPopup.open()
@@ -228,6 +244,7 @@ Item {
         previewPopup.close()
         previewIndex = -1
         previewTaskId = ""
+        previewWindowId = ""
         previewToken = 0
         previewTitle = ""
         previewRefresh.stop()
@@ -423,13 +440,16 @@ Item {
 
         Repeater {
             id: entryRepeater
-            model: root.stripVisible ? root.taskRows : []
+            model: KeyedRowModel {
+                identityRoles: ["taskId", "windowId"]
+                sourceRows: root.stripVisible ? root.taskRows : []
+            }
 
             delegate: TaskListEntryButton {
-                required property var modelData
+                required property var rowData
                 required property int index
 
-                entry: modelData
+                entry: rowData
                 access: root.access
                 dockAccess: root.dockAccess
                 vertical: root.vertical

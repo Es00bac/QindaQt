@@ -114,3 +114,19 @@ The focused checks are the desktop-controls unit, composition, offscreen QML,
 workspace transport, resolver/catalog, and boundary rows. These rows prove
 compiled presentation and injected-facade behavior; they do not qualify a
 physical display, host compositor, or hardware service.
+
+## Stable dock updates
+
+Quick Launch publishes `presentationId` from each stored item kind and its
+application id or path, with a fixed Trash identity. Groups use their first
+stored application, which is globally unique in the dock. The compiled strip
+uses the TaskList applet's public `KeyedRowModel` to update row data and move,
+insert, or remove individual tiles. Running-state updates and app launches no
+longer rebuild unchanged tiles or interrupt their focus/hover animations.
+A group rename/reorder retains its tile; replacing its first member can replace
+that group. No new dock persistence field is introduced.
+
+New dock tiles use a short token-duration opacity fade; reduced motion makes
+this immediate. Removed delegates retire immediately, and the animation never
+changes layout sizes or input targets. The shared presentation contract is
+[ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md).

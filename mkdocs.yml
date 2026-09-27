@@ -434,3 +434,4 @@ nav:
       - "ADR-0275: QindaLutris installs Windows games and manages pinned Proton builds": adr/0275-qindalutris-installs-games-and-manages-pinned-proton.md
       - "ADR-0276: Isolate private desktops from host activation": adr/0276-isolate-private-desktops-from-host-activation.md
       - "ADR-0277: One theme choice and a real corner-tab input cutout": adr/0277-theme-choice-and-corner-tab-input.md
+      - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md

@@ -74,6 +74,8 @@ LauncherPersistenceController::LauncherPersistenceController(SettingsClient &cli
           this, &LauncherPersistenceController::handleUncertain);
   connect(&m_client, &SettingsClient::stateChanged,
           this, &LauncherPersistenceController::handleClientState);
+  connect(&m_client, &SettingsClient::ownerChanged,
+          this, &LauncherPersistenceController::handleClientState);
   handleSnapshot();
   handleClientState();
 }
@@ -183,10 +185,17 @@ void LauncherPersistenceController::handleUncertain(const QString &message)
 
 void LauncherPersistenceController::handleClientState()
 {
-  if (m_client.state() != ClientState::Ready) {
-    // AGENT-GUARD: Pinned/recent identities are Settings1-owner truth. Keeping
-    // them whenever the client lacks Ready authority would let an owner loss,
-    // replacement, or malformed resync preserve stale presentation state.
+  const auto &snapshot = m_client.snapshot();
+  const bool sameOwner = snapshot && !m_client.currentOwner().isEmpty()
+      && snapshot->owner == m_client.currentOwner();
+  const bool refreshingConfirmedOwner = m_confirmedBaseline && sameOwner
+      && m_client.state() == ClientState::Authenticating;
+  // AGENT-GUARD: A validated commit enters Authenticating for its same-owner
+  // snapshot refresh. Retain display values through that gap, with edits
+  // disabled by persistenceReady(). Owner replacement/loss (even while still
+  // Authenticating), malformed replies and transport failures revoke them.
+  // SettingsClient validates the retained epoch/revision on the fresh reply.
+  if (!sameOwner || (m_client.state() != ClientState::Ready && !refreshingConfirmedOwner)) {
     clearAuthoritativeTruth();
   }
   if (m_client.state() == ClientState::Unavailable && !writeInFlight()

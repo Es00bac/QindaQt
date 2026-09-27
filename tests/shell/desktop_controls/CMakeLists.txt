@@ -175,3 +175,6 @@ add_test(
 )
 set_tests_properties(qindaqt.desktop-controls-boundary
     PROPERTIES LABELS "shell;desktop-controls;policy")
+
+qindaqt_add_desktop_controls_qml_test(qindaqt_dock_retained_delegate_tests
+    tst_dock_retained_delegates.cpp qindaqt.desktop-controls-dock-retained-delegates)

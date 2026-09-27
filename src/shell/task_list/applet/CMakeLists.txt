@@ -17,6 +17,7 @@ add_library(QindaQt::ShellTaskListApplet ALIAS qindaqt_shell_task_list_applet)
 target_sources(
     qindaqt_shell_task_list_applet
     PRIVATE
+        src/keyed_row_model.cpp
         src/task_list_applet_types.cpp
         src/task_list_applet_projection.cpp
         src/task_list_applet_operation_bridge.cpp
@@ -29,6 +30,7 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/shell/task_list/applet/keyed_row_model.h
             include/qindaqt/shell/task_list/applet/task_list_applet_types.h
             include/qindaqt/shell/task_list/applet/task_list_applet_projection.h
             include/qindaqt/shell/task_list/applet/task_list_applet_operation_port.h
@@ -37,6 +39,8 @@ target_sources(
             include/qindaqt/shell/task_list/applet/task_list_preview_provider.h
             include/qindaqt/shell/task_list/applet/task_list_applet_controller.h
 )
+target_include_directories(qindaqt_shell_task_list_applet PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/qindaqt/shell/task_list/applet")
 qt_add_qml_module(
     qindaqt_shell_task_list_applet
     URI QindaQt.Shell.TaskList

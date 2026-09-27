@@ -437,3 +437,9 @@ Settings1 OBS preferences and confirmed-write state. Settings Streaming and
 the shell OBS applet consume this service; neither reaches into the other's
 UI or private composition. The installed OBS login helper consumes the same
 read-only baseline and is started solely by session autostart (ADR-0248).
+
+The TaskList applet's `KeyedRowModel` is a GUI-thread presentation adapter over
+bounded row snapshots. DesktopControls consumes it through its existing public
+TaskList applet dependency; both controllers retain domain policy and intent
+fencing. The adapter owns only copied row data and incremental model signals
+([ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md)).
