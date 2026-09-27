@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include "session_activation_policy.h"
 
 #include <QString>
 #include <QStringList>
 #include <QtDBus/QDBusConnection>
 
 namespace QindaQt::SessionSupervisor {
+// AGENT-GUARD: Private scope (the default) never mutates the shared broker or
+// user manager without an explicit hermetic endpoint. Only the witnessed
+// physical compositor may use the native host manager. See compositor-session
+// wiki, "Private desktop isolation". Private harnesses own broker setup.
+
 
 // How a session-supervisor call reaches the systemd user manager.
 //
@@ -45,7 +51,8 @@ struct SystemdManagerRoute {
 // actually registered, so a private-bus session never triggers a spurious
 // second-user-manager activation.
 [[nodiscard]] SystemdManagerRoute resolveSystemdManagerRoute(
-    const QDBusConnection &sessionBus, const QString &privateSocketPath = {});
+    const QDBusConnection &sessionBus, const QString &privateSocketPath = {},
+    SessionActivationScope scope = SessionActivationScope::Private);
 
 // Sends org.freedesktop.systemd1.Manager.SetEnvironment(assignments) through
 // sd-bus on the given route address (or the manager's default endpoint when

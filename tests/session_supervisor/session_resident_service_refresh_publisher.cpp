@@ -12,16 +12,20 @@ int main(int argc, char **argv)
     // Optional leading `--socket <path>`: explicit systemd private-socket
     // path for the hermetic lane; everything else stays unit names, exactly
     // like the session supervisor call.
+    using QindaQt::SessionSupervisor::SessionActivationScope;
+    auto scope = SessionActivationScope::PhysicalDesktop;
     QString socketPath;
     QStringList unitNames;
     for (int i = 1; i < argc; ++i) {
         const QString arg = QString::fromLocal8Bit(argv[i]);
         if (arg == QStringLiteral("--socket") && i + 1 < argc) {
             socketPath = QString::fromLocal8Bit(argv[++i]);
+        } else if (arg == QStringLiteral("--private")) {
+            scope = SessionActivationScope::Private;
         } else {
             unitNames.append(arg);
         }
     }
     return QindaQt::SessionSupervisor::refreshResidentServices(
-        QDBusConnection::sessionBus(), unitNames, socketPath) ? 0 : 3;
+        QDBusConnection::sessionBus(), unitNames, socketPath, scope) ? 0 : 3;
 }

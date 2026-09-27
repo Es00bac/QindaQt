@@ -4020,3 +4020,13 @@ the chosen private output; neither process changes the live desktop graph
 or uses real user media. Record sender/receiver exit codes and packet/PCM
 evidence separately. This proves transport and private graph routing,
 not physical speaker audibility or a Settings UI walkthrough.
+
+### Private session activation setup
+
+Private and nested `qindaqt-session` processes do not publish activation variables
+or refresh the shared user manager's resident services. A harness that requires
+D-Bus activation must configure its own broker with its private display/socket
+environment before activating consumers. Sharing the real session bus does not
+grant a virtual compositor permission to change its activation environment.
+See [Private desktop isolation](../architecture/compositor-session.md#private-desktop-isolation)
+for the physical-compositor witness and focused regression gates.

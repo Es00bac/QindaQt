@@ -7,6 +7,9 @@ int main(int argc, char **argv) {
     // empty means the computed default, exactly like the session supervisor.
     const QString socketPath = argc > 1 ? QString::fromLocal8Bit(argv[1]) : QString();
     QindaQt::SessionSupervisor::publishActivationEnvironment(
-        QDBusConnection::sessionBus(), QProcessEnvironment::systemEnvironment(), socketPath);
+        QDBusConnection::sessionBus(), QProcessEnvironment::systemEnvironment(), socketPath,
+        argc > 2 && QString::fromLocal8Bit(argv[2]) == QStringLiteral("--private")
+            ? QindaQt::SessionSupervisor::SessionActivationScope::Private
+            : QindaQt::SessionSupervisor::SessionActivationScope::PhysicalDesktop);
     return 0;
 }

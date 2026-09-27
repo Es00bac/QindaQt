@@ -98,8 +98,13 @@ sd_bus *openManagerBus(const QString &address, const bool requiresBusHello)
 } // namespace
 
 SystemdManagerRoute resolveSystemdManagerRoute(const QDBusConnection &sessionBus,
-                                               const QString &privateSocketPath)
+                                               const QString &privateSocketPath,
+                                               const SessionActivationScope scope)
 {
+    // AGENT-GUARD: a separate broker does not isolate the native user manager.
+    // Virtual desktops must never redirect or restart the physical desktop.
+    if (scope == SessionActivationScope::Private && privateSocketPath.isEmpty())
+        return {SystemdManagerRoute::Kind::Unavailable, {}};
     const QString socketPath = privateSocketPath.isEmpty()
         ? QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)
               + QStringLiteral("/systemd/private")
@@ -109,6 +114,8 @@ SystemdManagerRoute resolveSystemdManagerRoute(const QDBusConnection &sessionBus
                 QStringLiteral("unix:path=") + socketPath,
                 !privateSocketPath.isEmpty()};
     }
+    if (scope == SessionActivationScope::Private)
+        return {SystemdManagerRoute::Kind::Unavailable, {}};
     // AGENT-GUARD: use the session-bus name only when a manager actually owns
     // it; on a private (dbus-run-session) bus the name is unowned and a call
     // would activate /usr/share/dbus-1's second-user-manager entry, which

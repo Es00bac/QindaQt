@@ -94,9 +94,11 @@ QStringList residentServiceRefreshUnits()
 
 bool refreshResidentServices(const QDBusConnection &bus,
                              const QStringList &unitNames,
-                             const QString &systemdPrivateSocketPath)
+                             const QString &systemdPrivateSocketPath,
+                                  const SessionActivationScope scope)
 {
-    const SystemdManagerRoute route = resolveSystemdManagerRoute(bus, systemdPrivateSocketPath);
+    if (scope == SessionActivationScope::Private && systemdPrivateSocketPath.isEmpty()) return true;
+    const SystemdManagerRoute route = resolveSystemdManagerRoute(bus, systemdPrivateSocketPath, scope);
     bool audioSafeToProceed = true;
     for (const QString &unitName : unitNames) {
         if (unitName.isEmpty()) continue;

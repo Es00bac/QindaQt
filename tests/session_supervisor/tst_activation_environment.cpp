@@ -64,6 +64,34 @@ struct PrivateManagerBus {
 class ActivationEnvironmentTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void privateSessionCannotPublishToTheSharedManager() {
+        auto bus = QDBusConnection::sessionBus();
+        UserManager manager;
+        QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QProcess monitor;
+        monitor.start(QStringLiteral("dbus-monitor"),
+                      {QStringLiteral("--session"),
+                       QStringLiteral("type='method_call',interface='org.freedesktop.DBus',member='UpdateActivationEnvironment'")});
+        QVERIFY(monitor.waitForStarted());
+        // dbus-monitor emits its initial name signal after the monitor
+        // subscription is active, before the publisher is allowed to start.
+        QVERIFY(monitor.waitForReadyRead(3000));
+        QProcess publisher;
+        publisher.start(QStringLiteral(QINDAQT_ACTIVATION_PUBLISHER),
+                        {QString{}, QStringLiteral("--private")});
+        QVERIFY(publisher.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(publisher.state() == QProcess::NotRunning, 6000);
+        QCOMPARE(publisher.exitCode(), 0);
+        QVERIFY(manager.assignments.isEmpty());
+        QTest::qWait(100);
+        monitor.terminate();
+        QVERIFY(monitor.waitForFinished(3000));
+        QVERIFY(!monitor.readAllStandardOutput().contains("member=UpdateActivationEnvironment"));
+        bus.unregisterObject(QStringLiteral("/org/freedesktop/systemd1"));
+        bus.unregisterService(QStringLiteral("org.freedesktop.systemd1"));
+    }
+
     void exportsCurrentDesktopBeforeConsumersStart() {
         auto bus = QDBusConnection::sessionBus();
         QVERIFY(bus.isConnected());
@@ -115,7 +143,7 @@ private Q_SLOTS:
         QVERIFY(managerBus.bind());
 
         QProcess publisher;
-        publisher.start(QStringLiteral(QINDAQT_ACTIVATION_PUBLISHER), {managerBus.socket});
+        publisher.start(QStringLiteral(QINDAQT_ACTIVATION_PUBLISHER), {managerBus.socket, QStringLiteral("--private")});
         QVERIFY(publisher.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(publisher.state() == QProcess::NotRunning, 6000);
         QCOMPARE(publisher.exitCode(), 0);
