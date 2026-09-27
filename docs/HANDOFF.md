@@ -1,5 +1,31 @@
 # Integration handoff
 
+## September 27 — User-folder wallpaper gallery
+
+Source `26ea670bf6892c456758c0e4845b9f86c57fb85f` integrates independently
+reviewed candidate `4d229a8d` (production from `fa90f55e`). QindaGentoo
+`3fc245c` pins this source as desktop `0.1.0_pre20260927-r5`; source and overlay
+are pushed to qinda hubs and public remotes. Installation verification is underway.
+
+The native FileDialog accepted handler previously called `toLocalFile()` on a
+QML URL, preventing selection. It now passes the QUrl to a small Appearance-owned
+catalog, copies validated images without overwriting source/collisions, selects
+the copied absolute path in the shared draft, and exposes **Set wallpaper**.
+The gallery combines bundled choices with a configurable Pictures/Wallpapers
+folder. Directory notifications and Refresh reflect external changes; the folder
+preference is local, and Apply/Revert still owns the actual wallpaper setting.
+See [ADR-0279](wiki/adr/0279-keep-custom-wallpapers-in-a-user-folder.md).
+
+Verification: native Settings and all affected Appearance targets build; all
+12 selected Appearance, shell preference/controller and installed Settings route
+CTest rows have passing evidence. The new dialog test exercises a URL with
+spaces, # and Unicode, import, custom-card reselection and rejected-image draft
+preservation. Two test-only fixture corrections use the actual visual delegate
+tree and a selectable malformed file (Qt refuses nonexistent dialog selections).
+The final page rerun passes in 0.82 seconds. Catalog tests independently pass
+5/5; 418-document validation and strict MkDocs pass. No shell/compositor product
+code changes or physical session restart are part of this delivery.
+
 ## September 27 — Delivered long-session performance and recovery repair
 
 The user reports progressively degraded dock animations (worst on the older
