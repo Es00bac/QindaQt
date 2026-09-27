@@ -24,13 +24,14 @@ DecorationChrome chromeFor(const QString &buttons, qreal radius, qreal opacity =
     chrome.shadowOpacity = opacity;
     return chrome;
 }
-QImage render(const DecorationChrome &chrome, qreal scale = 1.0)
+QImage render(const DecorationChrome &chrome, qreal scale = 1.0,
+              const QString &caption = QStringLiteral("Short"))
 {
     AppearanceWindowPreview item;
     item.setWidth(640);
     item.setHeight(400);
     item.setShowInactiveWindow(false);
-    item.setCaption(QStringLiteral("Short"));
+    item.setCaption(caption);
     item.setChrome(chrome.toVariantMap());
     item.setCanvas(QColor("#ee88ee"));
     item.setToolkitPalette({{QStringLiteral("window"), QColor("#dddddd")}});
@@ -81,9 +82,9 @@ private slots:
         QVERIFY(sample(render(chrome), 430, 99) != QColor("#ee88ee"));
         chrome.titleOpacity = 0;
         chrome.titleHighlight = false;
-        chrome.titleTint = {};
+        chrome.titleTint = QColor();
         // An invisible material must reveal the canvas, not the client fill.
-        QCOMPARE(sample(render(chrome), 230, 100), QColor("#ee88ee"));
+        QCOMPARE(sample(render(chrome, 1.0, QString{}), 350, 100), QColor("#ee88ee"));
     }
 };
 QTEST_MAIN(AppearanceWindowSilhouetteTest)
