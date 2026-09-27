@@ -50,7 +50,10 @@ Q_SIGNALS:
 
 private:
     void track(KWin::LayerSurfaceV1Interface *surface);
+    void refreshPanelOwner();
+    void retireClient();
     QList<QPointer<KWin::LayerSurfaceV1Interface>> m_surfaces;
+    std::optional<qint64> m_lastPublishedOwner;
 };
 
 class KWinShellWindowRegistry final : public ShellWindowRegistry
