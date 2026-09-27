@@ -1,7 +1,7 @@
 # Shell performance Codex
 
 - Role: Shell performance implementer
-- Status: available — read-only orphan audit handed off; ready for bounded integration regression help
+- Status: working — investigating remaining workstation icon canonicalization hotspot after installed shell reload
 - Base: `64ae95c336c03a2de54775962ff42622fae1d156`
 - Worktree: `/home/cabewse/work_space/container-wm-performance-worker`
 - Branch: `fix/shell-icon-performance`
@@ -26,3 +26,7 @@
 - 2026-09-27T11:21:24-06:00 — Claimed bounded manager audit of PPID1 portal processes on laptop and old Weston on qinda. Read-only process/selected-environment/socket/memory inspection; no termination, live-session changes, or shared build mutation authorized.
 
 - 2026-09-27T11:26:37-06:00 — Audited 18 same-identity dead private-bus portal backends, mapped site-capture log origins, quantified PSS/private/swap without attributing dock degradation. Evidence retained in ignored build/orphan-audit.json; Weston left untouched because listener/host bus remain live. Website child-lifetime gap reported separately; no product or process mutations.
+
+- 2026-09-27T11:37:28-06:00 — Claimed remaining workstation shell hotspot; manager measured laptop improvement but qinda still 80.9% CPU. Preserved worker history and merged exact origin/main 83717eaf; tracing icon projection callers pending symbolized live stack, no live process/build mutations.
+
+- 2026-09-27T11:41:11-06:00 — Locator metadata-first repair passes four compiled icon rows (73 QtTest cases), strict docs and 417 links. Fortified-realpath counter over 1,000 missing queries/649 real theme directories: parent 3,900,003 calls, 35,514 ms; fixed 3 calls, 3,167 ms (11.2x). Freshness/confined existing paths preserved; ready for exact review and manager live qualification.

@@ -38,6 +38,7 @@ private slots:
     void hostileNamesRefused_data();
     void escapingDirectoryEntriesRefused();
     void symlinkEscapeRefused();
+    void filesystemChangesRemainFresh();
     void oversizedIndexIgnored();
     void standardHicolorDirectoryInventoryIsCovered();
     void lookupsAreDeterministic();
@@ -229,6 +230,32 @@ void ShellIconsLocatorTest::symlinkEscapeRefused()
     QVERIFY(escape.locate(QStringLiteral("escape"), 32).isEmpty());
     // The unthemed fallback must not rescue the name through the link either.
     QVERIFY(m_locator->locate(QStringLiteral("escape"), 32).isEmpty());
+}
+
+void ShellIconsLocatorTest::filesystemChangesRemainFresh()
+{
+    const QString base = ShellIconsTest::fixtureRoot() + QStringLiteral("/fresh-probes");
+    QVERIFY(ShellIconsTest::recreateDir(base));
+    const QString root = base + QStringLiteral("/icons");
+    QVERIFY(QDir().mkpath(root));
+    const QString candidate = root + QStringLiteral("/fresh.svg");
+    const QString outside = base + QStringLiteral("/outside.svg");
+    QVERIFY(ShellIconsTest::writeTextFile(outside, QString::fromUtf8(ShellIconsTest::kGreenCircleSvg)));
+    IconThemeLocator locator({root}, {});
+    for (int iteration = 0; iteration < 64; ++iteration) {
+        // No negative/positive result cache may hide newly created artwork,
+        // removal, or a formerly safe path replaced by an escaping symlink.
+        QVERIFY(locator.locate(QStringLiteral("fresh"), 32).isEmpty());
+        QVERIFY(ShellIconsTest::writeTextFile(candidate, QString::fromUtf8(ShellIconsTest::kGreenCircleSvg)));
+        QCOMPARE(locator.locate(QStringLiteral("fresh"), 32), candidate);
+        QVERIFY(QFile::remove(candidate));
+        QVERIFY(QFile::link(outside, candidate));
+        QVERIFY(locator.locate(QStringLiteral("fresh"), 32).isEmpty());
+        QVERIFY(QFile::remove(candidate));
+        QVERIFY(QDir().mkpath(candidate));
+        QVERIFY(locator.locate(QStringLiteral("fresh"), 32).isEmpty());
+        QVERIFY(QDir().rmdir(candidate));
+    }
 }
 
 void ShellIconsLocatorTest::oversizedIndexIgnored()
