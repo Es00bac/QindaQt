@@ -18,8 +18,14 @@ QindaQt service, reactivated Settings1/Voice1, reloaded the QindaQt decoration
 through Breeze, and restarted the shell under its supervisor. This restored the
 saved wallpaper/applets and loaded the duplicate-button fix. Overlay commit
 `07bf266` packages Gabbee's bounded watchdog system-wide instead of leaving it
-as laptop-only user configuration. The FormRow fix still requires the next
-desktop package revision recorded after this handoff.
+as laptop-only user configuration. QindaQt `0.1.0_pre20260927-r1` and Gabbee
+`0.1.0_p20260926` are installed on both hosts from the same signed binaries;
+both report 1,641/1,641 and 271/271 good files, and their key executable/plugin
+hashes match. A fresh Voice Settings process emitted no layout warning and used
+1.78 CPU seconds over its first 12 wall seconds, then only 0.09 additional CPU
+seconds over the next ten. This physical session's pre-repair supervisor still
+owns the process graph and a replacement shell continues resolving paths in a
+tight loop; a logout/login is required to start the corrected supervisor.
 
 ## September 26 — Private session isolation and live dictation recovery
 
