@@ -32,6 +32,30 @@ T.ToolButton {
     property bool dockMode: false
     property int dockTileSize: 60
     property bool reducedMotion: false
+    // Only a genuinely inserted delegate fades in. Keyed row updates retain
+    // this object, so title/focus/running changes never replay the animation.
+    property real revealProgress: 1.0
+    opacity: revealProgress
+    NumberAnimation {
+        id: revealAnimation
+        target: button
+        property: "revealProgress"
+        to: 1.0
+        duration: Tokens.motion.short
+        easing.type: Easing.OutCubic
+    }
+    Component.onCompleted: {
+        if (dockMode && !reducedMotion) {
+            revealProgress = 0.0
+            revealAnimation.start()
+        }
+    }
+    onReducedMotionChanged: {
+        if (reducedMotion) {
+            revealAnimation.stop()
+            revealProgress = 1.0
+        }
+    }
     property bool luna: false
     // Profile-selected tile shape (ADR-0224). "centered" is the Windows-11
     // taskbar's glyph-only tile with an underline indicator; "rail" is the

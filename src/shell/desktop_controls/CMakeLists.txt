@@ -130,6 +130,7 @@ qt_add_qml_module(
     QML_FILES ${QINDAQT_DESKTOP_CONTROLS_QML_FILES}
     DEPENDENCIES
         TARGET qindaqt_shell_icons
+        TARGET qindaqt_shell_task_list_applet
 )
 target_link_libraries(
     qindaqt_shell_desktop_controls_runtime
@@ -151,4 +152,5 @@ add_dependencies(
     qindaqt_controls_qmlplugin
     qindaqt_tokens_qmlplugin
     qindaqt_shell_iconsplugin
+    qindaqt_shell_task_list_appletplugin
 )
