@@ -15,7 +15,8 @@ add_test(NAME qindaqt.design-tokens-derivation COMMAND qindaqt_design_token_deri
 qt_add_executable(qindaqt_design_token_contrast_tests tst_builtin_contrast.cpp)
 target_link_libraries(
     qindaqt_design_token_contrast_tests
-    PRIVATE QindaQt::DesignTokens qindaqt_themes Qt6::Test
+    PRIVATE QindaQt::DesignTokens QindaQt::AppAppearance QindaQt::DecorationPainter
+        qindaqt_themes Qt6::Test
 )
 target_compile_definitions(
     qindaqt_design_token_contrast_tests

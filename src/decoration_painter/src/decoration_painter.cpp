@@ -269,13 +269,37 @@ QColor decorationTitleColor(const DecorationChrome &chrome, bool active)
 
 QColor decorationCaptionColor(const DecorationChrome &chrome, bool active)
 {
-    // White captions ride the dark Luna paint; light title surfaces keep the
-    // theme's own text color so contrast never regresses.
     const QColor title = decorationTitleColor(chrome, active);
-    if (title.isValid() && qGray(title.rgb()) < 128) {
-        return Qt::white;
+    const QColor preferred = title.isValid() && qGray(title.rgb()) < 128
+        ? QColor(Qt::white) : decorationTextColor(chrome, active);
+    if (!title.isValid()) {
+        return preferred;
     }
-    return decorationTextColor(chrome, active);
+    const auto luminance = [](const QColor &color) {
+        const auto linear = [](qreal channel) {
+            return channel <= 0.04045 ? channel / 12.92
+                : std::pow((channel + 0.055) / 1.055, 2.4);
+        };
+        return 0.2126 * linear(color.redF()) + 0.7152 * linear(color.greenF())
+            + 0.0722 * linear(color.blueF());
+    };
+    const qreal background = luminance(title);
+    const auto contrast = [&](const QColor &color) {
+        const qreal foreground = luminance(color);
+        return (std::max(background, foreground) + 0.05)
+            / (std::min(background, foreground) + 0.05);
+    };
+    // AGENT-GUARD: Inactive textMuted is authored for a theme surface, not
+    // necessarily its separate title material (notably Bliss blue). Retain
+    // the existing color when legible; otherwise prefer the theme's text
+    // before using the stronger black/white caption. Preview and live title
+    // share this decision, including glyphs that borrow caption ink.
+    for (const QColor &candidate : {preferred, chrome.text}) {
+        if (candidate.isValid() && contrast(candidate) >= 4.5) {
+            return candidate;
+        }
+    }
+    return contrast(Qt::black) >= contrast(Qt::white) ? QColor(Qt::black) : QColor(Qt::white);
 }
 
 QColor decorationTextColor(const DecorationChrome &chrome, bool active)

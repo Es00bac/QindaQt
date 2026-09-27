@@ -66,6 +66,7 @@ private slots:
     void unauthoredLunaKeysStayAbsent();
     void buttonLayoutFollowsTheLiveDecoration();
     void titleAndCaptionColorsFollowFocusAndAuthoring();
+    void captionsStayLegibleOnAuthoredInactiveTitles();
     void paintsClassicAndLunaChromeDeterministically();
     void defaultPreferencesReproduceEveryShippedTheme();
     void authoredDecorationDrivesContainerChrome();
@@ -75,6 +76,24 @@ private slots:
     void layoutsAndPaintsTheContainedWindowHandlebar();
     void focusedMemberHandlebarWearsTheIdentityColor();
 };
+
+void DecorationPainterTests::captionsStayLegibleOnAuthoredInactiveTitles()
+{
+    auto chrome = DecorationChrome::fromTheme(lunaTheme());
+    chrome.text = QColor(QStringLiteral("#242A35"));
+    chrome.textMuted = QColor(QStringLiteral("#5F5A4C"));
+    // Bliss's muted ink on its inactive blue title used to have only 2.27:1
+    // contrast. The already-authored primary text is the smallest repair.
+    QCOMPARE(decorationCaptionColor(chrome, false), chrome.text);
+    chrome.titleBarInactive = QColor(QStringLiteral("#F5F3E8"));
+    QCOMPARE(decorationCaptionColor(chrome, false), chrome.textMuted);
+    chrome.text = QColor(QStringLiteral("#808080"));
+    chrome.textMuted = chrome.text;
+    chrome.titleBarInactive = QColor(QStringLiteral("#808080"));
+    QCOMPARE(decorationCaptionColor(chrome, false), QColor(Qt::black));
+    chrome.titleBarInactive = QColor(QStringLiteral("#20242A"));
+    QCOMPARE(decorationCaptionColor(chrome, false), QColor(Qt::white));
+}
 
 void DecorationPainterTests::chromeRoundTripsThroughTheCompositorMap()
 {

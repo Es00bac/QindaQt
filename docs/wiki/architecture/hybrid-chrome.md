@@ -635,6 +635,13 @@ invisible full-width bar. Width, height, caption, icon, font, and theme changes
 refresh this shallow texture. Ordinary rectangular titles and grouped-member
 handles retain the compact shared shadow, and maximized windows remain shadowless.
 
+Caption ink retains its existing theme color when it reaches 4.5:1 contrast
+against the authored title color. If an inactive muted color is too faint on
+the separate title material, the shared preview/live painter first tries the
+theme's primary text, then the higher-contrast black or white. This checks the
+resolved title color; translucent material over arbitrary client content is
+not a guarantee of that contrast after compositing.
+
 The focused plugin test loads the factory and metadata, while the staged-install
 test proves that both compositor and decoration artifacts are installed and
 that a fresh isolated `kwinrc` receives the default. The nested Hybrid-unload

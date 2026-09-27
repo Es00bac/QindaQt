@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "qindaqt/app_appearance/appearance_resolver.h"
+#include "qindaqt/decoration_painter/decoration_painter.h"
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_deriver.h"
 #include "qindaqt/themes/theme_loader.h"
@@ -32,13 +34,14 @@ class BuiltInContrastTests final : public QObject {
 private slots:
     void everyBuiltInMeetsDocumentedPairs();
     void everyBuiltInTranslucentSurfaceKeepsTextContrast();
+    void everyEffectiveThemeKeepsActiveAndInactiveCaptionsLegible();
 };
 
 void BuiltInContrastTests::everyBuiltInMeetsDocumentedPairs()
 {
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 16);
+    QCOMPARE(loaded.size(), 18);
 
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -94,7 +97,7 @@ void BuiltInContrastTests::everyBuiltInTranslucentSurfaceKeepsTextContrast()
     // surface composited on black and on white at its published opacity.
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 16);
+    QCOMPARE(loaded.size(), 18);
     int translucentSurfaces = 0;
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -134,6 +137,44 @@ void BuiltInContrastTests::everyBuiltInTranslucentSurfaceKeepsTextContrast()
     // The v2 catalog ships translucent surfaces; the guardrail must have had
     // something to guard.
     QVERIFY(translucentSurfaces > 0);
+}
+
+void BuiltInContrastTests::everyEffectiveThemeKeepsActiveAndInactiveCaptionsLegible()
+{
+    using namespace QindaQt::AppAppearance;
+    using namespace QindaQt::Decoration;
+    const auto loaded = ThemeLoader::fromDirectory(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
+    QCOMPARE(loaded.size(), 18);
+    QVector<ThemeSpec> themes;
+    for (const auto &result : loaded) {
+        QVERIFY2(result.ok, qPrintable(result.error));
+        themes.append(result.theme);
+    }
+    int checked = 0;
+    for (const auto &selected : themes) {
+        for (const auto preference : {ColorSchemePreference::Light,
+                                      ColorSchemePreference::Dark,
+                                      ColorSchemePreference::System}) {
+            for (const auto system : {Qt::ColorScheme::Light, Qt::ColorScheme::Dark}) {
+                const auto effective = resolveAppearanceTheme(
+                    themes, {selected.id, preference}, system);
+                QVERIFY(effective.has_value());
+                const auto chrome = DecorationChrome::fromTheme(*effective);
+                for (const bool active : {false, true}) {
+                    const QString label = QStringLiteral("%1/%2/system-%3/%4")
+                        .arg(selected.id, colorSchemeToken(preference))
+                        .arg(static_cast<int>(system))
+                        .arg(active ? QStringLiteral("active") : QStringLiteral("inactive"));
+                    requireContrast(label, QStringLiteral("caption/title"),
+                                    decorationCaptionColor(chrome, active),
+                                    decorationTitleColor(chrome, active), 4.5);
+                    ++checked;
+                }
+            }
+        }
+    }
+    QCOMPARE(checked, 18 * 3 * 2 * 2);
 }
 
 QTEST_GUILESS_MAIN(BuiltInContrastTests)
