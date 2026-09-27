@@ -61,7 +61,12 @@ Specification lookup over the injected roots:
 
 Lookups are deterministic: identical inputs and fixtures always return the
 identical canonical path. An instance is confined to its owning thread; the
-provider and the QML seam hold separate instances.
+provider and the QML seam hold separate instances. Candidate probes reject
+missing, non-file or unreadable paths through fresh metadata before canonicalizing
+the root and candidate. This avoids repeated realpath walks for absent names
+across large theme inventories on each task publication. Existing candidates
+still undergo fresh canonical containment; misses and successes are not cached,
+so new files, removal and symlink retargeting remain visible on the next lookup.
 
 Task-list consumers resolve icon availability when publishing their bounded
 row snapshots, not in QML property getters. This prevents repeated sequence
@@ -206,7 +211,7 @@ ctest --test-dir build/dev \
 
 | Test | Scope |
 | --- | --- |
-| `qindaqt.shell-icons-locator` | Generated theme roots: exact/threshold/scalable matching, scale-aware directories, inherits chains with cycle guard and depth cap, hicolor-last ordering including when the chain cap is full, a 649-directory hicolor-shaped inventory with an application icon beyond the former truncation point, deterministic root order, `-symbolic` preference and fallback, unthemed root hits, hostile names, `../` and symlink-escape refusal, oversized-index refusal, index-cache bound. |
+| `qindaqt.shell-icons-locator` | Generated theme roots: exact/threshold/scalable matching, scale-aware directories, inherits chains with cycle guard and depth cap, hicolor-last ordering including when the chain cap is full, a 649-directory hicolor-shaped inventory with an application icon beyond the former truncation point, deterministic root order, `-symbolic` preference and fallback, unthemed root hits, hostile names, `../` and symlink-escape refusal, repeated missing/create/remove/symlink/non-file freshness, oversized-index refusal, index-cache bound. |
 | `qindaqt.shell-icons-resolver` | Generated application roots: exact/nested id mapping, first-root precedence, app-id normalizations, `StartupWMClass` matching, display names under the same rules (a refused icon keeps its name), prettified-id fallback, hidden/NoDisplay/malformed/oversized/wrong-Type entries skipped, hostile `Icon=` values refused, symlink escape refused, empty and missing roots, deterministic rescan. |
 | `qindaqt.shell-icons-provider` | Offscreen, fatal warnings: raster and SVG rendering at device size, symbolic recolor pixel assertions, placeholder determinism and non-emptiness, size/scale clamping, hostile URL ids, over-long-id refusal before cache access, canonical cache-key sharing, hostile-id flood cache-key-byte and RSS bounds, LRU cache bound. |
 | `qindaqt.shell-icons-qml-offscreen` | The compiled `Icon` element through the real `IconRuntime` seam: resolved rendering, typed fallback glyph, accessible names, warning-free under `QT_FATAL_WARNINGS=1`. |

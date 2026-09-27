@@ -398,11 +398,16 @@ qint64 IconThemeLocator::directorySizeDistance(const ThemeDirectory &directory, 
 
 QString IconThemeLocator::confinedFile(const QString &root, const QString &candidate) const
 {
-    const QString canonicalRoot = QDir(root).canonicalPath();
     const QFileInfo candidateInfo(candidate);
+    // AGENT-GUARD: Most theme probes miss. Reject those with one metadata
+    // lookup before walking both paths with realpath; every existing candidate
+    // still receives fresh canonical containment checks, including symlinks.
+    if (!candidateInfo.isFile() || !candidateInfo.isReadable()) {
+        return {};
+    }
+    const QString canonicalRoot = QDir(root).canonicalPath();
     const QString canonicalCandidate = candidateInfo.canonicalFilePath();
-    if (canonicalRoot.isEmpty() || canonicalCandidate.isEmpty() || !candidateInfo.isFile()
-        || !candidateInfo.isReadable()) {
+    if (canonicalRoot.isEmpty() || canonicalCandidate.isEmpty()) {
         return {};
     }
     const QString relative = QDir(canonicalRoot).relativeFilePath(canonicalCandidate);
