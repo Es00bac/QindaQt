@@ -72,11 +72,11 @@ QString TaskListAppletController::phaseReasonText() const {
 }
 
 QVariantList TaskListAppletController::entryRows() const {
-  return rowsToVariant(m_projection.rows);
+  return m_entryRows;
 }
 
 QVariantList TaskListAppletController::windowRows() const {
-  return rowsToVariant(m_projection.windowRows);
+  return m_windowRows;
 }
 
 QVariantList TaskListAppletController::rowsToVariant(
@@ -303,6 +303,12 @@ void TaskListAppletController::reproject() {
     m_projection.totalWindowCount = 0;
     m_projection.windowOverflowCount = 0;
   }
+  // AGENT-GUARD: QML sequence length/index reads call these property getters
+  // repeatedly during dock layout/animation. Resolve metadata once per
+  // publication, never per read, or filesystem icon scans grow quadratically
+  // with the number of windows. Publish both snapshots before notifying.
+  m_entryRows = rowsToVariant(m_projection.rows);
+  m_windowRows = rowsToVariant(m_projection.windowRows);
   Q_EMIT stateReprojected();
 }
 

@@ -351,6 +351,16 @@ withholds all observation (phase `unavailable`, no rows, no dispatch);
 `windows.activate` and `windows.manage` gate their intents independently with
 pre-dispatch refusals and user feedback.
 
+The controller materializes both QML row lists once per reprojection, including
+application names and icon availability, before emitting `stateReprojected`.
+The `entryRows` and `windowRows` getters return bounded, implicitly shared
+snapshots; QML sequence length/index reads during dock layout and magnification
+must never repeat desktop-entry or filesystem icon resolution. Each new
+publication refreshes the metadata and revision together, including previously
+missing icons. Read denial still publishes empty lists without resolving names
+or icons. The focused row-snapshot regression exercises QV4 reads with 1, 12,
+and 64 windows and verifies atomic freshness on the next publication.
+
 Presentation phases are the T0 projection plus the read-denial state:
 `loading` (no accepted generation — cold start is Loading and the T1 producer
 degrades explicitly once owner discovery resolves, so Loading cannot persist
