@@ -5,6 +5,22 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 27 — Keep aged sessions responsive and recover core services on both hosts
+
+Active repair: preserve the degraded physical sessions while measuring the
+laptop (about 33 hours old) and workstation (about two hours old), eliminate
+panel repaint/invalidation feedback, avoid repeated task-row icon resolution,
+and retain dock delegates across ordinary window changes. Independently reviewed
+row-publication candidate `7d2a1601` is integrated; manager rerun passes 3/3.
+The compositor feedback and retained-delegate candidates remain under verification.
+
+The cross-host recovery audit also found stale environment-file overrides at
+login, omitted core services, and qinda reports blocked by loopback SSH. Gabbee
+candidate `f7ec6b2` addresses these with 83 focused tests; exact independent
+review, combined gates, immutable overlay pins, signed packages and installed
+readback on both hosts remain required. A fresh physical logout/login and
+multi-day observation are not yet evidence.
+
 ## September 27 — Keep Settings responsive at FormRow's breakpoint
 
 Integrated `e39909ba`: `FormRow` chooses its responsive one/two-column layout
