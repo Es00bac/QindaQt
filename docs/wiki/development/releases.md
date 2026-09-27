@@ -142,6 +142,27 @@ already installed versions are skipped. `qinda-sync code` exchanges only the
 current clean branch and stops on divergence. Other active worktrees and local
 changes stay with their owners. Updates are invoked explicitly; no timer,
 world update or desktop restart is part of this workflow.
+
+The September 27 long-session repair pairs the desktop with Gabbee
+`0.1.0_p20260927` or newer. Recovery drop-ins inherit the physical supervisor's
+fresh user-manager environment; an old `EnvironmentFile` must not override a
+new login. The installed timer covers Voice1, Audio1, Clipboard1, Display1,
+Network1, Bluetooth1, Power1, Settings1 and the appearance portal. Missing-owner
+and systemd crash recovery is bounded and reports locally to qinda's maintenance
+inbox (over SSH from another host). This is not hung-GUI detection.
+Verification for this repair covers installed
+unit templates, available names and delivery queues on **both** hosts. A
+representative controlled resident crash returned a new owner and a reported
+incident on each host without ending the desktop. The handoff records the
+laptop Clipboard circuit explicitly unblocked after its source repair.
+
+Shell replacements can load the new presentation code without ending ordinary
+applications. A running KWin process still retains its loaded compositor binary;
+record that distinction and qualify a later physical login separately. Private
+native boot and repaint tests protect the session boundary while keeping the
+operator's current applications intact. The [retained-dock contract](../adr/0278-retain-dock-delegates-by-presentation-identity.md)
+and current [handoff](../../HANDOFF.md) describe this repair's evidence.
+
 Before the two serialized native boot checks, CI creates its container-private
 `/tmp/.X11-unix` directory with mode `1777`. Minimal container images may omit
 this standard X11 socket path; both checks still require working XWayland.

@@ -19,8 +19,22 @@ workstation login. Physical sessions were preserved for baseline measurements.
   or a complete explanation of the session-age curve.
 
 Reviewed task-row candidate `7d2a1601` and compositor candidate `152ab42d`
-are integrated. Manager row-cache gates pass 3/3; the integrated compositor
-native gates are running. Stable keyed delegates remain under verification.
+are integrated. Manager row-cache gates pass 3/3 and integrated compositor gates pass 4/4
+(including the private native repaint/authority proof). Reviewed retained-delegate
+candidate `8414e435` is integrated with ADR-0278. Its five compiled test rows
+pass 51 QtTest cases, including 64 delegates across 1,000 updates and successful
+save continuity. The combined manager suite initially passed 84/87: the direct-file
+installed consumer exposed a missing explicit QML module import, the offscreen
+keyboard fixture retained focus on a hidden popup, and the native action proof
+timed out once. Independently accepted repairs `e37f01f9` and `292cd361`
+fix the import and restore the fixture's real closed/focus preconditions without
+changing product focus behavior. The native proof passed its isolated retry
+in 3.72 seconds; the staged and relocated installed consumer passed in 35.28
+seconds. The four offscreen task-applet phase/arrow/keyboard/grouping rows then
+passed together (4/4); all initially failing rows are resolved. The full native build
+passed, as did the release contract, pinned KWin source gate, 417-document
+link checker and strict MkDocs build. Production surfaces at 1080p, WUXGA
+and 1440p and the session-supervisor lifecycle are among the passing rows.
 
 Gabbee repair `141e044` passed independent review and 84 focused tests, is on
 the hub's main branch, and ships as `0.1.0_p20260927` via QindaGentoo `feb1753`.
