@@ -367,6 +367,12 @@ role updates in place by `(taskId, windowId)` identity; insertions, removals,
 and reorders preserve every surviving delegate. It owns at most 4,096 copied
 rows, rejects duplicate/empty identities, and has no transport or authority.
 DesktopControls reuses this adapter through its existing TaskList dependency.
+The root QML file explicitly imports its own module under an alias for the
+C++ adapter. Direct-file installed consumers therefore load the same exported
+type registration as module-based consumers; implicit local QML-file discovery
+is insufficient for a C++ type. The installed package gate checks the original
+and relocated stage with ambient import paths removed.
+
 Only genuinely new dock tiles fade in with the short motion token; reduced
 motion is immediate. Retained rows never restart that fade, and removal retires
 intent targets immediately. See [ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md).
@@ -498,3 +504,9 @@ list on the smart shelf. Legacy `application-launcher` aliases normalize to
 list exists and is otherwise dropped as redundant. The independent
 Compositor1 inventories remain diagnostic inputs and must not be substituted
 or joined by shell code.
+
+The offscreen keyboard context-menu gate waits for the retained popup's actual
+`closed` signal and reactivates the test host before sending the next key.
+The offscreen platform leaves native focus on the hidden popup window; a real
+compositor restores the parent surface. The test asserts the menu is the same
+retained object and still reopens and dispatches subsequent actions.
