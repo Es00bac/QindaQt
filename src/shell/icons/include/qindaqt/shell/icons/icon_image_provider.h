@@ -53,6 +53,9 @@ public:
 
     QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize) override;
 
+    // Serialized with image requests; no provider ownership changes.
+    void setThemes(const QStringList &iconRoots, const QStringList &themeNames);
+
     // Deterministic neutral placeholder: same device size, same pixels.
     [[nodiscard]] static QImage placeholder(int devicePixels);
 

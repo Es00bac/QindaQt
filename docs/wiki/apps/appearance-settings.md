@@ -290,3 +290,13 @@ component into a clean prefix and launches both routes with host display,
 Wayland, QML-import, and library-path overrides removed.
 
 The bundled artwork follows QindaQt's [Mineral Light visual identity](../shell/visual-identity.md).
+
+## Icon families
+
+The Themes page's **Icons** chooser lists installed XDG icon themes independently
+of the color theme, with **Follow theme** as the default. Selection uses the same
+draft, Apply and Revert controls; it never changes the current desktop until
+confirmed. Missing packages fall back to the color theme's icon family without
+rewriting the saved choice. Discovery checks at most 32 roots, 1,024 entries and
+128 themes, limits indexes to 256 KiB, and rejects path escapes. Reopen Settings
+to refresh the installed catalog. See [ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md).

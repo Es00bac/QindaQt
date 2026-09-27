@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
         QDBusConnection::sessionBus());
     QindaQt::Services::SettingsClient::SettingsClient settingsClient(
         settingsTransport,
-        {QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme")});
+        {QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme"), QStringLiteral("appearance.iconTheme")});
     QString settingsError;
     if (!settingsClient.start(&settingsError)) {
         qWarning("qindaqt-welcome: Settings1 unavailable: %s", qPrintable(settingsError));

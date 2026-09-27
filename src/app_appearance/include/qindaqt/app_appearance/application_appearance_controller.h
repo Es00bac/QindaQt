@@ -59,6 +59,7 @@ Q_SIGNALS:
 
 private:
   void applySnapshot();
+  bool applyIconTheme();
   [[nodiscard]] bool selectTheme(const QString &themeId, QString *error);
 
   Services::SettingsClient::SettingsClient &m_settings;
@@ -68,6 +69,8 @@ private:
   Themes::ThemeSpec m_theme;
   QString m_lastError;
   DesignTokens::AccessibilityInputs m_accessibility;
+  QString m_iconPreference;
+  QString m_authoredIconTheme;
   QString m_fontFamily;
   QString m_monoFontFamily;
   Qt::ColorScheme m_platformScheme = Qt::ColorScheme::Unknown;

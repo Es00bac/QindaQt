@@ -220,16 +220,7 @@ void ShellRuntimeApplication::initializeServiceAppletCompositions(
         Icons::IconRuntime::freedesktopApplicationRoots(
             m_dataRoots.dataHome, m_dataRoots.dataDirectories),
         taskListIconRoots,
-        QStringList{[this] {
-            QString themeName;
-            QString ignoredError;
-            const bool themeSelected = ShellIconConfiguration::selectedThemeName(
-                m_themes, &themeName, &ignoredError);
-            if (!themeSelected) {
-                return QString{};
-            }
-            return themeName;
-        }()});
+        QStringList{effectiveIconTheme()});
     QString taskListError;
     if (!m_taskListApplet->start(&taskListError)) {
         qWarning().noquote()

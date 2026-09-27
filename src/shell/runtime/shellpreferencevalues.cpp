@@ -5,6 +5,7 @@
 
 #include <QFileInfo>
 #include <QMetaType>
+#include "qindaqt/themes/icon_theme_catalog.h"
 
 namespace QindaQt::Shell {
 namespace {
@@ -67,6 +68,7 @@ QStringList ShellPreferenceValues::scopedKeys()
 {
     return {QStringLiteral("panels.layoutProfile"),
             QStringLiteral("appearance.theme"),
+            QStringLiteral("appearance.iconTheme"),
             QStringLiteral("appearance.colorScheme"),
             QStringLiteral("fonts.family"),
             QStringLiteral("appearance.wallpaper"),
@@ -99,7 +101,13 @@ ShellPreferenceValues::fromVariantMap(const QVariantMap &values, QString *error)
         && exactBool(values, ReducedTransparencyKey, &reducedTransparency)
         && exactNumber(values, TextScaleKey, &textScale);
     result.wallpaper = values.value(QLatin1StringView(WallpaperKey)).toString();
-    if (!ok) {
+    const QVariant icon = values.value(QStringLiteral("appearance.iconTheme"));
+    // Compatibility with older Settings1 peers: an absent additive key means
+    // Follow theme; mistyped or unsafe identifiers fail the whole snapshot.
+    const bool iconValid = !icon.isValid() || (icon.metaType().id() == QMetaType::QString
+        && (icon.toString().isEmpty() || Themes::safeIconThemeId(icon.toString())));
+    result.iconTheme = icon.toString();
+    if (!ok || !iconValid) {
         if (error != nullptr) {
             *error = QStringLiteral(
                 "Settings1 returned an incomplete or mistyped shell preference snapshot");

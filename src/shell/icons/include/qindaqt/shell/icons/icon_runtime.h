@@ -25,6 +25,13 @@ namespace QindaQt::Shell::Icons::IconRuntime
 [[nodiscard]] bool install(QQmlEngine &engine, const QStringList &iconRoots,
                            const QStringList &themeNames);
 
+// GUI-thread live update. Keeps the engine-owned provider and every QML
+// delegate; atomically replaces the provider locator/cache, then publishes a
+// per-engine icon revision so Qt's image cache requests fresh pixels. No-op
+// when roots and theme chain are unchanged. Returns false before install.
+[[nodiscard]] bool update(QQmlEngine &engine, const QStringList &iconRoots,
+                          const QStringList &themeNames);
+
 // Pure helpers for composition roots: `<dataHome>/icons` followed by
 // `<dataDirs[i]>/icons`, in order. `~/.icons` is deliberately never added;
 // the XDG icon-theme specification deprecates it and confinement policy

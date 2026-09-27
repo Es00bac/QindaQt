@@ -59,6 +59,14 @@ IconImageProvider::IconImageProvider(QStringList iconRoots, QStringList themeNam
 
 IconImageProvider::~IconImageProvider() = default;
 
+void IconImageProvider::setThemes(const QStringList &iconRoots, const QStringList &themeNames)
+{
+    QMutexLocker locker(&m_mutex);
+    m_locator = std::make_unique<IconThemeLocator>(iconRoots, themeNames);
+    m_cache.clear();
+    m_cacheOrder.clear();
+}
+
 QImage IconImageProvider::requestImage(const QString &id, QSize *size,
                                        const QSize &requestedSize)
 {

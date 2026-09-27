@@ -281,3 +281,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0277: One theme choice and a real corner-tab input cutout](0277-theme-choice-and-corner-tab-input.md)
 
 - [ADR-0278: Retain dock delegates by presentation identity](0278-retain-dock-delegates-by-presentation-identity.md)
+
+- [ADR-0280: Independently select an installed icon theme](0280-independent-installed-icon-theme-choice.md)

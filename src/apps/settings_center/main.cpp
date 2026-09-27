@@ -1,3 +1,4 @@
+#include "qindaqt/app_appearance/application_appearance_controller.h"
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "settings_navigation_controller.h"
 #include "settings_route_registry.h"
@@ -409,6 +410,17 @@ int main(int argc, char **argv) {
       QindaQt::Apps::SettingsAppearance::discoverBundledWallpapers(
           wallpaperSearchDirectories()),
       application.styleHints()->colorScheme(), facade);
+  QindaQt::AppAppearance::ApplicationAppearanceController iconAppearance(
+      appearanceClient, directories, QStringLiteral("qinda-dark"));
+  const auto refreshIcons = [&] {
+    const bool updated = QindaQt::Shell::Icons::IconRuntime::update(
+        engine, iconThemeRoots(), {iconAppearance.theme().iconTheme});
+    Q_UNUSED(updated)
+  };
+  QObject::connect(&iconAppearance,
+      &QindaQt::AppAppearance::ApplicationAppearanceController::appearanceChanged,
+      &engine, refreshIcons);
+  refreshIcons();
   startSettingsClient(appearanceClient);
 
   QindaQt::DisplayClient::QtDisplayTransport displayTransport(

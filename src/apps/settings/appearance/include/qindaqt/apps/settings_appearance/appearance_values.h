@@ -20,6 +20,7 @@ namespace QindaQt::Apps::SettingsAppearance {
 // versa) makes every appearance commit fail as UnknownKey.
 namespace AppearanceKeys {
 inline constexpr QLatin1String Theme{"appearance.theme"};
+inline constexpr QLatin1String IconTheme{"appearance.iconTheme"};
 inline constexpr QLatin1String ColorScheme{"appearance.colorScheme"};
 inline constexpr QLatin1String Wallpaper{"appearance.wallpaper"};
 inline constexpr QLatin1String WallpaperMode{"appearance.wallpaperMode"};
@@ -65,6 +66,7 @@ subpixelOrderFromToken(const QString &token);
 // before the first authoritative baseline arrives.
 struct AppearanceValues final {
     QString themeId{QStringLiteral("qinda-dark")};
+    QString iconTheme;
     ColorSchemePreference colorScheme{ColorSchemePreference::System};
     QString wallpaper;
     WallpaperMode wallpaperMode{WallpaperMode::Scaled};

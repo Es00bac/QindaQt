@@ -20,7 +20,7 @@ class AppearanceBinding final {
 public:
     explicit AppearanceBinding(const QStringList &directories)
         : transport(QDBusConnection::sessionBus()),
-          client(transport, {QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme"),
+          client(transport, {QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme"), QStringLiteral("appearance.iconTheme"),
                             QStringLiteral("fonts.family"), QStringLiteral("fonts.monospaceFamily"),
                             QStringLiteral("fonts.pointSize"), QStringLiteral("accessibility.textScale"),
                             QStringLiteral("accessibility.highContrast"), QStringLiteral("accessibility.reducedMotion"),

@@ -230,3 +230,15 @@ display claims.
 
 The custom artwork follows the [Mineral Light visual identity](visual-identity.md);
 lookup and rendering contracts remain independent of its palette.
+
+## Live icon-theme choice
+
+[ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md) defines the
+independent `appearance.iconTheme` preference. Empty means Follow theme. The
+shell resolves confirmed installed choices before startup and on appearance
+updates, retaining the last confirmed choice through owner loss.
+`IconRuntime::update` replaces locators and clears the provider's bounded cache
+under its mutex, then increments the GUI-thread lookup revision. `Icon.qml`
+includes that revision in its image URL, so existing icon items request fresh
+pixels without recreating dock delegates. An unchanged chain is a no-op. Task
+row icon presentation refreshes once per actual resolved theme change.
