@@ -37,8 +37,12 @@ bool setManagerEnvironment(const SystemdManagerRoute &route,
 
 void publishActivationEnvironment(const QDBusConnection &bus,
                                   const QProcessEnvironment &environment,
-                                  const QString &systemdPrivateSocketPath)
+                                  const QString &systemdPrivateSocketPath,
+                                  const SessionActivationScope scope)
 {
+    // Private sessions may inherit the host broker as well as its manager.
+    // Their harness owns activation setup; do not mutate either shared service.
+    if (scope == SessionActivationScope::Private && systemdPrivateSocketPath.isEmpty()) return;
     if (!bus.isConnected()) return;
     QMap<QString, QString> values;
     QStringList assignments;
@@ -67,7 +71,7 @@ void publishActivationEnvironment(const QDBusConnection &bus,
     if (bus.call(broker, QDBus::Block, 2000).type() == QDBusMessage::ErrorMessage)
         qWarning("Could not update the D-Bus activation environment");
     if (!setManagerEnvironment(
-            resolveSystemdManagerRoute(bus, systemdPrivateSocketPath), bus, assignments)) {
+            resolveSystemdManagerRoute(bus, systemdPrivateSocketPath, scope), bus, assignments)) {
         qWarning("Could not update the user service activation environment");
     }
 }

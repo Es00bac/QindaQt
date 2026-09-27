@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include "session_activation_policy.h"
 #include <QStringList>
 #include <QtDBus/QDBusConnection>
 
 namespace QindaQt::SessionSupervisor {
+// AGENT-GUARD: Private scope (the default) never mutates the shared broker or
+// user manager without an explicit hermetic endpoint. Only the witnessed
+// physical compositor may use the native host manager. See compositor-session
+// wiki, "Private desktop isolation". Private harnesses own broker setup.
+
 
 // This fixed list contains services that cache desktop session state across
 // logins, plus the narrow Audio1 package-upgrade exception: a persistent user
@@ -43,6 +49,7 @@ namespace QindaQt::SessionSupervisor {
 // touched.
 bool refreshResidentServices(const QDBusConnection &bus,
                              const QStringList &unitNames,
-                             const QString &systemdPrivateSocketPath = {});
+                             const QString &systemdPrivateSocketPath = {},
+                                  SessionActivationScope scope = SessionActivationScope::Private);
 
 } // namespace QindaQt::SessionSupervisor

@@ -95,6 +95,22 @@ struct PrivateManagerBus {
 class ResidentServiceRefreshTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void privateSessionCannotRestartSharedServices() {
+        auto bus = QDBusConnection::sessionBus();
+        FakeUserManager manager;
+        QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+        QProcess publisher;
+        publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                        {QStringLiteral("--private"), QStringLiteral("xdg-desktop-portal.service")});
+        QVERIFY(publisher.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(publisher.state() == QProcess::NotRunning, 6000);
+        QCOMPARE(publisher.exitCode(), 0);
+        QVERIFY(manager.requestedUnits.isEmpty());
+        bus.unregisterObject(QStringLiteral("/org/freedesktop/systemd1"));
+        bus.unregisterService(QStringLiteral("org.freedesktop.systemd1"));
+    }
+
     // This is the regression the manual physical-session recovery on
     // 2026-09-06 stood in for: a service already resident from a prior
     // desktop keeps its stale Wayland socket after SetEnvironment runs, so
@@ -154,7 +170,7 @@ private Q_SLOTS:
 
         QProcess publisher;
         publisher.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
-                        {QStringLiteral("--socket"), managerBus.socket,
+                        {QStringLiteral("--private"), QStringLiteral("--socket"), managerBus.socket,
                          QStringLiteral("qindaqt-test-resident-a.service"),
                          QStringLiteral("qindaqt-test-resident-b.service")});
         QVERIFY(publisher.waitForStarted());

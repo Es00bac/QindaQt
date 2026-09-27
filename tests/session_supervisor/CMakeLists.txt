@@ -214,3 +214,12 @@ add_test(NAME qindaqt.session-autostart-lifetime
 set_tests_properties(qindaqt.session-autostart-lifetime PROPERTIES
     TIMEOUT 40 LABELS "session;autostart;dbus"
     ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")
+
+qt_add_executable(qindaqt_session_activation_policy_tests tst_session_activation_policy.cpp)
+target_include_directories(qindaqt_session_activation_policy_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(qindaqt_session_activation_policy_tests PRIVATE
+    QindaQt::SessionSupervisorSupport Qt6::Test)
+qindaqt_enable_warnings(qindaqt_session_activation_policy_tests)
+add_test(NAME qindaqt.session-activation-policy
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_session_activation_policy_tests>)
+set_tests_properties(qindaqt.session-activation-policy PROPERTIES TIMEOUT 15 LABELS "session;dbus")

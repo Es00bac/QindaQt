@@ -589,7 +589,7 @@ The supervisor also owns Plasma 6's separate `kglobalacceld` process on that
 broker. See
 [ADR-0158](../adr/0158-bootstrap-one-session-bus-before-the-compositor.md).
 
-Before the supervisor starts shell consumers, it updates the D-Bus broker and
+Before a physical desktop supervisor starts shell consumers, it updates the D-Bus broker and
 systemd user manager with KWin’s current desktop connection variables. This
 prevents independently activated services from inheriting a retired Wayland
 socket. The broker is updated over the session bus; the manager call is routed
@@ -630,7 +630,7 @@ QindaQt's private session bus, ADR-0170 documents that a Type=dbus unit may
 time out while D-Bus activation leaves an unmanaged process; this wait reports
 that case but cannot guarantee its retirement.
 
-Immediately after publishing the environment and before any desktop consumer
+In a physical desktop, immediately after publishing the environment and before any desktop consumer
 starts, the supervisor calls `refreshResidentServices` with the fixed,
 reviewed unit list from `residentServiceRefreshUnits()`, in order (Audio1,
 then the portal backend before the frontend that routes to it), requesting a
@@ -650,3 +650,31 @@ mechanism (against a fake user manager, including one unit failing to restart
 without stopping the request for the rest) and the fixed production list, and
 a second lane drives sd-bus `RestartUnit` calls against a fake manager on an
 explicit bus endpoint.
+
+### Private desktop isolation
+
+A private broker does not isolate the native systemd user manager. Virtual
+showcase runs previously reached `$XDG_RUNTIME_DIR/systemd/private`, overwrote
+the physical session's activation variables, and restarted its portal services.
+That invalidated Gabbee's live dictation shortcut session even when the test
+itself had a separate D-Bus broker.
+
+The session supervisor now derives activation scope from its already
+lifetime-witnessed direct parent. Only an executable named `kwin_wayland` with
+an explicit `--drm` option before its child payload can publish activation state
+or refresh shared resident services. Virtual, windowed, X11, Wayland-display,
+unknown, unreadable, and conflicting backend evidence all remain private.
+Private scope is also the helper API default, and skips **both** broker
+`UpdateActivationEnvironment` and manager `SetEnvironment`/`RestartUnit` calls.
+This protects a nested process even if it inherits the physical desktop's bus.
+
+A physical DRM login keeps the native sd-bus fallback on a bootstrapped private
+production bus; the bus pathname does not decide desktop ownership. Private
+harnesses must seed their own broker environment when testing D-Bus activation.
+The explicit fake-manager socket parameter remains a hermetic test seam; it is
+not exposed as a session command-line or environment override. The focused
+activation-policy, activation-environment, and resident-service-refresh gates
+cover backend classification, absence of shared broker/manager writes, physical
+native routing, and the explicit fake endpoint.
+
+[ADR-0276](../adr/0276-isolate-private-desktops-from-host-activation.md) records this isolation decision.

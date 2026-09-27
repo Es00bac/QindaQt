@@ -14,6 +14,8 @@ target_sources(
         src/polkit_agent_selection.cpp
         src/resident_service_refresh.cpp
         src/resident_service_refresh.h
+        src/session_activation_policy.cpp
+        src/session_activation_policy.h
         src/systemd_manager_port.cpp
         src/systemd_manager_port.h
         src/supervised_process_launcher.cpp

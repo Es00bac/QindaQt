@@ -96,13 +96,14 @@ int main(int argc, char *argv[])
         return 2;
     }
 
+    const auto activationScope = witnessedSessionActivationScope(*compositorProcessId);
     publishActivationEnvironment(QDBusConnection::sessionBus(),
-                                 QProcessEnvironment::systemEnvironment());
+                                 QProcessEnvironment::systemEnvironment(), {}, activationScope);
     // AGENT-CONTRACT: must run after publishActivationEnvironment (so the
     // restarted unit reads the just-published environment) and before any
     // desktop consumer starts. See resident_service_refresh.h.
     refreshResidentServices(QDBusConnection::sessionBus(),
-                            residentServiceRefreshUnits());
+                            residentServiceRefreshUnits(), {}, activationScope);
 
     SessionProcessOptions options;
     options.notificationHostExecutable = parser.value(QStringLiteral("notification-host"));
