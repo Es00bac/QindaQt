@@ -1,5 +1,25 @@
 # Integration handoff
 
+## September 26 — Private session isolation and live dictation recovery
+
+Candidate `58d1e338` was independently accepted by reviewer `223e926f` and
+integrated as `8bcfa9fa`, `c63db7a0`, and review record `768bbb01`. The candidate
+was based on unrelated website work; only the reviewed isolation changes were
+cherry-picked onto main. Production session and focused test sources match the
+accepted candidate byte for byte. ADR-0276 and the session/harness wiki changes
+are included. Manager rerun: rebuilt the supervisor and three focused test
+executables on the integrated tree; all 3/3 CTest gates pass. Strict MkDocs,
+415-document/navigation validation, and diff whitespace checks pass.
+
+The staged executable was installed atomically on qinda-top with its installed
+RUNPATH preserved, rollback binary retained, and its commit/hash receipt under
+`/var/lib/qindaqt/recovery`. The current physical KWin and supervisor were left
+running; isolation applies to future supervisor startups. Dictation's Voice1
+state is enabled/idle/ok and its hotkey portal is connected. A post-repair
+successful utterance delivery was observed through metadata without reading
+transcript content. Gabbee watchdog commit `794ed46` is already on qinda and
+installed. Existing incident reports remain available to maintainers on qinda.
+
 ## September 24 — code-first round (W7, W9–W20) integration
 
 Main carries the code-first round branch `round/code-first-20260924`: W7 desktop menu (ADR-0260), W9

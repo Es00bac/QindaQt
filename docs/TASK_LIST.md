@@ -5,6 +5,19 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 26 — Keep private desktops from disconnecting live dictation
+
+Integrated the independently reviewed session activation isolation repair
+(candidate `58d1e338`, review `223e926f`, integration `768bbb01`). Private/nested
+supervisors no longer publish activation environment or refresh the physical
+session's resident services. Explicit physical DRM sessions retain their native
+systemd activation path, including privileged KWin process identification.
+See [ADR-0276](wiki/adr/0276-isolate-private-desktops-from-host-activation.md).
+The reviewed executable is installed on qinda-top without restarting its active
+desktop. Gabbee's separate watchdog repair `794ed46` allows a bounded reconnect
+after a new healthy portal owner replaces a prior dependency. Long-duration
+reliability remains an observation task; this is not a claim of zero crashes.
+
 ## September 24 — Code-first round: desktop menu, Finder-style File Manager, dock, edit mode, presets, decorations (plan W7, W9–W20)
 
 Integrated on main from `round/code-first-20260924`: **W7** File Manager menu when no application is
