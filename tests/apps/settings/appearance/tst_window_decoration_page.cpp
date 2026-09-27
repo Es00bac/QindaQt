@@ -104,7 +104,7 @@ void WindowDecorationPageTests::listsAppliesAndGatesForeignDecorationPreview()
 {
     const auto scene = createScene();
     QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
-    auto *destination = item(scene.root, QStringLiteral("appearanceDestination_windows"));
+    auto *destination = item(scene.root, QStringLiteral("appearanceThemeDetailsButton"));
     QVERIFY(destination != nullptr);
     QVERIFY(QMetaObject::invokeMethod(destination, "click"));
     QCoreApplication::processEvents();
@@ -142,7 +142,7 @@ void WindowDecorationPageTests::offersEveryButtonStyleAndTitleBarOption()
     // forwards its token to the one draft.
     const auto scene = createScene();
     QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
-    auto *destination = item(scene.root, QStringLiteral("appearanceDestination_windows"));
+    auto *destination = item(scene.root, QStringLiteral("appearanceThemeDetailsButton"));
     QVERIFY(destination != nullptr);
     QVERIFY(QMetaObject::invokeMethod(destination, "click"));
     QCoreApplication::processEvents();

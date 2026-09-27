@@ -276,3 +276,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0273: Integrate the File Manager with the desktop like Finder](0273-integrate-the-file-manager-with-the-desktop-like-finder.md)
 - [ADR-0274: Display1 reads mirroring and modes from the compositor inventory](0274-display1-reads-mirroring-and-modes-from-the-compositor-inventory.md)
 - [ADR-0275: QindaLutris installs Windows games and manages pinned Proton builds](0275-qindalutris-installs-games-and-manages-pinned-proton.md)
+- [ADR-0276: One theme choice and a real corner-tab input cutout](0276-theme-choice-and-corner-tab-input.md)

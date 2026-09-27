@@ -91,12 +91,19 @@ feel:
 | Menu and Dock | A Mac: menu bar on top, dock below with the File Manager first and the Trash last | Qinda Mist |
 | Classic Taskbar | XP: start button, quick launch, window buttons, tray | Qinda Classic Blue |
 | Centered Taskbar | Windows 11, without advertising or account prompts | Qinda Daylight |
-| Corner Bar | BeOS: yellow title tabs and a bar in the top-right corner | Qinda Marigold |
+| Corner Bar | BeOS: short yellow title tabs with click-through clear space, and a bar in the top-right corner | Qinda Marigold |
 | Program Groups | Windows 3.1: program groups on a top bar, windows that minimize to desktop icons | Qinda Classic Grey |
 | Workspace Dock | NeXTSTEP: a dock column down the right edge | Qinda Graphite |
 
 Menus stay inside windows in every one of these except Menu and Dock. These are
 starting points in the spirit of those desktops, not recreations of them.
+In Appearance, choosing a theme resets earlier window and container chrome
+overrides to that theme's buttons, colors and decoration. Open **Fine tune this
+theme** there to change button arrangement, title shape and corner roundness.
+The Qinda Sea Glass and Qinda Lilac themes offer other tab colors and radii;
+imported theme documents can author more. The clear
+space beside a Corner Bar title tab passes pointer input to the desktop or
+window below when QindaQt is built with its pinned KWin patch.
 
 To change a layout, edit the panels themselves. Right-click a panel and
 choose **Edit Panels**:

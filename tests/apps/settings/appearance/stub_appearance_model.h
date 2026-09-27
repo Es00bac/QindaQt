@@ -138,6 +138,28 @@ public:
         Q_EMIT draftChanged();
         return true;
     }
+    Q_INVOKABLE bool selectTheme(const QString &themeId)
+    {
+        // The production model resolves a whole theme bundle. This QML stub
+        // records the two visible preferences for the existing card test.
+        setDraftValue(QStringLiteral("appearance.theme"), themeId);
+        for (const QVariant &entry : installedThemes) {
+            const QVariantMap theme = entry.toMap();
+            if (theme.value(QStringLiteral("id")).toString() == themeId) {
+                const QString variant = theme.value(QStringLiteral("variant")).toString();
+                if (variant == QLatin1String("light")) {
+                    setDraftValue(QStringLiteral("appearance.colorScheme"),
+                                  QStringLiteral("light"));
+                } else if (variant == QLatin1String("dark")
+                           || variant == QLatin1String("dusk")) {
+                    setDraftValue(QStringLiteral("appearance.colorScheme"),
+                                  QStringLiteral("dark"));
+                }
+                break;
+            }
+        }
+        return true;
+    }
     Q_INVOKABLE bool cancelDraft()
     {
         ++cancels;
