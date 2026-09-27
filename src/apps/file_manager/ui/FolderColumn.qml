@@ -70,7 +70,7 @@ ListView {
                 Layout.preferredWidth: root.rowIconSize
                 Layout.preferredHeight: root.rowIconSize
                 sourceSize: Qt.size(root.rowIconSize, root.rowIconSize)
-                source: EntryText.iconUrl(row.modelData, root.rowIconSize)
+                source: EntryText.iconUrl(row.modelData, root.rowIconSize, typeof fileManagerIconAppearance === "undefined" ? null : fileManagerIconAppearance)
                 Accessible.ignored: true
             }
             Tk.Label {

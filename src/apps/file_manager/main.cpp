@@ -43,6 +43,10 @@
 #include <QFile>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <qindaqt/app_appearance/application_appearance_controller.h>
+#include <qindaqt/services/settings_client/settings_client.h>
+#include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <QDBusConnection>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -360,6 +364,19 @@ int main(int argc, char **argv) {
   }
 
   QQmlApplicationEngine engine;
+  // Only the shared confirmed appearance controller interprets Settings1.
+  // Its icon id changes QIcon's cache key and every existing file icon URL;
+  // no listing reset or application restart is needed for a family change.
+  QindaQt::Services::SettingsClient::QtSettingsTransport iconTransport(QDBusConnection::sessionBus());
+  QindaQt::Services::SettingsClient::SettingsClient iconClient(iconTransport,
+      {QStringLiteral("appearance.theme"), QStringLiteral("appearance.colorScheme"),
+       QStringLiteral("appearance.iconTheme")});
+  QindaQt::AppAppearance::ApplicationAppearanceController iconAppearance(
+      iconClient, QindaQt::AppAppearance::standardThemeDirectories(), QStringLiteral("qinda-dark"));
+  engine.rootContext()->setContextProperty(QStringLiteral("fileManagerIconAppearance"), &iconAppearance);
+  const bool iconSettingsStarted = iconClient.start();
+  Q_UNUSED(iconSettingsStarted)
+
   // ADR-0262: the Applications place is browsed through the navigation's own
   // lister and launcher seams, so this controller is built first and outlives
   // them. Its catalog is scanned whenever the place is listed (and on F5).

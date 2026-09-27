@@ -104,10 +104,11 @@ function glyphFor(entry) {
 // The theme icon an entry is drawn with (the image://theme-icons provider),
 // rendered `size` pixels square: the provider's size hint stands in for
 // Image.sourceSize, which a Tk.Thumbnail does not expose.
-function iconUrl(entry, size) {
+function iconUrl(entry, size, appearance) {
     return "image://theme-icons/" + (entry && entry.iconName ? entry.iconName
                                                               : "application-octet-stream")
         + "?size=" + Math.max(16, Math.round(size))
+        + "&theme=" + encodeURIComponent(appearance ? appearance.iconTheme : "")
 }
 
 // AGENT-CONTRACT: main.cpp registers the Gallery's larger preview pipeline as

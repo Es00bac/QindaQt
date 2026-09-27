@@ -19,6 +19,9 @@ public:
   // id is a freedesktop icon name (for example "folder" or
   // "list-add-symbolic"), optionally followed by a "?color=#rrggbb" query
   // and (ADR-0270) a "size=N" edge used when no sourceSize is requested.
+  // The optional "theme" query tags a confirmed family change solely to
+  // invalidate Qt Quick's image cache; resolution stays with QIcon, never
+  // with an untrusted URL-supplied theme.
   // A resolved "-symbolic" name is monochrome by convention and is tinted:
   // with the query color when it is valid (callers pass a palette color so a
   // live theme change re-resolves the URL), otherwise with the application

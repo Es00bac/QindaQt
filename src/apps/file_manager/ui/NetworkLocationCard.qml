@@ -33,7 +33,7 @@ Control {
         Image {
             Layout.preferredWidth: 32
             Layout.preferredHeight: 32
-            source: "image://theme-icons/folder-network"
+            source: "image://theme-icons/folder-network" + "?theme=" + encodeURIComponent(typeof fileManagerIconAppearance === "undefined" ? "" : fileManagerIconAppearance.iconTheme)
             sourceSize: Qt.size(32, 32)
             Accessible.ignored: true
         }

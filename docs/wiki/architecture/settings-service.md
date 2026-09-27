@@ -45,6 +45,9 @@ the settings-schema version is lineage metadata rather than a wire break.
 V1 migration leaves those three keys absent from the partial migrated layer;
 typed migration coverage proves active-v2 system defaults resolve them to
 `system`, `scaled`, and `1.0` without manufacturing user overrides.
+The additive `appearance.iconTheme` string likewise defaults to empty (Follow
+theme); [ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md) records
+its installed-catalog admission and confirmed live icon presentation.
 
 Object values are recursively normalized at every schema/layer/migration
 ingress to one restart-stable JSON domain. Null has one valid in-memory form,

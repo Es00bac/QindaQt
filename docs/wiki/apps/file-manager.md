@@ -1708,3 +1708,9 @@ matching the stock Qt navigation chrome in both light and dark sessions.
 `qindaqt.file-manager-toolkit-palette` changes QGuiApplication's palette through
 repeated dark/light transitions and checks the file-view roles; explicit window
 color assignments alone do not reproduce this failure.
+Icon-family changes use the shared ApplicationAppearanceController, retaining
+confirmed state through Settings1 owner loss. Every existing themed-image URL
+carries its confirmed icon id, invalidating Qt Quick's image cache when the
+family changes; QIcon remains the only provider resolution authority. Folder
+listings and view delegates stay intact. See
+[ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md).

@@ -189,7 +189,7 @@ FocusScope {
                         Layout.preferredHeight: 18
                         source: "image://theme-icons/"
                             + (rowItem.modelData.depth === 0 && rowItem.modelData.path !== "/"
-                               ? "user-home" : rowItem.modelData.path === "/" ? "drive-harddisk" : "folder")
+                               ? "user-home" : rowItem.modelData.path === "/" ? "drive-harddisk" : "folder") + "?theme=" + encodeURIComponent(typeof fileManagerIconAppearance === "undefined" ? "" : fileManagerIconAppearance.iconTheme)
                         sourceSize: Qt.size(18, 18)
                         Accessible.ignored: true
                     }

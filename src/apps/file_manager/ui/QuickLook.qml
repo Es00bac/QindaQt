@@ -112,7 +112,7 @@ Item {
                         && preview.implicitWidth > 1
                     // Nothing is requested or read while the preview is closed.
                     source: popover.visible && root.current
-                        ? EntryText.iconUrl(root.current, stage.iconEdge) : ""
+                        ? EntryText.iconUrl(root.current, stage.iconEdge, typeof fileManagerIconAppearance === "undefined" ? null : fileManagerIconAppearance) : ""
                     placeholderIcon: EntryText.glyphFor(root.current)
                     crop: false
                     tooltip: root.current ? root.current.name : ""

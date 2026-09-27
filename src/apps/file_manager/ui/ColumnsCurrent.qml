@@ -124,7 +124,7 @@ Item {
                     Layout.preferredWidth: root.view.rowIconSize
                     Layout.preferredHeight: root.view.rowIconSize
                     sourceSize: Qt.size(root.view.rowIconSize, root.view.rowIconSize)
-                    source: EntryText.iconUrl(row.modelData, root.view.rowIconSize)
+                    source: EntryText.iconUrl(row.modelData, root.view.rowIconSize, typeof fileManagerIconAppearance === "undefined" ? null : fileManagerIconAppearance)
                     Accessible.ignored: true
                 }
                 Tk.Label {

@@ -147,7 +147,7 @@ Item {
             Layout.preferredWidth: root.view.rowIconSize
             Layout.preferredHeight: root.view.rowIconSize
             sourceSize: Qt.size(root.view.rowIconSize, root.view.rowIconSize)
-            source: root.entry !== null ? EntryText.iconUrl(root.entry, root.view.rowIconSize) : ""
+            source: root.entry !== null ? EntryText.iconUrl(root.entry, root.view.rowIconSize, typeof fileManagerIconAppearance === "undefined" ? null : fileManagerIconAppearance) : ""
             Accessible.ignored: true
             Image {
                 visible: root.entry !== null && root.entry.isSymlink === true
@@ -156,7 +156,7 @@ Item {
                 width: Math.round(parent.width / 2)
                 height: width
                 sourceSize: Qt.size(width, height)
-                source: "image://theme-icons/emblem-symbolic-link"
+                source: "image://theme-icons/emblem-symbolic-link" + "?theme=" + encodeURIComponent(typeof fileManagerIconAppearance === "undefined" ? "" : fileManagerIconAppearance.iconTheme)
                 Accessible.ignored: true
             }
         }

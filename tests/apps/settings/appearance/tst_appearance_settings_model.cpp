@@ -9,6 +9,8 @@
 #include <QFile>
 #include <QTemporaryDir>
 #include <QtTest>
+#include <QDir>
+#include <QScopeGuard>
 
 using namespace QindaQt::Apps::SettingsAppearance;
 using namespace QindaQt::Services::SettingsClient;
@@ -160,6 +162,7 @@ private slots:
     void loadingThenReadyWithConfirmedBaseline();
     void draftValidationGatesApplyAndCancelRestores();
     void themeChoiceResetsChromeAndPairsScheme();
+    void iconChoiceUsesDraftApplyAndRevert();
     void applySequencesPerKeyCommitsInOrder();
     void monospaceDraftSavesWithoutChangingInterfaceFont();
     void conflictStopsSequenceAndRequiresExplicitReapply();
@@ -304,6 +307,40 @@ void AppearanceSettingsModelTests::draftValidationGatesApplyAndCancelRestores()
              QStringLiteral("qinda-dark"));
     // Cancel without dirt or outside Ready is refused, not silently ignored.
     QVERIFY(!model->cancelDraft());
+}
+
+void AppearanceSettingsModelTests::iconChoiceUsesDraftApplyAndRevert()
+{
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    const QByteArray oldHome = qgetenv("XDG_DATA_HOME");
+    const auto restore = qScopeGuard([&] {
+        if (oldHome.isNull()) qunsetenv("XDG_DATA_HOME"); else qputenv("XDG_DATA_HOME", oldHome);
+    });
+    qputenv("XDG_DATA_HOME", temporary.path().toUtf8());
+    QVERIFY(QDir().mkpath(temporary.path() + "/icons/Choice"));
+    QFile index(temporary.path() + "/icons/Choice/index.theme");
+    QVERIFY(index.open(QIODevice::WriteOnly));
+    index.write("[Icon Theme]\nName=Choice\n");
+    index.close();
+    auto *model = makeModel(Qt::ColorScheme::Dark);
+    QVERIFY(model);
+    QVERIFY(model->setDraftValue(QString(AppearanceKeys::IconTheme), "Choice"));
+    QVERIFY(model->draftValid());
+    QVERIFY(m_transport.commits.isEmpty());
+    QVERIFY(model->selectTheme("qinda-light"));
+    QCOMPARE(model->draft().value(QString(AppearanceKeys::IconTheme)).toString(), "Choice");
+    QVERIFY(model->cancelDraft());
+    QCOMPARE(model->draft().value(QString(AppearanceKeys::IconTheme)).toString(), "");
+    QVERIFY(model->setDraftValue(QString(AppearanceKeys::IconTheme), "Missing"));
+    QVERIFY(!model->applyAvailable());
+    QVERIFY(model->cancelDraft());
+    QVERIFY(model->setDraftValue(QString(AppearanceKeys::IconTheme), "Choice"));
+    QVERIFY(model->applyDraft());
+    QCOMPARE(m_transport.commits.size(), 1);
+    const auto operation = m_transport.commits.first().operations.first().toMap();
+    QCOMPARE(operation.value(QLatin1StringView(WireContract::FieldKey)).toString(), "appearance.iconTheme");
+    QCOMPARE(operation.value(QLatin1StringView(WireContract::FieldValue)).toString(), "Choice");
 }
 
 void AppearanceSettingsModelTests::themeChoiceResetsChromeAndPairsScheme()

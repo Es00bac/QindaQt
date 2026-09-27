@@ -150,7 +150,7 @@ Control {
                         height: stage.iconEdge
                         visible: root.current !== null && !stage.previewReady
                         sourceSize: Qt.size(stage.iconEdge, stage.iconEdge)
-                        source: root.current ? EntryText.iconUrl(root.current, stage.iconEdge) : ""
+                        source: root.current ? EntryText.iconUrl(root.current, stage.iconEdge, typeof fileManagerIconAppearance === "undefined" ? null : fileManagerIconAppearance) : ""
                         Accessible.ignored: true
                     }
                     Image {

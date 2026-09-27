@@ -27,11 +27,27 @@ private slots:
     void decodeRejectsWrongTypesAndUnknownTokens();
     void validationRequiresInstalledThemesAndBounds();
     void scopedKeysMatchSchemaKeys();
+    void iconThemeDefaultsAndIdentifiers();
     void chromeTokensMatchTheirSchemaDefinitions();
     void titleBarOptionsDecodeStrictlyAndRoundTrip();
     void bundledWallpaperCatalogIsOrderedAndDeduplicated();
     void chromeArrangementTokensDecodeStrictlyAndRoundTrip();
 };
+
+void AppearanceValuesTests::iconThemeDefaultsAndIdentifiers()
+{
+    auto values = validMap();
+    QCOMPARE(values.value(QString(AppearanceKeys::IconTheme)).toString(), QString{});
+    values.insert(QString(AppearanceKeys::IconTheme), QStringLiteral("QindaFacet"));
+    const auto selected = AppearanceValues::fromVariantMap(values);
+    QVERIFY(selected);
+    QCOMPARE(selected->iconTheme, QStringLiteral("QindaFacet"));
+    QCOMPARE(selected->toVariantMap(), values);
+    values.insert(QString(AppearanceKeys::IconTheme), QStringLiteral("../outside"));
+    QVERIFY(!AppearanceValues::fromVariantMap(values));
+    values.insert(QString(AppearanceKeys::IconTheme), 7);
+    QVERIFY(!AppearanceValues::fromVariantMap(values));
+}
 
 void AppearanceValuesTests::tokenRoundTripsCoverEveryEnumeratedValue()
 {

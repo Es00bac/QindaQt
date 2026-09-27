@@ -26,6 +26,7 @@ namespace QindaQt::AppAppearance {
 // prevents palette publication from feeding back into another update.
 class ApplicationAppearanceController final : public QObject {
   Q_OBJECT
+  Q_PROPERTY(QString iconTheme READ iconTheme NOTIFY appearanceChanged)
 public:
   ApplicationAppearanceController(
       Services::SettingsClient::SettingsClient &settings,
@@ -35,6 +36,7 @@ public:
   [[nodiscard]] const Themes::ThemeSpec &theme() const noexcept {
     return m_theme;
   }
+  [[nodiscard]] QString iconTheme() const { return m_theme.iconTheme; }
   [[nodiscard]] const QString &themeId() const noexcept { return m_theme.id; }
   [[nodiscard]] bool hasExplicitOverride() const noexcept {
     return !m_explicitThemeOverride.isEmpty();

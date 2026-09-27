@@ -36,7 +36,7 @@ ToolBar {
         property string actionId: ""
         display: button.bar.width >= 640 ? AbstractButton.TextBesideIcon : AbstractButton.IconOnly
         icon.source: "image://theme-icons/" + button.iconName + "-symbolic"
-            + "?color=" + encodeURIComponent(button.palette.buttonText.toString())
+            + "?color=" + encodeURIComponent(button.palette.buttonText.toString()) + "&theme=" + encodeURIComponent(typeof fileManagerIconAppearance === "undefined" ? "" : fileManagerIconAppearance.iconTheme)
         icon.width: 18
         icon.height: 18
         enabled: button.actionId.length === 0 || button.bar.available(button.actionId)
