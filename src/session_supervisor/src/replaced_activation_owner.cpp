@@ -8,6 +8,7 @@
 #include <QtDBus/QDBusMessage>
 
 #include <csignal>
+#include <cstddef>
 #include <optional>
 #include <sys/types.h>
 #include <unistd.h>
@@ -111,13 +112,14 @@ QStringList retireReplacedActivationOwners(const QDBusConnection &bus,
         }
         // Read the raw link text: QFile::symLinkTarget() canonicalizes and
         // drops the kernel's " (deleted)" marker this decision depends on.
-        QByteArray link(4096, Qt::Uninitialized);
+        constexpr std::size_t LinkCapacity = 4096;
+        char buffer[LinkCapacity];
         const QByteArray linkPath = QFile::encodeName(processDirectory + QStringLiteral("/exe"));
-        const ssize_t length = ::readlink(linkPath.constData(), link.data(), link.size() - 1);
+        const ssize_t length = ::readlink(linkPath.constData(), buffer, LinkCapacity - 1);
         if (length <= 0) {
             continue;
         }
-        link.truncate(length);
+        const QByteArray link(buffer, static_cast<qsizetype>(length));
         if (!executableWasReplaced(QFile::decodeName(link))) {
             continue;
         }
