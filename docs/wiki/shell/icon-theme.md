@@ -39,7 +39,7 @@ The palette is the icon-side spelling of the Pearl / Smoked Plum identity in
 
 | Color | Icon role |
 | --- | --- |
-| Heather (legacy `BLUE` generator constant) | Body of every first-party application and shell built-in in the `apps` group (launcher Q, Settings gear, QindaQt system-menu mark, File Manager folder, clock, notifications bell, executable), the `preferences-system-*` family, and neutral action frames; the palette samplers (application grid, theme dots, color dial) show amber, blue, violet, and apricot only |
+| Heather (legacy `BLUE` generator constant) | Body of every first-party application and shell built-in in the `apps` group (launcher Q, Settings gear, QindaQt system-menu mark, executable) and neutral action frames (the `preferences-*` subsystem glyphs, the clock and the bell carry their own hue, below); the palette samplers (application grid, theme dots, color dial) show amber, blue, violet, and apricot only |
 | Apricot (legacy `AMBER` generator constant) | At most one accent per first-party icon, placed where it meets the surface rather than on top of a blue body: the launcher Q tail, the Settings gear hub, the system-menu mark's inner window, the Text Editor pen, the Terminal prompt, and the Welcome (`help-about`) question mark |
 | Porcelain | Light bodies (Text Editor page) and marks painted on a blue or ink body |
 | Jade | Semantic success or positive state only: battery charge, `emblem-ok`/`dialog-ok`, `security-high`, upload/update arrows, media glyphs; never a brand or application color |
@@ -52,6 +52,45 @@ six-tooth gear badge. The system-menu applet shows `qindaqt-mark`, the "Nest":
 a rounded container with a small window resting in its upper-left corner. The
 four-spoke circle that once served as both the Settings icon and the
 system-menu logo is retired; no icon may draw it (plan W18, 2026-09-24).
+
+### Places, file types and Qinda applications
+
+[ADR-0283](../adr/0283-true-color-places-types-and-qinda-app-marks.md) adds
+true-color artwork alongside the identity palette:
+
+- **Places.** One folder grammar — a darker back flap, a paper sheet, a lit
+  front body and one single-tone emblem — for every folder. Each special folder
+  has its own body color *and* emblem: home (vermilion, house), desktop
+  (indigo, monitor), documents (blue, page), downloads (teal, arrow into a
+  tray), pictures (green, landscape), videos (crimson, film), music (magenta,
+  notes), books and `folder-ebooks` (brown, open book), templates (lilac, set
+  square), public share (lime, people), projects (gold, light bulb), games
+  (violet, gamepad), development (slate, `</>`), remote (steel, globe), cloud
+  (sky, cloud), plus applications, work, favorites, locked, backup, camera and
+  Wine folders and twelve plain colors. `user-trash-full` shows paper rising
+  above the rim so it reads at 24 px; `computer` and `network-workgroup` are
+  drawn for the 48–64 px desktop-icon surface.
+- **File types.** One page silhouette with a colored band along the foot and
+  a content glyph: code by language, ODF (glyph-only) versus OOXML (letter
+  glyph) documents, PDF, e-books, image, audio and video formats, archives,
+  disk images, packages, fonts, torrents, calendars, contacts, and the owner's
+  formats — Sloom Studio `application/x-sloom` projects and
+  `application/x-slppr` Paper layouts, and the QindaOffice notebook, books,
+  diagram, plan and base types. Common spellings are aliases.
+- **Qinda applications.** Every Qinda launcher's `Icon=` name has its own
+  mark and hue (Sloom Studio's four rings and its four workspaces, the Office
+  suite, QindaDeck, QindaMPV, the media player, Venus Pro, QQ_Term,
+  QindaLutris, QindaFox, Files, Text Editor, System Monitor, Calendar, Viewer,
+  Voice, Gabbee, LlamaWatch, Computer Use and the Qinda games).
+- **Settings subsystems.** Each `preferences-*` glyph carries one muted hue
+  (display blue, power and plugins green, notifications amber or blue-violet,
+  windows indigo, search teal) so a Settings sidebar is not a column of
+  identical plum shapes.
+
+These are semantic colors, so the table above still governs identity roles:
+jade never becomes an application color and ink, pearl and apricot stay
+pinned to the packaged themes. The QindaThemes icon families re-tone the same
+true colors into their own palettes.
 
 Keep small on-body marks pearl or ink so they remain recognizable without hue. Application and
 category icons use rounded forms with restrained layering. Actions, status,
@@ -68,8 +107,14 @@ The catalog is split by module so each stays small and reviewable:
 | `tools/qinda_icon_catalog_apps.py` | Launcher, first-party app, and `preferences-*` glyphs |
 | `tools/qinda_icon_catalog_actions.py` | Edits, window controls, navigation, dialogs, session actions |
 | `tools/qinda_icon_catalog_devices.py` | Audio, battery, input, storage, and network-radio devices |
-| `tools/qinda_icon_catalog_places.py` | Folders, trash, hosts |
-| `tools/qinda_icon_catalog_mimetypes.py` | MIME-type document glyphs |
+| `tools/qinda_icon_catalog_first_party.py` | One mark per Qinda application, keyed by its desktop `Icon=` name |
+| `tools/qinda_icon_catalog_places.py` | The folder grammar, special and colored folders, trash, hosts |
+| `tools/qinda_icon_place_marks.py` | Single-tone folder emblems |
+| `tools/qinda_icon_catalog_mimetypes.py` | The file-type page grammar and every MIME name and alias |
+| `tools/qinda_icon_type_marks.py` | Single-tone file-type content glyphs |
+| `tools/qinda_icon_outline.py` | Derives an outline `-symbolic` cut from layered color art; `plate()` background tiles |
+| `tools/qinda_icon_color.py` | Pure color arithmetic (shade, mix, HSL, luminance) |
+| `tools/qinda_icon_required.py` | The required-name floor shared with QindaThemes (ADR-0283) |
 | `tools/qinda_icon_catalog_categories_status.py` | Application categories and status/emblem icons |
 | `tools/qinda_icon_catalog.py` | Merges the modules above into one `CANON`/`ALIASES` table; raises at import time on a duplicate or dangling alias |
 | `tools/generate_qinda_icon_theme.py` | Writes the catalog and `index.theme` from that table |
@@ -87,6 +132,7 @@ Validate a checkout without building the desktop:
 
 ```sh
 python3 tools/generate_qinda_icon_theme.py
+python3 tools/generate_qinda_icon_theme.py --check
 python3 tools/validate_qinda_icon_theme.py
 find data/icons/QindaQt -name '*.svg' -print0 | xargs -0 -n1 xmllint --noout
 ```
@@ -100,7 +146,14 @@ render identical artwork -- the check that would have caught the withdrawn
 candidate's generic per-group fallback shapes -- and that the palette still
 matches the packaged identity: ink, porcelain, and amber equal the
 `qinda-dark` canvas and accent and `qinda-light` surface roles in
-`data/themes`, and no `apps` color artwork uses jade.
+`data/themes`, and no `apps` color artwork uses jade. It also requires every
+name in `tools/qinda_icon_required.py`. The `qindaqt.qindaqt-icon-artwork-current`
+and `qindaqt.qindaqt-icon-artwork` tests run the generator's `--check` mode and
+the validator.
+
+These modules are the source of truth for the QindaThemes icon families too:
+QindaThemes copies them verbatim with its `tools/sync_icon_sources.py` and
+fails its check when a copy drifts, so change the catalog here first.
 
 Render representative SVGs with `rsvg-convert` for visual review. Generated
 contact sheets are local review artifacts and are not committed.
