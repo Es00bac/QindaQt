@@ -199,6 +199,14 @@ Window {
         objectName: "desktopContentsController"
     }
 
+    // The optional standard icons (Home, Trash, the XDG folders, Computer),
+    // each one a desktop-icons setting (ADR-0282).
+    DesktopPlacesController {
+        id: desktopPlaces
+        objectName: "desktopPlacesController"
+        settings: root.appletSettings
+    }
+
     // Full-surface input, stacked UNDER the icons view: a plain Item does not
     // accept pointer events, so tile clicks reach the tiles and empty-area
     // clicks fall through to here — except left clicks, which the icons
@@ -262,6 +270,7 @@ Window {
         anchors.fill: parent
         settings: root.appletSettings
         contents: desktopContents
+        places: desktopPlaces
         layoutStore: root.layoutStore
         screenName: root.screenName
         outputRects: root.outputRects

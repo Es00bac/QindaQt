@@ -78,6 +78,9 @@ qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_new_folder_tests
     tst_new_folder_controller.cpp qindaqt.desktop-surface-new-folder)
 qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_contents_tests
     tst_desktop_contents_controller.cpp qindaqt.desktop-surface-contents)
+# ADR-0282: the optional standard icons (Home, Trash, XDG folders, Computer).
+qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_places_tests
+    tst_desktop_places_controller.cpp qindaqt.desktop-surface-places)
 qindaqt_add_desktop_surface_test(qindaqt_desktop_icon_layout_store_tests
     tst_desktop_icon_layout_store.cpp qindaqt.desktop-icon-layout-store)
 qindaqt_add_desktop_surface_test(qindaqt_desktop_surface_controller_tests
@@ -101,6 +104,14 @@ qindaqt_add_desktop_surface_test(
     qindaqt_desktop_icon_interaction_tests
     tst_desktop_icon_interactions.cpp
     qindaqt.desktop-icon-interactions
+    SUPPORT desktop_surface_qml_test_support.h
+    OFFSCREEN
+)
+# ADR-0282: the optional standard icons (Home, Trash, ...) in the surface.
+qindaqt_add_desktop_surface_test(
+    qindaqt_desktop_standard_icon_tests
+    tst_desktop_standard_icons.cpp
+    qindaqt.desktop-standard-icons
     SUPPORT desktop_surface_qml_test_support.h
     OFFSCREEN
 )
