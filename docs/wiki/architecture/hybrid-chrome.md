@@ -89,6 +89,66 @@ when the optional bridge cannot load or before the first confirmed map, and
 follows later confirmed changes through the bridge's retained binding. See
 [ADR-0092](../adr/0092-project-confirmed-palette-into-compositor-ui.md).
 
+## Split-deck row (Corner Bar)
+
+A style may arrange the shared row as a split deck instead of the classic
+full-width row
+([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)).
+The theme's `decoration.containerTitleLayout`, a decoration document's key of
+the same name, and the `appearance.containerTitleLayout` preference resolve
+into `ChromeStyle::titleLayout`; the six Corner Bar treatments (Qinda Marigold,
+Sea Glass and Lilac, light and dark) author `split-deck`.
+
+`ChromeSplitDeck` rearranges the engine's plan:
+
+- a **title tab** at the left edge holds the window buttons in the theme's
+  placement and order and the container's name. It is as wide as its content
+  but never wider than 20% of the row; on a narrow container the buttons and a
+  24 px drag surface are always kept and the name elides first. The whole tab
+  moves the container and takes the title double-click;
+- a **deck** anchored to the right edge holds the group controls at the far
+  right and the page tabs growing leftward from them, never wider than 75% of
+  the row, and it yields so that at least 5% of the row stays a gap;
+- tabs that fit sit side by side in logical order (the tab direction still
+  picks which end is first). Otherwise the deck is a **card carousel**: the
+  active tab is a full-size front card in the middle, each card behind it is
+  scaled by 0.84 per step and overlapped by the nearer card, receding toward
+  both ends. Three cards per side are painted; deeper cards sit exactly behind
+  the third. Every tab remains a plan tab in logical order with a `deckDepth`,
+  so accessibility, keyboard traversal, tab drag and the context menu see all
+  of them; the nearest card owns a point for hit testing and paint order.
+
+The **gap** between the pieces is not chrome. The renderer fills, clips and
+strokes only the silhouette of the body and the two pieces (the identity frame
+and focus glow are clipped to it), and the hit tester returns nothing in the
+gap and no top resize edge above it, so a press there reaches the window
+underneath. Because container chrome is a paint-only scene item, this needs
+none of the KWin input-shape patch that ordinary Corner Bar windows use
+(ADR-0277).
+
+A plain vertical wheel over the deck, on a card or on the deck's own surface,
+steps the active page one tab in logical order (away from the user toward the
+first tab) and stops at either end, like a Qt tab bar. The router reports a
+tab step; `KWinChromeManager::dispatchTabStep` revalidates it against the
+published plan and emits the same page activation as a click. A wheel with any
+modifier (Meta in particular) is never a deck step, and a wheel over the title
+tab still rolls the container up. A change of front card glides over the
+theme's `motionDuration` in the scene overlay; `accessibility.reducedMotion`
+makes it instant. The glide is paint-only: the published plan, and so every
+hit test, is already final.
+
+The title tab wears the theme's `titleBarColor` while the container is
+focused and `titleBarInactiveColor` otherwise (falling back to
+`surfaceRaised`), with name ink that keeps 4.5:1 against it. The split-deck
+row is painted opaque whatever the material.
+
+`hybrid-chrome.splitdeck` covers the geometry, hit testing, wheel stepping,
+paint and glide. Setting `QINDAQT_SPLITDECK_EVIDENCE_DIR` makes its
+`cornerBarThemesRenderEveryDeckState` row save each Corner Bar treatment
+(light and dark, a roomy row and a 16-tab deck, focused and unfocused) over a
+checkered backdrop for visual review; those are offscreen renderer frames,
+not a live-session capture.
+
 ## DPI and output coordinates
 
 Every metric and input rectangle is expressed in device-independent logical
@@ -205,8 +265,10 @@ A double-click on the unshaded shared outer title is reported to the session,
 which runs the container style's title double-click
 ([ADR-0264](../adr/0264-window-button-styles-are-data.md)): the container's own
 maximize/restore or minimize window action, or its wheel roll-up. The default
-`none` keeps the row inert, as it shipped; a double-click on the shaded badge
-still unrolls.
+`theme` follows the theme's `containerTitleDoubleClick` (the Corner Bar themes
+roll up; [ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md))
+and otherwise keeps the row inert, as it shipped; `none` keeps it inert
+whatever the theme says. A double-click on the shaded badge still unrolls.
 
 The shared row's window buttons are the built-in traffic lights or flat
 plates unless the style carries a `ChromeButtonPainter`: the decoration
@@ -230,8 +292,12 @@ A **Group Color** submenu offers a fixed curated palette
 (`Compositor::containerColorSwatches()`) plus **Default**, radio-exclusive
 against the container's current color. Rename and color are process-local
 `ContainerAppearance` overrides (`HybridContainerAppearanceStore`, owned by
-`KWinHybridSession`): the name replaces the derived title painted into the
-shared row's outer-title drag region and the collapsed dock/task entry's
+`KWinHybridSession`): the name is the container's title
+([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)):
+the user's rename, else the translated default "Container", never a member's
+application title. It is painted in the classic row's leftover drag region
+(muted while it is the default), in the split-deck title tab, and on the
+rolled-up badge, and a rename also replaces the collapsed dock/task entry's
 title; the color replaces the shared row's resolved accent (active-tab
 underline, rename text, and other accent-derived cues) for that container
 only. Neither is part of `Core::WindowContainer`/`TopologyCommand` and
@@ -293,16 +359,14 @@ frame it was shaded from. When a strip cannot hold both, page pills drop into
 the "+N" counter before the label gives up any of its measured width: the label
 is the only thing on a rolled-up badge that says which page this is.
 
-That label spends its width on whichever text the
-user can actually recognise
-([ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)): a
-container the user renamed reads `<name> · <active page>`, a container that was
-never renamed reads the active page title alone, and the stable generated
-`Container N`
-([ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md))
-appears only when there is no page title to show. A generated placeholder is
-never prefixed to real text - doing so elided the page title out of the badge,
-so a title readable on the unrolled row vanished when rolled up. Container
+That label is the container's own name
+([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md),
+superseding the page-title label of
+[ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)):
+the user's rename, else "Container". The generated `Container N` numbering of
+[ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md)
+is retired. The page title is only the fallback for a caller that supplies no
+name, and it is never prefixed or appended. Container
 names are not persisted: they live only for the container's process lifetime
 (see ADR-0189's consequences for exactly why a restart cannot keep them yet).
 No member is minimized (the container never becomes one collapsed dock
@@ -404,7 +468,8 @@ bounds on either button side and the centered grip contracts to 8 px without
 overlap; it grows to 36 px when space permits. Narrower geometry is explicitly
 incomplete and paints no grip. A modifier-free vertical wheel over the
 container title row, a tab or control, or a member handlebar rolls the
-container up (wheel away from the user) or down. Over an ordinary window's
+container up (wheel away from the user) or down, except over a split-deck
+deck, where it steps the active tab (see "Split-deck row" above). Over an ordinary window's
 title bar the same wheel rolls that window up to its icon chip (next section),
 not into KWin's shade. See
 [ADR-0131](../adr/0131-contained-window-handlebar-and-wheel-roll-up.md) and

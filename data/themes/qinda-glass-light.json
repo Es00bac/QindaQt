@@ -3,7 +3,7 @@
   "id": "qinda-glass-light",
   "name": "Qinda Glass",
   "variant": "light",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaFacet",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 14,

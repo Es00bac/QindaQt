@@ -3,7 +3,7 @@
   "id": "qinda-glass-dark",
   "name": "Qinda Glass Dark",
   "variant": "dark",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaOrbit",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 14,

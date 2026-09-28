@@ -40,6 +40,15 @@ struct DecorationSpec {
     QString titleDoubleClick;
     QString minimizeAction = QStringLiteral("minimize");
     bool titleWear = true;
+    // Container title row arrangement (ADR-0281): `classic` or `split-deck`.
+    // Empty means "not authored", which containers read as classic, so every
+    // existing document keeps the row it shipped with and its strict round
+    // trip gains no key.
+    QString containerTitleLayout;
+    // What a container title double-click does (ADR-0281): `maximize`,
+    // `roll-up` or `minimize`; empty (unauthored) keeps containers inert.
+    // The user's appearance.containerTitleDoubleClick wins unless "theme".
+    QString containerTitleDoubleClick;
 
     [[nodiscard]] QVariantMap toVariantMap() const;
 };
@@ -130,6 +139,11 @@ public:
     // Decoration theme document (data/decorations/<id>.json) this color theme
     // pairs with; empty keeps the inline `decoration` block.
     QString decorationTheme;
+    // Light/dark twins (ADR-0284): the theme ids to use for this selection
+    // when the effective scheme is light or dark. Empty means no twin; the
+    // resolver then falls back as it always did. Schema v2 `variants`.
+    QString lightVariant;
+    QString darkVariant;
 
     // The material for one surface class: the authored entry, or a v1-shaped
     // default whose blur follows `blurEnabled` for panels, popups, and menus

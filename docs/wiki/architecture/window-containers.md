@@ -170,29 +170,38 @@ never iconified; see [Hybrid container chrome](hybrid-chrome.md)
   hidden member revealed or focused by a KWin activation. The badge width is
   derived from chrome metrics and tab count, capped by the former container
   width, so roll-up genuinely shrinks the frame. It paints the container
-  identity color and a label that prefers real text over a placeholder
-  ([ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)):
-  `<rename> · <active page>` when the user named the container, the active page
-  title alone when they did not, and the generated `Container N`
-  ([ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md))
-  only when no page title exists. It keeps bounded page pills; clicking
+  identity color and a label with the container's own name, the rename or
+  "Container"
+  ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md),
+  superseding the page-title label of
+  [ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)).
+  It keeps bounded page pills; clicking
   a pill activates that page and unrolls. Unroll restores the exact frames,
   content, and the member focus held at roll-up. See
   [ADR-0099](../adr/0099-shade-whole-containers-by-hiding-member-content.md)
   and [ADR-0139](../adr/0139-identity-borders-focus-and-rolled-up-badge.md).
 - A container may be renamed and given a user-chosen accent color through the
   group menu. Both are process-local presentation overrides (not part of the
-  persistence-neutral `Core::WindowContainer` model below): the rename
-  replaces the derived title in the shared row and the collapsed dock/task
-  entry, and the color replaces the shared row's accent (active-tab
-  underline, rename text, focus cue). A container that was never renamed
-  still presents a stable generated `Container N` name on surfaces that
-  require one (the rolled-up badge); the rename prompt keeps prefilling the
-  raw override, not the generated name
-  ([ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md)).
+  persistence-neutral `Core::WindowContainer` model below). **A container is
+  titled by its own name**: the rename, else the translated default
+  "Container", never a member's application or window title, on every
+  layout (classic row, split-deck title tab, rolled-up badge); a rename also
+  replaces the collapsed dock/task entry's title. The color replaces the
+  shared row's accent (active-tab underline, rename text, focus cue). The
+  rename prompt keeps prefilling the raw override, not the default name
+  ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md);
+  the `Container N` numbering of
+  [ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md)
+  is retired).
   Neither survives a compositor restart
   yet; see [Hybrid container chrome](hybrid-chrome.md) for the exact
   boundary a future persistence owner reads/writes through.
+- The shared title row is either the classic full-width row or, for the
+  Corner Bar themes, a split deck: the name and window buttons on a title tab
+  at the left (at most 20% of the width), the page tabs and group controls on
+  a deck at the right (at most 75%), an input-transparent gap between them,
+  and a card carousel when the tabs overflow; a plain wheel over the deck
+  steps tabs ([Hybrid container chrome](hybrid-chrome.md) "Split-deck row").
 - The shared title row keeps a visible native-title toggle and group-management
   menu opposite the normal window buttons. `Meta+Shift+C` toggles the same
   active-group choice. Server-drawn member titles restore their exact prior

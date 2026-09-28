@@ -49,6 +49,14 @@ enum class TitleDoubleClickAction {
 };
 Q_ENUM_NS(TitleDoubleClickAction)
 
+// How a container's shared title row is arranged (ADR-0281): the shipped
+// full-width row, or the Corner Bar split deck (see ChromeSplitDeck).
+enum class ContainerTitleLayout {
+    Classic,
+    SplitDeck,
+};
+Q_ENUM_NS(ContainerTitleLayout)
+
 enum class WindowAction {
     Close,
     Minimize,
@@ -106,6 +114,10 @@ struct ChromePalette final
     QColor close = QColor(QStringLiteral("#ff5f57"));
     QColor minimize = QColor(QStringLiteral("#febc2e"));
     QColor maximize = QColor(QStringLiteral("#28c840"));
+    // Split-deck title tab colors (ADR-0281); optional, so isValid() ignores
+    // them and an invalid color falls back to surfaceRaised.
+    QColor titleBar;
+    QColor titleBarInactive;
 
     [[nodiscard]] bool isValid(QString *error = nullptr) const;
 };
@@ -158,6 +170,10 @@ struct ChromeStyle final
     QSizeF buttonSize;
     qreal buttonSpacing = -1.0;
     TitleDoubleClickAction titleDoubleClick = TitleDoubleClickAction::None;
+    // Row arrangement and the split-deck glide in ms (the theme's
+    // motionDuration; 0 under reduced motion), ADR-0281.
+    ContainerTitleLayout titleLayout = ContainerTitleLayout::Classic;
+    int deckMotionMs = 0;
 
     // AGENT-CONTRACT: Palette values come from the resolved theme. This
     // factory owns Qinda macOS behavior without duplicating theme color data.
@@ -241,21 +257,14 @@ struct ChromeLayoutRequest final
     // A container can retain an active page while another window owns focus.
     bool containerFocused = false;
     bool memberTitlesVisible = true;
-    // User-chosen rename override (see ContainerAppearance). Empty means no
-    // override: the shared row paints no container-level title text, leaving
-    // tabs as the only page-identity presentation, exactly as before this
-    // field existed.
+    // The container's own name (ADR-0281): the rename, else "Container";
+    // never a member's application title. Empty paints no title.
     QString containerTitle;
-    // True when `containerTitle` is a GENERATED placeholder ("Container N",
-    // ADR-0163) rather than something a user typed.
-    //
-    // AGENT-GUARD (ADR-0168): a generated placeholder must never displace real
-    // text. The rolled-up badge has a 48-140 px label; unconditionally
-    // prefixing "Container N · " elided the user's actual title out of it, so
-    // a title that was visible on the unrolled row vanished when rolled up.
-    // The badge therefore uses a generated name only when there is no page
-    // title to show.
+    // True while `containerTitle` is the default name (painted muted).
     bool containerTitleIsGenerated = false;
+    // Caller-measured advance of `containerTitle` (ChromeSplitDeck::
+    // titleTextWidth); 0 is unmeasured, and a split-deck tab takes its share.
+    qreal containerTitleWidth = 0.0;
     // The resolved rolled-up badge label and its measured width in logical
     // pixels (ADR-0207). Only a shaded request sets them; an unshaded request
     // leaves them empty and zero.
@@ -305,6 +314,9 @@ struct TabGeometry final
     qsizetype logicalIndex = -1;
     QRectF rect;
     bool active = false;
+    // Split-deck card depth (ADR-0281): 0 is the front; the smallest depth
+    // wins overlaps for hit and paint. See ChromeSplitDeck::VisibleDepth.
+    int deckDepth = 0;
 };
 
 struct MemberGeometry final
@@ -360,6 +372,12 @@ struct ChromeRenderPlan final
     QVector<MemberGeometry> members;
     QVector<DividerGeometry> dividers;
     bool tabsOverflowed = false;
+    // Split-deck pieces (ADR-0281), empty otherwise: the two painted parts
+    // of the row (outer border included; between them is the gap) and the
+    // name's rect inside the title tab.
+    QRectF titleTab;
+    QRectF deckPiece;
+    QRectF titleLabelRect;
     // Rolled-up badge extras (ADR-0139): the badge label rect (foremost tab
     // and container name), the pill overflow count behind "+N", and the
     // keyboard selection chip rect. Empty/zero when not shown.
@@ -383,6 +401,8 @@ struct ChromeHitTarget final
     // pointer interactions also carry the unroll-to-it semantics (a pill
     // click unrolls to that tab; a badge double-click unrolls).
     bool fromShadedBadge = false;
+    // ADR-0281: on a split-deck deck a plain wheel steps tabs, not roll-up.
+    bool wheelStepsTabs = false;
 
     [[nodiscard]] bool isInteractive() const { return kind != HitKind::None; }
     friend bool operator==(const ChromeHitTarget &, const ChromeHitTarget &) = default;

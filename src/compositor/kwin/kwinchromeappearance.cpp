@@ -26,7 +26,9 @@ KWinChromeAppearance::KWinChromeAppearance(ManagedWindowRegistry &registry,
       std::make_unique<Services::SettingsClient::QtSettingsTransport>(bus);
   m_settings = std::make_unique<Services::SettingsClient::SettingsClient>(
       *m_transport, QStringList{QStringLiteral("appearance.theme"),
-                                QStringLiteral("appearance.colorScheme")});
+                                QStringLiteral("appearance.colorScheme"),
+                                // ADR-0281: stills the split-deck glide.
+                                QStringLiteral("accessibility.reducedMotion")});
   m_appearance =
       std::make_unique<AppAppearance::ApplicationAppearanceController>(
           *m_settings, AppAppearance::standardThemeDirectories(),
@@ -125,6 +127,10 @@ void KWinChromeAppearance::publish() {
                                              m_preferences);
   m_containerStyle =
       Decoration::resolveContainerStyle(theme, containerDocument, m_preferences);
+  // ADR-0281: the split-deck carousel glides over the theme's motion duration
+  // unless the user asked for reduced motion.
+  if (m_appearance->accessibilityInputs().reducedMotion)
+    m_containerStyle.deckMotionMs = 0;
   m_qmlPalette.insert(QStringLiteral("accent"),
                       m_nativePalette.color(QPalette::Highlight));
   m_qmlPalette.insert(QStringLiteral("accentText"),

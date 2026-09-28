@@ -3,7 +3,7 @@
   "id": "qinda-aurora",
   "name": "Qinda Aurora",
   "variant": "dark",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaOrbit",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 16,

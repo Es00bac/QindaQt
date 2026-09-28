@@ -19,6 +19,7 @@ document that carries a v2 key is rejected rather than half-read.
 | `motion` | object | Optional; motion name → `{duration, easing}` |
 | `accent` | object | Optional; `{ "mode": "fixed" \| "wallpaper" }`, default `fixed` |
 | `decorationTheme` | string | Optional decoration document id (same grammar as `iconTheme`); empty keeps the inline `decoration` block |
+| `variants` | object | Optional `{ "light": id, "dark": id }`, either or both, naming this selection's light and dark twins (theme ids, same grammar); the resolver uses an installed twin of the right kind when the effective scheme calls for it ([ADR-0284](../adr/0284-themes-name-their-light-and-dark-twins.md)) |
 
 ## Surfaces
 
@@ -69,6 +70,7 @@ of colors, so Appearance can pair any color theme with any decoration:
 | `shadow` | object | `extent` `0`–`48` (default `12`), `opacity` `0`–`1` (default `0.30`) |
 | `memberHandle` | string | `grip`, `dots`, or `plain` |
 | `containerBadge` | string | `pill` or `square` |
+| `containerTitleLayout` | string | optional `classic` or `split-deck`; absent keeps the color theme's own row ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)) |
 
 A color theme names its companion with `decorationTheme`; the user may
 override the pairing for windows and for containers separately from

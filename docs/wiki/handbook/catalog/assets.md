@@ -133,7 +133,7 @@ Source: `data/themes/qinda-bliss.json`.
 | --- | --- |
 | schemaVersion | `1` |
 | variant | `"light"` |
-| iconTheme | `"QindaQt"` |
+| iconTheme | `"QindaNative"` |
 | fontFamily | `"Tahoma"` |
 | monoFontFamily | `"JetBrains Mono"` |
 | cornerRadius | `4` |
@@ -182,7 +182,7 @@ Source: `data/themes/qinda-high-contrast.json`.
 | --- | --- |
 | schemaVersion | `1` |
 | variant | `"high-contrast"` |
-| iconTheme | `"QindaQt"` |
+| iconTheme | `"QindaNative"` |
 | fontFamily | `"Noto Sans"` |
 | monoFontFamily | `"Noto Sans Mono"` |
 | cornerRadius | `4` |
@@ -214,7 +214,7 @@ Source: `data/themes/qinda-macos.json`.
 | --- | --- |
 | schemaVersion | `1` |
 | variant | `"light"` |
-| iconTheme | `"QindaQt"` |
+| iconTheme | `"QindaNative"` |
 | fontFamily | `"Inter"` |
 | monoFontFamily | `"JetBrains Mono"` |
 | cornerRadius | `12` |

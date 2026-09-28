@@ -3,7 +3,7 @@
   "id": "qinda-bliss",
   "name": "Qinda Classic Blue",
   "variant": "light",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaNative",
   "fontFamily": "Noto Sans",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 4,

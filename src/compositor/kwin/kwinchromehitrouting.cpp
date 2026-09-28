@@ -2,6 +2,8 @@
 #include "kwinchromemanager.h"
 
 #include "qindaqt/hybrid_chrome/chromehittest.h"
+#include "qindaqt/hybrid_chrome/chromesplitdeck.h"
+
 #include <algorithm>
 #include <utility>
 
@@ -25,8 +27,11 @@ std::optional<ChromePointerHit> KWinChromeManager::pointerHitAt(
         }
         const auto target = HybridChrome::ChromeHitTester::hitTest(
             found->second.plan, position);
+        // A frame hides chrome below it, except through a split-deck gap
+        // (ADR-0281), which belongs to whatever lies underneath.
         if (target.isInteractive()
-            || found->second.plan.outerFrame.contains(position)) {
+            || (found->second.plan.outerFrame.contains(position)
+                && !HybridChrome::ChromeSplitDeck::inGap(found->second.plan, position))) {
             return ChromePointerHit{*iterator, target};
         }
     }
@@ -172,6 +177,28 @@ bool KWinChromeManager::dispatchPointerActivation(const ChromePointerHit &hit)
         return true;
     }
     return false;
+}
+
+bool KWinChromeManager::dispatchTabStep(const QString &containerId, int step)
+{
+    if (m_contextQuarantine.contains(containerId)) {
+        return false;
+    }
+    const auto found = m_entries.find(containerId);
+    if (found == m_entries.end()) {
+        return false;
+    }
+    const auto &plan = found->second.plan;
+    const auto next = HybridChrome::ChromeSplitDeck::steppedTab(plan, step);
+    if (!next) {
+        return false;
+    }
+    const auto &tabId = plan.tabs[*next].tabId;
+    if (!found->second.tabRepresentatives.contains(tabId)) {
+        return false;
+    }
+    Q_EMIT tabActivationRequested(containerId, tabId);
+    return true;
 }
 
 void KWinChromeManager::setPointerHover(std::optional<ChromePointerHit> hit)

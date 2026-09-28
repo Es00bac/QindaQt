@@ -3,7 +3,7 @@
   "id": "qinda-daylight",
   "name": "Qinda Daylight",
   "variant": "light",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaNative",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 8,

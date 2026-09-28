@@ -38,7 +38,8 @@ All **97 keys** in active schema v2 are listed below. The immutable v1 schema re
 | `appearance.windowTitleDoubleClick` | string | `"theme"` | `{"allowedValues":["theme","maximize","roll-up","minimize"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.containerButtonSize` | string | `"theme"` | `{"allowedValues":["theme","small","large"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.containerButtonSpacing` | string | `"theme"` | `{"allowedValues":["theme","tight","roomy"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
-| `appearance.containerTitleDoubleClick` | string | `"none"` | `{"allowedValues":["none","maximize","roll-up","minimize"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.containerTitleDoubleClick` | string | `"theme"` | `{"allowedValues":["theme","none","maximize","roll-up","minimize"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.containerTitleLayout` | string | `"theme"` | `{"allowedValues":["theme","classic","split-deck"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.windowDecoration` | string | `"theme"` | `{"nonEmpty":true}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.containerDecoration` | string | `"theme"` | `{"nonEmpty":true}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 

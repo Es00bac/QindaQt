@@ -41,7 +41,7 @@ ChromeRenderPlan shadedBadgePlan(qsizetype tabCount, qreal widthOverride = 0.0)
     // ADR-0189: the caller resolves and measures the label, then sizes the
     // strip for that measurement.
     request.badgeLabelText = ChromeShadedBadge::resolveLabel(
-        request.containerTitle, false,
+        request.containerTitle,
         request.tabs.isEmpty() ? QString() : request.tabs.constFirst().title);
     request.badgeLabelWidth = measuredLabelWidth(request.badgeLabelText);
     // Size the badge to its content-driven strip width unless the caller
