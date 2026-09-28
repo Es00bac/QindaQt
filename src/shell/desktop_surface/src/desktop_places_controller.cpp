@@ -206,9 +206,23 @@ void DesktopPlacesController::watchTrash() {
   if (m_locations.trashFiles.isEmpty()) {
     return;
   }
+  // The files folder itself, plus the nearest existing folder above it, so a
+  // Trash (or data home) created on first use is noticed too.
   const QString files = QDir::cleanPath(m_locations.trashFiles);
-  for (const QString &path : {files, QFileInfo(files).absolutePath()}) {
-    if (QFileInfo(path).isDir() && !m_watcher.directories().contains(path)) {
+  QStringList wanted;
+  if (QFileInfo(files).isDir()) {
+    wanted.append(files);
+  }
+  for (QString parent = QFileInfo(files).absolutePath(); !parent.isEmpty();) {
+    if (QFileInfo(parent).isDir()) {
+      wanted.append(parent);
+      break;
+    }
+    const QString next = QFileInfo(parent).absolutePath();
+    parent = next == parent ? QString() : next;
+  }
+  for (const QString &path : std::as_const(wanted)) {
+    if (!m_watcher.directories().contains(path)) {
       m_watcher.addPath(path);
     }
   }
