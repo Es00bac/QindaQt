@@ -7,8 +7,11 @@ each name genuinely means "settings for <subsystem>" -- the badge is a real
 semantic device, not an index-derived decoration. See
 tools/qinda_icon_shapes.py for the transparency rule these fragments follow.
 
-AGENT-GUARD: First-party material icons use plum, pearl and apricot. Keep
-small on-body marks readable by luminance and preserve real symbolic cutouts.
+AGENT-GUARD: First-party material icons use plum, pearl and apricot; the
+settings-for-subsystem glyphs additionally carry one muted hue per subsystem
+(`_HUE`, ADR-0283) so a Settings sidebar is not a column of identical plum
+shapes. Keep small on-body marks readable by luminance and preserve real
+symbolic cutouts.
 """
 from qinda_icon_shapes import (
     AMBER, APRICOT, BELL_CLAPPER_D, BELL_D, BLUE, BLUETOOTH_D, FOLDER_D,
@@ -17,6 +20,12 @@ from qinda_icon_shapes import (
 )
 
 GROUP = "apps"
+# Muted per-subsystem hues (ADR-0283). Never JADE: that is a status color.
+_HUE = {
+    "access": "#4a86c8", "display": "#5c7fd0", "plugin": "#5aa872", "network": "#3f8fc0",
+    "notify": "#e0a040", "notify-settings": "#6a7fd8", "power": "#5aa872", "windows": "#7a6ad0", "bluetooth": "#3f7fd0",
+    "search": "#2a9d9a", "clock": "#5c6fd6",
+}
 
 
 def _q_logo(accent: str, tail: str) -> Icon:
@@ -76,7 +85,7 @@ CANON = {
         # Universal-access figure: head dot, outstretched arms, standing legs,
         # inside a ring. Distinct from the notification bell and the gear.
         ring(32, 32, 24, width=5) + dot(32, 19, 4) + strokes("M20 28h24", "M32 28v12", "M32 40l-7 10", "M32 40l7 10", width=5),
-        f'<circle cx="32" cy="32" r="26" fill="{BLUE}"/>'
+        f'<circle cx="32" cy="32" r="26" fill="{_HUE["access"]}"/>'
         + dot(32, 19, 5, PORCELAIN)
         + strokes("M20 28h24", "M32 28v12", "M32 40l-7 10", "M32 40l7 10", color=PORCELAIN, width=5),
     ),
@@ -106,60 +115,60 @@ CANON = {
     "preferences-desktop-display": Icon(
         GROUP,
         rect(11, 12, 34, 26, rx=4) + stroke("M22 46h12M28 38v8") + ring(50, 12, 5, width=4),
-        rect(11, 12, 34, 26, rx=4, fill=BLUE) + stroke("M22 46h12M28 38v8", color=INK, width=5)
+        rect(11, 12, 34, 26, rx=4, fill=_HUE["display"]) + stroke("M22 46h12M28 38v8", color=INK, width=5)
         + ring(50, 12, 5, width=4, color=APRICOT),
     ),
     "preferences-desktop-plasma": Icon(
         GROUP,
         rect(12, 22, 26, 26, rx=5) + rect(26, 14, 26, 26, rx=5),
-        rect(12, 22, 26, 26, rx=5, fill=VIOLET) + rect(26, 14, 26, 26, rx=5, fill=BLUE),
+        rect(12, 22, 26, 26, rx=5, fill=VIOLET) + rect(26, 14, 26, 26, rx=5, fill=_HUE["display"]),
     ),
     "preferences-plugin": Icon(
         GROUP,
         stroke("M18 20h10v-2a4 4 0 0 1 8 0v2h10v10h2a4 4 0 0 1 0 8h-2v10H36v-2a4 4 0 0 0-8 0v2H18V38h-2a4 4 0 0 1 0-8h2z", width=4),
-        filled("M18 20h10v-2a4 4 0 0 1 8 0v2h10v10h2a4 4 0 0 1 0 8h-2v10H36v-2a4 4 0 0 0-8 0v2H18V38h-2a4 4 0 0 1 0-8h2z", fill=BLUE)
+        filled("M18 20h10v-2a4 4 0 0 1 8 0v2h10v10h2a4 4 0 0 1 0 8h-2v10H36v-2a4 4 0 0 0-8 0v2H18V38h-2a4 4 0 0 1 0-8h2z", fill=_HUE["plugin"])
         + stroke("M18 20h10v-2a4 4 0 0 1 8 0v2h10v10h2a4 4 0 0 1 0 8h-2v10H36v-2a4 4 0 0 0-8 0v2H18V38h-2a4 4 0 0 1 0-8h2z", width=3, color=INK),
     ),
     "preferences-system-network": Icon(
         GROUP,
         ring(32, 32, 18) + stroke("M14 32h36") + strokes("M32 14c-10 6-10 30 0 36", "M32 14c10 6 10 30 0 36", width=5),
-        f'<circle cx="32" cy="32" r="22" fill="{BLUE}"/>'
+        f'<circle cx="32" cy="32" r="22" fill="{_HUE["network"]}"/>'
         + strokes("M12 32h40", "M32 12c-11 7-11 33 0 40", "M32 12c11 7 11 33 0 40", color=PORCELAIN, width=4),
     ),
     "preferences-system-notifications": Icon(
         GROUP,
         stroke(BELL_D, width=5) + stroke(BELL_CLAPPER_D, width=5) + gear_badge(),
-        filled(BELL_D, fill=BLUE) + stroke(BELL_CLAPPER_D, color=INK, width=4) + gear_badge(APRICOT),
+        filled(BELL_D, fill=_HUE["notify-settings"]) + stroke(BELL_CLAPPER_D, color=INK, width=4) + gear_badge(APRICOT),
     ),
     "preferences-system-power-management": Icon(
         GROUP,
         rect(11, 22, 38, 22, rx=5) + stroke("M49 29v8") + gear_badge(),
-        rect(11, 22, 38, 22, rx=5, fill=BLUE) + stroke("M49 29v8", color=INK, width=5) + gear_badge(APRICOT),
+        rect(11, 22, 38, 22, rx=5, fill=_HUE["power"]) + stroke("M49 29v8", color=INK, width=5) + gear_badge(APRICOT),
     ),
     "preferences-system-windows": Icon(
         GROUP,
         rect(10, 14, 36, 30, rx=4) + stroke("M10 22h36") + gear_badge(),
-        rect(10, 14, 36, 30, rx=4, fill=BLUE) + stroke("M10 22h36", color=PORCELAIN, width=4) + gear_badge(APRICOT),
+        rect(10, 14, 36, 30, rx=4, fill=_HUE["windows"]) + stroke("M10 22h36", color=PORCELAIN, width=4) + gear_badge(APRICOT),
     ),
     "preferences-system-bluetooth": Icon(
         GROUP,
         stroke(BLUETOOTH_D, width=5) + gear_badge(),
-        stroke(BLUETOOTH_D, color=BLUE, width=6) + gear_badge(APRICOT),
+        stroke(BLUETOOTH_D, color=_HUE["bluetooth"], width=6) + gear_badge(APRICOT),
     ),
     "preferences-system-search": Icon(
         GROUP,
         ring(26, 26, 12) + stroke("M35 35 48 48") + gear_badge(),
-        ring(26, 26, 12, width=7, color=BLUE) + stroke("M35 35 48 48", color=INK, width=7) + gear_badge(APRICOT),
+        ring(26, 26, 12, width=7, color=_HUE["search"]) + stroke("M35 35 48 48", color=INK, width=7) + gear_badge(APRICOT),
     ),
     "notifications": Icon(
         GROUP,
         stroke(BELL_D, width=6) + stroke(BELL_CLAPPER_D, width=6),
-        filled(BELL_D, fill=BLUE) + stroke(BELL_CLAPPER_D, color=INK, width=5),
+        filled(BELL_D, fill=_HUE["notify"]) + stroke(BELL_CLAPPER_D, color=INK, width=5),
     ),
     "clock": Icon(
         GROUP,
         ring(32, 32, 18) + stroke("M32 32V19M32 32 43 39"),
-        f'<circle cx="32" cy="32" r="22" fill="{BLUE}"/>'
+        f'<circle cx="32" cy="32" r="22" fill="{_HUE["clock"]}"/>'
         + stroke("M32 32V17M32 32 44 40", color=PORCELAIN, width=5),
     ),
     "system-file-manager": Icon(
@@ -215,14 +224,14 @@ CANON["utilities-terminal"] = Icon(
     + stroke("M19 29l8 7-8 7", color=PORCELAIN, width=4)
     + stroke("M35 43h10", color=AMBER, width=4))
 
+# AGENT-NOTE: Files, Text Editor and QQ_Term (Icon=qqterm) now own distinct
+# first-party marks in qinda_icon_catalog_first_party.py (personality round,
+# 2026-09-28); the generic glyphs here stay the freedesktop defaults that
+# third-party file managers, editors and terminals resolve to.
 ALIASES = {
     "application-launcher": ("start-here-kde", None),
-    "org.qindaqt.FileManager": ("system-file-manager", None),
-    "org.qindaqt.TextEditor": ("accessories-text-editor", None),
     "org.qindaqt.Settings": ("preferences-system", None),
-    # QQ_Term ships as gui-apps/qqterm and declares Icon=qqterm; the QindaQt
-    # theme aliases that name onto the shared terminal glyph so the first-party
-    # terminal still looks like the rest of the desktop.
-    "qqterm": ("utilities-terminal", None),
-    "org.qindaqt.QQTerm": ("utilities-terminal", None),
+    # The QindaQt Terminal (src/apps/terminal) declares Icon=utilities-terminal;
+    # its app id also resolves here for task-list lookups by id.
+    "org.qindaqt.Terminal": ("utilities-terminal", None),
 }

@@ -283,3 +283,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0278: Retain dock delegates by presentation identity](0278-retain-dock-delegates-by-presentation-identity.md)
 
 - [ADR-0280: Independently select an installed icon theme](0280-independent-installed-icon-theme-choice.md)
+
+- [ADR-0283: True-color places, file types and Qinda app marks from one shared catalog](0283-true-color-places-types-and-qinda-app-marks.md)
