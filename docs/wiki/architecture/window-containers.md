@@ -100,7 +100,9 @@ never iconified; see [Hybrid container chrome](hybrid-chrome.md)
   and modifier + wheel rolls it up or down once per scroll gesture. Over an
   independent window the left chord stays KWin's move and the right chord starts
   KWin's resize; the pen's tip is the left button and its barrel button the
-  right. See [ADR-0282](../adr/0282-containers-never-lock-and-speak-modifier-chords.md).
+  right. On a touchscreen a finger held still on a window's own title bar picks
+  it up into the same dock drag. See
+  [ADR-0282](../adr/0282-containers-never-lock-and-speak-modifier-chords.md).
 - Whole-container minimize is session state, not derived page state: a
   topology mutation re-plans every container but never resurrects a minimized
   one, and only an explicit restore (task list, group menu, or chrome) brings

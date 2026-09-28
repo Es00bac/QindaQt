@@ -7,6 +7,7 @@
 #include "qindaqt/hybrid_input/interactioncontroller.h"
 #include "qindaqt/hybrid_input/lateshifttakeoverdetector.h"
 #include "qindaqt/hybrid_input/tabletpointertranslator.h"
+#include "qindaqt/hybrid_input/touchtitlepickup.h"
 #include "qindaqt/hybrid_input/wheelrollchord.h"
 
 #include <QPointF>
@@ -72,6 +73,22 @@ struct ModifierChordHooks final
     std::function<bool(const QPointF &)> resizeWindowAt;
 };
 
+// ADR-0282 touch pick-up of a window by its own title bar. Both are optional;
+// without them a held finger on a title stays KWin's.
+struct TouchPickupHooks final
+{
+    // The manageable window whose native title bar is under a finger landing
+    // at this point, or nothing (another input owner covers it, no title).
+    std::function<std::optional<QString>(const QPointF &)> titleAt;
+    // Called when the long press fires. Returns the dock-drag source when the
+    // takeover is safe -- KWin has not started its own move and the finger is
+    // on the title, not a title-bar button -- after releasing KWin's pending
+    // title press; nothing when the sequence must stay KWin's.
+    std::function<std::optional<HybridInput::HitTarget>(const QString &windowId,
+                                                        const QPointF &position)>
+        takeOver;
+};
+
 class KWinInteractionFilter final
 {
 public:
@@ -105,6 +122,7 @@ public:
     // builds its chip router before the filter and resolves chips itself.
     void setIconifyHooks(IconifyInputHooks hooks);
     void setModifierChordHooks(ModifierChordHooks hooks);
+    void setTouchPickupHooks(TouchPickupHooks hooks);
     [[nodiscard]] bool beginKeyboardDock(const HybridInput::HitTarget &source);
     [[nodiscard]] bool beginKeyboardMove(const HybridInput::HitTarget &source);
     [[nodiscard]] bool beginKeyboardDividerResize(
@@ -140,6 +158,13 @@ private:
     [[nodiscard]] bool touchUp(KWin::TouchUpEvent *event);
     [[nodiscard]] bool touchCancel();
     void expireTouchLongPress();
+    // ADR-0282 native-title pick-up (kwininteractionfilter_touch.cpp).
+    [[nodiscard]] bool titlePickupDown(KWin::TouchDownEvent *event, qint64 now);
+    [[nodiscard]] bool titlePickupMotion(KWin::TouchMotionEvent *event);
+    [[nodiscard]] bool titlePickupUp(KWin::TouchUpEvent *event);
+    void titlePickupCancel();
+    void expireTitlePickup();
+    [[nodiscard]] bool applyTitlePickup(const HybridInput::TouchPickupDecision &decision);
     void finishTouchGesture();
     // ADR-0282 (kwininteractionfilter_chords.cpp): the pen speaks the mouse
     // chords (tip = left, barrel = right) through TabletPointerTranslator,
@@ -188,6 +213,11 @@ private:
     // True from a tablet press the controller claimed until its release.
     bool m_tabletGesture = false;
     HybridInput::WheelRollChord m_wheelRoll;
+    TouchPickupHooks m_touchPickupHooks;
+    HybridInput::TouchTitlePickup m_titlePickup;
+    QTimer m_titlePickupTimer;
+    bool m_titlePickupTimerConnected = false;
+    QString m_titlePickupWindowId;
     HybridChromeTouchPolicy m_touch;
     QTimer m_touchTimer;
     bool m_touchTimerConnected = false;

@@ -2,6 +2,8 @@
 // The touch half of KWinInteractionFilter (ADR-0193): fingers over shared
 // chrome become the router's left button, a held finger becomes the
 // container's right click, and a second finger's swipe becomes the wheel.
+// ADR-0282: a finger held still on a window's own title bar picks the window
+// up for docking (TouchTitlePickup), the touch Meta + Shift + drag.
 #include "kwininteractionfilter.h"
 
 #include "hybridchromepointerrouter.h"
@@ -14,6 +16,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <utility>
 
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
@@ -66,6 +69,11 @@ bool KWinInteractionFilter::touchDown(KWin::TouchDownEvent *event)
         return false;
     }
     const qint64 now = milliseconds(event->time);
+    if (m_titlePickup.armed() || m_titlePickup.pickedUp()) {
+        // A second finger ends a pending or active title pick-up and, like
+        // every finger during it, stays KWin's.
+        return titlePickupDown(event, now);
+    }
     if (m_touch.isStale(now)) {
         // The grab went elsewhere and no up or cancel ever came: abandon the
         // old gesture so this finger is judged fresh instead of eaten.
@@ -85,7 +93,7 @@ bool KWinInteractionFilter::touchDown(KWin::TouchDownEvent *event)
         return m_touch.down(event->id, event->pos, now, joins, false).consumed;
     }
     if (!hit) {
-        return false;
+        return titlePickupDown(event, now);
     }
     const auto decision = m_touch.down(event->id, event->pos, now, true,
                                        HybridChromePointerRouter::rollTarget(hit->hit.target));
@@ -111,6 +119,9 @@ bool KWinInteractionFilter::touchDown(KWin::TouchDownEvent *event)
 
 bool KWinInteractionFilter::touchMotion(KWin::TouchMotionEvent *event)
 {
+    if (event != nullptr && m_titlePickup.tracking() && !m_touch.active()) {
+        return titlePickupMotion(event);
+    }
     if (event == nullptr || m_chromeRouter == nullptr || !m_touch.active()) {
         return false;
     }
@@ -144,6 +155,11 @@ bool KWinInteractionFilter::touchMotion(KWin::TouchMotionEvent *event)
 
 bool KWinInteractionFilter::touchUp(KWin::TouchUpEvent *event)
 {
+    if (event != nullptr && m_titlePickup.tracking()) {
+        // Never consumed: KWin's decoration filter must see the lift to
+        // release the title press it recorded when the finger landed.
+        static_cast<void>(titlePickupUp(event));
+    }
     if (event == nullptr || m_chromeRouter == nullptr || !m_touch.active()) {
         return false;
     }
@@ -165,6 +181,7 @@ bool KWinInteractionFilter::touchUp(KWin::TouchUpEvent *event)
 
 bool KWinInteractionFilter::touchCancel()
 {
+    titlePickupCancel();
     if (m_chromeRouter == nullptr || !m_touch.active()) {
         return false;
     }
@@ -219,6 +236,109 @@ void KWinInteractionFilter::setTouchPolicyConfig(const TouchPolicyConfig &config
     // A gesture in flight keeps the thresholds it started with; the next
     // finger uses the new ones.
     m_touch.setConfig(config);
+    m_titlePickup.setConfig({.longPressMs = config.longPressMs,
+                             .slop = config.slop,
+                             .staleSequenceMs = config.staleSequenceMs});
+}
+
+void KWinInteractionFilter::setTouchPickupHooks(TouchPickupHooks hooks)
+{
+    m_touchPickupHooks = std::move(hooks);
+}
+
+bool KWinInteractionFilter::titlePickupDown(KWin::TouchDownEvent *event, qint64 now)
+{
+    const bool firstFinger = !m_titlePickup.tracking();
+    std::optional<QString> windowId;
+    if (firstFinger && !m_controller.active() && m_touchPickupHooks.titleAt
+        && m_touchPickupHooks.takeOver) {
+        windowId = m_touchPickupHooks.titleAt(event->pos);
+    }
+    const auto decision = m_titlePickup.down(event->id, event->pos, now, windowId.has_value());
+    if (m_titlePickup.armed()) {
+        m_titlePickupWindowId = *windowId;
+        if (!m_titlePickupTimerConnected) {
+            m_titlePickupTimer.setSingleShot(true);
+            QObject::connect(&m_titlePickupTimer, &QTimer::timeout, &m_titlePickupTimer,
+                             [this] { expireTitlePickup(); });
+            m_titlePickupTimerConnected = true;
+        }
+        if (const auto due = m_titlePickup.longPressDueMs()) {
+            m_titlePickupTimer.start(static_cast<int>(std::max<qint64>(0, *due - now)));
+        }
+    } else {
+        m_titlePickupTimer.stop();
+    }
+    return applyTitlePickup(decision);
+}
+
+bool KWinInteractionFilter::titlePickupMotion(KWin::TouchMotionEvent *event)
+{
+    const auto decision = m_titlePickup.motion(event->id, event->pos, milliseconds(event->time));
+    if (!m_titlePickup.armed()) {
+        m_titlePickupTimer.stop();
+    }
+    return applyTitlePickup(decision);
+}
+
+bool KWinInteractionFilter::titlePickupUp(KWin::TouchUpEvent *event)
+{
+    const auto decision = m_titlePickup.up(event->id, milliseconds(event->time));
+    if (!m_titlePickup.armed()) {
+        m_titlePickupTimer.stop();
+    }
+    return applyTitlePickup(decision);
+}
+
+void KWinInteractionFilter::titlePickupCancel()
+{
+    m_titlePickupTimer.stop();
+    static_cast<void>(applyTitlePickup(m_titlePickup.cancel()));
+}
+
+void KWinInteractionFilter::expireTitlePickup()
+{
+    // The timer fired at the due time the policy asked for; the finger's own
+    // timestamps do not tick while it holds still.
+    const auto due = m_titlePickup.longPressDueMs();
+    if (!due) {
+        return;
+    }
+    std::optional<HybridInput::HitTarget> source;
+    if (!m_controller.active() && m_touchPickupHooks.takeOver) {
+        source = m_touchPickupHooks.takeOver(m_titlePickupWindowId,
+                                             m_titlePickup.armedPosition());
+    }
+    const auto decision = m_titlePickup.expire(*due, source.has_value());
+    if (decision.action == HybridInput::TouchPickupAction::PickUp) {
+        // The same dock drag Meta + Shift + drag starts, so the same drop
+        // targets highlight and the same drop rules apply.
+        static_cast<void>(dispatch(m_controller.adoptDrag(*source, decision.position)));
+    }
+}
+
+bool KWinInteractionFilter::applyTitlePickup(const HybridInput::TouchPickupDecision &decision)
+{
+    using HybridInput::TouchPickupAction;
+    switch (decision.action) {
+    case TouchPickupAction::Move:
+        static_cast<void>(dispatch(m_controller.pointerMove(
+            syntheticPointer(decision.position, Qt::NoButton, Qt::LeftButton))));
+        break;
+    case TouchPickupAction::Drop:
+        static_cast<void>(dispatch(m_controller.pointerRelease(
+            syntheticPointer(decision.position, Qt::LeftButton, Qt::NoButton))));
+        break;
+    case TouchPickupAction::Cancel:
+        if (m_controller.active()) {
+            static_cast<void>(dispatch(m_controller.cancel()));
+        }
+        break;
+    case TouchPickupAction::None:
+    case TouchPickupAction::PickUp:
+        break;
+    }
+    return decision.consumed;
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

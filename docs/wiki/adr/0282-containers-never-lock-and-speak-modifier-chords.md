@@ -106,6 +106,21 @@ is consumed only when the controller claimed the press that began its gesture,
 so drawing and the barrel's plain right-click are unchanged; leaving proximity
 releases whatever the pen still held.
 
+**A held finger picks a window up by its title.** Touch has no modifiers, so
+a finger held still (the touch policy's long press, 500 ms within its 8 px
+slop) on a window's own title bar picks the window up into the same dock drag
+as modifier + Shift + left drag: the same drop targets highlight, a drop on a
+window, container edge or tab strip docks it, a grouped window dropped on empty
+space detaches, and an independent one dropped there stays where it was. Until
+the long press fires every event of the sequence stays KWin's, so a tap and an
+ordinary title drag are unchanged; moving past the slop, a second finger or an
+early lift disarms it. The takeover happens only when KWin read the landing as
+a title press (not a title-bar button) and has not started its own move; it
+releases KWin's recorded title press, consumes the finger's motion, and passes
+the lift on so KWin's decoration filter clears its touch-press id (swallowing
+it would make KWin ignore every later title touch). A second finger or a
+seat-wide cancel ends the pick-up. The policy is `TouchTitlePickup`.
+
 **Standard desktop icons are applet settings.** The desktop-icons applet shows
 optional Home, Documents, Downloads, Pictures, Videos, Music, Trash and Computer
 icons, one boolean desktop-icons setting each (Home and Trash on), before the
@@ -127,7 +142,8 @@ no Network icon: File Manager has no folder to open for its Network place.
 - The chord rules are pure (`containerchords.h`, `wheelrollchord.h`,
   `tabletpointertranslator.h`, `hybridtitlewheelroute.h`) and unit tested; the
   KWin adapters only move events in and out of them. Real-device behaviour (a
-  Wacom barrel button, a touchpad's scroll stop events, KWin's own resize
+  Wacom barrel button, a touchpad's scroll stop events, a real touchscreen's
+  long-press pick-up, KWin's own resize
   following a pen) still needs a live session to confirm.
 - Meta + wheel no longer zooms while the pointer is over a window.
 - Every chord follows the one existing Windows-settings choice; there is no
