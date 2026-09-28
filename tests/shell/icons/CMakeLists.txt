@@ -101,3 +101,30 @@ set_tests_properties(
             "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QML2_IMPORT_PATH=${CMAKE_BINARY_DIR}/qml;DISPLAY=;WAYLAND_DISPLAY=;DBUS_SESSION_BUS_ADDRESS=;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
         TIMEOUT 300
 )
+
+# Artwork gate (ADR-0283): the checked-in QindaQt theme matches its catalog and
+# passes the validator (required-name floor, identity palette, wifi masks).
+# Registered only where the artwork tools exist; they are not runtime deps.
+find_package(Python3 COMPONENTS Interpreter)
+find_program(QINDAQT_RSVG_CONVERT rsvg-convert)
+if(Python3_Interpreter_FOUND AND QINDAQT_RSVG_CONVERT)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import PIL"
+        RESULT_VARIABLE qindaqt_icon_pillow_missing
+        OUTPUT_QUIET ERROR_QUIET
+    )
+    if(qindaqt_icon_pillow_missing EQUAL 0)
+        add_test(
+            NAME qindaqt.qindaqt-icon-artwork-current
+            COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/generate_qinda_icon_theme.py --check
+        )
+        add_test(
+            NAME qindaqt.qindaqt-icon-artwork
+            COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/validate_qinda_icon_theme.py
+        )
+        set_tests_properties(
+            qindaqt.qindaqt-icon-artwork-current qindaqt.qindaqt-icon-artwork
+            PROPERTIES LABELS "shell;icons"
+        )
+    endif()
+endif()

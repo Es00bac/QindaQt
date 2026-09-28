@@ -43,10 +43,12 @@ splits by grouping separate windows, so the terminal does not reimplement them.
 - **Settings1.** QQ_Term reads the desktop's appearance and accessibility
   settings through the public [Settings1](../reference/settings1-v1.md) client;
   `accessibility.reducedTransparency` clamps its per-profile opacity to opaque.
-- **Icon theme.** The QindaQt icon theme aliases `qqterm` and
-  `org.qindaqt.QQTerm` onto the shared terminal glyph
-  (`tools/qinda_icon_catalog_apps.py`), so the first-party terminal looks like
-  the rest of the desktop. See [Shell iconography](../shell/iconography.md).
+- **Icon theme.** `qqterm` (and `org.qindaqt.QQTerm`) has its own QQ_Term
+  mark — a dark console with a plum title strip and an amber double prompt —
+  in `tools/qinda_icon_catalog_first_party.py`, distinct from the generic
+  `utilities-terminal` glyph other terminals use
+  ([ADR-0283](../adr/0283-true-color-places-types-and-qinda-app-marks.md)).
+  See [Icon theme](../shell/icon-theme.md).
 
 ## Profiles and Settings1 persistence
 

@@ -27,7 +27,10 @@ contrast remove these layers; text never fades with its container.
 Application icons use tactile rounded silhouettes with pearl marks and a
 restrained apricot detail. Navigation commands use recognizable symbolic
 geometry with theme-derived tint. Color supplements shape. Places retain short
-names; file grids emphasize MIME icons and image previews. Tooltips and accessible
+names; each special folder and file type pairs its own true color with an
+emblem or content glyph, and each Qinda application has its own mark
+([ADR-0283](../adr/0283-true-color-places-types-and-qinda-app-marks.md));
+file grids emphasize MIME icons and image previews. Tooltips and accessible
 names explain icon buttons without permanent paragraphs of instruction.
 
 A small original glass-folder illustration adds personality to empty directories;
