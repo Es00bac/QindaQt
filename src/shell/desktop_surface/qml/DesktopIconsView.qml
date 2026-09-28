@@ -246,7 +246,12 @@ Item {
 
     Connections {
         target: root.contents
-        function onRowsChanged() { root.selection.reconcile() }
+        function onRowsChanged() {
+            root.selection.reconcile()
+            // A Desktop item trashed from here fills the Trash icon at once.
+            if (root.places !== null)
+                root.places.refresh()
+        }
     }
     Connections {
         target: root.places
