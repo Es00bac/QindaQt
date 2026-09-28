@@ -98,6 +98,14 @@ button** do the same things. Without Meta the barrel button is an ordinary
 right-click. **Settings → Windows → Docking drag** changes the key (Alt or
 Ctrl instead of Meta) or turns these off.
 
+On a **touchscreen**, hold a finger still on a window's own title bar for
+about half a second: the window is picked up. Slide it onto another window, a
+container's edge or its tab strip — the same highlight as Meta + Shift + drag
+shows where it will land — and lift to drop it there. Dropping a grouped window
+on empty space takes it out of its container; dropping any other window there
+leaves it where it was. A quick tap, or dragging the title straight away, works
+as it always did, and putting a second finger down cancels the pick-up.
+
 A **maximized** container still does all of this: dragging its title restores
 it under the pointer and keeps moving, resizing starts from the maximized
 frame, and rolling it up keeps it maximized for when it rolls back down.

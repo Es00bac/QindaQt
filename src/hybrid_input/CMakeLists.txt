@@ -10,6 +10,7 @@ target_sources(
         src/interactioncontroller.cpp
         src/lateshifttakeoverdetector.cpp
         src/tabletpointertranslator.cpp
+        src/touchtitlepickup.cpp
         src/wheelrollchord.cpp
     PUBLIC
         FILE_SET public_headers
@@ -22,6 +23,7 @@ target_sources(
             include/qindaqt/hybrid_input/interactiontypes.h
             include/qindaqt/hybrid_input/lateshifttakeoverdetector.h
             include/qindaqt/hybrid_input/tabletpointertranslator.h
+            include/qindaqt/hybrid_input/touchtitlepickup.h
             include/qindaqt/hybrid_input/wheelrollchord.h
 )
 

@@ -64,3 +64,15 @@ add_test(
     NAME hybrid.input-wheel-roll-chord
     COMMAND qindaqt_hybrid_input_wheel_roll_chord_tests
 )
+
+# ADR-0282: touch long-press pick-up of a window by its own title bar.
+qt_add_executable(qindaqt_hybrid_input_touch_title_pickup_tests tst_touchtitlepickup.cpp)
+target_link_libraries(
+    qindaqt_hybrid_input_touch_title_pickup_tests
+    PRIVATE QindaQt::HybridInput Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_hybrid_input_touch_title_pickup_tests)
+add_test(
+    NAME hybrid.input-touch-title-pickup
+    COMMAND qindaqt_hybrid_input_touch_title_pickup_tests
+)
