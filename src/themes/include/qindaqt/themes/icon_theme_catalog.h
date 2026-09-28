@@ -14,8 +14,9 @@ struct IconThemeEntry {
 [[nodiscard]] bool safeIconThemeId(const QString &id);
 [[nodiscard]] QStringList standardIconThemeRoots();
 [[nodiscard]] QVector<IconThemeEntry> installedIconThemes(const QStringList &roots);
-// Empty/missing/invalid preferences fall back to the authored theme id. Only
-// installed entries can override it; never interpret a preference as a path.
+// ADR-0280 order: an installed user preference, else the color theme's
+// authored id when that is installed too, else QindaQt. Empty, missing,
+// invalid or uninstalled ids fall through; never interpret one as a path.
 [[nodiscard]] QString resolveIconTheme(const QString &preference, const QString &authored,
                                        const QStringList &roots);
 }

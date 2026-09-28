@@ -96,7 +96,9 @@ maximize and minimize are the window manager's own actions. The window
 double-click's **Default** is the theme's double-click where the theme
 authors one (Qinda Marigold rolls up), else KWin's own
 ([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)),
-and the container's **Nothing** keeps its bar inert, as both shipped. The
+and the container's **Default** is its theme's container double-click where
+the theme authors one (the Corner Bar themes roll up), else nothing; its
+**Nothing** keeps the bar inert whatever the theme says (ADR-0281). The
 container section's **Title bar** row chooses **Theme**, **Shared bar** (the
 classic full-width row) or **Name tab and card deck**, the split-deck row the
 Corner Bar themes author
@@ -300,8 +302,9 @@ The bundled artwork follows QindaQt's [Mineral Light visual identity](../shell/v
 The Themes page's **Icons** chooser lists installed XDG icon themes independently
 of the color theme, with **Follow theme** as the default. Selection uses the same
 draft, Apply and Revert controls; it never changes the current desktop until
-confirmed. Missing packages fall back to the color theme's icon family without
-rewriting the saved choice. Discovery checks at most 32 roots, 1,024 entries and
+confirmed. Missing packages fall back to the color theme's icon family, and a
+color theme's family that is not installed falls back to QindaQt, without
+rewriting the saved choice ([QindaQt icon theme](../shell/icon-theme.md)). Discovery checks at most 32 roots, 1,024 entries and
 128 themes, limits indexes to 256 KiB, and rejects path escapes. Reopen Settings
 to refresh the installed catalog. See [ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md).
 

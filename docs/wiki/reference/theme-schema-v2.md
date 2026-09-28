@@ -19,6 +19,7 @@ document that carries a v2 key is rejected rather than half-read.
 | `motion` | object | Optional; motion name → `{duration, easing}` |
 | `accent` | object | Optional; `{ "mode": "fixed" \| "wallpaper" }`, default `fixed` |
 | `decorationTheme` | string | Optional decoration document id (same grammar as `iconTheme`); empty keeps the inline `decoration` block |
+| `variants` | object | Optional `{ "light": id, "dark": id }`, either or both, naming this selection's light and dark twins (theme ids, same grammar); the resolver uses an installed twin of the right kind when the effective scheme calls for it ([ADR-0284](../adr/0284-themes-name-their-light-and-dark-twins.md)) |
 
 ## Surfaces
 

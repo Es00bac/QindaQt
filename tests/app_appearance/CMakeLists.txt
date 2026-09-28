@@ -1,4 +1,5 @@
 qt_add_executable(tst_app_appearance_resolver tst_app_appearance_resolver.cpp)
+target_compile_definitions(tst_app_appearance_resolver PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 target_link_libraries(tst_app_appearance_resolver PRIVATE QindaQt::AppAppearance Qt6::Test)
 add_test(NAME qindaqt.app-appearance-resolver COMMAND tst_app_appearance_resolver)
 qt_add_executable(tst_application_appearance_controller tst_application_appearance_controller.cpp)

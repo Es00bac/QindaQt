@@ -3,7 +3,7 @@
   "id": "qinda-corner-teal",
   "name": "Qinda Sea Glass",
   "variant": "light",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaContour",
   "fontFamily": "Noto Sans",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 8,
@@ -32,7 +32,12 @@
     "maximizeColor": "#216C58",
     "titleDoubleClick": "roll-up",
     "titleWear": false,
-    "containerTitleLayout": "split-deck"
+    "containerTitleLayout": "split-deck",
+    "containerTitleDoubleClick": "roll-up"
+  },
+  "variants": {
+    "light": "qinda-corner-teal",
+    "dark": "qinda-corner-teal-dark"
   },
   "radii": {
     "decoration": 8

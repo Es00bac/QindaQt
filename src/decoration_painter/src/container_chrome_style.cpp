@@ -133,6 +133,10 @@ ChromeStyle containerStyleForTheme(const Themes::ThemeSpec &theme, bool *themeHo
         style.palette.titleBarInactive = decoration.titleBarInactiveColor;
         style.titleLayout = titleLayout(decoration.containerTitleLayout,
                                         ContainerTitleLayout::Classic);
+        // ADR-0281: a theme may author what a container title double-click
+        // does (Corner Bar rolls up, like its window tab); unauthored stays
+        // inert, as containers shipped.
+        style.titleDoubleClick = doubleClickAction(decoration.containerTitleDoubleClick);
     }
     style.material = containerMaterialForTheme(theme);
     style.deckMotionMs = theme.motionDuration;
@@ -196,7 +200,11 @@ ChromeStyle applyContainerPreferences(ChromeStyle style, bool themeHoverGlyphs,
             && decorationButtonStyle(style.namedButtonStyle).shape == DecorationButtonShape::Pill;
         style.buttonSpacing = joined ? 0.0 : static_cast<qreal>(qRound(gap * gapScale));
     }
-    style.titleDoubleClick = doubleClickAction(preferences.containerTitleDoubleClick);
+    // "theme" keeps the theme's container double-click; any other token,
+    // "none" included, is the user's explicit choice.
+    if (preferences.containerTitleDoubleClick != QLatin1String("theme")) {
+        style.titleDoubleClick = doubleClickAction(preferences.containerTitleDoubleClick);
+    }
     style.titleLayout = titleLayout(preferences.containerTitleLayout, style.titleLayout);
     return style;
 }

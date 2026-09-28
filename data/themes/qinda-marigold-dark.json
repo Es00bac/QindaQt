@@ -3,7 +3,7 @@
   "id": "qinda-marigold-dark",
   "name": "Qinda Marigold Dark",
   "variant": "dark",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaFacet",
   "fontFamily": "Noto Sans",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 3,
@@ -32,7 +32,12 @@
     "maximizeColor": "#8FC77D",
     "titleDoubleClick": "roll-up",
     "titleWear": false,
-    "containerTitleLayout": "split-deck"
+    "containerTitleLayout": "split-deck",
+    "containerTitleDoubleClick": "roll-up"
+  },
+  "variants": {
+    "light": "qinda-marigold",
+    "dark": "qinda-marigold-dark"
   },
   "radii": {
     "decoration": 2

@@ -47,6 +47,9 @@ changes whenever that preference changes — it is not a clock or a day-and-nigh
 schedule. If the theme you picked is the wrong kind for the scheme in force
 (Nightfall under a light preference, say), QindaQt shows the matching built-in
 QindaPunk theme instead until it fits again; Qinda High Contrast fits both.
+The Corner Bar themes (Qinda Marigold, Sea Glass and Lilac) come in light and
+dark pairs, so they switch to their own twin instead, including when System
+follows a dark desktop preference.
 A theme in QindaQt is one choice with two reach: the panels, Settings, and
 bundled applications paint from the QST tokens, and ordinary Qt applications
 (anything built on stock Qt6) receive the same colors, fonts, and icons

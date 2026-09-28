@@ -79,7 +79,7 @@ const QList<PreferenceField> &preferenceFields()
              &ChromePreferences::containerButtonSpacing, spacings},
             {ChromePreferenceKeys::ContainerTitleDoubleClick,
              &ChromePreferences::containerTitleDoubleClick,
-             QStringList{QStringLiteral("none")} + doubleClicks},
+             QStringList{theme, QStringLiteral("none")} + doubleClicks},
             // ADR-0281, appended for the same commit-order reason.
             {ChromePreferenceKeys::ContainerTitleLayout,
              &ChromePreferences::containerTitleLayout,

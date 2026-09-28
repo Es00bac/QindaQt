@@ -74,7 +74,12 @@ property in the same step.
 `appearance.colorScheme=system` preserves an installed requested theme exactly.
 Only explicit `light` or `dark` preferences select a compatible variant. This
 keeps a user's valid Qinda theme authoritative when the host Qt palette differs
-from the Qinda session palette.
+from the Qinda session palette. The one exception is a theme that names its
+light and dark twins (schema-v2 `variants`,
+[ADR-0284](../adr/0284-themes-name-their-light-and-dark-twins.md)): a forced
+scheme it does not fit, or a known platform scheme it does not fit while
+following the system, resolves to its installed twin of the right kind before
+any built-in fallback. A missing or wrong-kind twin changes nothing.
 
 ### Threading and errors
 

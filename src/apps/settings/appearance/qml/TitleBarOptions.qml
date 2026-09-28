@@ -139,14 +139,18 @@ ColumnLayout {
         hint: root.windows ? qsTr("What double-clicking a title bar does")
                            : qsTr("What double-clicking the container bar does")
         // Windows default to the theme's double-click (ADR-0268), else
-        // KWin's own (maximize unless the user changed it); a container bar
-        // did nothing before ADR-0264.
-        choices: [
-            root.windows ? { token: "theme", label: qsTr("Default") }
-                         : { token: "none", label: qsTr("Nothing") },
-            { token: "maximize", label: qsTr("Maximize") },
-            { token: "roll-up", label: qsTr("Roll up") },
-            { token: "minimize", label: qsTr("Minimize") }
-        ]
+        // KWin's own (maximize unless the user changed it). A container bar
+        // defaults to its theme's container double-click, else nothing
+        // (ADR-0281); "Nothing" keeps it inert whatever the theme says.
+        choices: root.windows
+            ? [{ token: "theme", label: qsTr("Default") },
+               { token: "maximize", label: qsTr("Maximize") },
+               { token: "roll-up", label: qsTr("Roll up") },
+               { token: "minimize", label: qsTr("Minimize") }]
+            : [{ token: "theme", label: qsTr("Default") },
+               { token: "none", label: qsTr("Nothing") },
+               { token: "maximize", label: qsTr("Maximize") },
+               { token: "roll-up", label: qsTr("Roll up") },
+               { token: "minimize", label: qsTr("Minimize") }]
     }
 }
