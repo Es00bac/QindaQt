@@ -618,6 +618,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         qindaqt_hybrid_container_placement_tests
         tst_hybridcontainerplacement.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerplacement.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainermaximize.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerrescue.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
@@ -647,6 +648,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         qindaqt_hybrid_container_rescue_tests
         tst_hybridcontainerrescue.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerplacement.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainermaximize.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerrescue.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
@@ -670,6 +672,7 @@ if(TARGET qindaqt_kwin_input_adapter)
     )
 
     include("${CMAKE_CURRENT_LIST_DIR}/ContainerShadeTests.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/ContainerMaximizeTests.cmake")
 
     qt_add_executable(
         qindaqt_hybrid_container_appearance_tests

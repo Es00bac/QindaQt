@@ -14,6 +14,7 @@ private Q_SLOTS:
     void rejectsInvalidAndAmbiguousBaselines();
     void detachesOnlyGroupedNativeTitleMoves();
     void vetoesInteractiveResizeOnOwnedMembersOnly();
+    void aMemberWhoseDetachFailedStaysVetoed();
     void redockedWindowCanDetachAgainAfterSynchronousRefresh();
     void focusedDetachOwnsSynchronousRefreshAndKeepsCallbackValuesAlive();
     void maximizeTogglesFocusAndRestoresExactBaseline();
@@ -95,6 +96,26 @@ void HybridMemberPolicyTest::vetoesInteractiveResizeOnOwnedMembersOnly()
     QVERIFY(policy.synchronize({}));
     QVERIFY(!policy.blocksInteractiveResize(QStringLiteral("left")));
     QCOMPARE(platform.calls.size(), 1);
+}
+
+// ADR-0282: KWinMemberPolicyManager cancels a native member move that did
+// not detach, using the same predicate as the resize veto. A failed detach
+// must therefore leave the window an owned, vetoed member -- otherwise KWin
+// carries one member away while topology still places it in its tile.
+void HybridMemberPolicyTest::aMemberWhoseDetachFailedStaysVetoed()
+{
+    FakePlatform platform;
+    HybridMemberPolicy policy(platform);
+    QVERIFY(policy.synchronize({group()}));
+    platform.failNext = true;
+    QString error;
+    QVERIFY(!policy.interactiveMoveStarted(QStringLiteral("left"), true, &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(policy.blocksInteractiveResize(QStringLiteral("left")));
+
+    // A later native move still gets its detach.
+    QVERIFY(policy.interactiveMoveStarted(QStringLiteral("left"), true));
+    QVERIFY(!policy.blocksInteractiveResize(QStringLiteral("left")));
 }
 
 void HybridMemberPolicyTest::redockedWindowCanDetachAgainAfterSynchronousRefresh()

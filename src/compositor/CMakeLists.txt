@@ -202,6 +202,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/inputcapabilities.h
             kwin/kwininteractionfilter.cpp
             kwin/kwininteractionfilter_touch.cpp
+            kwin/kwininteractionfilter_chords.cpp
             kwin/kwininteractionfilter.h
             kwin/kwininputadapter.cpp
             kwin/kwininputadapter.h
@@ -328,6 +329,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridchromeplanbuilder.cpp
             kwin/hybridchromeplanbuilder.h
             kwin/hybridcontainerplacement.cpp
+            kwin/hybridcontainermaximize.cpp
             kwin/hybridcontainershade.cpp
             kwin/hybridcontainerrescue.cpp
             kwin/hybridcontainerplacement.h
@@ -337,6 +339,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridshadecontroller.h
             kwin/hybridiconifycontroller.cpp
             kwin/hybridiconifycontroller.h
+            kwin/hybridtitlewheelroute.h
             kwin/hybridshadestripgeometry.cpp
             kwin/hybridshadestripgeometry.h
             kwin/hybridgroupedgeometryreconciler.cpp
@@ -401,6 +404,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridshade.cpp
             kwin/kwinhybridiconify.cpp
             kwin/kwinhybridiconifyinput.cpp
+            kwin/kwinhybridmodifierchords.cpp
             kwin/kwiniconchippresenter.cpp
             kwin/kwiniconchippresenter.h
             kwin/kwiniconifyplatform.cpp

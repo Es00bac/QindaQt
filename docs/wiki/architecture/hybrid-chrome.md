@@ -229,7 +229,11 @@ total displacement from the original press:
 
 - the outer title moves the entire container;
 - an outer border resizes it, subject to the current 240x160 minimum outer
-  frame and disabled while maximized;
+  frame; the border offers no resize handle while maximized, but the keyboard
+  and the modifier + right-drag chord resize a maximized container from its
+  maximized frame, leaving maximize (ADR-0282);
+- the outer title of a maximized container restores it under the pointer and
+  keeps moving; Escape re-maximizes (ADR-0282);
 - a tab represents exactly one complete page: it reorders within one container,
   moves to another container's tab target, detaches to empty space, or regroups
   its whole tree with an independent tab target;
@@ -405,7 +409,10 @@ request from the same container is rejected after the KWin adapter clears
 only that requesting member's native fullscreen, maximize, and quick-tile
 state and restores its committed frame. It never reveals a hidden peer,
 shared chrome, or changes activation while the accepted focus owner remains
-active. Minimizing
+active. While the
+group chrome is hidden the zoomed member's own title bar is the group's only
+title: a wheel away from the user there rolls up the whole container, leaving
+member focus first (`titleWheelRoute`, ADR-0282). Minimizing
 the focused member restores the group then leaves that member minimized;
 closing it restores surviving members; native drag commits the topology detach
 before clearing temporary focus presentation; shutdown restores focus state

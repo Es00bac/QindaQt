@@ -286,6 +286,8 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0281: Split-deck container title row, and a container is titled by its own name](0281-split-deck-container-title-and-container-names.md)
 
+- [ADR-0282: Containers never lock up, and speak one set of modifier chords](0282-containers-never-lock-and-speak-modifier-chords.md)
+
 - [ADR-0283: True-color places, file types and Qinda app marks from one shared catalog](0283-true-color-places-types-and-qinda-app-marks.md)
 
 - [ADR-0284: Themes name their light and dark twins](0284-themes-name-their-light-and-dark-twins.md)

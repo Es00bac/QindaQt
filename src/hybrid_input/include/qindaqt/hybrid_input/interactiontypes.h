@@ -118,8 +118,15 @@ struct InteractionDecision
 
 struct InteractionBindings
 {
+    // The docking chord. ADR-0282: the same modifiers without Shift are the
+    // window-management modifier for the container move/resize chords
+    // (containerchords.h).
     Qt::KeyboardModifiers pointerModifiers = Qt::MetaModifier | Qt::ShiftModifier;
     Qt::MouseButton pointerButton = Qt::LeftButton;
+    // modifier + this button resizes the container under the pointer.
+    Qt::MouseButton resizeButton = Qt::RightButton;
+    // Off keeps only the docking chord (the pre-ADR-0282 behaviour).
+    bool containerChords = true;
     qreal dragThreshold = 8.0;
     // One press or auto-repeat advances exactly this many logical pixels.
     qreal keyboardStep = 10.0;

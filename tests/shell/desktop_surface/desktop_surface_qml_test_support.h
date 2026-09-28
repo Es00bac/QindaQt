@@ -159,12 +159,25 @@ public:
 
 // One resolved desktop-icons applet map in the
 // ResolvedAppletInstance::toVariantMap shape the controller publishes.
+//
+// ADR-0282: Home and Trash default on in production. Rows written before the
+// standard icons assert exact Desktop-folder icon sets, so every standard icon
+// is off here unless a row names it; tst_desktop_standard_icons.cpp covers
+// them.
 inline QVariantList makeApplets(const QVariantMap &settings)
 {
+    QVariantMap effective = settings;
+    for (const char *key : {"showHomeIcon", "showDocumentsIcon", "showDownloadsIcon",
+                            "showPicturesIcon", "showVideosIcon", "showMusicIcon",
+                            "showTrashIcon", "showComputerIcon"}) {
+        if (!effective.contains(QString::fromLatin1(key))) {
+            effective.insert(QString::fromLatin1(key), false);
+        }
+    }
     return QVariantList{QVariantMap{
         {QStringLiteral("id"), QStringLiteral("desktop-icons")},
         {QStringLiteral("plugin"), QStringLiteral("desktop-icons")},
-        {QStringLiteral("settings"), settings},
+        {QStringLiteral("settings"), effective},
         {QStringLiteral("runtime"),
          QVariantMap{{QStringLiteral("status"), QStringLiteral("ready")},
                      {QStringLiteral("ready"), true},

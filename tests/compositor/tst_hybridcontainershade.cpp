@@ -140,7 +140,7 @@ class HybridContainerShadeTest final : public QObject
 private Q_SLOTS:
     void shadesAndUnshadesAnchoringTheBadgeStripAtTheLeftEdge();
     void shadeStripFollowsItsBadgeLabel();
-    void rejectsShadeWhileMaximizedAndMaximizeWhileShaded();
+    void rollsUpWhileMaximizedButRefusesMaximizeWhileShaded();
     void rejectsOuterResizeWhileShadedButStillAllowsMove();
     void cancelledShadedMoveRestoresTheStripsPriorPosition();
     void forgettingContainerClearsShadeRestoreFrame();
@@ -239,14 +239,19 @@ void HybridContainerShadeTest::shadeStripFollowsItsBadgeLabel()
     QVERIFY(!fixture.controller.resizeShadeStrip(QStringLiteral("group"), wide));
 }
 
-void HybridContainerShadeTest::rejectsShadeWhileMaximizedAndMaximizeWhileShaded()
+// ADR-0282: rolling up a maximized container used to be refused ("restore a
+// maximized container before shading it"), 27 times in one owner session.
+// It now rolls up and stays maximized; tst_hybridcontainermaximize covers the
+// unroll. Explicitly maximizing a rolled-up container is still refused.
+void HybridContainerShadeTest::rollsUpWhileMaximizedButRefusesMaximizeWhileShaded()
 {
     Fixture fixture;
     QString error;
     QVERIFY(fixture.controller.maximize(QStringLiteral("group"), &error));
-    QVERIFY(!fixture.controller.shade(QStringLiteral("group"), &error));
-    QVERIFY(!error.isEmpty());
-    QVERIFY(!fixture.controller.isShaded(QStringLiteral("group")));
+    QVERIFY2(fixture.controller.shade(QStringLiteral("group"), &error), qPrintable(error));
+    QVERIFY(fixture.controller.isShaded(QStringLiteral("group")));
+    QVERIFY(fixture.controller.isMaximized(QStringLiteral("group")));
+    QVERIFY(fixture.controller.unshade(QStringLiteral("group"), &error));
     QVERIFY(fixture.controller.restore(QStringLiteral("group"), &error));
 
     QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));

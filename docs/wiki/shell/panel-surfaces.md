@@ -330,7 +330,7 @@ whenever its content is a fraction taller than the popup.
 | --- | --- |
 | Panel (`PanelCustomizeMenu`) | Add applet ▸ (palette admitted by the panel's orientation), Panel ▸ (Edge, Alignment, Auto-hide, Size 20–192 px, Length, Displays ▸ This display only / All displays), Add panel ▸ (edge), Remove panel, Enter/Exit edit mode, Undo, Redo, Open Customize… |
 | Applet (`AppletCustomizeMenu`) | Move to start, Move to center, Move to end, Move left, Move right, Move to panel ▸, Remove "‹applet›", "‹applet›" settings ▸ (typed rows from `settingsSchema`: switches, closed choices, bounded integers), Duplicate "‹applet›" |
-| Desktop (`DesktopCustomizeMenu`) | Add panel ▸, Change wallpaper…, Desktop icons ▸ (Show/Hide desktop icons, then the desktop-icons applet's typed rows: switches, choices, bounded numbers such as icon size), Enter/Exit edit mode, Undo, Open Customize… |
+| Desktop (`DesktopCustomizeMenu`) | Add panel ▸, Change wallpaper…, Desktop icons ▸ (Show/Hide desktop icons, then the desktop-icons applet's typed rows: switches -- among them the standard icons Show Home … Show Computer, ADR-0282 --, choices, bounded numbers such as icon size), Enter/Exit edit mode, Undo, Open Customize… |
 
 "Move to ‹zone›" appends after the zone's last applet; when the applet already
 sits there in the flat list only its zone tag changes (a

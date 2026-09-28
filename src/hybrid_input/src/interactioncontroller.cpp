@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/hybrid_input/interactioncontroller.h"
 
+#include "qindaqt/hybrid_input/containerchords.h"
+
 #include <QLineF>
 
 #include <cmath>
@@ -76,9 +78,11 @@ InteractionController::InteractionController(const InteractionTargetResolver &re
 
 InteractionDecision InteractionController::pointerPress(const PointerEvent &event)
 {
-    if (m_state != State::Idle || event.changedButton != m_bindings.pointerButton
-        || !pointerBindingMatches(event)) {
+    if (m_state != State::Idle) {
         return {};
+    }
+    if (event.changedButton != m_bindings.pointerButton || !pointerBindingMatches(event)) {
+        return containerChordPress(event);
     }
 
     const auto source = m_resolver.hitTest(event.position);
@@ -93,6 +97,55 @@ InteractionDecision InteractionController::pointerPress(const PointerEvent &even
     m_state = State::PointerPending;
     m_kind = source.isValid() ? kind : InteractionKind::None;
     m_source = source;
+    m_activeButton = event.changedButton;
+    m_pressPosition = event.position;
+    m_lastPosition = event.position;
+    m_displacement = {};
+    return {.consumed = true, .intents = {}};
+}
+
+InteractionDecision InteractionController::containerChordPress(const PointerEvent &event)
+{
+    if (!m_pointerChordEnabled || !m_bindings.containerChords
+        || !event.buttons.testFlag(event.changedButton)) {
+        return {};
+    }
+    const auto modifier = windowManagementModifier(m_bindings.pointerModifiers);
+    if (modifier == Qt::NoModifier || event.modifiers != modifier
+        || (event.changedButton != m_bindings.pointerButton
+            && event.changedButton != m_bindings.resizeButton)) {
+        return {};
+    }
+    // AGENT-CONTRACT (ADR-0282): only a press over a container is claimed.
+    // Over an independent window the press falls through untouched, so
+    // KWin's own modifier move (and the adapter's plain-window resize) keep
+    // working, and over a panel the shell keeps its Meta+right-click.
+    const auto hit = m_resolver.hitTest(event.position);
+    const QString containerId = hit.kind == HitKind::IconChip ? QString{} : hit.containerId;
+    if (containerId.isEmpty()) {
+        return {};
+    }
+    const auto action = classifyPointerChord({
+        .button = event.changedButton == m_bindings.pointerButton ? Qt::LeftButton
+                                                                   : Qt::RightButton,
+        .modifiers = event.modifiers,
+        .dockChord = m_bindings.pointerModifiers,
+        .overContainer = true,
+        .overIndependentWindow = false,
+    });
+    if (action == PointerChordAction::ContainerMove) {
+        m_kind = InteractionKind::ContainerMove;
+        m_source = {HitKind::OuterTitle, containerId, {}, {}};
+    } else if (action == PointerChordAction::ContainerResize) {
+        const auto frame = m_resolver.containerFrame(containerId);
+        m_kind = InteractionKind::ContainerResize;
+        m_source = {HitKind::OuterResize, containerId, {}, {},
+                    nearestResizeEdges(frame.value_or(QRectF{}), event.position)};
+    } else {
+        return {};
+    }
+    m_state = State::PointerPending;
+    m_activeButton = event.changedButton;
     m_pressPosition = event.position;
     m_lastPosition = event.position;
     m_displacement = {};
@@ -103,6 +156,13 @@ InteractionDecision InteractionController::pointerMove(const PointerEvent &event
 {
     if (m_state != State::PointerPending && m_state != State::PointerActive) {
         return {};
+    }
+    if (!event.buttons.testFlag(m_activeButton)) {
+        // AGENT-GUARD (ADR-0282): a lost release must end the gesture, the
+        // same rule as HybridChromePointerRouter. Otherwise the controller
+        // stays active, swallows every later pointer event and bypasses the
+        // chrome router, and the container never receives its Commit.
+        return cancelActive(event.position);
     }
 
     InteractionDecision decision{.consumed = true, .intents = {}};
@@ -140,7 +200,7 @@ InteractionDecision InteractionController::pointerMove(const PointerEvent &event
 InteractionDecision InteractionController::pointerRelease(const PointerEvent &event)
 {
     if ((m_state != State::PointerPending && m_state != State::PointerActive)
-        || event.changedButton != m_bindings.pointerButton) {
+        || event.changedButton != m_activeButton) {
         return {};
     }
 
@@ -165,9 +225,13 @@ InteractionDecision InteractionController::pointerRelease(const PointerEvent &ev
             }
         }
         decision.intents.append(commit);
-    } else {
+    } else if (m_kind == InteractionKind::MemberDock) {
+        // A pending dock only ever published a preview; Cancel clears it.
         decision.intents.append(intent(IntentPhase::Cancel, event.position));
     }
+    // A pending move/resize/divider press never sent Begin, so placement has
+    // no baseline to cancel; a Cancel there only logged "no active baseline"
+    // for every plain modifier click on a container (ADR-0282).
     reset();
     return decision;
 }
@@ -191,6 +255,7 @@ InteractionDecision InteractionController::adoptDrag(const HitTarget &source,
     m_state = State::PointerActive;
     m_kind = source.isValid() ? kind : InteractionKind::None;
     m_source = source;
+    m_activeButton = m_bindings.pointerButton;
     m_pressPosition = position;
     m_lastPosition = position;
     m_displacement = {};
@@ -463,6 +528,7 @@ void InteractionController::reset()
     m_state = State::Idle;
     m_kind = InteractionKind::None;
     m_source = {};
+    m_activeButton = Qt::NoButton;
     m_previewTarget = {};
     m_pressPosition = {};
     m_lastPosition = {};

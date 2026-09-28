@@ -55,16 +55,19 @@ qt_add_qml_module(
         include/qindaqt/shell/desktop_surface/desktop_contents_controller.h
         include/qindaqt/shell/desktop_surface/desktop_file_actions.h
         include/qindaqt/shell/desktop_surface/desktop_icon_layout_store.h
+        include/qindaqt/shell/desktop_surface/desktop_places_controller.h
         include/qindaqt/shell/desktop_surface/new_folder_controller.h
         src/desktop_contents_controller.cpp
         src/desktop_file_actions.cpp
         src/desktop_icon_layout_store.cpp
+        src/desktop_places_controller.cpp
         src/new_folder_controller.cpp
     QML_FILES
         qml/DesktopApplicationsMenu.qml
         qml/DesktopContextMenu.qml
         qml/DesktopCustomizeMenu.qml
         qml/DesktopIconContextMenu.qml
+        qml/DesktopIconFileOps.qml
         qml/DesktopMenuItem.qml
         qml/DesktopRenamePopup.qml
         qml/DesktopIconPlacement.qml

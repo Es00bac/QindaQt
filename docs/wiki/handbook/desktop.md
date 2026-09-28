@@ -38,6 +38,20 @@ Trash** moves the selected items to the home Trash (recoverable, exactly like
 File Manager's Trash). Renaming changes the real Desktop item through the same
 protected operation used by File Manager and keeps the icon where you put it.
 
+### Standard desktop icons
+
+Besides your Desktop folder's own files, the desktop can show the standard
+icons other desktops have: **Home** and **Trash** (both on unless your layout
+says otherwise), and **Documents**, **Downloads**, **Pictures**, **Videos**,
+**Music** and **Computer** (the whole file system) when you switch them on.
+Right-click (or Meta + right-click) empty desktop space, choose **Desktop
+icons**, and tick the ones you want; the same switches are in the Customize
+editor. A folder you do not have shows no icon. These icons sit with the rest,
+move and snap like them, and open in File Manager; they cannot be renamed or
+deleted — to remove one, switch it off. The Trash icon shows when it holds
+something; drop icons or files from File Manager on it to move them to the
+Trash (recoverable, never deleted outright), and open it to put things back.
+
 Selecting more than one icon works the way other desktops teach you: drag a
 rubber band across empty desktop space to select every icon it crosses (Shift
 adds to the selection, Control toggles), Ctrl+click adds or removes single
@@ -63,6 +77,30 @@ share one outer frame with a shared title row and a tab per page, while
 every window keeps its own slim title strip and its own close, minimize, and
 maximize buttons. Windows you never group are untouched — containers are
 opt-in.
+
+### Moving, resizing and rolling up with Meta
+
+Hold **Meta** anywhere over a window and use the mouse or a pen:
+
+- **Meta + left drag** moves the window — and for a window in a container,
+  the **whole container**, never just the one window;
+- **Meta + Shift + left drag** takes the one window under the pointer out of
+  its container or into another (see *Combining windows* below);
+- **Meta + right drag** resizes from the nearest corner or side — the whole
+  container for a grouped window;
+- **Meta + wheel** away from you rolls the container (or a lone window) up;
+  towards you rolls it back down. One notch does it, a long or smooth scroll
+  still counts once, and rolling up something already rolled up does nothing.
+
+With a **pen**, the tip is the left button and the side (barrel) button is the
+right button, so **Meta + tip**, **Meta + Shift + tip** and **Meta + barrel
+button** do the same things. Without Meta the barrel button is an ordinary
+right-click. **Settings → Windows → Docking drag** changes the key (Alt or
+Ctrl instead of Meta) or turns these off.
+
+A **maximized** container still does all of this: dragging its title restores
+it under the pointer and keeps moving, resizing starts from the maximized
+frame, and rolling it up keeps it maximized for when it rolls back down.
 
 ### Combining windows
 
@@ -181,6 +219,9 @@ confirms and **Esc** cancels.
 
 | Keys | What they do |
 | --- | --- |
+| `Meta` + left drag | Move the window, or its whole container |
+| `Meta` + right drag | Resize the window, or its whole container |
+| `Meta` + wheel | Roll the container (or window) up / back down |
 | `Meta+Shift` + drag | Combine or rearrange windows |
 | `Meta+Shift+D` | Dock the active window (arrows = edge, `T` = tab, `D` = detach) |
 | `Meta+Ctrl+Shift+D` | Dock the active page (whole tab) |
