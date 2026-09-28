@@ -5,10 +5,12 @@
 // rolled up (ADR-0099, ADR-0139, ADR-0189).
 //
 // AGENT-NOTE: split out of hybridcontainerplacement.cpp, which was over its
-// 600-line shape limit. This is a cohesive slice — nothing here touches the
-// drag, resize, maximize or aspect-pin state machines — so the split is by
-// behaviour rather than by line count. The members it uses
-// (m_shadeStripFrames, m_shadeRestoreSizes, m_layout, m_changed) stay private
+// 600-line shape limit. This is a cohesive slice — nothing here changes the
+// drag, resize, maximize or aspect-pin state machines (it only reads whether
+// the container is maximized) — so the split is by behaviour rather than by
+// line count. The members it uses
+// (m_shadeStripFrames, m_shadeRestoreSizes, m_layout, m_workArea, m_changed,
+// and isMaximized() for ADR-0282's maximized roll-up) stay private
 // to the controller; this is the same class, a second translation unit.
 
 #include "hybridcontainerplacement.h"
@@ -42,10 +44,10 @@ bool HybridContainerPlacementController::shade(
     if (isShaded(containerId)) {
         return true;
     }
-    if (isMaximized(containerId)) {
-        assignError(error, QStringLiteral("restore a maximized container before shading it"));
-        return false;
-    }
+    // ADR-0282: a maximized container rolls up too and stays maximized; its
+    // strip starts at the maximized frame's top-left and unshade() returns it
+    // to the current maximize area. Refusing here left a maximized group
+    // impossible to roll up from its title, wheel, menu, or double-click.
     const auto current = m_layout ? m_layout(containerId) : std::nullopt;
     if (!current || !current->outerFrame.isValid()) {
         assignError(error, QStringLiteral("container has no valid frame to shade"));
@@ -120,7 +122,14 @@ bool HybridContainerPlacementController::unshade(
     // (possibly moved) position, so "moving the rolled strip" genuinely
     // relocates where the container reappears. This is the one legitimate
     // reflow in the shade lifecycle: a real, intentional full restore.
-    const QRect restoreFrame(stripFound->topLeft(), *sizeFound);
+    //
+    // ADR-0282: a container still maximized unrolls into the maximize area as
+    // it is now (the panels may have changed while it was rolled up). Moving
+    // the strip leaves maximize, so a maximized strip has not moved.
+    const QRect workArea = isMaximized(containerId) && m_workArea
+        ? m_workArea(containerId) : QRect{};
+    const QRect restoreFrame = workArea.isValid()
+        ? workArea : QRect(stripFound->topLeft(), *sizeFound);
     if (!reflow(containerId, restoreFrame, error)) {
         return false;
     }

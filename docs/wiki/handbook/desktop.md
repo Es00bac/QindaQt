@@ -64,6 +64,30 @@ every window keeps its own slim title strip and its own close, minimize, and
 maximize buttons. Windows you never group are untouched — containers are
 opt-in.
 
+### Moving, resizing and rolling up with Meta
+
+Hold **Meta** anywhere over a window and use the mouse or a pen:
+
+- **Meta + left drag** moves the window — and for a window in a container,
+  the **whole container**, never just the one window;
+- **Meta + Shift + left drag** takes the one window under the pointer out of
+  its container or into another (see *Combining windows* below);
+- **Meta + right drag** resizes from the nearest corner or side — the whole
+  container for a grouped window;
+- **Meta + wheel** away from you rolls the container (or a lone window) up;
+  towards you rolls it back down. One notch does it, a long or smooth scroll
+  still counts once, and rolling up something already rolled up does nothing.
+
+With a **pen**, the tip is the left button and the side (barrel) button is the
+right button, so **Meta + tip**, **Meta + Shift + tip** and **Meta + barrel
+button** do the same things. Without Meta the barrel button is an ordinary
+right-click. **Settings → Windows → Docking drag** changes the key (Alt or
+Ctrl instead of Meta) or turns these off.
+
+A **maximized** container still does all of this: dragging its title restores
+it under the pointer and keeps moving, resizing starts from the maximized
+frame, and rolling it up keeps it maximized for when it rolls back down.
+
 ### Combining windows
 
 Hold **Meta+Shift** and drag one window onto another with the left button:
@@ -181,6 +205,9 @@ confirms and **Esc** cancels.
 
 | Keys | What they do |
 | --- | --- |
+| `Meta` + left drag | Move the window, or its whole container |
+| `Meta` + right drag | Resize the window, or its whole container |
+| `Meta` + wheel | Roll the container (or window) up / back down |
 | `Meta+Shift` + drag | Combine or rearrange windows |
 | `Meta+Shift+D` | Dock the active window (arrows = edge, `T` = tab, `D` = detach) |
 | `Meta+Ctrl+Shift+D` | Dock the active page (whole tab) |

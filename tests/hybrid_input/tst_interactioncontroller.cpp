@@ -78,18 +78,18 @@ void InteractionControllerTest::pointerThresholdUsesTotalBaselineDisplacement()
 
     QVERIFY(controller.pointerPress(
         pressAt({5, 5}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    const auto pending = controller.pointerMove({.position = {8, 5}});
+    const auto pending = controller.pointerMove({.position = {8, 5}, .buttons = Qt::LeftButton});
     QVERIFY(pending.consumed);
     QVERIFY(pending.intents.isEmpty());
 
-    const auto activated = controller.pointerMove({.position = {11, 8}});
+    const auto activated = controller.pointerMove({.position = {11, 8}, .buttons = Qt::LeftButton});
     QCOMPARE(activated.intents.size(), 2);
     QCOMPARE(activated.intents[0].phase, IntentPhase::Begin);
     QCOMPARE(activated.intents[0].delta, QPointF(6, 3));
     QCOMPARE(activated.intents[1].phase, IntentPhase::Update);
     QCOMPARE(activated.intents[1].delta, QPointF(6, 3));
 
-    const auto moved = controller.pointerMove({.position = {13, 9}});
+    const auto moved = controller.pointerMove({.position = {13, 9}, .buttons = Qt::LeftButton});
     QCOMPARE(moved.intents.size(), 1);
     QCOMPARE(moved.intents.constFirst().delta, QPointF(8, 4));
 
@@ -111,18 +111,18 @@ void InteractionControllerTest::memberDragPreviewsAndCommitsDock()
 
     QVERIFY(controller.pointerPress(
         pressAt({10, 10}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    const auto pending = controller.pointerMove({.position = {12, 10}});
+    const auto pending = controller.pointerMove({.position = {12, 10}, .buttons = Qt::LeftButton});
     QVERIFY(pending.consumed);
     QVERIFY(pending.intents.isEmpty());
 
-    const auto moved = controller.pointerMove({.position = {20, 10}});
+    const auto moved = controller.pointerMove({.position = {20, 10}, .buttons = Qt::LeftButton});
     QCOMPARE(moved.intents.size(), 2);
     QCOMPARE(moved.intents[0].phase, IntentPhase::Begin);
     QCOMPARE(moved.intents[1].phase, IntentPhase::Update);
     QCOMPARE(moved.intents[1].target.zone, DockZone::Right);
     QCOMPARE(moved.intents[1].delta, QPointF(10, 0));
 
-    const auto sameTarget = controller.pointerMove({.position = {25, 12}});
+    const auto sameTarget = controller.pointerMove({.position = {25, 12}, .buttons = Qt::LeftButton});
     QVERIFY(sameTarget.consumed);
     QVERIFY(sameTarget.intents.isEmpty());
 
@@ -141,7 +141,7 @@ void InteractionControllerTest::groupedMemberDragOutsideCommitsDetach()
     InteractionController controller(resolver, {.dragThreshold = 0.0});
     QVERIFY(controller.pointerPress(
         pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    QVERIFY(controller.pointerMove({.position = {20, 0}}).consumed);
+    QVERIFY(controller.pointerMove({.position = {20, 0}, .buttons = Qt::LeftButton}).consumed);
     const auto released = controller.pointerRelease(releaseAt({30, 0}));
     QCOMPARE(released.intents.constFirst().phase, IntentPhase::Commit);
     QVERIFY(!released.intents.constFirst().target.isValid());
@@ -155,7 +155,7 @@ void InteractionControllerTest::independentDragOutsideCancels()
     InteractionController controller(resolver, {.dragThreshold = 0.0});
     QVERIFY(controller.pointerPress(
         pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    QVERIFY(controller.pointerMove({.position = {20, 0}}).consumed);
+    QVERIFY(controller.pointerMove({.position = {20, 0}, .buttons = Qt::LeftButton}).consumed);
     const auto released = controller.pointerRelease(releaseAt({30, 0}));
     QCOMPARE(released.intents.constFirst().phase, IntentPhase::Cancel);
     QCOMPARE(released.intents.constFirst().delta, QPointF(30, 0));
@@ -171,7 +171,7 @@ void InteractionControllerTest::iconChipDragOutsideCommitsWithoutATarget()
     InteractionController controller(resolver, {.dragThreshold = 0.0});
     QVERIFY(controller.pointerPress(
         pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    const auto moved = controller.pointerMove({.position = {20, 0}});
+    const auto moved = controller.pointerMove({.position = {20, 0}, .buttons = Qt::LeftButton});
     QCOMPARE(moved.intents.constFirst().kind, InteractionKind::MemberDock);
     QCOMPARE(moved.intents.constFirst().source.kind, HitKind::IconChip);
     const auto released = controller.pointerRelease(releaseAt({30, 0}));
@@ -182,7 +182,7 @@ void InteractionControllerTest::iconChipDragOutsideCommitsWithoutATarget()
 
     QVERIFY(controller.pointerPress(
         pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    QVERIFY(controller.pointerMove({.position = {20, 0}}).consumed);
+    QVERIFY(controller.pointerMove({.position = {20, 0}, .buttons = Qt::LeftButton}).consumed);
     const auto escaped = controller.keyEvent({.key = Qt::Key_Escape, .pressed = true});
     QCOMPARE(escaped.intents.constFirst().phase, IntentPhase::Cancel);
     QVERIFY(!controller.active());
@@ -207,11 +207,11 @@ void InteractionControllerTest::pointerGeometryKindsUseCumulativeDeltas()
         InteractionController controller(resolver, {.dragThreshold = 1.0});
         QVERIFY(controller.pointerPress(
             pressAt({5, 5}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-        const auto moved = controller.pointerMove({.position = {15, 17}});
+        const auto moved = controller.pointerMove({.position = {15, 17}, .buttons = Qt::LeftButton});
         QCOMPARE(moved.intents.size(), 2);
         QCOMPARE(moved.intents[0].kind, kinds[index]);
         QCOMPARE(moved.intents[1].delta, QPointF(10, 12));
-        const auto movedAgain = controller.pointerMove({.position = {20, 23}});
+        const auto movedAgain = controller.pointerMove({.position = {20, 23}, .buttons = Qt::LeftButton});
         QCOMPARE(movedAgain.intents.constFirst().delta, QPointF(15, 18));
         const auto released = controller.pointerRelease(releaseAt({21, 24}));
         QCOMPARE(released.intents.constFirst().phase, IntentPhase::Commit);
@@ -226,7 +226,7 @@ void InteractionControllerTest::externalCancelKeepsCumulativeDelta()
     InteractionController controller(resolver, {.dragThreshold = 0.0});
     QVERIFY(controller.pointerPress(
         pressAt({10, 20}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    QVERIFY(controller.pointerMove({.position = {25, 35}}).consumed);
+    QVERIFY(controller.pointerMove({.position = {25, 35}, .buttons = Qt::LeftButton}).consumed);
     const auto cancelled = controller.cancel();
     QVERIFY(cancelled.consumed);
     QCOMPARE(cancelled.intents.constFirst().phase, IntentPhase::Cancel);
@@ -247,10 +247,10 @@ void InteractionControllerTest::exactChordWithoutTargetOwnsTheWholeGestureSilent
     QVERIFY(controller.pointerPress(
         pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
     QVERIFY(controller.active());
-    const auto pastThreshold = controller.pointerMove({.position = {50, 50}});
+    const auto pastThreshold = controller.pointerMove({.position = {50, 50}, .buttons = Qt::LeftButton});
     QVERIFY(pastThreshold.consumed);
     QVERIFY(pastThreshold.intents.isEmpty());
-    const auto stillMoving = controller.pointerMove({.position = {80, 80}});
+    const auto stillMoving = controller.pointerMove({.position = {80, 80}, .buttons = Qt::LeftButton});
     QVERIFY(stillMoving.consumed);
     QVERIFY(stillMoving.intents.isEmpty());
     const auto released = controller.pointerRelease(releaseAt({80, 80}));
@@ -260,7 +260,7 @@ void InteractionControllerTest::exactChordWithoutTargetOwnsTheWholeGestureSilent
 
     QVERIFY(controller.pointerPress(
         pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    QVERIFY(controller.pointerMove({.position = {50, 50}}).consumed);
+    QVERIFY(controller.pointerMove({.position = {50, 50}, .buttons = Qt::LeftButton}).consumed);
     const auto escaped = controller.keyEvent({.key = Qt::Key_Escape});
     QVERIFY(escaped.consumed);
     QVERIFY(escaped.intents.isEmpty());
@@ -268,7 +268,7 @@ void InteractionControllerTest::exactChordWithoutTargetOwnsTheWholeGestureSilent
 
     QVERIFY(controller.pointerPress(
         pressAt({0, 0}, Qt::MetaModifier | Qt::ShiftModifier)).consumed);
-    QVERIFY(controller.pointerMove({.position = {50, 50}}).consumed);
+    QVERIFY(controller.pointerMove({.position = {50, 50}, .buttons = Qt::LeftButton}).consumed);
     const auto cancelled = controller.cancel();
     QVERIFY(cancelled.consumed);
     QVERIFY(cancelled.intents.isEmpty());
@@ -301,7 +301,7 @@ void InteractionControllerTest::adoptDragEntersActiveImmediatelyWithPreview()
     // A huge configured drag threshold would swallow an ordinary press+move,
     // but adoptDrag already skipped straight past PointerPending, so an
     // immediately following move still previews and a release still commits.
-    const auto moved = controller.pointerMove({.position = {60, 40}});
+    const auto moved = controller.pointerMove({.position = {60, 40}, .buttons = Qt::LeftButton});
     QVERIFY(moved.consumed);
     const auto released = controller.pointerRelease(releaseAt({60, 40}));
     QCOMPARE(released.intents.constFirst().phase, IntentPhase::Commit);

@@ -7,7 +7,7 @@
 | Key | Type | Default | Consumers |
 | --- | --- | --- | --- |
 | `windowManagement.focusPolicy` | `click` / `focus-follows-mouse` / `focus-under-mouse` | `click` | kwinrc `[Windows] FocusPolicy`, read by KWin on reconfigure |
-| `windowManagement.dockingModifier` | `super` / `alt` / `control` / `disabled` | `super` | kwinrc `[QindaQt] DockingModifier`, rebinding the compositor's exact docking chord (Shift stays in every chord; `disabled` matches no pointer press) |
+| `windowManagement.dockingModifier` | `super` / `alt` / `control` / `disabled` | `super` | kwinrc `[QindaQt] DockingModifier`, rebinding the compositor's exact docking chord (Shift stays in the docking chord; `disabled` matches no pointer press). ADR-0282: the same key without Shift is the window-management modifier for moving (left drag) and resizing (right drag) whole containers and for the modifier + wheel roll-up, mouse and pen alike |
 | `windowManagement.snapDistance` | integer 0–64 | `12` | kwinrc `[Windows] BorderSnapZone` and `WindowSnapZone` |
 | `windowManagement.closeContainerPolicy` | `ask` / `close-all` / `ungroup` | `ask` | kwinrc `[QindaQt] CloseContainerPolicy`: a standing decision skips the group close prompt |
 

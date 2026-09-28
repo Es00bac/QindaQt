@@ -86,6 +86,21 @@ never iconified; see [Hybrid container chrome](hybrid-chrome.md)
 
 - Move, minimize, maximize, pin, workspace assignment, and output movement on
   the outer title bar affect the whole container.
+- A container never locks up
+  ([ADR-0282](../adr/0282-containers-never-lock-and-speak-modifier-chords.md)).
+  Maximize is left by acting on the frame: a title drag restores the container
+  under the pointer and keeps moving (Cancel re-maximizes), a resize starts from
+  the maximized frame, and a maximized container rolls up and unrolls into the
+  current maximize area. A placement Begin supersedes a gesture whose end was
+  lost, a refused Commit is delivered as Cancel, and a native move of a member
+  that did not detach is cancelled so no member ever moves alone.
+- The window-management modifier (the docking chord without Shift, Meta by
+  default) acts on containers with a mouse or a pen: modifier + left drag moves
+  the whole container, modifier + right drag resizes it from the nearest corner,
+  and modifier + wheel rolls it up or down once per scroll gesture. Over an
+  independent window the left chord stays KWin's move and the right chord starts
+  KWin's resize; the pen's tip is the left button and its barrel button the
+  right. See [ADR-0282](../adr/0282-containers-never-lock-and-speak-modifier-chords.md).
 - Whole-container minimize is session state, not derived page state: a
   topology mutation re-plans every container but never resurrects a minimized
   one, and only an explicit restore (task list, group menu, or chrome) brings

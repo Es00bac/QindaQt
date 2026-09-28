@@ -296,6 +296,8 @@ private:
     // Iconified windows (ADR-0203); implemented in kwinhybridiconify.cpp.
     void ensureIconify();
     void initializeIconifyInput();
+    // ADR-0282 modifier chords (kwinhybridmodifierchords.cpp).
+    void initializeModifierChordInput();
     void initializeTargetResolver();
     [[nodiscard]] std::optional<QString> iconChipSourceAt(const QPointF &position) const;
     [[nodiscard]] std::optional<IconChipPointerHit> iconChipHitAt(

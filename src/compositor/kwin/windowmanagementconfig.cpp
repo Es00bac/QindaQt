@@ -6,9 +6,10 @@ namespace QindaQt::Compositor::KWinIntegration {
 std::optional<Qt::KeyboardModifiers> WindowManagementConfig::dockingModifiersFor(
     const QString &name)
 {
-    // AGENT-CONTRACT: Shift stays in every chord. A bare modifier plus left
-    // button is KWin's own move/resize command (CommandAllKey), and the
-    // exact-equality match on both judges would otherwise fight it.
+    // AGENT-CONTRACT: Shift stays in the docking chord. The bare modifier is
+    // the ADR-0282 window-management modifier (containerchords.h): it claims a
+    // press only over a container and leaves every other window to KWin's own
+    // CommandAll move, so the two judges never claim the same press.
     const QString trimmed = name.trimmed().toLower();
     if (trimmed == QLatin1String("disabled")) {
         return std::nullopt;

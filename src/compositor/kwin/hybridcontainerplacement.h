@@ -52,6 +52,12 @@ public:
         const HybridChrome::ChromeDragEvent &event,
         QString *error = nullptr);
 
+    // ADR-0282: maximize is a state the user leaves by acting on the frame,
+    // never a lock. A title-bar move Begin on a maximized container restores
+    // it under the pointer and continues the drag (Cancel re-maximizes); a
+    // resize Begin leaves maximize in place; shade keeps maximize and unshade
+    // returns to the current maximize area. Only an explicit maximize while
+    // shaded is still refused. Implemented in hybridcontainermaximize.cpp.
     [[nodiscard]] bool maximize(const QString &containerId, QString *error = nullptr);
     [[nodiscard]] bool restore(const QString &containerId, QString *error = nullptr);
 
@@ -105,6 +111,7 @@ public:
     // Content/decoration/shadow/input hiding for members is a KWin-adapter
     // responsibility (see HybridShadeMemberController) driven by isShaded();
     // this controller owns no KWin object and no visibility state.
+    // A maximized container may roll up and stays maximized (ADR-0282).
     [[nodiscard]] bool shade(const QString &containerId, QString *error = nullptr);
     [[nodiscard]] bool unshade(const QString &containerId, QString *error = nullptr);
     [[nodiscard]] bool isShaded(const QString &containerId) const noexcept;
@@ -133,6 +140,11 @@ private:
         QRect baseline;
         QRect applied;
         Qt::Edges edges;
+        // Set only when this gesture left maximize at its Begin (ADR-0282):
+        // Cancel reinstates this restore frame and returns to cancelFrame,
+        // the maximized frame the gesture started from.
+        std::optional<QRect> resumeMaximizeRestore;
+        QRect cancelFrame;
     };
 
     [[nodiscard]] const Core::WindowContainer *container(
@@ -147,6 +159,16 @@ private:
     [[nodiscard]] DirectInteractionResult handleShadedMove(
         const QString &containerId,
         const HybridInput::InteractionIntent &intent);
+    // ADR-0282 (hybridcontainermaximize.cpp): the move Begin of a maximized,
+    // unshaded container. Restores the container to its restore size under
+    // the press point and records the drag so Cancel can re-maximize.
+    [[nodiscard]] DirectInteractionResult beginMaximizedMove(
+        const QString &containerId,
+        const HybridInput::InteractionIntent &intent);
+    // Cancel of a gesture that left maximize at Begin: back to the maximized
+    // frame with the original restore frame reinstated.
+    [[nodiscard]] DirectInteractionResult cancelMaximizedDrag(
+        const QString &containerId, const FrameDrag &drag);
     [[nodiscard]] static QRect resizedFrame(const FrameDrag &drag,
                                             const QPointF &delta,
                                             const std::optional<double> &pinnedContentRatio);

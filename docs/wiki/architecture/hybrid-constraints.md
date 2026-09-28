@@ -152,7 +152,10 @@ Current group-wide controls have these semantics:
   one real reflow in this lifecycle, back to the original size at the strip's
   current (possibly dragged) position, then restores every member's
   visibility and hands focus back to the member that held it at roll-up.
-  Shade is rejected while maximized (and maximize while shaded);
+  A maximized container may shade and stays maximized; unroll returns it to
+  the current maximize area, and moving its strip leaves maximize
+  ([ADR-0282](../adr/0282-containers-never-lock-and-speak-modifier-chords.md)).
+  Maximize is still rejected while shaded;
   outer resize is rejected while shaded, but outer move remains available so
   the strip stays draggable, and moving it changes where the container
   reappears on unroll. See

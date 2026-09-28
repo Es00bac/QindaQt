@@ -35,3 +35,23 @@ add_test(
     NAME compositor.hybrid-icon-chip-router
     COMMAND qindaqt_hybrid_icon_chip_router_tests
 )
+
+# Where a native title-bar roll-up goes: an independent window's icon chip, or
+# (ADR-0282) the whole container of a member zoomed over hidden group chrome.
+qt_add_executable(
+    qindaqt_hybrid_title_wheel_route_tests
+    tst_hybridtitlewheelroute.cpp
+)
+target_include_directories(
+    qindaqt_hybrid_title_wheel_route_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+)
+target_compile_features(qindaqt_hybrid_title_wheel_route_tests PRIVATE cxx_std_20)
+target_link_libraries(
+    qindaqt_hybrid_title_wheel_route_tests
+    PRIVATE Qt6::Core Qt6::Test
+)
+add_test(
+    NAME compositor.hybrid-title-wheel-route
+    COMMAND qindaqt_hybrid_title_wheel_route_tests
+)

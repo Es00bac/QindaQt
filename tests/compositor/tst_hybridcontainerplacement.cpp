@@ -233,10 +233,11 @@ void HybridContainerPlacementTest::rejectsUnavailableOrInconsistentResizeState()
 
     QVERIFY(fixture.controller.handleResize(
         resizeIntent(HybridInput::IntentPhase::Begin)).accepted);
-    const auto duplicate = fixture.controller.handleResize(
-        resizeIntent(HybridInput::IntentPhase::Begin));
-    QVERIFY(!duplicate.accepted);
-    QVERIFY(duplicate.message.contains(QStringLiteral("active")));
+    // ADR-0282: a second Begin supersedes a gesture whose end never arrived
+    // instead of locking the container (tst_hybridcontainerrescue covers the
+    // lost-end case itself). Its edges become the ones this gesture keeps.
+    QVERIFY(fixture.controller.handleResize(
+        resizeIntent(HybridInput::IntentPhase::Begin)).accepted);
     const auto changedEdges = fixture.controller.handleResize(
         resizeIntent(HybridInput::IntentPhase::Update, QPointF(5, 5),
                      Qt::LeftEdge | Qt::TopEdge));
@@ -245,12 +246,8 @@ void HybridContainerPlacementTest::rejectsUnavailableOrInconsistentResizeState()
     QVERIFY(fixture.controller.handleResize(
         resizeIntent(HybridInput::IntentPhase::Cancel)).accepted);
 
-    QString error;
-    QVERIFY(fixture.controller.maximize(QStringLiteral("group"), &error));
-    const auto maximized = fixture.controller.handleResize(
-        resizeIntent(HybridInput::IntentPhase::Begin));
-    QVERIFY(!maximized.accepted);
-    QVERIFY(maximized.message.contains(QStringLiteral("maximized")));
+    // A maximized container is resizable too; tst_hybridcontainermaximize
+    // covers how that leaves maximize (ADR-0282).
 }
 
 void HybridContainerPlacementTest::aspectPinKeepsRatioOnEdgeAndCornerDrags()

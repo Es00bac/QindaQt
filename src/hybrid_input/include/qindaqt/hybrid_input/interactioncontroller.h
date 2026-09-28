@@ -80,6 +80,9 @@ private:
     };
 
     [[nodiscard]] InteractionKind kindForHit(HitKind kind) const;
+    // ADR-0282: modifier + left moves, modifier + right resizes the container
+    // under the pointer (containerchords.h). Claims nothing elsewhere.
+    [[nodiscard]] InteractionDecision containerChordPress(const PointerEvent &event);
     [[nodiscard]] InteractionDecision beginKeyboardInteraction(
         const HitTarget &source, InteractionKind expectedKind);
     [[nodiscard]] InteractionIntent intent(IntentPhase phase,
@@ -101,6 +104,8 @@ private:
     State m_state = State::Idle;
     InteractionKind m_kind = InteractionKind::None;
     HitTarget m_source;
+    // The button whose release ends the pointer gesture in flight.
+    Qt::MouseButton m_activeButton = Qt::NoButton;
     DockTarget m_previewTarget;
     QPointF m_pressPosition;
     QPointF m_lastPosition;

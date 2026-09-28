@@ -21,8 +21,10 @@ constexpr double MinimumSplitRatio = 0.01;
 constexpr double MaximumSplitRatio = 0.99;
 
 // AGENT-NOTE: whole-container roll-up (shade/unshade/resizeShadeStrip and the
-// strip frame) lives in hybridcontainershade.cpp, a second translation unit of
-// this same class, because this file is at its shape limit.
+// strip frame) lives in hybridcontainershade.cpp and whole-container maximize
+// (maximize/restore/area refresh and leaving maximize by moving or resizing,
+// ADR-0282) in hybridcontainermaximize.cpp: further translation units of this
+// same class, because this file is at its shape limit.
 QString interactionContainerId(const HybridInput::InteractionIntent &intent)
 {
     return intent.source.containerId;
@@ -170,16 +172,24 @@ bool HybridContainerPlacementController::beginDrag(
     Qt::Edges edges,
     QString *error)
 {
-    if (drags.contains(containerId)) {
-        assignError(error, QStringLiteral("container already has an active placement drag"));
-        return false;
-    }
+    // AGENT-GUARD: A Begin always starts a new gesture (ADR-0282). The input
+    // layer holds at most one grab per container, so an entry that is still
+    // here belongs to a gesture whose Commit/Cancel never arrived (a commit
+    // refused upstream, a revoked chrome publication, a lost release).
+    // Refusing the new Begin made that container permanently immovable until
+    // all of its windows were dragged out and it dissolved. The abandoned
+    // gesture keeps the frame it last applied: that is what the user sees.
+    drags.remove(containerId);
     const auto current = m_layout ? m_layout(containerId) : std::nullopt;
     if (!container(containerId) || !current || !current->outerFrame.isValid()) {
         assignError(error, QStringLiteral("container has no committed placement"));
         return false;
     }
-    drags.insert(containerId, FrameDrag{current->outerFrame, current->outerFrame, edges});
+    drags.insert(containerId, FrameDrag{.baseline = current->outerFrame,
+                                        .applied = current->outerFrame,
+                                        .edges = edges,
+                                        .resumeMaximizeRestore = std::nullopt,
+                                        .cancelFrame = current->outerFrame});
     return true;
 }
 
@@ -200,9 +210,7 @@ DirectInteractionResult HybridContainerPlacementController::handleMove(
     if (intent.phase == HybridInput::IntentPhase::Begin) {
         m_refusedGestures.remove(containerId);
         if (isMaximized(containerId)) {
-            m_refusedGestures.insert(containerId);
-            return DirectInteractionResult::rejected(
-                QStringLiteral("restore a maximized container before moving it"));
+            return beginMaximizedMove(containerId, intent);
         }
         if (beginDrag(m_moveDrags, containerId, {}, &error)) {
             return DirectInteractionResult::handled();
@@ -226,10 +234,12 @@ DirectInteractionResult HybridContainerPlacementController::handleMove(
             QStringLiteral("container move has no active baseline"));
     }
     if (intent.phase == HybridInput::IntentPhase::Cancel) {
-        const auto baseline = found->baseline;
-        const bool changed = found->applied != baseline;
+        const FrameDrag drag = *found;
         m_moveDrags.erase(found);
-        if (changed && !reflow(containerId, baseline, &error)) {
+        if (drag.resumeMaximizeRestore) {
+            return cancelMaximizedDrag(containerId, drag);
+        }
+        if (drag.applied != drag.baseline && !reflow(containerId, drag.baseline, &error)) {
             return DirectInteractionResult::rejected(std::move(error));
         }
         return DirectInteractionResult::handled();
@@ -266,16 +276,18 @@ DirectInteractionResult HybridContainerPlacementController::handleShadedMove(
     const QString &containerId, const HybridInput::InteractionIntent &intent)
 {
     if (intent.phase == HybridInput::IntentPhase::Begin) {
-        if (m_moveDrags.contains(containerId)) {
-            return DirectInteractionResult::rejected(
-                QStringLiteral("container already has an active placement drag"));
-        }
+        // Supersedes an abandoned gesture exactly like beginDrag().
+        m_moveDrags.remove(containerId);
         const auto baseline = m_shadeStripFrames.value(containerId);
         if (!baseline.isValid()) {
             return DirectInteractionResult::rejected(
                 QStringLiteral("shaded container has no strip frame"));
         }
-        m_moveDrags.insert(containerId, FrameDrag{baseline, baseline, {}});
+        m_moveDrags.insert(containerId, FrameDrag{.baseline = baseline,
+                                                  .applied = baseline,
+                                                  .edges = {},
+                                                  .resumeMaximizeRestore = std::nullopt,
+                                                  .cancelFrame = baseline});
         return DirectInteractionResult::handled();
     }
 
@@ -303,7 +315,17 @@ DirectInteractionResult HybridContainerPlacementController::handleShadedMove(
         }
     }
     if (intent.phase == HybridInput::IntentPhase::Commit) {
+        const bool moved = found->applied != found->baseline;
         m_moveDrags.erase(found);
+        // ADR-0282: a rolled-up maximized container that was actually moved
+        // leaves maximize, so unrolling restores its restore size where the
+        // strip was put rather than snapping back to the maximize area.
+        if (moved) {
+            if (const auto restoreFrame = m_maximizeRestoreFrames.take(containerId);
+                restoreFrame.isValid()) {
+                m_shadeRestoreSizes.insert(containerId, restoreFrame.size());
+            }
+        }
     }
     return DirectInteractionResult::handled();
 }
@@ -322,11 +344,6 @@ DirectInteractionResult HybridContainerPlacementController::handleResize(
     QString error;
     if (intent.phase == HybridInput::IntentPhase::Begin) {
         m_refusedGestures.remove(containerId);
-        if (isMaximized(containerId)) {
-            m_refusedGestures.insert(containerId);
-            return DirectInteractionResult::rejected(
-                QStringLiteral("restore a maximized container before resizing it"));
-        }
         // AGENT-GUARD: A shaded outer frame has no content to expose; letting
         // an outer-edge drag resize it would silently unshade or produce a
         // frame the compositor never solved a real layout for. Move remains
@@ -336,8 +353,19 @@ DirectInteractionResult HybridContainerPlacementController::handleResize(
             return DirectInteractionResult::rejected(
                 QStringLiteral("unroll a shaded container before resizing it"));
         }
+        // ADR-0282: resizing leaves maximize in place (chrome hides the resize
+        // border while maximized, so this is the keyboard resize): the
+        // gesture starts from the maximized frame, and Cancel re-maximizes.
+        const auto restoreFrame = m_maximizeRestoreFrames.take(containerId);
         if (beginDrag(m_resizeDrags, containerId, intent.source.edges, &error)) {
+            if (restoreFrame.isValid()) {
+                auto &drag = m_resizeDrags[containerId];
+                drag.resumeMaximizeRestore = restoreFrame;
+            }
             return DirectInteractionResult::handled();
+        }
+        if (restoreFrame.isValid()) {
+            m_maximizeRestoreFrames.insert(containerId, restoreFrame);
         }
         m_refusedGestures.insert(containerId);
         return DirectInteractionResult::rejected(std::move(error));
@@ -361,10 +389,12 @@ DirectInteractionResult HybridContainerPlacementController::handleResize(
             QStringLiteral("container resize edges changed during the interaction"));
     }
     if (intent.phase == HybridInput::IntentPhase::Cancel) {
-        const auto baseline = found->baseline;
-        const bool changed = found->applied != baseline;
+        const FrameDrag drag = *found;
         m_resizeDrags.erase(found);
-        if (changed && !reflow(containerId, baseline, &error)) {
+        if (drag.resumeMaximizeRestore) {
+            return cancelMaximizedDrag(containerId, drag);
+        }
+        if (drag.applied != drag.baseline && !reflow(containerId, drag.baseline, &error)) {
             return DirectInteractionResult::rejected(std::move(error));
         }
         return DirectInteractionResult::handled();
@@ -534,73 +564,6 @@ bool HybridContainerPlacementController::handleOuterResize(
         assignError(error, result.message);
     }
     return result.accepted;
-}
-
-bool HybridContainerPlacementController::maximize(
-    const QString &containerId, QString *error)
-{
-    if (isMaximized(containerId)) {
-        return true;
-    }
-    if (isShaded(containerId)) {
-        assignError(error, QStringLiteral("unroll a shaded container before maximizing it"));
-        return false;
-    }
-    const auto current = m_layout ? m_layout(containerId) : std::nullopt;
-    const auto workArea = m_workArea ? m_workArea(containerId) : QRect{};
-    if (!current || !workArea.isValid()) {
-        assignError(error, QStringLiteral("container has no valid maximize area"));
-        return false;
-    }
-    m_maximizeRestoreFrames.insert(containerId, current->outerFrame);
-    if (!reflow(containerId, workArea, error)) {
-        m_maximizeRestoreFrames.remove(containerId);
-        return false;
-    }
-    return true;
-}
-
-bool HybridContainerPlacementController::restore(
-    const QString &containerId, QString *error)
-{
-    const auto found = m_maximizeRestoreFrames.constFind(containerId);
-    if (found == m_maximizeRestoreFrames.cend()) {
-        assignError(error, QStringLiteral("container has no maximize restore frame"));
-        return false;
-    }
-    const auto frame = *found;
-    m_maximizeRestoreFrames.erase(found);
-    if (!reflow(containerId, frame, error)) {
-        m_maximizeRestoreFrames.insert(containerId, frame);
-        return false;
-    }
-    return true;
-}
-
-
-QStringList HybridContainerPlacementController::refreshMaximizedAreas()
-{
-    QStringList failures;
-    auto containerIds = m_maximizeRestoreFrames.keys();
-    containerIds.sort();
-    for (const auto &containerId : std::as_const(containerIds)) {
-        const auto current = m_layout ? m_layout(containerId) : std::nullopt;
-        const auto workArea = m_workArea ? m_workArea(containerId) : QRect{};
-        if (!current || !workArea.isValid()) {
-            failures.append(QStringLiteral("container '%1' has no valid maximize area")
-                                .arg(containerId));
-            continue;
-        }
-        if (current->outerFrame == workArea) {
-            continue;
-        }
-        QString error;
-        if (!reflow(containerId, workArea, &error)) {
-            failures.append(QStringLiteral("container '%1': %2")
-                                .arg(containerId, error));
-        }
-    }
-    return failures;
 }
 
 void HybridContainerPlacementController::forgetContainer(

@@ -4,6 +4,8 @@
 #include "hybridchromepointerrouter.h"
 #include "hybridiconchiprouter.h"
 
+#include "qindaqt/hybrid_input/containerchords.h"
+
 #include <core/inputdevice.h>
 #include <input.h>
 #include <input_event.h>
@@ -65,6 +67,26 @@ public:
         return m_owner.touchCancel();
     }
 
+    bool tabletToolProximityEvent(KWin::TabletToolProximityEvent *event) override
+    {
+        return m_owner.tabletToolProximity(event);
+    }
+
+    bool tabletToolAxisEvent(KWin::TabletToolAxisEvent *event) override
+    {
+        return m_owner.tabletToolAxis(event);
+    }
+
+    bool tabletToolTipEvent(KWin::TabletToolTipEvent *event) override
+    {
+        return m_owner.tabletToolTip(event);
+    }
+
+    bool tabletToolButtonEvent(KWin::TabletToolButtonEvent *event) override
+    {
+        return m_owner.tabletToolButton(event);
+    }
+
 private:
     KWinInteractionFilter &m_owner;
 };
@@ -97,6 +119,14 @@ public:
     bool keyboardKey(KWin::KeyboardKeyEvent *event) override
     {
         return m_owner.earlyKeyboardKey(event);
+    }
+
+    // ADR-0282: modifier + wheel roll-up must be judged here, before KWin's
+    // GlobalShortcut filter hands Meta+wheel to an axis shortcut (zoom) and
+    // before the Decoration-order chrome router scrolls a tab strip.
+    bool pointerAxis(KWin::PointerAxisEvent *event) override
+    {
+        return m_owner.earlyPointerAxis(event);
     }
 
 private:
@@ -150,6 +180,11 @@ void KWinInteractionFilter::setIconifyHooks(IconifyInputHooks hooks)
     m_iconify = std::move(hooks);
 }
 
+void KWinInteractionFilter::setModifierChordHooks(ModifierChordHooks hooks)
+{
+    m_modifierChords = std::move(hooks);
+}
+
 bool KWinInteractionFilter::beginKeyboardDock(const HybridInput::HitTarget &source)
 {
     if (m_chromeRouter && m_chromeRouter->active()) {
@@ -198,6 +233,9 @@ void KWinInteractionFilter::setDockingModifiers(std::optional<Qt::KeyboardModifi
 {
     m_controller.setPointerModifiers(modifiers);
     m_lateShiftDetector.setRequiredModifiers(modifiers);
+    // ADR-0282: one setting moves every chord; the wheel uses the modifier
+    // without Shift, like the move and resize chords.
+    m_wheelRoll.setModifier(HybridInput::windowManagementModifier(modifiers));
 }
 
 void KWinInteractionFilter::invalidateChromeTargets()
@@ -267,9 +305,14 @@ bool KWinInteractionFilter::pointerButton(KWin::PointerButtonEvent *event)
             return true;
         }
     }
-    return dispatch(event->state == KWin::PointerButtonState::Pressed
-                        ? m_controller.pointerPress(normalized)
-                        : m_controller.pointerRelease(normalized));
+    if (event->state == KWin::PointerButtonState::Pressed) {
+        const auto decision = m_controller.pointerPress(normalized);
+        if (decision.consumed || !decision.intents.isEmpty()) {
+            return dispatch(decision);
+        }
+        return modifierWindowResize(normalized);
+    }
+    return dispatch(m_controller.pointerRelease(normalized));
 }
 
 bool KWinInteractionFilter::pointerAxis(KWin::PointerAxisEvent *event)
@@ -288,7 +331,9 @@ bool KWinInteractionFilter::pointerAxis(KWin::PointerAxisEvent *event)
     }
     // ADR-0203: a wheel over an iconified window's chip unrolls it; a wheel
     // away from the user over an independent window's decoration title bar
-    // rolls that window up before native KDecoration sees the event.
+    // rolls that window up before native KDecoration sees the event, and over
+    // a zoomed member's title (group chrome hidden) rolls up its container
+    // (ADR-0282; the session's titleWheelRoute() decides which).
     if (m_iconify.chipRouter
         && dispatchChip(m_iconify.chipRouter->pointerWheel(event->position, event->modifiers,
                                                            awayFromUser))) {

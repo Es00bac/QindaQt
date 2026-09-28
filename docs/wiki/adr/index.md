@@ -283,3 +283,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0278: Retain dock delegates by presentation identity](0278-retain-dock-delegates-by-presentation-identity.md)
 
 - [ADR-0280: Independently select an installed icon theme](0280-independent-installed-icon-theme-choice.md)
+- [ADR-0282: Containers never lock up, and speak one set of modifier chords](0282-containers-never-lock-and-speak-modifier-chords.md)
