@@ -312,6 +312,11 @@ void KWinHybridSession::dispatchChromePointerDecision(
     for (const auto &containerId : decision.titleDoubleClicks) {
         applyTitleDoubleClick(containerId);
     }
+    for (const auto &request : decision.tabSteps) {
+        // ADR-0281: activates the neighbouring page through the same path as
+        // a tab click; a step past either end is a silent no-op.
+        (void)m_chromeManager->dispatchTabStep(request.containerId, request.step);
+    }
 }
 
 void KWinHybridSession::applyTitleDoubleClick(const QString &containerId)

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-corner-teal-dark",
+  "name": "Qinda Sea Glass Dark",
+  "variant": "dark",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Noto Sans",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 8,
+  "motionDuration": 130,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#141E1D",
+    "surface": "#1D2928",
+    "surfaceRaised": "#263534",
+    "border": "#628581",
+    "text": "#E7F3F0",
+    "textMuted": "#AFC7C2",
+    "accent": "#5CCBBC",
+    "accentText": "#062320",
+    "danger": "#F28A88"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "tab",
+    "hoverGlyphs": false,
+    "titleBarColor": "#2FA597",
+    "titleBarInactiveColor": "#34504C",
+    "closeColor": "#F28A88",
+    "minimizeColor": "#B8CC80",
+    "maximizeColor": "#63CBA6",
+    "titleDoubleClick": "roll-up",
+    "titleWear": false,
+    "containerTitleLayout": "split-deck"
+  },
+  "radii": {
+    "decoration": 8
+  }
+}

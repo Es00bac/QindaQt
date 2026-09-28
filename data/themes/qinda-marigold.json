@@ -31,7 +31,8 @@
     "minimizeColor": "#8E6A00",
     "maximizeColor": "#4A7A3A",
     "titleDoubleClick": "roll-up",
-    "titleWear": false
+    "titleWear": false,
+    "containerTitleLayout": "split-deck"
   },
   "radii": {
     "decoration": 2

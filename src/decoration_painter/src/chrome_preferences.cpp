@@ -80,6 +80,10 @@ const QList<PreferenceField> &preferenceFields()
             {ChromePreferenceKeys::ContainerTitleDoubleClick,
              &ChromePreferences::containerTitleDoubleClick,
              QStringList{QStringLiteral("none")} + doubleClicks},
+            // ADR-0281, appended for the same commit-order reason.
+            {ChromePreferenceKeys::ContainerTitleLayout,
+             &ChromePreferences::containerTitleLayout,
+             {theme, QStringLiteral("classic"), QStringLiteral("split-deck")}},
         };
     }();
     return fields;

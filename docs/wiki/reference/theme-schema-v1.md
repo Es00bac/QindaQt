@@ -44,6 +44,7 @@ hard-coding theme-specific palette values.
 | `titleDoubleClick` | Optional `maximize`, `roll-up`, or `minimize`: what a title double-click does; absent leaves KWin's own action ([ADR-0268](../adr/0268-familiar-desktop-experiences-are-layout-and-theme-pairs.md)) |
 | `minimizeAction` | `minimize` (default) or `roll-up`: with `roll-up` the roll-up control takes minimize's place, so minimizing rolls the window up to its icon on the desktop (ADR-0203) |
 | `titleWear` | Boolean, default `true`; `false` paints an authored title bar clean instead of weathered |
+| `containerTitleLayout` | Optional `classic` or `split-deck`: how container title rows are arranged; absent means `classic`. `split-deck` puts the container's name and window buttons on a title tab at the left (painted in `titleBarColor`/`titleBarInactiveColor`) and the tabs on a card deck at the right ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)) |
 
 All decoration fields beyond the two directions are optional presentation
 hints. Absent fields keep the classic rendering: a theme that authors none

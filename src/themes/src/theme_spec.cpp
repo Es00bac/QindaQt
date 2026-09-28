@@ -68,6 +68,9 @@ QVariantMap DecorationSpec::toVariantMap() const
     if (!titleWear) {
         values.insert(QStringLiteral("titleWear"), false);
     }
+    if (!containerTitleLayout.isEmpty()) {
+        values.insert(QStringLiteral("containerTitleLayout"), containerTitleLayout);
+    }
     return values;
 }
 

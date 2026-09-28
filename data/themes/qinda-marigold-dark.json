@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 2,
+  "id": "qinda-marigold-dark",
+  "name": "Qinda Marigold Dark",
+  "variant": "dark",
+  "iconTheme": "QindaQt",
+  "fontFamily": "Noto Sans",
+  "monoFontFamily": "JetBrains Mono",
+  "cornerRadius": 3,
+  "motionDuration": 130,
+  "blurEnabled": false,
+  "colors": {
+    "canvas": "#1C1C1A",
+    "surface": "#272724",
+    "surfaceRaised": "#33332F",
+    "border": "#88857A",
+    "text": "#F1EFE8",
+    "textMuted": "#C2BFB4",
+    "accent": "#8AB0F0",
+    "accentText": "#0F1520",
+    "danger": "#F2877D"
+  },
+  "decoration": {
+    "buttonPlacement": "left",
+    "tabDirection": "left-to-right",
+    "buttonStyle": "tab",
+    "hoverGlyphs": false,
+    "titleBarColor": "#E8B423",
+    "titleBarInactiveColor": "#4A4843",
+    "closeColor": "#F2877D",
+    "minimizeColor": "#E3B445",
+    "maximizeColor": "#8FC77D",
+    "titleDoubleClick": "roll-up",
+    "titleWear": false,
+    "containerTitleLayout": "split-deck"
+  },
+  "radii": {
+    "decoration": 2
+  }
+}

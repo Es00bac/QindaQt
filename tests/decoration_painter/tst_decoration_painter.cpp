@@ -393,8 +393,9 @@ void DecorationPainterTests::paintsFlatButtonsAndLeftCaptions()
 void DecorationPainterTests::preferenceTokensAndContainerStylesRoundTrip()
 {
     const auto keys = ChromePreferences::settingsKeys();
-    // The eight arrangement keys plus the eleven title-bar options (ADR-0264).
-    QCOMPARE(keys.size(), 19);
+    // The eight arrangement keys, the eleven title-bar options (ADR-0264) and
+    // the container title layout (ADR-0281).
+    QCOMPARE(keys.size(), 20);
     const ChromePreferences defaults;
     for (const QString &key : keys) {
         const auto allowed = ChromePreferences::tokens(key);

@@ -18,8 +18,8 @@ private Q_SLOTS:
     void setColorRejectsInvalidHexAndLeavesPriorValue();
     void forgetContainerRemovesBothFields();
     void containersAreIndependent();
-    void displayNameGeneratesStableNamesAndHonorsOverrides();
-  void assignedDisplayNameReportsWithoutAssigning();
+    void displayNameIsTheRenameOrTheDefault();
+    void displayNameIsAPureRead();
 };
 
 void HybridContainerAppearanceStoreTests::unknownContainerHasNoOverride()
@@ -101,56 +101,39 @@ void HybridContainerAppearanceStoreTests::containersAreIndependent()
     QCOMPARE(store.appearance(QStringLiteral("beta")), ContainerAppearance{});
 }
 
-void HybridContainerAppearanceStoreTests::displayNameGeneratesStableNamesAndHonorsOverrides()
+// ADR-0281: a container is titled by its own name: the user's rename, else
+// the default "Container". Never a number, never a page title.
+void HybridContainerAppearanceStoreTests::displayNameIsTheRenameOrTheDefault()
 {
     HybridContainerAppearanceStore store;
     QString error;
+    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container"));
+    QCOMPARE(store.displayName(QStringLiteral("beta")), QStringLiteral("Container"));
+    QVERIFY(!store.hasCustomName(QStringLiteral("alpha")));
 
-    // First observation assigns sequential numbers; repeat queries stay
-    // stable for the container's lifetime (ADR-0163).
-    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container 1"));
-    QCOMPARE(store.displayName(QStringLiteral("beta")), QStringLiteral("Container 2"));
-    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container 1"));
-
-    // The rename override wins, and clearing it falls back to the memoized
-    // generated name instead of minting a new number.
-    QVERIFY(store.setName(QStringLiteral("alpha"), QStringLiteral("Games"), &error));
+    QVERIFY(store.setName(QStringLiteral("alpha"), QStringLiteral("  Games "), &error));
     QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Games"));
+    QVERIFY(store.hasCustomName(QStringLiteral("alpha")));
+    QCOMPARE(store.displayName(QStringLiteral("beta")), QStringLiteral("Container"));
+
+    // Clearing the rename returns to the default; so does forgetting.
     QVERIFY(store.setName(QStringLiteral("alpha"), QStringLiteral("   "), &error));
-    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container 1"));
-
-    // Forgetting a container retires its memoized name; the counter never
-    // reuses a number, so two live containers can never share a name.
-    store.forgetContainer(QStringLiteral("alpha"));
-    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container 3"));
-    QCOMPARE(store.displayName(QStringLiteral("beta")), QStringLiteral("Container 2"));
-
-    // clear() resets the whole generated map; the counter keeps advancing.
-    store.clear();
-    QCOMPARE(store.displayName(QStringLiteral("gamma")), QStringLiteral("Container 4"));
+    QCOMPARE(store.displayName(QStringLiteral("alpha")), QStringLiteral("Container"));
+    QVERIFY(!store.hasCustomName(QStringLiteral("alpha")));
+    QVERIFY(store.setName(QStringLiteral("beta"), QStringLiteral("Work"), &error));
+    store.forgetContainer(QStringLiteral("beta"));
+    QCOMPARE(store.displayName(QStringLiteral("beta")), QStringLiteral("Container"));
 }
 
-// A diagnostic read must never burn a generated number: an observer that
-// called displayName() would renumber a container simply by inspecting it.
-void HybridContainerAppearanceStoreTests::assignedDisplayNameReportsWithoutAssigning()
+// Reading a name never changes it: a const read, identical however often and
+// in whatever order containers are inspected.
+void HybridContainerAppearanceStoreTests::displayNameIsAPureRead()
 {
-  HybridContainerAppearanceStore store;
-  // Never observed: nothing to report, and nothing assigned by asking.
-  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")), QString());
-  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")), QString());
-  // The first real observation assigns "Container 1"; a container observed
-  // afterwards must still get "Container 2", proving the reads above consumed
-  // no number.
-  QCOMPARE(store.displayName(QStringLiteral("c1")), QStringLiteral("Container 1"));
-  QCOMPARE(store.displayName(QStringLiteral("c2")), QStringLiteral("Container 2"));
-  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")),
-           QStringLiteral("Container 1"));
-  // A rename wins, and clearing it falls back to the memoized generated name.
-  QVERIFY(store.setName(QStringLiteral("c1"), QStringLiteral("Games")));
-  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")), QStringLiteral("Games"));
-  QVERIFY(store.setName(QStringLiteral("c1"), QString()));
-  QCOMPARE(store.assignedDisplayName(QStringLiteral("c1")),
-           QStringLiteral("Container 1"));
+    const HybridContainerAppearanceStore store;
+    for (int pass = 0; pass < 3; ++pass) {
+        QCOMPARE(store.displayName(QStringLiteral("c%1").arg(pass)), QStringLiteral("Container"));
+    }
+    QCOMPARE(QindaQt::Compositor::defaultContainerName(), QStringLiteral("Container"));
 }
 
 QTEST_GUILESS_MAIN(HybridContainerAppearanceStoreTests)

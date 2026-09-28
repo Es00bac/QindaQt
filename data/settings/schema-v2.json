@@ -203,6 +203,13 @@
       "constraints": { "allowedValues": ["none", "maximize", "roll-up", "minimize"] }
     },
     {
+      "key": "appearance.containerTitleLayout",
+      "domain": "appearance",
+      "type": "string",
+      "default": "theme",
+      "constraints": { "allowedValues": ["theme", "classic", "split-deck"] }
+    },
+    {
       "key": "appearance.windowDecoration",
       "domain": "appearance",
       "type": "string",

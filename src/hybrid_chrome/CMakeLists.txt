@@ -14,6 +14,7 @@ target_sources(
         src/chromelayoutengine.cpp
         src/chromerenderer.cpp
         src/chromeshadedbadge.cpp
+        src/chromesplitdeck.cpp
         src/chrometypes.cpp
         src/chromewidget.cpp
     PUBLIC
@@ -26,6 +27,7 @@ target_sources(
             include/qindaqt/hybrid_chrome/chromelayoutengine.h
             include/qindaqt/hybrid_chrome/chromerenderer.h
             include/qindaqt/hybrid_chrome/chromeshadedbadge.h
+            include/qindaqt/hybrid_chrome/chromesplitdeck.h
             include/qindaqt/hybrid_chrome/chrometypes.h
             include/qindaqt/hybrid_chrome/chromewidget.h
 )

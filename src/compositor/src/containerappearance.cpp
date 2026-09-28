@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/compositor/containerappearance.h"
 
+#include <QCoreApplication>
 #include <QRegularExpression>
 
 namespace QindaQt::Compositor {
@@ -21,6 +22,12 @@ bool safePresentationText(const QString &value)
 }
 
 } // namespace
+
+QString defaultContainerName()
+{
+  return QCoreApplication::translate("QindaQt::Compositor::ContainerAppearance",
+                                     "Container");
+}
 
 QString normalizedContainerName(const QString &rawName)
 {

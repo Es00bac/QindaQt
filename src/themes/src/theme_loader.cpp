@@ -294,6 +294,8 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
                                           .toString(theme.decoration.minimizeAction);
     theme.decoration.titleWear =
         decoration.value(QStringLiteral("titleWear")).toBool(theme.decoration.titleWear);
+    theme.decoration.containerTitleLayout =
+        decoration.value(QStringLiteral("containerTitleLayout")).toString();
 
     if ((theme.schemaVersion != 1 && theme.schemaVersion != 2) || theme.id.isEmpty()
         || theme.name.isEmpty() || theme.variant.isEmpty()) {
@@ -312,7 +314,10 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
         || !DecorationThemeTokens::buttonStyles().contains(theme.decoration.buttonStyle)
         || !(theme.decoration.titleDoubleClick.isEmpty()
              || contains(theme.decoration.titleDoubleClick, titleDoubleClicks))
-        || !contains(theme.decoration.minimizeAction, minimizeActions)) {
+        || !contains(theme.decoration.minimizeAction, minimizeActions)
+        || !(theme.decoration.containerTitleLayout.isEmpty()
+             || DecorationThemeTokens::containerTitleLayouts().contains(
+                 theme.decoration.containerTitleLayout))) {
         return failure(origin, QStringLiteral("theme decoration contains an unknown enum value"));
     }
 

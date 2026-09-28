@@ -275,10 +275,17 @@ name a user reads is another vendor's; ids stay as they were.
 | Menu and Dock | Qinda Mist | traffic lights, left | theme surface | `finder` |
 | Classic Taskbar | Qinda Classic Blue | `blue-tiles`, right | clean blue | `explorer` |
 | Centered Taskbar | Qinda Daylight | `wide`, right | theme surface, 8 px corners | `explorer` |
-| Corner Bar | Qinda Marigold | `tab`, left | clean yellow tab; double-click rolls up | `finder` |
+| Corner Bar | Qinda Marigold | `tab`, left | clean yellow tab; double-click rolls up; containers use the split-deck row | `finder` |
 | Program Groups | Qinda Classic Grey | `bevel`, right | clean navy; minimize rolls up to an icon | `explorer` |
 | Workspace Dock | Qinda Graphite | `bold`, right | clean black | `finder` |
 
+- **Corner Bar comes light and dark.** Qinda Marigold, Qinda Sea Glass and
+  Qinda Lilac each have a dark twin (`qinda-marigold-dark`,
+  `qinda-corner-teal-dark`, `qinda-corner-violet-dark`) with charcoal
+  surfaces and the signature tab color tuned for dark. All six arrange
+  container title rows as a split deck
+  ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)).
+  The profile's `defaultTheme` stays Qinda Marigold.
 - **Title-bar behaviour lives in the theme.** A theme's `decoration` block may
   author `titleDoubleClick`, `minimizeAction` and `titleWear`
   ([theme schema](../reference/theme-schema-v1.md)); the Appearance

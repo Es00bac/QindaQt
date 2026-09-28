@@ -7,6 +7,7 @@
 
 #include <QPainter>
 #include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
+#include "qindaqt/hybrid_chrome/chromesplitdeck.h"
 #include <QFontMetricsF>
 #include <QtTest>
 
@@ -30,6 +31,7 @@ private Q_SLOTS:
     void publishesAShadedBadgeWithTabsButWithoutMemberGeometry();
     void localizesAndPaintsLiveContainerControls();
     void localizesTheRolledUpBadgeRectsSoItsLabelIsPainted();
+    void splitDeckWheelStepsPagesAndItsGapIsNotChrome();
 };
 
 void KWinChromeManagerTests::reconcilesOneOverlayPerContainerAndTearsDownSafely()
@@ -565,6 +567,70 @@ void KWinChromeManagerTests::publishesAShadedBadgeWithTabsButWithoutMemberGeomet
     // survives untouched, matching rejectsInvalidOrStaleSnapshotsAtomically.
     QCOMPARE(manager.overlayCount(), 1);
     QCOMPARE(record->planCount, 1);
+}
+
+// ADR-0281: a wheel step over a split-deck deck activates the neighbouring
+// page through the same signal as a click, stops at either end, and the gap
+// between the title tab and the deck resolves to no chrome at all, so KWin
+// delivers the press to whatever lies underneath.
+void KWinChromeManagerTests::splitDeckWheelStepsPagesAndItsGapIsNotChrome()
+{
+    FakeOverlayFactory factory;
+    KWinChromeManager manager(factory);
+    const auto topology = makeTopology({makeContainer(QStringLiteral("alpha"))}, 3);
+    auto style = HybridChrome::ChromeStyle::standard(HybridChrome::ButtonSide::Left);
+    style.titleLayout = HybridChrome::ContainerTitleLayout::SplitDeck;
+    const auto plans = plansFor(topology, style);
+    QVERIFY(manager.updateFromSnapshot(topology, plans));
+    const auto plan = plans.constBegin().value();
+    const QString containerId = QStringLiteral("container-alpha");
+
+    const auto gap = QPointF((plan.titleTab.right() + plan.deckPiece.left()) / 2.0,
+                             plan.outerTitleBar.center().y());
+    QVERIFY(!manager.pointerTargetAt(gap));
+    const auto tabHit = manager.pointerTargetAt(plan.tabs.constFirst().rect.center());
+    QVERIFY(tabHit);
+    QVERIFY(tabHit->target.wheelStepsTabs);
+
+    qsizetype active = -1;
+    for (qsizetype index = 0; index < plan.tabs.size(); ++index) {
+        if (plan.tabs[index].active) {
+            active = index;
+        }
+    }
+    QVERIFY(active >= 0);
+    const int towardOther = active == 0 ? 1 : -1;
+    QSignalSpy tabs(&manager, &KWinChromeManager::tabActivationRequested);
+    QVERIFY(manager.dispatchTabStep(containerId, towardOther));
+    QCOMPARE(tabs.size(), 1);
+    QCOMPARE(tabs.constFirst().at(0).toString(), containerId);
+    QCOMPARE(tabs.constFirst().at(1).toString(), plan.tabs[active + towardOther].tabId);
+    // Past the end nothing moves and nothing is emitted.
+    QVERIFY(!manager.dispatchTabStep(containerId, -towardOther));
+    QVERIFY(!manager.dispatchTabStep(QStringLiteral("container-missing"), 1));
+    manager.quarantineContainer(containerId);
+    QVERIFY(!manager.dispatchTabStep(containerId, towardOther));
+    QCOMPARE(tabs.size(), 1);
+
+    // Through the gap, the chrome of a container stacked below is reachable:
+    // the upper frame does not swallow the point.
+    FakeOverlayFactory stackedFactory;
+    KWinChromeManager stacked(stackedFactory);
+    const auto pair = makeTopology({makeContainer(QStringLiteral("alpha")),
+                                    makeContainer(QStringLiteral("beta"))}, 4);
+    KWinChromeManager::ChromePlanMap pairPlans;
+    pairPlans.insert(QStringLiteral("container-alpha"),
+                     makePlan(*pair.container(QStringLiteral("container-alpha")), style));
+    pairPlans.insert(QStringLiteral("container-beta"),
+                     makePlan(*pair.container(QStringLiteral("container-beta"))));
+    QVERIFY(stacked.updateFromSnapshot(
+        pair, pairPlans,
+        {QStringLiteral("container-beta"), QStringLiteral("container-alpha")}));
+    const auto below = stacked.pointerTargetAt(gap);
+    QVERIFY(below);
+    QCOMPARE(below->containerId, QStringLiteral("container-beta"));
+    // On the painted pieces the upper container still wins.
+    QCOMPARE(stacked.pointerTargetAt(plan.titleLabelRect.center())->containerId, containerId);
 }
 
 QTEST_MAIN(KWinChromeManagerTests)

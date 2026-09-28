@@ -18,7 +18,7 @@ endif()
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Test)
 
-foreach(test_name IN ITEMS layout hittest renderer)
+foreach(test_name IN ITEMS layout hittest renderer splitdeck)
     qt_add_executable(qindaqt_hybrid_chrome_${test_name}_tests tst_${test_name}.cpp)
     target_link_libraries(
         qindaqt_hybrid_chrome_${test_name}_tests
@@ -32,9 +32,9 @@ foreach(test_name IN ITEMS layout hittest renderer)
     if(COMMAND qindaqt_enable_warnings)
         qindaqt_enable_warnings(qindaqt_hybrid_chrome_${test_name}_tests)
     endif()
-    if(test_name STREQUAL "renderer")
+    if(test_name STREQUAL "renderer" OR test_name STREQUAL "splitdeck")
         target_compile_definitions(
-            qindaqt_hybrid_chrome_renderer_tests
+            qindaqt_hybrid_chrome_${test_name}_tests
             PRIVATE QINDAQT_SOURCE_DIR="${CMAKE_CURRENT_LIST_DIR}/../.."
         )
     endif()
@@ -45,7 +45,7 @@ foreach(test_name IN ITEMS layout hittest renderer)
 endforeach()
 
 set_tests_properties(
-    hybrid-chrome.renderer
+    hybrid-chrome.renderer hybrid-chrome.splitdeck
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 

@@ -48,22 +48,16 @@ HybridChromePlanBuilder::ShadedLabel KWinHybridSession::shadedBadgeLabel(
     if (container == nullptr) {
         return {};
     }
-    // Mirrors synchronizeChrome()'s shaded branch: the generated name is used
-    // only when no rename exists (ADR-0163/0168), and the title lookup is the
-    // same caption read.
+    // Mirrors synchronizeChrome()'s shaded branch: the container's own name
+    // (ADR-0281), and the title lookup is the same caption read.
     // AGENT-NOTE: only the title fields matter to shadedLabel(); the metrics
     // and style chromePlanOptions() would add are unused by it, and that
     // helper is file-local to kwinhybridsession.cpp. Keeping this local avoids
     // widening that boundary for a diagnostic.
     HybridChromePlanOptions options;
     options.shaded = true;
-    const auto appearance = m_appearance.appearance(containerId);
-    options.containerTitle = appearance.name;
-    options.containerTitleIsGenerated = false;
-    if (options.containerTitle.isEmpty()) {
-        options.containerTitle = m_appearance.assignedDisplayName(containerId);
-        options.containerTitleIsGenerated = !options.containerTitle.isEmpty();
-    }
+    options.containerTitle = m_appearance.displayName(containerId);
+    options.containerTitleIsGenerated = !m_appearance.hasCustomName(containerId);
     const HybridWindowTitleLookup titleLookup = [this](const QString &windowId) {
         const auto *window = m_registry.window(windowId);
         return window ? window->caption() : QString{};
@@ -166,18 +160,17 @@ QJsonArray KWinHybridSession::publicContainers() const
     }
     const auto revision = QString::number(topologyRevision());
     for (const auto &containerId : m_runtime->topology().containerIds()) {
-        // AGENT-CONTRACT: naming is reported, never assigned, from here.
-        // `name` is the user's rename override and is empty when the container
-        // has never been renamed; `displayName` is what a surface would paint
-        // and is empty only for a container no surface has named yet
-        // (ADR-0163). Without these a live session offers no way at all to
-        // tell whether a rename took effect.
+        // AGENT-CONTRACT: `name` is the user's rename override and is empty
+        // when the container has never been renamed; `displayName` is the
+        // title every surface paints: the rename or the default "Container"
+        // (ADR-0281), never empty. Without these a live session offers no way
+        // at all to tell whether a rename took effect.
         QJsonObject entry{{QStringLiteral("id"), containerId},
                           {QStringLiteral("revision"), revision},
                           {QStringLiteral("name"),
                            m_appearance.appearance(containerId).name},
                           {QStringLiteral("displayName"),
-                           m_appearance.assignedDisplayName(containerId)},
+                           m_appearance.displayName(containerId)},
                           {QStringLiteral("shaded"),
                            m_placement && m_placement->isShaded(containerId)},
                           {QStringLiteral("authority"),
