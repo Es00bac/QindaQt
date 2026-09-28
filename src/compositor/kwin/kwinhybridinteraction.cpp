@@ -11,6 +11,7 @@
 #include "kwindockpreview.h"
 #include "kwinhybridgroupstacking.h"
 #include "kwinhybridscene.h"
+#include "kwininteractionfilter.h"
 #include "kwininteractiontargetresolver.h"
 #include "kwinmemberpolicy.h"
 #include "managedwindowregistry.h"
@@ -241,11 +242,41 @@ void KWinHybridSession::dispatchIntent(const HybridInput::InteractionIntent &int
             }
         }
     }
+    if (intent.phase == HybridInput::IntentPhase::Begin
+        && (intent.kind == HybridInput::InteractionKind::ContainerMove
+            || intent.kind == HybridInput::InteractionKind::ContainerResize
+            || intent.kind == HybridInput::InteractionKind::DividerResize)) {
+        // AGENT-GUARD (ADR-0282): a geometry gesture reflows every member, so
+        // a zoomed member (focus presentation) must be restored before the
+        // first reflow, not at Commit: restoring then replays the pre-drag
+        // baseline frames over the moved layout. The modifier chords can start
+        // these gestures on a zoomed member, whose group chrome is hidden.
+        QString error;
+        if (!restoreMemberFocusForContainerAction(intent.source.containerId, &error)) {
+            qWarning("QindaQt Hybrid gesture could not leave member focus: %s",
+                     qPrintable(error));
+            if (m_inputFilter) {
+                m_inputFilter->cancel();
+            }
+            return;
+        }
+    }
     if (intent.phase == HybridInput::IntentPhase::Commit) {
         QString error;
         if (!restoreMemberFocusForInteraction(&error)) {
             qWarning("QindaQt Hybrid interaction could not leave member focus: %s",
                      qPrintable(error));
+            // AGENT-GUARD (ADR-0282): the input layer has already ended its
+            // grab, so this gesture must still end in placement/runtime. A
+            // Commit that simply returned here left the container's move or
+            // resize baseline behind, and before placement learned to
+            // supersede it every later drag of that container was refused.
+            // Deliver the end as a Cancel: the gesture is undone, not lost.
+            auto cancelled = intent;
+            cancelled.phase = HybridInput::IntentPhase::Cancel;
+            cancelled.target = {};
+            warnRuntimeFailure(QLatin1StringView("interaction cancel"),
+                               m_runtime->handleIntent(cancelled));
             if (m_dockPreview) {
                 m_dockPreview->clear();
             }

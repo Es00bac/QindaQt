@@ -142,8 +142,16 @@ void KWinHybridSession::startKeyboardMove()
                  qPrintable(error));
         return;
     }
+    // ADR-0282: a keyboard move of a maximized group restores it first (the
+    // pointer path restores it under the pointer instead); refusing here was
+    // one more way a maximized group could not be moved at all.
     if (m_placement->isMaximized(context->containerId)
-        || !m_sceneFactory->committedLayout(context->containerId)) {
+        && !m_placement->restore(context->containerId, &error)) {
+        qWarning("QindaQt keyboard group move could not restore the group: %s",
+                 qPrintable(error));
+        return;
+    }
+    if (!m_sceneFactory->committedLayout(context->containerId)) {
         qWarning("QindaQt keyboard group move has no available placement");
         return;
     }
@@ -203,8 +211,9 @@ void KWinHybridSession::startKeyboardContainerResize()
                  qPrintable(error));
         return;
     }
-    if (m_placement->isMaximized(context->containerId)
-        || !m_sceneFactory->committedLayout(context->containerId)) {
+    // A maximized group is resizable: placement leaves maximize at Begin and
+    // starts from the maximized frame (ADR-0282).
+    if (!m_sceneFactory->committedLayout(context->containerId)) {
         qWarning("QindaQt keyboard group resize has no available placement");
         return;
     }

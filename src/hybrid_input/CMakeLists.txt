@@ -6,17 +6,23 @@ add_library(QindaQt::HybridInput ALIAS qindaqt_hybrid_input)
 target_sources(
     qindaqt_hybrid_input
     PRIVATE
+        src/containerchords.cpp
         src/interactioncontroller.cpp
         src/lateshifttakeoverdetector.cpp
+        src/tabletpointertranslator.cpp
+        src/wheelrollchord.cpp
     PUBLIC
         FILE_SET public_headers
         TYPE HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/hybrid_input/containerchords.h
             include/qindaqt/hybrid_input/interactioncontroller.h
             include/qindaqt/hybrid_input/interactiontargetresolver.h
             include/qindaqt/hybrid_input/interactiontypes.h
             include/qindaqt/hybrid_input/lateshifttakeoverdetector.h
+            include/qindaqt/hybrid_input/tabletpointertranslator.h
+            include/qindaqt/hybrid_input/wheelrollchord.h
 )
 
 target_compile_features(qindaqt_hybrid_input PUBLIC cxx_std_20)

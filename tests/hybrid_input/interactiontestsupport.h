@@ -14,6 +14,7 @@ public:
     HitTarget hit;
     DockTarget pointerTarget;
     QHash<DockZone, DockTarget> keyboardTargets;
+    std::optional<QRectF> frame;
     mutable QVector<QPointF> pointerQueries;
     mutable QVector<DockZone> keyboardQueries;
 
@@ -30,6 +31,8 @@ public:
         keyboardQueries.append(zone);
         return keyboardTargets.value(zone);
     }
+
+    std::optional<QRectF> containerFrame(const QString &) const override { return frame; }
 };
 
 inline PointerEvent pressAt(QPointF position, Qt::KeyboardModifiers modifiers)

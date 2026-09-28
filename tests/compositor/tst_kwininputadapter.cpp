@@ -304,7 +304,8 @@ void KWinInputAdapterTest::cancelInvalidatesPointerAndKeyboardTransactionsWithou
          .buttons = Qt::LeftButton,
          .modifiers = Qt::MetaModifier | Qt::ShiftModifier})
                 .consumed);
-    const auto activated = controller.pointerMove({.position = {20.0, 10.0}});
+    const auto activated = controller.pointerMove(
+        {.position = {20.0, 10.0}, .buttons = Qt::LeftButton});
     QCOMPARE(activated.intents.constFirst().phase,
              HybridInput::IntentPhase::Begin);
     QVERIFY(controller.active());

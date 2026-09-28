@@ -10,6 +10,7 @@ qt_add_executable(
     qindaqt_hybrid_container_shade_tests
     tst_hybridcontainershade.cpp
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerplacement.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainermaximize.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainershade.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadestripgeometry.cpp"
 )

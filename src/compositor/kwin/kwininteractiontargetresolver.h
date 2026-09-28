@@ -65,6 +65,15 @@ public:
     [[nodiscard]] HybridInput::DockTarget pointerDockTarget(
         const HybridInput::HitTarget &source,
         const QPointF &position) const override;
+    // ADR-0282: the modifier + right-button resize picks its edges from the
+    // container's committed content frame (outer frame minus the title row),
+    // which is where the pointer lands on a grouped window.
+    [[nodiscard]] std::optional<QRectF> containerFrame(
+        const QString &containerId) const override
+    {
+        return m_containerContentFrame ? m_containerContentFrame(containerId)
+                                       : std::nullopt;
+    }
     [[nodiscard]] HybridInput::DockTarget keyboardDockTarget(
         const HybridInput::HitTarget &source,
         HybridInput::DockZone zone) const override;
