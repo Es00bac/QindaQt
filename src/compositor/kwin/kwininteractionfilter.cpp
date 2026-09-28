@@ -259,12 +259,16 @@ bool KWinInteractionFilter::pointerMotion(KWin::PointerMotionEvent *event)
     if (!event) {
         return false;
     }
-    const HybridInput::PointerEvent normalized{
+    return routeMotion({
         .position = event->position,
         .changedButton = Qt::NoButton,
         .buttons = event->buttons,
         .modifiers = event->modifiers,
-    };
+    });
+}
+
+bool KWinInteractionFilter::routeMotion(const HybridInput::PointerEvent &normalized)
+{
     if (!m_controller.active() && m_chromeRouter
         && dispatchChrome(m_chromeRouter->pointerMove(normalized))) {
         return true;
@@ -281,16 +285,20 @@ bool KWinInteractionFilter::pointerButton(KWin::PointerButtonEvent *event)
     if (!event) {
         return false;
     }
-    const HybridInput::PointerEvent normalized{
+    return routeButton({
         .position = event->position,
         .changedButton = event->button,
         .buttons = event->buttons,
         .modifiers = event->modifiers,
-    };
+    }, event->state == KWin::PointerButtonState::Pressed);
+}
+
+bool KWinInteractionFilter::routeButton(const HybridInput::PointerEvent &normalized,
+                                        bool pressed)
+{
     if (!m_controller.active() && m_chromeRouter) {
-        const auto chromeDecision = event->state == KWin::PointerButtonState::Pressed
-            ? m_chromeRouter->pointerPress(normalized)
-            : m_chromeRouter->pointerRelease(normalized);
+        const auto chromeDecision = pressed ? m_chromeRouter->pointerPress(normalized)
+                                            : m_chromeRouter->pointerRelease(normalized);
         if (dispatchChrome(chromeDecision)) {
             return true;
         }
@@ -298,14 +306,13 @@ bool KWinInteractionFilter::pointerButton(KWin::PointerButtonEvent *event)
     if (!m_controller.active() && m_iconify.chipRouter) {
         // Chips take the ordinary sequence after container chrome; a chip
         // stacked above chrome is denied to the chrome resolver instead.
-        const auto chipDecision = event->state == KWin::PointerButtonState::Pressed
-            ? m_iconify.chipRouter->pointerPress(normalized)
-            : m_iconify.chipRouter->pointerRelease(normalized);
+        const auto chipDecision = pressed ? m_iconify.chipRouter->pointerPress(normalized)
+                                          : m_iconify.chipRouter->pointerRelease(normalized);
         if (dispatchChip(chipDecision)) {
             return true;
         }
     }
-    if (event->state == KWin::PointerButtonState::Pressed) {
+    if (pressed) {
         const auto decision = m_controller.pointerPress(normalized);
         if (decision.consumed || !decision.intents.isEmpty()) {
             return dispatch(decision);
@@ -313,6 +320,12 @@ bool KWinInteractionFilter::pointerButton(KWin::PointerButtonEvent *event)
         return modifierWindowResize(normalized);
     }
     return dispatch(m_controller.pointerRelease(normalized));
+}
+
+bool KWinInteractionFilter::routersActive() const
+{
+    return m_controller.active() || (m_chromeRouter && m_chromeRouter->active())
+        || (m_iconify.chipRouter && m_iconify.chipRouter->active());
 }
 
 bool KWinInteractionFilter::pointerAxis(KWin::PointerAxisEvent *event)
@@ -394,7 +407,17 @@ bool KWinInteractionFilter::earlyKeyboardKey(KWin::KeyboardKeyEvent *event)
     if (!event || !m_input) {
         return false;
     }
-    return observeLateShiftTakeover(event->modifiers, m_input->globalPointer());
+    // A native move the pen drives has the pen's position, not the mouse
+    // cursor's, and its motion and lift arrive as tablet events: adopt it
+    // for the pen so that lift commits the dock (owner, 2026-09-28: the
+    // preview appeared but the drop never happened).
+    const bool pen = tabletDrivesInput();
+    const bool adopted = observeLateShiftTakeover(
+        event->modifiers, pen ? m_tablet.position() : m_input->globalPointer());
+    if (adopted && pen && m_controller.active()) {
+        m_tabletGesture = true;
+    }
+    return adopted;
 }
 
 bool KWinInteractionFilter::earlyPointerMotion(KWin::PointerMotionEvent *event)
@@ -402,6 +425,7 @@ bool KWinInteractionFilter::earlyPointerMotion(KWin::PointerMotionEvent *event)
     if (!event) {
         return false;
     }
+    m_penIsLastPointer = false;
     return observeLateShiftTakeover(event->modifiers, event->position);
 }
 
@@ -410,6 +434,7 @@ bool KWinInteractionFilter::earlyPointerButton(KWin::PointerButtonEvent *event)
     if (!event) {
         return false;
     }
+    m_penIsLastPointer = false;
     return observeLateShiftTakeover(event->modifiers, event->position);
 }
 

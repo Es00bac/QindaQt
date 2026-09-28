@@ -99,8 +99,9 @@ never iconified; see [Hybrid container chrome](hybrid-chrome.md)
   the whole container, modifier + right drag resizes it from the nearest corner,
   and modifier + wheel rolls it up or down once per scroll gesture. Over an
   independent window the left chord stays KWin's move and the right chord starts
-  KWin's resize; the pen's tip is the left button and its barrel button the
-  right. On a touchscreen a finger held still on a window's own title bar picks
+  KWin's resize. The pen has its own chords: modifier + tip moves, modifier +
+  Ctrl + tip resizes and modifier + eraser docks; without the modifier the tip
+  and eraser belong to the application. On a touchscreen a finger held still on a window's own title bar picks
   it up into the same dock drag. See
   [ADR-0282](../adr/0282-containers-never-lock-and-speak-modifier-chords.md).
 - Whole-container minimize is session state, not derived page state: a

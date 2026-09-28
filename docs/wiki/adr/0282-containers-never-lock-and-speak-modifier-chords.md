@@ -99,12 +99,28 @@ Alt, Control, or Off, which disables all of them):
   (zoom) wherever something is under the pointer; over the bare desktop or a
   panel KWin keeps Meta + wheel.
 
-A stylus reaches the same controller through `TabletPointerTranslator`: the tip
-is the left button, the lower barrel button (BTN_STYLUS) the right button and
-the upper one the middle button, with the keyboard's modifiers. A tablet event
-is consumed only when the controller claimed the press that began its gesture,
-so drawing and the barrel's plain right-click are unchanged; leaving proximity
-releases whatever the pen still held.
+A stylus reaches the same routing as the mouse (container chrome, icon chips,
+then the controller) through `TabletPointerTranslator`. Amended 2026-09-28 at
+the owner's request, the pen has its own chords, with M the window-management
+modifier (Meta by default):
+
+| Pen | Held | Does |
+| --- | --- | --- |
+| Tip | M | Moves the window, or its whole container |
+| Tip | M + Ctrl | Resizes the window or container from the nearest corner |
+| Eraser | M (or M + Shift) | Docks: moves one window into, out of or within a container |
+| Tip | M + Shift | Docks, like the mouse chord |
+| Tip or eraser | nothing | Belongs to the application (drawing, erasing) |
+
+The lower barrel button (BTN_STYLUS) remains the right button and the upper one
+the middle button. A tablet press is consumed only when a router claimed it, so
+drawing, erasing and the barrel's plain right-click are unchanged; a plain pen
+press on chrome QindaQt draws (tabs, container buttons, icon chips) works like a
+mouse press. The release repeats the chord the press chose, even if the keys
+were let go first, and leaving proximity releases whatever the pen still held.
+A native move the pen drives that the late-Shift takeover adopts keeps the pen's
+position and ends on the pen's lift; before this amendment the lift went
+nowhere and the dock preview stayed until Escape.
 
 **A held finger picks a window up by its title.** Touch has no modifiers, so
 a finger held still (the touch policy's long press, 500 ms within its 8 px

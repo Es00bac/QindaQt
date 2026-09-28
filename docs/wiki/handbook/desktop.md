@@ -92,10 +92,17 @@ Hold **Meta** anywhere over a window and use the mouse or a pen:
   towards you rolls it back down. One notch does it, a long or smooth scroll
   still counts once, and rolling up something already rolled up does nothing.
 
-With a **pen**, the tip is the left button and the side (barrel) button is the
-right button, so **Meta + tip**, **Meta + Shift + tip** and **Meta + barrel
-button** do the same things. Without Meta the barrel button is an ordinary
-right-click. **Settings → Windows → Docking drag** changes the key (Alt or
+With a **pen**, hold Meta on the keyboard:
+
+- **Meta + tip** drag moves the window, or its whole container.
+- **Meta + Ctrl + tip** drag resizes the window or container from the nearest
+  corner.
+- **Meta + eraser** drag moves one window into or out of a container, or to a
+  new place inside it.
+
+Without Meta the tip and the eraser work in your applications as usual, and
+the side (barrel) button is an ordinary right-click. A pen tap on a container's
+tabs, buttons or an icon works like a mouse click. **Settings → Windows → Docking drag** changes the key (Alt or
 Ctrl instead of Meta) or turns these off.
 
 On a **touchscreen**, hold a finger still on a window's own title bar for

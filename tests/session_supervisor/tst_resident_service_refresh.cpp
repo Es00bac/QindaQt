@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "src/session_supervisor/src/replaced_activation_owner.h"
 #include "src/session_supervisor/src/resident_service_refresh.h"
 
 #include <QDir>
@@ -12,6 +13,7 @@
 #include <QtDBus/QDBusVirtualObject>
 #include <QtDBus/QDBusConnectionInterface>
 #include <QtTest>
+#include <QTemporaryDir>
 
 namespace {
 
@@ -95,6 +97,50 @@ struct PrivateManagerBus {
 class ResidentServiceRefreshTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void replacedExecutableIsRecognizedFromTheRawLinkText() {
+        using QindaQt::SessionSupervisor::executableWasReplaced;
+        QVERIFY(executableWasReplaced(QStringLiteral("/usr/bin/qindaqt-settings-service (deleted)")));
+        QVERIFY(!executableWasReplaced(QStringLiteral("/usr/bin/qindaqt-settings-service")));
+        QVERIFY(!executableWasReplaced(QString{}));
+        QVERIFY(QindaQt::SessionSupervisor::replacedActivationServiceNames()
+                    .contains(QStringLiteral("org.qindaqt.Settings1")));
+    }
+
+    // Owner, 2026-09-28: after an update the previous login's Settings1 kept
+    // answering with the old schema ("Settings snapshot is malformed or
+    // regressed"). Only an owner whose executable was replaced is retired.
+    void onlyAnOwnerWithAReplacedExecutableIsRetired() {
+        using namespace QindaQt::SessionSupervisor;
+        const QString name = QStringLiteral("org.qindaqt.ReplacedOwnerTest");
+        auto bus = QDBusConnection::sessionBus();
+        QProcess owner;
+        owner.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                    {QStringLiteral("--own"), name});
+        QVERIFY(owner.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered(name).value(), 5000);
+        QTemporaryDir proc;
+        QVERIFY(proc.isValid());
+        const QString processDirectory = proc.filePath(QString::number(owner.processId()));
+        QVERIFY(QDir().mkpath(processDirectory));
+        const QString exe = processDirectory + QStringLiteral("/exe");
+
+        // An up-to-date executable, or a Private session, is never touched.
+        QVERIFY(QFile::link(QStringLiteral("/usr/bin/qindaqt-settings-service"), exe));
+        QVERIFY(retireReplacedActivationOwners(
+                    bus, {name}, SessionActivationScope::PhysicalDesktop, proc.path()).isEmpty());
+        QVERIFY(retireReplacedActivationOwners(bus, {name}, SessionActivationScope::Private)
+                    .isEmpty());
+        QCOMPARE(owner.state(), QProcess::Running);
+
+        QVERIFY(QFile::remove(exe));
+        QVERIFY(QFile::link(QStringLiteral("/usr/bin/qindaqt-settings-service (deleted)"), exe));
+        QCOMPARE(retireReplacedActivationOwners(
+                     bus, {name}, SessionActivationScope::PhysicalDesktop, proc.path()),
+                 QStringList{name});
+        QVERIFY(owner.waitForFinished(3000));
+        QVERIFY(!bus.interface()->isServiceRegistered(name).value());
+    }
+
     void privateSessionCannotRestartSharedServices() {
         auto bus = QDBusConnection::sessionBus();
         FakeUserManager manager;

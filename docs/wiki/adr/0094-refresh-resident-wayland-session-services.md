@@ -111,6 +111,22 @@ activation-environment scaling problems are resolved.
 - Any further resident-service addition requires updating the fixed unit list
   and the owning ADR; the refresh mechanism remains unchanged.
 
+## Amendment 2026-09-28: retire replaced D-Bus-activated owners
+
+A package update replaced `qindaqt-settings-service` while the previous
+login's Settings1 kept running on the persistent user bus; it rejected every
+snapshot carrying the update's new keys and Appearance reported "Settings
+snapshot is malformed or regressed". Settings1 and the QindaQt portal backend
+are D-Bus-activated rather than restarted units here, so after
+`refreshResidentServices` the supervisor calls
+`retireReplacedActivationOwners` for the fixed `replacedActivationServiceNames()`
+list. It signals an owner only when that process belongs to the user and its
+`/proc/<pid>/exe` reads " (deleted)", i.e. the executable was replaced since it
+started; a healthy owner is never restarted. D-Bus activation starts the
+installed binary on the next call. Private scope never signals anything.
+`qindaqt.session-resident-service-refresh` covers the replaced, current and
+Private cases with a child process that owns a test name.
+
 ## Revisit when
 
 A future resident service opens its own Wayland connection, independently
