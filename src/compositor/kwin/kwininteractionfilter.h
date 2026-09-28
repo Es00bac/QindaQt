@@ -6,6 +6,8 @@
 #include "qindaqt/hybrid_chrome/chrometypes.h"
 #include "qindaqt/hybrid_input/interactioncontroller.h"
 #include "qindaqt/hybrid_input/lateshifttakeoverdetector.h"
+#include "qindaqt/hybrid_input/tabletpointertranslator.h"
+#include "qindaqt/hybrid_input/wheelrollchord.h"
 
 #include <QPointF>
 #include <QPointer>
@@ -23,6 +25,10 @@ struct KeyboardKeyEvent;
 struct PointerButtonEvent;
 struct PointerAxisEvent;
 struct PointerMotionEvent;
+struct TabletToolAxisEvent;
+struct TabletToolButtonEvent;
+struct TabletToolProximityEvent;
+struct TabletToolTipEvent;
 struct TouchDownEvent;
 struct TouchMotionEvent;
 struct TouchUpEvent;
@@ -47,6 +53,23 @@ struct IconifyInputHooks final
     std::function<std::optional<QString>(const QPointF &)> titleWheelTarget;
     // Receives the window a modifier-free wheel away from the user rolls up.
     std::function<void(const QString &windowId)> iconify;
+};
+
+// ADR-0282 window-management chords the controller cannot act on alone.
+// Every member is optional; a missing callable leaves that chord to KWin.
+struct ModifierChordHooks final
+{
+    // Whether modifier + wheel has something to roll under the pointer: a
+    // managed window, container chrome, or an icon chip. False leaves the
+    // wheel to KWin (its own Meta+wheel zoom over the bare desktop).
+    std::function<bool(const QPointF &)> rollTargetAt;
+    // Rolls that target up or down; idempotent (rolling up a rolled-up
+    // container does nothing).
+    std::function<void(const QPointF &, HybridInput::RollDirection)> roll;
+    // modifier + right button over an ordinary independent window: starts
+    // KWin's own interactive resize, which QindaQt's CommandAll3=Nothing seed
+    // otherwise never does. True when a resize began.
+    std::function<bool(const QPointF &)> resizeWindowAt;
 };
 
 class KWinInteractionFilter final
@@ -81,6 +104,7 @@ public:
     // Installs the iconified-window hooks after construction; the session
     // builds its chip router before the filter and resolves chips itself.
     void setIconifyHooks(IconifyInputHooks hooks);
+    void setModifierChordHooks(ModifierChordHooks hooks);
     [[nodiscard]] bool beginKeyboardDock(const HybridInput::HitTarget &source);
     [[nodiscard]] bool beginKeyboardMove(const HybridInput::HitTarget &source);
     [[nodiscard]] bool beginKeyboardDividerResize(
@@ -117,6 +141,19 @@ private:
     [[nodiscard]] bool touchCancel();
     void expireTouchLongPress();
     void finishTouchGesture();
+    // ADR-0282 (kwininteractionfilter_chords.cpp): the pen speaks the mouse
+    // chords (tip = left, barrel = right) through TabletPointerTranslator,
+    // modifier + wheel rolls containers, and modifier + right button resizes
+    // an ordinary window. Tablet events stay the client's unless the
+    // controller claimed the press that began the gesture.
+    [[nodiscard]] bool tabletToolTip(KWin::TabletToolTipEvent *event);
+    [[nodiscard]] bool tabletToolButton(KWin::TabletToolButtonEvent *event);
+    [[nodiscard]] bool tabletToolAxis(KWin::TabletToolAxisEvent *event);
+    [[nodiscard]] bool tabletToolProximity(KWin::TabletToolProximityEvent *event);
+    [[nodiscard]] bool tabletPointer(const HybridInput::PointerEvent &event, bool pressed);
+    [[nodiscard]] bool earlyPointerAxis(KWin::PointerAxisEvent *event);
+    [[nodiscard]] bool modifierWindowResize(const HybridInput::PointerEvent &event);
+    [[nodiscard]] Qt::KeyboardModifiers keyboardModifiers() const;
     [[nodiscard]] bool dispatch(HybridInput::InteractionDecision decision);
     [[nodiscard]] bool dispatchChrome(ChromePointerDecision decision);
     [[nodiscard]] bool dispatchChip(IconChipPointerDecision decision);
@@ -146,6 +183,11 @@ private:
     std::unique_ptr<Filter> m_filter;
     std::unique_ptr<EarlyTakeoverFilter> m_earlyFilter;
     HybridInput::LateShiftTakeoverDetector m_lateShiftDetector;
+    ModifierChordHooks m_modifierChords;
+    HybridInput::TabletPointerTranslator m_tablet;
+    // True from a tablet press the controller claimed until its release.
+    bool m_tabletGesture = false;
+    HybridInput::WheelRollChord m_wheelRoll;
     HybridChromeTouchPolicy m_touch;
     QTimer m_touchTimer;
     bool m_touchTimerConnected = false;

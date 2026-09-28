@@ -251,6 +251,20 @@ surface hosts the desktop-icons entry (see its bullet below):
   primary Settings launch. Every style ends with "Edit Panels", which enters
   panel edit mode through the borrowed live customization facade (disabled
   without it; ADR-0266).
+  Optional standard icons -- Home, Documents, Downloads, Pictures, Videos,
+  Music, Trash and Computer -- come first, from `DesktopPlacesController`
+  ([ADR-0282](../adr/0282-containers-never-lock-and-speak-modifier-chords.md)).
+  Each is one boolean desktop-icons setting (`showHomeIcon` ...
+  `showComputerIcon`; Home and Trash default on), so the Desktop icons ▸
+  submenu and the Customize editor list them as switches with no new storage.
+  A missing or unset XDG folder shows no icon; the Trash icon follows its files
+  folder (`user-trash` / `user-trash-full`). Places open through
+  `FileBoundary::openLocalFolder`, keep ids and layout keys of the form
+  `place:<id>`, and are excluded from every file operation (rename, cut, copy,
+  trash, dock): a place is hidden through its setting, never deleted. Desktop
+  icons dragged onto the Trash icon go through the existing `trashEntries`
+  path; files dropped from File Manager go to the home Trash through
+  `FileBoundary`'s identity-checked mutation controller.
   Folder creation goes through the least-authority `NewFolderController`
   seam, which writes only under the user's Desktop directory; the manifest
   requests only `applications.launch` and no new capability enum. See

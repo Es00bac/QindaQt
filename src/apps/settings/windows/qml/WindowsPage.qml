@@ -26,7 +26,7 @@ T.Page {
     // not in visible paragraphs (product direction: short labels, minimal
     // prose). Keep each description one sentence.
     readonly property string focusPolicyHelp: qsTr("How a window becomes active: by click, or by the pointer entering it.")
-    readonly property string dockingModifierHelp: qsTr("Keys held with a left drag to dock, split, or group windows; Shift is always part of the chord.")
+    readonly property string dockingModifierHelp: qsTr("Keys held with a left drag to dock, split, or group windows. The same key without Shift moves a whole container (left drag), resizes it (right drag), and rolls it up or down (wheel), with a mouse or a pen.")
     readonly property string snapDistanceHelp: qsTr("Distance in pixels at which a dragged window snaps to screen edges and other windows. %1 is the default.")
         .arg(root.windowsSettings.defaultSnapDistance)
     readonly property string closePolicyHelp: qsTr("What closing a window group does without asking.")

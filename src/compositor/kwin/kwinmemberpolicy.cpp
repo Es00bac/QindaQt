@@ -366,9 +366,19 @@ void KWinMemberPolicyManager::reconnectGroupedWindows(
                         return;
                     }
                     QString error;
-                    (void)m_policy->interactiveMoveStarted(id, window->isInteractiveMove(),
-                                                           &error);
+                    const bool detached = m_policy->interactiveMoveStarted(
+                        id, window->isInteractiveMove(), &error);
                     warnFailure(QLatin1StringView("title drag"), id, error);
+                    // AGENT-GUARD (ADR-0282): a native move of a member that
+                    // did not detach (a refused scene transaction, a focus
+                    // transition in progress) must not continue: KWin would
+                    // carry one member away while topology, chrome, and the
+                    // committed layout still place it in its tile -- a
+                    // container that looks broken until it is emptied.
+                    if (!detached && window->isInteractiveMove()
+                        && m_policy->blocksInteractiveResize(id)) {
+                        window->cancelInteractiveMoveResize();
+                    }
                 }));
             connections.append(connect(
                 window, &KWin::Window::maximizedChanged, this,

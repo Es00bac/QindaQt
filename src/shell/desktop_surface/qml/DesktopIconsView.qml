@@ -44,7 +44,10 @@ Item {
     }
     readonly property real tileWidth: Math.max(iconSize + 24, 104)
     readonly property real tileHeight: iconSize + 40
-    readonly property var rows: contents.rows
+    // Standard icons first (ADR-0282), then the Desktop folder's entries.
+    // A place row carries isPlace: true and an id outside the folder's paths.
+    property var places: null
+    readonly property var rows: (places !== null ? places.rows : []).concat(contents.rows)
     readonly property bool canPaste: contents.canPaste === true
     readonly property bool snapToGrid: settings?.snapToGrid !== false
 
@@ -72,6 +75,7 @@ Item {
     property string contextEntryId: ""
     property string contextEntryLabel: ""
     property bool contextEntryIsDirectory: false
+    property bool contextEntryIsPlace: false
     // The dock facade (ADR-0265) for "Add to Dock"; null without a dock.
     property var dockAccess: null
 
@@ -80,42 +84,30 @@ Item {
     function clearSelection() { selection.clear() }
     function selectAll() { selection.selectAll() }
 
-    // --- file operations, all through the contents controller boundary -----
-    function openEntry(entryId) { contents.open(entryId) }
-    function trashSelection() {
-        const picked = selection.selectedRows()
-        if (picked.length > 0)
-            contents.trashEntries(picked)
+    // --- file operations (DesktopIconFileOps; standard icons are excluded) --
+    readonly property DesktopIconFileOps fileOps: DesktopIconFileOps {
+        selection: root.selection
+        contents: root.contents
+        places: root.places
+        dockAccess: root.dockAccess
     }
-    function cutSelectionOps() {
-        const picked = selection.selectedRows()
-        if (picked.length > 0)
-            contents.cutSelection(picked)
-    }
-    function copySelectionOps() {
-        const picked = selection.selectedRows()
-        if (picked.length > 0)
-            contents.copySelection(picked)
-    }
+    function openEntry(entryId) { fileOps.open(entryId) }
+    function trashSelection() { fileOps.trashSelection() }
+    function cutSelectionOps() { fileOps.cutSelection() }
+    function copySelectionOps() { fileOps.copySelection() }
+    function addSelectionToDock() { fileOps.addSelectionToDock() }
     function pasteClipboard() { contents.pasteIntoDesktop() }
     // ADR-0273: File Manager's own dialogs (Get Info, Open With, New File) for
     // one icon, or for the Desktop folder when `entryId` is empty.
     function runFileManagerAction(actionId, entryId) {
         contents.runFileManagerAction(actionId, entryId)
     }
-    // The whole selection joins the dock as one edit (the dock refuses a
-    // second write while the first is saving).
-    function addSelectionToDock() {
-        if (dockAccess === null)
-            return
-        const paths = selection.selectedRows().map(row => String(row.path))
-        if (paths.length > 0)
-            dockAccess.addPaths(paths)
-    }
     function reflow() {
         selection.clear()
         layoutStore.clearAll()
         contents.refresh()
+        if (places !== null)
+            places.refresh()
     }
 
     // --- drag, owned by the surface holding the pointer grab ---------------
@@ -172,7 +164,32 @@ Item {
         }
         layoutStore.updateDrag(batch)
     }
-    function commitDrag() {
+    // The Trash icon under a view point, or null (ADR-0282).
+    function trashTileAt(viewX, viewY) {
+        for (let i = 0; i < tileRepeater.count; ++i) {
+            const item = tileRepeater.itemAt(i)
+            if (item === null || !item.visible || item.modelData.placeId !== "trash")
+                continue
+            const local = item.mapFromItem(root, viewX, viewY)
+            if (item.contains(local))
+                return item
+        }
+        return null
+    }
+    // Icons dropped on the Trash icon are moved to the Trash instead of
+    // placed: the same recoverable Trash as Delete, never a permanent delete.
+    function trashDraggedRows() {
+        const picked = rows.filter(row => isDragKey(String(row.layoutKey)))
+        dragKeys = []
+        dragStart = ({})
+        layoutStore.endDrag()
+        fileOps.trashRows(picked)
+    }
+    function commitDrag(viewX, viewY) {
+        if (viewX !== undefined && trashTileAt(viewX, viewY) !== null) {
+            trashDraggedRows()
+            return
+        }
         for (const key of dragKeys) {
             const live = layoutStore.dragPosition(key)
             if (live.x === undefined)
@@ -220,6 +237,7 @@ Item {
         contextEntryId = tile.entryId
         contextEntryLabel = tile.entryLabel
         contextEntryIsDirectory = tile.modelData.isDirectory === true
+        contextEntryIsPlace = tile.modelData.isPlace === true
         const point = tile.mapToItem(root, localX, localY)
         positionAnchor(iconMenuAnchor, point.x, point.y,
                        iconContextMenu.width, iconContextMenu.height)
@@ -228,6 +246,16 @@ Item {
 
     Connections {
         target: root.contents
+        function onRowsChanged() {
+            root.selection.reconcile()
+            // A Desktop item trashed from here fills the Trash icon at once.
+            if (root.places !== null)
+                root.places.refresh()
+        }
+    }
+    Connections {
+        target: root.places
+        ignoreUnknownSignals: true
         function onRowsChanged() { root.selection.reconcile() }
     }
 
@@ -300,6 +328,7 @@ Item {
             id: iconContextMenu
             objectName: "desktopIconContextMenu"
             directory: root.contextEntryIsDirectory
+            place: root.contextEntryIsPlace
             onOpenRequested: root.openEntry(root.contextEntryId)
             onOpenWithRequested: root.runFileManagerAction("file.open-with", root.contextEntryId)
             onInfoRequested: root.runFileManagerAction("file.properties", root.contextEntryId)

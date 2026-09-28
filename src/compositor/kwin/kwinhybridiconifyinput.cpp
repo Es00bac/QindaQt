@@ -3,6 +3,8 @@
 
 #include "hybridiconchiprouter.h"
 #include "hybridiconifycontroller.h"
+#include "hybridtitlewheelroute.h"
+#include "kwinchromemanager.h"
 #include "kwiniconchippresenter.h"
 #include "kwininteractionfilter.h"
 #include "managedwindowregistry.h"
@@ -50,6 +52,13 @@ void KWinHybridSession::initializeIconifyInput()
             return iconifyWheelTargetAt(position);
         },
         .iconify = [this](const QString &windowId) {
+            // ADR-0282: iconifyWheelTargetAt() only names a grouped member when
+            // its container's chrome is hidden (member zoom); rolling up that
+            // title rolls up the whole container, as its shared title would.
+            if (const auto owner = m_registry.owner(windowId); !owner.isEmpty()) {
+                applyWheelShade(owner, true);
+                return;
+            }
             QString error;
             if (!iconifyWindow(windowId, &error)) {
                 qWarning("QindaQt wheel roll-up of '%s' failed: %s",
@@ -132,21 +141,27 @@ std::optional<QString> KWinHybridSession::iconifyWheelTargetAt(const QPointF &po
             continue;
         }
         // AGENT-CONTRACT: stop at the first real input owner. Popups, panels,
-        // dialogs, and grouped members (whose handlebar wheel the chrome
-        // router owns) never tunnel to a title bar below them.
+        // dialogs, and grouped members whose handlebar wheel the chrome router
+        // owns never tunnel to a title bar below them; titleWheelRoute() is the
+        // rule for what the owner's own title bar does.
         const auto windowId = m_registry.windowId(window);
-        if (windowId.isEmpty() || m_registry.window(windowId) != window
-            || !m_registry.owner(windowId).isEmpty() || !window->isNormalWindow()
-            || (m_iconify && m_iconify->isIconified(windowId))) {
+        if (windowId.isEmpty() || m_registry.window(windowId) != window) {
             return std::nullopt;
         }
+        const auto owner = m_registry.owner(windowId);
         auto *const decoration = window->decoration();
-        if (!decoration) {
-            return std::nullopt;
-        }
-        const QRectF frame = window->frameGeometry();
-        const QRectF titleBar = decoration->titleBar().translated(frame.topLeft());
-        return titleBar.contains(position) ? std::optional(windowId) : std::nullopt;
+        const QRectF titleBar = decoration
+            ? decoration->titleBar().translated(window->frameGeometry().topLeft())
+            : QRectF{};
+        const auto route = titleWheelRoute({
+            .onTitleBar = titleBar.contains(position),
+            .normalWindow = window->isNormalWindow(),
+            .iconified = m_iconify && m_iconify->isIconified(windowId),
+            .grouped = !owner.isEmpty(),
+            .containerChromeVisible = !owner.isEmpty() && m_chromeManager
+                && m_chromeManager->overlayVisible(owner),
+        });
+        return route == TitleWheelRoute::None ? std::nullopt : std::optional(windowId);
     }
     return std::nullopt;
 }

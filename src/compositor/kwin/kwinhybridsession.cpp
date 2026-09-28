@@ -240,6 +240,7 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
             return {HybridInput::HitKind::MemberTitle, m_registry.owner(id), id, {}};
         });
     initializeIconifyInput();
+    initializeModifierChordInput();
     applyWindowManagementConfig();
     if (KWin::options) {
         connect(KWin::options, &KWin::Options::configChanged, this,
