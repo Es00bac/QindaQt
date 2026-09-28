@@ -27,10 +27,12 @@ HybridChromeTouchPolicy::HybridChromeTouchPolicy(TouchPolicyConfig config)
 TouchDecision HybridChromeTouchPolicy::down(qint32 id, const QPointF &position, qint64 timeMs,
                                             bool overChrome, bool rollTarget)
 {
+    forget(id);
     if (isStale(timeMs)) {
         // Nothing arrived for the whole stale window: the grab went elsewhere
         // and no up or cancel followed. Do not eat every later finger.
         reset();
+        m_swallowed.clear();
     }
     if (m_primary) {
         if (id == m_primary->id) {
@@ -51,6 +53,10 @@ TouchDecision HybridChromeTouchPolicy::down(qint32 id, const QPointF &position, 
         }
         m_finished = m_finished || !m_rollTarget || m_moved;
         m_longPressArmed = false;
+        if (!m_secondary || m_secondary->id != id) {
+            // Consumed but not part of the gesture: see swallows().
+            m_swallowed.insert(id);
+        }
         return {TouchGesture::None, position, true};
     }
     if (!overChrome) {
@@ -70,6 +76,9 @@ TouchDecision HybridChromeTouchPolicy::down(qint32 id, const QPointF &position, 
 
 TouchDecision HybridChromeTouchPolicy::motion(qint32 id, const QPointF &position, qint64 timeMs)
 {
+    if (m_swallowed.contains(id)) {
+        return {TouchGesture::None, position, true};
+    }
     if (!m_primary) {
         return {TouchGesture::None, position, false};
     }
@@ -102,6 +111,9 @@ TouchDecision HybridChromeTouchPolicy::motion(qint32 id, const QPointF &position
 
 TouchDecision HybridChromeTouchPolicy::up(qint32 id, qint64 timeMs)
 {
+    if (m_swallowed.remove(id)) {
+        return {TouchGesture::None, {}, true};
+    }
     if (!m_primary) {
         return {TouchGesture::None, {}, false};
     }
@@ -140,8 +152,9 @@ TouchDecision HybridChromeTouchPolicy::up(qint32 id, qint64 timeMs)
 
 TouchDecision HybridChromeTouchPolicy::cancel()
 {
-    const bool wasActive = m_primary.has_value();
+    const bool wasActive = tracking();
     reset();
+    m_swallowed.clear();
     return {TouchGesture::Cancel, {}, wasActive};
 }
 

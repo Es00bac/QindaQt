@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QPointF>
+#include <QSet>
 #include <QtGlobal>
 
 #include <optional>
@@ -75,6 +76,16 @@ public:
     [[nodiscard]] std::optional<TouchDecision> expire(qint64 nowMs);
 
     [[nodiscard]] bool active() const noexcept { return m_primary.has_value(); }
+    // AGENT-GUARD: a finger whose down this policy consumed without making it
+    // part of the gesture (a second finger that could not join) is swallowed
+    // until it lifts, even after the gesture ends. Its motion and lift must
+    // never reach KWin, whose seat never saw its down ("Detected a touch move
+    // that never has been down"; the client got half a touch).
+    [[nodiscard]] bool tracking() const noexcept { return active() || !m_swallowed.isEmpty(); }
+    [[nodiscard]] bool swallows(qint32 id) const { return m_swallowed.contains(id); }
+    // A new down reuses a finger id (libinput slots are recycled): whatever a
+    // lost lift left swallowed under that id is forgotten.
+    void forget(qint32 id) { static_cast<void>(m_swallowed.remove(id)); }
     // True when a gesture is open but nothing has arrived for the stale
     // window: the owner should abandon it (cancel) before the next finger.
     [[nodiscard]] bool isStale(qint64 nowMs) const noexcept
@@ -106,6 +117,7 @@ private:
     // The primary lifted while a secondary was still down: the sequence is
     // spent and stays owned until that secondary lifts too.
     bool m_primaryLifted = false;
+    QSet<qint32> m_swallowed;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

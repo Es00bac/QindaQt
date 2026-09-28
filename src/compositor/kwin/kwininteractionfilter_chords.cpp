@@ -12,6 +12,7 @@
 #include <core/inputdevice.h>
 #include <input.h>
 #include <input_event.h>
+#include <workspace.h>
 
 #include <chrono>
 
@@ -61,15 +62,18 @@ bool KWinInteractionFilter::tabletPointer(const HybridInput::PointerEvent &event
         }
         // A KWin-owned modifier resize is driven by KWin's own move/resize
         // filter, which sits before this one and consumes the pen's motion
-        // and lift itself; only our own routers hold the pen.
-        m_tabletGesture = routersActive();
+        // and lift itself. Every other claimed press is ours until its lift,
+        // even one a router settles at once, so the lift never reaches a
+        // client that did not see the press.
+        auto *const activeWorkspace = KWin::workspace();
+        m_tabletGesture = !(activeWorkspace && activeWorkspace->moveResizeWindow());
         return true;
     }
     if (!m_tabletGesture) {
         return false;
     }
     static_cast<void>(routeButton(event, false));
-    if (!routersActive() || m_tablet.buttons() == Qt::NoButton) {
+    if (m_tablet.buttons() == Qt::NoButton) {
         m_tabletGesture = false;
     }
     return true;
@@ -116,10 +120,9 @@ bool KWinInteractionFilter::tabletToolAxis(KWin::TabletToolAxisEvent *event)
     if (!m_tabletGesture) {
         return false;
     }
+    // The gesture holds the pen until its lift even if a router already
+    // settled: the client never saw the press, so it must not see the rest.
     static_cast<void>(routeMotion(motion));
-    if (!routersActive()) {
-        m_tabletGesture = false;
-    }
     return true;
 }
 

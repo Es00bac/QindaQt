@@ -21,6 +21,7 @@ private Q_SLOTS:
     void fingersOffTheChromeAreNeverConsumedWhileAGestureRuns();
     void staleSequenceIsAbandonedByTheNextFinger();
     void cancelClearsEverything();
+    void aFingerThatCannotJoinIsSwallowedUntilItLifts();
 };
 
 void HybridChromeTouchPolicyTests::ignoresFingersOffChrome()
@@ -124,8 +125,13 @@ void HybridChromeTouchPolicyTests::secondFingerOnNonRollTargetSpendsTheGesture()
     QCOMPARE(policy.down(1, {10.0, 10.0}, 0, true, false).gesture, TouchGesture::Press);
     QVERIFY(policy.down(2, {40.0, 10.0}, 20, true, false).consumed);
     // No swipe on a divider; and once two fingers touched, no drag either.
-    QCOMPARE(policy.motion(2, {40.0, 200.0}, 40).gesture, TouchGesture::None);
-    QCOMPARE(policy.up(2, 50).gesture, TouchGesture::None);
+    // The second finger's down was consumed, so its motion and lift are too.
+    const auto secondMotion = policy.motion(2, {40.0, 200.0}, 40);
+    QCOMPARE(secondMotion.gesture, TouchGesture::None);
+    QVERIFY(secondMotion.consumed);
+    const auto secondUp = policy.up(2, 50);
+    QCOMPARE(secondUp.gesture, TouchGesture::None);
+    QVERIFY(secondUp.consumed);
     QCOMPARE(policy.motion(1, {80.0, 10.0}, 60).gesture, TouchGesture::None);
     const auto up = policy.up(1, 70);
     QCOMPARE(up.gesture, TouchGesture::None);
@@ -216,6 +222,50 @@ void HybridChromeTouchPolicyTests::cancelClearsEverything()
     // A fresh gesture starts clean after a cancel.
     QCOMPARE(policy.down(1, {10.0, 10.0}, 20, true, true).gesture, TouchGesture::Press);
     QCOMPARE(policy.longPressDueMs(), std::optional<qint64>(520));
+}
+
+// Live log, 2026-09-28: 210 "Detected a touch move that never has been
+// down". A second finger on chrome that could not join (the first had
+// already dragged) was consumed on down but not tracked, so its motion and
+// lift reached KWin's seat and the client beneath got half a touch.
+void HybridChromeTouchPolicyTests::aFingerThatCannotJoinIsSwallowedUntilItLifts()
+{
+    HybridChromeTouchPolicy policy;
+    QCOMPARE(policy.down(1, {10.0, 10.0}, 0, true, true).gesture, TouchGesture::Press);
+    QCOMPARE(policy.motion(1, {40.0, 10.0}, 10).gesture, TouchGesture::Move);
+    QVERIFY(policy.down(2, {60.0, 10.0}, 20, true, true).consumed);
+    QVERIFY(policy.swallows(2));
+    QVERIFY(policy.motion(2, {60.0, 90.0}, 30).consumed);
+    // The gesture ends while the extra finger is still down...
+    QVERIFY(policy.up(1, 40).consumed);
+    QVERIFY(!policy.active());
+    QVERIFY(policy.tracking());
+    // ...and the extra finger stays swallowed until its own lift.
+    QVERIFY(policy.motion(2, {60.0, 120.0}, 50).consumed);
+    QVERIFY(policy.up(2, 60).consumed);
+    QVERIFY(!policy.tracking());
+    QVERIFY(!policy.motion(2, {60.0, 130.0}, 70).consumed);
+
+    // A lost lift never swallows a later touch that reuses the finger id.
+    QCOMPARE(policy.down(3, {10.0, 10.0}, 100, true, true).gesture, TouchGesture::Press);
+    QCOMPARE(policy.motion(3, {40.0, 10.0}, 110).gesture, TouchGesture::Move);
+    QVERIFY(policy.down(4, {60.0, 10.0}, 120, true, true).consumed);
+    QVERIFY(policy.up(3, 130).consumed);
+    // Finger 4 lifts but its up is lost; a new touch reuses id 4 on a client.
+    const auto reused = policy.down(4, {600.0, 400.0}, 140, false, false);
+    QVERIFY(!reused.consumed);
+    QVERIFY(!policy.swallows(4));
+    QVERIFY(!policy.motion(4, {610.0, 400.0}, 150).consumed);
+    QVERIFY(!policy.up(4, 160).consumed);
+
+    // A cancel clears swallowed fingers too.
+    QCOMPARE(policy.down(5, {10.0, 10.0}, 200, true, true).gesture, TouchGesture::Press);
+    QCOMPARE(policy.motion(5, {40.0, 10.0}, 210).gesture, TouchGesture::Move);
+    QVERIFY(policy.down(6, {60.0, 10.0}, 220, true, true).consumed);
+    QVERIFY(policy.cancel().consumed);
+    QVERIFY(!policy.tracking());
+    policy.forget(6);
+    QVERIFY(!policy.swallows(6));
 }
 
 QTEST_GUILESS_MAIN(HybridChromeTouchPolicyTests)
