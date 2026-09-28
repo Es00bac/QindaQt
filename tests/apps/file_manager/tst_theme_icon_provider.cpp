@@ -147,7 +147,9 @@ void ThemeIconProviderTest::fullColorIconsKeepTheirAuthoredPixels() {
   const QPixmap pixmap = provider.requestPixmap(
       QStringLiteral("folder?color=%23ff0000"), nullptr, QSize(kEdge, kEdge));
   QVERIFY(!pixmap.isNull());
-  QVERIFY(paintsColor(pixmap, QColor(QStringLiteral("#E8AE84")), 24));
+  // AGENT-NOTE: #E9A445 is the QindaQt folder body authored by
+  // tools/qinda_icon_catalog_places.py (ADR-0283); update it with the artwork.
+  QVERIFY(paintsColor(pixmap, QColor(QStringLiteral("#E9A445")), 24));
   QVERIFY(!paintsColor(pixmap, QColor(QStringLiteral("#ff0000")), 16));
 }
 void ThemeIconProviderTest::unresolvedNamesRenderTheColoredFallback() {
