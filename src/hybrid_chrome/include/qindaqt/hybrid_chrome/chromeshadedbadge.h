@@ -14,8 +14,8 @@ struct ChromeLayoutRequest;
 
 // The rolled-up container badge (ADR-0139, ADR-0099's shaded strip). A
 // shaded plan is badge-shaped: window buttons are dropped, the container
-// controls collapse onto one edge, the label names the container and its
-// foremost tab, and one tinted pill per tab (at most MaxPills, then a "+N"
+// controls collapse onto one edge, the label names the container, and one
+// tinted pill per tab (at most MaxPills, then a "+N"
 // counter) unrolls to that tab. Layout is pure plan transformation; paint
 // reads only the plan. The pill tabs are real ChromeRenderPlan::tabs
 // entries, so hit testing and the accessibility adapter keep treating them
@@ -31,13 +31,11 @@ public:
     static constexpr qreal LabelMinimumWidth = 48.0;
     static constexpr qreal LabelMaximumWidth = 320.0;
 
-    // The label a rolled-up badge shows: "<container name> · <foremost page>"
-    // when the user named this container, the page title alone when they did
-    // not, and the generated placeholder only when there is no page title
-    // either (ADR-0168). Pure; the single source of truth for both the width
-    // the strip reserves and the text paint() draws.
+    // The label a rolled-up badge shows: the container's own name (its
+    // rename, else the default name), and the foremost page title only when
+    // the caller supplies no name (ADR-0281). Pure; the single source of
+    // truth for both the width the strip reserves and the text paint() draws.
     [[nodiscard]] static QString resolveLabel(const QString &containerTitle,
-                                              bool containerTitleIsGenerated,
                                               const QString &foremostTitle);
 
     // The font the badge label is painted with.

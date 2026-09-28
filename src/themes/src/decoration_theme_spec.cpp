@@ -27,6 +27,11 @@ QStringList DecorationThemeTokens::containerBadgeStyles()
     return {QStringLiteral("pill"), QStringLiteral("square")};
 }
 
+QStringList DecorationThemeTokens::containerTitleLayouts()
+{
+    return {QStringLiteral("classic"), QStringLiteral("split-deck")};
+}
+
 bool DecorationThemeSpec::hasAuthoredColors() const
 {
     return decoration.closeColor.isValid() && decoration.minimizeColor.isValid()
@@ -64,6 +69,9 @@ QVariantMap DecorationThemeSpec::toVariantMap() const
     optionalColor("restoreColor", decoration.restoreColor);
     optionalColor("titleBarColor", decoration.titleBarColor);
     optionalColor("titleBarInactiveColor", decoration.titleBarInactiveColor);
+    if (!decoration.containerTitleLayout.isEmpty()) {
+        values.insert(QStringLiteral("containerTitleLayout"), decoration.containerTitleLayout);
+    }
     return values;
 }
 

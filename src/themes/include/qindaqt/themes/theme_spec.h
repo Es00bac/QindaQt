@@ -40,6 +40,11 @@ struct DecorationSpec {
     QString titleDoubleClick;
     QString minimizeAction = QStringLiteral("minimize");
     bool titleWear = true;
+    // Container title row arrangement (ADR-0281): `classic` or `split-deck`.
+    // Empty means "not authored", which containers read as classic, so every
+    // existing document keeps the row it shipped with and its strict round
+    // trip gains no key.
+    QString containerTitleLayout;
 
     [[nodiscard]] QVariantMap toVariantMap() const;
 };

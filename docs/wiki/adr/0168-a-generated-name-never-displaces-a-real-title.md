@@ -5,7 +5,9 @@
 - **Owners:** Platform (compositor container appearance, shared chrome)
 - **Supersedes:** ADR-0163's badge label clause (the label format only; every
   other decision in ADR-0163 stands), and with it ADR-0139's label clause
-- **Superseded by:** None
+- **Superseded by:** [ADR-0281](0281-split-deck-container-title-and-container-names.md)
+  (a container is titled by its own name; the badge label no longer shows
+  page titles)
 
 ## Context
 

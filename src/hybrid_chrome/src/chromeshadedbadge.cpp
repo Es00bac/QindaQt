@@ -46,22 +46,14 @@ qreal pillsWidth(qsizetype pillCount, qsizetype overflowCount)
 } // namespace
 
 QString ChromeShadedBadge::resolveLabel(const QString &containerTitle,
-                                        const bool containerTitleIsGenerated,
                                         const QString &foremostTitle)
 {
-    // AGENT-GUARD (ADR-0168): never prefix a GENERATED name. Prefixing
-    // "Container 7 · " consumed most of the label and elided away the title
-    // the user could still read on the unrolled row — the reported "name
-    // disappears when rolled up".
-    if (containerTitle.isEmpty()) {
-        return foremostTitle;
-    }
-    if (containerTitleIsGenerated) {
-        return foremostTitle.isEmpty() ? containerTitle : foremostTitle;
-    }
-    return foremostTitle.isEmpty()
-        ? containerTitle
-        : containerTitle + QStringLiteral(" · ") + foremostTitle;
+    // AGENT-GUARD (ADR-0281, superseding ADR-0168's page-title label): a
+    // rolled-up container is titled by its own name, exactly like its
+    // unrolled row. A page title is only the fallback for a caller that
+    // supplies no name at all; it is never prefixed or appended, because
+    // that is how an application title became the container's title.
+    return containerTitle.isEmpty() ? foremostTitle : containerTitle;
 }
 
 QFont ChromeShadedBadge::labelFont()
@@ -144,9 +136,9 @@ void ChromeShadedBadge::layout(ChromeRenderPlan *plan, const ChromeLayoutRequest
                                  available - pillsWidth(pillCount, overflowCount)
                                      - BadgeClusterGap));
     // AGENT-GUARD: pills yield before the label does. The label is the only
-    // thing on a rolled-up badge that says which page this is, so a strip that
-    // cannot hold both drops pills into "+N" first and keeps the label at its
-    // measured width for as long as the minimum allows.
+    // text on a rolled-up badge (the container's name, ADR-0281), so a strip
+    // that cannot hold both drops pills into "+N" first and keeps the label
+    // at its measured width for as long as the minimum allows.
     while (pillCount > 1
            && labelWidth + pillsWidth(pillCount, overflowCount) > available) {
         --pillCount;
@@ -197,8 +189,7 @@ void ChromeShadedBadge::paint(QPainter &painter, const ChromeRenderPlan &plan)
         if (foremost.isEmpty() && !plan.tabs.isEmpty()) {
             foremost = plan.tabs.constFirst().title;
         }
-        label = resolveLabel(plan.containerTitle, plan.containerTitleIsGenerated,
-                             foremost);
+        label = resolveLabel(plan.containerTitle, foremost);
     }
     if (!label.isEmpty() && plan.badgeLabelRect.width() > 12.0) {
         const auto elided = metrics.elidedText(

@@ -6,6 +6,7 @@
 #include "managedwindowregistry.h"
 
 #include "qindaqt/hybrid_chrome/chromerenderer.h"
+#include "qindaqt/hybrid_chrome/chromesplitdeck.h"
 
 #include <compositor.h>
 #include <scene/imageitem.h>
@@ -14,9 +15,12 @@
 #include <scene/workspacescene.h>
 #include <window.h>
 
+#include <QEasingCurve>
+#include <QElapsedTimer>
 #include <QImage>
 #include <QPainter>
 #include <QPointer>
+#include <QTimer>
 
 #include <cmath>
 #include <utility>
@@ -45,7 +49,17 @@ public:
     {
         m_globalGeometry = plan.outerFrame;
         m_devicePixelRatio = plan.devicePixelRatio;
-        m_plan = localizeChromeRenderPlan(std::move(plan), m_globalGeometry.topLeft());
+        auto localized = localizeChromeRenderPlan(std::move(plan), m_globalGeometry.topLeft());
+        // ADR-0281: a split-deck carousel glides to its new active card over
+        // the theme's motion duration (0 under reduced motion). Paint only:
+        // the published plan, and so every hit test, is already final.
+        if (localized.style.deckMotionMs > 0
+            && HybridChrome::ChromeSplitDeck::canAnimate(m_plan, localized)) {
+            startDeckMotion(std::move(localized));
+        } else {
+            stopDeckMotion();
+            m_plan = std::move(localized);
+        }
         render();
         updateItem();
     }
@@ -118,6 +132,7 @@ public:
 
     void closeOverlay() noexcept override
     {
+        stopDeckMotion();
         m_visible = false;
         if (m_item) {
             m_item->setVisible(false);
@@ -129,6 +144,47 @@ public:
     }
 
 private:
+    void startDeckMotion(HybridChrome::ChromeRenderPlan target)
+    {
+        // Starting from what is on screen keeps a fast wheel smooth: a new
+        // step mid-glide continues from the current card positions.
+        m_motionFrom = m_plan;
+        m_motionTarget = std::move(target);
+        m_plan = HybridChrome::ChromeSplitDeck::interpolate(m_motionFrom, m_motionTarget, 0.0);
+        if (!m_motionTimer) {
+            m_motionTimer = std::make_unique<QTimer>();
+            m_motionTimer->setInterval(16);
+            QObject::connect(m_motionTimer.get(), &QTimer::timeout, m_motionTimer.get(),
+                             [this] { advanceDeckMotion(); });
+        }
+        m_motionClock.start();
+        m_motionTimer->start();
+    }
+
+    void advanceDeckMotion()
+    {
+        const int duration = std::max(1, m_motionTarget.style.deckMotionMs);
+        const qreal progress = std::min(1.0, qreal(m_motionClock.elapsed()) / duration);
+        if (progress >= 1.0) {
+            stopDeckMotion();
+        } else {
+            m_plan = HybridChrome::ChromeSplitDeck::interpolate(
+                m_motionFrom, m_motionTarget,
+                QEasingCurve(QEasingCurve::OutCubic).valueForProgress(progress));
+        }
+        render();
+        updateItem();
+    }
+
+    // Lands any glide in flight on its target.
+    void stopDeckMotion()
+    {
+        if (m_motionTimer && m_motionTimer->isActive()) {
+            m_motionTimer->stop();
+            m_plan = m_motionTarget;
+        }
+    }
+
     void render()
     {
         if (!m_plan.outerFrame.isValid() || !std::isfinite(m_devicePixelRatio)
@@ -167,7 +223,12 @@ private:
 
     QString m_containerId;
     ManagedWindowRegistry &m_registry;
+    // What is painted: the published plan, or a frame of a deck glide.
     HybridChrome::ChromeRenderPlan m_plan;
+    HybridChrome::ChromeRenderPlan m_motionFrom;
+    HybridChrome::ChromeRenderPlan m_motionTarget;
+    std::unique_ptr<QTimer> m_motionTimer;
+    QElapsedTimer m_motionClock;
     HybridChrome::ChromePaintState m_state;
     QRectF m_globalGeometry;
     QImage m_image;

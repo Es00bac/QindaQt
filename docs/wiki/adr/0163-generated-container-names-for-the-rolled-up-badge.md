@@ -6,7 +6,9 @@
 - **Supersedes:** ADR-0139's badge label clause (the label format only; all
   other ADR-0139 decisions stand)
 - **Superseded by:** ADR-0168 (badge label clause only — a generated name is
-  now a fallback rather than a prefix; every other decision here stands)
+  now a fallback rather than a prefix; every other decision here stands), then
+  [ADR-0281](0281-split-deck-container-title-and-container-names.md) (the
+  `Container N` numbering is retired for the default name "Container")
 
 ## Context
 

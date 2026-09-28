@@ -118,6 +118,11 @@ public:
     // Revalidates identity against the currently published plan before
     // emitting the existing session policy signals.
     [[nodiscard]] bool dispatchPointerActivation(const ChromePointerHit &hit);
+    // ADR-0281: activates the page `step` positions from the published
+    // plan's active tab (stopping at either end) by emitting
+    // tabActivationRequested, exactly like a click on that tab. False when the
+    // container is unknown or quarantined, or the step does not move.
+    [[nodiscard]] bool dispatchTabStep(const QString &containerId, int step);
     [[nodiscard]] std::optional<ChromeWindowActionRequest> windowActionAt(
         const QPointF &position) const;
     // Emits a policy request; the integration owner decides whether the action

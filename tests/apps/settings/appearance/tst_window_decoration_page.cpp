@@ -198,6 +198,9 @@ void WindowDecorationPageTests::offersEveryButtonStyleAndTitleBarOption()
          QStringLiteral("appearance.containerButtonSpacing")},
         {QStringLiteral("appearanceContainerTitleDoubleClick_maximize"),
          QStringLiteral("appearance.containerTitleDoubleClick")},
+        // ADR-0281: the container title row arrangement.
+        {QStringLiteral("appearanceContainerTitleLayout_split-deck"),
+         QStringLiteral("appearance.containerTitleLayout")},
     };
     for (const auto &[objectName, key] : rows) {
         QQuickItem *choice = nullptr;

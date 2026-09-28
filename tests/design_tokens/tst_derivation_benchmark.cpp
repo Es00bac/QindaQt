@@ -30,7 +30,7 @@ void DerivationBenchmark::deriveAllFiveBuiltIns()
     // themes plus their glass and paper variants; ADR-0268 adds the four
     // desktop-experience themes. The row pins the count so a theme that fails
     // to load, or a stray file, is noticed here first.
-    QCOMPARE(themes.size(), 18);
+    QCOMPARE(themes.size(), 21);
     for (const auto &theme : themes) {
         QVERIFY2(theme.ok, qPrintable(theme.error));
     }

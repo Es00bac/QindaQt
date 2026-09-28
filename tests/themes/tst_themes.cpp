@@ -9,6 +9,8 @@
 #include <QJsonObject>
 #include <QtTest>
 
+#include <algorithm>
+#include <cmath>
 #include <utility>
 
 using namespace QindaQt::Themes;
@@ -33,12 +35,14 @@ private slots:
     void rejectsInvalidSchemaV2Values();
     void everyBuiltInThemeRoundTripsItsOwnDocument();
     void cornerBarVariantsKeepTabBehaviorWithDistinctColorsAndRadii();
+    void darkCornerBarThemesPairTheLightOnesWithReadableTabs();
+    void containerTitleLayoutIsOptionalAndStrict();
 };
 
 void ThemeTests::loadsEveryBuiltInTheme()
 {
     const auto results = ThemeLoader::fromDirectory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(results.size(), 18);
+    QCOMPARE(results.size(), 21);
     int schemaV2 = 0;
     for (const auto &result : results) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -46,8 +50,9 @@ void ThemeTests::loadsEveryBuiltInTheme()
         schemaV2 += result.theme.schemaVersion == 2 ? 1 : 0;
     }
     // ADR-0206: six theming-v2 themes, six schema-v1 originals, four
-    // experience themes, and two Corner Bar color/radius variants.
-    QCOMPARE(schemaV2, 12);
+    // experience themes, two Corner Bar color/radius variants, and the three
+    // dark Corner Bar treatments (ADR-0281).
+    QCOMPARE(schemaV2, 15);
 }
 
 void ThemeTests::cornerBarVariantsKeepTabBehaviorWithDistinctColorsAndRadii()
@@ -56,7 +61,10 @@ void ThemeTests::cornerBarVariantsKeepTabBehaviorWithDistinctColorsAndRadii()
     for (const auto &[id, radius] : {
              std::pair{"qinda-marigold", 2},
              std::pair{"qinda-corner-teal", 8},
-             std::pair{"qinda-corner-violet", 12}}) {
+             std::pair{"qinda-corner-violet", 12},
+             std::pair{"qinda-marigold-dark", 2},
+             std::pair{"qinda-corner-teal-dark", 8},
+             std::pair{"qinda-corner-violet-dark", 12}}) {
         const auto result = ThemeLoader::fromFile(
             QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/%1.json")
                 .arg(QString::fromLatin1(id)));
@@ -65,9 +73,104 @@ void ThemeTests::cornerBarVariantsKeepTabBehaviorWithDistinctColorsAndRadii()
         QCOMPARE(result.theme.decoration.buttonPlacement, QStringLiteral("left"));
         QCOMPARE(result.theme.decoration.titleDoubleClick, QStringLiteral("roll-up"));
         QCOMPARE(result.theme.surfaceRadius(QString(SurfaceNames::Decoration)), radius);
+        // ADR-0281: every Corner Bar treatment uses the split-deck row.
+        QCOMPARE(result.theme.decoration.containerTitleLayout, QStringLiteral("split-deck"));
         titleColors.insert(result.theme.decoration.titleBarColor.name());
     }
-    QCOMPARE(titleColors.size(), 3);
+    QCOMPARE(titleColors.size(), 6);
+}
+
+namespace {
+qreal luminance(const QColor &color)
+{
+    const auto channel = [](qreal value) {
+        return value <= 0.03928 ? value / 12.92 : std::pow((value + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(color.redF()) + 0.7152 * channel(color.greenF())
+        + 0.0722 * channel(color.blueF());
+}
+
+qreal contrast(const QColor &first, const QColor &second)
+{
+    const qreal a = luminance(first);
+    const qreal b = luminance(second);
+    return (std::max(a, b) + 0.05) / (std::min(a, b) + 0.05);
+}
+} // namespace
+
+void ThemeTests::darkCornerBarThemesPairTheLightOnesWithReadableTabs()
+{
+    // ADR-0281: each light Corner Bar treatment has a dark twin with the same
+    // behaviour, a charcoal surface, and its signature tab color kept
+    // recognisable. The title tab carries text: some ink (black or white, the
+    // painter's fallback) must reach 4.5:1 on both tab states.
+    for (const auto &[light, dark] : {
+             std::pair{"qinda-marigold", "qinda-marigold-dark"},
+             std::pair{"qinda-corner-teal", "qinda-corner-teal-dark"},
+             std::pair{"qinda-corner-violet", "qinda-corner-violet-dark"}}) {
+        const auto load = [](const char *id) {
+            return ThemeLoader::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/%1.json")
+                                             .arg(QString::fromLatin1(id)));
+        };
+        const auto lightTheme = load(light);
+        const auto darkTheme = load(dark);
+        QVERIFY2(lightTheme.ok && darkTheme.ok, qPrintable(lightTheme.error + darkTheme.error));
+        const auto &theme = darkTheme.theme;
+        QCOMPARE(theme.variant, QStringLiteral("dark"));
+        QCOMPARE(lightTheme.theme.variant, QStringLiteral("light"));
+        QCOMPARE(theme.iconTheme, QStringLiteral("QindaQt"));
+        QCOMPARE(theme.decoration.buttonStyle, lightTheme.theme.decoration.buttonStyle);
+        QCOMPARE(theme.decoration.buttonPlacement, lightTheme.theme.decoration.buttonPlacement);
+        QCOMPARE(theme.decoration.titleDoubleClick, lightTheme.theme.decoration.titleDoubleClick);
+        const QColor surface = theme.colors.value(QStringLiteral("surface"));
+        QVERIFY2(luminance(surface) < 0.05, qPrintable(surface.name()));
+        QVERIFY(contrast(theme.colors.value(QStringLiteral("text")), surface) >= 7.0);
+        // The signature hue survives the dark tuning.
+        QVERIFY2(std::abs(theme.decoration.titleBarColor.hslHueF()
+                          - lightTheme.theme.decoration.titleBarColor.hslHueF()) < 0.08,
+                 dark);
+        for (const QColor &tab : {theme.decoration.titleBarColor,
+                                  theme.decoration.titleBarInactiveColor}) {
+            QVERIFY2(std::max({contrast(theme.colors.value(QStringLiteral("text")), tab),
+                               contrast(Qt::black, tab), contrast(Qt::white, tab)})
+                         >= 4.5,
+                     qPrintable(QStringLiteral("%1 tab %2").arg(QString::fromLatin1(dark),
+                                                                tab.name())));
+        }
+        // The unfocused tab reads as dimmed against the focused one.
+        QVERIFY(luminance(theme.decoration.titleBarInactiveColor)
+                < luminance(theme.decoration.titleBarColor));
+    }
+}
+
+void ThemeTests::containerTitleLayoutIsOptionalAndStrict()
+{
+    // Unauthored stays empty (classic) and adds no key to the round trip.
+    const auto plain = ThemeLoader::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-glass-light.json"));
+    QVERIFY2(plain.ok, qPrintable(plain.error));
+    QVERIFY(plain.theme.decoration.containerTitleLayout.isEmpty());
+    QVERIFY(!plain.theme.decoration.toVariantMap().contains(QStringLiteral("containerTitleLayout")));
+
+    QFile file(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-marigold.json"));
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    auto root = QJsonDocument::fromJson(file.readAll()).object();
+    auto decoration = root.value(QStringLiteral("decoration")).toObject();
+    for (const auto &[token, accepted] : {std::pair{"classic", true},
+                                          std::pair{"split-deck", true},
+                                          std::pair{"deck", false},
+                                          std::pair{"Split-Deck", false}}) {
+        decoration.insert(QStringLiteral("containerTitleLayout"), QString::fromLatin1(token));
+        root.insert(QStringLiteral("decoration"), decoration);
+        const auto result = ThemeLoader::fromJson(QJsonDocument(root).toJson(),
+                                                  QStringLiteral("layout-probe"));
+        QCOMPARE(result.ok, accepted);
+        if (accepted) {
+            QCOMPARE(result.theme.decoration.toVariantMap()
+                         .value(QStringLiteral("containerTitleLayout")).toString(),
+                     QString::fromLatin1(token));
+        }
+    }
 }
 
 void ThemeTests::qindaBlissDefinesTheClassicBlueChrome()

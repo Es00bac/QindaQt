@@ -10,6 +10,7 @@
 
 #include "qindaqt/hybrid_chrome/chromerenderer.h"
 #include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
+#include "qindaqt/hybrid_chrome/chromesplitdeck.h"
 
 namespace QindaQt::Compositor::KWinIntegration {
 namespace {
@@ -76,6 +77,7 @@ private Q_SLOTS:
     void usesActualWindowFramesForBoundedMembers();
     void rejectsChromeMetricsThatDisagreeWithScene();
     void rejectsStaleCommittedGeometry();
+    void splitDeckPlanIsTitledByTheMeasuredContainerName();
 };
 
 void HybridChromePlanBuilderTest::buildsQindaMacPlanInStableTopologyOrder()
@@ -216,17 +218,19 @@ void HybridChromePlanBuilderTest::productionShadedPlanPaintsItsLabel()
                                QStringLiteral("window-a"), &error),
              qPrintable(error));
 
+    // ADR-0281: the badge is titled by the container's name (here a long
+    // rename), never by the member's caption.
     HybridChromePlanOptions options;
     options.shaded = true;
-    options.containerTitle = QStringLiteral("Container 7");
-    options.containerTitleIsGenerated = true;
-    const QString caption =
-        QStringLiteral("Quarterly revenue model, revision 12");
+    const QString name = QStringLiteral("Quarterly revenue model, revision 12");
+    options.containerTitle = name;
+    options.containerTitleIsGenerated = false;
+    const QString caption = QStringLiteral("model.ods - QindaOffice Sheets");
     const auto titleLookup = [&caption](const QString &) { return caption; };
 
     const auto label =
         HybridChromePlanBuilder::shadedLabel(container, options, titleLookup);
-    QCOMPARE(label.text, caption);
+    QCOMPARE(label.text, name);
     QVERIFY(label.width > 140.0);
     options.shadedOuterFrame =
         QRectF(0.0, 0.0,
@@ -237,7 +241,7 @@ void HybridChromePlanBuilderTest::productionShadedPlanPaintsItsLabel()
     const auto plan = HybridChromePlanBuilder::build(
         container, {}, options, titleLookup, &error);
     QVERIFY2(plan.has_value(), qPrintable(error));
-    QCOMPARE(plan->badgeLabelText, caption);
+    QCOMPARE(plan->badgeLabelText, name);
     QVERIFY(plan->badgeLabelRect.width() > 140.0);
 
     QImage image(plan->outerFrame.size().toSize(),
@@ -277,6 +281,43 @@ void HybridChromePlanBuilderTest::productionShadedPlanPaintsItsLabel()
              qPrintable(QStringLiteral("label rect %1 wide painted %2 ink pixels")
                             .arg(plan->badgeLabelRect.width())
                             .arg(inkPixels)));
+}
+
+} // namespace QindaQt::Compositor::KWinIntegration
+
+namespace QindaQt::Compositor::KWinIntegration {
+
+// ADR-0281: the split-deck title tab carries the container's own name, which
+// the builder measures (the engine owns no font); page titles stay on tabs.
+void HybridChromePlanBuilderTest::splitDeckPlanIsTitledByTheMeasuredContainerName()
+{
+    const auto container = sampleContainer();
+    const auto solution = solve(container);
+    QVERIFY(solution);
+    auto options = chromeOptions();
+    options.style = HybridChrome::ChromeStyle::standard(HybridChrome::ButtonSide::Left);
+    options.style.titleLayout = HybridChrome::ContainerTitleLayout::SplitDeck;
+    options.containerTitle = QStringLiteral("Container");
+    options.containerTitleIsGenerated = true;
+    QString error;
+    const auto plan = HybridChromePlanBuilder::build(
+        container, *solution, options,
+        [](const QString &id) {
+            return id == QStringLiteral("chat-window") ? QStringLiteral("Chat - Firefox")
+                                                       : QStringLiteral("Files");
+        },
+        &error);
+    QVERIFY2(plan, qPrintable(error));
+    QCOMPARE(plan->containerTitle, QStringLiteral("Container"));
+    const qreal measured = HybridChrome::ChromeSplitDeck::titleTextWidth(
+        QStringLiteral("Container"),
+        QFontMetricsF(HybridChrome::ChromeSplitDeck::titleFont()));
+    QVERIFY(measured > 0.0);
+    QVERIFY(plan->titleLabelRect.width() + 0.01
+            >= measured + 2.0 * HybridChrome::ChromeSplitDeck::TitleTextInset);
+    QCOMPARE(plan->tabs.size(), 2);
+    QCOMPARE(plan->tabs[1].title, QStringLiteral("Chat - Firefox"));
+    QVERIFY(plan->titleTab.right() < plan->deckPiece.left());
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

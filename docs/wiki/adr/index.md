@@ -283,3 +283,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0278: Retain dock delegates by presentation identity](0278-retain-dock-delegates-by-presentation-identity.md)
 
 - [ADR-0280: Independently select an installed icon theme](0280-independent-installed-icon-theme-choice.md)
+- [ADR-0281: Split-deck container title row, and a container is titled by its own name](0281-split-deck-container-title-and-container-names.md)

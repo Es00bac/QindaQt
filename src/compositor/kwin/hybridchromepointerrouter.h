@@ -52,6 +52,17 @@ struct ChromeShadeRequest final
                            const ChromeShadeRequest &) = default;
 };
 
+// ADR-0281: a wheel over a split-deck tab deck moves the active tab one step
+// in logical order (-1 toward the first tab) instead of rolling the container.
+struct ChromeTabStepRequest final
+{
+    QString containerId;
+    int step = 0;
+
+    friend bool operator==(const ChromeTabStepRequest &,
+                           const ChromeTabStepRequest &) = default;
+};
+
 // One normalized KWin event can clear hover and terminate an interrupted drag,
 // so routing returns an ordered value batch instead of invoking policy inline.
 struct ChromePointerDecision final
@@ -69,6 +80,7 @@ struct ChromePointerDecision final
     // ADR-0264: containers whose shared title row was double-clicked; the
     // session runs the chrome style's title double-click action.
     QVector<QString> titleDoubleClicks;
+    QVector<ChromeTabStepRequest> tabSteps;
 };
 
 // AGENT-CONTRACT: A consumed decision can carry a raise request without
@@ -99,8 +111,10 @@ public:
         const HybridInput::PointerEvent &event);
     // AGENT-CONTRACT: a modifier-free vertical wheel over the shared title
     // row, its tabs and controls, or a member handlebar requests roll-up
-    // (positive delta, wheel turned away from the user) or roll-down. A held
-    // grab, modifiers, client content, and zero deltas pass through.
+    // (positive delta, wheel turned away from the user) or roll-down. Over a
+    // target marked wheelStepsTabs (a split-deck tab deck, ADR-0281) it
+    // requests a tab step instead. A held grab, modifiers, client content,
+    // and zero deltas pass through.
     [[nodiscard]] ChromePointerDecision pointerWheel(const QPointF &position,
                                                      Qt::KeyboardModifiers modifiers,
                                                      qreal angleDelta);

@@ -290,6 +290,8 @@ inline constexpr QLatin1String WindowTitleDoubleClick{"appearance.windowTitleDou
 inline constexpr QLatin1String ContainerButtonSize{"appearance.containerButtonSize"};
 inline constexpr QLatin1String ContainerButtonSpacing{"appearance.containerButtonSpacing"};
 inline constexpr QLatin1String ContainerTitleDoubleClick{"appearance.containerTitleDoubleClick"};
+// Container title row arrangement (ADR-0281).
+inline constexpr QLatin1String ContainerTitleLayout{"appearance.containerTitleLayout"};
 } // namespace ChromePreferenceKeys
 
 // The user's arrangement for application window decorations and container
@@ -321,6 +323,9 @@ struct ChromePreferences {
     QString containerButtonSize = QStringLiteral("theme");
     QString containerButtonSpacing = QStringLiteral("theme");
     QString containerTitleDoubleClick = QStringLiteral("none");
+    // ADR-0281: "theme" keeps the theme's (or decoration document's) row;
+    // "classic" and "split-deck" override it.
+    QString containerTitleLayout = QStringLiteral("theme");
 
     [[nodiscard]] static QStringList settingsKeys();
     // The two decoration-document keys, scoped separately (see above).

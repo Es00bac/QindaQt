@@ -15,6 +15,7 @@ namespace {
 using HybridChrome::ButtonSide;
 using HybridChrome::ButtonStyle;
 using HybridChrome::ChromeStyle;
+using HybridChrome::ContainerTitleLayout;
 using HybridChrome::TabVisualDirection;
 using HybridChrome::TitleDoubleClickAction;
 
@@ -84,6 +85,18 @@ QString doubleClickToken(TitleDoubleClickAction action)
     return QStringLiteral("none");
 }
 
+// ADR-0281: an empty (unauthored) or unknown token keeps `fallback`.
+ContainerTitleLayout titleLayout(const QString &token, ContainerTitleLayout fallback)
+{
+    if (token == QLatin1String("split-deck")) {
+        return ContainerTitleLayout::SplitDeck;
+    }
+    if (token == QLatin1String("classic")) {
+        return ContainerTitleLayout::Classic;
+    }
+    return fallback;
+}
+
 TitleDoubleClickAction doubleClickAction(const QString &token)
 {
     if (token == QLatin1String("maximize")) {
@@ -114,8 +127,15 @@ ChromeStyle containerStyleForTheme(const Themes::ThemeSpec &theme, bool *themeHo
             ? TabVisualDirection::RightToLeft : TabVisualDirection::LeftToRight;
         applyAuthoredButtonStyle(&style, decoration.buttonStyle);
         *themeHoverGlyphs = decoration.hoverGlyphs;
+        // ADR-0281: the split-deck title tab wears the theme's signature
+        // title color, the same one its windows' title tabs wear.
+        style.palette.titleBar = decoration.titleBarColor;
+        style.palette.titleBarInactive = decoration.titleBarInactiveColor;
+        style.titleLayout = titleLayout(decoration.containerTitleLayout,
+                                        ContainerTitleLayout::Classic);
     }
     style.material = containerMaterialForTheme(theme);
+    style.deckMotionMs = theme.motionDuration;
     return style;
 }
 
@@ -177,6 +197,7 @@ ChromeStyle applyContainerPreferences(ChromeStyle style, bool themeHoverGlyphs,
         style.buttonSpacing = joined ? 0.0 : static_cast<qreal>(qRound(gap * gapScale));
     }
     style.titleDoubleClick = doubleClickAction(preferences.containerTitleDoubleClick);
+    style.titleLayout = titleLayout(preferences.containerTitleLayout, style.titleLayout);
     return style;
 }
 
@@ -219,6 +240,15 @@ ChromeStyle applyDecorationTheme(ChromeStyle style, const Themes::DecorationThem
     style.material.border = document.titleMaterial.border;
     style.material.highlight = document.titleMaterial.highlight;
     style.material.squareBadge = document.containerBadgeStyle == QLatin1String("square");
+    // A document that authors the row or the title colors wins; one that
+    // does not keeps the color theme's.
+    style.titleLayout = titleLayout(decoration.containerTitleLayout, style.titleLayout);
+    if (decoration.titleBarColor.isValid()) {
+        style.palette.titleBar = decoration.titleBarColor;
+    }
+    if (decoration.titleBarInactiveColor.isValid()) {
+        style.palette.titleBarInactive = decoration.titleBarInactiveColor;
+    }
     return style;
 }
 
@@ -298,6 +328,16 @@ QVariantMap containerStyleToVariantMap(const ChromeStyle &style)
     if (style.titleDoubleClick != TitleDoubleClickAction::None) {
         values.insert(QStringLiteral("titleDoubleClick"), doubleClickToken(style.titleDoubleClick));
     }
+    // Split-deck keys (ADR-0281), omitted at their defaults.
+    if (style.titleLayout == ContainerTitleLayout::SplitDeck) {
+        values.insert(QStringLiteral("titleLayout"), QStringLiteral("split-deck"));
+    }
+    if (palette.titleBar.isValid()) {
+        values.insert(QStringLiteral("titleBar"), palette.titleBar);
+    }
+    if (palette.titleBarInactive.isValid()) {
+        values.insert(QStringLiteral("titleBarInactive"), palette.titleBarInactive);
+    }
     return values;
 }
 
@@ -354,6 +394,9 @@ ChromeStyle containerStyleFromVariantMap(const QVariantMap &map)
         style.buttonSpacing = number("buttonSpacing", 0.0, 64.0, style.buttonSpacing);
     }
     style.titleDoubleClick = doubleClickAction(text("titleDoubleClick"));
+    style.titleLayout = titleLayout(text("titleLayout"), ContainerTitleLayout::Classic);
+    palette.titleBar = styleColor(map, "titleBar", QColor());
+    palette.titleBarInactive = styleColor(map, "titleBarInactive", QColor());
     return style;
 }
 

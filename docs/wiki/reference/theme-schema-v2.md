@@ -69,6 +69,7 @@ of colors, so Appearance can pair any color theme with any decoration:
 | `shadow` | object | `extent` `0`–`48` (default `12`), `opacity` `0`–`1` (default `0.30`) |
 | `memberHandle` | string | `grip`, `dots`, or `plain` |
 | `containerBadge` | string | `pill` or `square` |
+| `containerTitleLayout` | string | optional `classic` or `split-deck`; absent keeps the color theme's own row ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)) |
 
 A color theme names its companion with `decorationTheme`; the user may
 override the pairing for windows and for containers separately from
