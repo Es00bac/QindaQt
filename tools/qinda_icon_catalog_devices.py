@@ -149,6 +149,23 @@ CANON = {
     ),
 }
 
+# Voice dictation's microphone states (voice applet presentation). They were
+# once hand-copied SVGs outside the catalog; the catalog now owns them so a
+# regeneration cannot silently delete them.
+_MIC_BODY_D = "M32 10a6 6 0 0 1 6 6v16a6 6 0 0 1-12 0V16a6 6 0 0 1 6-6z"
+
+
+def _microphone(extra: str, extra_width: float = 4) -> Icon:
+    def draw(color: str) -> str:
+        return (filled(_MIC_BODY_D, color) + stroke("M20 30v2a12 12 0 0 0 24 0v-2", 4, color)
+                + stroke("M32 44v8M24 54h16", 4, color) + (stroke(extra, extra_width, color) if extra else ""))
+    return Icon(GROUP, draw(INK), draw(VIOLET))
+
+
+CANON["audio-input-microphone"] = _microphone("")
+CANON["audio-input-microphone-high"] = _microphone("M50 22q7 10 0 20M56 15q12 17 0 34")
+CANON["audio-input-microphone-muted"] = _microphone("M14 12l36 40", 5)
+
 ALIASES = {
     "bluetooth": ("network-bluetooth-active", None),
     "network-wireless": ("network-wireless-signal-excellent", None),

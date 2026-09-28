@@ -15,11 +15,12 @@ import qinda_icon_catalog_actions as _actions
 import qinda_icon_catalog_apps as _apps
 import qinda_icon_catalog_categories_status as _categories_status
 import qinda_icon_catalog_devices as _devices
+import qinda_icon_catalog_first_party as _first_party
 import qinda_icon_catalog_mimetypes as _mimetypes
 import qinda_icon_catalog_places as _places
 from qinda_icon_shapes import Icon
 
-_MODULES = (_apps, _actions, _devices, _places, _mimetypes, _categories_status)
+_MODULES = (_apps, _first_party, _actions, _devices, _places, _mimetypes, _categories_status)
 
 GROUPS = ("apps", "actions", "devices", "places", "mimetypes", "categories", "status")
 GROUP_CONTEXT = {

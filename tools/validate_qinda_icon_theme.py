@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from qinda_icon_catalog import ALIASES, CANON, GROUP_CONTEXT, GROUPS
+from qinda_icon_required import REQUIRED_ALL
 from qinda_icon_shapes import AMBER, INK, JADE, PORCELAIN, render
 
 ROOT = Path(__file__).resolve().parents[1] / "data/icons/QindaQt"
@@ -45,6 +46,9 @@ def _required_names_from_coverage_cmake() -> set[str]:
 
 
 REQUIRED_NAMES = _required_names_from_coverage_cmake()
+
+# ADR-0283: places, file types and Qinda app ids every Qinda icon theme resolves.
+REQUIRED_NAMES = REQUIRED_NAMES | REQUIRED_ALL
 
 
 def _expected_paths():
