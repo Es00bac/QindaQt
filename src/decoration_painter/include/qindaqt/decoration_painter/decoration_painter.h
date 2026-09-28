@@ -311,7 +311,9 @@ struct ChromePreferences {
     QString containerDecoration = QStringLiteral("theme");
     // Title-bar options (ADR-0264). "theme" keeps what the theme and its
     // decoration document resolved; the window double-click "theme" leaves
-    // KWin's own action and the container "none" keeps the row inert.
+    // KWin's own action where the theme authors none. The container
+    // double-click "theme" is the theme's containerTitleDoubleClick, else
+    // inert (ADR-0281), and "none" keeps the row inert whatever the theme.
     QString windowButtonSize = QStringLiteral("theme");
     QString windowButtonSpacing = QStringLiteral("theme");
     QString windowTitleHeight = QStringLiteral("theme");
@@ -322,7 +324,7 @@ struct ChromePreferences {
     QString windowTitleDoubleClick = QStringLiteral("theme");
     QString containerButtonSize = QStringLiteral("theme");
     QString containerButtonSpacing = QStringLiteral("theme");
-    QString containerTitleDoubleClick = QStringLiteral("none");
+    QString containerTitleDoubleClick = QStringLiteral("theme");
     // ADR-0281: "theme" keeps the theme's (or decoration document's) row;
     // "classic" and "split-deck" override it.
     QString containerTitleLayout = QStringLiteral("theme");

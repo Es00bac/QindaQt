@@ -95,7 +95,7 @@ bool readSchemaV2(const QJsonObject &root, ThemeSpec *theme, QString *error)
 {
     const QStringList v2Keys{QStringLiteral("surfaces"), QStringLiteral("radii"),
                              QStringLiteral("motion"), QStringLiteral("accent"),
-                             QStringLiteral("decorationTheme")};
+                             QStringLiteral("decorationTheme"), QStringLiteral("variants")};
     if (theme->schemaVersion == 1) {
         for (const auto &key : v2Keys) {
             if (root.contains(key)) {
@@ -213,6 +213,25 @@ bool readSchemaV2(const QJsonObject &root, ThemeSpec *theme, QString *error)
         }
         theme->decorationTheme = decorationTheme.toString();
     }
+    // ADR-0284: optional light/dark twins, each a theme id.
+    const QJsonValue variants = root.value(QStringLiteral("variants"));
+    if (!variants.isUndefined()) {
+        const auto object = variants.toObject();
+        if (!variants.isObject() || object.isEmpty()) {
+            *error = QStringLiteral("variants must be an object naming light and/or dark");
+            return false;
+        }
+        for (auto it = object.constBegin(); it != object.constEnd(); ++it) {
+            const bool light = it.key() == QLatin1String("light");
+            if ((!light && it.key() != QLatin1String("dark")) || !it.value().isString()
+                || !isValidDocumentId(it.value().toString())) {
+                *error = QStringLiteral("variants.%1 must be light or dark naming a theme id")
+                             .arg(it.key());
+                return false;
+            }
+            (light ? theme->lightVariant : theme->darkVariant) = it.value().toString();
+        }
+    }
     return true;
 }
 
@@ -296,6 +315,8 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
         decoration.value(QStringLiteral("titleWear")).toBool(theme.decoration.titleWear);
     theme.decoration.containerTitleLayout =
         decoration.value(QStringLiteral("containerTitleLayout")).toString();
+    theme.decoration.containerTitleDoubleClick =
+        decoration.value(QStringLiteral("containerTitleDoubleClick")).toString();
 
     if ((theme.schemaVersion != 1 && theme.schemaVersion != 2) || theme.id.isEmpty()
         || theme.name.isEmpty() || theme.variant.isEmpty()) {
@@ -315,6 +336,8 @@ LoadResult ThemeLoader::fromJson(const QByteArray &json, const QString &origin)
         || !(theme.decoration.titleDoubleClick.isEmpty()
              || contains(theme.decoration.titleDoubleClick, titleDoubleClicks))
         || !contains(theme.decoration.minimizeAction, minimizeActions)
+        || !(theme.decoration.containerTitleDoubleClick.isEmpty()
+             || contains(theme.decoration.containerTitleDoubleClick, titleDoubleClicks))
         || !(theme.decoration.containerTitleLayout.isEmpty()
              || DecorationThemeTokens::containerTitleLayouts().contains(
                  theme.decoration.containerTitleLayout))) {

@@ -57,6 +57,7 @@ private slots:
     void themeAuthoredBehaviourAndFinishResolve();
     void titleTabCutoutTracksPaintedGeometry();
     void containerTitleLayoutResolvesFromThemeDocumentAndPreference();
+    void themeAuthoredContainerDoubleClickYieldsOnlyToAnExplicitChoice();
 };
 
 void DecorationTitleOptionTests::styleNamesMatchTheThemeAndSettingsTokens()
@@ -103,8 +104,11 @@ void DecorationTitleOptionTests::titleOptionTokensDecodeStrictlyAndRoundTrip()
                              QStringLiteral("none")));
     QVERIFY(edited.setToken(QString(ChromePreferenceKeys::ContainerTitleDoubleClick),
                             QStringLiteral("minimize")));
+    // ADR-0281: "theme" defers to the theme's container double-click.
+    QVERIFY(edited.setToken(QString(ChromePreferenceKeys::ContainerTitleDoubleClick),
+                            QStringLiteral("theme")));
     QVERIFY(!edited.setToken(QString(ChromePreferenceKeys::ContainerTitleDoubleClick),
-                             QStringLiteral("theme")));
+                             QStringLiteral("sparkles")));
     QVERIFY(edited.setToken(QString(ChromePreferenceKeys::WindowRollUpButton),
                             QStringLiteral("shown")));
     QVERIFY(edited.setToken(QString(ChromePreferenceKeys::ContainerButtonStyle),
@@ -429,6 +433,44 @@ void DecorationTitleOptionTests::containerTitleLayoutResolvesFromThemeDocumentAn
              ContainerTitleLayout::Classic);
     QCOMPARE(resolveContainerStyle(corner, document, preferences).titleLayout,
              ContainerTitleLayout::SplitDeck);
+}
+
+// ADR-0281: a theme may author what a container title double-click does (the
+// Corner Bar themes roll up, like their window tab). The preference's "theme"
+// default follows it; any explicit token, "none" included, wins; a theme that
+// authors nothing keeps containers inert, as they shipped.
+void DecorationTitleOptionTests::themeAuthoredContainerDoubleClickYieldsOnlyToAnExplicitChoice()
+{
+    using QindaQt::HybridChrome::TitleDoubleClickAction;
+    QCOMPARE(ChromePreferences{}.containerTitleDoubleClick, QStringLiteral("theme"));
+    QindaQt::Themes::ThemeSpec corner;
+    corner.decoration.authored = true;
+    corner.decoration.containerTitleDoubleClick = QStringLiteral("roll-up");
+    QCOMPARE(resolveContainerStyle(corner, ChromePreferences{}).titleDoubleClick,
+             TitleDoubleClickAction::RollUp);
+    ChromePreferences preferences;
+    for (const auto &[token, action] :
+         {std::pair{"none", TitleDoubleClickAction::None},
+          std::pair{"maximize", TitleDoubleClickAction::Maximize},
+          std::pair{"minimize", TitleDoubleClickAction::Minimize},
+          std::pair{"roll-up", TitleDoubleClickAction::RollUp}}) {
+        preferences.containerTitleDoubleClick = QString::fromLatin1(token);
+        QCOMPARE(resolveContainerStyle(corner, preferences).titleDoubleClick, action);
+    }
+    // A decoration document does not undo the theme's double-click.
+    QindaQt::Themes::DecorationThemeSpec document;
+    document.decoration.authored = true;
+    QCOMPARE(resolveContainerStyle(corner, document, ChromePreferences{}).titleDoubleClick,
+             TitleDoubleClickAction::RollUp);
+    // A theme that authors only a window double-click leaves containers inert.
+    QindaQt::Themes::ThemeSpec windowsOnly;
+    windowsOnly.decoration.authored = true;
+    windowsOnly.decoration.titleDoubleClick = QStringLiteral("maximize");
+    QCOMPARE(resolveContainerStyle(windowsOnly, ChromePreferences{}).titleDoubleClick,
+             TitleDoubleClickAction::None);
+    QCOMPARE(resolveContainerStyle(QindaQt::Themes::ThemeSpec{}, ChromePreferences{})
+                 .titleDoubleClick,
+             TitleDoubleClickAction::None);
 }
 
 QTEST_MAIN(DecorationTitleOptionTests)

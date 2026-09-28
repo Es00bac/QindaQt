@@ -3,7 +3,7 @@
   "id": "qinda-corner-violet-dark",
   "name": "Qinda Lilac Dark",
   "variant": "dark",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaOrbit",
   "fontFamily": "Noto Sans",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 12,
@@ -32,7 +32,12 @@
     "maximizeColor": "#8FC7A1",
     "titleDoubleClick": "roll-up",
     "titleWear": false,
-    "containerTitleLayout": "split-deck"
+    "containerTitleLayout": "split-deck",
+    "containerTitleDoubleClick": "roll-up"
+  },
+  "variants": {
+    "light": "qinda-corner-violet",
+    "dark": "qinda-corner-violet-dark"
   },
   "radii": {
     "decoration": 12

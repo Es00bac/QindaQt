@@ -288,8 +288,9 @@ void AppearanceValuesTests::titleBarOptionsDecodeStrictlyAndRoundTrip()
              QStringLiteral("theme"));
     QCOMPARE(map.value(QStringLiteral("appearance.windowRollUpButton")).toString(),
              QStringLiteral("hidden"));
+    // ADR-0281: the container double-click defaults to the theme's.
     QCOMPARE(map.value(QStringLiteral("appearance.containerTitleDoubleClick")).toString(),
-             QStringLiteral("none"));
+             QStringLiteral("theme"));
 
     map.insert(QStringLiteral("appearance.windowButtonStyle"), QStringLiteral("blue-tiles"));
     map.insert(QStringLiteral("appearance.containerButtonStyle"), QStringLiteral("chunky"));

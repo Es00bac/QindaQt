@@ -32,6 +32,11 @@ icon catalog change rebuilds cached row presentation once, never on row reads.
 
 ## Consequences
 
+2026-09-28 note ([ADR-0284](0284-themes-name-their-light-and-dark-twins.md)):
+the authored id is used only when it is installed too. A color theme naming an
+icon family whose package is absent resolves to QindaQt rather than passing Qt
+a missing name (which fell straight to `hicolor`). The order is unchanged.
+
 New installed families appear when Settings is opened; no hard-coded family list
 is needed. Theme removal falls back on the next confirmed appearance update or
 application launch, without overwriting the saved preference. This does not

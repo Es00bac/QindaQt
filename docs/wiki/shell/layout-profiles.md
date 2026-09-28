@@ -283,8 +283,11 @@ name a user reads is another vendor's; ids stay as they were.
   Qinda Lilac each have a dark twin (`qinda-marigold-dark`,
   `qinda-corner-teal-dark`, `qinda-corner-violet-dark`) with charcoal
   surfaces and the signature tab color tuned for dark. All six arrange
-  container title rows as a split deck
-  ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)).
+  container title rows as a split deck whose name tab rolls the container up
+  on double-click
+  ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)),
+  and each pair names its twin, so a dark or light scheme picks the matching
+  half ([ADR-0284](../adr/0284-themes-name-their-light-and-dark-twins.md)).
   The profile's `defaultTheme` stays Qinda Marigold.
 - **Title-bar behaviour lives in the theme.** A theme's `decoration` block may
   author `titleDoubleClick`, `minimizeAction` and `titleWear`

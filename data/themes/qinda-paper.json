@@ -3,7 +3,7 @@
   "id": "qinda-paper",
   "name": "Qinda Paper",
   "variant": "light",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaCopperplate",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 6,

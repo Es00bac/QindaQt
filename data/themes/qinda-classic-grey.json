@@ -3,7 +3,7 @@
   "id": "qinda-classic-grey",
   "name": "Qinda Classic Grey",
   "variant": "light",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaArcade",
   "fontFamily": "Noto Sans",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 2,

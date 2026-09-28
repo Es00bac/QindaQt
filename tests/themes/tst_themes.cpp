@@ -37,6 +37,8 @@ private slots:
     void cornerBarVariantsKeepTabBehaviorWithDistinctColorsAndRadii();
     void darkCornerBarThemesPairTheLightOnesWithReadableTabs();
     void containerTitleLayoutIsOptionalAndStrict();
+    void containerDoubleClickAndVariantsAreOptionalAndStrict();
+    void everyBuiltInThemeNamesItsIconFamily();
 };
 
 void ThemeTests::loadsEveryBuiltInTheme()
@@ -73,8 +75,14 @@ void ThemeTests::cornerBarVariantsKeepTabBehaviorWithDistinctColorsAndRadii()
         QCOMPARE(result.theme.decoration.buttonPlacement, QStringLiteral("left"));
         QCOMPARE(result.theme.decoration.titleDoubleClick, QStringLiteral("roll-up"));
         QCOMPARE(result.theme.surfaceRadius(QString(SurfaceNames::Decoration)), radius);
-        // ADR-0281: every Corner Bar treatment uses the split-deck row.
+        // ADR-0281: every Corner Bar treatment uses the split-deck row, and
+        // its container name tab rolls up on double-click like a window tab.
         QCOMPARE(result.theme.decoration.containerTitleLayout, QStringLiteral("split-deck"));
+        QCOMPARE(result.theme.decoration.containerTitleDoubleClick, QStringLiteral("roll-up"));
+        // ADR-0284: each names its light and dark twin.
+        const QString base = QString::fromLatin1(id).remove(QStringLiteral("-dark"));
+        QCOMPARE(result.theme.lightVariant, base);
+        QCOMPARE(result.theme.darkVariant, base + QStringLiteral("-dark"));
         titleColors.insert(result.theme.decoration.titleBarColor.name());
     }
     QCOMPARE(titleColors.size(), 6);
@@ -118,7 +126,7 @@ void ThemeTests::darkCornerBarThemesPairTheLightOnesWithReadableTabs()
         const auto &theme = darkTheme.theme;
         QCOMPARE(theme.variant, QStringLiteral("dark"));
         QCOMPARE(lightTheme.theme.variant, QStringLiteral("light"));
-        QCOMPARE(theme.iconTheme, QStringLiteral("QindaQt"));
+        QVERIFY(!theme.iconTheme.isEmpty());
         QCOMPARE(theme.decoration.buttonStyle, lightTheme.theme.decoration.buttonStyle);
         QCOMPARE(theme.decoration.buttonPlacement, lightTheme.theme.decoration.buttonPlacement);
         QCOMPARE(theme.decoration.titleDoubleClick, lightTheme.theme.decoration.titleDoubleClick);
@@ -530,6 +538,91 @@ void ThemeTests::everyBuiltInThemeRoundTripsItsOwnDocument()
                 }
             }
         }
+    }
+}
+
+void ThemeTests::containerDoubleClickAndVariantsAreOptionalAndStrict()
+{
+    // Only the Corner Bar treatments author either key (ADR-0281, ADR-0284).
+    for (const auto &result :
+         ThemeLoader::fromDirectory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"))) {
+        QVERIFY2(result.ok, qPrintable(result.error));
+        const bool corner = result.theme.decoration.containerTitleLayout
+            == QLatin1String("split-deck");
+        QCOMPARE(!result.theme.decoration.containerTitleDoubleClick.isEmpty(), corner);
+        QCOMPARE(!result.theme.darkVariant.isEmpty(), corner);
+    }
+    QFile file(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes/qinda-marigold.json"));
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const auto original = QJsonDocument::fromJson(file.readAll()).object();
+    const auto probe = [](const QJsonObject &root) {
+        return ThemeLoader::fromJson(QJsonDocument(root).toJson(), QStringLiteral("probe"));
+    };
+    auto root = original;
+    auto decoration = root.value(QStringLiteral("decoration")).toObject();
+    decoration.insert(QStringLiteral("containerTitleDoubleClick"), QStringLiteral("spin"));
+    root.insert(QStringLiteral("decoration"), decoration);
+    QVERIFY(!probe(root).ok);
+    for (const auto &[value, accepted] :
+         {std::pair{QJsonValue(QJsonObject{{QStringLiteral("dark"), QStringLiteral("x-dark")}}), true},
+          std::pair{QJsonValue(QJsonObject{{QStringLiteral("dusk"), QStringLiteral("x")}}), false},
+          std::pair{QJsonValue(QJsonObject{{QStringLiteral("dark"), QStringLiteral("../x")}}), false},
+          std::pair{QJsonValue(QJsonObject{}), false},
+          std::pair{QJsonValue(QStringLiteral("qinda-dark")), false}}) {
+        root = original;
+        root.insert(QStringLiteral("variants"), value);
+        QCOMPARE(probe(root).ok, accepted);
+    }
+    // Schema v1 does not accept the v2 `variants` key.
+    root = original;
+    root.insert(QStringLiteral("schemaVersion"), 1);
+    root.remove(QStringLiteral("radii"));
+    QVERIFY(!probe(root).ok);
+    // The round trip carries both keys exactly.
+    const auto loaded = probe(original);
+    QVERIFY(loaded.ok);
+    const auto map = loaded.theme.toVariantMap();
+    QCOMPARE(map.value(QStringLiteral("variants")).toMap().value(QStringLiteral("dark")).toString(),
+             QStringLiteral("qinda-marigold-dark"));
+    QCOMPARE(map.value(QStringLiteral("decoration")).toMap()
+                 .value(QStringLiteral("containerTitleDoubleClick")).toString(),
+             QStringLiteral("roll-up"));
+}
+
+// Each built-in color theme authors one of the qinda-icons families (the XDG
+// directory names installed by x11-themes/qinda-icons). A family that is not
+// installed resolves to QindaQt at run time (resolveIconTheme, ADR-0280).
+void ThemeTests::everyBuiltInThemeNamesItsIconFamily()
+{
+    const QHash<QString, QString> expected{
+        {QStringLiteral("qinda-dark"), QStringLiteral("QindaQt")},
+        {QStringLiteral("qinda-light"), QStringLiteral("QindaQt")},
+        {QStringLiteral("qinda-dusk"), QStringLiteral("QindaQt")},
+        {QStringLiteral("qinda-bliss"), QStringLiteral("QindaNative")},
+        {QStringLiteral("qinda-daylight"), QStringLiteral("QindaNative")},
+        {QStringLiteral("qinda-macos"), QStringLiteral("QindaNative")},
+        {QStringLiteral("qinda-high-contrast"), QStringLiteral("QindaNative")},
+        {QStringLiteral("qinda-classic-grey"), QStringLiteral("QindaArcade")},
+        {QStringLiteral("qinda-aurora"), QStringLiteral("QindaOrbit")},
+        {QStringLiteral("qinda-glass-dark"), QStringLiteral("QindaOrbit")},
+        {QStringLiteral("qinda-corner-teal-dark"), QStringLiteral("QindaOrbit")},
+        {QStringLiteral("qinda-corner-violet-dark"), QStringLiteral("QindaOrbit")},
+        {QStringLiteral("qinda-glass-light"), QStringLiteral("QindaFacet")},
+        {QStringLiteral("qinda-slate"), QStringLiteral("QindaFacet")},
+        {QStringLiteral("qinda-marigold-dark"), QStringLiteral("QindaFacet")},
+        {QStringLiteral("qinda-graphite"), QStringLiteral("QindaContour")},
+        {QStringLiteral("qinda-corner-teal"), QStringLiteral("QindaContour")},
+        {QStringLiteral("qinda-paper"), QStringLiteral("QindaCopperplate")},
+        {QStringLiteral("qinda-studio"), QStringLiteral("QindaCopperplate")},
+        {QStringLiteral("qinda-marigold"), QStringLiteral("QindaKith")},
+        {QStringLiteral("qinda-corner-violet"), QStringLiteral("QindaKith")},
+    };
+    const auto results = ThemeLoader::fromDirectory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
+    QCOMPARE(results.size(), expected.size());
+    for (const auto &result : results) {
+        QVERIFY2(result.ok, qPrintable(result.error));
+        QVERIFY2(expected.contains(result.theme.id), qPrintable(result.theme.id));
+        QCOMPARE(result.theme.iconTheme, expected.value(result.theme.id));
     }
 }
 

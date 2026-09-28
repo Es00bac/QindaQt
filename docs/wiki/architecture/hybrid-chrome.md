@@ -265,8 +265,10 @@ A double-click on the unshaded shared outer title is reported to the session,
 which runs the container style's title double-click
 ([ADR-0264](../adr/0264-window-button-styles-are-data.md)): the container's own
 maximize/restore or minimize window action, or its wheel roll-up. The default
-`none` keeps the row inert, as it shipped; a double-click on the shaded badge
-still unrolls.
+`theme` follows the theme's `containerTitleDoubleClick` (the Corner Bar themes
+roll up; [ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md))
+and otherwise keeps the row inert, as it shipped; `none` keeps it inert
+whatever the theme says. A double-click on the shaded badge still unrolls.
 
 The shared row's window buttons are the built-in traffic lights or flat
 plates unless the style carries a `ChromeButtonPainter`: the decoration

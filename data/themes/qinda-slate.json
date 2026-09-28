@@ -3,7 +3,7 @@
   "id": "qinda-slate",
   "name": "Qinda Slate",
   "variant": "dark",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaFacet",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 8,

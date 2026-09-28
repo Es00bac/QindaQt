@@ -81,6 +81,15 @@ Corner Bar windows (ADR-0277), no KWin input-shape change is needed for a gap.
    `qinda-corner-violet-dark`, variant `dark`) author `split-deck`. The title
    tab wears the theme's `titleBarColor` (focused) and `titleBarInactiveColor`.
 
+8. **The name tab rolls up, like the window tab.** A theme may author
+   `decoration.containerTitleDoubleClick` (`maximize`, `roll-up`,
+   `minimize`); the six Corner Bar treatments author `roll-up`.
+   `appearance.containerTitleDoubleClick` gains the token `theme`, now its
+   default, which follows that authored value and otherwise stays inert;
+   `none` and the action tokens are explicit user choices that win. This
+   supersedes ADR-0264's container default of `none` for theme-following
+   users; themes that author nothing behave exactly as before.
+
 ## Consequences
 
 - Every theme that does not author the key keeps its classic row, and a
@@ -97,6 +106,10 @@ Corner Bar windows (ADR-0277), no KWin input-shape change is needed for a gap.
 - The compositor's appearance client now also reads
   `accessibility.reducedMotion`.
 - The split-deck row ignores translucent materials: it is painted opaque.
+- A user whose Settings1 store already holds the old default `none` (for
+  example after an earlier theme-card Apply wrote every default) keeps an
+  inert container bar until they pick **Default** or apply a theme card
+  again; `none` is indistinguishable from an explicit choice.
 - The router gains a tab-step decision; `KWinChromeManager::dispatchTabStep`
   revalidates it against the published plan like a click.
 

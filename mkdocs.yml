@@ -437,4 +437,5 @@ nav:
       - "ADR-0279: Keep custom wallpapers in a user folder": adr/0279-keep-custom-wallpapers-in-a-user-folder.md
       - "0280: Independent installed icon themes": adr/0280-independent-installed-icon-theme-choice.md
       - "ADR-0281: Split-deck container title row and container names": adr/0281-split-deck-container-title-and-container-names.md
+      - "ADR-0284: Themes name their light and dark twins": adr/0284-themes-name-their-light-and-dark-twins.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
