@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "desktop-icons",
   "name": "Desktop Icons",
-  "description": "Presents places as desktop icons with a configurable right-click desktop menu.",
+  "description": "Presents the Desktop folder and optional standard icons (Home, Trash, the user folders, Computer) with a configurable right-click desktop menu.",
   "apiVersion": "1.0",
   "entryPoint": {
     "kind": "builtin",
@@ -25,7 +25,15 @@
       "iconSize": {"type": "integer", "minimum": 16, "maximum": 128, "default": 48},
       "contextMenuStyle": {"type": "string", "enum": ["windows", "mac", "traditional"], "default": "windows"},
       "applicationsMenuModifier": {"type": "string", "enum": ["none", "shift", "ctrl", "alt"], "default": "shift"},
-      "snapToGrid": {"type": "boolean", "default": true}
+      "snapToGrid": {"type": "boolean", "default": true},
+      "showHomeIcon": {"type": "boolean", "default": true, "title": "Show Home"},
+      "showDocumentsIcon": {"type": "boolean", "default": false, "title": "Show Documents"},
+      "showDownloadsIcon": {"type": "boolean", "default": false, "title": "Show Downloads"},
+      "showPicturesIcon": {"type": "boolean", "default": false, "title": "Show Pictures"},
+      "showVideosIcon": {"type": "boolean", "default": false, "title": "Show Videos"},
+      "showMusicIcon": {"type": "boolean", "default": false, "title": "Show Music"},
+      "showTrashIcon": {"type": "boolean", "default": true, "title": "Show Trash"},
+      "showComputerIcon": {"type": "boolean", "default": false, "title": "Show Computer"}
     }
   }
 }

@@ -37,6 +37,10 @@ T.Menu {
     property bool desktopEntry: false
     // The right-clicked icon is a folder, which has no Open With.
     property bool directory: false
+    // ADR-0282: a standard icon (Home, Trash, ...) only opens; it is not a
+    // Desktop file, so it is never renamed, cut, copied or trashed, and it is
+    // hidden through its desktop-icons setting instead.
+    property bool place: false
     popupType: T.Popup.Window
     topPadding: 4
     bottomPadding: 4
@@ -73,6 +77,8 @@ T.Menu {
 
     readonly property var entries: {
         const rows = [root.entry("desktopIconContextOpen", "file.open", "open")]
+        if (root.place)
+            return rows
         if (!root.directory)
             rows.push(root.entry("desktopIconContextOpenWith", "file.open-with", "openWith"))
         rows.push({separator: true},

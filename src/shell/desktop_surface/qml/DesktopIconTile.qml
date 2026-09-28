@@ -122,7 +122,8 @@ Rectangle {
             if (mouse.button !== Qt.LeftButton)
                 return
             if (tile.dragged) {
-                tile.view.commitDrag()
+                const point = tileInput.mapToItem(tile.view, mouse.x, mouse.y)
+                tile.view.commitDrag(point.x, point.y)
             } else {
                 tile.view.cancelDrag(tile, mouse.modifiers)
             }
@@ -139,6 +140,21 @@ Rectangle {
         onDoubleClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton && !tile.dragged)
                 tile.view.openEntry(tile.entryId)
+        }
+    }
+
+    // ADR-0282: files dragged from File Manager onto the Trash icon move to
+    // the Trash through the same authority File Manager uses.
+    DropArea {
+        objectName: "desktopIconsTrashDrop"
+        anchors.fill: parent
+        enabled: tile.modelData.placeId === "trash" && tile.view.places !== null
+        onEntered: (drag) => drag.accepted = drag.hasUrls
+        onDropped: (drop) => {
+            if (!drop.hasUrls)
+                return
+            drop.accept(Qt.MoveAction)
+            tile.view.places.trashUrls(drop.urls)
         }
     }
 

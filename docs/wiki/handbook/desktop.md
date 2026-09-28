@@ -38,6 +38,20 @@ Trash** moves the selected items to the home Trash (recoverable, exactly like
 File Manager's Trash). Renaming changes the real Desktop item through the same
 protected operation used by File Manager and keeps the icon where you put it.
 
+### Standard desktop icons
+
+Besides your Desktop folder's own files, the desktop can show the standard
+icons other desktops have: **Home** and **Trash** (both on unless your layout
+says otherwise), and **Documents**, **Downloads**, **Pictures**, **Videos**,
+**Music** and **Computer** (the whole file system) when you switch them on.
+Right-click (or Meta + right-click) empty desktop space, choose **Desktop
+icons**, and tick the ones you want; the same switches are in the Customize
+editor. A folder you do not have shows no icon. These icons sit with the rest,
+move and snap like them, and open in File Manager; they cannot be renamed or
+deleted — to remove one, switch it off. The Trash icon shows when it holds
+something; drop icons or files from File Manager on it to move them to the
+Trash (recoverable, never deleted outright), and open it to put things back.
+
 Selecting more than one icon works the way other desktops teach you: drag a
 rubber band across empty desktop space to select every icon it crosses (Shift
 adds to the selection, Control toggles), Ctrl+click adds or removes single

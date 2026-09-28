@@ -223,8 +223,20 @@ struct SurfaceHost {
                 storagePath());
             sharedStore = layoutStore.get();
         }
+        // ADR-0282: Home and Trash default on in production. Rows written
+        // before the standard icons assert exact Desktop-folder icon sets, so
+        // the harness turns every standard icon off unless a row names it;
+        // tst_desktop_standard_icons.cpp covers them.
+        QVariantMap effectiveSettings = settings;
+        for (const char *key : {"showHomeIcon", "showDocumentsIcon", "showDownloadsIcon",
+                                "showPicturesIcon", "showVideosIcon", "showMusicIcon",
+                                "showTrashIcon", "showComputerIcon"}) {
+            if (!effectiveSettings.contains(QString::fromLatin1(key))) {
+                effectiveSettings.insert(QString::fromLatin1(key), false);
+            }
+        }
         QVariantMap initialProperties{
-            {QStringLiteral("applets"), makeApplets(settings)},
+            {QStringLiteral("applets"), makeApplets(effectiveSettings)},
             {QStringLiteral("access"), QVariant::fromValue(access)},
             {QStringLiteral("launcherAccess"),
              QVariant::fromValue(launcherAccess)},
