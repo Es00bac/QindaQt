@@ -48,6 +48,13 @@ HybridChrome::ChromeRenderPlan localizeChromeRenderPlan(
     // is invisible rather than misplaced, which is why it can go unnoticed.
     translateRect(&plan.badgeLabelRect, offset);
     translateRect(&plan.indexBadgeRect, offset);
+    // The split-deck pieces (ADR-0281) repeated that miss: the name tab, the
+    // deck piece and the name were painted at global coordinates, so a Corner
+    // Bar container's title row only lined up with its windows at the
+    // screen's top-left corner (owner, 2026-09-28).
+    translateRect(&plan.titleTab, offset);
+    translateRect(&plan.deckPiece, offset);
+    translateRect(&plan.titleLabelRect, offset);
     return plan;
 }
 
