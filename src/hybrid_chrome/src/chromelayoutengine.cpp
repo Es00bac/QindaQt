@@ -3,6 +3,7 @@
 
 #include "qindaqt/hybrid_chrome/chromeidentity.h"
 #include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
+#include "qindaqt/hybrid_chrome/chromesplitdeck.h"
 
 #include <QSet>
 
@@ -378,13 +379,20 @@ std::optional<ChromeRenderPlan> ChromeLayoutEngine::build(const ChromeLayoutRequ
         ChromeShadedBadge::layout(&plan, request);
         return plan;
     }
-    if (!appendTabsAndDragRect(request, &plan, error)) {
+    // ADR-0281: the split-deck row rearranges buttons, controls, tabs, and
+    // the drag region itself (including the keyboard chip beside its name).
+    const bool splitDeck = request.style.titleLayout == ContainerTitleLayout::SplitDeck;
+    if (splitDeck) {
+        if (!ChromeSplitDeck::layout(&plan, request, error)) {
+            return std::nullopt;
+        }
+    } else if (!appendTabsAndDragRect(request, &plan, error)) {
         return std::nullopt;
     }
     // Keyboard selection hint (CONTRACTS §2.4, wire W2, ADR-0139): an 18 px
     // identity chip at the leading edge of the outer drag region. indexBadge
     // 0 hides it; the drag region yields the chip's width plus a gap.
-    if (request.indexBadge > 0 && plan.outerTitleDragRect.width() > 44.0) {
+    if (!splitDeck && request.indexBadge > 0 && plan.outerTitleDragRect.width() > 44.0) {
         constexpr qreal badgeSize = 18.0;
         plan.indexBadgeRect = {plan.outerTitleDragRect.left() + 2.0,
                                plan.outerTitleDragRect.center().y() - badgeSize / 2.0,

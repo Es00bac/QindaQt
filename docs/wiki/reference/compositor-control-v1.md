@@ -639,11 +639,11 @@ fabricated zero, plus three naming and state fields
 | Field | Meaning |
 | --- | --- |
 | `name` | The user's rename override. Empty when the container has never been renamed. |
-| `displayName` | What a surface would paint right now: the override, else the generated `Container N` once one has been assigned. Empty only for a container no surface has named yet. |
+| `displayName` | The container's title as every surface paints it: the override, else the default "Container" ([ADR-0281](../adr/0281-split-deck-container-title-and-container-names.md)). Never empty. |
 | `shaded` | Whether the container is currently rolled up. |
 
-`displayName` is reported, never assigned: reading it cannot consume a
-generated number, so inspecting a session can never renumber a container.
+`displayName` is a pure read; the generated `Container N` numbering it once
+reported was retired by ADR-0281.
 These fields exist so a live session can be asked whether a rename actually
 took effect, which was previously unobservable from outside the compositor. `Snapshot` routes by authority and returns `status: "ok"`, the
 protocol, container ID, matching revision and authority, and the schema-1 model

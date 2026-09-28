@@ -32,11 +32,10 @@ struct HybridChromePlanOptions final
     bool containerFocused = false;
     QString focusedMemberId;
     bool memberTitlesVisible = true;
-    // ContainerAppearance rename override; empty means "no override" (see
-    // ChromeLayoutRequest::containerTitle).
+    // The container's own name (ADR-0281; see
+    // ChromeLayoutRequest::containerTitle). The builder measures it.
     QString containerTitle;
-    // True when containerTitle is the generated "Container N" placeholder
-    // rather than a user rename (ADR-0168).
+    // True when containerTitle is the default name rather than a user rename.
     bool containerTitleIsGenerated = false;
     // Container identity and keyboard-hint inputs (CONTRACTS §2.4, wire W1/W2,
     // ADR-0139). Defaults reproduce today's output: an invalid identityColor

@@ -5,6 +5,7 @@
 
 #include "qindaqt/hybrid_chrome/chromelayoutengine.h"
 #include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
+#include "qindaqt/hybrid_chrome/chromesplitdeck.h"
 
 #include <QRectF>
 #include <QStringList>
@@ -159,7 +160,7 @@ HybridChromePlanBuilder::ShadedLabel HybridChromePlanBuilder::shadedLabel(
         foremost = *overridden;
     }
     const QString text = HybridChrome::ChromeShadedBadge::resolveLabel(
-        options.containerTitle, options.containerTitleIsGenerated, foremost);
+        options.containerTitle, foremost);
     return {text,
             HybridChrome::ChromeShadedBadge::labelWidthFor(
                 text, QFontMetricsF(HybridChrome::ChromeShadedBadge::labelFont()))};
@@ -202,6 +203,7 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
             .memberTitlesVisible = options.memberTitlesVisible,
             .containerTitle = options.containerTitle,
             .containerTitleIsGenerated = options.containerTitleIsGenerated,
+            .containerTitleWidth = 0.0,
             // Filled in below, once the label has been resolved and measured.
             .badgeLabelText = {},
             .badgeLabelWidth = 0.0,
@@ -241,6 +243,11 @@ std::optional<HybridChrome::ChromeRenderPlan> HybridChromePlanBuilder::build(
         .memberTitlesVisible = options.memberTitlesVisible,
         .containerTitle = options.containerTitle,
         .containerTitleIsGenerated = options.containerTitleIsGenerated,
+        // ADR-0281: measured here, like the badge label, because the layout
+        // engine owns no font.
+        .containerTitleWidth = HybridChrome::ChromeSplitDeck::titleTextWidth(
+            options.containerTitle,
+            QFontMetricsF(HybridChrome::ChromeSplitDeck::titleFont())),
         // Badge label fields belong to the shaded branch above only.
         .badgeLabelText = {},
         .badgeLabelWidth = 0.0,

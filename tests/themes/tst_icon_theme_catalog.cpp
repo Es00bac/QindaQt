@@ -34,6 +34,42 @@ private slots:
         QVERIFY(!safeIconThemeId("/absolute"));
         QVERIFY(!safeIconThemeId(QString(129, 'a')));
     }
+
+    // The color theme's authored family is used only when it is installed;
+    // a missing one resolves to QindaQt instead of reaching Qt as a name
+    // that falls straight to hicolor. The user's installed choice still wins.
+    void authoredFamilyMustBeInstalled() {
+        QTemporaryDir temporary;
+        QVERIFY(temporary.isValid());
+        const QString first = temporary.path() + "/first/icons";
+        const QString second = temporary.path() + "/second/icons";
+        const auto write = [](const QString &path, const QByteArray &bytes) {
+            QDir().mkpath(QFileInfo(path).absolutePath());
+            QFile file(path);
+            return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
+        };
+        QVERIFY(write(first + "/QindaQt/index.theme", "[Icon Theme]\nName=QindaQt\n"));
+        QVERIFY(write(second + "/QindaKith/index.theme", "[Icon Theme]\nName=Kith\n"));
+        QVERIFY(write(first + "/Choice/index.theme", "[Icon Theme]\nName=Choice\n"));
+        QVERIFY(write(first + "/Ghost/index.theme", "[Icon Theme]\nName=Ghost\nHidden=true\n"));
+        QVERIFY(write(temporary.path() + "/outside/index.theme", "[Icon Theme]\nName=Out\n"));
+        QVERIFY(QFile::link(temporary.path() + "/outside", first + "/Escaped"));
+        const QStringList roots{first, second};
+        // Installed authored family (in a later root).
+        QCOMPARE(resolveIconTheme("", "QindaKith", roots), "QindaKith");
+        // Missing, hidden, escaping or unsafe authored families -> QindaQt.
+        QCOMPARE(resolveIconTheme("", "QindaOrbit", roots), "QindaQt");
+        QCOMPARE(resolveIconTheme("", "Ghost", roots), "QindaQt");
+        QCOMPARE(resolveIconTheme("", "Escaped", roots), "QindaQt");
+        QCOMPARE(resolveIconTheme("", "../outside", roots), "QindaQt");
+        // The user's installed choice wins over an installed authored family;
+        // an uninstalled choice falls back to the authored family.
+        QCOMPARE(resolveIconTheme("Choice", "QindaKith", roots), "Choice");
+        QCOMPARE(resolveIconTheme("Missing", "QindaKith", roots), "QindaKith");
+        QCOMPARE(resolveIconTheme("Missing", "QindaOrbit", roots), "QindaQt");
+        // No roots at all: QindaQt, the one name the desktop always ships.
+        QCOMPARE(resolveIconTheme("", "QindaKith", {}), "QindaQt");
+    }
 };
 QTEST_GUILESS_MAIN(IconThemeCatalogTest)
 #include "tst_icon_theme_catalog.moc"

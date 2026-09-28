@@ -46,8 +46,7 @@ void applyResolvedLabel(ChromeLayoutRequest &request)
     if (foremost.isEmpty() && !request.tabs.isEmpty()) {
         foremost = request.tabs.constFirst().title;
     }
-    request.badgeLabelText = ChromeShadedBadge::resolveLabel(
-        request.containerTitle, request.containerTitleIsGenerated, foremost);
+    request.badgeLabelText = ChromeShadedBadge::resolveLabel(request.containerTitle, foremost);
     request.badgeLabelWidth =
         ChromeShadedBadge::labelWidthFor(request.badgeLabelText, labelMetrics());
 }
@@ -199,10 +198,10 @@ private slots:
     void badgeLabelPaintsWithGeneratedNameAndWithoutAnyTitle()
     {
         // ADR-0163 regression guard: a rolled-up badge must never paint an
-        // empty label area. The session passes the generated "Container N"
-        // name for never-renamed containers; a badge without any title still
-        // paints the active tab's title as the fallback.
-        for (const auto &containerTitle : {QStringLiteral("Container 1"), QString()}) {
+        // empty label area. The session passes the default "Container" name
+        // for never-renamed containers (ADR-0281); a badge without any title
+        // still paints the active tab's title as the fallback.
+        for (const auto &containerTitle : {QStringLiteral("Container"), QString()}) {
             ChromeLayoutRequest request;
             request.containerId = QStringLiteral("container-shaded");
             request.shaded = true;
@@ -233,58 +232,39 @@ private slots:
         }
     }
 
-    // ADR-0168 regression for the reported "name shows on the container window,
-    // disappears when rolled up, unrolling brings it back". ADR-0163 made the
-    // session pass a GENERATED "Container N" whenever no rename existed, and
-    // the badge prefixed it unconditionally. The label rect was 48-140 px, so
-    // "Container 7 \u00B7 " consumed most of it and elided the page title - the
-    // only text the user recognised - out of the badge. A generated placeholder
-    // must never displace real text.
-    void generatedNameNeverDisplacesTheRealTitle()
+    // ADR-0281 (superseding ADR-0168's page-title label): a rolled-up
+    // container is titled by its own name, exactly like its unrolled row. The
+    // page title never becomes the container's title, prefixed or not; it is
+    // only the fallback for a caller that supplies no name.
+    void rolledUpBadgeIsTitledByTheContainerName()
     {
-        const QString pageTitle = QStringLiteral("Quarterly Planning Notes");
-
-        ChromeLayoutRequest generated;
-        generated.containerId = QStringLiteral("container-shaded");
-        generated.shaded = true;
-        generated.containerTitle = QStringLiteral("Container 7");
-        generated.containerTitleIsGenerated = true;
-        generated.tabs = {{QStringLiteral("page-a"), pageTitle, true}};
-        applyResolvedLabel(generated);
-        generated.outerRect = QRectF(
-            0.0, 0.0,
-            ChromeShadedBadge::badgeWidth(ChromeMetrics{}, 1,
-                                          generated.badgeLabelWidth)
-                + 2.0 * ChromeMetrics{}.outerBorder,
-            31.0);
-        const auto generatedPlan = ChromeLayoutEngine::build(generated);
-        QVERIFY(generatedPlan);
-        QCOMPARE(badgeLabelText(*generatedPlan), pageTitle);
-
-        // A container the user actually named keeps the name, ahead of the page.
-        ChromeLayoutRequest renamed = generated;
-        renamed.containerTitle = QStringLiteral("Planning");
-        renamed.containerTitleIsGenerated = false;
-        applyResolvedLabel(renamed);
-        renamed.outerRect = QRectF(
-            0.0, 0.0,
-            ChromeShadedBadge::badgeWidth(ChromeMetrics{}, 1,
-                                          renamed.badgeLabelWidth)
-                + 2.0 * ChromeMetrics{}.outerBorder,
-            31.0);
-        const auto renamedPlan = ChromeLayoutEngine::build(renamed);
-        QVERIFY(renamedPlan);
-        QCOMPARE(badgeLabelText(*renamedPlan),
-                 QStringLiteral("Planning \u00B7 ") + pageTitle);
-
-        // ADR-0163's promise still holds: with no page title to show, the
-        // generated placeholder is what keeps the badge from being anonymous.
-        ChromeLayoutRequest anonymous = generated;
-        anonymous.tabs = {{QStringLiteral("page-a"), QString(), true}};
-        applyResolvedLabel(anonymous);
-        const auto anonymousPlan = ChromeLayoutEngine::build(anonymous);
-        QVERIFY(anonymousPlan);
-        QCOMPARE(badgeLabelText(*anonymousPlan), QStringLiteral("Container 7"));
+        const QString pageTitle = QStringLiteral("Quarterly Planning Notes - Firefox");
+        const auto planFor = [&pageTitle](const QString &name, bool isDefault) {
+            ChromeLayoutRequest request;
+            request.containerId = QStringLiteral("container-shaded");
+            request.shaded = true;
+            request.containerTitle = name;
+            request.containerTitleIsGenerated = isDefault;
+            request.tabs = {{QStringLiteral("page-a"), pageTitle, true}};
+            applyResolvedLabel(request);
+            request.outerRect = QRectF(
+                0.0, 0.0,
+                ChromeShadedBadge::badgeWidth(ChromeMetrics{}, 1, request.badgeLabelWidth)
+                    + 2.0 * ChromeMetrics{}.outerBorder,
+                31.0);
+            return ChromeLayoutEngine::build(request);
+        };
+        const auto unnamed = planFor(QStringLiteral("Container"), true);
+        QVERIFY(unnamed);
+        QCOMPARE(badgeLabelText(*unnamed), QStringLiteral("Container"));
+        const auto renamed = planFor(QStringLiteral("Planning"), false);
+        QVERIFY(renamed);
+        QCOMPARE(badgeLabelText(*renamed), QStringLiteral("Planning"));
+        QVERIFY(!badgeLabelText(*renamed).contains(pageTitle));
+        // No name at all (an old caller): the page title keeps it readable.
+        const auto anonymous = planFor(QString(), false);
+        QVERIFY(anonymous);
+        QCOMPARE(badgeLabelText(*anonymous), pageTitle);
     }
 
     // ADR-0189. The defect: the label rect was a fixed 48-140 px and the strip
@@ -379,7 +359,7 @@ private slots:
     {
         const QString title = QStringLiteral("Quarterly revenue model");
         const qreal measured = ChromeShadedBadge::labelWidthFor(
-            ChromeShadedBadge::resolveLabel({}, false, title), labelMetrics());
+            ChromeShadedBadge::resolveLabel({}, title), labelMetrics());
         const auto roomy = badgePlanWithTitles(8, {}, false, title);
         QCOMPARE(roomy.tabs.size(), 8);
         QCOMPARE(roomy.badgeOverflowCount, 0);
@@ -409,25 +389,20 @@ private slots:
         }
     }
 
-    void resolvedLabelFollowsTheGeneratedNameRule()
+    void resolvedLabelIsTheContainerName()
     {
-        // ADR-0168, now a pure function shared by the strip sizing and paint.
-        QCOMPARE(ChromeShadedBadge::resolveLabel({}, false,
-                                                 QStringLiteral("Inbox")),
+        // ADR-0281, a pure function shared by the strip sizing and paint.
+        QCOMPARE(ChromeShadedBadge::resolveLabel({}, QStringLiteral("Inbox")),
                  QStringLiteral("Inbox"));
-        QCOMPARE(ChromeShadedBadge::resolveLabel(QStringLiteral("Work"), false,
+        QCOMPARE(ChromeShadedBadge::resolveLabel(QStringLiteral("Work"),
                                                  QStringLiteral("Inbox")),
-                 QStringLiteral("Work \u00B7 Inbox"));
-        QCOMPARE(ChromeShadedBadge::resolveLabel(QStringLiteral("Work"), false, {}),
                  QStringLiteral("Work"));
-        // A generated placeholder never displaces a real title.
-        QCOMPARE(ChromeShadedBadge::resolveLabel(QStringLiteral("Container 7"), true,
+        QCOMPARE(ChromeShadedBadge::resolveLabel(QStringLiteral("Work"), {}),
+                 QStringLiteral("Work"));
+        QCOMPARE(ChromeShadedBadge::resolveLabel(QStringLiteral("Container"),
                                                  QStringLiteral("Inbox")),
-                 QStringLiteral("Inbox"));
-        QCOMPARE(ChromeShadedBadge::resolveLabel(QStringLiteral("Container 7"), true,
-                                                 {}),
-                 QStringLiteral("Container 7"));
-        QCOMPARE(ChromeShadedBadge::resolveLabel({}, true, {}), QString());
+                 QStringLiteral("Container"));
+        QCOMPARE(ChromeShadedBadge::resolveLabel({}, {}), QString());
     }
 
     void badgeUnsetIdentityUsesAccentDerivation()

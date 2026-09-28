@@ -32,6 +32,12 @@ struct ContainerAppearance final {
 // crash.
 [[nodiscard]] QString normalizedContainerName(const QString &rawName);
 
+// The name every container carries until the user renames it (ADR-0281):
+// the translated word "Container". A container's title is its own name, this
+// default, or the user's rename; it is never a member's application or window
+// title.
+[[nodiscard]] QString defaultContainerName();
+
 // Accepts only exact "#RRGGBB" (uppercase hex digits after normalization).
 [[nodiscard]] bool isValidContainerColor(const QString &colorHex);
 

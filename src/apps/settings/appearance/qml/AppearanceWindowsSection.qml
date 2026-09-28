@@ -231,6 +231,20 @@ ColumnLayout {
     }
 
     ChromeChoice {
+        label: qsTr("Title bar")
+        settings: root.appearanceSettings
+        canEdit: root.editable
+        settingsKey: "appearance.containerTitleLayout"
+        choiceObjectName: "appearanceContainerTitleLayout"
+        hint: qsTr("One shared bar, or the container's name on a tab at the left with its tabs stacked like cards on the right")
+        choices: [
+            { token: "theme", label: qsTr("Theme") },
+            { token: "classic", label: qsTr("Shared bar") },
+            { token: "split-deck", label: qsTr("Name tab and card deck") }
+        ]
+    }
+
+    ChromeChoice {
         label: qsTr("Tabs")
         settings: root.appearanceSettings
         canEdit: root.editable

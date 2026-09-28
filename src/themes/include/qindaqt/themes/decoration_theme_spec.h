@@ -42,6 +42,8 @@ namespace DecorationThemeTokens {
 [[nodiscard]] QStringList buttonStyles();
 [[nodiscard]] QStringList memberHandleStyles();
 [[nodiscard]] QStringList containerBadgeStyles();
+// ADR-0281: the container title row arrangements a theme or document names.
+[[nodiscard]] QStringList containerTitleLayouts();
 } // namespace DecorationThemeTokens
 
 } // namespace QindaQt::Themes

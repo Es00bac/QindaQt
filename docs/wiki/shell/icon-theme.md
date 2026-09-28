@@ -30,6 +30,31 @@ resolver's mandatory `hicolor` fallback.
   the catalog entirely follows the existing resolver chain to `hicolor` and
   system themes; it is never mapped to a pretend brand icon.
 
+## Color themes and icon families
+
+Each built-in color theme authors an `iconTheme` family, the exact XDG
+directory name installed by the QindaThemes `x11-themes/qinda-icons` package:
+
+| Family | Color themes |
+| --- | --- |
+| `QindaQt` | `qinda-dark`, `qinda-light`, `qinda-dusk` |
+| `QindaNative` | `qinda-bliss`, `qinda-daylight`, `qinda-macos`, `qinda-high-contrast` |
+| `QindaArcade` | `qinda-classic-grey` |
+| `QindaOrbit` | `qinda-aurora`, `qinda-glass-dark`, `qinda-corner-teal-dark`, `qinda-corner-violet-dark` |
+| `QindaFacet` | `qinda-glass-light`, `qinda-slate`, `qinda-marigold-dark` |
+| `QindaContour` | `qinda-graphite`, `qinda-corner-teal` |
+| `QindaCopperplate` | `qinda-paper`, `qinda-studio` |
+| `QindaKith` | `qinda-marigold`, `qinda-corner-violet` |
+
+`Themes::resolveIconTheme` picks the icon theme in the
+[ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md) order: the
+user's installed **Icons** choice, then the authored family, then `QindaQt`.
+The authored family counts only when it is installed as a valid, visible XDG
+theme under the canonical icon roots; a family whose package is absent
+resolves to `QindaQt` instead of reaching Qt as a name that would fall straight
+to `hicolor` and lose every icon. `qindaqt.themes` pins the table above and
+`qindaqt.icon-theme-catalog` the fallback.
+
 ## Visual language
 
 The palette is the icon-side spelling of the Pearl / Smoked Plum identity in

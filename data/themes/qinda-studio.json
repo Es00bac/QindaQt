@@ -3,7 +3,7 @@
   "id": "qinda-studio",
   "name": "Qinda Studio",
   "variant": "dark",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaCopperplate",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 4,

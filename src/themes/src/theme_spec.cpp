@@ -68,6 +68,12 @@ QVariantMap DecorationSpec::toVariantMap() const
     if (!titleWear) {
         values.insert(QStringLiteral("titleWear"), false);
     }
+    if (!containerTitleLayout.isEmpty()) {
+        values.insert(QStringLiteral("containerTitleLayout"), containerTitleLayout);
+    }
+    if (!containerTitleDoubleClick.isEmpty()) {
+        values.insert(QStringLiteral("containerTitleDoubleClick"), containerTitleDoubleClick);
+    }
     return values;
 }
 
@@ -149,6 +155,16 @@ QVariantMap ThemeSpec::toVariantMap() const
                       QVariantMap{{QStringLiteral("mode"), accentMode}});
         if (!decorationTheme.isEmpty()) {
             values.insert(QStringLiteral("decorationTheme"), decorationTheme);
+        }
+        QVariantMap variantValues;
+        if (!lightVariant.isEmpty()) {
+            variantValues.insert(QStringLiteral("light"), lightVariant);
+        }
+        if (!darkVariant.isEmpty()) {
+            variantValues.insert(QStringLiteral("dark"), darkVariant);
+        }
+        if (!variantValues.isEmpty()) {
+            values.insert(QStringLiteral("variants"), variantValues);
         }
     }
     return values;

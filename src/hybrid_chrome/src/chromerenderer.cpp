@@ -2,6 +2,7 @@
 #include "qindaqt/hybrid_chrome/chromerenderer.h"
 
 #include "qindaqt/hybrid_chrome/chromeshadedbadge.h"
+#include "qindaqt/hybrid_chrome/chromesplitdeck.h"
 
 #include <QFontMetricsF>
 #include <QPainter>
@@ -191,10 +192,24 @@ void paintIdentityFrame(QPainter &painter, const ChromeRenderPlan &plan,
         painter.setPen(Qt::NoPen);
         painter.setBrush(plan.identity.border);
         const qreal radius = plan.metrics.cornerRadius;
-        painter.drawRect(QRectF(plan.outerTitleBar.left() + radius,
-                                plan.outerTitleBar.top(),
-                                plan.outerTitleBar.width() - radius * 2.0,
-                                std::min(3.0, plan.outerTitleBar.height())));
+        const QRectF stripe(plan.outerTitleBar.left() + radius, plan.outerTitleBar.top(),
+                            plan.outerTitleBar.width() - radius * 2.0,
+                            std::min(3.0, plan.outerTitleBar.height()));
+        if (plan.style.titleLayout == ContainerTitleLayout::SplitDeck) {
+            // ADR-0281: the stripe runs only over the two painted pieces.
+            for (const auto &piece : {plan.titleTab, plan.deckPiece}) {
+                const QRectF over(std::max(stripe.left(), piece.left() + radius / 2.0),
+                                  stripe.top(),
+                                  std::min(stripe.right(), piece.right() - radius / 2.0)
+                                      - std::max(stripe.left(), piece.left() + radius / 2.0),
+                                  stripe.height());
+                if (over.width() > 0.0) {
+                    painter.drawRect(over);
+                }
+            }
+        } else {
+            painter.drawRect(stripe);
+        }
         painter.restore();
     }
 
@@ -231,8 +246,17 @@ void ChromeRenderer::paint(QPainter &painter,
     const auto &material = plan.style.material;
     const qreal frameRadius = plan.shaded && material.squareBadge
         ? std::min<qreal>(3.0, plan.metrics.cornerRadius) : plan.metrics.cornerRadius;
+    // ADR-0281: a split-deck row paints only its title tab and deck; the gap
+    // between them stays transparent, and the frame stroke follows the same
+    // outline.
+    const bool splitDeck = !plan.shaded
+        && plan.style.titleLayout == ContainerTitleLayout::SplitDeck;
     QPainterPath framePath;
-    framePath.addRoundedRect(plan.outerFrame, frameRadius, frameRadius);
+    if (splitDeck) {
+        framePath = ChromeSplitDeck::silhouette(plan, frameRadius);
+    } else {
+        framePath.addRoundedRect(plan.outerFrame, frameRadius, frameRadius);
+    }
     QPainterPath paintClip = framePath;
     for (const auto &member : plan.members) {
         QPainterPath nativeWindow;
@@ -247,20 +271,25 @@ void ChromeRenderer::paint(QPainter &painter,
         painter.fillPath(framePath, materialTint(material));
     }
     painter.fillPath(framePath, withMaterialOpacity(plan.style.palette.surface, material));
-    if (!plan.shaded) {
+    if (splitDeck) {
+        ChromeSplitDeck::paint(painter, plan, state);
+    } else if (!plan.shaded) {
         paintMaterialRows(painter, plan, frameRadius);
-        // AGENT-CONTRACT: containerTitle is the user's rename override (see
-        // ContainerAppearance); it paints in the leftover outer-title drag
-        // region beside tabs/controls, in the resolved identity text color.
-        // Empty title is a silent no-op, matching every container that never
-        // renamed.
+        // AGENT-CONTRACT: containerTitle is the container's own name (ADR-0281:
+        // the user's rename, else the default name, never a page title); it
+        // paints in the leftover outer-title drag region beside tabs and
+        // controls, in muted ink while it is the default. Empty is a silent
+        // no-op for callers that pass no name.
         if (!plan.containerTitle.isEmpty() && plan.outerTitleDragRect.width() > 0.0) {
             paintLabel(painter, plan.outerTitleDragRect, plan.containerTitle,
-                      plan.identity.textOnFill);
+                       plan.containerTitleIsGenerated ? plan.style.palette.textMuted
+                                                      : plan.identity.textOnFill);
         }
     }
 
-    if (!plan.shaded) {
+    if (splitDeck) {
+        // The deck painted its cards above.
+    } else if (!plan.shaded) {
         for (const auto &tab : plan.tabs) {
             const auto fill = tab.active ? plan.identity.tabTint
                                          : plan.style.palette.surface;
@@ -346,7 +375,13 @@ void ChromeRenderer::paint(QPainter &painter,
     for (const auto &divider : plan.dividers) {
         painter.drawRect(divider.visualRect);
     }
+    if (splitDeck) {
+        // Elsewhere the image edge clips the outer half of the frame stroke
+        // and glow; the gap needs the same clip or they would paint into it.
+        painter.setClipPath(framePath);
+    }
     paintIdentityFrame(painter, plan, framePath);
+    painter.setClipping(false);
 
     // AGENT-CONTRACT: A focused member cue is clipped to the paintable side
     // of its native frame. This keeps client content and KDecoration pixels

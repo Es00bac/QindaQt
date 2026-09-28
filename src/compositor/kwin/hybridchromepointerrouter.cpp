@@ -26,7 +26,7 @@ bool hasChromeDecisionOutput(const ChromePointerDecision &decision) noexcept
         || !decision.containerRaiseRequests.isEmpty()
         || !decision.activations.isEmpty() || !decision.drags.isEmpty()
         || !decision.contextMenus.isEmpty() || !decision.shadeRequests.isEmpty()
-        || !decision.titleDoubleClicks.isEmpty();
+        || !decision.titleDoubleClicks.isEmpty() || !decision.tabSteps.isEmpty();
 }
 
 HybridChromePointerRouter::HybridChromePointerRouter(HitResolver resolver,
@@ -372,6 +372,15 @@ ChromePointerDecision HybridChromePointerRouter::pointerWheel(
         return decision;
     }
     decision.consumed = true;
+    if (m_hovered->target.wheelStepsTabs) {
+        // ADR-0281: over a split-deck tab deck the wheel walks the tabs, as
+        // in a Qt tab bar: away from the user goes toward the first tab.
+        // AGENT-GUARD: only the modifier-free wheel reaches here (checked
+        // above). A Meta+wheel must never step the deck: it is the
+        // container roll anywhere over the container.
+        decision.tabSteps.append({m_hovered->containerId, angleDelta > 0.0 ? -1 : 1});
+        return decision;
+    }
     decision.shadeRequests.append({m_hovered->containerId, angleDelta > 0.0});
     return decision;
 }

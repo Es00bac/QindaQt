@@ -512,18 +512,11 @@ void KWinHybridSession::synchronizeChrome()
         options.focusedMemberId = options.containerFocused ? activeWindowId : QString{};
         options.memberTitlesVisible = memberTitlesVisible(containerId);
         const auto appearance = m_appearance.appearance(containerId);
-        options.containerTitle = appearance.name;
-        options.containerTitleIsGenerated = false;
-        if (options.shaded && options.containerTitle.isEmpty()) {
-            // ADR-0163: while shaded, the badge label is the container's only
-            // naming surface, so a never-renamed container carries its stable
-            // generated "Container N" name there. The unshaded shared row
-            // keeps the override-only contract (empty paints no row title).
-            // ADR-0168: the badge is told this name is generated, so it shows
-            // the placeholder only when no page title can be shown instead.
-            options.containerTitle = m_appearance.displayName(containerId);
-            options.containerTitleIsGenerated = true;
-        }
+        // ADR-0281: every layout, shaded or not, is titled by the container's
+        // own name: the user's rename, else the default "Container". A
+        // member's application title never becomes the container's title.
+        options.containerTitle = m_appearance.displayName(containerId);
+        options.containerTitleIsGenerated = !m_appearance.hasCustomName(containerId);
         if (!appearance.colorHex.isEmpty()) {
             options.style.palette.accent = QColor(appearance.colorHex);
         }

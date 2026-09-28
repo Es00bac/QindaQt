@@ -3,7 +3,7 @@
   "id": "qinda-macos",
   "name": "Qinda Mist",
   "variant": "light",
-  "iconTheme": "QindaQt",
+  "iconTheme": "QindaNative",
   "fontFamily": "Inter",
   "monoFontFamily": "JetBrains Mono",
   "cornerRadius": 12,

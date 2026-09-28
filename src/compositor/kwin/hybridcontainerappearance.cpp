@@ -60,42 +60,27 @@ Compositor::ContainerAppearance HybridContainerAppearanceStore::appearance(
     return m_byContainer.value(containerId);
 }
 
-QString HybridContainerAppearanceStore::displayName(const QString &containerId)
+QString HybridContainerAppearanceStore::displayName(const QString &containerId) const
 {
-    const auto overrideName = m_byContainer.constFind(containerId);
-    if (overrideName != m_byContainer.cend() && !overrideName->name.isEmpty()) {
-        return overrideName->name;
-    }
-    const auto generated = m_generatedNames.constFind(containerId);
-    if (generated != m_generatedNames.cend()) {
-        return *generated;
-    }
-    const auto name = QStringLiteral("Container %1").arg(++m_nameCounter);
-    m_generatedNames.insert(containerId, name);
-    return name;
+    return hasCustomName(containerId) ? m_byContainer.value(containerId).name
+                                      : Compositor::defaultContainerName();
 }
 
-QString HybridContainerAppearanceStore::assignedDisplayName(
-    const QString &containerId) const
+bool HybridContainerAppearanceStore::hasCustomName(const QString &containerId) const
 {
-    const auto overrideName = m_byContainer.constFind(containerId);
-    if (overrideName != m_byContainer.cend() && !overrideName->name.isEmpty()) {
-        return overrideName->name;
-    }
-    return m_generatedNames.value(containerId);
+    const auto found = m_byContainer.constFind(containerId);
+    return found != m_byContainer.cend() && !found->name.isEmpty();
 }
 
 void HybridContainerAppearanceStore::forgetContainer(
     const QString &containerId) noexcept
 {
     m_byContainer.remove(containerId);
-    m_generatedNames.remove(containerId);
 }
 
 void HybridContainerAppearanceStore::clear() noexcept
 {
     m_byContainer.clear();
-    m_generatedNames.clear();
 }
 
 } // namespace QindaQt::Compositor::KWinIntegration

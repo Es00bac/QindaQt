@@ -41,7 +41,7 @@ void BuiltInContrastTests::everyBuiltInMeetsDocumentedPairs()
 {
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 18);
+    QCOMPARE(loaded.size(), 21);
 
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -97,7 +97,7 @@ void BuiltInContrastTests::everyBuiltInTranslucentSurfaceKeepsTextContrast()
     // surface composited on black and on white at its published opacity.
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 18);
+    QCOMPARE(loaded.size(), 21);
     int translucentSurfaces = 0;
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -145,7 +145,7 @@ void BuiltInContrastTests::everyEffectiveThemeKeepsActiveAndInactiveCaptionsLegi
     using namespace QindaQt::Decoration;
     const auto loaded = ThemeLoader::fromDirectory(
         QStringLiteral(QINDAQT_SOURCE_DIR "/data/themes"));
-    QCOMPARE(loaded.size(), 18);
+    QCOMPARE(loaded.size(), 21);
     QVector<ThemeSpec> themes;
     for (const auto &result : loaded) {
         QVERIFY2(result.ok, qPrintable(result.error));
@@ -174,7 +174,7 @@ void BuiltInContrastTests::everyEffectiveThemeKeepsActiveAndInactiveCaptionsLegi
             }
         }
     }
-    QCOMPARE(checked, 18 * 3 * 2 * 2);
+    QCOMPARE(checked, 21 * 3 * 2 * 2);
 }
 
 QTEST_GUILESS_MAIN(BuiltInContrastTests)

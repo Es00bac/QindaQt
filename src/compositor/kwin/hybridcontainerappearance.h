@@ -36,32 +36,20 @@ public:
     [[nodiscard]] Compositor::ContainerAppearance appearance(
         const QString &containerId) const;
 
-    // The user-visible container name: the rename override when one exists,
-    // otherwise a stable generated "Container N" (ADR-0163). Never empty, so
-    // surfaces that need a name (the rolled-up badge) always have one. The
-    // generated value is memoized for the container's lifetime and survives
-    // a later blank setName (which only clears the override). Not const:
-    // first observation assigns the next number. The counter is
-    // process-monotonic so two live containers can never share a number.
-    [[nodiscard]] QString displayName(const QString &containerId);
-
-    // The name a surface WOULD show right now, without assigning one: the
-    // rename override, else the generated name if this container has already
-    // been observed, else empty.
-    //
-    // AGENT-GUARD: this is the read for diagnostics and control replies, and
-    // it is const on purpose. Calling displayName() from an observer would
-    // burn a generated number as a side effect of merely looking, so a
-    // container could be renumbered by being inspected.
-    [[nodiscard]] QString assignedDisplayName(const QString &containerId) const;
+    // The container's title (ADR-0281): the rename override when one exists,
+    // otherwise defaultContainerName(). Never empty, and never a member's
+    // application or window title. Pure read: looking at a container never
+    // changes what it is called. (The ADR-0163 "Container N" numbering was
+    // retired by ADR-0281.)
+    [[nodiscard]] QString displayName(const QString &containerId) const;
+    // True when displayName() is the user's rename rather than the default.
+    [[nodiscard]] bool hasCustomName(const QString &containerId) const;
 
     void forgetContainer(const QString &containerId) noexcept;
     void clear() noexcept;
 
 private:
     QHash<QString, Compositor::ContainerAppearance> m_byContainer;
-    QHash<QString, QString> m_generatedNames;
-    int m_nameCounter = 0;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration

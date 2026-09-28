@@ -56,6 +56,8 @@ private slots:
     void containerOptionsResolveIntoTheContainerStyle();
     void themeAuthoredBehaviourAndFinishResolve();
     void titleTabCutoutTracksPaintedGeometry();
+    void containerTitleLayoutResolvesFromThemeDocumentAndPreference();
+    void themeAuthoredContainerDoubleClickYieldsOnlyToAnExplicitChoice();
 };
 
 void DecorationTitleOptionTests::styleNamesMatchTheThemeAndSettingsTokens()
@@ -85,10 +87,12 @@ void DecorationTitleOptionTests::styleNamesMatchTheThemeAndSettingsTokens()
 void DecorationTitleOptionTests::titleOptionTokensDecodeStrictlyAndRoundTrip()
 {
     const auto keys = ChromePreferences::settingsKeys();
-    QCOMPARE(keys.size(), 19);
-    // The eleven option keys follow the original eight, in commit order.
+    QCOMPARE(keys.size(), 20);
+    // The eleven option keys follow the original eight, in commit order, and
+    // the ADR-0281 title layout follows them.
     QCOMPARE(keys.at(8), QString(ChromePreferenceKeys::WindowButtonSize));
-    QCOMPARE(keys.constLast(), QString(ChromePreferenceKeys::ContainerTitleDoubleClick));
+    QCOMPARE(keys.at(18), QString(ChromePreferenceKeys::ContainerTitleDoubleClick));
+    QCOMPARE(keys.constLast(), QString(ChromePreferenceKeys::ContainerTitleLayout));
     const ChromePreferences defaults;
     for (const QString &key : keys) {
         QCOMPARE(defaults.token(key), ChromePreferences::tokens(key).constFirst());
@@ -100,8 +104,11 @@ void DecorationTitleOptionTests::titleOptionTokensDecodeStrictlyAndRoundTrip()
                              QStringLiteral("none")));
     QVERIFY(edited.setToken(QString(ChromePreferenceKeys::ContainerTitleDoubleClick),
                             QStringLiteral("minimize")));
+    // ADR-0281: "theme" defers to the theme's container double-click.
+    QVERIFY(edited.setToken(QString(ChromePreferenceKeys::ContainerTitleDoubleClick),
+                            QStringLiteral("theme")));
     QVERIFY(!edited.setToken(QString(ChromePreferenceKeys::ContainerTitleDoubleClick),
-                             QStringLiteral("theme")));
+                             QStringLiteral("sparkles")));
     QVERIFY(edited.setToken(QString(ChromePreferenceKeys::WindowRollUpButton),
                             QStringLiteral("shown")));
     QVERIFY(edited.setToken(QString(ChromePreferenceKeys::ContainerButtonStyle),
@@ -367,6 +374,103 @@ void DecorationTitleOptionTests::themeAuthoredBehaviourAndFinishResolve()
     weatheredChrome.titleWorn = true;
     const QImage weathered = paintTitle(weatheredChrome);
     QVERIFY(weathered.pixelColor(150, 4) != weathered.pixelColor(150, 20));
+}
+
+// ADR-0281: the split-deck row is data. A theme authors it, a decoration
+// document may override it, and the user's preference wins over both; the
+// title tab wears the theme's title colors, and the Settings preview's map
+// carries all of it.
+void DecorationTitleOptionTests::containerTitleLayoutResolvesFromThemeDocumentAndPreference()
+{
+    using QindaQt::HybridChrome::ContainerTitleLayout;
+    QCOMPARE(ChromePreferences::tokens(QString(ChromePreferenceKeys::ContainerTitleLayout)),
+             QStringList({QStringLiteral("theme"), QStringLiteral("classic"),
+                          QStringLiteral("split-deck")}));
+    const QindaQt::Themes::ThemeSpec plain;
+    auto style = resolveContainerStyle(plain, ChromePreferences{});
+    QCOMPARE(style.titleLayout, ContainerTitleLayout::Classic);
+    QVERIFY(!style.palette.titleBar.isValid());
+    QCOMPARE(style.deckMotionMs, plain.motionDuration);
+    QVERIFY(!containerStyleToVariantMap(style).contains(QStringLiteral("titleLayout")));
+
+    QindaQt::Themes::ThemeSpec corner;
+    corner.motionDuration = 130;
+    corner.decoration.authored = true;
+    corner.decoration.buttonPlacement = QStringLiteral("left");
+    corner.decoration.buttonStyle = QStringLiteral("tab");
+    corner.decoration.titleBarColor = QColor(QStringLiteral("#F6C02B"));
+    corner.decoration.titleBarInactiveColor = QColor(QStringLiteral("#DDD8CB"));
+    corner.decoration.containerTitleLayout = QStringLiteral("split-deck");
+    style = resolveContainerStyle(corner, ChromePreferences{});
+    QCOMPARE(style.titleLayout, ContainerTitleLayout::SplitDeck);
+    QCOMPARE(style.palette.titleBar, QColor(QStringLiteral("#F6C02B")));
+    QCOMPARE(style.palette.titleBarInactive, QColor(QStringLiteral("#DDD8CB")));
+    QCOMPARE(style.deckMotionMs, 130);
+
+    const auto back = containerStyleFromVariantMap(containerStyleToVariantMap(style));
+    QCOMPARE(back.titleLayout, ContainerTitleLayout::SplitDeck);
+    QCOMPARE(back.palette.titleBar, style.palette.titleBar);
+    QCOMPARE(back.palette.titleBarInactive, style.palette.titleBarInactive);
+
+    ChromePreferences preferences;
+    preferences.containerTitleLayout = QStringLiteral("classic");
+    QCOMPARE(resolveContainerStyle(corner, preferences).titleLayout,
+             ContainerTitleLayout::Classic);
+    preferences.containerTitleLayout = QStringLiteral("split-deck");
+    QCOMPARE(resolveContainerStyle(plain, preferences).titleLayout,
+             ContainerTitleLayout::SplitDeck);
+
+    // A document that authors no row keeps the theme's; one that does wins,
+    // and the preference still wins over the document.
+    QindaQt::Themes::DecorationThemeSpec document;
+    document.decoration.authored = true;
+    document.decoration.buttonPlacement = QStringLiteral("left");
+    document.decoration.buttonStyle = QStringLiteral("tab");
+    QCOMPARE(resolveContainerStyle(corner, document, ChromePreferences{}).titleLayout,
+             ContainerTitleLayout::SplitDeck);
+    document.decoration.containerTitleLayout = QStringLiteral("classic");
+    QCOMPARE(resolveContainerStyle(corner, document, ChromePreferences{}).titleLayout,
+             ContainerTitleLayout::Classic);
+    QCOMPARE(resolveContainerStyle(corner, document, preferences).titleLayout,
+             ContainerTitleLayout::SplitDeck);
+}
+
+// ADR-0281: a theme may author what a container title double-click does (the
+// Corner Bar themes roll up, like their window tab). The preference's "theme"
+// default follows it; any explicit token, "none" included, wins; a theme that
+// authors nothing keeps containers inert, as they shipped.
+void DecorationTitleOptionTests::themeAuthoredContainerDoubleClickYieldsOnlyToAnExplicitChoice()
+{
+    using QindaQt::HybridChrome::TitleDoubleClickAction;
+    QCOMPARE(ChromePreferences{}.containerTitleDoubleClick, QStringLiteral("theme"));
+    QindaQt::Themes::ThemeSpec corner;
+    corner.decoration.authored = true;
+    corner.decoration.containerTitleDoubleClick = QStringLiteral("roll-up");
+    QCOMPARE(resolveContainerStyle(corner, ChromePreferences{}).titleDoubleClick,
+             TitleDoubleClickAction::RollUp);
+    ChromePreferences preferences;
+    for (const auto &[token, action] :
+         {std::pair{"none", TitleDoubleClickAction::None},
+          std::pair{"maximize", TitleDoubleClickAction::Maximize},
+          std::pair{"minimize", TitleDoubleClickAction::Minimize},
+          std::pair{"roll-up", TitleDoubleClickAction::RollUp}}) {
+        preferences.containerTitleDoubleClick = QString::fromLatin1(token);
+        QCOMPARE(resolveContainerStyle(corner, preferences).titleDoubleClick, action);
+    }
+    // A decoration document does not undo the theme's double-click.
+    QindaQt::Themes::DecorationThemeSpec document;
+    document.decoration.authored = true;
+    QCOMPARE(resolveContainerStyle(corner, document, ChromePreferences{}).titleDoubleClick,
+             TitleDoubleClickAction::RollUp);
+    // A theme that authors only a window double-click leaves containers inert.
+    QindaQt::Themes::ThemeSpec windowsOnly;
+    windowsOnly.decoration.authored = true;
+    windowsOnly.decoration.titleDoubleClick = QStringLiteral("maximize");
+    QCOMPARE(resolveContainerStyle(windowsOnly, ChromePreferences{}).titleDoubleClick,
+             TitleDoubleClickAction::None);
+    QCOMPARE(resolveContainerStyle(QindaQt::Themes::ThemeSpec{}, ChromePreferences{})
+                 .titleDoubleClick,
+             TitleDoubleClickAction::None);
 }
 
 QTEST_MAIN(DecorationTitleOptionTests)

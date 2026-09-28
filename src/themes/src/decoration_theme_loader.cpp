@@ -128,7 +128,10 @@ DecorationThemeLoadResult DecorationThemeLoader::fromJson(const QByteArray &json
                       &error)
         || !readToken(root, QStringLiteral("containerBadge"),
                       DecorationThemeTokens::containerBadgeStyles(),
-                      &theme.containerBadgeStyle, &error)) {
+                      &theme.containerBadgeStyle, &error)
+        || !readToken(root, QStringLiteral("containerTitleLayout"),
+                      DecorationThemeTokens::containerTitleLayouts(),
+                      &theme.decoration.containerTitleLayout, &error)) {
         return failure(origin, error);
     }
     if (root.contains(QStringLiteral("hoverGlyphs"))) {

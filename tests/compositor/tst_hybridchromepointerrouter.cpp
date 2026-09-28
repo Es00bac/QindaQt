@@ -44,6 +44,7 @@ private Q_SLOTS:
     void rollsContainersWithTheWheelOverChromeAndHandlebars();
     void touchHitTestReachesNearbyOwnedTargetsOnly();
     void reportsTitleRowDoubleClicksButNotSingleClicksOrDrags();
+    void splitDeckWheelStepsTabsAndLeavesModifiedWheelsAlone();
 };
 
 void HybridChromePointerRouterTests::reportsTitleRowDoubleClicksButNotSingleClicksOrDrags()
@@ -430,6 +431,51 @@ void HybridChromePointerRouterTests::touchHitTestReachesNearbyOwnedTargetsOnly()
     QVERIFY(HybridChromePointerRouter::contextMenuTarget(tab.target));
     QVERIFY(!HybridChromePointerRouter::contextMenuTarget(
         hit(HybridChrome::HitKind::Divider, QStringLiteral("divider")).target));
+}
+
+// ADR-0281: over a split-deck tab deck a plain wheel steps the active tab (away
+// from the user toward the first tab) instead of rolling the container. Any
+// modifier, Meta above all, is never a deck step: Meta+wheel belongs to the
+// container roll and must reach it unconsumed by the deck.
+void HybridChromePointerRouterTests::splitDeckWheelStepsTabsAndLeavesModifiedWheelsAlone()
+{
+    auto deckTab = hit(HybridChrome::HitKind::Tab, QStringLiteral("page-b"), 1);
+    deckTab.target.wheelStepsTabs = true;
+    std::optional<ChromePointerHit> resolved = deckTab;
+    HybridChromePointerRouter router([&](const QPointF &) { return resolved; });
+
+    const auto away = router.pointerWheel({5.0, 5.0}, Qt::NoModifier, 120.0);
+    QVERIFY(away.consumed);
+    QVERIFY(hasChromeDecisionOutput(away));
+    QVERIFY(away.shadeRequests.isEmpty());
+    QCOMPARE(away.tabSteps,
+             QVector<ChromeTabStepRequest>({{QStringLiteral("container-a"), -1}}));
+    const auto toward = router.pointerWheel({5.0, 5.0}, Qt::NoModifier, -40.0);
+    QCOMPARE(toward.tabSteps,
+             QVector<ChromeTabStepRequest>({{QStringLiteral("container-a"), 1}}));
+
+    // The deck surface around the cards steps too.
+    auto surface = hit(HybridChrome::HitKind::OuterTitleDrag);
+    surface.target.wheelStepsTabs = true;
+    resolved = surface;
+    QCOMPARE(router.pointerWheel({6.0, 5.0}, Qt::NoModifier, 120.0).tabSteps.size(), 1);
+
+    for (const auto modifiers : {Qt::KeyboardModifiers(Qt::MetaModifier),
+                                 Qt::KeyboardModifiers(Qt::MetaModifier | Qt::ShiftModifier),
+                                 Qt::KeyboardModifiers(Qt::ControlModifier)}) {
+        resolved = deckTab;
+        const auto modified = router.pointerWheel({7.0, 5.0}, modifiers, 120.0);
+        QVERIFY(modified.tabSteps.isEmpty());
+        QVERIFY(!modified.consumed);
+        resolved = surface;
+        QVERIFY(router.pointerWheel({7.5, 5.0}, modifiers, -120.0).tabSteps.isEmpty());
+    }
+
+    // The title tab (no deck mark) keeps rolling the container.
+    resolved = hit(HybridChrome::HitKind::OuterTitleDrag, QStringLiteral("container-a"));
+    const auto title = router.pointerWheel({8.0, 5.0}, Qt::NoModifier, 120.0);
+    QVERIFY(title.tabSteps.isEmpty());
+    QCOMPARE(title.shadeRequests.size(), 1);
 }
 
 QTEST_GUILESS_MAIN(HybridChromePointerRouterTests)
