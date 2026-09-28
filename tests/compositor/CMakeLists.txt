@@ -430,6 +430,26 @@ if(TARGET qindaqt_kwin_input_adapter)
             Qt6::Test
     )
     add_test(NAME compositor.kwin-chrome-manager COMMAND qindaqt_kwin_chrome_manager_tests)
+
+    qt_add_executable(
+        qindaqt_chrome_plan_localizer_tests
+        tst_chromeplanlocalizer.cpp
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/chromeplanlocalizer.cpp"
+    )
+    target_include_directories(
+        qindaqt_chrome_plan_localizer_tests
+        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+    )
+    target_link_libraries(
+        qindaqt_chrome_plan_localizer_tests
+        PRIVATE QindaQt::HybridChrome Qt6::Gui Qt6::Test
+    )
+    qindaqt_enable_warnings(qindaqt_chrome_plan_localizer_tests)
+    add_test(NAME compositor.chrome-plan-localizer COMMAND qindaqt_chrome_plan_localizer_tests)
+    set_tests_properties(
+        compositor.chrome-plan-localizer
+        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    )
     set_tests_properties(
         compositor.kwin-chrome-manager
         PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
