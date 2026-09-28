@@ -170,7 +170,7 @@ private:
     // then icon chips, then the controller, then KWin's modifier resize.
     [[nodiscard]] bool routeButton(const HybridInput::PointerEvent &event, bool pressed);
     [[nodiscard]] bool routeMotion(const HybridInput::PointerEvent &event);
-    [[nodiscard]] bool routersActive() const;
+    [[nodiscard]] bool pointerOwnedByPenOrTouch() const;
     // ADR-0282 (kwininteractionfilter_chords.cpp): the pen reaches the same
     // routing as the mouse through TabletPointerTranslator (Meta + tip moves,
     // Meta + Ctrl + tip resizes, Meta + eraser docks, barrel = right button),

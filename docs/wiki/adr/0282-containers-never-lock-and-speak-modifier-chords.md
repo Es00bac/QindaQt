@@ -122,6 +122,18 @@ A native move the pen drives that the late-Shift takeover adopts keeps the pen's
 position and ends on the pen's lift; before this amendment the lift went
 nowhere and the dock preview stayed until Escape.
 
+One device drives a gesture at a time. While the pen holds a claimed gesture,
+or a finger drives a picked-up title or a pressed piece of chrome, mouse and
+touchpad events bypass QindaQt's routers and reach KWin and the client as
+usual: their buttonless motion would otherwise read as the gesture's lost
+release and cancel it, and their click would commit the pen's or finger's drop
+at the mouse cursor. A claimed pen press owns every pen event until its lift,
+even when a router settles at once, so a client never sees a lift or motion
+without its press. Likewise the chrome touch policy swallows, until it lifts, a
+second finger whose down it consumed without letting it join the gesture; the
+live log showed 210 "Detected a touch move that never has been down" from
+exactly that leak.
+
 **A held finger picks a window up by its title.** Touch has no modifiers, so
 a finger held still (the touch policy's long press, 500 ms within its 8 px
 slop) on a window's own title bar picks the window up into the same dock drag

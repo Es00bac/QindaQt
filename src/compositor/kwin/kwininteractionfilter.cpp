@@ -11,6 +11,7 @@
 #include <input_event.h>
 #include <inputmethod.h>
 #include <main.h>
+#include <tablet_input.h>
 #include <window.h>
 #include <workspace.h>
 
@@ -254,9 +255,21 @@ void KWinInteractionFilter::cancel()
     static_cast<void>(dispatch(m_controller.cancel()));
 }
 
+bool KWinInteractionFilter::pointerOwnedByPenOrTouch() const
+{
+    // AGENT-GUARD: while a pen or finger drives a gesture, the mouse or
+    // touchpad stays KWin's and the client's. Its motion carries no pressed
+    // button, which the routers' lost-release rule reads as the gesture
+    // ending, and its click would commit the pen's or finger's drag at the
+    // mouse cursor. Each clause is bounded by a gesture that is visibly
+    // running, so a lost lift cannot lock the mouse out of chrome.
+    return m_tabletGesture || (m_titlePickup.pickedUp() && m_controller.active())
+        || (m_touch.active() && m_chromeRouter && m_chromeRouter->active());
+}
+
 bool KWinInteractionFilter::pointerMotion(KWin::PointerMotionEvent *event)
 {
-    if (!event) {
+    if (!event || pointerOwnedByPenOrTouch()) {
         return false;
     }
     return routeMotion({
@@ -282,7 +295,7 @@ bool KWinInteractionFilter::routeMotion(const HybridInput::PointerEvent &normali
 
 bool KWinInteractionFilter::pointerButton(KWin::PointerButtonEvent *event)
 {
-    if (!event) {
+    if (!event || pointerOwnedByPenOrTouch()) {
         return false;
     }
     return routeButton({
@@ -320,12 +333,6 @@ bool KWinInteractionFilter::routeButton(const HybridInput::PointerEvent &normali
         return modifierWindowResize(normalized);
     }
     return dispatch(m_controller.pointerRelease(normalized));
-}
-
-bool KWinInteractionFilter::routersActive() const
-{
-    return m_controller.active() || (m_chromeRouter && m_chromeRouter->active())
-        || (m_iconify.chipRouter && m_iconify.chipRouter->active());
 }
 
 bool KWinInteractionFilter::pointerAxis(KWin::PointerAxisEvent *event)
@@ -411,9 +418,11 @@ bool KWinInteractionFilter::earlyKeyboardKey(KWin::KeyboardKeyEvent *event)
     // cursor's, and its motion and lift arrive as tablet events: adopt it
     // for the pen so that lift commits the dock (owner, 2026-09-28: the
     // preview appeared but the drop never happened).
-    const bool pen = tabletDrivesInput();
+    // KWin's move/resize filter consumes a pen-driven move's motion before
+    // this filter, so KWin's tablet position is the current one.
+    const bool pen = tabletDrivesInput() && m_input->tablet() != nullptr;
     const bool adopted = observeLateShiftTakeover(
-        event->modifiers, pen ? m_tablet.position() : m_input->globalPointer());
+        event->modifiers, pen ? m_input->tablet()->position() : m_input->globalPointer());
     if (adopted && pen && m_controller.active()) {
         m_tabletGesture = true;
     }

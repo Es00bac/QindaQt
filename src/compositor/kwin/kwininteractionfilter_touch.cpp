@@ -69,6 +69,7 @@ bool KWinInteractionFilter::touchDown(KWin::TouchDownEvent *event)
         return false;
     }
     const qint64 now = milliseconds(event->time);
+    m_touch.forget(event->id);
     if (m_titlePickup.armed() || m_titlePickup.pickedUp()) {
         // A second finger ends a pending or active title pick-up and, like
         // every finger during it, stays KWin's.
@@ -119,6 +120,11 @@ bool KWinInteractionFilter::touchDown(KWin::TouchDownEvent *event)
 
 bool KWinInteractionFilter::touchMotion(KWin::TouchMotionEvent *event)
 {
+    if (event != nullptr && m_touch.swallows(event->id)) {
+        // Its down was consumed on chrome without joining the gesture; the
+        // seat never saw it, so neither may its motion (policy swallows()).
+        return true;
+    }
     if (event != nullptr && m_titlePickup.tracking() && !m_touch.active()) {
         return titlePickupMotion(event);
     }
@@ -155,6 +161,10 @@ bool KWinInteractionFilter::touchMotion(KWin::TouchMotionEvent *event)
 
 bool KWinInteractionFilter::touchUp(KWin::TouchUpEvent *event)
 {
+    if (event != nullptr && m_touch.swallows(event->id)) {
+        static_cast<void>(m_touch.up(event->id, milliseconds(event->time)));
+        return true;
+    }
     if (event != nullptr && m_titlePickup.tracking()) {
         // Never consumed: KWin's decoration filter must see the lift to
         // release the title press it recorded when the finger landed.
@@ -182,11 +192,14 @@ bool KWinInteractionFilter::touchUp(KWin::TouchUpEvent *event)
 bool KWinInteractionFilter::touchCancel()
 {
     titlePickupCancel();
-    if (m_chromeRouter == nullptr || !m_touch.active()) {
+    if (m_chromeRouter == nullptr || !m_touch.tracking()) {
         return false;
     }
+    const bool gesture = m_touch.active();
     (void)m_touch.cancel();
-    finishTouchGesture();
+    if (gesture) {
+        finishTouchGesture();
+    }
     // A cancel is a seat-wide reset, not a consumed down: every later filter
     // and the seat must see it too.
     return false;
