@@ -15,7 +15,7 @@ from __future__ import annotations
 import time
 
 from shade_control import (MINIMIZE_GROUP_MENU_INDEX, ROLL_UP_MENU_INDEX, SHARED_ROW_HEIGHT,
-                           content_point, rect, united, wait_for)
+                           badge_title_point, content_point, rect, united, wait_for)
 from shade_fixtures import (BACKDROP_COLOUR, BACKDROP_TITLE, MEMBER_A_COLOUR, MEMBER_A_TITLE)
 from shade_framebuffer import area_mismatch, pixel_matches
 from shade_session import ShadeSession, window_summary
@@ -83,28 +83,29 @@ def _badge_label_verdicts(session, cycle: int, strips, strip, frame,
     session.step(f"shaded-badge-label{cycle}", label=badge_label,
                  labelWidth=badge_label_width,
                  stripWidth=strip[2] if strip else None)
-    # The badge names the active *page*, not the active member: a page holding
-    # a split reads "<first leaf> +<others>" (HybridChromePlanBuilder's
-    # pageTitle). Which member is the page's first leaf depends on which side
-    # of the split it landed on, and that differs between window backends, so
-    # this asserts the shape — one of the two members plus the split suffix —
-    # rather than pinning a specific member and failing on half the rows.
-    session.verdict(f"badgeLabelNamesTheActivePage{cycle}",
-                    "+1" in badge_label
-                    and any(title in badge_label
-                            for title in (MEMBER_A_TITLE, member_title)))
+    # ADR-0281 (superseding ADR-0168's page-title label): the badge is titled
+    # by the container's own name -- its rename, else its default name --
+    # exactly like its unrolled row. An application's title must never become
+    # the container's title, so neither member title may appear in it.
+    session.verdict(f"badgeLabelNamesTheContainer{cycle}",
+                    bool(badge_label)
+                    and not any(title in badge_label
+                                for title in (MEMBER_A_TITLE, member_title)))
     session.verdict(f"badgeLabelIsNotElided{cycle}",
                     "\u2026" not in badge_label and "..." not in badge_label)
     session.verdict(f"stripHoldsItsMeasuredLabel{cycle}",
                     strip is not None and badge_label_width >= 48.0
                     and strip[2] >= badge_label_width)
     # Before ADR-0189 the strip reserved a constant 140 px of label whatever
-    # the title was. This fixture's page title measures wider than that, so a
-    # measured label is the only way the strip can be this size. If the fixture
-    # titles ever shorten below 140 px, re-derive this bound rather than
-    # deleting the verdict.
+    # the title was. The container name is shorter than that, so "measured"
+    # now means the painted label has exactly the width the compositor
+    # measured for it, and that width is not the old constant. If a default
+    # name ever measures exactly 140 px, re-derive this rather than deleting
+    # the verdict.
+    painted_width = float(entry.get("paintedBadgeLabelRectWidth") or 0.0)
     session.verdict(f"labelWasMeasuredNotAssumed{cycle}",
-                    badge_label_width > 140.0)
+                    badge_label_width >= 48.0 and abs(badge_label_width - 140.0) > 0.5
+                    and abs(painted_width - badge_label_width) < 0.5)
     label_ink = strip_label_ink(frame, strip, entry) if strip else 0
     session.step(f"shaded-badge-ink{cycle}", labelInk=label_ink)
     session.verdict(f"badgeLabelIsActuallyPainted{cycle}", label_ink > 20)
@@ -194,7 +195,7 @@ def run(session: ShadeSession) -> None:
         if cycle == 0:
             _activation_while_shaded(session, member, frames, title_b, probe_area, strip)
 
-        strip_point = (strip[0] + strip[2] * 0.3, strip[1] + strip[3] / 2) if strip else row_point
+        strip_point = badge_title_point(strips[0]) if strips else row_point
         pointer.group_menu_action(strip_point, ROLL_UP_MENU_INDEX)
 
         def unrolled():

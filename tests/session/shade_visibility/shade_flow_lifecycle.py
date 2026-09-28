@@ -14,8 +14,9 @@ import subprocess
 import time
 from typing import Any
 
-from shade_control import (MINIMIZE_GROUP_MENU_INDEX, ROLL_UP_MENU_INDEX, Rect, content_point,
-                           rect, united, wait_for)
+from shade_control import (MINIMIZE_GROUP_MENU_INDEX, ROLL_UP_MENU_INDEX, Rect,
+                           badge_title_point, clear_content_point, content_point, rect,
+                           united, wait_for)
 from shade_fixtures import (BACKDROP_COLOUR, BACKDROP_TITLE, MEMBER_A_COLOUR, MEMBER_A_TITLE,
                             MEMBER_B_COLOUR, MEMBER_B_TITLE, MEMBER_C_COLOUR, MEMBER_C_TITLE)
 from shade_framebuffer import area_mismatch, pixel_matches
@@ -44,7 +45,10 @@ def _strip(session: ShadeSession) -> Rect | None:
     return rect(strips[0]) if strips else None
 
 
-def _strip_point(strip: Rect) -> tuple[float, float]:
+def _strip_point(session: ShadeSession, strip: Rect) -> tuple[float, float]:
+    strips = session.hybrid_summary().get("shadedStripFrames") or []
+    if strips:
+        return badge_title_point(strips[0])
     return (strip[0] + strip[2] * 0.3, strip[1] + strip[3] / 2)
 
 
@@ -154,7 +158,7 @@ def _close_anchor(session: ShadeSession, processes, before, strip: Rect) -> Rect
 
 
 def _minimize_then_activate(session: ShadeSession, processes, strip: Rect) -> Rect:
-    session.pointer.group_menu_action(_strip_point(strip), MINIMIZE_GROUP_MENU_INDEX)
+    session.pointer.group_menu_action(_strip_point(session, strip), MINIMIZE_GROUP_MENU_INDEX)
     time.sleep(1.0)
     inventory = session.control.windows()
     frame = session.capture("L05-minimized-while-shaded")
@@ -186,19 +190,18 @@ def _minimize_then_activate(session: ShadeSession, processes, strip: Rect) -> Re
 
 def _unroll(session: ShadeSession, strip: Rect) -> None:
     control = session.control
-    session.pointer.group_menu_action(_strip_point(strip), ROLL_UP_MENU_INDEX)
+    session.pointer.group_menu_action(_strip_point(session, strip), ROLL_UP_MENU_INDEX)
     wait_for("survivors shown", lambda: not any(
         control.windows()[title]["hidden"] for title in SURVIVORS), 6)
     time.sleep(0.5)
     restored = control.windows()
     frame = session.capture("L07-unrolled")
+    points = {title: clear_content_point(restored, title) for title in SURVIVORS}
     content = {
-        MEMBER_A_TITLE: pixel_matches(
-            frame, content_point(restored[MEMBER_A_TITLE]["targetGeometry"]), MEMBER_A_COLOUR),
-        MEMBER_C_TITLE: pixel_matches(
-            frame, content_point(restored[MEMBER_C_TITLE]["targetGeometry"]), MEMBER_C_COLOUR),
+        MEMBER_A_TITLE: pixel_matches(frame, points[MEMBER_A_TITLE], MEMBER_A_COLOUR),
+        MEMBER_C_TITLE: pixel_matches(frame, points[MEMBER_C_TITLE], MEMBER_C_COLOUR),
     }
-    session.step("unrolled", content=content, active=session.active_titles(restored),
+    session.step("unrolled", content=content, points=points, active=session.active_titles(restored),
                  members={title: window_summary(restored[title]) for title in SURVIVORS},
                  hybrid=session.hybrid_summary())
     session.verdict("lifecycleUnrollRestoresContent", all(content.values()))

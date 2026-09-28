@@ -92,6 +92,25 @@ def rect(geometry: dict[str, float]) -> Rect:
     return (geometry["x"], geometry["y"], geometry["width"], geometry["height"])
 
 
+def badge_title_point(entry: dict[str, Any]) -> tuple[float, float]:
+    """A point on a rolled-up badge that opens the group menu.
+
+    AGENT-NOTE: aim at the painted label, which lies on the badge's title drag
+    region. The container controls sit at the badge's leading edge and do not
+    own a right click, so a fixed fraction of the strip width lands on them
+    once the label is short. Since ADR-0281 the label is the container's own
+    name, not the page title, and 30 % of the narrower strip fell on a
+    container control: the right click reached the backdrop and no menu
+    opened.
+    """
+    x, y, width, height = rect(entry)
+    label_x = float(entry.get("paintedBadgeLabelRectX") or 0.0)
+    label_width = float(entry.get("paintedBadgeLabelRectWidth") or 0.0)
+    if label_width > 0.0:
+        return (x + label_x + label_width / 2.0, y + height / 2.0)
+    return (x + width * 0.3, y + height / 2.0)
+
+
 def content_point(geometry: dict[str, float]) -> tuple[float, float]:
     """A point well inside a member's client content, below any title bar."""
     x, y, width, height = rect(geometry)
@@ -191,6 +210,36 @@ def uncovered_content_point(inventory: dict[str, dict[str, Any]],
             if uncovered(inventory, title, point):
                 return point
     return None
+
+
+def clear_content_point(inventory: dict[str, dict[str, Any]],
+                        title: str) -> tuple[float, float]:
+    """A content point of `title` that no other shown window can tint.
+
+    AGENT-NOTE: for pixel checks, not input. Tiled siblings can overlap when a
+    toolkit's minimum size is wider than its tile (the solver's overflow
+    state: two GTK fixtures in a 360 px container after the third member
+    closes), and a client-side-decorated neighbour paints its drop shadow past
+    its frame -- an active GTK window darkens the next 15 px or so. The centre
+    of the solver's *target* tile then sat 7 px from the active sibling's edge
+    and read a few units too dark. Every other shown window therefore counts
+    with an INPUT_MARGIN band here, siblings included; the tile centre is the
+    fallback when nothing is that clear.
+    """
+    x, y, width, height = rect(inventory[title]["geometry"])
+    others = [rect(window["geometry"]) for other, window in inventory.items()
+              if other != title and not window["hidden"] and not window["minimized"]
+              and window["stackIndex"] > inventory[title]["stackIndex"]]
+    for fy in _GRID:
+        for fx in _GRID:
+            if fy < 0.2:
+                continue
+            point = (x + width * fx, y + height * fy)
+            if not any(_contains((ox - INPUT_MARGIN, oy - INPUT_MARGIN,
+                                  ow + 2 * INPUT_MARGIN, oh + 2 * INPUT_MARGIN), point)
+                       for ox, oy, ow, oh in others):
+                return point
+    return content_point(inventory[title]["targetGeometry"])
 
 
 @dataclass(frozen=True)
