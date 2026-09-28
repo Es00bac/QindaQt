@@ -9,6 +9,7 @@
 
 #include "qindaqt/hybrid_input/containerchords.h"
 
+#include <core/inputdevice.h>
 #include <input.h>
 #include <input_event.h>
 
@@ -50,22 +51,25 @@ bool KWinInteractionFilter::tabletPointer(const HybridInput::PointerEvent &event
         if (m_controller.active()) {
             return false;
         }
-        const auto decision = m_controller.pointerPress(event);
-        if (decision.consumed) {
-            m_tabletGesture = true;
-            static_cast<void>(dispatch(decision));
-            return true;
+        // AGENT-GUARD: never consume an unclaimed tablet press. Without the
+        // window-management modifier the tip, eraser and barrel reach the
+        // client exactly as before ADR-0282; only chrome QindaQt draws (tabs,
+        // container buttons, icon chips) claims a plain pen press, as it
+        // claims a plain mouse press.
+        if (!routeButton(event, true)) {
+            return false;
         }
-        // AGENT-GUARD: never consume an unclaimed tablet press. The barrel's
-        // plain right-click and every stroke must reach the client exactly as
-        // before ADR-0282.
-        return event.changedButton == Qt::RightButton && modifierWindowResize(event);
+        // A KWin-owned modifier resize is driven by KWin's own move/resize
+        // filter, which sits before this one and consumes the pen's motion
+        // and lift itself; only our own routers hold the pen.
+        m_tabletGesture = routersActive();
+        return true;
     }
     if (!m_tabletGesture) {
         return false;
     }
-    static_cast<void>(dispatch(m_controller.pointerRelease(event)));
-    if (!m_controller.active() || m_tablet.buttons() == Qt::NoButton) {
+    static_cast<void>(routeButton(event, false));
+    if (!routersActive() || m_tablet.buttons() == Qt::NoButton) {
         m_tabletGesture = false;
     }
     return true;
@@ -76,8 +80,18 @@ bool KWinInteractionFilter::tabletToolTip(KWin::TabletToolTipEvent *event)
     if (!event) {
         return false;
     }
+    m_penIsLastPointer = true;
     const bool down = event->type == KWin::TabletToolTipEvent::Press;
-    return tabletPointer(m_tablet.tip(down, event->position, keyboardModifiers()), down);
+    const auto tool = event->tool && event->tool->type() == KWin::InputDeviceTabletTool::Eraser
+        ? HybridInput::TabletTool::Eraser
+        : HybridInput::TabletTool::Pen;
+    const auto pointer = m_tablet.contact(tool, down, event->position, keyboardModifiers(),
+                                          m_controller.pointerModifiers());
+    if (!pointer) {
+        // An eraser without the modifier: an ordinary eraser for the client.
+        return m_tabletGesture;
+    }
+    return tabletPointer(*pointer, down);
 }
 
 bool KWinInteractionFilter::tabletToolButton(KWin::TabletToolButtonEvent *event)
@@ -97,12 +111,13 @@ bool KWinInteractionFilter::tabletToolAxis(KWin::TabletToolAxisEvent *event)
     if (!event) {
         return false;
     }
+    m_penIsLastPointer = true;
     const auto motion = m_tablet.motion(event->position, keyboardModifiers());
     if (!m_tabletGesture) {
         return false;
     }
-    static_cast<void>(dispatch(m_controller.pointerMove(motion)));
-    if (!m_controller.active()) {
+    static_cast<void>(routeMotion(motion));
+    if (!routersActive()) {
         m_tabletGesture = false;
     }
     return true;
@@ -113,23 +128,33 @@ bool KWinInteractionFilter::tabletToolProximity(KWin::TabletToolProximityEvent *
     if (!event) {
         return false;
     }
+    m_penIsLastPointer = true;
     if (event->type == KWin::TabletToolProximityEvent::EnterProximity) {
         static_cast<void>(m_tablet.motion(event->position, keyboardModifiers()));
         return false;
     }
     // A pen lifted away mid-gesture never sends its button-up: release what
-    // it still holds so the controller ends the gesture (never left active).
+    // it still holds so every router ends the gesture (never left active).
     const auto releases = m_tablet.leaveProximity(keyboardModifiers());
     if (m_tabletGesture) {
         for (const auto &release : releases) {
-            static_cast<void>(dispatch(m_controller.pointerRelease(release)));
+            static_cast<void>(routeButton(release, false));
         }
         if (m_controller.active()) {
             static_cast<void>(dispatch(m_controller.cancel()));
         }
+        cancelChrome();
         m_tabletGesture = false;
     }
     return false;
+}
+
+bool KWinInteractionFilter::tabletDrivesInput() const
+{
+    // AGENT-NOTE: not KWin's lastInputHandler(): keyboard input claims it
+    // before any filter runs, so a key pressed mid pen-drag would read as
+    // keyboard. Pointer and tablet events maintain m_penIsLastPointer.
+    return m_penIsLastPointer;
 }
 
 bool KWinInteractionFilter::earlyPointerAxis(KWin::PointerAxisEvent *event)

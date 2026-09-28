@@ -22,6 +22,7 @@
 
 #include "../src/activation_environment.h"
 #include "../src/resident_service_refresh.h"
+#include "../src/replaced_activation_owner.h"
 
 #include <utility>
 
@@ -104,6 +105,10 @@ int main(int argc, char *argv[])
     // desktop consumer starts. See resident_service_refresh.h.
     refreshResidentServices(QDBusConnection::sessionBus(),
                             residentServiceRefreshUnits(), {}, activationScope);
+    // Same boundary: an update may have replaced a D-Bus-activated service
+    // that is still running from the previous login (replaced_activation_owner.h).
+    static_cast<void>(retireReplacedActivationOwners(
+        QDBusConnection::sessionBus(), replacedActivationServiceNames(), activationScope));
 
     SessionProcessOptions options;
     options.notificationHostExecutable = parser.value(QStringLiteral("notification-host"));

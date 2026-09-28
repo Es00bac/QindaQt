@@ -166,16 +166,24 @@ private:
     void expireTitlePickup();
     [[nodiscard]] bool applyTitlePickup(const HybridInput::TouchPickupDecision &decision);
     void finishTouchGesture();
-    // ADR-0282 (kwininteractionfilter_chords.cpp): the pen speaks the mouse
-    // chords (tip = left, barrel = right) through TabletPointerTranslator,
+    // One routing for mouse and pen buttons and motion: container chrome,
+    // then icon chips, then the controller, then KWin's modifier resize.
+    [[nodiscard]] bool routeButton(const HybridInput::PointerEvent &event, bool pressed);
+    [[nodiscard]] bool routeMotion(const HybridInput::PointerEvent &event);
+    [[nodiscard]] bool routersActive() const;
+    // ADR-0282 (kwininteractionfilter_chords.cpp): the pen reaches the same
+    // routing as the mouse through TabletPointerTranslator (Meta + tip moves,
+    // Meta + Ctrl + tip resizes, Meta + eraser docks, barrel = right button),
     // modifier + wheel rolls containers, and modifier + right button resizes
-    // an ordinary window. Tablet events stay the client's unless the
-    // controller claimed the press that began the gesture.
+    // an ordinary window. Tablet events stay the client's unless a router
+    // claimed the press that began the gesture.
     [[nodiscard]] bool tabletToolTip(KWin::TabletToolTipEvent *event);
     [[nodiscard]] bool tabletToolButton(KWin::TabletToolButtonEvent *event);
     [[nodiscard]] bool tabletToolAxis(KWin::TabletToolAxisEvent *event);
     [[nodiscard]] bool tabletToolProximity(KWin::TabletToolProximityEvent *event);
     [[nodiscard]] bool tabletPointer(const HybridInput::PointerEvent &event, bool pressed);
+    // True when the pen, not the mouse, produced KWin's latest input.
+    [[nodiscard]] bool tabletDrivesInput() const;
     [[nodiscard]] bool earlyPointerAxis(KWin::PointerAxisEvent *event);
     [[nodiscard]] bool modifierWindowResize(const HybridInput::PointerEvent &event);
     [[nodiscard]] Qt::KeyboardModifiers keyboardModifiers() const;
@@ -210,8 +218,12 @@ private:
     HybridInput::LateShiftTakeoverDetector m_lateShiftDetector;
     ModifierChordHooks m_modifierChords;
     HybridInput::TabletPointerTranslator m_tablet;
-    // True from a tablet press the controller claimed until its release.
+    // True from a tablet press a router claimed (or a pen-driven native move
+    // the late-Shift takeover adopted) until its release: every pen motion
+    // and lift in between belongs to QindaQt, never to KWin or the client.
     bool m_tabletGesture = false;
+    // Whether the pen (true) or the mouse moved or clicked most recently.
+    bool m_penIsLastPointer = false;
     HybridInput::WheelRollChord m_wheelRoll;
     TouchPickupHooks m_touchPickupHooks;
     HybridInput::TouchTitlePickup m_titlePickup;

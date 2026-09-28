@@ -12,6 +12,8 @@ target_sources(
         src/first_launch_welcome.h
         src/session_optional_child.cpp
         src/polkit_agent_selection.cpp
+        src/replaced_activation_owner.cpp
+        src/replaced_activation_owner.h
         src/resident_service_refresh.cpp
         src/resident_service_refresh.h
         src/session_activation_policy.cpp

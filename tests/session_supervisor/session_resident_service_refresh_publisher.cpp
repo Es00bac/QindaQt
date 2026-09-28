@@ -9,6 +9,14 @@
 int main(int argc, char **argv)
 {
     QCoreApplication application(argc, argv);
+    // `--own <name>`: stand in for a D-Bus-activated service by owning
+    // <name> until terminated (replaced_activation_owner tests).
+    if (argc == 3 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--own")) {
+        if (!QDBusConnection::sessionBus().registerService(QString::fromLocal8Bit(argv[2]))) {
+            return 4;
+        }
+        return application.exec();
+    }
     // Optional leading `--socket <path>`: explicit systemd private-socket
     // path for the hermetic lane; everything else stays unit names, exactly
     // like the session supervisor call.

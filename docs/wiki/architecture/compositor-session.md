@@ -654,6 +654,11 @@ D-Bus call is bounded and best-effort; a missing unit or transport failure is
 logged and does not stop the session. See
 [ADR-0094](../adr/0094-refresh-resident-wayland-session-services.md).
 
+Right after that refresh the supervisor retires any D-Bus-activated Settings1
+or QindaQt portal owner whose executable an update has replaced
+(`retireReplacedActivationOwners`); an up-to-date owner is left alone and the
+next call activates the installed binary (ADR-0094, 2026-09-28 amendment).
+
 The private-bus `qindaqt.session-resident-service-refresh` gate covers both the
 mechanism (against a fake user manager, including one unit failing to restart
 without stopping the request for the rest) and the fixed production list, and

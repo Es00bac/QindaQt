@@ -67,6 +67,7 @@ private Q_SLOTS:
     void rebindingTheModifierMovesEveryChord();
     void penTipAndBarrelSpeakTheSameChords();
     void penLeavingProximityReleasesWhatIsHeld();
+    void penTipAndEraserFollowTheOwnersPenChords();
 };
 
 void ContainerChordsTest::classifiesEveryChord()
@@ -315,6 +316,77 @@ void ContainerChordsTest::penLeavingProximityReleasesWhatIsHeld()
     QVERIFY(!controller.active());
     QCOMPARE(pen.buttons(), Qt::MouseButtons(Qt::NoButton));
     QVERIFY(pen.leaveProximity(Meta).isEmpty());
+}
+
+// Owner, 2026-09-28: "Using the tip moves a window regularly, moves a
+// container, while holding meta. While holding meta, if you use the eraser,
+// it moves a window into and out of containers ... If you're not, then it's
+// just a normal eraser." and "meta+ctrl+tip resizes a window or container".
+void ContainerChordsTest::penTipAndEraserFollowTheOwnersPenChords()
+{
+    RecordingResolver resolver;
+    resolver.hit = groupedMember();
+    resolver.frame = QRectF(0, 0, 900, 600);
+    InteractionController controller(resolver, {.dragThreshold = 0.0});
+    TabletPointerTranslator pen;
+    const std::optional<Qt::KeyboardModifiers> dock = MetaShift;
+    const Qt::KeyboardModifiers MetaCtrl = Qt::MetaModifier | Qt::ControlModifier;
+
+    // Meta + tip moves the container.
+    auto down = pen.contact(TabletTool::Pen, true, {100, 100}, Meta, dock);
+    QVERIFY(down.has_value());
+    QCOMPARE(down->changedButton, Qt::LeftButton);
+    QVERIFY(controller.pointerPress(*down).consumed);
+    QCOMPARE(controller.pointerMove(pen.motion({120, 100}, Meta)).intents.constFirst().kind,
+             InteractionKind::ContainerMove);
+    // Letting go of Meta before lifting still ends the same gesture.
+    auto up = pen.contact(TabletTool::Pen, false, {130, 100}, Qt::NoModifier, dock);
+    QVERIFY(up.has_value());
+    QCOMPARE(controller.pointerRelease(*up).intents.constFirst().phase, IntentPhase::Commit);
+    QVERIFY(!controller.active());
+
+    // Meta + eraser docks the one window, and its motion stays a docking drag.
+    down = pen.contact(TabletTool::Eraser, true, {100, 100}, Meta, dock);
+    QVERIFY(down.has_value());
+    QCOMPARE(down->modifiers, MetaShift);
+    QVERIFY(controller.pointerPress(*down).consumed);
+    QCOMPARE(controller.interactionKind(), InteractionKind::MemberDock);
+    QCOMPARE(pen.motion({140, 100}, Meta).modifiers, MetaShift);
+    static_cast<void>(controller.pointerRelease(
+        *pen.contact(TabletTool::Eraser, false, {140, 100}, Meta, dock)));
+    QVERIFY(!controller.active());
+
+    // Meta + Ctrl + tip resizes from the nearest corner.
+    down = pen.contact(TabletTool::Pen, true, {880, 590}, MetaCtrl, dock);
+    QVERIFY(down.has_value());
+    QCOMPARE(down->changedButton, Qt::RightButton);
+    QCOMPARE(down->modifiers, Qt::KeyboardModifiers(Meta));
+    QVERIFY(controller.pointerPress(*down).consumed);
+    const auto resized = controller.pointerMove(pen.motion({900, 610}, MetaCtrl));
+    QCOMPARE(resized.intents.constFirst().kind, InteractionKind::ContainerResize);
+    QCOMPARE(resized.intents.constFirst().source.edges, Qt::BottomEdge | Qt::RightEdge);
+    up = pen.contact(TabletTool::Pen, false, {900, 610}, MetaCtrl, dock);
+    QCOMPARE(up->changedButton, Qt::RightButton);
+    QCOMPARE(controller.pointerRelease(*up).intents.constFirst().phase, IntentPhase::Commit);
+
+    // Without Meta the eraser is the application's: nothing to map or claim.
+    QVERIFY(!pen.contact(TabletTool::Eraser, true, {10, 10}, Qt::NoModifier, dock).has_value());
+    QVERIFY(!pen.contact(TabletTool::Eraser, false, {10, 10}, Qt::NoModifier, dock).has_value());
+    QVERIFY(!pen.contact(TabletTool::Eraser, true, {10, 10}, Qt::ShiftModifier, dock).has_value());
+    // A plain tip is a plain left press the controller never claims.
+    down = pen.contact(TabletTool::Pen, true, {10, 10}, Qt::NoModifier, dock);
+    QVERIFY(down.has_value());
+    QVERIFY(!controller.pointerPress(*down).consumed);
+    // With modifier gestures disabled nothing is a chord and the eraser stays plain.
+    QVERIFY(!pen.contact(TabletTool::Eraser, true, {10, 10}, Meta, std::nullopt).has_value());
+
+    // KWin's own move/resize filter can consume a lift QindaQt never sees;
+    // the next press forgets that contact instead of reporting it held.
+    TabletPointerTranslator kwinOwned;
+    static_cast<void>(kwinOwned.contact(TabletTool::Pen, true, {5, 5}, MetaCtrl, dock));
+    QCOMPARE(kwinOwned.buttons(), Qt::MouseButtons(Qt::RightButton));
+    down = kwinOwned.contact(TabletTool::Pen, true, {6, 6}, Meta, dock);
+    QCOMPARE(down->buttons, Qt::MouseButtons(Qt::LeftButton));
 }
 
 QTEST_GUILESS_MAIN(ContainerChordsTest)
