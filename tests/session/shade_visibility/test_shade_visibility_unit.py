@@ -189,6 +189,21 @@ class TiledSiblingTests(unittest.TestCase):
         self.assertIsNotNone(uncovered_content_point(inventory, "middle"))
         self.assertFalse(uncovered(inventory, "middle", (270.0, 300.0)))  # inside left's frame
 
+    def test_pixel_checks_stay_clear_of_an_overflowing_siblings_shadow(self) -> None:
+        # The lifecycle replay after the anchor closed: two GTK fixtures whose
+        # minimum width (262) overflows their 178 px tiles, the active one on
+        # top. Its drop shadow tinted the target tile's centre (7 px away).
+        from shade_control import INPUT_MARGIN, clear_content_point
+        inventory = {"a": {**window(781, 309, 262, 490, 2, container="c1"),
+                           "targetGeometry": {"x": 781, "y": 309, "width": 178, "height": 490}},
+                     "c": {**window(961, 309, 263, 490, 1, container="c1"),
+                           "targetGeometry": {"x": 961, "y": 309, "width": 178, "height": 490}}}
+        point = clear_content_point(inventory, "c")
+        self.assertGreater(point[0], 781 + 262 + INPUT_MARGIN)
+        self.assertLess(point[0], 961 + 263)
+        # Nothing above the top window: its own centre.
+        self.assertEqual(clear_content_point(inventory, "a"), (781 + 131.0, 309 + 245.0))
+
 
 MEMBER_A, MEMBER_B = shade_fixtures.MEMBER_A_TITLE, shade_fixtures.MEMBER_B_TITLE
 
