@@ -4132,3 +4132,25 @@ worker, including a PAM module blocked outside a conversation callback.
 
 These slices establish neither the installed Qt greeter nor real owner-password
 qualification. See [ADR-0299](../adr/0299-native-locker-private-launch-and-authentication.md).
+
+### PF7 native worker parent and Qt role interoperability
+
+`lock.worker-process` exercises the actual asynchronous native parent and its
+owned private-confdir worker: authenticated/account-approved completion,
+password/account failure, cancellation, missing child, one-shot completion and
+keyring notification fallback. A synthetic module reports entry into a blocking
+PAM call; the native parent then terminates only that disposable child at its
+whole-attempt deadline. Production root-managed executable/Qt paths reject a
+user-writable alias; no runtime path/configuration injection is compiled into
+the production client.
+
+The fork's non-installable authorization build accepts an explicit
+`QINDAQT_PRIVATE_QT_LOCK_PROBE` CMake FILEPATH pointing to the consumer's built
+`qindaqt-private-lock-window`. PF7 qualification requires this fixture and the
+`nativeQtSurfaces` rows; the baseline server matrix remains usable independently.
+The client is the real Qt Wayland shell adapter, not a protocol mock: the rows
+check two mapped/input-eligible roles and actual physical framebuffer pixels at
+100% and 150%, incremental output add/remove, and protected black fallback after
+owned-client termination. The fixture contains no PAM-success/unlock method and
+is never installed. Qt initial construction must not commit before configure
+acknowledgement; server protocol validation remains unchanged.

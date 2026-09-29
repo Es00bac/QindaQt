@@ -8,6 +8,7 @@
 #include <security/pam_modules.h>
 #include <string>
 #include <vector>
+#include <unistd.h>
 extern "C" int pam_sm_authenticate(pam_handle_t *handle, int, int argc,
                                    const char **argv) {
   const std::string mode = argc ? argv[0] : "deny";
@@ -16,6 +17,14 @@ extern "C" int pam_sm_authenticate(pam_handle_t *handle, int, int argc,
     return PAM_SYSTEM_ERR;
   }
   const auto *conv = static_cast<const pam_conv *>(item);
+  if (mode == "block") {
+    const pam_message notice{PAM_TEXT_INFO, "Synthetic fixture entering blocked PAM module"};
+    const pam_message *messages[] = {&notice};
+    pam_response *response = nullptr;
+    if (conv->conv(1, messages, &response, conv->appdata_ptr) != PAM_SUCCESS) return PAM_AUTH_ERR;
+    free(response);
+    usleep(1000000); // Parent must terminate its own blocked worker, not await callback.
+  }
   const std::string text = mode == "huge-prompt" ? std::string(4097, 'x')
                                                  : "Synthetic fixture password";
   const pam_message prompt{mode == "invalid-style" ? 999 : PAM_PROMPT_ECHO_OFF,
@@ -47,3 +56,15 @@ extern "C" int pam_sm_acct_mgmt(pam_handle_t *, int, int argc,
   return argc && !strcmp(argv[0], "account-deny") ? PAM_ACCT_EXPIRED
                                                   : PAM_SUCCESS;
 }
+
+extern "C" int pam_sm_open_session(pam_handle_t *handle, int, int argc, const char **argv) {
+  const void *item = nullptr;
+  if (pam_get_item(handle, PAM_CONV, &item) != PAM_SUCCESS || !item) return PAM_SYSTEM_ERR;
+  const auto *conv = static_cast<const pam_conv *>(item);
+  const pam_message notice{PAM_TEXT_INFO, "Synthetic approved keyring session notification"};
+  const pam_message *messages[] = {&notice}; pam_response *response = nullptr;
+  if (conv->conv(1, messages, &response, conv->appdata_ptr) != PAM_SUCCESS) return PAM_SYSTEM_ERR;
+  free(response);
+  return argc && !strcmp(argv[0], "keyring-fallback") ? PAM_SYSTEM_ERR : PAM_SUCCESS;
+}
+extern "C" int pam_sm_close_session(pam_handle_t *, int, int, const char **) { return PAM_SUCCESS; }

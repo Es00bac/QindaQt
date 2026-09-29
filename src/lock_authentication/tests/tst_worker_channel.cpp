@@ -85,7 +85,7 @@ private Q_SLOTS:
     QTemporaryDir configuration; QVERIFY(configuration.isValid());
     QFile service(configuration.filePath("qindaqt-lock")); QVERIFY(service.open(QIODevice::WriteOnly));
     const QByteArray module = QINDAQT_PRIVATE_PAM_MODULE_PATH;
-    service.write("auth required " + module + " " + mode.toUtf8() + "\naccount required " + module + " " + account.toUtf8() + "\n"); service.close();
+    service.write("auth required " + module + " " + mode.toUtf8() + "\naccount required " + module + " " + account.toUtf8() + "\nsession optional " + module + " " + account.toUtf8() + "\n"); service.close();
     OwnedWorker worker; const int fd = worker.start(configuration.path()); QVERIFY(fd >= 0);
     WorkerChannel channel(fd, std::chrono::seconds(3));
     const AttemptToken token{19, 31}; QVERIFY(channel.send({WireKind::Begin, token, {}}));
@@ -99,6 +99,11 @@ private Q_SLOTS:
       QVERIFY(channel.send({responseKind == "cancel" ? WireKind::Cancel : WireKind::Response,
                             responseKind == "stale" ? AttemptToken{18, 31} : token,
                             responseKind == "cancel" ? "" : "fixture-response"}));
+      frame = channel.receive(); QVERIFY(frame);
+    }
+    if (frame->kind == WireKind::Information) {
+      QCOMPARE(outcome, int(Outcome::Authenticated));
+      QVERIFY(frame->payload.find("approved keyring session") != std::string::npos);
       frame = channel.receive(); QVERIFY(frame);
     }
     QCOMPARE(frame->kind, WireKind::Result); QCOMPARE(frame->token, token);

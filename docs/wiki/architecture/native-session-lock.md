@@ -77,3 +77,22 @@ current-generation physical presentation, including clientless black fallback.
 The prior PF5/PF6 integrated server and this candidate are separate executable
 boundaries until manager integration. Native greeter/UI/PAM/service delivery is
 still qualified independently.
+
+The Qt shell integration assigns the immutable standard lock role during the
+native pre-show resource check. It suppresses Qt's usual initial shell commit
+until configure is acknowledged, applies the latest output size, and exposes
+only the configured surface. One role per real output is enforced; placeholder
+screens have no lock role. The native protocol boundary is never exposed to QML
+and waits for server sync after authenticated unlock. The private real-window
+probe proves actual compositor pixels at normal and 150% scale, output add/remove
+and crash-black recovery on the compositor-created connection.
+
+The owned native worker client bounds framing, handles partial writes, accepts
+only its current token/result plus normal worker exit, and kills its own child
+at the whole-attempt deadline even inside a blocked PAM module. Cancellation
+invalidates the controller token before child termination. After authentication
+and account approval, the worker invokes the optional handle-bound keyring PAM
+session notification, closes it and ends PAM while its conversation is alive,
+then reports approval. Keyring failure permits its later prompt fallback; it
+never supplies unlock authority. The final `qindaqt-lock` service stack must not
+open a second login/logind session. Its distro/package delivery remains held.

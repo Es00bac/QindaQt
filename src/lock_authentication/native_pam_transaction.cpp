@@ -11,6 +11,7 @@ NativePamTransaction::NativePamTransaction(std::string fixtureConfiguration)
 #endif
 NativePamTransaction::~NativePamTransaction() {
   if (m_handle) {
+    if (m_sessionOpened) pam_close_session(m_handle, 0);
     pam_end(m_handle, m_status);
   }
 }
@@ -53,7 +54,16 @@ bool NativePamTransaction::approveAccount() {
   m_status = pam_acct_mgmt(m_handle, 0);
   // Expired credentials require a separate sign-in/password-change flow;
   // PAM_NEW_AUTHTOK_REQD is never an authenticated unlock result.
-  return m_status == PAM_SUCCESS;
+  m_accountApproved = m_status == PAM_SUCCESS;
+  return m_accountApproved;
+}
+void NativePamTransaction::notifyApprovedUnlock() {
+  if (!m_accountApproved || m_sessionAttempted || !m_conversation || m_conversation->cancelled()) return;
+  m_sessionAttempted = true;
+  // AGENT-CONTRACT: qindaqt-lock session stack is only the optional protected
+  // keyring handoff, never a second login/logind session (ADR-0299, PK3).
+  m_sessionOpened = pam_open_session(m_handle, 0) == PAM_SUCCESS;
+  if (m_sessionOpened) { pam_close_session(m_handle, 0); m_sessionOpened = false; }
 }
 int NativePamTransaction::converse(int count, const pam_message **messages,
                                    pam_response **responses, void *context) {
