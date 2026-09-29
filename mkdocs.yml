@@ -107,6 +107,7 @@ nav:
       - Audio1 version 2: reference/audio1-v2.md
       - Audio1 schema 12: reference/audio1-v12.md
       - Audio1 schema 13: reference/audio1-v13.md
+      - Audio1 schema 14: reference/audio1-v14.md
       - "VoiceMeeter Potato parity target": reference/voicemeeter-potato-parity.md
       - "Request checklist: audio, OBS, file manager, tray, roll-up, Wine": reference/qindaqt-request-checklist.md
       - "Audio macro buttons": reference/audio-macro-buttons.md

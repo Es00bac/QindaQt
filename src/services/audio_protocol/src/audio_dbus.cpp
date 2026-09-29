@@ -288,7 +288,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, DenoiserSettings 
 QDBusArgument &operator<<(QDBusArgument &argument, const BusProcessing &value)
 {
     argument.beginStructure();
-    argument << value.equalizer << static_cast<quint32>(value.mode);
+    argument << value.equalizer << static_cast<quint32>(value.mode) << value.delayMs;
     argument.endStructure();
     return argument;
 }
@@ -297,7 +297,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, BusProcessing &va
 {
     quint32 mode = 0;
     argument.beginStructure();
-    argument >> value.equalizer >> mode;
+    argument >> value.equalizer >> mode >> value.delayMs;
     argument.endStructure();
     value.mode = static_cast<BusMode>(mode);
     return argument;

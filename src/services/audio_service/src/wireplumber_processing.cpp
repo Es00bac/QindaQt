@@ -247,20 +247,48 @@ QByteArray busProcessingModuleArguments(const QString &busId, const QString &dev
     }
     // The mode is the output port mapping: which chain end feeds which
     // channel of the device.
-    QString outputs;
+    QString outLeft;
+    QString outRight;
     switch (processing.mode) {
     case BusMode::Normal:
-        outputs = QStringLiteral("\"eq_l_high:Out\" \"eq_r_high:Out\"");
+        outLeft = QStringLiteral("eq_l_high:Out");
+        outRight = QStringLiteral("eq_r_high:Out");
         break;
     case BusMode::SwapChannels:
-        outputs = QStringLiteral("\"eq_r_high:Out\" \"eq_l_high:Out\"");
+        outLeft = QStringLiteral("eq_r_high:Out");
+        outRight = QStringLiteral("eq_l_high:Out");
         break;
     case BusMode::LeftToBoth:
-        outputs = QStringLiteral("\"eq_l_high:Out\" \"eq_l_high:Out\"");
+        outLeft = QStringLiteral("eq_l_high:Out");
+        outRight = QStringLiteral("eq_l_high:Out");
         break;
     case BusMode::RightToBoth:
-        outputs = QStringLiteral("\"eq_r_high:Out\" \"eq_r_high:Out\"");
+        outLeft = QStringLiteral("eq_r_high:Out");
+        outRight = QStringLiteral("eq_r_high:Out");
         break;
+    }
+    // The delay stage (ADR-0288 dated addendum): PipeWire's builtin "delay"
+    // filter, mono ("In"/"Out" only - verified against the installed
+    // PipeWire 1.6.8 filter-chain manual, libpipewire-module-filter-chain(7)),
+    // one instance per final output channel, appended after the mode's
+    // channel routing so the same delay reaches whichever EQ chain the mode
+    // selected. Zero means no node at all: the bus plays exactly as it did
+    // before this stage existed.
+    QString outputs;
+    if (processing.delayMs > 0) {
+        const QString delaySeconds = number(processing.delayMs / 1000.0);
+        nodes << QStringLiteral(
+                     "{ type = builtin name = delay_l label = delay config = {"
+                     " \"max-delay\" = 1.0 } control = { \"Delay (s)\" = %1 } }"
+                     " { type = builtin name = delay_r label = delay config = {"
+                     " \"max-delay\" = 1.0 } control = { \"Delay (s)\" = %1 } }")
+                     .arg(delaySeconds);
+        links << QStringLiteral("{ output = \"%1\" input = \"delay_l:In\" }"
+                                " { output = \"%2\" input = \"delay_r:In\" }")
+                     .arg(outLeft, outRight);
+        outputs = QStringLiteral("\"delay_l:Out\" \"delay_r:Out\"");
+    } else {
+        outputs = QStringLiteral("\"%1\" \"%2\"").arg(outLeft, outRight);
     }
     return QStringLiteral(
                "{ node.name = \"%1\" node.description = \"QindaQt bus rack %2\""
