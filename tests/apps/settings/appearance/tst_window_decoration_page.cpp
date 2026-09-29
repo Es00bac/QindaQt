@@ -98,6 +98,7 @@ class WindowDecorationPageTests final : public QObject {
 private slots:
     void listsAppliesAndGatesForeignDecorationPreview();
     void offersEveryButtonStyleAndTitleBarOption();
+    void containerTitleDoubleClickDefaultIsNeverWrittenAsAChoice();
 };
 
 void WindowDecorationPageTests::listsAppliesAndGatesForeignDecorationPreview()
@@ -212,6 +213,49 @@ void WindowDecorationPageTests::offersEveryButtonStyleAndTitleBarOption()
     }
     // A container bar's height belongs to the container layout: no option.
     QVERIFY(item(scene.root, QStringLiteral("appearanceContainerTitleHeight_tall")) == nullptr);
+}
+
+// Caveat: a stored appearance.containerTitleDoubleClick=none, produced by
+// opening the page rather than by picking Nothing, must never happen.
+// SegmentedChoiceRow reacts to Button.clicked(), not toggled(), so the
+// delegate checked bindings settling (Repeater creation order, autoExclusive)
+// can never reach ChromeChoice's setDraftValue(). The stub's initial draft
+// carries no appearance.containerTitleDoubleClick entry at all (nobody has
+// picked anything yet), so any write here at all is the regression.
+void WindowDecorationPageTests::containerTitleDoubleClickDefaultIsNeverWrittenAsAChoice()
+{
+    const auto scene = createScene();
+    QVERIFY2(scene.root != nullptr, qPrintable(scene.error));
+    auto *destination = item(scene.root, QStringLiteral("appearanceThemeDetailsButton"));
+    QVERIFY(destination != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(destination, "click"));
+    QCoreApplication::processEvents();
+
+    QQuickItem *theme = nullptr;
+    QTRY_VERIFY((theme = item(scene.root,
+                              QStringLiteral("appearanceContainerTitleDoubleClick_theme")))
+                != nullptr);
+    // Give the exclusive group and its declarative checked bindings time to
+    // settle: this is exactly the window a toggled()-driven handler could
+    // fire spuriously in.
+    QTest::qWait(50);
+    QCoreApplication::processEvents();
+
+    const QString key = QStringLiteral("appearance.containerTitleDoubleClick");
+    QVERIFY2(!scene.model->draft.contains(key),
+            "opening the page wrote a containerTitleDoubleClick draft value that "
+            "nobody chose");
+    QVERIFY2(!scene.model->draftKeys.contains(key),
+            "opening the page called setDraftValue(containerTitleDoubleClick) "
+            "without a click");
+    QVERIFY(theme->property("checked").toBool());
+
+    // A genuine click still works, and remains the only thing that writes it.
+    auto *none = item(scene.root,
+                      QStringLiteral("appearanceContainerTitleDoubleClick_none"));
+    QVERIFY(none != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(none, "click"));
+    QTRY_COMPARE(scene.model->draft.value(key).toString(), QStringLiteral("none"));
 }
 
 QTEST_MAIN(WindowDecorationPageTests)
