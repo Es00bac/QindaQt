@@ -17,6 +17,14 @@ set_tests_properties(
         ENVIRONMENT "PYTHONPATH=${PROJECT_SOURCE_DIR}/tools"
 )
 
+# ADR-0286: every bundled wallpaper is a named, credited landscape image of at
+# least the minimum width. Reads PNG headers only; no image library needed.
+add_test(
+    NAME qindaqt.wallpapers-bundle
+    COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/import-wallpapers" --check
+)
+set_tests_properties(qindaqt.wallpapers-bundle PROPERTIES LABELS "unit;tools;wallpaper")
+
 add_test(
     NAME qindaqt.agent-input-installed
     COMMAND

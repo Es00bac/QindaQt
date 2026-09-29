@@ -24,6 +24,8 @@ struct CommitOutcome;
 
 namespace QindaQt::Apps::SettingsAppearance {
 
+class WallpaperTargetCatalog;
+
 // AGENT-CONTRACT: Projection of one SettingsClient scoped to
 // AppearanceKeys::scopedKeys(). The rules follow the accepted Settings1
 // controller contract (wiki/architecture/settings-service.md): last confirmed
@@ -95,6 +97,15 @@ class AppearanceSettingsModel final : public QObject {
     // The draft wallpaper as a file URL the previews paint behind their
     // windows; empty when no wallpaper is chosen or the file is unknown.
     Q_PROPERTY(QUrl previewWallpaper READ previewWallpaper NOTIFY previewChanged)
+    // ADR-0286: the displays and desktops a wallpaper can be chosen for (null
+    // until composition lends a catalog), the draft's saved per-display and
+    // per-desktop choices with their labels, and a notice when the confirmed
+    // choices could not be read.
+    Q_PROPERTY(QObject *wallpaperTargets READ wallpaperTargets NOTIFY wallpaperTargetsChanged)
+    Q_PROPERTY(QVariantList wallpaperAssignmentRows READ wallpaperAssignmentRows
+                   NOTIFY wallpaperAssignmentsChanged)
+    Q_PROPERTY(QString wallpaperAssignmentsNotice READ wallpaperAssignmentsNotice
+                   NOTIFY wallpaperAssignmentsChanged)
 
 public:
     // AGENT-CONTRACT: Construct, call, and destroy this model on the GUI
@@ -146,6 +157,13 @@ public:
     [[nodiscard]] QVariantMap previewContainerStyle() const;
     [[nodiscard]] QVariantList decorationDocuments() const;
     [[nodiscard]] QUrl previewWallpaper() const;
+    [[nodiscard]] QObject *wallpaperTargets() const;
+    [[nodiscard]] QVariantList wallpaperAssignmentRows() const;
+    [[nodiscard]] QString wallpaperAssignmentsNotice() const;
+
+    // Borrowed and guarded: composition keeps the catalog alive while QML
+    // can reach it. Null offers only the everywhere wallpaper.
+    void setWallpaperTargets(WallpaperTargetCatalog *targets);
 
     // Replaces the decoration document catalog. Construction loads the
     // standard directories; tests and focused compositions inject their own.
@@ -166,11 +184,29 @@ public:
     // Safe transport/authority refresh; never resubmits a write.
     Q_INVOKABLE void retry();
 
+    // ADR-0286 draft edits for one scope: `display` is an ADR-0017 stable id
+    // or empty for every display, `desktop` a compositor desktop id or empty
+    // for every desktop. Both empty edits `appearance.wallpaper` itself.
+    // Refused (false, draft unchanged) when editing is not allowed or the
+    // scope or wallpaper is invalid, or the choice ceiling is reached.
+    Q_INVOKABLE bool setWallpaperFor(const QString &display, const QString &desktop,
+                                     const QString &wallpaper);
+    // Removes one scope's own choice so it follows the next broader one
+    // again. The everywhere scope cannot be removed.
+    Q_INVOKABLE bool clearWallpaperFor(const QString &display, const QString &desktop);
+    // What the scope shows under the draft: {explicit, value, scope, label,
+    // previewUrl}. `scope` names the choice in effect: "display-desktop",
+    // "display", "desktop", or "everywhere" (ADR-0286 precedence).
+    Q_INVOKABLE QVariantMap wallpaperChoiceFor(const QString &display,
+                                               const QString &desktop) const;
+
 Q_SIGNALS:
     void stateChanged();
     void draftChanged();
     void previewChanged();
     void saveResultsChanged();
+    void wallpaperTargetsChanged();
+    void wallpaperAssignmentsChanged();
 
 private:
     enum class State { Loading, Ready, Saving, Conflict, Unavailable };
@@ -215,6 +251,10 @@ private:
     [[nodiscard]] static QString saveResultStateToken(SaveResultState state);
     [[nodiscard]] static QString saveResultStateLabel(SaveResultState state);
     [[nodiscard]] QSet<QString> installedThemeIds() const;
+    // Preview file URL and human name of one wallpaper preference value.
+    [[nodiscard]] QUrl previewUrlFor(const QString &value) const;
+    [[nodiscard]] QString wallpaperLabel(const QString &value) const;
+    void noteConfirmedWallpaperAssignments(const QVariantMap &values);
 
     QindaQt::Services::SettingsClient::SettingsClient &m_client;
     AppearancePreview m_preview;
@@ -224,6 +264,8 @@ private:
     UserWallpaperCatalog m_userWallpaperCatalog;
     QStringList m_installedMonospaceFamilies;
     QPointer<DesignTokens::TokenFacade> m_previewFacade;
+    QPointer<WallpaperTargetCatalog> m_wallpaperTargets;
+    bool m_wallpaperAssignmentsUnreadable = false;
 
     State m_state = State::Loading;
     AppearanceValues m_confirmed;

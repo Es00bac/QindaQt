@@ -255,6 +255,9 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shortcutnoteshortcut.h
         runtime/wallpapercontroller.cpp
         runtime/wallpapercontroller.h
+        runtime/wallpaperselectionsource.h
+        runtime/sessionwallpaperselection.cpp
+        runtime/sessionwallpaperselection.h
         runtime/gatheroverviewcomposition.cpp
         runtime/gatheroverviewcomposition.h
         runtime/kwinscreenshotpreviewport.cpp
@@ -386,6 +389,10 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             # "QindaQt.Shell.GatherOverview" found`.
             qindaqt_shell_gather_overview_uiplugin
             QindaQt::ShellWorkspacesDBus
+            # ADR-0286: per-display wallpapers join outputs to their ADR-0017
+            # stable ids through the public, read-only Display1 client.
+            QindaQt::DisplayClient
+            QindaQt::WallpaperAssignments
             QindaQt::StatusNotifierHost
             QindaQt::StatusNotifierWatcher
             QindaQt::SessionActions

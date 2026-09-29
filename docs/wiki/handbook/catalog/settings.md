@@ -15,6 +15,7 @@ All **97 keys** in active schema v2 are listed below. The immutable v1 schema re
 | `appearance.colorScheme` | string | `"system"` | `{"allowedValues":["system","light","dark"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.wallpaper` | string | `""` | None beyond type | **Active route** — Appearance owns the visible or confirmed preference boundary. |
 | `appearance.wallpaperMode` | string | `"scaled"` | `{"allowedValues":["scaled","centered","tiled"]}` | **Active route** — Appearance owns the visible or confirmed preference boundary. |
+| `appearance.wallpaperAssignments` | object | `{}` | None beyond type; the strict shape and bounds are ADR-0286's codec | **Active route** — Appearance edits per-display and per-desktop choices; the shell paints them ([Wallpapers](../../shell/wallpapers.md)). |
 | `appearance.uiScale` | number | `1.0` | `{"minimum":0.5,"maximum":3.0}` | **Missing consumer** — Appearance round-trips the key, but no visible scale editor or runtime consumer was found; Display1 output scale is separate. |
 | `appearance.accentColor` | string | `"#4f8cff"` | `{"nonEmpty":true}` | **Missing consumer** — No verified production consumer; theme/QST policy is not proof this stored key is applied. |
 | `appearance.blurEnabled` | boolean | `true` | None beyond type | **Missing consumer** — No verified production consumer. |

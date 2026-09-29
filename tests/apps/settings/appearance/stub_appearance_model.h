@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/decoration_painter/decoration_painter.h"
+#include "qindaqt/services/wallpaper_assignments/wallpaper_assignments.h"
 #include "qindaqt/themes/theme_spec.h"
 
 #include <QColor>
@@ -121,6 +122,12 @@ class StubAppearanceModel final : public QObject {
                    NOTIFY draftChanged)
     Q_PROPERTY(QUrl previewWallpaper MEMBER previewWallpaper NOTIFY draftChanged)
     Q_PROPERTY(QObject *windowDecorationSettings READ windowDecorationSettings CONSTANT)
+    // ADR-0286 wallpaper scopes. Null targets keep the everywhere-only page.
+    Q_PROPERTY(QObject *wallpaperTargets MEMBER wallpaperTargets NOTIFY stateChanged)
+    Q_PROPERTY(QVariantList wallpaperAssignmentRows MEMBER wallpaperAssignmentRows
+                   NOTIFY draftChanged)
+    Q_PROPERTY(QString wallpaperAssignmentsNotice MEMBER wallpaperAssignmentsNotice
+                   NOTIFY draftChanged)
 
 public:
     explicit StubAppearanceModel(QObject *parent = nullptr) : QObject(parent) {}
@@ -173,6 +180,51 @@ public:
         return true;
     }
     Q_INVOKABLE void retry() { ++retries; }
+
+    // Mirrors AppearanceSettingsModel's scoped edits through the same shared
+    // codec and precedence, recording every call for the page tests.
+    Q_INVOKABLE bool setWallpaperFor(const QString &display, const QString &desktop,
+                                     const QString &wallpaper)
+    {
+        wallpaperCalls.append(QStringList{display, desktop, wallpaper});
+        if (display.isEmpty() && desktop.isEmpty())
+            return setDraftValue(QStringLiteral("appearance.wallpaper"), wallpaper);
+        if (wallpaperChoices.set(display, desktop, wallpaper)
+            != QindaQt::Services::WallpaperAssignments::WallpaperEditError::None) {
+            return false;
+        }
+        Q_EMIT draftChanged();
+        return true;
+    }
+    Q_INVOKABLE bool clearWallpaperFor(const QString &display, const QString &desktop)
+    {
+        clearCalls.append(QStringList{display, desktop});
+        if (display.isEmpty() && desktop.isEmpty())
+            return false;
+        wallpaperChoices.remove(display, desktop);
+        Q_EMIT draftChanged();
+        return true;
+    }
+    Q_INVOKABLE QVariantMap wallpaperChoiceFor(const QString &display,
+                                               const QString &desktop) const
+    {
+        using QindaQt::Services::WallpaperAssignments::ResolvedScope;
+        const auto resolution = wallpaperChoices.resolve(
+            draft.value(QStringLiteral("appearance.wallpaper")).toString(), display, desktop);
+        const bool own = (display.isEmpty() && desktop.isEmpty())
+            || wallpaperChoices.find(display, desktop).has_value();
+        const QString scope = resolution.scope == ResolvedScope::DisplayDesktop ? QStringLiteral("display-desktop")
+            : resolution.scope == ResolvedScope::Display ? QStringLiteral("display")
+            : resolution.scope == ResolvedScope::Desktop ? QStringLiteral("desktop")
+                                                         : QStringLiteral("everywhere");
+        return {{QStringLiteral("explicit"), own},
+                {QStringLiteral("value"), resolution.wallpaper},
+                {QStringLiteral("scope"), scope},
+                {QStringLiteral("label"), resolution.wallpaper.isEmpty()
+                                              ? QStringLiteral("No wallpaper")
+                                              : resolution.wallpaper},
+                {QStringLiteral("previewUrl"), QUrl()}};
+    }
 
     // Mirrors AppearanceSettingsModel::previewWallpaper(): the page binds
     // the wallpaper preview to this projection, so the stub derives it from
@@ -245,6 +297,12 @@ public:
     int cancels = 0;
     int retries = 0;
     StubWindowDecorationSettings windowDecorations{this};
+    QObject *wallpaperTargets = nullptr;
+    QVariantList wallpaperAssignmentRows;
+    QString wallpaperAssignmentsNotice;
+    QindaQt::Services::WallpaperAssignments::WallpaperAssignments wallpaperChoices;
+    QList<QStringList> wallpaperCalls;
+    QList<QStringList> clearCalls;
 
 Q_SIGNALS:
     void stateChanged();
