@@ -42,6 +42,7 @@ nav:
       - Native keyring storage: architecture/keyring-storage.md
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
+      - Application window management: architecture/application-window-management.md
       - QST-1 semantic design tokens: architecture/design-tokens.md
       - Qt platform appearance: architecture/qt-platform-theme.md
       - Compositor and session: architecture/compositor-session.md
@@ -464,5 +465,6 @@ nav:
       - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md
       - "ADR-0290: Native QindaQt polkit agent, and a single-agent autostart rule": adr/0290-native-polkit-agent-and-single-agent-rule.md
       - "ADR-0292: Own a bounded native keyring storage core": adr/0292-native-keyring-storage.md
+      - ADR-0298 native application window placement: adr/0298-native-application-window-placement.md
 
       - "ADR-0296: Own a native Secret Service daemon and session boundary": adr/0296-native-keyring-daemon-boundary.md

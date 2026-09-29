@@ -285,3 +285,11 @@ are separated in
 [Hybrid topology](hybrid-topology.md), [Hybrid constraints](hybrid-constraints.md),
 [Hybrid chrome](hybrid-chrome.md), and the
 [testing harness](../development/testing-harness.md).
+
+## Application-requested placement
+
+An application may explicitly place its own new window as a container tab or
+tile through the [native application window management API](application-window-management.md).
+The application chooses its shortcuts and creates content; the compositor
+authenticates both surfaces and publishes one complete topology/scene mutation.
+Ordinary clients retain their behavior when they do not use this optional API.
