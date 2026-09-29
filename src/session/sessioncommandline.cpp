@@ -58,7 +58,7 @@ void configureParser(QCommandLineParser &parser)
                       QStringLiteral("path"),
                       QStringLiteral(QINDAQT_DEFAULT_SESSION_EXECUTABLE)});
     parser.addOption({QStringLiteral("plugin-root"),
-                      QStringLiteral("Qt plugin root containing kwin/plugins."),
+                      QStringLiteral("Qt plugin root containing qindaqt-kwin/plugins."),
                       QStringLiteral("path"),
                       InstallPaths::pluginRoot()});
 }

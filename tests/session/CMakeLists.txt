@@ -68,7 +68,11 @@ qindaqt_enable_warnings(qindaqt-wayland-pointer-constraints-probe)
 
 # AGENT-CONTRACT: QindaQtKWinDecoration (qindaqt-kwin, ADR-0289) publishes the relative plugin directory used by
 # both the production install rule and this staged-install contract check.
-find_package(QindaQtKWinDecoration 6.6.6.1 EXACT REQUIRED CONFIG)
+# Only builds with the native plugin need it; bridge-only lanes (CI on a
+# distribution KWin) have no qindaqt-kwin and never use the plugin directory.
+if(QINDAQT_BUILD_KWIN_PLUGIN)
+    find_package(QindaQtKWinDecoration 6.6.6.1 EXACT REQUIRED CONFIG)
+endif()
 
 foreach(test_name IN ITEMS compositorconfigimport installpaths kwincommandbuilder sessioncommandline sessionbusbootstrap sessiondefaults sessionenvironment)
     add_executable(tst_${test_name} tst_${test_name}.cpp)

@@ -67,7 +67,7 @@ def authenticate_window_switcher_package(stage_root: Path) -> tuple[Path, ...]:
     """Authenticate the exact production KWin TabBox payload in a stage."""
 
     stage = stage_root.resolve(strict=True)
-    package = stage / "share/kwin/tabbox/qindaqt"
+    package = stage / "share/qindaqt-kwin/tabbox/qindaqt"
     try:
         info = package.lstat()
     except OSError as error:

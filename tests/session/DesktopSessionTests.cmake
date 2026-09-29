@@ -297,7 +297,7 @@ if(
     include("${CMAKE_CURRENT_LIST_DIR}/DesktopSessionRouteStaging.cmake")
     install(
         TARGETS qindaqt_compositor
-        LIBRARY DESTINATION "${KDE_INSTALL_PLUGINDIR}/kwin/plugins"
+        LIBRARY DESTINATION "${KDE_INSTALL_PLUGINDIR}/qindaqt-kwin/plugins"
         COMPONENT DesktopVirtual
     )
     # The editor links the AppShell C++ boundary directly. Its production
@@ -351,7 +351,7 @@ if(
     )
     set(
         _qindaqt_desktop_plugin_relative
-        "${KDE_INSTALL_PLUGINDIR}/kwin/plugins/$<TARGET_FILE_NAME:qindaqt_compositor>"
+        "${KDE_INSTALL_PLUGINDIR}/qindaqt-kwin/plugins/$<TARGET_FILE_NAME:qindaqt_compositor>"
     )
     set(
         _qindaqt_desktop_decoration_relative
