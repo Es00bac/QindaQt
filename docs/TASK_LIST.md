@@ -17,7 +17,8 @@ portal twin, one-shot touch lift, and saved-workspace container names. Saved wor
 custom and default names when restored under fresh IDs; unsaved live topology is not
 automatically restored on restart. The fork consumer passes 16 manager checks plus the adjacent six; native polkit passes nine manager checks and strict documentation.
 The native keyring storage core passes four focused manager checks on both hosts and
-strict documentation; its daemon/PAM/UI remain queued. Remaining native service work
+strict documentation. Its native Secret Service daemon passes nine manager gates, including
+20 private-bus protocol/lifetime cases with real clients; PAM/UI/portal/import remain active/queued. Remaining native service work
 is active, with no complete-program or installed-delivery claim.
 
 ## September 29 — Gather minimized items and expose native application placement

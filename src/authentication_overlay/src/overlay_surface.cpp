@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "polkit_overlay_surface.h"
+#include <qindaqt/authentication_overlay/overlay_surface.h>
+#include <LayerShellQt/Shell>
+#include <QThread>
 
 #include <LayerShellQt/Window>
 
@@ -8,7 +10,7 @@
 #include <QQuickWindow>
 #include <QScreen>
 
-namespace QindaQt::Apps::PolkitAgent {
+namespace QindaQt::AuthenticationOverlay {
 namespace {
 
 void setError(QString *error, const QString &message)
@@ -32,7 +34,7 @@ QScreen *screenUnderPointer()
 
 bool configureLayerWindow(QQuickWindow &window,
                           LayerShellQt::Window *layerWindow,
-                          QString *error)
+                          const QString &scope, QString *error)
 {
     if (layerWindow == nullptr) {
         setError(error, QStringLiteral(
@@ -48,7 +50,7 @@ bool configureLayerWindow(QQuickWindow &window,
         window.setGeometry(screen->geometry());
         layerWindow->setScreen(screen);
     }
-    layerWindow->setScope(QStringLiteral("polkit-agent"));
+    layerWindow->setScope(scope);
     // AGENT-GUARD: exclusive keyboard interactivity is the entire point of
     // this surface -- a password must never be typeable into whatever window
     // happened to have focus underneath it.
@@ -69,8 +71,21 @@ bool configureLayerWindow(QQuickWindow &window,
 
 } // namespace
 
-bool PolkitOverlaySurface::configure(QQuickWindow &window, QString *error)
+bool OverlaySurface::initializePlatform() {
+    if (QGuiApplication::instance()) return false;
+    QT_WARNING_PUSH
+    QT_WARNING_DISABLE_DEPRECATED
+    LayerShellQt::Shell::useLayerShell();
+    QT_WARNING_POP
+    return true;
+}
+bool OverlaySurface::configure(QQuickWindow &window, const QString &scope, QString *error)
 {
+    if (window.thread() != QThread::currentThread() || window.isVisible() || window.handle()
+        || scope.isEmpty() || scope.size() > 64) {
+        setError(error, QStringLiteral("Authentication role must be configured before native creation/show"));
+        return false;
+    }
     // LayerShellQt installs an attached Window object even for Qt offscreen;
     // only the Wayland platform can create a keyboard-exclusive protocol role.
     if (QGuiApplication::platformName() != QLatin1String("wayland")) {
@@ -78,7 +93,7 @@ bool PolkitOverlaySurface::configure(QQuickWindow &window, QString *error)
             "Wayland layer-shell is required; refusing to show an ordinary authentication window"));
         return false;
     }
-    return configureLayerWindow(window, LayerShellQt::Window::get(&window), error);
+    return configureLayerWindow(window, LayerShellQt::Window::get(&window), scope, error);
 }
 
-} // namespace QindaQt::Apps::PolkitAgent
+} // namespace QindaQt::AuthenticationOverlay
