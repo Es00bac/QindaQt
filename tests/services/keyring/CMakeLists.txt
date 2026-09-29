@@ -40,3 +40,5 @@ if(TARGET qindaqt-keyring-prompt)
     set_tests_properties(keyring_prompt_qml PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1")
 endif()
+
+add_subdirectory(pam)
