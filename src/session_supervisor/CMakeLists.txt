@@ -8,6 +8,8 @@ target_sources(
         src/activation_environment.cpp
         src/activation_environment.h
         src/direct_parent_process.cpp
+        src/keyring_session_lifetime.cpp
+        src/keyring_session_lifetime.h
         src/first_launch_welcome.cpp
         src/first_launch_welcome.h
         src/session_optional_child.cpp
@@ -22,6 +24,7 @@ target_sources(
         src/systemd_manager_port.h
         src/supervised_process_launcher.cpp
         src/tokenized_process_launcher.cpp
+        src/session_process_diagnostics.cpp
         src/session_process_supervisor.cpp
         src/session_autostart_runner.cpp
         src/session_autostart_runner.h
@@ -72,7 +75,7 @@ target_link_libraries(
         Qt6::Core
         Qt6::DBus
 )
-target_compile_definitions(qindaqt-session PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(qindaqt-session PRIVATE QINDAQT_KEYRING_INSTALL_PATH="${CMAKE_INSTALL_FULL_BINDIR}/qindaqt-keyring" QINDAQT_VERSION="${PROJECT_VERSION}")
 set_target_properties(qindaqt-session PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-session)
 

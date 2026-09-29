@@ -18,6 +18,7 @@ namespace QindaQt::SessionSupervisor {
 
 class FirstLaunchWelcome;
 class OptionalSessionChild;
+class KeyringSessionLifetime;
 class SessionAutostartRunner;
 
 struct SessionProcessOptions final {
@@ -33,6 +34,9 @@ struct SessionProcessOptions final {
     // means the session has no agent to offer; the caller resolves known
     // distribution paths before constructing the options.
     QString polkitAgentExecutable;
+    // Empty disables keyring ownership in private sessions. Production uses
+    // the installed native executable; no distribution fallback (ADR-0296).
+    QString keyringExecutable;
     // Empty disables the daemon in private sessions; production resolves the
     // distribution PowerDevil executable before constructing this supervisor.
     QString powerDevilExecutable;
@@ -154,6 +158,7 @@ private:
     std::unique_ptr<FirstLaunchWelcome> m_welcome;
     std::unique_ptr<SessionAutostartRunner> m_autostart;
     std::unique_ptr<OptionalSessionChild> m_desktopControls;
+    std::unique_ptr<KeyringSessionLifetime> m_keyring;
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;
     std::unique_ptr<OptionalSessionChild> m_globalShortcutDaemon;

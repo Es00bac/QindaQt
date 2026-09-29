@@ -311,3 +311,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0292: Own a bounded native keyring storage core](0292-native-keyring-storage.md)
 
 - [ADR-0298: Native application window placement](0298-native-application-window-placement.md)
+- [ADR-0296: Own a native Secret Service daemon and session boundary](0296-native-keyring-daemon-boundary.md)
