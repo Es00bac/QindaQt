@@ -4071,3 +4071,30 @@ omits `--plugin-root`. `session.installed-plugin-stage` uses a minimal real CMak
 fixture to prove relative artifacts and an absolute destination remain staged,
 including when the caller already has a different `DESTDIR`; it also checks
 cleanup and artifact escape refusals. See the [release gates](releases.md).
+
+## Native lock server candidate gates
+
+The fork runs `qindaqt/tools/run-native-lock build/bin/testNativeSessionLock`
+in a private virtual compositor with disposable HOME/XDG roots and D-Bus.
+Its selected socketpair clients are authorized only in a compile-time build
+that refuses installation. Production has no test authorization switch.
+
+The PF6 candidate's one focused CTest runs 23 QtTest checks, including setup and
+cleanup, with no skipped cases. Its executable evidence includes:
+
+| Boundary | Private proof |
+| --- | --- |
+| Trust and protocol | Ordinary client denied despite debug bypass; explicit roles; ten fatal request/commit errors keep the fence |
+| Presentation | Actual physical-output frame feedback before `locked`; pre-acknowledgement graphics/input denied; mirrors cannot bypass an inhibited output |
+| Failure and topology | Crash never unlocks; trusted replacement recovers; hotplug remains fenced; presented output pixels remain black after crash and hotplug |
+| Input | Ordinary keyboard/pointer/touch suppressed, native role receives events, ordinary delivery resumes after unlock; actual compositor-owned input-method socket restricted to native lock focus; effects grabs suppressed |
+| Capture | Actual Screenshot2 IPC and five screencast requests reject locked requests; direct CPU/GL window/output/region sources produce black pixels; GL state restored |
+| Production separation | Authorization-OFF, tests-OFF build with KScreenLocker lookup disabled builds compositor and capture plugins; production library has no test authorization symbol |
+
+Existing screencast streams close synchronously on acquisition and recording
+checks the lock state. The private fixture intentionally runs without a PipeWire
+daemon; it proves request rejection before stream/node creation and source
+blackening, not an external consumer's full revocation lifecycle. Physical DRM,
+installed root-owned greeter binding, PAM/account validation and native session
+services remain separate qualification gates. No live rollout is implied.
+See [Native session locking](../architecture/native-session-lock.md).
