@@ -12,3 +12,12 @@ if(COMMAND qindaqt_enable_warnings)
     qindaqt_enable_warnings(qindaqt_application_placement_tests)
     qindaqt_enable_warnings(qindaqt_application_placement_client_tests)
 endif()
+
+# Private virtual-compositor probe, invoked by run_native.py only.
+add_executable(qindaqt_application_placement_native_probe native_probe.cpp)
+target_compile_features(qindaqt_application_placement_native_probe PRIVATE cxx_std_20)
+target_link_libraries(qindaqt_application_placement_native_probe PRIVATE QindaQt::ApplicationWindowClient Qt6::Widgets)
+
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_application_placement_native_probe)
+endif()

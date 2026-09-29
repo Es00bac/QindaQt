@@ -53,7 +53,8 @@ One connection may bind four manager objects, the compositor accepts at most
 connection may submit 64 requests in each ten-second admission period, including
 invalid requests; destroying and rebinding a manager does not reset that budget.
 Request IDs must be nonzero and unique while pending. Violating that identity
-contract is a protocol error. Other refusals produce one `result` event.
+contract is a protocol error. Binding above the object limit also raises a
+protocol error. Other placement refusals produce one `result` event.
 
 | Status | Wire value | Meaning |
 | --- | --- | --- |
@@ -114,3 +115,31 @@ windows, invalid modes, and failed scene rollback. The Qt fallback gate runs
 with offscreen and fatal warnings. Native acceptance uses a private virtual
 compositor and private bus, including the installed SDK consumer and actual
 application-created surface adoption; never the user's desktop.
+
+
+Native qualification passed on 1920×1080 at scale 1 and 1.5. Each private scene
+completed 77 responses: solo tab, grouped right tile, already-grouped target
+refusal, pending cancellation, unmapped deadline, background refusal, destroyed
+target, and a 70-request burst reaching connection rate admission. Read-only
+scene snapshots verify all three members share one container, the initial page
+is minimized, the new page has two disjoint equal-height tiles, and the separate
+foreground window stays active. The installed SDK external consumer also
+compiles and runs with fatal warnings on offscreen.
+
+```sh
+ctest --test-dir build/dev --output-on-failure -R \
+  'qindaqt.application-placement|hybrid.(topology_commands|topology_placement|atomic_coordinator|layout_adoption)'
+python3 tests/application_window_management/run_native.py \
+  --launcher build/dev/src/session/qindaqt-wm \
+  --plugin-root build/dev/plugins --kwin "$QINDAQT_TEST_KWIN" \
+  --probe build/dev/tests/application_window_management/qindaqt_application_placement_native_probe \
+  --scenario tests/scenarios/single-1080p-150.json \
+  --output build/native-application-placement
+```
+
+The private fork runtime must expose its matching library and decoration plugin
+roots through `LD_LIBRARY_PATH` and `QT_PLUGIN_PATH`. The runner preserves the
+fork executable basename and uses private HOME/XDG/bus roots with host portal
+activation disabled. It never reads owner passwords or drives the live desktop.
+Session-lock denial follows the fork's lock state; these no-lockscreen virtual
+scenes do not qualify physical lock/input/capture behavior.
