@@ -44,7 +44,10 @@ it. The trusted native client boundary is the cross-process contract.
 
 PF5 is the executable protocol/server boundary. PF6 must pass private virtual
 compositor input, protocol-error, crash and topology gates before the fork drops
-its KScreenLocker build dependency. PF7 supplies the greeter/PAM and its
+its KScreenLocker build dependency. The PF6 candidate passes those isolated
+gates and removes discovery/linkage, with a separate authorization-OFF
+production build. It also rejects capture, closes existing recording streams
+and suppresses the effects paint chain while locked. PF7 supplies the greeter/PAM and its
 root-owned desktop permission entry; PF8 supplies Lock1, idle/inhibitor,
 ScreenSaver and session-service adaptation. These separate boundaries require
 separate evidence; none alone means full Plasma independence or live readiness.
