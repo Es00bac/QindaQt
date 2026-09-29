@@ -1,0 +1,40 @@
+# Native session locking
+
+[ADR-0294](../adr/0294-native-session-lock-authority.md) defines the target native
+lock boundary. Candidate server evidence differs from integrated session and
+package readiness. The released session retains its existing services until the
+manager integrates native server, greeter and service candidates.
+
+The QindaQt fork implements the standard Wayland `ext-session-lock-v1`
+protocol. Protocol resources validate surface roles, configure acknowledgements
+and output-sized buffers. A native lock window is an explicit role; other
+windows belonging to the same client gain no privilege. The controller owns
+main-thread lock state and a generation-tagged physical output presentation
+barrier. Native role loss removes graphics, not authority.
+
+The fixed installed `/usr/bin/qindaqt-lock` must be root-owned and not writable
+by the session user, including its parent directory hierarchy. Peer UID equals
+compositor UID and executable inode/device matches the installed file. Its
+desktop entry requests `ext_session_lock_manager_v1` using the public interface
+permission field. Debug permission bypass, executable names and sandbox app IDs
+cannot grant access. Unlock revalidates the current peer.
+
+The compositor trusts that executable to authenticate through PAM and account
+validation before `unlock_and_destroy`. PF7 supplies the executable, PAM and
+desktop permission entry. PF8 adapts idle/inhibitors, Lock1/ScreenSaver, session
+supervision and consumers. A request to lock confers no unlock authority.
+
+Every enabled desktop physical output presents a protected frame before
+`locked`, including mirrored outputs. Black fallback is allowed by the standard.
+No timeout manufactures success. Crash and output changes remain fenced; an
+authorized replacement can recover. Ordinary windows and desktop chrome cannot
+appear or receive input while locked. The compositor-owned input method is
+permitted only while a current explicit lock surface has keyboard focus.
+
+The focused proof runs on private virtual outputs and a disposable D-Bus bus,
+with temporary HOME/XDG roots. Selected fixture socketpair peers receive access
+only in a non-installable compile-time test build; production contains no
+fixture authorization. The fork README records commands and matrix coverage.
+The [testing harness](../development/testing-harness.md) records consumer gates.
+Physical DRM, greeter/PAM, service policy and live rollout remain later
+qualification boundaries.
