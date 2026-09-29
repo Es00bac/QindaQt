@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/session/window_management/kwin_reconfigure_requester.h"
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QDBusMessage>
 #include <QDBusPendingCall>
 #include <QDBusPendingCallWatcher>
@@ -18,13 +20,13 @@ DBusKWinReconfigureRequester::DBusKWinReconfigureRequester(QDBusConnection bus, 
     , m_bus(std::move(bus))
 {
     if (m_bus.interface() != nullptr) {
-        const QDBusReply<QString> owner = m_bus.interface()->serviceOwner(QStringLiteral("org.kde.KWin"));
+        const QDBusReply<QString> owner = m_bus.interface()->serviceOwner(QString(CompositorNames::service));
         if (owner.isValid()) {
             m_owner = owner.value();
         }
     }
     m_serviceWatcher = new QDBusServiceWatcher(
-        QStringLiteral("org.kde.KWin"), m_bus, QDBusServiceWatcher::WatchForOwnerChange, this);
+        QString(CompositorNames::service), m_bus, QDBusServiceWatcher::WatchForOwnerChange, this);
     connect(m_serviceWatcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
             [this](const QString &, const QString &, const QString &newOwner) {
                 m_owner = newOwner;
@@ -42,7 +44,7 @@ void DBusKWinReconfigureRequester::requestReconfigure(quint64 requestId)
         return;
     }
     QDBusMessage request = QDBusMessage::createMethodCall(
-        owner, QStringLiteral("/KWin"), QStringLiteral("org.kde.KWin"),
+        owner, QString(CompositorNames::objectPath), QString(CompositorNames::interfaceName),
         QStringLiteral("reconfigure"));
     auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(request, 5'000), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,

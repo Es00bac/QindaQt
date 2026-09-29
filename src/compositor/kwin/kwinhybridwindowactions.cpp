@@ -13,6 +13,7 @@
 #include "kwinmemberpolicy.h"
 #include "managedwindowregistry.h"
 #include "windowmanagementconfig.h"
+#include "qindaqt/compositor_names/compositor_names.h"
 
 #include <KConfigGroup>
 #include <KSharedConfig>
@@ -431,10 +432,10 @@ bool KWinHybridSession::executeShellWindowAction(
 void KWinHybridSession::applyWindowManagementConfig()
 {
     // AGENT-CONTRACT (ADR-0209): KWin's Options::configChanged fires after
-    // KWin has re-read kwinrc for its own keys; the shared KSharedConfig
+    // KWin has re-read qindaqt/kwinrc for its own keys; the shared KSharedConfig
     // already holds the new bytes, but a reparse costs nothing and keeps the
     // plugin correct when the signal source is a different config object.
-    const KSharedConfig::Ptr kwinrc = KSharedConfig::openConfig(QStringLiteral("kwinrc"));
+    const KSharedConfig::Ptr kwinrc = KSharedConfig::openConfig(QString(CompositorNames::configFile));
     kwinrc->reparseConfiguration();
     const KConfigGroup group = kwinrc->group(QStringLiteral("QindaQt"));
     const WindowManagementConfig config = WindowManagementConfig::fromEntries(

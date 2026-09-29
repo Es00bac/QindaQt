@@ -12,13 +12,13 @@
 namespace QindaQt::Tests {
 
 // Fake KWin input device with the tablet property surface KWin 6.6.6
-// advertises (verified by introspecting org.kde.KWin.InputDevice on
+// advertises (verified by introspecting org.qindaqt.KWin.InputDevice on
 // qinda-top, 2026-09-17). Qt exposes Q_PROPERTYs through
 // org.freedesktop.DBus.Properties automatically, so GetAll, typed Set and
 // read-only rejection come for free; every accepted write is recorded.
 class FakeTabletDevice final : public QObject {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.InputDevice")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.InputDevice")
     Q_PROPERTY(QString name READ name CONSTANT)
     Q_PROPERTY(QString sysName READ id CONSTANT)
     Q_PROPERTY(QString deviceGroupId READ deviceGroupId CONSTANT)
@@ -209,12 +209,12 @@ private:
     bool m_relative = false;
 };
 
-// Manager object on one private bus, service org.kde.KWin. KWin 6.6 has no
+// Manager object on one private bus, service org.qindaqt.KWin. KWin 6.6 has no
 // ListTablets, so the port reads `devicesSysNames` and filters; the fake
 // publishes exactly that plus the hotplug signals.
 class FakeKWinTabletManager final : public QObject {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.InputDeviceManager")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.InputDeviceManager")
     Q_PROPERTY(QStringList devicesSysNames READ devicesSysNames)
 
 public:
@@ -222,12 +222,12 @@ public:
         m_bus = bus;
         const auto options = QDBusConnection::ExportAllContents;
         for (const auto &device : std::as_const(m_devices)) {
-            bus.registerObject(QStringLiteral("/org/kde/KWin/InputDevice/%1")
+            bus.registerObject(QStringLiteral("/org/qindaqt/KWin/InputDevice/%1")
                                    .arg(device->id()),
                                device.data(), options);
         }
-        return bus.registerService(QStringLiteral("org.kde.KWin")) &&
-               bus.registerObject(QStringLiteral("/org/kde/KWin/InputDevice"),
+        return bus.registerService(QStringLiteral("org.qindaqt.KWin")) &&
+               bus.registerObject(QStringLiteral("/org/qindaqt/KWin/InputDevice"),
                                   this, options);
     }
 
@@ -235,7 +235,7 @@ public:
         auto device = QSharedPointer<FakeTabletDevice>::create(spec, this);
         m_devices.append(device);
         if (m_bus.isConnected()) {
-            m_bus.registerObject(QStringLiteral("/org/kde/KWin/InputDevice/%1")
+            m_bus.registerObject(QStringLiteral("/org/qindaqt/KWin/InputDevice/%1")
                                      .arg(device->id()),
                                  device.data(),
                                  QDBusConnection::ExportAllContents);
@@ -252,7 +252,7 @@ public:
             m_devices.removeAt(index);
             if (m_bus.isConnected()) {
                 m_bus.unregisterObject(
-                    QStringLiteral("/org/kde/KWin/InputDevice/%1").arg(id));
+                    QStringLiteral("/org/qindaqt/KWin/InputDevice/%1").arg(id));
                 emitDeviceRemoved(id);
             }
             return;
@@ -273,8 +273,8 @@ public:
 
     void emitDeviceAdded(const QString &id) {
         auto message = QDBusMessage::createSignal(
-            QStringLiteral("/org/kde/KWin/InputDevice"),
-            QStringLiteral("org.kde.KWin.InputDeviceManager"),
+            QStringLiteral("/org/qindaqt/KWin/InputDevice"),
+            QStringLiteral("org.qindaqt.KWin.InputDeviceManager"),
             QStringLiteral("deviceAdded"));
         message.setArguments({id});
         m_bus.send(message);
@@ -282,8 +282,8 @@ public:
 
     void emitDeviceRemoved(const QString &id) {
         auto message = QDBusMessage::createSignal(
-            QStringLiteral("/org/kde/KWin/InputDevice"),
-            QStringLiteral("org.kde.KWin.InputDeviceManager"),
+            QStringLiteral("/org/qindaqt/KWin/InputDevice"),
+            QStringLiteral("org.qindaqt.KWin.InputDeviceManager"),
             QStringLiteral("deviceRemoved"));
         message.setArguments({id});
         m_bus.send(message);

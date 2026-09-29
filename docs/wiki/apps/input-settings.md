@@ -15,7 +15,7 @@ records how a desk tablet keeps the screen's up and how its areas are mapped.
 | --- | --- | --- |
 | Mouse & touchpad | Pointer speed, acceleration profile, natural scrolling, left-handed, scroll speed, middle-click emulation; touchpads add tap to click, tap and drag, disable while typing, and scroll method | KWin device properties over D-Bus |
 | Pen & tablet | Which screen the pen draws on; for a desk tablet its rotation (kept upright on a rotated screen), left-handed, and the part of the tablet mapped onto a part of the screen; for a pen display the screen it turns with and its calibration; pen mode, the pressure curve and tip threshold, enabling the tablet, and what the pad has | KWin device properties over D-Bus; the intent is remembered in Settings1 `input.tabletMappings` |
-| Keyboard | Key repeat, delay and rate with a test field, NumLock at login, and layouts (add, remove, reorder, variant) | `kcminputrc [Keyboard]` and `kxkbrc [Layout]` |
+| Keyboard | Key repeat, delay and rate with a test field, NumLock at login, and layouts (add, remove, reorder, variant) | `qindaqt/kwininputrc [Keyboard]` and `qindaqt/kwinxkbrc [Layout]` |
 | Shortcuts | Every global shortcut, searchable; change by pressing keys, conflicts named, reset, clear; custom command shortcuts | kglobalaccel |
 | Touch | Touchscreen on or off (a real stop of every touch device at the compositor seat), how long a finger is held for the menu, the on-screen keyboard, and what a swipe from each screen edge opens | Settings1 `input.touch.*` ([ADR-0205](../adr/0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md)) |
 
@@ -39,7 +39,7 @@ the current device.
 
 Tap-to-click and tap-and-drag availability come from KWin's `tapFingerCount`
 integer property (0 = the device cannot tap), not from a boolean `supports*`
-flag: KWin's real `org.kde.KWin.InputDevice` interface has none for tapping.
+flag: KWin's real `org.qindaqt.KWin.InputDevice` interface has none for tapping.
 An earlier version of `kwin_pointer_device_port.cpp` read
 `supportsTapToClick`/`supportsTapAndDrag`/`defaultTapToClick` names that KWin
 has never exposed, which left both rows (and the Touchpad section header)
@@ -187,7 +187,7 @@ first snapshot and the tab is reachable by mouse or keyboard.
   remembered.
 - Pointer and tablet properties apply the moment KWin accepts them, and KWin
   persists a tablet's screen by output UUID under
-  `[Libinput][<vendor>][<product>][<name>] OutputUuid=` in `kcminputrc`, so it
+  `[Libinput][<vendor>][<product>][<name>] OutputUuid=` in `qindaqt/kwininputrc`, so it
   survives re-plug and login. A refused write leaves the row showing what the
   device actually is and says why.
 - Keyboard and layout writes save the file, then announce the change to the
@@ -238,8 +238,8 @@ first snapshot and the tab is reachable by mouse or keyboard.
 | Row | Covers |
 | --- | --- |
 | `qindaqt.settings-input-pointer-port` | Device listing, capability properties, typed writes against a fake KWin |
-| `qindaqt.settings-input-keyboard-config-port` | `kcminputrc` round trip, range refusal, the announcement on a private bus, relocated names never announced |
-| `qindaqt.settings-input-keyboard-layout-port` | `kxkbrc` round trip with `Use=true`, hostile catalogs, the announcement |
+| `qindaqt.settings-input-keyboard-config-port` | `qindaqt/kwininputrc` round trip, range refusal, the announcement on a private bus, relocated names never announced |
+| `qindaqt.settings-input-keyboard-layout-port` | `qindaqt/kwinxkbrc` round trip with `Use=true`, hostile catalogs, the announcement |
 | `qindaqt.settings-input-shortcut-port` | The kglobalaccel wire contract, read-back truth, command components, malformed replies |
 | `qindaqt.settings-input-pointer-devices-model`, `-keyboard-models`, `-shortcuts-model` | Presentation truth and write paths over fakes |
 | `qindaqt.settings-input-page` | Offscreen page: capability hiding, editors seated inside their rows, shortcut keys drawn as one KeyCap group per binding with a spelled-out accessible name, conflict capture, capture keys, keyboard navigation, unavailable notices, reachable Touch tab and real mouse edit |

@@ -25,7 +25,7 @@ vacuous.
 
 ## Values and bounds
 
-`NightLightSettings` is one output half (`kwinrc [NightColor]`) and one
+`NightLightSettings` is one output half (`qindaqt/kwinrc [NightColor]`) and one
 schedule half (`knighttimerc`). The enumerators persist exactly as the
 authoritative schemas define them — KWin's `nightlightsettings.kcfg` choice
 names `Constant`/`DarkLight` and the schedule daemon's `Location`/`Times` —
@@ -40,7 +40,7 @@ unknown tokens and out-of-bounds numbers never normalize silently.
 
 ## Config port
 
-`NightLightConfigPort` reads and writes exactly the owned keys: `kwinrc
+`NightLightConfigPort` reads and writes exactly the owned keys: `qindaqt/kwinrc
 [NightColor]` `Active`, `Mode`, `DayTemperature`, `NightTemperature`, and
 `knighttimerc` `General`/`Location`/`Times` `Source`, `Automatic`,
 `Latitude`, `Longitude`, `SunriseStart`, `SunsetStart`, `TransitionDuration`.
@@ -58,7 +58,7 @@ identities, so subscribers never see their own writes as external intent.
 ## State port and schedule monitor
 
 `NightLightStatePort` publishes complete `NightLightStatus` frames read from
-`org.kde.KWin.NightLight` properties. Every bus read is an asynchronous queued
+`org.qindaqt.KWin.NightLight` properties. Every bus read is an asynchronous queued
 pending call — blocking calls never reliably complete against peer
 connections in this environment — and `PropertiesChanged` is treated as an
 invalidation hint only: the frame that follows is always re-read through
@@ -87,7 +87,7 @@ mapping with the outdated documentation as negative control), the config port
 (temp-dir round-trips, byte-stable unchanged writes, unrelated-key survival,
 hostile stored values that fail closed and converge on rewrite, refused
 invalid writes, external-change truth with suppressed self-echoes), the state
-port against a faithful fake `org.kde.KWin.NightLight` on a private bus
+port against a faithful fake `org.qindaqt.KWin.NightLight` on a private bus
 (missing service, live updates, out-of-range and malformed frames, preview and
 stopPreview forwarding, connection-scoped inhibit release), the schedule
 monitor's fail-closed availability, the boundary policy row, and its poison

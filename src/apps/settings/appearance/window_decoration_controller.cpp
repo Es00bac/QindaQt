@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/apps/settings_appearance/window_decoration_controller.h"
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -68,8 +70,9 @@ QString themeDisplayName(const QDir &directory)
 bool nativePluginAvailable(const QString &library)
 {
     for (const QString &root : QCoreApplication::libraryPaths()) {
+        // qindaqt-kwin loads decorations only from its own namespace (ADR-0291).
         const QDir directory(QDir(root).filePath(
-            QStringLiteral("org.kde.kdecoration3")));
+            QString(CompositorNames::decorationNamespace)));
         if (QFileInfo::exists(directory.filePath(library + QStringLiteral(".so")))) {
             return true;
         }
@@ -277,12 +280,18 @@ QString windowDecorationConfigPath()
 {
     return QDir(QStandardPaths::writableLocation(
                     QStandardPaths::GenericConfigLocation))
-        .filePath(QStringLiteral("kwinrc"));
+        .filePath(QString(CompositorNames::configFile));
 }
 
 QStringList windowDecorationThemeRoots()
 {
     QStringList roots;
+    // AGENT-GUARD (ADR-0291, amends ADR-0160): stock Aurorae is a plugin of
+    // stock KWin's decoration namespace and never loads in qindaqt-kwin, so its
+    // themes are listed only when an Aurorae plugin exists in the fork's.
+    if (!nativePluginAvailable(QStringLiteral("org.kde.kwin.aurorae"))) {
+        return roots;
+    }
     for (const QString &dataRoot : QStandardPaths::standardLocations(
              QStandardPaths::GenericDataLocation)) {
         const QString root = QDir(dataRoot).filePath(
@@ -297,8 +306,8 @@ QStringList windowDecorationThemeRoots()
 bool requestKWinDecorationReconfigure(QString *error)
 {
     QDBusMessage request = QDBusMessage::createMethodCall(
-        QStringLiteral("org.kde.KWin"), QStringLiteral("/KWin"),
-        QStringLiteral("org.kde.KWin"), QStringLiteral("reconfigure"));
+        QString(CompositorNames::service), QString(CompositorNames::objectPath),
+        QString(CompositorNames::interfaceName), QStringLiteral("reconfigure"));
     const QDBusMessage reply = QDBusConnection::sessionBus().call(
         request, QDBus::Block, 5000);
     if (reply.type() == QDBusMessage::ReplyMessage) {

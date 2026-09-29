@@ -75,7 +75,7 @@ target_include_directories(
 )
 target_link_libraries(
     qindaqt_settings_display_qml
-    PRIVATE qindaqt_settings_display QindaQt::NightLight QindaQt::TokensQml
+    PRIVATE qindaqt_settings_display QindaQt::NightLight QindaQt::TokensQml QindaQt::CompositorNames
             Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick
             Qt6::QuickControls2
 )

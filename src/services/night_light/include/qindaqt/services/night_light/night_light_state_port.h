@@ -40,7 +40,7 @@ struct NightLightStatus {
                            const NightLightStatus &) = default;
 };
 
-// Live-state port over `org.kde.KWin.NightLight`. Implementations must keep
+// Live-state port over `org.qindaqt.KWin.NightLight`. Implementations must keep
 // every D-Bus detail private, publish complete validated frames only, and
 // treat transport loss as unavailable truth rather than stale truth
 // (fail closed, ADR-0136).
@@ -71,7 +71,7 @@ Q_SIGNALS:
 
 // Production implementation over an injected connection. Never touches the
 // session bus passed by the caller other than through this object's calls;
-// tests register their own fake `org.kde.KWin.NightLight` on a private bus.
+// tests register their own fake `org.qindaqt.KWin.NightLight` on a private bus.
 class QtNightLightStatePort final : public NightLightStatePort {
     Q_OBJECT
 

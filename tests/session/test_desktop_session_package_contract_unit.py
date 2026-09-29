@@ -71,7 +71,7 @@ class PackageContractTests(unittest.TestCase):
     def test_exact_window_switcher_payload_passes_and_missing_fails(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             stage = Path(directory) / "stage"
-            package = stage / "share/kwin/tabbox/qindaqt"
+            package = stage / "share/qindaqt-kwin/tabbox/qindaqt"
             package.mkdir(parents=True)
             for relative in WINDOW_SWITCHER_FILES:
                 path = package / relative

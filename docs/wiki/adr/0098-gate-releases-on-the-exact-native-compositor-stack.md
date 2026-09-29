@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-07
+- Amended by: [ADR-0291](0291-run-on-qindaqt-kwin.md): the exact stack is the qindaqt-kwin fork (with its vendored decoration library) instead of stock KWin and kdecoration
 
 ## Context
 

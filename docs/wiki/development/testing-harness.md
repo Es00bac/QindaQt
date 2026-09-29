@@ -95,6 +95,20 @@ or replacing selected file/preview identities. These rows complement native
 material captures; they do not qualify file clipboard exchange or remote
 filesystem workflows.
 
+## The compositor in nested rows
+
+Since [ADR-0291](../adr/0291-run-on-qindaqt-kwin.md) QindaQt runs on
+qindaqt-kwin, its own KWin fork. CMake resolves `QINDAQT_KWIN_WAYLAND` as
+`qindaqt-kwin` first and falls back to a stock `kwin_wayland` only for rows
+that prove the public layer-shell boundary on a distribution KWin (the CI
+production-shell lane); QindaQt's plugin and decoration never load there. A
+staged fork runs with `LD_LIBRARY_PATH`, `QT_PLUGIN_PATH`, `QML2_IMPORT_PATH` and
+`XDG_DATA_DIRS` pointing into its stage (the fork's `qindaqt/tools/smoke-test`
+shows the pattern). Fakes and probes use the fork's D-Bus names
+(`org.qindaqt.KWin`, `/org/qindaqt/KWin/...`) and its config files under
+`$XDG_CONFIG_HOME/qindaqt/`. Evidence rows dated before 2026-09-28 name the
+stock `kwin_wayland` they ran.
+
 ## Backend roles
 
 | Backend | Use |
@@ -599,7 +613,7 @@ emission), the `[Wayland] InputMethod=` seed cases of `session.sessiondefaults`,
 and the nested `compositor.touch-osk.osk.gtk-entry.{single-1080p,single-1440p-125}`
 rows: the row writes a desktop entry whose Exec is this build's
 `qindaqt-osk`, names it through `QINDAQT_OSK_DESKTOP_FILE` so the private
-session's kwinrc seeds it, and KWin launches the keyboard on its own
+session's qindaqt/kwinrc seeds it, and KWin launches the keyboard on its own
 input-method connection. A finger taps a GTK entry (the fixture's `entry`
 mode logs the entries' allocations and text), the keyboard becomes visible
 (KWin's `org.kde.kwin.VirtualKeyboard` `visible` property plus the
@@ -2036,11 +2050,14 @@ Build-tree runs always pass `<build>/plugins` explicitly. The separate
 `session.installed-plugin-discovery` test stages `cmake --install` beneath the
 build tree, starts the staged launcher without a plugin-root override, and
 requires the installed KWin module to publish its live service. The same test
-requires `org.qindaqt` at KDecoration3's KDE-relative plugin destination and
-checks that a fresh isolated `kwinrc` selects that module. The focused
-`session.sessiondefaults` test separately proves that first-run policy selects
-the QindaQt decoration and switcher, disables KWin's competing edge tile and
-corner maximize defaults, and never overwrites any explicit choice. The
+requires `org.qindaqt` at qindaqt-kwin's decoration namespace
+(`QindaQtKWinDecoration`'s `KDECORATION_PLUGIN_DIR`, `qindaqt-kwin/decorations`) and
+checks that a fresh isolated `qindaqt/kwinrc` selects that module. The focused
+`session.sessiondefaults` test separately proves that the session leaves the
+QindaQt decoration, switcher, edge tile and corner maximize to qindaqt-kwin's
+compiled-in defaults (ADR-0291), seeds only installation-dependent keys, and
+never overwrites any explicit choice; `session.compositorconfigimport` proves
+the one-time import of KDE KWin files into the fork's names. The
 `session.window-switcher-package` test validates the KWin package metadata,
 native TabBox model roles, selection/activation bindings, and complete QML
 with a lint-only description of KWin's process-registered root type.
@@ -2281,7 +2298,7 @@ recorded verdict passed, and the private compositor mapped the build tree's
 offline network namespace is unavailable, and that coverage is then missing,
 not claimed.
 
-The private compositor runs from a byte-identical copy of `kwin_wayland`
+The private compositor runs from a byte-identical copy of the compositor binary (`qindaqt-kwin`)
 without file capabilities: the host binary carries `cap_sys_nice`, which makes
 KWin non-dumpable and its output memfds unreadable. KWin's QPainter swapchain
 keeps two buffers, so every capture parks the pointer in the output corner,
@@ -3947,7 +3964,7 @@ are not ctest rows; their logs live under
 
 - a configuration written by absolute path reaches KWin only after an explicit
   `ConfigChanged` announcement;
-- layouts apply from `kxkbrc` only with `Use=true`;
+- layouts apply from `qindaqt/kwinxkbrc` only with `Use=true`;
 - a kglobalaccel key sequence must carry four ints, and a one-int sequence
   aborts the compositor;
 - a command component's `_launch` action runs its `Exec` line.
@@ -3957,11 +3974,11 @@ are not ctest rows; their logs live under
 The live `windowManagement.*` bridge ([ADR-0209](../adr/0209-bridge-window-management-settings-into-kwinrc.md))
 is proven in three layers. `qindaqt.window-management-preferences` and
 `qindaqt.kwin-window-management-writer` cover the total decode and the KConfig
-mapping (foreign kwinrc groups survive; an unchanged file reports no change).
+mapping (foreign qindaqt/kwinrc groups survive; an unchanged file reports no change).
 `qindaqt.window-management-bridge` runs the real resident Settings1 service on
-a private `dbus-daemon`, a real writer, and a fake `org.kde.KWin` object that
+a private `dbus-daemon`, a real writer, and a fake `org.qindaqt.KWin` object that
 counts `reconfigure` calls: the first snapshot writes and reconfigures once, a
-burst of four confirmed edits lands in kwinrc with a debounced reload, and an
+burst of four confirmed edits lands in qindaqt/kwinrc with a debounced reload, and an
 invalid value is rejected as a whole without touching the file.
 `compositor.window-management-config` covers the plugin's `[QindaQt]` parser;
 the rebind cases in `hybrid.interaction-controller` and
@@ -3971,8 +3988,8 @@ The nested row `compositor.window-management-bridge.docking-chord.single-1080p`
 (`tests/session/window_management/run_docking_chord.py`, driver
 `docking_chord_driver.py`) reuses the shade-visibility harness: a private
 virtual session, CSD GTK members, planned dock gestures through the
-development input device. It rewrites the private session's own `kwinrc` and
-calls the real `org.kde.KWin.reconfigure`, then judges nine verdicts: the
+development input device. It rewrites the private session's own `qindaqt/kwinrc` and
+calls the real `org.qindaqt.KWin.reconfigure`, then judges nine verdicts: the
 shipped Meta+Shift chord docks; after `DockingModifier=alt` Meta+Shift is
 inert and Alt+Shift docks; after `disabled` neither docks; click-to-focus
 ignores a hover; after `FocusPolicy=FocusFollowsMouse` a hover activates in

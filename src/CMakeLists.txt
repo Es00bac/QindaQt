@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# The qindaqt-kwin names (ADR-0291) are shared by the session, services,
+# Settings, shell and compositor plugin, so they come first.
+add_subdirectory(compositor_names)
 add_subdirectory(profiles)
 add_subdirectory(shell_layout)
 add_subdirectory(panel_blur)
@@ -193,7 +196,7 @@ if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/smart_lights_applet)
     add_subdirectory(shell/voice_applet)
     add_subdirectory(shell/obs_applet)
-    # The Screenshot tool (ADR-0289) is a QindaTK app that reuses the OBS
+    # The Screenshot tool (ADR-0291) is a QindaTK app that reuses the OBS
     # applet's pure presentation, so it needs both the shell and QindaTK.
     if(QINDAQT_BUILD_VIEWER)
         add_subdirectory(apps/screenshot)

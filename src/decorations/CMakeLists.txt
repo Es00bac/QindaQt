@@ -1,7 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Gui Widgets)
-find_package(KDecoration3 6.6 REQUIRED CONFIG)
+# The decoration library is qindaqt-kwin's vendored copy (ADR-0291); its
+# package names the fork's decoration namespace as KDECORATION_PLUGIN_DIR.
+include("${PROJECT_SOURCE_DIR}/src/compositor/cmake/QindaQtKWinAbi.cmake")
+qindaqt_resolve_kwin_abi(
+    "${PROJECT_SOURCE_DIR}/compositor/upstream/kwin.json"
+    _qindaqt_decoration_abi_version
+)
+find_package(QindaQtKWinDecoration ${_qindaqt_decoration_abi_version} EXACT REQUIRED CONFIG)
 find_package(KF6CoreAddons 6.0 REQUIRED CONFIG)
 
 add_library(qindaqt_decoration_visuals STATIC
@@ -17,7 +24,7 @@ target_link_libraries(
     PUBLIC
         QindaQt::DecorationPainter
         Qt6::Gui
-        KDecoration3::KDecoration
+        QindaQtKWinDecoration::KDecoration
 )
 set_target_properties(qindaqt_decoration_visuals PROPERTIES
     CXX_EXTENSIONS OFF
@@ -55,7 +62,7 @@ target_link_libraries(
     PRIVATE
         Qt6::Gui
         KF6::CoreAddons
-        KDecoration3::KDecoration
+        QindaQtKWinDecoration::KDecoration
         qindaqt_decoration_context_menu
         qindaqt_decoration_visuals
 )

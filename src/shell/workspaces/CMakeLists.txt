@@ -44,6 +44,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_shell_workspaces_dbus
+    PRIVATE QindaQt::CompositorNames
     PUBLIC QindaQt::ShellWorkspaces Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_shell_workspaces_dbus PUBLIC cxx_std_20)

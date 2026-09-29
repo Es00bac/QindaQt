@@ -18,7 +18,7 @@ namespace QindaQt::Tests
 class FakeInputDevice final : public QObject
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.InputDevice")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.InputDevice")
     Q_PROPERTY(QString name READ name CONSTANT)
     Q_PROPERTY(bool pointer READ pointer CONSTANT)
     Q_PROPERTY(bool touchpad READ touchpad CONSTANT)
@@ -224,24 +224,24 @@ private:
     bool m_enabled;
 };
 
-// Manager object on one private bus, service org.kde.KWin. KWin lists
+// Manager object on one private bus, service org.qindaqt.KWin. KWin lists
 // touchpads among the pointers, so ListPointers returns both.
 class FakeKWinInput final : public QObject
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.InputDeviceManager")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.InputDeviceManager")
 public:
     bool publish(QDBusConnection bus)
     {
         const auto options = QDBusConnection::ExportAllContents;
         for (const auto &device : std::as_const(m_devices)) {
             bus.registerObject(
-                QStringLiteral("/org/kde/KWin/InputDevice/%1").arg(
+                QStringLiteral("/org/qindaqt/KWin/InputDevice/%1").arg(
                     device->id()),
                 device.data(), options);
         }
-        return bus.registerService(QStringLiteral("org.kde.KWin")) &&
-               bus.registerObject(QStringLiteral("/org/kde/KWin/InputDevice"),
+        return bus.registerService(QStringLiteral("org.qindaqt.KWin")) &&
+               bus.registerObject(QStringLiteral("/org/qindaqt/KWin/InputDevice"),
                                   this, options);
     }
 

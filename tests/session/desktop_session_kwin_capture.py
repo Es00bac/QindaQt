@@ -30,13 +30,18 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+# qindaqt-kwin is QindaQt's compositor (ADR-0291); stock kwin_wayland is accepted
+# for the distribution-KWin layer-shell lane.
+COMPOSITOR_NAMES = ("qindaqt-kwin", "kwin_wayland")
+
+
 def _parent_arguments(arguments: argparse.Namespace) -> list[str]:
     process_root = Path(f"/proc/{arguments.parent_pid}")
     executable = process_root / "exe"
     if arguments.parent_pid <= 1:
         raise RuntimeError("capture PID is not the exact private KWin executable")
     resolved = executable.resolve(strict=True)
-    if resolved.name != "kwin_wayland":
+    if resolved.name not in COMPOSITOR_NAMES:
         raise RuntimeError("capture PID is not the exact private KWin executable")
     values = [
         value.decode("utf-8", "strict")
@@ -53,7 +58,7 @@ def _parent_arguments(arguments: argparse.Namespace) -> list[str]:
         "--no-lockscreen",
         "--no-global-shortcuts",
     ]
-    if len(values) < 2 or Path(values[0]).name != "kwin_wayland" or values[1:] != expected_tail:
+    if len(values) < 2 or Path(values[0]).name not in COMPOSITOR_NAMES or values[1:] != expected_tail:
         raise RuntimeError("private KWin arguments disagree with the capture row")
     return values[1:]
 

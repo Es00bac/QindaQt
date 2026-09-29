@@ -15,8 +15,20 @@ The screenshot replacement is source-integrated and passes six laptop checks. Th
 polish candidate passes six manager checks: theme-default versus explicit title action, active
 portal twin, one-shot touch lift, and saved-workspace container names. Saved workspaces retain
 custom and default names when restored under fresh IDs; unsaved live topology is not
-automatically restored on restart. Fork and polkit candidates await manager integration.
+automatically restored on restart. The fork consumer passes 16 manager checks plus the adjacent six; repaired polkit awaits manager integration.
 Remaining native service work is active, with no complete-program or installed-delivery claim.
+
+## September 29 — Gather minimized items and expose native application placement
+
+The owner requests rolled-up containers and iconified windows at the usable upper-left
+output corner using overview columns, with no mutual overlap and the same placement
+from fullscreen/windowed origins. Restore geometry is preserved; app icons and labels
+identify iconified windows. Accessible finite-capacity overflow is part of the outcome.
+
+A documented native application API must let an app place its newly created window as
+a container tab or as a tile beside its current window, creating a container for a solo
+source. Shortcuts remain app-owned. Authentication and atomic model invariants are
+required. These outcomes are active/queued, with no completion claim.
 
 ## September 27 — Correct Corner Bar, light appearances and full icon themes
 

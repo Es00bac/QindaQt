@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/shell/workspaces/qt_workspace_transport.h"
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QDBusArgument>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
@@ -14,11 +16,11 @@
 namespace QindaQt::Shell::Workspaces {
 namespace {
 
-constexpr auto KWinService = "org.kde.KWin";
-constexpr auto KWinPath = "/KWin";
-constexpr auto KWinInterface = "org.kde.KWin";
-constexpr auto DesktopsPath = "/VirtualDesktopManager";
-constexpr auto DesktopsInterface = "org.kde.KWin.VirtualDesktopManager";
+constexpr const char *KWinService = CompositorNames::service.data();
+constexpr const char *KWinPath = CompositorNames::objectPath.data();
+constexpr const char *KWinInterface = CompositorNames::interfaceName.data();
+constexpr const char *DesktopsPath = CompositorNames::virtualDesktopsPath.data();
+constexpr const char *DesktopsInterface = CompositorNames::virtualDesktopsInterface.data();
 constexpr auto PropertiesInterface = "org.freedesktop.DBus.Properties";
 constexpr auto BusService = "org.freedesktop.DBus";
 constexpr auto BusPath = "/org/freedesktop/DBus";

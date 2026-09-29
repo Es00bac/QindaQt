@@ -43,6 +43,9 @@ export XDG_CACHE_HOME="${PROOF_DIR}/cache"
 export XDG_STATE_HOME="${PROOF_DIR}/state"
 mkdir -p "${XDG_CONFIG_HOME}" "${XDG_DATA_HOME}" "${XDG_CACHE_HOME}" "${XDG_STATE_HOME}"
 # Keep any installed QindaQt compositor plugin out of this disposable KWin.
+# qindaqt-kwin reads qindaqt/kwinrc (ADR-0291); stock kwin_wayland reads kwinrc.
+mkdir -p "${XDG_CONFIG_HOME}/qindaqt"
+printf '[Plugins]\nqindaqt_compositorEnabled=false\n' > "${XDG_CONFIG_HOME}/qindaqt/kwinrc"
 printf '[Plugins]\nqindaqt_compositorEnabled=false\n' > "${XDG_CONFIG_HOME}/kwinrc"
 
 log() { echo "[proof] $*" | tee -a "${PROOF_DIR}/summary.txt"; }

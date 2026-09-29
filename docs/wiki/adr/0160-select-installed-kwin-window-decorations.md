@@ -5,6 +5,7 @@
 - **Owners:** Settings Appearance, Platform integration
 - **Supersedes:** None
 - **Superseded by:** None
+- **Amended by:** [ADR-0291](0291-run-on-qindaqt-kwin.md): only decorations in qindaqt-kwin's own namespace are offered
 
 ## Context
 

@@ -56,7 +56,7 @@ void TabletDevicesModelTest::groupsAPenAndItsPadIntoOneTablet() {
 void TabletDevicesModelTest::anUnreachableAuthorityIsDegradedNotEmpty() {
     FakeTabletPort port;
     FakeTabletOutputs outputs;
-    port.listError = QStringLiteral("org.kde.KWin is not reachable");
+    port.listError = QStringLiteral("org.qindaqt.KWin is not reachable");
     FakeTabletMappingStore store;
     TabletDevicesModel model(port, outputs, &store);
     model.refresh();
