@@ -27,11 +27,14 @@ void KeyringSessionLifetime::attach() {
     if (!owner.isValid() || owner.value().isEmpty()) return;
     const auto uid = bus_->interface()->serviceUid(owner.value());
     if (!uid.isValid() || uid.value() != geteuid()) { admission_.stop(); return; }
-    auto request = QDBusMessage::createMethodCall(owner.value(),Path,Service,"AttachSession");
+    const auto display = qEnvironmentVariable("WAYLAND_DISPLAY");
+    auto request = QDBusMessage::createMethodCall(owner.value(),Path,Service,
+        display.isEmpty() ? "AttachSession" : "AttachSessionWithDisplay");
+    if (!display.isEmpty()) request.setArguments({display});
     request.setAutoStartService(false);
     QDBusReply<bool> reply = bus_->call(request,QDBus::Block,500);
     attached_ = reply.isValid() && reply.value();
-    admission_.stop();
+    if (attached_ || display.isEmpty()) admission_.stop();
 }
 void KeyringSessionLifetime::stop() noexcept {
     admission_.stop();
