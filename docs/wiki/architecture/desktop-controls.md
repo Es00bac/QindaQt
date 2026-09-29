@@ -7,7 +7,8 @@ idle display-off policy. Its current maturity is **EXECUTABLE (focused
 evidence)**: the resident process, supervisor startup, Settings Power section,
 and focused tests are implemented and green in Debug builds. The private
 installed-session row passed real `VolumeUp`, one production-shell feedback
-popup, and a decoded Spectacle region capture. The real KDE polkit agent also
+popup, and a decoded region capture (then Spectacle's; the row now proves the
+native Screenshot tool, [ADR-0289](../adr/0289-native-screenshot-and-record-tool.md)). The real KDE polkit agent also
 presented an authentication dialog in installed QindaQt session 39, corroborated
 by the user; terminating the unapproved request removed the dialog and left
 the session healthy. No credential was entered or privileged command run.
@@ -32,7 +33,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Wi-Fi/WWAN radio enable | resident `Network1` | public `NetworkClient::setRadio` |
 | Brightness media keys | PowerDevil 6.6.6 `ScreenBrightnessAgent` | PowerDevil's registered shortcuts |
 | Internal/external brightness mutation | PowerDevil `org.kde.ScreenBrightness` | session-owned PowerDevil |
-| Print screenshot | Spectacle desktop action | installed Spectacle owns Print and its capture UI |
+| Print screenshot and record toggle | desktop-controls `KGlobalAccelRegistrar` | `ScreenshotLauncher` starts `qindaqt-screenshot` (`--region`, `--fullscreen`, `--active`, `--record-toggle`), ADR-0289 |
 | Visible media-key feedback | resident notification host | `org.freedesktop.Notifications` with per-category replaces-id |
 | Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
 | Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
@@ -70,7 +71,7 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | `AirplaneModeKeyController` | toggles the Wi-Fi radio over the public `NetworkClient`; see [Airplane mode and microphone mute](#airplane-mode-and-microphone-mute) |
 | `PowerDevilBrightnessFeedbackObserver` | filters PowerDevil keyboard feedback, reads the public per-display maximum, and emits normalized notifier feedback |
 | `BrightnessKeyController` | retained sysfs fixture seam for migration coverage; not instantiated or registered by production |
-| `ScreenshotLauncher` | retained launch-fixture seam; it is not instantiated by the resident process because Spectacle owns Print |
+| `ScreenshotLauncher` | one per screenshot action; launches `qindaqt-screenshot` detached, sibling-first, and reports an unavailable tool as feedback |
 | `FreedesktopFeedbackNotifier` | one replaceable notification per feedback category, bounded text, fail-quiet on host loss |
 | `PowerDevilIdlePreferencesBinding` | coalesces Settings1 preferences and applies them through the session-owned PowerDevil adapter |
 | `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes` with the documented default when truth is absent |
@@ -81,9 +82,12 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | `TabletRouteLauncher` | the `--page input --destination tablet --select <group>` deep link, resolved sibling-first like `ScreenshotLauncher` |
 
 The production process keeps `KGlobalAccelRegistrar` for volume, mute,
-microphone mute, and airplane mode.
-Spectacle owns the installed Print action, preserving its own user remapping and
-capture-mode choices. PowerDevil owns monitor-brightness shortcut registration
+microphone mute, airplane mode, and the screenshot actions: Print and
+`Meta+Shift+Print` (region), `Shift+Print` (every screen), `Alt+Print` (active
+window) and `Meta+Alt+R` (OBS record toggle). They are appended after the
+original actions so stable indices and user remapping persist
+([ADR-0289](../adr/0289-native-screenshot-and-record-tool.md)); `Meta+Shift+S`
+and `Meta+Shift+R` stay the compositor's container keys. PowerDevil owns monitor-brightness shortcut registration
 and the idle display-off policy; QindaQt only observes its documented public
 brightness signal and binds its idle preference. The retained KIdleTime,
 DPMS, and sysfs classes are migration seams for focused tests and are not
@@ -308,13 +312,14 @@ Focused rows use fixtures, fake transports, and private buses only. The separate
 `desktop.daily-controls.live` installed row accepts only a manager-granted private
 namespace: it verifies the real `VolumeUp` global shortcut changes Audio1’s
 private PipeWire default output and makes exactly one production shell feedback popup (the existing read-only shell
-evidence reports counts but not notification text), then waits for Spectacle's
-actual capture surface, completes a region selection, and requires its normal
-`Print` action to save a decoded, non-uniform image in a disposable private
-output directory. Because KWin 6.6.6's screenshot plugin requires an EGL
+evidence reports counts but not notification text), then sets the Screenshot
+tool's Settings1 folder to a disposable private directory with the result
+window off, presses `Print`, waits for the tool's full-screen selection
+surface, drags and confirms a region, and requires a decoded, non-uniform
+image in that directory. Because KWin 6.6.6's screenshot plugin requires an EGL
 backend, this private capture row requests llvmpipe OpenGL and verifies KWin's
-public compositing type before Print. The row configures only that disposable
-Spectacle profile; it never changes an installed user's capture-mode or save preferences. It does not claim a
+public compositing type before Print. The row writes only the private session's
+Settings1; it never changes an installed user's capture or save preferences. It does not claim a
 physical media key, a real PowerDevil brightness operation, a polkit prompt on
 installed packages, or real idle/display cycling on the host desktop. The nested
 inhibition matrix (native, portal, and ScreenSaver inhibition suppresses

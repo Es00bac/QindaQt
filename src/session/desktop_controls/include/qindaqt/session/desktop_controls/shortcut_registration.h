@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QKeySequence>
+#include <QList>
 
 #include <functional>
 
@@ -26,8 +27,10 @@ public:
 
     // `action` and `lifetime` are borrowed and outlive callbacks installed by
     // this call. The callback reports user remapping, disablement, or recovery.
+    // `defaultShortcuts` holds every default key of the one action (Print and
+    // Meta+Shift+Print both capture a region); it is never empty.
     [[nodiscard]] virtual ShortcutRegistration registerShortcut(
-        QAction &action, const QKeySequence &defaultShortcut, QObject &lifetime,
+        QAction &action, const QList<QKeySequence> &defaultShortcuts, QObject &lifetime,
         std::function<void(bool)> activeBindingChanged) = 0;
 };
 

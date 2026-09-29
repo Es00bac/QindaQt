@@ -268,7 +268,7 @@ runtime closure follows the production process contracts:
 | Power management, brightness, and idle inhibition | release-matched PowerDevil and KConfig for its persisted idle preferences |
 | Audio and network | WirePlumber and NetworkManager |
 | Desktop-entry launch | KIO and KService |
-| Media keys, idle display policy, screenshots, and authorization prompts | KGlobalAccel, KIdleTime, release-matched KWayland, Spectacle, and the KDE polkit agent |
+| Media keys, idle display policy, screenshots, and authorization prompts | KGlobalAccel, KIdleTime, release-matched KWayland, KWin ScreenShot2 (QindaQt Screenshot, ADR-0289), and the KDE polkit agent |
 
 SDDM remains an operator-selected login manager and is not a package
 dependency. Portage must solve the plan without slot conflicts before the
