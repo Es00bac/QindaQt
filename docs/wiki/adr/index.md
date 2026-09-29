@@ -312,3 +312,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0298: Native application window placement](0298-native-application-window-placement.md)
 - [ADR-0296: Own a native Secret Service daemon and session boundary](0296-native-keyring-daemon-boundary.md)
+
+- [ADR-0301: Share semantic window management with voice](0301-share-semantic-window-management-with-voice.md)

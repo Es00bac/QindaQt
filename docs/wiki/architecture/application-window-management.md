@@ -148,3 +148,7 @@ The native driver retains a live post-completion snapshot while the probe
 windows still exist; Qt surface teardown before process exit is not treated as
 the result of a completed placement request. Both output rows require that
 completion fence as well as the mapped plugin and actual scene geometry.
+
+The shared [semantic command boundary](window-management-commands.md) extends
+first-party input/voice management separately. It does not grant V1 clients
+global authority or change same-client surface authentication.
