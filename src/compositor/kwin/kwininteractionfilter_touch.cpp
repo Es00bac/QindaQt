@@ -329,7 +329,8 @@ void KWinInteractionFilter::expireTitlePickup()
         static_cast<void>(dispatch(m_controller.adoptDrag(*source, decision.position)));
         // Give this pick-up the same presentation response the mouse chord's
         // equivalent takeover gets (see TouchPickupHooks::pickedUp).
-        if (m_touchPickupHooks.pickedUp) {
+        if (decision.feedback == HybridInput::TouchPickupFeedback::Lift
+            && m_touchPickupHooks.pickedUp) {
             m_touchPickupHooks.pickedUp(m_titlePickupWindowId);
         }
     }

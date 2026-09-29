@@ -119,7 +119,10 @@ TouchPickupDecision TouchTitlePickup::expire(qint64 nowMs, bool canTakeOver)
         return {};
     }
     m_state = State::PickedUp;
-    return {.action = TouchPickupAction::PickUp, .position = m_last, .consumed = true};
+    return {.action = TouchPickupAction::PickUp,
+            .feedback = TouchPickupFeedback::Lift,
+            .position = m_last,
+            .consumed = true};
 }
 
 } // namespace QindaQt::HybridInput

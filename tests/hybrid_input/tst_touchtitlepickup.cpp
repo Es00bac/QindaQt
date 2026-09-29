@@ -62,6 +62,8 @@ void TouchTitlePickupTest::holdingStillPicksTheWindowUp()
     QCOMPARE(pickup.expire(1499, true).action, TouchPickupAction::None);
     const auto fired = pickup.expire(1500, true);
     QCOMPARE(fired.action, TouchPickupAction::PickUp);
+    QCOMPARE(fired.feedback, TouchPickupFeedback::Lift);
+    QCOMPARE(pickup.expire(1501, true).feedback, TouchPickupFeedback::None);
     QCOMPARE(fired.position, Title);
     QVERIFY(pickup.pickedUp());
 
@@ -150,7 +152,9 @@ void TouchTitlePickupTest::aRefusedTakeOverLeavesTheSequenceToKWin()
     // finger is on a title-bar button.
     TouchTitlePickup pickup;
     static_cast<void>(pickup.down(1, Title, 0, true));
-    QCOMPARE(pickup.expire(500, false).action, TouchPickupAction::None);
+    const auto refused = pickup.expire(500, false);
+    QCOMPARE(refused.action, TouchPickupAction::None);
+    QCOMPARE(refused.feedback, TouchPickupFeedback::None);
     QVERIFY(!pickup.pickedUp());
     QVERIFY(!pickup.motion(1, QPointF(300, 300), 600).consumed);
     QCOMPARE(pickup.up(1, 700).action, TouchPickupAction::None);
