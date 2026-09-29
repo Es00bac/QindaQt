@@ -335,6 +335,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/hybridcontainerplacement.h
             kwin/hybridcontainerappearance.cpp
             kwin/hybridcontainerappearance.h
+            kwin/hybridcontainerappearanceledger.cpp
+            kwin/hybridcontainerappearanceledger.h
             kwin/hybridshadecontroller.cpp
             kwin/hybridshadecontroller.h
             kwin/hybridiconifycontroller.cpp

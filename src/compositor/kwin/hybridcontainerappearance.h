@@ -48,6 +48,12 @@ public:
     void forgetContainer(const QString &containerId) noexcept;
     void clear() noexcept;
 
+    // A read-only snapshot of every current override, for the persistence
+    // boundary (ContainerAppearanceLedger) to serialize. Never a display
+    // source itself: use displayName()/hasCustomName() for that, since this
+    // includes only raw, possibly-empty overrides.
+    [[nodiscard]] QHash<QString, Compositor::ContainerAppearance> snapshot() const;
+
 private:
     QHash<QString, Compositor::ContainerAppearance> m_byContainer;
 };

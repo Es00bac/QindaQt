@@ -530,6 +530,7 @@ bool KWinHybridSession::ungroupContainer(const QString &containerId,
     m_placement->forgetContainer(containerId);
     m_minimizedContainers.remove(containerId);
     m_appearance.forgetContainer(containerId);
+    persistContainerAppearance();
     synchronizeChrome();
     return true;
 }
