@@ -90,3 +90,8 @@ plugin path the window gets no server-side decoration and the row fails, which
 also shows that stock decorations never load in the fork. On 2026-09-27 the
 same fixture had passed on the formerly patched stock KWin and failed on the
 unpatched library at `!above->hitTest(cutoutPoint)`.
+
+Composition tests that compile production screenshot/compositor adapters directly
+must link the public `QindaQt::CompositorNames` target themselves. The native
+namespace header is a declared dependency, including when a fixture does not
+start a compositor. The gather-overview composition gate checks that boundary.
