@@ -7,7 +7,7 @@
 //                                   production QtConfigNightLightPort and
 //                                   prints the write outcome.
 //   hold-inhibit <seconds>          Connects to the session bus, calls
-//                                   org.kde.KWin.NightLight.inhibit(), keeps
+//                                   org.qindaqt.KWin.NightLight.inhibit(), keeps
 //                                   the connection open for the given
 //                                   seconds, then exits WITHOUT uninhibiting
 //                                   so the proof can observe that the lock
@@ -54,9 +54,9 @@ int main(int argc, char **argv)
             return 2;
         }
         QDBusMessage call = QDBusMessage::createMethodCall(
-            QStringLiteral("org.kde.KWin.NightLight"),
-            QStringLiteral("/org/kde/KWin/NightLight"),
-            QStringLiteral("org.kde.KWin.NightLight"),
+            QStringLiteral("org.qindaqt.KWin.NightLight"),
+            QStringLiteral("/org/qindaqt/KWin/NightLight"),
+            QStringLiteral("org.qindaqt.KWin.NightLight"),
             QStringLiteral("inhibit"));
         auto *watcher =
             new QDBusPendingCallWatcher(bus.asyncCall(call), &app);

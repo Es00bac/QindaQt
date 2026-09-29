@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/apps/settings_input/keyboard_config_port.h>
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <qindaqt/apps/settings_input/config_change_announcement.h>
 
 #include <KConfigGroup>
@@ -14,7 +16,7 @@ namespace {
 Q_LOGGING_CATEGORY(lcKeyboardConfigPort, "qindaqt.settings.input.keyboardconfig",
                    QtInfoMsg)
 
-constexpr auto KWinService = "org.kde.KWin";
+constexpr QLatin1StringView KWinService = CompositorNames::service;
 
 constexpr int MinimumRepeatDelayMs = 100;
 constexpr int MaximumRepeatDelayMs = 2000;

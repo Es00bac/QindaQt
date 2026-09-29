@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/apps/settings_input/pointer_device_port.h>
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QDBusArgument>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
@@ -15,10 +17,10 @@
 namespace QindaQt::Apps::SettingsInput {
 namespace {
 
-constexpr auto KWinService = "org.kde.KWin";
-constexpr auto ManagerPath = "/org/kde/KWin/InputDevice";
-constexpr auto ManagerInterface = "org.kde.KWin.InputDeviceManager";
-constexpr auto DeviceInterface = "org.kde.KWin.InputDevice";
+constexpr QLatin1StringView KWinService = CompositorNames::service;
+constexpr QLatin1StringView ManagerPath = CompositorNames::inputDevicesPath;
+constexpr QLatin1StringView ManagerInterface = CompositorNames::inputDeviceManagerInterface;
+constexpr QLatin1StringView DeviceInterface = CompositorNames::inputDeviceInterface;
 constexpr auto PropertiesInterface = "org.freedesktop.DBus.Properties";
 constexpr int CallTimeoutMs = 4000;
 constexpr int MaxDevices = 256;
@@ -280,7 +282,7 @@ KWinPointerDevicePort::devices(QString *error) const {
     if (!serviceAvailable(m_bus)) {
         if (error != nullptr) {
             *error = QStringLiteral(
-                "Input authority org.kde.KWin is not reachable");
+                "Input authority org.qindaqt.KWin is not reachable");
         }
         return {};
     }
@@ -320,7 +322,7 @@ KWinPointerDevicePort::devices(QString *error) const {
             continue;
         }
         const QString path =
-            QStringLiteral("/org/kde/KWin/InputDevice/%1").arg(sysName);
+            (QString(CompositorNames::inputDevicesPath) + QStringLiteral("/%1")).arg(sysName);
         const QDBusMessage deviceReply =
             call(m_bus, m_destination, path,
                  QLatin1String(PropertiesInterface), QStringLiteral("GetAll"),
@@ -409,7 +411,7 @@ KWinPointerDevicePort::devices(QString *error) const {
                  QStringLiteral("supportsScrollTwoFinger"),
                  QStringLiteral("supportsScrollEdge"),
                  QStringLiteral("supportsScrollOnButtonDown"),
-                 // AGENT-NOTE: KWin's real org.kde.KWin.InputDevice interface
+                 // AGENT-NOTE: KWin's real org.qindaqt.KWin.InputDevice interface
                  // has no supportsTapToClick/supportsTapAndDrag/default<Prop>
                  // properties; it names the "on by default" family
                  // "<prop>EnabledByDefault" and signals tap capability
@@ -466,14 +468,14 @@ bool KWinPointerDevicePort::writeProperty(const QString &deviceId,
     if (deviceId.isEmpty() || deviceId.contains(QLatin1Char('/')) ||
         !serviceAvailable(m_bus)) {
         if (error != nullptr) {
-            *error = QStringLiteral("Input authority org.kde.KWin is not "
+            *error = QStringLiteral("Input authority org.qindaqt.KWin is not "
                                     "reachable for device '%1'")
                          .arg(deviceId);
         }
         return false;
     }
     const QString path =
-        QStringLiteral("/org/kde/KWin/InputDevice/%1").arg(deviceId);
+        (QString(CompositorNames::inputDevicesPath) + QStringLiteral("/%1")).arg(deviceId);
     const QDBusMessage reply =
         call(m_bus, m_destination, path,
              QLatin1String(PropertiesInterface), QStringLiteral("Set"),

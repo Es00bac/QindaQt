@@ -62,7 +62,7 @@ normalizedArea(const TabletArea &area, double minimumExtent = 1e-4);
 
 // KWin's identity calibration: a 4x4 row-major matrix as sixteen
 // comma-separated numbers, exactly the form
-// org.kde.KWin.InputDevice.calibrationMatrix reads and writes.
+// org.qindaqt.KWin.InputDevice.calibrationMatrix reads and writes.
 [[nodiscard]] QString identityCalibrationMatrix();
 
 // The calibration matrix that carries `measured` points onto `targets`.

@@ -192,7 +192,7 @@ dock interaction upgrades.
 The `-r3` revision vetoes native interactive resize for container members and
 removes their resize-only decoration borders (ADR-0117): a grouped member's
 frame now changes only through tile-border operations and container reflow.
-Because this code runs inside `kwin_wayland`, the fix takes effect on the next
+Because this code runs inside the compositor process, the fix takes effect on the next
 session login after installation, not through a shell-only refresh.
 
 The `-r2` revision makes the panel Bluetooth applet self-sufficient: pairing
@@ -256,7 +256,9 @@ plugins, existing application code, or inherited session environment. Those
 boundaries still require application restart or a later login; never restart the
 compositor to refresh panels while applications must remain connected.
 
-The package requires the exact KWin 6.6.6 stack and Qt 6.11 or newer. Its direct
+The package requires the exact compositor stack and Qt 6.11 or newer; since
+[ADR-0289](../adr/0289-run-on-qindaqt-kwin.md) that is `=gui-wm/qindaqt-kwin-6.6.6_p1:=`,
+QindaQt's own KWin fork, which installs beside an unmodified `kde-plasma/kwin`. Its direct
 runtime closure follows the production process contracts:
 
 | Desktop function | Direct package authority |

@@ -4,7 +4,7 @@
 # that already requires QINDAQT_DBUS_RUN_SESSION, QINDAQT_KWIN_WAYLAND,
 # QINDAQT_XDPYINFO and QINDAQT_XWAYLAND and defines _qindaqt_test_plugin_root.
 # The nested row proves the compositor half of the windowManagement.* bridge
-# (ADR-0209): a kwinrc rewrite plus org.kde.KWin.reconfigure rebinds the
+# (ADR-0209): a kwinrc rewrite plus org.qindaqt.KWin.reconfigure rebinds the
 # docking chord and the focus policy live.
 
 function(qindaqt_add_docking_chord_test scenario)

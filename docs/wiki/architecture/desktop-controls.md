@@ -40,7 +40,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Idle screensaver program | the saver package itself (the installed `x11-misc` savers, discovered from their desktop entries) | `ScreensaverLauncher`, started only while idle and unlocked |
 | Idle screensaver preference | Settings1 `power.screensaver` / `power.screensaverMinutes` | purpose-scoped provider + [Screen saver route](../apps/screensaver-settings.md) |
 | Low/critical battery warning level | UPower `WarningLevel` (via resident `Power1`'s `composite.warning`) | `BatteryNotificationPolicy`, edge-triggered on the resident notification host |
-| Tablet screen mapping and hotplug | KWin `org.kde.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
+| Tablet screen mapping and hotplug | KWin `org.qindaqt.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
 | Tablet rotation and areas for the screen it reaches | KWin device properties (`orientationDBus`, `inputArea`, `outputArea`, `leftHanded`); screen rotations from Display1 | `TabletMappingPolicy` with the shared placement planner and `DisplayRotationTabletOutputs` ([ADR-0285](../adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md)) |
 | Remembered tablet mapping decisions | Settings1 `input.tabletMappings` | purpose-scoped `Settings1TabletMappings` + Settings Pen & tablet destination |
 | Pen display announcement and its actions | resident notification host | `TabletArrivalNotifier` with `ActionInvoked` routing |

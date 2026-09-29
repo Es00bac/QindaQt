@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QSize>
 #include <QString>
 
@@ -15,7 +17,8 @@ enum class Backend {
 struct SessionOptions final
 {
     Backend backend = Backend::Drm;
-    QString kwinExecutable = QStringLiteral("kwin_wayland");
+    // QindaQt's compositor, qindaqt-kwin (ADR-0289).
+    QString kwinExecutable = QString(CompositorNames::executable);
     QString socketName = QStringLiteral("qindaqt-0");
     QSize outputSize{1920, 1080};
     double scale = 1.0;

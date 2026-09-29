@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "sessiondefaults.h"
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QDir>
 #include <QFileInfo>
 #include <QMetaType>
@@ -53,21 +55,22 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
         return false;
     }
 
-    QSettings kwin(directory.filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
-    kwin.beginGroup(QStringLiteral("org.kde.kdecoration2"));
-    // AGENT-CONTRACT: `org.qindaqt` is the installed KDecoration3 module
-    // name. First-run defaults select the coherent QindaQt desktop without
-    // turning each launcher invocation into an edit of the user's choices.
-    seedMissing(kwin, QStringLiteral("library"), QStringLiteral("org.qindaqt"));
-    kwin.endGroup();
-
-    kwin.beginGroup(QStringLiteral("Windows"));
-    // AGENT-GUARD: An ordinary drag remains a floating-window move. The
-    // explicit Meta+Shift path owns QindaQt edge/corner docking; KWin's absent
-    // defaults otherwise add a second, conflicting pointer interpretation.
-    seedMissing(kwin, QStringLiteral("ElectricBorderTiling"), false);
-    seedMissing(kwin, QStringLiteral("ElectricBorderMaximize"), false);
-    kwin.endGroup();
+    // qindaqt-kwin reads its settings from QindaQt's config folder (ADR-0289).
+    const QString compositorConfig = directory.filePath(QString(CompositorNames::configFile));
+    if (!QDir().mkpath(QFileInfo(compositorConfig).absolutePath())) {
+        if (error) {
+            *error = QStringLiteral("could not create configuration directory '%1'")
+                         .arg(QFileInfo(compositorConfig).absolutePath());
+        }
+        return false;
+    }
+    QSettings kwin(compositorConfig, QSettings::IniFormat);
+    // AGENT-NOTE (ADR-0289): the QindaQt decoration, the qindaqt window
+    // switcher, disabled electric-border maximize and tiling, CommandAll3
+    // "Nothing" (the shell's Meta+right-click chord) and the Theming v2 blur
+    // strengths are qindaqt-kwin's compiled-in defaults, so they are not
+    // seeded here; only values that depend on this installation or on
+    // QindaQt's own components are.
 
     kwin.beginGroup(QStringLiteral("Wayland"));
     // AGENT-CONTRACT: a seed, never an override — a user who chose another
@@ -95,35 +98,6 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
                             QStringLiteral("qindaqt_open_launcher")});
     kwin.endGroup();
 
-    kwin.beginGroup(QStringLiteral("MouseBindings"));
-    // AGENT-CONTRACT (live customization, O9): KWin's default CommandAll3 is
-    // "Resize", and its window-action filter runs that command for every
-    // client window including layer-shell panels, consuming Meta+right-click
-    // before the shell sees it. "Nothing" replays the press to the surface,
-    // and KWin already sends keyboard modifiers to the pointer-focused
-    // surface, so the shell's customization chord arrives with Meta set.
-    // Seed-missing only: a user's own MouseBindings choice always wins.
-    seedMissing(kwin, QStringLiteral("CommandAll3"), QStringLiteral("Nothing"));
-    kwin.endGroup();
-
-    kwin.beginGroup(QStringLiteral("TabBox"));
-    // KWin retains switch/focus authority and supplies the native model. The
-    // installed package changes presentation only and consumes the
-    // compositor's one-representative-per-container skipSwitcher policy.
-    seedMissing(kwin, QStringLiteral("LayoutName"), QStringLiteral("qindaqt"));
-    kwin.endGroup();
-
-    // Theming v2 (ADR-0206): translucent panel, popup, chrome and title
-    // materials rely on the blur and background-contrast effects. Seeded
-    // only when absent, so a user who switched an effect off keeps that.
-    kwin.beginGroup(QStringLiteral("Plugins"));
-    seedMissing(kwin, QStringLiteral("blurEnabled"), true);
-    seedMissing(kwin, QStringLiteral("contrastEnabled"), true);
-    kwin.endGroup();
-    kwin.beginGroup(QStringLiteral("Effect-blur"));
-    seedMissing(kwin, QStringLiteral("BlurStrength"), 8);
-    seedMissing(kwin, QStringLiteral("NoiseStrength"), 2);
-    kwin.endGroup();
 
     kwin.beginGroup(QStringLiteral("Effect-overview"));
     // AGENT-GUARD (ADR-0240): KWin reads this entry as an IntList. QSettings

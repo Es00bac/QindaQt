@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "qindaqt/compositor_names/compositor_names.h"
 #include "qindaqt/session_supervisor/direct_parent_process.h"
 #include "qindaqt/session_supervisor/session_process_supervisor.h"
 #include "qindaqt/session_supervisor/session_service.h"
@@ -153,9 +154,9 @@ int main(int argc, char *argv[])
         return 2;
     }
     // The windowManagement.* live bridge (ADR-0209): confirmed Settings1
-    // values become kwinrc entries plus one KWin reconfigure. It rides the
+    // values become qindaqt/kwinrc entries plus one reconfigure. It rides the
     // supervisor's lifetime and never blocks it; without Settings1 the last
-    // written kwinrc simply stands.
+    // written qindaqt/kwinrc simply stands.
     QindaQt::Services::SettingsClient::QtSettingsTransport windowManagementTransport(
         QDBusConnection::sessionBus());
     QindaQt::Services::SettingsClient::SettingsClient windowManagementSettings(
@@ -163,7 +164,7 @@ int main(int argc, char *argv[])
         QindaQt::Session::WindowManagement::WindowManagementPreferences::scopedKeys());
     const QindaQt::Session::WindowManagement::KWinWindowManagementWriter kwinWriter(
         QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
-            .filePath(QStringLiteral("kwinrc")));
+            .filePath(QString(QindaQt::CompositorNames::configFile)));
     QindaQt::Session::WindowManagement::DBusKWinReconfigureRequester kwinReconfigure(
         QDBusConnection::sessionBus());
     QindaQt::Session::WindowManagement::WindowManagementBridge windowManagementBridge(

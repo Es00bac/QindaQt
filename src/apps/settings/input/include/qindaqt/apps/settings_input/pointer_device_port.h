@@ -2,6 +2,8 @@
 #pragma once
 
 #include <QDBusConnection>
+
+#include "qindaqt/compositor_names/compositor_names.h"
 #include <QList>
 #include <QObject>
 #include <QDBusServiceWatcher>
@@ -23,7 +25,7 @@ namespace QindaQt::Apps::SettingsInput {
 // "supportsNaturalScroll" / "naturalScrollEnabledByDefault"), but tap
 // capability has no boolean flag at all — it is the integer
 // "tapFingerCount" (0 = the device cannot tap), shared by tap-to-click and
-// tap-and-drag. Verified against the live org.kde.KWin.InputDevice
+// tap-and-drag. Verified against the live org.qindaqt.KWin.InputDevice
 // interface (qinda-top, event4); do not reintroduce a
 // "supportsTapToClick"/"supportsTapAndDrag"/"defaultTapToClick" name, KWin
 // has never exposed them and every row gated on them renders permanently
@@ -90,9 +92,9 @@ Q_SIGNALS:
     void authorityChanged();
 };
 
-// Production adapter over KWin's org.kde.KWin input D-Bus API
-// (org.kde.KWin.InputDeviceManager on /org/kde/KWin/InputDevice and
-// org.kde.KWin.InputDevice device objects). KWin stays the live and
+// Production adapter over KWin's org.qindaqt.KWin input D-Bus API
+// (org.qindaqt.KWin.InputDeviceManager on /org/qindaqt/KWin/InputDevice and
+// org.qindaqt.KWin.InputDevice device objects). KWin stays the live and
 // persisted authority (ADR-0134); this adapter never writes config files.
 class KWinPointerDevicePort final : public PointerDevicePort {
     Q_OBJECT
@@ -102,7 +104,7 @@ public:
     // worker requests pin it so a replacement process cannot receive a Set.
     explicit KWinPointerDevicePort(
         QDBusConnection bus,
-        QString destination = QStringLiteral("org.kde.KWin"));
+        QString destination = QString(CompositorNames::service));
 
     [[nodiscard]] QList<PointerDeviceSnapshot>
     devices(QString *error) const override;

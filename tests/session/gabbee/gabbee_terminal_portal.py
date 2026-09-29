@@ -190,8 +190,8 @@ def wait_for_private_pipewire(
 def _kwin_plugin_call(
     environment: Mapping[str, str], method: str, plugin: str | None = None
 ) -> subprocess.CompletedProcess[str]:
-    args = ["/usr/bin/gdbus", "call", "--session", "--dest", "org.kde.KWin",
-            "--object-path", "/Plugins", "--method", f"org.kde.KWin.Plugins.{method}"]
+    args = ["/usr/bin/gdbus", "call", "--session", "--dest", "org.qindaqt.KWin",
+            "--object-path", "/org/qindaqt/KWin/Plugins", "--method", f"org.qindaqt.KWin.Plugins.{method}"]
     if plugin is not None:
         args.append(plugin)
     return subprocess.run(args, env=dict(environment), capture_output=True, text=True, timeout=5)
@@ -201,9 +201,9 @@ def reload_screencast_plugin(environment: Mapping[str, str], evidence: dict[str,
     """Restart KWin's public screencast plugin after PipeWire is available."""
 
     loaded = subprocess.run(
-        ["/usr/bin/gdbus", "call", "--session", "--dest", "org.kde.KWin",
-         "--object-path", "/Plugins", "--method",
-         "org.freedesktop.DBus.Properties.Get", "org.kde.KWin.Plugins", "LoadedPlugins"],
+        ["/usr/bin/gdbus", "call", "--session", "--dest", "org.qindaqt.KWin",
+         "--object-path", "/org/qindaqt/KWin/Plugins", "--method",
+         "org.freedesktop.DBus.Properties.Get", "org.qindaqt.KWin.Plugins", "LoadedPlugins"],
         env=dict(environment), capture_output=True, text=True, timeout=5,
     )
     evidence["kwinPluginsBeforeReload"] = loaded.stdout.strip()
@@ -219,9 +219,9 @@ def reload_screencast_plugin(environment: Mapping[str, str], evidence: dict[str,
             "KWin public screencast plugin reload failed: " + load.stderr.strip()
         )
     loaded_after = subprocess.run(
-        ["/usr/bin/gdbus", "call", "--session", "--dest", "org.kde.KWin",
-         "--object-path", "/Plugins", "--method",
-         "org.freedesktop.DBus.Properties.Get", "org.kde.KWin.Plugins", "LoadedPlugins"],
+        ["/usr/bin/gdbus", "call", "--session", "--dest", "org.qindaqt.KWin",
+         "--object-path", "/org/qindaqt/KWin/Plugins", "--method",
+         "org.freedesktop.DBus.Properties.Get", "org.qindaqt.KWin.Plugins", "LoadedPlugins"],
         env=dict(environment), capture_output=True, text=True, timeout=5,
     )
     evidence["kwinPluginsAfterReload"] = loaded_after.stdout.strip()

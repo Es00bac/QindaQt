@@ -2,6 +2,8 @@
 
 #include <qindaqt/services/night_light/night_light_state_port.h>
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCall>
@@ -17,9 +19,9 @@ namespace QindaQt::Services::NightLight {
 
 namespace {
 
-const QString kServiceName = QStringLiteral("org.kde.KWin.NightLight");
-const QString kObjectPath = QStringLiteral("/org/kde/KWin/NightLight");
-const QString kInterfaceName = QStringLiteral("org.kde.KWin.NightLight");
+const QString kServiceName = QString(CompositorNames::nightLightService);
+const QString kObjectPath = QString(CompositorNames::nightLightPath);
+const QString kInterfaceName = QString(CompositorNames::nightLightInterface);
 const QString kPropertiesInterface =
     QStringLiteral("org.freedesktop.DBus.Properties");
 

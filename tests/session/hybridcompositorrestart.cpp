@@ -162,9 +162,9 @@ exerciseHybridCompositorRestart(CompositorProbeClient &client,
 
     auto bus = QDBusConnection::sessionBus();
     CompositingTransitionObserver observer;
-    if (!bus.connect(QStringLiteral("org.kde.KWin"),
-                     QStringLiteral("/Compositor"),
-                     QStringLiteral("org.kde.kwin.Compositing"),
+    if (!bus.connect(QStringLiteral("org.qindaqt.KWin"),
+                     QStringLiteral("/org/qindaqt/KWin/Compositor"),
+                     QStringLiteral("org.qindaqt.KWin.Compositing"),
                      QStringLiteral("compositingToggled"),
                      &observer, SLOT(compositingToggled(bool)))) {
         *error = QStringLiteral(
@@ -212,9 +212,9 @@ exerciseHybridCompositorRestart(CompositorProbeClient &client,
         }
         QThread::msleep(10);
     }
-    bus.disconnect(QStringLiteral("org.kde.KWin"),
-                   QStringLiteral("/Compositor"),
-                   QStringLiteral("org.kde.kwin.Compositing"),
+    bus.disconnect(QStringLiteral("org.qindaqt.KWin"),
+                   QStringLiteral("/org/qindaqt/KWin/Compositor"),
+                   QStringLiteral("org.qindaqt.KWin.Compositing"),
                    QStringLiteral("compositingToggled"),
                    &observer, SLOT(compositingToggled(bool)));
     if (!publicationRestored) {

@@ -28,11 +28,11 @@ namespace {
 constexpr auto CompositorService = "org.qindaqt.Compositor";
 constexpr auto CompositorPath = "/org/qindaqt/Compositor";
 constexpr auto CompositorInterface = "org.qindaqt.Compositor1";
-constexpr auto KWinService = "org.kde.KWin";
-constexpr auto KWinPath = "/KWin";
-constexpr auto KWinInterface = "org.kde.KWin";
-constexpr auto PluginPath = "/Plugins";
-constexpr auto PluginInterface = "org.kde.KWin.Plugins";
+constexpr auto KWinService = "org.qindaqt.KWin";
+constexpr auto KWinPath = "/org/qindaqt/KWin";
+constexpr auto KWinInterface = "org.qindaqt.KWin";
+constexpr auto PluginPath = "/org/qindaqt/KWin/Plugins";
+constexpr auto PluginInterface = "org.qindaqt.KWin.Plugins";
 constexpr auto PluginId = "qindaqt_compositor";
 
 std::optional<QJsonObject> decode(const QDBusReply<QByteArray> &reply,
@@ -225,7 +225,7 @@ public:
             {QStringLiteral("secondaryRestoreFrame"), frameJson(m_secondaryRestoreFrame)},
             {QStringLiteral("tertiaryRestoreFrame"), frameJson(m_tertiaryRestoreFrame)},
             {QStringLiteral("quaternaryRestoreFrame"), frameJson(m_quaternaryRestoreFrame)},
-            {QStringLiteral("observer"), QStringLiteral("org.kde.KWin.getWindowInfo")},
+            {QStringLiteral("observer"), QStringLiteral("org.qindaqt.KWin.getWindowInfo")},
         };
         return m_result;
     }
