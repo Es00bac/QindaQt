@@ -7,6 +7,7 @@
 #include "qwayland-ext-data-control-v1.h"
 
 #include <QtCore/QObject>
+#include <QtCore/QPointer>
 #include <QtCore/QSocketNotifier>
 
 #include <memory>
@@ -32,6 +33,10 @@ private:
     ClipboardModel::ClipboardValue m_value;
     std::vector<std::unique_ptr<PendingWrite>> m_writes;
 };
+
+// True while any published source is still offered. A source the
+// compositor cancelled deletes itself, so its QPointer reads null (ADR-0289).
+[[nodiscard]] bool anySourceLive(const std::vector<QPointer<DataControlSource>> &sources) noexcept;
 
 class DataControlManager final : public QtWayland::ext_data_control_manager_v1 {
 public:

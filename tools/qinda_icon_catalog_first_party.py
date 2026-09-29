@@ -135,6 +135,12 @@ CANON = {
     "qindaqt-viewer": _mark(
         rect(6, 10, 52, 44, rx=6, fill=PLUM) + rect(11, 15, 42, 34, rx=2, fill="#7cc4f0")
         + filled("M11 49V38l11-9 9 8 8-6 14 11v7z", "#4dab4f") + dot(42, 24, 4.5, APRICOT)),
+    # The Screenshot tool (ADR-0289): the places catalog's camera silhouette
+    # inside region-selection corners, in the first-party plum and apricot.
+    "org.qindaqt.Screenshot": _mark(
+        strokes("M8 21V8h13", "M43 8h13v13", "M56 43v13H43", "M21 56H8V43", width=4, color=APRICOT)
+        + rect(15, 22, 34, 25, rx=5, fill=PLUM) + filled("M25 22l3.5-6h7l3.5 6z", PLUM)
+        + dot(32, 34.5, 8, CREAM) + dot(32, 34.5, 4.5, "#3a3347") + dot(43, 27, 2, APRICOT)),
     "qindaqt-voice": _mark(
         rect(24, 6, 16, 30, rx=8, fill=PLUM) + stroke("M17 28q0 15 15 15t15-15M32 43v11M24 56h16", 3.6, "#3a3347")
         + strokes("M10 24v10", "M5 20v18", "M54 24v10", "M59 20v18", width=3, color=APRICOT)),

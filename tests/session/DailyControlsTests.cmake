@@ -2,7 +2,8 @@
 
 # This row is intentionally separate from fixture-only desktop-controls tests:
 # it starts the installed session, KGlobalAccel, Audio1/PipeWire, notification
-# host and Spectacle in one private namespace before injecting hardware keys.
+# host and QindaQt Screenshot (ADR-0289) in one private namespace before
+# injecting hardware keys.
 if(TARGET qindaqt-desktop-controls
    AND TARGET qindaqt-shell
    AND TARGET qindaqt-session
@@ -20,7 +21,7 @@ if(TARGET qindaqt-desktop-controls
    AND QINDAQT_PW_CLI
    AND QINDAQT_WPCTL
    AND QINDAQT_KBUILDSYCOCA
-   AND QINDAQT_SPECTACLE)
+   AND TARGET qindaqt-screenshot)
     qt_add_executable(
         qindaqt-daily-controls-live-probe
         compositorprobeclient.cpp
@@ -31,7 +32,7 @@ if(TARGET qindaqt-desktop-controls
     )
     target_link_libraries(
         qindaqt-daily-controls-live-probe
-        PRIVATE QindaQt::AudioClient KF6::GlobalAccel Qt6::Core Qt6::DBus Qt6::Gui
+        PRIVATE QindaQt::AudioClient QindaQt::SettingsClient KF6::GlobalAccel Qt6::Core Qt6::DBus Qt6::Gui
     )
     set_target_properties(qindaqt-daily-controls-live-probe PROPERTIES CXX_EXTENSIONS OFF)
     qindaqt_enable_warnings(qindaqt-daily-controls-live-probe)
@@ -39,7 +40,7 @@ if(TARGET qindaqt-desktop-controls
         qindaqt-daily-controls-live-probe
         qindaqt-desktop-controls qindaqt-shell qindaqt-session
         qindaqt-notification-host qindaqt-settings-service qindaqt-audio-service
-        qindaqt_compositor
+        qindaqt_compositor qindaqt-screenshot
     )
 
     add_test(
@@ -59,7 +60,6 @@ if(TARGET qindaqt-desktop-controls
             --pw-cli "${QINDAQT_PW_CLI}"
             --wpctl "${QINDAQT_WPCTL}"
             --kbuildsycoca "${QINDAQT_KBUILDSYCOCA}"
-            --spectacle "${QINDAQT_SPECTACLE}"
             --pipewire-config "${QINDAQT_PIPEWIRE_TEST_CONFIG}"
             --probe "$<TARGET_FILE:qindaqt-daily-controls-live-probe>"
             --bin-directory "${KDE_INSTALL_BINDIR}"

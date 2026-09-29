@@ -68,8 +68,8 @@ theme, including dark mode.
 - The session autostart catalog (`src/session_autostart`,
   [ADR-0247](../adr/0247-run-xdg-autostart-in-the-session-supervisor.md))
   marks a documented table of distribution polkit-agent `Exec`/`TryExec`
-  basenames ineligible -- superseded by this agent -- regardless of that
-  entry's own `NotShowIn`/`OnlyShowIn`. Every other autostart entry is
+  basenames ineligible -- superseded by this agent -- and logs each skipped
+  entry, regardless of that entry's own `NotShowIn`/`OnlyShowIn`. Every other autostart entry is
   unaffected.
 - A registration conflict with polkitd (another agent already holds the
   session's slot) exits this agent with status 2 and a stderr line, never a

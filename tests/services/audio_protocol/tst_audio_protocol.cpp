@@ -225,23 +225,27 @@ void AudioProtocolTests::fixedSignatures()
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Level>()), "(ddb)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<LevelReading>()),
              "(s(ddb))");
-    // Schema 5 appends the device pin (ADR-0178) to both structs.
+    // Schema 5 appends the device pin (ADR-0178) to both structs. Schema 14
+    // (ADR-0288's dated addendum) appends delayMs to BusProcessing, so the
+    // bus half of Console (and Snapshot below) carries one more field too.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Console>()),
              "(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))"
-             "a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs))");
+             "a(suusttbdbb(ddb)s((bddddddd)ui))basas(bsst)a(sbssubbs))");
     // The rack (ADR-0179): gate, compressor, equalizer, limiter, in the order
     // the graph applies them.
     // The rack (ADR-0179/0180): denoiser, gate, compressor, equalizer, limiter,
     // in the order the graph applies them; a bus rack is an equalizer and a mode.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<StripProcessing>()),
              "((bd)(bddddd)(bdddddd)(bddddddd)(bdd))");
+    // Schema 14 (ADR-0288 dated addendum) appends delayMs (kMinBusDelayMs..
+    // kMaxBusDelayMs, audio_limits.h) after mode, its previous last field.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<BusProcessing>()),
-             "((bddddddd)u)");
+             "((bddddddd)ui)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
              "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbsbxbxx)a((tt)ussdbbbbbbadasbsbxbxx)"
              "a((tt)uss(tt)bdbbbbbbadas)"
              "(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))"
-             "a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs)))");
+             "a(suusttbdbb(ddb)s((bddddddd)ui))basas(bsst)a(sbssubbs)))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }

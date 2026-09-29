@@ -7,7 +7,9 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 13;
+// Schema 14 (ADR-0288 dated addendum): a real per-bus delay stage, beside
+// the per-device latency offset schema 13 already carries.
+inline constexpr quint32 kSchemaVersion = 14;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;
@@ -92,5 +94,11 @@ inline constexpr qint64 kMinLatencyOffsetNs = -2'000'000'000LL;
 inline constexpr qint64 kMaxLatencyOffsetNs = 2'000'000'000LL;
 // How many devices the latency document remembers: one per possible device.
 inline constexpr qsizetype kMaxLatencyOffsets = kMaxOutputs + kMaxInputs;
+// Per-bus delay stage (schema 14, ADR-0288 dated addendum): real delay in the
+// graph, in whole milliseconds. The upper bound matches the PipeWire builtin
+// delay filter's "max-delay" = 1.0 s the graph declares
+// (wireplumber_processing.cpp); never widen one without the other.
+inline constexpr qint32 kMinBusDelayMs = 0;
+inline constexpr qint32 kMaxBusDelayMs = 1000;
 
 } // namespace QindaQt::Audio

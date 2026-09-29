@@ -103,3 +103,53 @@ nodes without routes.
 - PipeWire starts insisting on route-level offsets for Bluetooth or ALSA (a
   node-level write no longer sticks after the one re-emission), or a
   WirePlumber release persists node-level offsets itself.
+
+## Addendum (2026-09-28): a real per-bus delay stage
+
+The first "Revisit when" condition above was met the same day: the owner
+asked for two speakers fed from different buses, or a bus and a VBAN peer
+fed from that bus, to play in sync, not just report matching latency. The
+per-device offset above cannot do this - it never inserts delay into console
+routing - so this addendum adds one.
+
+- **Model.** Each bus's rack (`BusProcessing`, ADR-0180) gains `delayMs`, a
+  whole-millisecond integer bounded `kMinBusDelayMs`..`kMaxBusDelayMs`
+  (0..1000, `audio_limits.h`), default 0. It is carried, validated, and
+  persisted exactly like the rack's equalizer: through the existing
+  `SetBusProcessing` operation (kind 20) and the console's existing mutation
+  capability - no new operation, capability bit, or method. `busProcessingActive`
+  treats `delayMs > 0` the same as an enabled equalizer or a non-Normal mode:
+  it alone is enough to build the bus's filter-chain.
+- **Wire contract (schema 14, additive).** `BusProcessing` appends `delayMs`
+  (D-Bus `i`) after `mode`, its existing last field. See
+  [Audio1 schema 14](../reference/audio1-v14.md).
+- **Graph.** The graph worker appends PipeWire's builtin `delay` filter
+  (verified against the installed PipeWire 1.6.8 filter-chain manual,
+  `libpipewire-module-filter-chain(7)`: a mono filter, one "In" port and one
+  "Out" port) when `delayMs > 0`: one instance per final output channel
+  (`delay_l`, `delay_r`), linked after whichever equalizer chain the bus
+  mode already selects for that channel, `"max-delay" = 1.0` matching the
+  1000 ms bound exactly, `"Delay (s)" = delayMs / 1000`. Zero adds no node at
+  all: the graph is byte-for-byte what it was before this addendum.
+- **Scope: physical buses only, like the rack it lives in.** A bus rack -
+  equalizer, mode, and now delay - is built only for a physical bus with a
+  bound device; a virtual bus's own sink would have to become a post-rack
+  node to gain one (`aBusRackNeedsItsOwnSinkAndOnlyOnAPhysicalBus`), which is
+  unrelated, larger surgery this addendum does not attempt. A bus driving an
+  outgoing VBAN stream shares that bus's own delay, so aligning a bus's local
+  device against its VBAN peer's downstream playback is possible; aligning
+  two peers independently, or delaying a strip rather than a bus, is not.
+- **Settings.** The Mixer tab's bus rack (`AudioConsoleBusRack.qml`, opened
+  from the bus card's existing "Rack" toggle, beside the equalizer) gains a
+  compact "Delay" field: a `Tk.NumberField` in whole milliseconds with a
+  Reset to 0 ms, composed like `AudioLatencyControl.qml`'s device field, and
+  dispatched through the same whole-rack `setBusProcessing` request the
+  equalizer already uses.
+
+Focused evidence: `qindaqt.audio-processing`
+(`aBusDelayAppendsMonoNodesAfterTheMode`: the graph string for 0, 25 and
+1000 ms, and delay alone building the chain), `qindaqt.audio-console-model`
+(`busDelayIsBoundedAppliedAndPersists`: bounds and a JSON round trip), and
+`qindaqt.settings-audio-console-page` (`consoleBusRackDelayDispatches`: the
+Settings control, offscreen). Unqualified: audible alignment on real hardware
+or a live VBAN peer, and Bluetooth/HDMI/USB devices, as before.

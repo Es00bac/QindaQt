@@ -280,6 +280,7 @@ inline QVariantMap defaultBusRack() {
                    {QStringLiteral("midGainDb"), 0.0}, {QStringLiteral("midQ"), 1.0},
                    {QStringLiteral("highHz"), 8000.0}, {QStringLiteral("highGainDb"), 0.0}}},
       {QStringLiteral("mode"), QStringLiteral("normal")},
+      {QStringLiteral("delayMs"), 0},
   };
 }
 
