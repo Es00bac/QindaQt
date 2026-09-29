@@ -42,6 +42,11 @@ inline constexpr QLatin1StringView nightLightService{"org.qindaqt.KWin.NightLigh
 inline constexpr QLatin1StringView nightLightPath{"/org/qindaqt/KWin/NightLight"};
 inline constexpr QLatin1StringView nightLightInterface{"org.qindaqt.KWin.NightLight"};
 
+// Native lock backend admits lock/recovery and reports physical protection;
+// there is no public unlock or authentication-result method (ADR-0299).
+inline constexpr QLatin1StringView nativeLockPath{"/org/qindaqt/KWin/NativeLock"};
+inline constexpr QLatin1StringView nativeLockInterface{"org.qindaqt.KWin.NativeLock1"};
+
 // AGENT-NOTE: carve-outs until PF21 of the Plasma-free plan. The fork keeps
 // ScreenShot2 under its KDE names because the KDE portal and Spectacle call
 // it; QindaQt's callers move together with the rename in PF21. (Scripting at

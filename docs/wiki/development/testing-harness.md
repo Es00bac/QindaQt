@@ -4098,3 +4098,25 @@ blackening, not an external consumer's full revocation lifecycle. Physical DRM,
 installed root-owned greeter binding, PAM/account validation and native session
 services remain separate qualification gates. No live rollout is implied.
 See [Native session locking](../architecture/native-session-lock.md).
+
+### PF7 private launch and authentication slices
+
+The native fork matrix adds a real child protocol probe plus an actually loaded
+harmless preload module. The same executable sees the lock global only on the
+compositor-owned connection; hostile self-launch sees none. The owned launch
+omits injection variables and reports non-dumpable state; its parent is
+also denied ptrace access to that disposable protected child. Root-file/alias trust,
+whitelist environment and clientless physical Protected feedback have separate
+rows. The probe and injected module are never installed.
+
+`lock.authentication` covers authentication/account decisions, cancellation,
+request/epoch isolation, crash invalidation and one-shot approval. Its scripted
+port does not call PAM. `lock.native-pam-conversation` exercises the native libpam
+adapter against a temporary `pam_start_confdir` and a non-installed synthetic
+module: synthetic success, denial, account denial, cancellation, malformed style,
+oversize prompts/message counts and embedded-NUL responses. It never reads system
+PAM config or accepts an owner's password. The fixture-only constructor is
+compiled solely into that test executable; the production worker has none.
+
+These slices establish neither the installed Qt greeter nor real owner-password
+qualification. See [ADR-0299](../adr/0299-native-locker-private-launch-and-authentication.md).
