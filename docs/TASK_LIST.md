@@ -2089,3 +2089,7 @@ reproduces on the clean tree and is unrelated.
 - [x] Private installed SDK consumer and real 1080p/150% native fixtures, each with 77 request results and independent scene evidence.
 - [ ] Shared semantic window-management commands and Gabbee command-hotkey integration, with bounded current/named targets, ambiguity refusal, inset maximize, regional geometry, container appearance, tabs/splits and application launches. The owner's spoken examples are not an exhaustive operation list. Dictation does not dispatch window management.
 - [ ] Shared interactive placement chooser and consolidated installed-session qualification.
+
+### Native key-store PAM and display source checkpoint
+
+Integrated candidate `f0d6edae17ea722a3d8604902cbe142e85f1ad69`: fixed SYSTEM owner/PIDFD token delivery and optional login/password-change handoff; native session display attachment pins an ordinary Wayland connection for prompts rather than guessing a socket. Manager integrated build22 targets and12/12 focused fatal-warning CTests pass, including actual private display-owner/FD/launcher and synthetic PAM failures. Production activation/install, real credential migration and physical native prompt qualification remain explicit gates; native Passwords & Keys PK4 follows.

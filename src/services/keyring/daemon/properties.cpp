@@ -74,6 +74,12 @@ bool SecretService::nativeMethod(const QDBusMessage &m) {
         }
         reply(m,{result}); return true;
     }
+    if (m.member() == "AttachSessionWithDisplay" && m.signature() == "s") {
+        const bool accepted = (sessionOwner_.isEmpty() || sessionOwner_ == m.service())
+            && promptsProvider_.bindSessionDisplay(m.service(),m.arguments()[0].toString());
+        if (accepted) sessionOwner_ = m.service();
+        reply(m,{accepted}); return true;
+    }
     if (m.member() == "AttachSession" && m.signature().isEmpty()) {
         const bool accepted = sessionOwner_.isEmpty() || sessionOwner_ == m.service();
         if (accepted) sessionOwner_ = m.service();

@@ -4,15 +4,20 @@
 #include <QProcess>
 #include <map>
 namespace qindaqt::keyring::service {
+class SessionDisplayBinding;
 class ProcessPromptProvider final : public PromptProvider {
 public:
-    explicit ProcessPromptProvider(QString executable, QObject *parent = nullptr);
+    explicit ProcessPromptProvider(QString executable, QObject *parent = nullptr,
+                                   SessionDisplayBinding *display = nullptr);
     ~ProcessPromptProvider() override;
     quint64 begin(PromptRequest, PromptCompletion) override;
     void cancel(quint64) override;
+    bool bindSessionDisplay(const QString &,const QString &) override;
 private:
-    struct Active { std::unique_ptr<QProcess> process; PromptCompletion done; SecureBuffer input; std::size_t used = 0; };
+    struct Active { ~Active(); std::unique_ptr<QProcess> process; PromptCompletion done; SecureBuffer input; std::size_t used = 0; int displayFd = -1; };
     void finish(quint64 id, bool cancelled);
+    // Borrowed GUI-thread collaborator outlives this provider; revocation cancels approval.
+    SessionDisplayBinding *display_ = nullptr;
     QString executable_;
     quint64 generation_ = 0;
     std::map<quint64,std::unique_ptr<Active>> active_;
