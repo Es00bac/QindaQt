@@ -40,9 +40,9 @@ namespace {
 
 constexpr auto AudioService = "org.qindaqt.Audio1";
 constexpr auto GlobalAccelService = "org.kde.kglobalaccel";
-constexpr auto KWinService = "org.kde.KWin";
-constexpr auto KWinCompositingPath = "/Compositor";
-constexpr auto KWinCompositingInterface = "org.kde.kwin.Compositing";
+constexpr auto KWinService = "org.qindaqt.KWin";
+constexpr auto KWinCompositingPath = "/org/qindaqt/KWin/Compositor";
+constexpr auto KWinCompositingInterface = "org.qindaqt.KWin.Compositing";
 constexpr auto ShellEvidenceService = "org.qindaqt.ShellDevelopment";
 constexpr auto ShellEvidencePath = "/org/qindaqt/ShellDevelopment";
 constexpr auto ShellEvidenceInterface = "org.qindaqt.ShellDevelopment1";
@@ -351,7 +351,7 @@ int main(int argc, char **argv)
         || !QDir(screenshotDirectory).entryList(QDir::Files | QDir::NoDotAndDotDot).isEmpty()) {
         return fail(QStringLiteral("private screenshot output directory is unavailable or not fresh"));
     }
-    // ADR-0289: Print launches QindaQt Screenshot. Its Settings1 preferences
+    // ADR-0291: Print launches QindaQt Screenshot. Its Settings1 preferences
     // send the region straight to the private evidence folder, exactly as a
     // user who turned the result window off would get it.
     {

@@ -32,7 +32,7 @@ active assignments below for this program. Worker activity is not product comple
 | --- | --- | --- | --- | --- | --- |
 | Native power policy PF1 | active source/schema lane | native-power worker | base 0d912510 / native-power | schema/import admission, idempotence and failed-commit retry | owns power policy/Settings schema; ADR0293 |
 | Native session lock PF5–PF6 | active fork/server lane | native-lock worker | fork base 0dd2fdb8 / session-lock | private nested crash/input/hotplug/presentation matrix | owns fork lock authority; ADR0294 |
-| Keyring PK1 | active storage-only lane | keyring-storage worker | base 0d912510 / keyring | EVP crypto, hostile envelope, atomic replacement and locked-search tests | owns keyring storage; ADR0292 |
+| Keyring PK1 | source integrated | manager | candidate 720a503e / keyring | manager and laptop4/4; strict MkDocs, 438-page links pass; nextPK2 | storage-only; ADR0292; no real data |
 
 Builds use qinda and a separate laptop build mirror at low CPU/I/O priority.
 No running desktop or services are changed. Final recipe consolidation precedes one delivery.
@@ -49,3 +49,7 @@ No running desktop or services are changed. Final recipe consolidation precedes 
 - 2026-09-06T10:15:52-06:00 — Integrateddf090f0f closes Bluetooth fixture regressions: affected rebuild and full service100/100pass; live NetworkReady/Full. Menua02e rejected by independent reviewer; exact first-layout rejection repair running in same Kimi lane. ICC884a independently reviewed; theme15baseline repair delegated GLM, shared ComboBox popup repair Luna, Settings followup/review active. Claude scope includes Meta+Arrow/native geometry conflicts as well as docking. All remaining candidates await acceptance and real nested proof.
 
 - 2026-09-06T10:49:35-06:00 — Main `bc87c7c9`: reviewed theme/control fixtures integrated; affected rebuild and combined46/46 pass. Settings final Revert restoration fd2a40a8 awaits GLM recheck; ICC884/1806 Claude reevaluation active after impossible-sequence refutation. Container63ba rejected for corner/Custom native geometry leakage, same Claude repairing; menu same Kimi repair still building. New scope: Sol member-title toggle and parent menu, Luna active-frame paint, GLM desktop shortcut note; root owns nested lane.
+
+Manager observation 2026-09-29T19:51:04+00:00: fork source/consumer 0dd2fdb8 / 6623b7d6 passes
+manager target build, 16/16 focused + adjacent 6/6 CTests, strict MkDocs and 434-page
+links/navigation. No interim packaging/install; overlay released r3 remains immutable.

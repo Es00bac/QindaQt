@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/tablet_devices/kwin_tablet_devices.h>
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <qindaqt/services/tablet_devices/tablet_geometry.h>
 #include <qindaqt/services/tablet_devices/tablet_orientation.h>
 
@@ -15,10 +17,10 @@
 namespace QindaQt::Services::TabletDevices {
 namespace {
 
-constexpr auto KWinService = "org.kde.KWin";
-constexpr auto ManagerPath = "/org/kde/KWin/InputDevice";
-constexpr auto ManagerInterface = "org.kde.KWin.InputDeviceManager";
-constexpr auto DeviceInterface = "org.kde.KWin.InputDevice";
+constexpr QLatin1StringView KWinService = CompositorNames::service;
+constexpr QLatin1StringView ManagerPath = CompositorNames::inputDevicesPath;
+constexpr QLatin1StringView ManagerInterface = CompositorNames::inputDeviceManagerInterface;
+constexpr QLatin1StringView DeviceInterface = CompositorNames::inputDeviceInterface;
 constexpr auto PropertiesInterface = "org.freedesktop.DBus.Properties";
 constexpr int CallTimeoutMs = 4000;
 constexpr int MaxDevices = 256;
@@ -117,7 +119,7 @@ bool legalSysName(const QString &sysName) {
 }
 
 QString devicePath(const QString &sysName) {
-    return QStringLiteral("/org/kde/KWin/InputDevice/%1").arg(sysName);
+    return (QString(CompositorNames::inputDevicesPath) + QStringLiteral("/%1")).arg(sysName);
 }
 
 // AGENT-NOTE: Qt hands a reply container back either demarshalled or as a
@@ -230,7 +232,7 @@ KWinTabletDevicePort::devices(QString *error) const {
     if (!serviceAvailable(m_bus)) {
         if (error != nullptr) {
             *error = QStringLiteral(
-                "Input authority org.kde.KWin is not reachable");
+                "Input authority org.qindaqt.KWin is not reachable");
         }
         return {};
     }
@@ -294,7 +296,7 @@ bool KWinTabletDevicePort::device(const QString &deviceId,
     }
     if (!legalSysName(deviceId) || !serviceAvailable(m_bus)) {
         if (error != nullptr) {
-            *error = QStringLiteral("Input authority org.kde.KWin is not "
+            *error = QStringLiteral("Input authority org.qindaqt.KWin is not "
                                     "reachable for device '%1'")
                          .arg(deviceId);
         }
@@ -420,7 +422,7 @@ bool KWinTabletDevicePort::writeProperty(const QString &deviceId,
     }
     if (!legalSysName(deviceId) || !serviceAvailable(m_bus)) {
         if (error != nullptr) {
-            *error = QStringLiteral("Input authority org.kde.KWin is not "
+            *error = QStringLiteral("Input authority org.qindaqt.KWin is not "
                                     "reachable for device '%1'")
                          .arg(deviceId);
         }
@@ -456,7 +458,7 @@ bool KWinTabletDeviceWatcher::start(QString *error) {
         return false;
     }
     // AGENT-GUARD: Subscribe without a sender name. KWin may not own
-    // org.kde.KWin yet when this process starts, and a sender-filtered match
+    // org.qindaqt.KWin yet when this process starts, and a sender-filtered match
     // registered too early never fires afterwards.
     const bool added = m_bus.connect(
         QString(), QLatin1String(ManagerPath), QLatin1String(ManagerInterface),

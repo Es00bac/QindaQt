@@ -331,6 +331,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     target_link_libraries(
         qindaqt-shell
         PRIVATE
+            QindaQt::CompositorNames
             qindaqt_profiles
             QindaQt::TokensQml
             QindaQt::AppletRuntime

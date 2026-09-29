@@ -7,9 +7,9 @@
 
 namespace QindaQt::Services::TabletDevices {
 
-// Production adapter over KWin's org.kde.KWin input D-Bus API
-// (org.kde.KWin.InputDeviceManager on /org/kde/KWin/InputDevice and
-// org.kde.KWin.InputDevice device objects). KWin stays the live and
+// Production adapter over KWin's org.qindaqt.KWin input D-Bus API
+// (org.qindaqt.KWin.InputDeviceManager on /org/qindaqt/KWin/InputDevice and
+// org.qindaqt.KWin.InputDevice device objects). KWin stays the live and
 // persisted authority (ADR-0134); this adapter never writes config files.
 //
 // AGENT-NOTE: KWin 6.6 has no ListTablets, so the adapter enumerates the
@@ -35,7 +35,7 @@ private:
 };
 
 // Production hotplug adapter over
-// org.kde.KWin.InputDeviceManager.deviceAdded/deviceRemoved.
+// org.qindaqt.KWin.InputDeviceManager.deviceAdded/deviceRemoved.
 class KWinTabletDeviceWatcher final : public TabletDeviceWatcher {
     Q_OBJECT
 public:

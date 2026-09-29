@@ -2,6 +2,8 @@
 
 #include <qindaqt/services/night_light/night_light_config_port.h>
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <KConfig>
 #include <KConfigGroup>
 #include <QtCore/QDir>
@@ -94,9 +96,15 @@ void announceConfigChange(const QDBusConnection &bus, const QString &path,
     if (!bus.isConnected() || changes.isEmpty()) {
         return;
     }
-    const QString fileName = QFileInfo(path).fileName();
+    const QFileInfo info(path);
+    QString fileName = info.fileName();
+    // AGENT-CONTRACT (ADR-0291): qindaqt-kwin watches its config as
+    // /qindaqt/kwinrc, the KConfig name "qindaqt/kwinrc" as a D-Bus path.
+    if (info.dir().dirName() == CompositorNames::configDirectory) {
+        fileName = QString(CompositorNames::configDirectory) + QLatin1Char('/') + fileName;
+    }
     static const QRegularExpression pathElement(
-        QStringLiteral("^[A-Za-z0-9_]+$"));
+        QStringLiteral("^[A-Za-z0-9_]+(/[A-Za-z0-9_]+)?$"));
     if (!pathElement.match(fileName).hasMatch()) {
         return;
     }

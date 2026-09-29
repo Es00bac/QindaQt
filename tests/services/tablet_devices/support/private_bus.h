@@ -10,7 +10,7 @@ namespace QindaQt::Tests
 {
 
 // Private dbus-daemon fixture. Every tablet row runs against this
-// isolated bus carrying a fake org.kde.KWin; no
+// isolated bus carrying a fake org.qindaqt.KWin; no
 // test contacts the host session bus, the live compositor, or any real
 // input device.
 class PrivateBus final

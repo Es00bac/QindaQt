@@ -32,9 +32,11 @@ FIRST_CHIP_INSET = 20.0
 def chord_seeded(session: LiveSession) -> None:
     parser = configparser.ConfigParser(strict=False, interpolation=None)
     parser.optionxform = str  # type: ignore[assignment]
-    parser.read(Path(os.environ["XDG_CONFIG_HOME"]) / "kwinrc", encoding="utf-8")
-    seeded = parser.get("MouseBindings", "CommandAll3", fallback="")
-    session.step("kwinrc", commandAll3=seeded)
+    parser.read(Path(os.environ["XDG_CONFIG_HOME"]) / "qindaqt" / "kwinrc", encoding="utf-8")
+    # ADR-0291: "Nothing" is qindaqt-kwin's compiled-in default, so an absent
+    # key means the fork default; only an explicit other value fails.
+    seeded = parser.get("MouseBindings", "CommandAll3", fallback="Nothing")
+    session.step("qindaqt/kwinrc", commandAll3=seeded)
     session.verdict("chord-seeded-command-all-3-nothing", seeded == "Nothing")
 
 

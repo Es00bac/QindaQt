@@ -98,15 +98,16 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     # provide QindaQt's compositor service. Packagers must choose explicit OFF
     # when intentionally building only the persistence-neutral bridge.
     find_package(Qt6 6.11 REQUIRED COMPONENTS DBus Widgets)
-    find_package(KDecoration3 6.6 REQUIRED CONFIG)
+    find_package(QindaQtKWinDecoration ${_qindaqt_kwin_abi_version} EXACT REQUIRED CONFIG)
     find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
-    # kwinrc's [QindaQt] group (the windowManagement.* bridge, ADR-0209) is
+    # qindaqt/kwinrc's [QindaQt] group (the windowManagement.* bridge, ADR-0209) is
     # read with KConfig on KWin's own reconfigure signal.
     find_package(KF6Config 6.0 REQUIRED CONFIG)
-    find_package(KWin ${_qindaqt_kwin_abi_version} EXACT REQUIRED CONFIG)
+    # QindaQt's compositor is its own KWin fork, qindaqt-kwin (ADR-0291).
+    find_package(QindaQtKWin ${_qindaqt_kwin_abi_version} EXACT REQUIRED CONFIG)
     # KWin's public Activities header includes PlasmaActivities but its package
     # does not propagate that include directory to extension plugins.
-    find_package(PlasmaActivities ${_qindaqt_kwin_abi_version} EXACT REQUIRED CONFIG)
+    find_package(PlasmaActivities 6.6.6 EXACT REQUIRED CONFIG)
 
     add_library(qindaqt_hybrid_chrome_pointer_router STATIC
         kwin/hybridchromepointerrouter.cpp
@@ -217,7 +218,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     target_link_libraries(
         qindaqt_kwin_input_adapter
         PUBLIC
-            KWin::kwin
+            QindaQtKWin::kwin
             QindaQt::HybridInput
             qindaqt_hybrid_chrome_pointer_router
             Qt6::Core
@@ -243,7 +244,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     )
     target_link_libraries(
         qindaqt_kwin_development_input
-        PUBLIC QindaQt::CompositorBridge KWin::kwin Qt6::Core
+        PUBLIC QindaQt::CompositorBridge QindaQtKWin::kwin Qt6::Core
     )
     set_target_properties(
         qindaqt_kwin_development_input
@@ -268,7 +269,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     )
     target_link_libraries(
         qindaqt_kwin_output_support
-        PUBLIC QindaQt::CompositorBridge KWin::kwin Qt6::Core
+        PUBLIC QindaQt::CompositorBridge QindaQtKWin::kwin Qt6::Core
     )
     set_target_properties(
         qindaqt_kwin_output_support
@@ -442,7 +443,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/shellvisibilitywindowadmission.h
             kwin/windowmanagementconfig.cpp
             kwin/windowmanagementconfig.h
-        INSTALL_NAMESPACE "kwin/plugins"
+        INSTALL_NAMESPACE "qindaqt-kwin/plugins"
     )
     target_link_libraries(
         qindaqt_compositor
@@ -464,8 +465,9 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             qindaqt_kwin_development_input
             qindaqt_kwin_input_adapter
             qindaqt_kwin_output_support
-            KDecoration3::KDecoration
-            KWin::kwin
+            QindaQtKWinDecoration::KDecoration
+            QindaQtKWin::kwin
+            QindaQt::CompositorNames
             KF6::ConfigCore
             KF6::GlobalAccel
             Plasma::Activities
@@ -480,7 +482,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         qindaqt_compositor
         PROPERTIES
             CXX_EXTENSIONS OFF
-            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins/kwin/plugins"
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins/qindaqt-kwin/plugins"
             # AGENT-NOTE: KWin scans its plugin namespace for module names,
             # not conventional Unix "lib"-prefixed shared libraries.
             PREFIX ""

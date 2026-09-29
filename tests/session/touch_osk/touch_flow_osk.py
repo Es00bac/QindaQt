@@ -30,7 +30,7 @@ HARDWARE_KEY = "c"
 
 
 def _kwin_keyboard_visible() -> bool:
-    proxy = dbus.SessionBus().get_object("org.kde.KWin", "/VirtualKeyboard")
+    proxy = dbus.SessionBus().get_object("org.qindaqt.KWin", "/VirtualKeyboard")
     properties = dbus.Interface(proxy, "org.freedesktop.DBus.Properties")
     return bool(properties.Get("org.kde.kwin.VirtualKeyboard", "visible"))
 

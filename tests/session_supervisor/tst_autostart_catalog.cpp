@@ -47,6 +47,8 @@ private Q_SLOTS:
     void malformedScalarEscapeExplainsIneligibility();
     void terminalAndWorkingDirectoryFollowThePublicPlan();
     void environmentResolvesXdgRootsWithoutAmbientFallback();
+    void knownPolkitAgentEntriesAreSupersededWhileOthersStillRun();
+    void distributionPolkitAgentCanRunWhenTheSessionAgentIsDisabled();
 };
 
 void AutostartCatalogTest::disabledWinnerMasksSystemAndDoesNotLaunch()
@@ -220,6 +222,60 @@ void AutostartCatalogTest::environmentResolvesXdgRootsWithoutAmbientFallback()
              QStringList({QStringLiteral("QindaQt"), QStringLiteral("GNOME")}));
     QCOMPARE(result.executableDirectories,
              QStringList({QStringLiteral("/bin"), QStringLiteral("/usr/bin")}));
+}
+
+void AutostartCatalogTest::knownPolkitAgentEntriesAreSupersededWhileOthersStillRun()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    auto config = options(root);
+    QVERIFY(QDir().mkpath(config.userDirectory));
+    QVERIFY(QDir().mkpath(config.executableDirectories.constFirst()));
+    executable(root, QStringLiteral("unrelated-tool"));
+    // Exactly the live defect ADR-0290 fixes: a real polkit-gnome autostart
+    // entry, NotShowIn=MATE;KDE only, which never excluded it from QindaQt.
+    writeFile(
+        QDir(config.userDirectory)
+            .filePath(QStringLiteral("polkit-gnome-authentication-agent.desktop")),
+        QStringLiteral(
+            "[Desktop Entry]\nType=Application\nName=PolicyKit Authentication Agent\n"
+            "Exec=/usr/libexec/polkit-gnome-authentication-agent-1\n"
+            "NotShowIn=MATE;KDE;\n"));
+    writeFile(QDir(config.userDirectory).filePath(QStringLiteral("unrelated.desktop")),
+              QStringLiteral("[Desktop Entry]\nType=Application\nName=Unrelated\n"
+                             "Exec=unrelated-tool\n"));
+    const auto entries = scan(config);
+    QCOMPARE(entries.size(), 2);
+    for (const auto &entry : entries) {
+        if (entry.name == QLatin1String("PolicyKit Authentication Agent")) {
+            QVERIFY(!entry.eligible);
+            QCOMPARE(entry.ineligibilityReason,
+                     QStringLiteral("Superseded by the QindaQt session's own polkit agent"));
+        } else {
+            QVERIFY2(entry.eligible, qPrintable(entry.name));
+        }
+    }
+}
+
+void AutostartCatalogTest::distributionPolkitAgentCanRunWhenTheSessionAgentIsDisabled()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    auto config = options(root);
+    config.supersedeDistributionPolkitAgents = false;
+    QVERIFY(QDir().mkpath(config.userDirectory));
+    QVERIFY(QDir().mkpath(config.executableDirectories.constFirst()));
+    executable(root, QStringLiteral("polkit-gnome-authentication-agent-1"));
+    writeFile(
+        QDir(config.userDirectory)
+            .filePath(QStringLiteral("polkit-gnome-authentication-agent.desktop")),
+        QStringLiteral(
+            "[Desktop Entry]\nType=Application\nName=PolicyKit Authentication Agent\n"
+            "Exec=polkit-gnome-authentication-agent-1\nNotShowIn=MATE;KDE;\n"));
+    const auto entries = scan(config);
+    QCOMPARE(entries.size(), 1);
+    QVERIFY2(entries.constFirst().eligible,
+             qPrintable(entries.constFirst().ineligibilityReason));
 }
 
 QTEST_MAIN(AutostartCatalogTest)

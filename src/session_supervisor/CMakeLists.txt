@@ -46,11 +46,19 @@ pkg_check_modules(libsystemd REQUIRED IMPORTED_TARGET libsystemd)
 target_link_libraries(
     qindaqt_session_supervisor_support
     PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus
-    PRIVATE PkgConfig::libsystemd
+    PRIVATE PkgConfig::libsystemd QindaQt::CompositorNames
 )
 target_compile_features(qindaqt_session_supervisor_support PUBLIC cxx_std_20)
 set_target_properties(
     qindaqt_session_supervisor_support PROPERTIES CXX_EXTENSIONS OFF
+)
+# ADR-0290: the sole candidate defaultPolkitAgentCandidates() offers, built
+# from the same KDE_INSTALL_FULL_LIBEXECDIR src/apps/polkit_agent installs
+# to. See the AGENT-CONTRACT in polkit_agent_selection.h.
+target_compile_definitions(
+    qindaqt_session_supervisor_support
+    PRIVATE
+        QINDAQT_POLKIT_AGENT_INSTALL_PATH="${KDE_INSTALL_FULL_LIBEXECDIR}/qindaqt-polkit-agent"
 )
 qindaqt_enable_warnings(qindaqt_session_supervisor_support)
 
@@ -60,6 +68,7 @@ target_link_libraries(
     PRIVATE
         QindaQt::SessionSupervisorSupport
         QindaQt::WindowManagementBridge
+        QindaQt::CompositorNames
         Qt6::Core
         Qt6::DBus
 )

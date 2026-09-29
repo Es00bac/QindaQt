@@ -2,7 +2,7 @@
 
 ## September 28: RESUME HERE (Claude ⇄ Codex program handoff, kept current)
 
-**Last updated:** 2026-09-29T19:02:46+00:00 by Codex recovery manager. **Hub `main`:** `see git log -1 hub/main`.
+**Last updated:** 2026-09-29T19:51:04+00:00 by Codex recovery manager. **Hub `main`:** `see git log -1 hub/main`.
 
 Whoever resumes (Claude or Codex) reads, in order:
 1. this section;
@@ -34,11 +34,11 @@ A lane is done when its handoff is posted (exact commits, files, tests with coun
 
 | Lane | Spec | Branch / worktree | State |
 |---|---|---|---|
-| F: `qindaqt-kwin` fork, M1 (F1–F8 plus the native root-window kill helper) | `laneF-fork-m1.md` | fork hub `~/git/qindaqt-kwin.git`, checkout `~/work_SPaC3/qindaqt-kwin`; container-wm `feature/qindaqt-kwin`; overlay `gui-wm/qindaqt-kwin` branch | recovering (Codex fork worker) |
-| S: `qindaqt-screenshot` with OBS record mode (PF16, ADR-0289) | `laneS-screenshot.md` | `feature/qindaqt-screenshot` / `screenshot` | integrated at `607c1f60`; manager gate pending |
-| PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | recovering (Codex Luna; exact candidate e67761a3) |
+| F: `qindaqt-kwin` fork, M1 (F1–F8 plus the native root-window kill helper) | `laneF-fork-m1.md` | fork hub `~/git/qindaqt-kwin.git`, checkout `~/work_SPaC3/qindaqt-kwin`; container-wm `feature/qindaqt-kwin`; overlay `gui-wm/qindaqt-kwin` branch | source integrated: fork 0dd2fdb8, consumer 6623b7d6; manager 16/16 + adjacent 6/6 and strict docs pass; final packaging deferred |
+| S: `qindaqt-screenshot` with OBS record mode (PF16, ADR-0289) | `laneS-screenshot.md` | `feature/qindaqt-screenshot` / `screenshot` | integrated at `607c1f60`; laptop native build and 6/6 focused gates pass |
+| PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | source integrated candidate 72191b76; native build, manager 9/9 and strict docs pass; live multi-output/authentication gates deferred |
 | P: four caveats (container names on restart, Corner Bar double-click, portal twin accent, touch lift) | `laneP-polish.md` | `fix/round-caveats` / `polish` | integrated candidate 5e8d73d7; manager 6/6 gates pass |
-| K: key store PK1–PK3 (plan §3.8) | `laneK-keyring.md` | `feature/qindaqt-keyring` / `keyring` | queued; starts when an Opus slot frees |
+| K: key store PK1–PK3 (plan §3.8) | `laneK-keyring.md` | `feature/qindaqt-keyring` / `keyring` | PK1 storage source integrated candidate 720a503e; manager and laptop each 4/4 plus strict docs pass; PK2–PK6 remain queued |
 | D: mixer bus delay (ADR-0288 addendum) | `laneD-mixer-delay.md` | merged `32ed1f42` | done |
 
 ### September 29 recovery resource boundary
@@ -66,8 +66,11 @@ Unsaved live topology has no automatic restart restoration. The unsafe transient
 was removed; touch lift visuals still require hardware qualification.
 
 Screenshot's laptop build and six focused CTests pass at integrated `607c1f60`.
-Fork main is preserved/pushed at `0dd2fdb8`; consumer `6623b7d6` awaits this manager's
-integration gates. Native polkit repaired `72191b76` awaits integration.
+Fork main is preserved/pushed at `0dd2fdb8`; consumer `6623b7d6` passes this manager's 16/16 focused gates plus the
+adjacent six polish gates. Strict MkDocs and 434-page link/navigation validation pass. Native polkit repaired `72191b76` passes manager native build, nine focused CTests
+(including supervisor and autostart lifetime), strict MkDocs and 436-page link/navigation
+validation. Pointer-output placement remains best effort until its native output contract
+is qualified; actual authentication/focus tests belong to final isolated/live delivery gates.
 Strict MkDocs remains a final gate; developer-tool recipes are being validated through Portage.
 
 ### Next, in order (plan §4)
@@ -4460,3 +4463,36 @@ package and private lifecycle boundary over the PB-0 protocol/aggregation/
 brightness foundation. PB-2 production upstream adapters and policy remain
 behind the routed session-lane activation contract. A source-only handoff or a
 live worker process is not completion.
+
+### Additional owner outcomes — 2026-09-29T19:51:04+00:00
+
+The owner added a persistent gathered layout for rolled-up containers and iconified
+windows, regardless of fullscreen/windowed origin: clear of the top bar, no overlap,
+overview ordering/columns, reliable app icons and visible app identity. A fresh isolated
+`feature/gathered-minimized` lane owns layout/presentation/restoration and accessible overflow.
+
+A documented opt-in native application placement API is queued: an app can request a new
+application window as a container tab or as a tile beside its current window, creating a
+container for a solo source. The app owns its accelerator and content/window creation;
+the compositor owns authenticated target adoption and atomic topology changes. Existing
+unauthenticated development-control mutators must remain disabled in production.
+
+Documentation tooling is preserved in overlay branch `build/mkdocs-portage` at `07bc89e`.
+Five new recipes, hashes/Manifests, pkgcheck and nine Portage test-image builds pass.
+Strict documentation uses those test images; no system software merge or delivery change.
+The bridge failure-mode test now asserts exact expected warnings and fails every other
+warning with QtTest: Qt global fatal-warning handling aborts even ignored expected warnings.
+Other affected CTests retain `QT_FATAL_WARNINGS=1`.
+
+### Native keyring storage boundary — 2026-09-29T20:08:00+00:00
+
+PK1 candidate `720a503e` passes native configure/build and four focused CTests on
+both qinda and qinda-top. Manager strict MkDocs and 438-page links/navigation pass.
+Storage owns bounded authenticated crypto/format, wiped locked/dump/fork-excluded
+secret pages, and no-follow atomic private-file persistence. The public search key
+allows offline attribute guessing; locked loaded results remain unauthenticated until
+unlock, as ADR-0292 documents. Daemon caller policy, single-writer/rate limits,
+Secret Service transport, PAM, UI and imports remain PK2–PK6. No real keyring data read.
+
+Laptop fork consumer/plugin/launcher/session targets build and six focused ABI/session
+checks pass at `f1abe8ed` with the staged fork; no binaries are installed system-wide.

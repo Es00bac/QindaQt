@@ -16,9 +16,9 @@ class SessionDefaultsTest final : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
-    void seedsQindaDesktopDefaultsWhenMissing();
+    void leavesCompositorDefaultsToQindaQtKWin();
     void preservesExplicitDesktopChoices();
-    void seedsEachMissingChoiceIndependently();
+    void addsNoCompositorDefaultBesideAChoice();
     void createsMissingConfigurationHome();
     void rejectsEmptyConfigurationHome();
     void doesNotCreateUserMimeDefaults();
@@ -28,38 +28,37 @@ private Q_SLOTS:
     void seedsOnScreenKeyboardFromTheNamedDesktopFile();
     void seedsNoInputMethodWithoutADesktopFile();
     void keepsAnExplicitInputMethod();
-    void seedsTranslucencyEffectsWithoutOverridingChoices();
+    void leavesTranslucencyEffectsToQindaQtKWin();
     void seedsTheMetaKeyOntoTheLauncherAction();
     void keepsAnExplicitModifierOnlyShortcut();
     void releasesTheOverviewHotCornerWithoutOverridingAChoice();
     void repairsTheInvalidOverviewEdgeSeed();
 };
 
-void SessionDefaultsTest::seedsQindaDesktopDefaultsWhenMissing()
+// ADR-0291: the QindaQt decoration, the qindaqt switcher, disabled electric
+// borders, CommandAll3 "Nothing" and the Theming v2 blur are qindaqt-kwin's
+// compiled-in defaults; the session writes none of them, so a later change of
+// the fork's defaults reaches every user who never chose otherwise.
+void SessionDefaultsTest::leavesCompositorDefaultsToQindaQtKWin()
 {
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
     QString error;
     QVERIFY2(SessionDefaults::ensure(temporary.path(), &error), qPrintable(error));
 
-    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc"));
+    QVERIFY(QFileInfo::exists(path));
+    QVERIFY(!QFileInfo::exists(QDir(temporary.path()).filePath(QStringLiteral("kwinrc"))));
     QSettings settings(path, QSettings::IniFormat);
-    settings.beginGroup(QStringLiteral("org.kde.kdecoration2"));
-    QCOMPARE(settings.value(QStringLiteral("library")).toString(),
-             QStringLiteral("org.qindaqt"));
-    settings.endGroup();
-    settings.beginGroup(QStringLiteral("Windows"));
-    QCOMPARE(settings.value(QStringLiteral("ElectricBorderTiling")).toBool(), false);
-    QCOMPARE(settings.value(QStringLiteral("ElectricBorderMaximize")).toBool(), false);
-    settings.endGroup();
-    settings.beginGroup(QStringLiteral("TabBox"));
-    QCOMPARE(settings.value(QStringLiteral("LayoutName")).toString(),
-             QStringLiteral("qindaqt"));
-    settings.endGroup();
-    // The live customization chord: Meta+right must reach layer-shell panels.
-    settings.beginGroup(QStringLiteral("MouseBindings"));
-    QCOMPARE(settings.value(QStringLiteral("CommandAll3")).toString(),
-             QStringLiteral("Nothing"));
+    for (const QString &key : {QStringLiteral("org.kde.kdecoration2/library"),
+                               QStringLiteral("Windows/ElectricBorderTiling"),
+                               QStringLiteral("Windows/ElectricBorderMaximize"),
+                               QStringLiteral("TabBox/LayoutName"),
+                               QStringLiteral("MouseBindings/CommandAll3"),
+                               QStringLiteral("Plugins/blurEnabled"),
+                               QStringLiteral("Effect-blur/BlurStrength")}) {
+        QVERIFY2(!settings.contains(key), qPrintable(key));
+    }
 }
 
 void SessionDefaultsTest::seedsTheMetaKeyOntoTheLauncherAction()
@@ -74,7 +73,7 @@ void SessionDefaultsTest::seedsTheMetaKeyOntoTheLauncherAction()
     // interface, method, then arguments. A value written as one quoted string
     // would leave KWin with a single malformed element and a dead Meta key,
     // so the row asserts the parsed shape rather than the raw text.
-    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")),
+    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc")),
                        QSettings::IniFormat);
     settings.beginGroup(QStringLiteral("ModifierOnlyShortcuts"));
     const QStringList call = settings.value(QStringLiteral("Meta")).toStringList();
@@ -90,7 +89,7 @@ void SessionDefaultsTest::seedsTheMetaKeyOntoTheLauncherAction()
     // entry on bare commas. A quoted value or a comma-space separator would
     // parse into one malformed element there while still reading back
     // correctly above, so the row also pins the written text.
-    QFile file(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")));
+    QFile file(QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc")));
     QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
     const QString contents = QString::fromUtf8(file.readAll());
     QVERIFY2(contents.contains(QStringLiteral(
@@ -108,7 +107,7 @@ void SessionDefaultsTest::keepsAnExplicitModifierOnlyShortcut()
 {
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
-    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc"));
     {
         QSettings settings(path, QSettings::IniFormat);
         settings.beginGroup(QStringLiteral("ModifierOnlyShortcuts"));
@@ -130,7 +129,7 @@ void SessionDefaultsTest::preservesExplicitDesktopChoices()
 {
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
-    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc"));
     {
         QSettings settings(path, QSettings::IniFormat);
         settings.beginGroup(QStringLiteral("org.kde.kdecoration2"));
@@ -167,11 +166,11 @@ void SessionDefaultsTest::preservesExplicitDesktopChoices()
              QStringLiteral("Resize"));
 }
 
-void SessionDefaultsTest::seedsEachMissingChoiceIndependently()
+void SessionDefaultsTest::addsNoCompositorDefaultBesideAChoice()
 {
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
-    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc"));
     {
         QSettings settings(path, QSettings::IniFormat);
         settings.beginGroup(QStringLiteral("Windows"));
@@ -184,11 +183,9 @@ void SessionDefaultsTest::seedsEachMissingChoiceIndependently()
     QSettings settings(path, QSettings::IniFormat);
     settings.beginGroup(QStringLiteral("Windows"));
     QCOMPARE(settings.value(QStringLiteral("ElectricBorderTiling")).toBool(), true);
-    QCOMPARE(settings.value(QStringLiteral("ElectricBorderMaximize")).toBool(), false);
+    QVERIFY(!settings.contains(QStringLiteral("ElectricBorderMaximize")));
     settings.endGroup();
-    settings.beginGroup(QStringLiteral("TabBox"));
-    QCOMPARE(settings.value(QStringLiteral("LayoutName")).toString(),
-             QStringLiteral("qindaqt"));
+    QVERIFY(!settings.contains(QStringLiteral("TabBox/LayoutName")));
 }
 
 void SessionDefaultsTest::createsMissingConfigurationHome()
@@ -198,7 +195,7 @@ void SessionDefaultsTest::createsMissingConfigurationHome()
     const auto config = QDir(temporary.path()).filePath(QStringLiteral("nested/config"));
     QString error;
     QVERIFY2(SessionDefaults::ensure(config, &error), qPrintable(error));
-    QVERIFY(QFileInfo::exists(QDir(config).filePath(QStringLiteral("kwinrc"))));
+    QVERIFY(QFileInfo::exists(QDir(config).filePath(QStringLiteral("qindaqt/kwinrc"))));
 }
 
 void SessionDefaultsTest::rejectsEmptyConfigurationHome()
@@ -253,7 +250,7 @@ void SessionDefaultsTest::seedsOnScreenKeyboardFromTheNamedDesktopFile()
     const bool ensured = SessionDefaults::ensure(temporary.path(), &error);
     qunsetenv("QINDAQT_OSK_DESKTOP_FILE");
     QVERIFY2(ensured, qPrintable(error));
-    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
+    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc")), QSettings::IniFormat);
     settings.beginGroup(QStringLiteral("Wayland"));
     QCOMPARE(settings.value(QStringLiteral("InputMethod")).toString(), desktopFile);
 }
@@ -269,7 +266,7 @@ void SessionDefaultsTest::seedsNoInputMethodWithoutADesktopFile()
     const bool ensured = SessionDefaults::ensure(temporary.path(), &error);
     qunsetenv("QINDAQT_OSK_DESKTOP_FILE");
     QVERIFY2(ensured, qPrintable(error));
-    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
+    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc")), QSettings::IniFormat);
     settings.beginGroup(QStringLiteral("Wayland"));
     QVERIFY(!settings.contains(QStringLiteral("InputMethod")));
 }
@@ -284,7 +281,7 @@ void SessionDefaultsTest::keepsAnExplicitInputMethod()
     entry.write("[Desktop Entry]\nType=Application\nExec=/opt/qindaqt-osk\n");
     entry.close();
     {
-        QSettings existing(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
+        QSettings existing(QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc")), QSettings::IniFormat);
         existing.beginGroup(QStringLiteral("Wayland"));
         existing.setValue(QStringLiteral("InputMethod"), QStringLiteral("/usr/share/applications/com.github.maliit.keyboard.desktop"));
     }
@@ -293,20 +290,21 @@ void SessionDefaultsTest::keepsAnExplicitInputMethod()
     const bool ensured = SessionDefaults::ensure(temporary.path(), &error);
     qunsetenv("QINDAQT_OSK_DESKTOP_FILE");
     QVERIFY2(ensured, qPrintable(error));
-    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("kwinrc")), QSettings::IniFormat);
+    QSettings settings(QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc")), QSettings::IniFormat);
     settings.beginGroup(QStringLiteral("Wayland"));
     QCOMPARE(settings.value(QStringLiteral("InputMethod")).toString(),
              QStringLiteral("/usr/share/applications/com.github.maliit.keyboard.desktop"));
     settings.endGroup();
 }
 
-void SessionDefaultsTest::seedsTranslucencyEffectsWithoutOverridingChoices()
+void SessionDefaultsTest::leavesTranslucencyEffectsToQindaQtKWin()
 {
-    // Theming v2 (ADR-0206): the blur and background-contrast effects are
-    // seeded on first run; a user who switched blur off keeps that choice.
+    // Theming v2 (ADR-0206): qindaqt-kwin enables blur with QindaQt's strengths
+    // by default (ADR-0291); the session writes nothing, and a user who
+    // switched blur off keeps that choice.
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
-    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc"));
     {
         QSettings existing(path, QSettings::IniFormat);
         existing.beginGroup(QStringLiteral("Plugins"));
@@ -318,14 +316,10 @@ void SessionDefaultsTest::seedsTranslucencyEffectsWithoutOverridingChoices()
     QVERIFY2(SessionDefaults::ensure(temporary.path(), &error), qPrintable(error));
 
     QSettings settings(path, QSettings::IniFormat);
-    settings.beginGroup(QStringLiteral("Plugins"));
-    QCOMPARE(settings.value(QStringLiteral("blurEnabled")).toBool(), false);
-    QCOMPARE(settings.value(QStringLiteral("contrastEnabled")).toBool(), true);
-    settings.endGroup();
-    settings.beginGroup(QStringLiteral("Effect-blur"));
-    QCOMPARE(settings.value(QStringLiteral("BlurStrength")).toInt(), 8);
-    QCOMPARE(settings.value(QStringLiteral("NoiseStrength")).toInt(), 2);
-    settings.endGroup();
+    QCOMPARE(settings.value(QStringLiteral("Plugins/blurEnabled")).toBool(), false);
+    QVERIFY(!settings.contains(QStringLiteral("Plugins/contrastEnabled")));
+    QVERIFY(!settings.contains(QStringLiteral("Effect-blur/BlurStrength")));
+    QVERIFY(!settings.contains(QStringLiteral("Effect-blur/NoiseStrength")));
 }
 
 // AGENT-GUARD (ADR-0240): This assertion uses KConfig, the reader KWin uses.
@@ -335,7 +329,7 @@ void SessionDefaultsTest::releasesTheOverviewHotCornerWithoutOverridingAChoice()
 {
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
-    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc"));
     QString error;
     QVERIFY2(SessionDefaults::ensure(temporary.path(), &error), qPrintable(error));
     {
@@ -347,7 +341,7 @@ void SessionDefaultsTest::releasesTheOverviewHotCornerWithoutOverridingAChoice()
 
     QTemporaryDir chosen;
     QVERIFY(chosen.isValid());
-    const auto chosenPath = QDir(chosen.path()).filePath(QStringLiteral("kwinrc"));
+    const auto chosenPath = QDir(chosen.path()).filePath(QStringLiteral("qindaqt/kwinrc"));
     {
         QSettings existing(chosenPath, QSettings::IniFormat);
         existing.beginGroup(QStringLiteral("Effect-overview"));
@@ -367,7 +361,7 @@ void SessionDefaultsTest::repairsTheInvalidOverviewEdgeSeed()
 {
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
-    const auto path = QDir(temporary.path()).filePath(QStringLiteral("kwinrc"));
+    const auto path = QDir(temporary.path()).filePath(QStringLiteral("qindaqt/kwinrc"));
     {
         QSettings existing(path, QSettings::IniFormat);
         existing.beginGroup(QStringLiteral("Effect-overview"));

@@ -130,6 +130,7 @@ private Q_SLOTS:
     void invalidWriteIsRefused();
     void externalChangeIsReportedAndSelfWritesAreNot();
     void writesAreAnnouncedToConfigWatchers();
+    void announcesTheCompositorsFolderPath();
 
 private Q_SLOTS:
     // Each test function gets fresh files: QSettings-style state leaking
@@ -385,6 +386,32 @@ void NightLightConfigPortTests::writesAreAnnouncedToConfigWatchers()
              NightLightConfigPort::WriteOutcome::Unchanged);
     QTest::qWait(200);
     QCOMPARE(recorder.byPath.value(QStringLiteral("/kwinrc")).size(), 1);
+    QDBusConnection::disconnectFromBus(listenerName);
+}
+
+// ADR-0291: qindaqt-kwin watches "qindaqt/kwinrc"; a kwinrc in QindaQt's config
+// folder is announced on /qindaqt/kwinrc, knighttimerc still on /knighttimerc.
+void NightLightConfigPortTests::announcesTheCompositorsFolderPath()
+{
+    qDBusRegisterMetaType<QByteArrayList>();
+    qDBusRegisterMetaType<QHash<QString, QByteArrayList>>();
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString listenerName = QStringLiteral("night-light-folder-watcher");
+    QDBusConnection listener = QDBusConnection::connectToBus(bus.address, listenerName);
+    ConfigChangeRecorder recorder;
+    QVERIFY(listener.connect(QString(), QString(),
+                             QStringLiteral("org.kde.kconfig.notify"),
+                             QStringLiteral("ConfigChanged"), &recorder,
+                             SLOT(record(QDBusMessage))));
+    QVERIFY(QDir(m_directory->path()).mkpath(QStringLiteral("qindaqt")));
+    QtConfigNightLightPort port(m_directory->filePath(QStringLiteral("qindaqt/kwinrc")), knightPath(),
+                                bus.connection());
+    QCOMPARE(port.write(exampleSettings()).outcome,
+             NightLightConfigPort::WriteOutcome::Applied);
+    QTRY_COMPARE(recorder.byPath.value(QStringLiteral("/qindaqt/kwinrc")).size(), 1);
+    QVERIFY(recorder.byPath.value(QStringLiteral("/kwinrc")).isEmpty());
+    QTRY_COMPARE(recorder.byPath.value(QStringLiteral("/knighttimerc")).size(), 1);
     QDBusConnection::disconnectFromBus(listenerName);
 }
 

@@ -675,3 +675,17 @@ These answer the open questions and are binding for the slices above.
 9. The fork's name is `qindaqt-kwin` (package `gui-wm/qindaqt-kwin`).
 10. **QindaQt has its own key store** (owner, 2026-09-28): a native keyring replaces gnome-keyring and
    KWallet, including unlock at login and a one-time import of the existing keyrings and wallets (§3.8).
+
+## September 29 additional owner outcomes
+
+- Gather rolled-up containers and iconified windows at the usable upper-left corner,
+  outside top-bar reservation, using overview order and columns. Fullscreen/windowed
+  origins share placement; items never overlap and overflow remains accessible.
+  Automatic placement preserves original restore geometry and state. Resolve real
+  application icons and provide meaningful app identity when metadata is incomplete.
+- Publish a native opt-in application window-placement API with an executable example.
+  An app-owned shortcut creates a new app window and requests adoption as a container
+  tab or as a tile beside the originating window; a solo source creates a container.
+  The compositor authenticates application-owned surface targets, applies topology
+  atomically, and reports failure/lifetime/version behavior. General development
+  mutation APIs remain production-disabled. Concrete protocol choice requires its ADR.

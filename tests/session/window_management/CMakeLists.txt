@@ -53,3 +53,8 @@ add_test(
     NAME qindaqt.window-management-bridge
     COMMAND qindaqt_window_management_bridge_tests
 )
+
+# AGENT-NOTE: Qt global fatal warnings abort even an expected QtTest warning.
+# This failure-mode suite asserts exact expected warnings and fails all others.
+set_tests_properties(qindaqt.window-management-bridge PROPERTIES
+    ENVIRONMENT_MODIFICATION "QT_FATAL_WARNINGS=unset:")

@@ -254,8 +254,12 @@ jobs:
             -R '^shell\.production-surface\.1440p$' \
             --output-on-failure --no-tests=error
 
+  # AGENT-NOTE (ADR-0291): QindaQt now builds against its own KWin fork,
+  # gui-wm/qindaqt-kwin, whose hub is private to qinda. Until the fork has a
+  # public source this job cannot install it and fails at the compositor
+  # steps; publishing the fork (or retiring this lane) is an owner decision.
   native-release:
-    name: Build and boot the KWin 6.6.6 plugin
+    name: Build and boot the qindaqt-kwin 6.6.6.1 plugin
     needs: repository-policy
     runs-on: ubuntu-24.04
     container:
@@ -353,12 +357,12 @@ jobs:
       - name: Verify the exact runtime and source pin
         run: |
           cmake_version="$(find /usr/lib /usr/lib64 \
-            -path '*/cmake/KWin/KWinConfigVersion.cmake' -print -quit)"
+            -path '*/cmake/QindaQtKWin/QindaQtKWinConfigVersion.cmake' -print -quit)"
           test -n "$cmake_version"
           ./compositor/tools/verify-kwin-source --check-remote
           ./tools/check-release-contract \
-            --kwin-wayland /usr/bin/kwin_wayland \
-            --kwin-cmake-version "$cmake_version"
+            --compositor /usr/bin/qindaqt-kwin \
+            --compositor-cmake-version "$cmake_version"
 
       - name: Record the exact native build stack
         run: |
@@ -396,10 +400,10 @@ jobs:
       - name: Verify release artifacts and static ABI gates
         run: |
           cmake_version="$(find /usr/lib /usr/lib64 \
-            -path '*/cmake/KWin/KWinConfigVersion.cmake' -print -quit)"
+            -path '*/cmake/QindaQtKWin/QindaQtKWinConfigVersion.cmake' -print -quit)"
           ./tools/check-release-contract \
-            --kwin-wayland /usr/bin/kwin_wayland \
-            --kwin-cmake-version "$cmake_version" \
+            --compositor /usr/bin/qindaqt-kwin \
+            --compositor-cmake-version "$cmake_version" \
             --build-root build/ci-native-release \
             --install-root build/ci-native-release-stage
           ctest --test-dir build/ci-native-release \

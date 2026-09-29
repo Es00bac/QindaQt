@@ -1,75 +1,77 @@
-# Upgrading the pinned KWin release
+# Releasing and upgrading qindaqt-kwin
 
-KWin's native plugin boundary is an exact binary ABI. Treat every patch release
-as an upgrade that needs a clean rebuild and fresh nested evidence.
+QindaQt runs on qindaqt-kwin, its own co-installable KWin fork
+([ADR-0291](../adr/0291-run-on-qindaqt-kwin.md)). The native plugin boundary is
+an exact binary ABI: treat every fork release, including one that only merges
+an upstream patch release, as an upgrade that needs a clean rebuild and fresh
+nested evidence.
 
-## Resolve the authoritative source
+## Work in the fork
 
-Start from KDE's repository and resolve both the annotated tag and its peeled
-commit:
+The fork's hub is `qinda:~/git/qindaqt-kwin.git`; read its `AGENTS.md` and
+`qindaqt/README.md` first. QindaQt changes are small commits labelled
+`qindaqt:`. Upstream enters only as a merge of a KDE release tag:
 
 ```sh
-git ls-remote https://invent.kde.org/plasma/kwin.git \
-  refs/tags/vX.Y.Z 'refs/tags/vX.Y.Z^{}'
-git init build/kwin-X.Y.Z
-git -C build/kwin-X.Y.Z fetch --depth=1 \
-  https://invent.kde.org/plasma/kwin.git refs/tags/vX.Y.Z
-git -C build/kwin-X.Y.Z cat-file -p FETCH_HEAD
+git -C <fork worktree> fetch https://invent.kde.org/plasma/kwin.git \
+  refs/tags/vX.Y.Z:refs/tags/vX.Y.Z
+git -C <fork worktree> merge vX.Y.Z
+qindaqt/tools/rename-identity           # re-apply the identity to new upstream code
+qindaqt/tools/rename-identity --check
 ```
 
-For an annotated tag, the first object is the tag and the second is the commit.
-Resolve the tree from the peeled commit. Compare these values with the locally
-installed KWin runtime and `KWinConfigVersion.cmake`; the local package proves
-what can be compiled and run, while the upstream objects prove source identity.
+Record the tag object and commit in the fork's `qindaqt/UPSTREAM.md`; a
+vendored kdecoration update is a `git subtree pull --prefix=kdecoration --squash`
+with its own row. Stay on the pinned minor release unless a move is planned.
 
-Update `compositor/upstream/kwin.json`, then rebase every entry in
-`compositor/patches/series.json` onto the peeled commit. Preserve patch order and
-intent, regenerate each patch hash, and run both source-verifier modes. An empty
-series still needs its `upstreamCommit` changed. Update ADR-0001 and the
-compositor-session pin table with the same tag, commit, and tree.
+## Cut a fork release
 
-## Advance the binary contract
+1. Bump `QINDAQT_KWIN_SERIAL` in the fork's `CMakeLists.txt` (the fork version is
+   `<upstream release>.<serial>`, the Gentoo version `<release>_p<serial>`).
+2. Build, stage an install and run the fork's gates:
+   `qindaqt/tools/check-install-collisions <stage>` (no collisions, no stock
+   names), `qindaqt/tools/smoke-test <stage> <out>` (the fork's own names answer,
+   only `$XDG_CONFIG_HOME/qindaqt/` files are written) and the helper tests.
+3. Push the fork branch, then in container-wm update, as one change,
+   `compositor/upstream/kwin.json` (fork commit, tree, version, package), the
+   literal in `src/compositor/cmake/QindaQtKWinAbi.cmake`, the fork version in
+   `tests/` `find_package(... EXACT)` requests, and the pin tables in
+   [compositor and session integration](../architecture/compositor-session.md)
+   and ADR-0291. Run `./compositor/tools/verify-kwin-source`, `--verify` against
+   a fork checkout and `--verify-archive` against the package tarball.
+4. In QindaGentoo add `gui-wm/qindaqt-kwin-<release>_p<serial>` pinning the same
+   commit (`git archive --format=tar.gz --prefix=qindaqt-kwin-<version>/`) and
+   move `qindaqt-desktop`'s `=gui-wm/qindaqt-kwin-…:=` atom with it.
 
-Update the exact `find_package(KWin ...)` request, plugin IID, dependency
-contract tests, and the full-desktop ebuild's KWin, KDecoration, LayerShellQt,
-and Plasma Activities atoms as one change. Confirm the selected distribution
-packages form one patch-release stack. Never relax `EXACT`, keep an old IID, or
-reuse an old plugin artifact to get configuration past a mismatch.
-
-Run the complete [release procedure](releases.md) from a fresh build root. The
-required evidence includes static ABI checks, live build-tree plugin loading,
-and staged installed discovery. A plugin-disabled LayerShellQt run does not
-replace either native row.
+Never relax `EXACT`, keep an old plugin interface id, or reuse an old plugin
+artifact to get configuration past a mismatch. Run the complete [release
+procedure](releases.md) from a fresh build root.
 
 ## Upgrade and rollback on Gentoo
 
-Create the updated `gui-wm/qindaqt-desktop` binary package before touching the
-running system. Review the Portage plan so the four exact Plasma atoms and the
-QindaQt package advance together. Leave the QindaQt session, merge from a text
-console or another desktop, and start a fresh login; an in-process plugin cannot
-survive a KWin ABI replacement safely.
+Build the new `gui-wm/qindaqt-kwin` and `gui-wm/qindaqt-desktop` binary packages
+before touching the running system; the `:=` subslot rebuilds every consumer.
+Leave the QindaQt session, merge from a text console or another desktop, and
+start a fresh login; an in-process plugin cannot survive an ABI replacement.
 
 If the new session fails its installed smoke, return to the text console and
-install the retained prior KWin stack and QindaQt binary package as one rollback
-transaction. Do not mix the prior plugin with the new KWin process. Capture the
-failed package versions and nested reproduction before retrying the upgrade.
+install the retained prior fork and desktop binary packages as one rollback
+transaction. Do not mix a prior plugin with a new compositor. A stock
+`kde-plasma/kwin` beside it is unaffected either way.
 
 ## Corner Bar input regression
 
-The Corner Bar cutout requires the patched KWin library as well as the
-QindaQt decoration (ADR-0277). A painted transparent strip alone is not
-acceptance evidence. The test-only patch
-`compositor/tests/transparent-decoration-input.patch` extends upstream
-`testDecorationInput` at the exact pinned source revision. Apply it after the
-production patch series in an isolated KWin source tree, configure that tree
-with `BUILD_TESTING=ON`, and build the `testDecorationInput` target. Test
-configuration additionally needs KWayland and KPipeWire development packages.
-
-Run it through the private-home/private-bus wrapper:
+The Corner Bar cutout requires the fork's input change as well as the QindaQt
+decoration (ADR-0277). A painted transparent strip alone is not acceptance
+evidence. The fork's `testDecorationInput` carries
+`testTransparentDecorationCutout`; configure a fork tree with
+`BUILD_TESTING=ON`, build `testDecorationInput`, and run it through the
+private-home/private-bus wrapper with QindaQt's decoration on the plugin path
+(the fork loads decorations only from `qindaqt-kwin/decorations`):
 
 ```sh
-python3 compositor/tests/run-decoration-input.py \
-  /path/to/kwin-build/bin/testDecorationInput
+QT_PLUGIN_PATH=<container-wm build>/plugins \
+  qindaqt/tools/run-decoration-input <fork build>/bin/testDecorationInput
 ```
 
 The virtual compositor maps two real Wayland clients. The upper decoration
@@ -77,21 +79,14 @@ publishes the process-local cutout contract; a pointer press and release in
 that region must reach the lower client's surface without moving the upper
 window. A retained title point still targets the upper decoration. Removing
 the property, or supplying an invalid type, restores ordinary input. The
-fixture tests the compositor contract independently of decoration painting;
-QindaQt's painter/plugin tests separately cover published geometry and shape.
-The test-only patch is deliberately outside the production patch series.
-
-For a negative control, retain the unpatched library from the same exact KWin
-release in an ignored directory and pass `--library-path` pointing there. The
-cutout assertion must fail with that library. Do not substitute a different
-KWin ABI. Never replace or restart the physical compositor to run this test.
-
-On 2026-09-27 the pinned native fixture passed with the packaged patched
-KWin library (three QtTest rows including setup/cleanup, 116 ms). With the
-retained unpatched library from the same 6.6.6 release, it failed exactly at
-`!above->hitTest(cutoutPoint)` (118 ms). The positive also received both actual
-Wayland button events on the lower client and retained the upper frame. The
 fixture uses `Test::waylandSync()` after motion and button delivery to flush
-the private client/server transport before assertions; polling QObject state
-alone does not establish that transport boundary. This qualifies the KWin
-input contract, not physical-session activation of a newly installed library.
+the private client/server transport before assertions. Never replace or restart
+the physical compositor to run this test.
+
+On 2026-09-28 the fixture passed in qindaqt-kwin 6.6.6.1 with container-wm's
+`org.qindaqt` decoration built against `QindaQtKWinDecoration` (three QtTest
+rows including setup/cleanup, 259 ms). Without QindaQt's decoration on the
+plugin path the window gets no server-side decoration and the row fails, which
+also shows that stock decorations never load in the fork. On 2026-09-27 the
+same fixture had passed on the formerly patched stock KWin and failed on the
+unpatched library at `!above->hitTest(cutoutPoint)`.

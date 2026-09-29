@@ -16,7 +16,7 @@ set_tests_properties(qindaqt.services-tablet-devices-policy-values PROPERTIES
     LABELS "services;tablet-devices;model")
 
 # The KWin tablet authority port and hotplug watcher against a fake
-# org.kde.KWin on a private bus.
+# org.qindaqt.KWin on a private bus.
 qt_add_executable(qindaqt_tablet_device_port_tests
     tst_tablet_device_port.cpp
     support/fake_kwin_tablets.h

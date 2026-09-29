@@ -15,16 +15,16 @@ namespace {
 void configureParser(QCommandLineParser &parser)
 {
     parser.setApplicationDescription(
-        QStringLiteral("Launch the QindaQt KWin-derived Wayland compositor session."));
+        QStringLiteral("Launch the QindaQt Wayland session on qindaqt-kwin, QindaQt's compositor."));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addOption({QStringLiteral("drm"), QStringLiteral("Run directly on DRM/KMS (default).")});
     parser.addOption({QStringLiteral("windowed"), QStringLiteral("Run nested on WAYLAND_DISPLAY.")});
     parser.addOption({QStringLiteral("virtual"), QStringLiteral("Use KWin's virtual framebuffer.")});
     parser.addOption({QStringLiteral("kwin"),
-                      QStringLiteral("KWin executable to launch."),
+                      QStringLiteral("Compositor executable to launch."),
                       QStringLiteral("path"),
-                      QStringLiteral("kwin_wayland")});
+                      QString(CompositorNames::executable)});
     parser.addOption({QStringLiteral("socket"),
                       QStringLiteral("Child Wayland socket name."),
                       QStringLiteral("name"),
@@ -58,7 +58,7 @@ void configureParser(QCommandLineParser &parser)
                       QStringLiteral("path"),
                       QStringLiteral(QINDAQT_DEFAULT_SESSION_EXECUTABLE)});
     parser.addOption({QStringLiteral("plugin-root"),
-                      QStringLiteral("Qt plugin root containing kwin/plugins."),
+                      QStringLiteral("Qt plugin root containing qindaqt-kwin/plugins."),
                       QStringLiteral("path"),
                       InstallPaths::pluginRoot()});
 }

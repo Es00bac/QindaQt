@@ -38,7 +38,7 @@ COLOURS = ("#b03a2e", "#2e5cb0", "#8a2eb0", "#b08a2e", "#2eb0a0", "#6e6e6e", "#b
 
 
 def kwinrc_path() -> Path:
-    return Path(os.environ["XDG_CONFIG_HOME"]) / "kwinrc"
+    return Path(os.environ["XDG_CONFIG_HOME"]) / "qindaqt" / "kwinrc"
 
 
 def write_kwinrc_entries(entries: dict[str, dict[str, str]]) -> str:
@@ -75,9 +75,9 @@ def write_kwinrc_entries(entries: dict[str, dict[str, str]]) -> str:
 
 
 def reconfigure_kwin() -> None:
-    """The bridge's own signal: org.kde.KWin.reconfigure on the session bus."""
-    proxy = dbus.SessionBus().get_object("org.kde.KWin", "/KWin")
-    dbus.Interface(proxy, "org.kde.KWin").reconfigure()
+    """The bridge's own signal: org.qindaqt.KWin.reconfigure on the session bus."""
+    proxy = dbus.SessionBus().get_object("org.qindaqt.KWin", "/org/qindaqt/KWin")
+    dbus.Interface(proxy, "org.qindaqt.KWin").reconfigure()
     time.sleep(1.0)
 
 

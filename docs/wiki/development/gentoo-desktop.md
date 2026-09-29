@@ -192,7 +192,7 @@ dock interaction upgrades.
 The `-r3` revision vetoes native interactive resize for container members and
 removes their resize-only decoration borders (ADR-0117): a grouped member's
 frame now changes only through tile-border operations and container reflow.
-Because this code runs inside `kwin_wayland`, the fix takes effect on the next
+Because this code runs inside the compositor process, the fix takes effect on the next
 session login after installation, not through a shell-only refresh.
 
 The `-r2` revision makes the panel Bluetooth applet self-sufficient: pairing
@@ -256,7 +256,9 @@ plugins, existing application code, or inherited session environment. Those
 boundaries still require application restart or a later login; never restart the
 compositor to refresh panels while applications must remain connected.
 
-The package requires the exact KWin 6.6.6 stack and Qt 6.11 or newer. Its direct
+The package requires the exact compositor stack and Qt 6.11 or newer; since
+[ADR-0291](../adr/0291-run-on-qindaqt-kwin.md) that is `=gui-wm/qindaqt-kwin-6.6.6_p1:=`,
+QindaQt's own KWin fork, which installs beside an unmodified `kde-plasma/kwin`. Its direct
 runtime closure follows the production process contracts:
 
 | Desktop function | Direct package authority |
@@ -268,7 +270,7 @@ runtime closure follows the production process contracts:
 | Power management, brightness, and idle inhibition | release-matched PowerDevil and KConfig for its persisted idle preferences |
 | Audio and network | WirePlumber and NetworkManager |
 | Desktop-entry launch | KIO and KService |
-| Media keys, idle display policy, screenshots, and authorization prompts | KGlobalAccel, KIdleTime, release-matched KWayland, KWin ScreenShot2 (QindaQt Screenshot, ADR-0289), and the KDE polkit agent |
+| Media keys, idle display policy, screenshots, and authorization prompts | KGlobalAccel, KIdleTime, release-matched KWayland, KWin ScreenShot2 (QindaQt Screenshot, ADR-0291), and the KDE polkit agent |
 
 SDDM remains an operator-selected login manager and is not a package
 dependency. Portage must solve the plan without slot conflicts before the
@@ -345,3 +347,14 @@ ABI-safe sequence.
 For application-only installation, keep using
 [`gui-apps/qindaqt-apps`](gentoo-apps.md); the two packages are alternative file
 owners and are not installed together.
+
+### M1 overlay dependency preparation
+
+The fork lane prepares the qindaqt-kwin pin and removes the downstream patched
+stock KWin package. The prepared existing desktop recipe carries the fork-only
+dependency and removes Spectacle, but retains its released source pin for the
+manager to create the final new revision. It is not a publishable replacement
+for that released recipe. Before integrating the overlay, preserve the released
+recipe and apply these dependency changes to a new revision pinned to final
+container-wm main, including native polkit and subsequent lanes. No delivery
+list or installed package changes are part of M1 source qualification.
