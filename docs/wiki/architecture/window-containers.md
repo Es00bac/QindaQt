@@ -211,9 +211,11 @@ never iconified; see [Hybrid container chrome](hybrid-chrome.md)
   the `Container N` numbering of
   [ADR-0163](../adr/0163-generated-container-names-for-the-rolled-up-badge.md)
   is retired).
-  Neither survives a compositor restart
-  yet; see [Hybrid container chrome](hybrid-chrome.md) for the exact
-  boundary a future persistence owner reads/writes through.
+  An explicitly saved workspace persists both overrides with its layout and
+  reapplies them when that layout is reopened. Unsaved live topology is not
+  automatically restored across compositor restarts; see
+  [Saved workspaces](workspaces.md) and
+  [Hybrid container chrome](hybrid-chrome.md).
 - The shared title row is either the classic full-width row or, for the
   Corner Bar themes, a split deck: the name and window buttons on a title tab
   at the left (at most 20% of the width), the page tabs and group controls on

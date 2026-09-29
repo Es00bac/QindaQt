@@ -112,20 +112,18 @@ from.
 - The badge's label text is computed outside the painter. A fixture that builds
   a request by hand and sets no label still paints the derived label, so older
   tests keep their meaning, but they reserve only the minimum.
-- **Container names still do not survive a compositor restart, and this change
-  does not fix that.** `HybridContainerAppearanceStore` is documented
-  process-local and non-persisted; there is no automatic save or restore of
-  live container topology at compositor start; and the explicit saved-workspace
-  path rebuilds the layout with a fresh container ID on adoption, so a
-  per-container name has nothing stable to attach to. Making names durable
-  needs a persistence owner for container identity, which is a separate
-  decision and not a parallel file next to this one.
+- Live container appearance overrides are process-local. Explicit Saved
+  Workspaces persist the displayed name and color beside the layout and reapply
+  them after adopting a fresh live container ID. Unsaved live topology is not
+  automatically restored at compositor start. See
+  [Saved workspaces](../architecture/workspaces.md).
 - The 320 px maximum is a judgement, not a measurement. A user with a very
   wide panel and long titles may want more.
 
 ## Revisit when
 
-- Container identity gains a persistence owner, at which point the name half of
-  the original request becomes implementable.
+- The compositor gains automatic live-topology save/restore with stable
+  container identity; explicitly saved workspaces already preserve the name
+  and color they carry.
 - The renderer stops painting chrome with the application default font.
 - A theme wants the badge label to use a different font from the title bar.

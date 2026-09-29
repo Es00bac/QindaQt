@@ -8,7 +8,6 @@
 #include "qindaqt/compositor/shellwindowactions.h"
 #include "hybridchromeplanbuilder.h"
 #include "hybridcontainerappearance.h"
-#include "hybridcontainerappearanceledger.h"
 #include "hybridshadecontroller.h"
 #include "hybridtaskidentitypolicy.h"
 #include "windowmanagementconfig.h"
@@ -231,16 +230,6 @@ private:
     void applyWindowManagementConfig();
     void initializeSavedWorkspaces();
     void initializeChromeSceneLifecycle();
-    // Applies every entry the appearance ledger has on disk to m_appearance.
-    // Runs once at construction, before the first synchronizeChrome(); a
-    // loaded containerId that names no live container yet is inert until
-    // (if ever) a container with that same deterministic id exists again.
-    void loadContainerAppearance();
-    // Best-effort: writes the complete current m_appearance map to disk.
-    // Called after every accepted rename/color/forget so the ledger never
-    // drifts from memory. A failed write is silently ignored; it must not
-    // block the mutation it followed.
-    void persistContainerAppearance();
     void shutdownSavedWorkspaces() noexcept;
     void synchronizeTaskIdentity();
     void shutdownTaskIdentity() noexcept;
@@ -396,7 +385,6 @@ private:
     WindowManagementConfig m_windowManagement;
     HybridChrome::ChromeStyle m_chromeStyle = HybridChrome::ChromeStyle::qindaMacOS({});
     HybridContainerAppearanceStore m_appearance;
-    ContainerAppearanceLedger m_appearanceLedger;
     std::unique_ptr<HybridShadeMemberPlatform> m_shadeMemberPlatform;
     std::unique_ptr<HybridShadeController> m_shadeController;
     std::unique_ptr<HybridIconifyPlatform> m_iconifyPlatform;
