@@ -66,3 +66,13 @@ packet of margin and drops back to silence when it runs dry.
 
 - Other sample rates, or resampling on receive, are wanted.
 - A stream definition surface outside the Audio route's closed gate exists.
+
+## Amendment 2026-09-28: allow the AF_INET UDP socket VBAN needs
+
+The service unit's `RestrictAddressFamilies=AF_UNIX` predated VBAN and
+blocked its AF_INET UDP socket outright: a stream could be declared and the
+unit still ran, but no packet was ever sent or received, and nothing in the
+service log said why. `RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6`
+now allows it; the unit's other hardening lines (no `PrivateNetwork`, no
+`IPAddressDeny`, `SystemCallFilter=@system-service`) already permitted UDP,
+so this was the one blocking line.
