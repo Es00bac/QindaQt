@@ -7,10 +7,14 @@ namespace QindaQt::SessionSupervisor {
 
 QStringList defaultPolkitAgentCandidates()
 {
+    // ADR-0290 (owner decision, 2026-09-28): no Plasma/KDE fallback. Two
+    // agents racing to register with polkitd at every login -- the
+    // supervisor's KDE candidate here and XDG autostart's polkit-gnome --
+    // was the live defect this agent replaces; there is exactly one
+    // candidate now, and src/session_autostart's basename skip table keeps
+    // every other distribution agent's autostart entry from racing it.
     return {
-        QStringLiteral("/usr/libexec/polkit-kde-authentication-agent-1"),
-        QStringLiteral("/usr/lib/polkit-kde-authentication-agent-1"),
-        QStringLiteral("/usr/lib64/libexec/polkit-kde-authentication-agent-1"),
+        QStringLiteral(QINDAQT_POLKIT_AGENT_INSTALL_PATH),
     };
 }
 
