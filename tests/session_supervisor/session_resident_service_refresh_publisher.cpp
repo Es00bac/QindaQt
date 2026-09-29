@@ -24,15 +24,31 @@ int main(int argc, char **argv)
     auto scope = SessionActivationScope::PhysicalDesktop;
     QString socketPath;
     QStringList unitNames;
+    // `--pipewire-hung` / `--pipewire-answers`: run the PipeWire liveness
+    // refresh with a probe that reports that outcome (exit 0 = restart
+    // requested, 6 = nothing requested).
+    bool pipeWireProbe = false;
+    bool pipeWireHung = false;
     for (int i = 1; i < argc; ++i) {
         const QString arg = QString::fromLocal8Bit(argv[i]);
         if (arg == QStringLiteral("--socket") && i + 1 < argc) {
             socketPath = QString::fromLocal8Bit(argv[++i]);
         } else if (arg == QStringLiteral("--private")) {
             scope = SessionActivationScope::Private;
+        } else if (arg == QStringLiteral("--pipewire-hung")) {
+            pipeWireProbe = true;
+            pipeWireHung = true;
+        } else if (arg == QStringLiteral("--pipewire-answers")) {
+            pipeWireProbe = true;
         } else {
             unitNames.append(arg);
         }
+    }
+    if (pipeWireProbe) {
+        const bool requested = QindaQt::SessionSupervisor::refreshUnresponsivePipeWire(
+            QDBusConnection::sessionBus(), [pipeWireHung] { return !pipeWireHung; },
+            socketPath, scope);
+        return requested ? 0 : 6;
     }
     return QindaQt::SessionSupervisor::refreshResidentServices(
         QDBusConnection::sessionBus(), unitNames, socketPath, scope) ? 0 : 3;

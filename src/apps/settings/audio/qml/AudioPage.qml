@@ -138,6 +138,23 @@ T.Page {
             stretch: true
             Accessible.name: qsTr("Audio settings sections")
             onTabActivated: index => root.selectTab(index)
+            // AGENT-NOTE: QindaTK's TabStrip handles arrows on each tab button,
+            // not on the strip, yet this page's keyboard entry targets
+            // (firstFocusTarget, lastActionTarget) can be the strip itself. Keys
+            // on the strip act exactly as they do on its open tab.
+            Keys.onPressed: event => {
+                if (event.key === Qt.Key_Left)
+                    destinationTabs.move(destinationTabs.currentIndex, -1, "")
+                else if (event.key === Qt.Key_Right)
+                    destinationTabs.move(destinationTabs.currentIndex, 1, "")
+                else if (event.key === Qt.Key_Home)
+                    destinationTabs.move(destinationTabs.currentIndex, 1, "first")
+                else if (event.key === Qt.Key_End)
+                    destinationTabs.move(destinationTabs.currentIndex, -1, "last")
+                else
+                    return
+                event.accepted = true
+            }
         }
 
         Flickable {

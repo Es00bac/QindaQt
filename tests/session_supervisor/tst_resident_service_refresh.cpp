@@ -97,6 +97,52 @@ struct PrivateManagerBus {
 class ResidentServiceRefreshTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    // Owner, 2026-09-28: a PipeWire that stopped answering new clients
+    // survived two logins and dictation recognized nothing. A daemon that
+    // does not answer restarts the audio stack in order; one that answers,
+    // or a Private session, is left alone.
+    void unresponsivePipeWireRestartsTheAudioStack() {
+        auto bus = QDBusConnection::sessionBus();
+        QVERIFY(bus.isConnected());
+        FakeUserManager manager;
+        QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.systemd1")));
+        QVERIFY(bus.registerVirtualObject(QStringLiteral("/org/freedesktop/systemd1"), &manager));
+
+        QProcess hung;
+        hung.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                   {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                    QStringLiteral("--pipewire-hung")});
+        QVERIFY(hung.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(hung.state() == QProcess::NotRunning, 6000);
+        QCOMPARE(hung.exitCode(), 0);
+        QCOMPARE(manager.requestedUnits, QindaQt::SessionSupervisor::pipeWireStackUnits());
+        for (const QString &mode : manager.requestedModes) {
+            QCOMPARE(mode, QStringLiteral("replace"));
+        }
+
+        manager.requestedUnits.clear();
+        manager.requestedModes.clear();
+        QProcess answering;
+        answering.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                        {QStringLiteral("--socket"), QStringLiteral("/nonexistent"),
+                         QStringLiteral("--pipewire-answers")});
+        QVERIFY(answering.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(answering.state() == QProcess::NotRunning, 6000);
+        QCOMPARE(answering.exitCode(), 6);
+        QVERIFY(manager.requestedUnits.isEmpty());
+
+        QProcess privateSession;
+        privateSession.start(QStringLiteral(QINDAQT_RESIDENT_SERVICE_REFRESH_PUBLISHER),
+                             {QStringLiteral("--private"), QStringLiteral("--pipewire-hung")});
+        QVERIFY(privateSession.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(privateSession.state() == QProcess::NotRunning, 6000);
+        QCOMPARE(privateSession.exitCode(), 6);
+        QVERIFY(manager.requestedUnits.isEmpty());
+
+        bus.unregisterObject(QStringLiteral("/org/freedesktop/systemd1"));
+        bus.unregisterService(QStringLiteral("org.freedesktop.systemd1"));
+    }
+
     void replacedExecutableIsRecognizedFromTheRawLinkText() {
         using QindaQt::SessionSupervisor::executableWasReplaced;
         QVERIFY(executableWasReplaced(QStringLiteral("/usr/bin/qindaqt-settings-service (deleted)")));

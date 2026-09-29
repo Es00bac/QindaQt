@@ -10,6 +10,9 @@
 #include <QDir>
 #include <QFile>
 #include <QScopeGuard>
+#include <QThread>
+
+#include <memory>
 using namespace QindaQt::Apps::FileManager;
 namespace {
 constexpr int kEdge = 64;
@@ -49,6 +52,7 @@ private slots:
   void fullColorIconsKeepTheirAuthoredPixels();
   void unresolvedNamesRenderTheColoredFallback();
   void unresolvedSymbolicNamesDoNotTintTheFallback();
+  void readerThreadRequestsRenderOnTheGuiThread();
 };
 void ThemeIconProviderTest::liveChoiceRefreshesTheExistingImage() {
   QTemporaryDir temporary;
@@ -178,6 +182,23 @@ void ThemeIconProviderTest::unresolvedSymbolicNamesDoNotTintTheFallback() {
   QVERIFY(paintsColor(pixmap, QColor(QStringLiteral("#9C86AA")), 24));
   QVERIFY(!paintsColor(pixmap, QColor(QStringLiteral("#00ff00")), 16));
   QVERIFY(!paintsColor(pixmap, QColor(QStringLiteral("#ff0000")), 16));
+}
+// Live crash, 2026-09-28: Qt Quick's image-reader thread used QIcon while the
+// GUI thread was rendering another icon, and QIcon's caches are not thread
+// safe. A request made from another thread renders on the GUI thread and
+// still returns the real artwork.
+void ThemeIconProviderTest::readerThreadRequestsRenderOnTheGuiThread() {
+  ThemeIconProvider provider;
+  QPixmap pixmap;
+  std::unique_ptr<QThread> reader(QThread::create([&provider, &pixmap] {
+    pixmap = provider.requestPixmap(QStringLiteral("folder"), nullptr,
+                                    QSize(kEdge, kEdge));
+  }));
+  reader->start();
+  QTRY_VERIFY_WITH_TIMEOUT(reader->isFinished(), 5000);
+  QVERIFY(reader->wait(1000));
+  QVERIFY(!pixmap.isNull());
+  QVERIFY(paintsColor(pixmap, QColor(QStringLiteral("#E9A445")), 24));
 }
 int main(int argc, char **argv) {
   QGuiApplication app(argc, argv);

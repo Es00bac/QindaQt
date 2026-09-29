@@ -20,7 +20,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "default-apps"
                 && host.defaultApplicationsComponent !== null
         sourceComponent: host.defaultApplicationsComponent
@@ -32,7 +32,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "about-computer"
                 && host.aboutComputerComponent !== null
         sourceComponent: host.aboutComputerComponent
@@ -44,7 +44,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "startup"
                 && host.startupComponent !== null
         sourceComponent: host.startupComponent
@@ -61,7 +61,7 @@ Item {
         // (ADR-0226).
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "screensaver"
                 && host.screensaverComponent !== null
         sourceComponent: host.screensaverComponent
@@ -73,7 +73,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "login-screen"
                 && host.loginScreenComponent !== null
         sourceComponent: host.loginScreenComponent
@@ -85,7 +85,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "voice"
                 && host.voiceComponent !== null
         sourceComponent: host.voiceComponent

@@ -3,6 +3,8 @@
 #include "systemd_manager_port.h"
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QProcess>
+#include <QStandardPaths>
 #include <QThread>
 #include <QtDBus/QDBusMessage>
 
@@ -127,6 +129,64 @@ bool refreshResidentServices(const QDBusConnection &bus,
         }
     }
     return audioSafeToProceed;
+}
+
+QStringList pipeWireStackUnits()
+{
+    return {
+        QStringLiteral("pipewire.service"),
+        QStringLiteral("wireplumber.service"),
+        QStringLiteral("pipewire-pulse.service"),
+    };
+}
+
+bool pipeWireAnswers(const int timeoutMilliseconds)
+{
+    const QString client = QStandardPaths::findExecutable(QStringLiteral("pw-cli"));
+    if (client.isEmpty()) {
+        return true;
+    }
+    QProcess probe;
+    probe.setProgram(client);
+    probe.setArguments({QStringLiteral("info"), QStringLiteral("0")});
+    probe.setStandardOutputFile(QProcess::nullDevice());
+    probe.setStandardErrorFile(QProcess::nullDevice());
+    probe.start();
+    if (!probe.waitForStarted(timeoutMilliseconds)) {
+        return true;
+    }
+    if (!probe.waitForFinished(timeoutMilliseconds)) {
+        // Connected but never answered: the hang that silenced dictation.
+        probe.kill();
+        static_cast<void>(probe.waitForFinished(1'000));
+        return false;
+    }
+    return probe.exitStatus() == QProcess::NormalExit && probe.exitCode() == 0;
+}
+
+bool refreshUnresponsivePipeWire(const QDBusConnection &bus,
+                                 const std::function<bool()> &answers,
+                                 const QString &systemdPrivateSocketPath,
+                                 const SessionActivationScope scope)
+{
+    if (scope == SessionActivationScope::Private && systemdPrivateSocketPath.isEmpty()) {
+        return false;
+    }
+    if (!answers || answers()) {
+        return false;
+    }
+    qWarning("PipeWire did not answer a client; restarting the audio stack");
+    const SystemdManagerRoute route =
+        resolveSystemdManagerRoute(bus, systemdPrivateSocketPath, scope);
+    bool requested = false;
+    for (const QString &unitName : pipeWireStackUnits()) {
+        if (restartUnitOnManager(route, bus, unitName)) {
+            requested = true;
+        } else {
+            qWarning("Could not restart audio unit %s", qUtf8Printable(unitName));
+        }
+    }
+    return requested;
 }
 
 } // namespace QindaQt::SessionSupervisor
