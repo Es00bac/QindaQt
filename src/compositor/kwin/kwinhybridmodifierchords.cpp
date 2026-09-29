@@ -89,6 +89,12 @@ void KWinHybridSession::initializeModifierChordInput()
             return HybridInput::HitTarget{HybridInput::HitKind::MemberTitle,
                                           m_registry.owner(windowId), windowId, {}};
         },
+        .pickedUp = [this](const QString &) {
+            // Give the touch pick-up the same presentation response any
+            // other state change gets: a full resync from current state,
+            // right when the drag begins rather than at its first Move.
+            synchronizeChrome();
+        },
     });
     // Container chrome under the pointer, or the container of the managed
     // window under it; empty for an independent window or nothing managed.
