@@ -21,7 +21,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
     Q_CLASSINFO(
         "D-Bus Introspection",
         "<interface name=\"org.qindaqt.Audio1\">"
-        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs)))\" "
+        "<method name=\"GetSnapshot\"><arg name=\"snapshot\" type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbsbxbxx)a((tt)ussdbbbbbbadasbsbxbxx)a((tt)uss(tt)bdbbbbbbadas)(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs)))\" "
         "direction=\"out\"/></method>"
         "<method name=\"SetDefault\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
@@ -45,6 +45,7 @@ class AudioServiceObject final : public QObject, protected QDBusContext
         "<method name=\"RemoveVirtualDevice\"><arg name=\"device\" type=\"(tt)\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
         "direction=\"out\"/></method>"
+        "<method name=\"SetLatencyOffset\"><arg name=\"device\" type=\"(tt)\" direction=\"in\"/><arg name=\"offsetNs\" type=\"x\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetStripGain\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"gainDb\" type=\"d\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetStripMute\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"muted\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
         "<method name=\"SetStripSolo\"><arg name=\"strip\" type=\"s\" direction=\"in\"/><arg name=\"soloed\" type=\"b\" direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" direction=\"out\"/></method>"
@@ -90,6 +91,9 @@ public Q_SLOTS:
     Q_SCRIPTABLE void CreateVirtualDevice(quint32 kind, const QString &displayName,
                                           quint32 channels);
     Q_SCRIPTABLE void RemoveVirtualDevice(const QindaQt::Audio::Handle &device);
+    // Remembers and applies one device's latency offset, in signed
+    // nanoseconds (schema 13, ADR-0288).
+    Q_SCRIPTABLE void SetLatencyOffset(const QindaQt::Audio::Handle &device, qint64 offsetNs);
 
     // Console operations (ADR-0173). Each addresses a strip or bus by its
     // stable console id, so a call stays meaningful across the device behind

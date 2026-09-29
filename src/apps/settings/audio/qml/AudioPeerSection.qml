@@ -14,7 +14,7 @@ ColumnLayout {
     required property var audioSettings
     Layout.fillWidth: true
     Layout.minimumWidth: 0
-    spacing: Tokens.space["3"]
+    spacing: Tokens.space["2"]
 
     readonly property Item firstActionTarget: connectionCard.firstActionTarget
     readonly property Item lastActionTarget: receiveSave.enabled ? receiveSave : null

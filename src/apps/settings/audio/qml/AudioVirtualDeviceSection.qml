@@ -56,12 +56,13 @@ ColumnLayout {
     }
 
     Layout.fillWidth: true
-    spacing: Tokens.space["2"]
+    spacing: Tokens.space["1"]
 
-    SectionHeader {
+    Tk.SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Virtual devices")
-        description: qsTr(
+        count: virtualRepeater.count > 0 ? String(virtualRepeater.count) : ""
+        Accessible.description: qsTr(
             "Extra software devices for streaming, recording, and app-to-app audio")
     }
 
@@ -126,7 +127,7 @@ ColumnLayout {
             required property var modelData
             required property int index
             Layout.fillWidth: true
-            padding: Tokens.space["3"]
+            padding: Tokens.space["2"]
             Accessible.name: qsTr("%1 %2, %3")
                 .arg(virtualRow.modelData.kindText)
                 .arg(virtualRow.modelData.displayName)
@@ -152,18 +153,20 @@ ColumnLayout {
             contentItem: RowLayout {
                 spacing: Tokens.space["2"]
 
-                ColumnLayout {
+                RowLayout {
                     Layout.fillWidth: true
-                    spacing: Tokens.space["1"]
+                    spacing: Tokens.space["2"]
 
                     Label {
                         Layout.fillWidth: true
                         text: virtualRow.modelData.displayName
                         font.weight: Font.DemiBold
+                        elide: Text.ElideRight
                     }
 
                     Label {
-                        Layout.fillWidth: true
+                        Layout.maximumWidth: implicitWidth
+                        elide: Text.ElideRight
                         text: virtualRow.modelData.channelMap.length > 0
                               ? qsTr("%1 · %2")
                                     .arg(virtualRow.modelData.kindText)

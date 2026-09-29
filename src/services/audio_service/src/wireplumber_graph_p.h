@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "latency_policy_p.h"
+
 #include <qindaqt/services/audio_protocol/audio_types.h>
 
 #include <QtCore/QStringList>
@@ -34,9 +36,12 @@ struct NodeLookup {
 
 [[nodiscard]] quint64 daemonSerial(WpObjectManager *manager);
 [[nodiscard]] WpMetadata *defaultMetadata(WpObjectManager *manager);
+// `latencyRanges` is the worker's per-serial PropInfo memory (ADR-0288); a
+// device whose range is not known yet is published without a settable range.
 [[nodiscard]] BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
                                         WpPlugin *defaultNodes, quint64 epoch,
-                                        quint64 revision, Capabilities capabilities);
+                                        quint64 revision, Capabilities capabilities,
+                                        const LatencyPolicy::Ranges &latencyRanges);
 [[nodiscard]] std::optional<NodeLookup> findNode(WpObjectManager *manager,
                                                  quint64 serial);
 // Finds a node by its `node.name`. The console's send loopbacks are addressed

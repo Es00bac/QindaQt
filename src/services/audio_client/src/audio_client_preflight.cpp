@@ -209,6 +209,18 @@ QString preflightOperation(const Snapshot &snapshot, const OperationRequest &req
         }
         return {};
     }
+    case OperationKind::SetLatencyOffset:
+        if (device == nullptr) {
+            return QStringLiteral("stale-handle");
+        }
+        if (!snapshot.capabilities.testFlag(Capability::SetLatencyOffset)
+            || !device->canSetLatencyOffset || device->nodeName.isEmpty()) {
+            return QStringLiteral("unsupported");
+        }
+        // The same rule the service admits with (ADR-0288).
+        return latencyOffsetAdmitted(*device, request.latencyOffsetNs)
+            ? QString{}
+            : QStringLiteral("invalid-latency-offset");
     }
     return QStringLiteral("malformed-request");
 }

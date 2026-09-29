@@ -106,6 +106,7 @@ nav:
       - Display1 version 1: reference/display1-v1.md
       - Audio1 version 2: reference/audio1-v2.md
       - Audio1 schema 12: reference/audio1-v12.md
+      - Audio1 schema 13: reference/audio1-v13.md
       - "VoiceMeeter Potato parity target": reference/voicemeeter-potato-parity.md
       - "Request checklist: audio, OBS, file manager, tray, roll-up, Wine": reference/qindaqt-request-checklist.md
       - "Audio macro buttons": reference/audio-macro-buttons.md
@@ -444,4 +445,5 @@ nav:
       - "ADR-0285: Desk tablets keep the screen's up; pen displays turn with their screen": adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md
       - "ADR-0286: Per-display and per-desktop wallpapers": adr/0286-per-display-and-per-desktop-wallpapers.md
       - "ADR-0287: Pass tablet proximity through window decorations": adr/0287-pass-tablet-proximity-through-window-decorations.md
+      - "ADR-0288: Per-device latency offsets through Audio1, and a compact Audio page": adr/0288-per-device-latency-offsets-and-a-compact-audio-page.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md

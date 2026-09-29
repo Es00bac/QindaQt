@@ -82,6 +82,7 @@ AudioSettingsModel::AudioSettingsModel(AudioClient &client, QObject *parent)
     }
     reconcileVolumeIntents();
     reconcileMoveReadbacks();
+    reconcileLatencyIntents();
     Q_EMIT viewChanged();
   });
   connect(&m_client, &AudioClient::snapshotChanged, this, [this] {
@@ -89,6 +90,7 @@ AudioSettingsModel::AudioSettingsModel(AudioClient &client, QObject *parent)
     ++m_moveSnapshotSequence;
     reconcileVolumeIntents();
     reconcileMoveReadbacks();
+    reconcileLatencyIntents();
     Q_EMIT viewChanged();
   });
   connect(&m_client, &AudioClient::operationCompleted, this,
@@ -449,6 +451,9 @@ void AudioSettingsModel::beginIntentMessage(const Intent intent) {
   case Intent::RemoveVirtual:
     m_operationStatusText = translateAudio("Removing the virtual device…");
     break;
+  case Intent::DeviceLatency:
+    m_operationStatusText = translateAudio("Applying the latency offset…");
+    break;
   }
   Q_EMIT viewChanged();
 }
@@ -476,6 +481,9 @@ QString AudioSettingsModel::actionFailureText(const QString &reason) const {
   }
   if (reason == QStringLiteral("invalid-name")) {
     return translateAudio("That virtual device name was not accepted.");
+  }
+  if (reason == QStringLiteral("invalid-latency-offset")) {
+    return translateAudio("That latency offset is outside what this device accepts.");
   }
   if (reason == QStringLiteral("invalid-channel-count")) {
     return translateAudio("That channel layout is not supported.");
