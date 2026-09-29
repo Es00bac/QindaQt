@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stable entry point for the pinned KWin source verifier."""
+"""Stable entry point for the pinned qindaqt-kwin source verifier (ADR-0289)."""
 
 from __future__ import annotations
 

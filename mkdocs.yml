@@ -444,4 +444,5 @@ nav:
       - "ADR-0285: Desk tablets keep the screen's up; pen displays turn with their screen": adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md
       - "ADR-0286: Per-display and per-desktop wallpapers": adr/0286-per-display-and-per-desktop-wallpapers.md
       - "ADR-0287: Pass tablet proximity through window decorations": adr/0287-pass-tablet-proximity-through-window-decorations.md
+      - "ADR-0289: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0289-run-on-qindaqt-kwin.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md

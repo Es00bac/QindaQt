@@ -373,7 +373,7 @@ if(
     # src/session/CMakeLists.txt.
     install(
         DIRECTORY "${PROJECT_SOURCE_DIR}/data/kwin/tabbox/qindaqt/"
-        DESTINATION "${KDE_INSTALL_DATADIR}/kwin/tabbox/qindaqt"
+        DESTINATION "${KDE_INSTALL_DATADIR}/qindaqt-kwin/tabbox/qindaqt"
         COMPONENT DesktopVirtual
     )
 

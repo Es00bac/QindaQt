@@ -157,8 +157,8 @@ set_tests_properties(
     # KWin's imported target is directory-scoped to src/compositor until this
     # sibling test directory imports it for the callback-signature test.
     find_package(Qt6 6.11 REQUIRED COMPONENTS Widgets)
-    find_package(KWin 6.6.6 EXACT REQUIRED CONFIG)
-if(TARGET KWin::kwin)
+    find_package(QindaQtKWin 6.6.6.1 EXACT REQUIRED CONFIG)
+if(TARGET QindaQtKWin::kwin)
     qt_add_executable(
         qindaqt_kwin_pointer_corner_reserver_tests
         tst_kwinpointercornerreserver.cpp
@@ -171,7 +171,7 @@ if(TARGET KWin::kwin)
     )
     target_link_libraries(
         qindaqt_kwin_pointer_corner_reserver_tests
-        PRIVATE qindaqt_hybrid_chrome_pointer_router KWin::kwin Qt6::Test
+        PRIVATE qindaqt_hybrid_chrome_pointer_router QindaQtKWin::kwin Qt6::Test
     )
     set_target_properties(
         qindaqt_kwin_pointer_corner_reserver_tests
@@ -228,7 +228,7 @@ add_test(
     COMMAND
         "${CMAKE_COMMAND}"
         ${_qindaqt_kwin_abi_test_arguments}
-        -DQINDAQT_KWIN_ABI_VERSION:STRING=6.6.6
+        -DQINDAQT_KWIN_ABI_VERSION:STRING=6.6.6.1
         -P "${CMAKE_CURRENT_LIST_DIR}/verify_kwin_abi_configuration.cmake"
 )
 add_test(
@@ -236,7 +236,8 @@ add_test(
     COMMAND
         "${CMAKE_COMMAND}"
         ${_qindaqt_kwin_abi_test_arguments}
-        -DQINDAQT_KWIN_ABI_VERSION:STRING=6.6.4
+        # Stock KWin's own release is not the fork's ABI (ADR-0289).
+        -DQINDAQT_KWIN_ABI_VERSION:STRING=6.6.6
         -P "${CMAKE_CURRENT_LIST_DIR}/verify_kwin_abi_configuration.cmake"
 )
 set_tests_properties(
@@ -280,8 +281,8 @@ set_tests_properties(
 
 if(TARGET qindaqt_kwin_input_adapter)
     find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
-    find_package(KDecoration3 6.6 REQUIRED CONFIG)
-    find_package(KWin 6.6.6 EXACT REQUIRED CONFIG)
+    find_package(QindaQtKWinDecoration 6.6.6.1 EXACT REQUIRED CONFIG)
+    find_package(QindaQtKWin 6.6.6.1 EXACT REQUIRED CONFIG)
     qt_add_executable(
         qindaqt_kwin_input_adapter_tests
         tst_kwininputadapter.cpp
@@ -421,7 +422,7 @@ if(TARGET qindaqt_kwin_input_adapter)
     target_link_libraries(
         qindaqt_kwin_chrome_manager_tests
         PRIVATE
-            KWin::kwin
+            QindaQtKWin::kwin
             QindaQt::Hybrid
             QindaQt::HybridChrome
             QindaQt::HybridInput

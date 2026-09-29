@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-26
+- Amended by: [ADR-0289](0289-run-on-qindaqt-kwin.md): the input patch is a qindaqt-kwin commit
 
 ## Context
 

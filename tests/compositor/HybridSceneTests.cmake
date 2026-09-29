@@ -33,8 +33,8 @@ function(qindaqt_add_kwin_hybrid_scene_test target source test_name)
             QindaQt::Hybrid
             QindaQt::HybridConstraints
             QindaQt::HybridInput
-            KDecoration3::KDecoration
-            KWin::kwin
+            QindaQtKWinDecoration::KDecoration
+            QindaQtKWin::kwin
             Qt6::Test
     )
     add_test(NAME "${test_name}" COMMAND "${target}")
