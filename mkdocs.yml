@@ -37,6 +37,8 @@ nav:
       - Repository catalog: handbook/catalog/repository.md
       - Documentation catalog: handbook/catalog/reading.md
   - Architecture:
+      - Native keyring daemon: architecture/keyring-daemon.md
+      - Authentication overlay: architecture/authentication-overlay.md
       - Native keyring storage: architecture/keyring-storage.md
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
@@ -455,3 +457,5 @@ nav:
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
       - "ADR-0290: Native QindaQt polkit agent, and a single-agent autostart rule": adr/0290-native-polkit-agent-and-single-agent-rule.md
       - "ADR-0292: Own a bounded native keyring storage core": adr/0292-native-keyring-storage.md
+
+      - "ADR-0296: Own a native Secret Service daemon and session boundary": adr/0296-native-keyring-daemon-boundary.md

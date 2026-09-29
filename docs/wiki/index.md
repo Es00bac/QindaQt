@@ -267,3 +267,5 @@ Physical DRM/GPU/input qualification remains a release gate.
 Pages distinguish accepted contracts from planned implementation; unresolved
 durable decisions belong in an ADR rather than being silently embedded in
 code.
+
+See [Native keyring daemon](architecture/keyring-daemon.md) and the shared [authentication overlay](architecture/authentication-overlay.md) for the native credential process boundary.

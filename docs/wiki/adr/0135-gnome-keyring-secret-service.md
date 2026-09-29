@@ -4,7 +4,7 @@
 - **Date:** 2026-09-11
 - **Owners:** Session, Platform integration
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0296](0296-native-keyring-daemon-boundary.md) for the native provider/lifecycle/prompt choice; live packaging and PAM transition remain separate.
 
 ## Context
 

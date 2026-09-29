@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
+#include <QProcess>
 
 #include <algorithm>
 #include <utility>
@@ -285,6 +286,10 @@ QList<Entry> scan(const ScanOptions &options, QString *error)
             markIneligible(entry, QStringLiteral("Invalid desktop entry string escape"));
         } else if (fields.invalidBoolean) {
             markIneligible(entry, QStringLiteral("Invalid desktop autostart flag"));
+        } else if (options.supersedeDistributionKeyringAgents
+                   && QFileInfo(QProcess::splitCommand(fields.exec).value(0)).fileName()
+                        == QStringLiteral("gnome-keyring-daemon")) {
+            markIneligible(entry, QStringLiteral("Superseded by the native QindaQt keyring"));
         } else if (options.supersedeDistributionPolkitAgents && isKnownPolkitAgent(fields)) {
             markIneligible(
                 entry,
