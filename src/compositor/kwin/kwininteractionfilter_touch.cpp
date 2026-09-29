@@ -216,7 +216,8 @@ bool KWinInteractionFilter::touchCancel()
             && !m_iconify.pagerRouter->pointerActive();
         if (pagerGesture) {
             m_iconify.pagerRouter->cancel();
-            return true;
+            // Preserve the seat-wide cancel contract: later filters and the
+            // seat must observe this reset after pager state is cleared.
         }
     }
     titlePickupCancel();

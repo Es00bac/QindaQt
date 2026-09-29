@@ -122,6 +122,8 @@ public:
     // gathered location retains the original unroll position; a later manual
     // drag supersedes that automatic presentation placement.
     [[nodiscard]] bool placeShadeStripForGather(const QString &containerId,
+                                                const QRect &frame);
+    [[nodiscard]] bool placeShadeStripForGather(const QString &containerId,
                                                 const QPoint &topLeft);
     // Re-sizes a shaded container's strip for a badge label of labelWidth
     // logical pixels, keeping its current top-left. Returns true when the

@@ -228,12 +228,45 @@ namespace {
     return lane;
 }
 
+[[nodiscard]] Lane stackSizedLane(const QVector<QString> &ids,
+                                  const QVector<QSizeF> &sizes,
+                                  const QSizeF &cellSize,
+                                  const QRectF &field,
+                                  qreal left,
+                                  qreal maxRight,
+                                  qreal gap)
+{
+    Lane lane;
+    if (ids.isEmpty()) {
+        return lane;
+    }
+    const qsizetype rows = laneCapacity(field.height(), cellSize.height(), gap);
+    const qsizetype columns = std::max<qsizetype>(0, static_cast<qsizetype>(
+        std::floor((maxRight - left + gap) / (cellSize.width() + gap))));
+    const qsizetype count = std::min(ids.size(), rows * columns);
+    lane.placements.reserve(count);
+    for (qsizetype index = 0; index < count; ++index) {
+        const qsizetype column = index / rows;
+        const qsizetype row = index % rows;
+        const QPointF topLeft(
+            left + static_cast<qreal>(column) * (cellSize.width() + gap),
+            field.top() + static_cast<qreal>(row) * (cellSize.height() + gap));
+        lane.placements.append({ids.at(index), QRectF(topLeft, sizes.at(index)), true});
+    }
+    const qsizetype usedColumns = count == 0 ? 0 : (count + rows - 1) / rows;
+    lane.width = usedColumns == 0 ? 0
+        : static_cast<qreal>(usedColumns) * cellSize.width()
+            + static_cast<qreal>(usedColumns - 1) * gap;
+    return lane;
+}
+
 [[nodiscard]] bool validMinimizedRequest(const MinimizedGatherRequest &request)
 {
     if (!finite(request.workArea) || request.workArea.isEmpty()
         || !finite(request.margin) || request.margin < 0
         || !finite(request.gap) || request.gap < 0
-        || !finite(request.iconExtent) || request.iconExtent <= 0) {
+        || !finite(request.iconExtent) || request.iconExtent <= 0
+        || !finite(request.containerWidthLimit) || request.containerWidthLimit <= 0) {
         return false;
     }
     return std::all_of(request.shadedContainers.cbegin(),
@@ -245,52 +278,105 @@ namespace {
 
 } // namespace
 
-MinimizedGatherLayout planMinimizedGather(const MinimizedGatherRequest &request,
-                                          const int requestedPage)
+static MinimizedGatherLayout planMinimizedGatherPass(
+    const MinimizedGatherRequest &request, const int requestedPage,
+    const bool reservePager)
 {
     MinimizedGatherLayout result;
     if (!validMinimizedRequest(request)) {
         result.diagnostic = QStringLiteral("minimized gather geometry is invalid");
         return result;
     }
-    result.field = request.workArea.adjusted(request.margin, request.margin,
-                                              -request.margin, -request.margin);
+    const bool haveIcons = !request.iconifiedWindowIds.isEmpty();
+    const bool haveContainers = !request.shadedContainers.isEmpty();
+    qreal sourceContainerWidth = 0;
+    qreal containerHeight = 0;
+    QVector<QSizeF> containerSizes;
+    containerSizes.reserve(request.shadedContainers.size());
+    for (const GatherTile &tile : request.shadedContainers) {
+        const qreal width = std::min(tile.sourceSize.width(),
+                                     request.containerWidthLimit);
+        sourceContainerWidth = std::max(sourceContainerWidth, width);
+        containerHeight = std::max(containerHeight, tile.sourceSize.height());
+        containerSizes.append(QSizeF(width, tile.sourceSize.height()));
+    }
+    const QSizeF iconSize(request.iconExtent, request.iconExtent);
+    const qreal requiredWidth = std::max(
+        haveIcons ? iconSize.width() : qreal(0),
+        haveContainers ? std::min(sourceContainerWidth, request.workArea.width()) : qreal(0));
+    const qreal requiredHeight = std::max(
+        haveIcons ? iconSize.height() : qreal(0), haveContainers ? containerHeight : qreal(0));
+    const qreal marginX = std::min(request.margin,
+        std::max(qreal(0), (request.workArea.width() - requiredWidth) / 2));
+    const qreal estimatedPagerButton = std::min({request.iconExtent,
+        request.workArea.width() / 2, request.workArea.height() / 3});
+    const qreal estimatedPagerGap = std::min(request.gap, estimatedPagerButton / 2);
+    const qreal pagerReserve = reservePager
+        ? estimatedPagerButton + estimatedPagerGap : qreal(0);
+    const qreal marginY = std::min(request.margin,
+        std::max(qreal(0), (request.workArea.height() - requiredHeight - pagerReserve) / 2));
+    result.field = request.workArea.adjusted(marginX, marginY, -marginX, -marginY);
     if (result.field.isEmpty()) {
         result.diagnostic = QStringLiteral("margin leaves no minimized gather field");
         return result;
     }
 
-    qreal containerWidth = 0;
-    qreal containerHeight = 0;
-    for (const GatherTile &tile : request.shadedContainers) {
-        containerWidth = std::max(containerWidth, tile.sourceSize.width());
-        containerHeight = std::max(containerHeight, tile.sourceSize.height());
+    result.itemArea = result.field;
+    if (reservePager) {
+        const qreal buttonExtent = std::min({request.iconExtent,
+            result.field.width() / 2, result.field.height() / 3});
+        const qreal pagerGap = std::min(request.gap, buttonExtent / 2);
+        if (buttonExtent <= 0 || result.field.height() < buttonExtent + pagerGap + requiredHeight) {
+            result.diagnostic = QStringLiteral("work area cannot fit pager and one minimized item");
+            return result;
+        }
+        const qreal preferredWidth = buttonExtent * 3 + pagerGap * 2;
+        const qreal pagerWidth = std::min(result.field.width(), preferredWidth);
+        result.pagerFrame = QRectF(QPointF(result.itemArea.right() - pagerWidth,
+                                           result.itemArea.top()),
+                                   QSizeF(pagerWidth, buttonExtent));
+        if (pagerWidth >= preferredWidth) {
+            result.pagerPreviousButton = QRectF(result.pagerFrame.topLeft(),
+                                                QSizeF(buttonExtent, buttonExtent));
+            result.pagerCounter = QRectF(result.pagerFrame.left() + buttonExtent + pagerGap,
+                result.pagerFrame.top(), buttonExtent + pagerGap, buttonExtent);
+            result.pagerNextButton = QRectF(result.pagerFrame.right() - buttonExtent,
+                                            result.pagerFrame.top(),
+                                            buttonExtent, buttonExtent);
+        } else {
+            const qreal half = pagerWidth / 2;
+            result.pagerPreviousButton = QRectF(result.pagerFrame.topLeft(),
+                                                QSizeF(half, buttonExtent));
+            result.pagerNextButton = QRectF(result.pagerFrame.left() + half,
+                result.pagerFrame.top(), pagerWidth - half, buttonExtent);
+        }
+        result.itemArea = result.field.adjusted(0, buttonExtent + pagerGap, 0, 0);
     }
-    const QSizeF iconSize(request.iconExtent, request.iconExtent);
+
+    const qreal containerWidth = std::min(sourceContainerWidth, result.itemArea.width());
+    for (QSizeF &size : containerSizes) {
+        size.setWidth(std::min(size.width(), containerWidth));
+    }
     const QSizeF containerSize(containerWidth, containerHeight);
-    if ((request.iconifiedWindowIds.size() > 0
-         && (iconSize.width() > result.field.width()
-             || iconSize.height() > result.field.height()))
-        || (request.shadedContainers.size() > 0
-            && (containerWidth > result.field.width()
-                || containerHeight > result.field.height()))) {
+    if ((haveIcons && (iconSize.width() > result.itemArea.width()
+                       || iconSize.height() > result.itemArea.height()))
+        || (haveContainers && (containerWidth <= 0
+                               || containerHeight > result.itemArea.height()))) {
         result.diagnostic = QStringLiteral("one minimized item cannot fit in the work area");
         return result;
     }
-    const bool haveIcons = !request.iconifiedWindowIds.isEmpty();
-    const bool haveContainers = !request.shadedContainers.isEmpty();
-    const qreal laneExtent = result.field.width();
+    const qreal laneExtent = result.itemArea.width();
     const qreal reserve = haveIcons && haveContainers
         ? containerWidth + request.gap : 0;
     const qreal iconWidth = std::max(qreal(0), laneExtent - reserve);
-    const qsizetype iconRows = laneCapacity(result.field.height(),
+    const qsizetype iconRows = laneCapacity(result.itemArea.height(),
                                              iconSize.height(), request.gap);
     const qsizetype iconColumns = haveIcons
         ? static_cast<qsizetype>(std::floor(
               (iconWidth + request.gap) / (iconSize.width() + request.gap))) : 0;
     const qsizetype iconCapacity = iconRows * iconColumns;
 
-    qreal containerLeft = result.field.left();
+    qreal containerLeft = result.itemArea.left();
     qreal containerAvailableWidth = laneExtent;
     if (haveIcons && haveContainers && iconColumns > 0) {
         const qsizetype columns = std::min(
@@ -304,7 +390,7 @@ MinimizedGatherLayout planMinimizedGather(const MinimizedGatherRequest &request,
         containerAvailableWidth -= usedIconLane + request.gap;
     }
     const qsizetype containerRows = haveContainers
-        ? laneCapacity(result.field.height(), containerSize.height(), request.gap) : 0;
+        ? laneCapacity(result.itemArea.height(), containerSize.height(), request.gap) : 0;
     const qsizetype containerColumns = haveContainers
         ? static_cast<qsizetype>(std::floor(
               (containerAvailableWidth + request.gap)
@@ -321,9 +407,9 @@ MinimizedGatherLayout planMinimizedGather(const MinimizedGatherRequest &request,
     qsizetype containerPages = 0;
     if (separateLanes) {
         iconPageCapacity = iconRows * laneCapacity(
-            result.field.width(), iconSize.width(), request.gap);
+            result.itemArea.width(), iconSize.width(), request.gap);
         containerPageCapacity = containerRows * laneCapacity(
-            result.field.width(), containerSize.width(), request.gap);
+            result.itemArea.width(), containerSize.width(), request.gap);
         if (iconPageCapacity == 0 || containerPageCapacity == 0) {
             result.diagnostic = QStringLiteral("one minimized item cannot fit in the work area");
             return result;
@@ -358,8 +444,8 @@ MinimizedGatherLayout planMinimizedGather(const MinimizedGatherRequest &request,
             const auto ids = request.iconifiedWindowIds.mid(
                 first, std::min(iconPageCapacity,
                                 request.iconifiedWindowIds.size() - first));
-            const Lane lane = stackFixedLane(ids, iconSize, result.field,
-                                              result.field.left(), result.field.right(),
+            const Lane lane = stackFixedLane(ids, iconSize, result.itemArea,
+                                              result.itemArea.left(), result.itemArea.right(),
                                               request.gap);
             result.icons = lane.placements;
         } else {
@@ -368,13 +454,16 @@ MinimizedGatherLayout planMinimizedGather(const MinimizedGatherRequest &request,
             const qsizetype count = std::min(containerPageCapacity,
                 request.shadedContainers.size() - first);
             QVector<QString> ids;
+            QVector<QSizeF> sizes;
             ids.reserve(count);
+            sizes.reserve(count);
             for (qsizetype index = 0; index < count; ++index) {
                 ids.append(request.shadedContainers.at(first + index).id);
+                sizes.append(containerSizes.at(first + index));
             }
-            const Lane lane = stackFixedLane(ids, containerSize, result.field,
-                                              result.field.left(), result.field.right(),
-                                              request.gap);
+            const Lane lane = stackSizedLane(ids, sizes, containerSize, result.itemArea,
+                                             result.itemArea.left(), result.itemArea.right(),
+                                             request.gap);
             result.containers = lane.placements;
         }
         return result;
@@ -385,9 +474,9 @@ MinimizedGatherLayout planMinimizedGather(const MinimizedGatherRequest &request,
         const auto ids = request.iconifiedWindowIds.mid(
             first, std::min(iconPageCapacity,
                             request.iconifiedWindowIds.size() - first));
-        const Lane lane = stackFixedLane(ids, iconSize, result.field,
-                                          result.field.left(),
-                                          result.field.left() + iconWidth,
+        const Lane lane = stackFixedLane(ids, iconSize, result.itemArea,
+                                          result.itemArea.left(),
+                                          result.itemArea.left() + iconWidth,
                                           request.gap);
         result.icons = lane.placements;
     }
@@ -396,16 +485,29 @@ MinimizedGatherLayout planMinimizedGather(const MinimizedGatherRequest &request,
         const qsizetype count = std::min(containerPageCapacity,
             request.shadedContainers.size() - first);
         QVector<QString> ids;
+        QVector<QSizeF> sizes;
         ids.reserve(count);
+        sizes.reserve(count);
         for (qsizetype index = 0; index < count; ++index) {
             ids.append(request.shadedContainers.at(first + index).id);
+            sizes.append(containerSizes.at(first + index));
         }
-        const Lane lane = stackFixedLane(ids, containerSize, result.field,
-                                          containerLeft,
-                                          result.field.right(), request.gap);
+        const Lane lane = stackSizedLane(ids, sizes, containerSize, result.itemArea,
+                                         containerLeft,
+                                         result.itemArea.right(), request.gap);
         result.containers = lane.placements;
     }
     return result;
+}
+
+MinimizedGatherLayout planMinimizedGather(const MinimizedGatherRequest &request,
+                                          const int requestedPage)
+{
+    auto layout = planMinimizedGatherPass(request, requestedPage, false);
+    if (!layout.ok || layout.pageCount <= 1) {
+        return layout;
+    }
+    return planMinimizedGatherPass(request, requestedPage, true);
 }
 
 } // namespace QindaQt::HybridGather
