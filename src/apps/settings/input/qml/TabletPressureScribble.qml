@@ -23,7 +23,7 @@ Canvas {
     Accessible.description: qsTr("Draw here to see how the pressure settings feel")
 
     readonly property color inkColor: Tokens.fg.default
-    readonly property color groundColor: Tokens.bg.sunken
+    readonly property color groundColor: Tokens.bg.highest
     readonly property color frameColor: Tokens.outline.divider
 
     function clearStrokes() {
