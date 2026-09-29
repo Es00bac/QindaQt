@@ -10,7 +10,7 @@
 namespace QindaQt::Session::DesktopControls {
 
 ShortcutRegistration KGlobalAccelRegistrar::registerShortcut(
-    QAction &action, const QKeySequence &defaultShortcut, QObject &lifetime,
+    QAction &action, const QList<QKeySequence> &defaultShortcuts, QObject &lifetime,
     std::function<void(bool)> activeBindingChanged)
 {
     auto *const globalAccel = KGlobalAccel::self();
@@ -23,7 +23,7 @@ ShortcutRegistration KGlobalAccelRegistrar::registerShortcut(
             }
         });
 
-    const QList<QKeySequence> shortcuts{defaultShortcut};
+    const QList<QKeySequence> &shortcuts = defaultShortcuts;
     const bool defaultAccepted = globalAccel->setDefaultShortcut(
         &action, shortcuts, KGlobalAccel::Autoloading);
     // AGENT-CONTRACT: Autoloading preserves user remapping and intentional

@@ -161,6 +161,7 @@ nav:
       - Settings Startup applications route: apps/startup-settings.md
       - Settings Screen saver route: apps/screensaver-settings.md
       - Settings Login screen route: apps/login-screen-settings.md
+      - Screenshot: apps/screenshot.md
       - Voice: apps/voice.md
       - Settings Voice route: apps/voice-settings.md
       - Terminal (QQ_Term): apps/terminal.md
@@ -444,4 +445,5 @@ nav:
       - "ADR-0285: Desk tablets keep the screen's up; pen displays turn with their screen": adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md
       - "ADR-0286: Per-display and per-desktop wallpapers": adr/0286-per-display-and-per-desktop-wallpapers.md
       - "ADR-0287: Pass tablet proximity through window decorations": adr/0287-pass-tablet-proximity-through-window-decorations.md
+      - "ADR-0289: A native screenshot and record tool replaces Spectacle": adr/0289-native-screenshot-and-record-tool.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md

@@ -121,7 +121,7 @@ integration retains every accepted decision in numeric order.
 - [ADR-0104: Serialize production shell rendering](0104-serialize-shell-rendering.md)
 - [ADR-0105: Delegate idle display-off to PowerDevil](0105-delegate-idle-display-off-to-powerdevil.md)
 - [ADR-0106: Accept an equivalent Gentoo Power Profiles provider](0106-accept-equivalent-power-profiles-provider.md)
-- [ADR-0107: Delegate Print to Spectacle](0107-delegate-print-to-spectacle.md)
+- [ADR-0107: Delegate Print to Spectacle](0107-delegate-print-to-spectacle.md) (superseded by ADR-0289)
 - [ADR-0108: Compose System Monitor from detachable views](0108-compose-system-monitor-from-detachable-views.md)
 - [ADR-0109: Pearl and Smoked Plum materials](0109-use-pearl-and-smoked-plum-app-materials.md)
 - [ADR-0110: Ordinary editor windows](0110-own-editor-documents-in-ordinary-windows.md)
@@ -298,3 +298,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0286: Per-display and per-desktop wallpapers](0286-per-display-and-per-desktop-wallpapers.md)
 
 - [ADR-0287: Pass tablet proximity through window decorations](0287-pass-tablet-proximity-through-window-decorations.md)
+
+- [ADR-0289: A native screenshot and record tool replaces Spectacle](0289-native-screenshot-and-record-tool.md)

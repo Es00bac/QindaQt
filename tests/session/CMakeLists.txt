@@ -304,7 +304,6 @@ find_program(QINDAQT_WIREPLUMBER wireplumber)
 find_program(QINDAQT_PW_CLI pw-cli)
 find_program(QINDAQT_WPCTL wpctl)
 find_program(QINDAQT_KBUILDSYCOCA kbuildsycoca6)
-find_program(QINDAQT_SPECTACLE spectacle)
 find_file(QINDAQT_PIPEWIRE_TEST_CONFIG NAMES pipewire.conf PATHS /usr/share /usr/local/share PATH_SUFFIXES pipewire)
 find_program(
     QINDAQT_POWERDEVIL

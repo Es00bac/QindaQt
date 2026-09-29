@@ -36,7 +36,6 @@ RDEPEND="
 	=kde-plasma/plasma-activities-6.6.6*:6=
 	~kde-plasma/powerdevil-6.6.6
 	~kde-plasma/knighttime-6.6.6
-	=kde-plasma/spectacle-6.6.6*:6=
 	=kde-plasma/xdg-desktop-portal-kde-6.6.6*:6=
 	>=kde-frameworks/kconfig-6.0:6=
 	>=kde-frameworks/kcoreaddons-6.0:6=
