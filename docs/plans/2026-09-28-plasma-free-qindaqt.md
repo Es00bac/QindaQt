@@ -569,6 +569,16 @@ numbers when a slice is scheduled:
 9. **The fork's name.** `qindaqt-kwin` is a working name for the package, program, library and
    folders. Do you want a brand of its own before F2 bakes the name in?
 
+## Guiding principle (owner, 2026-09-28)
+
+The goal is not only to remove Plasma parts and dependencies. Each replacement is a **native
+QindaQt implementation designed to integrate cleanly with QindaQt**, and QindaQt is designed to
+work well with it. It has a QindaTK interface, keeps its preferences in Settings1 and shows them in
+QindaQt Settings, and follows QindaQt's appearance tokens and themes. It uses QindaQt's
+notifications, shortcuts and shell integration, and exposes QindaQt D-Bus contracts recorded in
+ADRs. A like-for-like port of the KDE component does not meet the bar; every slice's acceptance
+names its QindaQt integration points.
+
 ## Owner decisions (2026-09-28)
 
 These answer the open questions and are binding for the slices above.
