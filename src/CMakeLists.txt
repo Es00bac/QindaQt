@@ -3,6 +3,7 @@
 # The qindaqt-kwin names (ADR-0291) are shared by the session, services,
 # Settings, shell and compositor plugin, so they come first.
 add_subdirectory(compositor_names)
+add_subdirectory(lock_authentication)
 add_subdirectory(profiles)
 add_subdirectory(shell_layout)
 add_subdirectory(panel_blur)

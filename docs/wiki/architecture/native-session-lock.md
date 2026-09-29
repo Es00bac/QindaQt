@@ -53,3 +53,25 @@ The fork's production build no longer discovers or links KScreenLocker. Its
 vendored public ScreenSaver XML retains the PF8 service boundary. This source
 change alone does not remove released package dependencies: the manager owns
 the coherent final source pin, greeter and service integration.
+
+## Private launch and authentication candidate
+
+[ADR-0299](../adr/0299-native-locker-private-launch-and-authentication.md)
+supersedes executable-inode-only binding for the PF7 candidate. The compositor
+creates the private locker connection and launches its fixed native executable
+with a whitelist environment. An independently launched copy cannot bind the
+lock global, including one with actual loader injection. Kernel ptrace protection
+and non-dumpable/core-off authority processes protect the inherited transport.
+The planned separate native PAM worker owns both authentication and account
+approval; the current executable slice validates its native libpam adapter and
+request/epoch coordinator.
+only the native controller can consume current epoch/request approval. QML
+provides prompt/response/cancel presentation and cannot manufacture success.
+
+The backend's `org.qindaqt.KWin.NativeLock1` at
+`/org/qindaqt/KWin/NativeLock` admits `RequestLock`, exports `Locked` and
+`Protected`, and offers no unlock/authentication method. Protected means actual
+current-generation physical presentation, including clientless black fallback.
+The prior PF5/PF6 integrated server and this candidate are separate executable
+boundaries until manager integration. Native greeter/UI/PAM/service delivery is
+still qualified independently.
