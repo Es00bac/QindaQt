@@ -13,6 +13,9 @@ T.Page {
     id: root
 
     required property var streamingSettings
+    // The Screenshot tool's preferences (ADR-0289); the section is omitted
+    // when a host does not provide them.
+    property var captureSettings: null
     signal closeRequested()
 
     readonly property Item firstFocusTarget: setupButton.visible
@@ -227,6 +230,17 @@ T.Page {
                     objectName: "streamingBusMappingSection"
                     Layout.fillWidth: true
                     streamingSettings: root.streamingSettings
+                }
+
+                Loader {
+                    objectName: "streamingCaptureSectionLoader"
+                    Layout.fillWidth: true
+                    active: root.captureSettings !== null
+                    visible: active
+                    sourceComponent: StreamingCaptureSection {
+                        objectName: "streamingCaptureSection"
+                        captureSettings: root.captureSettings
+                    }
                 }
             }
         }

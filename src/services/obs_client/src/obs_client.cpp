@@ -381,6 +381,15 @@ void ObsClient::applyResponse(const RequestResponse &response) {
                     .toString();
         } else if (type == QLatin1String(Requests::GetRecordStatus)) {
             m_snapshot.record = recordStatusFrom(response.data);
+        } else if (type == QLatin1String(Requests::StopRecord)) {
+            // AGENT-NOTE: the STOPPED event may land before or after this
+            // reply; both carry the same path and either one publishes it.
+            const QString path =
+                response.data.value(QStringLiteral("outputPath")).toString();
+            moved = !path.isEmpty() && path != m_snapshot.lastRecordingPath;
+            if (moved) {
+                m_snapshot.lastRecordingPath = path;
+            }
         } else if (type == QLatin1String(Requests::GetStreamStatus)) {
             m_snapshot.stream = streamStatusFrom(response.data);
         } else if (type == QLatin1String(Requests::GetVirtualCamStatus)) {
@@ -429,6 +438,10 @@ void ObsClient::applyEvent(const Event &event) {
         }
         m_snapshot.record.active = active;
         m_snapshot.record.paused = paused;
+        const QString path = event.data.value(QStringLiteral("outputPath")).toString();
+        if (state == QLatin1String("OBS_WEBSOCKET_OUTPUT_STOPPED") && !path.isEmpty()) {
+            m_snapshot.lastRecordingPath = path;
+        }
     } else if (type == QLatin1String(Events::StreamStateChanged)) {
         const QString state = event.data.value(QStringLiteral("outputState")).toString();
         const bool reconnecting = state == QLatin1String("OBS_WEBSOCKET_OUTPUT_RECONNECTING");

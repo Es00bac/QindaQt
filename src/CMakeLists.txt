@@ -59,6 +59,7 @@ add_subdirectory(services/settings_protocol)
 add_subdirectory(services/settings_service)
 add_subdirectory(services/settings_client)
 add_subdirectory(services/streaming_preferences)
+add_subdirectory(services/screenshot_preferences)
 # ADR-0265: the dock value and pin helper; the launcher runtime (deferred to
 # the end of this scope) and the File Manager link it.
 add_subdirectory(services/dock_items)
@@ -198,6 +199,11 @@ if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/smart_lights_applet)
     add_subdirectory(shell/voice_applet)
     add_subdirectory(shell/obs_applet)
+    # The Screenshot tool (ADR-0289) is a QindaTK app that reuses the OBS
+    # applet's pure presentation, so it needs both the shell and QindaTK.
+    if(QINDAQT_BUILD_VIEWER)
+        add_subdirectory(apps/screenshot)
+    endif()
     add_subdirectory(shell/power_applet)
     add_subdirectory(shell/workspaces)
     add_subdirectory(shell/desktop_controls)

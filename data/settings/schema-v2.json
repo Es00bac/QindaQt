@@ -502,6 +502,65 @@
       "default": false
     },
     {
+      "key": "services.screenshotFolder",
+      "domain": "services",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "key": "services.screenshotFileNamePattern",
+      "domain": "services",
+      "type": "string",
+      "default": "Screenshot_{date}_{time}",
+      "constraints": {
+        "nonEmpty": true
+      }
+    },
+    {
+      "key": "services.screenshotDefaultMode",
+      "domain": "services",
+      "type": "string",
+      "default": "region",
+      "constraints": {
+        "allowedValues": [
+          "region",
+          "all-screens",
+          "current-screen",
+          "active-window",
+          "window-under-pointer"
+        ]
+      }
+    },
+    {
+      "key": "services.screenshotDelaySeconds",
+      "domain": "services",
+      "type": "integer",
+      "default": 0,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 60
+      }
+    },
+    {
+      "key": "services.screenshotShowResult",
+      "domain": "services",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "services.screenshotRecordFinish",
+      "domain": "services",
+      "type": "string",
+      "default": "notify",
+      "constraints": {
+        "allowedValues": [
+          "notify",
+          "show-in-folder",
+          "quiet"
+        ]
+      }
+    },
+    {
       "key": "services.doNotDisturbSchedule",
       "domain": "services",
       "type": "boolean",

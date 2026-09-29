@@ -21,6 +21,13 @@ enum class DesktopShortcutAction {
     TakeScreenshot,
     ToggleMicMute,
     ToggleAirplaneMode,
+    // AGENT-GUARD: appended after the original eight so every stable index
+    // (and the user's persisted KGlobalAccel binding) stays put. The
+    // screenshot actions launch qindaqt-screenshot (ADR-0289); TakeScreenshot
+    // above is its region capture.
+    ScreenshotFullScreen,
+    ScreenshotActiveWindow,
+    ToggleRecording,
     Count,
 };
 
@@ -33,11 +40,16 @@ struct DesktopShortcutTriggers final {
     std::function<void()> takeScreenshot;
     std::function<void()> toggleMicMute;
     std::function<void()> toggleAirplaneMode;
+    std::function<void()> screenshotFullScreen = {};
+    std::function<void()> screenshotActiveWindow = {};
+    std::function<void()> toggleRecording = {};
 };
 
 struct DesktopShortcutRegistrationOptions final {
-    // PowerDevil owns monitor-brightness and Spectacle owns Print in production.
-    // Tests and embedders can opt in when they provide those owners themselves.
+    // PowerDevil owns monitor-brightness in production. The screenshot and
+    // record actions belong to this set since QindaQt Screenshot replaced
+    // Spectacle (ADR-0289); an embedder that brings its own screenshot owner
+    // turns them off together.
     bool registerBrightness = true;
     bool registerScreenshot = true;
 };
@@ -57,7 +69,9 @@ public:
     DesktopShortcutSet(const DesktopShortcutSet &) = delete;
     DesktopShortcutSet &operator=(const DesktopShortcutSet &) = delete;
 
+    // The first default key; defaultShortcuts() lists every one.
     [[nodiscard]] static QKeySequence defaultShortcut(DesktopShortcutAction action);
+    [[nodiscard]] static QList<QKeySequence> defaultShortcuts(DesktopShortcutAction action);
     [[nodiscard]] static QString stableActionId(DesktopShortcutAction action);
 
     [[nodiscard]] QAction *action(DesktopShortcutAction action) const;

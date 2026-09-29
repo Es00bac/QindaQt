@@ -20,7 +20,7 @@ target_compile_definitions(qindaqt_settings_streaming_page_test PRIVATE
     QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
     QINDAQT_STREAMING_PAGE_QML_PATH="${PROJECT_SOURCE_DIR}/src/apps/settings/streaming/qml/StreamingPage.qml")
 target_link_libraries(qindaqt_settings_streaming_page_test PRIVATE
-    qindaqt_settings_streaming qindaqt_settings_appearance
+    qindaqt_settings_streaming qindaqt_settings_appearance QindaQt::ScreenshotPreferences
     QindaQt::TokensQml qindaqt_themes Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 add_dependencies(qindaqt_settings_streaming_page_test
     qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin

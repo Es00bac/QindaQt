@@ -217,6 +217,7 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool publishedSelectionLive() const noexcept override { return anySourceLive(m_sources); }
     void introduceOffer(::ext_data_control_offer_v1 *raw)
     {
         // AGENT-GUARD: A compositor may introduce offers it never selects.

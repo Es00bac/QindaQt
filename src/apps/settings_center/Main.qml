@@ -429,6 +429,7 @@ T.ApplicationWindow {
         StreamingPage {
             objectName: "streamingPage"
             streamingSettings: StreamingRouteComposition.streaming
+            captureSettings: StreamingRouteComposition.capture
             onCloseRequested: root.close()
         }
     }

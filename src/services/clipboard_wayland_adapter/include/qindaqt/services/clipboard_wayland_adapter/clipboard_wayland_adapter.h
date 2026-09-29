@@ -47,6 +47,12 @@ public:
     [[nodiscard]] virtual qint64 peerProcessId() const noexcept = 0;
     [[nodiscard]] virtual bool publishSelection(
         SelectionKind kind, const ClipboardModel::ClipboardValue &value) = 0;
+    // True while at least one selection this adapter published is still
+    // offered, i.e. the compositor has not cancelled it because another
+    // client took the selection. A publisher that must stay resident to
+    // answer pastes (the screenshot tool, ADR-0289) polls this to learn when
+    // it may exit. Additive: implementations that never publish keep false.
+    [[nodiscard]] virtual bool publishedSelectionLive() const noexcept { return false; }
 };
 
 } // namespace QindaQt::Services::ClipboardWayland

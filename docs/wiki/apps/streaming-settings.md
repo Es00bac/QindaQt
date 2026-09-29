@@ -140,6 +140,23 @@ masked by a user override in Startup; the Streaming page shows that effective
 status. A custom XDG_CONFIG_DIRS that excludes /etc/xdg must include the
 installed entry elsewhere.
 
+## Screenshots and recording
+
+The page's last section holds the [Screenshot](screenshot.md) tool's six
+`services.screenshot*` preferences ([ADR-0289](../adr/0289-native-screenshot-and-record-tool.md)):
+save folder, file-name pattern with a live preview, the area and delay new
+captures start with, whether shortcut captures open the result window, and
+what happens when an OBS recording stops. The route composition gives them
+their own purpose-scoped Settings1 client, so an unknown key can never reject
+the OBS preferences' snapshot (ADR-0126), and they follow the same write
+contract as the OBS preferences above: one save at a time, shown only after
+readback, never replayed. The section is omitted when a host does not pass
+`captureSettings`.
+
+The shared OBS client's snapshot also carries `lastRecordingPath`, the file
+OBS reported for the last finished recording (from the STOPPED event or the
+StopRecord reply), which the Screenshot tool's Record tab offers to open.
+
 ## Tests
 
 | Row | Covers |
