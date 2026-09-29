@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+add_executable(qindaqt_application_placement_tests tst_placement.cpp)
+target_link_libraries(qindaqt_application_placement_tests PRIVATE QindaQt::ApplicationWindowManagement Qt6::Test)
+target_compile_features(qindaqt_application_placement_tests PRIVATE cxx_std_20)
+add_test(NAME qindaqt.application-placement COMMAND qindaqt_application_placement_tests)
+add_executable(qindaqt_application_placement_client_tests tst_client.cpp)
+target_link_libraries(qindaqt_application_placement_client_tests PRIVATE QindaQt::ApplicationWindowClient Qt6::Test Qt6::Widgets)
+target_compile_features(qindaqt_application_placement_client_tests PRIVATE cxx_std_20)
+add_test(NAME qindaqt.application-placement-client COMMAND qindaqt_application_placement_client_tests)
+set_tests_properties(qindaqt.application-placement-client PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_application_placement_tests)
+    qindaqt_enable_warnings(qindaqt_application_placement_client_tests)
+endif()
+
+# Private virtual-compositor probe, invoked by run_native.py only.
+add_executable(qindaqt_application_placement_native_probe native_probe.cpp)
+target_compile_features(qindaqt_application_placement_native_probe PRIVATE cxx_std_20)
+target_link_libraries(qindaqt_application_placement_native_probe PRIVATE QindaQt::ApplicationWindowClient Qt6::Widgets)
+
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_application_placement_native_probe)
+endif()
