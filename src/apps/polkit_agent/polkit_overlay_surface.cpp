@@ -11,34 +11,41 @@
 namespace QindaQt::Apps::PolkitAgent {
 namespace {
 
+void setError(QString *error, const QString &message)
+{
+    if (error != nullptr) {
+        *error = message;
+    }
+}
+
 QScreen *screenUnderPointer()
 {
-    // screenAt returns null where the platform will not report a global
-    // cursor position (GatherOverviewComposition::screenToOpenOn() records
-    // the same Wayland limitation), which is why the primary screen is the
-    // fallback rather than the assumption.
+    // AGENT-NOTE: QCursor::pos may return (0, 0) on Wayland when global
+    // pointer position is unavailable. This mirrors GatherOverviewComposition::
+    // screenToOpenOn(); screenAt can then choose the first output, so multi-
+    // output pointer placement remains a live-session qualification boundary.
     if (QScreen *under = QGuiApplication::screenAt(QCursor::pos())) {
         return under;
     }
     return QGuiApplication::primaryScreen();
 }
 
-} // namespace
-
-void PolkitOverlaySurface::configure(QQuickWindow &window)
+bool configureLayerWindow(QQuickWindow &window,
+                          LayerShellQt::Window *layerWindow,
+                          QString *error)
 {
+    if (layerWindow == nullptr) {
+        setError(error, QStringLiteral(
+            "LayerShellQt did not create a layer surface; refusing to show an ordinary authentication window"));
+        return false;
+    }
+
     QScreen *screen = screenUnderPointer();
     window.setFlag(Qt::FramelessWindowHint, true);
     window.setColor(Qt::transparent);
     if (screen != nullptr) {
         window.setScreen(screen);
         window.setGeometry(screen->geometry());
-    }
-    auto *layerWindow = LayerShellQt::Window::get(&window);
-    if (layerWindow == nullptr) {
-        return;
-    }
-    if (screen != nullptr) {
         layerWindow->setScreen(screen);
     }
     layerWindow->setScope(QStringLiteral("polkit-agent"));
@@ -56,6 +63,22 @@ void PolkitOverlaySurface::configure(QQuickWindow &window)
     layerWindow->setAnchors(anchors);
     layerWindow->setExclusiveZone(-1);
     layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
+    setError(error, {});
+    return true;
+}
+
+} // namespace
+
+bool PolkitOverlaySurface::configure(QQuickWindow &window, QString *error)
+{
+    // LayerShellQt installs an attached Window object even for Qt offscreen;
+    // only the Wayland platform can create a keyboard-exclusive protocol role.
+    if (QGuiApplication::platformName() != QLatin1String("wayland")) {
+        setError(error, QStringLiteral(
+            "Wayland layer-shell is required; refusing to show an ordinary authentication window"));
+        return false;
+    }
+    return configureLayerWindow(window, LayerShellQt::Window::get(&window), error);
 }
 
 } // namespace QindaQt::Apps::PolkitAgent

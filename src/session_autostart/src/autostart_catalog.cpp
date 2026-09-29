@@ -157,8 +157,9 @@ bool intersects(const QStringList &left, const QStringList &right)
     return false;
 }
 
-// AGENT-NOTE: QindaQt always starts its own polkit authentication agent
-// (ADR-0290) as a supervised child; a host XDG entry for a distribution
+// AGENT-NOTE: QindaQt normally starts its own polkit authentication agent
+// (ADR-0290) as a supervised child; when that policy is disabled, the
+// same entries remain eligible. A host XDG entry for a distribution
 // agent would otherwise race it for polkitd's single registration slot --
 // the live defect ADR-0290 fixes. Basenames are literal upstream binary
 // names, matched exactly, never a substring or path match, and
@@ -284,7 +285,7 @@ QList<Entry> scan(const ScanOptions &options, QString *error)
             markIneligible(entry, QStringLiteral("Invalid desktop entry string escape"));
         } else if (fields.invalidBoolean) {
             markIneligible(entry, QStringLiteral("Invalid desktop autostart flag"));
-        } else if (isKnownPolkitAgent(fields)) {
+        } else if (options.supersedeDistributionPolkitAgents && isKnownPolkitAgent(fields)) {
             markIneligible(
                 entry,
                 QStringLiteral("Superseded by the QindaQt session's own polkit agent"));

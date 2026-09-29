@@ -10,6 +10,7 @@
 #include "qindaqt/services/settings_client/settings_client.h"
 
 #include <PolkitQt1/Subject>
+#include <LayerShellQt/Shell>
 
 #include <QCoreApplication>
 #include <QDBusConnection>
@@ -43,6 +44,13 @@ void addImportPaths(QQmlApplicationEngine &engine)
 
 int main(int argc, char **argv)
 {
+    // AGENT-GUARD: set LayerShellQt up before QGuiApplication creates the
+    // Wayland platform integration; the password dialog must never degrade to
+    // an ordinary toplevel without exclusive keyboard ownership.
+    QT_WARNING_PUSH
+    QT_WARNING_DISABLE_DEPRECATED
+    LayerShellQt::Shell::useLayerShell();
+    QT_WARNING_POP
     QGuiApplication application(argc, argv);
     application.setOrganizationName(QStringLiteral("QindaQt"));
     application.setOrganizationDomain(QStringLiteral("qindaqt.org"));
@@ -113,7 +121,11 @@ int main(int argc, char **argv)
         std::fprintf(stderr, "qindaqt-polkit-agent: dialog root is not a window\n");
         return 4;
     }
-    PolkitOverlaySurface::configure(*window);
+    QString surfaceError;
+    if (!PolkitOverlaySurface::configure(*window, &surfaceError)) {
+        std::fprintf(stderr, "qindaqt-polkit-agent: %s\n", qPrintable(surfaceError));
+        return 5;
+    }
     QObject::connect(&viewModel, &PolkitDialogViewModel::visibleChanged, window,
                      [window, &viewModel] { window->setVisible(viewModel.isVisible()); });
 

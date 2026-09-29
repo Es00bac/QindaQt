@@ -48,6 +48,7 @@ private Q_SLOTS:
     void terminalAndWorkingDirectoryFollowThePublicPlan();
     void environmentResolvesXdgRootsWithoutAmbientFallback();
     void knownPolkitAgentEntriesAreSupersededWhileOthersStillRun();
+    void distributionPolkitAgentCanRunWhenTheSessionAgentIsDisabled();
 };
 
 void AutostartCatalogTest::disabledWinnerMasksSystemAndDoesNotLaunch()
@@ -254,6 +255,27 @@ void AutostartCatalogTest::knownPolkitAgentEntriesAreSupersededWhileOthersStillR
             QVERIFY2(entry.eligible, qPrintable(entry.name));
         }
     }
+}
+
+void AutostartCatalogTest::distributionPolkitAgentCanRunWhenTheSessionAgentIsDisabled()
+{
+    QTemporaryDir root;
+    QVERIFY(root.isValid());
+    auto config = options(root);
+    config.supersedeDistributionPolkitAgents = false;
+    QVERIFY(QDir().mkpath(config.userDirectory));
+    QVERIFY(QDir().mkpath(config.executableDirectories.constFirst()));
+    executable(root, QStringLiteral("polkit-gnome-authentication-agent-1"));
+    writeFile(
+        QDir(config.userDirectory)
+            .filePath(QStringLiteral("polkit-gnome-authentication-agent.desktop")),
+        QStringLiteral(
+            "[Desktop Entry]\nType=Application\nName=PolicyKit Authentication Agent\n"
+            "Exec=polkit-gnome-authentication-agent-1\nNotShowIn=MATE;KDE;\n"));
+    const auto entries = scan(config);
+    QCOMPARE(entries.size(), 1);
+    QVERIFY2(entries.constFirst().eligible,
+             qPrintable(entries.constFirst().ineligibilityReason));
 }
 
 QTEST_MAIN(AutostartCatalogTest)

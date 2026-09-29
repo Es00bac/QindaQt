@@ -3,6 +3,7 @@
 #include "polkit_attempt_controller.h"
 #include "polkit_dialog_view_model.h"
 #include "polkit_request_queue.h"
+#include "polkit_overlay_surface.h"
 
 #include <qindaqt/design_tokens/token_facade.h>
 #include <qindaqt/themes/theme_loader.h>
@@ -71,6 +72,7 @@ private Q_SLOTS:
     void hidesIdentityChooserForOneIdentityAndExposesAccessibleNames();
     void enterAuthenticatesAndEscapeCancels();
     void failedAttemptShowsErrorClearsAndRefocusesPassword();
+    void unsupportedPlatformFailsClosed();
 
 private:
     std::unique_ptr<QQuickView> m_view;
@@ -181,6 +183,17 @@ void PolkitDialogQmlTest::enterAuthenticatesAndEscapeCancels()
 
     QTest::keyClick(m_view.get(), Qt::Key_Escape);
     QCOMPARE(created.constFirst()->cancelCount, 1);
+}
+
+void PolkitDialogQmlTest::unsupportedPlatformFailsClosed()
+{
+    QQuickWindow window;
+    QString error;
+    QVERIFY(!PolkitOverlaySurface::configure(window, &error));
+    QVERIFY(!window.isVisible());
+    QVERIFY(error.contains(QStringLiteral("Wayland layer-shell is required")));
+    QVERIFY(error.contains(
+        QStringLiteral("refusing to show an ordinary authentication window")));
 }
 
 void PolkitDialogQmlTest::failedAttemptShowsErrorClearsAndRefocusesPassword()
