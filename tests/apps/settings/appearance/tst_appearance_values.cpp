@@ -28,6 +28,7 @@ private slots:
     void validationRequiresInstalledThemesAndBounds();
     void scopedKeysMatchSchemaKeys();
     void iconThemeDefaultsAndIdentifiers();
+    void wallpaperChoicesDecodeTolerantlyAndRoundTrip();
     void chromeTokensMatchTheirSchemaDefinitions();
     void titleBarOptionsDecodeStrictlyAndRoundTrip();
     void bundledWallpaperCatalogIsOrderedAndDeduplicated();
@@ -47,6 +48,37 @@ void AppearanceValuesTests::iconThemeDefaultsAndIdentifiers()
     QVERIFY(!AppearanceValues::fromVariantMap(values));
     values.insert(QString(AppearanceKeys::IconTheme), 7);
     QVERIFY(!AppearanceValues::fromVariantMap(values));
+}
+
+// ADR-0286: the whole-route decode never fails on the choices value; an
+// absent or unreadable value reads as no choices (the model reports it), and
+// a valid one survives the canonical wire round trip byte for byte.
+void AppearanceValuesTests::wallpaperChoicesDecodeTolerantlyAndRoundTrip()
+{
+    using QindaQt::Services::WallpaperAssignments::WallpaperAssignments;
+    auto values = validMap();
+    const QString key = QString(AppearanceKeys::WallpaperAssignments);
+    QCOMPARE(values.value(key).toMap(), QVariantMap{});
+
+    WallpaperAssignments choices;
+    QCOMPARE(int(choices.set(QStringLiteral("edid:00112233445566778899aabbccddeeff"), QString(),
+                             QStringLiteral("qindaqt:neon-harbor"))),
+             0);
+    QCOMPARE(int(choices.set(QString(), QStringLiteral("desktop-2"), QString())), 0);
+    values.insert(key, WallpaperAssignments::encodeSettingsValue(choices));
+    const auto decoded = AppearanceValues::fromVariantMap(values);
+    QVERIFY(decoded.has_value());
+    QCOMPARE(decoded->wallpaperAssignments, choices);
+    QCOMPARE(decoded->toVariantMap(), values);
+
+    values.insert(key, QVariantMap{{QStringLiteral("version"), 9}});
+    const auto unreadable = AppearanceValues::fromVariantMap(values);
+    QVERIFY(unreadable.has_value());
+    QVERIFY(unreadable->wallpaperAssignments.isEmpty());
+    values.remove(key);
+    const auto absent = AppearanceValues::fromVariantMap(values);
+    QVERIFY(absent.has_value());
+    QVERIFY(absent->wallpaperAssignments.isEmpty());
 }
 
 void AppearanceValuesTests::tokenRoundTripsCoverEveryEnumeratedValue()
@@ -210,11 +242,17 @@ void AppearanceValuesTests::scopedKeysMatchSchemaKeys()
     // authority that will validate its optimistic commits.
     const auto keys = AppearanceKeys::scopedKeys();
     // Twelve appearance keys plus the chrome arrangement keys (ADR-0129), the
-    // two decoration document choices (ADR-0207) and the two accessibility
-    // switches the route offers (ADR-0206).
+    // two decoration document choices (ADR-0207), the two accessibility
+    // switches the route offers (ADR-0206), and the per-display/per-desktop
+    // wallpaper choices (ADR-0286).
     QCOMPARE(keys.size(), 12 + QindaQt::Decoration::ChromePreferences::settingsKeys().size()
                               + QindaQt::Decoration::ChromePreferences::decorationKeys().size()
-                              + 2);
+                              + 2 + 1);
+    QCOMPARE(keys.constLast(), QString(AppearanceKeys::WallpaperAssignments));
+    const auto *choices = schema->definition(QString(AppearanceKeys::WallpaperAssignments));
+    QVERIFY(choices != nullptr);
+    QVERIFY(choices->type == SettingValueType::Object);
+    QCOMPARE(choices->defaultValue.toMap(), QVariantMap{});
     QVERIFY(keys.contains(QStringLiteral("accessibility.reducedTransparency")));
     QVERIFY(keys.contains(QStringLiteral("accessibility.reducedMotion")));
     QVERIFY(keys.contains(QLatin1String(AppearanceKeys::FontMonospaceFamily)));

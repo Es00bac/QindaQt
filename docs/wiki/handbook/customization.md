@@ -60,11 +60,20 @@ panels, controls, window frames, and container chrome — without a restart.
 
 ### Wallpaper
 
-Choose from the six bundled wallpapers — Jade Fold, Porcelain Dawn, Ink
-Tide, Qinda Punk, Compile Club, and Qinda Bliss (rolling green hills under
-a blue sky) — or pick **any image on your disk**. A
-picture mode of scaled, centered, or tiled decides how the image fills the
-screen. After **Apply**, the wallpaper appears on every screen.
+Choose from the eleven bundled wallpapers — Jade Fold, Porcelain Dawn, Ink
+Tide, Qinda Punk, Compile Club, Qinda Bliss (rolling green hills under
+a blue sky), and the penguin-and-duck scenes Horizon Arc, Light Waves,
+Valley Sunrise, Neon Harbor, and Aurora Plain — or pick **any image on your
+disk**. A picture mode of scaled, centered, or tiled decides how the image
+fills the screen. After **Set wallpaper**, it appears on every screen.
+
+Each display and each virtual desktop can also have its own picture. Under
+**Show on**, pick a display in the small map of your screens and, if you
+like, a desktop, then choose the image. The most specific choice wins; a
+screen or desktop without one shows the main wallpaper. Unplugging a
+monitor never forgets its picture, and **Stop using a separate wallpaper
+here** or **Remove** in the saved list returns a screen to the main one.
+Switching desktops fades between pictures unless Reduce motion is on.
 
 ### Fonts
 

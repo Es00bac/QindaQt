@@ -559,54 +559,10 @@ add_test(
 find_package(KF6GlobalAccel 6.0 REQUIRED CONFIG)
 find_package(LayerShellQt 6.6.6 REQUIRED)
 
-qt_add_executable(
-    qindaqt_wallpaper_controller_tests
-    tst_wallpapercontroller.cpp
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/wallpapercontroller.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/wallpapercontroller.h"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shellpreferencevalues.h"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnotecontroller.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnotecontroller.h"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnoteshortcut.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/shortcutnoteshortcut.h"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/kglobalaccelshortcutregistrar.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime/kglobalaccelshortcutregistrar.h"
-)
-target_include_directories(
-    qindaqt_wallpaper_controller_tests
-    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/shell/runtime"
-)
-target_link_libraries(
-    qindaqt_wallpaper_controller_tests
-    PRIVATE
-        QindaQt::DesignTokens
-        QindaQt::SettingsClient
-        QindaQt::SettingsService
-        KF6::GlobalAccel
-        LayerShellQt::Interface
-        Qt6::DBus
-        Qt6::Gui
-        Qt6::Qml
-        Qt6::Quick
-        Qt6::Test
-)
-target_compile_definitions(
-    qindaqt_wallpaper_controller_tests
-    PRIVATE
-        QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-        QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}"
-)
-qindaqt_enable_warnings(qindaqt_wallpaper_controller_tests)
-add_test(
-    NAME qindaqt.shell-wallpaper-controller
-    COMMAND qindaqt_wallpaper_controller_tests
-)
-set_tests_properties(
-    qindaqt.shell-wallpaper-controller
-    PROPERTIES
-        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
-)
+# ADR-0078 and ADR-0286: the wallpaper controller rows (per-output surfaces,
+# per-display and per-desktop choices, cross-fades) live beside their tests.
+# They use the imported targets found above, so this stays after them.
+add_subdirectory(wallpaper)
 
 
 qt_add_executable(

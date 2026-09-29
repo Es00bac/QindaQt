@@ -31,7 +31,16 @@ qindaqt_enable_warnings(qindaqt_settings_navigation)
 
 qt_add_executable(qindaqt-settings main.cpp
     settings_route_construction_probe.h
-    settings_route_construction_probe.cpp)
+    settings_route_construction_probe.cpp
+    settings_wallpaper_targets.h
+    settings_wallpaper_targets.cpp)
+# ADR-0286: Appearance names virtual desktops for per-desktop wallpapers
+# through the shell's read-only workspace truth. That module exists only with
+# the shell (src/CMakeLists.txt); without it the route offers displays only.
+if(QINDAQT_BUILD_SHELL)
+    target_link_libraries(qindaqt-settings PRIVATE QindaQt::ShellWorkspacesDBus)
+    target_compile_definitions(qindaqt-settings PRIVATE QINDAQT_SETTINGS_WORKSPACE_TRUTH)
+endif()
 qt_add_qml_module(
     qindaqt-settings
     URI QindaQt.SettingsApp

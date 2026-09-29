@@ -89,7 +89,11 @@ QVariantList AppearanceSettingsModel::decorationDocuments() const
 
 QUrl AppearanceSettingsModel::previewWallpaper() const
 {
-    const QString value = m_draft.wallpaper;
+    return previewUrlFor(m_draft.wallpaper);
+}
+
+QUrl AppearanceSettingsModel::previewUrlFor(const QString &value) const
+{
     if (value.isEmpty()) {
         return {};
     }

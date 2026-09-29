@@ -710,6 +710,7 @@ void AppearanceSettingsModelTests::ownerLossDuringSequenceAbortsWithoutReplay()
 }
 
 int runAppearanceSettingsModelAdversarialTests(int argc, char **argv);
+int runAppearanceWallpaperChoicesTests(int argc, char **argv);
 
 int main(int argc, char **argv)
 {
@@ -717,6 +718,7 @@ int main(int argc, char **argv)
     AppearanceSettingsModelTests ordinary;
     int status = QTest::qExec(&ordinary, argc, argv);
     status |= runAppearanceSettingsModelAdversarialTests(argc, argv);
+    status |= runAppearanceWallpaperChoicesTests(argc, argv);
     return status;
 }
 

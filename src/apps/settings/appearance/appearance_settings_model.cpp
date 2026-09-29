@@ -103,6 +103,9 @@ AppearanceSettingsModel::AppearanceSettingsModel(
             this, &AppearanceSettingsModel::handleCommit);
     connect(&m_client, &SettingsClient::commitUncertain,
             this, &AppearanceSettingsModel::handleUncertain);
+    // ADR-0286: saved-choice rows are a projection of the draft.
+    connect(this, &AppearanceSettingsModel::draftChanged,
+            this, &AppearanceSettingsModel::wallpaperAssignmentsChanged);
 
     // Decoration documents (ADR-0207) ship beside the themes; a missing or
     // malformed catalog costs only the choosers, never the route.
@@ -290,6 +293,7 @@ void AppearanceSettingsModel::handleSnapshot()
                           || m_confirmedEpoch != snapshot->epoch);
     m_confirmedOwner = snapshot->owner;
     m_confirmedEpoch = snapshot->epoch;
+    noteConfirmedWallpaperAssignments(snapshot->values);
     setConfirmed(*decoded);
     setAuthorityReady(true);
 

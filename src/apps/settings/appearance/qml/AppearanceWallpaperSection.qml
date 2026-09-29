@@ -9,6 +9,9 @@ import QindaQt.Tokens 1.0
 
 // The route model owns wallpaper validation and commit authority. This page
 // only makes a desktop background choice in the shared Appearance draft.
+// ADR-0286: a scope (every display, one display, one desktop, or both) picks
+// where the gallery's choice applies; with no targets it is the everywhere
+// wallpaper exactly as before.
 ColumnLayout {
     id: root
 
@@ -16,9 +19,28 @@ ColumnLayout {
     required property bool editorBusy
     readonly property var gallery: appearanceSettings.userWallpaperCatalog ?? null
     readonly property var draftValues: appearanceSettings.draft
-    readonly property Item firstFocusTarget: wallpaperChoices.children.length > 0
-                                           ? wallpaperChoices.children[0] : null
+    readonly property var targets: appearanceSettings.wallpaperTargets ?? null
+    readonly property bool scopesAvailable: root.targets !== null
+                                            && ((root.targets.displays ?? []).length > 0
+                                                || (root.targets.desktops ?? []).length > 0)
+    readonly property Item firstFocusTarget: root.scopesAvailable
+                                             ? scopePicker.firstFocusTarget
+                                             : wallpaperChoices.firstChoice
     readonly property string selectedWallpaper: String(root.draftValue("appearance.wallpaper"))
+    // The scope the next pick applies to; "" means every display / desktop.
+    property string selectedDisplay: ""
+    property string selectedDesktop: ""
+    readonly property bool everywhereScope: root.selectedDisplay === "" && root.selectedDesktop === ""
+    // Re-read on every draft publication: the argument makes the draft a
+    // binding dependency of the model call.
+    readonly property var scopeChoice: root.choiceFor(root.draftValues, root.selectedDisplay,
+                                                      root.selectedDesktop)
+    // The gallery highlights only a choice this scope owns; an inherited
+    // wallpaper is described by the scope picker instead.
+    readonly property var pickedValue: root.everywhereScope
+                                       ? root.draftValue("appearance.wallpaper")
+                                       : root.scopeChoice !== null && root.scopeChoice.explicit
+                                         ? root.scopeChoice.value : null
 
     Layout.fillWidth: true
     spacing: Tokens.space["3"]
@@ -31,10 +53,66 @@ ColumnLayout {
         root.appearanceSettings.setDraftValue(key, value)
     }
 
+    function choiceFor(draft, display, desktop) {
+        if (draft === undefined || root.appearanceSettings.wallpaperChoiceFor === undefined)
+            return null
+        return root.appearanceSettings.wallpaperChoiceFor(display, desktop)
+    }
+
+    // Every gallery pick goes through here: the everywhere scope keeps the
+    // original `appearance.wallpaper` edit; any other scope is a saved choice.
+    function pickWallpaper(value) {
+        if (root.everywhereScope)
+            root.setDraft("appearance.wallpaper", value)
+        else
+            root.appearanceSettings.setWallpaperFor(root.selectedDisplay, root.selectedDesktop, value)
+    }
+
+    // A display unplugged or a desktop removed while selected falls back to
+    // the broader scope instead of editing something no longer listed.
+    function keepScopeListed() {
+        const displays = root.targets?.displays ?? []
+        const desktops = root.targets?.desktops ?? []
+        if (root.selectedDisplay !== "" && !displays.some(entry => entry.stableId === root.selectedDisplay))
+            root.selectedDisplay = ""
+        if (root.selectedDesktop !== "" && !desktops.some(entry => entry.id === root.selectedDesktop))
+            root.selectedDesktop = ""
+    }
+
+    Connections {
+        target: root.targets
+        ignoreUnknownSignals: true
+        function onDisplaysChanged() { root.keepScopeListed() }
+        function onDesktopsChanged() { root.keepScopeListed() }
+    }
+
     SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Wallpaper")
         description: ""
+    }
+
+    Label {
+        objectName: "appearanceWallpaperAssignmentsNotice"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: root.appearanceSettings.wallpaperAssignmentsNotice ?? ""
+        Accessible.role: Accessible.AlertMessage
+    }
+
+    WallpaperScopePicker {
+        id: scopePicker
+        Layout.fillWidth: true
+        visible: root.scopesAvailable
+        targets: root.targets
+        selectedDisplay: root.selectedDisplay
+        selectedDesktop: root.selectedDesktop
+        choice: root.scopeChoice
+        editable: root.appearanceSettings.canEdit && !root.editorBusy
+        onDisplayPicked: stableId => root.selectedDisplay = stableId
+        onDesktopPicked: desktopId => root.selectedDesktop = desktopId
+        onClearRequested: root.appearanceSettings.clearWallpaperFor(root.selectedDisplay,
+                                                                    root.selectedDesktop)
     }
 
     Image {
@@ -45,72 +123,31 @@ ColumnLayout {
         // The model projects the draft wallpaper to a complete file URL, so
         // the preview resolves identically from any document base URL and
         // never shows a broken frame for an unknown file.
-        visible: (root.appearanceSettings.previewWallpaper ?? "").toString().length > 0
-        source: root.appearanceSettings.previewWallpaper ?? ""
+        readonly property url shown: root.everywhereScope || root.scopeChoice === null
+                                     ? (root.appearanceSettings.previewWallpaper ?? "")
+                                     : root.scopeChoice.previewUrl
+        visible: String(wallpaperPreview.shown).length > 0
+        source: wallpaperPreview.shown
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         Accessible.name: qsTr("Selected wallpaper preview")
     }
 
-    Flow {
+    WallpaperGallery {
         id: wallpaperChoices
         Layout.fillWidth: true
-        spacing: Tokens.space["2"]
-
-        Button {
-            objectName: "noWallpaperButton"
-            width: 144
-            height: 94
-            text: qsTr("No wallpaper")
-            emphasized: root.draftValue("appearance.wallpaper") === ""
-            available: root.appearanceSettings.canEdit && !root.editorBusy
-            onClicked: root.setDraft("appearance.wallpaper", "")
-        }
-
-        Repeater {
-            model: (root.appearanceSettings.bundledWallpapers ?? []).concat(root.gallery?.wallpapers ?? [])
-
-            Button {
-                id: wallpaperButton
-                required property var modelData
-                objectName: "bundledWallpaperButton"
-                width: 144
-                height: 94
-                text: modelData.name
-                emphasized: root.draftValue("appearance.wallpaper") === modelData.value
-                available: root.appearanceSettings.canEdit && !root.editorBusy
-                accessibleDescription: qsTr("Select this wallpaper")
-                onClicked: root.setDraft("appearance.wallpaper", modelData.value)
-
-                contentItem: ColumnLayout {
-                    spacing: Tokens.space["1"]
-                    Image {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        source: modelData.previewUrl
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        Accessible.ignored: true
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        text: modelData.name
-                        color: !wallpaperButton.enabled ? Tokens.fg.muted
-                             : wallpaperButton.emphasized ? Tokens.accent.fg
-                                                          : Tokens.fg.default
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
-                        Accessible.ignored: true
-                    }
-                }
-            }
-        }
+        wallpapers: (root.appearanceSettings.bundledWallpapers ?? []).concat(root.gallery?.wallpapers ?? [])
+        pickedValue: root.pickedValue
+        editable: root.appearanceSettings.canEdit && !root.editorBusy
+        onPicked: value => root.pickWallpaper(value)
     }
 
     FormRow {
         Layout.fillWidth: true
         label: qsTr("Image file")
-        description: qsTr("Add an image to your gallery, then choose Set wallpaper to apply it")
+        description: root.everywhereScope
+                     ? qsTr("Add an image to your gallery, then choose Set wallpaper to apply it")
+                     : qsTr("Add an image to your gallery; it is used where Show on points")
         errorMessage: root.appearanceSettings.fieldErrors["appearance.wallpaper"] ?? ""
         editor: wallpaperField
 
@@ -122,6 +159,9 @@ ColumnLayout {
                 id: wallpaperPath
                 objectName: "appearanceWallpaperField"
                 Layout.fillWidth: true
+                // A typed path edits the everywhere wallpaper only; scoped
+                // choices come from the gallery and Add image….
+                visible: root.everywhereScope
                 enabled: root.appearanceSettings.canEdit && !root.editorBusy
                 error: root.appearanceSettings.fieldErrors["appearance.wallpaper"] !== undefined
                 accessibleName: qsTr("Wallpaper image file")
@@ -198,7 +238,8 @@ ColumnLayout {
     FormRow {
         Layout.fillWidth: true
         label: qsTr("Fit")
-        description: qsTr("Choose how the image fills the desktop")
+        description: root.scopesAvailable ? qsTr("Choose how images fill every display")
+                                          : qsTr("Choose how the image fills the desktop")
         editor: wallpaperModeButtons
 
         SegmentedChoiceRow {
@@ -216,6 +257,13 @@ ColumnLayout {
         }
     }
 
+    WallpaperAssignmentList {
+        Layout.fillWidth: true
+        rows: root.appearanceSettings.wallpaperAssignmentRows ?? []
+        editable: root.appearanceSettings.canEdit && !root.editorBusy
+        onRemoveRequested: (display, desktop) => root.appearanceSettings.clearWallpaperFor(display, desktop)
+    }
+
     FolderDialog {
         id: wallpaperFolderDialog
         title: qsTr("Choose wallpaper folder")
@@ -231,7 +279,7 @@ ColumnLayout {
         onAccepted: {
             const path = root.gallery?.importImage(selectedFile) ?? ""
             if (path.length > 0)
-                root.setDraft("appearance.wallpaper", path)
+                root.pickWallpaper(path)
         }
     }
 }

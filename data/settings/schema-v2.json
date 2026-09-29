@@ -35,6 +35,12 @@
       "constraints": { "allowedValues": ["scaled", "centered", "tiled"] }
     },
     {
+      "key": "appearance.wallpaperAssignments",
+      "domain": "appearance",
+      "type": "object",
+      "default": {}
+    },
+    {
       "key": "appearance.uiScale",
       "domain": "appearance",
       "type": "number",

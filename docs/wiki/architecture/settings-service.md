@@ -48,6 +48,10 @@ typed migration coverage proves active-v2 system defaults resolve them to
 The additive `appearance.iconTheme` string likewise defaults to empty (Follow
 theme); [ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md) records
 its installed-catalog admission and confirmed live icon presentation.
+The additive `appearance.wallpaperAssignments` object defaults to `{}` (every
+display shows `appearance.wallpaper`), so saved single wallpapers need no
+migration; [ADR-0286](../adr/0286-per-display-and-per-desktop-wallpapers.md)
+owns its strict shape and the precedence the shell paints.
 
 Object values are recursively normalized at every schema/layer/migration
 ingress to one restart-stable JSON domain. Null has one valid in-memory form,

@@ -22,7 +22,7 @@ One page covers the appearance preference set stored through Settings1:
 | --- | --- | --- |
 | Themes | A preview window (ADR-0127) painting the previewed theme's real window chrome around Fusion controls, over the draft wallpaper; twenty-one theme cards that choose the theme, matching light/dark scheme, and authored window/container chrome together, including three Corner Bar color and radius treatments and their dark twins (ADR-0281); **Fine tune this theme** opens the advanced controls described below; the **Translucency** and **Motion** switches; and the palette row naming each QPalette role on hover | `appearance.theme`, `appearance.colorScheme`, chrome keys below, `accessibility.reducedTransparency`, `accessibility.reducedMotion` |
 | Advanced theme details | A catalog of installed native and Aurorae KWin decorations with an explicit **Use decoration** action; a **Window decoration** chooser of decoration documents (ADR-0207) painted by the shared painter; QindaQt-only application-window controls and preview while QindaQt is selected; a **Container decoration** chooser and two-window container preview (ADR-0129, ADR-0160) | KWin `[org.kde.kdecoration2]` `library`/`theme`; Settings1 `appearance.windowDecoration`, `appearance.containerDecoration`, `appearance.windowButtonStyle`, `appearance.windowButtonSide`, `appearance.windowButtons`, `appearance.windowTitleAlignment`, `appearance.containerButtonStyle`, `appearance.containerButtonSide`, `appearance.containerTabOrder`, `appearance.containerButtonGlyphs`, and the ADR-0264 title-bar options `appearance.windowButtonSize`, `appearance.windowButtonSpacing`, `appearance.windowTitleHeight`, `appearance.windowCornerRadius`, `appearance.windowTitleWeight`, `appearance.windowAppIcon`, `appearance.windowRollUpButton`, `appearance.windowTitleDoubleClick`, `appearance.containerButtonSize`, `appearance.containerButtonSpacing`, `appearance.containerTitleDoubleClick`, and the ADR-0281 `appearance.containerTitleLayout` |
-| Wallpaper | Bundled previews (any of png/jpg/jpeg/webp/bmp beneath the wallpaper data directories, ADR-0228), native image chooser or local path, and scaled/centered/tiled mode | `appearance.wallpaper`, `appearance.wallpaperMode` |
+| Wallpaper | A **Show on** scope (all displays or one display from a miniature of the arrangement, and all desktops or one virtual desktop, ADR-0286), bundled previews (any of png/jpg/jpeg/webp/bmp beneath the wallpaper data directories, ADR-0228), native image chooser or local path, scaled/centered/tiled mode, and the list of separate wallpapers | `appearance.wallpaper`, `appearance.wallpaperMode`, `appearance.wallpaperAssignments` |
 | Fonts | Independent interface and installed fixed-width family pickers with live samples and saved/draft monospace state, size slider (6–36 pt), antialiasing, hinting, and subpixel choices | `fonts.family`, `fonts.monospaceFamily`, `fonts.pointSize`, `fonts.antialiasing`, `fonts.hinting`, `fonts.subpixelOrder` |
 
 Display scale belongs to the separate **Display** route, which owns the live
@@ -35,6 +35,25 @@ model's projections, never their own resolution: the preview paints the same
 path field adopts draft changes that come from the bundled grid, the "No
 wallpaper" choice, the file dialog, Revert, or a baseline rebase while
 leaving the user's own in-progress typing untouched.
+
+The **Show on** scope decides what the gallery edits
+([ADR-0286](../adr/0286-per-display-and-per-desktop-wallpapers.md)). With all
+displays and all desktops selected it edits `appearance.wallpaper` exactly as
+before, including the typed path field. Picking a display tile or a desktop
+makes the gallery, **No wallpaper** and **Add image…** save a choice for that
+scope in the same draft (the path field hides, since it names the everywhere
+wallpaper). A line under the picker says what the scope shows and where it
+comes from; **Stop using a separate wallpaper here** removes the scope's own
+choice. The saved list names every choice, including displays that are not
+connected and desktops that no longer exist, each with **Remove**. The route
+model resolves every answer through the shared precedence, so the preview is
+what the desktop paints. Displays come from snapshots of the public Display1
+client the Settings process already runs (ambiguous twins are shown but not
+selectable); desktop names come from a read-only workspace controller the
+composition root builds (`SettingsWallpaperTargets`). Without either, the
+scope simply offers less. An unreadable stored value is reported above the
+picker and replaced by the next explicit choice. **Fit** stays global. See
+[Wallpapers](../shell/wallpapers.md).
 
 The wallpaper gallery combines bundled images with a user folder, defaulting to
 `Pictures/Wallpapers` (using the XDG Pictures location). **Add image…** copies a

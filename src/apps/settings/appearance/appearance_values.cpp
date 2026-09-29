@@ -62,6 +62,9 @@ QStringList AppearanceKeys::scopedKeys()
     keys.append(Decoration::ChromePreferences::decorationKeys());
     keys.append(QLatin1String(ReducedTransparency));
     keys.append(QLatin1String(ReducedMotion));
+    // ADR-0286 last, so an Apply writes the everywhere wallpaper before the
+    // per-display and per-desktop choices layered on top of it.
+    keys.append(QLatin1String(WallpaperAssignments));
     return keys;
 }
 
@@ -300,6 +303,10 @@ AppearanceValues::fromVariantMap(const QVariantMap &values, QString *error)
         }
         decoded.*member = value.toBool();
     }
+    const auto choices = Services::WallpaperAssignments::WallpaperAssignments::decodeSettingsValue(
+        values.value(QLatin1String(AppearanceKeys::WallpaperAssignments)));
+    decoded.wallpaperAssignments =
+        choices.value.value_or(Services::WallpaperAssignments::WallpaperAssignments{});
 
     return decoded;
 }
@@ -325,6 +332,9 @@ QVariantMap AppearanceValues::toVariantMap() const
     map.insert(chrome.toSettingsValues());
     map.insert(QLatin1String(AppearanceKeys::ReducedTransparency), reducedTransparency);
     map.insert(QLatin1String(AppearanceKeys::ReducedMotion), reducedMotion);
+    map.insert(QLatin1String(AppearanceKeys::WallpaperAssignments),
+               Services::WallpaperAssignments::WallpaperAssignments::encodeSettingsValue(
+                   wallpaperAssignments));
     return map;
 }
 

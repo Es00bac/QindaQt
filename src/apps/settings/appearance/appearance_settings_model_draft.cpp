@@ -2,6 +2,7 @@
 #include "qindaqt/apps/settings_appearance/appearance_settings_model.h"
 
 #include <algorithm>
+#include <utility>
 
 namespace QindaQt::Apps::SettingsAppearance {
 
@@ -125,6 +126,14 @@ bool AppearanceSettingsModel::setDraftValue(const QString &key,
             || !next.chrome.setToken(key, value.toString())) {
             return false;
         }
+    } else if (key == QLatin1String(AppearanceKeys::WallpaperAssignments)) {
+        // ADR-0286: whole values only, and only through the strict shared
+        // codec; setWallpaperFor()/clearWallpaperFor() are the scoped edits.
+        if (value.metaType().id() != QMetaType::QVariantMap) return false;
+        auto decoded = Services::WallpaperAssignments::WallpaperAssignments::
+            decodeSettingsValue(value);
+        if (!decoded.ok()) return false;
+        next.wallpaperAssignments = std::move(*decoded.value);
     } else if (key == QLatin1String(AppearanceKeys::ReducedTransparency)) {
         if (value.metaType().id() != QMetaType::Bool) return false;
         next.reducedTransparency = value.toBool();

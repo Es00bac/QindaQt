@@ -2,6 +2,7 @@
 #pragma once
 
 #include "qindaqt/decoration_painter/decoration_painter.h"
+#include "qindaqt/services/wallpaper_assignments/wallpaper_assignments.h"
 
 #include <QLatin1String>
 #include <QMetaType>
@@ -24,6 +25,9 @@ inline constexpr QLatin1String IconTheme{"appearance.iconTheme"};
 inline constexpr QLatin1String ColorScheme{"appearance.colorScheme"};
 inline constexpr QLatin1String Wallpaper{"appearance.wallpaper"};
 inline constexpr QLatin1String WallpaperMode{"appearance.wallpaperMode"};
+// ADR-0286: per-display and per-desktop wallpaper choices (object value; the
+// shared codec in QindaQt::Services::WallpaperAssignments owns its shape).
+inline constexpr QLatin1String WallpaperAssignments{"appearance.wallpaperAssignments"};
 inline constexpr QLatin1String UiScale{"appearance.uiScale"};
 inline constexpr QLatin1String FontFamily{"fonts.family"};
 inline constexpr QLatin1String FontMonospaceFamily{"fonts.monospaceFamily"};
@@ -83,6 +87,12 @@ struct AppearanceValues final {
     // Reduce transparency / reduce motion (accessibility domain).
     bool reducedTransparency = false;
     bool reducedMotion = false;
+    // ADR-0286: choices beyond the everywhere `wallpaper`. Decoding is
+    // tolerant here (absent or unreadable reads as none) so one bad stored
+    // value never makes the whole route unavailable; the route model reports
+    // unreadable choices separately and edits always go through the strict
+    // codec.
+    Services::WallpaperAssignments::WallpaperAssignments wallpaperAssignments;
 
     [[nodiscard]] bool operator==(const AppearanceValues &) const = default;
 
