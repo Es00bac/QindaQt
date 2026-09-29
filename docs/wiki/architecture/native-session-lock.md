@@ -29,7 +29,10 @@ Every enabled desktop physical output presents a protected frame before
 No timeout manufactures success. Crash and output changes remain fenced; an
 authorized replacement can recover. Ordinary windows and desktop chrome cannot
 appear or receive input while locked. The compositor-owned input method is
-permitted only while a current explicit lock surface has keyboard focus.
+permitted only while a current explicit lock surface has keyboard focus. Native
+role graphics and input remain suppressed until the protected presentation
+barrier has acknowledged the lock; an early green buffer cannot satisfy the
+black-fallback barrier.
 
 The focused proof runs on private virtual outputs and a disposable D-Bus bus,
 with temporary HOME/XDG roots. Selected fixture socketpair peers receive access
@@ -38,3 +41,15 @@ fixture authorization. The fork README records commands and matrix coverage.
 The [testing harness](../development/testing-harness.md) records consumer gates.
 Physical DRM, greeter/PAM, service policy and live rollout remain later
 qualification boundaries.
+
+The PF6 candidate also fences capture. Screenshot APIs reject locked requests;
+screencast APIs reject new requests, close existing streams on acquisition and
+stop recording. Direct window/output/region sources render black to CPU or GL
+buffers while locked. The effects paint chain cannot replay cached ordinary
+window content over the protected scene. This policy protects ordinary content
+and does not export the greeter's authentication graphics.
+
+The fork's production build no longer discovers or links KScreenLocker. Its
+vendored public ScreenSaver XML retains the PF8 service boundary. This source
+change alone does not remove released package dependencies: the manager owns
+the coherent final source pin, greeter and service integration.
