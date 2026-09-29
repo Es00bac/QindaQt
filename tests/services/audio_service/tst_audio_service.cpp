@@ -6,6 +6,7 @@
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 #include <qindaqt/services/audio_protocol/audio_validation.h>
 
+#include <QtCore/QFile>
 #include <QtTest>
 
 #include <limits>
@@ -26,6 +27,7 @@ private Q_SLOTS:
     void malformedBackendFailsClosed();
     void rejectsStoppedSupersededAndRegressedBackendValues();
     void malformedBackendOutcomesBecomeProtocolValidFailures();
+    void residentUnitTemplateAllowsVbanNetworking();
 };
 
 void AudioServiceTests::publishesValidatedSnapshots()
@@ -426,6 +428,18 @@ void AudioServiceTests::malformedBackendOutcomesBecomeProtocolValidFailures()
         QVERIFY(validateOperationResult(result).accepted);
     }
     QCOMPARE(completed.count(), malformed.size());
+}
+
+// ADR-0185's 2026-09-28 amendment: the resident unit's own sandbox blocked
+// VBAN's AF_INET UDP socket until this line changed. Guard the template so a
+// future edit does not narrow it back to AF_UNIX alone.
+void AudioServiceTests::residentUnitTemplateAllowsVbanNetworking()
+{
+    QFile file(QStringLiteral(QINDAQT_AUDIO_SERVICE_UNIT_TEMPLATE));
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString content = QString::fromUtf8(file.readAll());
+    QVERIFY(content.contains(
+        QStringLiteral("RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6")));
 }
 
 QTEST_GUILESS_MAIN(AudioServiceTests)

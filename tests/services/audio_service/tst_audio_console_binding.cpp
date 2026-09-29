@@ -33,6 +33,7 @@ private Q_SLOTS:
     void aMacroRunsItsActionsAndStopsAtTheFirstRefusal();
     void aRecordingIsOneBusToOneFileAndWithdrawsOnFailure();
     void vbanStreamsAreSwitchedAndDeclaredOnlyWhenTheyCanRun();
+    void levelsDoNotClearPresetsMacrosRecordingOrVban();
 };
 
 // ADR-0174. A console that is not attached to the graph draws faders wired to
@@ -606,6 +607,79 @@ void AudioConsoleBindingTests::vbanStreamsAreSwitchedAndDeclaredOnlyWhenTheyCanR
     // The switch is the user's decision and persists with the console.
     QCOMPARE(coordinator.consoleModel().enabledVbanStreams(),
              (QStringList{QStringLiteral("Nowhere"), QStringLiteral("Laptop")}));
+}
+
+// Regression for the console-flicker bug: ConsoleModel::console() (what
+// acceptLevels reads at meter rate) never carries presets/macros/recording/
+// vban -- only republishConsole() projects those four fields. A meter update
+// must carry the previous snapshot's values forward rather than resetting
+// them to empty.
+void AudioConsoleBindingTests::levelsDoNotClearPresetsMacrosRecordingOrVban()
+{
+    QTemporaryDir dir;
+    qputenv("QINDAQT_AUDIO_RECORDING_DIR", dir.path().toUtf8());
+    const QString macroPath = dir.filePath(QStringLiteral("audio-macros.json"));
+    {
+        QFile file(macroPath);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        // AGENT-NOTE: MacroStore drops a macro with an empty actions array
+        // (macro_store.cpp), so this needs at least one syntactically valid
+        // action to be loaded and counted by names() -- it is never run here.
+        file.write(R"({"macros":[{"name":"Stream","actions":[
+            {"op":"strip.mute","strip":"strip.hw.1","on":true}]}]})");
+    }
+    FakeAudioBackend backend;
+    AudioOperationCoordinator coordinator(
+        &backend, nullptr, dir.filePath(QStringLiteral("presets")), macroPath,
+        dir.filePath(QStringLiteral("audio-vban.json")));
+    coordinator.start();
+    backend.publish(audioSnapshot());
+    const QString stripId = coordinator.snapshot().console.strips.at(0).id;
+    const QString busId = coordinator.snapshot().console.buses.at(0).id;
+
+    OperationRequest save;
+    save.kind = OperationKind::SavePreset;
+    save.displayName = QStringLiteral("Night");
+    QCOMPARE(coordinator.submit(save).immediateResult.status, OperationStatus::Succeeded);
+
+    OperationRequest record;
+    record.kind = OperationKind::StartRecording;
+    record.consoleId = busId;
+    record.displayName = QStringLiteral("wav");
+    QCOMPARE(coordinator.submit(record).immediateResult.status, OperationStatus::Succeeded);
+
+    VbanStream stream;
+    stream.name = QStringLiteral("Desk");
+    stream.outgoing = true;
+    stream.busId = busId;
+    stream.host = QStringLiteral("192.0.2.10");
+    OperationRequest upsert;
+    upsert.kind = OperationKind::UpsertVbanStream;
+    upsert.vbanDefinition = stream;
+    QCOMPARE(coordinator.submit(upsert).immediateResult.status, OperationStatus::Succeeded);
+
+    const Console before = coordinator.snapshot().console;
+    QCOMPARE(before.presets, QStringList{QStringLiteral("Night")});
+    QCOMPARE(before.macros, QStringList{QStringLiteral("Stream")});
+    QVERIFY(before.recording.active);
+    QCOMPARE(before.vban.size(), 1);
+
+    QSignalSpy snapshots(&coordinator, &AudioOperationCoordinator::snapshotChanged);
+    backend.publishLevels(
+        {LevelReading{stripId, Level{.peakDb = -4.0, .rmsDb = -11.0, .known = true}}});
+    // Meters must not trigger a full republish (see
+    // meterReadingsStreamWithoutTouchingLineage); the checks below can only
+    // pass here because acceptLevels() carried the four fields forward
+    // itself, not because a fresh republish recomputed them.
+    QCOMPARE(snapshots.count(), 0);
+
+    const Console after = coordinator.snapshot().console;
+    QCOMPARE(after.presets, before.presets);
+    QCOMPARE(after.macros, before.macros);
+    QCOMPARE(after.recording, before.recording);
+    QCOMPARE(after.vban, before.vban);
+
+    qunsetenv("QINDAQT_AUDIO_RECORDING_DIR");
 }
 
 QTEST_GUILESS_MAIN(AudioConsoleBindingTests)

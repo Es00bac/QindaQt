@@ -8,6 +8,11 @@ qt_add_executable(
 target_link_libraries(
     qindaqt_audio_service_tests PRIVATE QindaQt::AudioService Qt6::DBus Qt6::Test
 )
+target_compile_definitions(
+    qindaqt_audio_service_tests
+    PRIVATE
+        QINDAQT_AUDIO_SERVICE_UNIT_TEMPLATE="${CMAKE_SOURCE_DIR}/src/services/audio_service/data/qindaqt-audio-service.service.in"
+)
 qindaqt_enable_warnings(qindaqt_audio_service_tests)
 add_test(NAME qindaqt.audio-service COMMAND qindaqt_audio_service_tests)
 set_tests_properties(qindaqt.audio-service PROPERTIES LABELS "service;audio")
