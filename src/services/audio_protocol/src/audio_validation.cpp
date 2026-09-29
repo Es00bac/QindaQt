@@ -125,14 +125,15 @@ bool stripProcessingActive(const StripProcessing &p) noexcept
 
 bool busProcessingActive(const BusProcessing &p) noexcept
 {
-    return p.equalizer.enabled || p.mode != BusMode::Normal;
+    return p.equalizer.enabled || p.mode != BusMode::Normal || p.delayMs > 0;
 }
 
 bool validBusProcessing(const BusProcessing &processing)
 {
     return validEqualizer(processing.equalizer)
         && (processing.mode == BusMode::Normal || processing.mode == BusMode::SwapChannels
-            || processing.mode == BusMode::LeftToBoth || processing.mode == BusMode::RightToBoth);
+            || processing.mode == BusMode::LeftToBoth || processing.mode == BusMode::RightToBoth)
+        && within(processing.delayMs, kMinBusDelayMs, kMaxBusDelayMs);
 }
 
 bool validStripProcessing(const StripProcessing &processing)
