@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "session_activation_policy.h"
+
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QFile>
 #include <QFileInfo>
 
@@ -7,7 +10,8 @@ namespace QindaQt::SessionSupervisor {
 SessionActivationScope activationScopeForCompositor(
     const QString &executable, const QStringList &arguments, const QString &processName)
 {
-    const QString expected = QStringLiteral("kwin_wayland");
+    // Only QindaQt's own compositor (ADR-0291) starts the physical session.
+    const QString expected = QString(CompositorNames::executable);
     const bool hasIdentity = !executable.isEmpty()
         ? QFileInfo(executable).fileName() == expected
         : processName == expected && !arguments.isEmpty()

@@ -23,7 +23,7 @@ identity. The exact values and limits are in
 ## Authority boundary
 
 Pinned KWin 6.6.5 remains the sole live-output and restore authority. It owns
-the active topology and its private `kwinoutputconfig.json` store. QindaQt must
+the active topology and its private `qindaqt/kwinoutputconfig.json` store. QindaQt must
 not read, write, watch, or recreate that store.
 
 The resident Display1 process is the only component allowed to become a

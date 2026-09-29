@@ -40,27 +40,27 @@ wait_for() { # wait_for <name> <seconds> <command...>
     return 1
 }
 
-if wait_for kwin 90 busctl --user call org.kde.KWin /KWin org.freedesktop.DBus.Peer Ping; then
+if wait_for kwin 90 busctl --user call org.qindaqt.KWin /org/qindaqt/KWin org.freedesktop.DBus.Peer Ping; then
     note "VERIFIED kwin_started socket=$SOCKET pid=$KWIN_PID"
 else
     note "FAILED kwin_did_not_start pid_alive=$(kill -0 "$KWIN_PID" 2>/dev/null && echo yes || echo no); see kwin.log"
     kill "$PROBE" 2>/dev/null
     exit 1
 fi
-evidence kwin-services busctl --user tree org.kde.KWin
-evidence kwin-support busctl --user call org.kde.KWin /KWin org.kde.KWin supportInformation
+evidence kwin-services busctl --user tree org.qindaqt.KWin
+evidence kwin-support busctl --user call org.qindaqt.KWin /org/qindaqt/KWin org.qindaqt.KWin supportInformation
 note "kglobalaccel owner: $(busctl --user status org.kde.kglobalaccel 2>/dev/null | sed -n 's/^.*PID: */kwin? /p' || echo unknown)"
 
 # --- Question 1: does KWin persist D-Bus device property writes? ----------
-DEVS=$(busctl --user call org.kde.KWin /org/kde/KWin/InputDevice \
-    org.kde.KWin.InputDeviceManager ListPointers 2>/dev/null | tr ' ' '\n' | grep -c event || true)
+DEVS=$(busctl --user call org.qindaqt.KWin /org/qindaqt/KWin/InputDevice \
+    org.qindaqt.KWin.InputDeviceManager ListPointers 2>/dev/null | tr ' ' '\n' | grep -c event || true)
 note "private-session pointer devices seen: $DEVS"
 if [ "$DEVS" -ge 1 ]; then
-    DEV=$(busctl --user call org.kde.KWin /org/kde/KWin/InputDevice \
-        org.kde.KWin.InputDeviceManager ListPointers | tr ' ' '\n' | grep event | head -1)
-    evidence device-introspect "busctl --user introspect org.kde.KWin /org/kde/KWin/InputDevice/$DEV org.kde.KWin.InputDevice"
-    busctl --user call org.kde.KWin "/org/kde/KWin/InputDevice/$DEV" \
-        org.freedesktop.DBus.Properties Set ssb org.kde.KWin.InputDevice naturalScroll true
+    DEV=$(busctl --user call org.qindaqt.KWin /org/qindaqt/KWin/InputDevice \
+        org.qindaqt.KWin.InputDeviceManager ListPointers | tr ' ' '\n' | grep event | head -1)
+    evidence device-introspect "busctl --user introspect org.qindaqt.KWin /org/qindaqt/KWin/InputDevice/$DEV org.qindaqt.KWin.InputDevice"
+    busctl --user call org.qindaqt.KWin "/org/qindaqt/KWin/InputDevice/$DEV" \
+        org.freedesktop.DBus.Properties Set ssb org.qindaqt.KWin.InputDevice naturalScroll true
     sleep 3
     if [ -f "$XDG_CONFIG_HOME/kcminputrc" ]; then
         note "VERIFIED kwin_writes_kcminputrc_on_dbus_set"
@@ -87,7 +87,7 @@ note "layouts after kxkbrc write only: $(layouts)"
 if layouts | grep -q de; then
     note "VERIFIED kxkbrc_reloads_via_file_watch_only"
 else
-    busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure
+    busctl --user call org.qindaqt.KWin /org/qindaqt/KWin org.qindaqt.KWin reconfigure
     sleep 4
     note "layouts after reconfigure: $(layouts)"
     if layouts | grep -q de; then
@@ -107,7 +107,7 @@ RepeatRate=25
 NumLock=0
 EOF
 sleep 3
-busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure 2>/dev/null
+busctl --user call org.qindaqt.KWin /org/qindaqt/KWin org.qindaqt.KWin reconfigure 2>/dev/null
 sleep 2
 if grep -qi "repeat" "$PROOF/kwin-support.txt"; then
     note "VERIFIED repeat_visible_in_supportinformation"

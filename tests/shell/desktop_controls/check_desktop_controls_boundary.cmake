@@ -17,7 +17,7 @@ file(GLOB qml_sources "${SOURCE_ROOT}/src/shell/desktop_controls/qml/*.qml"
 set(forbidden_cpp
     "<QDBus" "QtDBus" "QDBusConnection" "<KWin" "kwin/" "LayerShellQt"
     "shellruntimeapplication" "<QProcess>" "QProcess::" "startDetached"
-    "qt_workspace_transport" "org.kde.KWin")
+    "qt_workspace_transport" "org.qindaqt.KWin" "org.kde.KWin")
 set(forbidden_qml
     "import QtQuick.Controls 2" "#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]\""
     "popupType: T.Popup.Item" "Qt.createQmlObject")

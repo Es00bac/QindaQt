@@ -139,7 +139,7 @@ Pointer input reaches Hybrid policy through three deliberately separate paths:
   restore KWin behavior without being overwritten on later logins.
 - Exact `Meta+Shift+Left` (by default; `windowManagement.dockingModifier`
   swaps Meta for Alt or Ctrl, keeps Shift in every chord, or disables pointer
-  docking entirely, live through the kwinrc bridge of
+  docking entirely, live through the qindaqt/kwinrc bridge of
   [ADR-0209](../adr/0209-bridge-window-management-settings-into-kwinrc.md))
   acquires the compositor input grab after an
   eight-logical-pixel threshold. It can start anywhere on an independent or

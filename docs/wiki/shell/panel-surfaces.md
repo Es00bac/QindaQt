@@ -311,7 +311,7 @@ chord deliverable to a focus-less layer-shell panel: KWin sends keyboard
 modifiers to the pointer-focused surface, and its `[MouseBindings]`
 `CommandAll3` window action (default `Resize`) runs on layer-shell windows
 too and would consume the press, so `qindaqt-wm` seeds
-`CommandAll3=Nothing` in `kwinrc` (seed-missing only; a user's own binding
+`CommandAll3=Nothing` in `qindaqt/kwinrc` (seed-missing only; a user's own binding
 wins). On the panel the chord is a modifier branch of the existing right-click
 `MouseArea`; on a chip it is a `TapHandler` in `AppletEditHandle` that takes
 the exclusive grab on press so the applet beneath never also opens its own

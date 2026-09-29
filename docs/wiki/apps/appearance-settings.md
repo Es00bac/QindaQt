@@ -77,9 +77,12 @@ card, scheme, or font change shows before Apply. Without a widgets application
 (headless tests) the client area degrades to flat palette rows.
 
 The advanced details in Themes read the real KWin decoration selection separately.
-It discovers valid Aurorae theme directories from the standard XDG data roots
-and supported native plugins from Qt's plugin roots. Applying one choice
-preserves unrelated `kwinrc` keys and synchronously requests KWin reconfigure.
+It discovers supported native plugins in qindaqt-kwin's decoration namespace
+(`qindaqt-kwin/decorations` below Qt's plugin roots) and valid Aurorae theme
+directories from the standard XDG data roots, but lists Aurorae themes only
+when an Aurorae plugin exists in that namespace: stock Breeze and Aurorae are
+plugins of stock KWin and never load in the fork (ADR-0291). Applying one choice
+preserves unrelated `qindaqt/kwinrc` keys and synchronously requests KWin reconfigure.
 QindaQt's renderer is shown only for QindaQt; a foreign plugin's authoritative
 preview is the Settings window's own frame after apply. Container chrome is
 always available because the QindaQt compositor owns that renderer regardless
@@ -207,7 +210,7 @@ without discarding confirmed state:
    directories win duplicate IDs, while unique built-ins remain present; an
    invalid theme fails closed and no themes exits 3 instead of rendering
    token-less controls;
-5. construct the KWin-decoration controller with the user's `kwinrc`, standard
+5. construct the KWin-decoration controller with the user's `qindaqt/kwinrc`, standard
    Aurorae data roots, and the bounded KWin reconfigure call; it performs no
    write until the user explicitly invokes **Use decoration**;
 6. bind the engine-owned `QindaQt.Tokens` singleton, hand it to the model,

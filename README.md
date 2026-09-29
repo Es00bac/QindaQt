@@ -74,9 +74,8 @@ purpose:
 | --- | --- | --- |
 | Qt | 6.11 or newer, including Core, DBus, Gui, QML, Quick, Quick Controls, SVG, Test, and Widgets | `qt6-base 6.11.1-1`, `qt6-declarative 6.11.1-3`, `qt6-svg 6.11.1-1`, `qt6-wayland 6.11.1-1` |
 | Extra CMake Modules | 6.0 or newer | `extra-cmake-modules 6.27.0-1` |
-| KWin | **6.6.6 exactly** | `kwin 6.6.6` (Gentoo `kde-plasma/kwin-6.6.6`) |
+| qindaqt-kwin (QindaQt's KWin fork, [ADR-0291](docs/wiki/adr/0291-run-on-qindaqt-kwin.md)) | **6.6.6.1 exactly** (`QindaQtKWin`, `QindaQtKWinDecoration`) | Gentoo `gui-wm/qindaqt-kwin-6.6.6_p1`; source hub `qinda:~/git/qindaqt-kwin.git` |
 | Plasma Activities | **6.6.6 exactly** | `plasma-activities 6.6.6` |
-| KDecoration3 | 6.6 or newer | `kdecoration 6.6.6` |
 | LayerShellQt | 6.6.6 or newer | `layer-shell-qt 6.6.6` |
 | KF6 CoreAddons and GlobalAccel | 6.0 or newer | `kcoreaddons 6.27.0-1`, `kglobalaccel 6.27.0-1` |
 | XDG desktop portal runtime | 1.20 or newer; QindaQt supplies only Settings | `xdg-desktop-portal` plus at least one of `xdg-desktop-portal-kde`, `xdg-desktop-portal-gtk`, or `xdg-desktop-portal-lxqt` for explicitly routed fallback families |
@@ -86,9 +85,11 @@ purpose:
 | Qt image formats | WebP/TIFF plugins for Viewer, alongside Qt SVG | `qt6-imageformats` on Arch; `dev-qt/qtimageformats` on Gentoo |
 
 You'll also need CMake 3.25 or newer, Ninja, Python 3 for the tests, and a
-C++20 compiler. KWin and Plasma Activities are pinned to exact versions
-because QindaQt ships a native KWin plugin — a newer patch or minor release
-is not assumed to be binary compatible.
+C++20 compiler. The qindaqt-kwin fork and Plasma Activities are pinned to exact
+versions because QindaQt ships a native compositor plugin — another fork
+release is not assumed to be binary compatible. The fork installs beside a
+stock KWin and never shares its files. A distribution KWin only serves the
+bridge-only configuration below.
 
 On an Arch-derived system:
 
@@ -113,9 +114,9 @@ Viewer is verified on the native development machines. QindaTK source is
 [available on GitHub](https://github.com/Es00bac/QindaTK). Full desktop packages
 keep Viewer enabled.
 
-Rolling repositories may already have moved past KWin 6.6.6. If so, the
-default presets need a coherent 6.6.6 package snapshot or cache — don't
-force CMake past its exact ABI check. You can still build and test the
+Without an installed qindaqt-kwin the default presets cannot configure the
+native plugin — don't force CMake past its exact ABI check. You can still
+build and test the
 production panel client on a current rolling stack without the native
 plugin, using an explicit bridge-only configuration:
 

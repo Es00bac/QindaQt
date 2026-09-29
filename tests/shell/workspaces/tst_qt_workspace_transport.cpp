@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// The authenticated KWin workspace adapter against a fake `org.kde.KWin` on a
+// The authenticated KWin workspace adapter against a fake `org.qindaqt.KWin` on a
 // private dbus-daemon. Both ends live in this process, so the bus-daemon PID
 // of the fake equals getpid(): the positive case injects that PID, the
 // negative case injects a different one. The host session bus is never used.
@@ -86,10 +86,10 @@ private:
   QString m_address;
 };
 
-// Fake org.kde.KWin.VirtualDesktopManager at /VirtualDesktopManager.
+// Fake org.qindaqt.KWin.VirtualDesktopManager at /VirtualDesktopManager.
 class FakeDesktopManager final : public QObject {
   Q_OBJECT
-  Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.VirtualDesktopManager")
+  Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.VirtualDesktopManager")
   Q_PROPERTY(uint count READ count)
   Q_PROPERTY(QString current READ current WRITE setCurrent)
   Q_PROPERTY(uint rows READ rows)
@@ -126,10 +126,10 @@ Q_SIGNALS:
   void countChanged(uint count);
 };
 
-// Fake org.kde.KWin at /KWin.
+// Fake org.qindaqt.KWin at /KWin.
 class FakeKWin final : public QObject {
   Q_OBJECT
-  Q_CLASSINFO("D-Bus Interface", "org.kde.KWin")
+  Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin")
   Q_PROPERTY(bool showingDesktop READ showingDesktop)
 
 public:
@@ -164,7 +164,7 @@ struct FakeCompositor {
   {
     if (connection.isConnected()) {
       (void)connection.unregisterService(QStringLiteral("org.qindaqt.Compositor"));
-      (void)connection.unregisterService(QStringLiteral("org.kde.KWin"));
+      (void)connection.unregisterService(QStringLiteral("org.qindaqt.KWin"));
     }
     QDBusConnection::disconnectFromBus(connectionName);
   }
@@ -173,11 +173,11 @@ struct FakeCompositor {
   {
     const auto options = QDBusConnection::ExportAllProperties
         | QDBusConnection::ExportAllSignals | QDBusConnection::ExportAllSlots;
-    if (!connection.registerObject(QStringLiteral("/VirtualDesktopManager"), &desktops, options)
-        || !connection.registerObject(QStringLiteral("/KWin"), &kwin, options)) {
+    if (!connection.registerObject(QStringLiteral("/org/qindaqt/KWin/VirtualDesktopManager"), &desktops, options)
+        || !connection.registerObject(QStringLiteral("/org/qindaqt/KWin"), &kwin, options)) {
       return false;
     }
-    if (!connection.registerService(QStringLiteral("org.kde.KWin"))) {
+    if (!connection.registerService(QStringLiteral("org.qindaqt.KWin"))) {
       return false;
     }
     return !registerPeer || connection.registerService(QStringLiteral("org.qindaqt.Compositor"));
@@ -261,7 +261,7 @@ void QtWorkspaceTransportTests::authenticatedOwnerReadsSwitchesAndShowsDesktop()
 
   // A request to the well-known name or a foreign unique name is refused
   // locally: only the bound unique owner is ever called.
-  transport.requestSwitch(15, QStringLiteral("org.kde.KWin"), QStringLiteral("uuid-a"));
+  transport.requestSwitch(15, QStringLiteral("org.qindaqt.KWin"), QStringLiteral("uuid-a"));
   QTRY_COMPARE(finishedSpy.size(), 3);
   QCOMPARE(finishedSpy.constLast().at(2).toBool(), false);
   QCOMPARE(finishedSpy.constLast().at(3).toString(), QStringLiteral("owner-not-bound"));

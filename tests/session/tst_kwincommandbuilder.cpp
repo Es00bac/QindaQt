@@ -34,7 +34,7 @@ void KWinCommandBuilderTest::buildsVirtualXWaylandSession()
     QString error;
     const auto command = KWinCommandBuilder::build(options, &error);
     QVERIFY2(!command.isEmpty(), qPrintable(error));
-    QCOMPARE(command.constFirst(), QStringLiteral("kwin_wayland"));
+    QCOMPARE(command.constFirst(), QStringLiteral("qindaqt-kwin"));
     QVERIFY(command.contains(QStringLiteral("--virtual")));
     QVERIFY(command.contains(QStringLiteral("--xwayland")));
     QCOMPARE(command[command.indexOf(QStringLiteral("--width")) + 1], QStringLiteral("2560"));
