@@ -1,10 +1,10 @@
 # ADR-0107: Delegate Print to Spectacle
 
-- **Status:** Accepted
+- **Status:** Superseded
 - **Date:** 2026-09-07
 - **Owners:** Session and platform
 - **Supersedes:** the Print decision in [ADR-0100](0100-own-desktop-essentials-in-a-session-process.md)
-- **Superseded by:** None
+- **Superseded by:** [ADR-0289](0289-native-screenshot-and-record-tool.md)
 
 ## Context
 

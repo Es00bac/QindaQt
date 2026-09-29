@@ -42,7 +42,7 @@ qt_add_qml_module(
 )
 target_link_libraries(
     qindaqt_settings_streaming_backend_qml
-    PRIVATE qindaqt_settings_streaming QindaQt::TokensQml
+    PRIVATE qindaqt_settings_streaming QindaQt::ScreenshotPreferences QindaQt::TokensQml
             Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml Qt6::Quick
 )
 set_target_properties(qindaqt_settings_streaming_backend_qml PROPERTIES
@@ -62,6 +62,7 @@ qt_add_qml_module(
     TYPEINFO qindaqt_settings_streaming.qmltypes
     QML_FILES
         qml/StreamingBusMappingSection.qml
+        qml/StreamingCaptureSection.qml
         qml/StreamingOutputsSection.qml
         qml/StreamingPage.qml
 )
@@ -94,6 +95,7 @@ install(
         "${QINDAQT_STREAMING_QML_OUTPUT_DIRECTORY}/qmldir"
         "${QINDAQT_STREAMING_QML_OUTPUT_DIRECTORY}/qindaqt_settings_streaming.qmltypes"
         qml/StreamingBusMappingSection.qml
+        qml/StreamingCaptureSection.qml
         qml/StreamingOutputsSection.qml
         qml/StreamingPage.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Streaming"

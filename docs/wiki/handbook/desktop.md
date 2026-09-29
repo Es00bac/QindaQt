@@ -251,6 +251,10 @@ confirms and **Esc** cancels.
 | `Meta+Shift+C` | Show or hide the member title strips QindaQt draws (for this session) |
 | `Meta+Shift+F1` | Show or hide the desktop shortcut note |
 | `Meta+N` | Open the notification center |
+| `Print` / `Meta+Shift+Print` | Screenshot of a region ([Screenshot](../apps/screenshot.md)) |
+| `Shift+Print` | Screenshot of every screen |
+| `Alt+Print` | Screenshot of the active window |
+| `Meta+Alt+R` | Start or stop an OBS recording |
 | `Meta+L` | Lock the screen (owned by KWin's session management component) |
 
 One rule worth knowing: while a window is grouped, its frame belongs to the
