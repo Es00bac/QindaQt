@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 add_library(qindaqt_session_support STATIC
+    compositorconfigimport.cpp
+    compositorconfigimport.h
     installpaths.cpp
     installpaths.h
     kwincommandbuilder.cpp
@@ -19,7 +21,7 @@ add_library(QindaQt::SessionSupport ALIAS qindaqt_session_support)
 
 target_compile_features(qindaqt_session_support PUBLIC cxx_std_20)
 target_include_directories(qindaqt_session_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(qindaqt_session_support PUBLIC Qt6::Core)
+target_link_libraries(qindaqt_session_support PUBLIC Qt6::Core QindaQt::CompositorNames)
 target_compile_definitions(
     qindaqt_session_support
     # AGENT-CONTRACT: The launcher binary is an installed-session component.
@@ -70,12 +72,12 @@ install(
     COMPONENT QindaQt
 )
 
-# KWin owns switching and focus; this package supplies QindaQt presentation
-# over its public TabBox model. SessionDefaults selects it only for users who
-# have not already chosen a switcher layout.
+# qindaqt-kwin owns switching and focus; this package supplies QindaQt
+# presentation over its public TabBox model. AGENT-CONTRACT: the fork's
+# default switcher layout is "qindaqt" in qindaqt-kwin/tabbox (ADR-0289).
 install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/data/kwin/tabbox/qindaqt/"
-    DESTINATION "${KDE_INSTALL_DATADIR}/kwin/tabbox/qindaqt"
+    DESTINATION "${KDE_INSTALL_DATADIR}/qindaqt-kwin/tabbox/qindaqt"
     COMPONENT QindaQt
 )
 

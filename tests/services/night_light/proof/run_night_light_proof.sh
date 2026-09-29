@@ -6,7 +6,7 @@
 #
 # 1. starts a virtual KWin on socket qq-gap-night-light-0 with a private
 #    config directory;
-# 2. reads the baseline org.kde.KWin.NightLight properties;
+# 2. reads the baseline org.qindaqt.KWin.NightLight properties;
 # 3. writes Active=true, Mode=Constant, NightTemperature=3400 through the
 #    production QtConfigNightLightPort (never by hand-editing the file);
 # 4. watches currentTemperature move to 3400 over the private bus;
@@ -37,8 +37,8 @@ fail() {
 }
 
 get_prop() {
-    busctl --user get-property org.kde.KWin.NightLight \
-        /org/kde/KWin/NightLight "org.kde.KWin.NightLight" "$1" 2>/dev/null \
+    busctl --user get-property org.qindaqt.KWin.NightLight \
+        /org/qindaqt/KWin/NightLight "org.qindaqt.KWin.NightLight" "$1" 2>/dev/null \
         | awk '{print $2}'
 }
 
@@ -89,15 +89,15 @@ trap cleanup EXIT
 SERVICE_UP=0
 for _ in $(seq 1 120); do
     if busctl --user list --no-legend 2>/dev/null \
-        | grep -q "org.kde.KWin.NightLight"; then
+        | grep -q "org.qindaqt.KWin.NightLight"; then
         SERVICE_UP=1
         break
     fi
     sleep 0.5
 done
 if [ "${SERVICE_UP}" -ne 1 ]; then
-    fail "org.kde.KWin.NightLight never appeared on the private bus"
-    busctl --user tree org.kde.KWin \
+    fail "org.qindaqt.KWin.NightLight never appeared on the private bus"
+    busctl --user tree org.qindaqt.KWin \
         > "${PROOF_DIR}/00-kwin-tree.txt" 2>&1 || true
     busctl --user list \
         > "${PROOF_DIR}/00-bus-names.txt" 2>&1 || true
@@ -105,7 +105,7 @@ if [ "${SERVICE_UP}" -ne 1 ]; then
     wait "${KWIN_PID}" 2>/dev/null
     exit 1
 fi
-log "org.kde.KWin.NightLight is on the private bus"
+log "org.qindaqt.KWin.NightLight is on the private bus"
 
 # ------------------------------------------------------------------ baseline
 {
@@ -155,7 +155,7 @@ sleep 1
 # requests KWin's documented reconfigure call on the PRIVATE compositor so
 # the reload is deterministic even where KConfigWatcher delivery is not.
 log "requesting KWin reconfigure on the private compositor"
-busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure \
+busctl --user call org.qindaqt.KWin /org/qindaqt/KWin org.qindaqt.KWin reconfigure \
     >> "${PROOF_DIR}/02-write-outcome.txt" 2>&1 \
     && log "reconfigure call ok"
 log "watching currentTemperature until 4500 (30 s budget)"
@@ -181,8 +181,8 @@ ENABLED=$(get_prop enabled)
 log "preview(2700) then stopPreview"
 {
     echo "preview $(date -Iseconds)"
-    busctl --user call org.kde.KWin.NightLight /org/kde/KWin/NightLight \
-        org.kde.KWin.NightLight preview u 2700 \
+    busctl --user call org.qindaqt.KWin.NightLight /org/qindaqt/KWin/NightLight \
+        org.qindaqt.KWin.NightLight preview u 2700 \
         && echo "preview call ok"
 } > "${PROOF_DIR}/04-preview.log" 2>&1
 PREVIEW_OK=0
@@ -195,8 +195,8 @@ for _ in $(seq 1 20); do
 done
 [ "${PREVIEW_OK}" = "1" ] \
     || fail "currentTemperature never reached the 2700 K preview"
-busctl --user call org.kde.KWin.NightLight /org/kde/KWin/NightLight \
-    org.kde.KWin.NightLight stopPreview >> "${PROOF_DIR}/04-preview.log" 2>&1 \
+busctl --user call org.qindaqt.KWin.NightLight /org/qindaqt/KWin/NightLight \
+    org.qindaqt.KWin.NightLight stopPreview >> "${PROOF_DIR}/04-preview.log" 2>&1 \
     && echo "stopPreview call ok" >> "${PROOF_DIR}/04-preview.log"
 
 # ------------------------------------------------------------ inhibit scope

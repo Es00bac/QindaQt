@@ -75,9 +75,9 @@ def write_kwinrc_entries(entries: dict[str, dict[str, str]]) -> str:
 
 
 def reconfigure_kwin() -> None:
-    """The bridge's own signal: org.kde.KWin.reconfigure on the session bus."""
-    proxy = dbus.SessionBus().get_object("org.kde.KWin", "/KWin")
-    dbus.Interface(proxy, "org.kde.KWin").reconfigure()
+    """The bridge's own signal: org.qindaqt.KWin.reconfigure on the session bus."""
+    proxy = dbus.SessionBus().get_object("org.qindaqt.KWin", "/org/qindaqt/KWin")
+    dbus.Interface(proxy, "org.qindaqt.KWin").reconfigure()
     time.sleep(1.0)
 
 

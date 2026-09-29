@@ -30,6 +30,7 @@ target_link_libraries(
     qindaqt_window_management_bridge
     PUBLIC
         QindaQt::SettingsClient
+        QindaQt::CompositorNames
         KF6::ConfigCore
         Qt6::Core
         Qt6::DBus

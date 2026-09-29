@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "compositorconfigimport.h"
 #include "kwincommandbuilder.h"
 #include "sessioncommandline.h"
 #include "sessionbusbootstrap.h"
@@ -151,6 +152,16 @@ int main(int argc, char *argv[])
     auto configHome = qEnvironmentVariable("XDG_CONFIG_HOME");
     if (configHome.isEmpty()) {
         configHome = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+    }
+    auto stateHome = qEnvironmentVariable("XDG_STATE_HOME");
+    if (stateHome.isEmpty()) {
+        stateHome = QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation);
+    }
+    // ADR-0289: carry the user's KDE KWin settings into qindaqt-kwin's files
+    // once, before the seeds fill what is still missing.
+    if (!QindaQt::Session::CompositorConfigImport::run(configHome, stateHome, nullptr, &error)) {
+        QTextStream(stderr) << "qindaqt-wm: " << error << '\n';
+        return 2;
     }
     if (!QindaQt::Session::SessionDefaults::ensure(configHome, &error)) {
         QTextStream(stderr) << "qindaqt-wm: " << error << '\n';

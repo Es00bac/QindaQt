@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The bridge end to end on a private bus: the real Settings1 resident
 // service, a real purpose-scoped client, the real KConfig writer, and a
-// fake org.kde.KWin that counts reconfigure calls.
+// fake org.qindaqt.KWin that counts reconfigure calls.
 #include "qindaqt/session/window_management/kwin_reconfigure_requester.h"
 #include "qindaqt/session/window_management/kwin_window_management_writer.h"
 #include "qindaqt/session/window_management/window_management_apply_state_service.h"
@@ -40,7 +40,7 @@ namespace {
 class FakeKWin final : public QObject
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin")
 public:
     int reconfigures = 0;
 public Q_SLOTS:
@@ -122,8 +122,8 @@ void WindowManagementBridgeTest::confirmedSettingsBecomeKwinrcAndOneReconfigure(
     QVERIFY(service.start().ok());
 
     FakeKWin kwin;
-    QVERIFY(kwinBus.registerObject(QStringLiteral("/KWin"), &kwin, QDBusConnection::ExportAllSlots));
-    QVERIFY(kwinBus.registerService(QStringLiteral("org.kde.KWin")));
+    QVERIFY(kwinBus.registerObject(QStringLiteral("/org/qindaqt/KWin"), &kwin, QDBusConnection::ExportAllSlots));
+    QVERIFY(kwinBus.registerService(QStringLiteral("org.qindaqt.KWin")));
 
     const QString kwinrcPath = directory.filePath(QStringLiteral("kwinrc"));
     const KWinWindowManagementWriter kwinrc(kwinrcPath);

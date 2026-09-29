@@ -66,11 +66,11 @@ set_target_properties(
 )
 qindaqt_enable_warnings(qindaqt-wayland-pointer-constraints-probe)
 
-# AGENT-CONTRACT: KDecoration3 publishes the relative plugin directory used by
+# AGENT-CONTRACT: QindaQtKWinDecoration (qindaqt-kwin, ADR-0289) publishes the relative plugin directory used by
 # both the production install rule and this staged-install contract check.
-find_package(KDecoration3 6.6 REQUIRED CONFIG)
+find_package(QindaQtKWinDecoration 6.6.6.1 EXACT REQUIRED CONFIG)
 
-foreach(test_name IN ITEMS installpaths kwincommandbuilder sessioncommandline sessionbusbootstrap sessiondefaults sessionenvironment)
+foreach(test_name IN ITEMS compositorconfigimport installpaths kwincommandbuilder sessioncommandline sessionbusbootstrap sessiondefaults sessionenvironment)
     add_executable(tst_${test_name} tst_${test_name}.cpp)
     target_compile_features(tst_${test_name} PRIVATE cxx_std_20)
     target_link_libraries(tst_${test_name} PRIVATE QindaQt::SessionSupport Qt6::Test)
@@ -283,7 +283,10 @@ set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
 
 find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session)
 find_program(QINDAQT_BUSCTL busctl)
-find_program(QINDAQT_KWIN_WAYLAND kwin_wayland)
+# QindaQt's compositor is qindaqt-kwin (ADR-0289). AGENT-NOTE: stock kwin_wayland
+# stays acceptable only for rows that prove the public layer-shell boundary on a
+# distribution KWin (the CI production-shell lane); QindaQt's plugin never loads there.
+find_program(QINDAQT_KWIN_WAYLAND NAMES qindaqt-kwin kwin_wayland)
 find_program(QINDAQT_XDPYINFO xdpyinfo)
 find_program(QINDAQT_XWAYLAND Xwayland)
 find_program(QINDAQT_WESTON weston)

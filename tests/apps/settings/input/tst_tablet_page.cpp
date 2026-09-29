@@ -351,7 +351,7 @@ void TabletPageTest::noTabletShowsTheHonestEmptyState() {
 void TabletPageTest::anUnreachableAuthorityShowsTheDegradedNotice() {
     facade = std::make_unique<TestTabletFacade>();
     facade->tabletPort.listError =
-        QStringLiteral("Input authority org.kde.KWin is not reachable");
+        QStringLiteral("Input authority org.qindaqt.KWin is not reachable");
     buildPage();
     QVERIFY(isShown(QStringLiteral("tabletDegraded")));
     // Degraded is not the same claim as "no tablet is connected".

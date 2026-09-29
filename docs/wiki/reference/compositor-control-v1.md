@@ -117,7 +117,7 @@ close, or rollback; neither field is silently substituted for the other.
 `serverDecorated` reports whether KWin attached a server decoration, and
 `decorationClass` is the live decoration instance's Qt meta-object class (empty
 when no server decoration exists). These fields distinguish a mapped
-`QindaDecoration` from artifact discovery or `kwinrc` selection alone.
+`QindaDecoration` from artifact discovery or `qindaqt/kwinrc` selection alone.
 `active`, `skipTaskbar`, and `skipSwitcher` expose KWin's current presentation
 policy. `stackIndex` is the window's absolute zero-based index in
 `Workspace::stackingOrder()`, ordered bottom to top, or `-1` if a managed

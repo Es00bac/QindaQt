@@ -25,10 +25,10 @@ struct WorkspaceAuthority {
   QString peerServiceName = QStringLiteral("org.qindaqt.Compositor");
 };
 
-// Narrow adapter over KWin's public `org.kde.KWin` and
-// `org.kde.KWin.VirtualDesktopManager` D-Bus surface (ADR-0075).
+// Narrow adapter over KWin's public `org.qindaqt.KWin` and
+// `org.qindaqt.KWin.VirtualDesktopManager` D-Bus surface (ADR-0075).
 //
-// AGENT-CONTRACT: the adapter binds the exact unique owner of `org.kde.KWin`
+// AGENT-CONTRACT: the adapter binds the exact unique owner of `org.qindaqt.KWin`
 // only after `GetConnectionUnixProcessID` for that owner equals the injected
 // compositor PID (or the peer service owner's PID). Every method call and
 // signal subscription then targets that unique owner, never the well-known

@@ -130,11 +130,11 @@ void KeyboardConfigPortTest::reloadFailureIsReportedSeparately()
 
 void KeyboardConfigPortTest::announcesTheChangeToARunningDesktop()
 {
-    // A stand-in for the running desktop owns org.kde.KWin on a private bus;
+    // A stand-in for the running desktop owns org.qindaqt.KWin on a private bus;
     // a second connection listens exactly where KWin's config watcher does.
     QindaQt::Tests::PrivateBus bus;
     QVERIFY(bus.start());
-    QVERIFY(bus.connection.registerService(QStringLiteral("org.kde.KWin")));
+    QVERIFY(bus.connection.registerService(QStringLiteral("org.qindaqt.KWin")));
     const QString listenerName = QStringLiteral("kcminputrc-listener");
     QindaQt::Tests::ConfigChangeListener listener;
     QVERIFY(listener.listen(QDBusConnection::connectToBus(bus.address, listenerName),
@@ -160,7 +160,7 @@ void KeyboardConfigPortTest::announcesTheChangeToARunningDesktop()
 void KeyboardConfigPortTest::withoutADesktopTheChangeWaitsForTheNextSession()
 {
     // Negative control: the file is durable, but with nobody owning
-    // org.kde.KWin the port must not claim a live change.
+    // org.qindaqt.KWin the port must not claim a live change.
     QindaQt::Tests::PrivateBus bus;
     QVERIFY(bus.start());
     QVERIFY(QDir(m_dir.path()).mkpath(QStringLiteral("nodesktop")));
@@ -176,7 +176,7 @@ void KeyboardConfigPortTest::relocatedFileNamesAreNeverAnnounced()
 {
     QindaQt::Tests::PrivateBus bus;
     QVERIFY(bus.start());
-    QVERIFY(bus.connection.registerService(QStringLiteral("org.kde.KWin")));
+    QVERIFY(bus.connection.registerService(QStringLiteral("org.qindaqt.KWin")));
     const QString listenerName = QStringLiteral("relocated-listener");
     QindaQt::Tests::ConfigChangeListener listener;
     QVERIFY(listener.listen(QDBusConnection::connectToBus(bus.address, listenerName),

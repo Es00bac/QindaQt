@@ -39,6 +39,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_settings_appearance
+    PRIVATE QindaQt::CompositorNames
     # TokenFacade's implementation lives in the shared QindaQt.Tokens QML
     # module library; the static DesignTokens value library does not carry it.
     # qindaqt_native_palette projects the same tokens into the QPalette that

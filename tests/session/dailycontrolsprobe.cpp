@@ -38,9 +38,9 @@ namespace {
 
 constexpr auto AudioService = "org.qindaqt.Audio1";
 constexpr auto GlobalAccelService = "org.kde.kglobalaccel";
-constexpr auto KWinService = "org.kde.KWin";
-constexpr auto KWinCompositingPath = "/Compositor";
-constexpr auto KWinCompositingInterface = "org.kde.kwin.Compositing";
+constexpr auto KWinService = "org.qindaqt.KWin";
+constexpr auto KWinCompositingPath = "/org/qindaqt/KWin/Compositor";
+constexpr auto KWinCompositingInterface = "org.qindaqt.KWin.Compositing";
 constexpr auto ShellEvidenceService = "org.qindaqt.ShellDevelopment";
 constexpr auto ShellEvidencePath = "/org/qindaqt/ShellDevelopment";
 constexpr auto ShellEvidenceInterface = "org.qindaqt.ShellDevelopment1";

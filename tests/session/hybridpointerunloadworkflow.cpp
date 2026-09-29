@@ -27,11 +27,11 @@ namespace QindaQt::Test {
 namespace {
 
 constexpr auto CompositorService = "org.qindaqt.Compositor";
-constexpr auto KWinService = "org.kde.KWin";
-constexpr auto KWinPath = "/KWin";
-constexpr auto KWinInterface = "org.kde.KWin";
-constexpr auto PluginPath = "/Plugins";
-constexpr auto PluginInterface = "org.kde.KWin.Plugins";
+constexpr auto KWinService = "org.qindaqt.KWin";
+constexpr auto KWinPath = "/org/qindaqt/KWin";
+constexpr auto KWinInterface = "org.qindaqt.KWin";
+constexpr auto PluginPath = "/org/qindaqt/KWin/Plugins";
+constexpr auto PluginInterface = "org.qindaqt.KWin.Plugins";
 constexpr auto PluginId = "qindaqt_compositor";
 
 bool await(const std::function<bool()> &condition,
