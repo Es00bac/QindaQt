@@ -51,7 +51,8 @@ void KWinHybridSession::initializeApplicationPlacement() {
         // restoring it before a fallible request would change unrelated state
         // even if placement failed. Ordinary restored windows need no pre-edit.
         if (m_memberPolicy && !m_memberPolicy->focusStates().isEmpty())
-          return refuse(QStringLiteral("restore member focus before placement"));
+          return refuse(
+              QStringLiteral("restore member focus before placement"));
         const auto result = m_runtime->execute(*plan.command);
         if (!result.topologyChanged())
           return ApplicationPlacementResult{

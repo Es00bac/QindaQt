@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <QApplication>
 #include <QLabel>
+#include <QPointer>
 #include <QShortcut>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -29,10 +30,13 @@ int main(int argc, char **argv) {
         window));
     const auto create = [&, window](Placement mode) {
       auto *created = makeWindow();
-      QTimer::singleShot(0, created, [&, window, created, mode] {
+      QPointer<QWidget> guardedSource = window;
+      QTimer::singleShot(0, created, [&, guardedSource, created, mode] {
+        if (!guardedSource)
+          return;
         QString error;
-        if (!placement.place(window->windowHandle(), created->windowHandle(),
-                             mode, &error)) {
+        if (!placement.place(guardedSource->windowHandle(),
+                             created->windowHandle(), mode, &error)) {
           std::fprintf(stderr, "placement unavailable: %s\n",
                        qPrintable(error));
           if (exercise)
