@@ -3,9 +3,9 @@
   "fork": {
     "project": "qindaqt-kwin",
     "repository": "qinda:git/qindaqt-kwin.git",
-    "branch": "feature/qindaqt-kwin",
-    "commit": "0dd2fdb802c6dfdecb4771942b05788a8aa386b5",
-    "tree": "97ade09fdc536f6293b74d2114aaf04a699e9351",
+    "branch": "main",
+    "commit": "cf6cce994285e4c14996f669e8c1a8c5124f4a25",
+    "tree": "d768eb808658d4c337fdddda4b4b74bf8367d126",
     "version": "6.6.6.1",
     "package": "gui-wm/qindaqt-kwin-6.6.6_p1"
   },

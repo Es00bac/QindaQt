@@ -1,3 +1,36 @@
+## 2026-09-29 — Native lock server and capture/input fence (PF5–PF6)
+
+Fork main/hub is `cf6cce99`; consumer docs candidate `9a943c41` is preserved
+in the qinda hub and integrated here. KScreenLocker discovery/linkage is
+removed from the fork. Native session-lock acknowledgement waits for actual
+physical output presentation; crash, output changes, input roles, effects,
+and screenshot/screencast entry points stay fenced. The metadata source pin
+now names this exact fork commit and tree.
+
+Manager exact native CTest passed 1/1; the worker inspected 23/23 Qt checks,
+zero failure/skip. Production compositor, screenshot and screencast built
+with test authorization OFF and KScreenLocker discovery disabled; direct
+KScreenLocker NEEDED and exported test authorization counts are both zero.
+PF7 private compositor-launched locker/PAM trust, PF8 Lock1/ScreenSaver,
+installed trusted-greeter qualification, physical DRM and real PipeWire
+consumer revocation remain open. No desktop package or live lock was used.
+
+## 2026-09-29 — Native power preferences integrated (PF1)
+
+PF1 source candidate `151dce49` plus manager preservation repair `c29a285c`
+adds Settings1-native per-source power preferences and one-time bounded
+PowerDevil import. Second-resolution durations, disabled critical action,
+shutdown-on-lid, sleep variants, and explicit native override precedence are
+preserved. Import and marker commit atomically after service-name ownership;
+malformed/missing sources and persistence failures remain retryable. No power
+actions execute yet. PF2–PF4 runtime, presentation, and retirement remain open.
+
+Candidate evidence: native five-target build and four focused CTests passed,
+strict MkDocs and 436-document repository validation passed. Manager reruns
+the same focused gates on the integrated tree before committing this boundary.
+No desktop package was installed. Only qinda-top needs interactive reserve;
+qinda may use all 24 CPU threads, with memory monitoring against OOM.
+
 # Integration handoff
 
 ## September 28: RESUME HERE (Claude ⇄ Codex program handoff, kept current)

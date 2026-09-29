@@ -687,6 +687,367 @@
       }
     },
     {
+      "key": "power.lid.ac.action",
+      "domain": "power",
+      "type": "string",
+      "default": "suspend",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate",
+          "lock",
+          "screen-off",
+          "power-off"
+        ]
+      }
+    },
+    {
+      "key": "power.lid.ac.dockedAction",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate",
+          "lock",
+          "screen-off",
+          "power-off"
+        ]
+      }
+    },
+    {
+      "key": "power.idle.ac.displayOffEnabled",
+      "domain": "power",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "power.idle.ac.displayOffSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 600,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.idle.ac.dimEnabled",
+      "domain": "power",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "power.idle.ac.dimSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 300,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.idle.ac.lockBeforeDisplayOff",
+      "domain": "power",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "power.idle.ac.suspendAction",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate"
+        ]
+      }
+    },
+    {
+      "key": "power.idle.ac.suspendSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 1800,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.profile.ac",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "power-saver",
+          "balanced",
+          "performance"
+        ]
+      }
+    },
+    {
+      "key": "power.lid.battery.action",
+      "domain": "power",
+      "type": "string",
+      "default": "suspend",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate",
+          "lock",
+          "screen-off",
+          "power-off"
+        ]
+      }
+    },
+    {
+      "key": "power.lid.battery.dockedAction",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate",
+          "lock",
+          "screen-off",
+          "power-off"
+        ]
+      }
+    },
+    {
+      "key": "power.idle.battery.displayOffEnabled",
+      "domain": "power",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "power.idle.battery.displayOffSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 600,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.idle.battery.dimEnabled",
+      "domain": "power",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "power.idle.battery.dimSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 300,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.idle.battery.lockBeforeDisplayOff",
+      "domain": "power",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "power.idle.battery.suspendAction",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate"
+        ]
+      }
+    },
+    {
+      "key": "power.idle.battery.suspendSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 1800,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.profile.battery",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "power-saver",
+          "balanced",
+          "performance"
+        ]
+      }
+    },
+    {
+      "key": "power.lid.lowBattery.action",
+      "domain": "power",
+      "type": "string",
+      "default": "suspend",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate",
+          "lock",
+          "screen-off",
+          "power-off"
+        ]
+      }
+    },
+    {
+      "key": "power.lid.lowBattery.dockedAction",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate",
+          "lock",
+          "screen-off",
+          "power-off"
+        ]
+      }
+    },
+    {
+      "key": "power.idle.lowBattery.displayOffEnabled",
+      "domain": "power",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "power.idle.lowBattery.displayOffSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 600,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.idle.lowBattery.dimEnabled",
+      "domain": "power",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "power.idle.lowBattery.dimSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 300,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.idle.lowBattery.lockBeforeDisplayOff",
+      "domain": "power",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "power.idle.lowBattery.suspendAction",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "suspend",
+          "hibernate"
+        ]
+      }
+    },
+    {
+      "key": "power.idle.lowBattery.suspendSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 1800,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "power.profile.lowBattery",
+      "domain": "power",
+      "type": "string",
+      "default": "none",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "power-saver",
+          "balanced",
+          "performance"
+        ]
+      }
+    },
+    {
+      "key": "power.idle.screensaverMinutes",
+      "domain": "power",
+      "type": "integer",
+      "default": 5,
+      "constraints": {
+        "minimum": 1,
+        "maximum": 240
+      }
+    },
+    {
+      "key": "power.critical.action",
+      "domain": "power",
+      "type": "string",
+      "default": "suspend",
+      "constraints": {
+        "allowedValues": [
+          "none",
+          "hibernate",
+          "suspend",
+          "power-off"
+        ]
+      }
+    },
+    {
+      "key": "power.critical.countdownSeconds",
+      "domain": "power",
+      "type": "integer",
+      "default": 30,
+      "constraints": {
+        "minimum": 5,
+        "maximum": 300
+      }
+    },
+    {
+      "key": "power.migration.powerDevilImported",
+      "domain": "power",
+      "type": "boolean",
+      "default": false
+    },
+    {
       "key": "input.touch.enabled",
       "domain": "input",
       "type": "boolean",
@@ -781,6 +1142,45 @@
           "overview",
           "notifications",
           "task-switcher"
+        ]
+      }
+    },
+    {
+      "key": "power.sleep.ac.mode",
+      "domain": "power",
+      "type": "string",
+      "default": "suspend",
+      "constraints": {
+        "allowedValues": [
+          "suspend",
+          "hybrid-sleep",
+          "suspend-then-hibernate"
+        ]
+      }
+    },
+    {
+      "key": "power.sleep.battery.mode",
+      "domain": "power",
+      "type": "string",
+      "default": "suspend",
+      "constraints": {
+        "allowedValues": [
+          "suspend",
+          "hybrid-sleep",
+          "suspend-then-hibernate"
+        ]
+      }
+    },
+    {
+      "key": "power.sleep.lowBattery.mode",
+      "domain": "power",
+      "type": "string",
+      "default": "suspend",
+      "constraints": {
+        "allowedValues": [
+          "suspend",
+          "hybrid-sleep",
+          "suspend-then-hibernate"
         ]
       }
     }

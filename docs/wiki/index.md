@@ -63,6 +63,8 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Audio service](architecture/audio-service.md) records the typed Audio1
   model/client/service boundary, confined WirePlumber adapter, activation, and
   isolated-runtime qualification.
+- [Native power policy](architecture/power-policy.md) defines the Settings1
+  schema and safe one-time PowerDevil preference import.
 - [Power and brightness](architecture/power-service.md) records the accepted
   Power1, shell-action, fail-closed backlight, and session-bound activation
   architecture, including the resident service, live upstream adapters,
