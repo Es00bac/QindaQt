@@ -158,6 +158,10 @@ QQuickItem *TabletAreaEditorTest::load(const QByteArray &type,
                                  "import QindaQt.SettingsApp.Input\n") +
                           type + QByteArray(" { objectName: \"subject\" }\n"),
                       QUrl(QStringLiteral("qindaqt-test://tablet-area")));
+    // Same as the page row: the module's imports may resolve asynchronously.
+    (void)QTest::qWaitFor(
+        [&component] { return component.status() != QQmlComponent::Loading; },
+        10000);
     if (component.status() != QQmlComponent::Ready) {
         qWarning("component: %s", qPrintable(component.errorString()));
         return nullptr;
