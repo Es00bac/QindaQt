@@ -35,6 +35,8 @@ informational line for each skipped entry. `--no-polkit-agent` leaves these
 entries eligible so a distribution agent may run. This is
 [ADR-0290](../adr/0290-native-polkit-agent-and-single-agent-rule.md).
 
+When an installed native keyring is selected, actual `gnome-keyring-daemon` Exec entries are superseded; labels, arguments and desktop filenames do not identify the provider. An absent native owner leaves these entries eligible. See [native keyring daemon](keyring-daemon.md).
+
 [Startup Settings](../apps/startup-settings.md) reads this catalog and only
 writes user overrides. Its Enabled switch describes next-login configuration;
 an ineligibility line explains why a configured entry will not execute.

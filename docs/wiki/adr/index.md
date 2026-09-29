@@ -309,3 +309,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0290: Native QindaQt polkit agent, and a single-agent autostart rule](0290-native-polkit-agent-and-single-agent-rule.md)
 - [ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork](0291-run-on-qindaqt-kwin.md)
 - [ADR-0292: Own a bounded native keyring storage core](0292-native-keyring-storage.md)
+
+- [ADR-0296: Own a native Secret Service daemon and session boundary](0296-native-keyring-daemon-boundary.md)

@@ -60,7 +60,6 @@ qt_add_executable(
     main.cpp
     polkit_listener.cpp
     polkit_listener.h
-    polkit_overlay_surface.cpp
     polkit_overlay_surface.h
 )
 qt_add_qml_module(
@@ -78,7 +77,7 @@ target_link_libraries(
         qindaqt_polkit_agent_appearance
         PolkitQt6-1::Core
         PolkitQt6-1::Agent
-        LayerShellQt::Interface
+        QindaQt::AuthenticationOverlay
         QindaQt::SettingsClient
         QindaQt::ShellIcons
         QindaQt::TokensQml
@@ -166,7 +165,6 @@ if(BUILD_TESTING)
     qt_add_executable(
         qindaqt_polkit_dialog_qml_tests
         tests/tst_polkit_dialog_qml.cpp
-        polkit_overlay_surface.cpp
         polkit_overlay_surface.h
     )
     target_include_directories(
@@ -184,7 +182,7 @@ if(BUILD_TESTING)
         PRIVATE
             qindaqt_polkit_agent_core
             qindaqt_polkit_agent_appearance
-            LayerShellQt::Interface
+            QindaQt::AuthenticationOverlay
             QindaQt::TokensQml
             qindaqt_themes
             Qt6::Quick
