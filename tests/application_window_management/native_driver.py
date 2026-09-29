@@ -15,7 +15,15 @@ def main():
         evidence={"snapshots":[],"mappedLibraries":sorted({line.split()[-1] for line in Path(f"/proc/{os.getppid()}/maps").read_text().splitlines() if "qindaqt_compositor.so" in line})}
         try:
             while child.poll() is None and time.monotonic()<deadline:
-                evidence["snapshots"].append({"hybrid":control.hybrid(),"windows":control.windows()})
+                snapshot = {"hybrid": control.hybrid(), "windows": control.windows()}
+                evidence["snapshots"].append(snapshot)
+                # AGENT-GUARD: Qt destroys surfaces before process exit. A
+                # trailing shutdown snapshot is not the committed result of
+                # the requests. Retain post-completion live scene evidence.
+                expected = {"Native placement probe " + str(i) for i in (1, 2, 3, 6)}
+                if ("NATIVE_PLACEMENT_COMPLETED" in (output / "probe.log").read_text()
+                        and expected.issubset(snapshot["windows"])):
+                    evidence["completionSnapshot"] = snapshot
                 time.sleep(.15)
             if child.poll() is None: child.kill()
             evidence["probeExit"]=child.wait(timeout=3)

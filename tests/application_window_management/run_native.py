@@ -30,7 +30,10 @@ def main():
     mapped=str((args.plugin_root/"qindaqt-kwin"/"plugins"/"qindaqt_compositor.so").resolve())
     # Read-only scene evidence verifies membership, active tab and tiled frames;
     # completion events alone would miss a transport that reported false success.
-    last=evidence["snapshots"][-1]
+    last=evidence.get("completionSnapshot")
+    if last is None:
+        print("No live post-completion scene evidence", file=sys.stderr)
+        return 1
     windows=last["windows"]
     members=[windows.get("Native placement probe "+str(i),{}) for i in (1,2,3)]
     owners={value.get("containerId") for value in members}

@@ -143,3 +143,8 @@ fork executable basename and uses private HOME/XDG/bus roots with host portal
 activation disabled. It never reads owner passwords or drives the live desktop.
 Session-lock denial follows the fork's lock state; these no-lockscreen virtual
 scenes do not qualify physical lock/input/capture behavior.
+
+The native driver retains a live post-completion snapshot while the probe
+windows still exist; Qt surface teardown before process exit is not treated as
+the result of a completed placement request. Both output rows require that
+completion fence as well as the mapped plugin and actual scene geometry.
