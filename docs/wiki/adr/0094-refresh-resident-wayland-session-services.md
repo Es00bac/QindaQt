@@ -127,6 +127,19 @@ installed binary on the next call. Private scope never signals anything.
 `qindaqt.session-resident-service-refresh` covers the replaced, current and
 Private cases with a child process that owns a test name.
 
+## Amendment 2026-09-28: restart a PipeWire that no longer answers
+
+A PipeWire daemon stopped answering new clients (idle in epoll, every
+`pw-cli`/`wpctl` connection timed out) and, living in the persistent user
+manager, survived two logins; dictation recorded silence. Before
+`refreshResidentServices`, the supervisor now calls
+`refreshUnresponsivePipeWire`: one bounded `pw-cli info 0` round trip (3 s),
+and only when it does not answer, `RestartUnit` for `pipewire.service`,
+`wireplumber.service` and `pipewire-pulse.service`, in that order, through the
+same manager route and scope rules. Audio1 is refreshed afterwards, so it and
+every recorder reconnect to a daemon that answers. No pw-cli means no restart.
+Private scope never signals the shared manager.
+
 ## Revisit when
 
 A future resident service opens its own Wayland connection, independently

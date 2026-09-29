@@ -4,6 +4,8 @@
 #include <QStringList>
 #include <QtDBus/QDBusConnection>
 
+#include <functional>
+
 namespace QindaQt::SessionSupervisor {
 // AGENT-GUARD: Private scope (the default) never mutates the shared broker or
 // user manager without an explicit hermetic endpoint. Only the witnessed
@@ -51,5 +53,26 @@ bool refreshResidentServices(const QDBusConnection &bus,
                              const QStringList &unitNames,
                              const QString &systemdPrivateSocketPath = {},
                                   SessionActivationScope scope = SessionActivationScope::Private);
+
+// AGENT-NOTE (2026-09-28): a PipeWire daemon that stopped answering new
+// clients survived two logins in the persistent user manager; every later
+// recording captured nothing and dictation recognized nothing. These are the
+// units of the audio stack, in restart order.
+[[nodiscard]] QStringList pipeWireStackUnits();
+
+// One bounded client round trip (`pw-cli info 0`). True when PipeWire answered,
+// and also when there is no pw-cli to ask: the stack is never restarted blindly.
+[[nodiscard]] bool pipeWireAnswers(int timeoutMilliseconds = 3'000);
+
+// Restarts pipeWireStackUnits() on the user manager when `answers` reports a
+// daemon that does not answer; returns true only when a restart was requested.
+// Route and scope rules are refreshResidentServices'; Private scope never
+// touches the shared manager without an explicit socket. AGENT-CONTRACT:
+// qindaqt-session calls this before refreshResidentServices, so Audio1 and
+// every recorder reconnect to a daemon that answers.
+bool refreshUnresponsivePipeWire(const QDBusConnection &bus,
+                                 const std::function<bool()> &answers,
+                                 const QString &systemdPrivateSocketPath = {},
+                                 SessionActivationScope scope = SessionActivationScope::Private);
 
 } // namespace QindaQt::SessionSupervisor

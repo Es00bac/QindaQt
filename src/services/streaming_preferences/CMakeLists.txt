@@ -21,7 +21,18 @@ set_target_properties(qindaqt-obs-login PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-obs-login)
 install(TARGETS qindaqt-obs-login RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     COMPONENT StreamingRuntime)
-# Absolute sysconf destination follows the default /etc/xdg root that A02
-# reads when XDG_CONFIG_DIRS is unset; DESTDIR still stages it for packaging.
-install(FILES data/qindaqt-obs-login.desktop DESTINATION "/etc/xdg/autostart"
-    COMPONENT StreamingRuntime)
+# AGENT-GUARD: a system prefix installs into the /etc/xdg root A02 reads when
+# XDG_CONFIG_DIRS is unset; any other prefix (the staged-install tests) keeps
+# the entry under that prefix. The choice is made at install time because
+# `cmake --install --prefix` cannot redirect an absolute DESTINATION, which
+# made every staged install try to write the real /etc. file(INSTALL) still
+# honors DESTDIR for packaging.
+install(CODE "
+    if(CMAKE_INSTALL_PREFIX MATCHES \"^/(usr(/local)?)?/?$\")
+        set(_qindaqt_autostart_dir \"/etc/xdg/autostart\")
+    else()
+        set(_qindaqt_autostart_dir \"\${CMAKE_INSTALL_PREFIX}/etc/xdg/autostart\")
+    endif()
+    file(INSTALL DESTINATION \"\${_qindaqt_autostart_dir}\" TYPE FILE
+         FILES \"${CMAKE_CURRENT_SOURCE_DIR}/data/qindaqt-obs-login.desktop\")
+" COMPONENT StreamingRuntime)

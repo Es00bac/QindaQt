@@ -46,7 +46,7 @@ Item {
     signal applicationCloseResolved()
     signal routeConstructed(string routeId, string state)
     readonly property bool customizeDeparturePending:
-        host.presentationActive && host.customizeSettings?.dirty
+        host.presentationActive && (host.customizeSettings?.dirty ?? false)
         && host.navigation?.activeRouteComponent !== "customize"
 
     readonly property Loader currentLoader: customizeDeparturePending
@@ -145,7 +145,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "notifications"
         sourceComponent: host.notificationsComponent
     }
@@ -156,7 +156,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "appearance"
         sourceComponent: host.appearanceComponent
     }
@@ -167,7 +167,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "display"
                 && host.displayComponent !== null
         sourceComponent: host.displayComponent
@@ -179,7 +179,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "network"
                 && host.networkComponent !== null
         sourceComponent: host.networkComponent
@@ -190,7 +190,7 @@ Item {
         objectName: host.objectNamePrefix + "CustomizeLoader"
         anchors.fill: parent
         active: host.presentationActive
-                && ((host.navigation?.activeRouteAvailable
+                && (((host.navigation?.activeRouteAvailable ?? false)
                      && host.navigation?.activeRouteComponent === "customize")
                     || host.customizeDeparturePending
                     || host.applicationClosePending)
@@ -219,7 +219,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "audio"
                 && host.audioComponent !== null
         sourceComponent: host.audioComponent
@@ -231,7 +231,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "bluetooth"
                 && host.bluetoothComponent !== null
         sourceComponent: host.bluetoothComponent
@@ -243,7 +243,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "power"
                 && host.powerComponent !== null
         sourceComponent: host.powerComponent
@@ -255,7 +255,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "clipboard"
                 && host.clipboardComponent !== null
         sourceComponent: host.clipboardComponent
@@ -267,7 +267,7 @@ Item {
         anchors.fill: parent
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "color"
                 && host.colorComponent !== null
         sourceComponent: host.colorComponent
@@ -282,7 +282,7 @@ Item {
         // explicit unavailable notice instead of binding against null.
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "accessibility"
                 && host.accessibilityComponent !== null
                 && host.accessibilitySettings !== null
@@ -299,7 +299,7 @@ Item {
         // when the input authorities are unreachable (ADR-0134).
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "input"
                 && host.inputComponent !== null
         sourceComponent: host.inputComponent
@@ -317,7 +317,7 @@ Item {
         // degraded truth when any of them is absent.
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "streaming"
                 && host.streamingComponent !== null
         sourceComponent: host.streamingComponent
@@ -332,7 +332,7 @@ Item {
         // the platform clock service cannot be reached (ADR-0211).
         active: host.presentationActive
                 && !host.customizeDeparturePending
-                && host.navigation?.activeRouteAvailable
+                && (host.navigation?.activeRouteAvailable ?? false)
                 && host.navigation?.activeRouteComponent === "datetime"
                 && host.dateTimeComponent !== null
         sourceComponent: host.dateTimeComponent

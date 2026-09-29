@@ -8,14 +8,18 @@ import QindaQt.Controls 1.0 as Controls
 Item {
     required property var navigation
     readonly property Item firstFocusTarget: unavailableNotice
+    // The navigation object can be absent while the window is torn down; a
+    // missing reason then reads as empty text instead of a TypeError.
+    readonly property string unavailableReason:
+        navigation?.activeRouteUnavailableReason ?? ""
 
     Controls.DegradedNotice {
         id: unavailableNotice
         objectName: "settingsUnavailableNotice"
         anchors.centerIn: parent
         width: Math.min(parent.width - Tokens.space["6"] * 2, 380)
-        reason: navigation.activeRouteUnavailableReason.length > 0
-            ? navigation.activeRouteUnavailableReason
+        reason: unavailableReason.length > 0
+            ? unavailableReason
             : qsTr("This settings page is unavailable.")
     }
 }

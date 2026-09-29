@@ -100,6 +100,10 @@ int main(int argc, char *argv[])
     const auto activationScope = witnessedSessionActivationScope(*compositorProcessId);
     publishActivationEnvironment(QDBusConnection::sessionBus(),
                                  QProcessEnvironment::systemEnvironment(), {}, activationScope);
+    // AGENT-CONTRACT: before Audio1 is refreshed, so Audio1 and every recorder
+    // reconnect to a PipeWire that answers (resident_service_refresh.h).
+    static_cast<void>(refreshUnresponsivePipeWire(
+        QDBusConnection::sessionBus(), [] { return pipeWireAnswers(); }, {}, activationScope));
     // AGENT-CONTRACT: must run after publishActivationEnvironment (so the
     // restarted unit reads the just-published environment) and before any
     // desktop consumer starts. See resident_service_refresh.h.
