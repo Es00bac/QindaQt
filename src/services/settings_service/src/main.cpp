@@ -58,8 +58,12 @@ int main(int argc, char **argv)
                                 .filePath(QStringLiteral("qindaqt/settings-v2.json"));
     const QString profileDefaults = schemas
                                     + QStringLiteral("/profile-defaults/qindaqt.json");
+    const QString powerDevilPreferences =
+        QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
+            .filePath(QStringLiteral("powerdevilrc"));
     ResidentSettingsService service(sessionBus, std::move(*active),
-                                    std::move(*legacy), profileDefaults, storage);
+                                    std::move(*legacy), profileDefaults, storage,
+                                    powerDevilPreferences);
     const auto started = service.start();
     if (!started.ok()) {
         std::fprintf(stderr, "qindaqt-settings-service: %s: %s\n",

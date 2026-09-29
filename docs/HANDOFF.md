@@ -1,3 +1,19 @@
+## 2026-09-29 — Native power preferences integrated (PF1)
+
+PF1 source candidate `151dce49` plus manager preservation repair `c29a285c`
+adds Settings1-native per-source power preferences and one-time bounded
+PowerDevil import. Second-resolution durations, disabled critical action,
+shutdown-on-lid, sleep variants, and explicit native override precedence are
+preserved. Import and marker commit atomically after service-name ownership;
+malformed/missing sources and persistence failures remain retryable. No power
+actions execute yet. PF2–PF4 runtime, presentation, and retirement remain open.
+
+Candidate evidence: native five-target build and four focused CTests passed,
+strict MkDocs and 436-document repository validation passed. Manager reruns
+the same focused gates on the integrated tree before committing this boundary.
+No desktop package was installed. Only qinda-top needs interactive reserve;
+qinda may use all 24 CPU threads, with memory monitoring against OOM.
+
 # Integration handoff
 
 ## September 28: RESUME HERE (Claude ⇄ Codex program handoff, kept current)
