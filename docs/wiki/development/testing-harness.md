@@ -4054,3 +4054,18 @@ omits `--plugin-root`. `session.installed-plugin-stage` uses a minimal real CMak
 fixture to prove relative artifacts and an absolute destination remain staged,
 including when the caller already has a different `DESTDIR`; it also checks
 cleanup and artifact escape refusals. See the [release gates](releases.md).
+
+## Native lock server candidate gates
+
+The fork runs `qindaqt/tools/run-native-lock build/bin/testNativeSessionLock`
+in a private virtual compositor with disposable HOME/XDG roots and D-Bus.
+Its selected socketpair clients are authorized only in a compile-time build
+that refuses installation. Production has no test authorization switch.
+
+PF5 gates protocol visibility despite the general debug bypass, actual
+presentation on all enabled physical outputs before `locked`, explicit roles,
+crash persistence and replacement unlock. PF6 requires protocol-error, ordinary
+input, lock input, topology and input-method coverage before dropping the
+KScreenLocker build dependency. Exact completed rows belong in the candidate
+handoff; tests do not authenticate PAM or qualify physical DRM.
+See [Native session locking](../architecture/native-session-lock.md).

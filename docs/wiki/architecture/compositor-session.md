@@ -699,3 +699,10 @@ cover backend classification, absence of shared broker/manager writes, physical
 native routing, and the explicit fake endpoint.
 
 [ADR-0276](../adr/0276-isolate-private-desktops-from-host-activation.md) records this isolation decision.
+
+## Native lock authority migration
+
+The fork server and native client/service boundaries are defined by
+[Native session locking](native-session-lock.md) and
+[ADR-0294](../adr/0294-native-session-lock-authority.md). Candidate server proof
+does not replace released greeter/PAM/session-service readiness.
