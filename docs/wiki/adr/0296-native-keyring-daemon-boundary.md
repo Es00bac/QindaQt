@@ -99,3 +99,11 @@ The current contracts and executable gates are on
 The supervisor decomposition review moves unchanged read-only diagnostics to a separate implementation file. New keyring lifetime policy remains a dedicated collaborator; existing orchestration stays below the hard source-size limit.
 
 [ADR-0300](0300-trusted-native-keyring-pam.md) defines the later PAM token-delivery authority: the existing same-UID control boundary is unchanged, but automatic login tokens require the exact protected system-owned daemon invocation.
+
+The later system-owner boundary adds Keyring1.AttachSessionWithDisplay without
+changing legacy AttachSession. A display collaborator joins one session/compositor
+unique-owner lineage to the actual owned Unix peer and kernel pidfd. Prompt
+processes inherit an already validated ordinary Wayland connection; owner/dead-peer
+loss cancels approval, and no pathname reconnect or locker capability sharing is
+permitted. A system-launched broker has no prompt authority until this binding.
+Native rendering/output qualification remains separate from private peer tests.

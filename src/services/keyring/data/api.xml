@@ -52,6 +52,7 @@
 </interface>
 <interface name="org.qindaqt.Keyring1">
 <method name="AttachSession"><arg type="b" direction="out"/></method>
+<method name="AttachSessionWithDisplay"><arg type="s" direction="in"/><arg type="b" direction="out"/></method>
 <method name="Shutdown"/>
 <method name="ChangePassword"><arg type="o" direction="in"/><arg type="(oayays)" direction="in"/><arg type="(oayays)" direction="in"/><arg type="b" direction="out"/></method>
 <signal name="CollectionStateChanged"><arg type="o"/><arg type="b"/><arg type="b"/></signal>

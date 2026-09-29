@@ -85,7 +85,8 @@ authentication and new derivation.
 ## Native control and session lifetime
 
 Keyring1 provides `ListCollections() -> a{sv}`, `ChangePassword(o,secret,secret)
--> b`, `AttachSession() -> b` and `Shutdown()`. ChangePassword requires two
+-> b`, `AttachSession() -> b`, additive
+`AttachSessionWithDisplay(s) -> b` and `Shutdown()`. ChangePassword requires two
 secrets using caller-owned sessions, nonempty bounded passwords, and authenticates
 the old password. Owner disconnect or session close invalidates delayed work.
 The [native PAM bridge](keyring-pam.md) uses the socket through its trusted
@@ -107,7 +108,9 @@ exact owned mode0600 runtime path.
 The session supervisor starts an optional native child only when the native
 executable is installed; `qindaqt-session --no-keyring` explicitly disables it
 for private/diagnostic runs. A dedicated supervisor bus connection invokes
-AttachSession: one unique owner is accepted, including an already activated
+AttachSessionWithDisplay for its current WAYLAND_DISPLAY basename; legacy
+AttachSession remains available when there is no declared display. One unique
+owner is accepted, including an already activated
 daemon; loss of that owner exits and wipes the daemon. Logout stops its child,
 sends Shutdown only after successful attachment, and disconnects that bus
 connection. Bus loss or loss of Secret Service ownership also terminates the
@@ -116,6 +119,27 @@ insufficient because QindaQt does not activate that target. D-Bus activation
 and explicit supervisor ownership are the startup paths. Distribution
 `gnome-keyring-daemon` Exec entries are superseded only when this native
 executable is selected, preserving the existing polkit filter.
+
+## Prompt display authority
+
+A system-started owner requires validated session display attachment before
+launching any prompt helper. Native basenames use the public CompositorNames
+prefix and canonical slots0–4095; absolute paths, malformed names, symlinks,
+nonprivate runtime roots and peers that differ from the active native compositor
+bus PID/UID are rejected. The session and compositor unique-owner lineage,
+probe connection and kernel peer pidfd remain pinned. Owner loss or dead/socket
+lineage loss revokes in-flight approval. Every prompt gets a fresh validated
+connection inherited as WAYLAND_SOCKET; no helper reconnects by pathname.
+Replacing the socket path after admission cannot substitute a different process.
+Failed metadata admission permanently disables inherited-display fallback;
+untouched legacy activation remains compatible with prior prompt behavior.
+The system launcher supplies no guessed or caller-controlled display.
+
+This is ordinary authentication-overlay transport, separate from the locker's
+private sealed client connection. Active compositor lineage is a session
+binding contract, not executable attestation or PAM delivery authority. The
+[trusted PAM boundary](keyring-pam.md) authenticates the system owner separately.
+Rendered native output/role qualification remains a deployment/PK4 gate.
 
 ## Prompt and memory boundaries
 

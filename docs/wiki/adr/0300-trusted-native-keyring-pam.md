@@ -60,7 +60,13 @@ Root/CAP_SYS_PTRACE/trusted ancestors remain outside the ordinary-user model.
 - Synthetic private tests replace only the manager authority port. Kernel peers,
   peer pidfds, actual daemon injection and PAM confdir behavior are executable.
   The production sd-bus/root service path is compiled, not activated here.
-- PK4 extends native Passwords & Keys UI and trusted display/output selection.
+- The system launcher supplies no inherited or guessed display. Additive
+  Keyring1.AttachSessionWithDisplay joins the unique session owner and active
+  compositor bus PID to an ordinary connected Wayland socket/peer pidfd. Prompt
+  helpers inherit that exact FD, never reconnect by pathname; lineage loss
+  cancels approval. Legacy attachment supplies no system-owner prompt authority.
+  This does not share the locker's sealed capability or attest compositor code.
+- PK4 extends native Passwords & Keys UI and qualifies rendered display/output behavior.
   PAM observes/consumes existing tokens; it never opens its own password dialog.
 
 The current lifecycle, ABI, verification and deployment limits are on the

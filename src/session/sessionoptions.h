@@ -19,7 +19,7 @@ struct SessionOptions final
     Backend backend = Backend::Drm;
     // QindaQt's compositor, qindaqt-kwin (ADR-0291).
     QString kwinExecutable = QString(CompositorNames::executable);
-    QString socketName = QStringLiteral("qindaqt-0");
+    QString socketName = QString(CompositorNames::waylandSocketPrefix) + QStringLiteral("0");
     QSize outputSize{1920, 1080};
     double scale = 1.0;
     int outputCount = 1;
