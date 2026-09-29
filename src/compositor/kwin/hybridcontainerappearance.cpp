@@ -83,9 +83,4 @@ void HybridContainerAppearanceStore::clear() noexcept
     m_byContainer.clear();
 }
 
-QHash<QString, Compositor::ContainerAppearance> HybridContainerAppearanceStore::snapshot() const
-{
-    return m_byContainer;
-}
-
 } // namespace QindaQt::Compositor::KWinIntegration

@@ -304,11 +304,15 @@ application title. It is painted in the classic row's leftover drag region
 rolled-up badge, and a rename also replaces the collapsed dock/task entry's
 title; the color replaces the shared row's resolved accent (active-tab
 underline, rename text, and other accent-derived cues) for that container
-only. Neither is part of `Core::WindowContainer`/`TopologyCommand` and
-neither persists across a compositor restart yet. Each accepted name or color
-edit also invalidates the shell task facts through `shellVisibilityStateChanged`,
-so the dock refreshes the override even when native geometry, focus, and task
-flags are unchanged. Rejected edits publish no invalidation. The menu's remaining live,
+only. Neither is part of `Core::WindowContainer`/`TopologyCommand`. An
+explicitly saved workspace carries the displayed name and color beside its
+durable layout and reapplies them after adopting a fresh live container ID.
+Unsaved live container topology is not automatically restored after a
+compositor restart, so its presentation has no topology to attach to. Each
+accepted name or color edit also invalidates the shell task facts through
+`shellVisibilityStateChanged`, so the dock refreshes the override even when
+native geometry, focus, and task flags are unchanged. Rejected edits publish
+no invalidation. See [Saved workspaces](workspaces.md). The menu's remaining live,
 stable-ID actions cover Keep Above, Keep Below, pinning to all workspaces,
 individual workspace membership, all or individual activities, and moving the
 group to an output. These context actions mutate one current representative;

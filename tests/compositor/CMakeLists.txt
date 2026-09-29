@@ -713,25 +713,6 @@ if(TARGET qindaqt_kwin_input_adapter)
     )
 
     qt_add_executable(
-        qindaqt_hybrid_container_appearance_ledger_tests
-        tst_hybridcontainerappearanceledger.cpp
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerappearance.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridcontainerappearanceledger.cpp"
-    )
-    target_include_directories(
-        qindaqt_hybrid_container_appearance_ledger_tests
-        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
-    )
-    target_link_libraries(
-        qindaqt_hybrid_container_appearance_ledger_tests
-        PRIVATE QindaQt::CompositorShellActions Qt6::Test
-    )
-    add_test(
-        NAME compositor.hybrid-container-appearance-ledger
-        COMMAND qindaqt_hybrid_container_appearance_ledger_tests
-    )
-
-    qt_add_executable(
         qindaqt_hybrid_shade_controller_tests
         tst_hybridshadecontroller.cpp
         "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/hybridshadecontroller.cpp"

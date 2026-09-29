@@ -113,7 +113,7 @@ bus name and so had no fallback.
 |---|---|
 | A user-set name stays on the rolled-up badge ([ADR-0168](../adr/0168-a-generated-name-never-displaces-a-real-title.md)) | committed |
 | The badge is wide enough to read the page title, and follows it as it changes ([ADR-0189](../adr/0189-size-the-rolled-up-badge-to-its-label.md)) | committed |
-| Names persist across compositor restarts | gap — blocked on a persistence owner for container identity: the appearance store is process-local by contract, nothing saves or restores live container topology at compositor start, and the explicit saved-workspace path adopts with a fresh container ID, so a name has nothing stable to attach to |
+| Container names persist with explicitly saved layouts across compositor restarts | Saved Workspaces persist the displayed name/color beside the durable layout and reapply them after adoption under a fresh live ID; unsaved live containers are not automatically restored at compositor start |
 
 ## 6. Wine / Proton window identity
 
