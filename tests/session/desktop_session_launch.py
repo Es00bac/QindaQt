@@ -217,7 +217,11 @@ def _start_fractional_parent(
     # child keeps the sandbox's XDG_CONFIG_HOME and the build-tree plugin.
     parent_config = Path(environment["XDG_CONFIG_HOME"]).parent / ".config-parent"
     parent_config.mkdir(parents=True, exist_ok=True)
-    (parent_config / "kwinrc").write_text("[Plugins]\nqindaqt_compositorEnabled=false\n")
+    # qindaqt-kwin reads qindaqt/kwinrc (ADR-0289); a stock kwin_wayland parent
+    # reads the bare name. Keep QindaQt's plugin off in either.
+    for relative in ("qindaqt/kwinrc", "kwinrc"):
+        (parent_config / relative).parent.mkdir(parents=True, exist_ok=True)
+        (parent_config / relative).write_text("[Plugins]\nqindaqt_compositorEnabled=false\n")
     parent_environment.update({
         "DBUS_SESSION_BUS_ADDRESS": f"unix:path={parent_bus_path}",
         "QT_NO_XDG_DESKTOP_PORTAL": "1",

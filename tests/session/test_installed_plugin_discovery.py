@@ -83,7 +83,7 @@ def decoration_library(config_home: Path) -> str:
     # key. Reading the real file proves the installed launcher executed its
     # first-run policy before replacing itself with KWin.
     parser = configparser.ConfigParser(interpolation=None)
-    kwin_config = config_home / "kwinrc"
+    kwin_config = config_home / "qindaqt" / "kwinrc"
     try:
         with kwin_config.open(encoding="utf-8") as stream:
             parser.read_file(stream)
@@ -91,12 +91,9 @@ def decoration_library(config_home: Path) -> str:
         raise RuntimeError(
             f"could not read installed session defaults from {kwin_config}: {error}"
         )
-    try:
-        return parser.get("org.kde.kdecoration2", "library")
-    except (configparser.Error, KeyError) as error:
-        raise RuntimeError(
-            f"installed session did not seed org.kde.kdecoration2/library in {kwin_config}"
-        ) from error
+    # ADR-0289: org.qindaqt is qindaqt-kwin's compiled-in default, so the
+    # launcher no longer writes the key; an absent key selects the default.
+    return parser.get("org.kde.kdecoration2", "library", fallback="org.qindaqt")
 
 
 def run_installed_session(arguments: argparse.Namespace, launcher: Path) -> dict[str, object]:

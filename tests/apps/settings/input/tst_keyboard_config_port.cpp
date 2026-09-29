@@ -26,6 +26,7 @@ private Q_SLOTS:
     void rejectsOutOfRangeValuesWithoutWriting();
     void reloadFailureIsReportedSeparately();
     void announcesTheChangeToARunningDesktop();
+    void announcesTheCompositorsFolderPath();
     void withoutADesktopTheChangeWaitsForTheNextSession();
     void relocatedFileNamesAreNeverAnnounced();
     void validityHelperRejectsOutOfRange();
@@ -154,6 +155,29 @@ void KeyboardConfigPortTest::announcesTheChangeToARunningDesktop()
     QVERIFY(keys.contains("RepeatRate"));
     QVERIFY(keys.contains("KeyRepeat"));
     QVERIFY(keys.contains("NumLock"));
+    QDBusConnection::disconnectFromBus(listenerName);
+}
+
+// ADR-0289: qindaqt-kwin watches "qindaqt/kwininputrc", so a file in QindaQt's
+// config folder is announced on /qindaqt/kwininputrc, where the fork listens.
+void KeyboardConfigPortTest::announcesTheCompositorsFolderPath()
+{
+    QindaQt::Tests::PrivateBus bus;
+    QVERIFY(bus.start());
+    QVERIFY(bus.connection.registerService(QStringLiteral("org.qindaqt.KWin")));
+    const QString listenerName = QStringLiteral("qindaqt-kwininputrc-listener");
+    QindaQt::Tests::ConfigChangeListener listener;
+    QVERIFY(listener.listen(QDBusConnection::connectToBus(bus.address, listenerName),
+                            QStringLiteral("qindaqt/kwininputrc")));
+    QVERIFY(QDir(m_dir.path()).mkpath(QStringLiteral("home/qindaqt")));
+    QtKeyboardConfigPort port(m_dir.filePath(QStringLiteral("home/qindaqt/kwininputrc")),
+                              bus.connection);
+    KeyboardConfig config;
+    config.repeatDelayMs = 450;
+    QString error;
+    QCOMPARE(port.write(config, &error), StoreResult::Stored);
+    QTRY_COMPARE(listener.changes.size(), 1);
+    QVERIFY(listener.changes.first().value(QStringLiteral("Keyboard")).contains("RepeatDelay"));
     QDBusConnection::disconnectFromBus(listenerName);
 }
 

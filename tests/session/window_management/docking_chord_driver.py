@@ -38,7 +38,7 @@ COLOURS = ("#b03a2e", "#2e5cb0", "#8a2eb0", "#b08a2e", "#2eb0a0", "#6e6e6e", "#b
 
 
 def kwinrc_path() -> Path:
-    return Path(os.environ["XDG_CONFIG_HOME"]) / "kwinrc"
+    return Path(os.environ["XDG_CONFIG_HOME"]) / "qindaqt" / "kwinrc"
 
 
 def write_kwinrc_entries(entries: dict[str, dict[str, str]]) -> str:

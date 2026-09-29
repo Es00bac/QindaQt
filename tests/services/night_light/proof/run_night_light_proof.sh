@@ -52,14 +52,14 @@ fi
 # the file". Both writes below go through QtConfigNightLightPort.
 CONFIG_DIR="$(mktemp -d "${PROOF_DIR}/config-XXXXXX")"
 export XDG_CONFIG_HOME="${CONFIG_DIR}"
-if "${HELPER}" write "${XDG_CONFIG_HOME}/kwinrc" \
+if "${HELPER}" write "${XDG_CONFIG_HOME}/qindaqt/kwinrc" \
         "${XDG_CONFIG_HOME}/knighttimerc" \
         > "${PROOF_DIR}/02-write-outcome.txt" 2>&1; then
-    log "pre-seed write: Applied (${XDG_CONFIG_HOME}/kwinrc)"
+    log "pre-seed write: Applied (${XDG_CONFIG_HOME}/qindaqt/kwinrc)"
 else
     fail "pre-seed write failed (see 02-write-outcome.txt)"
 fi
-cp "${XDG_CONFIG_HOME}/kwinrc" "${PROOF_DIR}/02-kwinrc-after-write.txt" 2>/dev/null
+cp "${XDG_CONFIG_HOME}/qindaqt/kwinrc" "${PROOF_DIR}/02-kwinrc-after-write.txt" 2>/dev/null
 
 # ---------------------------------------------------------------- compositor
 log "starting kwin_wayland --virtual (socket ${SOCKET_NAME})"
@@ -122,7 +122,7 @@ AVAILABLE=$(get_prop available)
 # ------------------------------------------- write through the config port
 # The written file must be the very kwinrc this compositor watches: KWin
 # resolved it from XDG_CONFIG_HOME at startup.
-KWINRC_PATH="${XDG_CONFIG_HOME:-${HOME}/.config}/kwinrc"
+KWINRC_PATH="${XDG_CONFIG_HOME:-${HOME}/.config}/qindaqt/kwinrc"
 KNIGHTRC_PATH="${XDG_CONFIG_HOME:-${HOME}/.config}/knighttimerc"
 # Live reload: write a CHANGED night temperature through the port after the
 # compositor is up, then reconfigure and watch it converge.
