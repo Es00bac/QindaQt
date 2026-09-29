@@ -186,6 +186,12 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
     add_subdirectory(shell_orchestration)
 endif()
 
+# ADR-0290: the agent's dialog is a layer-shell overlay, so it needs the
+# same production Wayland shell gate as shell_surface above.
+if(QINDAQT_BUILD_PRODUCTION_SHELL)
+    add_subdirectory(apps/polkit_agent)
+endif()
+
 if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/bluetooth_applet)
     add_subdirectory(shell/network_applet)

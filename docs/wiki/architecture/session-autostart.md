@@ -28,6 +28,12 @@ Terminal=true uses qqterm -e. Unsupported D-Bus activation and
 non-Application GNOME startup phases remain visible in Settings with reasons
 and do not launch.
 
+One eligibility rule is not conditional on any of the above: an
+`Exec`/`TryExec` basename matching a documented table of distribution
+polkit authentication agents is always ineligible, superseded by the
+session's own `qindaqt-polkit-agent`
+([ADR-0290](../adr/0290-native-polkit-agent-and-single-agent-rule.md)).
+
 [Startup Settings](../apps/startup-settings.md) reads this catalog and only
 writes user overrides. Its Enabled switch describes next-login configuration;
 an ineligibility line explains why a configured entry will not execute.

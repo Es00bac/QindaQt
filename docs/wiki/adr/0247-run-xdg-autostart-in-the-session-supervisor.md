@@ -42,3 +42,19 @@ Re-enable patches every recognized disable flag in the user's copy.
   applications require separate lifecycle design.
 - Unsupported D-Bus activation and early startup phases are diagnosed in
   Settings. Any future support must extend the catalog and supervisor together.
+
+## 2026-09-28 update: a documented polkit-agent basename exception
+
+[ADR-0290](0290-native-polkit-agent-and-single-agent-rule.md) adds one
+documented exception to this ADR's eligibility rules: an `Exec`/`TryExec`
+basename matching a fixed table of distribution polkit authentication
+agents (`polkit-gnome-authentication-agent-1`,
+`polkit-kde-authentication-agent-1`, `lxqt-policykit-agent`,
+`polkit-mate-authentication-agent-1`, `xfce-polkit`, `lxpolkit`) is
+ineligible -- superseded by the session's own `qindaqt-polkit-agent` --
+independent of that entry's `NotShowIn`/`OnlyShowIn`, `Hidden`, or any
+other condition this ADR's catalog otherwise evaluates. Every entry
+outside that table keeps exactly the eligibility this ADR describes; the
+exception exists because a real polkit-gnome entry's own
+`NotShowIn=MATE;KDE` never named QindaQt, so this catalog's ordinary
+conditions could never have excluded it on their own.

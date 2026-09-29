@@ -44,7 +44,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Tablet rotation and areas for the screen it reaches | KWin device properties (`orientationDBus`, `inputArea`, `outputArea`, `leftHanded`); screen rotations from Display1 | `TabletMappingPolicy` with the shared placement planner and `DisplayRotationTabletOutputs` ([ADR-0285](../adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md)) |
 | Remembered tablet mapping decisions | Settings1 `input.tabletMappings` | purpose-scoped `Settings1TabletMappings` + Settings Pen & tablet destination |
 | Pen display announcement and its actions | resident notification host | `TabletArrivalNotifier` with `ActionInvoked` routing |
-| Polkit authentication UI | polkit daemon | optional supervisor child, distribution agent binary |
+| Polkit authentication UI | polkit daemon | optional supervisor child, `qindaqt-polkit-agent` ([ADR-0290](../adr/0290-native-polkit-agent-and-single-agent-rule.md)) |
 
 Nothing here modifies the compositor, the Power1 v1 wire protocol, or the
 screen-lock preference. Display-off is display power only; locking remains the

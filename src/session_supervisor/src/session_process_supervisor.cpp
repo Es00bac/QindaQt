@@ -501,6 +501,9 @@ void SessionProcessSupervisor::startOptionalChildren()
     // display itself, so starting it here rather than later is safe.
     m_xembedTrayProxy->start(resolveExecutable(m_options.xembedTrayProxyExecutable));
     m_desktopControls->start(resolveExecutable(m_options.desktopControlsExecutable));
+    // AGENT-NOTE (ADR-0290): a registration conflict exits the agent with
+    // status 2; ended() does not inspect the exit code, so the shared
+    // one-restart budget already bounds this to one retry, never a loop.
     m_polkitAgent->start(m_options.polkitAgentExecutable);
 }
 
