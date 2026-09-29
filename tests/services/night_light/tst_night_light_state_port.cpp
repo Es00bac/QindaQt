@@ -16,9 +16,9 @@ using namespace QindaQt::Services::NightLight;
 
 namespace {
 
-const QString kServiceName = QStringLiteral("org.kde.KWin.NightLight");
-const QString kObjectPath = QStringLiteral("/org/kde/KWin/NightLight");
-const QString kInterfaceName = QStringLiteral("org.kde.KWin.NightLight");
+const QString kServiceName = QStringLiteral("org.qindaqt.KWin.NightLight");
+const QString kObjectPath = QStringLiteral("/org/qindaqt/KWin/NightLight");
+const QString kInterfaceName = QStringLiteral("org.qindaqt.KWin.NightLight");
 const QString kPropertiesInterface =
     QStringLiteral("org.freedesktop.DBus.Properties");
 const QString kScheduleServiceName = QStringLiteral("org.kde.NightTime");
@@ -29,7 +29,7 @@ const QString kScheduleServiceName = QStringLiteral("org.kde.NightTime");
 // Changing this fake changes what the port tests prove.
 class FakeNightLightService final : public QObject, public QDBusContext {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.NightLight")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.NightLight")
     Q_PROPERTY(bool available MEMBER m_available)
     Q_PROPERTY(bool enabled MEMBER m_enabled)
     Q_PROPERTY(bool running MEMBER m_running)
@@ -125,7 +125,7 @@ private Q_SLOTS:
 private:
     // AGENT-CONTRACT: The inhibition lock is connection-scoped: it is
     // released automatically when the requesting service disappears
-    // (org.kde.KWin.NightLight D-Bus XML). A paused Settings client would
+    // (org.qindaqt.KWin.NightLight D-Bus XML). A paused Settings client would
     // lose its pause on disconnect, which is why Settings offers no pause.
     void releaseCaller(const QString &caller)
     {
@@ -167,7 +167,7 @@ private:
 // string, which the port must reject whole.
 class MalformedNightLightService final : public QObject {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.NightLight")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.NightLight")
     Q_PROPERTY(QString available MEMBER m_available)
 
 public:

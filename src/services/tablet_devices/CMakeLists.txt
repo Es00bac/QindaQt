@@ -45,6 +45,7 @@ target_sources(
 target_link_libraries(
     qindaqt_tablet_devices
     PUBLIC QindaQt::DisplayClient QindaQt::SettingsClient Qt6::Core Qt6::DBus
+    PRIVATE QindaQt::CompositorNames
            Qt6::Gui
 )
 target_compile_features(qindaqt_tablet_devices PUBLIC cxx_std_20)

@@ -8,28 +8,36 @@ pointer and native-decoration interaction, member/public state, scene-resident
 chrome, lifecycle recovery, context-menu policy, and unload restoration.
 Evidence for the two completed milestone boundaries is kept distinct below.
 
-## Pinned KWin and binary ABI
+## qindaqt-kwin and the binary ABI
 
-The source manifest pins one immutable upstream state:
+QindaQt runs on **qindaqt-kwin**, its own co-installable fork of KWin
+([ADR-0291](../adr/0291-run-on-qindaqt-kwin.md)). The fork keeps KWin's history
+and renames everything that reaches the file system, the session bus, a plugin
+loader or a QML engine, so a stock KDE Plasma installs beside it and never reads
+its files. The source manifest `compositor/upstream/kwin.json` pins one fork
+state and the upstream release it descends from:
 
 | Field | Value |
 | --- | --- |
-| Release/ref | KWin `6.6.6`, `refs/tags/v6.6.6` |
-| Tag object | `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff` |
-| Commit | `9bf2235fad10de9048c634e376bf12e56b3023e6` |
-| Tree | `88f96f8cde49c51552d82f60fd461b6e8b950685` |
-| Current downstream patches | One: subtract the QindaQt decoration's transparent title-tab cutout from KWin input |
-| KWin CMake target | `KWin::kwin`, found with version `6.6.6 EXACT` |
-| Plugin factory ABI/IID | `KWin::PluginFactory`, `org.kde.kwin.PluginFactoryInterface6.6.6` |
+| Fork | `qindaqt-kwin` `6.6.6.1`, package `gui-wm/qindaqt-kwin-6.6.6_p1`, hub `qinda:~/git/qindaqt-kwin.git` |
+| Fork commit | `0dd2fdb802c6dfdecb4771942b05788a8aa386b5` (tree `97ade09fdc536f6293b74d2114aaf04a699e9351`) |
+| Upstream release/ref | KWin `6.6.6`, `refs/tags/v6.6.6` |
+| Upstream tag object | `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff` |
+| Upstream commit | `9bf2235fad10de9048c634e376bf12e56b3023e6` |
+| Upstream tree | `88f96f8cde49c51552d82f60fd461b6e8b950685` |
+| QindaQt changes | fork commits labelled `qindaqt:`, among them the decoration cutout ([ADR-0277](../adr/0277-theme-choice-and-corner-tab-input.md)) and tablet proximity ([ADR-0287](../adr/0287-pass-tablet-proximity-through-window-decorations.md)); container-wm keeps no patch series |
+| CMake | `QindaQtKWin::kwin` and `QindaQtKWinDecoration::KDecoration`, found with version `6.6.6.1 EXACT` |
+| Plugin factory ABI/IID | `KWin::PluginFactory`, `org.qindaqt.kwin.PluginFactoryInterface6.6.6.1` |
 
 This is a binary plugin ABI, not a compatibility range. QindaQt must rebuild
-and rerun the compositor matrix for every KWin patch release. The manifest
-records KWin's Qt minimum as 6.10.0 while QindaQt's baseline is Qt 6.11.
+and rerun the compositor matrix for every fork release. The manifest records
+KWin's Qt minimum as 6.10.0 while QindaQt's baseline is Qt 6.11.
 
 The supported ABI is not a CMake option. Configuration removes the former
 cache entry, rejects a conflicting value, verifies the fixed ABI against the
-manifest, and requests `find_package(KWin 6.6.6 EXACT)`. With
-`QINDAQT_BUILD_KWIN_PLUGIN=ON` (the default), missing exact KWin or Qt
+manifest's fork version, and requests `find_package(QindaQtKWin 6.6.6.1 EXACT)`
+and `find_package(QindaQtKWinDecoration 6.6.6.1 EXACT)`. With
+`QINDAQT_BUILD_KWIN_PLUGIN=ON` (the default), missing exact fork or Qt
 DBus/Widgets dependencies are fatal. Only an explicit `OFF` selects a
 bridge-only build.
 
@@ -38,23 +46,70 @@ Pin checks are:
 ```sh
 ./compositor/tools/verify-kwin-source
 ./compositor/tools/verify-kwin-source --check-remote
+./compositor/tools/verify-kwin-source --verify-archive qindaqt-kwin-6.6.6_p1.tar.gz \
+    --checkout ~/work_SPaC3/qindaqt-kwin
 ```
 
-The verifier also supports `--fetch NEW_DIRECTORY` and `--verify CHECKOUT`.
-The patch filename and SHA-256 are checked from
-`compositor/patches/series.json`. [ADR-0277](../adr/0277-theme-choice-and-corner-tab-input.md)
-records the corner-tab input contract and [ADR-0287](../adr/0287-pass-tablet-proximity-through-window-decorations.md)
-the tablet proximity patch. [ADR-0001](../adr/0001-use-kwin-as-compositor-base.md)
-records this maintenance model. Follow the [KWin upgrade
-procedure](../development/kwin-upgrades.md) for any patch-release change; the
+The verifier also supports `--fetch NEW_DIRECTORY` and `--verify CHECKOUT`; a
+checkout must be the pinned fork commit and descend from the upstream commit,
+and `--verify-archive` proves the Gentoo source archive holds exactly that tree.
+
+### Names QindaQt uses
+
+container-wm names the fork only through `QindaQt::CompositorNames`
+(`src/compositor_names`):
+
+| What | Name |
+| --- | --- |
+| Program | `qindaqt-kwin` (`--version` prints `kwin 6.6.6.1`) |
+| Plugin namespaces | `qindaqt-kwin/plugins` (the compositor plugin), `qindaqt-kwin/decorations` (`org.qindaqt`, the default and fallback decoration) |
+| Window switcher | `share/qindaqt-kwin/tabbox/qindaqt`, structure `QindaQtKWin/WindowSwitcher`, QML `org.qindaqt.kwin`, the fork's default layout |
+| Config | `$XDG_CONFIG_HOME/qindaqt/kwinrc`, `kwinrulesrc`, `kwinoutputconfig.json`, `kwininputrc`, `kwinxkbrc`; state `$XDG_STATE_HOME/qindaqt/kwinstaterc` |
+| D-Bus | `org.qindaqt.KWin` at `/org/qindaqt/KWin` (`.VirtualDesktopManager`, `.InputDevice*`, `.NightLight`, …) |
+| Carve-outs until PF21 | ScreenShot2 (`org.kde.KWin.ScreenShot2`), EIS, TabletModeManager, VirtualKeyboard and Scripting (`/Scripting`, for Gabbee) keep their KDE names; the fork also owns `org.kde.KWin` |
+| Privileged clients | `X-QindaQt-KWin-DBus-Restricted-Interfaces`, `X-QindaQt-KWin-Wayland-Interfaces` (`X-KDE-*` also honoured until PF21) |
+
+The fork's compiled-in defaults are QindaQt's: the `org.qindaqt` decoration,
+the `qindaqt` switcher, electric-border maximize and tiling off, CommandAll3
+"Nothing" and the Theming v2 blur strengths. On every start `qindaqt-wm` first
+imports the user's KDE files (`kwinrc`, `kwinrulesrc`, `kwinoutputconfig.json`,
+`kcminputrc`, `kxkbrc`, `kwinstaterc`) into the fork's names once — only while
+the qindaqt-kwin file is absent, never writing KDE's — then seeds the remaining
+installation-dependent keys. Follow the [KWin upgrade
+procedure](../development/kwin-upgrades.md) for any fork release; the
 [release procedure](../development/releases.md) requires a fresh native build
 and sequential build-tree plus staged-install plugin boots.
+
+### M1 staged qualification (2026-09-29)
+
+The recovered fork candidate is built from the pinned hub commit. The source
+verifier checks upstream ancestry and its `git archive` tree before packaging.
+The fork stages 468 files; the collision checker compares them with 1,059 stock
+KWin, kwin-x11 and kdecoration paths and finds zero shared paths or stock identity
+paths. Installed KWin and kdecoration inventories come directly from `qlist`;
+kwin-x11 uses the checked-in 6.6.6 manifest because it is not installed.
+
+`qindaqt/tools/smoke-test` now fails on missing native endpoints, compatibility
+carve-outs, wrong fork version or stock config creation.
+`qindaqt/tools/check-coinstall-runtime` additionally starts installed stock KWin
+and the staged fork concurrently on distinct private buses and HOME directories.
+The stock sandbox disables the legacy installed consumer plugin; the staged fork
+plugins occupy their own namespace. A relocated launcher with the staged consumer
+plugin and decoration qualifies the output/input inventory, hotplug, container
+page operations, rollback, native decoration and rootless XWayland path.
+
+These checks make no system installation or session switch. The root termination
+helper tests signal disposable unprivileged children only; real root-owned-window
+authorization and user interaction await the native polkit agent and final
+delivery. Physical DRM, input devices and laptop hardware remain release gates.
+Remaining Plasma services and their compatibility names are the later M2–M6
+boundaries; staged M1 qualification does not certify their removal.
 
 ## `qindaqt-wm` launcher
 
 `qindaqt-wm` validates options, establishes QindaQt session markers and plugin
-search paths, builds an argument vector, and replaces itself with
-`kwin_wayland`. It is a session launcher, not a renamed KWin fork.
+search paths, imports KDE KWin settings once, builds an argument vector, and
+replaces itself with `qindaqt-kwin`, QindaQt's compositor (ADR-0291).
 
 | QindaQt backend | KWin invocation | Qualified evidence |
 | --- | --- | --- |
@@ -74,10 +129,12 @@ a readiness-independent child; one unexpected exit consumes its sole restart
 without affecting either essential child. The same optional one-restart
 treatment starts the installed sibling `qindaqt-desktop-controls` — the
 [desktop controls](desktop-controls.md) media-key, screenshot, polkit-agent,
-and idle display-off helper — and a polkit authentication agent resolved from
-well-known distribution paths (overridable with `--polkit-agent`, suppressed
-entirely with `--no-polkit-agent` — every staged private and nested run must
-pass the suppression so the supervisor never resolves a host binary); both
+and idle display-off helper — and `qindaqt-polkit-agent`, the session's own polkit
+authentication agent ([ADR-0290](../adr/0290-native-polkit-agent-and-single-agent-rule.md)),
+with no other agent as fallback (overridable with `--polkit-agent`,
+suppressed entirely with `--no-polkit-agent` — every staged private and
+nested run must pass the suppression so the supervisor never resolves a
+host binary); both
 start after the shell, and their absence is skipped without any session
 impact.
 After the first shell starts, the
@@ -142,7 +199,7 @@ applications](../apps/default-applications.md) and
 [ADR-0218](../adr/0218-use-qindatk-and-poppler-for-the-viewer.md).
 
 The canonical build artifact is
-`<build>/plugins/kwin/plugins/qindaqt_compositor.so`. Build-tree tests pass
+`<build>/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so`. Build-tree tests pass
 `<build>/plugins` explicitly. Installed discovery uses the same
 `KDE_INSTALL_PLUGINDIR` that owns the plugin rule; no build directory is
 compiled into the launcher.
@@ -152,8 +209,8 @@ its executable directory, so staged and relocated installs keep launcher and
 plugin aligned. Absolute KDE plugin paths use the configured absolute fallback.
 A staged-install test starts the installed launcher without `--plugin-root`,
 then requires the installed plugin's live service and exact ABI. It also
-requires the `org.qindaqt` KDecoration3 artifact at KDecoration3's exported
-relative plugin directory and verifies that a fresh isolated `kwinrc` selects
+requires the `org.qindaqt` decoration artifact at the fork's exported
+relative decoration namespace (`qindaqt-kwin/decorations`) and verifies that a fresh isolated `qindaqt/kwinrc` selects
 it. The launcher seeds that selection only when the key is absent, preserving
 an explicit user choice.
 
@@ -177,10 +234,10 @@ edge behavior.
 Beyond those one-time seeds, `qindaqt-session` hosts the live
 `windowManagement.*` bridge ([ADR-0209](../adr/0209-bridge-window-management-settings-into-kwinrc.md)).
 A purpose-scoped Settings1 client over the five keys decodes every confirmed
-snapshot as a whole, writes the result into the user's `kwinrc` with KConfig
+snapshot as a whole, writes the result into the user's `qindaqt/kwinrc` with KConfig
 (`[Windows] FocusPolicy`, `BorderSnapZone` and `WindowSnapZone` for KWin's own
 knobs; a `[QindaQt]` group carrying `DockingModifier`, `CloseContainerPolicy`
-and `SessionRestore`), and asks `org.kde.KWin.reconfigure` for the exact
+and `SessionRestore`), and asks `org.qindaqt.KWin.reconfigure` for the exact
 current compositor owner. It reads the owned values back and reports an
 acknowledged apply only after the KWin call succeeds and the values still
 match. The session publishes this state through
@@ -188,7 +245,7 @@ match. The session publishes this state through
 so Settings can distinguish a saved preference from a failed, pending, or
 applied session effect. Settings retries never write Settings1 again. A lost
 Settings1 or KWin owner revokes stale acknowledgements, and a replacement KWin
-owner must acknowledge a new reconfigure even when `kwinrc` already matches.
+owner must acknowledge a new reconfigure even when `qindaqt/kwinrc` already matches.
 After convergence, ordinary changes keep the debounced write/reconfigure
 behavior. The compositor plugin re-reads the `[QindaQt]` group on KWin's
 `configChanged` and rebinds the docking chord and close policy without a
@@ -677,12 +734,13 @@ That invalidated Gabbee's live dictation shortcut session even when the test
 itself had a separate D-Bus broker.
 
 The session supervisor now derives activation scope from its already
-lifetime-witnessed direct parent. Only an executable named `kwin_wayland` with
+lifetime-witnessed direct parent. Only an executable named `qindaqt-kwin` (a
+stock `kwin_wayland` never, ADR-0291) with
 an explicit `--drm` option before its child payload can publish activation state
 or refresh shared resident services. Virtual, windowed, X11, Wayland-display,
 unknown, unreadable, and conflicting backend evidence all remain private.
 When capability-bearing KWin hides `/proc/PID/exe`, both its bounded `comm`
-name and the basename of `argv[0]` must instead equal `kwin_wayland`; a readable
+name and the basename of `argv[0]` must instead equal `qindaqt-kwin`; a readable
 conflicting executable is never overridden. This is an accidental-interference
 guard, not a security boundary against same-user code.
 Private scope is also the helper API default, and skips **both** broker

@@ -17,6 +17,9 @@ struct ScanOptions final {
     QStringList desktops;
     QStringList executableDirectories;
     QString terminalExecutable = QStringLiteral("qqterm");
+    // Settings models the production session by default; qindaqt-session clears
+    // this when --no-polkit-agent is selected so distribution entries may run.
+    bool supersedeDistributionPolkitAgents = true;
 
     [[nodiscard]] static ScanOptions fromEnvironment(
         const QProcessEnvironment &environment = QProcessEnvironment::systemEnvironment());

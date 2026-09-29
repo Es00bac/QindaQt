@@ -37,6 +37,7 @@ nav:
       - Repository catalog: handbook/catalog/repository.md
       - Documentation catalog: handbook/catalog/reading.md
   - Architecture:
+      - Native keyring storage: architecture/keyring-storage.md
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
       - QST-1 semantic design tokens: architecture/design-tokens.md
@@ -173,6 +174,7 @@ nav:
       - "QindaLutris prior art (2026-09-25)": apps/qindalutris-prior-art.md
       - QindaLutris compatibility database: apps/qindalutris-compat-db.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
+      - Polkit authentication agent: apps/polkit-agent.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
       - Team board and progress evidence: contributing/team-board.md
@@ -449,4 +451,7 @@ nav:
       - "ADR-0287: Pass tablet proximity through window decorations": adr/0287-pass-tablet-proximity-through-window-decorations.md
       - "ADR-0288: Per-device latency offsets through Audio1, and a compact Audio page": adr/0288-per-device-latency-offsets-and-a-compact-audio-page.md
       - "ADR-0289: A native screenshot and record tool replaces Spectacle": adr/0289-native-screenshot-and-record-tool.md
+      - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
+      - "ADR-0290: Native QindaQt polkit agent, and a single-agent autostart rule": adr/0290-native-polkit-agent-and-single-agent-rule.md
+      - "ADR-0292: Own a bounded native keyring storage core": adr/0292-native-keyring-storage.md

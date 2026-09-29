@@ -31,7 +31,7 @@ Q_SIGNALS:
     void ownerChanged(const QString &newOwner);
 };
 
-// Calls `org.kde.KWin /KWin org.kde.KWin.reconfigure` asynchronously with a
+// Calls `org.qindaqt.KWin /org/qindaqt/KWin org.qindaqt.KWin.reconfigure` asynchronously with a
 // five-second timeout to the exact watched unique owner. A vanished or slow
 // compositor never blocks the session process; completion reports the error.
 class DBusKWinReconfigureRequester final : public KWinReconfigureRequester {

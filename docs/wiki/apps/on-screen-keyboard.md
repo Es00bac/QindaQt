@@ -7,7 +7,7 @@ hardware key is typed or the field loses focus.
 
 ## How it appears
 
-1. `qindaqt-session` seeds `kwinrc [Wayland] InputMethod=` with the keyboard's
+1. `qindaqt-session` seeds `qindaqt/kwinrc [Wayland] InputMethod=` with the keyboard's
    desktop entry the first time a session starts; an existing choice is kept.
 2. KWin starts `qindaqt-osk` on a dedicated Wayland connection that offers
    `zwp_input_method_v1` and `zwp_input_panel_v1`. Launched anywhere else the
@@ -46,7 +46,7 @@ theme controller every first-party app uses. Keys are at least 48 px tall.
 
 - `qindaqt.osk-keyboard-model` (unit): documents, placement, shift, pages,
   key emission.
-- `session.sessiondefaults`: the kwinrc seed.
+- `session.sessiondefaults`: the qindaqt/kwinrc seed.
 - `compositor.touch-osk.osk.gtk-entry.single-1080p` and `…-1440p-125`
   (nested, private compositor): KWin launches this build's keyboard from a
   desktop entry the row writes; a finger taps a GTK entry (`oskShowsOnTouchFocus`,

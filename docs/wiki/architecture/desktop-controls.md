@@ -8,7 +8,7 @@ evidence)**: the resident process, supervisor startup, Settings Power section,
 and focused tests are implemented and green in Debug builds. The private
 installed-session row passed real `VolumeUp`, one production-shell feedback
 popup, and a decoded region capture (then Spectacle's; the row now proves the
-native Screenshot tool, [ADR-0289](../adr/0289-native-screenshot-and-record-tool.md)). The real KDE polkit agent also
+native Screenshot tool, [ADR-0291](../adr/0289-native-screenshot-and-record-tool.md)). The real KDE polkit agent also
 presented an authentication dialog in installed QindaQt session 39, corroborated
 by the user; terminating the unapproved request removed the dialog and left
 the session healthy. No credential was entered or privileged command run.
@@ -33,7 +33,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Wi-Fi/WWAN radio enable | resident `Network1` | public `NetworkClient::setRadio` |
 | Brightness media keys | PowerDevil 6.6.6 `ScreenBrightnessAgent` | PowerDevil's registered shortcuts |
 | Internal/external brightness mutation | PowerDevil `org.kde.ScreenBrightness` | session-owned PowerDevil |
-| Print screenshot and record toggle | desktop-controls `KGlobalAccelRegistrar` | `ScreenshotLauncher` starts `qindaqt-screenshot` (`--region`, `--fullscreen`, `--active`, `--record-toggle`), ADR-0289 |
+| Print screenshot and record toggle | desktop-controls `KGlobalAccelRegistrar` | `ScreenshotLauncher` starts `qindaqt-screenshot` (`--region`, `--fullscreen`, `--active`, `--record-toggle`), ADR-0291 |
 | Visible media-key feedback | resident notification host | `org.freedesktop.Notifications` with per-category replaces-id |
 | Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
 | Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
@@ -41,11 +41,11 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Idle screensaver program | the saver package itself (the installed `x11-misc` savers, discovered from their desktop entries) | `ScreensaverLauncher`, started only while idle and unlocked |
 | Idle screensaver preference | Settings1 `power.screensaver` / `power.screensaverMinutes` | purpose-scoped provider + [Screen saver route](../apps/screensaver-settings.md) |
 | Low/critical battery warning level | UPower `WarningLevel` (via resident `Power1`'s `composite.warning`) | `BatteryNotificationPolicy`, edge-triggered on the resident notification host |
-| Tablet screen mapping and hotplug | KWin `org.kde.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
+| Tablet screen mapping and hotplug | KWin `org.qindaqt.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
 | Tablet rotation and areas for the screen it reaches | KWin device properties (`orientationDBus`, `inputArea`, `outputArea`, `leftHanded`); screen rotations from Display1 | `TabletMappingPolicy` with the shared placement planner and `DisplayRotationTabletOutputs` ([ADR-0285](../adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md)) |
 | Remembered tablet mapping decisions | Settings1 `input.tabletMappings` | purpose-scoped `Settings1TabletMappings` + Settings Pen & tablet destination |
 | Pen display announcement and its actions | resident notification host | `TabletArrivalNotifier` with `ActionInvoked` routing |
-| Polkit authentication UI | polkit daemon | optional supervisor child, distribution agent binary |
+| Polkit authentication UI | polkit daemon | optional supervisor child, `qindaqt-polkit-agent` ([ADR-0290](../adr/0290-native-polkit-agent-and-single-agent-rule.md)) |
 
 Nothing here modifies the compositor, the Power1 v1 wire protocol, or the
 screen-lock preference. Display-off is display power only; locking remains the
@@ -86,7 +86,7 @@ microphone mute, airplane mode, and the screenshot actions: Print and
 `Meta+Shift+Print` (region), `Shift+Print` (every screen), `Alt+Print` (active
 window) and `Meta+Alt+R` (OBS record toggle). They are appended after the
 original actions so stable indices and user remapping persist
-([ADR-0289](../adr/0289-native-screenshot-and-record-tool.md)); `Meta+Shift+S`
+([ADR-0291](../adr/0289-native-screenshot-and-record-tool.md)); `Meta+Shift+S`
 and `Meta+Shift+R` stay the compositor's container keys. PowerDevil owns monitor-brightness shortcut registration
 and the idle display-off policy; QindaQt only observes its documented public
 brightness signal and binds its idle preference. The retained KIdleTime,

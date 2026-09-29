@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinscreenshotpreviewport.h"
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
@@ -17,9 +19,10 @@
 namespace QindaQt::Shell {
 namespace {
 
-constexpr auto ScreenshotService = "org.kde.KWin.ScreenShot2";
-constexpr auto ScreenshotPath = "/org/kde/KWin/ScreenShot2";
-constexpr auto ScreenshotInterface = "org.kde.KWin.ScreenShot2";
+// ScreenShot2 keeps its KDE names until PF21 (CompositorNames carve-out).
+constexpr QLatin1StringView ScreenshotService = CompositorNames::screenshotService;
+constexpr QLatin1StringView ScreenshotPath = CompositorNames::screenshotPath;
+constexpr QLatin1StringView ScreenshotInterface = CompositorNames::screenshotInterface;
 constexpr auto CompositorService = "org.qindaqt.Compositor";
 constexpr qsizetype MaxRawBytes = 64 * 1024 * 1024;
 constexpr int MaxQueuedRequests = 64;

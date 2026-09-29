@@ -25,7 +25,7 @@ using QindaQt::Tests::PrivateBus;
 class MalformedManager : public QObject
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.InputDeviceManager")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.InputDeviceManager")
 public Q_SLOTS:
     Q_SCRIPTABLE QString ListPointers() { return QStringLiteral("garbage"); }
     Q_SCRIPTABLE QStringList ListTouch() { return {}; }
@@ -226,9 +226,9 @@ void PointerDevicePortTest::malformedListReplyFailsClosed()
     PrivateBus bus;
     QVERIFY(bus.start());
     MalformedManager malformed;
-    QVERIFY(bus.connection.registerService(QStringLiteral("org.kde.KWin")));
+    QVERIFY(bus.connection.registerService(QStringLiteral("org.qindaqt.KWin")));
     QVERIFY(bus.connection.registerObject(
-        QStringLiteral("/org/kde/KWin/InputDevice"), &malformed,
+        QStringLiteral("/org/qindaqt/KWin/InputDevice"), &malformed,
         QDBusConnection::ExportAllContents));
 
     KWinPointerDevicePort port(bus.connection);
@@ -286,7 +286,7 @@ void PointerDevicePortTest::ownerLossEmitsInvalidation()
     port.setObserving(true);
     QSignalSpy spy(&port, &PointerDevicePort::authorityChanged);
     QVERIFY(spy.isValid());
-    QVERIFY(bus.connection.unregisterService(QStringLiteral("org.kde.KWin")));
+    QVERIFY(bus.connection.unregisterService(QStringLiteral("org.qindaqt.KWin")));
     QTRY_VERIFY_WITH_TIMEOUT(spy.count() > 0, 5000);
 }
 
@@ -302,10 +302,10 @@ void PointerDevicePortTest::propertySignalEmitsInventoryRefresh()
     QSignalSpy spy(&port, &PointerDevicePort::inventoryChanged);
     QVERIFY(spy.isValid());
     auto signal = QDBusMessage::createSignal(
-        QStringLiteral("/org/kde/KWin/InputDevice/event5"),
+        QStringLiteral("/org/qindaqt/KWin/InputDevice/event5"),
         QStringLiteral("org.freedesktop.DBus.Properties"),
         QStringLiteral("PropertiesChanged"));
-    signal.setArguments({QStringLiteral("org.kde.KWin.InputDevice"),
+    signal.setArguments({QStringLiteral("org.qindaqt.KWin.InputDevice"),
                          QVariantMap{{QStringLiteral("naturalScroll"), true}},
                          QStringList{}});
     QVERIFY(bus.connection.send(signal));
@@ -336,9 +336,9 @@ void PointerDevicePortTest::pinnedOwnerNeverWritesToReplacement()
     // The first owner releases its well-known name, while a new KWin with
     // the same device ID acquires it. A stale transaction addressed to that
     // name would silently mutate the second owner.
-    QVERIFY(bus.connection.unregisterService(QStringLiteral("org.kde.KWin")));
+    QVERIFY(bus.connection.unregisterService(QStringLiteral("org.qindaqt.KWin")));
     QVERIFY(second.publish(replacement));
-    QCOMPARE(client.interface()->serviceOwner(QStringLiteral("org.kde.KWin"))
+    QCOMPARE(client.interface()->serviceOwner(QStringLiteral("org.qindaqt.KWin"))
                  .value(),
              replacement.baseService());
     KWinPointerDevicePort pinned(client, firstOwner);

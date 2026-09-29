@@ -2,7 +2,7 @@
 
 # This row is intentionally separate from fixture-only desktop-controls tests:
 # it starts the installed session, KGlobalAccel, Audio1/PipeWire, notification
-# host and QindaQt Screenshot (ADR-0289) in one private namespace before
+# host and QindaQt Screenshot (ADR-0291) in one private namespace before
 # injecting hardware keys.
 if(TARGET qindaqt-desktop-controls
    AND TARGET qindaqt-shell
@@ -63,7 +63,7 @@ if(TARGET qindaqt-desktop-controls
             --pipewire-config "${QINDAQT_PIPEWIRE_TEST_CONFIG}"
             --probe "$<TARGET_FILE:qindaqt-daily-controls-live-probe>"
             --bin-directory "${KDE_INSTALL_BINDIR}"
-            --plugin-relative "${KDE_INSTALL_PLUGINDIR}/kwin/plugins/$<TARGET_FILE_NAME:qindaqt_compositor>"
+            --plugin-relative "${KDE_INSTALL_PLUGINDIR}/qindaqt-kwin/plugins/$<TARGET_FILE_NAME:qindaqt_compositor>"
             --decoration-relative "${KDE_INSTALL_PLUGINDIR}/${KDECORATION_PLUGIN_DIR}/$<TARGET_FILE_NAME:qindaqt_decoration>"
             --settings-service-directory "${CMAKE_INSTALL_DATADIR}/dbus-1/services"
             --audio-service-directory "${KDE_INSTALL_DBUSSERVICEDIR}"

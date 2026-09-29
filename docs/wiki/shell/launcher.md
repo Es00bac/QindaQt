@@ -285,7 +285,7 @@ launcher instance.
 ## The Meta key
 
 A bare modifier is not a key sequence, so KGlobalAccel cannot hold it. KWin
-owns it instead, through `kwinrc`'s `[ModifierOnlyShortcuts] Meta` entry, which
+owns it instead, through `qindaqt/kwinrc`'s `[ModifierOnlyShortcuts] Meta` entry, which
 names a D-Bus call as service, path, interface, method, then arguments.
 `SessionDefaults` seeds it — seed-missing only, so a user who bound Meta to
 something else keeps that — with a call to KGlobalAccel's own
@@ -341,7 +341,7 @@ panel. Until that lands, `Alt+F1` and the panel button are the working paths.
 Two consequences worth keeping in mind when changing this:
 
 - `qindaqt_open_launcher` is a **stable id**. Renaming it breaks the Meta key
-  on every machine whose `kwinrc` already carries the seeded entry, because
+  on every machine whose `qindaqt/kwinrc` already carries the seeded entry, because
   KWin will keep invoking the old name.
 - The shell owns no D-Bus service name of its own; the Meta key reaches it
   through KGlobalAccel's component object. Nothing about this path needs the

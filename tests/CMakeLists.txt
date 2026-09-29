@@ -206,3 +206,5 @@ endif()
 if(TARGET obs-qindaqt)
     add_subdirectory(obs)
 endif()
+
+add_subdirectory(services/keyring)

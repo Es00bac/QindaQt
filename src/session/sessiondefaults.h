@@ -8,11 +8,12 @@ namespace QindaQt::Session {
 class SessionDefaults final
 {
 public:
-    // Seeds only missing desktop-owned KWin presentation and pointer-policy
-    // keys. MIME defaults are packaged desktop policy, never login writes
-    // to user mimeapps.list. Existing KWin values are
-    // user policy and survive every subsequent login, including deliberate
-    // decoration, switcher, edge, or input-method choices.
+    // Seeds only missing, installation-dependent keys of qindaqt-kwin's
+    // $configHome/qindaqt/kwinrc (the on-screen keyboard, the Meta launcher
+    // call, the overview edge repair); qindaqt-kwin's compiled-in defaults
+    // cover the rest (ADR-0291). MIME defaults are packaged desktop policy,
+    // never login writes to user mimeapps.list. Existing values are user
+    // policy and survive every subsequent login.
     [[nodiscard]] static bool ensure(const QString &configHome,
                                      QString *error = nullptr);
 };

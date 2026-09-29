@@ -102,7 +102,7 @@ if(TARGET qindaqt-shell
                 --shell-relative
                     "${KDE_INSTALL_BINDIR}/qindaqt-shell${CMAKE_EXECUTABLE_SUFFIX}"
                 --compositor-plugin-relative
-                    "${KDE_INSTALL_PLUGINDIR}/kwin/plugins/$<TARGET_FILE_NAME:qindaqt_compositor>"
+                    "${KDE_INSTALL_PLUGINDIR}/qindaqt-kwin/plugins/$<TARGET_FILE_NAME:qindaqt_compositor>"
         )
         set_tests_properties(
             "shell.notification-live.${test_name}"

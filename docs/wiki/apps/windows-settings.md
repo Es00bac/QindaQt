@@ -6,13 +6,13 @@
 
 | Key | Type | Default | Consumers |
 | --- | --- | --- | --- |
-| `windowManagement.focusPolicy` | `click` / `focus-follows-mouse` / `focus-under-mouse` | `click` | kwinrc `[Windows] FocusPolicy`, read by KWin on reconfigure |
-| `windowManagement.dockingModifier` | `super` / `alt` / `control` / `disabled` | `super` | kwinrc `[QindaQt] DockingModifier`, rebinding the compositor's exact docking chord (Shift stays in the docking chord; `disabled` matches no pointer press). ADR-0282: the same key without Shift is the window-management modifier for moving (left drag) and resizing (right drag) whole containers and for the modifier + wheel roll-up, mouse and pen alike |
-| `windowManagement.snapDistance` | integer 0–64 | `12` | kwinrc `[Windows] BorderSnapZone` and `WindowSnapZone` |
-| `windowManagement.closeContainerPolicy` | `ask` / `close-all` / `ungroup` | `ask` | kwinrc `[QindaQt] CloseContainerPolicy`: a standing decision skips the group close prompt |
+| `windowManagement.focusPolicy` | `click` / `focus-follows-mouse` / `focus-under-mouse` | `click` | qindaqt/kwinrc `[Windows] FocusPolicy`, read by KWin on reconfigure |
+| `windowManagement.dockingModifier` | `super` / `alt` / `control` / `disabled` | `super` | qindaqt/kwinrc `[QindaQt] DockingModifier`, rebinding the compositor's exact docking chord (Shift stays in the docking chord; `disabled` matches no pointer press). ADR-0282: the same key without Shift is the window-management modifier for moving (left drag) and resizing (right drag) whole containers and for the modifier + wheel roll-up, mouse and pen alike |
+| `windowManagement.snapDistance` | integer 0–64 | `12` | qindaqt/kwinrc `[Windows] BorderSnapZone` and `WindowSnapZone` |
+| `windowManagement.closeContainerPolicy` | `ask` / `close-all` / `ungroup` | `ask` | qindaqt/kwinrc `[QindaQt] CloseContainerPolicy`: a standing decision skips the group close prompt |
 
 `windowManagement.sessionRestore` is defined by the schema and carried into
-kwinrc by the bridge, but **reserved**: nothing reads it yet, so the route
+qindaqt/kwinrc by the bridge, but **reserved**: nothing reads it yet, so the route
 neither scopes, reads, nor writes it. The boundary scan rejects any route
 source that names the key. The route decision is
 [ADR-0210](../adr/0210-windows-and-workspaces-settings-route.md); the navigation
@@ -50,7 +50,7 @@ the confirmed values and is refused while a commit is in flight.
   value Settings1 would reject.
 
 Once Settings1 confirms a key, `qindaqt-session` writes the complete confirmed
-snapshot into `kwinrc`, reads the owned values back, and asks the current KWin
+snapshot into `qindaqt/kwinrc`, reads the owned values back, and asks the current KWin
 owner to reconfigure. The page displays the Settings1 saved preference and the
 session's apply result as separate facts. It reports **Applied in this
 session** only when the session has matching readback and a successful
@@ -98,12 +98,12 @@ px) stacks every label above its control.
   direct A-to-B unique-owner replacement with B's response held, late A reply
   fencing, and replacement-owner convergence.
 - `qindaqt.window-management-bridge`: private session bus — Settings1 snapshot
-  to kwinrc write/readback and exact-owner KWin acknowledgement, failed
-  kwinrc write and reconfigure failures without a false Applied state, retry,
+  to qindaqt/kwinrc write/readback and exact-owner KWin acknowledgement, failed
+  qindaqt/kwinrc write and reconfigure failures without a false Applied state, retry,
   and compositor replacement.
 - `compositor.window-management-bridge.docking-chord.single-1080p`: nested
   private KWin — pointer docking and hover-focus behavior changes after
-  kwinrc reconfigure without restarting the compositor.
+  qindaqt/kwinrc reconfigure without restarting the compositor.
 - `qindaqt.settings-windows-boundary` and `-boundary-poison`: public-client
   allow-list (no bridge, compositor, KConfig, or non-public header; D-Bus only
   in the route composition and its focused status transport; the reserved

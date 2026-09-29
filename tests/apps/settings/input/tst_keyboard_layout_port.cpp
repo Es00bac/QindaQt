@@ -141,7 +141,7 @@ void KeyboardLayoutPortTest::announcesTheLayoutChangeToARunningDesktop()
 {
     QindaQt::Tests::PrivateBus bus;
     QVERIFY(bus.start());
-    QVERIFY(bus.connection.registerService(QStringLiteral("org.kde.KWin")));
+    QVERIFY(bus.connection.registerService(QStringLiteral("org.qindaqt.KWin")));
     const QString listenerName = QStringLiteral("kxkbrc-listener");
     QindaQt::Tests::ConfigChangeListener listener;
     QVERIFY(listener.listen(QDBusConnection::connectToBus(bus.address, listenerName),
