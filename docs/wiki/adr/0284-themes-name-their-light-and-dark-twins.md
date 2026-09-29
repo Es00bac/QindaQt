@@ -47,7 +47,15 @@ twin in both directions.
   choice stays the light (or dark) theme they picked.
 - The portal's `Settings` projection reads the *selected* theme for its
   accent, not the resolved one, so a portal accent can come from the paired
-  theme's other half. It is unchanged by this decision.
+  theme's other half. It is unchanged by this decision. **Update (2026-09-28,
+  same-round follow-up):** the projection now calls the same
+  `resolveAppearanceTheme` and reads the resolved theme's accent and
+  `high-contrast` variant, exactly like the Settings preview, shell, and
+  first-party applications; see
+  [Portal service](../architecture/portal-service.md#appearance-projection).
+  Installation is still checked against the exact selected id first, so an
+  unknown selection fails the projection rather than resolving to a fallback
+  theme.
 - A v1 document may not author `variants` (the v2 key rule of ADR-0206).
 
 ## Icon families of the twins
@@ -67,10 +75,14 @@ unknown platform scheme, a missing twin, a twin of the wrong kind, unpaired
 themes unchanged, and the shipped Corner Bar pairs loaded from `data/themes`),
 `qindaqt.theme-formats` (only Corner Bar themes pair; strict `variants`
 values; v1 rejection; round trip), the built-in contrast rows, which walk
-every theme under every scheme, and `qindaqt.icon-theme-catalog` (installed
-authored family, missing authored family to QindaQt, user precedence).
+every theme under every scheme, `qindaqt.icon-theme-catalog` (installed
+authored family, missing authored family to QindaQt, user precedence), and
+`qindaqt.portal-appearance-policy` (a forced dark scheme on a light Corner
+Bar Teal selection resolves to the dark twin's accent; an explicit light
+scheme keeps the base theme's own accent; an unknown selected id still fails
+the projection outright).
 
 ## Revisit when
 
-Themes other than Corner Bar ship light/dark pairs, or the portal projection
-moves to the resolved theme.
+Themes other than Corner Bar ship light/dark pairs. (The portal projection
+moving to the resolved theme, above, is done.)
