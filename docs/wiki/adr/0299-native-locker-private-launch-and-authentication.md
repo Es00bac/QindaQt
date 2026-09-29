@@ -43,7 +43,10 @@ supersedes ordinary crash-dump/debug attachment for these authority processes.
 
 PAM runs in a separate disposable native process with private inherited IPC.
 The worker selects the real UID's session account and the fixed `qindaqt-lock`
-service. Authentication success AND `pam_acct_mgmt` approval are required;
+service, rejecting caller-selected account/service and transport tokens from
+another attempt. The channel uses a versioned fixed-size header, at most 4096
+payload bytes and an absolute deadline; its native owner also terminates a
+worker blocked inside PAM. Authentication success AND `pam_acct_mgmt` approval are required;
 expired credentials, cancellation, malformed conversation, unavailable modules
 or failure never unlock. Conversation prompts/responses are bounded; native
 mutable response copies are wiped. Successful libpam response allocations belong

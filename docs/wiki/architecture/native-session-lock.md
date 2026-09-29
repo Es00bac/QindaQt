@@ -62,10 +62,12 @@ creates the private locker connection and launches its fixed native executable
 with a whitelist environment. An independently launched copy cannot bind the
 lock global, including one with actual loader injection. Kernel ptrace protection
 and non-dumpable/core-off authority processes protect the inherited transport.
-The planned separate native PAM worker owns both authentication and account
-approval; the current executable slice validates its native libpam adapter and
-request/epoch coordinator.
-only the native controller can consume current epoch/request approval. QML
+The separate native PAM worker owns authentication and account approval, using
+a bounded private inherited socket and the real UID account. Each frame carries
+the current lock epoch/request; caller-selected identity/service, malformed
+frames, cancellation and EOF fail closed. The executable worker fixture uses
+only a temporary PAM configuration and synthetic module. Only the native
+controller can consume current epoch/request approval. QML
 provides prompt/response/cancel presentation and cannot manufacture success.
 
 The backend's `org.qindaqt.KWin.NativeLock1` at

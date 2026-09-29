@@ -4118,5 +4118,17 @@ oversize prompts/message counts and embedded-NUL responses. It never reads syste
 PAM config or accepts an owner's password. The fixture-only constructor is
 compiled solely into that test executable; the production worker has none.
 
+`lock.worker-channel` runs the separate non-installed native worker on an owned
+socketpair. It covers synthetic authentication plus account approval, wrong
+password, account rejection, cancellation, stale response tokens, malformed
+conversation styles, prompt/message bounds, EOF and caller-selected identity
+rejection. Protocol rows reject altered magic/version/kind/reserved bytes,
+zero tokens, oversize or embedded-NUL payloads and incomplete frames; transport
+rows cover a bounded deadline and EOF. Actual ptrace attachment to the protected
+ordinary-UID disposable worker fails. Production has no configuration-directory
+argument; only the non-installed executable compiles the private-confdir adapter.
+The controller must enforce the whole-attempt deadline by terminating its own
+worker, including a PAM module blocked outside a conversation callback.
+
 These slices establish neither the installed Qt greeter nor real owner-password
 qualification. See [ADR-0299](../adr/0299-native-locker-private-launch-and-authentication.md).
