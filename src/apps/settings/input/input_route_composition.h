@@ -11,9 +11,11 @@ namespace QindaQt::Apps::SettingsInput {
 
 // Process-lifetime QML singleton composition. It owns the injected ports'
 // production adapters (KWin input D-Bus, kcminputrc/kxkbrc KConfig files,
-// kglobalaccel D-Bus) and the route models over them. No D-Bus call or file
-// write happens in construction: the desktop may be unreachable and the
-// route must still construct (ADR-0134).
+// kglobalaccel D-Bus, and for tablets a Settings1 ledger client and a
+// Display1 client) and the route models over them. No blocking D-Bus call or
+// file write happens in construction; the two tablet clients only start
+// asynchronously. The desktop may be unreachable and the route must still
+// construct (ADR-0134, ADR-0285).
 //
 // AGENT-CONTRACT: This is the only place that names production transports.
 // Models see the port interfaces; QML sees the models. The catalog path and

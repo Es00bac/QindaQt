@@ -12,6 +12,7 @@
 #include <qindaqt/apps/settings_input/shortcuts_model.h>
 #include <qindaqt/apps/settings_input/tablet_devices_model.h>
 
+#include <qindaqt/services/tablet_devices/display_tablet_outputs.h>
 #include <qindaqt/services/tablet_devices/kwin_tablet_devices.h>
 #include <qindaqt/services/tablet_devices/tablet_mapping_store.h>
 #include <qindaqt/services/tablet_devices/tablet_output_inventory.h>
@@ -64,6 +65,7 @@ public:
           layoutsModel(layoutPort),
           shortcutsModel(shortcutPort),
           tabletPort(bus),
+          tabletOutputs(bus),
           tabletSettingsTransport(bus),
           tabletSettingsClient(
               tabletSettingsTransport,
@@ -82,6 +84,11 @@ public:
         if (!tabletSettingsClient.start(&error)) {
             tabletSettingsError = error;
         }
+        // AGENT-NOTE: the tablet route's own Display1 client (ADR-0285),
+        // started here like the Power and Color routes start theirs. Start is
+        // asynchronous; until Display1 answers, a screen's rotation is
+        // unknown and the placement model says so instead of guessing.
+        tabletOutputs.startDisplay();
     }
 
     QDBusConnection bus;
@@ -96,7 +103,8 @@ public:
     KeyboardLayoutsModel layoutsModel;
     ShortcutsModel shortcutsModel;
     Services::TabletDevices::KWinTabletDevicePort tabletPort;
-    Services::TabletDevices::ScreenTabletOutputs tabletOutputs;
+    // The screens and the rotation KWin applies to pen input on each.
+    Services::TabletDevices::DisplayRotationTabletOutputs tabletOutputs;
     Services::SettingsClient::QtSettingsTransport tabletSettingsTransport;
     Services::SettingsClient::SettingsClient tabletSettingsClient;
     Services::TabletDevices::Settings1TabletMappings tabletMappings;
@@ -110,10 +118,13 @@ public:
 
 InputRouteComposition::InputRouteComposition(QObject *parent)
     : QObject(parent), d(std::make_unique<Private>()) {
-    // AGENT-CONTRACT: Construction performs no IO and no D-Bus calls. Every
-    // model fills itself when its tab becomes visible (refresh() from QML),
-    // so importing this module from Main.qml stays cheap for every route,
-    // including when the desktop authority is unreachable.
+    // AGENT-CONTRACT: Construction performs no blocking IO and reads no
+    // device. The only bus traffic is the asynchronous start of the tablet
+    // destination's two purpose-scoped clients (the Settings1 ledger and
+    // Display1 rotations, see Private). Every model fills itself when its
+    // tab becomes visible (refresh() from QML), so importing this module from
+    // Main.qml stays cheap for every route, including when the desktop
+    // authority is unreachable.
     d->layoutsModel.setCatalogPath(evdevCatalogPath());
 }
 

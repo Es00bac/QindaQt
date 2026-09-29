@@ -38,6 +38,43 @@ bool TabletMappingStore::recordChoice(const QString &identity,
     return save(next);
 }
 
+bool TabletMappingStore::recordPlacement(const QString &identity,
+                                         const TabletPlacementIntent &placement,
+                                         TabletMapChoice currentChoice,
+                                         const QString &currentOutput,
+                                         const QString &deviceName) {
+    if (identity.isEmpty() || !isLoaded()) {
+        return false;
+    }
+    TabletMappingLedger next = ledger();
+    const bool known = next.contains(identity);
+    TabletMappingRecord record = next.record(identity);
+    if (!known) {
+        const bool named = currentChoice == TabletMapChoice::NamedOutput;
+        // A named mapping without a name is not a mapping (the ledger drops
+        // such a record on read), so it is recorded as KWin's own default.
+        record.choice = named && currentOutput.isEmpty()
+                            ? TabletMapChoice::FollowActiveScreen
+                            : currentChoice;
+        record.outputName = named ? currentOutput : QString();
+        record.userChosen = false;
+    }
+    if (placement.rotation.has_value()) {
+        record.placement.rotation = placement.rotation;
+    }
+    if (placement.inputArea.has_value()) {
+        record.placement.inputArea = placement.inputArea;
+    }
+    if (placement.outputArea.has_value()) {
+        record.placement.outputArea = placement.outputArea;
+    }
+    if (!deviceName.isEmpty()) {
+        record.deviceName = deviceName;
+    }
+    next.setRecord(identity, record);
+    return save(next);
+}
+
 const QStringList &Settings1TabletMappings::scopedKey() {
     static const QStringList keys{QLatin1String(kKey)};
     return keys;

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/tablet_devices/kwin_tablet_devices.h>
 
+#include <qindaqt/services/tablet_devices/tablet_geometry.h>
+#include <qindaqt/services/tablet_devices/tablet_orientation.h>
+
 #include <QDBusArgument>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
@@ -20,7 +23,15 @@ constexpr auto PropertiesInterface = "org.freedesktop.DBus.Properties";
 constexpr int CallTimeoutMs = 4000;
 constexpr int MaxDevices = 256;
 
-enum class ValueKind { Unknown, Boolean, Double, UnsignedInt, Text, Area };
+enum class ValueKind {
+    Unknown,
+    Boolean,
+    Double,
+    UnsignedInt,
+    Text,
+    Area,
+    Orientation,
+};
 
 ValueKind writableKind(const QString &property) {
     static const QHash<QString, ValueKind> table{
@@ -31,6 +42,10 @@ ValueKind writableKind(const QString &property) {
         {QStringLiteral("pressureRangeMin"), ValueKind::Double},
         {QStringLiteral("pressureRangeMax"), ValueKind::Double},
         {QStringLiteral("rotation"), ValueKind::UnsignedInt},
+        // AGENT-NOTE: `orientation` itself is a Qt::ScreenOrientation, which
+        // QtDBus cannot export; KWin publishes the int twin `orientationDBus`
+        // (`i` on the wire, verified on qinda-top 2026-09-28).
+        {QStringLiteral("orientationDBus"), ValueKind::Orientation},
         {QStringLiteral("outputName"), ValueKind::Text},
         {QStringLiteral("calibrationMatrix"), ValueKind::Text},
         {QStringLiteral("pressureCurve"), ValueKind::Text},
@@ -55,6 +70,7 @@ const QStringList &readProperties() {
         QStringLiteral("pressureRangeMin"),
         QStringLiteral("pressureRangeMax"),
         QStringLiteral("rotation"),
+        QStringLiteral("orientationDBus"),
         QStringLiteral("leftHanded"),
         QStringLiteral("tabletToolIsRelative"),
         QStringLiteral("size"),
@@ -361,13 +377,33 @@ bool KWinTabletDevicePort::writeProperty(const QString &deviceId,
     case ValueKind::Area: {
         bool ok = false;
         const TabletArea area = TabletArea::fromVariant(value, &ok);
-        if (ok && area.isValid()) {
+        // AGENT-GUARD: KWin persists whatever arrives here; libinput then
+        // refuses an edge past 1.0 even by one ulp and keeps the old area.
+        // Only the normalized rectangle ever reaches the wire.
+        const std::optional<TabletArea> normalized =
+            ok ? normalizedArea(area) : std::nullopt;
+        if (normalized.has_value()) {
             // AGENT-NOTE: KWin declares outputArea/inputArea as QRectF
             // properties, and QtDBus marshals QRectF as the `(dddd)`
             // x/y/width/height struct the interface advertises. Sending the
             // rectangle itself is the only encoding KWin demarshals.
-            wire = QVariant::fromValue(
-                QRectF(area.x, area.y, area.width, area.height));
+            wire = QVariant::fromValue(QRectF(normalized->x, normalized->y,
+                                              normalized->width,
+                                              normalized->height));
+        }
+        break;
+    }
+    case ValueKind::Orientation: {
+        bool ok = false;
+        const int orientation = value.toInt(&ok);
+        const bool integral = value.typeId() == QMetaType::Int ||
+                              value.typeId() == QMetaType::UInt ||
+                              value.typeId() == QMetaType::LongLong;
+        // Only the five Qt::ScreenOrientation values; KWin would persist any
+        // other int and apply no rotation for it.
+        if (integral && ok &&
+            rotationFromKWinOrientation(orientation).has_value()) {
+            wire = QVariant::fromValue(orientation);
         }
         break;
     }

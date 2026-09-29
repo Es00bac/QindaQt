@@ -23,6 +23,9 @@ target_sources(
         shortcuts_model.cpp
         tablet_device_selection.cpp
         tablet_devices_model.cpp
+        tablet_placement_model.cpp
+        tablet_placement_notes.cpp
+        tablet_surface.cpp
         touch_settings_model.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -42,6 +45,8 @@ target_sources(
             include/qindaqt/apps/settings_input/store_result.h
             include/qindaqt/apps/settings_input/tablet_device_selection.h
             include/qindaqt/apps/settings_input/tablet_devices_model.h
+            include/qindaqt/apps/settings_input/tablet_placement_model.h
+            include/qindaqt/apps/settings_input/tablet_surface.h
             include/qindaqt/apps/settings_input/touch_settings_model.h
 )
 target_link_libraries(
@@ -100,6 +105,9 @@ qt_add_qml_module(
         qml/InputTabletSection.qml
         qml/InputTouchSection.qml
         qml/ShortcutCaptureButton.qml
+        qml/TabletAreaCanvas.qml
+        qml/TabletAreaEditor.qml
+        qml/TabletAreaGeometry.js
         qml/TabletCalibrationOverlay.qml
         qml/TabletCalibrationSection.qml
         qml/TabletMapDiagram.qml
@@ -145,6 +153,9 @@ install(
         qml/InputTabletSection.qml
         qml/InputTouchSection.qml
         qml/ShortcutCaptureButton.qml
+        qml/TabletAreaCanvas.qml
+        qml/TabletAreaEditor.qml
+        qml/TabletAreaGeometry.js
         qml/TabletCalibrationOverlay.qml
         qml/TabletCalibrationSection.qml
         qml/TabletMapDiagram.qml

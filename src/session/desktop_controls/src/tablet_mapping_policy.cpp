@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/session/desktop_controls/tablet_mapping_policy.h"
 
+#include <qindaqt/services/tablet_devices/tablet_classification.h>
+#include <qindaqt/services/tablet_devices/tablet_placement.h>
+
 #include <QHash>
 #include <QScopeGuard>
 
 namespace QindaQt::Session::DesktopControls {
 
 using Services::TabletDevices::TabletDeviceSnapshot;
+using Services::TabletDevices::TabletKind;
 using Services::TabletDevices::TabletMapChoice;
 using Services::TabletDevices::TabletMappingLedger;
 using Services::TabletDevices::TabletMappingRecord;
+using Services::TabletDevices::TabletOutputCandidate;
 using Services::TabletDevices::TabletOutputMatch;
+using Services::TabletDevices::TabletPlacementIntent;
+using Services::TabletDevices::TabletPlacementPlan;
+using Services::TabletDevices::TabletPropertyWrite;
 
 namespace {
 
@@ -200,6 +208,13 @@ void TabletMappingPolicy::reconcile() {
         // A matched output is an automatic decision; it must stay
         // overridable by the user and must not pretend to be their choice.
         next.userChosen = record.userChosen;
+        // ADR-0285: rotation and areas for the screen the pen now reaches,
+        // recorded with the decision so the next rotation re-bases them.
+        QString placementError;
+        if (!applyPlacement(group, choice, outputName, devices, outputs,
+                            &next.placement, &placementError)) {
+            fail(placementError);
+        }
         if (!known || next != record) {
             ledger.setRecord(key, next);
             ledgerChanged = true;
@@ -255,6 +270,51 @@ bool TabletMappingPolicy::applyChoice(
             !m_port.writeProperty(deviceId, QStringLiteral("mapToWorkspace"),
                                   true, error)) {
             return false;
+        }
+    }
+    return true;
+}
+
+bool TabletMappingPolicy::applyPlacement(
+    const GroupState &group, TabletMapChoice choice, const QString &outputName,
+    const QList<TabletDeviceSnapshot> &devices,
+    const QList<TabletOutputCandidate> &outputs, TabletPlacementIntent *intent,
+    QString *error) {
+    const Services::TabletDevices::MappedRotation mapped =
+        Services::TabletDevices::mappedRotation(choice, outputName, outputs);
+    for (const QString &deviceId : group.toolDeviceIds) {
+        const TabletDeviceSnapshot *device = nullptr;
+        for (const TabletDeviceSnapshot &candidate : devices) {
+            if (candidate.deviceId == deviceId) {
+                device = &candidate;
+                break;
+            }
+        }
+        if (device == nullptr) {
+            continue;
+        }
+        const bool penDisplay =
+            Services::TabletDevices::classifyTablet(*device, outputs).kind ==
+            TabletKind::PenDisplay;
+        // AGENT-GUARD: an unknown screen rotation plans nothing and records
+        // nothing. Adopting intent against a guessed rotation would bake the
+        // guess into the ledger and turn the pen once the real value arrives.
+        const TabletPlacementPlan plan =
+            penDisplay
+                ? Services::TabletDevices::planPenDisplayPlacement(*device)
+                : Services::TabletDevices::planDeskTabletPlacement(
+                      *device, *intent, mapped);
+        if (!plan.actionable) {
+            continue;
+        }
+        for (const TabletPropertyWrite &write : plan.writes) {
+            if (!m_port.writeProperty(deviceId, write.property, write.value,
+                                      error)) {
+                return false;
+            }
+        }
+        if (!penDisplay) {
+            *intent = plan.intent;
         }
     }
     return true;

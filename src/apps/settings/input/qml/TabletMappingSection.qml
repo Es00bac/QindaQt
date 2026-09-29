@@ -6,7 +6,10 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// Where the pen draws: which screen it covers and how much of it.
+// Where the pen draws: which screen it covers and how much of it. A desk
+// tablet gets the two-rectangle area editor; a pen display, whose surface IS
+// its screen, keeps the picture of the mapped area and the two fit buttons
+// (ADR-0285).
 //
 // AGENT-GUARD: "Map to" and the screen picker are one decision. Both go
 // through the selection's applyMapping(), never through two writes of their
@@ -15,11 +18,13 @@ ColumnLayout {
     id: root
 
     required property var selection
+    readonly property var placement: root.selection !== null ? root.selection.placement : null
+    readonly property bool penDisplay: root.placement !== null && root.placement.penDisplay
     readonly property bool mapsToOutput: root.selection !== null
                                          && root.selection.mapMode === "output"
-    readonly property var area: root.selection !== null
-                                && root.selection.outputArea.length === 4
-                                ? root.selection.outputArea : [0, 0, 1, 1]
+    readonly property var area: root.placement !== null
+                                && root.placement.outputArea.length === 4
+                                ? root.placement.outputArea : [0, 0, 1, 1]
     readonly property Item firstFocusTarget: mapRow
 
     spacing: Tokens.space["2"]
@@ -78,11 +83,22 @@ ColumnLayout {
         }
     }
 
+    TabletAreaEditor {
+        objectName: "tabletAreaEditor"
+        Layout.fillWidth: true
+        visible: root.placement !== null && !root.penDisplay
+                 && (root.placement.inputAreaAvailable || root.placement.outputAreaAvailable)
+        placement: root.placement
+    }
+
     TabletMapDiagram {
         objectName: "tabletMapDiagram"
         Layout.fillWidth: true
         Layout.preferredHeight: 170
-        visible: root.selection !== null && root.selection.outputAreaAvailable
+        visible: root.penDisplay && root.placement.outputAreaAvailable
+        screenAspect: root.placement !== null && root.placement.surfaceWidth > 0
+                      && root.placement.surfaceHeight > 0
+                      ? root.placement.surfaceWidth / root.placement.surfaceHeight : 16 / 9
         areaX: root.area[0]
         areaY: root.area[1]
         areaWidth: root.area[2]
@@ -97,7 +113,7 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true
-        visible: root.selection !== null && root.selection.outputAreaAvailable
+        visible: root.penDisplay && root.placement.outputAreaAvailable
         spacing: Tokens.space["2"]
 
         Button {
@@ -105,22 +121,21 @@ ColumnLayout {
             text: qsTr("Fit the whole screen")
             emphasized: false
             accessibleDescription: qsTr("Stretch the tablet surface over the entire screen")
-            onClicked: root.selection.fitWholeScreen()
+            onClicked: root.placement.fitWholeScreen()
         }
 
         Button {
             objectName: "tabletAreaKeepProportions"
             text: qsTr("Keep the tablet's proportions")
             emphasized: false
-            available: root.selection !== null && root.selection.aspectRatioAvailable
+            available: root.placement !== null && root.placement.tabletWidth > 0
             accessibleDescription: qsTr("Letterbox the mapped area so a square on the tablet is a square on screen")
             onClicked: {
-                // The screen the settings window is on is the best proxy the
-                // route has for the mapped screen's shape; the area is
-                // normalized, so only the ratio matters.
+                // The mapped screen's own shape decides when it is known; the
+                // screen this window is on stands in only when it is not.
                 const screen = root.Window.window !== null
                     ? root.Window.window.screen : null
-                root.selection.keepTabletProportions(
+                root.placement.keepTabletProportions(
                     screen !== null ? screen.width : 16,
                     screen !== null ? screen.height : 9)
             }

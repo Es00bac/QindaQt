@@ -128,14 +128,14 @@ void TabletDevicesModelTest::capabilityFlagsDecideWhatIsAvailable() {
 
     auto *selection = model.selection();
     QVERIFY(!selection->calibrationAvailable());
-    QVERIFY(!selection->rotationAvailable());
+    QVERIFY(!selection->placement()->rotationAvailable());
     QVERIFY(!selection->leftHandedAvailable());
     QVERIFY(!selection->pressureRangeAvailable());
-    QVERIFY(!selection->inputAreaAvailable());
+    QVERIFY(!selection->placement()->inputAreaAvailable());
     QVERIFY(!selection->deviceEnabledAvailable());
     // The pressure curve and the screen rectangle exist for every tool.
     QVERIFY(selection->pressureCurveAvailable());
-    QVERIFY(selection->outputAreaAvailable());
+    QVERIFY(selection->placement()->outputAreaAvailable());
     QVERIFY(selection->relativeModeAvailable());
 }
 
@@ -175,18 +175,24 @@ void TabletDevicesModelTest::mappingWritesTheWorkspaceFlagAndOutputInOrder() {
 void TabletDevicesModelTest::aRefusedWriteKeepsThePresentedValueAndSaysWhy() {
     FakeTabletPort port;
     FakeTabletOutputs outputs;
-    port.scripted = {fakeWacomPen()};
-    port.refuse = QStringLiteral("rotation");
+    outputs.scripted = {fakeMonitor(QStringLiteral("DP-1"),
+                                    QindaQt::Services::TabletDevices::Rotation::None)};
+    port.scripted = {fakeBambooPen(QStringLiteral("DP-1"))};
+    // A desk tablet turns through KWin's orientation (ADR-0285).
+    port.refuse = QStringLiteral("orientationDBus");
     FakeTabletMappingStore store;
     TabletDevicesModel model(port, outputs, &store);
     model.refresh();
     auto *selection = model.selection();
 
-    selection->setRotation(90);
+    QVERIFY(!selection->placement()->setRotation(90));
     // Success alone moves the presented value; a refused write leaves the
-    // route showing what the device actually is.
-    QCOMPARE(selection->rotation(), 0);
+    // route showing what the device actually is, and nothing is recorded.
+    QCOMPARE(selection->placement()->rotation(), 0);
     QVERIFY(selection->statusText().contains(QStringLiteral("refused")));
+    QVERIFY(!store.held
+                 .record(QStringLiteral("1386:221:Wacom Bamboo Connect"))
+                 .placement.rotation.has_value());
 }
 
 void TabletDevicesModelTest::areaHelpersComputeFromTheTabletsOwnSize() {
@@ -196,18 +202,20 @@ void TabletDevicesModelTest::areaHelpersComputeFromTheTabletsOwnSize() {
     FakeTabletMappingStore store;
     TabletDevicesModel model(port, outputs, &store);
     model.refresh();
-    auto *selection = model.selection();
-    QVERIFY(selection->aspectRatioAvailable());
+    auto *placement = model.selection()->placement();
+    QVERIFY(placement->penDisplay());
+    QVERIFY(placement->tabletWidth() > 0.0);
 
     port.writes.clear();
-    QVERIFY(selection->fitWholeScreen());
+    QVERIFY(placement->fitWholeScreen());
     QCOMPARE(std::get<1>(port.writes.at(0)), QStringLiteral("outputArea"));
     QCOMPARE(std::get<2>(port.writes.at(0)).toList(),
              (QVariantList{0.0, 0.0, 1.0, 1.0}));
 
-    // A 294 x 166 tablet on a 16:9 screen is very slightly narrower.
+    // A 294 x 166 tablet on a 16:9 screen is very slightly narrower. No
+    // screen geometry is known here, so the fallback extents decide.
     port.writes.clear();
-    QVERIFY(selection->keepTabletProportions(1920.0, 1080.0));
+    QVERIFY(placement->keepTabletProportions(1920.0, 1080.0));
     const QVariantList area = std::get<2>(port.writes.at(0)).toList();
     QCOMPARE(area.size(), 4);
     QVERIFY(area.at(2).toDouble() < 1.0);
@@ -220,8 +228,9 @@ void TabletDevicesModelTest::areaHelpersComputeFromTheTabletsOwnSize() {
                                QVariantList{-1.0, -1.0});
     port.scripted = {sizeless};
     model.refresh();
-    QVERIFY(!model.selection()->aspectRatioAvailable());
-    QVERIFY(!model.selection()->keepTabletProportions(1920.0, 1080.0));
+    QCOMPARE(model.selection()->placement()->tabletWidth(), 0.0);
+    QVERIFY(!model.selection()->placement()->keepTabletProportions(1920.0,
+                                                                   1080.0));
     QVERIFY(!model.selection()->statusText().isEmpty());
 }
 
@@ -231,7 +240,8 @@ void TabletDevicesModelTest::resetPutsTheDeviceBackToItsOwnDefaults() {
     TabletDeviceSnapshot pen = fakeWacomPen();
     pen.properties.insert(QStringLiteral("calibrationMatrix"),
                           QStringLiteral("2,0,0,0,0,2,0,0,0,0,1,0,0,0,0,1"));
-    pen.properties.insert(QStringLiteral("rotation"), 90u);
+    // A rotation left on a pen display from before ADR-0285.
+    pen.properties.insert(QStringLiteral("orientationDBus"), 1);
     port.scripted = {pen};
     FakeTabletMappingStore store;
     TabletDevicesModel model(port, outputs, &store);
@@ -246,12 +256,17 @@ void TabletDevicesModelTest::resetPutsTheDeviceBackToItsOwnDefaults() {
         written.append(std::get<1>(write));
     }
     QVERIFY(written.contains(QStringLiteral("calibrationMatrix")));
-    QVERIFY(written.contains(QStringLiteral("rotation")));
+    // The pen display loses its stale rotation: it turns with its screen.
+    QVERIFY(written.contains(QStringLiteral("orientationDBus")));
     QVERIFY(written.contains(QStringLiteral("outputArea")));
     QCOMPARE(selection->calibrationMatrix(),
              QStringLiteral("1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1"));
     QVERIFY(!selection->calibrated());
-    QCOMPARE(selection->rotation(), 0);
+    for (const auto &write : port.writes) {
+        if (std::get<1>(write) == QLatin1String("orientationDBus")) {
+            QCOMPARE(std::get<2>(write).toInt(), 0);
+        }
+    }
 
     // A curve KWin could not read is refused before it reaches the wire.
     port.writes.clear();

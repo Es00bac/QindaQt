@@ -14,6 +14,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QSet>
+#include <QSignalSpy>
 #include <QTest>
 
 #include "support/fake_ports.h"
@@ -101,7 +102,9 @@ private Q_SLOTS:
 
     void theRouteUnderTestIsTheBuildTreesQml();
     void theDestinationListOffersPenAndTablet();
-    void everyControlRendersForAFullyCapableTablet();
+    void everyControlRendersForAPenDisplay();
+    void aDeskTabletShowsRotationAndTheAreaEditor();
+    void aPenDisplaySendsTheUserToDisplays();
     void unsupportedControlsAreHiddenNotDisabled();
     void noTabletShowsTheHonestEmptyState();
     void anUnreachableAuthorityShowsTheDegradedNotice();
@@ -227,7 +230,7 @@ void TabletPageTest::theDestinationListOffersPenAndTablet() {
              QStringLiteral("pointers"));
 }
 
-void TabletPageTest::everyControlRendersForAFullyCapableTablet() {
+void TabletPageTest::everyControlRendersForAPenDisplay() {
     facade = std::make_unique<TestTabletFacade>();
     facade->tabletPort.scripted = {fakeWacomPen(), fakeWacomPad()};
     facade->outputs.scripted = {fakeLaptopPanel(), fakePenDisplayOutput()};
@@ -238,8 +241,13 @@ void TabletPageTest::everyControlRendersForAFullyCapableTablet() {
     QVERIFY(isShown(QStringLiteral("tabletMapDiagram")));
     QVERIFY(isShown(QStringLiteral("tabletAreaWholeScreen")));
     QVERIFY(isShown(QStringLiteral("tabletAreaKeepProportions")));
-    QVERIFY(isShown(QStringLiteral("tabletRotationRow")));
-    QVERIFY(isShown(QStringLiteral("tabletLeftHandedRow")));
+    // ADR-0285: a pen display turns with its screen; it has no rotation or
+    // left-handed switch of its own, and no desk-tablet area editor.
+    QVERIFY(isShown(QStringLiteral("tabletFollowsScreenRow")));
+    QVERIFY(isShown(QStringLiteral("tabletOpenDisplays")));
+    QVERIFY(!isShown(QStringLiteral("tabletRotationRow")));
+    QVERIFY(!isShown(QStringLiteral("tabletLeftHandedRow")));
+    QVERIFY(!isShown(QStringLiteral("tabletAreaEditor")));
     QVERIFY(isShown(QStringLiteral("tabletPenModeRow")));
     QVERIFY(isShown(QStringLiteral("tabletEnabledRow")));
     QVERIFY(isShown(QStringLiteral("tabletCalibrationStart")));
@@ -256,6 +264,57 @@ void TabletPageTest::everyControlRendersForAFullyCapableTablet() {
     QVERIFY(!padText.contains(QStringLiteral("strip")));
     // The calibration overlay is not up until the user asks for it.
     QVERIFY(findObject(QStringLiteral("tabletCalibrationOverlay")) == nullptr);
+}
+
+void TabletPageTest::aDeskTabletShowsRotationAndTheAreaEditor() {
+    facade = std::make_unique<TestTabletFacade>();
+    facade->tabletPort.scripted = {fakeBambooPen(QStringLiteral("DP-1"))};
+    facade->outputs.scripted = {
+        fakeMonitor(QStringLiteral("DP-1"),
+                    QindaQt::Services::TabletDevices::Rotation::Cw90,
+                    QRectF(0, 0, 1080, 1920))};
+    buildPage();
+
+    // The owner's Bamboo: rotation always offered, left-handed too, and the
+    // two-rectangle editor instead of the pen display's picture.
+    QVERIFY(isShown(QStringLiteral("tabletRotationRow")));
+    QVERIFY(isShown(QStringLiteral("tabletRotationNote")));
+    QVERIFY(isShown(QStringLiteral("tabletLeftHandedRow")));
+    QVERIFY(isShown(QStringLiteral("tabletAreaEditor")));
+    QVERIFY(isShown(QStringLiteral("tabletInputCanvas")));
+    QVERIFY(isShown(QStringLiteral("tabletOutputCanvas")));
+    QVERIFY(isShown(QStringLiteral("tabletKeepProportions")));
+    QVERIFY(isShown(QStringLiteral("tabletAreaReset")));
+    QVERIFY(!isShown(QStringLiteral("tabletFollowsScreenRow")));
+    QVERIFY(!isShown(QStringLiteral("tabletMapDiagram")));
+    // The calibration wizard measures a pen on its own screen.
+    QVERIFY(!isShown(QStringLiteral("tabletCalibrationStart")));
+    // The note says why the pen is turned back.
+    const QObject *note = findObject(QStringLiteral("tabletRotationNote"));
+    QVERIFY(note != nullptr);
+    QVERIFY(note->property("text").toString().contains(QStringLiteral("90")));
+    // The combo shows the recorded turn.
+    const QObject *combo = findObject(QStringLiteral("tabletRotationCombo"));
+    QVERIFY(combo != nullptr);
+    QCOMPARE(combo->property("currentIndex").toInt(), 0);
+    QVERIFY(facade->tabletModel.selection()->placement()->setRotation(90));
+    QCOMPARE(combo->property("currentIndex").toInt(), 1);
+}
+
+void TabletPageTest::aPenDisplaySendsTheUserToDisplays() {
+    facade = std::make_unique<TestTabletFacade>();
+    facade->tabletPort.scripted = {fakeWacomPen()};
+    facade->outputs.scripted = {fakeLaptopPanel(), fakePenDisplayOutput()};
+    buildPage();
+    QSignalSpy requested(page, SIGNAL(displaySettingsRequested()));
+    QObject *button = findObject(QStringLiteral("tabletOpenDisplays"));
+    QVERIFY(button != nullptr);
+    QVERIFY(QMetaObject::invokeMethod(button, "clicked"));
+    QCOMPARE(requested.size(), 1);
+    // The note names the screen it turns with.
+    const QObject *note = findObject(QStringLiteral("tabletFollowsScreenNote"));
+    QVERIFY(note != nullptr);
+    QVERIFY(note->property("text").toString().contains(QStringLiteral("HDMI-A-1")));
 }
 
 void TabletPageTest::unsupportedControlsAreHiddenNotDisabled() {

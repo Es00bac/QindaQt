@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/apps/settings_input/tablet_device_selection.h>
 
+#include <qindaqt/apps/settings_input/tablet_surface.h>
 #include <qindaqt/services/tablet_devices/tablet_geometry.h>
 
 #include <QPointF>
 
 namespace QindaQt::Apps::SettingsInput {
 
-using Services::TabletDevices::TabletArea;
 using Services::TabletDevices::TabletDeviceSnapshot;
+using Services::TabletDevices::TabletMapChoice;
 using Services::TabletDevices::TabletOutputCandidate;
 
 namespace {
@@ -18,13 +19,13 @@ bool flag(const QVariantMap &properties, const char *name) {
     return value.typeId() == QMetaType::Bool && value.toBool();
 }
 
-QVariantList areaOf(const QVariantMap &properties, const char *name) {
-    const QVariant value = properties.value(QLatin1String(name));
-    if (value.typeId() != QMetaType::QVariantList) {
-        return {};
+TabletMapChoice choiceFor(const QString &mapMode) {
+    if (mapMode == QLatin1String("workspace")) {
+        return TabletMapChoice::EntireWorkspace;
     }
-    const QVariantList parts = value.toList();
-    return parts.size() == 4 ? parts : QVariantList{};
+    return mapMode == QLatin1String("output")
+               ? TabletMapChoice::NamedOutput
+               : TabletMapChoice::FollowActiveScreen;
 }
 
 // KWin publishes an absent pad count as the unsigned -1; -1 is the honest
@@ -42,29 +43,19 @@ int countOf(const QVariantMap &properties, const char *name) {
     return int(raw);
 }
 
-QString outputLabelFor(const TabletOutputCandidate &output) {
-    QStringList parts;
-    if (!output.manufacturer.trimmed().isEmpty()) {
-        parts.append(output.manufacturer.trimmed());
-    }
-    if (!output.model.trimmed().isEmpty() &&
-        output.model.trimmed() != output.connectorName) {
-        parts.append(output.model.trimmed());
-    }
-    if (parts.isEmpty()) {
-        return output.connectorName;
-    }
-    return QStringLiteral("%1 (%2)")
-        .arg(parts.join(QLatin1Char(' ')), output.connectorName);
-}
-
 } // namespace
 
 TabletDeviceSelection::TabletDeviceSelection(
     const Services::TabletDevices::TabletDevicePort &port,
     const Services::TabletDevices::TabletOutputInventory &outputs,
     Services::TabletDevices::TabletMappingStore *store, QObject *parent)
-    : QObject(parent), m_port(port), m_outputs(outputs), m_store(store) {
+    : QObject(parent), m_port(port), m_outputs(outputs), m_store(store),
+      m_placement(new TabletPlacementModel(port, outputs, store, this)) {
+    // Which rows exist depends on the kind of tablet the placement decided.
+    connect(m_placement, &TabletPlacementModel::placementChanged, this,
+            &TabletDeviceSelection::availabilityChanged);
+    connect(m_placement, &TabletPlacementModel::statusReported, this,
+            [this](const QString &text) { setStatusText(text); });
     refreshOutputs();
 }
 
@@ -77,8 +68,11 @@ void TabletDeviceSelection::refreshOutputs() {
             continue;
         }
         names.append(output.connectorName);
-        labels.append(outputLabelFor(output));
+        labels.append(tabletOutputLabel(output));
     }
+    // A screen that turned or moved changes the compensation and the shape
+    // the area editor draws even when the list of names did not change.
+    m_placement->refresh();
     if (names == m_outputNames && labels == m_outputLabels) {
         return;
     }
@@ -102,15 +96,13 @@ void TabletDeviceSelection::clear() {
     m_penProperties.clear();
     m_padProperties.clear();
     m_enabledAvailable = false;
-    m_outputAreaAvailable = false;
-    m_inputAreaAvailable = false;
-    m_rotationAvailable = false;
     m_leftHandedAvailable = false;
     m_calibrationAvailable = false;
     m_pressureCurveAvailable = false;
     m_pressureRangeAvailable = false;
     m_relativeAvailable = false;
     m_padButtons = m_padRings = m_padStrips = m_padDials = -1;
+    m_placement->clear();
     Q_EMIT deviceChanged();
     Q_EMIT availabilityChanged();
     Q_EMIT mappingChanged();
@@ -143,24 +135,10 @@ void TabletDeviceSelection::setGroup(const TabletDeviceSnapshot &pen,
                 : outputName.isEmpty() ? QStringLiteral("follow")
                                        : QStringLiteral("output");
 
-    m_outputArea = areaOf(m_penProperties, "outputArea");
-    m_inputArea = areaOf(m_penProperties, "inputArea");
-    // AGENT-NOTE: KWin has no supportsOutputName/supportsOutputArea pair for
-    // the mapped rectangle of the screen — `outputArea` exists on every
-    // device that can be mapped, while `supportsOutputArea` gates libinput's
-    // *input* area on the tablet surface. The screen rectangle therefore
-    // follows the tool flag, and the tablet-surface rectangle follows
-    // supportsInputArea.
-    m_outputAreaAvailable = hasPen && m_outputArea.size() == 4;
-    m_inputAreaAvailable = hasPen && flag(m_penProperties, "supportsInputArea") &&
-                           m_inputArea.size() == 4;
-
-    const double width = hasPen ? pen.widthMillimeters() : -1.0;
-    const double height = hasPen ? pen.heightMillimeters() : -1.0;
-    m_aspectRatio = (width > 0.0 && height > 0.0) ? width / height : 0.0;
-
-    m_rotation = int(penProperty(QStringLiteral("rotation")).toUInt());
-    m_rotationAvailable = hasPen && flag(m_penProperties, "supportsRotation");
+    // AGENT-NOTE: `outputArea` exists on every device that can be mapped;
+    // `supportsInputArea` gates libinput's area on the tablet surface and is
+    // also libinput's verdict that the tablet is not a screen. Both areas and
+    // the rotation are presented by `placement` in the frames the user sees.
     m_leftHanded = flag(m_penProperties, "leftHanded");
     m_leftHandedAvailable = hasPen && flag(m_penProperties, "supportsLeftHanded");
 
@@ -194,12 +172,12 @@ void TabletDeviceSelection::setGroup(const TabletDeviceSnapshot &pen,
     m_padDials = countOf(padSource, "tabletPadDialCount");
 
     m_statusText.clear();
+    m_placement->setDevice(pen, hasPen, m_identity, m_name,
+                           choiceFor(m_mapMode), m_outputName);
     Q_EMIT deviceChanged();
     Q_EMIT availabilityChanged();
     Q_EMIT deviceEnabledChanged();
     Q_EMIT mappingChanged();
-    Q_EMIT areaChanged();
-    Q_EMIT rotationChanged();
     Q_EMIT leftHandedChanged();
     Q_EMIT calibrationChanged();
     Q_EMIT pressureChanged();
@@ -249,19 +227,6 @@ void TabletDeviceSelection::setDeviceEnabled(bool value) {
     }
     m_enabled = value;
     Q_EMIT deviceEnabledChanged();
-}
-
-void TabletDeviceSelection::setRotation(int value) {
-    const int normalized = ((value % 360) + 360) % 360;
-    if (normalized == m_rotation) {
-        return;
-    }
-    if (!write(m_penId, QStringLiteral("rotation"),
-               QVariant::fromValue(uint(normalized)), tr("Orientation"))) {
-        return;
-    }
-    m_rotation = normalized;
-    Q_EMIT rotationChanged();
 }
 
 void TabletDeviceSelection::setLeftHanded(bool value) {
@@ -357,56 +322,9 @@ bool TabletDeviceSelection::applyMapping(const QString &mode,
                          "could not be remembered for next time."));
     }
     Q_EMIT mappingChanged();
+    // A different screen is a different rotation to compensate (ADR-0285).
+    m_placement->applyMapping(recorded, wantedOutput);
     return true;
-}
-
-bool TabletDeviceSelection::applyOutputArea(double x, double y, double width,
-                                            double height) {
-    const TabletArea area{x, y, width, height};
-    if (!area.isValid()) {
-        setStatusText(tr("That area is outside the screen."));
-        return false;
-    }
-    if (!write(m_penId, QStringLiteral("outputArea"), area.toVariantList(),
-               tr("Area"))) {
-        return false;
-    }
-    m_outputArea = area.toVariantList();
-    Q_EMIT areaChanged();
-    return true;
-}
-
-bool TabletDeviceSelection::applyInputArea(double x, double y, double width,
-                                           double height) {
-    const TabletArea area{x, y, width, height};
-    if (!area.isValid()) {
-        setStatusText(tr("That area is outside the tablet."));
-        return false;
-    }
-    if (!write(m_penId, QStringLiteral("inputArea"), area.toVariantList(),
-               tr("Tablet area"))) {
-        return false;
-    }
-    m_inputArea = area.toVariantList();
-    Q_EMIT areaChanged();
-    return true;
-}
-
-bool TabletDeviceSelection::fitWholeScreen() {
-    return applyOutputArea(0.0, 0.0, 1.0, 1.0);
-}
-
-bool TabletDeviceSelection::keepTabletProportions(double outputWidth,
-                                                  double outputHeight) {
-    if (m_aspectRatio <= 0.0) {
-        setStatusText(
-            tr("This tablet does not report its size, so its proportions "
-               "cannot be matched."));
-        return false;
-    }
-    const TabletArea area = Services::TabletDevices::letterboxArea(
-        m_aspectRatio, outputWidth, outputHeight);
-    return applyOutputArea(area.x, area.y, area.width, area.height);
 }
 
 bool TabletDeviceSelection::applyCalibrationMatrix(const QString &matrix) {
@@ -468,16 +386,12 @@ bool TabletDeviceSelection::resetDevice() {
         ok = resetCalibration() && ok;
     }
     ok = resetPressure() && ok;
-    if (m_rotationAvailable) {
-        const QVariant rotation = penProperty(QStringLiteral("defaultRotation"));
-        setRotation(rotation.isValid() ? int(rotation.toUInt()) : 0);
-    }
     if (m_leftHandedAvailable) {
         setLeftHanded(false);
     }
-    if (m_outputAreaAvailable) {
-        ok = fitWholeScreen() && ok;
-    }
+    // Upright on its screen with the whole tablet on the whole surface; a
+    // pen display also loses any stale rotation of its own.
+    ok = m_placement->reset() && ok;
     setRelativeMode(false);
     return ok;
 }

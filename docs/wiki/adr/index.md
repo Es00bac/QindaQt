@@ -291,3 +291,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0283: True-color places, file types and Qinda app marks from one shared catalog](0283-true-color-places-types-and-qinda-app-marks.md)
 
 - [ADR-0284: Themes name their light and dark twins](0284-themes-name-their-light-and-dark-twins.md)
+
+- [ADR-0285: Desk tablets keep the screen's up; pen displays turn with their screen](0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md)

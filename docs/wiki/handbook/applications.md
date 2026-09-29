@@ -51,6 +51,11 @@ or from the launcher. A sidebar groups the pages:
   - *Power* — battery and supply state, power profile, and screen and
     keyboard brightness.
   - *Color* — color-profile management per screen.
+  - *Input* — mouse and touchpad, keyboard and layouts, shortcuts, touch, and
+    *Pen & tablet*: which screen the pen draws on; for a desk tablet, which
+    way it lies on the desk (it stays upright even on a rotated monitor) and
+    which part of the tablet reaches which part of the screen, drawn as two
+    rectangles; for a pen display, the screen it turns with.
 
 Keyboard shortcuts: `Ctrl+1` through `Ctrl+0` jump straight to the pages in
 order, the arrow keys move through them, and `Alt+Left` returns to the

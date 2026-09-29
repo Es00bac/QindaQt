@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/tablet_devices/tablet_geometry.h>
 #include <qindaqt/services/tablet_devices/tablet_mapping_ledger.h>
+#include <qindaqt/services/tablet_devices/tablet_orientation.h>
 #include <qindaqt/services/tablet_devices/tablet_output_matcher.h>
 
 #include <QTest>
+
+#include <array>
+#include <limits>
+#include <optional>
 
 using namespace QindaQt::Services::TabletDevices;
 
@@ -47,6 +52,10 @@ private Q_SLOTS:
     void theLedgerKeyIsStableAcrossAReplug();
     void theLedgerKeyIsNeverKWinsDeviceGroupId();
     void aLedgerWrittenUnderTheOldPointerHashIsDropped();
+    void theLedgerKeepsPlacementIntentThroughSettings1Numbers();
+    void aMalformedPlacementMemberCostsOnlyItself();
+    void normalizedAreasAreOnesLibinputAccepts();
+    void proportionalOutputKeepsCentreAreaAndPhysicalShape();
 };
 
 void TabletPolicyValuesTest::matchesTheDisplayTabletVendorByEitherEdidForm() {
@@ -340,6 +349,147 @@ void TabletPolicyValuesTest::aLedgerWrittenUnderTheOldPointerHashIsDropped() {
     QCOMPARE(ledger.record(QStringLiteral("1386:934:Wacom One Pen Display 13"))
                  .outputName,
              QStringLiteral("DP-2"));
+}
+
+void TabletPolicyValuesTest::theLedgerKeepsPlacementIntentThroughSettings1Numbers() {
+    TabletMappingLedger ledger;
+    TabletMappingRecord record;
+    record.deviceName = QStringLiteral("Wacom Bamboo Connect Pen");
+    record.placement.rotation = Rotation::Cw90;
+    record.placement.inputArea = TabletArea{0.25, 0.0, 0.5, 1.0};
+    record.placement.outputArea = TabletArea{0.0, 0.0, 1.0, 1.0};
+    ledger.setRecord(QStringLiteral("1386:221:Wacom Bamboo Connect"), record);
+    const QVariantMap document = ledger.toVariantMap();
+    QCOMPARE(TabletMappingLedger::fromVariantMap(document), ledger);
+
+    // Settings1 hands integral numbers back as qint64 and fractions as
+    // double (settings_wire_decode.cpp); the record must survive that.
+    const QVariantMap canonical{
+        {QStringLiteral("1386:221:Wacom Bamboo Connect"),
+         QVariantMap{{QStringLiteral("choice"), QStringLiteral("follow")},
+                     {QStringLiteral("rotation"), QVariant::fromValue(qint64(270))},
+                     {QStringLiteral("inputArea"),
+                      QVariantList{QVariant::fromValue(qint64(0)), 0.5,
+                                   QVariant::fromValue(qint64(1)), 0.5}},
+                     {QStringLiteral("outputArea"),
+                      QVariantList{QVariant::fromValue(qint64(0)),
+                                   QVariant::fromValue(qint64(0)),
+                                   QVariant::fromValue(qint64(1)),
+                                   QVariant::fromValue(qint64(1))}}}}};
+    const TabletPlacementIntent parsed =
+        TabletMappingLedger::fromVariantMap(canonical)
+            .record(QStringLiteral("1386:221:Wacom Bamboo Connect"))
+            .placement;
+    QVERIFY(parsed.rotation.has_value());
+    QCOMPARE(*parsed.rotation, Rotation::Cw270);
+    QVERIFY(parsed.inputArea.has_value());
+    QCOMPARE(*parsed.inputArea, (TabletArea{0.0, 0.5, 1.0, 0.5}));
+    QVERIFY(parsed.outputArea.has_value() && parsed.outputArea->isWhole());
+
+    // A record written before ADR-0285 simply has no intent.
+    const QVariantMap old{
+        {QStringLiteral("1386:221:Wacom Bamboo Connect"),
+         QVariantMap{{QStringLiteral("choice"), QStringLiteral("follow")}}}};
+    const TabletPlacementIntent none =
+        TabletMappingLedger::fromVariantMap(old)
+            .record(QStringLiteral("1386:221:Wacom Bamboo Connect"))
+            .placement;
+    QVERIFY(!none.rotation.has_value());
+    QVERIFY(!none.inputArea.has_value());
+    QVERIFY(!none.outputArea.has_value());
+}
+
+void TabletPolicyValuesTest::aMalformedPlacementMemberCostsOnlyItself() {
+    const QVariantMap document{
+        {QStringLiteral("1386:221:Wacom Bamboo Connect"),
+         QVariantMap{{QStringLiteral("choice"), QStringLiteral("output")},
+                     {QStringLiteral("outputName"), QStringLiteral("DP-1")},
+                     {QStringLiteral("userChosen"), true},
+                     // Not a quarter turn.
+                     {QStringLiteral("rotation"), 45},
+                     // Outside the tablet.
+                     {QStringLiteral("inputArea"), QVariantList{0.5, 0.0, 0.9, 1.0}},
+                     // Strings are not numbers here.
+                     {QStringLiteral("outputArea"),
+                      QVariantList{QStringLiteral("0"), 0.0, 1.0, 1.0}}}}};
+    const TabletMappingLedger ledger =
+        TabletMappingLedger::fromVariantMap(document);
+    QCOMPARE(ledger.size(), 1);
+    const TabletMappingRecord record =
+        ledger.record(QStringLiteral("1386:221:Wacom Bamboo Connect"));
+    // The mapping decision survives every bad member.
+    QCOMPARE(record.choice, TabletMapChoice::NamedOutput);
+    QCOMPARE(record.outputName, QStringLiteral("DP-1"));
+    QVERIFY(record.userChosen);
+    QVERIFY(!record.placement.rotation.has_value());
+    QVERIFY(!record.placement.inputArea.has_value());
+    QVERIFY(!record.placement.outputArea.has_value());
+}
+
+void TabletPolicyValuesTest::normalizedAreasAreOnesLibinputAccepts() {
+    // In range: untouched.
+    const std::optional<TabletArea> inside =
+        normalizedArea(TabletArea{0.1, 0.2, 0.5, 0.25});
+    QVERIFY(inside.has_value());
+    QCOMPARE(*inside, (TabletArea{0.1, 0.2, 0.5, 0.25}));
+    // A rounding overshoot of an edge is pulled onto it, and the far edge
+    // computed the way KWin does (x + width) is never past 1.0.
+    const std::array<double, 5> origins{0.1, 0.3, 0.7, 0.123456789, 0.999};
+    for (const double origin : origins) {
+        const std::optional<TabletArea> snapped = normalizedArea(
+            TabletArea{origin, 0.0, (1.0 - origin) + 1e-12, 1.0}, 0.0);
+        QVERIFY(snapped.has_value());
+        QVERIFY(snapped->x + snapped->width <= 1.0);
+    }
+    const std::optional<TabletArea> negative =
+        normalizedArea(TabletArea{-1e-12, 0.0, 0.5, 0.5});
+    QVERIFY(negative.has_value() && negative->x == 0.0);
+    // Genuinely outside, empty, non-finite or below the minimum: refused.
+    QVERIFY(!normalizedArea(TabletArea{0.5, 0.0, 0.8, 1.0}).has_value());
+    QVERIFY(!normalizedArea(TabletArea{-0.2, 0.0, 0.5, 0.5}).has_value());
+    QVERIFY(!normalizedArea(TabletArea{0.2, 0.2, 0.0, 0.5}).has_value());
+    QVERIFY(!normalizedArea(TabletArea{0.2, 0.2, std::numeric_limits<double>::quiet_NaN(), 0.5}).has_value());
+    QVERIFY(!normalizedArea(TabletArea{0.2, 0.2, 0.04, 0.5},
+                            MinimumEditableAreaExtent)
+                 .has_value());
+    QVERIFY(normalizedArea(TabletArea{0.2, 0.2, 0.05, 0.5},
+                           MinimumEditableAreaExtent)
+                .has_value());
+    QVERIFY(sameArea(TabletArea{0.1, 0.1, 0.5, 0.5},
+                     TabletArea{0.1 + 1e-12, 0.1, 0.5, 0.5}));
+    QVERIFY(!sameArea(TabletArea{0.1, 0.1, 0.5, 0.5},
+                      TabletArea{0.11, 0.1, 0.5, 0.5}));
+}
+
+void TabletPolicyValuesTest::proportionalOutputKeepsCentreAreaAndPhysicalShape() {
+    // The owner's Bamboo is 147.2 x 92 mm; a 1920 x 1080 screen.
+    const TabletArea wholeTablet{};
+    const double aspect =
+        proportionalOutputAspect(wholeTablet, 147.2, 92.0, 1920.0, 1080.0);
+    QVERIFY(qAbs(aspect - (147.2 / 92.0) * 1080.0 / 1920.0) < 1e-12);
+    const TabletArea centred{0.25, 0.25, 0.5, 0.5};
+    const TabletArea shaped = proportionalOutputArea(wholeTablet, 147.2, 92.0,
+                                                     centred, 1920.0, 1080.0);
+    // Same centre and same area, the tablet's physical proportions on screen.
+    QVERIFY(qAbs((shaped.x + shaped.width / 2.0) - 0.5) < 1e-9);
+    QVERIFY(qAbs((shaped.y + shaped.height / 2.0) - 0.5) < 1e-9);
+    QVERIFY(qAbs(shaped.width * shaped.height - 0.25) < 1e-9);
+    QVERIFY(qAbs((shaped.width * 1920.0) / (shaped.height * 1080.0) -
+                 147.2 / 92.0) < 1e-9);
+    // Too big to keep its area: shrunk to fit, still in proportion.
+    const TabletArea fitted = proportionalOutputArea(
+        TabletArea{0.0, 0.0, 1.0, 0.2}, 147.2, 92.0, TabletArea{}, 1920.0,
+        1080.0);
+    QVERIFY(fitted.width <= 1.0 && fitted.height <= 1.0);
+    QVERIFY(fitted.x >= 0.0 && fitted.x + fitted.width <= 1.0 + 1e-12);
+    QVERIFY(qAbs(fitted.width / fitted.height -
+                 proportionalOutputAspect(TabletArea{0.0, 0.0, 1.0, 0.2}, 147.2,
+                                          92.0, 1920.0, 1080.0)) < 1e-9);
+    // Unknown sizes are never guessed.
+    QCOMPARE(proportionalOutputAspect(wholeTablet, -1.0, -1.0, 1920.0, 1080.0),
+             0.0);
+    QCOMPARE(proportionalOutputArea(wholeTablet, 147.2, 92.0, centred, 0.0, 0.0),
+             centred);
 }
 
 QTEST_APPLESS_MAIN(TabletPolicyValuesTest)

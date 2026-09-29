@@ -4,7 +4,7 @@
 - **Date:** 2026-09-17
 - **Owners:** Session desktop controls; Settings Input route
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0285](0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md), in part (the "no Display1 client" consequence; rotation and areas)
 
 ## Context
 

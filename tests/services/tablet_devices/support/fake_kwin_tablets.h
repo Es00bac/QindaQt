@@ -64,6 +64,8 @@ class FakeTabletDevice final : public QObject {
     Q_PROPERTY(double pressureRangeMax READ pressureRangeMax WRITE
                    setPressureRangeMax)
     Q_PROPERTY(uint rotation READ rotation WRITE setRotation)
+    // KWin exports its Qt::ScreenOrientation property as this int twin.
+    Q_PROPERTY(int orientationDBus READ orientationDBus WRITE setOrientationDBus)
     Q_PROPERTY(bool leftHanded READ leftHanded WRITE setLeftHanded)
     Q_PROPERTY(bool tabletToolIsRelative READ relative WRITE setRelative)
 
@@ -169,6 +171,10 @@ public:
     }
     uint rotation() const { return m_rotation; }
     void setRotation(uint value) { record("rotation", value, m_rotation, value); }
+    int orientationDBus() const { return m_orientation; }
+    void setOrientationDBus(int value) {
+        record("orientationDBus", value, m_orientation, value);
+    }
     bool leftHanded() const { return m_leftHanded; }
     void setLeftHanded(bool value) {
         record("leftHanded", value, m_leftHanded, value);
@@ -196,6 +202,7 @@ private:
     double m_pressureMin = 0.0;
     double m_pressureMax = 1.0;
     uint m_rotation = 0;
+    int m_orientation = 0;
     bool m_enabled = true;
     bool m_workspace = false;
     bool m_leftHanded = false;
