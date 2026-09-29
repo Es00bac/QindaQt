@@ -15,6 +15,7 @@
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDir>
+#include <QFileInfo>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QtDBus/QDBusConnection>
@@ -80,6 +81,8 @@ int main(int argc, char *argv[])
                         "well-known host locations exist. Private and "
                         "integration runs must pass this so a staged session "
                         "never launches host binaries.")},
+        {QStringLiteral("no-keyring"),
+         QStringLiteral("Disable native keyring ownership in private sessions.")},
         {QStringLiteral("no-autostart"),
          QStringLiteral("Do not launch XDG autostart entries in a private or diagnostic session.")},
         {QStringLiteral("profile"), QStringLiteral("Shell profile id."),
@@ -134,10 +137,14 @@ int main(int argc, char *argv[])
     options.polkitAgentExecutable = resolvePolkitAgentExecutable(
         parser.isSet(QStringLiteral("no-polkit-agent")),
         parser.value(QStringLiteral("polkit-agent")));
+    const auto keyring = QString::fromUtf8(QINDAQT_KEYRING_INSTALL_PATH);
+    if (!parser.isSet(QStringLiteral("no-keyring")) && QFileInfo(keyring).isExecutable())
+        options.keyringExecutable = keyring;
     if (!parser.isSet(QStringLiteral("no-autostart"))) {
         options.autostart = QindaQt::SessionAutostart::ScanOptions::fromEnvironment();
         options.autostart.supersedeDistributionPolkitAgents =
             !options.polkitAgentExecutable.isEmpty();
+        options.autostart.supersedeDistributionKeyringAgents = !options.keyringExecutable.isEmpty();
     }
     options.profileId = parser.value(QStringLiteral("profile"));
     options.themeId = parser.value(QStringLiteral("theme"));

@@ -6,6 +6,7 @@
 #include "qindaqt/session_supervisor/supervised_process_launcher.h"
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
 #include "first_launch_welcome.h"
+#include "keyring_session_lifetime.h"
 #include "session_autostart_runner.h"
 
 #include <QCoreApplication>
@@ -65,6 +66,7 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
       , m_autostart(std::make_unique<SessionAutostartRunner>(m_options.autostart))
       , m_desktopControls(std::make_unique<OptionalSessionChild>(
             QStringLiteral("desktop-controls"), QStringList{}))
+      , m_keyring(std::make_unique<KeyringSessionLifetime>(this))
       , m_polkitAgent(std::make_unique<OptionalSessionChild>(
             QStringLiteral("polkit-agent"), QStringList{}))
       , m_powerDevil(std::make_unique<OptionalSessionChild>(
@@ -162,6 +164,7 @@ bool SessionProcessSupervisor::start(QString *error)
     // AGENT-GUARD: optional budgets are per session; reset only now that any
     // previous session's children were stopped by stop()/finishSession().
     m_desktopControls->resetRestartCount();
+    m_keyring->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
     m_globalShortcutDaemon->resetRestartCount();
@@ -231,6 +234,7 @@ void SessionProcessSupervisor::stop() noexcept
     }
     stopChild(m_networkSecretAgent);
     m_desktopControls->stop();
+    m_keyring->stop();
     m_polkitAgent->stop();
     m_powerDevil->stop();
     m_globalShortcutDaemon->stop();
@@ -254,6 +258,7 @@ void SessionProcessSupervisor::stop() noexcept
     // All optional children are stopped above; their budgets belong to the
     // next session.
     m_desktopControls->resetRestartCount();
+    m_keyring->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
     m_globalShortcutDaemon->resetRestartCount();
@@ -268,92 +273,6 @@ void SessionProcessSupervisor::requestLogout()
     }
     stop();
     Q_EMIT finished(0, QStringLiteral("logout requested"));
-}
-
-bool SessionProcessSupervisor::isRunning() const noexcept
-{
-    // A missing shell is a recoverable interval. The notification host keeps
-    // the session's authenticated service resident while the retry timer
-    // paces a replacement.
-    return m_running && m_host.state() != QProcess::NotRunning;
-}
-
-bool SessionProcessSupervisor::canLogout() const noexcept
-{
-    // Session1 authorizes the shell by PID. During a replacement interval
-    // there is no shell caller to authorize, even though the session remains
-    // alive and the resident host continues serving applications.
-    return isRunning() && !m_stopping
-           && m_shell.state() != QProcess::NotRunning;
-}
-
-qint64 SessionProcessSupervisor::notificationHostProcessId() const noexcept
-{
-    return m_host.state() == QProcess::NotRunning ? 0 : m_hostProcessId;
-}
-
-qint64 SessionProcessSupervisor::shellProcessId() const noexcept
-{
-    return m_shell.state() == QProcess::NotRunning ? 0 : m_shellProcessId;
-}
-
-int SessionProcessSupervisor::shellRestartCount() const noexcept { return m_shellRestartCount; }
-
-qint64 SessionProcessSupervisor::networkSecretAgentProcessId() const noexcept
-{
-    return m_networkSecretAgent.state() == QProcess::NotRunning
-        ? 0 : m_networkSecretAgentProcessId;
-}
-
-int SessionProcessSupervisor::networkSecretAgentRestartCount() const noexcept
-{
-    return m_networkSecretAgentRestartCount;
-}
-
-qint64 SessionProcessSupervisor::desktopControlsProcessId() const noexcept
-{
-    return m_desktopControls->processId();
-}
-
-int SessionProcessSupervisor::desktopControlsRestartCount() const noexcept
-{
-    return m_desktopControls->restartCount();
-}
-
-qint64 SessionProcessSupervisor::powerDevilProcessId() const noexcept
-{
-    return m_powerDevil->processId();
-}
-
-qint64 SessionProcessSupervisor::globalShortcutDaemonProcessId() const noexcept
-{
-    return m_globalShortcutDaemon->processId();
-}
-
-qint64 SessionProcessSupervisor::inputMethodDaemonProcessId() const noexcept
-{
-    return m_inputMethodDaemon->processId();
-}
-
-
-qint64 SessionProcessSupervisor::xembedTrayProxyProcessId() const noexcept
-{
-    return m_xembedTrayProxy->processId();
-}
-
-qint64 SessionProcessSupervisor::polkitAgentProcessId() const noexcept
-{
-    return m_polkitAgent->processId();
-}
-
-int SessionProcessSupervisor::polkitAgentRestartCount() const noexcept
-{
-    return m_polkitAgent->restartCount();
-}
-
-qint64 SessionProcessSupervisor::welcomeProcessId() const noexcept
-{
-    return m_welcome->processId();
 }
 
 QString SessionProcessSupervisor::resolveExecutable(const QString &configured) const
@@ -505,6 +424,7 @@ void SessionProcessSupervisor::startOptionalChildren()
     // status 2; ended() does not inspect the exit code, so the shared
     // one-restart budget already bounds this to one retry, never a loop.
     m_polkitAgent->start(m_options.polkitAgentExecutable);
+    m_keyring->start(m_options.keyringExecutable);
 }
 
 void SessionProcessSupervisor::startWelcome()
@@ -584,6 +504,7 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     stopChild(m_networkSecretAgent);
     m_networkSecretAgentProcessId = 0;
     m_desktopControls->stop();
+    m_keyring->stop();
     m_polkitAgent->stop();
     m_powerDevil->stop();
     // AGENT-GUARD: these two were omitted here, so an abnormal session end

@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[D-BUS Service]
+Name=org.qindaqt.Keyring1
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-keyring
+SystemdService=qindaqt-keyring.service

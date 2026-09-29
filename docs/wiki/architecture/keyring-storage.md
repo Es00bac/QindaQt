@@ -138,3 +138,5 @@ These tests do not read user keyrings/wallets, own a secrets name, activate
 PAM/daemon/UI, import real data, or prove live-service compatibility. Those
 remain the next slices. See the [testing harness](../development/testing-harness.md)
 for later isolated service qualification.
+
+The [native daemon](keyring-daemon.md) supplies sole-writer, alias, prompt and process policy through this public storage boundary.

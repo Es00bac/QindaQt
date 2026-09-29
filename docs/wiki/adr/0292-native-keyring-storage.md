@@ -87,9 +87,9 @@ a caller reports persisted state.
   still depends on the underlying filesystem and storage hardware.
 - No rollback detection, file locking across writers, credential policy,
   multi-process arbitration, default alias policy or migration is implied.
-  PK2 must be the sole writer; replay of an older authentic file is possible.
+  [PK2](0296-native-keyring-daemon-boundary.md) now supplies the sole-writer lock; replay of an older authentic file remains possible.
 - PK2 owns process dump policy, Secret Service sessions and authenticated caller
-  metadata; PK3 owns PAM borrowed-password lifetime. PK4 owns prompts and UI.
+  metadata; PK3 owns PAM borrowed-password lifetime. PK2 includes a minimal prompt seam/helper; PK4 extends full prompts and UI.
   Those boundaries must not access storage private headers.
 
 See [Native keyring storage](../architecture/keyring-storage.md) for the wire

@@ -37,6 +37,8 @@ nav:
       - Repository catalog: handbook/catalog/repository.md
       - Documentation catalog: handbook/catalog/reading.md
   - Architecture:
+      - Native keyring daemon: architecture/keyring-daemon.md
+      - Authentication overlay: architecture/authentication-overlay.md
       - Native keyring storage: architecture/keyring-storage.md
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
@@ -59,6 +61,7 @@ nav:
       - OBS console bridge: architecture/obs-bridge.md
       - Bluetooth service: architecture/bluetooth-service.md
       - Power and brightness: architecture/power-service.md
+      - Native power policy: architecture/power-policy.md
       - PowerDevil idle preferences: architecture/powerdevil-idle.md
       - Desktop controls: architecture/desktop-controls.md
       - Pure brightness model: architecture/brightness-model.md
@@ -136,6 +139,7 @@ nav:
       - KWin upgrades: development/kwin-upgrades.md
       - Settings install checkpoint: development/install-checkpoint.md
       - Testing harness: development/testing-harness.md
+      - Native session lock: architecture/native-session-lock.md
       - Gabbee interop evidence: development/gabbee-interop-evidence.md
   - Applications:
       - QindaQt.AppShell 1.0: apps/application-shell.md
@@ -451,7 +455,14 @@ nav:
       - "ADR-0287: Pass tablet proximity through window decorations": adr/0287-pass-tablet-proximity-through-window-decorations.md
       - "ADR-0288: Per-device latency offsets through Audio1, and a compact Audio page": adr/0288-per-device-latency-offsets-and-a-compact-audio-page.md
       - "ADR-0289: A native screenshot and record tool replaces Spectacle": adr/0289-native-screenshot-and-record-tool.md
-      - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md
+
+      - "ADR-0293: Settings1 native power policy": adr/0293-settings1-native-power-policy-and-powerdevil-import.md
+
+      - "ADR-0294: native protocol state owns the session lock": adr/0294-native-session-lock-authority.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
+      - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md
+      - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md
       - "ADR-0290: Native QindaQt polkit agent, and a single-agent autostart rule": adr/0290-native-polkit-agent-and-single-agent-rule.md
       - "ADR-0292: Own a bounded native keyring storage core": adr/0292-native-keyring-storage.md
+
+      - "ADR-0296: Own a native Secret Service daemon and session boundary": adr/0296-native-keyring-daemon-boundary.md
