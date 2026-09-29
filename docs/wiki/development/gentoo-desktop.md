@@ -347,3 +347,14 @@ ABI-safe sequence.
 For application-only installation, keep using
 [`gui-apps/qindaqt-apps`](gentoo-apps.md); the two packages are alternative file
 owners and are not installed together.
+
+### M1 overlay dependency preparation
+
+The fork lane prepares the qindaqt-kwin pin and removes the downstream patched
+stock KWin package. The prepared existing desktop recipe carries the fork-only
+dependency and removes Spectacle, but retains its released source pin for the
+manager to create the final new revision. It is not a publishable replacement
+for that released recipe. Before integrating the overlay, preserve the released
+recipe and apply these dependency changes to a new revision pinned to final
+container-wm main, including native polkit and subsequent lanes. No delivery
+list or installed package changes are part of M1 source qualification.
