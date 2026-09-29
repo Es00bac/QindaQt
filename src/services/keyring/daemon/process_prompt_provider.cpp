@@ -1,13 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "process_prompt_provider.h"
 #include "wire_types.h"
+#include "session_display_binding.h"
+#include <QProcessEnvironment>
+#include <fcntl.h>
+#include <unistd.h>
 #include <QTimer>
 #include <QFileInfo>
 #include <algorithm>
 #include <signal.h>
 namespace qindaqt::keyring::service {
-ProcessPromptProvider::ProcessPromptProvider(QString executable, QObject *parent)
-    : PromptProvider(parent), executable_(std::move(executable)) {}
+ProcessPromptProvider::ProcessPromptProvider(QString executable, QObject *parent,SessionDisplayBinding *display)
+    : PromptProvider(parent), display_(display), executable_(std::move(executable)) {
+    if (display_) connect(display_,&SessionDisplayBinding::revoked,this,[this] {
+        while (!active_.empty()) finish(active_.begin()->first,true);
+    });
+}
+bool ProcessPromptProvider::bindSessionDisplay(const QString &owner,const QString &name) {
+    return display_ && display_->attach(owner,name);
+}
+ProcessPromptProvider::Active::~Active() { if (displayFd >= 0) close(displayFd); }
 ProcessPromptProvider::~ProcessPromptProvider() {
     while (!active_.empty()) cancel(active_.begin()->first);
 }
@@ -17,11 +29,30 @@ quint64 ProcessPromptProvider::begin(PromptRequest request, PromptCompletion don
         QTimer::singleShot(0,this,[done=std::move(done)]() mutable { done(SecureBuffer{},true); }); return 0;
     }
     auto active = std::make_unique<Active>();
+    const int displayFd = display_ ? display_->openPromptConnection() : -2;
+    if (displayFd == -1) {
+        QTimer::singleShot(0,this,[done=std::move(done)]() mutable { done(SecureBuffer{},true); }); return 0;
+    }
+    active->displayFd = displayFd;
     active->process = std::make_unique<QProcess>();
     active->input = SecureBuffer(4097); active->done = std::move(done);
     auto *process = active->process.get();
-    process->setChildProcessModifier([] {
+    if (displayFd >= 0) {
+        auto environment = QProcessEnvironment::systemEnvironment();
+        environment.remove("WAYLAND_SOCKET"); environment.remove("WAYLAND_DISPLAY");
+        environment.insert("WAYLAND_SOCKET",QString::number(displayFd));
+        environment.insert("WAYLAND_DISPLAY",display_->basename());
+        process->setProcessEnvironment(environment);
+        connect(process,&QProcess::started,this,[this,id] {
+            const auto found = active_.find(id); if (found == active_.end()) return;
+            if (found->second->displayFd >= 0) close(found->second->displayFd);
+            found->second->displayFd = -1;
+        });
+    }
+    process->setChildProcessModifier([displayFd] {
         sigset_t mask; sigemptyset(&mask); sigprocmask(SIG_SETMASK,&mask,nullptr);
+        // AGENT-GUARD: inherit the exact validated connection, never reconnect by name.
+        if (displayFd >= 0 && fcntl(displayFd,F_SETFD,0) != 0) _exit(2);
     });
     process->setStandardErrorFile(QProcess::nullDevice());
     process->setProcessChannelMode(QProcess::SeparateChannels);
@@ -51,6 +82,7 @@ quint64 ProcessPromptProvider::begin(PromptRequest request, PromptCompletion don
 void ProcessPromptProvider::finish(quint64 id,bool cancelled) {
     const auto found = active_.find(id); if (found == active_.end()) return;
     auto a = std::move(found->second); active_.erase(found);
+    if (display_ && !display_->live()) cancelled = true;
     a->process->disconnect(this);
     if (a->process->state() != QProcess::NotRunning) { a->process->kill(); a->process->waitForFinished(1000); }
     SecureBuffer password;

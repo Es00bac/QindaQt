@@ -208,3 +208,5 @@ if(TARGET obs-qindaqt)
 endif()
 
 add_subdirectory(services/keyring)
+
+add_subdirectory(application_window_management)

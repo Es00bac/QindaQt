@@ -125,6 +125,9 @@ struct InsertIndependentWindow final
     QString windowId;
     QString leafNodeId;
     MemberDestination destination;
+    // Activate a newly inserted tab inside the same candidate/scene transaction.
+    // False preserves the historical command behavior; only valid for MoveAsPage.
+    bool activateInsertedPage = false;
 };
 
 struct GroupIndependentWindowsAsPages final
@@ -136,6 +139,7 @@ struct GroupIndependentWindowsAsPages final
     QString secondWindowId;
     QString secondPageId;
     QString secondLeafNodeId;
+    bool activateSecondPage = false;
 };
 
 struct RegroupAsSplit final

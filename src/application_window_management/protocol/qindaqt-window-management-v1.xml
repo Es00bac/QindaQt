@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="qindaqt_window_management_v1">
+  <copyright>SPDX-License-Identifier: MIT</copyright>
+  <interface name="qindaqt_window_manager_v1" version="1">
+    <description summary="application-owned container placement">
+      This optional interface places an application's newly created normal
+      toplevel beside another toplevel owned by the same Wayland connection.
+      Applications own content, window creation and shortcut handling.
+      The compositor owns eligibility, topology, atomic publication and focus.
+      Requests require a foreground source, expire after five seconds while
+      waiting for mapping, and never mutate topology on rejection or cancellation.
+      Unsupported compositors do not advertise this global; applications retain
+      ordinary windows and normal shortcut behavior. See the installed QindaQt
+      application-window-management documentation for the complete contract.
+    </description>
+    <enum name="placement">
+      <entry name="tab" value="0"/>
+      <entry name="tile_right" value="1"/>
+      <entry name="tile_down" value="2"/>
+      <entry name="tile_left" value="3"/>
+      <entry name="tile_up" value="4"/>
+    </enum>
+    <enum name="status">
+      <entry name="accepted" value="0"/>
+      <entry name="denied" value="1"/>
+      <entry name="invalid" value="2"/>
+      <entry name="unavailable" value="3"/>
+      <entry name="timeout" value="4"/>
+      <entry name="cancelled" value="5"/>
+      <entry name="resource_limit" value="6"/>
+    </enum>
+    <request name="destroy" type="destructor"/>
+    <request name="place">
+      <description summary="place a new independent window atomically">
+        request_id is nonzero and unique among this object's pending requests.
+        source and created must be distinct normal toplevel surfaces owned by
+        this object's client. The source must already be managed. The created
+        surface may be awaiting mapping but must become a managed independent
+        window before the deadline. Tab inserts after the source page and
+        activates the new page in the same transaction. Tile splits the source
+        leaf equally. A solo source creates a new container. The source or new
+        window must remain foreground when the request commits. The compositor
+        sends exactly one result unless this object or client is destroyed.
+        A rejected or cancelled created window stays an ordinary application
+        window; the compositor never closes it.
+      </description>
+      <arg name="request_id" type="uint"/>
+      <arg name="source" type="object" interface="wl_surface"/>
+      <arg name="created" type="object" interface="wl_surface"/>
+      <arg name="placement" type="uint" enum="placement"/>
+    </request>
+    <request name="cancel">
+      <arg name="request_id" type="uint"/>
+    </request>
+    <event name="result">
+      <arg name="request_id" type="uint"/>
+      <arg name="status" type="uint" enum="status"/>
+      <arg name="container_id" type="string"/>
+      <arg name="message" type="string"/>
+    </event>
+  </interface>
+</protocol>

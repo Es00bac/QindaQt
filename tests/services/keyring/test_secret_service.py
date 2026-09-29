@@ -25,6 +25,8 @@ class SecretServiceTest(unittest.TestCase):
         self.runtime = self.root / "runtime"
         self.runtime.mkdir(mode=0o700)
         self.env = dict(os.environ)
+        self.env.pop("WAYLAND_DISPLAY",None)
+        self.env.pop("WAYLAND_SOCKET",None)
         self.env["XDG_RUNTIME_DIR"] = str(self.runtime)
         self.env["XDG_DATA_HOME"] = str(self.root / "data")
         self.env["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=" + str(self.root / "bus")

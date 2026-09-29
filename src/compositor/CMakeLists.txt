@@ -381,6 +381,9 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridcontextmenu.cpp
             kwin/kwinhybridinteraction.cpp
             kwin/kwinhybridmemberchrome.cpp
+            kwin/kwinapplicationplacementserver.cpp
+            kwin/kwinapplicationplacementserver.h
+            kwin/kwinhybridapplicationplacement.cpp
             kwin/kwinhybridsession.cpp
             kwin/kwinhybridsession.h
             kwin/chromeappearancepalette.cpp
@@ -452,6 +455,9 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             QindaQt::DecorationPainter
             QindaQt::CompositorShellActions
             QindaQt::Hybrid
+            QindaQt::ApplicationWindowManagement
+            QindaQt::ApplicationWindowProtocol
+            PkgConfig::QINDAQT_APP_WM_WAYLAND_SERVER
             QindaQt::HybridChrome
             QindaQt::HybridGather
             QindaQt::HybridConstraints
