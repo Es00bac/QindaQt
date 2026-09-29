@@ -5,6 +5,19 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 29 — Complete the Plasma-free program
+
+The owner confirmed the complete [native replacement program](plans/2026-09-28-plasma-free-qindaqt.md),
+including the compositor fork, lock/power services, helpers, portals, shortcuts, and key store.
+The exact integration and packaging boundaries are recorded in [Handoff](HANDOFF.md).
+
+The screenshot replacement is source-integrated and passes six laptop checks. The recovered
+polish candidate passes six manager checks: theme-default versus explicit title action, active
+portal twin, one-shot touch lift, and saved-workspace container names. Saved workspaces retain
+custom and default names when restored under fresh IDs; unsaved live topology is not
+automatically restored on restart. Fork and polkit candidates await manager integration.
+Remaining native service work is active, with no complete-program or installed-delivery claim.
+
 ## September 27 — Correct Corner Bar, light appearances and full icon themes
 
 Installed on both hosts: desktop r6/source `4c704e12`, patched KWin `6.6.6-r1`,

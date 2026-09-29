@@ -1,5 +1,18 @@
 # First-party delivery queue
 
+## September 29 Plasma-free continuation — 2026-09-29T19:27:29+00:00
+
+Current recovery coordinator: Codex Program Manager. This section supersedes historical
+active assignments below for this program. Worker activity is not product completion.
+
+| Outcome | State | Owner | Exact source boundary | Next gate/evidence | Collision/resource |
+| --- | --- | --- | --- | --- | --- |
+| Native polkit PF15 | repaired candidate ready; integration pending | recovery manager | candidate72191b76 / polkit-agent | manager native agent/autostart/supervisor gates | Wayland multi-output placement remains qualification |
+| Native screenshot PF16 | source integrated | recovery manager | main607c1f60 | laptop build and6/6 focused rows pass | final dependency/source pin and live capture held |
+
+Builds use qinda and a separate laptop build mirror at low CPU/I/O priority.
+No running desktop or services are changed. Final recipe consolidation precedes one delivery.
+
 ## September 23 Settings integration repair
 
 Audit: `/tmp/qindaqt-settings-audit-2026-09-23/PLAN.md`, baseline `7ba705bf53fde8887ca38c89ad24c85b3823ee68`. These assignments carry no product-completion credit until independently reviewed and integrated.

@@ -104,6 +104,11 @@ library destruction.
 
 The Save action asks the port for one complete current-container snapshot,
 prefills its name and color, then calls `capture()` and `WorkspaceStore::save()`.
+The displayed container name, including the default “Container”, is stored in
+the workspace document beside the split layout. Reopen carries that document
+through atomic adoption and applies its name and color to the new live ID. This
+covers explicitly saved workspaces; unsaved live topology is not automatically
+restored after a compositor restart.
 An optional saved-workspace ID in that snapshot intentionally replaces the
 matching document when saving an existing template. Cancelling capture or a
 validation/store failure leaves the previous document untouched.
@@ -149,7 +154,10 @@ lifetime contract. Platform composition belongs outside this module.
 `workspaces.persistence-assignment` verifies persistence across store lifetimes,
 last-save preservation, damaged-file reporting, schema/layout rejection,
 identity rebinding, ambiguous application matches, explicit replacement and
-ineligible/duplicate-window rejection. These tests do not prove logout restore.
+ineligible/duplicate-window rejection. Its container-name round trip covers a
+custom name and the default “Container” while rebinding the layout to a fresh
+live ID; `KWinWorkspaceUiPort::restore()` then applies the durable presentation
+after topology adoption. These tests do not prove logout restore.
 
 Capture accepts a complete application-intent inventory for the current
 container, preserves page order and active page, and replaces live leaf IDs

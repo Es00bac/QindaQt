@@ -37,7 +37,7 @@ A lane is done when its handoff is posted (exact commits, files, tests with coun
 | F: `qindaqt-kwin` fork, M1 (F1–F8 plus the native root-window kill helper) | `laneF-fork-m1.md` | fork hub `~/git/qindaqt-kwin.git`, checkout `~/work_SPaC3/qindaqt-kwin`; container-wm `feature/qindaqt-kwin`; overlay `gui-wm/qindaqt-kwin` branch | recovering (Codex fork worker) |
 | S: `qindaqt-screenshot` with OBS record mode (PF16, ADR-0289) | `laneS-screenshot.md` | `feature/qindaqt-screenshot` / `screenshot` | integrated at `607c1f60`; manager gate pending |
 | PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | recovering (Codex Luna; exact candidate e67761a3) |
-| P: four caveats (container names on restart, Corner Bar double-click, portal twin accent, touch lift) | `laneP-polish.md` | `fix/round-caveats` / `polish` | recovering (Codex Luna; exact candidate 7a2af95b) |
+| P: four caveats (container names on restart, Corner Bar double-click, portal twin accent, touch lift) | `laneP-polish.md` | `fix/round-caveats` / `polish` | integrated candidate 5e8d73d7; manager 6/6 gates pass |
 | K: key store PK1–PK3 (plan §3.8) | `laneK-keyring.md` | `feature/qindaqt-keyring` / `keyring` | queued; starts when an Opus slot frees |
 | D: mixer bus delay (ADR-0288 addendum) | `laneD-mixer-delay.md` | merged `32ed1f42` | done |
 
@@ -52,6 +52,23 @@ interactive load or available memory requires it. This supersedes the qinda-only
 The later interrupted fork work is preserved at `362d69b9` in its M1 worktree.
 Screenshot is already integrated; polkit and polish candidates are being checked against
 their saved acceptance specifications. Assignments and candidates claim no completed milestone.
+
+### Current continuation (2026-09-29T19:27:29+00:00)
+
+The owner explicitly confirmed **complete the full Plasma-free program**. Native power-policy
+schema/import (PF1, ADR-0293), keyring storage (PK1, ADR-0292), and fork session-lock
+server/matrix (PF5–PF6, ADR-0294) run as bounded isolated lanes. Candidates carry no milestone credit.
+
+Polish candidate `5e8d73d7` passes the manager's merged-tree six focused CTests,
+targeted compositor/appearance/workspace builds, and 433-page link/navigation validation.
+Names persist through explicit Saved Workspaces capture/load/adoption under a fresh ID.
+Unsaved live topology has no automatic restart restoration. The unsafe transient-ID ledger
+was removed; touch lift visuals still require hardware qualification.
+
+Screenshot's laptop build and six focused CTests pass at integrated `607c1f60`.
+Fork main is preserved/pushed at `0dd2fdb8`; consumer `6623b7d6` awaits this manager's
+integration gates. Native polkit repaired `72191b76` awaits integration.
+Strict MkDocs remains a final gate; developer-tool recipes are being validated through Portage.
 
 ### Next, in order (plan §4)
 

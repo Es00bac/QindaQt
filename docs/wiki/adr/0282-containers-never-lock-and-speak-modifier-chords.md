@@ -149,6 +149,17 @@ the lift on so KWin's decoration filter clears its touch-press id (swallowing
 it would make KWin ignore every later title touch). A second finger or a
 seat-wide cancel ends the pick-up. The policy is `TouchTitlePickup`.
 
+**Update (2026-09-29, same-round follow-up): accepted title pick-up emits a
+one-shot lift feedback state.** `TouchTitlePickup::expire()` returns
+`TouchPickupFeedback::Lift` together with `PickUp`; a refused or repeated
+expiry returns no feedback. `KWinInteractionFilter` consumes that state after
+`InteractionController::adoptDrag()` and calls `TouchPickupHooks::pickedUp`
+once. The session resynchronizes chrome at that point, and the drag enters the
+same Begin/Update and dock-preview path as a mouse late-Shift takeover. The
+policy test checks the Lift response occurs once and is absent when KWin has
+already taken over. Visual confirmation on real touch hardware is still
+needed; see [testing harness](../development/testing-harness.md).
+
 **Standard desktop icons are applet settings.** The desktop-icons applet shows
 optional Home, Documents, Downloads, Pictures, Videos, Music, Trash and Computer
 icons, one boolean desktop-icons setting each (Home and Trash on), before the

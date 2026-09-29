@@ -9,6 +9,15 @@ import QindaQt.Tokens 1.0
 // radio semantics. The component owns no domain knowledge: callers supply
 // choices, the current draft token, and an accessibility prefix, and receive
 // one choicePicked(token) per explicit user selection.
+//
+// AGENT-GUARD: React to Button.clicked(), never Button.toggled(). toggled()
+// fires for any checked change, including ones this file makes itself:
+// checked is a declarative binding on currentValue, so a delegate created or
+// re-bound while the exclusive group settles can toggle before a person ever
+// touches it. A caller upstream (ChromeChoice) can then call
+// settings.setDraftValue() for a token nobody picked, silently marking a
+// Settings default dirty as though it were an explicit choice. clicked() is
+// the gesture-only signal and has no such false positive.
 Row {
     id: root
 
@@ -46,11 +55,7 @@ Row {
             Accessible.checked: checked
             Accessible.description: root.descriptionPrefix + " "
                                     + choiceButton.modelData.label
-            onToggled: {
-                if (choiceButton.checked) {
-                    root.choicePicked(choiceButton.modelData.token)
-                }
-            }
+            onClicked: root.choicePicked(choiceButton.modelData.token)
         }
     }
 }

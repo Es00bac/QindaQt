@@ -57,17 +57,30 @@ snapshot. Partial or extra input is not appearance truth.
 | Standard result | QindaQt source | Projection |
 | --- | --- | --- |
 | `color-scheme` (`u`) | `appearance.colorScheme` | `system` → 0, `dark` → 1, `light` → 2 |
-| `accent-color` (`(ddd)`) | `appearance.theme`, QST-1, and `accessibility.reducedTransparency` | selected theme's derived QST accent, converted to opaque sRGB components in `[0,1]` |
-| `contrast` (`u`) | `appearance.theme` and `accessibility.highContrast` | 1 when the accessibility input is true or the selected theme is `high-contrast`; otherwise 0 |
+| `accent-color` (`(ddd)`) | `appearance.theme`, `appearance.colorScheme`, QST-1, and `accessibility.reducedTransparency` | active theme's derived QST accent, converted to opaque sRGB components in `[0,1]` |
+| `contrast` (`u`) | `appearance.theme`, `appearance.colorScheme`, and `accessibility.highContrast` | 1 when the accessibility input is true or the active theme is `high-contrast`; otherwise 0 |
 
 The portal deliberately does not read the legacy
-`appearance.accentColor` schema field. QST-1's selected theme plus explicit
+`appearance.accentColor` schema field. QST-1's active theme plus explicit
 accessibility inputs are the first-party rendering truth; exporting a separate
 unused color would make sandboxed applications disagree with QindaQt itself.
 Reduced transparency participates only because QST derivation can turn a
 nonopaque theme source into an opaque final accent. If the final QST accent is
 invalid, non-finite, outside sRGB, or nonopaque, the complete projection is
 unavailable.
+
+The *active* theme is `appearance.theme` (the chosen base selection) resolved
+through the same `QindaQt::AppAppearance::resolveAppearanceTheme` call the
+Settings preview, shell, and first-party applications use
+([ADR-0284](../adr/0284-themes-name-their-light-and-dark-twins.md)): with a
+dark twin active, `accent-color` and `contrast` reflect the twin, not the
+chosen base theme's own values. The portal has no platform-level scheme
+signal of its own, so resolution always runs with an unknown platform scheme;
+an explicit `dark`/`light` `appearance.colorScheme` still resolves its twin
+fully, and `system` keeps the plain selection. Installation is checked
+against the exact `appearance.theme` id before resolution runs, so an unknown
+selection still fails the projection outright rather than silently
+substituting a fallback theme's accent.
 
 Theme discovery reads at most 16 unique absolute directories and 128 JSON
 theme documents of at most 128 KiB each. Earlier directories win a duplicate

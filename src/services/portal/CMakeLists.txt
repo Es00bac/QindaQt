@@ -18,7 +18,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_portal_appearance
-    PUBLIC QindaQt::DesignTokens qindaqt_themes Qt6::Core Qt6::Gui
+    PUBLIC QindaQt::DesignTokens qindaqt_themes QindaQt::AppAppearance Qt6::Core Qt6::Gui
 )
 target_compile_features(qindaqt_portal_appearance PUBLIC cxx_std_20)
 target_compile_definitions(qindaqt_portal_appearance PRIVATE QT_NO_KEYWORDS)
