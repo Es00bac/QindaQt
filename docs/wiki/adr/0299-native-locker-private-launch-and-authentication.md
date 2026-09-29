@@ -51,7 +51,13 @@ expired credentials, cancellation, malformed conversation, unavailable modules
 or failure never unlock. Conversation prompts/responses are bounded; native
 mutable response copies are wiped. Successful libpam response allocations belong
 to libpam, and the disposable worker exits after its attempt. Secrets never enter
-diagnostics or resident service state.
+diagnostics or resident service state. After approved authentication/account
+checks, the worker runs the optional keyring module's handle-bound
+`pam_open_session`/`pam_close_session` notification and ends PAM before reporting
+approval. This service stack performs only that protected handoff, not another
+login/logind session. A keyring error falls back to a later keyring prompt and
+cannot manufacture or revoke authentication approval. Cancellation during the
+notification still prevents the worker from reporting authenticated unlock.
 
 QML can present a prompt, submit a response or cancel. It has no success or unlock
 method. Only the native controller consumes the owned worker's response and

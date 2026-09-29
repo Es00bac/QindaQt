@@ -66,8 +66,8 @@ private Q_SLOTS:
                   "\naccount required " + module + " " + account.toUtf8() +
                   "\n");
     service.close();
-    NativePamTransaction pam(conf.path().toStdString());
     FixtureConversation conversation;
+    NativePamTransaction pam(conf.path().toStdString());
     conversation.cancel = cancel;
     if (nulResponse) {
       conversation.response = std::string("fixture-response\0extra", 22);
