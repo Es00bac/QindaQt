@@ -1,3 +1,37 @@
+## 2026-09-29 — Native Secret Service integrated (PK2)
+
+Exact candidate `6e2832d2` adds the native Secret Service/Keyring1 daemon,
+collection catalog, encrypted client sessions, same-UID control socket, native
+prompt, and supervisor-bound wipe/exit. Secret-tool/libsecret and SecretStorage
+exercise actual encrypted exchange on private buses. Distribution keyring
+autostart suppression is conditional on the native selection. The shared
+pre-show keyboard-exclusive authentication overlay also serves native polkit.
+
+Manager native daemon/prompt/session/polkit build passes; the integrated focused
+suite passes 9/9, including all 20 protocol/lifetime cases. Strict docs and
+repository validation pass before this integration commit. PK1 was already
+verified on both hosts. PAM/trusted login-token delivery, full Settings UI,
+Secret portal, import, physical multi-output prompts and final package retirement
+remain open. No live wallet, system unit, PAM configuration or installation was
+used. Native PAM work continues in a new isolated worktree based on `6e2832d2`.
+
+## 2026-09-29 — Native lock server and capture/input fence (PF5–PF6)
+
+Fork main/hub is `cf6cce99`; consumer docs candidate `9a943c41` is preserved
+in the qinda hub and integrated here. KScreenLocker discovery/linkage is
+removed from the fork. Native session-lock acknowledgement waits for actual
+physical output presentation; crash, output changes, input roles, effects,
+and screenshot/screencast entry points stay fenced. The metadata source pin
+now names this exact fork commit and tree.
+
+Manager exact native CTest passed 1/1; the worker inspected 23/23 Qt checks,
+zero failure/skip. Production compositor, screenshot and screencast built
+with test authorization OFF and KScreenLocker discovery disabled; direct
+KScreenLocker NEEDED and exported test authorization counts are both zero.
+PF7 private compositor-launched locker/PAM trust, PF8 Lock1/ScreenSaver,
+installed trusted-greeter qualification, physical DRM and real PipeWire
+consumer revocation remain open. No desktop package or live lock was used.
+
 ## 2026-09-29 — Native power preferences integrated (PF1)
 
 PF1 source candidate `151dce49` plus manager preservation repair `c29a285c`
@@ -18,7 +52,7 @@ qinda may use all 24 CPU threads, with memory monitoring against OOM.
 
 ## September 28: RESUME HERE (Claude ⇄ Codex program handoff, kept current)
 
-**Last updated:** 2026-09-29T19:51:04+00:00 by Codex recovery manager. **Hub `main`:** `see git log -1 hub/main`.
+**Last updated:** 2026-09-29T21:28:56+00:00 by Codex recovery manager. **Hub `main`:** `see git log -1 hub/main`.
 
 Whoever resumes (Claude or Codex) reads, in order:
 1. this section;
@@ -35,7 +69,7 @@ Whoever resumes (Claude or Codex) reads, in order:
 - **Token economy:** use the cheapest model that does the job well.
   - Claude: Sonnet for spec'd work with defined tests, Opus for hard work, at most 2 Opus workers at once.
   - Codex: GPT Luna, sparingly; the owner's weekly GPT budget is small.
-- **Builds:** each lane builds on qinda with `-j8 -l24` (another project uses `-j24`) and runs targeted tests only. The manager runs one full suite at the end.
+- **Builds:** qinda is dedicated to this program and may use `-j24 -l24` with at least 4 GiB available memory. Only qinda-top needs browsing/video reserve (`-j3 -l8`, low CPU/I/O priority). Lanes run targeted tests; the manager runs one full suite at the end.
 - **Commits** use the owner's personal identity configured in the repos, never the FSCC address. Install software through Portage only.
 - **Review:** the owner waived independent reviewer agents. The implementer's tests plus the manager's integration gates are the verification.
 

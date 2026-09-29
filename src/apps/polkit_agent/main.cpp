@@ -10,7 +10,7 @@
 #include "qindaqt/services/settings_client/settings_client.h"
 
 #include <PolkitQt1/Subject>
-#include <LayerShellQt/Shell>
+#include <qindaqt/authentication_overlay/overlay_surface.h>
 
 #include <QCoreApplication>
 #include <QDBusConnection>
@@ -47,10 +47,7 @@ int main(int argc, char **argv)
     // AGENT-GUARD: set LayerShellQt up before QGuiApplication creates the
     // Wayland platform integration; the password dialog must never degrade to
     // an ordinary toplevel without exclusive keyboard ownership.
-    QT_WARNING_PUSH
-    QT_WARNING_DISABLE_DEPRECATED
-    LayerShellQt::Shell::useLayerShell();
-    QT_WARNING_POP
+    if (!QindaQt::AuthenticationOverlay::OverlaySurface::initializePlatform()) return 3;
     QGuiApplication application(argc, argv);
     application.setOrganizationName(QStringLiteral("QindaQt"));
     application.setOrganizationDomain(QStringLiteral("qindaqt.org"));

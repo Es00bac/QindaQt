@@ -40,6 +40,7 @@ void executable(const QTemporaryDir &root, const QString &name)
 class AutostartCatalogTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void nativeKeyringSupersedesOnlyActualExecWhenSelected();
     void disabledWinnerMasksSystemAndDoesNotLaunch();
     void desktopTryExecAndUnsupportedLaunchFormsExplainIneligibility();
     void boundedExecExpansionProducesArgvWithoutShell();
@@ -276,6 +277,26 @@ void AutostartCatalogTest::distributionPolkitAgentCanRunWhenTheSessionAgentIsDis
     QCOMPARE(entries.size(), 1);
     QVERIFY2(entries.constFirst().eligible,
              qPrintable(entries.constFirst().ineligibilityReason));
+}
+
+
+void AutostartCatalogTest::nativeKeyringSupersedesOnlyActualExecWhenSelected()
+{
+    QTemporaryDir root;
+    QVERIFY(QDir().mkpath(root.filePath("user/autostart")));
+    QVERIFY(QDir().mkpath(root.filePath("bin")));
+    executable(root,"gnome-keyring-daemon"); executable(root,"ordinary");
+    writeFile(root.filePath("user/autostart/keyring.desktop"),
+        "[Desktop Entry]\nType=Application\nName=Keyring\nExec=gnome-keyring-daemon --start --components=secrets\n");
+    writeFile(root.filePath("user/autostart/ordinary.desktop"),
+        "[Desktop Entry]\nType=Application\nName=gnome-keyring-daemon\nExec=ordinary gnome-keyring-daemon\n");
+    auto selected = options(root); selected.supersedeDistributionKeyringAgents = true;
+    auto entries = scan(selected);
+    QCOMPARE(entries.size(),2);
+    for (const auto &entry : entries) QCOMPARE(entry.eligible,entry.id == "ordinary");
+    selected.supersedeDistributionKeyringAgents = false;
+    entries = scan(selected);
+    for (const auto &entry : entries) QVERIFY(entry.eligible);
 }
 
 QTEST_MAIN(AutostartCatalogTest)
