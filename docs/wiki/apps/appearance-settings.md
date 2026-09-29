@@ -300,7 +300,13 @@ Production application is defined by [ADR-0078](../adr/0078-own-wallpaper-surfac
 Settings1 service: a fresh profile's default-layer bundled identity reaches
 one background window per screen, live commits of a custom path and fit mode
 reconcile onto the same surfaces, and an explicit empty choice clears the
-source without window churn.
+source without window churn. Its selection rows (ADR-0286) switch one output's
+picture as the current desktop changes, fall back for unknown displays and
+removed desktops, and cross-fade only when motion is allowed.
+`qindaqt.appearance-settings-model` covers scoped draft edits, the Apply order,
+Revert and unreadable stored choices; `qindaqt.appearance-wallpaper-scopes-page`
+covers the **Show on** picker, where picks land, removal, accessible names and
+an unplugged selection falling back.
 
 The route also inherits the settings-app offscreen and unknown-route gates.
 `qindaqt.settings-app-desktop-identity` proves the built executable embeds the
