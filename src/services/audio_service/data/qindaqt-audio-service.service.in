@@ -34,7 +34,13 @@ ProtectKernelLogs=true
 ProtectKernelModules=true
 ProtectKernelTunables=true
 ProtectSystem=strict
-RestrictAddressFamilies=AF_UNIX
+# AGENT-NOTE: VBAN (ADR-0185) sends and receives on an AF_INET UDP socket;
+# with only AF_UNIX allowed here, the unit's own sandbox silently dropped
+# that socket -- a stream could be declared and the unit still ran, but no
+# packet was ever sent or received, and nothing in the service log said why.
+# AF_INET6 is included so a future IPv6 sender/receiver does not hit the same
+# silent block; today's implementation only resolves and binds AF_INET.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictNamespaces=true
 RestrictRealtime=true
 LockPersonality=true

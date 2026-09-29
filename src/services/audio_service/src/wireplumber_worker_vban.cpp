@@ -4,6 +4,8 @@
 
 #include "wireplumber_graph_p.h"
 
+#include <QtCore/QDebug>
+
 #include <pipewire/impl-module.h>
 
 #include <algorithm>
@@ -89,13 +91,26 @@ void WirePlumberWorker::applyVbanOnWorker(const QList<BackendVbanStream> &stream
             started = run.sender->start(context, target,
                                         stream.name, stream.host,
                                         static_cast<quint16>(stream.port));
+            // AGENT-NOTE: VbanSender::start only returns bool, so this is the
+            // most specific failure reason available; it used to be dropped
+            // here with no trace at all (an enabled stream would just never
+            // come up, silently).
+            if (!started) {
+                qWarning().noquote() << QStringLiteral(
+                    "VBAN: outgoing stream '%1' failed to start (host %2 port %3)")
+                    .arg(stream.name, stream.host, QString::number(stream.port));
+            }
         } else {
             const QByteArray arguments = vbanRouteArguments(stream.name, target);
             if (arguments.isEmpty()) continue;
             run.receiver = std::make_unique<VbanReceiver>();
             if (!run.receiver->start(context, stream.name,
-                                     static_cast<quint16>(stream.port), stream.host))
+                                     static_cast<quint16>(stream.port), stream.host)) {
+                qWarning().noquote() << QStringLiteral(
+                    "VBAN: incoming stream '%1' failed to start (host %2 port %3)")
+                    .arg(stream.name, stream.host, QString::number(stream.port));
                 continue;
+            }
             struct pw_impl_module *const module = pw_context_load_module(
                 context, "libpipewire-module-loopback", arguments.constData(), nullptr);
             if (module != nullptr) {
@@ -103,6 +118,11 @@ void WirePlumberWorker::applyVbanOnWorker(const QList<BackendVbanStream> &stream
                 m_vbanRouteModules.emplace(key, LoadedModule{.module = module,
                                                                .arguments = arguments});
                 started = true;
+            } else {
+                qWarning().noquote() << QStringLiteral(
+                    "VBAN: incoming stream '%1' receiver started but loopback route "
+                    "failed to load (host %2 port %3)")
+                    .arg(stream.name, stream.host, QString::number(stream.port));
             }
         }
         if (started) m_vbanRuns.emplace(key, std::move(run));
