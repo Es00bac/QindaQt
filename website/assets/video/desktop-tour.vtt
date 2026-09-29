@@ -1,17 +1,397 @@
 WEBVTT
 
 1
-00:00:00.000 --> 00:00:08.550
-QindaQt starts with ordinary windows. The welcome guide shows what changes when you bring related work together.
+00:00:00.000 --> 00:00:05.153
+Kinda Cute, written QindaQt, is a free and open source Wayland desktop.
 
 2
-00:00:08.750 --> 00:00:18.550
-Settings and Files begin apart. Hold Meta and Shift, drag a title to the edge, and there it is: one live split. Both tools still work.
+00:00:05.153 --> 00:00:10.305
+You get a shell, settings, a file manager, native tools, and an
 
 3
-00:00:18.750 --> 00:00:30.050
-In Settings, I move from Menu and Dock to Classic Taskbar, then back. These are real presets. The panels can be edited and saved as your own layout.
+00:00:10.305 --> 00:00:15.458
+optional office suite. This is a captured session, not a concept picture.
 
 4
-00:00:30.250 --> 00:00:40.133
-The wallpaper collection is an ordinary folder in File Manager. Pick a scene, open your files, and keep the desktop you actually want to use.
+00:00:15.458 --> 00:00:20.611
+The Welcome guide starts with the main idea: keep ordinary windows until
+
+5
+00:00:20.611 --> 00:00:24.217
+you choose to make them work together.
+
+6
+00:00:24.417 --> 00:00:27.508
+Here are Files and Settings as separate, working windows.
+
+7
+00:00:27.508 --> 00:00:31.631
+I hold Meta and Shift and drag Settings toward the left edge
+
+8
+00:00:31.631 --> 00:00:35.066
+of Files. The preview tells me where it will land.
+
+9
+00:00:35.066 --> 00:00:38.845
+Release, and they share one movable frame with a live split.
+
+10
+00:00:38.845 --> 00:00:42.624
+I can drag the divider to give either app more room.
+
+11
+00:00:42.624 --> 00:00:46.403
+Each member keeps working and still has its own title controls.
+
+12
+00:00:46.403 --> 00:00:50.181
+The group menu handles detach, ungroup, and moving the whole group;
+
+13
+00:00:50.181 --> 00:00:54.217
+closing the frame asks what to do with its members.
+
+14
+00:00:54.417 --> 00:00:59.198
+The same gesture has a second answer. Drop near the middle instead
+
+15
+00:00:59.198 --> 00:01:03.978
+of an edge, and Files and Settings become pages in one container.
+
+16
+00:01:03.978 --> 00:01:08.361
+I switch between those real applications in the shared tab row.
+
+17
+00:01:08.361 --> 00:01:13.142
+A page can itself contain splits, so a container can hold a
+
+18
+00:01:13.142 --> 00:01:16.727
+larger project without turning every window into a tile.
+
+19
+00:01:16.727 --> 00:01:21.508
+Pull a member's own title strip into empty space to detach it.
+
+20
+00:01:21.508 --> 00:01:26.289
+You can also open the group menu, or use Meta Shift D
+
+21
+00:01:26.289 --> 00:01:31.070
+and choose a target with arrows, T for a tab, or D
+
+22
+00:01:31.070 --> 00:01:32.467
+to detach.
+
+23
+00:01:32.667 --> 00:01:37.264
+Settings is where the desktop shape changes. In Customize I choose Classic
+
+24
+00:01:37.264 --> 00:01:41.861
+Taskbar, then restore Menu and Dock. Those are two of eleven starting
+
+25
+00:01:41.861 --> 00:01:46.458
+layouts. A layout changes the panels and applets; it does not erase
+
+26
+00:01:46.458 --> 00:01:51.055
+the color theme I chose. Right click a panel for Edit Panels,
+
+27
+00:01:51.055 --> 00:01:55.653
+then move items, add or duplicate applets, and save the result as
+
+28
+00:01:55.653 --> 00:02:00.467
+your own preset. Your starting point is only a starting point.
+
+29
+00:02:00.667 --> 00:02:05.660
+Appearance previews the real window chrome around ordinary application controls.
+
+30
+00:02:05.660 --> 00:02:11.652
+I browse the theme cards and select Graphite. The draft preview changes
+
+31
+00:02:11.652 --> 00:02:17.644
+before I apply it. A theme brings its palette, window and container
+
+32
+00:02:17.644 --> 00:02:23.636
+decoration, title buttons, and button arrangement together. Fine tune this theme opens
+
+33
+00:02:23.636 --> 00:02:29.629
+the details: button style and side, title height, corner shape, and container
+
+34
+00:02:29.629 --> 00:02:35.621
+controls. Wallpaper and fonts have their own tabs. Apply commits the draft;
+
+35
+00:02:35.621 --> 00:02:39.217
+Revert returns to the saved look.
+
+36
+00:02:39.417 --> 00:02:44.270
+Here is QindaQt's own arrangement: a thin top ledger, a smart shelf
+
+37
+00:02:44.270 --> 00:02:48.314
+on the left, and compact instruments at the bottom right.
+
+38
+00:02:48.314 --> 00:02:53.168
+The dark theme and Compiler Club wallpaper give it a distinct home,
+
+39
+00:02:53.168 --> 00:02:58.217
+while the same ordinary File Manager moves freely across the desktop.
+
+40
+00:02:58.417 --> 00:03:04.061
+Classic Taskbar puts launching, running windows, and status on one familiar bar.
+
+41
+00:03:04.061 --> 00:03:09.704
+Its paired Classic Blue theme and the Qinda Bliss hills make the
+
+42
+00:03:09.704 --> 00:03:15.348
+Windows-style starting point immediately recognizable. This is a live session, and its
+
+43
+00:03:15.348 --> 00:03:18.300
+panels can still be edited.
+
+44
+00:03:18.500 --> 00:03:22.183
+Centered Taskbar moves the launch cluster to the middle.
+
+45
+00:03:22.183 --> 00:03:27.093
+Daylight supplies the light controls and title bar, and Porcelain Dawn carries
+
+46
+00:03:27.093 --> 00:03:32.003
+that calm through the wallpaper. Pick it if you want a modern
+
+47
+00:03:32.003 --> 00:03:35.467
+taskbar without giving up QindaQt's window containers.
+
+48
+00:03:35.667 --> 00:03:40.926
+Corner Bar takes a BeOS-like route: a compact panel in the corner
+
+49
+00:03:40.926 --> 00:03:45.747
+and a short title tab instead of a full colored strip.
+
+50
+00:03:45.747 --> 00:03:51.006
+Marigold gives it amber controls. Sea Glass and Lilac offer other colors
+
+51
+00:03:51.006 --> 00:03:55.550
+and corner radii; the layout itself remains the same.
+
+52
+00:03:55.750 --> 00:04:00.610
+Workspace Dock sets a column down the right side, inspired by NeXT.
+
+53
+00:04:00.610 --> 00:04:05.064
+Graphite gives its windows a darker, quieter treatment against Ink Tide.
+
+54
+00:04:05.064 --> 00:04:09.924
+Open applications keep their own real windows; the dock is the route
+
+55
+00:04:09.924 --> 00:04:15.383
+into a workspace, not a rule about how you must arrange it.
+
+56
+00:04:15.583 --> 00:04:21.752
+Program Groups recalls the Windows three point one idea of organized application
+
+57
+00:04:21.752 --> 00:04:27.920
+groups, with a top bar and windows that can minimize to desktop
+
+58
+00:04:27.920 --> 00:04:34.088
+icons. Classic Grey supplies the matching squared decoration. Familiar history becomes another
+
+59
+00:04:34.088 --> 00:04:38.800
+editable profile rather than a separate operating system.
+
+60
+00:04:39.000 --> 00:04:43.455
+Menu and Dock is the shipped default. The application menu sits across
+
+61
+00:04:43.455 --> 00:04:47.911
+the top, while the dock lives below with File Manager near the
+
+62
+00:04:47.911 --> 00:04:52.366
+beginning and Trash at the end. Its Mist theme and Jade Fold
+
+63
+00:04:52.366 --> 00:04:57.050
+wallpaper keep the menu, dock, and windows in one visual family.
+
+64
+00:04:57.250 --> 00:05:02.072
+Overview starts from workspaces and an Activities entry along the top.
+
+65
+00:05:02.072 --> 00:05:06.455
+The darker Slate theme is paired here with Ink Tide.
+
+66
+00:05:06.455 --> 00:05:10.400
+It is a different path through the same desktop:
+
+67
+00:05:10.400 --> 00:05:15.383
+QindaQt's apps, settings, and optional window grouping are still there.
+
+68
+00:05:15.583 --> 00:05:19.948
+Command Rail puts launch and switching controls down the left and a
+
+69
+00:05:19.948 --> 00:05:24.312
+search HUD at the top. Dusk and Qinda Punk make that vertical
+
+70
+00:05:24.312 --> 00:05:28.677
+layout feel deliberate. If you like a side launcher, begin here and
+
+71
+00:05:28.677 --> 00:05:32.550
+then rearrange the rail to suit your own applications.
+
+72
+00:05:32.750 --> 00:05:37.418
+Compact Flexible gives you a lean top panel and a smaller launcher
+
+73
+00:05:37.418 --> 00:05:42.086
+below. The light theme and Porcelain Dawn backdrop make the window edges
+
+74
+00:05:42.086 --> 00:05:46.755
+easy to read. It leaves room for the task at hand and
+
+75
+00:05:46.755 --> 00:05:50.467
+plenty of room to change the panels later.
+
+76
+00:05:50.667 --> 00:05:54.491
+Minimal strips the shell down so the application takes the stage.
+
+77
+00:05:54.491 --> 00:05:58.316
+Ink Tide and the dark glass theme keep the frame quiet.
+
+78
+00:05:58.316 --> 00:06:02.488
+You can bring back any panel or applet when you need it;
+
+79
+00:06:02.488 --> 00:06:06.217
+choosing a sparse profile is not a permanent commitment.
+
+80
+00:06:06.417 --> 00:06:12.169
+File Manager is a native app, not just a screenshot of a
+
+81
+00:06:12.169 --> 00:06:17.922
+folder. Browse files, switch views, use bookmarks, and open the wallpaper collection
+
+82
+00:06:17.922 --> 00:06:23.674
+shown here. QindaQt also includes Settings, Text Editor, Terminal, a viewer for
+
+83
+00:06:23.674 --> 00:06:27.989
+images and PDFs, QindaMPV for media, and System Monitor.
+
+84
+00:06:27.989 --> 00:06:33.741
+They use the desktop's visual language instead of looking like visitors from
+
+85
+00:06:33.741 --> 00:06:35.300
+another system.
+
+86
+00:06:35.500 --> 00:06:40.631
+Audio is more than a volume slider. Audio One has five physical
+
+87
+00:06:40.631 --> 00:06:45.761
+and three virtual input strips, five hardware buses and three virtual buses.
+
+88
+00:06:45.761 --> 00:06:50.892
+You can set each send independently, watch live meters, use processing racks,
+
+89
+00:06:50.892 --> 00:06:54.740
+record, and configure manual stereo streams to another computer.
+
+90
+00:06:54.740 --> 00:06:59.870
+In this captured example a test tone enters Virtual Input, I enable
+
+91
+00:06:59.870 --> 00:07:05.001
+its B one send, and the B one meter responds in an
+
+92
+00:07:05.001 --> 00:07:06.883
+isolated PipeWire graph.
+
+93
+00:07:07.083 --> 00:07:12.503
+The companion Office suite handles real work too. This budget is an
+
+94
+00:07:12.503 --> 00:07:16.568
+editable workbook for Signal Garden, a sample neighborhood event.
+
+95
+00:07:16.568 --> 00:07:21.988
+I double the lighting quantity and the formula raises cost above the
+
+96
+00:07:21.988 --> 00:07:26.957
+project's ceiling. Then I return it to one before the pitch.
+
+97
+00:07:26.957 --> 00:07:32.377
+The related brief, chart, slide deck, and field notes open in QindaWrite,
+
+98
+00:07:32.377 --> 00:07:37.797
+QindaCalc, QindaShow, and QindaNote. You can download the same files from the
+
+99
+00:07:37.797 --> 00:07:39.300
+Office site.

@@ -22,14 +22,18 @@ from demo_input import inject
 
 ROOT = Path(__file__).resolve().parents[2]
 STAGE = ROOT / "build/site-capture/live"
-SAMPLE = Path(os.environ["QINDA_SHOWCASE_SAMPLES"])
+SAMPLE = Path(os.environ.get("QINDA_SHOWCASE_SAMPLES", ROOT / "website/assets/sample"))
 SETTINGS_BIN = os.environ.get("QINDA_SITE_SETTINGS_BIN", "qindaqt-settings")
 
 
 def selected(name: str) -> bool:
     scene = os.environ.get("QINDA_SCENE", "")
     return (not scene or scene == name
+            or (scene == "desktop-tools" and name in {"desktop-editor", "desktop-terminal",
+                                                       "desktop-calendar", "desktop-mail",
+                                                       "desktop-voice"})
             or (scene == "desktop-office" and not name.startswith("audio-"))
+            or (scene == "office-set" and name.startswith("office-"))
             or (scene == "audio-set" and name.startswith("audio-")))
 
 
@@ -46,6 +50,12 @@ def click(x: int, y: int) -> None:
 def key(name: str) -> None:
     inject([{"type": "key", "key": name, "pressed": True},
             {"type": "key", "key": name, "pressed": False}])
+
+
+def shortcut(*names: str) -> None:
+    inject([{"type": "key", "key": name, "pressed": True} for name in names]
+           + [{"type": "key", "key": name, "pressed": False}
+              for name in reversed(names)])
 
 
 def drag(start: tuple[int, int], end: tuple[int, int], *, dock: bool = False) -> None:
@@ -69,6 +79,9 @@ def drag(start: tuple[int, int], end: tuple[int, int], *, dock: bool = False) ->
 
 def paste(value: str) -> None:
     subprocess.run(["wl-copy", "--type", "text/plain", value], check=True)
+    # The private compositor must see the new Wayland selection before the
+    # injected Ctrl+V arrives; the first paste otherwise intermittently drops.
+    pause(.35)
 
 
 def pause(seconds: float = .65) -> None:
@@ -120,7 +133,21 @@ def app_scene(name: str, command: list[str], action) -> None:
             action()
             pause(1.1)
     finally:
-        app.terminate()
+        if name == "office-calc" and app.poll() is None:
+            # This edited document must close normally; SIGTERM leaves a
+            # recovery journal that covers the following chart workbook.
+            click(147, 71)  # Mac-style close control of this private window.
+            pause(.6)
+            subprocess.run(["spectacle", "-b", "-n", "-f", "-o",
+                            str(STAGE / "office-calc-close.png")], check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            click(528, 505)  # Discard the demo edit after showing its result.
+            try:
+                app.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                pass
+        if app.poll() is None:
+            app.terminate()
         try:
             app.wait(timeout=3)
         except subprocess.TimeoutExpired:
@@ -132,6 +159,21 @@ def app_scene(name: str, command: list[str], action) -> None:
 
 def main() -> None:
     STAGE.mkdir(parents=True, exist_ok=True)
+    profile = os.environ.get("QINDA_PROFILE_FILM", "")
+    if profile:
+        # The profile launcher starts the real shell, paired theme and File
+        # Manager first. Moving that real window exposes the panel layout and
+        # decoration behavior instead of turning a still into fake footage.
+        with Capture(f"layout-{profile}"):
+            move(730, 164)
+            pause(1.2)
+            drag((730, 164), (802, 213))
+            pause(.8)
+            move(1005, 330)
+            pause(.5)
+            inject([{"type": "pointer-axis", "axis": "vertical", "delta": 100.0}])
+            pause(1.3)
+        return
     if selected("desktop-welcome"):
         with Capture("desktop-welcome"):
             move(367, 329)
@@ -160,7 +202,20 @@ def main() -> None:
         pause(.45)
         click(887, 321)  # Restore Menu and Dock.
         pause(1.6)
-    app_scene("desktop-settings", ["qindaqt-settings"], settings)
+    app_scene("desktop-settings", [SETTINGS_BIN], settings)
+
+    def appearance() -> None:
+        move(903, 325)
+        pause(.7)
+        inject([{"type": "pointer-axis", "axis": "vertical", "delta": 130.0}])
+        pause(1.2)
+        move(1015, 514)
+        pause(.5)
+        click(1015, 514)  # Select the actual Graphite theme thumbnail.
+        pause(1.3)
+        inject([{"type": "pointer-axis", "axis": "vertical", "delta": -260.0}])
+        pause(1.2)  # Preview shows the new window and application palette.
+    app_scene("desktop-appearance", [SETTINGS_BIN, "--page", "appearance"], appearance)
 
     def files() -> None:
         move(550, 320)
@@ -171,6 +226,62 @@ def main() -> None:
         pause(.75)
     app_scene("desktop-files", ["qindaqt-file-manager", "/usr/share/qindaqt/wallpapers"], files)
 
+    runbook = SAMPLE / "signal-garden-runbook.txt"
+    runbook.write_text("Signal Garden / site runbook\n\n"
+                       "Friday: approve the courtyard plan.\n"
+                       "Saturday: verify the step-free entrance.\n"
+                       "Night test: check low-glare lights and covered power.\n")
+
+    def editor() -> None:
+        move(800, 275)
+        pause(.4)
+        click(800, 275)
+        paste("\nOwner: Ducke / confirm the night test before opening.\n")
+        shortcut("left-control", "v")
+        pause(1.1)
+        click(393, 177)  # Save toolbar control in the private Editor window.
+        pause(.9)
+    app_scene("desktop-editor", ["qindaqt-editor", str(runbook)], editor)
+
+    def terminal() -> None:
+        click(288, 128)  # Dismiss Welcome so the command session is legible.
+        pause(.45)
+        drag((878, 569), (1195, 732))
+        move(670, 410)
+        pause(.6)
+        inject([{"type": "pointer-axis", "axis": "vertical", "delta": 80.0}])
+        pause(.9)
+    app_scene("desktop-terminal", ["qqterm", "--shell", "/bin/bash", "--arg", "-lc",
+                                   "--arg", "find website/assets/sample -maxdepth 1 -type f -printf '%f\\n' | sort; exec bash"], terminal)
+
+    def calendar() -> None:
+        move(1138, 174)
+        pause(.5)
+        click(1098, 175)  # Week view of the imported site visit.
+        pause(1.0)
+        click(1183, 175)  # Day view of the same live calendar event.
+        pause(1.4)
+    app_scene("desktop-calendar", ["qindaqt-calendar", str(SAMPLE / "signal-garden-night-test.ics")], calendar)
+
+    def mail() -> None:
+        click(533, 348)
+        paste("\n\nDucke / please attach the final route map after the night test.")
+        shortcut("left-control", "v")
+        pause(1.1)
+        click(989, 154)  # Save locally; the demo never sends mail.
+        pause(1.2)
+        click(172, 287)  # Open Drafts to show the stored message.
+        pause(1.1)
+    app_scene("desktop-mail", ["qindamail", "mailto:?subject=Signal%20Garden%20%2F%20Friday%20approval"
+                               "&body=Please%20confirm%20the%20courtyard%20route%2C%20lighting%20plan%2C%20and%20covered%20power."], mail)
+
+    def voice() -> None:
+        move(670, 325)
+        pause(.7)
+        click(670, 325)
+        pause(1.2)
+    app_scene("desktop-voice", [SETTINGS_BIN, "--page", "voice"], voice)
+
     if selected("desktop-windows"):
         logs = [(STAGE / f"desktop-windows-{name}.log").open("w")
                 for name in ("files", "settings")]
@@ -178,14 +289,51 @@ def main() -> None:
                                  stdout=logs[0], stderr=logs[0])]
         try:
             pause(2.5)
-            apps.append(subprocess.Popen(["qindaqt-settings"], stdout=logs[1], stderr=logs[1]))
+            apps.append(subprocess.Popen([SETTINGS_BIN], stdout=logs[1], stderr=logs[1]))
             pause(2.7)
             with Capture("desktop-windows"):
                 pause(.9)
                 drag((640, 179), (960, 205))  # Expose both ordinary windows.
                 pause(.8)
                 drag((960, 205), (288, 401), dock=True)  # Split at the file window edge.
-                pause(2.0)
+                pause(1.1)
+                drag((690, 485), (785, 485))  # Resize the live split divider.
+                pause(1.2)
+                click(1152, 164)  # Open the actual group menu.
+                pause(1.5)
+        finally:
+            for app in apps:
+                app.terminate()
+                try:
+                    app.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    app.kill()
+                    app.wait()
+            for log in logs:
+                log.close()
+            pause(.4)
+
+    if selected("desktop-tabs"):
+        logs = [(STAGE / f"desktop-tabs-{name}.log").open("w")
+                for name in ("files", "settings")]
+        apps = [subprocess.Popen(["qindaqt-file-manager", "/usr/share/qindaqt/wallpapers"],
+                                 stdout=logs[0], stderr=logs[0])]
+        try:
+            pause(2.5)
+            apps.append(subprocess.Popen([SETTINGS_BIN], stdout=logs[1], stderr=logs[1]))
+            pause(2.7)
+            with Capture("desktop-tabs"):
+                pause(.9)
+                drag((640, 179), (960, 205))
+                pause(.8)
+                drag((960, 205), (718, 410), dock=True)
+                pause(1.2)
+                click(750, 165)  # Switch the real grouped tab if it formed.
+                pause(.8)
+                click(1152, 164)  # Group actions include detach and ungroup.
+                pause(.8)
+                click(1220, 229)  # Detach the active page's member.
+                pause(1.4)
         finally:
             for app in apps:
                 app.terminate()
@@ -239,6 +387,7 @@ def main() -> None:
         pause(1.2)
         move(555, 677)
         pause(.6)
+        pause(.8)
     app_scene("office-calc", ["qindacalc", "--new-instance", str(SAMPLE / "signal-garden-budget.xlsx")], calc)
 
     def chart() -> None:

@@ -108,4 +108,14 @@
           : 'assets/images/cyber-pengu-ducke-react.webp');
     });
   });
+
+  const desktopTour = document.querySelector('#desktop-tour-video');
+  document.querySelectorAll('[data-tour-time]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (!desktopTour) return;
+      desktopTour.currentTime = Number(button.dataset.tourTime);
+      desktopTour.play();
+      desktopTour.scrollIntoView({ block: 'center' });
+    });
+  });
 })();

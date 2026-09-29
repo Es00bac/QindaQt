@@ -3,10 +3,12 @@
 `website/` is a portable static site. Serve it from the repository root with:
 
 ```sh
-python3 -m http.server 8765 --directory website
+python3 website/scripts/serve.py
 ```
 
-Open `http://localhost:8765/`. QindaOffice has its own nested page at
+Open `http://localhost:8765/`. The local server listens on the LAN and supports
+byte ranges so viewers can jump between chapters of the long desktop film.
+QindaOffice has its own nested page at
 `/office/`, and Audio1 has a deep dive at `/audio/`; later companion projects can add sibling directories while sharing
 `assets/base.css`, `assets/identity.css`, and the same header/footer pattern. There is no site build step,
 framework runtime, tracking script, or remote font request. The source links
@@ -24,14 +26,13 @@ captions, and basic image/button markup.
   session and XDG configuration, data, cache, and Desktop directories under
   ignored `build/site-capture/`; it disables normal autostart. It never copies
   a capture of the owner's live desktop or personal files into the site.
-- `layout-live-*.webp` show five live profile captures, including Classic
-  Taskbar, Centered Taskbar, Corner Bar, Workspace Dock, and Program Groups.
-  The capture script starts Settings1 in the private session and selects each
-  profile's catalog default theme, color scheme, and paired wallpaper.
-  `profile-*.webp` are deterministic renders from QindaQt's
-  `qindaqt-shell-preview` against this checkout's profile/theme catalogs.
-  The site labels them “Shell render · preview” so they are not mistaken for
-  live session screenshots. Source command pattern:
+- `layout-live-*.webp` show all eleven live profile captures. The capture
+  script starts Settings1 in the private session and selects each profile's
+  catalog default theme, color scheme, and paired wallpaper. With
+  `QINDA_PROFILE_FILM=1`, it also records File Manager moving over that layout
+  for the full desktop tour. `profile-*.webp` are deterministic reference
+  renders from `qindaqt-shell-preview`; the public comparison uses live images.
+  Source command pattern:
 
   ```sh
   QT_QPA_PLATFORM=offscreen qindaqt-shell-preview \
@@ -95,9 +96,11 @@ live screenshots are the acceptance evidence.
 a scenario-gated virtual QindaQt session. It uses the compositor's private
 development input interface to click, drag, and operate public sample files;
 it never sends input to the owner's desktop. It records frame sequences with
-Spectacle under ignored `build/site-capture/live/`. The desktop sequence
-includes an actual Meta+Shift drag that creates a split, a layout switch in
-Settings, and native File Manager. The Office sequence edits the DOCX brief,
+Spectacle under ignored `build/site-capture/live/`. The desktop sequence lasts
+at least five minutes and includes actual Meta+Shift drags for splits and tabs,
+group controls, layout changes in Settings, a draft appearance theme preview,
+moving File Manager across all eleven layouts, native apps, Audio1, and an Office
+decision. The Office sequence edits the DOCX brief,
 changes a cell in the XLSX budget so formulas recalculate, opens the workbook
 chart, advances the native slides with speaker notes, and changes notebook
 pages. The sample files are copied to `/tmp` before the recording and removed
@@ -111,7 +114,8 @@ and reproducible film edit. It sequences three wallpaper-matched key poses of
 Cyber Pengu and Ducke using the narration envelope. They respond
 to the work in every chapter; brief focus rings and speech cues point to real
 controls and outcomes. The app UI under them is live footage. WebVTT captions
-ship beside the three MP4s.
+ship beside the three MP4s. `scripts/check-site.py` checks the desktop film's
+encoded duration so an accidental short export fails validation.
 
 The character narration uses two contrasting [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M)
 voices (`bm_george` for Cyber Pengu and `am_puck` for Ducke), voiced with
