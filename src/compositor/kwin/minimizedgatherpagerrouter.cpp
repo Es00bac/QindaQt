@@ -53,13 +53,18 @@ bool MinimizedGatherPagerRouter::touchDown(const qint32 id,
         return false;
     }
     m_touchId = id;
+    m_touchPosition = position;
     return true;
 }
 
 bool MinimizedGatherPagerRouter::touchMotion(const qint32 id,
-                                              const QPointF &) const noexcept
+                                              const QPointF &position) noexcept
 {
-    return touchActive(id);
+    if (!touchActive(id)) {
+        return false;
+    }
+    m_touchPosition = position;
+    return true;
 }
 
 bool MinimizedGatherPagerRouter::touchActive(const qint32 id) const noexcept
@@ -68,13 +73,13 @@ bool MinimizedGatherPagerRouter::touchActive(const qint32 id) const noexcept
 }
 
 std::optional<MinimizedPagerHit> MinimizedGatherPagerRouter::touchUp(
-    const qint32 id, const QPointF &position)
+    const qint32 id)
 {
     if (m_touchId != id || !m_pressed) {
         return std::nullopt;
     }
     m_touchId.reset();
-    return release(position);
+    return release(m_touchPosition);
 }
 
 void MinimizedGatherPagerRouter::cancel() noexcept

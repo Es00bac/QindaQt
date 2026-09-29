@@ -311,7 +311,6 @@ void KWinHybridSession::synchronizeIconChips()
                      qPrintable(windowId), qPrintable(error));
         }
     }
-    synchronizeMinimizedGather();
 }
 
 void KWinHybridSession::releaseIconChipSceneItems() noexcept

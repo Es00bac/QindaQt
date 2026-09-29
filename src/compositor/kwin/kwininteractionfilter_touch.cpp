@@ -175,7 +175,7 @@ bool KWinInteractionFilter::touchUp(KWin::TouchUpEvent *event)
 {
     if (event != nullptr && m_iconify.pagerRouter
         && m_iconify.pagerRouter->touchActive(event->id)) {
-        const auto hit = m_iconify.pagerRouter->touchUp(event->id, event->pos);
+        const auto hit = m_iconify.pagerRouter->touchUp(event->id);
         if (hit && m_iconify.pagerSink) {
             m_iconify.pagerSink(*hit);
         }

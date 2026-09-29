@@ -64,7 +64,9 @@ MinimizedApplicationIdentity resolveMinimizedApplicationIdentity(
 
     appendUnique(&result.iconThemeCandidates, desktopIconName);
     appendUnique(&result.iconThemeCandidates, iconId(desktopFileName));
-    appendUnique(&result.iconThemeCandidates, resourceClass);
+    if (!isGenericClass(resourceClass)) {
+        appendUnique(&result.iconThemeCandidates, resourceClass);
+    }
     return result;
 }
 

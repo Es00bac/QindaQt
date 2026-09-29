@@ -35,7 +35,7 @@ void MinimizedApplicationIdentityTests::desktopFileAndClassFallbacksRemainMeanin
         {}, {}, QStringLiteral("Alarm"));
     QCOMPARE(desktop.label, QStringLiteral("org.example.Clock"));
     QCOMPARE(desktop.iconThemeCandidates,
-             QStringList({QStringLiteral("org.example.Clock"), QStringLiteral("wayland")}));
+             QStringList({QStringLiteral("org.example.Clock")}));
 
     const auto appClass = resolveMinimizedApplicationIdentity(
         {}, QStringLiteral("Firefox"), {}, {}, QStringLiteral("Report"));

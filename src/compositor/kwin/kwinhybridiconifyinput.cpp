@@ -47,11 +47,11 @@ void KWinHybridSession::initializeIconifyInput()
     m_inputFilter->setIconifyHooks(IconifyInputHooks{
         .chipRouter = m_iconChipRouter.get(),
         .pagerRouter = m_minimizedGatherPagerRouter.get(),
-        .pagerSink = [this](const MinimizedPagerHit &hit) {
-            handleMinimizedPagerHit(hit);
-        },
         .chipSink = [this](const IconChipPointerDecision &decision) {
             dispatchIconChipDecision(decision);
+        },
+        .pagerSink = [this](const MinimizedPagerHit &hit) {
+            handleMinimizedPagerHit(hit);
         },
         .titleWheelTarget = [this](const QPointF &position) {
             return iconifyWheelTargetAt(position);

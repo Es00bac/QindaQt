@@ -28,6 +28,21 @@ struct OutputGather final
     QString anchorWindowId;
 };
 
+QString firstWindowId(const Core::LayoutNode &root)
+{
+    const auto *node = &root;
+    while (node->isSplit()) {
+        node = node->firstChild();
+    }
+    return node->windowId();
+}
+
+QString activeRepresentative(const Core::WindowContainer &container)
+{
+    const auto *page = container.page(container.activePageId());
+    return page ? firstWindowId(page->root()) : QString{};
+}
+
 void setOutputArea(OutputGather *gather, KWin::Window *window)
 {
     if (!gather->request.workArea.isEmpty() || !window) {
