@@ -163,6 +163,8 @@ void KWinHybridSession::reconcileWorkAreaGeometry()
                      qPrintable(failure));
         }
     }
+    synchronizeMinimizedGather();
+    synchronizeChrome();
 }
 
 // Composes the exact-chord target resolver: chrome hits, live-stack chrome
