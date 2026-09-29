@@ -414,6 +414,15 @@ quint64 AudioClient::setChannelVolumes(const Handle &target, const QVector<doubl
          .channelVolumes = volumes});
 }
 
+quint64 AudioClient::setLatencyOffset(const Handle &device, const qint64 offsetNs)
+{
+    OperationRequest request;
+    request.kind = OperationKind::SetLatencyOffset;
+    request.primary = device;
+    request.latencyOffsetNs = offsetNs;
+    return beginOperation(request);
+}
+
 quint64 AudioClient::createVirtualDevice(const DeviceKind kind, const QString &displayName,
                                          const quint32 channels)
 {

@@ -13,6 +13,7 @@
 #include <QtDBus/QDBusMetaType>
 #include <QtTest>
 
+#include <functional>
 #include <limits>
 #include <memory>
 
@@ -204,14 +205,17 @@ private Q_SLOTS:
     void snapshotRoundTripsOverDBus();
     void aCaptureStreamMayReadAnOutputsMonitor();
     void hostileChannelArraysFailClosedOverDBus();
+    void latencyOffsetsRoundTripAndStayCanonical();
 };
 
 void AudioProtocolTests::fixedSignatures()
 {
     registerDBusTypes();
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Handle>()), "(tt)");
+    // Schema 13 (ADR-0288) appends the latency offset: known, value,
+    // settable, minimum, maximum.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Device>()),
-             "((tt)ussdbbbbbbadasbs)");
+             "((tt)ussdbbbbbbadasbsbxbxx)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Stream>()),
              "((tt)uss(tt)bdbbbbbbadas)");
     // The console (ADR-0173) and the meter reading (ADR-0174) are part of the
@@ -221,23 +225,27 @@ void AudioProtocolTests::fixedSignatures()
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Level>()), "(ddb)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<LevelReading>()),
              "(s(ddb))");
-    // Schema 5 appends the device pin (ADR-0178) to both structs.
+    // Schema 5 appends the device pin (ADR-0178) to both structs. Schema 14
+    // (ADR-0288's dated addendum) appends delayMs to BusProcessing, so the
+    // bus half of Console (and Snapshot below) carries one more field too.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Console>()),
              "(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))"
-             "a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs))");
+             "a(suusttbdbb(ddb)s((bddddddd)ui))basas(bsst)a(sbssubbs))");
     // The rack (ADR-0179): gate, compressor, equalizer, limiter, in the order
     // the graph applies them.
     // The rack (ADR-0179/0180): denoiser, gate, compressor, equalizer, limiter,
     // in the order the graph applies them; a bus rack is an equalizer and a mode.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<StripProcessing>()),
              "((bd)(bddddd)(bdddddd)(bddddddd)(bdd))");
+    // Schema 14 (ADR-0288 dated addendum) appends delayMs (kMinBusDelayMs..
+    // kMaxBusDelayMs, audio_limits.h) after mode, its previous last field.
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<BusProcessing>()),
-             "((bddddddd)u)");
+             "((bddddddd)ui)");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<Snapshot>()),
-             "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)a((tt)ussdbbbbbbadasbs)"
+             "(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbsbxbxx)a((tt)ussdbbbbbbadasbsbxbxx)"
              "a((tt)uss(tt)bdbbbbbbadas)"
              "(a(suusttbdbbbdada(ubd)(ddb)s((bd)(bddddd)(bdddddd)(bddddddd)(bdd)))"
-             "a(suusttbdbb(ddb)s((bddddddd)u))basas(bsst)a(sbssubbs)))");
+             "a(suusttbdbb(ddb)s((bddddddd)ui))basas(bsst)a(sbssubbs)))");
     QCOMPARE(QDBusMetaType::typeToSignature(QMetaType::fromType<OperationResult>()),
              "(uuttttss)");
 }
@@ -404,8 +412,10 @@ void AudioProtocolTests::operationResultLineage()
     QVERIFY(validateOperationResult(result).accepted);
     result.kind = OperationKind::DeleteVbanStream;
     QVERIFY(validateOperationResult(result).accepted);
+    result.kind = OperationKind::SetLatencyOffset;
+    QVERIFY(validateOperationResult(result).accepted);
     result.kind = static_cast<OperationKind>(
-        static_cast<quint32>(OperationKind::DeleteVbanStream) + 1);
+        static_cast<quint32>(OperationKind::SetLatencyOffset) + 1);
     QCOMPARE(validateOperationResult(result).reasonCode,
              QStringLiteral("malformed-result"));
     result.kind = OperationKind::SetVolume;
@@ -458,6 +468,73 @@ void AudioProtocolTests::snapshotRoundTripsOverDBus()
     QVERIFY(echoed->wireValid);
     QVERIFY(echoed->outputs[0].wireValid);
     QVERIFY(echoed->streams[0].wireValid);
+}
+
+// Schema 13 (ADR-0288): a settable signed offset and a read-only one survive
+// the bus unchanged, and every non-canonical latency field fails closed.
+void AudioProtocolTests::latencyOffsetsRoundTripAndStayCanonical()
+{
+    registerDBusTypes();
+    constexpr qint64 ms = 1'000'000;
+    Snapshot snapshot = validSnapshot();
+    snapshot.capabilities |= Capability::SetLatencyOffset;
+    Device &settable = snapshot.outputs[0];
+    settable.latencyOffsetKnown = true;
+    settable.latencyOffsetNs = -35 * ms;
+    settable.canSetLatencyOffset = true;
+    settable.latencyOffsetMinNs = kMinLatencyOffsetNs;
+    settable.latencyOffsetMaxNs = kMaxLatencyOffsetNs;
+    snapshot.outputs[1].latencyOffsetKnown = true;
+    snapshot.outputs[1].latencyOffsetNs = 120 * ms;
+    QVERIFY(validateSnapshot(snapshot).accepted);
+
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    EchoService echo(bus.connection);
+    const std::optional<Snapshot> echoed = echoOverBus(bus.connection, snapshot);
+    QVERIFY(echoed.has_value());
+    QCOMPARE(*echoed, snapshot);
+    QCOMPARE(echoed->outputs[0].latencyOffsetNs, -35 * ms);
+    QCOMPARE(echoed->outputs[0].latencyOffsetMinNs, kMinLatencyOffsetNs);
+
+    const auto rejectedWith = [&snapshot](const std::function<void(Snapshot &)> &mutate) {
+        Snapshot changed = snapshot;
+        mutate(changed);
+        return validateSnapshot(changed).reasonCode;
+    };
+    const QString invalidDevice = QStringLiteral("invalid-device");
+    // An unknown offset carries neither a value nor a range.
+    QCOMPARE(rejectedWith([](Snapshot &s) {
+                 s.outputs[1].latencyOffsetKnown = false;
+             }),
+             invalidDevice);
+    QCOMPARE(rejectedWith([](Snapshot &s) { s.outputs[1].latencyOffsetMaxNs = 1; }),
+             invalidDevice);
+    QCOMPARE(rejectedWith([](Snapshot &s) {
+                 s.outputs[1].latencyOffsetNs = kMaxLatencyOffsetNs + 1;
+             }),
+             invalidDevice);
+    // Settable needs the capability, an ordered range inside the window, and
+    // a value inside that range.
+    QCOMPARE(rejectedWith([](Snapshot &s) {
+                 s.capabilities &= ~Capabilities(Capability::SetLatencyOffset);
+             }),
+             invalidDevice);
+    QCOMPARE(rejectedWith([](Snapshot &s) { s.outputs[0].latencyOffsetMinNs = 0; }),
+             invalidDevice);
+    QCOMPARE(rejectedWith([](Snapshot &s) {
+                 s.outputs[0].latencyOffsetMinNs = kMinLatencyOffsetNs - 1;
+             }),
+             invalidDevice);
+    QCOMPARE(rejectedWith([](Snapshot &s) {
+                 s.outputs[0].latencyOffsetMinNs = 10;
+                 s.outputs[0].latencyOffsetMaxNs = 5;
+             }),
+             invalidDevice);
+    QVERIFY(latencyOffsetAdmitted(settable, kMinLatencyOffsetNs));
+    QVERIFY(!latencyOffsetAdmitted(settable, kMaxLatencyOffsetNs + 1));
+    QVERIFY(!latencyOffsetAdmitted(snapshot.outputs[1], 120 * ms));
+    QVERIFY(operationTargetsHandle(OperationKind::SetLatencyOffset));
 }
 
 void AudioProtocolTests::hostileChannelArraysFailClosedOverDBus()

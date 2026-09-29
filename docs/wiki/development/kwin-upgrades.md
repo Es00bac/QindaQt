@@ -1,7 +1,7 @@
 # Releasing and upgrading qindaqt-kwin
 
 QindaQt runs on qindaqt-kwin, its own co-installable KWin fork
-([ADR-0289](../adr/0289-run-on-qindaqt-kwin.md)). The native plugin boundary is
+([ADR-0291](../adr/0291-run-on-qindaqt-kwin.md)). The native plugin boundary is
 an exact binary ABI: treat every fork release, including one that only merges
 an upstream patch release, as an upgrade that needs a clean rebuild and fresh
 nested evidence.
@@ -37,7 +37,7 @@ with its own row. Stay on the pinned minor release unless a move is planned.
    literal in `src/compositor/cmake/QindaQtKWinAbi.cmake`, the fork version in
    `tests/` `find_package(... EXACT)` requests, and the pin tables in
    [compositor and session integration](../architecture/compositor-session.md)
-   and ADR-0289. Run `./compositor/tools/verify-kwin-source`, `--verify` against
+   and ADR-0291. Run `./compositor/tools/verify-kwin-source`, `--verify` against
    a fork checkout and `--verify-archive` against the package tarball.
 4. In QindaGentoo add `gui-wm/qindaqt-kwin-<release>_p<serial>` pinning the same
    commit (`git archive --format=tar.gz --prefix=qindaqt-kwin-<version>/`) and

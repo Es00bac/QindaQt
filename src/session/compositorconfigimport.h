@@ -7,7 +7,7 @@
 namespace QindaQt::Session {
 
 // Carries a user's KDE KWin settings into qindaqt-kwin's own files once
-// (ADR-0289): monitor layout, window rules, input and keyboard settings, and
+// (ADR-0291): monitor layout, window rules, input and keyboard settings, and
 // KWin's state. For each pair, the KDE file is copied only while the
 // qindaqt-kwin file does not exist yet; a present qindaqt-kwin file is never
 // read from or written to here, so KDE and QindaQt settings diverge freely

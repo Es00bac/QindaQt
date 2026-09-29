@@ -29,6 +29,14 @@ struct ValidationResult {
 // Shared Audio1/Settings eligibility for a manual-peer speaker. The service
 // rechecks it against the current graph before declaring a receiver route.
 [[nodiscard]] bool isPhysicalPeerOutput(const Device &device);
+// Schema 13 (ADR-0288). The device's latency fields are canonical: an unknown
+// offset has no value and no range, a settable one lies inside its range and
+// the protocol window, and settable requires the SetLatencyOffset capability.
+[[nodiscard]] bool validDeviceLatency(const Device &device, Capabilities capabilities);
+// AGENT-CONTRACT: the one admission rule for a requested offset, shared by
+// the coordinator, the client's dispatch preflight and the Settings route so
+// an enabled control is never refused and a refused value never dispatched.
+[[nodiscard]] bool latencyOffsetAdmitted(const Device &device, qint64 offsetNs);
 
 // True when the rack needs a chain on the graph. ONE definition, used by the
 // coordinator that declares chains and the worker that builds them: the

@@ -1,6 +1,6 @@
 """Validate, fetch, and verify the exact qindaqt-kwin source used by QindaQt.
 
-QindaQt runs on qindaqt-kwin, its own co-installable fork of KWin (ADR-0289).
+QindaQt runs on qindaqt-kwin, its own co-installable fork of KWin (ADR-0291).
 compositor/upstream/kwin.json pins the fork commit and the upstream KWin
 release it descends from; this tool checks that pin against Git and against
 the source archive the Gentoo package builds from.

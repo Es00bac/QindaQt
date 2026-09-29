@@ -5,7 +5,7 @@
 - **Owners:** Session, Compositor
 - **Supersedes:** None
 - **Superseded by:** None
-- **Amended by:** [ADR-0289](0289-run-on-qindaqt-kwin.md): the bridge writes qindaqt-kwin's `$XDG_CONFIG_HOME/qindaqt/kwinrc` and asks `org.qindaqt.KWin` to reconfigure
+- **Amended by:** [ADR-0291](0291-run-on-qindaqt-kwin.md): the bridge writes qindaqt-kwin's `$XDG_CONFIG_HOME/qindaqt/kwinrc` and asks `org.qindaqt.KWin` to reconfigure
 
 ## Context
 

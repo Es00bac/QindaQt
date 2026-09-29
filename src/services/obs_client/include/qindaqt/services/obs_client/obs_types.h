@@ -148,6 +148,11 @@ struct ObsSnapshot {
     SceneList scenes;
     QList<AudioInput> audioInputs;
     ConsoleMapping consoleMapping;
+    // The file OBS reported for the most recent finished recording, from the
+    // STOPPED RecordStateChanged event or the StopRecord reply, whichever
+    // lands first. Empty until OBS reports one; it is not cleared when a new
+    // recording starts, so a surface can keep offering the previous file.
+    QString lastRecordingPath;
 
     [[nodiscard]] bool ready() const {
         return state == ConnectionState::Ready;

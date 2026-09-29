@@ -257,7 +257,7 @@ boundaries still require application restart or a later login; never restart the
 compositor to refresh panels while applications must remain connected.
 
 The package requires the exact compositor stack and Qt 6.11 or newer; since
-[ADR-0289](../adr/0289-run-on-qindaqt-kwin.md) that is `=gui-wm/qindaqt-kwin-6.6.6_p1:=`,
+[ADR-0291](../adr/0291-run-on-qindaqt-kwin.md) that is `=gui-wm/qindaqt-kwin-6.6.6_p1:=`,
 QindaQt's own KWin fork, which installs beside an unmodified `kde-plasma/kwin`. Its direct
 runtime closure follows the production process contracts:
 
@@ -270,7 +270,7 @@ runtime closure follows the production process contracts:
 | Power management, brightness, and idle inhibition | release-matched PowerDevil and KConfig for its persisted idle preferences |
 | Audio and network | WirePlumber and NetworkManager |
 | Desktop-entry launch | KIO and KService |
-| Media keys, idle display policy, screenshots, and authorization prompts | KGlobalAccel, KIdleTime, release-matched KWayland, Spectacle, and the KDE polkit agent |
+| Media keys, idle display policy, screenshots, and authorization prompts | KGlobalAccel, KIdleTime, release-matched KWayland, KWin ScreenShot2 (QindaQt Screenshot, ADR-0291), and the KDE polkit agent |
 
 SDDM remains an operator-selected login manager and is not a package
 dependency. Portage must solve the plan without slot conflicts before the

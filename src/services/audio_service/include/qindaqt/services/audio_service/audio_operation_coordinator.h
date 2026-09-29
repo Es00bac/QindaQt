@@ -3,6 +3,7 @@
 #pragma once
 
 #include <qindaqt/services/audio_service/console_model.h>
+#include <qindaqt/services/audio_service/latency_store.h>
 #include <qindaqt/services/audio_service/macro_store.h>
 #include <qindaqt/services/audio_service/preset_store.h>
 #include <qindaqt/services/audio_service/vban_store.h>
@@ -36,7 +37,7 @@ public:
     // passes a temporary directory.
     explicit AudioOperationCoordinator(AudioBackend *backend, QObject *parent = nullptr,
                                        QString presetDirectory = {}, QString macroPath = {},
-                                       QString vbanPath = {});
+                                       QString vbanPath = {}, QString latencyPath = {});
 
     [[nodiscard]] const Snapshot &snapshot() const noexcept;
     // The console this coordinator owns (ADR-0173). Exposed so a persistence
@@ -93,6 +94,11 @@ private:
     // to the backend when enabled and, for an outgoing one, bound.
     [[nodiscard]] QList<VbanStream> vbanStreams() const;
     void publishVban();
+    // Per-device latency offsets (ADR-0288, audio_latency_operations.cpp):
+    // remembered by node.name in the latency store and declared whole to the
+    // backend, which applies each to the node that carries that name.
+    [[nodiscard]] OperationSubmission submitLatencyOffset(const OperationRequest &request);
+    void publishLatency();
     // Republishes the snapshot with the console's current value folded in.
     void republishConsole();
     // Re-derives the backend routing from the console and the currently
@@ -121,6 +127,8 @@ private:
     PresetStore m_presets;
     MacroStore m_macros;
     VbanStore m_vban;
+    LatencyStore m_latency;
+    QList<BackendLatencyOffset> m_publishedLatency;
     QList<BackendVbanStream> m_publishedVban;
     QList<BackendVbanStream> m_runningVban;
     quint64 m_nextVbanActivationToken = 1;

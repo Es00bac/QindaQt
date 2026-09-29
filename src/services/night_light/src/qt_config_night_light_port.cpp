@@ -98,7 +98,7 @@ void announceConfigChange(const QDBusConnection &bus, const QString &path,
     }
     const QFileInfo info(path);
     QString fileName = info.fileName();
-    // AGENT-CONTRACT (ADR-0289): qindaqt-kwin watches its config as
+    // AGENT-CONTRACT (ADR-0291): qindaqt-kwin watches its config as
     // /qindaqt/kwinrc, the KConfig name "qindaqt/kwinrc" as a D-Bus path.
     if (info.dir().dirName() == CompositorNames::configDirectory) {
         fileName = QString(CompositorNames::configDirectory) + QLatin1Char('/') + fileName;

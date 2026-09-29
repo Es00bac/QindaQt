@@ -10,7 +10,7 @@ namespace QindaQt::SessionSupervisor {
 SessionActivationScope activationScopeForCompositor(
     const QString &executable, const QStringList &arguments, const QString &processName)
 {
-    // Only QindaQt's own compositor (ADR-0289) starts the physical session.
+    // Only QindaQt's own compositor (ADR-0291) starts the physical session.
     const QString expected = QString(CompositorNames::executable);
     const bool hasIdentity = !executable.isEmpty()
         ? QFileInfo(executable).fileName() == expected

@@ -14,7 +14,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "compositor/upstream/kwin.json"
 COMPOSITOR_DOC = ROOT / "docs/wiki/architecture/compositor-session.md"
-ADR = ROOT / "docs/wiki/adr/0289-run-on-qindaqt-kwin.md"
+ADR = ROOT / "docs/wiki/adr/0291-run-on-qindaqt-kwin.md"
 OBJECT_ID = re.compile(r"[0-9a-f]{40}")
 POWER_PROFILE_PROVIDER = re.compile(
     r"\|\|\s*\(\s*"
@@ -50,7 +50,7 @@ def read_text(path: Path) -> str:
 
 
 def verify_repository() -> tuple[str, str, str]:
-    """Checks the qindaqt-kwin pin (ADR-0289); returns fork version, fork commit, upstream release."""
+    """Checks the qindaqt-kwin pin (ADR-0291); returns fork version, fork commit, upstream release."""
     manifest = load_json(MANIFEST)
     require(manifest.get("schemaVersion") == 2, "compositor manifest schema must be 2 (qindaqt-kwin)")
     upstream = manifest.get("upstream")
@@ -94,7 +94,6 @@ def verify_desktop_ebuild(path: Path, version: str, release: str) -> None:
         f"=kde-plasma/kwayland-{release}*:6",
         f"=kde-plasma/polkit-kde-agent-{release}*:6",
         f"=kde-plasma/plasma-activities-{release}*:6",
-        f"=kde-plasma/spectacle-{release}*:6",
         f"=kde-plasma/xdg-desktop-portal-kde-{release}*:6",
         ">=kde-frameworks/kconfig-6.0:6=",
         ">=kde-frameworks/kidletime-6.0:6=",
@@ -112,6 +111,10 @@ def verify_desktop_ebuild(path: Path, version: str, release: str) -> None:
     )
     for fragment in required_fragments:
         require(fragment in ebuild, f"desktop ebuild misses release contract: {fragment}")
+    # ADR-0291: QindaQt ships its own screenshot tool; the desktop package must
+    # not pull Spectacle back in as a dependency of QindaQt itself.
+    require("kde-plasma/spectacle" not in ebuild,
+            "desktop ebuild must not depend on kde-plasma/spectacle (ADR-0291)")
     require(
         POWER_PROFILE_PROVIDER.search(ebuild) is not None,
         "desktop ebuild must accept tuned[ppd] or power-profiles-daemon as the Power Profiles provider",
@@ -142,7 +145,7 @@ def verify_runtime(command: Path, expected_release: str, cmake_version: Path) ->
 
 def verify_runtime_output(stdout: str, stderr: str, expected_release: str) -> None:
     # qindaqt-kwin keeps the application name "kwin" (KF6GlobalAccel component,
-    # ADR-0289) and reports its own fork version.
+    # ADR-0291) and reports its own fork version.
     require(stdout.strip() == f"kwin {expected_release}",
             f"runtime qindaqt-kwin must report {expected_release} exactly once on stdout, "
             f"got stdout={stdout.strip()!r}, stderr={stderr.strip()!r}")
@@ -187,7 +190,7 @@ def verify_install(install_root: Path) -> None:
     for name in required_plugins:
         require(name in installed_files,
                 f"full desktop install omitted runtime plugin {name}")
-    # AGENT-CONTRACT (ADR-0289): qindaqt-kwin loads plugins, decorations and
+    # AGENT-CONTRACT (ADR-0291): qindaqt-kwin loads plugins, decorations and
     # window switchers only from its own namespaces.
     for relative in ("qindaqt-kwin/plugins/qindaqt_compositor.so",
                      "qindaqt-kwin/decorations/org.qindaqt.so"):

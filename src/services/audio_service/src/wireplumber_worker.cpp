@@ -73,6 +73,9 @@ Capabilities capabilitiesFor(WpPlugin *mixer, WpPlugin *defaultNodes,
     // Virtual device management needs only the connected core and object
     // manager, both of which rebuild() has established before publishing.
     result |= Capability::ManageVirtualDevices;
+    // So does a node Props write; each device still says whether it has an
+    // offset and a declared range to honour (ADR-0288).
+    result |= Capability::SetLatencyOffset;
     return result;
 }
 
@@ -229,8 +232,11 @@ void WirePlumberWorker::setupCore()
     wp_object_manager_add_interest(m_manager, WP_TYPE_LINK, nullptr);
     wp_object_manager_add_interest(m_manager, WP_TYPE_CLIENT, nullptr);
     wp_object_manager_add_interest(m_manager, WP_TYPE_METADATA, nullptr);
-    wp_object_manager_request_object_features(m_manager, WP_TYPE_NODE,
-                                               WP_PIPEWIRE_OBJECT_FEATURES_MINIMAL);
+    // PARAM_PROPS keeps each node's Props cached, so a device's latency
+    // offset (ADR-0288) is read without a round trip and changes are signalled.
+    wp_object_manager_request_object_features(
+        m_manager, WP_TYPE_NODE,
+        WP_PIPEWIRE_OBJECT_FEATURES_MINIMAL | WP_PIPEWIRE_OBJECT_FEATURE_PARAM_PROPS);
     wp_object_manager_request_object_features(m_manager, WP_TYPE_LINK,
                                                WP_PIPEWIRE_OBJECT_FEATURES_MINIMAL);
     wp_object_manager_request_object_features(m_manager, WP_TYPE_CLIENT,
@@ -239,6 +245,8 @@ void WirePlumberWorker::setupCore()
                                                WP_OBJECT_FEATURES_ALL);
     g_signal_connect(m_manager, "installed", G_CALLBACK(onManagerInstalled), this);
     g_signal_connect(m_manager, "objects-changed", G_CALLBACK(onObjectsChanged), this);
+    g_signal_connect(m_manager, "object-added", G_CALLBACK(onObjectAdded), this);
+    g_signal_connect(m_manager, "object-removed", G_CALLBACK(onObjectRemoved), this);
 
     if (!wp_core_connect(m_core)) {
         publishUnavailable(QStringLiteral("pipewire-unavailable"));
@@ -378,8 +386,12 @@ void WirePlumberWorker::rebuild()
     if (metadata != nullptr) {
         g_object_unref(metadata);
     }
+    // Latency first (ADR-0288): a device that just appeared gets its
+    // remembered offset now, and its declared range is queried once.
+    applyLatencyOnWorker();
     auto graph = WirePlumberGraph::buildSnapshot(m_manager, m_mixer, m_defaultNodes,
-                                                 m_epoch, m_revision + 1, capabilities);
+                                                 m_epoch, m_revision + 1, capabilities,
+                                                 m_latencyRanges);
     if (m_apiLoadFailed && graph.snapshot.availability == Availability::Ready) {
         graph.snapshot.availability = Availability::Degraded;
         graph.snapshot.reasonCode = QStringLiteral("wireplumber-api-degraded");
@@ -571,6 +583,7 @@ void WirePlumberWorker::cleanupCore()
     cancelComponentLoads();
     cancelNodeActivations();
     cancelOperationSyncs();
+    stopLatencyOnWorker();
     m_managerInstalled = false;
     if (m_mixer != nullptr) {
         g_signal_handlers_disconnect_by_data(m_mixer, this);

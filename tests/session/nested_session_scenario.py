@@ -358,7 +358,7 @@ def write_virtual_output_config(config_home: Path, spec: VirtualOutputSpec) -> N
     # AGENT-GUARD: KWin's output store otherwise replaces the CLI scale with 1
     # for virtual outputs, whose physical size is intentionally unknown. Keep
     # this file inside the disposable XDG tree and assert the live result.
-    # qindaqt-kwin reads qindaqt/kwinoutputconfig.json (ADR-0289); a stock
+    # qindaqt-kwin reads qindaqt/kwinoutputconfig.json (ADR-0291); a stock
     # kwin_wayland (the CI layer-shell lane) reads the bare name.
     for relative in ("qindaqt/kwinoutputconfig.json", "kwinoutputconfig.json"):
         target = config_home / relative

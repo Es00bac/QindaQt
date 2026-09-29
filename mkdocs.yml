@@ -106,6 +106,8 @@ nav:
       - Display1 version 1: reference/display1-v1.md
       - Audio1 version 2: reference/audio1-v2.md
       - Audio1 schema 12: reference/audio1-v12.md
+      - Audio1 schema 13: reference/audio1-v13.md
+      - Audio1 schema 14: reference/audio1-v14.md
       - "VoiceMeeter Potato parity target": reference/voicemeeter-potato-parity.md
       - "Request checklist: audio, OBS, file manager, tray, roll-up, Wine": reference/qindaqt-request-checklist.md
       - "Audio macro buttons": reference/audio-macro-buttons.md
@@ -161,6 +163,7 @@ nav:
       - Settings Startup applications route: apps/startup-settings.md
       - Settings Screen saver route: apps/screensaver-settings.md
       - Settings Login screen route: apps/login-screen-settings.md
+      - Screenshot: apps/screenshot.md
       - Voice: apps/voice.md
       - Settings Voice route: apps/voice-settings.md
       - Terminal (QQ_Term): apps/terminal.md
@@ -444,5 +447,7 @@ nav:
       - "ADR-0285: Desk tablets keep the screen's up; pen displays turn with their screen": adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md
       - "ADR-0286: Per-display and per-desktop wallpapers": adr/0286-per-display-and-per-desktop-wallpapers.md
       - "ADR-0287: Pass tablet proximity through window decorations": adr/0287-pass-tablet-proximity-through-window-decorations.md
-      - "ADR-0289: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0289-run-on-qindaqt-kwin.md
+      - "ADR-0288: Per-device latency offsets through Audio1, and a compact Audio page": adr/0288-per-device-latency-offsets-and-a-compact-audio-page.md
+      - "ADR-0291: A native screenshot and record tool replaces Spectacle": adr/0289-native-screenshot-and-record-tool.md
+      - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md

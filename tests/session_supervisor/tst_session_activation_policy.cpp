@@ -33,7 +33,7 @@ private Q_SLOTS:
             << QStringList{"qindaqt-kwin", "--exit-with-session", "command", "--drm"} << false;
         QTest::newRow("payload-nested") << "/usr/bin/qindaqt-kwin"
             << QStringList{"qindaqt-kwin", "--drm", "--exit-with-session=command --virtual"} << true;
-        // ADR-0289: a stock KWin never starts the physical QindaQt session.
+        // ADR-0291: a stock KWin never starts the physical QindaQt session.
         QTest::newRow("stock-kwin") << "/usr/bin/kwin_wayland"
             << QStringList{"kwin_wayland", "--drm", "--socket", "qindaqt-0", "--exit-with-session", "qindaqt-session"} << false;
         QTest::newRow("wrong-executable") << "/usr/bin/bash"

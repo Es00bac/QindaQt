@@ -209,4 +209,12 @@ void WirePlumberAudioBackend::applyVban(const QList<BackendVbanStream> &streams)
     m_worker->applyVban(streams);
 }
 
+void WirePlumberAudioBackend::applyLatencyOffsets(const QList<BackendLatencyOffset> &offsets)
+{
+    if (!m_running.load(std::memory_order_acquire)) {
+        return;
+    }
+    m_worker->applyLatencyOffsets(offsets);
+}
+
 } // namespace QindaQt::Audio

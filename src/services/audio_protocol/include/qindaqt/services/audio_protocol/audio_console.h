@@ -150,6 +150,12 @@ enum class BusMode : quint32 {
 struct BusProcessing {
     EqualizerSettings equalizer;
     BusMode mode = BusMode::Normal;
+    // Real delay in the graph (schema 14, ADR-0288 dated addendum), whole
+    // milliseconds, kMinBusDelayMs..kMaxBusDelayMs (audio_limits.h). Unlike
+    // ADR-0288's original per-device latency offset, this changes what a
+    // listener actually hears. Appended last so the fields before it keep
+    // their wire order.
+    qint32 delayMs = 0;
 
     friend bool operator==(const BusProcessing &, const BusProcessing &) = default;
 };

@@ -3,7 +3,7 @@
 include_guard(GLOBAL)
 
 function(qindaqt_resolve_kwin_abi manifest_path output_variable)
-    # AGENT-GUARD: qindaqt-kwin plugins have a per-release binary ABI (ADR-0289).
+    # AGENT-GUARD: qindaqt-kwin plugins have a per-release binary ABI (ADR-0291).
     # This literal, the fork version in the source manifest, find_package(EXACT)
     # of QindaQtKWin and QindaQtKWinDecoration, and the fork's PluginFactory_iid
     # must advance together, only after the compositor matrix is rerun.

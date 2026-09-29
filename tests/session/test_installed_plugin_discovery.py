@@ -91,7 +91,7 @@ def decoration_library(config_home: Path) -> str:
         raise RuntimeError(
             f"could not read installed session defaults from {kwin_config}: {error}"
         )
-    # ADR-0289: org.qindaqt is qindaqt-kwin's compiled-in default, so the
+    # ADR-0291: org.qindaqt is qindaqt-kwin's compiled-in default, so the
     # launcher no longer writes the key; an absent key selects the default.
     return parser.get("org.kde.kdecoration2", "library", fallback="org.qindaqt")
 

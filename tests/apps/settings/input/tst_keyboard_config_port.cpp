@@ -158,7 +158,7 @@ void KeyboardConfigPortTest::announcesTheChangeToARunningDesktop()
     QDBusConnection::disconnectFromBus(listenerName);
 }
 
-// ADR-0289: qindaqt-kwin watches "qindaqt/kwininputrc", so a file in QindaQt's
+// ADR-0291: qindaqt-kwin watches "qindaqt/kwininputrc", so a file in QindaQt's
 // config folder is announced on /qindaqt/kwininputrc, where the fork listens.
 void KeyboardConfigPortTest::announcesTheCompositorsFolderPath()
 {

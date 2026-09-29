@@ -165,6 +165,10 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Device &value)
     writeChannelVolumes(argument, value.channelVolumes);
     writeChannelMap(argument, value.channelMap);
     argument << value.virtualDevice << value.nodeName;
+    // Schema 13 (ADR-0288), appended so every earlier field keeps its offset.
+    argument << value.latencyOffsetKnown << value.latencyOffsetNs
+             << value.canSetLatencyOffset << value.latencyOffsetMinNs
+             << value.latencyOffsetMaxNs;
     argument.endStructure();
     return argument;
 }
@@ -180,6 +184,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Device &value)
     readChannelVolumes(argument, value.channelVolumes, value.wireValid);
     readChannelMap(argument, value.channelMap, value.wireValid);
     argument >> value.virtualDevice >> value.nodeName;
+    argument >> value.latencyOffsetKnown >> value.latencyOffsetNs
+        >> value.canSetLatencyOffset >> value.latencyOffsetMinNs
+        >> value.latencyOffsetMaxNs;
     argument.endStructure();
     value.kind = static_cast<DeviceKind>(kind);
     return argument;
@@ -281,7 +288,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, DenoiserSettings 
 QDBusArgument &operator<<(QDBusArgument &argument, const BusProcessing &value)
 {
     argument.beginStructure();
-    argument << value.equalizer << static_cast<quint32>(value.mode);
+    argument << value.equalizer << static_cast<quint32>(value.mode) << value.delayMs;
     argument.endStructure();
     return argument;
 }
@@ -290,7 +297,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, BusProcessing &va
 {
     quint32 mode = 0;
     argument.beginStructure();
-    argument >> value.equalizer >> mode;
+    argument >> value.equalizer >> mode >> value.delayMs;
     argument.endStructure();
     value.mode = static_cast<BusMode>(mode);
     return argument;

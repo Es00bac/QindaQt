@@ -95,7 +95,7 @@ QVariantMap AudioSettingsModel::projectDeviceRow(const Device &device,
          qBound(0.0, device.channelVolumes.at(index), 1.0)},
     });
   }
-  return QVariantMap{
+  QVariantMap row{
       {QStringLiteral("serial"), device.handle.serial},
       {QStringLiteral("kindText"),
        device.kind == DeviceKind::Output ? translateAudio("Output device")
@@ -135,6 +135,8 @@ QVariantMap AudioSettingsModel::projectDeviceRow(const Device &device,
        serialPending(device.handle.serial)
            || m_volumeBySerial.contains(device.handle.serial)},
   };
+  row.insert(projectLatency(device));
+  return row;
 }
 
 QVariantMap AudioSettingsModel::projectStreamRow(

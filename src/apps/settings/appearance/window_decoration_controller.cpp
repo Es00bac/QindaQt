@@ -70,7 +70,7 @@ QString themeDisplayName(const QDir &directory)
 bool nativePluginAvailable(const QString &library)
 {
     for (const QString &root : QCoreApplication::libraryPaths()) {
-        // qindaqt-kwin loads decorations only from its own namespace (ADR-0289).
+        // qindaqt-kwin loads decorations only from its own namespace (ADR-0291).
         const QDir directory(QDir(root).filePath(
             QString(CompositorNames::decorationNamespace)));
         if (QFileInfo::exists(directory.filePath(library + QStringLiteral(".so")))) {
@@ -286,7 +286,7 @@ QString windowDecorationConfigPath()
 QStringList windowDecorationThemeRoots()
 {
     QStringList roots;
-    // AGENT-GUARD (ADR-0289, amends ADR-0160): stock Aurorae is a plugin of
+    // AGENT-GUARD (ADR-0291, amends ADR-0160): stock Aurorae is a plugin of
     // stock KWin's decoration namespace and never loads in qindaqt-kwin, so its
     // themes are listed only when an Aurorae plugin exists in the fork's.
     if (!nativePluginAvailable(QStringLiteral("org.kde.kwin.aurorae"))) {

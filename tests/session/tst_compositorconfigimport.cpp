@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The one-time import of KDE KWin settings into qindaqt-kwin's own files
-// (ADR-0289): import once, never overwrite, never touch the KDE files.
+// (ADR-0291): import once, never overwrite, never touch the KDE files.
 #include "compositorconfigimport.h"
 
 #include <QDir>

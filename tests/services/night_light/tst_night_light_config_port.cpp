@@ -389,7 +389,7 @@ void NightLightConfigPortTests::writesAreAnnouncedToConfigWatchers()
     QDBusConnection::disconnectFromBus(listenerName);
 }
 
-// ADR-0289: qindaqt-kwin watches "qindaqt/kwinrc"; a kwinrc in QindaQt's config
+// ADR-0291: qindaqt-kwin watches "qindaqt/kwinrc"; a kwinrc in QindaQt's config
 // folder is announced on /qindaqt/kwinrc, knighttimerc still on /knighttimerc.
 void NightLightConfigPortTests::announcesTheCompositorsFolderPath()
 {

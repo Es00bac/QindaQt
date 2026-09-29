@@ -26,6 +26,13 @@ target_sources(
         src/resident_audio_service.cpp
         src/audio_console_operations.cpp
         src/audio_vban_operations.cpp
+        src/audio_latency_operations.cpp
+        src/latency_policy.cpp
+        src/latency_policy_p.h
+        src/latency_store.cpp
+        src/wireplumber_latency.cpp
+        src/wireplumber_latency_p.h
+        src/wireplumber_worker_latency.cpp
         src/console_endpoints.cpp
         src/console_endpoints_p.h
         src/console_model.cpp
@@ -68,6 +75,7 @@ target_sources(
             include/qindaqt/services/audio_service/macro_store.h
             include/qindaqt/services/audio_service/preset_store.h
             include/qindaqt/services/audio_service/vban_store.h
+            include/qindaqt/services/audio_service/latency_store.h
             include/qindaqt/services/audio_service/audio_operation_coordinator.h
             include/qindaqt/services/audio_service/resident_audio_service.h
             include/qindaqt/services/audio_service/wireplumber_audio_backend.h

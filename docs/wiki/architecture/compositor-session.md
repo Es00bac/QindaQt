@@ -11,7 +11,7 @@ Evidence for the two completed milestone boundaries is kept distinct below.
 ## qindaqt-kwin and the binary ABI
 
 QindaQt runs on **qindaqt-kwin**, its own co-installable fork of KWin
-([ADR-0289](../adr/0289-run-on-qindaqt-kwin.md)). The fork keeps KWin's history
+([ADR-0291](../adr/0291-run-on-qindaqt-kwin.md)). The fork keeps KWin's history
 and renames everything that reaches the file system, the session bus, a plugin
 loader or a QML engine, so a stock KDE Plasma installs beside it and never reads
 its files. The source manifest `compositor/upstream/kwin.json` pins one fork
@@ -84,7 +84,7 @@ and sequential build-tree plus staged-install plugin boots.
 
 `qindaqt-wm` validates options, establishes QindaQt session markers and plugin
 search paths, imports KDE KWin settings once, builds an argument vector, and
-replaces itself with `qindaqt-kwin`, QindaQt's compositor (ADR-0289).
+replaces itself with `qindaqt-kwin`, QindaQt's compositor (ADR-0291).
 
 | QindaQt backend | KWin invocation | Qualified evidence |
 | --- | --- | --- |
@@ -708,7 +708,7 @@ itself had a separate D-Bus broker.
 
 The session supervisor now derives activation scope from its already
 lifetime-witnessed direct parent. Only an executable named `qindaqt-kwin` (a
-stock `kwin_wayland` never, ADR-0289) with
+stock `kwin_wayland` never, ADR-0291) with
 an explicit `--drm` option before its child payload can publish activation state
 or refresh shared resident services. Virtual, windowed, X11, Wayland-display,
 unknown, unreadable, and conflicting backend evidence all remain private.

@@ -23,7 +23,7 @@ Q_LOGGING_CATEGORY(lcDisplayNightLightRoute,
 QString configFilePath(const QString &fileName)
 {
     // KSharedConfig::openConfig resolves rc names against the generic config
-    // location: qindaqt-kwin's qindaqt/kwinrc (ADR-0289) and knighttimerc.
+    // location: qindaqt-kwin's qindaqt/kwinrc (ADR-0291) and knighttimerc.
     return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
         + QLatin1Char('/') + fileName;
 }

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Gui Widgets)
-# The decoration library is qindaqt-kwin's vendored copy (ADR-0289); its
+# The decoration library is qindaqt-kwin's vendored copy (ADR-0291); its
 # package names the fork's decoration namespace as KDECORATION_PLUGIN_DIR.
 include("${PROJECT_SOURCE_DIR}/src/compositor/cmake/QindaQtKWinAbi.cmake")
 qindaqt_resolve_kwin_abi(

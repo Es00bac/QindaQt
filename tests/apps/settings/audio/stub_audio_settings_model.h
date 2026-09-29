@@ -148,6 +148,9 @@ public:
   int createChannels = 0;
   int createCount = 0;
   quint64 removeVirtualSerial = 0;
+  quint64 latencySerial = 0;
+  int latencyMs = 0;
+  int latencyCount = 0;
 
   explicit StubAudioSettingsModel(QObject *parent = nullptr)
       : QObject(parent) {
@@ -211,6 +214,12 @@ public:
   }
   Q_INVOKABLE bool removeVirtualDevice(quint64 serial) {
     removeVirtualSerial = serial;
+    return true;
+  }
+  Q_INVOKABLE bool setDeviceLatencyOffset(quint64 serial, int milliseconds) {
+    latencySerial = serial;
+    latencyMs = milliseconds;
+    ++latencyCount;
     return true;
   }
 

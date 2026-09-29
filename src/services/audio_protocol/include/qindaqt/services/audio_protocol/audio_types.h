@@ -46,6 +46,9 @@ enum class Capability : quint32 {
     SetConsoleRouting = 1U << 8U,
     ConsoleMeters = 1U << 9U,
     ManageVbanStreams = 1U << 10U,
+    // Schema 13 (ADR-0288): per-device latency offsets. A device additionally
+    // needs its own canSetLatencyOffset before one may be set.
+    SetLatencyOffset = 1U << 11U,
 };
 Q_DECLARE_FLAGS(Capabilities, Capability)
 
@@ -95,6 +98,8 @@ enum class OperationKind : quint32 {
     // Schema 12 (ADR-0246): atomically edit Audio1-owned manual-peer definitions.
     UpsertVbanStream = 28,
     DeleteVbanStream = 29,
+    // Schema 13 (ADR-0288): remember and apply one device's latency offset.
+    SetLatencyOffset = 30,
 };
 
 enum class OperationStatus : quint32 {
@@ -146,6 +151,17 @@ struct Device {
     // The default member initializer keeps every existing designated
     // initializer of Device valid under -Werror=missing-field-initializers.
     QString nodeName = {};
+    // Schema 13 (ADR-0288): the node's PipeWire latency offset as the graph
+    // reports it. `latencyOffsetKnown` is false when the node publishes no
+    // offset (a virtual sink, a Bluetooth microphone) or one outside Audio1's
+    // window; value and range are then 0 and a surface must show the offset as
+    // absent, never as zero. The settable range is the node's declared range
+    // clipped to kMin/kMaxLatencyOffsetNs, and 0..0 unless canSetLatencyOffset.
+    bool latencyOffsetKnown = false;
+    qint64 latencyOffsetNs = 0;
+    bool canSetLatencyOffset = false;
+    qint64 latencyOffsetMinNs = 0;
+    qint64 latencyOffsetMaxNs = 0;
 
     // AGENT-GUARD: D-Bus decoding sets this false when a nested channel array
     // exceeded its bound while still consuming the complete argument. Snapshot
@@ -241,6 +257,8 @@ struct OperationRequest {
     // UpsertVbanStream: only definition fields are accepted; status bits are
     // derived by Audio1 and may not be supplied by a client.
     VbanStream vbanDefinition = {};
+    // SetLatencyOffset: the signed offset for `primary`, in nanoseconds.
+    qint64 latencyOffsetNs = 0;
 
     friend bool operator==(const OperationRequest &, const OperationRequest &) = default;
 };

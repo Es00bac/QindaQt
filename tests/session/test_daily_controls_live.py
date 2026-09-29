@@ -40,7 +40,6 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--pw-cli", type=Path, required=True)
     parser.add_argument("--wpctl", type=Path, required=True)
     parser.add_argument("--kbuildsycoca", type=Path, required=True)
-    parser.add_argument("--spectacle", type=Path, required=True)
     parser.add_argument("--pipewire-config", type=Path, required=True)
     parser.add_argument("--probe", type=Path, required=True)
     parser.add_argument("--bin-directory", required=True)
@@ -175,18 +174,14 @@ def _inner(arguments: argparse.Namespace) -> int:
         controls_wrapper.write_text("#!/usr/bin/sh\nexec " + str(controls)
                                     + " > /var/log/qindaqt-desktop/desktop-controls.log 2>&1\n",
                                     encoding="utf-8")
-        # Spectacle owns the installed Print action. These documented settings
-        # are private to this disposable XDG tree: choose its rectangular UI
-        # and autosave its actual image into the evidence bind mount.
-        (Path(environment["XDG_CONFIG_HOME"]) / "spectaclerc").write_text(
-            "[General]\nprintKeyRunningAction=0\nuseReleaseToCapture=true\n"
-            "autoSaveImage=true\n[GuiConfig]\ncaptureMode=0\n[ImageSave]\n"
-            "imageSaveLocation=file://" + screenshot_directory + "\n"
-            "lastImageSaveLocation=file://" + screenshot_directory + "\n", encoding="utf-8")
+        # desktop-controls owns Print and launches QindaQt Screenshot
+        # (ADR-0289). The probe points its Settings1 save folder at this
+        # private evidence directory and turns the result window off, so the
+        # real region capture is saved without further input.
         controls_wrapper.chmod(0o700)
         # Keep the normal session supervisor; only the host polkit default is
-        # suppressed. The production controls binary gets normal Spectacle CLI
-        # output configuration for a private, decoded capture artifact.
+        # suppressed. The production controls binary launches the staged
+        # screenshot tool for a private, decoded capture artifact.
         # KWin owns org.kde.kglobalaccel in this virtual Wayland session. Do not
         # launch kglobalacceld beside it: it exits and obscures the real provider.
         wrapper.write_text("#!/usr/bin/sh\nexec " + str(stage.executables["session"])
@@ -244,7 +239,7 @@ def _outer(arguments: argparse.Namespace) -> int:
     try:
         tools = [arguments.python, arguments.dbus_daemon, arguments.kwin_wayland,
                  arguments.pipewire, arguments.wireplumber, arguments.pw_cli, arguments.wpctl,
-                 arguments.kbuildsycoca, arguments.spectacle]
+                 arguments.kbuildsycoca]
         mounts = system_mounts(tools)
         inside = {tool: sandbox_path_for(tool, mounts) for tool in tools}
         libraries, plugins, qml = library_search_roots(tools)
@@ -264,7 +259,7 @@ def _outer(arguments: argparse.Namespace) -> int:
              "--dbus-daemon", inside[arguments.dbus_daemon], "--kwin-wayland", inside[arguments.kwin_wayland],
              "--pipewire", inside[arguments.pipewire], "--wireplumber", inside[arguments.wireplumber], "--pw-cli", inside[arguments.pw_cli],
              "--wpctl", inside[arguments.wpctl], "--kbuildsycoca", inside[arguments.kbuildsycoca],
-             "--spectacle", inside[arguments.spectacle], "--pipewire-config", sandbox_path_for(arguments.pipewire_config, mounts),
+             "--pipewire-config", sandbox_path_for(arguments.pipewire_config, mounts),
              "--probe", "/opt/qindaqt-tools/daily-controls-probe", "--bin-directory", arguments.bin_directory,
              "--plugin-relative", arguments.plugin_relative, "--decoration-relative", arguments.decoration_relative,
              "--settings-service-directory", arguments.settings_service_directory, "--audio-service-directory", arguments.audio_service_directory))

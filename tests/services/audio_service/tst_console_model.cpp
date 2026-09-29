@@ -42,6 +42,7 @@ private slots:
     void routingCarriesTheStripsPan();
     void pinsAreNamesThatPersistAndClear();
     void theRackIsAppliedWholeAndPersists();
+    void busDelayIsBoundedAppliedAndPersists();
     void persistenceRoundTripsTheUsersDecisions();
     void aCorruptDocumentLoadsWhatItCan();
 };
@@ -437,6 +438,42 @@ void ConsoleModelTests::theRackIsAppliedWholeAndPersists()
     ConsoleModel restored;
     restored.loadJson(model.toJson());
     QCOMPARE(restored.console().strips.at(0).processing, off.processing);
+}
+
+// ADR-0288 dated addendum. delayMs travels through SetBusProcessing exactly
+// like the equalizer beside it: bounded 0..1000 ms, applied whole (one value
+// out of range refuses the whole rack), and persisted through a JSON round
+// trip the same way a preset saves and loads it.
+void ConsoleModelTests::busDelayIsBoundedAppliedAndPersists()
+{
+    ConsoleModel model;
+    QString reason;
+    auto rack = strip(OperationKind::SetBusProcessing, QStringLiteral("bus.a2"));
+    rack.busProcessing.delayMs = 250;
+    QVERIFY(model.apply(rack, &reason));
+    QCOMPARE(model.console().buses.at(1).processing.delayMs, 250);
+    QVERIFY(validateConsole(model.console()).accepted);
+
+    auto tooLate = rack;
+    tooLate.busProcessing.delayMs = 1001;
+    QVERIFY(!model.apply(tooLate, &reason));
+    QCOMPARE(reason, QStringLiteral("processing-out-of-range"));
+    QCOMPARE(model.console().buses.at(1).processing.delayMs, 250);
+
+    auto negative = rack;
+    negative.busProcessing.delayMs = -1;
+    QVERIFY(!model.apply(negative, &reason));
+    QCOMPARE(reason, QStringLiteral("processing-out-of-range"));
+    QCOMPARE(model.console().buses.at(1).processing.delayMs, 250);
+
+    auto atBound = rack;
+    atBound.busProcessing.delayMs = 1000;
+    QVERIFY(model.apply(atBound, &reason));
+    QCOMPARE(model.console().buses.at(1).processing.delayMs, 1000);
+
+    ConsoleModel restored;
+    restored.loadJson(model.toJson());
+    QCOMPARE(restored.console().buses.at(1).processing.delayMs, 1000);
 }
 
 QTEST_APPLESS_MAIN(ConsoleModelTests)

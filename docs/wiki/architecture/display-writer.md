@@ -183,7 +183,7 @@ It also covers protocol failure and hotplug uncertainty.
 
 The private nested-KWin brightness proof is not a ctest row. It lives in
 `tests/services/display_writer/proof/run_brightness_nested_proof.sh`. It
-starts the compositor (`qindaqt-kwin`, ADR-0289) with `--virtual` inside an empty-environment `dbus-run-session`
+starts the compositor (`qindaqt-kwin`, ADR-0291) with `--virtual` inside an empty-environment `dbus-run-session`
 with disposable XDG roots and no system bus. On KWin 6.6.6 it records:
 
 - virtual outputs publish brightness 10000 without the brightness capability,

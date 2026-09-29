@@ -12,6 +12,7 @@ target_sources(
         src/audio_gain.cpp
         src/audio_validation.cpp
         src/audio_validation_vban.cpp
+        src/audio_validation_latency.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include

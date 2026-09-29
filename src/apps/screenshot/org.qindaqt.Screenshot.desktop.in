@@ -1,0 +1,32 @@
+[Desktop Entry]
+Type=Application
+Name=Screenshot
+GenericName=Screenshot and Screen Recording
+Comment=Capture the screen, a region or a window, and record with OBS
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-screenshot
+Icon=org.qindaqt.Screenshot
+Terminal=false
+Categories=Qt;Utility;
+Keywords=Screenshot;Screen;Capture;Region;Snip;Record;OBS;
+StartupNotify=true
+# AGENT-CONTRACT (ADR-0289, ADR-0241): KWin reads this as one exact
+# QStringList value. A trailing semicolon becomes part of the name and
+# silently denies every capture.
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
+Actions=Region;FullScreen;ActiveWindow;RecordToggle;
+
+[Desktop Action Region]
+Name=Capture a Region
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-screenshot --region
+
+[Desktop Action FullScreen]
+Name=Capture Every Screen
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-screenshot --fullscreen
+
+[Desktop Action ActiveWindow]
+Name=Capture the Active Window
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-screenshot --active
+
+[Desktop Action RecordToggle]
+Name=Start or Stop Recording
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-screenshot --record-toggle

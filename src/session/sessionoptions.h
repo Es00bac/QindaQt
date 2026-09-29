@@ -17,7 +17,7 @@ enum class Backend {
 struct SessionOptions final
 {
     Backend backend = Backend::Drm;
-    // QindaQt's compositor, qindaqt-kwin (ADR-0289).
+    // QindaQt's compositor, qindaqt-kwin (ADR-0291).
     QString kwinExecutable = QString(CompositorNames::executable);
     QString socketName = QStringLiteral("qindaqt-0");
     QSize outputSize{1920, 1080};

@@ -33,6 +33,7 @@ private Q_SLOTS:
   void consoleFaderFollowsTheOneGainLaw();
   void consoleStripControlsDispatch();
   void consoleBusControlsDispatch();
+  void consoleBusRackDelayDispatches();
 
 private:
   std::unique_ptr<QQuickView> m_view;
@@ -245,6 +246,44 @@ void AudioConsolePageTest::consoleBusControlsDispatch() {
   QCOMPARE(m_model->lastFaderPosition, 0.0);
 }
 
+
+// The bus rack's delay control (ADR-0288 dated addendum): opens behind the
+// "Rack" toggle beside the equalizer, is bounded 0..1000 ms, names its bus
+// for assistive technology, and dispatches through setBusProcessing exactly
+// like the equalizer knobs beside it.
+void AudioConsolePageTest::consoleBusRackDelayDispatches() {
+  auto [guard, page] = createPage(QSize(1100, 900));
+  QVERIFY(page != nullptr);
+
+  auto *rackToggle =
+      findItem(page, QStringLiteral("consoleBusRackToggle_bus.a1"));
+  QVERIFY(rackToggle != nullptr);
+  QVERIFY(rackToggle->isEnabled());
+  QVERIFY(QMetaObject::invokeMethod(rackToggle, "clicked"));
+
+  auto *field = findItem(page, QStringLiteral("consoleBusRack_bus.a1_delay"));
+  auto *reset =
+      findItem(page, QStringLiteral("consoleBusRack_bus.a1_delayReset"));
+  QVERIFY(field != nullptr);
+  QVERIFY(reset != nullptr);
+  QVERIFY(field->isEnabled());
+  QCOMPARE(field->property("value").toInt(), 0);
+  QCOMPARE(field->property("from").toInt(), 0);
+  QCOMPARE(field->property("to").toInt(), 1000);
+
+  auto *accessible = QAccessible::queryAccessibleInterface(field);
+  QVERIFY(accessible != nullptr);
+  QCOMPARE(accessible->role(), QAccessible::SpinBox);
+  QVERIFY(accessible->text(QAccessible::Name).contains(QStringLiteral("Delay bus A1")));
+
+  QVERIFY(QMetaObject::invokeMethod(field, "commit", Q_ARG(QVariant, 250)));
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("bus.a1"));
+  QCOMPARE(m_model->lastProcessing.value(QStringLiteral("delayMs")).toInt(), 250);
+
+  QVERIFY(QMetaObject::invokeMethod(reset, "clicked"));
+  QCOMPARE(m_model->lastConsoleId, QStringLiteral("bus.a1"));
+  QCOMPARE(m_model->lastProcessing.value(QStringLiteral("delayMs")).toInt(), 0);
+}
 
 QTEST_MAIN(AudioConsolePageTest)
 #include "tst_audio_console_page.moc"

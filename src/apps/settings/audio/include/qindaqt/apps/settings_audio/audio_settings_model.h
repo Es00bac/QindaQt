@@ -142,6 +142,10 @@ public:
   Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName,
                                        int channels);
   Q_INVOKABLE bool removeVirtualDevice(quint64 serial);
+  // Remembers and applies a device's latency offset in whole milliseconds
+  // (ADR-0288); 0 is the reset. The row keeps showing this target until
+  // Audio1's snapshot reports it, a refusal, or a bounded wait passes.
+  Q_INVOKABLE bool setDeviceLatencyOffset(quint64 serial, int milliseconds);
 
   // Console intents. Faders are driven by POSITION (0..1) from the UI and
   // converted through the one gain law (ADR-0171), so a slider and the dB
@@ -208,7 +212,7 @@ private:
   // Bounded graph intents exposed by the Settings route.
   enum class Intent { SetDefault, DeviceVolume, DeviceMute, StreamVolume,
                        StreamMute, MoveStream, DeviceChannelVolume, CreateVirtual,
-                       RemoveVirtual };
+                       RemoveVirtual, DeviceLatency };
 
   // Console intents (ADR-0173). Kept separate from Intent because they carry a
   // console id rather than a graph serial. AudioClient still fences authority
@@ -250,8 +254,22 @@ private:
     bool awaitingSnapshot = false;
   };
 
+  // A latency target shown until readback (audio_settings_latency.cpp); at
+  // most one queued successor while a request for the same device is out.
+  struct LatencyIntent {
+    qint64 displayNs = 0;
+    std::optional<qint64> queuedNs;
+    quint64 generation = 0;
+    bool inFlight = false;
+  };
+
   void handleOperationCompleted(quint64 requestId,
                                 const Audio::OperationResult &result);
+  [[nodiscard]] bool dispatchLatency(quint64 serial, qint64 offsetNs);
+  void completeLatencyRequest(quint64 serial, Intent intent,
+                              const Audio::OperationResult &result);
+  void reconcileLatencyIntents();
+  [[nodiscard]] QVariantMap projectLatency(const Audio::Device &device) const;
   void beginIntentMessage(const Intent intent);
   [[nodiscard]] bool trackConsoleRequest(quint64 requestId);
   void rejectAction(const QString &reason);
@@ -318,6 +336,8 @@ private:
   quint64 m_volumeSnapshotSequence = 0;
   quint64 m_nextVolumeGeneration = 1;
   QSet<quint64> m_consoleRequestIds;
+  QHash<quint64, LatencyIntent> m_latencyBySerial;
+  quint64 m_nextLatencyGeneration = 1;
 };
 
 } // namespace QindaQt::Apps::SettingsAudio

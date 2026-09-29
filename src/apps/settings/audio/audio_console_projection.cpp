@@ -64,7 +64,8 @@ using namespace QindaQt::Audio;
 [[nodiscard]] QVariantMap busProcessingMap(const BusProcessing &p)
 {
     return QVariantMap{{QStringLiteral("equalizer"), equalizerMap(p.equalizer)},
-                       {QStringLiteral("mode"), busModeToken(p.mode)}};
+                       {QStringLiteral("mode"), busModeToken(p.mode)},
+                       {QStringLiteral("delayMs"), p.delayMs}};
 }
 
 [[nodiscard]] QVariantMap processingMap(const StripProcessing &p)
@@ -462,6 +463,13 @@ bool AudioSettingsModel::setBusProcessing(QString busId, QVariantMap processing)
     rack.equalizer.highHz = number("highHz", rack.equalizer.highHz);
     rack.equalizer.highGainDb = number("highGainDb", rack.equalizer.highGainDb);
     rack.mode = busModeFromToken(processing.value(QStringLiteral("mode")).toString(), rack.mode);
+    if (processing.contains(QStringLiteral("delayMs"))) {
+        bool delayOk = false;
+        const int delayMs = processing.value(QStringLiteral("delayMs")).toInt(&delayOk);
+        if (delayOk) {
+            rack.delayMs = delayMs;
+        }
+    }
     if (!validBusProcessing(rack)) {
         rejectAction(QStringLiteral("processing-out-of-range"));
         return false;

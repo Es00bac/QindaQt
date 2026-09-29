@@ -51,6 +51,16 @@ qindaqt_enable_warnings(qindaqt_audio_vban_packet_tests)
 add_test(NAME qindaqt.audio-vban-packet COMMAND qindaqt_audio_vban_packet_tests)
 set_tests_properties(qindaqt.audio-vban-packet PROPERTIES LABELS "audio;service;pure")
 
+# Per-device latency offsets (ADR-0288): store, pure policy and coordinator
+# operation, with no daemon and no bus.
+qt_add_executable(qindaqt_audio_latency_offsets_tests tst_latency_offsets.cpp)
+target_link_libraries(
+    qindaqt_audio_latency_offsets_tests PRIVATE QindaQt::AudioService Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_audio_latency_offsets_tests)
+add_test(NAME qindaqt.audio-latency-offsets COMMAND qindaqt_audio_latency_offsets_tests)
+set_tests_properties(qindaqt.audio-latency-offsets PROPERTIES LABELS "audio;service;pure")
+
 qt_add_executable(qindaqt_audio_vban_store_tests tst_vban_store.cpp)
 target_link_libraries(
     qindaqt_audio_vban_store_tests PRIVATE QindaQt::AudioService Qt6::Test
@@ -145,6 +155,35 @@ add_test(
 )
 set_tests_properties(
     qindaqt.audio-wireplumber-runtime
+    PROPERTIES
+        LABELS "service;audio;wireplumber;isolated-runtime"
+        TIMEOUT 120
+        RUN_SERIAL TRUE
+)
+
+# Latency offsets against a private PipeWire (ADR-0288): an ALSA "null" PCM
+# sink carries the same node Props a hardware sink does.
+qt_add_executable(qindaqt_audio_wireplumber_latency_runtime_tests
+                  tst_wireplumber_latency_runtime.cpp)
+target_link_libraries(
+    qindaqt_audio_wireplumber_latency_runtime_tests
+    PRIVATE QindaQt::AudioService Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_audio_wireplumber_latency_runtime_tests
+    PRIVATE
+        QINDAQT_PIPEWIRE_EXECUTABLE="${QINDAQT_PIPEWIRE_EXECUTABLE}"
+        QINDAQT_WIREPLUMBER_EXECUTABLE="${QINDAQT_WIREPLUMBER_EXECUTABLE}"
+        QINDAQT_PW_CLI_EXECUTABLE="${QINDAQT_PW_CLI_EXECUTABLE}"
+        QINDAQT_PIPEWIRE_TEST_CONFIG="${QINDAQT_PIPEWIRE_TEST_CONFIG}"
+)
+qindaqt_enable_warnings(qindaqt_audio_wireplumber_latency_runtime_tests)
+add_test(
+    NAME qindaqt.audio-wireplumber-latency-runtime
+    COMMAND qindaqt_audio_wireplumber_latency_runtime_tests
+)
+set_tests_properties(
+    qindaqt.audio-wireplumber-latency-runtime
     PROPERTIES
         LABELS "service;audio;wireplumber;isolated-runtime"
         TIMEOUT 120

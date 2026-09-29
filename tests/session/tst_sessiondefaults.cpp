@@ -35,7 +35,7 @@ private Q_SLOTS:
     void repairsTheInvalidOverviewEdgeSeed();
 };
 
-// ADR-0289: the QindaQt decoration, the qindaqt switcher, disabled electric
+// ADR-0291: the QindaQt decoration, the qindaqt switcher, disabled electric
 // borders, CommandAll3 "Nothing" and the Theming v2 blur are qindaqt-kwin's
 // compiled-in defaults; the session writes none of them, so a later change of
 // the fork's defaults reaches every user who never chose otherwise.
@@ -300,7 +300,7 @@ void SessionDefaultsTest::keepsAnExplicitInputMethod()
 void SessionDefaultsTest::leavesTranslucencyEffectsToQindaQtKWin()
 {
     // Theming v2 (ADR-0206): qindaqt-kwin enables blur with QindaQt's strengths
-    // by default (ADR-0289); the session writes nothing, and a user who
+    // by default (ADR-0291); the session writes nothing, and a user who
     // switched blur off keeps that choice.
     QTemporaryDir temporary;
     QVERIFY(temporary.isValid());
