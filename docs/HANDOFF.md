@@ -1,5 +1,100 @@
 # Integration handoff
 
+## September 28: RESUME HERE (Claude ⇄ Codex program handoff, kept current)
+
+**Last updated:** 2026-09-28 22:02 by the manager. **Hub `main`:** `see git log -1 hub/main`.
+
+Whoever resumes (Claude or Codex) reads, in order:
+1. this section;
+2. the plan `docs/plans/2026-09-28-plasma-free-qindaqt.md`: its §4 slice table, the "Guiding principle" and the "Owner decisions";
+3. the lane spec being picked up, in `ops/team/specs/2026-09-28/`. Every worker follows `round-brief.md` there.
+
+**Update this section whenever a lane starts, lands or changes state.**
+
+### Standing owner rules
+
+- **Native, QindaQt-first replacements** (the plan's guiding principle). No KDE or Plasma fallback. The compositor is the co-installable `qindaqt-kwin` fork, and QindaQt has its own key store.
+- **Never interrupt running work:** agents, builds or the live session. New requirements go into follow-up lanes.
+- **No interim packages or installs.** Merge finished lanes into hub `main`. Build the binpkgs and install **once**, when all work is done and the owner is ready to log out.
+- **Token economy:** use the cheapest model that does the job well.
+  - Claude: Sonnet for spec'd work with defined tests, Opus for hard work, at most 2 Opus workers at once.
+  - Codex: GPT Luna, sparingly; the owner's weekly GPT budget is small.
+- **Builds:** each lane builds on qinda with `-j8 -l24` (another project uses `-j24`) and runs targeted tests only. The manager runs one full suite at the end.
+- **Commits** use the owner's personal identity configured in the repos, never the FSCC address. Install software through Portage only.
+- **Review:** the owner waived independent reviewer agents. The implementer's tests plus the manager's integration gates are the verification.
+
+### Lanes
+
+A lane whose worker stopped (for example, Claude usage ran out):
+1. Check `git -C <worktree> status` and `git log hub/<branch>`.
+2. Preserve and commit any uncommitted work; never discard it.
+3. Continue from the spec.
+
+A lane is done when its handoff is posted (exact commits, files, tests with counts) and the manager merges it into `main`, reruns its focused tests on the integrated tree, and updates this table. All worktrees are under `~/work_SPaC3/container-wm.worktrees/` on qinda.
+
+| Lane | Spec | Branch / worktree | State |
+|---|---|---|---|
+| F: `qindaqt-kwin` fork, M1 (F1–F8 plus the native root-window kill helper) | `laneF-fork-m1.md` | fork hub `~/git/qindaqt-kwin.git`, checkout `~/work_SPaC3/qindaqt-kwin`; container-wm `feature/qindaqt-kwin`; overlay `gui-wm/qindaqt-kwin` branch | running (Claude Opus) |
+| S: `qindaqt-screenshot` with OBS record mode (PF16, ADR-0289) | `laneS-screenshot.md` | `feature/qindaqt-screenshot` / `screenshot` | running (Claude Opus) |
+| PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | running (Claude Sonnet) |
+| P: four caveats (container names on restart, Corner Bar double-click, portal twin accent, touch lift) | `laneP-polish.md` | `fix/round-caveats` / `polish` | running (Claude Sonnet) |
+| K: key store PK1–PK3 (plan §3.8) | `laneK-keyring.md` | `feature/qindaqt-keyring` / `keyring` | queued; starts when an Opus slot frees |
+| D: mixer bus delay (ADR-0288 addendum) | `laneD-mixer-delay.md` | merged `32ed1f42` | done |
+
+### Next, in order (plan §4)
+
+1. Merge each running lane as it hands off.
+2. Key store: K (PK1–PK3), then PK4–PK6. PK6's import of the real keyrings and wallets is run by the manager.
+3. Services: PF1–PF4 (Power1 v2, idle engine and brightness; retire PowerDevil), then PF8 (Lock1) once PF7 lands.
+4. Compositor, after M1: PF5–PF7 (session lock and the `qindaqt-lock` greeter), PF10–PF12, then PF22–PF23.
+5. Portals PF17–PF21 and shortcuts PF24.
+6. Manager: PF9 (Plasma leaves SDDM), PF14 and PF25. Optionally G1 (a Wayland SDDM greeter).
+
+### Delivery, once, when the owner is ready to log out
+
+1. **Overlay:** `~/work_SPaC3/QindaGentoo`, hub `~/git/QindaGentoo.git`.
+   - Add a new `gui-wm/qindaqt-desktop` revision with `QINDAQT_COMMIT` set to the final `main`.
+   - In RDEPEND, drop `kde-plasma/spectacle` and `kde-plasma/polkit-kde-agent`, and add what the lane reports name, such as `sys-auth/polkit-qt`.
+   - Keep `kde-plasma/kwin-6.6.6-r2` (patch 0002) until `gui-wm/qindaqt-kwin` replaces it (F5/F8).
+   - Commit and push. On each machine, run `sudo git -C /var/db/repos/qindaqt pull --ff-only origin master`; `emaint sync` did not pull.
+2. **Build and install:**
+   - Build the binpkgs on qinda with `emerge --buildpkgonly` into the signed gpkg binhost.
+   - Fast-forward the laptop's `~/git/*.git` mirrors.
+   - Install on the laptop from the binhost (QindaGentoo `tools/qinda-sync packages`).
+3. **Verify:** run the full suite once on the final `main` and record it here. The last full run, at `e86325ce`, passed 1207 of 1214. The known environmental or flaky failures are touch-osk ×2 and obs-bridge ×2 (qinda environment), notification-live.scale-150 (pre-existing Display1 WriterStartFailed) and the shade-visibility electron test (flaky under load).
+4. **Qinda:** once the owner confirms, add the revision to `metadata/qinda-delivery` and install it on qinda.
+
+### Open owner items outside the lanes
+
+See `ops/team/specs/2026-09-28/owner-todo.md`:
+- PipeWire root cause (1a);
+- a Gabbee watchdog for silent capture (1c);
+- notification-live.scale-150;
+- SDDM falling back to X11 (G1);
+- `metadata/qinda-delivery` after owner confirmation.
+
+### Landed on `main` since 2026-09-28 00:00 (first-parent)
+
+- `02838356` Merge the Plasma-free program plan (M1–M8) into main
+- `32ed1f42` Add a real per-bus delay stage to the mixer (ADR-0288 addendum)
+- `103a1ded` Let each audio device carry its own latency offset, on a compact Audio page
+- `e86325ce` Merge VBAN network access and console snapshot fixes (lane A1)
+- `5f9d1cfb` Merge tablet orientation, pen-display awareness and area mapping (lane T)
+- `7f5a8f95` Merge per-display and per-desktop wallpapers (lane W)
+- `7945b58b` Let applications hear a pen that enters range over a title bar
+- `409d234e` Fix crashes, dead keys, noisy routes and stuck audio found in the audit
+- `190e49ba` Keep one device per gesture and never leak half a touch to clients
+- `562cffb6` Keep Corner Bar container title rows attached to their containers
+- `8f4d26c0` Keep the replaced-owner link read free of signed size conversions
+- `008d00d3` Give the pen its own chords and retire replaced settings services
+- `3128f066` Aim shade scenarios at the rolled-up badge's title after ADR-0281
+- `e57dcdd6` Expect the redrawn QindaQt folder body in the file-manager icon test
+- `60d8a1bb` Pick a window up by a long press on its title bar
+- `ad3e8931` Merge container rescue: maximize, gesture endings, Meta/pen/wheel chords, desktop places
+- `7869a29d` Merge Corner Bar split-deck containers, dark twins and icon pairing
+- `d4f3ab0a` Merge QindaQt icon places, file types and Qinda app marks
+
+
 ## September 27 — Corner shape, light palettes and complete icon choices
 
 Desktop `0.1.0_pre20260927-r6` (source `4c704e12`), patched KWin
