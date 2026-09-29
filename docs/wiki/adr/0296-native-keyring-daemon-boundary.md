@@ -97,3 +97,5 @@ The current contracts and executable gates are on
 [authentication overlay](../architecture/authentication-overlay.md).
 
 The supervisor decomposition review moves unchanged read-only diagnostics to a separate implementation file. New keyring lifetime policy remains a dedicated collaborator; existing orchestration stays below the hard source-size limit.
+
+[ADR-0300](0300-trusted-native-keyring-pam.md) defines the later PAM token-delivery authority: the existing same-UID control boundary is unchanged, but automatic login tokens require the exact protected system-owned daemon invocation.

@@ -5,7 +5,7 @@
 [storage core](keyring-storage.md) is a separate transport-free target;
 the daemon only consumes that public API. This source delivery is qualified
 on private buses with synthetic collections. Packaging, live provider
-replacement, PAM, full Passwords & Keys Settings, Secret portal routing and
+replacement, installed PAM integration, full Passwords & Keys Settings, Secret portal routing and
 existing-wallet import are separate program boundaries. Nothing in these
 tests reads a real wallet or activates a live service.
 
@@ -88,7 +88,9 @@ Keyring1 provides `ListCollections() -> a{sv}`, `ChangePassword(o,secret,secret)
 -> b`, `AttachSession() -> b` and `Shutdown()`. ChangePassword requires two
 secrets using caller-owned sessions, nonempty bounded passwords, and authenticates
 the old password. Owner disconnect or session close invalidates delayed work.
-It is a bounded seam for later PAM/UI integration, not an implemented PAM module.
+The [native PAM bridge](keyring-pam.md) uses the socket through its trusted
+system-owner boundary; ordinary same-UID admission alone never authorizes
+PAM login-token disclosure. Full UI integration remains separate.
 
 The peer socket is `$XDG_RUNTIME_DIR/qindaqt-keyring/control`, mode0600
 under a0700 directory with its own writer lock. Kernel `SO_PEERCRED` must

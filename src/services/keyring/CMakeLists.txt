@@ -8,7 +8,7 @@ add_library(QindaQt::KeyringStorage ALIAS qindaqt_keyring_storage)
 target_include_directories(qindaqt_keyring_storage PUBLIC include)
 target_link_libraries(qindaqt_keyring_storage PRIVATE OpenSSL::Crypto)
 target_compile_features(qindaqt_keyring_storage PUBLIC cxx_std_20)
-set_target_properties(qindaqt_keyring_storage PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(qindaqt_keyring_storage PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON)
 if(COMMAND qindaqt_enable_warnings)
     qindaqt_enable_warnings(qindaqt_keyring_storage)
 endif()
@@ -40,3 +40,5 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-keyring.service" data/qindaqt
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.freedesktop.secrets.service"
     "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Keyring1.service"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/services" COMPONENT QindaQtKeyring)
+
+add_subdirectory(pam)
