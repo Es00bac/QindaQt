@@ -32,7 +32,7 @@ active assignments below for this program. Worker activity is not product comple
 | --- | --- | --- | --- | --- | --- |
 | Native power policy PF1 | active source/schema lane | native-power worker | base 0d912510 / native-power | schema/import admission, idempotence and failed-commit retry | owns power policy/Settings schema; ADR0293 |
 | Native session lock PF5–PF6 | active fork/server lane | native-lock worker | fork base 0dd2fdb8 / session-lock | private nested crash/input/hotplug/presentation matrix | owns fork lock authority; ADR0294 |
-| Keyring PK1 | candidate preserved; worker handoff | keyring-storage worker | candidate 720a503e / keyring | 4/4 worker CTests, 48 rows; laptop and manager gates pending | owns keyring storage; ADR0292 |
+| Keyring PK1 | source integrated | manager | candidate 720a503e / keyring | manager and laptop4/4; strict MkDocs, 438-page links pass; nextPK2 | storage-only; ADR0292; no real data |
 
 Builds use qinda and a separate laptop build mirror at low CPU/I/O priority.
 No running desktop or services are changed. Final recipe consolidation precedes one delivery.
