@@ -51,6 +51,8 @@ dropped, and takes over the moment the first is resolved. The password is
 never logged, never kept in any model past the call that uses it, and
 cleared from the field after every attempt, success or failure alike.
 
+The platform role is provided through the public [AuthenticationOverlay](../architecture/authentication-overlay.md) module. Initialization precedes QGuiApplication and configuration precedes native window creation/show; policy and presentation remain owned by this agent.
+
 ## Appearance and output
 
 Surfaces, spacing, radii, type, and colour all come from the design tokens
