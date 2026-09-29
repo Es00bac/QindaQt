@@ -157,6 +157,45 @@ bool intersects(const QStringList &left, const QStringList &right)
     return false;
 }
 
+// AGENT-NOTE: QindaQt normally starts its own polkit authentication agent
+// (ADR-0290) as a supervised child; when that policy is disabled, the
+// same entries remain eligible. A host XDG entry for a distribution
+// agent would otherwise race it for polkitd's single registration slot --
+// the live defect ADR-0290 fixes. Basenames are literal upstream binary
+// names, matched exactly, never a substring or path match, and
+// NotShowIn/OnlyShowIn play no part: polkit-gnome's own entry ships with
+// only NotShowIn=MATE;KDE, which never excluded it from a QindaQt desktop
+// -- that gap is exactly why two agents used to race at every login.
+const QStringList &knownPolkitAgentBasenames()
+{
+    static const QStringList table{
+        QStringLiteral("polkit-gnome-authentication-agent-1"),
+        QStringLiteral("polkit-kde-authentication-agent-1"),
+        QStringLiteral("lxqt-policykit-agent"),
+        QStringLiteral("polkit-mate-authentication-agent-1"),
+        QStringLiteral("xfce-polkit"),
+        QStringLiteral("lxpolkit"),
+    };
+    return table;
+}
+
+QString execProgramBasename(const QString &exec)
+{
+    // Exec may carry arguments or field codes; only the program token's
+    // basename is compared. No known agent basename contains a space, so
+    // a naive first-token split is exact for this table.
+    const QString programToken = exec.trimmed().section(QLatin1Char(' '), 0, 0);
+    return QFileInfo(programToken).fileName();
+}
+
+bool isKnownPolkitAgent(const Fields &fields)
+{
+    if (knownPolkitAgentBasenames().contains(execProgramBasename(fields.exec)))
+        return true;
+    return !fields.tryExec.isEmpty()
+        && knownPolkitAgentBasenames().contains(QFileInfo(fields.tryExec).fileName());
+}
+
 void markIneligible(Entry &entry, const QString &reason)
 {
     entry.ineligibilityReason = reason;
@@ -246,6 +285,10 @@ QList<Entry> scan(const ScanOptions &options, QString *error)
             markIneligible(entry, QStringLiteral("Invalid desktop entry string escape"));
         } else if (fields.invalidBoolean) {
             markIneligible(entry, QStringLiteral("Invalid desktop autostart flag"));
+        } else if (options.supersedeDistributionPolkitAgents && isKnownPolkitAgent(fields)) {
+            markIneligible(
+                entry,
+                QStringLiteral("Superseded by the QindaQt session's own polkit agent"));
         } else if (fields.hasOnlyShowIn && fields.hasNotShowIn) {
             markIneligible(entry, QStringLiteral("Conflicting desktop conditions"));
         } else if (!entry.enabled) {

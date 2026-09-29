@@ -99,3 +99,8 @@ worker liveness or reserve this request's paths.
 Manager observation 2026-09-29T19:51:04+00:00: fork source/consumer 0dd2fdb8 / 6623b7d6 passes
 manager target build, 16/16 focused + adjacent 6/6 CTests, strict MkDocs and 434-page
 links/navigation. No interim packaging/install; overlay released r3 remains immutable.
+
+Native polkit observation 2026-09-29T20:00:43+00:00: accepted source 72191b76, eleven manager
+build targets and 9/9 focused CTests (supervisor/autostart included) pass.
+Strict MkDocs and 436-page links/navigation pass. Real authentication and
+pointer-output placement remain qualification boundaries; no installation.

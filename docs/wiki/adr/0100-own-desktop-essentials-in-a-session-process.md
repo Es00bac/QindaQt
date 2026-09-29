@@ -93,3 +93,17 @@ as an optional one-restart child after the shell.
   `Inhibit` flag 8) is not consumed; a later slice must either observe that
   state before requesting DPMS off or produce nested runtime evidence
   bounding the exposure before any general inhibitor-respect claim.
+
+## 2026-09-28 update: the polkit agent is native, not "well-known paths"
+
+[ADR-0290](0290-native-polkit-agent-and-single-agent-rule.md) replaces the
+"optional polkit authentication agent from well-known distribution paths"
+paragraph above: the supervisor now resolves only `qindaqt-polkit-agent`'s
+own fixed install path, with no KDE or other distribution fallback, and the
+session autostart catalog ([ADR-0247](0247-run-xdg-autostart-in-the-session-supervisor.md))
+treats every other distribution polkit agent's `.desktop` entry as
+superseded. The two-agent race this ADR's Context did not yet have a fix
+for -- the KDE candidate here racing XDG autostart's polkit-gnome entry --
+is what ADR-0290 closes. The one-restart-budget behavior this ADR records
+for "both optional children" is unchanged and still covers the native
+agent's exit(2) registration-conflict path.

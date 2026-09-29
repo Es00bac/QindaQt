@@ -40,6 +40,7 @@ private Q_SLOTS:
     void omittedConfigurationKeepsInstalledProductionDefault();
     void explicitConfiguredPathPassesThroughUnchanged();
     void missingHostCandidatesResolveToHonestEmpty();
+    void defaultCandidatesNameOnlyTheQindaQtAgent();
 };
 
 void PolkitAgentSelectionTest::disabledWinsEvenWhenHostCandidatesExist() {
@@ -90,6 +91,15 @@ void PolkitAgentSelectionTest::missingHostCandidatesResolveToHonestEmpty() {
     // path; it passes through and the sibling-resolution rules own it.
     QCOMPARE(resolvePolkitAgentExecutable(false, QStringLiteral("custom-agent")),
              QStringLiteral("custom-agent"));
+}
+
+void PolkitAgentSelectionTest::defaultCandidatesNameOnlyTheQindaQtAgent() {
+    // ADR-0290 (owner decision, 2026-09-28): no Plasma/KDE fallback. Exactly
+    // one candidate, and it is this session's own agent, never a KDE path.
+    const QStringList candidates = defaultPolkitAgentCandidates();
+    QCOMPARE(candidates.size(), 1);
+    QVERIFY(candidates.constFirst().endsWith(QStringLiteral("/qindaqt-polkit-agent")));
+    QVERIFY(!candidates.constFirst().contains(QStringLiteral("kde"), Qt::CaseInsensitive));
 }
 
 QTEST_MAIN(PolkitAgentSelectionTest)
