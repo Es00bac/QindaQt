@@ -63,3 +63,11 @@ Candidate `c29a285c` includes original `151dce49`, accepted by manager under the
 Exact fork `cf6cce99` is integrated/pushed; consumer docs `9a943c41` is manager-preserved to its hub branch. Manager exact native CTest passed. Next gate: native compositor source-pin/docs validation and integration commit; PF7 private-launch/PAM implementation active. Full locking milestone and final package deployment held.
 
 | Plasma-free PK2 native Secret Service | SOURCE INTEGRATED after manager gates | Codex Program Manager; storage worker moves to PK3 | accepted6e2832d2; keyring-daemon preserved; keyring-pam base6e | Owner waiver; manager exact source/gates | Trusted PAM login-token/rekey; later UI/Secret portal/import and final packaging | Keyring PAM owns new pam module; manager shared registries; qinda j24 | Nine manager rows pass incl20 private-bus client/lifetime cases; no live secrets or install; multi-output remains open | 2026-09-29T21:28:56+00:00 |
+
+## 2026-09-29 native application SDK candidate
+
+Manager admits exact `6db8864b` after focused 6/6, private installed SDK consumer,
+and real 1080p/150% protocol/scene gates. Next gate is the same focused build/tests
+and strict docs on the integration tree. Root owns the semantic command/voice
+compositor boundary; gathered-layout worker moves to Gabbee parser/client after
+its native paging/lock gates. qinda j24/l24 dedicated; laptop browsing reserve.

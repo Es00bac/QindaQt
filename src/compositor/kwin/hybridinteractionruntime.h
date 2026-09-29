@@ -140,6 +140,10 @@ public:
         const QString &incomingWindowId);
     [[nodiscard]] ReleaseAllResult releaseAll();
 
+    // Synchronous, non-reentrant atomic command boundary for compositor-owned
+    // policy adapters. Authentication is the transport owner's responsibility.
+    [[nodiscard]] HybridRuntimeResult execute(Hybrid::TopologyCommand command);
+
 private:
     struct Placement final
     {
@@ -169,7 +173,7 @@ private:
         const HybridInput::InteractionIntent &intent,
         const QString &sourceContainerId,
         const QString &targetContainerId);
-    [[nodiscard]] HybridRuntimeResult execute(Hybrid::TopologyCommand command);
+
     [[nodiscard]] HybridRuntimeResult delegate(
         const HybridInput::InteractionIntent &intent,
         const DirectInteractionHandler &handler,

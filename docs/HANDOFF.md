@@ -4546,3 +4546,20 @@ Secret Service transport, PAM, UI and imports remain PK2–PK6. No real keyring 
 
 Laptop fork consumer/plugin/launcher/session targets build and six focused ABI/session
 checks pass at `f1abe8ed` with the staged fork; no binaries are installed system-wide.
+
+### Native application SDK acceptance — 2026-09-29
+
+Exact candidate `6db8864b` implements optional `qindaqt_window_manager_v1` and
+the public Qt/CMake SDK. Apps own accelerator handling and create their new
+windows; the compositor authenticates both surfaces on the same connection,
+fences foreground/lock/lifetime/rate state, and commits tab/tile placement
+atomically. Private installed SDK consumer and native 1080p/150% scenes pass;
+each native row verifies 77 results plus actual group, active-page and split
+geometry. The complete pre-SDK recovered source tree also compiles successfully.
+
+The owner's added voice scope uses existing Gabbee command mode and hotkey.
+A shared typed semantic command boundary and composable target/placement grammar
+are being implemented; 90% maximize means centered 90% width and height inside
+the usable output, leaving a 5% border on each side. Named targets must resolve
+uniquely and stale command contexts fail without retargeting. These source
+acceptance results do not claim final deployment or the full Plasma-free program.
