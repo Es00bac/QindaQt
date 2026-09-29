@@ -151,6 +151,11 @@ bool TopologyPlacementMutation::apply(WindowTopology &candidate,
                                    error)) {
         return false;
     }
+    if (command.activateInsertedPage) {
+        const auto *page = std::get_if<MoveAsPage>(&command.destination);
+        if (!page || !target->activatePage(page->pageId, error))
+            return fail(error, QStringLiteral("activation requires an inserted tab"));
+    }
     independent.remove(command.windowId);
     return true;
 }
@@ -186,6 +191,8 @@ bool TopologyPlacementMutation::apply(
                           error)) {
         return false;
     }
+    if (command.activateSecondPage && !group.activatePage(command.secondPageId, error))
+        return false;
     independent.remove(command.firstWindowId);
     independent.remove(command.secondWindowId);
     containers.insert(group.id(), std::move(group));

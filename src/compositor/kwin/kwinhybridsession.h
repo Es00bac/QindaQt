@@ -76,6 +76,7 @@ class KWinWorkspaceUiPort;
 class KWinWorkspaceController;
 class KWinTransientManager;
 class ManagedWindowRegistry;
+class KWinApplicationPlacementServer;
 class MemberChromeVisibilityController;
 
 // Owns the production Hybrid collaborator graph for one KWin plugin lifetime.
@@ -188,6 +189,8 @@ private:
                             HybridChrome::WindowAction action);
     void handleContainerControl(const QString &containerId,
                                 HybridChrome::ContainerControl control);
+    void initializeApplicationPlacement();
+    void shutdownApplicationPlacement() noexcept;
     void initializeMemberChromeSupport();
     void synchronizeMemberChromeVisibility();
     // ADR-0139: publishes the per-window qindaqtMemberIdentity decoration
@@ -358,6 +361,7 @@ private:
     ManagedWindowRegistry &m_registry;
     std::unique_ptr<KWinHybridSceneFactory> m_sceneFactory;
     std::unique_ptr<HybridInteractionRuntime> m_runtime;
+    std::unique_ptr<KWinApplicationPlacementServer> m_applicationPlacement;
     std::unique_ptr<KWinChromeManager> m_chromeManager;
     std::unique_ptr<MemberChromeVisibilityController> m_memberChromeVisibility;
     std::unique_ptr<KWinChromeSceneLifecycle> m_chromeSceneLifecycle;

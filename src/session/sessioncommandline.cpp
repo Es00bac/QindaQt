@@ -28,7 +28,7 @@ void configureParser(QCommandLineParser &parser)
     parser.addOption({QStringLiteral("socket"),
                       QStringLiteral("Child Wayland socket name."),
                       QStringLiteral("name"),
-                      QStringLiteral("qindaqt-0")});
+                      QString(CompositorNames::waylandSocketPrefix) + QStringLiteral("0")});
     parser.addOption({QStringLiteral("width"),
                       QStringLiteral("Virtual or windowed output width."),
                       QStringLiteral("pixels"),

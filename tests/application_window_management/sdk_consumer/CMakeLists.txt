@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.25)
+project(QindaQtWindowSdkConsumer LANGUAGES CXX)
+find_package(QindaQtApplicationWindowManagement 1.0.0 EXACT REQUIRED CONFIG)
+add_executable(sdk-consumer main.cpp)
+target_compile_features(sdk-consumer PRIVATE cxx_std_20)
+target_link_libraries(sdk-consumer PRIVATE QindaQt::ApplicationWindowClient QindaQt::ApplicationWindowProtocol)

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinhybridsession.h"
+#include "kwinapplicationplacementserver.h"
 
 #include "qindaqt/decoration_painter/decoration_painter.h"
 
@@ -309,6 +310,7 @@ void KWinHybridSession::initializeChromeSceneLifecycle()
                 &KWinChromeSceneLifecycle::compositingToggled,
                 Qt::DirectConnection);
     }
+    initializeApplicationPlacement();
 }
 
 KWinHybridSession::~KWinHybridSession()
@@ -322,6 +324,7 @@ void KWinHybridSession::shutdown() noexcept
         return;
     }
     m_shutdown = true;
+    shutdownApplicationPlacement();
     // Dialog callbacks borrow runtime/app collaborators; release them first.
     shutdownSavedWorkspaces();
     m_groupContextMenu.reset();
