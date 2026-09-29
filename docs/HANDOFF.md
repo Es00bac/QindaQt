@@ -1,3 +1,20 @@
+## 2026-09-29 — Native lock server and capture/input fence (PF5–PF6)
+
+Fork main/hub is `cf6cce99`; consumer docs candidate `9a943c41` is preserved
+in the qinda hub and integrated here. KScreenLocker discovery/linkage is
+removed from the fork. Native session-lock acknowledgement waits for actual
+physical output presentation; crash, output changes, input roles, effects,
+and screenshot/screencast entry points stay fenced. The metadata source pin
+now names this exact fork commit and tree.
+
+Manager exact native CTest passed 1/1; the worker inspected 23/23 Qt checks,
+zero failure/skip. Production compositor, screenshot and screencast built
+with test authorization OFF and KScreenLocker discovery disabled; direct
+KScreenLocker NEEDED and exported test authorization counts are both zero.
+PF7 private compositor-launched locker/PAM trust, PF8 Lock1/ScreenSaver,
+installed trusted-greeter qualification, physical DRM and real PipeWire
+consumer revocation remain open. No desktop package or live lock was used.
+
 ## 2026-09-29 — Native power preferences integrated (PF1)
 
 PF1 source candidate `151dce49` plus manager preservation repair `c29a285c`
