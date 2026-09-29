@@ -20,7 +20,7 @@ state and the upstream release it descends from:
 | Field | Value |
 | --- | --- |
 | Fork | `qindaqt-kwin` `6.6.6.1`, package `gui-wm/qindaqt-kwin-6.6.6_p1`, hub `qinda:~/git/qindaqt-kwin.git` |
-| Fork commit | `362d69b960115cdc86def201eddbc6dc629c702d` (tree `bf989b440d782a22f97463ce4122d083249d87e3`) |
+| Fork commit | `0dd2fdb802c6dfdecb4771942b05788a8aa386b5` (tree `97ade09fdc536f6293b74d2114aaf04a699e9351`) |
 | Upstream release/ref | KWin `6.6.6`, `refs/tags/v6.6.6` |
 | Upstream tag object | `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff` |
 | Upstream commit | `9bf2235fad10de9048c634e376bf12e56b3023e6` |
@@ -79,6 +79,31 @@ installation-dependent keys. Follow the [KWin upgrade
 procedure](../development/kwin-upgrades.md) for any fork release; the
 [release procedure](../development/releases.md) requires a fresh native build
 and sequential build-tree plus staged-install plugin boots.
+
+### M1 staged qualification (2026-09-29)
+
+The recovered fork candidate is built from the pinned hub commit. The source
+verifier checks upstream ancestry and its `git archive` tree before packaging.
+The fork stages 468 files; the collision checker compares them with 1,059 stock
+KWin, kwin-x11 and kdecoration paths and finds zero shared paths or stock identity
+paths. Installed KWin and kdecoration inventories come directly from `qlist`;
+kwin-x11 uses the checked-in 6.6.6 manifest because it is not installed.
+
+`qindaqt/tools/smoke-test` now fails on missing native endpoints, compatibility
+carve-outs, wrong fork version or stock config creation.
+`qindaqt/tools/check-coinstall-runtime` additionally starts installed stock KWin
+and the staged fork concurrently on distinct private buses and HOME directories.
+The stock sandbox disables the legacy installed consumer plugin; the staged fork
+plugins occupy their own namespace. A relocated launcher with the staged consumer
+plugin and decoration qualifies the output/input inventory, hotplug, container
+page operations, rollback, native decoration and rootless XWayland path.
+
+These checks make no system installation or session switch. The root termination
+helper tests signal disposable unprivileged children only; real root-owned-window
+authorization and user interaction await the native polkit agent and final
+delivery. Physical DRM, input devices and laptop hardware remain release gates.
+Remaining Plasma services and their compatibility names are the later M2–M6
+boundaries; staged M1 qualification does not certify their removal.
 
 ## `qindaqt-wm` launcher
 

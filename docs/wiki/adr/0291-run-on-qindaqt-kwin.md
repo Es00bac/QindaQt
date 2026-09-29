@@ -32,7 +32,7 @@ after each. `compositor/upstream/kwin.json` pins it:
 | Pin | Value |
 |---|---|
 | Fork version | 6.6.6.1 |
-| Fork commit | `362d69b960115cdc86def201eddbc6dc629c702d` (tree `bf989b440d782a22f97463ce4122d083249d87e3`) |
+| Fork commit | `0dd2fdb802c6dfdecb4771942b05788a8aa386b5` (tree `97ade09fdc536f6293b74d2114aaf04a699e9351`) |
 | Upstream release | KWin 6.6.6, tag object `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff`, commit `9bf2235fad10de9048c634e376bf12e56b3023e6`, tree `88f96f8cde49c51552d82f60fd461b6e8b950685` |
 
 **The contract QindaQt consumes.** container-wm names the fork only through
@@ -95,6 +95,13 @@ KDE Frameworks, `kdeglobals`, Wayland protocol names and `org.kde.kglobalaccel`.
   source they can reach; until the fork is published they cannot pass.
 - Each fork release bumps the serial, the manifest, this pin table and
   `QindaQtKWinAbi.cmake` together, and rebuilds every plugin.
+
+## Qualification
+
+The [compositor session contract](../architecture/compositor-session.md#m1-staged-qualification-2026-09-29)
+records the 468-file staged collision proof, simultaneous private stock/fork
+runtime test and native consumer plugin/decoration checks. Installation and
+physical-session qualification remain manager-held until final delivery.
 
 ## Revisit when
 
