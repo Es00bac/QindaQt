@@ -143,7 +143,69 @@ private slots:
     void ownsRollsBackReleasesAndRestartsOnAPrivateBus();
     void validatesProfileAndUserCompatibilityDocuments();
     void startsPastUserOverridesThisSchemaCannotNormalize();
+    void importsPowerDevilPreferencesOnlyAfterOwningSettings1();
 };
+
+void SettingsServiceLifecycleTests::importsPowerDevilPreferencesOnlyAfterOwningSettings1()
+{
+    QProcess daemon;
+    daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
+                 {QStringLiteral("--session"), QStringLiteral("--nofork"),
+                  QStringLiteral("--print-address=1")});
+    QVERIFY2(daemon.waitForStarted(), qPrintable(daemon.errorString()));
+    QVERIFY2(daemon.waitForReadyRead(), qPrintable(daemon.errorString()));
+    const QString address = QString::fromUtf8(daemon.readLine()).trimmed();
+    QVERIFY(!address.isEmpty());
+    const QString connectionName = QStringLiteral("qindaqt-power-import-%1")
+                                       .arg(QCoreApplication::applicationPid());
+    auto bus = QDBusConnection::connectToBus(address, connectionName);
+    QVERIFY(bus.isConnected());
+    const QString competitorConnectionName = connectionName + QStringLiteral("-competitor");
+    auto competitorBus = QDBusConnection::connectToBus(address, competitorConnectionName);
+    QVERIFY(competitorBus.isConnected());
+
+    QString error;
+    auto active = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    auto legacy = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error, 1);
+    QVERIFY2(active && legacy, qPrintable(error));
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString profileDefaults = QStringLiteral(
+        QINDAQT_SOURCE_DIR "/data/settings/profile-defaults/qindaqt.json");
+    const QString powerDevil = directory.filePath(QStringLiteral("powerdevilrc"));
+    QFile source(powerDevil);
+    QVERIFY(source.open(QIODevice::WriteOnly));
+    source.write("[AC][Display]\nTurnOffDisplayWhenIdle=true\nTurnOffDisplayIdleTimeoutSec=600\n");
+    source.write("[AC][SuspendAndShutdown]\nLidAction=1\n");
+    source.close();
+
+    const QString storage = directory.filePath(QStringLiteral("settings.json"));
+    ResidentSettingsService owner(bus, *active, *legacy, profileDefaults, storage, powerDevil);
+    const auto started = owner.start();
+    QVERIFY2(started.ok(), qPrintable(started.message));
+    QCOMPARE(owner.revision(), quint64(1));
+    const auto imported = SettingsFileStore::load(storage, *active);
+    QVERIFY2(imported.ok, qPrintable(imported.error));
+    QVERIFY(imported.document.values.value(
+        QStringLiteral("power.migration.powerDevilImported")).toBool());
+    QCOMPARE(imported.document.values.value(
+        QStringLiteral("power.idle.ac.displayOffSeconds")).toInt(), 600);
+    QCOMPARE(imported.document.values.value(
+        QStringLiteral("power.lid.ac.action")).toString(), QStringLiteral("suspend"));
+
+    const QString competitorStorage = directory.filePath(QStringLiteral("competitor.json"));
+    ResidentSettingsService competitor(competitorBus, *active, *legacy,
+                                       profileDefaults, competitorStorage, powerDevil);
+    QCOMPARE(competitor.start().status, SettingsServiceStartStatus::NameOwnershipConflict);
+    QVERIFY(!QFileInfo::exists(competitorStorage));
+    owner.stop();
+    QDBusConnection::disconnectFromBus(competitorConnectionName);
+    QDBusConnection::disconnectFromBus(connectionName);
+    daemon.terminate();
+    QVERIFY(daemon.waitForFinished(5'000));
+}
 
 void SettingsServiceLifecycleTests::ownsRollsBackReleasesAndRestartsOnAPrivateBus()
 {

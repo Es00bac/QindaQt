@@ -38,3 +38,10 @@ add_test(
     NAME qindaqt.settings-service-process-lifecycle
     COMMAND qindaqt_settings_service_process_lifecycle_tests
 )
+
+qt_add_executable(qindaqt_powerdevil_import_tests tst_powerdevil_import.cpp)
+target_link_libraries(qindaqt_powerdevil_import_tests PRIVATE
+    QindaQt::PowerPolicy QindaQt::SettingsService Qt6::Test)
+target_compile_definitions(qindaqt_powerdevil_import_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+qindaqt_enable_warnings(qindaqt_powerdevil_import_tests)
+add_test(NAME qindaqt.powerdevil-import COMMAND qindaqt_powerdevil_import_tests)

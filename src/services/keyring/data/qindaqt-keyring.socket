@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[Unit]
+Description=QindaQt keyring peer control endpoint
+PartOf=graphical-session.target
+
+[Socket]
+ListenStream=%t/qindaqt-keyring/control
+SocketMode=0600
+DirectoryMode=0700
+RemoveOnStop=yes
+Service=qindaqt-keyring.service
+
+[Install]
+WantedBy=graphical-session.target

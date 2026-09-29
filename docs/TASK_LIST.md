@@ -17,7 +17,8 @@ portal twin, one-shot touch lift, and saved-workspace container names. Saved wor
 custom and default names when restored under fresh IDs; unsaved live topology is not
 automatically restored on restart. The fork consumer passes 16 manager checks plus the adjacent six; native polkit passes nine manager checks and strict documentation.
 The native keyring storage core passes four focused manager checks on both hosts and
-strict documentation; its daemon/PAM/UI remain queued. Remaining native service work
+strict documentation. Its native Secret Service daemon passes nine manager gates, including
+20 private-bus protocol/lifetime cases with real clients; PAM/UI/portal/import remain active/queued. Remaining native service work
 is active, with no complete-program or installed-delivery claim.
 
 ## September 29 — Gather minimized items and expose native application placement
@@ -2068,3 +2069,16 @@ of aspect locks, generated names, and pending replacements (none of the
 process-local state persists yet, by design of the current session model).
 The pre-existing `compositor.kwin-plugin-dependency-contract` failure
 reproduces on the clean tree and is unrelated.
+
+## 2026-09-29 Plasma-free PF1 integration
+
+- [x] Settings1 native per-source power preferences and bounded, one-time PowerDevil import (`151dce49`, preservation repair `c29a285c`). Second-resolution idle durations, disabled action and sleep modes are preserved.
+- [ ] PF2 Power1 v2 policy runtime, lid/critical battery/profile/inhibitor authority.
+- [ ] PF3–PF4 idle stages, native brightness feedback, native Settings route and PowerDevil retirement.
+
+## 2026-09-29 native locking integration
+
+- [x] PF5–PF6 native lock server/input/output/capture fence (`qindaqt-kwin cf6cce99`, consumer docs `9a943c41`); private native matrix 23/23, manager CTest 1/1 and production test-auth-OFF build passed.
+- [ ] PF7 trusted compositor-launched greeter, native Qt lock surfaces, PAM/account authentication and private process/epoch gates.
+- [ ] PF8 Lock1, ScreenSaver compatibility, logind sleep ordering and native Settings routes.
+- [ ] Installed trusted-greeter binding, physical DRM and real PipeWire consumer pipeline qualification.

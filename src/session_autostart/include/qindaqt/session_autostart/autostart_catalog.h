@@ -20,6 +20,9 @@ struct ScanOptions final {
     // Settings models the production session by default; qindaqt-session clears
     // this when --no-polkit-agent is selected so distribution entries may run.
     bool supersedeDistributionPolkitAgents = true;
+    // Only an installed native owner permits suppressing distribution keyring
+    // Exec entries. Labels/desktop filenames never identify an executable.
+    bool supersedeDistributionKeyringAgents = false;
 
     [[nodiscard]] static ScanOptions fromEnvironment(
         const QProcessEnvironment &environment = QProcessEnvironment::systemEnvironment());
