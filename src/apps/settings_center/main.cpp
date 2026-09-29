@@ -33,6 +33,7 @@
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell/icons/icon_runtime.h"
 #include "settings_route_construction_probe.h"
+#include "settings_wallpaper_targets.h"
 
 #include <QCommandLineParser>
 #include <QDBusConnection>
@@ -430,6 +431,7 @@ int main(int argc, char **argv) {
   QindaQt::Apps::SettingsDisplay::DisplaySettingsModel displaySettings(
       displayClient, displayCoordinator);
   displayClient.start();
+  QindaQt::Apps::SettingsCenter::SettingsWallpaperTargets wallpaperTargets(displayClient, appearanceSettings);
 
   // AGENT-CONTRACT: The Settings route consumes only the public Network1
   // client/transport boundary. It never links the resident service or libnm

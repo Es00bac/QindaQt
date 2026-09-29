@@ -28,4 +28,9 @@ these same background surfaces one dismissible shortcut-note card per output
 (primary output only) through a small attach hook; the wallpaper controller's
 surface planning and ADR-0078 scope are otherwise unchanged.
 
+2026-09-28 note ([ADR-0286](0286-per-display-and-per-desktop-wallpapers.md)):
+each surface now resolves its own picture from per-display and per-desktop
+choices layered over `appearance.wallpaper` and cross-fades changes. One
+wallpaper everywhere stays the default; ownership and scope are unchanged.
+
 This supersedes ADR-0074's deferral of wallpaper application; its Settings ownership and fail-closed snapshot rules remain unchanged.

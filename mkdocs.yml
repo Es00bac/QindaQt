@@ -95,6 +95,7 @@ nav:
       - "OBS applet": shell/obs-applet.md
       - Status notifier tray: shell/status-tray.md
       - Visual identity: shell/visual-identity.md
+      - Wallpapers: shell/wallpapers.md
       - Shell iconography: shell/iconography.md
       - QindaQt icon theme: shell/icon-theme.md
   - Reference:
@@ -440,5 +441,6 @@ nav:
       - "0282: Containers never lock; modifier chords": adr/0282-containers-never-lock-and-speak-modifier-chords.md
       - "ADR-0283: True-color places, file types and Qinda app marks": adr/0283-true-color-places-types-and-qinda-app-marks.md
       - "ADR-0284: Themes name their light and dark twins": adr/0284-themes-name-their-light-and-dark-twins.md
+      - "ADR-0286: Per-display and per-desktop wallpapers": adr/0286-per-display-and-per-desktop-wallpapers.md
       - "ADR-0287: Pass tablet proximity through window decorations": adr/0287-pass-tablet-proximity-through-window-decorations.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md

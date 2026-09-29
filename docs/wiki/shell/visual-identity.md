@@ -81,8 +81,18 @@ white, and Reduce transparency turns every material solid.
 | Qinda Punk | A chibi cyborg penguin, rooftop neon, coffee, and a rubber-duck drone |
 | Compile Club | The same mascot in a warm hacker workshop; the duck cools a compiling machine |
 | Qinda Bliss | Bright jade-green hills under a deep blue sky, a futuristic horizon city, and the mascot pair on a hill of reclaimed hardware |
+| Horizon Arc | The mascot pair on a dark polished floor under a thin jade horizon arc |
+| Light Waves | The mascot pair on a glassy platform among soft blue light waves |
+| Valley Sunrise | The mascot pair on a flowering hill of retired hardware above a green valley and a sunrise city |
+| Neon Harbor | The mascot pair on a rain-slick rooftop over a neon night harbor |
+| Aurora Plain | The mascot pair on a glassy plain under a violet and jade aurora |
 
-All six leave quiet areas for windows and icons. They share a material and
+The last five are the owner's own AI-assisted images, credited "Jarrod C,
+AI-assisted" and added beside the original six without changing them or the
+default ([ADR-0286](../adr/0286-per-display-and-per-desktop-wallpapers.md));
+[Wallpapers](wallpapers.md) describes how more are imported.
+
+All eleven leave quiet areas for windows and icons. They share a material and
 shape vocabulary rather than merely recoloring one image. The original PNGs
 are 1672 × 941 pixels. Generation provenance and full prompts are preserved
 with the assets in `data/wallpapers/ARTWORK.md`.

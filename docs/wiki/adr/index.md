@@ -292,4 +292,7 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0284: Themes name their light and dark twins](0284-themes-name-their-light-and-dark-twins.md)
 
+
+- [ADR-0286: Per-display and per-desktop wallpapers](0286-per-display-and-per-desktop-wallpapers.md)
+
 - [ADR-0287: Pass tablet proximity through window decorations](0287-pass-tablet-proximity-through-window-decorations.md)

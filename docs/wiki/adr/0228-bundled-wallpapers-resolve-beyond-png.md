@@ -45,6 +45,10 @@ must be added to both in the same change. Focused rows cover format
 resolution on both ends (`qindaqt.appearance-values`,
 `qindaqt.shell-preference-values`).
 
+2026-09-28 note ([ADR-0286](0286-per-display-and-per-desktop-wallpapers.md)):
+per-display and per-desktop wallpapers choose among ordinary preference
+values; bundled identities still resolve exactly as decided here.
+
 ## Revisit when
 
 The bundled identity scheme gains per-screen or per-theme variants, or the
