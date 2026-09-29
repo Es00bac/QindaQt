@@ -129,10 +129,12 @@ a readiness-independent child; one unexpected exit consumes its sole restart
 without affecting either essential child. The same optional one-restart
 treatment starts the installed sibling `qindaqt-desktop-controls` — the
 [desktop controls](desktop-controls.md) media-key, screenshot, polkit-agent,
-and idle display-off helper — and a polkit authentication agent resolved from
-well-known distribution paths (overridable with `--polkit-agent`, suppressed
-entirely with `--no-polkit-agent` — every staged private and nested run must
-pass the suppression so the supervisor never resolves a host binary); both
+and idle display-off helper — and `qindaqt-polkit-agent`, the session's own polkit
+authentication agent ([ADR-0290](../adr/0290-native-polkit-agent-and-single-agent-rule.md)),
+with no other agent as fallback (overridable with `--polkit-agent`,
+suppressed entirely with `--no-polkit-agent` — every staged private and
+nested run must pass the suppression so the supervisor never resolves a
+host binary); both
 start after the shell, and their absence is skipped without any session
 impact.
 After the first shell starts, the

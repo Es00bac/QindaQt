@@ -33,8 +33,14 @@ void SessionAutostartRunner::startOnce()
     if (!error.isEmpty())
         qCWarning(SESSION_AUTOSTART) << "could not scan autostart:" << error;
     for (const auto &entry : entries) {
-        if (!entry.eligible)
+        if (!entry.eligible) {
+            if (m_options.supersedeDistributionPolkitAgents
+                && entry.ineligibilityReason
+                    == QLatin1String("Superseded by the QindaQt session's own polkit agent")) {
+                qCInfo(SESSION_AUTOSTART) << "skipped superseded polkit agent entry:" << entry.id;
+            }
             continue;
+        }
         auto process = std::make_unique<QProcess>();
         process->setProcessChannelMode(QProcess::ForwardedChannels);
         if (!entry.workingDirectory.isEmpty())

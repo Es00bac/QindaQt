@@ -301,4 +301,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0288: Per-device latency offsets through Audio1, and a compact Audio page](0288-per-device-latency-offsets-and-a-compact-audio-page.md)
 - [ADR-0289: A native screenshot and record tool replaces Spectacle](0289-native-screenshot-and-record-tool.md)
+- [ADR-0290: Native QindaQt polkit agent, and a single-agent autostart rule](0290-native-polkit-agent-and-single-agent-rule.md)
 - [ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork](0291-run-on-qindaqt-kwin.md)

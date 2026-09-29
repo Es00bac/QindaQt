@@ -136,6 +136,8 @@ int main(int argc, char *argv[])
         parser.value(QStringLiteral("polkit-agent")));
     if (!parser.isSet(QStringLiteral("no-autostart"))) {
         options.autostart = QindaQt::SessionAutostart::ScanOptions::fromEnvironment();
+        options.autostart.supersedeDistributionPolkitAgents =
+            !options.polkitAgentExecutable.isEmpty();
     }
     options.profileId = parser.value(QStringLiteral("profile"));
     options.themeId = parser.value(QStringLiteral("theme"));

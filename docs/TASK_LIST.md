@@ -15,7 +15,7 @@ The screenshot replacement is source-integrated and passes six laptop checks. Th
 polish candidate passes six manager checks: theme-default versus explicit title action, active
 portal twin, one-shot touch lift, and saved-workspace container names. Saved workspaces retain
 custom and default names when restored under fresh IDs; unsaved live topology is not
-automatically restored on restart. The fork consumer passes 16 manager checks plus the adjacent six; repaired polkit awaits manager integration.
+automatically restored on restart. The fork consumer passes 16 manager checks plus the adjacent six; native polkit passes nine manager checks and strict documentation.
 Remaining native service work is active, with no complete-program or installed-delivery claim.
 
 ## September 29 — Gather minimized items and expose native application placement

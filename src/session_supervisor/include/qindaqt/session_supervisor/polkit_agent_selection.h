@@ -6,9 +6,14 @@
 
 namespace QindaQt::SessionSupervisor {
 
-// Well-known distribution locations of the polkit KDE authentication agent.
-// The first existing executable wins when the operator neither configures a
-// path nor disables the optional agent.
+// ADR-0290: QindaQt runs only its own native polkit authentication agent,
+// with no KDE (or other distribution) fallback. The single candidate is the
+// agent's fixed install path, built from KDE_INSTALL_FULL_LIBEXECDIR by
+// session_supervisor's CMakeLists.txt (QINDAQT_POLKIT_AGENT_INSTALL_PATH).
+//
+// AGENT-CONTRACT: the literal executable basename "qindaqt-polkit-agent"
+// here and in src/apps/polkit_agent/CMakeLists.txt's install() rule must
+// stay identical; nothing in CMake ties the two together.
 [[nodiscard]] QStringList defaultPolkitAgentCandidates();
 
 // Selection truth for the supervisor's optional polkit agent.

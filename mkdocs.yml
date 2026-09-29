@@ -173,6 +173,7 @@ nav:
       - "QindaLutris prior art (2026-09-25)": apps/qindalutris-prior-art.md
       - QindaLutris compatibility database: apps/qindalutris-compat-db.md
       - On-Screen Keyboard: apps/on-screen-keyboard.md
+      - Polkit authentication agent: apps/polkit-agent.md
   - Contributing:
       - Documentation maintenance: contributing/documentation-policy.md
       - Team board and progress evidence: contributing/team-board.md
@@ -451,3 +452,4 @@ nav:
       - "ADR-0289: A native screenshot and record tool replaces Spectacle": adr/0289-native-screenshot-and-record-tool.md
       - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
+      - "ADR-0290: Native QindaQt polkit agent, and a single-agent autostart rule": adr/0290-native-polkit-agent-and-single-agent-rule.md

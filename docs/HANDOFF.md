@@ -36,7 +36,7 @@ A lane is done when its handoff is posted (exact commits, files, tests with coun
 |---|---|---|---|
 | F: `qindaqt-kwin` fork, M1 (F1–F8 plus the native root-window kill helper) | `laneF-fork-m1.md` | fork hub `~/git/qindaqt-kwin.git`, checkout `~/work_SPaC3/qindaqt-kwin`; container-wm `feature/qindaqt-kwin`; overlay `gui-wm/qindaqt-kwin` branch | source integrated: fork 0dd2fdb8, consumer 6623b7d6; manager 16/16 + adjacent 6/6 and strict docs pass; final packaging deferred |
 | S: `qindaqt-screenshot` with OBS record mode (PF16, ADR-0289) | `laneS-screenshot.md` | `feature/qindaqt-screenshot` / `screenshot` | integrated at `607c1f60`; laptop native build and 6/6 focused gates pass |
-| PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | repaired candidate 72191b76 preserved in hub; awaits manager integration |
+| PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | source integrated candidate 72191b76; native build, manager 9/9 and strict docs pass; live multi-output/authentication gates deferred |
 | P: four caveats (container names on restart, Corner Bar double-click, portal twin accent, touch lift) | `laneP-polish.md` | `fix/round-caveats` / `polish` | integrated candidate 5e8d73d7; manager 6/6 gates pass |
 | K: key store PK1–PK3 (plan §3.8) | `laneK-keyring.md` | `feature/qindaqt-keyring` / `keyring` | PK1 storage candidate 720a503e preserved; laptop/manager gates pending, PK2–PK6 remain queued |
 | D: mixer bus delay (ADR-0288 addendum) | `laneD-mixer-delay.md` | merged `32ed1f42` | done |
@@ -67,7 +67,10 @@ was removed; touch lift visuals still require hardware qualification.
 
 Screenshot's laptop build and six focused CTests pass at integrated `607c1f60`.
 Fork main is preserved/pushed at `0dd2fdb8`; consumer `6623b7d6` passes this manager's 16/16 focused gates plus the
-adjacent six polish gates. Strict MkDocs and 434-page link/navigation validation pass. Native polkit repaired `72191b76` awaits integration.
+adjacent six polish gates. Strict MkDocs and 434-page link/navigation validation pass. Native polkit repaired `72191b76` passes manager native build, nine focused CTests
+(including supervisor and autostart lifetime), strict MkDocs and 436-page link/navigation
+validation. Pointer-output placement remains best effort until its native output contract
+is qualified; actual authentication/focus tests belong to final isolated/live delivery gates.
 Strict MkDocs remains a final gate; developer-tool recipes are being validated through Portage.
 
 ### Next, in order (plan §4)
