@@ -164,6 +164,8 @@ def main() -> int:
     GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM,
                          lambda: close() or GLib.SOURCE_REMOVE)
     window.present()
+    if mode == "fullscreen":
+        GLib.idle_add(lambda: (window.fullscreen(), GLib.SOURCE_REMOVE)[1])
     record("mapped")
     loop.run()
     return 0

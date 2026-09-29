@@ -580,6 +580,8 @@ The `Capabilities.hybrid` diagnostics report `iconifiedWindowCount`,
 `visibleIconChipCount`, and every `iconifiedWindows` chip and restore frame
 ([Compositor1 reference](../reference/compositor-control-v1.md)).
 
+The nested row compositor.gathered-visibility.mixed-pager.single-640x480 checks a maximized-origin shaded group and a genuine fullscreen independent window together. It verifies fullscreen survives iconification and restoration, then checks oldest-first mixed ordering, disjoint frames below a real layer-shell top-panel reservation, and mouse paging through the last icon on a compact output.
+
 Focused rows: `qindaqt.hybrid-chrome-icon-chip` (layout, clamping into
 bounds, scaling, hit precedence, icon ink, hover-only glyphs, the placeholder
 glyph), `compositor.hybrid-iconify-controller` (platform rollback on refusal,

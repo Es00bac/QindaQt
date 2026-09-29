@@ -18,9 +18,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import shade_flow_cycles  # noqa: E402
 import shade_flow_lifecycle  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gathered_visibility"))
+import gathered_flow  # noqa: E402
 from shade_session import SessionConfig, ShadeSession  # noqa: E402
 
-FLOWS = {"cycles": shade_flow_cycles.run, "lifecycle": shade_flow_lifecycle.run}
+FLOWS = {"cycles": shade_flow_cycles.run, "lifecycle": shade_flow_lifecycle.run,
+         "gathered": gathered_flow.run}
 
 
 def main() -> int:
