@@ -122,6 +122,24 @@ class RunnerEvaluationTests(unittest.TestCase):
     def test_complete_passing_evidence_passes(self) -> None:
         self.assertEqual(self.evaluate(self.evidence(), "cycles", self.plugin_root), [])
 
+    def test_capability_free_copy_preserves_stock_and_fork_basename(self) -> None:
+        from run_shade_visibility import capability_free_kwin
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for basename in ("kwin_wayland", "qindaqt-kwin"):
+                source = root / "source" / basename
+                source.parent.mkdir(parents=True, exist_ok=True)
+                source.write_bytes(b"test executable")
+                target = capability_free_kwin(source, root / "output")
+                self.assertEqual(target.name, basename)
+                self.assertEqual(target.read_bytes(), source.read_bytes())
+
+    def test_fork_namespace_is_accepted_without_changing_stock_path(self) -> None:
+        fork_library = str((self.plugin_root / "qindaqt-kwin/plugins/qindaqt_compositor.so").resolve())
+        evidence = self.evidence(mappedQindaqtLibraries=[fork_library])
+        self.assertEqual(self.evaluate(evidence, "cycles", self.plugin_root), [])
+
     def test_any_false_or_missing_verdict_fails(self) -> None:
         verdicts = {f"v{index}": True for index in range(16)}
         verdicts["ghostFreeAfterRollUp0"] = False

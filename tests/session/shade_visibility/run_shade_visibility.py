@@ -72,9 +72,15 @@ def evaluate(evidence: dict[str, Any], flow: str, plugin_root: Path) -> list[str
                         f"{MINIMUM_VERDICTS[flow]}")
     failures.extend(f"verdict failed: {name}" for name, value in sorted(verdicts.items())
                     if value is not True)
-    compositor = str((plugin_root / "kwin" / "plugins" / "qindaqt_compositor.so").resolve())
-    if compositor not in evidence.get("mappedQindaqtLibraries", []):
-        failures.append(f"private compositor did not map {compositor}")
+    # The stock build uses kwin/plugins; the QindaQt fork publishes its
+    # integrationContract namespace as qindaqt-kwin/plugins. Keep the test
+    # root generic and verify the artifact that the running compositor mapped.
+    candidates = (plugin_root / "kwin" / "plugins" / "qindaqt_compositor.so",
+                  plugin_root / "qindaqt-kwin" / "plugins" / "qindaqt_compositor.so")
+    compositor_paths = {str(path.resolve()) for path in candidates}
+    if not compositor_paths.intersection(evidence.get("mappedQindaqtLibraries", [])):
+        failures.append("private compositor did not map any supported namespace: "
+                        + ", ".join(sorted(compositor_paths)))
     return failures
 
 
@@ -85,7 +91,9 @@ def capability_free_kwin(source: Path, output_root: Path) -> Path:
     its framebuffer memfds unreadable to the session driver. Copying drops the
     security.capability xattr; the program bytes are unchanged.
     """
-    target = output_root / "kwin-nocap" / "kwin_wayland"
+    # Keep the executable basename: the patched KWin fork selects its private
+    # platform plugin from argv[0], so renaming qindaqt-kwin breaks startup.
+    target = output_root / "kwin-nocap" / source.name
     target.parent.mkdir(parents=True, exist_ok=True)
     if not target.exists() or target.read_bytes() != source.read_bytes():
         shutil.copyfile(source, target)

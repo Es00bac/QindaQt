@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QImage>
+#include <QJsonArray>
 #include <QPointF>
 #include <QPointer>
 #include <QRectF>
@@ -70,7 +71,10 @@ public:
 
     [[nodiscard]] bool publish(const QString &outputId,
                                const QString &anchorWindowId,
-                               const QRectF &workArea,
+                               const QRectF &frame,
+                               const QRectF &previousButton,
+                               const QRectF &counter,
+                               const QRectF &nextButton,
                                int currentPage,
                                int pageCount,
                                QString *error = nullptr);
@@ -81,6 +85,8 @@ public:
         const QPointF &position) const;
     [[nodiscard]] int currentPage(const QString &outputId) const noexcept;
     [[nodiscard]] int pageCount(const QString &outputId) const noexcept;
+    // Read-only, output-scoped geometry for the authenticated diagnostic API.
+    [[nodiscard]] QJsonArray diagnosticStates() const;
 
 private:
     struct Entry final
@@ -89,6 +95,7 @@ private:
         int pageCount = 0;
         QRectF frame;
         QRectF previousButton;
+        QRectF counter;
         QRectF nextButton;
         QImage image;
         std::unique_ptr<KWin::ImageItem> item;
@@ -97,7 +104,9 @@ private:
 
     [[nodiscard]] bool anchorItem(const QString &windowId, Entry &entry,
                                   QString *error);
-    static void render(Entry &entry, const QRectF &workArea);
+    static void render(Entry &entry, const QRectF &frame,
+                       const QRectF &previousButton, const QRectF &counter,
+                       const QRectF &nextButton);
     static void updateItem(Entry &entry) noexcept;
     static void dropItem(Entry &entry) noexcept;
 

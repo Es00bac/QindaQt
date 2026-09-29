@@ -159,19 +159,18 @@ void KWinHybridSession::synchronizeMinimizedGather()
                                         && window && !window->isMinimized());
         }
 
-        QMap<QString, QPoint> containerLocations;
+        QMap<QString, QRect> containerFrames;
         for (const auto &placement : layout.containers) {
-            containerLocations.insert(placement.id,
-                                      placement.frame.topLeft().toPoint());
+            containerFrames.insert(placement.id, placement.frame.toAlignedRect());
         }
         for (const auto &tile : gather.request.shadedContainers) {
-            const auto location = containerLocations.constFind(tile.id);
-            if (location != containerLocations.cend()) {
-                static_cast<void>(m_placement->placeShadeStripForGather(tile.id, *location));
+            const auto frame = containerFrames.constFind(tile.id);
+            if (frame != containerFrames.cend()) {
+                static_cast<void>(m_placement->placeShadeStripForGather(tile.id, *frame));
             }
             if (m_chromeManager) {
                 m_chromeManager->setOverlayVisible(
-                    tile.id, location != containerLocations.cend());
+                    tile.id, frame != containerFrames.cend());
             }
         }
 
@@ -187,8 +186,9 @@ void KWinHybridSession::synchronizeMinimizedGather()
             }
             QString error;
             if (!m_minimizedGatherPager->publish(
-                    outputId, anchorId, gather.request.workArea,
-                    layout.appliedPage, layout.pageCount, &error)) {
+                    outputId, anchorId, layout.pagerFrame,
+                    layout.pagerPreviousButton, layout.pagerCounter,
+                    layout.pagerNextButton, layout.appliedPage, layout.pageCount, &error)) {
                 qWarning("QindaQt minimized pager for output '%s' failed: %s",
                          qPrintable(outputId), qPrintable(error));
             }

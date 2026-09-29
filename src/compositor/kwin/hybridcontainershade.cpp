@@ -143,20 +143,30 @@ bool HybridContainerPlacementController::unshade(
 }
 
 bool HybridContainerPlacementController::placeShadeStripForGather(
-    const QString &containerId, const QPoint &topLeft)
+    const QString &containerId, const QRect &frame)
 {
     auto found = m_shadeStripFrames.find(containerId);
-    if (found == m_shadeStripFrames.end()) {
+    if (found == m_shadeStripFrames.end() || !frame.isValid()) {
         return false;
     }
-    if (found->topLeft() == topLeft) {
+    if (*found == frame) {
         return true;
     }
     if (!m_gatherRestorePositions.contains(containerId)) {
         m_gatherRestorePositions.insert(containerId, found->topLeft());
     }
-    found->moveTopLeft(topLeft);
+    // Automatic compaction changes only the visible strip. The independent
+    // restore-size ledger remains the full committed container geometry.
+    *found = frame;
     return true;
+}
+
+bool HybridContainerPlacementController::placeShadeStripForGather(
+    const QString &containerId, const QPoint &topLeft)
+{
+    const auto current = m_shadeStripFrames.constFind(containerId);
+    return current != m_shadeStripFrames.cend()
+        && placeShadeStripForGather(containerId, QRect(topLeft, current->size()));
 }
 
 std::optional<QRect> HybridContainerPlacementController::shadedFrame(

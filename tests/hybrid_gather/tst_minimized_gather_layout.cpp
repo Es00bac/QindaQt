@@ -13,6 +13,7 @@ private Q_SLOTS:
     void paginatesBothLanesInsideReservedWorkArea();
     void narrowOutputUsesNonOverlappingKindPages();
     void outputWorkAreasKeepIndependentPageBounds();
+    void reservesResponsivePagerAndCompactsFullscreenStrips();
     void rejectsGeometryThatCannotFitOneItem();
 };
 
@@ -33,33 +34,44 @@ void MinimizedGatherLayoutTests::paginatesBothLanesInsideReservedWorkArea()
 
     const auto first = planMinimizedGather(request);
     QVERIFY(first.ok);
-    QCOMPARE(first.pageCount, 2);
+    QVERIFY(first.pageCount > 1);
     QCOMPARE(first.appliedPage, 0);
-    QVERIFY(!first.icons.isEmpty());
-    QVERIFY(!first.containers.isEmpty());
-    for (const auto &placement : first.icons) {
-        QVERIFY(first.field.contains(placement.frame));
-    }
-    for (const auto &placement : first.containers) {
-        QVERIFY(first.field.contains(placement.frame));
-        for (const auto &icon : first.icons) {
-            QVERIFY(!placement.frame.intersects(icon.frame));
+    QVERIFY(!first.icons.isEmpty() || !first.containers.isEmpty());
+    QVERIFY(first.field.contains(first.pagerFrame));
+    QVector<QString> iconIds;
+    QVector<QString> containerIds;
+    for (int page = 0; page < first.pageCount; ++page) {
+        const auto layout = planMinimizedGather(request, page);
+        QVERIFY(layout.ok);
+        QCOMPARE(layout.pageCount, first.pageCount);
+        QVERIFY(layout.field.contains(layout.pagerFrame));
+        QVERIFY(layout.itemArea.top() > layout.pagerFrame.bottom());
+        for (const auto &placement : layout.icons) {
+            QVERIFY(layout.itemArea.contains(placement.frame));
+            QVERIFY(!layout.pagerFrame.intersects(placement.frame));
+            iconIds.append(placement.id);
+        }
+        for (const auto &placement : layout.containers) {
+            QVERIFY(layout.itemArea.contains(placement.frame));
+            QVERIFY(!layout.pagerFrame.intersects(placement.frame));
+            containerIds.append(placement.id);
+            for (const auto &icon : layout.icons) {
+                QVERIFY(!placement.frame.intersects(icon.frame));
+            }
         }
     }
-
-    const auto last = planMinimizedGather(request, 99);
-    QVERIFY(last.ok);
-    QCOMPARE(last.appliedPage, 1);
-    QVERIFY(last.icons.size() + first.icons.size() == 45);
-    QVERIFY(last.containers.size() + first.containers.size() == 13);
-    QCOMPARE(last.icons.constFirst().id, QStringLiteral("window-42"));
-    QCOMPARE(last.containers.constFirst().id, QStringLiteral("container-8"));
-    for (const auto &placement : last.icons) {
-        QVERIFY(last.field.contains(placement.frame));
-    }
-    for (const auto &placement : last.containers) {
-        QVERIFY(last.field.contains(placement.frame));
-    }
+    QCOMPARE(iconIds, request.iconifiedWindowIds);
+    QCOMPARE(containerIds, QStringList({
+        QStringLiteral("container-0"), QStringLiteral("container-1"),
+        QStringLiteral("container-2"), QStringLiteral("container-3"),
+        QStringLiteral("container-4"), QStringLiteral("container-5"),
+        QStringLiteral("container-6"), QStringLiteral("container-7"),
+        QStringLiteral("container-8"), QStringLiteral("container-9"),
+        QStringLiteral("container-10"), QStringLiteral("container-11"),
+        QStringLiteral("container-12")}));
+    const auto clamped = planMinimizedGather(request, 99);
+    QVERIFY(clamped.ok);
+    QCOMPARE(clamped.appliedPage, clamped.pageCount - 1);
 }
 
 void MinimizedGatherLayoutTests::narrowOutputUsesNonOverlappingKindPages()
@@ -115,6 +127,74 @@ void MinimizedGatherLayoutTests::outputWorkAreasKeepIndependentPageBounds()
     QVERIFY(secondaryLayout.icons.constFirst().frame.top() >= 70);
 }
 
+void MinimizedGatherLayoutTests::reservesResponsivePagerAndCompactsFullscreenStrips()
+{
+    MinimizedGatherRequest wide;
+    wide.workArea = QRectF(0, 28, 1920, 1052);
+    wide.iconifiedWindowIds.reserve(500);
+    for (int index = 0; index < 500; ++index) {
+        wide.iconifiedWindowIds.append(QStringLiteral("wide-%1").arg(index));
+    }
+    wide.shadedContainers = {{QStringLiteral("fullscreen-strip"), QSizeF(1920, 31)}};
+    const auto widePage = planMinimizedGather(wide, 0);
+    QVERIFY(widePage.ok);
+    QVERIFY(widePage.pageCount > 1);
+    QVERIFY(!widePage.pagerFrame.isEmpty());
+    QVERIFY(widePage.field.contains(widePage.pagerFrame));
+    QVERIFY(widePage.itemArea.top() > widePage.pagerFrame.bottom());
+    for (const auto &icon : widePage.icons) {
+        QVERIFY(widePage.itemArea.contains(icon.frame));
+        QVERIFY(!widePage.pagerFrame.intersects(icon.frame));
+    }
+    for (const auto &strip : widePage.containers) {
+        QVERIFY(widePage.itemArea.contains(strip.frame));
+        QVERIFY(strip.frame.width() <= wide.containerWidthLimit);
+        QVERIFY(!widePage.pagerFrame.intersects(strip.frame));
+    }
+    QVector<QRectF> visibleFrames;
+    for (const auto &icon : widePage.icons) {
+        visibleFrames.append(icon.frame);
+    }
+    for (const auto &strip : widePage.containers) {
+        visibleFrames.append(strip.frame);
+    }
+    for (qsizetype left = 0; left < visibleFrames.size(); ++left) {
+        for (qsizetype right = left + 1; right < visibleFrames.size(); ++right) {
+            QVERIFY(!visibleFrames.at(left).intersects(visibleFrames.at(right)));
+        }
+        QVERIFY(widePage.field.contains(visibleFrames.at(left)));
+    }
+
+    MinimizedGatherRequest narrow;
+    narrow.workArea = QRectF(0, 0, 96, 540);
+    narrow.iconifiedWindowIds = {QStringLiteral("narrow-a"),
+                                 QStringLiteral("narrow-b"),
+                                 QStringLiteral("narrow-c")};
+    narrow.shadedContainers = {{QStringLiteral("narrow-fullscreen-strip"),
+                               QSizeF(1920, 31)}};
+    const auto narrowPage = planMinimizedGather(narrow, 99);
+    QVERIFY(narrowPage.ok);
+    QVERIFY(narrowPage.pageCount > 1);
+    QCOMPARE(narrowPage.appliedPage, narrowPage.pageCount - 1);
+    QVERIFY(narrowPage.field.contains(narrowPage.pagerFrame));
+    QVERIFY(narrowPage.field.width() <= narrow.workArea.width());
+    QVERIFY(narrowPage.field.height() <= narrow.workArea.height());
+    QVERIFY(narrowPage.itemArea.top() > narrowPage.pagerFrame.bottom());
+    QVERIFY(!narrowPage.icons.isEmpty() || !narrowPage.containers.isEmpty());
+    for (const auto &item : narrowPage.icons) {
+        QVERIFY(narrowPage.itemArea.contains(item.frame));
+        QVERIFY(!narrowPage.pagerFrame.intersects(item.frame));
+    }
+    for (const auto &item : narrowPage.containers) {
+        QVERIFY(narrowPage.itemArea.contains(item.frame));
+        QVERIFY(item.frame.width() <= narrow.workArea.width());
+        QVERIFY(!narrowPage.pagerFrame.intersects(item.frame));
+    }
+    QVERIFY(narrowPage.pagerFrame.contains(narrowPage.pagerPreviousButton));
+    QVERIFY(narrowPage.pagerFrame.contains(narrowPage.pagerNextButton));
+    QVERIFY(!narrowPage.pagerPreviousButton.intersects(narrowPage.pagerNextButton));
+}
+
 void MinimizedGatherLayoutTests::rejectsGeometryThatCannotFitOneItem()
 {
     MinimizedGatherRequest request;
@@ -123,7 +203,7 @@ void MinimizedGatherLayoutTests::rejectsGeometryThatCannotFitOneItem()
     const auto emptyField = planMinimizedGather(request);
     QVERIFY(!emptyField.ok);
 
-    request.workArea = QRectF(0, 0, 100, 100);
+    request.workArea = QRectF(0, 0, 99, 99);
     request.margin = 10;
     request.iconExtent = 100;
     request.iconifiedWindowIds = {QStringLiteral("too-large")};

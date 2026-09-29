@@ -9,6 +9,7 @@
 #include "kwininteractionfilter.h"
 #include "kwintaskidentitymanager.h"
 #include "managedwindowregistry.h"
+#include "minimizedgatherpager.h"
 
 #include <window.h>
 
@@ -82,6 +83,8 @@ QJsonObject KWinHybridSession::diagnostics() const
     const int shadedContainerCount = m_placement
         ? int(m_placement->shadedContainerIds().size()) : 0;
     QJsonArray shadedStripFrames;
+    const QJsonArray minimizedGatherPagers = m_minimizedGatherPager
+        ? m_minimizedGatherPager->diagnosticStates() : QJsonArray{};
     if (m_placement) {
         for (const auto &shadedId : m_placement->shadedContainerIds()) {
             if (const auto frame = m_placement->shadedFrame(shadedId)) {
@@ -145,6 +148,7 @@ QJsonObject KWinHybridSession::diagnostics() const
              publishedGroupStackingCount},
             {QStringLiteral("shadedContainerCount"), shadedContainerCount},
             {QStringLiteral("shadedStripFrames"), shadedStripFrames},
+            {QStringLiteral("minimizedGatherPagers"), minimizedGatherPagers},
             {QStringLiteral("iconifiedWindowCount"), int(iconifiedWindowCount())},
             {QStringLiteral("visibleIconChipCount"), int(visibleIconChipCount())},
             {QStringLiteral("iconifiedWindows"), iconifiedWindowsJson()},

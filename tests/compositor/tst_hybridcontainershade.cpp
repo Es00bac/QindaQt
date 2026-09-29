@@ -342,8 +342,11 @@ void HybridContainerShadeTest::gatheredMaximizedContainerRestoresItsCurrentWorkA
     QVERIFY(fixture.controller.maximize(QStringLiteral("group"), &error));
     QCOMPARE(fixture.layout.outerFrame, fixture.workArea);
     QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
+    const QRect gatheredStrip(300, 200, 180, 32);
     QVERIFY(fixture.controller.placeShadeStripForGather(QStringLiteral("group"),
-                                                         QPoint(300, 200)));
+                                                         gatheredStrip));
+    QCOMPARE(fixture.controller.shadedFrame(QStringLiteral("group")).value(),
+             gatheredStrip);
     QVERIFY(fixture.controller.isMaximized(QStringLiteral("group")));
     QVERIFY(fixture.controller.unshade(QStringLiteral("group"), &error));
     QVERIFY(fixture.controller.isMaximized(QStringLiteral("group")));

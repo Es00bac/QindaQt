@@ -3,8 +3,6 @@
 
 #include "managedwindowregistry.h"
 
-#include "qindaqt/hybrid_chrome/chromeiconchip.h"
-
 #include <compositor.h>
 #include <scene/imageitem.h>
 #include <scene/itemrenderer.h>
@@ -13,6 +11,7 @@
 #include <window.h>
 
 #include <QApplication>
+#include <QJsonObject>
 #include <QPainter>
 #include <QPalette>
 #include <QPolygonF>
@@ -30,9 +29,6 @@ bool fail(QString *error, QString message)
     }
     return false;
 }
-
-constexpr qreal buttonExtent = HybridChrome::ChromeIconChip::ChipExtent;
-constexpr qreal buttonGap = HybridChrome::ChromeIconChip::LabelGap;
 
 } // namespace
 
@@ -72,13 +68,18 @@ bool KWinMinimizedGatherPager::anchorItem(const QString &windowId,
 
 bool KWinMinimizedGatherPager::publish(const QString &outputId,
                                        const QString &anchorWindowId,
-                                       const QRectF &workArea,
+                                       const QRectF &frame,
+                                       const QRectF &previousButton,
+                                       const QRectF &counter,
+                                       const QRectF &nextButton,
                                        const int currentPage,
                                        const int pageCount,
                                        QString *error)
 {
-    if (outputId.isEmpty() || !workArea.isValid() || pageCount < 2
-        || currentPage < 0 || currentPage >= pageCount) {
+    if (outputId.isEmpty() || !frame.isValid() || frame.isEmpty()
+        || !frame.contains(previousButton) || !frame.contains(nextButton)
+        || (counter.isValid() && !counter.isEmpty() && !frame.contains(counter))
+        || pageCount < 2 || currentPage < 0 || currentPage >= pageCount) {
         return fail(error, QStringLiteral("minimized pager request is invalid"));
     }
     auto found = m_entries.find(outputId);
@@ -91,7 +92,7 @@ bool KWinMinimizedGatherPager::publish(const QString &outputId,
     }
     entry.currentPage = currentPage;
     entry.pageCount = pageCount;
-    render(entry, workArea);
+    render(entry, frame, previousButton, counter, nextButton);
     updateItem(entry);
     return true;
 }
@@ -150,30 +151,55 @@ int KWinMinimizedGatherPager::pageCount(const QString &outputId) const noexcept
     return found == m_entries.end() ? 0 : found->second.pageCount;
 }
 
-void KWinMinimizedGatherPager::render(Entry &entry, const QRectF &workArea)
+QJsonArray KWinMinimizedGatherPager::diagnosticStates() const
 {
-    const qreal width = buttonExtent * 3 + buttonGap * 2;
-    const QPointF topLeft(workArea.right() - width - buttonGap,
-                          workArea.top() + buttonGap);
-    entry.frame = QRectF(topLeft, QSizeF(width, buttonExtent));
-    entry.previousButton = QRectF(topLeft, QSizeF(buttonExtent, buttonExtent));
-    entry.nextButton = QRectF(QPointF(topLeft.x() + width - buttonExtent, topLeft.y()),
-                              QSizeF(buttonExtent, buttonExtent));
+    const auto rectJson = [](const QRectF &rect) {
+        return QJsonObject{{QStringLiteral("x"), rect.x()},
+                           {QStringLiteral("y"), rect.y()},
+                           {QStringLiteral("width"), rect.width()},
+                           {QStringLiteral("height"), rect.height()}};
+    };
+    QJsonArray result;
+    for (const auto &[outputId, entry] : m_entries) {
+        result.append(QJsonObject{
+            {QStringLiteral("outputId"), outputId},
+            {QStringLiteral("frame"), rectJson(entry.frame)},
+            {QStringLiteral("previousButton"), rectJson(entry.previousButton)},
+            {QStringLiteral("counter"), rectJson(entry.counter)},
+            {QStringLiteral("nextButton"), rectJson(entry.nextButton)},
+            {QStringLiteral("currentPage"), entry.currentPage},
+            {QStringLiteral("pageCount"), entry.pageCount}});
+    }
+    return result;
+}
 
-    const QSize physicalSize(qCeil(width), qCeil(buttonExtent));
+void KWinMinimizedGatherPager::render(Entry &entry, const QRectF &frame,
+                                      const QRectF &previousButton,
+                                      const QRectF &counter,
+                                      const QRectF &nextButton)
+{
+    entry.frame = frame;
+    entry.previousButton = previousButton;
+    entry.counter = counter;
+    entry.nextButton = nextButton;
+    const QSize physicalSize(qCeil(frame.width()), qCeil(frame.height()));
     entry.image = QImage(physicalSize, QImage::Format_ARGB32_Premultiplied);
     entry.image.fill(Qt::transparent);
     QPainter painter(&entry.image);
     painter.setRenderHint(QPainter::Antialiasing, true);
     const QPalette palette = QApplication::palette();
+    const QRectF localFrame(QPointF(0, 0), frame.size());
     painter.setPen(palette.color(QPalette::Mid));
     painter.setBrush(palette.color(QPalette::Window));
-    painter.drawRoundedRect(QRectF(0, 0, width, buttonExtent), buttonExtent / 2,
-                            buttonExtent / 2);
+    painter.drawRoundedRect(localFrame, std::min(frame.width(), frame.height()) / 2,
+                            std::min(frame.width(), frame.height()) / 2);
     painter.setPen(palette.color(QPalette::Text));
-    const auto drawArrow = [&painter](const QRectF &button, const bool right) {
+    const auto drawArrow = [&painter, &frame](const QRectF &globalButton,
+                                              const bool right) {
+        const QRectF button(globalButton.topLeft() - frame.topLeft(),
+                            globalButton.size());
         const QPointF center = button.center();
-        const qreal side = buttonExtent / 6;
+        const qreal side = std::min(button.width(), button.height()) / 6;
         QPolygonF triangle;
         triangle << QPointF(center.x() + (right ? side : -side), center.y())
                  << QPointF(center.x() + (right ? -side : side), center.y() - side)
@@ -181,14 +207,16 @@ void KWinMinimizedGatherPager::render(Entry &entry, const QRectF &workArea)
         painter.setBrush(painter.pen().color());
         painter.drawPolygon(triangle);
     };
-    drawArrow(QRectF(0, 0, buttonExtent, buttonExtent), false);
-    drawArrow(QRectF(width - buttonExtent, 0, buttonExtent, buttonExtent), true);
-    painter.setPen(palette.color(QPalette::Text));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawText(QRectF(buttonExtent, 0, width - 2 * buttonExtent, buttonExtent),
-                     Qt::AlignCenter,
-                     QStringLiteral("%1 / %2").arg(entry.currentPage + 1)
-                         .arg(entry.pageCount));
+    drawArrow(previousButton, false);
+    drawArrow(nextButton, true);
+    if (!counter.isEmpty()) {
+        const QRectF localCounter(counter.topLeft() - frame.topLeft(), counter.size());
+        painter.setPen(palette.color(QPalette::Text));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawText(localCounter, Qt::AlignCenter,
+                         QStringLiteral("%1 / %2").arg(entry.currentPage + 1)
+                             .arg(entry.pageCount));
+    }
 }
 
 void KWinMinimizedGatherPager::updateItem(Entry &entry) noexcept
