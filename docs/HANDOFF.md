@@ -2,7 +2,7 @@
 
 ## September 28: RESUME HERE (Claude ⇄ Codex program handoff, kept current)
 
-**Last updated:** 2026-09-28 22:02 by the manager. **Hub `main`:** `see git log -1 hub/main`.
+**Last updated:** 2026-09-29T19:02:46+00:00 by Codex recovery manager. **Hub `main`:** `see git log -1 hub/main`.
 
 Whoever resumes (Claude or Codex) reads, in order:
 1. this section;
@@ -34,12 +34,24 @@ A lane is done when its handoff is posted (exact commits, files, tests with coun
 
 | Lane | Spec | Branch / worktree | State |
 |---|---|---|---|
-| F: `qindaqt-kwin` fork, M1 (F1–F8 plus the native root-window kill helper) | `laneF-fork-m1.md` | fork hub `~/git/qindaqt-kwin.git`, checkout `~/work_SPaC3/qindaqt-kwin`; container-wm `feature/qindaqt-kwin`; overlay `gui-wm/qindaqt-kwin` branch | running (Claude Opus) |
-| S: `qindaqt-screenshot` with OBS record mode (PF16, ADR-0289) | `laneS-screenshot.md` | `feature/qindaqt-screenshot` / `screenshot` | running (Claude Opus) |
-| PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | running (Claude Sonnet) |
-| P: four caveats (container names on restart, Corner Bar double-click, portal twin accent, touch lift) | `laneP-polish.md` | `fix/round-caveats` / `polish` | running (Claude Sonnet) |
+| F: `qindaqt-kwin` fork, M1 (F1–F8 plus the native root-window kill helper) | `laneF-fork-m1.md` | fork hub `~/git/qindaqt-kwin.git`, checkout `~/work_SPaC3/qindaqt-kwin`; container-wm `feature/qindaqt-kwin`; overlay `gui-wm/qindaqt-kwin` branch | recovering (Codex fork worker) |
+| S: `qindaqt-screenshot` with OBS record mode (PF16, ADR-0289) | `laneS-screenshot.md` | `feature/qindaqt-screenshot` / `screenshot` | integrated at `607c1f60`; manager gate pending |
+| PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | recovering (Codex Luna; exact candidate e67761a3) |
+| P: four caveats (container names on restart, Corner Bar double-click, portal twin accent, touch lift) | `laneP-polish.md` | `fix/round-caveats` / `polish` | recovering (Codex Luna; exact candidate 7a2af95b) |
 | K: key store PK1–PK3 (plan §3.8) | `laneK-keyring.md` | `feature/qindaqt-keyring` / `keyring` | queued; starts when an Opus slot frees |
 | D: mixer bus delay (ADR-0288 addendum) | `laneD-mixer-delay.md` | merged `32ed1f42` | done |
+
+### September 29 recovery resource boundary
+
+The owner requests both qinda and qinda-top for builds, with browsing and streaming usable.
+Source edits remain in isolated qinda worktrees and reach the hub. The laptop uses a separate
+build worktree of exact pushed commits. Builds run at lower CPU/I/O priority; start with
+qinda fork `-j8 -l20`, focused workers `-j4 -l16`, and laptop `-j3 -l8`, and reduce when
+interactive load or available memory requires it. This supersedes the qinda-only build rule.
+
+The later interrupted fork work is preserved at `362d69b9` in its M1 worktree.
+Screenshot is already integrated; polkit and polish candidates are being checked against
+their saved acceptance specifications. Assignments and candidates claim no completed milestone.
 
 ### Next, in order (plan §4)
 
