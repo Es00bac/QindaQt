@@ -568,3 +568,19 @@ numbers when a slice is scheduled:
    assumes the full replacement, done last.
 9. **The fork's name.** `qindaqt-kwin` is a working name for the package, program, library and
    folders. Do you want a brand of its own before F2 bakes the name in?
+
+## Owner decisions (2026-09-28)
+
+These answer the open questions and are binding for the slices above.
+
+1. Plasma's login entries stay until Plasma is actually gone (no early hiding).
+2. No Plasma fallback on either host. The goal is to replace KDE and Plasma completely. The
+   compositor is a co-installable KWin fork that leaves stock KWin and Plasma installable beside it.
+3. The Sloom menu add-ons (`sloom-globalmenu`, `sloom-panelmenu`) leave the QindaQt package set.
+4. KWin's KAuth/polkit "kill a root-owned hung window" helper is **replaced with a native QindaQt
+   implementation**, not dropped (add a slice to the fork milestone).
+5. `kwayland` and `layer-shell-qt` stay shared.
+6. KWin's tiles editor (Meta+T) is not used; it goes with the Plasma-dependent effects.
+7. The login screen runs on the fork (Wayland) if it can (G1 is in scope, conditional on it working).
+8. Global shortcuts are **replaced completely** (M6 in full; KDE's shortcut library is not kept).
+9. The fork's name is `qindaqt-kwin` (package `gui-wm/qindaqt-kwin`).
