@@ -4,7 +4,7 @@
 - **Date:** 2026-09-29
 - **Owners:** Native power policy and Settings service
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0297](0297-preserve-power-preference-precision.md) for duration and admitted-action restrictions
 - **Builds on:** [ADR-0023](0023-split-power-authority-across-service-and-shell.md),
   [ADR-0105](0105-delegate-idle-display-off-to-powerdevil.md),
   [ADR-0132](0132-finish-session-locking.md)
