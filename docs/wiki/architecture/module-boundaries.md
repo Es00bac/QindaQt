@@ -9,6 +9,7 @@ tests, and the wiki page describing its contract.
 | Area | Responsibility | Allowed inward dependencies |
 | --- | --- | --- |
 | `compositor` | Immutable qindaqt-kwin fork pin (fork commit, version and upstream KWin base), its verifier, and checked-in compositor IPC descriptors (ADR-0291) | Repository tooling and fork source metadata; never shell implementation or a patch series |
+| `src/application_window_management` | Optional versioned application-owned surface placement, Qt client and installed native protocol | Public Qt GUI client and raw Wayland protocol; pure planner crosses through Hybrid topology commands, authenticated compositor transport owns admission and atomic scene execution (ADR-0298) |
 | `src/compositor_names` | The qindaqt-kwin fork's external names: program, config and state files in QindaQt's folders, D-Bus service, paths and interfaces (with the PF21 carve-outs), plugin namespaces, privileged-client keys | Header-only Qt Core constants; every container-wm module names the compositor through it and never spells a fork name itself (ADR-0291) |
 | `src/lock_authentication` | Native lock authentication/account decision, bounded libpam conversation and epoch/request approval coordinator (ADR-0299) | C++20 and libpam through its owned native adapter; no QML, compositor internals, session policy or client-supplied success |
 | `src/lock_platform` | Linux core/dump/ptrace and root-managed Qt/worker code paths (ADR-0299) | Qt Core and Linux file/process APIs; no credential, UI or session policy |
