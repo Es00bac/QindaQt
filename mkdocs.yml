@@ -37,6 +37,7 @@ nav:
       - Repository catalog: handbook/catalog/repository.md
       - Documentation catalog: handbook/catalog/reading.md
   - Architecture:
+      - Native keyring storage: architecture/keyring-storage.md
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
       - QST-1 semantic design tokens: architecture/design-tokens.md
@@ -450,3 +451,4 @@ nav:
       - "ADR-0288: Per-device latency offsets through Audio1, and a compact Audio page": adr/0288-per-device-latency-offsets-and-a-compact-audio-page.md
       - "ADR-0289: A native screenshot and record tool replaces Spectacle": adr/0289-native-screenshot-and-record-tool.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
+      - "ADR-0292: Own a bounded native keyring storage core": adr/0292-native-keyring-storage.md

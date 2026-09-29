@@ -8,6 +8,7 @@ tests, and the wiki page describing its contract.
 
 | Area | Responsibility | Allowed inward dependencies |
 | --- | --- | --- |
+| `src/services/keyring` | [Native keyring storage](keyring-storage.md): bounded collection values, secure memory, authenticated format and atomic persistence | C++20, OpenSSL EVP and Linux file/memory APIs; no Qt, D-Bus, PAM, UI, session or existing wallets |
 | `compositor` | Immutable upstream KWin pin, downstream patch inventory and verifier, and checked-in compositor IPC descriptors | Repository tooling and upstream source metadata; never shell implementation |
 | `src/workspaces_apps` | XDG application lookup and asynchronous desktop-entry launch | Qt Core, KF6 Service and KIOGui; no persistence, matching, compositor or UI policy |
 | `src/workspaces_ui` | Compact native Qt Widgets saved-workspace dialogs backed by public Workspaces values and a borrowed synchronous platform port | Public Workspaces/Core values plus Qt Widgets; never KWin objects, application-launch implementation, persistence policy, or matching/adoption logic |

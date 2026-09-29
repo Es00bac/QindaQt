@@ -206,3 +206,5 @@ if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/desktop_menu)
     add_subdirectory(shell)
 endif()
+
+add_subdirectory(services/keyring)
