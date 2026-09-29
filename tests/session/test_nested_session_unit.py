@@ -110,7 +110,7 @@ class VirtualSpecTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             write_virtual_output_config(Path(directory), spec)
             document = json.loads(
-                (Path(directory) / "kwinoutputconfig.json").read_text(encoding="utf-8")
+                (Path(directory) / "qindaqt" / "kwinoutputconfig.json").read_text(encoding="utf-8")
             )
 
         output_data = document[0]["data"][0]

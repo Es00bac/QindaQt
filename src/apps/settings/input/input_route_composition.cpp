@@ -2,6 +2,8 @@
 
 #include "input_route_composition.h"
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <qindaqt/apps/settings_input/keyboard_config_port.h>
 #include <qindaqt/apps/settings_input/keyboard_layout_port.h>
 #include <qindaqt/apps/settings_input/keyboard_layouts_model.h>
@@ -51,11 +53,11 @@ public:
           configFilePath(QDir(QStandardPaths::writableLocation(
                                     QStandardPaths::StandardLocation::
                                         ConfigLocation))
-                             .absoluteFilePath(QStringLiteral("kcminputrc"))),
+                             .absoluteFilePath(QString(CompositorNames::inputConfigFile))),
           keyboardConfigPort(configFilePath, bus),
           kxkbrcPath(QDir(QStandardPaths::writableLocation(
                               QStandardPaths::StandardLocation::ConfigLocation))
-                         .absoluteFilePath(QStringLiteral("kxkbrc"))),
+                         .absoluteFilePath(QString(CompositorNames::keyboardConfigFile))),
           layoutPort(kxkbrcPath, bus),
           shortcutPort(bus,
                        QStandardPaths::writableLocation(

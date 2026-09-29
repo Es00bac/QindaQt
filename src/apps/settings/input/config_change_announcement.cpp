@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/apps/settings_input/config_change_announcement.h>
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <QDBusMessage>
+#include <QDir>
 #include <QDBusMetaType>
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -14,13 +17,21 @@ bool announceConfigChange(const QDBusConnection &bus,
     if (!bus.isConnected() || changedKeys.isEmpty()) {
         return false;
     }
-    const QString fileName = QFileInfo(configFilePath).fileName();
+    const QFileInfo info(configFilePath);
+    QString fileName = info.fileName();
+    // AGENT-CONTRACT (ADR-0289): qindaqt-kwin opens its files by the name
+    // "qindaqt/<file>", and KConfigWatcher listens on "/" + that name, e.g.
+    // /qindaqt/kwininputrc. A file in QindaQt's config folder is announced
+    // under that two-element path, any other file under its bare name.
+    if (info.dir().dirName() == CompositorNames::configDirectory) {
+        fileName = QString(CompositorNames::configDirectory) + QLatin1Char('/') + fileName;
+    }
     // AGENT-GUARD: An object path element allows only [A-Za-z0-9_]. The
     // desktop's rc names qualify; relocated test names with other characters
     // are skipped instead of producing an invalid message, which also keeps
     // a stray test write from reaching any real desktop watcher.
     static const QRegularExpression pathElement(
-        QStringLiteral("^[A-Za-z0-9_]+$"));
+        QStringLiteral("^[A-Za-z0-9_]+(/[A-Za-z0-9_]+)?$"));
     if (!pathElement.match(fileName).hasMatch()) {
         return false;
     }

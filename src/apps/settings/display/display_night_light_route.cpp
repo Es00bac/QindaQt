@@ -2,6 +2,8 @@
 
 #include <qindaqt/apps/settings_display/display_night_light_route.h>
 
+#include "qindaqt/compositor_names/compositor_names.h"
+
 #include <qindaqt/apps/settings_display/display_night_light_model.h>
 #include <qindaqt/services/night_light/night_light_config_port.h>
 #include <qindaqt/services/night_light/night_light_state_port.h>
@@ -20,8 +22,8 @@ Q_LOGGING_CATEGORY(lcDisplayNightLightRoute,
 
 QString configFilePath(const QString &fileName)
 {
-    // KSharedConfig::openConfig resolves bare rc names against the generic
-    // config location, so kwinrc and knighttimerc both live here.
+    // KSharedConfig::openConfig resolves rc names against the generic config
+    // location: qindaqt-kwin's qindaqt/kwinrc (ADR-0289) and knighttimerc.
     return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
         + QLatin1Char('/') + fileName;
 }
@@ -51,7 +53,7 @@ public:
     }
 
     QindaQt::Services::NightLight::QtConfigNightLightPort configPort{
-        configFilePath(QStringLiteral("kwinrc")),
+        configFilePath(QString(QindaQt::CompositorNames::configFile)),
         configFilePath(QStringLiteral("knighttimerc")),
         QDBusConnection::sessionBus()};
     QindaQt::Services::NightLight::QtNightLightStatePort statePort{
