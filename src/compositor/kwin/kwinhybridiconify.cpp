@@ -19,11 +19,14 @@
 #include <core/output.h>
 #include <window.h>
 #include <workspace.h>
+#include <wayland_server.h>
 
 #include <QApplication>
 #include <QIcon>
 #include <QPixmap>
+#include <QTimer>
 
+#include <algorithm>
 #include <optional>
 #include <utility>
 
@@ -114,6 +117,49 @@ void KWinHybridSession::ensureIconify()
     m_iconChipRouter = std::make_unique<HybridIconChipRouter>(
         [this](const QPointF &position) { return iconChipHitAt(position); },
         QApplication::startDragDistance());
+
+    // KWin recreates scene resources before this notification, but its earlier
+    // chrome synchronization can return before iconified scene children are
+    // republished. Queue one focused refresh for the surviving iconify records.
+    if (auto *const compositor = KWin::Compositor::self()) {
+        connect(compositor, &KWin::Compositor::compositingToggled, this,
+                [this](bool active) {
+            if (!active || m_iconifySceneRefreshPending || !m_iconify
+                || m_iconify->count() == 0) {
+                return;
+            }
+            m_iconifySceneRefreshPending = true;
+            QTimer::singleShot(0, this, [this] {
+                m_iconifySceneRefreshPending = false;
+                if (m_shutdown || !ready() || !m_iconify || !m_iconChips
+                    || (KWin::waylandServer() && KWin::waylandServer()->isScreenLocked())
+                    || m_iconify->count() == 0) {
+                    return;
+                }
+                for (const auto &windowId : m_iconify->iconifiedWindowIds()) {
+                    if (!m_iconify->isIconified(windowId)) {
+                        continue;
+                    }
+                    auto *const window = m_registry.window(windowId);
+                    if (!window || window->isDeleted()) {
+                        continue;
+                    }
+                    QString error;
+                    if (!m_iconify->reapply(windowId, &error)) {
+                        qWarning("QindaQt could not restore iconified scene treatment for '%s': %s",
+                                 qPrintable(windowId), qPrintable(error));
+                        continue;
+                    }
+                    error.clear();
+                    if (!publishIconChip(windowId, &error)) {
+                        qWarning("QindaQt could not republish iconified chip '%s': %s",
+                                 qPrintable(windowId), qPrintable(error));
+                    }
+                }
+                synchronizeMinimizedGather();
+            });
+        });
+    }
 }
 
 bool KWinHybridSession::isWindowIconified(const QString &windowId) const noexcept

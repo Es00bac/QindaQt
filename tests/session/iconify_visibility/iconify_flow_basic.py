@@ -158,7 +158,8 @@ def _scene_restart_stage(session: ShadeSession, window_id: str):
                           chip_probe_area(chip_after) if chip_after else None, BACKDROP_COLOUR)
     session.step("after-scene-restart", reply=reply, chip=chip_after, ink=ink, ghost=ghost,
                  hidden=inventory[WINDOW_TITLE]["hidden"],
-                 visibleIconChipCount=hybrid.get("visibleIconChipCount"))
+                 minimized=inventory[WINDOW_TITLE]["minimized"],
+                 visibleIconChipCount=hybrid.get("visibleIconChipCount"), hybrid=hybrid)
     session.verdict("sceneRestartKeepsIconified",
                     reply.get("status") == "scheduled" and chip_after is not None
                     and bool(inventory[WINDOW_TITLE]["hidden"]))
@@ -208,8 +209,12 @@ def _iconify(session: ShadeSession, capture_name: str, frame_before, first: bool
                  visibleIconChipCount=hybrid.get("visibleIconChipCount"))
     if first:
         session.verdict("windowHiddenAfterWheel", bool(inventory[WINDOW_TITLE]["hidden"]))
-        session.verdict("chipAnchoredAtTitleLeadingEdge",
-                        abs(chip[0] - frame_before[0]) <= 1.5 and abs(chip[1] - frame_before[1]) <= 1.5)
+        session.verdict("chipGatheredInsideOutput",
+                        chip[0] >= 0 and chip[1] >= 0
+                        and chip[0] + chip[2] <= session.config.logical_size[0]
+                        and chip[1] + chip[3] <= session.config.logical_size[1]
+                        and (abs(chip[0] - frame_before[0]) > 1.5
+                             or abs(chip[1] - frame_before[1]) > 1.5))
         session.verdict("chipVisible", hybrid.get("visibleIconChipCount") == 1)
         session.verdict("chipInkVisible", ink["fraction"] > INK_FRACTION)
         session.verdict("ghostFreeAfterIconify", ghost["mismatched"] == 0)
@@ -227,10 +232,12 @@ def frame_before_geometry(frame_before):
 
 
 def _keep_chip_clear_of(session: ShadeSession, window_id: str, chip, point):
-    """Drag the chip away when it sits where the backdrop is about to be clicked."""
-    centre = chip_center(chip)
-    if abs(centre[0] - point[0]) > 80 or abs(centre[1] - point[1]) > 80:
+    """Drag only when the gathered chip would intercept the backdrop press."""
+    covered = (chip[0] <= point[0] <= chip[0] + chip[2]
+               and chip[1] <= point[1] <= chip[1] + chip[3])
+    if not covered:
         return chip
+    centre = chip_center(chip)
     session.pointer.drag(centre, (centre[0] + 260.0, centre[1] + 200.0))
     time.sleep(0.4)
     moved = chip_of(session, window_id)

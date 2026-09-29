@@ -406,6 +406,7 @@ private:
     QHash<QString, QPointF> m_iconChipDragBaselines;
     QSet<QString> m_minimizedContainers;
     QString m_lastGroupStackingFailure;
+    bool m_iconifySceneRefreshPending = false;
     bool m_synchronizingChrome = false;
     bool m_applyingWindowAction = false;
     bool m_shutdown = false;

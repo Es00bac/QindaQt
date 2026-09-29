@@ -521,8 +521,14 @@ container chrome ([ADR-0005](../adr/0005-scene-resident-hybrid-chrome.md)):
 it creates no `QWindow`, input surface, or managed client, so it is reachable
 only through the compositor's own pointer routing. A minimized iconified
 window shows no chip until it is unminimized. Chip scene items are released
-before a compositor scene teardown and recreated, with the hide treatment
-re-applied to the new `WindowItem`, after `compositingToggled(true)`.
+before a compositor scene teardown. Once compositing is enabled again, the
+session queues one iconify-specific refresh rather than depending on the larger
+chrome transaction reaching its final icon-chip phase. If KWin did not create a
+replacement `WindowItem` for a still-hidden iconified window, the platform uses
+`Window::setupCompositing()` only for that missing item, reapplies its content,
+shadow, opacity, and hidden-state treatment, then reparents the chip and
+recomputes its gathered placement. Shutdown and session-lock fences suppress
+the queued refresh.
 
 Pointer input over a chip goes through `HybridIconChipRouter`, a sibling of
 the chrome pointer router with the same modifier semantics. Hit testing walks

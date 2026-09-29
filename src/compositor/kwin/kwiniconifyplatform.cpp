@@ -3,6 +3,7 @@
 
 #include "managedwindowregistry.h"
 
+#include <compositor.h>
 #include <scene/shadowitem.h>
 #include <scene/windowitem.h>
 #include <window.h>
@@ -50,7 +51,17 @@ bool KWinIconifyPlatform::hideWindow(const QString &windowId, QString *error)
     if (!window || window->isDeleted()) {
         return fail(error, QStringLiteral("window '%1' is unavailable").arg(windowId));
     }
-    auto *const item = window->windowItem();
+    auto *item = window->windowItem();
+    if (!item && m_applied.contains(windowId)) {
+        // Hidden iconified windows do not get a WindowItem automatically on a
+        // scene rebuild. KWin public setup recreates it without showing the
+        // client, so iconification state remains intact during scene recovery.
+        auto *const compositor = KWin::Compositor::self();
+        if (compositor && compositor->scene()) {
+            static_cast<void>(window->setupCompositing());
+            item = window->windowItem();
+        }
+    }
     if (!item) {
         return fail(error, QStringLiteral("window '%1' has no scene item").arg(windowId));
     }
