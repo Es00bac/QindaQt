@@ -182,5 +182,17 @@ void WallpaperControllerTests::freshProfileDefaultsAndConfirmedChangesReachBackg
     QVERIFY(daemon.waitForFinished());
 }
 
-QTEST_MAIN(WallpaperControllerTests)
+// ADR-0286 selection rows live in tst_wallpaperselection.cpp; one executable
+// keeps the shared controller sources compiled once.
+int runWallpaperSelectionTests(int argc, char **argv);
+
+int main(int argc, char **argv)
+{
+    QGuiApplication application(argc, argv);
+    WallpaperControllerTests integration;
+    int status = QTest::qExec(&integration, argc, argv);
+    status |= runWallpaperSelectionTests(argc, argv);
+    return status;
+}
+
 #include "tst_wallpapercontroller.moc"

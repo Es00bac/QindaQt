@@ -15,8 +15,12 @@ namespace {
 
 QVariantMap validSnapshotValues()
 {
+    // One value per ShellPreferenceValues::scopedKeys() entry, as Settings1
+    // returns them (schema defaults included).
     return {{QStringLiteral("panels.layoutProfile"), QStringLiteral("xfce-inspired")},
             {QStringLiteral("appearance.theme"), QStringLiteral("qinda-light")},
+            // Empty = Follow theme (ADR-0280).
+            {QStringLiteral("appearance.iconTheme"), QString()},
             {QStringLiteral("appearance.colorScheme"), QStringLiteral("light")},
             {QStringLiteral("appearance.wallpaper"), QStringLiteral("qindaqt:jade-fold")},
             {QStringLiteral("appearance.wallpaperMode"), QStringLiteral("scaled")},
@@ -55,6 +59,7 @@ void ShellPreferenceValuesTests::decodesCompleteSnapshot()
     QCOMPARE(values->layoutProfileId, QStringLiteral("xfce-inspired"));
     QCOMPARE(values->themeId, QStringLiteral("qinda-light"));
     QCOMPARE(values->colorScheme, QStringLiteral("light"));
+    QCOMPARE(values->iconTheme, QString());
     QCOMPARE(values->fontFamily, QStringLiteral("Noto Serif"));
     QCOMPARE(values->accessibility.basePointSize, 11.5);
     QCOMPARE(values->accessibility.textScale, 1.25);
@@ -103,6 +108,23 @@ void ShellPreferenceValuesTests::rejectsMistypedValue()
     QVariantMap snapshot = validSnapshotValues();
     snapshot.insert(QStringLiteral("accessibility.highContrast"), QStringLiteral("yes"));
     QVERIFY(!ShellPreferenceValues::fromVariantMap(snapshot).has_value());
+
+    // ADR-0280: an installed icon family decodes; a mistyped or unsafe id
+    // fails the whole snapshot; an absent key (an older Settings1 peer)
+    // still means Follow theme.
+    QVariantMap icons = validSnapshotValues();
+    icons.insert(QStringLiteral("appearance.iconTheme"), QStringLiteral("QindaFacet"));
+    const auto facet = ShellPreferenceValues::fromVariantMap(icons);
+    QVERIFY(facet.has_value());
+    QCOMPARE(facet->iconTheme, QStringLiteral("QindaFacet"));
+    icons.insert(QStringLiteral("appearance.iconTheme"), 7);
+    QVERIFY(!ShellPreferenceValues::fromVariantMap(icons).has_value());
+    icons.insert(QStringLiteral("appearance.iconTheme"), QStringLiteral("../outside"));
+    QVERIFY(!ShellPreferenceValues::fromVariantMap(icons).has_value());
+    icons.remove(QStringLiteral("appearance.iconTheme"));
+    const auto older = ShellPreferenceValues::fromVariantMap(icons);
+    QVERIFY(older.has_value());
+    QCOMPARE(older->iconTheme, QString());
 }
 
 void ShellPreferenceValuesTests::rejectsBlankStrings()
@@ -114,11 +136,17 @@ void ShellPreferenceValuesTests::rejectsBlankStrings()
 
 void ShellPreferenceValuesTests::scopedKeysCoverEveryDecodedKey()
 {
+    // Twelve keys since ADR-0280 added appearance.iconTheme. The ADR-0286
+    // wallpaper choices are deliberately not here: the wallpaper selection
+    // reads them through its own purpose-scoped client.
     const QStringList keys = ShellPreferenceValues::scopedKeys();
-    QCOMPARE(keys.size(), 11);
-    for (const QString &key : validSnapshotValues().keys()) {
+    QCOMPARE(keys.size(), 12);
+    const QVariantMap values = validSnapshotValues();
+    QCOMPARE(values.size(), keys.size());
+    for (const QString &key : values.keys()) {
         QVERIFY2(keys.contains(key), qPrintable(key));
     }
+    QVERIFY(!keys.contains(QStringLiteral("appearance.wallpaperAssignments")));
 }
 
 void ShellPreferenceValuesTests::startupSelectionPrecedence()

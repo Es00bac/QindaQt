@@ -93,8 +93,14 @@ QVariantMap preferenceValues(const QString &profile, const QString &theme,
                              double textScale, bool highContrast,
                              bool reducedMotion, bool reducedTransparency)
 {
+    // AGENT-GUARD: one value per ShellPreferenceValues::scopedKeys() entry.
+    // SettingsClient refuses a snapshot that does not cover its exact scope
+    // before the bridge ever decodes it, so a missing key here (iconTheme,
+    // ADR-0280) silently turns every row below into "nothing applied".
     return {{QStringLiteral("panels.layoutProfile"), profile},
             {QStringLiteral("appearance.theme"), theme},
+            // Empty = Follow theme (ADR-0280).
+            {QStringLiteral("appearance.iconTheme"), QString()},
             {QStringLiteral("appearance.colorScheme"),
              theme.contains(QStringLiteral("light")) ? QStringLiteral("light")
                                                        : QStringLiteral("dark")},

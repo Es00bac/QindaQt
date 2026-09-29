@@ -21,6 +21,8 @@ target_sources(
         window_decoration_controller.cpp
         wallpaper_catalog.cpp
         user_wallpaper_catalog.cpp
+        appearance_settings_model_wallpaper.cpp
+        wallpaper_target_catalog.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -33,6 +35,7 @@ target_sources(
             include/qindaqt/apps/settings_appearance/window_decoration_controller.h
             include/qindaqt/apps/settings_appearance/wallpaper_catalog.h
             include/qindaqt/apps/settings_appearance/user_wallpaper_catalog.h
+            include/qindaqt/apps/settings_appearance/wallpaper_target_catalog.h
 )
 target_link_libraries(
     qindaqt_settings_appearance
@@ -41,8 +44,10 @@ target_link_libraries(
     # qindaqt_native_palette projects the same tokens into the QPalette that
     # ordinary Qt applications receive, so the Themes section can reflect the
     # combined QST + Qt6 platform-theme truth (ADR-0115).
+    # ADR-0286: the shared wallpaper-choice codec, and the public read-only
+    # Display1 client whose outputs name the displays a wallpaper can target.
     PUBLIC QindaQt::SettingsClient QindaQt::DesignTokens QindaQt::TokensQml QindaQt::AppAppearance
-           QindaQt::DecorationPainter
+           QindaQt::DecorationPainter QindaQt::WallpaperAssignments QindaQt::DisplayClient
            qindaqt_themes qindaqt_native_palette Qt6::Core Qt6::DBus Qt6::Gui Qt6::Qml
 )
 target_include_directories(
@@ -87,6 +92,9 @@ qt_add_qml_module(
         qml/AppearanceWindowsSection.qml
         qml/SegmentedChoiceRow.qml
         qml/TitleBarOptions.qml
+        qml/WallpaperAssignmentList.qml
+        qml/WallpaperGallery.qml
+        qml/WallpaperScopePicker.qml
 )
 target_link_libraries(
     qindaqt_settings_appearance_qml
@@ -146,6 +154,9 @@ install(
         qml/AppearanceWallpaperSection.qml
         qml/AppearanceWindowsSection.qml
         qml/SegmentedChoiceRow.qml
+        qml/WallpaperAssignmentList.qml
+        qml/WallpaperGallery.qml
+        qml/WallpaperScopePicker.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Appearance"
     COMPONENT SettingsAppearanceRuntime
 )

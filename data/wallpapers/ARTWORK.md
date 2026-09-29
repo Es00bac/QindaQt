@@ -44,3 +44,29 @@ No text, watermarks, or third-party branded artwork.
 ### ink-tide
 
 Use case: stylized-concept. Asset type: original QindaQt Linux desktop wallpaper, landscape16:9, 3840x2160 if supported. Title metadata only: Ink Tide. A quiet sculptural abstract nocturnal landscape of broad folded smoked mineral-glass planes and smooth curved matte slate ribbons, deep ink teal#172528 background, low sea-glass jade#70BFA5 reflections, a thin restrained dusty violet#A69AC5 rim of light, very subtle warm apricot reflected edge. Premium tactile refined desktop artwork, soft geometry and fine mineral grain, broad shadows with carefully separated layers, not black crushed detail. Curves sweep across the bottom third toward a raised fold on right. Keep upper left and center dark and restful with large negative space for work. Full bleed, no text, letters, logos, watermark, UI, mockup, stars, neon or glossy plastic. Single finished wallpaper with modern calm QindaQt visual identity.
+
+## Owner collection
+
+Wallpapers the project owner generated and chose for QindaQt, added with
+`tools/import-wallpapers` (ADR-0286). Each section names the image's title and
+credit and records the SHA-256 of the exact source file that was imported.
+
+### horizon-arc
+
+Title: Horizon Arc. Credit: Jarrod C, AI-assisted. The cyborg penguin mascot with his coffee and rubber-duck drone on a dark polished floor under a thin jade horizon arc; the left half stays dark and quiet. Bundled as a 1672 × 941 PNG; source SHA-256 8bbdd935bd35298de8e797d45c0183f6372e30038bf927dd86037c22efd39523.
+
+### light-waves
+
+Title: Light Waves. Credit: Jarrod C, AI-assisted. The mascot pair on a glassy platform among soft blue light waves under a bright sky. Bundled as a 1672 × 941 PNG; source SHA-256 8377b05270970d13bacf916fe352fb2a2a68d8fd82da020d5703a4f7c5c071b0.
+
+### valley-sunrise
+
+Title: Valley Sunrise. Credit: Jarrod C, AI-assisted. The mascot pair on a flowering hill of retired hardware above a green river valley, with a futuristic city under the sunrise. Bundled as a 1672 × 941 PNG; source SHA-256 5af8d26ca95cd258fc3c353039f317adedb40f47b9710a6bb179874d6deb9e3e.
+
+### neon-harbor
+
+Title: Neon Harbor. Credit: Jarrod C, AI-assisted. The mascot pair on a rain-slick rooftop over a neon night harbor and bridge under a crescent moon. Bundled as a 1672 × 941 PNG; source SHA-256 7caed124c24f5a0023e2df0199047c748284374e3d725fbe9407e13b609a22e8.
+
+### aurora-plain
+
+Title: Aurora Plain. Credit: Jarrod C, AI-assisted. The mascot pair on a glassy plain under a violet and jade aurora, with floating crystal monoliths. Bundled as a 1672 × 941 PNG; source SHA-256 e352f4ab93c3c054b743e3a6ca2e973cc6123f5b21493c73f8cb1d35d2350113.

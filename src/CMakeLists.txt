@@ -62,6 +62,9 @@ add_subdirectory(services/streaming_preferences)
 # ADR-0265: the dock value and pin helper; the launcher runtime (deferred to
 # the end of this scope) and the File Manager link it.
 add_subdirectory(services/dock_items)
+# ADR-0286: per-display and per-desktop wallpaper choices; the shell and the
+# Appearance route both link this pure value.
+add_subdirectory(services/wallpaper_assignments)
 add_subdirectory(session/window_management)
 add_subdirectory(services/portal)
 add_subdirectory(services/display_protocol)
