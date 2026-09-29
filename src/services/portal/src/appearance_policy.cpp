@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "qindaqt/services/portal/appearance_policy.h"
 
+#include "qindaqt/app_appearance/appearance_resolver.h"
 #include "qindaqt/design_tokens/accessibility_inputs.h"
 #include "qindaqt/design_tokens/design_tokens.h"
 #include "qindaqt/design_tokens/token_deriver.h"
@@ -10,6 +11,7 @@
 #include <QMetaType>
 #include <QSet>
 
+#include <algorithm>
 #include <cmath>
 #include <utility>
 
@@ -121,23 +123,63 @@ AppearanceProjectionResult AppearancePolicyProjector::project(
                        QStringLiteral("appearance Settings1 snapshot has a wrong type or token"));
     }
 
-    const Themes::ThemeSpec *selected = nullptr;
-    for (const auto &theme : m_themes) {
-        if (theme.id == themeValue.toString()) {
-            selected = &theme;
-            break;
-        }
+    // ADR-0284: resolve the active theme exactly as the Settings preview,
+    // shell, first-party applications, and the compositor do (the same
+    // resolveAppearanceTheme call), so a dark twin's accent and contrast
+    // reach portal clients instead of the chosen base theme's. Before this,
+    // the projector looked `appearance.theme` up by exact id, so a portal
+    // client always saw the unresolved base theme's accent even while every
+    // QindaQt surface was painting its dark twin.
+    //
+    // AGENT-NOTE: the portal has no platform-level scheme signal beyond
+    // QindaQt's own Settings1 authority (there is no further "system" below
+    // this desktop), so Qt::ColorScheme::Unknown is passed as the platform
+    // scheme. An explicit "light"/"dark" preference resolves its twin fully
+    // regardless (resolveAppearanceTheme does not consult platformScheme for
+    // a forced scheme); "system" then keeps the plain selection, exactly
+    // like an unpaired theme, rather than guessing a platform state nothing
+    // here actually observes.
+    const auto preferenceScheme = AppAppearance::colorSchemeFromToken(
+        settingsValues.value(QString::fromLatin1(kColorSchemeSetting)).toString());
+    if (!preferenceScheme.has_value()) {
+        return failure(AppearanceProjectionError::MalformedSnapshot,
+                       QStringLiteral("appearance Settings1 snapshot has a wrong type or token"));
     }
-    if (selected == nullptr) {
+    // AGENT-GUARD: resolveAppearanceTheme falls back to a builtin or any
+    // compatible theme when the requested id has no usable twin, so it
+    // cannot itself distinguish "installed but incompatible" from "not
+    // installed" the way the portal's malformed-snapshot contract requires.
+    // Check installation explicitly first: an unknown theme id must stay a
+    // hard UnknownTheme failure (withdrawing portal truth), never a silent
+    // substitution.
+    const bool themeIsInstalled = std::any_of(
+        m_themes.cbegin(), m_themes.cend(),
+        [&themeValue](const Themes::ThemeSpec &theme) {
+            return theme.id == themeValue.toString();
+        });
+    if (!themeIsInstalled) {
         return failure(AppearanceProjectionError::UnknownTheme,
                        QStringLiteral("selected appearance theme is not installed"));
     }
+    const auto resolved = AppAppearance::resolveAppearanceTheme(
+        m_themes,
+        AppAppearance::AppearancePreference{.themeId = themeValue.toString(),
+                                            .colorScheme = *preferenceScheme},
+        Qt::ColorScheme::Unknown);
+    // The base selection is installed (checked above), so resolution always
+    // yields at least that selection back.
+    Q_ASSERT(resolved.has_value());
+    if (!resolved.has_value()) {
+        return failure(AppearanceProjectionError::UnknownTheme,
+                       QStringLiteral("selected appearance theme is not installed"));
+    }
+    const Themes::ThemeSpec &selected = *resolved;
 
     DesignTokens::AccessibilityInputs inputs;
     inputs.highContrast = *highContrast
-        || selected->variant == QStringLiteral("high-contrast");
+        || selected.variant == QStringLiteral("high-contrast");
     inputs.reducedTransparency = *reducedTransparency;
-    const auto derived = DesignTokens::DesignTokenDeriver::derive(*selected, inputs);
+    const auto derived = DesignTokens::DesignTokenDeriver::derive(selected, inputs);
     if (!derived.ok()) {
         return failure(AppearanceProjectionError::QstDerivationFailed,
                        derived.diagnostic);

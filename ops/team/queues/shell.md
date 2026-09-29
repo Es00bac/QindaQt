@@ -36,6 +36,19 @@
 | QQ-004.06 First-party global-menu export for Terminal and Text Editor | EXECUTABLE integrated at `42191636` | Andrea Ghez (Z.AI GLM `glm-5.3`) then Jennifer Doudna (OpenAI Codex) on `worker/first-party-menu-export` | exact accepted product `bfe6009950187901e4f42902aa211ab3378419aa` | Elizabeth Blackburn (OpenAI Codex; three REJECT 0/1/0/0), Nettie Stevens (Moonshot Kimi; ACCEPT 0/0/0/0) | Recorded; focused 190/190 in Debug and Release, static gates, broad safe Debug 630/630, serialized nested boot, panel-visibility and interactive rows 5/5 on the system KWin 6.6.6 roots | `src/apps/terminal/**`, `src/apps/editor/**` | none | 2026-09-04T17:59:47-06:00 |
 | QQ-004 desktop polish (task icons in the nested proof, shell-owned/non-normal task exclusion, quiet empty chips, DND default) | EXECUTABLE integrated at `3e658510` | Frances Arnold (OpenAI Codex `gpt-5.6-sol`, high) on `worker/desktop-polish` | exact product `511ac8623051b78adfb54634d9a5fce0c466005f` | Dorothy Hodgkin (Moonshot Kimi `k3`; REJECT 0/1/0/1 on a stale reference paragraph, reconciled at integration) | Recorded; focused 326/326 in Debug and Release, static gates, broad safe Debug 634/634, nested boot/panel-visibility/interactive/CompositorShell1 rows 6/6, installed rows 14/14, session.installpaths 1/1, broad safe Release 634/634 with the /usr/local prefix confirmed | — | none | 2026-09-05T02:40:44-06:00 |
 
+## September 29 Plasma-free continuation — 2026-09-29T19:27:29+00:00
+
+Current recovery coordinator: Codex Program Manager. This section supersedes historical
+active assignments below for this program. Worker activity is not product completion.
+
+| Outcome | State | Owner | Exact source boundary | Next gate/evidence | Collision/resource |
+| --- | --- | --- | --- | --- | --- |
+| Compositor fork M1 | fork integrated; consumer gates pending | recovery manager | fork 0dd2fdb8; consumer 6623b7d6 | manager consumer/staged/namespace tests | overlay preparation1819e4a9 remains held |
+| Four-caveat polish | source accepted in this integration | recovery manager | exact candidate5e8d73d7 | six focused manager rows pass | saved-workspace boundary explicit; no auto-topology restore |
+
+Builds use qinda and a separate laptop build mirror at low CPU/I/O priority.
+No running desktop or services are changed. Final recipe consolidation precedes one delivery.
+
 ## Requested audit repairs — 2026-09-05T16:50:21.278600+00:00
 
 | Outcome | Owner / isolated worktree | Candidate or base | Independent review / next gate | Collision and resources |

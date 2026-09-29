@@ -100,6 +100,47 @@ private slots:
     QVERIFY2(loaded.has_value(), qPrintable(error));
     QCOMPARE(loaded->toJson(), workspace.toJson());
   }
+  void containerNameRoundTripsWithSavedAndRestoredLayout() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    WorkspaceStore store(directory.path());
+
+    const QList<QPair<QString, QString>> cases{
+        {QStringLiteral("custom"), QStringLiteral("Research Stack")},
+        {QStringLiteral("default"), QStringLiteral("Container")}};
+    for (const auto &caseValue : cases) {
+      auto workspace = sample();
+      workspace.id = caseValue.first;
+      workspace.name = caseValue.second;
+      QString error;
+      QVERIFY2(store.save(workspace, &error), qPrintable(error));
+
+      const auto restoredDocument = store.load(workspace.id, &error);
+      QVERIFY2(restoredDocument.has_value(), qPrintable(error));
+      QCOMPARE(restoredDocument->name, caseValue.second);
+
+      // Workspace restoration deliberately gives the adopted topology a new
+      // live ID. The durable document, not that runtime ID, carries the title
+      // back to the KWin port's post-adoption presentation writer.
+      const auto assigned = assignWindows(*restoredDocument, windows());
+      const auto restoredLayout = instantiate(
+          *restoredDocument, assigned, QStringLiteral("new-live-container"));
+      QVERIFY(restoredLayout.has_value());
+      QCOMPARE(restoredLayout->id(), QStringLiteral("new-live-container"));
+
+      QMap<QString, ApplicationSlot> intent;
+      for (const auto &slot : restoredDocument->applicationSlots) {
+        const auto found = assigned.windowsBySlot.constFind(slot.id);
+        QVERIFY(found != assigned.windowsBySlot.cend());
+        intent.insert(found.value(), slot);
+      }
+      const auto recaptured = capture(restoredDocument->id, restoredDocument->name,
+                                      restoredDocument->color, *restoredLayout, intent);
+      QVERIFY(recaptured.has_value());
+      QCOMPARE(recaptured->name, caseValue.second);
+    }
+  }
+
   void rejectedSavePreservesLastWorkspace() {
     QTemporaryDir directory;
     WorkspaceStore store(directory.path());

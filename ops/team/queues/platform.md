@@ -23,6 +23,20 @@
 | QQ-005.04 Network secret agent (confined credential entry outside Network1) | EXECUTABLE (widened) integrated at `287ba6d` (ADR-0069) | Program Manager (integrated) | exact accepted product `dbeab3fde389b0ed917c0e54e52db8e55d3f609e` | Raman Parimala (OpenAI Codex; three rounds, terminal ACCEPT `0/0/0/0`) | Session autostart via the session-actions lane; N3 join in review | none | Regressions with an exact reproduction | 2026-09-03T11:21:44-06:00 merged; system-KWin batch green |
 | QQ-005.04 Network N3 join a visible Wi-Fi (ConnectVisibleNetwork, agent-owned secrets, route Connect) | EXECUTABLE (widened) integrated at `c269830` | Program Manager (integrated) | exact accepted product `beef29eb3efb59d0e06204ef978a40d0181e3035` | Lisa Piccirillo (OpenAI Codex; `afee87d` REJECT `0/0/2/0`, `beef29e` ACCEPT `0/0/0/0`) | Agent autostart lands with session actions | none | Regressions with an exact reproduction | 2026-09-03T12:30:19-06:00 merged; focused 66/66, broad 579/579 |
 
+## September 29 Plasma-free continuation — 2026-09-29T19:27:29+00:00
+
+Current recovery coordinator: Codex Program Manager. This section supersedes historical
+active assignments below for this program. Worker activity is not product completion.
+
+| Outcome | State | Owner | Exact source boundary | Next gate/evidence | Collision/resource |
+| --- | --- | --- | --- | --- | --- |
+| Native power policy PF1 | active source/schema lane | native-power worker | base 0d912510 / native-power | schema/import admission, idempotence and failed-commit retry | owns power policy/Settings schema; ADR0293 |
+| Native session lock PF5–PF6 | active fork/server lane | native-lock worker | fork base 0dd2fdb8 / session-lock | private nested crash/input/hotplug/presentation matrix | owns fork lock authority; ADR0294 |
+| Keyring PK1 | active storage-only lane | keyring-storage worker | base 0d912510 / keyring | EVP crypto, hostile envelope, atomic replacement and locked-search tests | owns keyring storage; ADR0292 |
+
+Builds use qinda and a separate laptop build mirror at low CPU/I/O priority.
+No running desktop or services are changed. Final recipe consolidation precedes one delivery.
+
 ## Active user-reported completion repair — 2026-09-06T09:12:59-06:00
 
 | Outcome | Owner | Base / isolated worktree | Reviewer | Next gate | Collision/help | Observed |

@@ -98,8 +98,11 @@ Corner Bar windows (ADR-0277), no KWin input-shape change is needed for a gap.
 - A rolled-up container that was never renamed reads "Container"; its page
   identity is carried by the pills and tabs, not the label. Two unnamed
   rolled-up containers are told apart by color and position, or by renaming.
-- Container names still live only for the compositor process (ADR-0189);
-  they do not survive a compositor restart.
+- Live container overrides remain process-local. An explicitly saved
+  workspace persists the displayed name and color with its layout and reapplies
+  them to the newly adopted container after restart; unsaved live topology is
+  not automatically restored (see
+  [Saved workspaces](../architecture/workspaces.md)).
 - `appearance.containerTitleLayout` joins the arrangement scope, so an older
   resident Settings1 without it rejects the arrangement snapshot until the
   service restarts with the new schema, as ADR-0129 and ADR-0264 recorded.

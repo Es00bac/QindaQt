@@ -45,6 +45,7 @@ private Q_SLOTS:
     void rejectsMalformedSnapshotsAtomically();
     void validatesCatalogAndOpaqueAccentBoundary();
     void boundsThemeDiscoveryAndPreservesPrecedence();
+    void followsTheActiveTwinNotTheChosenBaseTheme();
 };
 
 void AppearancePolicyTests::projectsStandardValuesFromSettingsAndQst()
@@ -175,6 +176,45 @@ void AppearancePolicyTests::boundsThemeDiscoveryAndPreservesPrecedence()
     malformed.close();
     QVERIFY(!loadPortalAppearanceThemes({first.path(), second.path()}, &error)
                  .has_value());
+}
+
+// ADR-0284: the projector must resolve exactly like the Settings preview,
+// shell, first-party applications, and the compositor (the shared
+// resolveAppearanceTheme call), so a portal client sees the active twin's
+// values, not the chosen base theme's.
+void AppearancePolicyTests::followsTheActiveTwinNotTheChosenBaseTheme()
+{
+    AppearancePolicyProjector projector(builtIns());
+    QVERIFY2(projector.isValid(), qPrintable(projector.catalogError()));
+
+    // The base selection is the light Corner Bar Teal theme; forcing a dark
+    // scheme must resolve to its authored dark twin (data/themes/
+    // qinda-corner-teal-dark.json), whose accent #5CCBBC differs from the
+    // light theme's own #126A73.
+    const auto dark = projector.project(validSettings(
+        QStringLiteral("qinda-corner-teal"), QStringLiteral("dark")));
+    QVERIFY2(dark.ok(), qPrintable(dark.diagnostic));
+    QCOMPARE(dark.policy->colorScheme, PortalColorScheme::PreferDark);
+    QVERIFY(qAbs(dark.policy->accentColor.red - (92.0 / 255.0)) < 0.00001);
+    QVERIFY(qAbs(dark.policy->accentColor.green - (203.0 / 255.0)) < 0.00001);
+    QVERIFY(qAbs(dark.policy->accentColor.blue - (188.0 / 255.0)) < 0.00001);
+
+    // The same base selection under an explicit light scheme keeps its own
+    // accent: the twin only applies when the resolved scheme calls for it.
+    const auto light = projector.project(validSettings(
+        QStringLiteral("qinda-corner-teal"), QStringLiteral("light")));
+    QVERIFY2(light.ok(), qPrintable(light.diagnostic));
+    QCOMPARE(light.policy->colorScheme, PortalColorScheme::PreferLight);
+    QVERIFY(qAbs(light.policy->accentColor.red - (18.0 / 255.0)) < 0.00001);
+    QVERIFY(qAbs(light.policy->accentColor.green - (106.0 / 255.0)) < 0.00001);
+    QVERIFY(qAbs(light.policy->accentColor.blue - (115.0 / 255.0)) < 0.00001);
+
+    // Choosing the dark twin directly under a dark scheme is unaffected: it
+    // is already compatible, so there is nothing to resolve away from.
+    const auto directDark = projector.project(validSettings(
+        QStringLiteral("qinda-corner-teal-dark"), QStringLiteral("dark")));
+    QVERIFY2(directDark.ok(), qPrintable(directDark.diagnostic));
+    QCOMPARE(directDark.policy->accentColor, dark.policy->accentColor);
 }
 
 QTEST_GUILESS_MAIN(AppearancePolicyTests)
