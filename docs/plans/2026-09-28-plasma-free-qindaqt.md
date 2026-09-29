@@ -367,7 +367,7 @@ Traps a future agent must know:
   - GlobalShortcuts, over the kglobalaccel API until M6 and over Shortcuts1 after it.
 - **PF21 also ends the carve-outs.** The fork drops `org.kde.KWin` and the `X-KDE-*` keys, and the
   carved-out interfaces are renamed together with QindaQt's callers.
-- Background and Wallpaper stay closed, and Secret stays with gnome-keyring.
+- Background and Wallpaper stay closed. Secret moves to the QindaQt keyring (PK5, §3.8).
 
 ### 3.7 Global shortcuts, replacing kglobalacceld (PF22–PF24)
 
@@ -383,6 +383,77 @@ Traps a future agent must know:
 - **Native interface.** `org.qindaqt.Shortcuts1` serves Settings → Input (one list, the owner of
   each key, clashes shown before saving) and the GlobalShortcuts portal. The supervisor drops its
   kglobalacceld child.
+
+### 3.8 Key store, replacing gnome-keyring and KWallet (PK1–PK6)
+
+The owner asked for QindaQt's own key store. Today:
+- gnome-keyring owns `org.freedesktop.secrets` on both machines;
+- KWallet keeps a second wallet (unlocked by kwallet-pam on qinda);
+- the OBS client reads its WebSocket password through the Secret Service.
+
+- **Service.** `qindaqt-keyring` is a resident user service: a systemd user unit with socket
+  activation, supervised like the other residents. It implements the freedesktop Secret Service
+  API, so libsecret, QtKeychain, Chromium and Python `secretstorage` work unchanged:
+  - sessions, both `plain` and `dh-ietf1024-sha256-aes128-cbc-pkcs7`;
+  - collections, items, aliases (`default` → `login`) and the in-memory `session` collection;
+  - prompts and signals.
+
+  QindaQt's own clients use the native `org.qindaqt.Keyring1` for lock state, item metadata for
+  Settings, and password changes. They never read its files.
+- **Storage.**
+  - One file per collection under `~/.local/share/qindaqt/keyring/`, in a 0700 directory. Files are
+    0600, replaced atomically, and start with a versioned header.
+  - Contents are sealed with AES-256-GCM under a key derived with Argon2id from the collection
+    password. Both come from OpenSSL 3, which is already installed. The KDF parameters live in the
+    header so they can be raised later.
+  - A small plaintext index of keyed attribute digests lets `SearchItems` find locked items, as
+    clients expect. The ADR records that leakage.
+  - Keys and secrets live in locked, zeroed memory and never reach logs.
+- **Unlock at login.** A PAM module, `pam_qindaqt_keyring.so`:
+  - `auth` keeps the password;
+  - `session` hands it, as the user, to the keyring's socket-activated control socket in
+    `$XDG_RUNTIME_DIR`, which checks the peer's credentials;
+  - `password` re-keys the login collection when the login password changes.
+
+  When the login collection's password no longer matches the login password (after a root reset,
+  or with autologin), the first use asks once for the old password, then re-keys. The lock
+  screen's PAM service (PF7) includes the module, so unlocking the screen also unlocks a keyring
+  that locked with it.
+- **Prompts.** Unlock, create-collection and confirm prompts come from a separate QindaTK prompt
+  process, so the resident never draws. They use the same secure overlay presentation as the polkit
+  agent (PF15); extract the shared piece into one module rather than copying it.
+- **Locking.** Settings1 `keyring.lockOnScreenLock` (default off) and
+  `keyring.lockAfterIdleMinutes` (0 = never). Collections always lock at logout, and memory is
+  wiped.
+- **Settings → Passwords & Keys** (QindaTK, compact):
+  - collections, with lock state, lock and unlock, and change password;
+  - items, with label, the app that stored them (captured from the caller at creation) and dates;
+  - reveal or copy a secret, only after re-authentication;
+  - delete an item, and create a collection.
+- **Flatpak.** `xdg-desktop-portal-qindaqt` serves the Secret portal. It keeps a random per-app
+  secret in the login collection and writes it to the app's file descriptor. The Secret row in
+  `qindaqt-portals.conf` flips to `qindaqt`.
+- **One owner of the secrets name.**
+  - The keyring claims `org.freedesktop.secrets` at session start.
+  - The autostart runner's single-owner table (PF15) also skips gnome-keyring's entries.
+  - The profile drops gnome-keyring's PAM hook (`sys-auth/pambase -gnome-keyring`) and
+    kwallet-pam, and the desktop package no longer pulls either.
+- **Migration, once.** `qindaqt-keyring-import` copies every item into matching collections: from
+  the running gnome-keyring over the Secret Service, and from KWallet over its D-Bus API.
+  - That covers both machines' `login` collections, qinda's `gogcli` collection and both
+    `kdewallet` wallets.
+  - It runs before the name switch, while those daemons are still installed.
+  - The original files stay untouched until the owner removes them.
+- **Tests.**
+  - Unit: format round trip, wrong password, tampering, truncation, atomic replace and
+    search-while-locked.
+  - Protocol, on a private bus with `secret-tool` and `secretstorage`: store, search, lock, unlock
+    through a scripted prompt, aliases and the DH session.
+  - `pam_wrapper`: login unlock, password change and mismatch recovery.
+  - A portal file-descriptor test, and an import test with fake providers.
+- **Later, not counted:**
+  - a QindaTK `ssh-askpass` and pinentry that can remember passphrases in the keyring;
+  - NetworkManager agent-owned secrets stored in the keyring.
 
 ## 4. Slices and order
 
@@ -428,6 +499,13 @@ Traps a future agent must know:
 | PF24 | Shortcuts1, Settings and portal switch-over; drop kglobalacceld | `apps/settings/input`, `session_supervisor`, QindaGentoo | PF21, PF23 | 2 |
 | **M7** | **Keep it that way** | | | **1** |
 | PF25 | Dependency guard, optional per-machine opt-out, final depclean on both machines, docs sweep | QindaGentoo, `docs/wiki` | all | 1 |
+| **M8** | **QindaQt's own key store** | | | **11** |
+| PK1 | Keyring ADR; storage core (format, KDF, AEAD, locked-search index, memory hygiene) | new `src/services/keyring` | — | 2 |
+| PK2 | Secret Service daemon (sessions, collections, items, aliases, prompts), `Keyring1`, unit and socket, single owner | `src/services/keyring`, `session_supervisor`, `session_autostart` | PK1 | 3 |
+| PK3 | PAM module: login unlock, password change, mismatch recovery, lock-screen tie | new `src/pam_keyring` | PK2 | 2 |
+| PK4 | Prompt process; Settings → Passwords & Keys; Settings1 lock policy | new `src/apps/keyring_prompt`, `apps/settings/keyring` | PK2, PF15 | 2 |
+| PK5 | Secret portal backend | `src/services/portal` | PK2 | 1 |
+| PK6 | Import from gnome-keyring and KWallet; packaging drops gnome-keyring and kwallet-pam | `src/services/keyring`, QindaGentoo | PK3 | 1 |
 | G1 | *Optional, not counted.* SDDM greeter on the fork (Wayland login, no silent X11 fallback) | QindaGentoo | M2 | 1 |
 
 **Lanes:**
@@ -437,6 +515,7 @@ Traps a future agent must know:
 | Compositor | F1, F2, F3, F4, F6, then PF5, PF6, PF7, then PF10, PF11, PF12, then PF22, PF23 | 23 |
 | Services | PF1–PF4, F7, PF8, then PF13, PF15, PF16, PF17–PF21, PF24 | 32 |
 | Manager integration | F5, F8, PF9, PF14, PF25 | 5 |
+| Key store | PK1–PK6 (independent of the fork; can start now) | 11 |
 
 The Plasma entry disappears at PF9. Its critical path is the compositor lane through PF7 (13
 slices) plus PF9.
@@ -594,3 +673,5 @@ These answer the open questions and are binding for the slices above.
 7. The login screen runs on the fork (Wayland) if it can (G1 is in scope, conditional on it working).
 8. Global shortcuts are **replaced completely** (M6 in full; KDE's shortcut library is not kept).
 9. The fork's name is `qindaqt-kwin` (package `gui-wm/qindaqt-kwin`).
+10. **QindaQt has its own key store** (owner, 2026-09-28): a native keyring replaces gnome-keyring and
+   KWallet, including unlock at login and a one-time import of the existing keyrings and wallets (§3.8).
