@@ -24,9 +24,16 @@ enum class TouchPickupAction {
     Cancel,
 };
 
+enum class TouchPickupFeedback {
+    None,
+    // The adapter should run the title-pickup lift response exactly once.
+    Lift,
+};
+
 struct TouchPickupDecision final
 {
     TouchPickupAction action = TouchPickupAction::None;
+    TouchPickupFeedback feedback = TouchPickupFeedback::None;
     QPointF position;
     // True when the event must not reach KWin. Only motion of a picked-up
     // finger is consumed; the lift is passed on so KWin's decoration filter
