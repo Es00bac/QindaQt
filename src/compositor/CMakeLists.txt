@@ -403,6 +403,12 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridcontainerappearance.cpp
             kwin/kwinhybridshade.cpp
             kwin/kwinhybridiconify.cpp
+            kwin/kwinhybridgatheredminimized.cpp
+            kwin/minimizedgatherpager.cpp
+            kwin/minimizedgatherpager.h
+            kwin/minimizedgatherpagerrouter.cpp
+            kwin/minimizedapplicationidentity.cpp
+            kwin/minimizedapplicationidentity.h
             kwin/kwinhybridiconifyinput.cpp
             kwin/kwinhybridmodifierchords.cpp
             kwin/kwiniconchippresenter.cpp
@@ -446,6 +452,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             QindaQt::CompositorShellActions
             QindaQt::Hybrid
             QindaQt::HybridChrome
+            QindaQt::HybridGather
             QindaQt::HybridConstraints
             QindaQt::HybridInput
             QindaQt::WorkspacesUi

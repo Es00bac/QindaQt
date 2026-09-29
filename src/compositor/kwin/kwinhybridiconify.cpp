@@ -6,10 +6,14 @@
 #include "hybridinteractionruntime.h"
 #include "kwinchromescenelifecycle.h"
 #include "kwiniconchippresenter.h"
+#include "minimizedgatherpager.h"
 #include "kwiniconifyplatform.h"
 #include "managedwindowregistry.h"
+#include "minimizedapplicationidentity.h"
 
 #include "qindaqt/hybrid_chrome/chromeiconchip.h"
+#include "qindaqt/compositor/foreignwindowidentity.h"
+#include "qindaqt/workspaces_apps/desktop_applications.h"
 
 #include <compositor.h>
 #include <core/output.h>
@@ -34,9 +38,21 @@ bool fail(QString *error, QString message)
     return false;
 }
 
-QImage chipIcon(const KWin::Window *window, qreal devicePixelRatio)
+QImage chipIcon(const KWin::Window *window, qreal devicePixelRatio,
+                const QStringList &themeCandidates)
 {
-    const QIcon &icon = window->icon();
+    QIcon icon;
+    for (const QString &candidate : themeCandidates) {
+        icon = QIcon::fromTheme(candidate);
+        if (!icon.isNull()) {
+            break;
+        }
+    }
+    // KWin's client icon is a useful last resort, but some Wayland clients
+    // inherit the generic compositor icon, so metadata lookup must come first.
+    if (icon.isNull()) {
+        icon = window->icon();
+    }
     if (icon.isNull()) {
         return {};
     }
@@ -48,13 +64,22 @@ HybridChrome::IconChipRequest chipRequest(const QString &windowId,
                                          const KWin::Window *window,
                                          const QPointF &anchor,
                                          const QRectF &bounds,
-                                         const HybridChrome::ChromePalette &palette)
+                                         const HybridChrome::ChromePalette &palette,
+                                         const WorkspacesApps::DesktopApplication *desktopApp)
 {
     const qreal devicePixelRatio = window->output() ? window->output()->scale() : 1.0;
     HybridChrome::IconChipRequest request;
     request.windowId = windowId;
-    request.title = window->caption();
-    request.icon = chipIcon(window, devicePixelRatio);
+    const auto identity = resolveMinimizedApplicationIdentity(
+        window->desktopFileName(), window->resourceClass(),
+        desktopApp ? desktopApp->name : QString{},
+        desktopApp ? desktopApp->iconName : QString{}, window->caption());
+    request.title = identity.label;
+    if (!window->caption().trimmed().isEmpty()
+        && window->caption().trimmed() != identity.label) {
+        request.title += QStringLiteral(" — ") + window->caption().trimmed();
+    }
+    request.icon = chipIcon(window, devicePixelRatio, identity.iconThemeCandidates);
     request.anchor = anchor;
     request.bounds = bounds;
     request.devicePixelRatio = devicePixelRatio;
@@ -80,6 +105,12 @@ void KWinHybridSession::ensureIconify()
     m_iconifyPlatform = std::make_unique<KWinIconifyPlatform>(m_registry, std::move(callbacks));
     m_iconify = std::make_unique<HybridIconifyController>(*m_iconifyPlatform);
     m_iconChips = std::make_unique<KWinIconChipPresenter>(m_registry);
+    m_minimizedGatherPager = std::make_unique<KWinMinimizedGatherPager>(m_registry);
+    m_minimizedGatherPagerRouter = std::make_unique<MinimizedGatherPagerRouter>(
+        [this](const QPointF &position) {
+            return m_minimizedGatherPager
+                ? m_minimizedGatherPager->hitAt(position) : std::nullopt;
+        });
     m_iconChipRouter = std::make_unique<HybridIconChipRouter>(
         [this](const QPointF &position) { return iconChipHitAt(position); },
         QApplication::startDragDistance());
@@ -129,9 +160,14 @@ bool KWinHybridSession::iconifyWindow(const QString &windowId, QString *error)
     }
     const QRectF frame = window->frameGeometry();
     const QRectF bounds = iconChipBounds(windowId);
+    const QString applicationId = ::QindaQt::Compositor::resolveApplicationId(
+        window->desktopFileName(), window->resourceClass(), {});
+    const auto desktopApp = m_workspaceApplications
+        ? m_workspaceApplications->find(applicationId) : std::nullopt;
     // The chip anchors at the title bar's leading edge: the frame's top-left.
     const auto plan = HybridChrome::ChromeIconChip::layout(
-        chipRequest(windowId, window, frame.topLeft(), bounds, m_chromeStyle.palette), error);
+        chipRequest(windowId, window, frame.topLeft(), bounds, m_chromeStyle.palette,
+                    desktopApp ? &*desktopApp : nullptr), error);
     if (!plan) {
         return false;
     }
@@ -226,9 +262,13 @@ bool KWinHybridSession::publishIconChip(const QString &windowId, QString *error)
         return fail(error, QStringLiteral("window '%1' is not iconified").arg(windowId));
     }
     const QRectF bounds = iconChipBounds(windowId);
+    const QString applicationId = ::QindaQt::Compositor::resolveApplicationId(
+        window->desktopFileName(), window->resourceClass(), {});
+    const auto desktopApp = m_workspaceApplications
+        ? m_workspaceApplications->find(applicationId) : std::nullopt;
     const auto plan = HybridChrome::ChromeIconChip::layout(
         chipRequest(windowId, window, record->chipFrame.topLeft(), bounds,
-                    m_chromeStyle.palette), error);
+                    m_chromeStyle.palette, desktopApp ? &*desktopApp : nullptr), error);
     if (!plan) {
         return false;
     }
@@ -271,12 +311,16 @@ void KWinHybridSession::synchronizeIconChips()
                      qPrintable(windowId), qPrintable(error));
         }
     }
+    synchronizeMinimizedGather();
 }
 
 void KWinHybridSession::releaseIconChipSceneItems() noexcept
 {
     if (m_iconChips) {
         m_iconChips->releaseSceneItems();
+    }
+    if (m_minimizedGatherPager) {
+        m_minimizedGatherPager->releaseSceneItems();
     }
 }
 

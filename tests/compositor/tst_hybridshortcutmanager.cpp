@@ -27,6 +27,8 @@ QVector<HybridShortcutAction> allActions()
         HybridShortcutAction::MaximizeGroup,
         HybridShortcutAction::RestoreGroup,
         HybridShortcutAction::ToggleMemberChrome,
+        HybridShortcutAction::NextMinimizedGatherPage,
+        HybridShortcutAction::PreviousMinimizedGatherPage,
     };
 }
 
@@ -74,6 +76,12 @@ void HybridShortcutManagerTest::exposesStableActionsDefaultsAndDispatches()
          },
          .toggleMemberChrome = [&] {
              dispatched.append(HybridShortcutAction::ToggleMemberChrome);
+         },
+         .nextMinimizedGatherPage = [&] {
+             dispatched.append(HybridShortcutAction::NextMinimizedGatherPage);
+         },
+         .previousMinimizedGatherPage = [&] {
+             dispatched.append(HybridShortcutAction::PreviousMinimizedGatherPage);
          }},
         false);
 
@@ -92,6 +100,8 @@ void HybridShortcutManagerTest::exposesStableActionsDefaultsAndDispatches()
         QStringLiteral("qindaqt_keyboard_maximize_group"),
         QStringLiteral("qindaqt_keyboard_restore_group"),
         QStringLiteral("qindaqt_keyboard_toggle_member_chrome"),
+        QStringLiteral("qindaqt_keyboard_minimized_gather_next_page"),
+        QStringLiteral("qindaqt_keyboard_minimized_gather_previous_page"),
     };
     const auto kinds = allActions();
     const QVector<QKeySequence> defaults{
@@ -109,6 +119,8 @@ void HybridShortcutManagerTest::exposesStableActionsDefaultsAndDispatches()
         QKeySequence(Qt::META | Qt::CTRL | Qt::SHIFT | Qt::Key_X),
         QKeySequence(Qt::META | Qt::CTRL | Qt::SHIFT | Qt::Key_U),
         QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_C),
+        QKeySequence(Qt::META | Qt::ALT | Qt::Key_PageDown),
+        QKeySequence(Qt::META | Qt::ALT | Qt::Key_PageUp),
     };
 
     QCOMPARE(kinds.size(), objectNames.size());

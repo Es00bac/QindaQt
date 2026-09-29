@@ -55,3 +55,42 @@ add_test(
     NAME compositor.hybrid-title-wheel-route
     COMMAND qindaqt_hybrid_title_wheel_route_tests
 )
+
+qt_add_executable(
+    qindaqt_minimized_application_identity_tests
+    tst_minimizedapplicationidentity.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/minimizedapplicationidentity.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/src/foreignwindowidentity.cpp"
+)
+target_include_directories(
+    qindaqt_minimized_application_identity_tests
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+        "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/include"
+)
+target_link_libraries(
+    qindaqt_minimized_application_identity_tests
+    PRIVATE Qt6::Core Qt6::Test
+)
+add_test(
+    NAME compositor.minimized-application-identity
+    COMMAND qindaqt_minimized_application_identity_tests
+)
+
+qt_add_executable(
+    qindaqt_minimized_gather_pager_router_tests
+    tst_minimizedgatherpagerrouter.cpp
+    "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin/minimizedgatherpagerrouter.cpp"
+)
+target_include_directories(
+    qindaqt_minimized_gather_pager_router_tests
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src/compositor/kwin"
+)
+target_link_libraries(
+    qindaqt_minimized_gather_pager_router_tests
+    PRIVATE Qt6::Core Qt6::Test
+)
+add_test(
+    NAME compositor.minimized-gather-pager-router
+    COMMAND qindaqt_minimized_gather_pager_router_tests
+)

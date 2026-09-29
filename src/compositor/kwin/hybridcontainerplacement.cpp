@@ -316,6 +316,11 @@ DirectInteractionResult HybridContainerPlacementController::handleShadedMove(
     }
     if (intent.phase == HybridInput::IntentPhase::Commit) {
         const bool moved = found->applied != found->baseline;
+        if (moved) {
+            // The user's strip drag is intentional placement; stop treating
+            // the gather-only display position as the restore location.
+            m_gatherRestorePositions.remove(containerId);
+        }
         m_moveDrags.erase(found);
         // ADR-0282: a rolled-up maximized container that was actually moved
         // leaves maximize, so unrolling restores its restore size where the
@@ -575,6 +580,7 @@ void HybridContainerPlacementController::forgetContainer(
     m_maximizeRestoreFrames.remove(containerId);
     m_aspectPins.remove(containerId);
     m_shadeStripFrames.remove(containerId);
+    m_gatherRestorePositions.remove(containerId);
     m_shadeRestoreSizes.remove(containerId);
 }
 

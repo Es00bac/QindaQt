@@ -597,6 +597,7 @@ void KWinHybridSession::synchronizeChrome()
     }
     synchronizeAccessibility();
     synchronizeIconChips();
+    synchronizeMinimizedGather();
 }
 
 void KWinHybridSession::setTouchPolicyConfig(const TouchPolicyConfig &config)
