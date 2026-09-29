@@ -4,6 +4,7 @@
 #include <qindaqt/services/tablet_devices/tablet_device_port.h>
 #include <qindaqt/services/tablet_devices/tablet_mapping_ledger.h>
 #include <qindaqt/services/tablet_devices/tablet_mapping_store.h>
+#include <qindaqt/services/tablet_devices/tablet_orientation.h>
 #include <qindaqt/services/tablet_devices/tablet_output_inventory.h>
 #include <qindaqt/services/tablet_devices/tablet_output_matcher.h>
 
@@ -17,13 +18,18 @@ using Services::TabletDevices::TabletOutputInventory;
 using Services::TabletDevices::TabletMappingStore;
 
 // Session policy: a pen display maps itself to its own screen, exactly once,
-// and never argues with a choice the user made.
+// and never argues with a choice the user made. Every pass also keeps each
+// tablet's rotation and areas right for the screen it reaches (ADR-0285): a
+// desk tablet's up stays the screen's up when that screen is rotated, and a
+// pen display carries no stale rotation of its own.
 //
 // AGENT-CONTRACT: This class writes KWin device properties and the mapping
 // ledger; it draws nothing and knows nothing about notifications. It reports
 // `tabletAnnounced` once per device group so a presenter can post one
 // notification, and records that it did so in the ledger, so a re-plug of a
-// known tablet is silent.
+// known tablet is silent. Output rotations arrive through `outputs` (the
+// Display1 decorator in production); an output change therefore re-plans
+// every tablet, and an unknown rotation plans nothing.
 //
 // AGENT-GUARD: A record with `userChosen` is never replaced by automatic
 // matching. The whole promise of the feature is that it asks once; a second
@@ -78,6 +84,17 @@ private:
         Services::TabletDevices::TabletMapChoice choice,
         const QString &outputName,
         const QList<Services::TabletDevices::TabletDeviceSnapshot> &devices,
+        QString *error);
+    // Writes each tool's planned rotation and areas for the mapping just
+    // applied and completes `intent` with what a desk tablet adopted, so the
+    // caller records it with the mapping decision.
+    [[nodiscard]] bool applyPlacement(
+        const GroupState &group,
+        Services::TabletDevices::TabletMapChoice choice,
+        const QString &outputName,
+        const QList<Services::TabletDevices::TabletDeviceSnapshot> &devices,
+        const QList<Services::TabletDevices::TabletOutputCandidate> &outputs,
+        Services::TabletDevices::TabletPlacementIntent *intent,
         QString *error);
     void fail(const QString &message);
 

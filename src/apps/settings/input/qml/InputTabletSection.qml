@@ -19,8 +19,12 @@ ColumnLayout {
     // notification's deep link. Empty means "whatever was selected".
     property string initialSelection: ""
 
+    // A pen display turns with its screen; its rotation is set in Displays.
+    signal displaySettingsRequested()
+
     readonly property var tablets: root.inputSettings.tabletDevices
     readonly property var selection: root.tablets.selection
+    readonly property var placement: root.selection !== null ? root.selection.placement : null
     readonly property bool hasTablets: root.tablets.count > 0
 
     readonly property Item firstFocusTarget: degraded.visible ? degraded
@@ -109,20 +113,66 @@ ColumnLayout {
         description: qsTr("Orientation, mode, and how the tip behaves")
     }
 
+    // ADR-0285: a desk tablet's rotation is how it lies on the desk; the
+    // placement model keeps its up the screen's up even on a rotated screen.
     FormRow {
+        id: rotationRow
         objectName: "tabletRotationRow"
         Layout.fillWidth: true
-        visible: root.selection !== null && root.selection.rotationAvailable
+        visible: root.placement !== null && root.placement.rotationAvailable
         label: qsTr("Rotation")
-        description: qsTr("Turn the tablet surface to match how the display is mounted")
+        description: qsTr("Match how the tablet lies on your desk. Up on the tablet stays up on the screen.")
         editor: ComboBox {
             id: rotationCombo
             objectName: "tabletRotationCombo"
-            width: 200
-            model: ["0°", "90°", "180°", "270°"]
-            currentIndex: root.selection !== null
-                          ? Math.round(root.selection.rotation / 90) % 4 : 0
-            onActivated: index => root.selection.rotation = index * 90
+            width: 260
+            model: [qsTr("Upright"), qsTr("Turned 90° clockwise"),
+                    qsTr("Upside down (180°)"), qsTr("Turned 90° counterclockwise")]
+            onActivated: index => root.placement.setRotation(index * 90)
+        }
+    }
+
+    // AGENT-GUARD: same rule as the device picker. The combo's own write
+    // breaks a `currentIndex:` binding, and a refused rotation would then
+    // show a turn the tablet never took.
+    Binding {
+        target: rotationCombo
+        property: "currentIndex"
+        value: root.placement !== null ? Math.round(root.placement.rotation / 90) % 4 : 0
+        restoreMode: Binding.RestoreBindingOrValue
+    }
+
+    Label {
+        objectName: "tabletRotationNote"
+        Layout.fillWidth: true
+        visible: rotationRow.visible && text.length > 0
+        text: root.placement !== null ? root.placement.rotationNote : ""
+        muted: true
+        Accessible.name: text
+    }
+
+    // A pen display has no rotation of its own: it turns with its screen
+    // (ADR-0285), so the row says which one and leads to where it is set,
+    // the way the Display card leads here.
+    RowLayout {
+        objectName: "tabletFollowsScreenRow"
+        Layout.fillWidth: true
+        visible: root.placement !== null && root.placement.penDisplay
+        spacing: Tokens.space["2"]
+
+        Label {
+            objectName: "tabletFollowsScreenNote"
+            Layout.fillWidth: true
+            muted: true
+            text: root.placement !== null ? root.placement.followNote : ""
+        }
+
+        Button {
+            objectName: "tabletOpenDisplays"
+            text: qsTr("Display settings…")
+            emphasized: false
+            accessibleDescription: qsTr("Open Displays to rotate the screen; the pen display turns with it")
+            onClicked: root.displaySettingsRequested()
         }
     }
 

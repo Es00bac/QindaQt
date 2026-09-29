@@ -41,6 +41,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Idle screensaver preference | Settings1 `power.screensaver` / `power.screensaverMinutes` | purpose-scoped provider + [Screen saver route](../apps/screensaver-settings.md) |
 | Low/critical battery warning level | UPower `WarningLevel` (via resident `Power1`'s `composite.warning`) | `BatteryNotificationPolicy`, edge-triggered on the resident notification host |
 | Tablet screen mapping and hotplug | KWin `org.kde.KWin.InputDevice` / `InputDeviceManager` | `TabletMappingPolicy` over the shared `QindaQt::TabletDevices` port |
+| Tablet rotation and areas for the screen it reaches | KWin device properties (`orientationDBus`, `inputArea`, `outputArea`, `leftHanded`); screen rotations from Display1 | `TabletMappingPolicy` with the shared placement planner and `DisplayRotationTabletOutputs` ([ADR-0285](../adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md)) |
 | Remembered tablet mapping decisions | Settings1 `input.tabletMappings` | purpose-scoped `Settings1TabletMappings` + Settings Pen & tablet destination |
 | Pen display announcement and its actions | resident notification host | `TabletArrivalNotifier` with `ActionInvoked` routing |
 | Polkit authentication UI | polkit daemon | optional supervisor child, distribution agent binary |
@@ -74,7 +75,7 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | `PowerDevilIdlePreferencesBinding` | coalesces Settings1 preferences and applies them through the session-owned PowerDevil adapter |
 | `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes` with the documented default when truth is absent |
 | `BatteryNotificationPolicy` | edge-triggered low/critical/action battery notifications from `PowerClient::snapshotChanged`; see [Battery notifications](#battery-notifications) |
-| `TabletMappingPolicy` | maps a tablet tool to its own screen once, re-maps when the screen arrives after the tablet, and never overrides a recorded user choice |
+| `TabletMappingPolicy` | maps a tablet tool to its own screen once, re-maps when the screen arrives after the tablet, and never overrides a recorded user choice; on every pass it also plans each tool's rotation and areas for the screen it reaches (ADR-0285) |
 | `Settings1TabletMappings` (shared library) | purpose-scoped Settings1 read/write of `input.tabletMappings`, used by **both** the session policy and the Settings route so a choice made in Settings is not re-decided a moment later; stays unloaded until a real document arrives |
 | `TabletArrivalNotifier` | one replaceable announcement per device group with the `setup` / `internal` / `dismiss` actions, ignoring every `ActionInvoked` that is not its own |
 | `TabletRouteLauncher` | the `--page input --destination tablet --select <group>` deep link, resolved sibling-first like `ScreenshotLauncher` |
@@ -118,11 +119,22 @@ decision; the operational shape is:
   USB-before-HDMI case.
 - `--no-tablet-policy` disables the whole feature for a session, the same way
   `--no-idle-policy` disables idle display-off.
+- On every pass the policy also plans each tool's rotation and areas
+  ([ADR-0285](../adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md)):
+  a desk tablet gets the user's recorded turn composed with the inverse of
+  the mapped screen's rotation, and both areas re-based into KWin's frames;
+  a pen display loses any rotation of its own. The intent it adopts is
+  recorded with the mapping decision. An unknown screen rotation plans and
+  records nothing.
 
 Output identity comes from `QScreen`: KWin fills a Wayland output's make and
 model from the EDID and Qt republishes them, with `name()` being the connector
-`outputName` takes. The process needs no Display1 client for one string per
-output.
+`outputName` takes. How each output is **rotated** does not: `QScreen`
+derives its orientation from the transform and the geometry's shape and
+ignores flips, so `DisplayRotationTabletOutputs` joins the transform Display1
+publishes per connector onto that list, through the process's own
+purpose-scoped Display1 client (started with the tablet policy). This
+supersedes ADR-0197's "no Display1 client" consequence.
 
 ## Preference contract
 

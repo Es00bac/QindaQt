@@ -22,6 +22,8 @@ private Q_SLOTS:
     void listsOnlyTabletsAndCarriesTheirProperties();
     void writesTypedPropertiesIncludingAreas();
     void rejectsUnknownNamesAndWrongTypes();
+    void orientationTravelsAsTheIntKWinExports();
+    void areasReachTheWireNormalizedForLibinput();
     void hotplugSignalsReachTheWatcher();
 
 private:
@@ -174,6 +176,58 @@ void TabletDevicePortTest::rejectsUnknownNamesAndWrongTypes() {
                                 QStringLiteral("outputName"),
                                 QStringLiteral("HDMI-A-1"), &error));
     QCOMPARE(pen->writes.size(), 0);
+}
+
+void TabletDevicePortTest::orientationTravelsAsTheIntKWinExports() {
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    FakeKWinTabletManager manager;
+    auto *pen = manager.addDevice(penSpec(QStringLiteral("event19")));
+    QVERIFY(manager.publish(bus.connection));
+
+    KWinTabletDevicePort port(bus.connection);
+    QString error;
+    // The desk-tablet rotation of ADR-0285 is read with the device...
+    const QList<TabletDeviceSnapshot> devices = port.devices(&error);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QCOMPARE(devices.size(), 1);
+    QVERIFY(devices.at(0).properties.contains(QStringLiteral("orientationDBus")));
+    QCOMPARE(devices.at(0).properties.value(QStringLiteral("orientationDBus")).toInt(),
+             0);
+    // ...and written as one of the five Qt::ScreenOrientation values.
+    QVERIFY2(port.writeProperty(QStringLiteral("event19"),
+                                QStringLiteral("orientationDBus"), 4, &error),
+             qPrintable(error));
+    QCOMPARE(pen->orientationDBus(), 4);
+    // KWin would persist any other int and turn nothing; refused here.
+    QVERIFY(!port.writeProperty(QStringLiteral("event19"),
+                                QStringLiteral("orientationDBus"), 3, &error));
+    QVERIFY(!port.writeProperty(QStringLiteral("event19"),
+                                QStringLiteral("orientationDBus"),
+                                QStringLiteral("1"), &error));
+    QCOMPARE(pen->writes.size(), 1);
+}
+
+void TabletDevicePortTest::areasReachTheWireNormalizedForLibinput() {
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    FakeKWinTabletManager manager;
+    auto *pen = manager.addDevice(penSpec(QStringLiteral("event19")));
+    QVERIFY(manager.publish(bus.connection));
+
+    KWinTabletDevicePort port(bus.connection);
+    QString error;
+    // One ulp past the edge is a rounding error, not a request: libinput
+    // would refuse x2 > 1 and keep its old area while KWin stored the new one.
+    QVERIFY2(port.writeProperty(QStringLiteral("event19"),
+                                QStringLiteral("inputArea"),
+                                QVariantList{0.25, 0.0, 0.75 + 1e-12, 1.0},
+                                &error),
+             qPrintable(error));
+    const QRectF written = pen->inputArea();
+    QVERIFY(written.x() + written.width() <= 1.0);
+    QVERIFY(qFuzzyCompare(written.width(), 0.75));
+    QCOMPARE(pen->writes.size(), 1);
 }
 
 void TabletDevicePortTest::hotplugSignalsReachTheWatcher() {

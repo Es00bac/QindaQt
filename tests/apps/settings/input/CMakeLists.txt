@@ -214,6 +214,60 @@ set_tests_properties(
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
+# ADR-0285 placement over fake ports: a desk tablet's rotation against a
+# rotated screen, both areas written in KWin's frames and presented in the
+# user's, keep proportions, pen displays following their screen, unknown
+# rotations never guessed into KWin, and the surfaces the editor draws.
+qindaqt_input_test(
+    qindaqt_settings_input_tablet_placement_test
+    SOURCES
+        tst_tablet_placement_model.cpp
+        support/fake_tablet_ports.h
+)
+add_test(NAME qindaqt.settings-input-tablet-placement
+         COMMAND qindaqt_settings_input_tablet_placement_test)
+set_tests_properties(
+    qindaqt.settings-input-tablet-placement PROPERTIES
+    LABELS "settings;input;model"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
+)
+
+# The area canvas and editor as real QML: pointer drags (move, corner resize,
+# draw), the aspect lock, keyboard nudging, accessible naming, and the editor
+# writing what the user drew in KWin's frame. Any QML warning fails a row.
+qt_add_executable(
+    qindaqt_settings_input_tablet_area_editor_test
+    tst_tablet_area_editor.cpp
+    support/fake_tablet_ports.h
+)
+target_include_directories(qindaqt_settings_input_tablet_area_editor_test
+    PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(
+    qindaqt_settings_input_tablet_area_editor_test PRIVATE
+    qindaqt_settings_input qindaqt_settings_appearance qindaqt_themes
+    qindaqt_design_tokens qindaqt_tokens_qml qindaqt_controls_qml
+    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_settings_input_tablet_area_editor_test PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_BUILD_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml"
+)
+add_dependencies(
+    qindaqt_settings_input_tablet_area_editor_test
+    qindaqt_settings_input_qml qindaqt_settings_input_qmlplugin
+    qindaqt_controls_qml qindaqt_controls_qmlplugin
+    qindaqt_tokens_qml qindaqt_tokens_qmlplugin
+)
+qindaqt_enable_warnings(qindaqt_settings_input_tablet_area_editor_test)
+add_test(NAME qindaqt.settings-input-tablet-area-editor
+         COMMAND qindaqt_settings_input_tablet_area_editor_test)
+set_tests_properties(
+    qindaqt.settings-input-tablet-area-editor PROPERTIES
+    LABELS "offscreen;settings;input"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+)
+
 # The Pen & tablet destination as the route ships it: real QML, real models,
 # fake authority.
 qt_add_executable(

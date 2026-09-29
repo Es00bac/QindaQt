@@ -6,16 +6,21 @@
 #include <qindaqt/services/tablet_devices/tablet_output_inventory.h>
 
 #include <QList>
+#include <QRectF>
 #include <QVariant>
+
+#include <optional>
 
 namespace QindaQt::Tests {
 
 // In-memory tablet authority for the Settings route rows: the same contract
 // as the KWin port, with every write recorded and every refusal scriptable.
+// An accepted write moves the scripted device too, as KWin's state moves, so
+// a model that re-reads the device sees what it wrote.
 class FakeTabletPort final
     : public Services::TabletDevices::TabletDevicePort {
 public:
-    QList<Services::TabletDevices::TabletDeviceSnapshot> scripted;
+    mutable QList<Services::TabletDevices::TabletDeviceSnapshot> scripted;
     QString listError;
     mutable QList<std::tuple<QString, QString, QVariant>> writes;
     mutable QString refuse;
@@ -55,6 +60,11 @@ public:
             return false;
         }
         writes.append({deviceId, property, value});
+        for (auto &candidate : scripted) {
+            if (candidate.deviceId == deviceId) {
+                candidate.properties.insert(property, value);
+            }
+        }
         return true;
     }
 };
@@ -101,8 +111,12 @@ public:
     }
 };
 
-// A Wacom pen as KWin 6.6.6 presents it: every capability flag true, so a
-// row that hides a control is hiding it for a reason the test states.
+// A Wacom One pen display as KWin 6.6.6 + libinput 1.31 present it. libinput
+// offers no tablet area for an INPUT_PROP_DIRECT tablet and no rotation for
+// any tablet, so `supportsInputArea` and `supportsRotation` are false; that
+// false `supportsInputArea` is also what classifies it as a pen display
+// (ADR-0285). Every other capability is true, so a row that hides a control
+// is hiding it for a reason the test states.
 inline Services::TabletDevices::TabletDeviceSnapshot
 fakeWacomPen(const QString &id = QStringLiteral("event19")) {
     Services::TabletDevices::TabletDeviceSnapshot pen;
@@ -128,17 +142,74 @@ fakeWacomPen(const QString &id = QStringLiteral("event19")) {
         {QStringLiteral("pressureRangeMin"), 0.0},
         {QStringLiteral("pressureRangeMax"), 1.0},
         {QStringLiteral("rotation"), 0u},
+        {QStringLiteral("orientationDBus"), 0},
         {QStringLiteral("leftHanded"), false},
         {QStringLiteral("tabletToolIsRelative"), false},
         {QStringLiteral("size"), QVariantList{294.0, 166.0}},
         {QStringLiteral("supportsDisableEvents"), true},
-        {QStringLiteral("supportsInputArea"), true},
+        {QStringLiteral("supportsInputArea"), false},
         {QStringLiteral("supportsCalibrationMatrix"), true},
         {QStringLiteral("supportsPressureRange"), true},
-        {QStringLiteral("supportsRotation"), true},
+        {QStringLiteral("supportsRotation"), false},
         {QStringLiteral("supportsLeftHanded"), true},
     };
     return pen;
+}
+
+// The owner's desk tablet, a Wacom Bamboo Connect CTL-470, exactly as KWin
+// 6.6.6 reported it on qinda-top (2026-09-28, libinput without libwacom):
+// no rotation, but a calibration matrix KWin folds its orientation into, and
+// a tablet area, which is libinput's verdict that it is not a screen.
+inline Services::TabletDevices::TabletDeviceSnapshot
+fakeBambooPen(const QString &outputName = QString()) {
+    Services::TabletDevices::TabletDeviceSnapshot pen;
+    pen.deviceId = QStringLiteral("event3");
+    pen.name = QStringLiteral("Wacom Bamboo Connect Pen");
+    pen.deviceGroupId = QStringLiteral("Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MA==");
+    pen.vendorId = 1386;
+    pen.productId = 221;
+    pen.tabletTool = true;
+    pen.properties = QVariantMap{
+        {QStringLiteral("enabled"), true},
+        {QStringLiteral("outputName"), outputName},
+        {QStringLiteral("mapToWorkspace"), false},
+        {QStringLiteral("outputArea"), QVariantList{0.0, 0.0, 1.0, 1.0}},
+        {QStringLiteral("inputArea"), QVariantList{0.0, 0.0, 1.0, 1.0}},
+        {QStringLiteral("calibrationMatrix"),
+         QStringLiteral("1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1")},
+        {QStringLiteral("defaultCalibrationMatrix"),
+         QStringLiteral("1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1")},
+        {QStringLiteral("pressureCurve"), QStringLiteral("0,0;1,1;")},
+        {QStringLiteral("defaultPressureCurve"), QStringLiteral("0,0;1,1;")},
+        {QStringLiteral("pressureRangeMin"), 0.0},
+        {QStringLiteral("pressureRangeMax"), 1.0},
+        {QStringLiteral("rotation"), 0u},
+        {QStringLiteral("orientationDBus"), 0},
+        {QStringLiteral("leftHanded"), false},
+        {QStringLiteral("tabletToolIsRelative"), false},
+        {QStringLiteral("size"), QVariantList{147.2, 92.0}},
+        {QStringLiteral("supportsDisableEvents"), true},
+        {QStringLiteral("supportsInputArea"), true},
+        {QStringLiteral("supportsCalibrationMatrix"), true},
+        {QStringLiteral("supportsPressureRange"), true},
+        {QStringLiteral("supportsRotation"), false},
+        {QStringLiteral("supportsLeftHanded"), true},
+    };
+    return pen;
+}
+
+// A plain monitor with the rotation Display1 reports and its logical
+// (already rotated) geometry.
+inline Services::TabletDevices::TabletOutputCandidate
+fakeMonitor(const QString &connector,
+            std::optional<Services::TabletDevices::Rotation> rotation,
+            const QRectF &geometry = QRectF(0, 0, 1920, 1080)) {
+    Services::TabletDevices::TabletOutputCandidate output{
+        connector, QStringLiteral("Dell Inc."), QStringLiteral("U2720Q"),
+        QStringLiteral("U2720Q"), false, true};
+    output.rotation = rotation;
+    output.logicalGeometry = geometry;
+    return output;
 }
 
 inline Services::TabletDevices::TabletDeviceSnapshot

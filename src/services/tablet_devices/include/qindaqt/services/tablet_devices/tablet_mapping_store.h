@@ -40,6 +40,22 @@ public:
                       const QString &outputName, bool userChosen,
                       const QString &deviceName);
 
+    // Records the desk-tablet placement a user chose (ADR-0285) without
+    // touching the mapping decision. Members of `placement` that are absent
+    // keep their recorded value. Refuses (false) until the ledger has been
+    // read, because writing a document built on an unread ledger would erase
+    // every other tablet's record.
+    //
+    // AGENT-GUARD: a tablet with no record yet adopts KWin's CURRENT mapping
+    // (`currentChoice`/`currentOutput`) as an automatic decision, never as a
+    // user choice. A default FollowActiveScreen here would make the session
+    // policy "restore" it and un-map a pen that KWin had on its own screen.
+    bool recordPlacement(const QString &identity,
+                         const TabletPlacementIntent &placement,
+                         TabletMapChoice currentChoice,
+                         const QString &currentOutput,
+                         const QString &deviceName);
+
 Q_SIGNALS:
     void ledgerChanged();
 };

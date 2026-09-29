@@ -2,6 +2,11 @@
 #include <qindaqt/services/tablet_devices/tablet_mapping_ledger.h>
 
 #include <qindaqt/services/tablet_devices/tablet_device_port.h>
+#include <qindaqt/services/tablet_devices/tablet_geometry.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
 
 namespace QindaQt::Services::TabletDevices {
 namespace {
@@ -19,6 +24,88 @@ bool boundedText(const QVariant &value, QString *out) {
     }
     *out = text;
     return true;
+}
+
+// AGENT-NOTE: Settings1 canonicalizes numbers on the wire: an integral
+// double comes back as qint64 and only a fractional one as double
+// (settings_protocol settings_wire_decode.cpp). A stored [0, 0, 1, 1] is
+// therefore four integers. Any numeric type counts; a bool or a string that
+// happens to convert does not.
+bool numberOf(const QVariant &value, double *out) {
+    switch (value.typeId()) {
+    case QMetaType::Int:
+    case QMetaType::UInt:
+    case QMetaType::LongLong:
+    case QMetaType::ULongLong:
+    case QMetaType::Float:
+    case QMetaType::Double: {
+        const double number = value.toDouble();
+        if (!std::isfinite(number)) {
+            return false;
+        }
+        *out = number;
+        return true;
+    }
+    default:
+        return false;
+    }
+}
+
+std::optional<Rotation> recordedRotation(const QVariant &value) {
+    double degrees = 0.0;
+    if (!numberOf(value, &degrees) || std::trunc(degrees) != degrees ||
+        degrees < 0.0 || degrees > 270.0) {
+        return std::nullopt;
+    }
+    return rotationFromDegrees(static_cast<int>(degrees));
+}
+
+std::optional<TabletArea> recordedArea(const QVariant &value) {
+    if (value.typeId() != QMetaType::QVariantList) {
+        return std::nullopt;
+    }
+    const QVariantList parts = value.toList();
+    if (parts.size() != 4) {
+        return std::nullopt;
+    }
+    std::array<double, 4> members{};
+    for (std::size_t index = 0; index < members.size(); ++index) {
+        if (!numberOf(parts.at(static_cast<qsizetype>(index)),
+                      &members[index])) {
+            return std::nullopt;
+        }
+    }
+    // An intent that is no longer a usable area was not written by this code;
+    // dropping it lets the planner adopt the device's own value again.
+    return normalizedArea(
+        TabletArea{members[0], members[1], members[2], members[3]});
+}
+
+// Members that are absent or malformed stay unset; the rest of the record,
+// including its mapping decision, is kept either way.
+TabletPlacementIntent placementFrom(const QVariantMap &entry) {
+    TabletPlacementIntent placement;
+    placement.rotation = recordedRotation(entry.value(QStringLiteral("rotation")));
+    placement.inputArea = recordedArea(entry.value(QStringLiteral("inputArea")));
+    placement.outputArea =
+        recordedArea(entry.value(QStringLiteral("outputArea")));
+    return placement;
+}
+
+void insertPlacement(const TabletPlacementIntent &placement,
+                     QVariantMap *entry) {
+    if (placement.rotation.has_value()) {
+        entry->insert(QStringLiteral("rotation"),
+                      rotationDegrees(*placement.rotation));
+    }
+    if (placement.inputArea.has_value()) {
+        entry->insert(QStringLiteral("inputArea"),
+                      placement.inputArea->toVariantList());
+    }
+    if (placement.outputArea.has_value()) {
+        entry->insert(QStringLiteral("outputArea"),
+                      placement.outputArea->toVariantList());
+    }
 }
 
 } // namespace
@@ -112,6 +199,7 @@ TabletMappingLedger::fromVariantMap(const QVariantMap &document) {
         }
         record.userChosen = userChosen.toBool();
         record.announced = announced.toBool();
+        record.placement = placementFrom(entry);
         ledger.m_records.insert(it.key(), record);
     }
     return ledger;
@@ -131,6 +219,7 @@ QVariantMap TabletMappingLedger::toVariantMap() const {
         if (!it.value().deviceName.isEmpty()) {
             entry.insert(QStringLiteral("deviceName"), it.value().deviceName);
         }
+        insertPlacement(it.value().placement, &entry);
         document.insert(it.key(), entry);
     }
     return document;

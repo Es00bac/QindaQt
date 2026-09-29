@@ -16,6 +16,9 @@ T.Page {
     required property var inputSettings
     signal closeRequested()
     signal shortcutCaptureActivityChanged(bool active)
+    // The Pen & tablet destination sends a pen display's rotation to the
+    // Display route, where the screen it turns with is rotated (ADR-0285).
+    signal displaySettingsRequested()
 
     // Deep link from the pen-display notification: which destination to open
     // and which device to select there (qindaqt-settings --destination
@@ -199,6 +202,7 @@ T.Page {
         InputTabletSection {
             inputSettings: root.inputSettings
             initialSelection: root.initialSelection
+            onDisplaySettingsRequested: root.displaySettingsRequested()
         }
     }
     Component {

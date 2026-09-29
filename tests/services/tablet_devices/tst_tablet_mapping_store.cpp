@@ -110,6 +110,8 @@ private Q_SLOTS:
     void aPersistedLedgerLoadsAndPublishes();
     void savingCommitsTheWholeDocument();
     void recordChoiceTouchesOneDeviceAndNeverClearsAUserChoice();
+    void recordPlacementKeepsTheMappingAndAdoptsKWinsForANewTablet();
+    void recordPlacementRefusesAnUnreadLedger();
 
 private:
     void rebuildClient();
@@ -225,6 +227,73 @@ void Settings1TabletMappingsTest::recordChoiceTouchesOneDeviceAndNeverClearsAUse
     // under a key that could never be found again.
     QVERIFY(!store.recordChoice(QString(), TabletMapChoice::NamedOutput,
                                 QStringLiteral("HDMI-A-1"), true, QString()));
+}
+
+void Settings1TabletMappingsTest::recordPlacementKeepsTheMappingAndAdoptsKWinsForANewTablet() {
+    rebuildClient();
+    QString error;
+    QVERIFY(m_client->start(&error));
+    m_transport->setValue(
+        QVariant(oneRecord(QStringLiteral("HDMI-A-1"), true)));
+    Settings1TabletMappings store(*m_client);
+    m_transport->announceOwner();
+    QTRY_VERIFY(store.isLoaded());
+
+    // A recorded tablet: only the placement members that are present move,
+    // and the user's mapping decision is untouched.
+    TabletPlacementIntent rotation;
+    rotation.rotation = Rotation::Cw90;
+    QVERIFY(store.recordPlacement(
+        QStringLiteral("1386:934:Wacom One Pen Display 13"), rotation,
+        TabletMapChoice::FollowActiveScreen, QString(), QString()));
+    TabletPlacementIntent area;
+    area.inputArea = TabletArea{0.0, 0.0, 0.5, 1.0};
+    QVERIFY(store.recordPlacement(
+        QStringLiteral("1386:934:Wacom One Pen Display 13"), area,
+        TabletMapChoice::FollowActiveScreen, QString(), QString()));
+    const TabletMappingRecord kept =
+        store.ledger().record(QStringLiteral("1386:934:Wacom One Pen Display 13"));
+    QCOMPARE(kept.choice, TabletMapChoice::NamedOutput);
+    QCOMPARE(kept.outputName, QStringLiteral("HDMI-A-1"));
+    QVERIFY(kept.userChosen);
+    QVERIFY(kept.placement.rotation.has_value());
+    QCOMPARE(*kept.placement.rotation, Rotation::Cw90);
+    QVERIFY(kept.placement.inputArea.has_value());
+    QVERIFY(!kept.placement.outputArea.has_value());
+
+    // AGENT-GUARD: a tablet with no record adopts what KWin already does as
+    // an AUTOMATIC decision. A default "follow the active screen" record
+    // would make the session un-map a pen KWin had on its own screen.
+    QVERIFY(store.recordPlacement(QStringLiteral("1386:221:Wacom Bamboo Connect"),
+                                  rotation, TabletMapChoice::NamedOutput,
+                                  QStringLiteral("DP-1"),
+                                  QStringLiteral("Wacom Bamboo Connect")));
+    const TabletMappingRecord adopted =
+        store.ledger().record(QStringLiteral("1386:221:Wacom Bamboo Connect"));
+    QCOMPARE(adopted.choice, TabletMapChoice::NamedOutput);
+    QCOMPARE(adopted.outputName, QStringLiteral("DP-1"));
+    QVERIFY(!adopted.userChosen);
+    QCOMPARE(adopted.deviceName, QStringLiteral("Wacom Bamboo Connect"));
+    QTRY_VERIFY(m_transport->commits() >= 1);
+}
+
+void Settings1TabletMappingsTest::recordPlacementRefusesAnUnreadLedger() {
+    rebuildClient();
+    QString error;
+    QVERIFY(m_client->start(&error));
+    Settings1TabletMappings store(*m_client);
+    QVERIFY(!store.isLoaded());
+    TabletPlacementIntent rotation;
+    rotation.rotation = Rotation::Cw180;
+    // Writing a document built on an unread ledger would erase every other
+    // tablet's record.
+    QVERIFY(!store.recordPlacement(QStringLiteral("1386:221:Wacom Bamboo Connect"),
+                                   rotation, TabletMapChoice::FollowActiveScreen,
+                                   QString(), QString()));
+    QVERIFY(!store.recordPlacement(QString(), rotation,
+                                   TabletMapChoice::FollowActiveScreen, QString(),
+                                   QString()));
+    QCOMPARE(m_transport->commits(), 0);
 }
 
 QTEST_MAIN(Settings1TabletMappingsTest)

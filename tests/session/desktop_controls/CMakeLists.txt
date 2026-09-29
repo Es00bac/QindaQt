@@ -173,13 +173,26 @@ set_tests_properties(qindaqt.session-desktop-controls-battery-notifications PROP
 # compositor. The rows state the promises the feature makes — map once,
 # announce once, never override a user's choice.
 qt_add_executable(qindaqt_tablet_mapping_policy_tests
-    tst_tablet_mapping_policy.cpp)
+    tst_tablet_mapping_policy.cpp fake_tablet_authority.h)
 target_link_libraries(qindaqt_tablet_mapping_policy_tests
     PRIVATE qindaqt_desktop_controls Qt6::Test)
 qindaqt_enable_warnings(qindaqt_tablet_mapping_policy_tests)
 add_test(NAME qindaqt.session-desktop-controls-tablet-policy
     COMMAND qindaqt_tablet_mapping_policy_tests)
 set_tests_properties(qindaqt.session-desktop-controls-tablet-policy PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "session;session-desktop-controls;model")
+
+# ADR-0285 in the session: rotation and areas follow the screen a tablet
+# reaches, re-based on every output change, over the same in-memory fakes.
+qt_add_executable(qindaqt_tablet_orientation_policy_tests
+    tst_tablet_orientation_policy.cpp fake_tablet_authority.h)
+target_link_libraries(qindaqt_tablet_orientation_policy_tests
+    PRIVATE qindaqt_desktop_controls Qt6::Test)
+qindaqt_enable_warnings(qindaqt_tablet_orientation_policy_tests)
+add_test(NAME qindaqt.session-desktop-controls-tablet-orientation
+    COMMAND qindaqt_tablet_orientation_policy_tests)
+set_tests_properties(qindaqt.session-desktop-controls-tablet-orientation PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "session;session-desktop-controls;model")
 
