@@ -64,6 +64,9 @@ class KWinGroupContextManager;
 class KWinHybridSceneFactory;
 class KWinHybridGroupStacking;
 class KWinIconChipPresenter;
+class KWinMinimizedGatherPager;
+class MinimizedGatherPagerRouter;
+struct MinimizedPagerHit;
 class KWinInteractionFilter;
 class KWinInteractionTargetResolver;
 class KWinMemberPolicyManager;
@@ -315,6 +318,9 @@ private:
     void handleIconifiedClosed(const QString &windowId);
     [[nodiscard]] bool publishIconChip(const QString &windowId, QString *error = nullptr);
     void synchronizeIconChips();
+    void synchronizeMinimizedGather();
+    void changeActiveMinimizedGatherPage(int delta);
+    void handleMinimizedPagerHit(const MinimizedPagerHit &hit);
     void releaseIconChipSceneItems() noexcept;
     void restoreIconifiedForShutdown();
     [[nodiscard]] QRectF iconChipBounds(const QString &windowId) const;
@@ -391,6 +397,9 @@ private:
     std::unique_ptr<HybridIconifyController> m_iconify;
     std::unique_ptr<HybridIconChipRouter> m_iconChipRouter;
     std::unique_ptr<KWinIconChipPresenter> m_iconChips;
+    std::unique_ptr<KWinMinimizedGatherPager> m_minimizedGatherPager;
+    std::unique_ptr<MinimizedGatherPagerRouter> m_minimizedGatherPagerRouter;
+    QHash<QString, int> m_minimizedGatherPages;
     std::unique_ptr<QMenu> m_iconChipMenu;
     // Chip top-left at the press that began an ordinary chip drag, keyed by
     // window id; the router reports cumulative deltas against that press.

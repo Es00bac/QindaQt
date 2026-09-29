@@ -128,14 +128,34 @@ bool HybridContainerPlacementController::unshade(
     // the strip leaves maximize, so a maximized strip has not moved.
     const QRect workArea = isMaximized(containerId) && m_workArea
         ? m_workArea(containerId) : QRect{};
+    const QPoint restorePosition = m_gatherRestorePositions.value(
+        containerId, stripFound->topLeft());
     const QRect restoreFrame = workArea.isValid()
-        ? workArea : QRect(stripFound->topLeft(), *sizeFound);
+        ? workArea : QRect(restorePosition, *sizeFound);
     if (!reflow(containerId, restoreFrame, error)) {
         return false;
     }
     m_shadeStripFrames.erase(stripFound);
     m_shadeRestoreSizes.remove(containerId);
+    m_gatherRestorePositions.remove(containerId);
     m_moveDrags.remove(containerId);
+    return true;
+}
+
+bool HybridContainerPlacementController::placeShadeStripForGather(
+    const QString &containerId, const QPoint &topLeft)
+{
+    auto found = m_shadeStripFrames.find(containerId);
+    if (found == m_shadeStripFrames.end()) {
+        return false;
+    }
+    if (found->topLeft() == topLeft) {
+        return true;
+    }
+    if (!m_gatherRestorePositions.contains(containerId)) {
+        m_gatherRestorePositions.insert(containerId, found->topLeft());
+    }
+    found->moveTopLeft(topLeft);
     return true;
 }
 

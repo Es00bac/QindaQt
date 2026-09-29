@@ -130,6 +130,21 @@ bool HybridIconifyController::relocateChip(const QString &windowId,
     return true;
 }
 
+bool HybridIconifyController::placeChipForGather(const QString &windowId,
+                                                       const QPointF &topLeft,
+                                                       QString *error)
+{
+    const auto index = indexOf(windowId);
+    if (index < 0) {
+        return fail(error, QStringLiteral("window is not iconified: %1").arg(windowId));
+    }
+    if (!std::isfinite(topLeft.x()) || !std::isfinite(topLeft.y())) {
+        return fail(error, QStringLiteral("chip position is not finite"));
+    }
+    m_records[index].chipFrame.moveTopLeft(topLeft);
+    return true;
+}
+
 bool HybridIconifyController::reapply(const QString &windowId, QString *error)
 {
     if (!isIconified(windowId)) {

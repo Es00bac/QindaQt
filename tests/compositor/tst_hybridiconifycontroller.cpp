@@ -61,6 +61,7 @@ private Q_SLOTS:
     void restoreShowsTheWindowAndReturnsTheRecordOnce();
     void restoreDropsTheRecordEvenWhenShowFails();
     void relocateMovesTheChipAndTheRestoreFrameTogetherWithinBounds();
+    void gatherPlacementPreservesTheRestoreFrame();
     void revealedIsADeliberateUnrollThatForgetsTheWindow();
     void reapplyReHidesOnlyIconifiedWindows();
     void closedWindowsAreForgottenWithoutPlatformCalls();
@@ -179,6 +180,22 @@ void HybridIconifyControllerTests::relocateMovesTheChipAndTheRestoreFrameTogethe
     QVERIFY(!controller.relocateChip(QStringLiteral("b"), QPointF(0.0, 0.0), Output, &error));
     QVERIFY(error.contains(QStringLiteral("not iconified")));
     QCOMPARE(platform.calls, QStringList{QStringLiteral("hide:a")});
+}
+
+void HybridIconifyControllerTests::gatherPlacementPreservesTheRestoreFrame()
+{
+    FakeIconifyPlatform platform;
+    HybridIconifyController controller(platform);
+    QVERIFY(controller.iconify(QStringLiteral("a"), WindowFrame, ChipFrame, false));
+    QString error;
+    QVERIFY2(controller.placeChipForGather(QStringLiteral("a"), QPointF(300.0, 420.0),
+                                            &error), qPrintable(error));
+    const auto record = controller.record(QStringLiteral("a"));
+    QCOMPARE(record->chipFrame, QRectF(300.0, 420.0, 48.0, 48.0));
+    QCOMPARE(record->restoreFrame, WindowFrame);
+    const auto restored = controller.restore(QStringLiteral("a"), &error);
+    QVERIFY2(restored.has_value(), qPrintable(error));
+    QCOMPARE(restored->restoreFrame, WindowFrame);
 }
 
 void HybridIconifyControllerTests::revealedIsADeliberateUnrollThatForgetsTheWindow()

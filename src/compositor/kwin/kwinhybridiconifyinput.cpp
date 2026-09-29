@@ -7,6 +7,7 @@
 #include "kwinchromemanager.h"
 #include "kwiniconchippresenter.h"
 #include "kwininteractionfilter.h"
+#include "minimizedgatherpager.h"
 #include "managedwindowregistry.h"
 
 #include "qindaqt/hybrid_chrome/chromeiconchip.h"
@@ -45,6 +46,10 @@ void KWinHybridSession::initializeIconifyInput()
     }
     m_inputFilter->setIconifyHooks(IconifyInputHooks{
         .chipRouter = m_iconChipRouter.get(),
+        .pagerRouter = m_minimizedGatherPagerRouter.get(),
+        .pagerSink = [this](const MinimizedPagerHit &hit) {
+            handleMinimizedPagerHit(hit);
+        },
         .chipSink = [this](const IconChipPointerDecision &decision) {
             dispatchIconChipDecision(decision);
         },

@@ -7,6 +7,7 @@
 #include "kwininteractionfilter.h"
 
 #include "hybridchromepointerrouter.h"
+#include "minimizedgatherpager.h"
 
 #include <core/output.h>
 #include <input.h>
@@ -65,7 +66,14 @@ HybridInput::PointerEvent syntheticPointer(const QPointF &position, Qt::MouseBut
 
 bool KWinInteractionFilter::touchDown(KWin::TouchDownEvent *event)
 {
-    if (event == nullptr || m_chromeRouter == nullptr) {
+    if (event == nullptr) {
+        return false;
+    }
+    if (m_iconify.pagerRouter
+        && m_iconify.pagerRouter->touchDown(event->id, event->pos)) {
+        return true;
+    }
+    if (m_chromeRouter == nullptr) {
         return false;
     }
     const qint64 now = milliseconds(event->time);
@@ -120,6 +128,10 @@ bool KWinInteractionFilter::touchDown(KWin::TouchDownEvent *event)
 
 bool KWinInteractionFilter::touchMotion(KWin::TouchMotionEvent *event)
 {
+    if (event != nullptr && m_iconify.pagerRouter
+        && m_iconify.pagerRouter->touchMotion(event->id, event->pos)) {
+        return true;
+    }
     if (event != nullptr && m_touch.swallows(event->id)) {
         // Its down was consumed on chrome without joining the gesture; the
         // seat never saw it, so neither may its motion (policy swallows()).
@@ -161,6 +173,14 @@ bool KWinInteractionFilter::touchMotion(KWin::TouchMotionEvent *event)
 
 bool KWinInteractionFilter::touchUp(KWin::TouchUpEvent *event)
 {
+    if (event != nullptr && m_iconify.pagerRouter
+        && m_iconify.pagerRouter->touchActive(event->id)) {
+        const auto hit = m_iconify.pagerRouter->touchUp(event->id, event->pos);
+        if (hit && m_iconify.pagerSink) {
+            m_iconify.pagerSink(*hit);
+        }
+        return true;
+    }
     if (event != nullptr && m_touch.swallows(event->id)) {
         static_cast<void>(m_touch.up(event->id, milliseconds(event->time)));
         return true;
@@ -191,6 +211,14 @@ bool KWinInteractionFilter::touchUp(KWin::TouchUpEvent *event)
 
 bool KWinInteractionFilter::touchCancel()
 {
+    if (m_iconify.pagerRouter) {
+        const bool pagerGesture = m_iconify.pagerRouter->active()
+            && !m_iconify.pagerRouter->pointerActive();
+        if (pagerGesture) {
+            m_iconify.pagerRouter->cancel();
+            return true;
+        }
+    }
     titlePickupCancel();
     if (m_chromeRouter == nullptr || !m_touch.tracking()) {
         return false;
