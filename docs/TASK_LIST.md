@@ -2068,3 +2068,9 @@ of aspect locks, generated names, and pending replacements (none of the
 process-local state persists yet, by design of the current session model).
 The pre-existing `compositor.kwin-plugin-dependency-contract` failure
 reproduces on the clean tree and is unrelated.
+
+## 2026-09-29 Plasma-free PF1 integration
+
+- [x] Settings1 native per-source power preferences and bounded, one-time PowerDevil import (`151dce49`, preservation repair `c29a285c`). Second-resolution idle durations, disabled action and sleep modes are preserved.
+- [ ] PF2 Power1 v2 policy runtime, lid/critical battery/profile/inhibitor authority.
+- [ ] PF3–PF4 idle stages, native brightness feedback, native Settings route and PowerDevil retirement.

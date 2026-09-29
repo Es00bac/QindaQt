@@ -3,6 +3,7 @@
 
 #include "dbus_service_name_validation_p.h"
 #include "settings_object_p.h"
+#include "qindaqt/services/power_policy/powerdevil_import.h"
 
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
 #include "qindaqt/services/settings_protocol/settings_wire_encode.h"
@@ -49,12 +50,14 @@ public:
             Settings::SettingsSchema currentSchema,
             Settings::SettingsSchema previousSchema,
             QString defaultsPath,
-            QString storagePath)
+            QString storagePath,
+            QString powerDevilPath)
         : connection(std::move(busConnection))
         , activeSchema(std::move(currentSchema))
         , legacySchema(std::move(previousSchema))
         , profileDefaultsPath(std::move(defaultsPath))
         , userOverridesPath(std::move(storagePath))
+        , powerDevilPreferencesPath(std::move(powerDevilPath))
     {
     }
 
@@ -63,6 +66,7 @@ public:
     Settings::SettingsSchema legacySchema;
     QString profileDefaultsPath;
     QString userOverridesPath;
+    QString powerDevilPreferencesPath;
     QString serviceName;
     std::unique_ptr<SettingsRepository> repository;
     std::unique_ptr<QObject> object;
@@ -72,10 +76,12 @@ ResidentSettingsService::ResidentSettingsService(QDBusConnection connection,
                                                  Settings::SettingsSchema activeSchema,
                                                  Settings::SettingsSchema legacySchema,
                                                  QString profileDefaultsPath,
-                                                 QString userOverridesPath)
+                                                 QString userOverridesPath,
+                                                 QString powerDevilPreferencesPath)
     : d(std::make_unique<Private>(std::move(connection), std::move(activeSchema),
                                   std::move(legacySchema), std::move(profileDefaultsPath),
-                                  std::move(userOverridesPath)))
+                                  std::move(userOverridesPath),
+                                  std::move(powerDevilPreferencesPath)))
 {
 }
 
@@ -199,6 +205,44 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
     d->repository = std::make_unique<SettingsRepository>(
         std::move(initial), d->userOverridesPath,
         QUuid::createUuid().toString(QUuid::WithoutBraces));
+    // AGENT-CONTRACT: import only after winning Settings1 and only through the
+    // public repository transaction. Imported values and marker share one
+    // durable commit; malformed/missing sources and failed saves remain retryable.
+    QVariantMap legacyPowerValues;
+    if (PowerPolicy::readPowerDevilPreferences(d->powerDevilPreferencesPath,
+                                               &legacyPowerValues)) {
+        QStringList nativeKeys{QStringLiteral("power.migration.powerDevilImported"),
+            QStringLiteral("power.idleDisplayOffMinutes"), QStringLiteral("power.screensaver"),
+            QStringLiteral("power.screensaverMinutes"), QStringLiteral("power.critical.action")};
+        for (const auto &profile : {QStringLiteral("ac"), QStringLiteral("battery"),
+                                    QStringLiteral("lowBattery")}) {
+            nativeKeys << QStringLiteral("power.sleep.%1.mode").arg(profile)
+                       << QStringLiteral("power.lid.%1.action").arg(profile)
+                       << QStringLiteral("power.lid.%1.dockedAction").arg(profile)
+                       << QStringLiteral("power.idle.%1.displayOffEnabled").arg(profile)
+                       << QStringLiteral("power.idle.%1.displayOffSeconds").arg(profile)
+                       << QStringLiteral("power.idle.%1.dimEnabled").arg(profile)
+                       << QStringLiteral("power.idle.%1.dimSeconds").arg(profile)
+                       << QStringLiteral("power.idle.%1.lockBeforeDisplayOff").arg(profile)
+                       << QStringLiteral("power.idle.%1.suspendAction").arg(profile)
+                       << QStringLiteral("power.idle.%1.suspendSeconds").arg(profile)
+                       << QStringLiteral("power.profile.%1").arg(profile);
+        }
+        const auto native = d->repository->snapshot(nativeKeys);
+        QVariantMap explicitValues;
+        if (native.ok) {
+            for (const auto &key : nativeKeys) {
+                if (native.sourceLayers.value(key) == Settings::SettingLayer::UserOverrides)
+                    explicitValues.insert(key, native.values.value(key));
+            }
+        }
+        const auto plan = PowerPolicy::planPowerDevilImport(legacyPowerValues, explicitValues);
+        QVector<SettingsRepository::Operation> operations;
+        for (const auto &entry : plan.values)
+            operations.push_back({entry.first, false, entry.second});
+        if (plan.sourceSupported && !operations.isEmpty())
+            (void)d->repository->commitUserOverrides(d->repository->revision(), operations);
+    }
     auto object = std::make_unique<
         ::QindaQt::Services::SettingsService::Private::SettingsObject>(
         d->connection, *d->repository);
