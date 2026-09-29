@@ -116,6 +116,8 @@ void ManagedWindowRegistry::addWindow(KWin::Window *window)
             this, [this](const KWin::RectF &) { scheduleWindowsChanged(); });
     connect(window, &KWin::Window::minimizedChanged,
             this, &ManagedWindowRegistry::scheduleWindowsChanged);
+    connect(window, &KWin::Window::fullScreenChanged,
+            this, [this] { scheduleWindowsChanged(); });
     connect(window, &KWin::Window::skipTaskbarChanged,
             this, &ManagedWindowRegistry::scheduleWindowsChanged);
     connect(window, &KWin::Window::skipSwitcherChanged,
@@ -366,6 +368,7 @@ QJsonArray ManagedWindowRegistry::windowsJson() const
                                    rectJson(m_targetFrames.value(
                                        id, window->moveResizeGeometry()))},
                                   {QStringLiteral("minimized"), window->isMinimized()},
+                                  {QStringLiteral("fullscreen"), window->isFullScreen()},
                                   // Distinct from minimized: shade hides
                                   // members via Window::isHidden(), never
                                   // isMinimized() (see ADR-0099), so this is

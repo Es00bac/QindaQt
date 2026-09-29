@@ -45,7 +45,7 @@ from shade_fixtures import KINDS, missing_executable  # noqa: E402
 SKIP_CODE = 77
 # Unix socket paths are limited to 108 bytes including the terminator.
 MAXIMUM_BUS_SOCKET_PATH = 100
-MINIMUM_VERDICTS = {"cycles": 15, "lifecycle": 13}
+MINIMUM_VERDICTS = {"cycles": 15, "lifecycle": 13, "gathered": 15}
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -58,6 +58,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--flow", choices=sorted(MINIMUM_VERDICTS), required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--name")
+    parser.add_argument("--panel-fixture", type=Path)
     return parser.parse_args()
 
 
@@ -154,6 +155,7 @@ def main() -> int:
     environment = isolated_environment(root)
     write_virtual_output_config(Path(environment["XDG_CONFIG_HOME"]), spec)
     environment.update({
+        "GATHERED_PANEL_FIXTURE": str(arguments.panel_fixture or ""),
         "SHADE_OUT": str(output), "SHADE_KIND": arguments.kind, "SHADE_FLOW": arguments.flow,
         "SHADE_PIXEL_WIDTH": str(spec.pixel_width), "SHADE_PIXEL_HEIGHT": str(spec.pixel_height),
         "SHADE_SCALE": f"{spec.scale:.12g}", "PYTHONDONTWRITEBYTECODE": "1"})
