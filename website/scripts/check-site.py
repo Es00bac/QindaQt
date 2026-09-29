@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -79,6 +80,19 @@ def main() -> int:
                 errors.append(f"{page.path.relative_to(SITE)}: missing {kind} target {raw}")
             elif fragment and target in pages and fragment not in pages[target].ids:
                 errors.append(f"{page.path.relative_to(SITE)}: missing anchor {raw}")
+    desktop_film = SITE / "assets/video/desktop-tour.mp4"
+    if desktop_film.is_file():
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(desktop_film)],
+            capture_output=True, text=True, check=False)
+        try:
+            duration = float(probe.stdout.strip())
+        except ValueError:
+            errors.append("desktop tour duration could not be read with ffprobe")
+        else:
+            if duration < 300:
+                errors.append(f"desktop tour is {duration:.1f}s; it must run at least 5 minutes")
     for error in errors:
         print(error, file=sys.stderr)
     if errors:

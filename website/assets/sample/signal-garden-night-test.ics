@@ -1,0 +1,13 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//QindaQt Showcase//Signal Garden//EN
+BEGIN:VEVENT
+UID:signal-garden-night-test-20260927@qindaqt.example
+DTSTAMP:20260927T060000Z
+DTSTART:20260927T100000
+DTEND:20260927T110000
+SUMMARY:Signal Garden night test
+LOCATION:Courtyard
+DESCRIPTION:Verify low-glare lighting and covered power before Friday approval.
+END:VEVENT
+END:VCALENDAR

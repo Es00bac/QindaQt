@@ -67,6 +67,17 @@ main, .site-footer { margin-left: 196px; }
 .hero-screen img { aspect-ratio: 16 / 10; }
 .screen-label { right: 0; left: auto; bottom: 0; border-radius: 0; background: #13252bd9; color: #d0eee7; font: 600 .58rem "DejaVu Sans Mono", monospace; }
 .hero-hosts { position: absolute; z-index: 3; width: min(44%, 285px); aspect-ratio: 1360 / 1157; right: -18px; bottom: -6px; filter: drop-shadow(0 12px 20px #06131dbb); pointer-events: none; }
+.host-sprite { aspect-ratio: 1; background: url("images/hosts-animation-sheet.png") 0 0 / 400% 200% no-repeat; animation: host-action 2.4s step-end infinite; }
+@keyframes host-action {
+  0%, 12.49% { background-position: 0% 0%; }
+  12.5%, 24.99% { background-position: 33.333% 0%; }
+  25%, 37.49% { background-position: 66.667% 0%; }
+  37.5%, 49.99% { background-position: 100% 0%; }
+  50%, 62.49% { background-position: 0% 100%; }
+  62.5%, 74.99% { background-position: 33.333% 100%; }
+  75%, 87.49% { background-position: 66.667% 100%; }
+  87.5%, 100% { background-position: 100% 100%; }
+}
 .host-pose { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .host-idle { animation: host-idle 6s step-end infinite; }
 .host-point { animation: host-point 6s step-end infinite; }
@@ -221,4 +232,4 @@ main, .site-footer { margin-left: 196px; }
   .theme-side { padding: 20px; }
   .button { width: auto; }
 }
-@media (prefers-reduced-motion: reduce) { .host-pose { animation: none !important; } .host-idle { opacity: 1; } .host-point, .host-react { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .host-sprite { animation: none; background-position: 0% 0%; } }

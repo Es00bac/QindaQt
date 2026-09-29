@@ -83,7 +83,9 @@ if [[ -n ${QINDA_SITE_PLUGIN_ROOT:-} ]]; then
     plugin_args=(--plugin-root "$QINDA_SITE_PLUGIN_ROOT")
 fi
 qindaqt-wm "${plugin_args[@]}" --virtual --socket "$socket" --width 1440 --height 900 \
-    --no-lockscreen --no-global-shortcuts --session "$run_dir/session.sh" \
+    --no-lockscreen --no-global-shortcuts \
+    --test-scenario "$repo/tests/scenarios/single-1080p.json" \
+    --session "$run_dir/session.sh" \
     > "$stage/wm.log" 2>&1 &
 wm=$!
 for _ in {1..50}; do
@@ -99,3 +101,6 @@ sleep 3
 spectacle -b -n -f -o "$stage/capture.png" > "$stage/spectacle.log" 2>&1
 ffmpeg -hide_banner -loglevel error -y -i "$stage/capture.png" \
     -quality 82 "$repo/website/assets/images/layout-live-$profile${2:+-$theme}.webp"
+if [[ ${QINDA_PROFILE_FILM:-0} == 1 ]]; then
+    QINDA_PROFILE_FILM="$profile" python3 website/scripts/record-live.py
+fi

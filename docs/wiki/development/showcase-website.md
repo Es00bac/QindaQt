@@ -20,16 +20,17 @@ handbook instead of implying a stable one-click binary release while the
 [release qualification](implementation-roadmap.md) remains in progress.
 
 The [website README](https://github.com/Es00bac/QindaQt/blob/main/website/README.md)
-records the local server,
-capture method, media provenance, mascot prompt, and film generation. Live
-screenshots come from an isolated virtual QindaQt session with an empty Desktop
-directory; five profile comparisons are live captures with paired themes,
-while the remaining previews are explicitly labeled renders from
-`qindaqt-shell-preview`. The HTML window demo is an illustration of the real
+records the local server, capture method, media provenance, mascot prompt, and
+film generation. The local preview server supports byte-range responses for
+seeking through the long desktop film. Live screenshots come from an isolated
+virtual QindaQt session with an empty Desktop
+directory. All eleven profile comparisons are live captures with their catalog
+themes and fitting wallpapers. The HTML window demo illustrates the real
 tab/split/detach contract. Three captioned films use actual screen recordings
-from the private virtual session: the desktop film shows a real Meta+Shift
-split and a live layout change; the Office film operates the sample files in
-installed apps; the Audio1 film walks actual Settings controls. Cyber Pengu
+from private virtual sessions: the desktop film runs for more than five minutes
+and covers splits, tabs, Settings, complete appearance themes, eleven live layouts,
+native tools, Audio1, and the companion Office suite. The Office film operates
+the sample files in installed apps; the Audio1 film walks actual Settings controls. Cyber Pengu
 and Ducke switch wallpaper-matched speaking and gesture poses in each chapter,
 voiced with distinct Kokoro voices. No personal desktop capture or model
 weights are in the website tree.
