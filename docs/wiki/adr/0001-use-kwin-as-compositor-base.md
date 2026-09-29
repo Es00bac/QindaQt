@@ -4,7 +4,7 @@
 - **Date:** 2026-08-25
 - **Owners:** Compositor
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0289](0289-run-on-qindaqt-kwin.md) for the downstream-patch model: QindaQt runs on its own KWin fork, and KWin remains the code base
 
 ## Context
 

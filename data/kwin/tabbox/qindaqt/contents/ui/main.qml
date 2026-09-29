@@ -4,7 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
-import org.kde.kwin as KWin
+import org.qindaqt.kwin as KWin
 
 // KWin remains the focus and activation authority. Its model already consumes
 // each window's skipSwitcher flag, so a QindaQt container arrives here as one

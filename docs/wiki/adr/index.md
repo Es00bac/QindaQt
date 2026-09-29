@@ -298,3 +298,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0286: Per-display and per-desktop wallpapers](0286-per-display-and-per-desktop-wallpapers.md)
 
 - [ADR-0287: Pass tablet proximity through window decorations](0287-pass-tablet-proximity-through-window-decorations.md)
+
+- [ADR-0289: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork](0289-run-on-qindaqt-kwin.md)

@@ -22,7 +22,7 @@ function(configure_without_kwin suffix plugin_enabled testing_enabled expect_suc
         -DQINDAQT_BUILD_SHELL=OFF
         -DQINDAQT_BUILD_KWIN_PLUGIN=${plugin_enabled}
         -DQINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS=${QINDAQT_TEST_AUDIO_LIVE_RUNTIME}
-        -DCMAKE_DISABLE_FIND_PACKAGE_KWin=TRUE
+        -DCMAKE_DISABLE_FIND_PACKAGE_QindaQtKWin=TRUE
     )
     if(DEFINED QINDAQT_TEST_CMAKE_PREFIX_PATH
        AND NOT "${QINDAQT_TEST_CMAKE_PREFIX_PATH}" STREQUAL "")
@@ -45,7 +45,7 @@ function(configure_without_kwin suffix plugin_enabled testing_enabled expect_suc
         endif()
     elseif(result EQUAL 0)
         message(FATAL_ERROR "the requested KWin plugin silently configured without KWin")
-    elseif(NOT log MATCHES "CMAKE_DISABLE_FIND_PACKAGE_KWin")
+    elseif(NOT log MATCHES "CMAKE_DISABLE_FIND_PACKAGE_QindaQtKWin")
         message(FATAL_ERROR "configuration failed for an unrelated reason:\n${log}")
     endif()
 endfunction()
@@ -59,8 +59,8 @@ function(configure_standalone_bridge)
         -B "${binary_dir}"
         -G "${QINDAQT_TEST_GENERATOR}"
         -DBUILD_TESTING=ON
-        -DCMAKE_DISABLE_FIND_PACKAGE_KWin=TRUE
-        -DCMAKE_DISABLE_FIND_PACKAGE_KDecoration3=TRUE
+        -DCMAKE_DISABLE_FIND_PACKAGE_QindaQtKWin=TRUE
+        -DCMAKE_DISABLE_FIND_PACKAGE_QindaQtKWinDecoration=TRUE
     )
     if(DEFINED QINDAQT_TEST_CMAKE_PREFIX_PATH
        AND NOT "${QINDAQT_TEST_CMAKE_PREFIX_PATH}" STREQUAL "")

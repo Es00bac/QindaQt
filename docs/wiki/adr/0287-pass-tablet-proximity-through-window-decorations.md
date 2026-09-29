@@ -5,6 +5,7 @@
 - **Owners:** Compositor
 - **Supersedes:** None
 - **Superseded by:** None
+- **Amended by:** [ADR-0289](0289-run-on-qindaqt-kwin.md): the patch is a qindaqt-kwin commit
 
 ## Context
 

@@ -6,13 +6,14 @@ the shipped KWin plugin.
 
 ## Prepare the candidate
 
-Work from a clean, reviewable commit. Confirm that the source manifest and
-empty or rebased patch series describe the intended KWin state:
+Work from a clean, reviewable commit. Confirm that the source manifest pins the
+intended qindaqt-kwin fork release (ADR-0289):
 
 ```sh
 ./compositor/tools/verify-kwin-source
 ./compositor/tools/verify-kwin-source --check-remote
-./tools/check-release-contract
+./tools/check-release-contract \
+  --desktop-ebuild <QindaGentoo>/gui-wm/qindaqt-desktop/qindaqt-desktop-<version>.ebuild
 ```
 
 The remote check resolves the annotated tag and its peeled commit. Do not copy
@@ -27,7 +28,7 @@ files and declares the replacement blocker.
 
 ## Build and qualify
 
-Use an exact release-matched KWin development package. A fresh build root
+Use the exact qindaqt-kwin development package the manifest pins. A fresh build root
 prevents a previous plugin from satisfying discovery accidentally:
 
 ```sh
@@ -45,8 +46,8 @@ cmake --build build/release-checkpoint \
 cmake --install build/release-checkpoint \
   --prefix "$PWD/build/release-checkpoint-stage"
 ./tools/check-release-contract \
-  --kwin-wayland /usr/bin/kwin_wayland \
-  --kwin-cmake-version /usr/lib64/cmake/KWin/KWinConfigVersion.cmake \
+  --compositor /usr/bin/qindaqt-kwin \
+  --compositor-cmake-version /usr/lib64/cmake/QindaQtKWin/QindaQtKWinConfigVersion.cmake \
   --build-root build/release-checkpoint \
   --install-root build/release-checkpoint-stage
 ```
@@ -56,7 +57,7 @@ load limits exactly. Do not replace `MAKEOPTS` with a guessed `--parallel`
 value or a command-local override; if a demonstrated failure requires different
 limits, obtain the operator's explicit approval first.
 
-Adjust only the KWin CMake version-file path for the distribution layout. The
+Adjust only the fork's CMake version-file path for the distribution layout. The
 checker requires the runtime and development package to report the exact same
 release and requires non-empty plugin and session-launcher artifacts. It
 requires stdout to contain only the exact `kwin VERSION` line while allowing

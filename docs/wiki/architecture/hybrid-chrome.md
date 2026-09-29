@@ -678,10 +678,11 @@ and commit/cancel behavior are documented in
 
 ## Decoration discovery and defaults
 
-The member decoration is installed at KDecoration3's exported KDE plugin
-directory under module ID `org.qindaqt`. On first run, `qindaqt-wm` writes
-`[org.kde.kdecoration2] library=org.qindaqt` only when that key is missing. A
-user-selected third-party decoration is never overwritten on a later launch.
+The member decoration is installed at qindaqt-kwin's decoration namespace (ADR-0289), exported as the KDE plugin
+directory under module ID `org.qindaqt`. qindaqt-kwin's compiled-in default and
+fallback is `org.qindaqt`, so `qindaqt-wm` no longer writes
+`[org.kde.kdecoration2] library`; a user-selected decoration in the fork's
+namespace is never overwritten.
 The Appearance **Windows** destination is the explicit user-facing authority
 for changing that selection: it lists installed native and Aurorae choices,
 writes only KWin's decoration keys, and requests live reconfiguration
@@ -716,7 +717,7 @@ not a guarantee of that contrast after compositing.
 
 The focused plugin test loads the factory and metadata, while the staged-install
 test proves that both compositor and decoration artifacts are installed and
-that a fresh isolated `kwinrc` receives the default. The nested Hybrid-unload
+that a fresh isolated `qindaqt/kwinrc` receives the default. The nested Hybrid-unload
 workflow also requires three mapped probe windows to be server-decorated and
 their live KDecoration meta-object class to contain `QindaDecoration`; a silent
 fallback to another selected decoration therefore fails the workflow.
