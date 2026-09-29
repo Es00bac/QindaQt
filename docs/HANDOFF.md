@@ -4563,3 +4563,5 @@ are being implemented; 90% maximize means centered 90% width and height inside
 the usable output, leaving a 5% border on each side. Named targets must resolve
 uniquely and stale command contexts fail without retargeting. These source
 acceptance results do not claim final deployment or the full Plasma-free program.
+
+Native key-store PK3 source candidate `f0d6edae17ea722a3d8604902cbe142e85f1ad69` is accepted after manager integration build and12/12 focused fatal-warning CTests. SYSTEM owner trust never accepts a supplied PID or user bus address. The system launcher clears display environment and waits for supervisor attachment joined to the native compositor bus owner/kernel peer; each prompt inherits the exact validated ordinary FD. No privileged locker FD is shared. Real system activation/rendered physical roles and credential migration remain pending; PK4 worker owns native Passwords & Keys in a new isolated worktree. Logs `.cache/manager-gates/keyring-pam-integration-{build,tests,docs}.log`.

@@ -15,5 +15,7 @@ public:
     using QObject::QObject;
     virtual quint64 begin(PromptRequest, PromptCompletion) = 0;
     virtual void cancel(quint64) = 0;
+    // GUI-thread metadata admission; implementations without display transport fail closed.
+    virtual bool bindSessionDisplay(const QString &,const QString &) { return false; }
 };
 }

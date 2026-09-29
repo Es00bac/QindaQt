@@ -2,6 +2,7 @@
 #include "../daemon/secret_service.h"
 #include "../daemon/process_prompt_provider.h"
 #include "../daemon/control_server.h"
+#include "../daemon/session_display_binding.h"
 #include <QCoreApplication>
 #include <QCommandLineParser>
 #include <QStandardPaths>
@@ -29,7 +30,8 @@ int main(int argc,char **argv) {
     QCoreApplication::setApplicationName("qindaqt-keyring");
     qInstallMessageHandler([](QtMsgType,const QMessageLogContext &,const QString &) {});
     QCommandLineParser parser; parser.addHelpOption();
-    parser.addOptions({{"storage-root","Explicit collection directory.","path"},
+    parser.addOptions({{"require-session-display","Require validated native session attachment before prompts."},
+                       {"storage-root","Explicit collection directory.","path"},
                        {"runtime-root","Explicit private runtime directory.","path"},
                        {"private-bus","Explicit isolated bus address for qualification.","address"},
                        {"prompt-program","Explicit trusted prompt helper executable.","path"}});
@@ -51,7 +53,8 @@ int main(int argc,char **argv) {
         const bool activated = qEnvironmentVariableIntValue("LISTEN_FDS") == 1
             && qEnvironmentVariable("LISTEN_PID").toLongLong() == getpid();
         ControlServer control(runtime,repository,activated ? 3 : -1);
-        ProcessPromptProvider provider(helper);
+        SessionDisplayBinding display(bus,qEnvironmentVariable("XDG_RUNTIME_DIR"),parser.isSet("require-session-display"));
+        ProcessPromptProvider provider(helper,nullptr,&display);
         SecretService service(repository,provider,bus);
         QObject::connect(&control,&ControlServer::collectionStateChanged,&service,&SecretService::notifyCollectionState);
         if (!bus.registerVirtualObject(Root,&service,QDBusConnection::SubPath)) return 2;
