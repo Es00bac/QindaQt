@@ -72,12 +72,25 @@ bool hasRunning(const QSignalSpy &spy, const QString &name) {
                        });
 }
 
+void createNullSink(const QString &name, const QProcessEnvironment &env) {
+    QString diagnostic;
+    const bool ok = command(QStringLiteral(QINDAQT_PW_CLI_EXECUTABLE),
+                            {QStringLiteral("create-node"), QStringLiteral("adapter"),
+                             QStringLiteral("{ factory.name = support.null-audio-sink "
+                                            "node.name = %1 node.description = \"%1\" "
+                                            "media.class = Audio/Sink object.linger = true "
+                                            "audio.position = [ FL FR ] }").arg(name)},
+                            env, &diagnostic);
+    QVERIFY2(ok, qPrintable(diagnostic));
+}
+
 } // namespace
 
 class VbanPeerRuntimeTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void twoPrivateInstancesRouteOnlyToSelectedOutput();
+    void senderFailureIsLoggedAndNotReportedRunning();
 };
 
 void VbanPeerRuntimeTest::twoPrivateInstancesRouteOnlyToSelectedOutput() {
@@ -115,19 +128,8 @@ void VbanPeerRuntimeTest::twoPrivateInstancesRouteOnlyToSelectedOutput() {
     QVERIFY(policy.start(QStringLiteral(QINDAQT_WIREPLUMBER_EXECUTABLE),
                          {QStringLiteral("-p"), QStringLiteral("policy")}, env));
 
-    const auto createSink = [&](const QString &name) {
-        QString diagnostic;
-        const bool ok = command(QStringLiteral(QINDAQT_PW_CLI_EXECUTABLE),
-                                {QStringLiteral("create-node"), QStringLiteral("adapter"),
-                                 QStringLiteral("{ factory.name = support.null-audio-sink "
-                                                "node.name = %1 node.description = \"%1\" "
-                                                "media.class = Audio/Sink object.linger = true "
-                                                "audio.position = [ FL FR ] }").arg(name)},
-                                env, &diagnostic);
-        QVERIFY2(ok, qPrintable(diagnostic));
-    };
-    createSink(QStringLiteral("qindaqt.test.peer.output.1"));
-    createSink(QStringLiteral("qindaqt.test.peer.output.2"));
+    createNullSink(QStringLiteral("qindaqt.test.peer.output.1"), env);
+    createNullSink(QStringLiteral("qindaqt.test.peer.output.2"), env);
 
     WirePlumberAudioBackend sender;
     WirePlumberAudioBackend receiver;
@@ -240,6 +242,70 @@ void VbanPeerRuntimeTest::twoPrivateInstancesRouteOnlyToSelectedOutput() {
     QTRY_VERIFY_WITH_TIMEOUT(!hasRunning(senderRunning, QStringLiteral("Peer")), 5000);
     sender.stop();
     receiver.stop();
+}
+
+// A sender that never comes up must not be reported running, and its
+// applyVbanOnWorker failure must be logged rather than dropped silently. An
+// empty stream name is the one VbanSender::start failure this test can force
+// deterministically through the real worker path: it is rejected before any
+// getaddrinfo/socket call, so the result does not depend on DNS or network
+// availability in the test sandbox.
+void VbanPeerRuntimeTest::senderFailureIsLoggedAndNotReportedRunning() {
+    registerDBusTypes();
+    QTemporaryDir root(QStringLiteral("/tmp/qindaqt-vban-fail-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString runtime = root.filePath(QStringLiteral("runtime"));
+    const QString state = root.filePath(QStringLiteral("state"));
+    const QString config = root.filePath(QStringLiteral("config"));
+    QVERIFY(QDir().mkpath(runtime));
+    QVERIFY(QDir().mkpath(state));
+    QVERIFY(QDir().mkpath(config));
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert(QStringLiteral("XDG_RUNTIME_DIR"), runtime);
+    env.insert(QStringLiteral("PIPEWIRE_RUNTIME_DIR"), runtime);
+    env.insert(QStringLiteral("XDG_STATE_HOME"), state);
+    env.insert(QStringLiteral("XDG_CONFIG_HOME"), config);
+    env.insert(QStringLiteral("DBUS_SESSION_BUS_ADDRESS"),
+               QStringLiteral("unix:path=%1/no-session-bus").arg(root.path()));
+    env.remove(QStringLiteral("PIPEWIRE_REMOTE"));
+    qputenv("XDG_RUNTIME_DIR", runtime.toUtf8());
+    qputenv("PIPEWIRE_RUNTIME_DIR", runtime.toUtf8());
+    qputenv("XDG_STATE_HOME", state.toUtf8());
+    qputenv("XDG_CONFIG_HOME", config.toUtf8());
+    qputenv("DBUS_SESSION_BUS_ADDRESS",
+            env.value(QStringLiteral("DBUS_SESSION_BUS_ADDRESS")).toUtf8());
+    qunsetenv("PIPEWIRE_REMOTE");
+
+    ProcessGuard pipewire;
+    QVERIFY(pipewire.start(QStringLiteral(QINDAQT_PIPEWIRE_EXECUTABLE),
+                           {QStringLiteral("-c"), QStringLiteral(QINDAQT_PIPEWIRE_TEST_CONFIG)},
+                           env));
+    QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(runtime + QStringLiteral("/pipewire-0")), 5000);
+    ProcessGuard policy;
+    QVERIFY(policy.start(QStringLiteral(QINDAQT_WIREPLUMBER_EXECUTABLE),
+                         {QStringLiteral("-p"), QStringLiteral("policy")}, env));
+    createNullSink(QStringLiteral("qindaqt.test.fail.output"), env);
+
+    WirePlumberAudioBackend sender;
+    QSignalSpy senderSnapshots(&sender, &AudioBackend::snapshotReady);
+    QSignalSpy senderRunning(&sender, &AudioBackend::vbanRunningChanged);
+    QVERIFY(sender.start() != 0);
+    QTRY_VERIFY_WITH_TIMEOUT(readySnapshot(senderSnapshots).has_value()
+        && outputHandle(*readySnapshot(senderSnapshots),
+                        QStringLiteral("qindaqt.test.fail.output")).isValid(), 10000);
+    const Handle sendTarget = outputHandle(*readySnapshot(senderSnapshots),
+                                           QStringLiteral("qindaqt.test.fail.output"));
+
+    QTest::ignoreMessage(QtWarningMsg,
+        "VBAN: outgoing stream '' failed to start (host 127.0.0.1 port 6980)");
+    sender.applyVban({BackendVbanStream{.name = QString(),
+                                        .outgoing = true,
+                                        .target = sendTarget,
+                                        .host = QStringLiteral("127.0.0.1"),
+                                        .port = 6980}});
+    QTest::qWait(300);
+    QVERIFY(!hasRunning(senderRunning, QString()));
+    sender.stop();
 }
 
 QTEST_MAIN(VbanPeerRuntimeTest)

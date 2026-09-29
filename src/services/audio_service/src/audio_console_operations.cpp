@@ -447,7 +447,21 @@ void AudioOperationCoordinator::acceptLevels(const quint64 generation,
     if (!m_console.publishLevels(levels)) {
         return;
     }
+    // AGENT-GUARD: m_console.console() carries only strips/buses/solo -
+    // presets, macros, recording and vban are projected separately in
+    // republishConsole() (presets/macros read their stores from disk) and are
+    // never part of that model. Carry the previous snapshot's four fields
+    // forward so a meter-rate update does not flicker them to empty; do not
+    // recompute them here.
+    const QStringList presets = m_snapshot.console.presets;
+    const QStringList macros = m_snapshot.console.macros;
+    const Recording recording = m_snapshot.console.recording;
+    const QList<VbanStream> vban = m_snapshot.console.vban;
     m_snapshot.console = m_console.console();
+    m_snapshot.console.presets = presets;
+    m_snapshot.console.macros = macros;
+    m_snapshot.console.recording = recording;
+    m_snapshot.console.vban = vban;
     Q_EMIT levelsChanged(levels);
 }
 
