@@ -162,6 +162,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         qindaqt_gather_overview_composition_tests
         PRIVATE
             QindaQt::ShellGatherOverview
+            QindaQt::CompositorNames
             QindaQt::ShellTaskListApplet
             QindaQt::ShellTaskListProducer
             QindaQt::ShellTaskListOperations
