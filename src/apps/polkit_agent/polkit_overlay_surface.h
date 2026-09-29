@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <QString>
+
 class QQuickWindow;
 
 namespace QindaQt::Apps::PolkitAgent {
@@ -26,8 +28,9 @@ public:
     // (falling back to the primary screen, exactly as
     // GatherOverviewComposition::screenToOpenOn() does, and for the same
     // reason: a layer-shell client is never told which output has focus).
-    // Must be called before the window is first shown.
-    static void configure(QQuickWindow &window);
+    // Must be called before the window is first shown. Returns false and
+    // leaves it hidden when Wayland or its layer-shell role is unavailable.
+    [[nodiscard]] static bool configure(QQuickWindow &window, QString *error = nullptr);
 };
 
 } // namespace QindaQt::Apps::PolkitAgent

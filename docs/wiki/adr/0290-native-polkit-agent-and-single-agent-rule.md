@@ -51,9 +51,12 @@ a port of any existing agent:
   -- is pure C++ with no polkit type in its public interface, so it is
   unit-tested without polkitd, D-Bus, or a live session. Only
   `polkit_listener.cpp` includes a `PolkitQt1` header.
-- The dialog is QindaTK QML (`QindaQt.Controls`, `QindaQt.Tokens`), so it
-  follows the session's theme and tokens, including dark mode, exactly like
-  every other first-party app. It is presented as a layer-shell overlay on
+- Before constructing `QGuiApplication`, the process selects LayerShellQt
+  integration. The app refuses non-Wayland platforms and aborts if no layer
+  surface can be created; it never presents an ordinary top-level password
+  window. The dialog is QindaTK QML (`QindaQt.Controls`, `QindaQt.Tokens`),
+  so it follows the session's theme and tokens, including dark mode, exactly
+  like every other first-party app. It is presented as a layer-shell overlay on
   the output under the pointer, with a token-coloured scrim and
   `KeyboardInteractivityExclusive`, so keystrokes cannot land in whatever
   window had focus underneath it. Enter authenticates, Escape cancels, and
@@ -71,10 +74,10 @@ a port of any existing agent:
   `TryExec` basenames (`polkit-gnome-authentication-agent-1`,
   `polkit-kde-authentication-agent-1`, `lxqt-policykit-agent`,
   `polkit-mate-authentication-agent-1`, `xfce-polkit`, `lxpolkit`) as
-  ineligible, superseded by this agent, independent of that entry's own
-  `NotShowIn`/`OnlyShowIn` content -- closing exactly the gap that let
-  polkit-gnome's entry run uncontested. Every other autostart entry's
-  eligibility is unchanged.
+  ineligible while this session owns its native agent, independent of that
+  entry's own `NotShowIn`/`OnlyShowIn` content -- closing exactly the gap that
+  let polkit-gnome's entry run uncontested. `--no-polkit-agent` restores those
+  entries' ordinary eligibility; all other entries remain unchanged.
 
 ## Consequences
 
@@ -83,6 +86,10 @@ a port of any existing agent:
 - Packaging must swap `kde-plasma/polkit-kde-agent` for `sys-auth/polkit-qt`
   as the session's polkit-agent dependency (the manager's change, not made
   here; see the packaging lines this change's handoff recommends).
+- `QCursor::pos()` may return `(0, 0)` when Wayland withholds global pointer
+  position; `screenAt()` can then choose the first output. This follows the
+  existing GatherOverview best-effort selection, but multi-output prompt
+  placement still needs live-session qualification.
 - This change never registers the agent against a real polkitd or starts
   any service, per the workflow's live-session safety rule; the live
   behaviour (`pkexec true` in an installed session, then a wrong password,

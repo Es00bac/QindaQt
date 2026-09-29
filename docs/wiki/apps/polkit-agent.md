@@ -51,12 +51,16 @@ dropped, and takes over the moment the first is resolved. The password is
 never logged, never kept in any model past the call that uses it, and
 cleared from the field after every attempt, success or failure alike.
 
-## Appearance
+## Appearance and output
 
 Surfaces, spacing, radii, type, and colour all come from the design tokens
 the Appearance route publishes, the same Settings1 subscription and theme
 controller every first-party app uses, so the dialog follows the session's
-theme, including dark mode.
+theme, including dark mode. The agent chooses the output under the global
+cursor position and falls back to the primary output when Qt reports no
+position. Wayland may report `(0, 0)` instead, which can choose the first
+output; pointer placement across multiple outputs remains to be qualified in
+a live session.
 
 ## Single-agent rule
 
@@ -69,9 +73,14 @@ theme, including dark mode.
   [ADR-0247](../adr/0247-run-xdg-autostart-in-the-session-supervisor.md))
   marks a documented table of distribution polkit-agent `Exec`/`TryExec`
   basenames ineligible -- superseded by this agent -- and logs each skipped
-  entry, regardless of that entry's own `NotShowIn`/`OnlyShowIn`. Every other autostart entry is
+  entry, regardless of that entry's own `NotShowIn`/`OnlyShowIn`. With
+  `--no-polkit-agent`, they retain normal eligibility; other entries are
   unaffected.
-- A registration conflict with polkitd (another agent already holds the
+- The process selects LayerShellQt before constructing QGuiApplication. It
+  refuses non-Wayland platforms or a missing layer surface and never falls back
+  to an ordinary top-level password window.
+
+A registration conflict with polkitd (another agent already holds the
   session's slot) exits this agent with status 2 and a stderr line, never a
   crash loop; the supervisor's shared one-restart budget for optional
   children already bounds the retry.
@@ -90,7 +99,8 @@ theme, including dark mode.
   including the honest-empty case for an unreadable pid.
 - `qindaqt.polkit-agent-dialog-qml` (offscreen QML): accessible names,
   Enter/Escape, the error line, the identity chooser hidden for one
-  identity, and the password field cleared after a failed attempt.
+  identity, the password field cleared after a failed attempt, and refusal to
+  configure an authentication window on an unsupported platform.
 - `qindaqt.session-polkit-agent-selection` and
   `qindaqt.session-autostart-catalog` (unit, `src/session_supervisor` and
   `src/session_autostart`): the single-candidate default and the autostart

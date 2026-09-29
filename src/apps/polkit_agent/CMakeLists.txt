@@ -163,7 +163,12 @@ if(BUILD_TESTING)
         qindaqt.polkit-agent-requester-resolver PROPERTIES LABELS "apps;polkit;model;pure"
     )
 
-    qt_add_executable(qindaqt_polkit_dialog_qml_tests tests/tst_polkit_dialog_qml.cpp)
+    qt_add_executable(
+        qindaqt_polkit_dialog_qml_tests
+        tests/tst_polkit_dialog_qml.cpp
+        polkit_overlay_surface.cpp
+        polkit_overlay_surface.h
+    )
     target_include_directories(
         qindaqt_polkit_dialog_qml_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
     )
@@ -179,6 +184,7 @@ if(BUILD_TESTING)
         PRIVATE
             qindaqt_polkit_agent_core
             qindaqt_polkit_agent_appearance
+            LayerShellQt::Interface
             QindaQt::TokensQml
             qindaqt_themes
             Qt6::Quick

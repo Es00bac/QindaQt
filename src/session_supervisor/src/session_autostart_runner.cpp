@@ -34,8 +34,9 @@ void SessionAutostartRunner::startOnce()
         qCWarning(SESSION_AUTOSTART) << "could not scan autostart:" << error;
     for (const auto &entry : entries) {
         if (!entry.eligible) {
-            if (entry.ineligibilityReason
-                == QLatin1String("Superseded by the QindaQt session's own polkit agent")) {
+            if (m_options.supersedeDistributionPolkitAgents
+                && entry.ineligibilityReason
+                    == QLatin1String("Superseded by the QindaQt session's own polkit agent")) {
                 qCInfo(SESSION_AUTOSTART) << "skipped superseded polkit agent entry:" << entry.id;
             }
             continue;
