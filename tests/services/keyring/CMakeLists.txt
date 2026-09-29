@@ -42,3 +42,6 @@ if(TARGET qindaqt-keyring-prompt)
 endif()
 
 add_subdirectory(pam)
+
+add_test(NAME keyring_prompt_display COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_prompt_display.py" "$<TARGET_FILE:qindaqt-keyring>" "$<TARGET_FILE:qindaqt_pam_fixture_launcher>")
+set_tests_properties(keyring_prompt_display PROPERTIES TIMEOUT 90 LABELS "keyring;dbus;private-fixture")

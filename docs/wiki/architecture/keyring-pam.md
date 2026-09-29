@@ -107,9 +107,25 @@ CMake provides the QindaQtKeyringPam component with the module, helper, launcher
 and system template. This is a Portage packaging input, not an installed stack.
 A future ebuild must own source installation, exact paths, stack ordering,
 system activation permission and activation-file reconciliation. Tests do not
-install or start any live unit. The launcher's fixed wayland-0 display selection
-is provisional; native prompt/output qualification and configurable trusted
-display selection remain PK4 work.
+install or start any live unit. The system launcher clears inherited display
+metadata and requires a validated session display attachment before a prompt.
+
+The supervisor supplies its current native socket basename through additive
+Keyring1.AttachSessionWithDisplay(s); legacy AttachSession remains compatible
+but supplies no display authority. CompositorNames owns the qindaqt- prefix.
+Only canonical numeric slots0–4095 are admitted, beneath the pinned no-follow
+owned0700 runtime directory. Admission joins the unique session owner and
+active native compositor bus owner/PID/UID to the actual Unix SO_PEERCRED and
+SO_PEERPIDFD. A compositor-name change, dead peer, session disconnect or socket
+lineage loss revokes approval. Each helper inherits the exact newly connected,
+validated ordinary Wayland FD as WAYLAND_SOCKET; it never reconnects by pathname.
+A replaced pathname cannot redirect that connection. No locker-only connection
+or privileged locker capability is shared.
+
+This display binding authenticates the declared current compositor lineage, not
+its executable or a PAM token recipient. The separate protected system owner
+remains the only PAM delivery authority. Native rendered overlay/multi-output
+qualification and best-effort cursor output selection remain bounded PK4 gates.
 
 ## Verification and memory limits
 
@@ -124,7 +140,11 @@ same-UID zero-payload rejection, injected actual-daemon rejection and competing
 ownership. A separately compiled manager seam pins the sanitized child created
 by the fixture; no such runtime option exists in production.
 keyring_pam_owner_policy checks manager identity/state refusals and protected
-path permissions/symlinks. The production sd-bus transport is compiled against
+path permissions/symlinks. keyring_prompt_display checks actual private bus
+and kernel peer lineage, native slot/FD environment, fake or replaced sockets,
+owner replacement, in-flight cancellation, disconnect and default cleared state.
+The existing Secret Service suite preserves legacy attachment/prompt behavior.
+The production sd-bus transport is compiled against
 installed systemd; real root system activation remains a deployment gate.
 
 Owned token/frame pages are locked and wiped. Anonymous socket/kernel buffers,

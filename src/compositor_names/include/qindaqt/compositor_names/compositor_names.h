@@ -15,6 +15,9 @@ namespace QindaQt::CompositorNames
 // The compositor program the QindaQt session launches.
 inline constexpr QLatin1StringView executable{"qindaqt-kwin"};
 
+// Native Wayland socket basenames use this prefix plus a canonical numeric slot.
+inline constexpr QLatin1StringView waylandSocketPrefix{"qindaqt-"};
+
 // Config files, relative to $XDG_CONFIG_HOME: QindaQt's own folder.
 inline constexpr QLatin1StringView configDirectory{"qindaqt"};
 inline constexpr QLatin1StringView configFile{"qindaqt/kwinrc"};

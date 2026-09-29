@@ -89,6 +89,6 @@ void SessionCommandLineTest::rejectsNonNumericDimensions()
     QVERIFY(error.contains(QStringLiteral("numeric")));
 }
 
-QTEST_APPLESS_MAIN(SessionCommandLineTest)
+QTEST_GUILESS_MAIN(SessionCommandLineTest)
 
 #include "tst_sessioncommandline.moc"
