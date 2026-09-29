@@ -15,13 +15,30 @@ ScreenTabletOutputs::ScreenTabletOutputs(QObject *parent)
     : TabletOutputInventory(parent) {
     if (auto *application = qGuiApp) {
         connect(application, &QGuiApplication::screenAdded, this,
-                &TabletOutputInventory::outputsChanged);
+                [this](QScreen *screen) {
+                    watchScreen(screen);
+                    Q_EMIT outputsChanged();
+                });
         connect(application, &QGuiApplication::screenRemoved, this,
                 &TabletOutputInventory::outputsChanged);
+        const QList<QScreen *> screens = QGuiApplication::screens();
+        for (QScreen *screen : screens) {
+            watchScreen(screen);
+        }
     }
 }
 
 ScreenTabletOutputs::~ScreenTabletOutputs() = default;
+
+void ScreenTabletOutputs::watchScreen(QScreen *screen) {
+    if (screen == nullptr) {
+        return;
+    }
+    // A rotated, rescaled or moved screen changes the shape and place the
+    // area editor draws (ADR-0285). The connection dies with the screen.
+    connect(screen, &QScreen::geometryChanged, this,
+            &TabletOutputInventory::outputsChanged);
+}
 
 bool ScreenTabletOutputs::isInternalConnector(const QString &connectorName) {
     static const QStringList prefixes{
@@ -51,6 +68,10 @@ QList<TabletOutputCandidate> ScreenTabletOutputs::outputs() const {
             .label = screen->model(),
             .internal = isInternalConnector(screen->name()),
             .enabled = true,
+            // QScreen cannot say how KWin turns pen input; the Display1
+            // decorator adds the rotation (display_tablet_outputs.h).
+            .rotation = std::nullopt,
+            .logicalGeometry = QRectF(screen->geometry()),
         });
     }
     return candidates;

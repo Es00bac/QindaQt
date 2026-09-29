@@ -5,6 +5,8 @@
 
 #include <QObject>
 
+class QScreen;
+
 namespace QindaQt::Services::TabletDevices {
 
 // The outputs a process currently drives, as tablet mapping needs to see
@@ -44,6 +46,9 @@ public:
     [[nodiscard]] QList<TabletOutputCandidate> outputs() const override;
 
     [[nodiscard]] static bool isInternalConnector(const QString &connectorName);
+
+private:
+    void watchScreen(QScreen *screen);
 };
 
 } // namespace QindaQt::Services::TabletDevices

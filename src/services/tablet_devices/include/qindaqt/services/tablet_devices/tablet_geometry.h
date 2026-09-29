@@ -7,11 +7,58 @@
 #include <QPointF>
 #include <QString>
 
+#include <optional>
+
 namespace QindaQt::Services::TabletDevices {
 
 // Pure geometry for the Pen & tablet route. Nothing here talks to KWin; the
 // route computes a value and the port writes it, so every rule below is
 // testable without a device.
+
+// The smallest side the area editor lets a user draw, as a fraction of the
+// surface (ADR-0285). Below it a mapping is no longer something a hand can
+// use, and a drag that ends there is a slip rather than a choice.
+inline constexpr double MinimumEditableAreaExtent = 0.05;
+
+// The rectangle KWin and libinput will both accept, or nothing.
+//
+// AGENT-GUARD: KWin stores an inputArea without checking it; libinput then
+// refuses it (x1 >= x2, or any edge outside 0..1, where x2 is computed as
+// x + width) and keeps the OLD area while kcminputrc remembers the new one
+// (kwin-6.6.6 device.cpp setInputArea; libinput 1.31 evdev-tablet.c
+// tablet_area_set_rectangle). Every area bound for the port passes through
+// here: a member that overshoots an edge by less than a rounding error is
+// pulled onto it, the far edge is recomputed as 1 - origin (which never
+// rounds past 1.0), and anything genuinely outside, non-finite, or with a
+// side shorter than `minimumExtent` is refused.
+[[nodiscard]] std::optional<TabletArea>
+normalizedArea(const TabletArea &area, double minimumExtent = 1e-4);
+
+// True when every member of the two areas agrees within `tolerance`. Used to
+// skip writes a floating-point round trip would otherwise repeat forever.
+[[nodiscard]] bool sameArea(const TabletArea &first, const TabletArea &second,
+                            double tolerance = 1e-9);
+
+// The normalized width/height ratio an output rectangle needs so that its
+// on-screen proportions equal the physical proportions of `input` on the
+// tablet. Tablet extents are in millimetres as the user sees the tablet;
+// surface extents are in logical pixels. 0 when any extent is unknown, so a
+// caller can never lock to a guessed ratio.
+[[nodiscard]] double proportionalOutputAspect(const TabletArea &input,
+                                              double tabletWidth,
+                                              double tabletHeight,
+                                              double surfaceWidth,
+                                              double surfaceHeight);
+
+// `output` reshaped to proportionalOutputAspect(): same centre and same area
+// where it fits, shrunk to fit the surface where it does not. Returns
+// `output` unchanged when the ratio is unknown.
+[[nodiscard]] TabletArea proportionalOutputArea(const TabletArea &input,
+                                                double tabletWidth,
+                                                double tabletHeight,
+                                                const TabletArea &output,
+                                                double surfaceWidth,
+                                                double surfaceHeight);
 
 // KWin's identity calibration: a 4x4 row-major matrix as sixteen
 // comma-separated numbers, exactly the form

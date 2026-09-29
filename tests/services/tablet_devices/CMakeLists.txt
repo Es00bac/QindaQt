@@ -45,3 +45,35 @@ add_test(NAME qindaqt.services-tablet-devices-mapping-store
 set_tests_properties(qindaqt.services-tablet-devices-mapping-store PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "services;tablet-devices;model")
+
+# ADR-0285 values: rotation algebra, KWin's orientation table, area turns,
+# pen display vs desk tablet classification, the rotation KWin applies per
+# mapping, and the Display1 join.
+qt_add_executable(qindaqt_tablet_orientation_values_tests
+    tst_tablet_orientation_values.cpp support/kwin_tablet_pipeline.h)
+target_include_directories(qindaqt_tablet_orientation_values_tests
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(qindaqt_tablet_orientation_values_tests
+    PRIVATE qindaqt_tablet_devices Qt6::Test)
+qindaqt_enable_warnings(qindaqt_tablet_orientation_values_tests)
+add_test(NAME qindaqt.services-tablet-devices-orientation
+    COMMAND qindaqt_tablet_orientation_values_tests)
+set_tests_properties(qindaqt.services-tablet-devices-orientation PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "services;tablet-devices;model")
+
+# ADR-0285 planning: the desk-tablet and pen-display planner checked against
+# an independent model of the KWin 6.6.6 + libinput 1.31 pipeline for every
+# turn x rotation pair, plus adoption, fixed points and refusals.
+qt_add_executable(qindaqt_tablet_placement_tests
+    tst_tablet_placement.cpp support/kwin_tablet_pipeline.h)
+target_include_directories(qindaqt_tablet_placement_tests
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(qindaqt_tablet_placement_tests
+    PRIVATE qindaqt_tablet_devices Qt6::Test)
+qindaqt_enable_warnings(qindaqt_tablet_placement_tests)
+add_test(NAME qindaqt.services-tablet-devices-placement
+    COMMAND qindaqt_tablet_placement_tests)
+set_tests_properties(qindaqt.services-tablet-devices-placement PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    LABELS "services;tablet-devices;model")

@@ -85,6 +85,7 @@ bool isWritableTabletProperty(const QString &property) {
         QStringLiteral("pressureRangeMin"),
         QStringLiteral("pressureRangeMax"),
         QStringLiteral("rotation"),
+        QStringLiteral("orientationDBus"),
         QStringLiteral("leftHanded"),
         QStringLiteral("tabletToolIsRelative"),
     };

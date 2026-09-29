@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <qindaqt/services/tablet_devices/tablet_orientation.h>
+
 #include <QHash>
 #include <QString>
 #include <QVariantMap>
@@ -33,6 +35,11 @@ struct TabletMappingRecord {
     // The device name at the time of the record, for diagnostics and for a
     // readable Settings list when the tablet is unplugged.
     QString deviceName;
+    // ADR-0285: the desk-tablet placement the user asked for, in the frames
+    // they see. Stored as `rotation` (degrees), `inputArea` and `outputArea`
+    // ([x, y, width, height]). A malformed member is dropped on read on its
+    // own; it never costs the record its mapping decision.
+    TabletPlacementIntent placement;
 
     friend bool operator==(const TabletMappingRecord &,
                            const TabletMappingRecord &) = default;

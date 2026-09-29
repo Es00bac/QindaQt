@@ -420,6 +420,7 @@ T.ApplicationWindow {
                 root.updateInputShortcutCapture(active)
             Component.onDestruction: root.updateInputShortcutCapture(false)
             onCloseRequested: root.close()
+            onDisplaySettingsRequested: root.navigation.selectRoute("display")
         }
     }
 

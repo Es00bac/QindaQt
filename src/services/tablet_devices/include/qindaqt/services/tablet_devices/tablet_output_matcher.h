@@ -2,9 +2,13 @@
 #pragma once
 
 #include <qindaqt/services/tablet_devices/tablet_device_port.h>
+#include <qindaqt/services/tablet_devices/tablet_orientation.h>
 
 #include <QList>
+#include <QRectF>
 #include <QString>
+
+#include <optional>
 
 namespace QindaQt::Services::TabletDevices {
 
@@ -18,6 +22,14 @@ struct TabletOutputCandidate {
     QString label;
     bool internal = false;
     bool enabled = true;
+    // ADR-0285: the rotation KWin applies to tablet input mapped to this
+    // output (its transform with flips ignored, exactly as KWin ignores
+    // them). std::nullopt means nobody has said, and planning on it would
+    // be a guess, so the placement planner acts on nothing in that case.
+    std::optional<Rotation> rotation = std::nullopt;
+    // Position and size in the logical (rotated, scaled) workspace; empty
+    // when unknown. The area editor draws the screen from this.
+    QRectF logicalGeometry = QRectF();
 
     friend bool operator==(const TabletOutputCandidate &,
                            const TabletOutputCandidate &) = default;

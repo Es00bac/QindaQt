@@ -14,6 +14,7 @@
 #include "qindaqt/session/desktop_controls/tablet_route_launcher.h"
 #include "qindaqt/session/desktop_controls/volume_key_controller.h"
 
+#include <qindaqt/services/tablet_devices/display_tablet_outputs.h>
 #include <qindaqt/services/tablet_devices/kwin_tablet_devices.h>
 #include <qindaqt/services/tablet_devices/tablet_mapping_store.h>
 #include <qindaqt/services/tablet_devices/tablet_output_inventory.h>
@@ -236,7 +237,8 @@ int main(int argc, char *argv[])
     QindaQt::Services::TabletDevices::KWinTabletDevicePort tabletPort(sessionBus);
     QindaQt::Services::TabletDevices::KWinTabletDeviceWatcher tabletWatcher(
         sessionBus, &application);
-    QindaQt::Services::TabletDevices::ScreenTabletOutputs tabletOutputs(&application);
+    QindaQt::Services::TabletDevices::DisplayRotationTabletOutputs tabletOutputs(
+        sessionBus, &application);
     QindaQt::Session::DesktopControls::TabletMappingPolicy tabletPolicy(
         tabletPort, tabletWatcher, tabletOutputs, tabletMappings, &application);
     QindaQt::Session::DesktopControls::TabletArrivalNotifier tabletNotifier(
@@ -290,6 +292,7 @@ int main(int argc, char *argv[])
             QTextStream(stderr) << "qindaqt-desktop-controls: " << notifierError
                                 << '\n';
         }
+        tabletOutputs.startDisplay();
         QString tabletError;
         if (!tabletPolicy.start(&tabletError)) {
             QTextStream(stderr)

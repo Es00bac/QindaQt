@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <qindaqt/apps/settings_input/tablet_placement_model.h>
 #include <qindaqt/services/tablet_devices/tablet_device_port.h>
 #include <qindaqt/services/tablet_devices/tablet_mapping_store.h>
 #include <qindaqt/services/tablet_devices/tablet_output_inventory.h>
@@ -23,6 +24,11 @@ namespace QindaQt::Apps::SettingsInput {
 // AGENT-GUARD: `mapMode` and `outputName` are one decision. Writing them in
 // the wrong order hands the pen back to the active screen for a frame, so
 // both go through applyMapping(), never through two independent setters.
+//
+// Rotation and the two mapped areas live in `placement` (ADR-0285), which
+// this selection owns and feeds with the device and every mapping change: a
+// new screen means a new compensation, so the mapping and the placement are
+// applied together.
 class TabletDeviceSelection final : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString deviceId READ deviceId NOTIFY deviceChanged)
@@ -44,25 +50,10 @@ class TabletDeviceSelection final : public QObject {
     Q_PROPERTY(QStringList outputNames READ outputNames NOTIFY outputsChanged)
     Q_PROPERTY(QStringList outputLabels READ outputLabels NOTIFY outputsChanged)
 
-    // Area: the mapped rectangle of the output, as four normalized doubles.
-    Q_PROPERTY(QVariantList outputArea READ outputArea NOTIFY areaChanged)
-    Q_PROPERTY(bool outputAreaAvailable READ outputAreaAvailable NOTIFY
-                   availabilityChanged)
-    Q_PROPERTY(QVariantList inputArea READ inputArea NOTIFY areaChanged)
-    Q_PROPERTY(bool inputAreaAvailable READ inputAreaAvailable NOTIFY
-                   availabilityChanged)
-    // True when the tablet reports a physical size, so "keep the tablet's
-    // proportions" can be computed rather than guessed.
-    Q_PROPERTY(bool aspectRatioAvailable READ aspectRatioAvailable NOTIFY
-                   availabilityChanged)
-    Q_PROPERTY(double tabletAspectRatio READ tabletAspectRatio NOTIFY
-                   deviceChanged)
+    // Rotation, the kind of tablet and both mapped areas (ADR-0285).
+    Q_PROPERTY(QObject *placement READ placement CONSTANT)
 
-    // Orientation
-    Q_PROPERTY(int rotation READ rotation WRITE setRotation NOTIFY
-                   rotationChanged)
-    Q_PROPERTY(bool rotationAvailable READ rotationAvailable NOTIFY
-                   availabilityChanged)
+    // Left-handed: desk tablets only; a pen display turns with its screen.
     Q_PROPERTY(bool leftHanded READ leftHanded WRITE setLeftHanded NOTIFY
                    leftHandedChanged)
     Q_PROPERTY(bool leftHandedAvailable READ leftHandedAvailable NOTIFY
@@ -135,27 +126,22 @@ public:
     [[nodiscard]] QString outputName() const { return m_outputName; }
     [[nodiscard]] QStringList outputNames() const { return m_outputNames; }
     [[nodiscard]] QStringList outputLabels() const { return m_outputLabels; }
-    [[nodiscard]] QVariantList outputArea() const { return m_outputArea; }
-    [[nodiscard]] bool outputAreaAvailable() const {
-        return m_outputAreaAvailable;
+    [[nodiscard]] TabletPlacementModel *placement() const {
+        return m_placement;
     }
-    [[nodiscard]] QVariantList inputArea() const { return m_inputArea; }
-    [[nodiscard]] bool inputAreaAvailable() const {
-        return m_inputAreaAvailable;
-    }
-    [[nodiscard]] bool aspectRatioAvailable() const {
-        return m_outputAreaAvailable && m_aspectRatio > 0.0;
-    }
-    [[nodiscard]] double tabletAspectRatio() const { return m_aspectRatio; }
-    [[nodiscard]] int rotation() const { return m_rotation; }
-    [[nodiscard]] bool rotationAvailable() const { return m_rotationAvailable; }
     [[nodiscard]] bool leftHanded() const { return m_leftHanded; }
+    // AGENT-NOTE: libinput's left-handed mode turns a tablet 180°. On a pen
+    // display that points the pen away from its tip, so the switch is a
+    // desk-tablet control; the session clears a stale one (ADR-0285).
     [[nodiscard]] bool leftHandedAvailable() const {
-        return m_leftHandedAvailable;
+        return m_leftHandedAvailable && !m_placement->penDisplay();
     }
     [[nodiscard]] QString calibrationMatrix() const { return m_calibration; }
+    // The four-target wizard measures a pen on the screen it draws on, so it
+    // is a pen-display control. (Without libwacom, libinput also offers a
+    // calibration matrix to desk tablets; it carries their rotation there.)
     [[nodiscard]] bool calibrationAvailable() const {
-        return m_calibrationAvailable;
+        return m_calibrationAvailable && m_placement->penDisplay();
     }
     [[nodiscard]] bool calibrated() const {
         return m_calibrationAvailable && m_calibration != m_defaultCalibration;
@@ -179,7 +165,6 @@ public:
     [[nodiscard]] int padDialCount() const { return m_padDials; }
 
     void setDeviceEnabled(bool value);
-    void setRotation(int value);
     void setLeftHanded(bool value);
     void setPressureRangeMin(double value);
     void setPressureRangeMax(double value);
@@ -190,17 +175,6 @@ public:
     // alone when the authority refuses.
     Q_INVOKABLE bool applyMapping(const QString &mode,
                                   const QString &output = {});
-    // Area. `x, y, width, height` are normalized to the mapped surface.
-    Q_INVOKABLE bool applyOutputArea(double x, double y, double width,
-                                     double height);
-    Q_INVOKABLE bool applyInputArea(double x, double y, double width,
-                                    double height);
-    // Fit the whole screen, or letterbox to the tablet's own proportions
-    // inside the current output. Returns false when the tablet reports no
-    // physical size, because a computed ratio would then be a guess.
-    Q_INVOKABLE bool fitWholeScreen();
-    Q_INVOKABLE bool keepTabletProportions(double outputWidth,
-                                           double outputHeight);
     // Calibration. `matrix` is KWin's 16-value comma-separated row-major
     // string; the wizard computes it from four measured targets.
     Q_INVOKABLE bool applyCalibrationMatrix(const QString &matrix);
@@ -224,8 +198,6 @@ Q_SIGNALS:
     void deviceEnabledChanged();
     void mappingChanged();
     void outputsChanged();
-    void areaChanged();
-    void rotationChanged();
     void leftHandedChanged();
     void calibrationChanged();
     void pressureChanged();
@@ -260,13 +232,7 @@ private:
     QString m_outputName;
     QStringList m_outputNames;
     QStringList m_outputLabels;
-    QVariantList m_outputArea;
-    QVariantList m_inputArea;
-    bool m_outputAreaAvailable = false;
-    bool m_inputAreaAvailable = false;
-    double m_aspectRatio = 0.0;
-    int m_rotation = 0;
-    bool m_rotationAvailable = false;
+    TabletPlacementModel *m_placement = nullptr;
     bool m_leftHanded = false;
     bool m_leftHandedAvailable = false;
     QString m_calibration;
