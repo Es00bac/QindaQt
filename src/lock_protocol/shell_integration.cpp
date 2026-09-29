@@ -57,6 +57,9 @@ public:
     for (const auto &global : display->globals()) {
       if (global.interface == QStringLiteral("ext_session_lock_manager_v1")) {
         m_client = std::make_unique<ProtocolClient>(display->wl_display(), global.registry, global.id);
+        for (const auto &seat : display->globals()) {
+          if (seat.interface == QStringLiteral("wl_seat")) { m_client->observeKeyboard(seat.registry, seat.id, seat.version); break; }
+        }
         return m_client->available();
       }
     }

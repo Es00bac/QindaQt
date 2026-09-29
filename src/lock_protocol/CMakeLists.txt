@@ -2,6 +2,7 @@
 find_package(Qt6 6.11 REQUIRED COMPONENTS WaylandClient WaylandClientPrivate GuiPrivate)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LockWayland REQUIRED IMPORTED_TARGET wayland-client)
+pkg_check_modules(LockXKB REQUIRED IMPORTED_TARGET xkbcommon)
 find_program(QINDAQT_WAYLAND_SCANNER wayland-scanner REQUIRED)
 find_file(QINDAQT_SESSION_LOCK_XML ext-session-lock-v1.xml
     PATHS /usr/share/wayland-protocols/staging/ext-session-lock REQUIRED)
@@ -12,11 +13,11 @@ add_custom_command(OUTPUT ext-session-lock-v1-client-protocol.h
 add_custom_command(OUTPUT ext-session-lock-v1-protocol.c
     COMMAND "${QINDAQT_WAYLAND_SCANNER}" private-code "${QINDAQT_SESSION_LOCK_XML}" "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-protocol.c"
     DEPENDS "${QINDAQT_SESSION_LOCK_XML}")
-add_library(qindaqt_lock_protocol SHARED protocol_client.cpp protocol_client.h
+add_library(qindaqt_lock_protocol SHARED protocol_client.cpp protocol_client.h keyboard_layout.cpp keyboard_layout.h
     "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-client-protocol.h"
     "${CMAKE_CURRENT_BINARY_DIR}/ext-session-lock-v1-protocol.c")
 target_include_directories(qindaqt_lock_protocol PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-target_link_libraries(qindaqt_lock_protocol PUBLIC Qt6::Core PRIVATE PkgConfig::LockWayland)
+target_link_libraries(qindaqt_lock_protocol PUBLIC Qt6::Core PRIVATE PkgConfig::LockWayland PkgConfig::LockXKB)
 set_target_properties(qindaqt_lock_protocol PROPERTIES VERSION 1.0 SOVERSION 1)
 qindaqt_enable_warnings(qindaqt_lock_protocol)
 add_library(qindaqt_session_lock_integration MODULE shell_integration.cpp session-lock.json)

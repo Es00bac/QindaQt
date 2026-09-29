@@ -84,3 +84,30 @@ remain manager-owned through Portage.
 
 See [Native session locking](../architecture/native-session-lock.md) and the
 [testing harness](../development/testing-harness.md).
+
+
+## Native presentation consequence
+
+The locker uses immutable ext-session-lock roles on per-output QtQuick views,
+with QindaTK prompt presentation and a private native controller. Shared
+AuthenticationOverlay is a layer-shell boundary and cannot substitute for this
+role. The controller exposes begin/respond/cancel only; QML receives neither
+ProtocolClient nor WorkerProcess.
+
+The public pure OSK model is reused inside the protected locker through an
+editing-only KeyEmitter. Actual standard wl_keyboard XKB group/key labels drive
+its layout; credentials never become synthetic seat events. Settings selects
+only fixed compiled Patrol/Reef wrappers with metrics disabled. Root-managed
+installed Qt/QML paths remain the only production import/plugin roots.
+
+Native locker qualification exposed CircuitReef's incompatible QString palette
+override of Qt6.11 Item.palette. The prerequisite suite-source ADR-0001 renames
+the public embedding property to reefPalette and documents the required
+migration; retaining the conflicting alias would preserve the fatal warning.
+The CLI option remains unchanged. Private tests may use an explicit compiled
+uninstalled prerequisite module path; production has no such override.
+
+The owned PAM worker sets PR_SET_PDEATHSIG and checks the inherited socketpair's
+creator credentials/current parent after setting it. A crashed locker cannot
+leave a blocked PAM module resident. Parent-death and current-token checks
+supplement cancellation and never confer approval.

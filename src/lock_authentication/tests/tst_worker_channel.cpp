@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "worker_wire.h"
+#include "worker_conversation.h"
 #include <QFile>
 #include <QProcess>
 #include <QTemporaryDir>
@@ -40,6 +41,14 @@ public:
 class WorkerChannelTest : public QObject {
   Q_OBJECT
 private Q_SLOTS:
+  void invalidConversationKind() {
+    int pair[2]; QVERIFY(!socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, pair));
+    WorkerChannel channel(pair[0], std::chrono::seconds(1)), peer(pair[1], std::chrono::seconds(1));
+    WorkerConversation conversation(channel, {1, 2});
+    QVERIFY(!conversation.exchange(static_cast<MessageKind>(99), "untrusted-kind"));
+    QVERIFY(conversation.cancelled());
+    QVERIFY(!peer.pending()); // No undefined wire kind or prompt was emitted.
+  }
   void frames() {
     const WireFrame frame{WireKind::Response, {23, 41}, "fixture-response"};
     auto encoded = WorkerChannel::encode(frame);

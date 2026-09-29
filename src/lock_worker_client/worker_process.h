@@ -22,6 +22,7 @@ public:
 #if defined(QINDAQT_PRIVATE_WORKER_CLIENT_FIXTURE)
   // Compiled solely into non-installed tests; production exposes no path/args.
   WorkerProcess(QString program, QString configuration, int deadlineMs);
+  qint64 testProcessId() const { return m_process.processId(); }
 #endif
   ~WorkerProcess() override;
   bool start(AttemptToken token);
