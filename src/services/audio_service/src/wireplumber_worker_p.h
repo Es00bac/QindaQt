@@ -4,6 +4,7 @@
 
 #include <qindaqt/services/audio_service/audio_backend.h>
 
+#include "latency_policy_p.h"
 #include "wireplumber_meters_p.h"
 #include "wireplumber_recorder_p.h"
 #include "wireplumber_vban_p.h"
@@ -66,6 +67,8 @@ public:
     // Starts or stops the one recording (ADR-0184).
     void applyRecording(BackendRecording recording);
     void applyVban(QList<BackendVbanStream> streams);
+    // Declares the remembered device latency offsets (ADR-0288).
+    void applyLatencyOffsets(QList<BackendLatencyOffset> offsets);
     // Called from a module's own destroy event: PipeWire took it down (a
     // stream that could not connect). Drops the entry only if it still holds
     // THAT module - the key may already belong to its replacement. Public
@@ -78,6 +81,7 @@ public:
 private:
     struct ComponentLoad;
     struct DisconnectReset;
+    struct LatencyRangeQuery;
     struct NodeActivation;
     struct OperationSync;
 
@@ -116,6 +120,14 @@ private:
     void applyBusProcessingOnWorker(const QList<BackendBusChain> &chains);
     void applyRecordingOnWorker(const BackendRecording &recording);
     void applyVbanOnWorker(const QList<BackendVbanStream> &streams);
+    // Latency offsets (ADR-0288, wireplumber_worker_latency.cpp): writes each
+    // declared offset onto present device nodes under LatencyPolicy, queries a
+    // device's declared range once per serial, and forgets departed serials.
+    void applyLatencyOnWorker();
+    void queryLatencyRange(WpPipewireObject *node, quint64 serial);
+    // Cancels range queries and drops node watches while the object manager
+    // still names every watched node; called from cleanupCore.
+    void stopLatencyOnWorker();
     void stopAllVban();
     void publishVbanRunning();
     // Where a send into a bus should play: the bus's own sink when the bus
@@ -158,6 +170,10 @@ private:
     static void onObjectsChanged(WpObjectManager *manager, gpointer data);
     static void onMixerChanged(WpPlugin *plugin, guint id, gpointer data);
     static void onDefaultsChanged(WpPlugin *plugin, gpointer data);
+    static void onObjectAdded(WpObjectManager *manager, gpointer object, gpointer data);
+    static void onObjectRemoved(WpObjectManager *manager, gpointer object, gpointer data);
+    static void onNodeParamsChanged(WpPipewireObject *node, const gchar *id, gpointer data);
+    static void onLatencyRangeQueried(GObject *source, GAsyncResult *result, gpointer data);
     static void onCoreDisconnected(WpCore *core, gpointer data);
     static void onCoreSync(GObject *source, GAsyncResult *result, gpointer data);
     static void onNodeActivated(GObject *source, GAsyncResult *result, gpointer data);
@@ -196,6 +212,12 @@ private:
     std::unordered_set<ComponentLoad *> m_componentLoads;
     std::unordered_set<NodeActivation *> m_nodeActivations;
     std::unordered_set<OperationSync *> m_operationSyncs;
+    std::unordered_set<LatencyRangeQuery *> m_latencyRangeQueries;
+    // Declared offsets by node.name, and per-serial reconcile and range memory.
+    std::unordered_map<std::string, qint64> m_declaredLatency;
+    std::unordered_map<quint64, LatencyPolicy::ReconcileState> m_latencyReconcile;
+    LatencyPolicy::Ranges m_latencyRanges;
+    std::unordered_set<quint64> m_latencyRangePending;
 
     GMainContext *m_context = nullptr;
     GMainLoop *m_loop = nullptr;

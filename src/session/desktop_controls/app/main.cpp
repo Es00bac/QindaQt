@@ -9,6 +9,7 @@
 #include "qindaqt/session/desktop_controls/settings1_screensaver_preferences.h"
 #include "qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h"
 #include "qindaqt/session/desktop_controls/screensaver_catalog.h"
+#include "qindaqt/session/desktop_controls/screenshot_launcher.h"
 #include "qindaqt/session/desktop_controls/tablet_arrival_notifier.h"
 #include "qindaqt/session/desktop_controls/tablet_mapping_policy.h"
 #include "qindaqt/session/desktop_controls/tablet_route_launcher.h"
@@ -193,6 +194,26 @@ int main(int argc, char *argv[])
                                 QStringLiteral("airplane-mode"));
         });
 
+    // AGENT-CONTRACT (ADR-0289): Print and its variants launch the native
+    // screenshot tool with the command-line flags its parser documents; a
+    // launch failure is feedback, never silence.
+    const auto screenshotLauncher = [&application, &notifier](const QString &flag) {
+        auto *launcher = new QindaQt::Session::DesktopControls::ScreenshotLauncher(
+            QStringLiteral("qindaqt-screenshot"), {flag}, &application);
+        QObject::connect(launcher,
+                         &QindaQt::Session::DesktopControls::ScreenshotLauncher::launchFailed,
+                         &notifier, [&notifier](const QString &) {
+                             notifier.showNotice(QStringLiteral("Screenshot"),
+                                                 QStringLiteral("The screenshot tool could not be started."),
+                                                 QStringLiteral("org.qindaqt.Screenshot"));
+                         });
+        return launcher;
+    };
+    auto *regionShot = screenshotLauncher(QStringLiteral("--region"));
+    auto *fullScreenShot = screenshotLauncher(QStringLiteral("--fullscreen"));
+    auto *activeWindowShot = screenshotLauncher(QStringLiteral("--active"));
+    auto *recordToggle = screenshotLauncher(QStringLiteral("--record-toggle"));
+
     QindaQt::Session::DesktopControls::KGlobalAccelRegistrar registrar;
     QindaQt::Session::DesktopControls::DesktopShortcutSet shortcuts(
         registrar,
@@ -202,15 +223,18 @@ int main(int argc, char *argv[])
             .toggleMute = [&volumeController] { volumeController.toggleMute(); },
             .brightnessUp = {},
             .brightnessDown = {},
-            .takeScreenshot = {},
+            .takeScreenshot = [regionShot] { regionShot->launch(); },
             .toggleMicMute = [&micMuteController] { micMuteController.toggleMicMute(); },
             .toggleAirplaneMode =
                 [&airplaneModeController] { airplaneModeController.toggleAirplaneMode(); },
+            .screenshotFullScreen = [fullScreenShot] { fullScreenShot->launch(); },
+            .screenshotActiveWindow = [activeWindowShot] { activeWindowShot->launch(); },
+            .toggleRecording = [recordToggle] { recordToggle->launch(); },
         },
         &application,
         QindaQt::Session::DesktopControls::DesktopShortcutRegistrationOptions{
             .registerBrightness = false,
-            .registerScreenshot = false,
+            .registerScreenshot = true,
         });
 
     QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(sessionBus);

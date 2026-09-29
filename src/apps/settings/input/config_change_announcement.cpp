@@ -19,7 +19,7 @@ bool announceConfigChange(const QDBusConnection &bus,
     }
     const QFileInfo info(configFilePath);
     QString fileName = info.fileName();
-    // AGENT-CONTRACT (ADR-0289): qindaqt-kwin opens its files by the name
+    // AGENT-CONTRACT (ADR-0291): qindaqt-kwin opens its files by the name
     // "qindaqt/<file>", and KConfigWatcher listens on "/" + that name, e.g.
     // /qindaqt/kwininputrc. A file in QindaQt's config folder is announced
     // under that two-element path, any other file under its bare name.

@@ -236,6 +236,7 @@ void WirePlumberWorker::submitOnWorker(const quint64 operationId,
     case OperationKind::SetVbanEnabled:
     case OperationKind::UpsertVbanStream:
     case OperationKind::DeleteVbanStream:
+    case OperationKind::SetLatencyOffset: // declared, never submitted (ADR-0288)
         rejectConsoleOperation(operationId);
         return;
     case OperationKind::SetDefault: {
@@ -500,7 +501,7 @@ void WirePlumberWorker::cancelOperationSyncs()
 void WirePlumberWorker::quitWhenCallbacksDrained()
 {
     if (m_stopping && m_componentLoads.empty() && m_nodeActivations.empty()
-        && m_operationSyncs.empty() && m_loop != nullptr) {
+        && m_operationSyncs.empty() && m_latencyRangeQueries.empty() && m_loop != nullptr) {
         g_main_loop_quit(m_loop);
     }
 }

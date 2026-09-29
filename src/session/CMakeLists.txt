@@ -74,7 +74,7 @@ install(
 
 # qindaqt-kwin owns switching and focus; this package supplies QindaQt
 # presentation over its public TabBox model. AGENT-CONTRACT: the fork's
-# default switcher layout is "qindaqt" in qindaqt-kwin/tabbox (ADR-0289).
+# default switcher layout is "qindaqt" in qindaqt-kwin/tabbox (ADR-0291).
 install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/data/kwin/tabbox/qindaqt/"
     DESTINATION "${KDE_INSTALL_DATADIR}/qindaqt-kwin/tabbox/qindaqt"

@@ -103,7 +103,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     # qindaqt/kwinrc's [QindaQt] group (the windowManagement.* bridge, ADR-0209) is
     # read with KConfig on KWin's own reconfigure signal.
     find_package(KF6Config 6.0 REQUIRED CONFIG)
-    # QindaQt's compositor is its own KWin fork, qindaqt-kwin (ADR-0289).
+    # QindaQt's compositor is its own KWin fork, qindaqt-kwin (ADR-0291).
     find_package(QindaQtKWin ${_qindaqt_kwin_abi_version} EXACT REQUIRED CONFIG)
     # KWin's public Activities header includes PlasmaActivities but its package
     # does not propagate that include directory to extension plugins.

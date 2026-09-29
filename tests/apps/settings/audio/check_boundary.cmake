@@ -30,6 +30,8 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool setDeviceChannelVolume(quint64 serial, int channelIndex, double level)"
         "Q_INVOKABLE bool createVirtualDevice(QString kindToken, QString displayName, int channels)"
         "Q_INVOKABLE bool removeVirtualDevice(quint64 serial)"
+        # ADR-0288: one bounded millisecond offset per device, reset is 0.
+        "Q_INVOKABLE bool setDeviceLatencyOffset(quint64 serial, int milliseconds)"
         # Console controls and the bounded manual-peer editor (ADR-0246).
         # No generic operation dispatch or raw D-Bus escape hatch is allowed.
         "Q_INVOKABLE bool setStripProcessing(QString stripId, QVariantMap processing)"

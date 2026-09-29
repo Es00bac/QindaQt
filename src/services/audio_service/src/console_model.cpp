@@ -63,7 +63,8 @@ QJsonObject busProcessingToJson(const BusProcessing &p)
                      {QStringLiteral("midQ"), p.equalizer.midQ},
                      {QStringLiteral("highHz"), p.equalizer.highHz},
                      {QStringLiteral("highGainDb"), p.equalizer.highGainDb}}},
-        {QStringLiteral("mode"), int(p.mode)}};
+        {QStringLiteral("mode"), int(p.mode)},
+        {QStringLiteral("delayMs"), p.delayMs}};
 }
 
 BusProcessing busProcessingFromJson(const QJsonObject &object, const BusProcessing &fallback)
@@ -85,6 +86,7 @@ BusProcessing busProcessingFromJson(const QJsonObject &object, const BusProcessi
     p.equalizer.highHz = number(eq, "highHz", p.equalizer.highHz);
     p.equalizer.highGainDb = number(eq, "highGainDb", p.equalizer.highGainDb);
     p.mode = static_cast<BusMode>(object.value(QStringLiteral("mode")).toInt(int(p.mode)));
+    p.delayMs = object.value(QStringLiteral("delayMs")).toInt(p.delayMs);
     return p;
 }
 

@@ -17,7 +17,7 @@ public:
     KGlobalAccelRegistrar &operator=(const KGlobalAccelRegistrar &) = delete;
 
     [[nodiscard]] ShortcutRegistration registerShortcut(
-        QAction &action, const QKeySequence &defaultShortcut, QObject &lifetime,
+        QAction &action, const QList<QKeySequence> &defaultShortcuts, QObject &lifetime,
         std::function<void(bool)> activeBindingChanged) override;
 };
 

@@ -35,6 +35,7 @@ public:
     void applyBusProcessing(const QList<BackendBusChain> &chains) override;
     void applyRecording(const BackendRecording &recording) override;
     void applyVban(const QList<BackendVbanStream> &streams) override;
+    void applyLatencyOffsets(const QList<BackendLatencyOffset> &offsets) override;
 
 private:
     [[nodiscard]] quint64 advanceRunGeneration();

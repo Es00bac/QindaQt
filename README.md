@@ -74,7 +74,7 @@ purpose:
 | --- | --- | --- |
 | Qt | 6.11 or newer, including Core, DBus, Gui, QML, Quick, Quick Controls, SVG, Test, and Widgets | `qt6-base 6.11.1-1`, `qt6-declarative 6.11.1-3`, `qt6-svg 6.11.1-1`, `qt6-wayland 6.11.1-1` |
 | Extra CMake Modules | 6.0 or newer | `extra-cmake-modules 6.27.0-1` |
-| qindaqt-kwin (QindaQt's KWin fork, [ADR-0289](docs/wiki/adr/0289-run-on-qindaqt-kwin.md)) | **6.6.6.1 exactly** (`QindaQtKWin`, `QindaQtKWinDecoration`) | Gentoo `gui-wm/qindaqt-kwin-6.6.6_p1`; source hub `qinda:~/git/qindaqt-kwin.git` |
+| qindaqt-kwin (QindaQt's KWin fork, [ADR-0291](docs/wiki/adr/0291-run-on-qindaqt-kwin.md)) | **6.6.6.1 exactly** (`QindaQtKWin`, `QindaQtKWinDecoration`) | Gentoo `gui-wm/qindaqt-kwin-6.6.6_p1`; source hub `qinda:~/git/qindaqt-kwin.git` |
 | Plasma Activities | **6.6.6 exactly** | `plasma-activities 6.6.6` |
 | LayerShellQt | 6.6.6 or newer | `layer-shell-qt 6.6.6` |
 | KF6 CoreAddons and GlobalAccel | 6.0 or newer | `kcoreaddons 6.27.0-1`, `kglobalaccel 6.27.0-1` |

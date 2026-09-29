@@ -13,19 +13,19 @@ class RecordingRegistrar final : public ShortcutRegistrar {
 public:
     struct Record {
         QString actionId;
-        QKeySequence defaultShortcut;
+        QList<QKeySequence> defaultShortcuts;
         std::function<void(bool)> activeBindingChanged;
         ShortcutRegistration result;
     };
 
     ShortcutRegistration registerShortcut(QAction &action,
-                                          const QKeySequence &defaultShortcut,
+                                          const QList<QKeySequence> &defaultShortcuts,
                                           QObject &,
                                           std::function<void(bool)> activeBindingChanged) override
     {
         Record record;
         record.actionId = action.objectName();
-        record.defaultShortcut = defaultShortcut;
+        record.defaultShortcuts = defaultShortcuts;
         record.activeBindingChanged = std::move(activeBindingChanged);
         record.result = m_nextResult;
         m_records.append(record);
@@ -77,7 +77,9 @@ private Q_SLOTS:
     void activeBindingChangesAreReportedPerAction();
     void rejectedRegistrationIsObservable();
     void brightnessRegistrationCanBeDisabledForPowerDevilOwnership();
-    void screenshotRegistrationCanBeDisabledForSpectacleOwnership();
+    void screenshotRegistrationCanBeDisabledTogether();
+    void screenshotKeysNeverTakeContainerShortcuts();
+    void screenshotTriggersLaunchTheirOwnFlow();
 
 private:
     RecordingRegistrar m_registrar;
@@ -91,17 +93,21 @@ void DesktopShortcutSetTest::init() {
 }
 
 void DesktopShortcutSetTest::registersEveryMediaKeyWithStableIdsAndDefaults() {
-    const std::array<QPair<const char *, Qt::Key>,
+    const std::array<QPair<const char *, QList<QKeySequence>>,
                      static_cast<std::size_t>(DesktopShortcutAction::Count)>
         expected{{
-            {"qindaqt_volume_up", Qt::Key_VolumeUp},
-            {"qindaqt_volume_down", Qt::Key_VolumeDown},
-            {"qindaqt_volume_mute", Qt::Key_VolumeMute},
-            {"qindaqt_brightness_up", Qt::Key_MonBrightnessUp},
-            {"qindaqt_brightness_down", Qt::Key_MonBrightnessDown},
-            {"qindaqt_take_screenshot", Qt::Key_Print},
-            {"qindaqt_mic_mute", Qt::Key_MicMute},
-            {"qindaqt_airplane_mode", Qt::Key_WLAN},
+            {"qindaqt_volume_up", {QKeySequence(Qt::Key_VolumeUp)}},
+            {"qindaqt_volume_down", {QKeySequence(Qt::Key_VolumeDown)}},
+            {"qindaqt_volume_mute", {QKeySequence(Qt::Key_VolumeMute)}},
+            {"qindaqt_brightness_up", {QKeySequence(Qt::Key_MonBrightnessUp)}},
+            {"qindaqt_brightness_down", {QKeySequence(Qt::Key_MonBrightnessDown)}},
+            {"qindaqt_take_screenshot",
+             {QKeySequence(Qt::Key_Print), QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_Print)}},
+            {"qindaqt_mic_mute", {QKeySequence(Qt::Key_MicMute)}},
+            {"qindaqt_airplane_mode", {QKeySequence(Qt::Key_WLAN)}},
+            {"qindaqt_screenshot_full_screen", {QKeySequence(Qt::SHIFT | Qt::Key_Print)}},
+            {"qindaqt_screenshot_active_window", {QKeySequence(Qt::ALT | Qt::Key_Print)}},
+            {"qindaqt_toggle_recording", {QKeySequence(Qt::META | Qt::ALT | Qt::Key_R)}},
         }};
 
     int volumeUps = 0;
@@ -122,8 +128,10 @@ void DesktopShortcutSetTest::registersEveryMediaKeyWithStableIdsAndDefaults() {
     for (const auto &entry : expected) {
         const int position = indexOf(m_registrar, QLatin1String(entry.first));
         QVERIFY(position >= 0);
-        QCOMPARE(m_registrar.records().at(position).defaultShortcut,
-                 QKeySequence(entry.second));
+        QCOMPARE(m_registrar.records().at(position).defaultShortcuts, entry.second);
+        QCOMPARE(DesktopShortcutSet::defaultShortcuts(
+                     static_cast<DesktopShortcutAction>(position)),
+                 entry.second);
         QCOMPARE(DesktopShortcutSet::stableActionId(
                      static_cast<DesktopShortcutAction>(position)),
                  QString::fromLatin1(entry.first));
@@ -234,7 +242,7 @@ void DesktopShortcutSetTest::brightnessRegistrationCanBeDisabledForPowerDevilOwn
     QVERIFY(!set.registrationRequestAccepted(DesktopShortcutAction::BrightnessDown));
 }
 
-void DesktopShortcutSetTest::screenshotRegistrationCanBeDisabledForSpectacleOwnership()
+void DesktopShortcutSetTest::screenshotRegistrationCanBeDisabledTogether()
 {
     RecordingRegistrar registrar;
     DesktopShortcutSet set(
@@ -247,11 +255,62 @@ void DesktopShortcutSetTest::screenshotRegistrationCanBeDisabledForSpectacleOwne
         DesktopShortcutRegistrationOptions{.registerBrightness = true,
                                            .registerScreenshot = false});
 
+    // An embedder with its own screenshot tool owns Print and the record
+    // key together; none of the four may be registered half-way.
     QCOMPARE(registrar.records().size(),
-             static_cast<int>(DesktopShortcutAction::Count) - 1);
-    QCOMPARE(indexOf(registrar, QStringLiteral("qindaqt_take_screenshot")), -1);
+             static_cast<int>(DesktopShortcutAction::Count) - 4);
+    for (const char *id : {"qindaqt_take_screenshot", "qindaqt_screenshot_full_screen",
+                           "qindaqt_screenshot_active_window", "qindaqt_toggle_recording"}) {
+        QCOMPARE(indexOf(registrar, QLatin1String(id)), -1);
+    }
     QVERIFY(!set.registrationRequestAccepted(DesktopShortcutAction::TakeScreenshot));
     QVERIFY(!set.activeBindingPresent(DesktopShortcutAction::TakeScreenshot));
+    QVERIFY(!set.registrationRequestAccepted(DesktopShortcutAction::ToggleRecording));
+}
+
+void DesktopShortcutSetTest::screenshotKeysNeverTakeContainerShortcuts()
+{
+    // AGENT-GUARD (ADR-0289): Meta+Shift+S and Meta+Shift+R belong to the
+    // container split/group resize actions; a default here would silently
+    // unbind one of the two owners.
+    const QKeySequence splitResize(Qt::META | Qt::SHIFT | Qt::Key_S);
+    const QKeySequence groupResize(Qt::META | Qt::SHIFT | Qt::Key_R);
+    for (int index = 0; index < static_cast<int>(DesktopShortcutAction::Count); ++index) {
+        const auto keys = DesktopShortcutSet::defaultShortcuts(static_cast<DesktopShortcutAction>(index));
+        QVERIFY(!keys.isEmpty());
+        QVERIFY(!keys.contains(splitResize));
+        QVERIFY(!keys.contains(groupResize));
+    }
+}
+
+void DesktopShortcutSetTest::screenshotTriggersLaunchTheirOwnFlow()
+{
+    QStringList launched;
+    // A private registrar: m_registrar keeps whatever m_nextResult an
+    // earlier row left behind.
+    RecordingRegistrar registrar;
+    DesktopShortcutSet set(
+        registrar,
+        DesktopShortcutTriggers{
+            .volumeUp = [] {},
+            .volumeDown = [] {},
+            .toggleMute = [] {},
+            .brightnessUp = [] {},
+            .brightnessDown = [] {},
+            .takeScreenshot = [&launched] { launched.append(QStringLiteral("region")); },
+            .toggleMicMute = [] {},
+            .toggleAirplaneMode = [] {},
+            .screenshotFullScreen = [&launched] { launched.append(QStringLiteral("full")); },
+            .screenshotActiveWindow = [&launched] { launched.append(QStringLiteral("window")); },
+            .toggleRecording = [&launched] { launched.append(QStringLiteral("record")); },
+        });
+    emit set.action(DesktopShortcutAction::ScreenshotActiveWindow)->trigger();
+    emit set.action(DesktopShortcutAction::TakeScreenshot)->trigger();
+    emit set.action(DesktopShortcutAction::ToggleRecording)->trigger();
+    emit set.action(DesktopShortcutAction::ScreenshotFullScreen)->trigger();
+    QCOMPARE(launched, (QStringList{QStringLiteral("window"), QStringLiteral("region"),
+                                    QStringLiteral("record"), QStringLiteral("full")}));
+    QVERIFY(set.registrationRequestAccepted(DesktopShortcutAction::ToggleRecording));
 }
 
 QTEST_MAIN(DesktopShortcutSetTest)

@@ -8,6 +8,7 @@
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 #include <qindaqt/services/audio_service/resident_audio_service.h>
 
+#include <QtCore/QFile>
 #include <QtCore/QProcess>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QUuid>
@@ -72,6 +73,7 @@ class QtAudioTransportTests final : public QObject
 private Q_SLOTS:
     void absentServiceLeavesStartingState();
     void successiveOwnersAndDelayedOperation();
+    void latencyOffsetCrossesTheBus();
 };
 
 void QtAudioTransportTests::absentServiceLeavesStartingState()
@@ -140,12 +142,14 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
              qPrintable(introspectionReply.error().message()));
     const QString introspection = introspectionReply.value();
     QVERIFY(introspection.contains(
-        QStringLiteral("type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbs)")));
+        QStringLiteral("type=\"(uttuuss(tt)(tt)a((tt)ussdbbbbbbadasbsbxbxx)")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(uuttttss)\"")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"ad\" direction=\"in\"")));
     QVERIFY(introspection.contains(QStringLiteral("name=\"UpsertVbanStream\"")));
     QVERIFY(introspection.contains(QStringLiteral("name=\"DeleteVbanStream\"")));
     QVERIFY(introspection.contains(QStringLiteral("type=\"(sbssubbs)\" direction=\"in\"")));
+    QVERIFY(introspection.contains(QStringLiteral("name=\"SetLatencyOffset\"")));
+    QVERIFY(introspection.contains(QStringLiteral("type=\"x\" direction=\"in\"")));
 
     QtAudioTransport transport(bus.connection, serviceName);
     AudioClient client(&transport);
@@ -247,6 +251,64 @@ void QtAudioTransportTests::successiveOwnersAndDelayedOperation()
     secondHost.reset();
     QDBusConnection::disconnectFromBus(secondConnectionName);
     client.stop();
+}
+
+// Schema 13 (ADR-0288): the signed offset travels as D-Bus `x` through the
+// real transport, the resident service remembers it by node.name, and the
+// coordinator declares it to the backend.
+void QtAudioTransportTests::latencyOffsetCrossesTheBus()
+{
+    registerDBusTypes();
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString serviceName = QStringLiteral("org.qindaqt.AudioLatencyTest.p%1")
+                                    .arg(QCoreApplication::applicationPid());
+    const QString connectionName = bus.name + QStringLiteral("-latency");
+    QDBusConnection connection = QDBusConnection::connectToBus(bus.address, connectionName);
+    QVERIFY(connection.isConnected());
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    // AGENT-GUARD: never the developer's real latency document.
+    const QString latencyPath = dir.filePath(QStringLiteral("audio-latency.json"));
+    qputenv("QINDAQT_AUDIO_LATENCY_PATH", latencyPath.toUtf8());
+    qputenv("QINDAQT_AUDIO_VBAN_PATH",
+            dir.filePath(QStringLiteral("audio-vban.json")).toUtf8());
+    auto backend = std::make_unique<FakeAudioBackend>();
+    FakeAudioBackend *backendPtr = backend.get();
+    auto host = std::make_unique<ResidentAudioService>(
+        std::move(backend), connection, serviceName, nullptr,
+        dir.filePath(QStringLiteral("audio-console.json")));
+    QCOMPARE(host->start(), ServiceStartStatus::Started);
+    Snapshot snapshot = audioSnapshot(41, 2);
+    snapshot.capabilities |= Capability::SetLatencyOffset;
+    snapshot.outputs[0].latencyOffsetKnown = true;
+    snapshot.outputs[0].canSetLatencyOffset = true;
+    snapshot.outputs[0].latencyOffsetMinNs = kMinLatencyOffsetNs;
+    snapshot.outputs[0].latencyOffsetMaxNs = kMaxLatencyOffsetNs;
+    backendPtr->publish(snapshot);
+
+    QtAudioTransport transport(bus.connection, serviceName);
+    AudioClient client(&transport);
+    QSignalSpy completed(&client, &AudioClient::operationCompleted);
+    client.start();
+    QTRY_COMPARE(client.state(), ClientState::Ready);
+    QCOMPARE(client.snapshot().outputs[0].latencyOffsetMinNs, kMinLatencyOffsetNs);
+    const qint64 offsetNs = -35'000'000;
+    const quint64 requestId = client.setLatencyOffset({.epoch = 41, .serial = 10}, offsetNs);
+    QVERIFY(requestId != 0);
+    QTRY_COMPARE(completed.count(), 1);
+    QCOMPARE(completed[0][0].toULongLong(), requestId);
+    QCOMPARE(completed[0][1].value<OperationResult>().status, OperationStatus::Succeeded);
+    QCOMPARE(backendPtr->latency.size(), 1);
+    QCOMPARE(backendPtr->latency.constFirst().nodeName, snapshot.outputs[0].nodeName);
+    QCOMPARE(backendPtr->latency.constFirst().offsetNs, offsetNs);
+    QVERIFY(QFile::exists(latencyPath));
+    client.stop();
+    host->stop();
+    host.reset();
+    QDBusConnection::disconnectFromBus(connectionName);
+    qunsetenv("QINDAQT_AUDIO_LATENCY_PATH");
+    qunsetenv("QINDAQT_AUDIO_VBAN_PATH");
 }
 
 QTEST_GUILESS_MAIN(QtAudioTransportTests)

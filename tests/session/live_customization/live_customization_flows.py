@@ -33,7 +33,7 @@ def chord_seeded(session: LiveSession) -> None:
     parser = configparser.ConfigParser(strict=False, interpolation=None)
     parser.optionxform = str  # type: ignore[assignment]
     parser.read(Path(os.environ["XDG_CONFIG_HOME"]) / "qindaqt" / "kwinrc", encoding="utf-8")
-    # ADR-0289: "Nothing" is qindaqt-kwin's compiled-in default, so an absent
+    # ADR-0291: "Nothing" is qindaqt-kwin's compiled-in default, so an absent
     # key means the fork default; only an explicit other value fails.
     seeded = parser.get("MouseBindings", "CommandAll3", fallback="Nothing")
     session.step("qindaqt/kwinrc", commandAll3=seeded)

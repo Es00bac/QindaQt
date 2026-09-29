@@ -47,6 +47,14 @@ inline QVariantList makeOutputDevices()
             {QStringLiteral("channelVolumeAvailable"), true},
             {QStringLiteral("virtualDevice"), false},
             {QStringLiteral("stateText"), QStringLiteral("Default")},
+            {QStringLiteral("latencyKnown"), true},
+            {QStringLiteral("latencyAvailable"), true},
+            {QStringLiteral("latencyMs"), 40},
+            {QStringLiteral("latencyDisplayMs"), 40},
+            {QStringLiteral("latencyMinMs"), 0},
+            {QStringLiteral("latencyMaxMs"), 2000},
+            {QStringLiteral("latencyText"), QStringLiteral("40 ms")},
+            {QStringLiteral("latencyPending"), false},
         },
         QVariantMap{
             {QStringLiteral("serial"), qulonglong(12)},
@@ -69,6 +77,14 @@ inline QVariantList makeOutputDevices()
             {QStringLiteral("channelVolumeAvailable"), true},
             {QStringLiteral("virtualDevice"), false},
             {QStringLiteral("stateText"), QStringLiteral("Volume 25%")},
+            {QStringLiteral("latencyKnown"), true},
+            {QStringLiteral("latencyAvailable"), true},
+            {QStringLiteral("latencyMs"), 0},
+            {QStringLiteral("latencyDisplayMs"), 0},
+            {QStringLiteral("latencyMinMs"), -2000},
+            {QStringLiteral("latencyMaxMs"), 2000},
+            {QStringLiteral("latencyText"), QStringLiteral("0 ms")},
+            {QStringLiteral("latencyPending"), false},
         },
     };
 }
@@ -94,6 +110,14 @@ inline QVariantList makeInputDevices()
             {QStringLiteral("channelVolumeAvailable"), true},
             {QStringLiteral("virtualDevice"), false},
             {QStringLiteral("stateText"), QStringLiteral("Default")},
+            {QStringLiteral("latencyKnown"), true},
+            {QStringLiteral("latencyAvailable"), false},
+            {QStringLiteral("latencyMs"), 15},
+            {QStringLiteral("latencyDisplayMs"), 15},
+            {QStringLiteral("latencyMinMs"), 0},
+            {QStringLiteral("latencyMaxMs"), 0},
+            {QStringLiteral("latencyText"), QStringLiteral("15 ms")},
+            {QStringLiteral("latencyPending"), false},
         },
         QVariantMap{
             {QStringLiteral("serial"), qulonglong(22)},
@@ -256,6 +280,7 @@ inline QVariantMap defaultBusRack() {
                    {QStringLiteral("midGainDb"), 0.0}, {QStringLiteral("midQ"), 1.0},
                    {QStringLiteral("highHz"), 8000.0}, {QStringLiteral("highGainDb"), 0.0}}},
       {QStringLiteral("mode"), QStringLiteral("normal")},
+      {QStringLiteral("delayMs"), 0},
   };
 }
 

@@ -11,7 +11,9 @@ namespace {
 struct ShortcutSpec final {
     const char *actionId;
     const char *text;
-    Qt::Key key;
+    QKeyCombination key;
+    // A second default key for the same action, or Key_unknown for none.
+    QKeyCombination alternate = QKeyCombination(Qt::Key_unknown);
 };
 
 constexpr std::array<ShortcutSpec,
@@ -22,10 +24,35 @@ constexpr std::array<ShortcutSpec,
         {"qindaqt_volume_mute", "Toggle mute", Qt::Key_VolumeMute},
         {"qindaqt_brightness_up", "Raise brightness", Qt::Key_MonBrightnessUp},
         {"qindaqt_brightness_down", "Lower brightness", Qt::Key_MonBrightnessDown},
-        {"qindaqt_take_screenshot", "Take screenshot", Qt::Key_Print},
+        {"qindaqt_take_screenshot", "Capture a screen region", Qt::Key_Print,
+         Qt::META | Qt::SHIFT | Qt::Key_Print},
         {"qindaqt_mic_mute", "Toggle microphone mute", Qt::Key_MicMute},
         {"qindaqt_airplane_mode", "Toggle airplane mode", Qt::Key_WLAN},
+        // AGENT-NOTE (ADR-0289): Meta+Shift+S and Meta+Shift+R are the
+        // container split/group resize keys (hybridshortcutmanager.cpp), so
+        // the region alternate is Meta+Shift+Print and recording uses
+        // Meta+Alt+R. Taking an owned key would silently unbind one side.
+        {"qindaqt_screenshot_full_screen", "Capture every screen", Qt::SHIFT | Qt::Key_Print},
+        {"qindaqt_screenshot_active_window", "Capture the active window", Qt::ALT | Qt::Key_Print},
+        {"qindaqt_toggle_recording", "Start or stop OBS recording", Qt::META | Qt::ALT | Qt::Key_R},
     }};
+
+QList<QKeySequence> keysOf(const ShortcutSpec &spec)
+{
+    QList<QKeySequence> keys{QKeySequence(spec.key)};
+    if (spec.alternate.key() != Qt::Key_unknown) {
+        keys.append(QKeySequence(spec.alternate));
+    }
+    return keys;
+}
+
+bool isScreenshotAction(DesktopShortcutAction action)
+{
+    return action == DesktopShortcutAction::TakeScreenshot
+           || action == DesktopShortcutAction::ScreenshotFullScreen
+           || action == DesktopShortcutAction::ScreenshotActiveWindow
+           || action == DesktopShortcutAction::ToggleRecording;
+}
 
 std::function<void()> triggerFor(const DesktopShortcutTriggers &triggers,
                                  DesktopShortcutAction action)
@@ -47,6 +74,12 @@ std::function<void()> triggerFor(const DesktopShortcutTriggers &triggers,
         return triggers.toggleMicMute;
     case DesktopShortcutAction::ToggleAirplaneMode:
         return triggers.toggleAirplaneMode;
+    case DesktopShortcutAction::ScreenshotFullScreen:
+        return triggers.screenshotFullScreen;
+    case DesktopShortcutAction::ScreenshotActiveWindow:
+        return triggers.screenshotActiveWindow;
+    case DesktopShortcutAction::ToggleRecording:
+        return triggers.toggleRecording;
     case DesktopShortcutAction::Count:
         break;
     }
@@ -78,15 +111,15 @@ DesktopShortcutSet::DesktopShortcutSet(ShortcutRegistrar &registrar,
         if ((!options.registerBrightness
              && (action == DesktopShortcutAction::BrightnessUp
                  || action == DesktopShortcutAction::BrightnessDown))
-            || (!options.registerScreenshot
-                && action == DesktopShortcutAction::TakeScreenshot)) {
-            // AGENT-GUARD: PowerDevil owns brightness and Spectacle owns Print
-            // in the production session. A second KGlobalAccel action silently
-            // loses a user or provider binding and makes ownership ambiguous.
+            || (!options.registerScreenshot && isScreenshotAction(action))) {
+            // AGENT-GUARD: PowerDevil owns brightness in the production
+            // session, and an embedder with its own screenshot tool owns
+            // Print. A second KGlobalAccel action silently loses a user or
+            // provider binding and makes ownership ambiguous.
             continue;
         }
         const auto registration = registrar.registerShortcut(
-            *actionObject, QKeySequence(spec.key), *this,
+            *actionObject, keysOf(spec), *this,
             [this, action](bool present) {
                 setActiveBindingPresent(action, present);
             });
@@ -102,6 +135,13 @@ QKeySequence DesktopShortcutSet::defaultShortcut(DesktopShortcutAction action)
     const auto index = static_cast<std::size_t>(action);
     Q_ASSERT(index < static_cast<std::size_t>(DesktopShortcutAction::Count));
     return QKeySequence(kShortcutSpecs[index].key);
+}
+
+QList<QKeySequence> DesktopShortcutSet::defaultShortcuts(DesktopShortcutAction action)
+{
+    const auto index = static_cast<std::size_t>(action);
+    Q_ASSERT(index < static_cast<std::size_t>(DesktopShortcutAction::Count));
+    return keysOf(kShortcutSpecs[index]);
 }
 
 QString DesktopShortcutSet::stableActionId(DesktopShortcutAction action)

@@ -78,54 +78,12 @@ T.Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Tokens.space["4"]
+        anchors.margins: Tokens.space["3"]
         spacing: Tokens.space["2"]
 
-        Label {
-            objectName: "audioPageHeading"
+        AudioStatusHeader {
             Layout.fillWidth: true
-            text: qsTr("Audio")
-            font.pointSize: Tokens.type.title
-            font.weight: Font.DemiBold
-            Accessible.role: Accessible.Heading
-            Accessible.name: text
-        }
-
-        StateCard {
-            id: serviceState
-            objectName: "audioServiceState"
-            Layout.fillWidth: true
-            status: root.audioSettings.loading ? StateCard.Busy
-                    : root.audioSettings.ready ? StateCard.Success
-                    : root.audioSettings.stale || root.audioSettings.degraded
-                      ? StateCard.Warning
-                    : StateCard.Error
-            title: root.audioSettings.stale
-                   ? qsTr("Stale audio information")
-                   : root.audioSettings.degraded
-                     ? qsTr("Limited audio information")
-                   : root.audioSettings.ready ? qsTr("Audio service ready")
-                   : qsTr("Audio service unavailable")
-            message: root.audioSettings.statusText
-        }
-
-        Label {
-            objectName: "audioOperationStatus"
-            Layout.fillWidth: true
-            visible: text.length > 0
-            text: root.audioSettings.operationStatusText
-            Accessible.role: Accessible.StaticText
-            Accessible.name: text
-        }
-
-        Label {
-            objectName: "audioError"
-            Layout.fillWidth: true
-            visible: text.length > 0
-            text: root.audioSettings.errorText
-            color: Tokens.fg.default
-            Accessible.role: Accessible.AlertMessage
-            Accessible.name: text
+            audioSettings: root.audioSettings
         }
 
         Tk.TabStrip {
@@ -134,7 +92,7 @@ T.Page {
             Layout.fillWidth: true
             model: [qsTr("Devices"), qsTr("Mixer"), qsTr("Other computers")]
             currentIndex: root.activeTab
-            small: width < 480
+            small: true
             stretch: true
             Accessible.name: qsTr("Audio settings sections")
             onTabActivated: index => root.selectTab(index)
@@ -215,10 +173,11 @@ T.Page {
             FormSurface {
                 id: formSurface
                 width: parent.width
+                padding: Tokens.space["2"]
 
                 ColumnLayout {
                     width: parent.width
-                    spacing: Tokens.space["3"]
+                    spacing: Tokens.space["2"]
 
                     Label {
                         visible: root.activeTab === 0
@@ -300,31 +259,36 @@ T.Page {
         RowLayout {
             Layout.fillWidth: true
             spacing: Tokens.space["2"]
+            // AGENT-GUARD: the conditions, not the children's `visible`: a
+            // child of a hidden row reports itself hidden, so binding to it
+            // would keep this row hidden forever.
+            visible: (root.audioSettings.reloadAvailable && !root.audioSettings.ready)
+                     || root.audioSettings.busy
 
-            Button {
+            Tk.Button {
                 id: retryButton
                 objectName: "audioRetryButton"
                 visible: root.audioSettings.reloadAvailable
                          && !root.audioSettings.ready
+                small: true
                 available: root.audioSettings.reloadAvailable
                 busy: root.audioSettings.loading
-                emphasized: false
                 text: qsTr("Retry")
-                accessibleDescription: qsTr(
+                tooltip: qsTr(
                     "Reconnect to the audio service and reload its state")
                 onClicked: root.audioSettings.reload()
             }
 
             Label {
+                id: busyNote
                 Layout.fillWidth: true
+                visible: text.length > 0
                 text: root.audioSettings.busy
                       ? qsTr("An audio change is in progress…")
-
-                        : ""
+                      : ""
                 muted: true
                 Accessible.name: text
             }
-
         }
     }
 }

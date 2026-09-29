@@ -678,7 +678,7 @@ and commit/cancel behavior are documented in
 
 ## Decoration discovery and defaults
 
-The member decoration is installed at qindaqt-kwin's decoration namespace (ADR-0289), exported as the KDE plugin
+The member decoration is installed at qindaqt-kwin's decoration namespace (ADR-0291), exported as the KDE plugin
 directory under module ID `org.qindaqt`. qindaqt-kwin's compiled-in default and
 fallback is `org.qindaqt`, so `qindaqt-wm` no longer writes
 `[org.kde.kdecoration2] library`; a user-selected decoration in the fork's

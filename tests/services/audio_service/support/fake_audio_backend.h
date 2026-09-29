@@ -70,6 +70,11 @@ public:
     {
         recording = declared;
     }
+    void applyLatencyOffsets(const QList<Audio::BackendLatencyOffset> &offsets) override
+    {
+        latency = offsets;
+        ++latencyCalls;
+    }
     QList<Audio::BackendVbanStream> declarationsForNames(const QStringList &names) const
     {
         QList<Audio::BackendVbanStream> observed;
@@ -137,6 +142,8 @@ public:
     QList<Audio::BackendBusChain> busProcessing;
     Audio::BackendRecording recording;
     QList<Audio::BackendVbanStream> vban;
+    QList<Audio::BackendLatencyOffset> latency;
+    int latencyCalls = 0;
     int processingCalls = 0;
     int endpointCalls = 0;
     int routingCalls = 0;

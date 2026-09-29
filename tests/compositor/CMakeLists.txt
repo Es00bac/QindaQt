@@ -236,7 +236,7 @@ add_test(
     COMMAND
         "${CMAKE_COMMAND}"
         ${_qindaqt_kwin_abi_test_arguments}
-        # Stock KWin's own release is not the fork's ABI (ADR-0289).
+        # Stock KWin's own release is not the fork's ABI (ADR-0291).
         -DQINDAQT_KWIN_ABI_VERSION:STRING=6.6.6
         -P "${CMAKE_CURRENT_LIST_DIR}/verify_kwin_abi_configuration.cmake"
 )

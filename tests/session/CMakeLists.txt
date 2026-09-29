@@ -66,7 +66,7 @@ set_target_properties(
 )
 qindaqt_enable_warnings(qindaqt-wayland-pointer-constraints-probe)
 
-# AGENT-CONTRACT: QindaQtKWinDecoration (qindaqt-kwin, ADR-0289) publishes the relative plugin directory used by
+# AGENT-CONTRACT: QindaQtKWinDecoration (qindaqt-kwin, ADR-0291) publishes the relative plugin directory used by
 # both the production install rule and this staged-install contract check.
 # Only builds with the native plugin need it; bridge-only lanes (CI on a
 # distribution KWin) have no qindaqt-kwin and never use the plugin directory.
@@ -287,7 +287,7 @@ set_tests_properties(session.python-syntax PROPERTIES LABELS unit)
 
 find_program(QINDAQT_DBUS_RUN_SESSION dbus-run-session)
 find_program(QINDAQT_BUSCTL busctl)
-# QindaQt's compositor is qindaqt-kwin (ADR-0289). AGENT-NOTE: stock kwin_wayland
+# QindaQt's compositor is qindaqt-kwin (ADR-0291). AGENT-NOTE: stock kwin_wayland
 # stays acceptable only for rows that prove the public layer-shell boundary on a
 # distribution KWin (the CI production-shell lane); QindaQt's plugin never loads there.
 find_program(QINDAQT_KWIN_WAYLAND NAMES qindaqt-kwin kwin_wayland)
@@ -311,7 +311,6 @@ find_program(QINDAQT_WIREPLUMBER wireplumber)
 find_program(QINDAQT_PW_CLI pw-cli)
 find_program(QINDAQT_WPCTL wpctl)
 find_program(QINDAQT_KBUILDSYCOCA kbuildsycoca6)
-find_program(QINDAQT_SPECTACLE spectacle)
 find_file(QINDAQT_PIPEWIRE_TEST_CONFIG NAMES pipewire.conf PATHS /usr/share /usr/local/share PATH_SUFFIXES pipewire)
 find_program(
     QINDAQT_POWERDEVIL

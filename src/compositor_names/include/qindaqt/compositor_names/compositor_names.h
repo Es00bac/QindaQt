@@ -3,7 +3,7 @@
 
 #include <QLatin1StringView>
 
-// The external names of qindaqt-kwin, QindaQt's compositor (ADR-0289).
+// The external names of qindaqt-kwin, QindaQt's compositor (ADR-0291).
 //
 // AGENT-CONTRACT: the qindaqt-kwin fork defines every name here (its
 // qindaqt/README.md, hub qinda:~/git/qindaqt-kwin.git). Change one only

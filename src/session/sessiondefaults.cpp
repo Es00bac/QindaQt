@@ -55,7 +55,7 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
         return false;
     }
 
-    // qindaqt-kwin reads its settings from QindaQt's config folder (ADR-0289).
+    // qindaqt-kwin reads its settings from QindaQt's config folder (ADR-0291).
     const QString compositorConfig = directory.filePath(QString(CompositorNames::configFile));
     if (!QDir().mkpath(QFileInfo(compositorConfig).absolutePath())) {
         if (error) {
@@ -65,7 +65,7 @@ bool SessionDefaults::ensure(const QString &configHome, QString *error)
         return false;
     }
     QSettings kwin(compositorConfig, QSettings::IniFormat);
-    // AGENT-NOTE (ADR-0289): the QindaQt decoration, the qindaqt window
+    // AGENT-NOTE (ADR-0291): the QindaQt decoration, the qindaqt window
     // switcher, disabled electric-border maximize and tiling, CommandAll3
     // "Nothing" (the shell's Meta+right-click chord) and the Theming v2 blur
     // strengths are qindaqt-kwin's compiled-in defaults, so they are not

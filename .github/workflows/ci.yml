@@ -254,7 +254,7 @@ jobs:
             -R '^shell\.production-surface\.1440p$' \
             --output-on-failure --no-tests=error
 
-  # AGENT-NOTE (ADR-0289): QindaQt now builds against its own KWin fork,
+  # AGENT-NOTE (ADR-0291): QindaQt now builds against its own KWin fork,
   # gui-wm/qindaqt-kwin, whose hub is private to qinda. Until the fork has a
   # public source this job cannot install it and fails at the compositor
   # steps; publishing the fork (or retiring this lane) is an owner decision.

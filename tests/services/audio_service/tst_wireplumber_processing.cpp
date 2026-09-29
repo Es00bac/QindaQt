@@ -22,6 +22,7 @@ private slots:
     void controlsListOnlyEnabledBlocks();
     void theDenoiserComesFirst();
     void aBusRackIsAStereoGraphWithTheModeAsItsOutputs();
+    void aBusDelayAppendsMonoNodesAfterTheMode();
 };
 
 void WirePlumberProcessingTests::anIdleRackHasNoChain()
@@ -182,6 +183,46 @@ void WirePlumberProcessingTests::aBusRackIsAStereoGraphWithTheModeAsItsOutputs()
     QVERIFY(QString::fromUtf8(busProcessingModuleArguments(QStringLiteral("bus.a3"),
                                                           QStringLiteral("alsa_output.z"), left))
                 .contains(QStringLiteral("outputs = [ \"eq_l_high:Out\" \"eq_l_high:Out\" ]")));
+}
+
+// ADR-0288 dated addendum: PipeWire's builtin "delay" filter is mono (one
+// "In", one "Out" - verified against the installed PipeWire 1.6.8
+// filter-chain manual), so a stereo bus gets one instance per final output
+// channel, wired after whichever EQ chain the mode selected. Zero means no
+// node at all, and delay alone (no EQ, Normal mode) must still build a chain.
+void WirePlumberProcessingTests::aBusDelayAppendsMonoNodesAfterTheMode()
+{
+    BusProcessing delayOnly;
+    delayOnly.delayMs = 25;
+    QVERIFY(busProcessingActive(delayOnly));
+    const QString text = QString::fromUtf8(busProcessingModuleArguments(
+        QStringLiteral("bus.a4"), QStringLiteral("alsa_output.d"), delayOnly));
+    QVERIFY(!text.isEmpty());
+    QVERIFY(text.contains(QStringLiteral("name = delay_l label = delay")));
+    QVERIFY(text.contains(QStringLiteral("name = delay_r label = delay")));
+    QVERIFY(text.contains(QStringLiteral("\"max-delay\" = 1.0")));
+    QVERIFY(text.contains(QStringLiteral("\"Delay (s)\" = 0.025")));
+    QVERIFY(text.contains(QStringLiteral(
+        "{ output = \"eq_l_high:Out\" input = \"delay_l:In\" }"
+        " { output = \"eq_r_high:Out\" input = \"delay_r:In\" }")));
+    QVERIFY(text.contains(QStringLiteral("outputs = [ \"delay_l:Out\" \"delay_r:Out\" ]")));
+
+    // The bound: exactly 1 s, matching the graph's own max-delay.
+    BusProcessing bound;
+    bound.delayMs = 1000;
+    QVERIFY(QString::fromUtf8(busProcessingModuleArguments(
+                QStringLiteral("bus.a5"), QStringLiteral("alsa_output.e"), bound))
+                .contains(QStringLiteral("\"Delay (s)\" = 1.000")));
+
+    // Zero is exactly the pre-existing graph: no delay node anywhere, and the
+    // mode's own routing is untouched.
+    BusProcessing zeroWithMode;
+    zeroWithMode.mode = BusMode::SwapChannels;
+    const QString swappedNoDelay = QString::fromUtf8(busProcessingModuleArguments(
+        QStringLiteral("bus.a6"), QStringLiteral("alsa_output.f"), zeroWithMode));
+    QVERIFY(!swappedNoDelay.contains(QStringLiteral("label = delay")));
+    QVERIFY(swappedNoDelay.contains(
+        QStringLiteral("outputs = [ \"eq_r_high:Out\" \"eq_l_high:Out\" ]")));
 }
 
 QTEST_APPLESS_MAIN(WirePlumberProcessingTests)

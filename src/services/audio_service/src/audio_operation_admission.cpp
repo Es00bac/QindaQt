@@ -60,6 +60,25 @@ using namespace Admission;
 
 namespace {
 
+// SetLatencyOffset (ADR-0288), apart from validateRequest to keep that switch
+// readable: one admission rule with the client and Settings.
+QString latencyRejection(const Snapshot &snapshot, const OperationRequest &request)
+{
+    if (!hasCapability(snapshot.capabilities, Capability::SetLatencyOffset)) {
+        return QStringLiteral("unsupported");
+    }
+    const Device *device = findDevice(snapshot, request.primary);
+    if (device == nullptr) {
+        return QStringLiteral("stale-handle");
+    }
+    if (!device->canSetLatencyOffset || device->nodeName.isEmpty()) {
+        return QStringLiteral("unsupported");
+    }
+    return latencyOffsetAdmitted(*device, request.latencyOffsetNs)
+        ? QString{}
+        : QStringLiteral("invalid-latency-offset");
+}
+
 bool validRequestedVolumes(const QVector<double> &volumes)
 {
     if (volumes.size() > kMaxChannelsPerDevice) {
@@ -267,6 +286,8 @@ QString AudioOperationCoordinator::validateRequest(const OperationRequest &reque
         }
         break;
     }
+    case OperationKind::SetLatencyOffset:
+        return latencyRejection(m_snapshot, request);
     default:
         return QStringLiteral("malformed-request");
     }

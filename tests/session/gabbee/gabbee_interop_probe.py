@@ -6,7 +6,7 @@ KWin), with Gabbee's real production stack and no input injection:
 
 - focus capture/activation: Gabbee's KWin-scripting window backend against
   the compositor's ``org.kde.KWin`` Scripting service, which qindaqt-kwin keeps
-  as a carve-out for Gabbee until PF21 (ADR-0289);
+  as a carve-out for Gabbee until PF21 (ADR-0291);
 - insertion: Gabbee's real ``TextDeliveryRouter`` recovery chain.  Direct
   typing tools are absent by sandbox design (no uinput node), so delivery
   exercises the AT-SPI EditableText path and the clipboard mirror — Gabbee's

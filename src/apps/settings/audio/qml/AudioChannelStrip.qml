@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
 // Per-channel volume strip for one device: a fader and position label per
 // projected channel. Availability comes from the route model's shared
@@ -37,7 +38,7 @@ ColumnLayout {
         root.lastEnabledControl = last
     }
 
-    spacing: Tokens.space["2"]
+    spacing: Tokens.space["1"]
 
     Repeater {
         id: channelFaders
@@ -55,7 +56,7 @@ ColumnLayout {
             readonly property alias slider: channelSlider
 
             Layout.fillWidth: true
-            spacing: Tokens.space["3"]
+            spacing: Tokens.space["2"]
 
             Component.onCompleted: root.refreshLastEnabled()
 
@@ -67,20 +68,21 @@ ColumnLayout {
                 Accessible.name: text
             }
 
-            Slider {
+            Tk.Slider {
                 id: channelSlider
                 objectName: "audioChannelVolume_" + root.serial + "_"
                              + channelRow.modelData.index
                 Layout.fillWidth: true
+                small: true
                 from: 0.0
                 to: 1.0
                 stepSize: 0.01
                 value: channelRow.modelData.level01
                 enabled: root.available
-                accessibleName: qsTr("%1 %2 channel volume")
+                Accessible.name: qsTr("%1 %2 channel volume")
                     .arg(root.targetName)
                     .arg(channelRow.modelData.position)
-                accessibleDescription: qsTr("Set %1 channel volume")
+                Accessible.description: qsTr("Set %1 channel volume")
                     .arg(channelRow.modelData.position)
                 // Same release-or-keyboard-step contract as the aggregate
                 // volume row: a pointer drag stays quiet until it ends.

@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     if (stateHome.isEmpty()) {
         stateHome = QStandardPaths::writableLocation(QStandardPaths::GenericStateLocation);
     }
-    // ADR-0289: carry the user's KDE KWin settings into qindaqt-kwin's files
+    // ADR-0291: carry the user's KDE KWin settings into qindaqt-kwin's files
     // once, before the seeds fill what is still missing.
     if (!QindaQt::Session::CompositorConfigImport::run(configHome, stateHome, nullptr, &error)) {
         QTextStream(stderr) << "qindaqt-wm: " << error << '\n';

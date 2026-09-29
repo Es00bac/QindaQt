@@ -69,13 +69,14 @@ const Device *findDevice(const QList<Device> &devices, const Handle &handle)
 
 AudioOperationCoordinator::AudioOperationCoordinator(AudioBackend *backend, QObject *parent,
                                                      QString presetDirectory, QString macroPath,
-                                                     QString vbanPath)
+                                                     QString vbanPath, QString latencyPath)
     : QObject(parent)
     , m_backend(backend)
     , m_presets(presetDirectory.isEmpty() ? PresetStore::defaultDirectory()
                                           : std::move(presetDirectory))
     , m_macros(macroPath.isEmpty() ? MacroStore::defaultPath() : std::move(macroPath))
     , m_vban(vbanPath.isEmpty() ? VbanStore::defaultPath() : std::move(vbanPath))
+    , m_latency(latencyPath.isEmpty() ? LatencyStore::defaultPath() : std::move(latencyPath))
 {
     Q_ASSERT(m_backend != nullptr);
     m_snapshot.schemaVersion = kSchemaVersion;
@@ -118,6 +119,10 @@ void AudioOperationCoordinator::start()
     // and a restarted backend rebuilds them from this declaration.
     m_publishedEndpoints.clear();
     publishConsoleEndpoints();
+    // Remembered offsets too, so a device present at startup gets its own
+    // without waiting for a user action (ADR-0288).
+    m_publishedLatency.clear();
+    publishLatency();
     if (m_hasBackendSnapshot) {
         publishRestartingSnapshot();
     }
@@ -174,6 +179,12 @@ OperationResult AudioOperationCoordinator::immediate(const OperationRequest &req
 
 OperationSubmission AudioOperationCoordinator::submit(const OperationRequest &request)
 {
+    // Schema 13 (ADR-0288): an offset is remembered by Audio1 and realised
+    // declaratively, so it completes here like a console change rather than
+    // waiting on a graph round trip.
+    if (request.kind == OperationKind::SetLatencyOffset) {
+        return submitLatencyOffset(request);
+    }
     // AGENT-CONTRACT: console operations are applied HERE and never submitted
     // to the graph backend (ADR-0173). The console is QindaQt's own state - the
     // backend only ever realises the routing it implies - so a console change

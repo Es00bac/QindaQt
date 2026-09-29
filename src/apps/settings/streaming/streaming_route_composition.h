@@ -22,12 +22,17 @@ class StreamingRouteComposition final : public QObject {
     QML_ELEMENT
     QML_SINGLETON
     Q_PROPERTY(QObject *streaming READ streaming CONSTANT)
+    // The Screenshot tool's preferences, shown as this page's "Screenshots
+    // and recording" section (ADR-0289). A separate purpose-scoped Settings1
+    // client, so one unknown key cannot reject the OBS snapshot (ADR-0126).
+    Q_PROPERTY(QObject *capture READ capture CONSTANT)
 
 public:
     explicit StreamingRouteComposition(QObject *parent = nullptr);
     ~StreamingRouteComposition() override;
 
     [[nodiscard]] QObject *streaming() const;
+    [[nodiscard]] QObject *capture() const;
 
 private:
     class Private;

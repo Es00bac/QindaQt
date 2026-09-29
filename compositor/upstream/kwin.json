@@ -19,7 +19,7 @@
     "tree": "88f96f8cde49c51552d82f60fd461b6e8b950685"
   },
   "integrationContract": {
-    "strategy": "co-installable KWin fork with release-matched binary plugins (ADR-0289)",
+    "strategy": "co-installable KWin fork with release-matched binary plugins (ADR-0291)",
     "executable": "qindaqt-kwin",
     "cmakePackage": "QindaQtKWin",
     "cmakeTarget": "QindaQtKWin::kwin",

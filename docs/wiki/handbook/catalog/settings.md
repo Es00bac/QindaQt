@@ -128,6 +128,12 @@ All **97 keys** in active schema v2 are listed below. The immutable v1 schema re
 | `services.obsWebSocketPort` | integer | `4455` | `{"minimum":1,"maximum":65535}` | **Active route** — Streaming route and confirmed streaming-preferences/login consumer. |
 | `services.obsAutoConnect` | boolean | `true` | None beyond type | **Active route** — Streaming route and confirmed auto-connect consumer. |
 | `services.obsStartAtLogin` | boolean | `false` | None beyond type | **Active route** — Streaming route and XDG login-entry policy. |
+| `services.screenshotFolder` | string | `""` | None beyond type | **Active route** — Streaming → Screenshots and recording; empty means XDG_PICTURES_DIR/Screenshots ([ADR-0289](../../adr/0289-native-screenshot-and-record-tool.md)). |
+| `services.screenshotFileNamePattern` | string | `"Screenshot_{date}_{time}"` | `{"nonEmpty":true}` | **Active route** — Streaming → Screenshots and recording; the Screenshot tool expands `{date}`, `{time}` and `{mode}`. |
+| `services.screenshotDefaultMode` | string | `"region"` | `{"allowedValues":["region","all-screens","current-screen","active-window","window-under-pointer"]}` | **Active route** — Streaming → Screenshots and recording; the Screenshot window's starting area. |
+| `services.screenshotDelaySeconds` | integer | `0` | `{"minimum":0,"maximum":60}` | **Active route** — Streaming → Screenshots and recording; the Screenshot window's starting delay. |
+| `services.screenshotShowResult` | boolean | `true` | None beyond type | **Active route** — Streaming → Screenshots and recording; off saves shortcut captures directly. |
+| `services.screenshotRecordFinish` | string | `"notify"` | `{"allowedValues":["notify","show-in-folder","quiet"]}` | **Active route** — Streaming → Screenshots and recording; what the Screenshot tool does when OBS finishes a recording. |
 | `services.doNotDisturbSchedule` | boolean | `false` | None beyond type | **Active route** — Notifications Quiet Hours route and shell interruption policy. |
 | `services.doNotDisturbStartMinutes` | integer | `1320` | `{"minimum":0,"maximum":1439}` | **Active route** — Notifications Quiet Hours route and shell interruption policy. |
 | `services.doNotDisturbEndMinutes` | integer | `420` | `{"minimum":0,"maximum":1439}` | **Active route** — Notifications Quiet Hours route and shell interruption policy. |

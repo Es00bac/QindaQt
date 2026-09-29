@@ -1,4 +1,4 @@
-# ADR-0289: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork
+# ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork
 
 - **Status:** Accepted
 - **Date:** 2026-09-28

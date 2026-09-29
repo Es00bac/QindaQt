@@ -81,7 +81,7 @@ It discovers supported native plugins in qindaqt-kwin's decoration namespace
 (`qindaqt-kwin/decorations` below Qt's plugin roots) and valid Aurorae theme
 directories from the standard XDG data roots, but lists Aurorae themes only
 when an Aurorae plugin exists in that namespace: stock Breeze and Aurorae are
-plugins of stock KWin and never load in the fork (ADR-0289). Applying one choice
+plugins of stock KWin and never load in the fork (ADR-0291). Applying one choice
 preserves unrelated `qindaqt/kwinrc` keys and synchronously requests KWin reconfigure.
 QindaQt's renderer is shown only for QindaQt; a foreign plugin's authoritative
 preview is the Settings window's own frame after apply. Container chrome is

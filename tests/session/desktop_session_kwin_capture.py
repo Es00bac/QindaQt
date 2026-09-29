@@ -30,7 +30,7 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-# qindaqt-kwin is QindaQt's compositor (ADR-0289); stock kwin_wayland is accepted
+# qindaqt-kwin is QindaQt's compositor (ADR-0291); stock kwin_wayland is accepted
 # for the distribution-KWin layer-shell lane.
 COMPOSITOR_NAMES = ("qindaqt-kwin", "kwin_wayland")
 

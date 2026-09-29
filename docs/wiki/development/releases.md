@@ -7,7 +7,7 @@ the shipped KWin plugin.
 ## Prepare the candidate
 
 Work from a clean, reviewable commit. Confirm that the source manifest pins the
-intended qindaqt-kwin fork release (ADR-0289):
+intended qindaqt-kwin fork release (ADR-0291):
 
 ```sh
 ./compositor/tools/verify-kwin-source

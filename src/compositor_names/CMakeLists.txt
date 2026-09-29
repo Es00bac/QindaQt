@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# The external names of qindaqt-kwin, QindaQt's compositor (ADR-0289): program,
+# The external names of qindaqt-kwin, QindaQt's compositor (ADR-0291): program,
 # config files and D-Bus names. Header-only and dependency-free apart from
 # Qt Core, so the session, services, Settings, shell and compositor plugin can
 # all name the compositor through one definition.

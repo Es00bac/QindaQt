@@ -97,7 +97,7 @@ filesystem workflows.
 
 ## The compositor in nested rows
 
-Since [ADR-0289](../adr/0289-run-on-qindaqt-kwin.md) QindaQt runs on
+Since [ADR-0291](../adr/0291-run-on-qindaqt-kwin.md) QindaQt runs on
 qindaqt-kwin, its own KWin fork. CMake resolves `QINDAQT_KWIN_WAYLAND` as
 `qindaqt-kwin` first and falls back to a stock `kwin_wayland` only for rows
 that prove the public layer-shell boundary on a distribution KWin (the CI
@@ -2055,7 +2055,7 @@ requires `org.qindaqt` at qindaqt-kwin's decoration namespace
 checks that a fresh isolated `qindaqt/kwinrc` selects that module. The focused
 `session.sessiondefaults` test separately proves that the session leaves the
 QindaQt decoration, switcher, edge tile and corner maximize to qindaqt-kwin's
-compiled-in defaults (ADR-0289), seeds only installation-dependent keys, and
+compiled-in defaults (ADR-0291), seeds only installation-dependent keys, and
 never overwrites any explicit choice; `session.compositorconfigimport` proves
 the one-time import of KDE KWin files into the fork's names. The
 `session.window-switcher-package` test validates the KWin package metadata,

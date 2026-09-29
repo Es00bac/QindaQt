@@ -98,6 +98,15 @@ void AudioServiceObject::RemoveVirtualDevice(const Handle &device)
                     .muted = false});
 }
 
+void AudioServiceObject::SetLatencyOffset(const Handle &device, const qint64 offsetNs)
+{
+    OperationRequest request;
+    request.kind = OperationKind::SetLatencyOffset;
+    request.primary = device;
+    request.latencyOffsetNs = offsetNs;
+    beginOperation(request);
+}
+
 namespace {
 
 // Console operations (ADR-0173) are addressed by console id, not by a graph
