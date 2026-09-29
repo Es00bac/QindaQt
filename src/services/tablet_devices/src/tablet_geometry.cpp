@@ -3,6 +3,7 @@
 
 #include <QStringList>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -144,6 +145,106 @@ TabletArea letterboxArea(double tabletAspect, double outputWidth,
     }
     const double width = tabletAspect / outputAspect;
     return TabletArea{(1.0 - width) / 2.0, 0.0, width, 1.0};
+}
+
+std::optional<TabletArea> normalizedArea(const TabletArea &area,
+                                         double minimumExtent) {
+    // A rotation or a QML drag overshoots an edge by a few ulps; anything
+    // further out than this is a real request outside the surface.
+    constexpr double SnapTolerance = 1e-6;
+    if (!std::isfinite(area.x) || !std::isfinite(area.y) ||
+        !std::isfinite(area.width) || !std::isfinite(area.height)) {
+        return std::nullopt;
+    }
+    TabletArea result = area;
+    if (result.x < 0.0) {
+        if (result.x < -SnapTolerance) {
+            return std::nullopt;
+        }
+        result.width += result.x;
+        result.x = 0.0;
+    }
+    if (result.y < 0.0) {
+        if (result.y < -SnapTolerance) {
+            return std::nullopt;
+        }
+        result.height += result.y;
+        result.y = 0.0;
+    }
+    // AGENT-GUARD: recompute the far extent as 1 - origin rather than
+    // clamping x + width. x + (1 - x) rounds to at most 1.0 in IEEE double
+    // (the error of 1 - x is at most half an ulp below 1, and the tie rounds
+    // to the even 1.0), which is exactly the x2 <= 1.0 libinput checks.
+    if (result.x + result.width > 1.0) {
+        if (result.x + result.width > 1.0 + SnapTolerance) {
+            return std::nullopt;
+        }
+        result.width = 1.0 - result.x;
+    }
+    if (result.y + result.height > 1.0) {
+        if (result.y + result.height > 1.0 + SnapTolerance) {
+            return std::nullopt;
+        }
+        result.height = 1.0 - result.y;
+    }
+    const double minimum = std::max(minimumExtent, 0.0);
+    // x1 < x2 must hold in double arithmetic too, or libinput refuses it.
+    if (!(result.width >= minimum) || !(result.height >= minimum) ||
+        !(result.x + result.width > result.x) ||
+        !(result.y + result.height > result.y)) {
+        return std::nullopt;
+    }
+    return result;
+}
+
+bool sameArea(const TabletArea &first, const TabletArea &second,
+              double tolerance) {
+    return std::abs(first.x - second.x) <= tolerance &&
+           std::abs(first.y - second.y) <= tolerance &&
+           std::abs(first.width - second.width) <= tolerance &&
+           std::abs(first.height - second.height) <= tolerance;
+}
+
+double proportionalOutputAspect(const TabletArea &input, double tabletWidth,
+                                double tabletHeight, double surfaceWidth,
+                                double surfaceHeight) {
+    if (!(input.width > 0.0) || !(input.height > 0.0) ||
+        !(tabletWidth > 0.0) || !(tabletHeight > 0.0) ||
+        !(surfaceWidth > 0.0) || !(surfaceHeight > 0.0)) {
+        return 0.0;
+    }
+    // The physical width/height of the used part of the tablet, then the
+    // normalized ratio that draws that same shape on this surface.
+    const double physical =
+        (input.width * tabletWidth) / (input.height * tabletHeight);
+    const double aspect = physical * surfaceHeight / surfaceWidth;
+    return std::isfinite(aspect) && aspect > 0.0 ? aspect : 0.0;
+}
+
+TabletArea proportionalOutputArea(const TabletArea &input, double tabletWidth,
+                                  double tabletHeight,
+                                  const TabletArea &output,
+                                  double surfaceWidth, double surfaceHeight) {
+    const double aspect = proportionalOutputAspect(
+        input, tabletWidth, tabletHeight, surfaceWidth, surfaceHeight);
+    if (!(aspect > 0.0) || !(output.width > 0.0) || !(output.height > 0.0)) {
+        return output;
+    }
+    // Keep the rectangle's area and centre and change only its shape, so
+    // repeated edits of the tablet side never shrink the screen side; then
+    // shrink uniformly until it fits the surface.
+    double height = std::sqrt((output.width * output.height) / aspect);
+    double width = aspect * height;
+    const double fit = std::min({1.0, 1.0 / width, 1.0 / height});
+    width = std::min(1.0, width * fit);
+    height = std::min(1.0, height * fit);
+    const double centreX = output.x + output.width / 2.0;
+    const double centreY = output.y + output.height / 2.0;
+    const double left =
+        std::max(0.0, std::min(centreX - width / 2.0, 1.0 - width));
+    const double top =
+        std::max(0.0, std::min(centreY - height / 2.0, 1.0 - height));
+    return TabletArea{left, top, width, height};
 }
 
 bool isValidPressureCurve(const QString &curve) {

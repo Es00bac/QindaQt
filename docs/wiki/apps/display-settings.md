@@ -31,7 +31,10 @@ a pen to its screen (`Services::TabletDevices::isDisplayTabletVendor`,
 badge and the automatic mapping can never disagree. Selecting such a display
 adds a **Pen & tablet settings…** row that moves to Input → Pen & tablet. The
 Display route never writes tablet state; the tablet route stays the single
-authority for what the pen does.
+authority for what the pen does. Rotating a display here still reaches the
+tablets: a pen display turns with its screen, and the session re-plans a desk
+tablet mapped to a rotated screen so its up stays the screen's up
+([ADR-0285](../adr/0285-desk-tablets-keep-the-screens-up-and-pen-displays-turn-with-their-screen.md)).
 
 Output cards are Tab-focusable radio controls activated by pointer, Return,
 Enter, or Space. Coordinate text is an explicit edit session: Return, Enter,

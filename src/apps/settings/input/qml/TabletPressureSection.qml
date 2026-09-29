@@ -73,7 +73,7 @@ ColumnLayout {
 
         readonly property color lineColor: Tokens.accent.default
         readonly property color frameColor: Tokens.outline.divider
-        readonly property color groundColor: Tokens.bg.sunken
+        readonly property color groundColor: Tokens.bg.highest
 
         onPaint: {
             const context = getContext("2d")

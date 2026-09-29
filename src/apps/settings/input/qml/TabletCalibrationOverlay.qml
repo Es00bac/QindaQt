@@ -54,7 +54,7 @@ Window {
     screen: root.targetScreen !== null ? root.targetScreen : Qt.application.screens[0]
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
     visibility: Window.FullScreen
-    color: Tokens.bg.sunken
+    color: Tokens.bg.base
     title: qsTr("Calibrate the pen display")
 
     function restart() {
