@@ -97,4 +97,10 @@ void DataControlSource::finish(PendingWrite *pending)
     m_writes.erase(found);
 }
 
+bool anySourceLive(const std::vector<QPointer<DataControlSource>> &sources) noexcept
+{
+    return std::any_of(sources.cbegin(), sources.cend(),
+                       [](const auto &source) { return !source.isNull(); });
+}
+
 } // namespace QindaQt::Services::ClipboardWayland

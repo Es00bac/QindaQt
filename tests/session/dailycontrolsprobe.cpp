@@ -5,6 +5,8 @@
 
 #include <qindaqt/services/audio_client/audio_client.h>
 #include <qindaqt/services/audio_client/qt_audio_transport.h>
+#include <qindaqt/services/settings_client/qt_settings_transport.h>
+#include <qindaqt/services/settings_client/settings_client.h>
 
 #include <KGlobalAccel>
 #include <KGlobalShortcutInfo>
@@ -163,7 +165,7 @@ bool validCapturedImage(const QString &path, QString *diagnostic)
     const QImage image = reader.read();
     if (image.isNull() || image.width() < 32 || image.height() < 32
         || image.width() > 1920 || image.height() > 1080) {
-        *diagnostic = QStringLiteral("Spectacle output is not a usable bounded image: %1")
+        *diagnostic = QStringLiteral("screenshot output is not a usable bounded image: %1")
                           .arg(reader.errorString());
         return false;
     }
@@ -174,7 +176,7 @@ bool validCapturedImage(const QString &path, QString *diagnostic)
             return true;
         }
     }
-    *diagnostic = QStringLiteral("Spectacle output is visually uniform");
+    *diagnostic = QStringLiteral("screenshot output is visually uniform");
     return false;
 }
 
@@ -235,7 +237,7 @@ std::optional<QString> capturedImageInDirectory(const QString &directory, QStrin
         }
     }
     if (candidates.isEmpty()) {
-        *diagnostic = QStringLiteral("Spectacle has not saved an image in %1").arg(directory);
+        *diagnostic = QStringLiteral("QindaQt Screenshot has not saved an image in %1").arg(directory);
     }
     return std::nullopt;
 }
@@ -347,7 +349,35 @@ int main(int argc, char **argv)
         qEnvironmentVariable("QINDAQT_DAILY_CONTROLS_SCREENSHOT_DIRECTORY");
     if (screenshotDirectory.isEmpty() || !QDir(screenshotDirectory).exists()
         || !QDir(screenshotDirectory).entryList(QDir::Files | QDir::NoDotAndDotDot).isEmpty()) {
-        return fail(QStringLiteral("private Spectacle output directory is unavailable or not fresh"));
+        return fail(QStringLiteral("private screenshot output directory is unavailable or not fresh"));
+    }
+    // ADR-0289: Print launches QindaQt Screenshot. Its Settings1 preferences
+    // send the region straight to the private evidence folder, exactly as a
+    // user who turned the result window off would get it.
+    {
+        const QString folderKey = QStringLiteral("services.screenshotFolder");
+        const QString showKey = QStringLiteral("services.screenshotShowResult");
+        QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(
+            QDBusConnection::sessionBus());
+        QindaQt::Services::SettingsClient::SettingsClient settings(settingsTransport,
+                                                                   {folderKey, showKey});
+        QString settingsError;
+        if (!settings.start(&settingsError))
+            return fail(QStringLiteral("Settings1 client did not start: %1").arg(settingsError));
+        const auto write = [&](const QString &key, const QVariant &value) -> bool {
+            if (!await([&] { return settings.canSetUserValue(key); }, 8'000, &error))
+                return false;
+            if (!settings.setUserValue(key, value, &settingsError))
+                return false;
+            return await([&] {
+                const auto &snapshot = settings.snapshot();
+                return !settings.writeInFlight() && snapshot && snapshot->values.value(key) == value;
+            }, 8'000, &error);
+        };
+        if (!write(folderKey, screenshotDirectory) || !write(showKey, false)) {
+            return fail(QStringLiteral("could not set the screenshot preferences: %1 %2")
+                            .arg(settingsError, error));
+        }
     }
     const auto windowsBeforePrint = compositor.windows(&error);
     if (!windowsBeforePrint) {
@@ -356,9 +386,9 @@ int main(int argc, char **argv)
     if (!input.pressKey(QLatin1StringView("print"), &error)) {
         return fail(QStringLiteral("Print injection failed: %1").arg(error));
     }
-    // A rectangular Print launch first captures a croppable image, then maps
-    // Spectacle's fullscreen CaptureWindow. Waiting for that new public KWin
-    // surface prevents the development drag from racing the real selector.
+    // A region Print launch first captures the whole workspace, then maps
+    // the tool's fullscreen selection overlay. Waiting for that new public
+    // KWin surface prevents the development drag from racing the selector.
     QString lastInventory;
     if (!await([&] {
             QString surfaceError;
@@ -370,19 +400,23 @@ int main(int argc, char **argv)
             lastInventory = windowInventorySummary(*windows);
             return newFullscreenSurfaceMapped(*windowsBeforePrint, *windows);
         }, 10'000, &error)) {
-        return fail(QStringLiteral("Spectacle capture surface did not map before region selection; "
+        return fail(QStringLiteral("screenshot selection surface did not map before region selection; "
                                    "last public inventory: %1")
                         .arg(lastInventory));
     }
     if (!input.drag(QPointF(240, 180), QPointF(1040, 620), false, &error)) {
-        return fail(QStringLiteral("Spectacle region selection injection failed: %1").arg(error));
+        return fail(QStringLiteral("screenshot region selection injection failed: %1").arg(error));
+    }
+    // The overlay confirms with Enter (release alone keeps editing).
+    if (!input.pressKey(QLatin1StringView("enter"), &error)) {
+        return fail(QStringLiteral("screenshot region confirmation failed: %1").arg(error));
     }
     std::optional<QString> savedCapture;
     if (!await([&] {
             savedCapture = capturedImageInDirectory(screenshotDirectory, &error);
             return savedCapture.has_value();
         }, 12'000, &error)) {
-        return fail(QStringLiteral("Print did not produce a decoded Spectacle capture: %1").arg(error));
+        return fail(QStringLiteral("Print did not produce a decoded QindaQt Screenshot capture: %1").arg(error));
     }
 
     QJsonObject result{{QStringLiteral("passed"), true},
