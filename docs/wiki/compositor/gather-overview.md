@@ -104,6 +104,9 @@ A merely *minimized* window is not iconified ([ADR-0203](../adr/0203-an-ordinary
 is specifically about rolling up to an icon), so it stays in the grid with the
 rest.
 
+
+The compositor's persistent minimized gather is separate from this transient overview: iconified windows and rolled-up containers share an output-local layout at the upper-left of the usable work area, with an accessible pager for overflow. Its placement and restore semantics are documented in [Hybrid chrome](../architecture/hybrid-chrome.md#minimized-gathering).
+
 The model also carries the truth a surface needs in order not to lie:
 
 - `interactive` is false when the source phase is `Degraded` — the retained

@@ -50,13 +50,16 @@ void MinimizedGatherPagerRouterTests::touchTapPagesAndCancelDropsThePendingActio
     });
     QVERIFY(router.touchDown(7, QPointF(20, 20)));
     QVERIFY(router.touchMotion(7, QPointF(25, 22)));
-    QVERIFY(!router.touchUp(8, QPointF(20, 20)).has_value());
-    QCOMPARE(router.touchUp(7, QPointF(20, 20)),
+    QVERIFY(!router.touchUp(8).has_value());
+    QCOMPARE(router.touchUp(7),
              std::optional(MinimizedPagerHit{QStringLiteral("output-b"),
                                               MinimizedPagerButton::Previous}));
+    QVERIFY(router.touchDown(8, QPointF(20, 20)));
+    QVERIFY(router.touchMotion(8, QPointF(60, 20)));
+    QVERIFY(!router.touchUp(8).has_value());
     QVERIFY(router.touchDown(9, QPointF(20, 20)));
     router.cancel();
-    QVERIFY(!router.touchUp(9, QPointF(20, 20)).has_value());
+    QVERIFY(!router.touchUp(9).has_value());
 }
 
 QTEST_APPLESS_MAIN(MinimizedGatherPagerRouterTests)

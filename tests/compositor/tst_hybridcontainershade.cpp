@@ -144,6 +144,7 @@ private Q_SLOTS:
     void rejectsOuterResizeWhileShadedButStillAllowsMove();
     void cancelledShadedMoveRestoresTheStripsPriorPosition();
     void automaticGatherKeepsTheOriginalRestorePositionUntilManualMove();
+    void gatheredMaximizedContainerRestoresItsCurrentWorkArea();
     void forgettingContainerClearsShadeRestoreFrame();
 };
 
@@ -314,13 +315,14 @@ void HybridContainerShadeTest::automaticGatherKeepsTheOriginalRestorePositionUnt
     Fixture fixture;
     QString error;
     QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
-    const QRect original = *fixture.controller.shadedFrame(QStringLiteral("group"));
+    const QRect original = fixture.layout.outerFrame;
     QVERIFY(fixture.controller.placeShadeStripForGather(QStringLiteral("group"),
                                                          QPoint(500, 300)));
     QCOMPARE(fixture.controller.shadedFrame(QStringLiteral("group"))->topLeft(),
              QPoint(500, 300));
     QVERIFY(fixture.controller.unshade(QStringLiteral("group"), &error));
-    QCOMPARE(fixture.layout.outerFrame, QRect(original.topLeft(), original.size()));
+    QCOMPARE(fixture.layout.outerFrame.topLeft(), original.topLeft());
+    QCOMPARE(fixture.layout.outerFrame.size(), original.size());
 
     QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
     QVERIFY(fixture.controller.placeShadeStripForGather(QStringLiteral("group"),
@@ -331,6 +333,21 @@ void HybridContainerShadeTest::automaticGatherKeepsTheOriginalRestorePositionUnt
         moveIntent(HybridInput::IntentPhase::Commit, QPointF(30, 20))).accepted);
     QVERIFY(fixture.controller.unshade(QStringLiteral("group"), &error));
     QCOMPARE(fixture.layout.outerFrame, QRect(530, 320, 800, 600));
+}
+
+void HybridContainerShadeTest::gatheredMaximizedContainerRestoresItsCurrentWorkArea()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY(fixture.controller.maximize(QStringLiteral("group"), &error));
+    QCOMPARE(fixture.layout.outerFrame, fixture.workArea);
+    QVERIFY(fixture.controller.shade(QStringLiteral("group"), &error));
+    QVERIFY(fixture.controller.placeShadeStripForGather(QStringLiteral("group"),
+                                                         QPoint(300, 200)));
+    QVERIFY(fixture.controller.isMaximized(QStringLiteral("group")));
+    QVERIFY(fixture.controller.unshade(QStringLiteral("group"), &error));
+    QVERIFY(fixture.controller.isMaximized(QStringLiteral("group")));
+    QCOMPARE(fixture.layout.outerFrame, fixture.workArea);
 }
 
 void HybridContainerShadeTest::forgettingContainerClearsShadeRestoreFrame()

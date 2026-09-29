@@ -14,6 +14,7 @@
 
 #include <QApplication>
 #include <QPainter>
+#include <QPalette>
 #include <QPolygonF>
 
 #include <algorithm>

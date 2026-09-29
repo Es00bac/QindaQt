@@ -12,6 +12,7 @@ class MinimizedGatherLayoutTests final : public QObject
 private Q_SLOTS:
     void paginatesBothLanesInsideReservedWorkArea();
     void narrowOutputUsesNonOverlappingKindPages();
+    void outputWorkAreasKeepIndependentPageBounds();
     void rejectsGeometryThatCannotFitOneItem();
 };
 
@@ -84,6 +85,34 @@ void MinimizedGatherLayoutTests::narrowOutputUsesNonOverlappingKindPages()
     for (const auto &placement : cards.containers) {
         QVERIFY(cards.field.contains(placement.frame));
     }
+}
+
+void MinimizedGatherLayoutTests::outputWorkAreasKeepIndependentPageBounds()
+{
+    MinimizedGatherRequest primary;
+    primary.workArea = QRectF(0, 28, 1280, 720);
+    primary.margin = 18;
+    primary.iconExtent = 48;
+    primary.gap = 8;
+    primary.iconifiedWindowIds = {QStringLiteral("primary-a"),
+                                 QStringLiteral("primary-b")};
+    const auto primaryLayout = planMinimizedGather(primary, 7);
+    QVERIFY(primaryLayout.ok);
+    QCOMPARE(primaryLayout.appliedPage, 0);
+    for (const auto &item : primaryLayout.icons) {
+        QVERIFY(primaryLayout.field.contains(item.frame));
+        QVERIFY(item.frame.top() >= 46);
+    }
+
+    MinimizedGatherRequest secondary = primary;
+    secondary.workArea = QRectF(1280, 52, 640, 480);
+    secondary.iconifiedWindowIds = {QStringLiteral("secondary-a")};
+    const auto secondaryLayout = planMinimizedGather(secondary, 7);
+    QVERIFY(secondaryLayout.ok);
+    QCOMPARE(secondaryLayout.appliedPage, 0);
+    QCOMPARE(secondaryLayout.icons.constFirst().id, QStringLiteral("secondary-a"));
+    QVERIFY(secondaryLayout.icons.constFirst().frame.left() >= 1298);
+    QVERIFY(secondaryLayout.icons.constFirst().frame.top() >= 70);
 }
 
 void MinimizedGatherLayoutTests::rejectsGeometryThatCannotFitOneItem()

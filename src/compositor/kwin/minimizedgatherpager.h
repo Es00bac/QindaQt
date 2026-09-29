@@ -43,10 +43,9 @@ public:
     [[nodiscard]] std::optional<MinimizedPagerHit> pointerRelease(
         const QPointF &position);
     [[nodiscard]] bool touchDown(qint32 id, const QPointF &position);
-    [[nodiscard]] bool touchMotion(qint32 id, const QPointF &position) const noexcept;
+    [[nodiscard]] bool touchMotion(qint32 id, const QPointF &position) noexcept;
     [[nodiscard]] bool touchActive(qint32 id) const noexcept;
-    [[nodiscard]] std::optional<MinimizedPagerHit> touchUp(
-        qint32 id, const QPointF &position);
+    [[nodiscard]] std::optional<MinimizedPagerHit> touchUp(qint32 id);
     void cancel() noexcept;
     [[nodiscard]] bool active() const noexcept;
 
@@ -57,6 +56,7 @@ private:
     HitTest m_hitTest;
     std::optional<MinimizedPagerHit> m_pressed;
     std::optional<qint32> m_touchId;
+    QPointF m_touchPosition;
 };
 
 class KWinMinimizedGatherPager final

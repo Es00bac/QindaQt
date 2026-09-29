@@ -27,6 +27,7 @@
 #include "kwinhybridshutdown.h"
 #include "kwinhybridgroupstacking.h"
 #include "kwiniconchippresenter.h"
+#include "minimizedgatherpager.h"
 #include "kwininteractionfilter.h"
 #include "kwininteractiontargetresolver.h"
 #include "kwinmemberpolicy.h"
@@ -482,6 +483,7 @@ void KWinHybridSession::synchronizeChrome()
     if (m_chromeSceneLifecycle && !m_chromeSceneLifecycle->sceneAvailable()) {
         return;
     }
+    synchronizeMinimizedGather();
     const auto publishedRevision = m_chromeManager->topologyRevision();
     if (publishedRevision && *publishedRevision != m_runtime->topology().revision()
         && m_chromePointerRouter && m_inputFilter) {

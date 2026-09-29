@@ -88,7 +88,7 @@ target_include_directories(
 )
 target_link_libraries(
     qindaqt_minimized_gather_pager_router_tests
-    PRIVATE Qt6::Core Qt6::Test
+    PRIVATE Qt6::Core Qt6::Gui Qt6::Test
 )
 add_test(
     NAME compositor.minimized-gather-pager-router

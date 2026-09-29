@@ -560,6 +560,13 @@ own activation token, and an unminimize all unroll. Closing the window while
 iconified drops the record and the chip. Compositor shutdown restores every
 iconified window at its recorded frame before release.
 
+
+## Minimized gathering
+
+The compositor also keeps icon chips and rolled-up container strips in a shared, output-local gather layout. The pure `planMinimizedGather()` planner follows the overview's stable lane ordering: iconified windows oldest-first in the left lane, followed by shaded-container strips, with both lanes stacked top-down and wrapped rightward. The input work area is KWin's maximize area, so the top bar and other reserved zones stay clear. Each item kind participates in the same collision plan, regardless of the window's original fullscreen state.
+
+Automatic placement changes only the visible chip or strip frame. It leaves an iconified window's restore frame intact, and unrolling a gathered strip returns the container to its recorded pre-gather position. A user-dragged chip retains the existing contract of moving its restore position with the chip; manually moving a strip replaces its automatic gather restore point. Item changes and output work-area changes reflow the output's gathered layout. When all items do not fit, the compositor shows previous/next page controls on that output; mouse, touch and the `Meta+Alt+PageUp` / `Meta+Alt+PageDown` actions page the same persistent set. Page state is clamped when items or outputs change. Each chip uses the resolved desktop application icon and label when metadata exists, with window identity and caption as readable fallback.
+
 Task facts publish `iconified` for the window
 ([Task list](../shell/task-list.md)); the task list keeps the entry, because
 the window is still on screen as its chip, and shows it as a rolled hint.
