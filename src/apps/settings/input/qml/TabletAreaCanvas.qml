@@ -162,7 +162,7 @@ Item {
         width: root.frameWidth
         height: root.frameHeight
         radius: Tokens.radius.s
-        color: Tokens.bg.sunken
+        color: Tokens.bg.highest
         border.color: root.activeFocus ? Tokens.focus.ring : Tokens.outline.divider
         border.width: root.activeFocus ? Tokens.space["1"] : 1
         Accessible.ignored: true
