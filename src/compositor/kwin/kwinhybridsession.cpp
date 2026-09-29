@@ -272,6 +272,7 @@ KWinHybridSession::KWinHybridSession(ManagedWindowRegistry &registry, QObject *p
         qWarning("QindaQt Hybrid runtime could not initialize: %s",
                  qPrintable(m_runtime->initializationError()));
     }
+    loadContainerAppearance();
     synchronizeChrome();
 }
 
