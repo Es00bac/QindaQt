@@ -57,6 +57,9 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 - [Notification service](architecture/notifications-service.md) records the
   bounded model, freedesktop adapter, authenticated host/client transport,
   descriptor provisioning, and remaining service policy.
+- [Native keyring storage](architecture/keyring-storage.md) records bounded
+  encrypted collections, secure memory, atomic persistence and the public
+  locked-search trust boundary; Secret Service and PAM remain later slices.
 - [Audio service](architecture/audio-service.md) records the typed Audio1
   model/client/service boundary, confined WirePlumber adapter, activation, and
   isolated-runtime qualification.
