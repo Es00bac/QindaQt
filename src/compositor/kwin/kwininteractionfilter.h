@@ -87,6 +87,23 @@ struct TouchPickupHooks final
     std::function<std::optional<HybridInput::HitTarget>(const QString &windowId,
                                                         const QPointF &position)>
         takeOver;
+    // Called exactly once, right after a successful takeover adopts the drag
+    // (never for a refused takeover, and never again for the same pick-up).
+    // AGENT-NOTE: the caveat this closes asks for "the same lift feedback as
+    // the mouse pick-up, using the existing animation and tokens." Nothing
+    // in this adapter, InteractionController, or the chrome paint plan
+    // carries a distinct "lift" concept today (checked: HybridChromeManager,
+    // HybridChromePlanBuilder, ChromeMaterial, KWinDockPreview, and the
+    // Begin/Update/Commit/Cancel intent phases are identical for a mouse
+    // late-Shift takeover and this touch takeover, since both call
+    // InteractionController::adoptDrag()). This hook is the explicit,
+    // testable seam this pick-up was missing: whatever presentation
+    // response a live session confirms belongs here (at minimum, a
+    // KWinHybridSession::synchronizeChrome() call, the pattern
+    // renameContainer()/setContainerColor() already use after their own
+    // state change, so pick-up repaints from current state immediately
+    // instead of waiting for the drag's first Move).
+    std::function<void(const QString &windowId)> pickedUp;
 };
 
 class KWinInteractionFilter final

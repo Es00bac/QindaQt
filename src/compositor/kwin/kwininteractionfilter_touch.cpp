@@ -327,6 +327,11 @@ void KWinInteractionFilter::expireTitlePickup()
         // The same dock drag Meta + Shift + drag starts, so the same drop
         // targets highlight and the same drop rules apply.
         static_cast<void>(dispatch(m_controller.adoptDrag(*source, decision.position)));
+        // Give this pick-up the same presentation response the mouse chord's
+        // equivalent takeover gets (see TouchPickupHooks::pickedUp).
+        if (m_touchPickupHooks.pickedUp) {
+            m_touchPickupHooks.pickedUp(m_titlePickupWindowId);
+        }
     }
 }
 
@@ -348,7 +353,14 @@ bool KWinInteractionFilter::applyTitlePickup(const HybridInput::TouchPickupDecis
         }
         break;
     case TouchPickupAction::None:
+        break;
     case TouchPickupAction::PickUp:
+        // AGENT-NOTE: unreachable today. TouchTitlePickup::expire() is the
+        // only producer of PickUp, and expireTitlePickup() (above) already
+        // handles it directly -- adoptDrag() plus the pickedUp hook -- before
+        // any caller reaches this switch. Kept for exhaustiveness: a future
+        // caller routing an expire() decision through applyTitlePickup()
+        // must not silently drop its PickUp case.
         break;
     }
     return decision.consumed;
