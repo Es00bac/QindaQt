@@ -303,3 +303,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0289: A native screenshot and record tool replaces Spectacle](0289-native-screenshot-and-record-tool.md)
 
 - [ADR-0293: Store native power policy in Settings1 and import PowerDevil once](0293-settings1-native-power-policy-and-powerdevil-import.md)
+
+- [ADR-0297: Preserve power preference precision and disabled actions](0297-preserve-power-preference-precision.md)

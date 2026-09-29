@@ -5,6 +5,7 @@
 #include <KConfigGroup>
 #include <QFile>
 #include <QRegularExpression>
+#include <QTemporaryFile>
 
 namespace QindaQt::Services::PowerPolicy {
 bool readPowerDevilPreferences(const QString &path, QVariantMap *entries) {
@@ -14,7 +15,12 @@ bool readPowerDevilPreferences(const QString &path, QVariantMap *entries) {
   if (!file.open(QIODevice::ReadOnly) || file.size() <= 0 ||
       file.size() > 1024 * 1024)
     return false;
-  const QString contents = QString::fromUtf8(file.readAll());
+  const QByteArray snapshot = file.read(1024 * 1024 + 1);
+  if (snapshot.size() > 1024 * 1024 || file.error() != QFileDevice::NoError)
+    return false;
+  const QString contents = QString::fromUtf8(snapshot);
+  if (contents.toUtf8() != snapshot || contents.contains(QChar::Null))
+    return false;
   static const QRegularExpression groupLine(
       QStringLiteral("^(?:\\[[^\\]\\r\\n]+\\])+$"));
   for (const QString &line : contents.split(QLatin1Char('\n'))) {
@@ -30,7 +36,14 @@ bool readPowerDevilPreferences(const QString &path, QVariantMap *entries) {
       return false;
     }
   }
-  KConfig source(path, KConfig::SimpleConfig);
+  // AGENT-GUARD: KConfig reopens its path. Parse a private bounded snapshot
+  // so a concurrently replaced/growing source cannot bypass the read cap.
+  QTemporaryFile boundedSource;
+  if (!boundedSource.open() ||
+      boundedSource.write(snapshot) != snapshot.size() ||
+      !boundedSource.flush())
+    return false;
+  KConfig source(boundedSource.fileName(), KConfig::SimpleConfig);
   QVariantMap parsed;
   const QStringList profiles{QStringLiteral("AC"), QStringLiteral("Battery"),
                              QStringLiteral("LowBattery")};
@@ -45,7 +58,7 @@ bool readPowerDevilPreferences(const QString &path, QVariantMap *entries) {
                                 QStringLiteral("DimDisplayIdleTimeoutSec"),
                                 QStringLiteral("LockBeforeTurnOffDisplay")};
   const QStringList suspendKeys{
-      QStringLiteral("AutoSuspendAction"),
+      QStringLiteral("AutoSuspendAction"), QStringLiteral("SleepMode"),
       QStringLiteral("AutoSuspendIdleTimeoutSec"), QStringLiteral("LidAction"),
       QStringLiteral("InhibitLidActionWhenExternalMonitorPresent")};
   for (const auto &profileName : profiles) {
@@ -136,7 +149,7 @@ ImportPlan planPowerDevilImport(const QVariantMap &legacyEntries,
           .toUInt(&criticalOk);
   if (criticalOk) {
     const QString action = actionName(critical);
-    if (action == QLatin1String("suspend") ||
+    if (action == QLatin1String("none") || action == QLatin1String("suspend") ||
         action == QLatin1String("hibernate") ||
         action == QLatin1String("power-off"))
       addIfNotExplicit(plan, explicitNativeValues,
@@ -152,8 +165,7 @@ ImportPlan planPowerDevilImport(const QVariantMap &legacyEntries,
     bool lidOk = false;
     const quint32 lid = rawLid.toUInt(&lidOk);
     const QString rawLidValue = lidOk ? actionName(lid) : QString{};
-    const QString lidValue =
-        rawLidValue == QLatin1String("power-off") ? QString{} : rawLidValue;
+    const QString lidValue = rawLidValue;
     if (!lidValue.isEmpty()) {
       addIfNotExplicit(plan, explicitNativeValues,
                        QStringLiteral("power.lid.%1.action").arg(target),
@@ -170,11 +182,25 @@ ImportPlan planPowerDevilImport(const QVariantMap &legacyEntries,
                        QStringLiteral("power.lid.%1.dockedAction").arg(target),
                        inhibit ? QStringLiteral("none") : lidValue);
     }
+    bool sleepModeOk = false;
+    const quint32 sleepMode =
+        legacyEntries
+            .value(prefix + QStringLiteral("SuspendAndShutdown/SleepMode"))
+            .toString()
+            .toUInt(&sleepModeOk);
+    const QStringList sleepModes{QStringLiteral("suspend"),
+                                 QStringLiteral("hybrid-sleep"),
+                                 QStringLiteral("suspend-then-hibernate")};
+    if (sleepModeOk && sleepMode >= 1 && sleepMode <= 3)
+      addIfNotExplicit(plan, explicitNativeValues,
+                       QStringLiteral("power.sleep.%1.mode").arg(target),
+                       sleepModes[sleepMode - 1]);
     bool enabled = false;
     const QVariant rawEnabled = legacyEntries.value(
         prefix + QStringLiteral("Display/TurnOffDisplayWhenIdle"));
     if (rawEnabled.isValid() && boolValue(rawEnabled, &enabled) &&
-        !explicitNativeValues.contains(QStringLiteral("power.idleDisplayOffMinutes"))) {
+        !explicitNativeValues.contains(
+            QStringLiteral("power.idleDisplayOffMinutes"))) {
       addIfNotExplicit(
           plan, explicitNativeValues,
           QStringLiteral("power.idle.%1.displayOffEnabled").arg(target),
@@ -201,11 +227,10 @@ ImportPlan planPowerDevilImport(const QVariantMap &legacyEntries,
             .value(prefix + QStringLiteral("Display/DimDisplayIdleTimeoutSec"))
             .toString()
             .toInt(&dimTimeoutOk);
-    if (dimTimeoutOk && dimSeconds >= 0 && dimSeconds <= 14400 &&
-        dimSeconds % 60 == 0)
+    if (dimTimeoutOk && dimSeconds >= 0 && dimSeconds <= 14400)
       addIfNotExplicit(plan, explicitNativeValues,
-                       QStringLiteral("power.idle.%1.dimMinutes").arg(target),
-                       dimSeconds / 60);
+                       QStringLiteral("power.idle.%1.dimSeconds").arg(target),
+                       dimSeconds);
     bool suspendOk = false;
     const quint32 suspendAction =
         legacyEntries
@@ -226,12 +251,11 @@ ImportPlan planPowerDevilImport(const QVariantMap &legacyEntries,
                                 "SuspendAndShutdown/AutoSuspendIdleTimeoutSec"))
             .toString()
             .toInt(&suspendTimeoutOk);
-    if (suspendTimeoutOk && suspendSeconds >= 0 && suspendSeconds <= 14400 &&
-        suspendSeconds % 60 == 0)
+    if (suspendTimeoutOk && suspendSeconds >= 0 && suspendSeconds <= 14400)
       addIfNotExplicit(
           plan, explicitNativeValues,
-          QStringLiteral("power.idle.%1.suspendMinutes").arg(target),
-          suspendSeconds / 60);
+          QStringLiteral("power.idle.%1.suspendSeconds").arg(target),
+          suspendSeconds);
     const QVariant legacyProfile = legacyEntries.value(
         prefix + QStringLiteral("Performance/PowerProfile"));
     const QString profileId = legacyProfile.toString();
@@ -249,30 +273,32 @@ ImportPlan planPowerDevilImport(const QVariantMap &legacyEntries,
             .toString()
             .toInt(&timeoutOk);
     const QString profileTimeoutKey =
-        QStringLiteral("power.idle.%1.displayOffMinutes").arg(target);
+        QStringLiteral("power.idle.%1.displayOffSeconds").arg(target);
     const QString profileEnabledKey =
         QStringLiteral("power.idle.%1.displayOffEnabled").arg(target);
-    const bool explicitProfileIdle =
-        explicitNativeValues.contains(profileEnabledKey) ||
-        explicitNativeValues.contains(profileTimeoutKey);
+    const bool explicitlyReenabled =
+        explicitNativeValues.value(profileEnabledKey).toBool();
     if (explicitNativeValues.contains(
             QStringLiteral("power.idleDisplayOffMinutes")) &&
-        !explicitProfileIdle) {
+        (explicitNativeValues
+                 .value(QStringLiteral("power.idleDisplayOffMinutes"))
+                 .toInt() > 0 ||
+         !explicitlyReenabled)) {
       const int savedMinutes =
-          explicitNativeValues.value(QStringLiteral("power.idleDisplayOffMinutes"))
+          explicitNativeValues
+              .value(QStringLiteral("power.idleDisplayOffMinutes"))
               .toInt();
       const bool savedEnabled = savedMinutes > 0;
       addIfNotExplicit(plan, explicitNativeValues, profileEnabledKey,
                        savedEnabled);
       addIfNotExplicit(plan, explicitNativeValues, profileTimeoutKey,
-                       savedEnabled ? savedMinutes : 0);
+                       savedEnabled ? savedMinutes * 60 : 0);
     } else {
-      if (timeoutOk && seconds >= 0 && seconds <= 14400 &&
-          seconds % 60 == 0)
+      if (timeoutOk && seconds >= 0 && seconds <= 14400)
         addIfNotExplicit(plan, explicitNativeValues, profileTimeoutKey,
-                         seconds / 60);
+                         seconds);
       if (!rawEnabled.isValid() && timeoutOk && seconds >= 0 &&
-          seconds <= 14400 && seconds % 60 == 0)
+          seconds <= 14400)
         addIfNotExplicit(plan, explicitNativeValues, profileEnabledKey, true);
     }
   }

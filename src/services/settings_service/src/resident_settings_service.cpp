@@ -216,15 +216,16 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
             QStringLiteral("power.screensaverMinutes"), QStringLiteral("power.critical.action")};
         for (const auto &profile : {QStringLiteral("ac"), QStringLiteral("battery"),
                                     QStringLiteral("lowBattery")}) {
-            nativeKeys << QStringLiteral("power.lid.%1.action").arg(profile)
+            nativeKeys << QStringLiteral("power.sleep.%1.mode").arg(profile)
+                       << QStringLiteral("power.lid.%1.action").arg(profile)
                        << QStringLiteral("power.lid.%1.dockedAction").arg(profile)
                        << QStringLiteral("power.idle.%1.displayOffEnabled").arg(profile)
-                       << QStringLiteral("power.idle.%1.displayOffMinutes").arg(profile)
+                       << QStringLiteral("power.idle.%1.displayOffSeconds").arg(profile)
                        << QStringLiteral("power.idle.%1.dimEnabled").arg(profile)
-                       << QStringLiteral("power.idle.%1.dimMinutes").arg(profile)
+                       << QStringLiteral("power.idle.%1.dimSeconds").arg(profile)
                        << QStringLiteral("power.idle.%1.lockBeforeDisplayOff").arg(profile)
                        << QStringLiteral("power.idle.%1.suspendAction").arg(profile)
-                       << QStringLiteral("power.idle.%1.suspendMinutes").arg(profile)
+                       << QStringLiteral("power.idle.%1.suspendSeconds").arg(profile)
                        << QStringLiteral("power.profile.%1").arg(profile);
         }
         const auto native = d->repository->snapshot(nativeKeys);

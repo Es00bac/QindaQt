@@ -452,3 +452,4 @@ nav:
       - "ADR-0289: A native screenshot and record tool replaces Spectacle": adr/0289-native-screenshot-and-record-tool.md
       - "ADR-0293: Settings1 native power policy": adr/0293-settings1-native-power-policy-and-powerdevil-import.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
+      - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md

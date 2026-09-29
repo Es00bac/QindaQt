@@ -8,11 +8,13 @@ session-action boundary in [Power and brightness](power-service.md).
 ## Settings contract
 
 Schema v2 defines bounded `power.lid.*`, `power.idle.*`,
-`power.critical.*`, and `power.profile.*` values. Lid and idle settings are
+`power.critical.*`, `power.sleep.*`, and `power.profile.*` values. Lid and idle settings are
 per source (`ac`, `battery`, `lowBattery`). Lid actions are `none`, `suspend`,
-`hibernate`, `lock`, or `screen-off`; docked actions use the same set and
-default to `none`. Idle durations are whole minutes from 0 through 240.
-Critical action is suspend, hibernate, or power-off, with a countdown
+`hibernate`, `lock`, `screen-off`, or `power-off`; docked actions use the same
+set and default to `none`. Idle durations are seconds from 0 through 14400;
+sub-minute preferences are preserved. Each source has a sleep mode of
+`suspend`, `hybrid-sleep`, or `suspend-then-hibernate`.
+Critical action is none, suspend, hibernate, or power-off, with a countdown
 from 5 through 300 seconds. Power profile values are none (leave the
 provider's profile alone), or the admitted power-saver, balanced, and
 performance identifiers. The default is none, preserving PowerDevil's
@@ -23,7 +25,9 @@ Existing `power.idleDisplayOffMinutes`, `power.screensaver`, and
 and compatibility. A stored `power.idleDisplayOffMinutes` choice is copied
 to each per-source display-off duration during migration and takes precedence
 over the legacy PowerDevil timeout. Explicit values for any new native key
-also take precedence. Defaults provide a usable policy where no supported
+also take precedence independently for enabled state and duration. An old
+disabled global preference does not synthesize a zero timeout when a new
+per-source choice explicitly re-enables display-off. Defaults provide a usable policy where no supported
 legacy choice exists; unsupported or malformed legacy fields are omitted
 rather than converted to zero or an action.
 
@@ -36,7 +40,7 @@ and the current user-override values, and recognizes only source keys
 documented by the PowerDevil 6.6.6 KConfig definitions:
 
 - `[AC|Battery|LowBattery][SuspendAndShutdown]`: `LidAction`,
-  `InhibitLidActionWhenExternalMonitorPresent`, `AutoSuspendAction`, and
+  `InhibitLidActionWhenExternalMonitorPresent`, `SleepMode`, `AutoSuspendAction`, and
   `AutoSuspendIdleTimeoutSec`.
 - `[AC|Battery|LowBattery][Display]`: dim, display-off, and
   `LockBeforeTurnOffDisplay` preferences.
@@ -45,11 +49,17 @@ documented by the PowerDevil 6.6.6 KConfig definitions:
 
 Action numbers are converted only through the cited PowerDevil enum mapping
 in [ADR-0293](../adr/0293-settings1-native-power-policy-and-powerdevil-import.md).
-Durations must be integral minutes within the schema bounds. Unknown profile
+Durations must be integer seconds within the schema bounds. The preservation
+refinement and sleep-mode mapping are recorded in
+[ADR-0297](../adr/0297-preserve-power-preference-precision.md). Unknown profile
 identifiers and unsupported action values stay absent. PowerDevil defines no
 critical-action countdown preference; Settings1 uses its bounded default.
 Screensaver selection remains in the existing QindaQt setting because it is
 not a PowerDevil preference.
+
+The reader admits at most one MiB of valid UTF-8 configuration, then parses
+that private bounded snapshot. KConfig cannot reopen a changed source to
+bypass the size bound. The original file is never written.
 
 The import runs only after the Settings1 process owns its D-Bus name. Imported
 values and `power.migration.powerDevilImported` are committed together through

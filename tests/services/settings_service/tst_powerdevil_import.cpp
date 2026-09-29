@@ -17,6 +17,7 @@ private slots:
   void importsDocumentedValuesForEveryProfile();
   void existingNativeChoicesWinAndMarkerMakesImportIdempotent();
   void invalidLegacyFieldsStayAbsentAndSafe();
+  void preservesDisabledActionsAndSubMinuteTimeouts();
   void missingAndMalformedFilesAreRetryable();
   void schemaBoundsPolicyValues();
   void repositoryCommitIsAtomicAndRetryable();
@@ -60,6 +61,9 @@ void PowerDevilImportTests::importsDocumentedValuesForEveryProfile() {
                   QStringLiteral("balanced"));
   }
   legacy.insert(QStringLiteral("BatteryManagement/BatteryCriticalAction"), 8);
+  legacy.insert(QStringLiteral("AC/SuspendAndShutdown/SleepMode"), 1);
+  legacy.insert(QStringLiteral("Battery/SuspendAndShutdown/SleepMode"), 2);
+  legacy.insert(QStringLiteral("LowBattery/SuspendAndShutdown/SleepMode"), 3);
   const ImportPlan plan = planPowerDevilImport(legacy, {});
   QVERIFY(plan.sourceSupported);
   QVariantMap imported;
@@ -70,23 +74,31 @@ void PowerDevilImportTests::importsDocumentedValuesForEveryProfile() {
   QCOMPARE(imported.value(QStringLiteral("power.lid.battery.dockedAction"))
                .toString(),
            QStringLiteral("none"));
-  QCOMPARE(imported.value(QStringLiteral("power.idle.lowBattery.dimMinutes"))
+  QCOMPARE(imported.value(QStringLiteral("power.idle.lowBattery.dimSeconds"))
                .toInt(),
-           5);
+           300);
   QCOMPARE(
-      imported.value(QStringLiteral("power.idle.ac.displayOffMinutes")).toInt(),
-      10);
+      imported.value(QStringLiteral("power.idle.ac.displayOffSeconds")).toInt(),
+      600);
   QCOMPARE(imported.value(QStringLiteral("power.idle.battery.suspendAction"))
                .toString(),
            QStringLiteral("hibernate"));
   QCOMPARE(
-      imported.value(QStringLiteral("power.idle.lowBattery.suspendMinutes"))
+      imported.value(QStringLiteral("power.idle.lowBattery.suspendSeconds"))
           .toInt(),
-      30);
+      1800);
   QCOMPARE(imported.value(QStringLiteral("power.profile.battery")).toString(),
            QStringLiteral("balanced"));
   QCOMPARE(imported.value(QStringLiteral("power.critical.action")).toString(),
            QStringLiteral("power-off"));
+  QCOMPARE(imported.value(QStringLiteral("power.sleep.ac.mode")).toString(),
+           QStringLiteral("suspend"));
+  QCOMPARE(
+      imported.value(QStringLiteral("power.sleep.battery.mode")).toString(),
+      QStringLiteral("hybrid-sleep"));
+  QCOMPARE(
+      imported.value(QStringLiteral("power.sleep.lowBattery.mode")).toString(),
+      QStringLiteral("suspend-then-hibernate"));
   QVERIFY(imported.value(QStringLiteral("power.migration.powerDevilImported"))
               .toBool());
 }
@@ -100,7 +112,8 @@ void PowerDevilImportTests::
   const QVariantMap native{
       {QStringLiteral("power.idle.ac.displayOffEnabled"), true},
       {QStringLiteral("power.idleDisplayOffMinutes"), 7},
-      {QStringLiteral("power.lid.ac.action"), QStringLiteral("lock")}};
+      {QStringLiteral("power.lid.ac.action"), QStringLiteral("lock")},
+      {QStringLiteral("power.sleep.ac.mode"), QStringLiteral("hybrid-sleep")}};
   const ImportPlan plan = planPowerDevilImport(legacy, native);
   QVariantMap imported;
   for (const auto &entry : plan.values)
@@ -108,9 +121,10 @@ void PowerDevilImportTests::
   QVERIFY(
       !imported.contains(QStringLiteral("power.idle.ac.displayOffEnabled")));
   QVERIFY(!imported.contains(QStringLiteral("power.lid.ac.action")));
+  QVERIFY(!imported.contains(QStringLiteral("power.sleep.ac.mode")));
   QCOMPARE(
-      imported.value(QStringLiteral("power.idle.ac.displayOffMinutes")).toInt(),
-      20);
+      imported.value(QStringLiteral("power.idle.ac.displayOffSeconds")).toInt(),
+      420);
   QVERIFY(!planPowerDevilImport(
                legacy,
                {{QStringLiteral("power.migration.powerDevilImported"), true}})
@@ -120,12 +134,14 @@ void PowerDevilImportTests::
   QVariantMap disabledValues;
   for (const auto &entry : disabled.values)
     disabledValues.insert(entry.first, entry.second);
-  QCOMPARE(disabledValues.value(
-               QStringLiteral("power.idle.ac.displayOffEnabled")).toBool(),
-           false);
-  QCOMPARE(disabledValues.value(
-               QStringLiteral("power.idle.ac.displayOffMinutes")).toInt(),
-           0);
+  QCOMPARE(
+      disabledValues.value(QStringLiteral("power.idle.ac.displayOffEnabled"))
+          .toBool(),
+      false);
+  QCOMPARE(
+      disabledValues.value(QStringLiteral("power.idle.ac.displayOffSeconds"))
+          .toInt(),
+      0);
   const ImportPlan existingMinutes = planPowerDevilImport(
       {{QStringLiteral("AC/Display/TurnOffDisplayWhenIdle"), false}},
       {{QStringLiteral("power.idleDisplayOffMinutes"), 7}});
@@ -141,7 +157,46 @@ void PowerDevilImportTests::
       {}, {{QStringLiteral("power.idleDisplayOffMinutes"), -1},
            {QStringLiteral("power.idle.ac.displayOffEnabled"), true}});
   for (const auto &entry : nativeProfileWins.values)
-    QVERIFY(entry.first != QStringLiteral("power.idle.ac.displayOffMinutes"));
+    QVERIFY(entry.first != QStringLiteral("power.idle.ac.displayOffSeconds"));
+}
+
+void PowerDevilImportTests::preservesDisabledActionsAndSubMinuteTimeouts() {
+  QTemporaryDir directory;
+  const QString path = directory.filePath(QStringLiteral("powerdevilrc"));
+  QFile file(path);
+  QVERIFY(file.open(QIODevice::WriteOnly));
+  file.write("[BatteryManagement]\nBatteryCriticalAction=0\n"
+             "[AC][Display]\nDimDisplayIdleTimeoutSec=30\n"
+             "[Battery][SuspendAndShutdown]\nLidAction=8\n"
+             "AutoSuspendIdleTimeoutSec=901\nSleepMode=3\n");
+  file.close();
+  QVariantMap legacy;
+  QVERIFY(readPowerDevilPreferences(path, &legacy));
+  const auto plan = planPowerDevilImport(legacy, {});
+  QVariantMap imported;
+  for (const auto &entry : plan.values)
+    imported.insert(entry.first, entry.second);
+  QCOMPARE(imported.value(QStringLiteral("power.critical.action")).toString(),
+           QStringLiteral("none"));
+  QCOMPARE(
+      imported.value(QStringLiteral("power.lid.battery.action")).toString(),
+      QStringLiteral("power-off"));
+  QCOMPARE(
+      imported.value(QStringLiteral("power.sleep.battery.mode")).toString(),
+      QStringLiteral("suspend-then-hibernate"));
+  QCOMPARE(imported.value(QStringLiteral("power.idle.ac.dimSeconds")).toInt(),
+           30);
+  QCOMPARE(imported.value(QStringLiteral("power.idle.battery.suspendSeconds"))
+               .toInt(),
+           901);
+  for (const auto &entry : plan.values)
+    QVERIFY(m_schema->validateValue(entry.first, entry.second).isValid());
+  QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+  file.write(QByteArray(1024 * 1024 + 1, 'x'));
+  file.close();
+  QVariantMap unchanged{{QStringLiteral("sentinel"), true}};
+  QVERIFY(!readPowerDevilPreferences(path, &unchanged));
+  QCOMPARE(unchanged.size(), 1);
 }
 
 void PowerDevilImportTests::invalidLegacyFieldsStayAbsentAndSafe() {
@@ -149,7 +204,7 @@ void PowerDevilImportTests::invalidLegacyFieldsStayAbsentAndSafe() {
       {QStringLiteral("AC/SuspendAndShutdown/LidAction"), 128},
       {QStringLiteral("AC/Display/TurnOffDisplayWhenIdle"),
        QStringLiteral("perhaps")},
-      {QStringLiteral("AC/Display/TurnOffDisplayIdleTimeoutSec"), 901},
+      {QStringLiteral("AC/Display/TurnOffDisplayIdleTimeoutSec"), 14401},
       {QStringLiteral("AC/SuspendAndShutdown/AutoSuspendAction"), 8},
       {QStringLiteral("BatteryManagement/BatteryCriticalAction"), 128}};
   const ImportPlan plan = planPowerDevilImport(legacy, {});
@@ -160,7 +215,7 @@ void PowerDevilImportTests::invalidLegacyFieldsStayAbsentAndSafe() {
   QVERIFY(
       !imported.contains(QStringLiteral("power.idle.ac.displayOffEnabled")));
   QVERIFY(
-      !imported.contains(QStringLiteral("power.idle.ac.displayOffMinutes")));
+      !imported.contains(QStringLiteral("power.idle.ac.displayOffSeconds")));
   QVERIFY(!imported.contains(QStringLiteral("power.idle.ac.suspendAction")));
   QVERIFY(!imported.contains(QStringLiteral("power.critical.action")));
 }
@@ -206,12 +261,16 @@ void PowerDevilImportTests::schemaBoundsPolicyValues() {
            .isValid());
   QVERIFY(!m_schema
                ->validateValue(
-                   QStringLiteral("power.idle.ac.displayOffMinutes"), 241)
+                   QStringLiteral("power.idle.ac.displayOffSeconds"), 14401)
                .isValid());
-  QCOMPARE(m_schema->systemDefaults().value(QStringLiteral("power.profile.ac")).toString(),
+  QCOMPARE(m_schema->systemDefaults()
+               .value(QStringLiteral("power.profile.ac"))
+               .toString(),
            QStringLiteral("none"));
-  QVERIFY(m_schema->validateValue(QStringLiteral("power.profile.ac"),
-                                  QStringLiteral("none")).isValid());
+  QVERIFY(m_schema
+              ->validateValue(QStringLiteral("power.profile.ac"),
+                              QStringLiteral("none"))
+              .isValid());
 }
 
 void PowerDevilImportTests::repositoryCommitIsAtomicAndRetryable() {

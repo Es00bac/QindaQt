@@ -191,7 +191,7 @@ void SettingsServiceLifecycleTests::importsPowerDevilPreferencesOnlyAfterOwningS
     QVERIFY(imported.document.values.value(
         QStringLiteral("power.migration.powerDevilImported")).toBool());
     QCOMPARE(imported.document.values.value(
-        QStringLiteral("power.idle.ac.displayOffMinutes")).toInt(), 10);
+        QStringLiteral("power.idle.ac.displayOffSeconds")).toInt(), 600);
     QCOMPARE(imported.document.values.value(
         QStringLiteral("power.lid.ac.action")).toString(), QStringLiteral("suspend"));
 
