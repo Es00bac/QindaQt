@@ -7,7 +7,7 @@
 namespace QindaQt::Audio
 {
 
-inline constexpr quint32 kSchemaVersion = 12;
+inline constexpr quint32 kSchemaVersion = 13;
 inline constexpr qsizetype kMaxOutputs = 128;
 inline constexpr qsizetype kMaxInputs = 128;
 inline constexpr qsizetype kMaxStreams = 256;
@@ -84,5 +84,13 @@ inline constexpr qsizetype kMaxVbanStreams = 16;
 inline constexpr qsizetype kMaxVbanNameUtf8Bytes = 16;
 inline constexpr qsizetype kMaxVbanHostUtf8Bytes = 253;
 inline constexpr qsizetype kMaxVbanOutputNodeUtf8Bytes = 253;
+// Per-device latency offset (schema 13, ADR-0288), in signed nanoseconds as
+// PipeWire's node Props `latencyOffsetNsec` carries it. ALSA nodes declare
+// 0..2 s and Bluetooth sinks a signed range; Audio1 never publishes or admits
+// a value outside this window, whatever a node declares.
+inline constexpr qint64 kMinLatencyOffsetNs = -2'000'000'000LL;
+inline constexpr qint64 kMaxLatencyOffsetNs = 2'000'000'000LL;
+// How many devices the latency document remembers: one per possible device.
+inline constexpr qsizetype kMaxLatencyOffsets = kMaxOutputs + kMaxInputs;
 
 } // namespace QindaQt::Audio

@@ -80,6 +80,29 @@ delivery and acoustic output are not observed.
 records the decision and [Audio VBAN streams](../reference/audio-vban-streams.md)
 gives the manual setup steps.
 
+## Per-device latency offsets
+
+Schema 13 ([Audio1 schema 13](../reference/audio1-v13.md),
+[ADR-0288](../adr/0288-per-device-latency-offsets-and-a-compact-audio-page.md))
+publishes each device node's PipeWire `latencyOffsetNsec` and lets a client
+set it. Three collaborators split the work:
+
+| Collaborator | Responsibility |
+| --- | --- |
+| `LatencyStore` | Atomic, bounded `node.name → offset` document owned by Audio1 |
+| Coordinator (`audio_latency_operations.cpp`) | Admits `SetLatencyOffset` against the retained snapshot, remembers the value, declares the whole map (`applyLatencyOffsets`) at start and on change |
+| Graph worker (`wireplumber_worker_latency.cpp`, `latency_policy`) | Reads `Props`/`PropInfo`, writes declared offsets to present device nodes, reconciles resets |
+
+The worker caches node `Props` (`PARAM_PROPS`) and enumerates each device
+node's `PropInfo` once per serial to learn its settable range. It writes a
+declared offset only when that range admits it, never resends while its last
+write is unechoed, answers a device that resets the value (a Bluetooth route
+re-emits its own offset on connect) with at most three writes per declaration,
+and never writes a device with nothing declared. A device's `params-changed`
+rebuilds the snapshot only when its offset changed. The offset is reported
+latency: players and latency-compensating PipeWire modules follow it; plain
+console loopbacks do not delay audio because of it.
+
 ## Authority and handle lineage
 
 Every public handle is `(epoch, object.serial)`. `object.serial` is PipeWire's

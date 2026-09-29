@@ -54,6 +54,10 @@ public:
     [[nodiscard]] quint64 createVirtualDevice(DeviceKind kind, const QString &displayName,
                                               quint32 channels);
     [[nodiscard]] quint64 removeVirtualDevice(const Handle &device);
+    // Schema 13 (ADR-0288): remember and apply `device`'s latency offset, in
+    // signed nanoseconds. Success means Audio1 remembered it; the applied
+    // value is confirmed by the device's latencyOffsetNs in a later snapshot.
+    [[nodiscard]] quint64 setLatencyOffset(const Handle &device, qint64 offsetNs);
 
     // Console operations (ADR-0173). Each addresses a strip or bus by its
     // stable console id; there is no graph handle to go stale, so a request

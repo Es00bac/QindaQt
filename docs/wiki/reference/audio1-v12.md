@@ -12,7 +12,8 @@ The private two-host test runs the candidate binaries on both hosts, not the
 installed Audio1 services.
 
 
-`Snapshot.schemaVersion` is 12. `VbanStream` in `Console.vban` has the
+`Snapshot.schemaVersion` was 12 for this slice; the current schema, 13, adds
+per-device latency offsets ([Audio1 schema 13](audio1-v13.md)). `VbanStream` in `Console.vban` has the
 D-Bus tuple `(sbssubbs)`: `name` (string), `outgoing` (bool), `busId`
 (string), `host` (string), `port` (uint32), `enabled` (bool),
 `active` (bool), `outputNodeName` (string). The final field is empty

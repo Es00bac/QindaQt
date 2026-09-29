@@ -196,6 +196,7 @@ bool operationTargetsHandle(const OperationKind kind) noexcept
     case OperationKind::MoveStream:
     case OperationKind::SetChannelVolumes:
     case OperationKind::RemoveVirtualDevice:
+    case OperationKind::SetLatencyOffset:
         return true;
     }
     return true;
@@ -419,7 +420,8 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
         | static_cast<quint32>(Capability::SetConsoleGain)
         | static_cast<quint32>(Capability::SetConsoleRouting)
         | static_cast<quint32>(Capability::ConsoleMeters)
-        | static_cast<quint32>(Capability::ManageVbanStreams);
+        | static_cast<quint32>(Capability::ManageVbanStreams)
+        | static_cast<quint32>(Capability::SetLatencyOffset);
     if ((static_cast<quint32>(snapshot.capabilities.toInt()) & ~knownCapabilities) != 0) {
         return rejected(QStringLiteral("invalid-capabilities"));
     }
@@ -466,7 +468,8 @@ ValidationResult validateSnapshot(const Snapshot &snapshot)
                         || !snapshot.capabilities.testFlag(Capability::SetVolume)))
                 || (device.canSetMute
                     && (!device.muteKnown
-                        || !snapshot.capabilities.testFlag(Capability::SetMute)))) {
+                        || !snapshot.capabilities.testFlag(Capability::SetMute)))
+                || !validDeviceLatency(device, snapshot.capabilities)) {
                 return rejected(QStringLiteral("invalid-device"));
             }
             previous = device.handle.serial;
@@ -550,7 +553,8 @@ ValidationResult validateOperationResult(const OperationResult &result)
     }
     const auto kind = static_cast<quint32>(result.kind);
     const auto status = static_cast<quint32>(result.status);
-    if (kind > static_cast<quint32>(OperationKind::DeleteVbanStream)
+    // AGENT-GUARD: the last appended OperationKind; move it with every append.
+    if (kind > static_cast<quint32>(OperationKind::SetLatencyOffset)
         || status > static_cast<quint32>(OperationStatus::Busy)) {
         return rejected(QStringLiteral("malformed-result"));
     }

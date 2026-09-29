@@ -291,11 +291,15 @@ void AudioPageTest::keepsCompactFocusVisibleWithoutAPageCloseAction() {
   QTRY_COMPARE(m_view->activeFocusItem(), entry);
   setDefault->forceActiveFocus(Qt::TabFocusReason);
   QTRY_COMPARE(m_view->activeFocusItem(), setDefault);
-  QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
+  // The compact rows (ADR-0288) fit the second output inside 420x320, so
+  // the reveal is proven on the last stream, which is still below the fold.
   auto *lastStreamVolume =
       findItem(page, QStringLiteral("audioStreamVolume_40"));
   QVERIFY(lastStreamVolume != nullptr);
   QVERIFY(lastStreamVolume->isEnabled());
+  lastStreamVolume->forceActiveFocus(Qt::TabFocusReason);
+  QTRY_COMPARE(m_view->activeFocusItem(), lastStreamVolume);
+  QTRY_VERIFY(viewport->property("contentY").toReal() > 0.0);
   m_model->ready = false;
   m_model->unavailable = true;
   m_model->statusText = QStringLiteral("The audio service is unavailable.");
@@ -323,6 +327,8 @@ void AudioPageTest::disabledDefaultFallsThroughToFirstAdmittedAction() {
   // row's channel strip so its disclosure cannot absorb the entry focus.
   firstRow[QStringLiteral("channelVolumes")] = QVariantList{};
   firstRow[QStringLiteral("channelVolumeAvailable")] = false;
+  // Likewise its latency offset (ADR-0288), which follows mute in traversal.
+  firstRow[QStringLiteral("latencyAvailable")] = false;
   outputDevices[0] = firstRow;
   m_model->outputDevices = outputDevices;
   Q_EMIT m_model->viewChanged();

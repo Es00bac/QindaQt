@@ -1,7 +1,8 @@
 # Audio1 protocol version 2
 
-The manual-peer additions to the current schema are in
-[Audio1 schema 12](audio1-v12.md). This page records the base contract.
+The manual-peer additions are in [Audio1 schema 12](audio1-v12.md) and the
+per-device latency offsets of the current schema in
+[Audio1 schema 13](audio1-v13.md). This page records the base contract.
 
 Audio1 is the bounded control and observation interface exported by
 `qindaqt-audio-service`. Version 2 adds per-channel truth and managed virtual

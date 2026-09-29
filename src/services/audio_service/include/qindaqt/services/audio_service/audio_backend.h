@@ -144,6 +144,16 @@ struct BackendVbanStream {
     friend bool operator==(const BackendVbanStream &, const BackendVbanStream &) = default;
 };
 
+// One remembered device latency offset (ADR-0288). Declared by node.name, the
+// identity that survives the device leaving and returning with a new serial;
+// the backend applies it to whichever node carries that name.
+struct BackendLatencyOffset {
+    QString nodeName;
+    qint64 offsetNs = 0;
+    friend bool operator==(const BackendLatencyOffset &,
+                           const BackendLatencyOffset &) = default;
+};
+
 // AGENT-CONTRACT: Implementations receive requests on the Qt main thread and
 // publish only immutable value copies through these signals. start() returns a
 // fresh nonzero generation before that run can publish; every value carries the
@@ -208,6 +218,13 @@ public:
     virtual void applyVban(const QList<BackendVbanStream> &streams)
     {
         Q_UNUSED(streams)
+    }
+    // Declares every remembered device latency offset (ADR-0288). Declarative
+    // like the rest: the backend writes each offset to the node carrying that
+    // node.name whenever it appears, and a backend with no graph may ignore it.
+    virtual void applyLatencyOffsets(const QList<BackendLatencyOffset> &offsets)
+    {
+        Q_UNUSED(offsets)
     }
 
 Q_SIGNALS:

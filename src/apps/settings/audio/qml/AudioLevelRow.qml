@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
+import QindaTK as Tk
 
 // One bounded volume row: label, slider, and known-percent label. The owning
 // section supplies the dispatch callback and target naming; availability
@@ -19,14 +20,17 @@ RowLayout {
     required property var commit
     property alias entryControl: volumeSlider
 
-    spacing: Tokens.space["3"]
+    spacing: Tokens.space["2"]
 
     Label {
         text: qsTr("Volume")
+        muted: true
         Accessible.name: text
     }
 
-    Slider {
+    // Compact QindaTK slider (ADR-0288). Its own accessible text would be
+    // "Value" and a bare number, so the target naming is set here.
+    Tk.Slider {
         id: volumeSlider
         objectName: root.kindPrefix + "Volume_" + (root.targetRow?.serial ?? 0)
 
@@ -35,13 +39,14 @@ RowLayout {
                   ?? root.targetRow.volumePercent) / 100.0 : 0.0
 
         Layout.fillWidth: true
+        small: true
         from: 0.0
         to: 1.0
         stepSize: 0.01
         wheelEnabled: false
         enabled: root.targetRow?.volumeAvailable ?? false
-        accessibleName: qsTr("%1 volume").arg(root.targetName)
-        accessibleDescription: (root.targetRow?.pending ?? false)
+        Accessible.name: qsTr("%1 volume").arg(root.targetName)
+        Accessible.description: (root.targetRow?.pending ?? false)
             ? qsTr("Volume change in progress")
             : (root.targetRow?.volumeKnown ?? false)
                 ? qsTr("%1 percent").arg(root.targetRow.volumePercent)

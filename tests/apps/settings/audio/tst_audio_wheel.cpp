@@ -171,7 +171,9 @@ void AudioWheelTest::settingsVolumePassesWheelToScrollerAtBoundsAndWhenDisabled(
     StubAudioSettingsModel model;
     auto [guard, page] = createAudioPage(view, model, QSize(420, 320));
     QVERIFY(page != nullptr);
-    auto *slider = findItem(page, QStringLiteral("audioOutputVolume_10"));
+    // A device far enough down the compact page (ADR-0288) that revealing it
+    // scrolls, so a pass-through wheel has somewhere to scroll back to.
+    auto *slider = findItem(page, QStringLiteral("audioInputVolume_22"));
     auto *viewport = viewportFor(page);
     QVERIFY(slider != nullptr);
     QVERIFY(viewport != nullptr);
@@ -188,9 +190,9 @@ void AudioWheelTest::settingsVolumePassesWheelToScrollerAtBoundsAndWhenDisabled(
     QCOMPARE(model.deviceVolumeSerial, qulonglong(0));
     QTRY_VERIFY_WITH_TIMEOUT(viewport->property("contentY").toReal() < beforeBound, 1500);
 
-    auto row = model.outputDevices.first().toMap();
+    auto row = model.inputDevices.at(1).toMap();
     row.insert(QStringLiteral("volumeAvailable"), false);
-    model.outputDevices[0] = row;
+    model.inputDevices[1] = row;
     Q_EMIT model.viewChanged();
     QTRY_VERIFY(!slider->isEnabled());
     reveal(page, slider);

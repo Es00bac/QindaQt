@@ -102,6 +102,7 @@ void AudioSettingsModel::handleOperationCompleted(
   Q_EMIT viewChanged();
   if (completed.has_value()) {
     completeVolumeRequest(completed->first, completed->second.intent, result);
+    completeLatencyRequest(completed->first, completed->second.intent, result);
   }
 }
 

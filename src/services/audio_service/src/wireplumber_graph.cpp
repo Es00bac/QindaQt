@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "wireplumber_graph_p.h"
+#include "wireplumber_latency_p.h"
 
 #include <qindaqt/services/audio_protocol/audio_limits.h>
 
@@ -364,7 +365,8 @@ WpMetadata *defaultMetadata(WpObjectManager *manager)
 
 BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
                           WpPlugin *defaultNodes, const quint64 epoch,
-                          const quint64 revision, const Capabilities capabilities)
+                          const quint64 revision, const Capabilities capabilities,
+                          const LatencyPolicy::Ranges &latencyRanges)
 {
     BuildResult result;
     result.snapshot.schemaVersion = kSchemaVersion;
@@ -431,6 +433,11 @@ BuildResult buildSnapshot(WpObjectManager *manager, WpPlugin *mixer,
             Device device = projectDevice(node, output, handle, volume, channelMap,
                                           mixerPresent);
             device.isDefault = boundId == (output ? defaultOutputId : defaultInputId);
+            const auto range = latencyRanges.find(*serial);
+            LatencyPolicy::project(device, WirePlumberLatency::readOffset(node),
+                                   range == latencyRanges.end() ? std::nullopt
+                                                                : range->second,
+                                   capabilities.testFlag(Capability::SetLatencyOffset));
             if (output) {
                 result.snapshot.outputs.push_back(std::move(device));
             } else {

@@ -376,6 +376,12 @@ void QtAudioTransport::submitOperation(const QString &owner, const quint64 reque
         method = QStringLiteral("DeleteVbanStream");
         arguments = {request.displayName};
         break;
+    case OperationKind::SetLatencyOffset:
+        method = QStringLiteral("SetLatencyOffset");
+        // qlonglong marshals as D-Bus `x`, the signed offset in nanoseconds.
+        arguments = {QVariant::fromValue(request.primary),
+                     QVariant::fromValue<qlonglong>(request.latencyOffsetNs)};
+        break;
     }
 
     QDBusMessage call = QDBusMessage::createMethodCall(

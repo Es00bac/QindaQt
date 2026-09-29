@@ -9,6 +9,7 @@ target_sources(
         audio_settings_completion.cpp
         audio_settings_stream_route.cpp
         audio_settings_volume.cpp
+        audio_settings_latency.cpp
         audio_console_projection.cpp
         audio_peer_projection.cpp
         audio_peer_code.cpp
@@ -57,11 +58,13 @@ qt_add_qml_module(
         qml/AudioConsoleStrip.qml
         qml/AudioDeviceSection.qml
         qml/AudioIconButton.qml
+        qml/AudioLatencyControl.qml
         qml/AudioLevelRow.qml
         qml/AudioPage.qml
         qml/AudioPeerConnectionCard.qml
         qml/AudioPeerSection.qml
         qml/AudioStreamSection.qml
+        qml/AudioStatusHeader.qml
         qml/AudioStreamTargetPicker.qml
         qml/AudioVirtualDeviceSection.qml
 )
@@ -105,11 +108,13 @@ install(
         qml/AudioChannelStrip.qml
         qml/AudioDeviceSection.qml
         qml/AudioIconButton.qml
+        qml/AudioLatencyControl.qml
         qml/AudioLevelRow.qml
         qml/AudioPage.qml
         qml/AudioPeerConnectionCard.qml
         qml/AudioPeerSection.qml
         qml/AudioStreamSection.qml
+        qml/AudioStatusHeader.qml
         qml/AudioStreamTargetPicker.qml
         qml/AudioVirtualDeviceSection.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Audio"

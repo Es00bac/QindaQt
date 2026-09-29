@@ -94,6 +94,33 @@ computers need Audio1 schema 12 for this setup. The Settings-only transfer
 format and its validation are recorded in
 [ADR-0252](../adr/0252-transfer-manual-stereo-peers-with-connection-code.md).
 
+## Compact Devices tab and latency offsets
+
+The Devices tab uses QindaTK's small controls (`Tk.Button`, `Tk.Switch`,
+`Tk.Slider`, `Tk.NumberField`, `Tk.SectionHeader`) under the page's
+`QindaQtTheme` bridge. A device row is three short lines: name, state and
+**Set default**; the volume slider and **Mute**; the latency offset, its
+**Reset** and **Channels**. A stream row keeps its name, direction and target on
+one line with **Mute**, and its device chooser beside its caption. Section
+descriptions stay as accessible descriptions of the section headers. A healthy
+service shows only **Ready** beside the heading; the state card appears for
+loading, limited, stale and unavailable truth. Object names, keyboard traversal
+and accessible names are unchanged, and the heading and status live in
+`AudioStatusHeader.qml`.
+
+Every device whose node reports a latency offset shows it in whole
+milliseconds (`AudioLatencyControl.qml`). The field is bounded numeric entry:
+the device's settable range from Audio1 schema 13, step 5 ms (Shift ×10), no
+free text. A device that reports no offset shows no field or reset at all —
+absent, never 0 ms — and a read-only offset is displayed without clamping.
+The model (`setDeviceLatencyOffset`) converts to nanoseconds and admits with
+the same `latencyOffsetAdmitted` rule the client and service use. It keeps the
+dispatched target on screen until a snapshot reports it; rapid edits keep one
+queued successor behind an in-flight request; a refusal returns the row to the
+device's value; and a device that never reports the value returns to its own
+after 3 s with a notice. Reset sends 0 ms, which Audio1 remembers like any
+other value ([ADR-0288](../adr/0288-per-device-latency-offsets-and-a-compact-audio-page.md)).
+
 ## Truth shown by the route
 
 The Devices tab presents the current public snapshot in three groups:
@@ -320,7 +347,7 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.settings-audio-(model|model-adversarial|page|stream-routing|stream-routing-page|boundary|boundary-poison)$'
+  -R '^qindaqt\.settings-audio-(model|model-adversarial|latency|latency-page|page|stream-routing|stream-routing-page|boundary|boundary-poison)$'
 ```
 
 - the model row proves bounded projection, exact lineage, capability and
@@ -345,6 +372,13 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
 - the Settings Center navigation row additionally proves Ctrl+6 selection,
   the Audio route tab's accessible name/role, and Tab entry plus Escape
   return in both the wide (720×520) and compact (440×360) host layouts.
+- `qindaqt.settings-audio-latency` proves the schema-13 projection (absent
+  stays absent), millisecond-to-nanosecond dispatch, shared admission, the
+  held target until readback, one queued successor, and fallback on refusal;
+- `qindaqt.settings-audio-latency-page` (with `QT_FATAL_WARNINGS=1`) proves the
+  field's SpinBox role and device name, bounded steps and clamped typing,
+  Reset, the absent and read-only cases, Tab order after **Mute** with arrow
+  stepping, and the compact row pitch (at most 100 px per device row);
 - the stream-routing model and offscreen page rows prove direction-matched
   choices, exact-handle dispatch, pending/readback truth, refusal, removal,
   owner replacement, keyboard selection, and compact wheel scrolling;

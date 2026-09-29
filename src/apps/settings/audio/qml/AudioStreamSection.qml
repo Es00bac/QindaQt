@@ -53,12 +53,13 @@ ColumnLayout {
     }
 
     Layout.fillWidth: true
-    spacing: Tokens.space["2"]
+    spacing: Tokens.space["1"]
 
-    SectionHeader {
+    Tk.SectionHeader {
         Layout.fillWidth: true
         title: qsTr("Application streams")
-        description: qsTr("Levels and devices for open applications")
+        count: streamRepeater.count > 0 ? String(streamRepeater.count) : ""
+        Accessible.description: qsTr("Levels and devices for open applications")
     }
 
     // AGENT-GUARD (mirrors ADR-0191, shell audio applet): index-stable rows,
@@ -73,7 +74,7 @@ ColumnLayout {
             readonly property var modelData: root.streamRows[index] ?? null
             visible: modelData !== null
             Layout.fillWidth: true
-            padding: Tokens.space["3"]
+            padding: Tokens.space["2"]
             Accessible.name: qsTr("%1 stream %2, %3, %4, %5")
                 .arg(streamRow.modelData?.directionText ?? "")
                 .arg(streamRow.modelData?.applicationName ?? "")
@@ -107,33 +108,30 @@ ColumnLayout {
                 root.removeActionRegistration(streamRow.index)
 
             contentItem: ColumnLayout {
-                spacing: Tokens.space["2"]
+                spacing: Tokens.space["1"]
 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Tokens.space["2"]
 
-                    ColumnLayout {
+                    Label {
                         Layout.fillWidth: true
-                        spacing: Tokens.space["1"]
+                        text: (streamRow.modelData?.mediaName.length ?? 0) > 0
+                              ? qsTr("%1 — %2")
+                                .arg(streamRow.modelData?.applicationName ?? "")
+                                .arg(streamRow.modelData?.mediaName ?? "")
+                              : streamRow.modelData?.applicationName ?? ""
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
 
-                        Label {
-                            Layout.fillWidth: true
-                            text: (streamRow.modelData?.mediaName.length ?? 0) > 0
-                                  ? qsTr("%1 — %2")
-                                    .arg(streamRow.modelData?.applicationName ?? "")
-                                    .arg(streamRow.modelData?.mediaName ?? "")
-                                  : streamRow.modelData?.applicationName ?? ""
-                            font.weight: Font.DemiBold
-                        }
-
-                        Label {
-                            Layout.fillWidth: true
-                            text: qsTr("%1 · %2")
-                                .arg(streamRow.modelData?.directionText ?? "")
-                                .arg(streamRow.modelData?.targetName ?? "")
-                            muted: true
-                        }
+                    Label {
+                        text: qsTr("%1 · %2")
+                            .arg(streamRow.modelData?.directionText ?? "")
+                            .arg(streamRow.modelData?.targetName ?? "")
+                        muted: true
+                        elide: Text.ElideRight
+                        Layout.maximumWidth: implicitWidth
                     }
 
                     Label {
@@ -144,14 +142,15 @@ ColumnLayout {
                         Accessible.name: text
                     }
 
-                    Switch {
+                    Tk.Switch {
                         id: muteSwitch
                         objectName: "audioStreamMute_"
                                     + (streamRow.modelData?.serial ?? 0)
+                        small: true
                         text: qsTr("Mute")
                         checked: streamRow.modelData?.muted ?? false
                         enabled: streamRow.modelData?.muteAvailable ?? false
-                        accessibleDescription: qsTr("Mute %1")
+                        tooltip: qsTr("Mute %1")
                             .arg(streamRow.modelData?.applicationName ?? "")
                         onToggled: streamRow.modelData !== null
                             && root.audioSettings.setStreamMuted(
