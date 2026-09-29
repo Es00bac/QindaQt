@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "protocol_client.h"
+#include "keyboard_layout.h"
 #include "ext-session-lock-v1-client-protocol.h"
 #include <wayland-client.h>
 namespace QindaQt::LockProtocol {
@@ -16,6 +17,7 @@ ProtocolClient::ProtocolClient(wl_display *display, wl_registry *registry, unsig
   wl_display_flush(m_display);
 }
 ProtocolClient::~ProtocolClient() {
+  m_keyboard.reset();
   if (m_sync) wl_callback_destroy(m_sync);
   // AGENT-GUARD: local proxy destruction leaves the server lock intact when a
   // client exits/crashes. Never send destroy on a locked resource or pretend
@@ -23,6 +25,13 @@ ProtocolClient::~ProtocolClient() {
   if (m_lock) wl_proxy_destroy(reinterpret_cast<wl_proxy *>(m_lock));
   if (m_manager) ext_session_lock_manager_v1_destroy(m_manager);
 }
+void ProtocolClient::observeKeyboard(wl_registry *registry, unsigned seatName, unsigned version) {
+  if (m_keyboard || !registry || !seatName) return;
+  m_keyboard = std::make_unique<KeyboardLayout>(registry, seatName, version);
+  connect(m_keyboard.get(), &KeyboardLayout::changed, this, &ProtocolClient::keyboardChanged);
+}
+QString ProtocolClient::keyboardLayout() const { return m_keyboard ? m_keyboard->name() : QString(); }
+QVariantList ProtocolClient::keyboardRows() const { return m_keyboard ? m_keyboard->rows() : QVariantList(); }
 ext_session_lock_surface_v1 *ProtocolClient::createSurface(wl_surface *surface, wl_output *output) {
   if (!available() || !surface || !output || m_unlocking) return nullptr;
   return ext_session_lock_v1_get_lock_surface(m_lock, surface, output);

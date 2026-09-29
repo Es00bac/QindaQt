@@ -6,6 +6,8 @@
 #include <pwd.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
+#include <signal.h>
 #include <unistd.h>
 using namespace QindaQt::LockAuthentication;
 int main(int argc, char **argv) {
@@ -14,6 +16,13 @@ int main(int argc, char **argv) {
   const rlimit noCore{0, 0};
   if (setrlimit(RLIMIT_CORE, &noCore) || prctl(PR_SET_DUMPABLE, 0) ||
       prctl(PR_GET_DUMPABLE) != 0 || getuid() != geteuid() || getgid() != getegid()) return 2;
+  // An owned worker must die even if its greeter crashes while a PAM module
+  // blocks outside conversation callbacks. Socketpair creation credentials pin
+  // the launching parent; set the death signal before checking the race.
+  ucred parent{}; socklen_t length = sizeof(parent);
+  if (prctl(PR_SET_PDEATHSIG, SIGKILL) ||
+      getsockopt(3, SOL_SOCKET, SO_PEERCRED, &parent, &length) || length != sizeof(parent) ||
+      parent.pid != getppid() || parent.uid != getuid() || parent.gid != getgid()) return 2;
 #if defined(QINDAQT_PRIVATE_PAM_FIXTURE)
   if (argc != 2) return 2;
 #else

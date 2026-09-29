@@ -4154,3 +4154,33 @@ check two mapped/input-eligible roles and actual physical framebuffer pixels at
 owned-client termination. The fixture contains no PAM-success/unlock method and
 is never installed. Qt initial construction must not commit before configure
 acknowledgement; server protocol validation remains unchanged.
+
+
+### PF7 native QtQuick / owned PAM fixture
+
+Build `qindaqt-private-lock-greeter` and the fixed production `qindaqt-lock`
+target. The former is never installed and compiles its own private worker
+configuration constructor. It uses a temporary PAM configuration and real
+synthetic module, not the system stack or an owner's password. Its input
+commands represent bounded synthetic UI intent; no command asserts approval.
+
+The fork's non-installable test configuration sets
+`QINDAQT_PRIVATE_QT_LOCK_GREETER` to that exact built fixture. Native QtQuick
+rows cover two real output roles at normal and 150% scale, denied password,
+cancel/late response, account denial and current-worker standard unlock.
+The fixture keeps fatal Qt warnings enabled. Its compiled public Patrol/Reef
+scenes load on the actual role; the pure OSK model exercises the QML credential
+editing/submit sink. Credential screenshots contain only synthetic test data.
+
+The installed Reef module's Qt6.11 palette collision is corrected in the separate
+suite-source prerequisite. Private qualification explicitly sets
+`QINDAQT_PRIVATE_REEF_QML_ROOT` to its built `build-reef/qt/qml` root.
+This compile-time override exists only in the non-installed greeter fixture;
+the production target imports only root-managed installed Qt/QML modules.
+Released recipe/module replacement stays manager-held.
+
+Run the exact server CTest name `kwin-testNativeSessionLock` with
+`--no-tests=error`. Run the four LockAuthentication/worker CTests with
+`QT_FATAL_WARNINGS=1`. Physical DRM, installed root-owned greeter binding,
+owner-password/PAM-stack qualification and final coherent Portage delivery
+remain distinct held gates; private matrix success does not claim live rollout.

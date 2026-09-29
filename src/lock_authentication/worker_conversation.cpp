@@ -12,6 +12,7 @@ std::optional<std::string> WorkerConversation::exchange(MessageKind kind, std::s
   case MessageKind::Visible: wire = WireKind::Visible; break;
   case MessageKind::Information: wire = WireKind::Information; break;
   case MessageKind::Error: wire = WireKind::Error; break;
+  default: m_cancelled = true; return std::nullopt;
   }
   if (!m_channel.send({wire, m_token, std::string(prompt)})) {
     m_cancelled = true; return std::nullopt;

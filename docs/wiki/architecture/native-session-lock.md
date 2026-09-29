@@ -13,11 +13,12 @@ main-thread lock state and a generation-tagged physical output presentation
 barrier. Native role loss removes graphics, not authority.
 
 The fixed installed `/usr/bin/qindaqt-lock` must be root-owned and not writable
-by the session user, including its parent directory hierarchy. Peer UID equals
-compositor UID and executable inode/device matches the installed file. Its
-desktop entry requests `ext_session_lock_manager_v1` using the public interface
-permission field. Debug permission bypass, executable names and sandbox app IDs
-cannot grant access. Unlock revalidates the current peer.
+by the session user, including its parent directory hierarchy. Its desktop
+entry requests `ext_session_lock_manager_v1` using the public interface
+permission field. The PF7 private launcher additionally restricts the global to
+the compositor-created connection: peer UID or executable inode alone cannot
+authorize a self-launched client. Debug permission bypass, executable names and
+sandbox app IDs cannot grant access. Unlock revalidates the current connection.
 
 The compositor trusts that executable to authenticate through PAM and account
 validation before `unlock_and_destroy`. PF7 supplies the executable, PAM and
@@ -96,3 +97,43 @@ session notification, closes it and ends PAM while its conversation is alive,
 then reports approval. Keyring failure permits its later prompt fallback; it
 never supplies unlock authority. The final `qindaqt-lock` service stack must not
 open a second login/logind session. Its distro/package delivery remains held.
+
+
+## Native prompt and scene composition
+
+The candidate `src/lock_greeter` composition root constructs a real QtQuick
+view for each physical output. Each view obtains the native standard lock role
+before loading/showing its compiled QML. A role or QML load failure exits the
+locker and preserves the compositor's black/input/capture fence; there is no
+ordinary window or layer-shell fallback. Output removal deletes its view before
+Qt can move it to another output. The QindaTK prompt displays a clock, real-UID
+account name, bounded PAM prompt/status and password field, plus the compositor's
+actual current XKB layout name. All views clear credential fields together.
+
+The native controller receives lock state solely from its borrowed protocol
+client and authentication solely from its owned worker. Its QML-facing methods
+are begin, respond and cancel; protocol/worker objects are never exposed to QML.
+The only authenticated-unlock call site consumes the coordinator's current
+epoch/request approval. Server sync completes before the locker quits.
+
+The public pure `qindaqt_osk_core` model supplies touch-keyboard geometry,
+shift/page state and bounded key intent inside the nondumpable locker process.
+A locker-owned KeyEmitter edits only its own credential field. It opens no
+additional privileged Wayland connection and synthesizes no credential
+keystrokes to another application. Printable labels and the layout indicator
+come from the compositor's bounded standard wl_keyboard XKB keymap/group.
+The compositor-owned input method remains restricted to current lock surfaces.
+
+A purpose-scoped public Settings1/screensaver preference provider selects only
+the two fixed compiled Patrol/Reef wrappers. The imported public scenes disable
+metrics; unknown/absent preferences and failed optional scene loads retain the
+plain background. No preference supplies an executable or QML URL. QML imports
+and Qt plugins are restricted to root-managed installed directories in
+production. CircuitReef's Qt6.11 prerequisite renames its incompatible QString
+`palette` embedding property to `reefPalette`; CLI `--palette` is unchanged.
+Its suite-source candidate and final Portage pin require separate integration.
+
+The native worker sets a kernel parent-death signal and verifies its inherited
+socketpair's creation credentials against the launching parent. Greeter crash
+therefore terminates even a PAM module blocked outside conversation callbacks,
+while the compositor remains locked. These controls do not modify kernel policy.

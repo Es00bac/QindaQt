@@ -7,6 +7,8 @@
 #include <cstring>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/prctl.h>
+#include <signal.h>
 #include <unistd.h>
 namespace QindaQt::LockWorkerClient {
 using namespace LockAuthentication;
@@ -63,8 +65,9 @@ bool WorkerProcess::start(AttemptToken token) {
   parameters.flags = QProcess::UnixProcessFlag::CloseFileDescriptors | QProcess::UnixProcessFlag::ResetIds |
                      QProcess::UnixProcessFlag::DisableCoreDumps | QProcess::UnixProcessFlag::ResetSignalHandlers;
   parameters.lowestFileDescriptorToClose = 4; m_process.setUnixProcessParameters(parameters);
-  const int childFd = m_childFd;
-  m_process.setChildProcessModifier([childFd] {
+  const int childFd = m_childFd; const pid_t parentPid = getpid();
+  m_process.setChildProcessModifier([childFd, parentPid] {
+    if (prctl(PR_SET_PDEATHSIG, SIGKILL) || getppid() != parentPid) _exit(127);
     if (dup2(childFd, 3) < 0 || fcntl(3, F_SETFD, 0) < 0) _exit(127);
   });
   m_process.start(); m_deadline.start(m_timeoutMs);

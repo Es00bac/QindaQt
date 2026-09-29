@@ -228,3 +228,7 @@ if(QINDAQT_BUILD_SHELL)
 endif()
 
 add_subdirectory(services/keyring)
+
+if(QINDAQT_BUILD_PRODUCTION_SHELL OR BUILD_TESTING)
+    add_subdirectory(lock_greeter)
+endif()
