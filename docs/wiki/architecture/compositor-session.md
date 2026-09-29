@@ -43,7 +43,8 @@ Pin checks are:
 The verifier also supports `--fetch NEW_DIRECTORY` and `--verify CHECKOUT`.
 The patch filename and SHA-256 are checked from
 `compositor/patches/series.json`. [ADR-0277](../adr/0277-theme-choice-and-corner-tab-input.md)
-records the corner-tab input contract. [ADR-0001](../adr/0001-use-kwin-as-compositor-base.md)
+records the corner-tab input contract and [ADR-0287](../adr/0287-pass-tablet-proximity-through-window-decorations.md)
+the tablet proximity patch. [ADR-0001](../adr/0001-use-kwin-as-compositor-base.md)
 records this maintenance model. Follow the [KWin upgrade
 procedure](../development/kwin-upgrades.md) for any patch-release change; the
 [release procedure](../development/releases.md) requires a fresh native build

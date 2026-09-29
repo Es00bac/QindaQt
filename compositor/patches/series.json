@@ -5,6 +5,10 @@
     {
       "path": "0001-click-through-transparent-decoration-cutout.patch",
       "sha256": "87749d8c841fe5a8757d70a17f480911da21d6a26fd207fd378e87c31ee55c6d"
+    },
+    {
+      "path": "0002-tablet-proximity-over-decoration.patch",
+      "sha256": "a6439a1c1fab0fcb7cefaacbaf2de6f22f3eb645d58055bd70504c9bbd897ce2"
     }
   ]
 }
