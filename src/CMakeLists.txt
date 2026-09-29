@@ -27,6 +27,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN OR BUILD_TESTING)
 endif()
 add_subdirectory(hybrid)
 add_subdirectory(application_window_management)
+add_subdirectory(window_management)
 add_subdirectory(hybrid_constraints)
 add_subdirectory(hybrid_gather)
 # Maps the task-list applet projection onto the gather planner's rectangles,
