@@ -38,7 +38,7 @@ A lane is done when its handoff is posted (exact commits, files, tests with coun
 | S: `qindaqt-screenshot` with OBS record mode (PF16, ADR-0289) | `laneS-screenshot.md` | `feature/qindaqt-screenshot` / `screenshot` | integrated at `607c1f60`; laptop native build and 6/6 focused gates pass |
 | PK: native polkit agent, one agent only (PF15, ADR-0290) | `lanePK-polkit-agent.md` | `feature/qindaqt-polkit-agent` / `polkit-agent` | source integrated candidate 72191b76; native build, manager 9/9 and strict docs pass; live multi-output/authentication gates deferred |
 | P: four caveats (container names on restart, Corner Bar double-click, portal twin accent, touch lift) | `laneP-polish.md` | `fix/round-caveats` / `polish` | integrated candidate 5e8d73d7; manager 6/6 gates pass |
-| K: key store PK1–PK3 (plan §3.8) | `laneK-keyring.md` | `feature/qindaqt-keyring` / `keyring` | PK1 storage candidate 720a503e preserved; laptop/manager gates pending, PK2–PK6 remain queued |
+| K: key store PK1–PK3 (plan §3.8) | `laneK-keyring.md` | `feature/qindaqt-keyring` / `keyring` | PK1 storage source integrated candidate 720a503e; manager and laptop each 4/4 plus strict docs pass; PK2–PK6 remain queued |
 | D: mixer bus delay (ADR-0288 addendum) | `laneD-mixer-delay.md` | merged `32ed1f42` | done |
 
 ### September 29 recovery resource boundary
@@ -4478,8 +4478,21 @@ the compositor owns authenticated target adoption and atomic topology changes. E
 unauthenticated development-control mutators must remain disabled in production.
 
 Documentation tooling is preserved in overlay branch `build/mkdocs-portage` at `07bc89e`.
-Five new recipes, hashes/Manifests, pkgcheck and eight Portage test-image builds pass.
+Five new recipes, hashes/Manifests, pkgcheck and nine Portage test-image builds pass.
 Strict documentation uses those test images; no system software merge or delivery change.
 The bridge failure-mode test now asserts exact expected warnings and fails every other
 warning with QtTest: Qt global fatal-warning handling aborts even ignored expected warnings.
 Other affected CTests retain `QT_FATAL_WARNINGS=1`.
+
+### Native keyring storage boundary — 2026-09-29T20:08:00+00:00
+
+PK1 candidate `720a503e` passes native configure/build and four focused CTests on
+both qinda and qinda-top. Manager strict MkDocs and 438-page links/navigation pass.
+Storage owns bounded authenticated crypto/format, wiped locked/dump/fork-excluded
+secret pages, and no-follow atomic private-file persistence. The public search key
+allows offline attribute guessing; locked loaded results remain unauthenticated until
+unlock, as ADR-0292 documents. Daemon caller policy, single-writer/rate limits,
+Secret Service transport, PAM, UI and imports remain PK2–PK6. No real keyring data read.
+
+Laptop fork consumer/plugin/launcher/session targets build and six focused ABI/session
+checks pass at `f1abe8ed` with the staged fork; no binaries are installed system-wide.
