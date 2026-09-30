@@ -135,8 +135,12 @@ public:
     }
     void stop() override {}
 
-    void requestSnapshot(quint64 token, const QString &owner, const QStringList &) override
+    void requestSnapshot(quint64 token, const QString &owner,
+                         const QStringList &keys) override
     {
+        // The Settings1 client receives exactly its requested scope, even when
+        // the backing fixture is shared with another scoped client.
+        m_scope = keys;
         if (!autoSnapshots) {
             m_snapshotRequests.append({token, owner});
             return;
@@ -248,17 +252,27 @@ public:
                 {QLatin1StringView(WireContract::FieldSettingsSchemaVersion), quint32(2)},
                 {QLatin1StringView(WireContract::FieldEpoch), m_epoch},
                 {QLatin1StringView(WireContract::FieldRevision), revision},
-                {QLatin1StringView(WireContract::FieldValues), m_values},
+                {QLatin1StringView(WireContract::FieldValues), scopedValues()},
                 {QLatin1StringView(WireContract::FieldSourceLayers), sourceLayers()},
                 {QLatin1StringView(WireContract::FieldMessage), QString{}}};
     }
 
 private:
+    [[nodiscard]] QVariantMap scopedValues() const
+    {
+        QVariantMap values;
+        for (const auto &key : m_scope) {
+            if (m_values.contains(key)) values.insert(key, m_values.value(key));
+        }
+        return values;
+    }
+
     [[nodiscard]] QVariantMap sourceLayers() const
     {
         QVariantMap layers;
-        for (auto it = m_values.constBegin(); it != m_values.constEnd(); ++it) {
-            layers.insert(it.key(), QStringLiteral("user-overrides"));
+        for (const auto &key : m_scope) {
+            if (m_values.contains(key))
+                layers.insert(key, QStringLiteral("user-overrides"));
         }
         return layers;
     }
@@ -284,6 +298,7 @@ private:
     }
 
     QString m_epoch = QStringLiteral("epoch-11");
+    QStringList m_scope;
     quint64 m_revision = 0;
     QVariantMap m_values{{QString::fromLatin1(kSaverKey), QStringLiteral("none")},
                          {QString::fromLatin1(kMinutesKey),

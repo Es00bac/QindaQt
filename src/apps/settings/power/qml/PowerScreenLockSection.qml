@@ -24,9 +24,8 @@ ColumnLayout {
             return { "value": value, "label": qsTr("%1 minutes").arg(value) }
         })
     }
-    // ADR-0132: the grace ladder mirrors the documented KScreenLocker choices
-    // in seconds. A stored out-of-set value (an upstream custom delay) is kept
-    // as an extra entry so opening the page never silently changes it.
+    // ADR-0308: grace is a cancellable pre-lock idle delay, never an
+    // authentication bypass after native protection is acquired.
     readonly property var graceOptions: {
         const seconds = [
             { "value": 0, "label": qsTr("Immediately") },
@@ -141,7 +140,7 @@ ColumnLayout {
                     Accessible.ignored: true
                 }
                 Label {
-                    text: qsTr("Require password after")
+                    text: qsTr("Wait after idle before locking")
                     Accessible.name: text
                     muted: !parent.enabled
                 }
@@ -158,8 +157,8 @@ ColumnLayout {
                     })
                     T.ToolTip.visible: graceHover.hovered
                     T.ToolTip.delay: 600
-                    T.ToolTip.text: qsTr("How long the screen stays unlocked after it locks")
-                    accessibleDescription: qsTr("Choose the unlock grace period")
+                    T.ToolTip.text: qsTr("Activity during this delay cancels locking; authentication is still required after protection is acquired.")
+                    accessibleDescription: qsTr("Choose how long to wait after idle before requesting a lock")
                     onActivated: index => {
                         if (index >= 0 && index < root.graceOptions.length)
                             root.screenLockSettings.setLockGraceSeconds(

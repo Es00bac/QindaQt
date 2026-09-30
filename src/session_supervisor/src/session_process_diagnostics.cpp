@@ -84,6 +84,16 @@ int SessionProcessSupervisor::polkitAgentRestartCount() const noexcept
     return m_polkitAgent->restartCount();
 }
 
+qint64 SessionProcessSupervisor::nightLightProcessId() const noexcept
+{
+    return m_nightLight->processId();
+}
+
+int SessionProcessSupervisor::nightLightRestartCount() const noexcept
+{
+    return m_nightLight->restartCount();
+}
+
 qint64 SessionProcessSupervisor::welcomeProcessId() const noexcept
 {
     return m_welcome->processId();
