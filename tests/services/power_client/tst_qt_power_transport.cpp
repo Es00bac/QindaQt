@@ -188,7 +188,8 @@ void QtPowerTransportTests::successiveOwnersDelayedOperationAndEpochFencing()
     QTRY_COMPARE(inhibitorState.size(), 1);
     QCOMPARE(inhibitorState.constFirst().at(0).toString(), firstOwner);
     QCOMPARE(inhibitorState.constFirst().at(1).toULongLong(), quint64(71));
-    QVERIFY(inhibitorState.constFirst().at(2).toBool());
+    QVERIFY2(inhibitorState.constFirst().at(2).toBool(),
+             qPrintable(inhibitorState.constFirst().at(5).toString()));
     QCOMPARE(inhibitorState.constFirst().at(3).toUInt(), quint32(0));
     QCOMPARE(inhibitorState.constFirst().at(4).toUInt(), quint32(0));
 

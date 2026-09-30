@@ -103,8 +103,16 @@ private Q_SLOTS:
         Q_EMIT changedReceived(epoch, revision);
     }
 
+    void onIdleInhibitorStateReceipt(const QString &nonce, quint32 supported,
+                                     quint32 active)
+    {
+        Q_EMIT idleReceiptReceived(nonce, supported, active);
+    }
+
 Q_SIGNALS:
     void changedReceived(quint64 epoch, quint64 revision);
+    void idleReceiptReceived(const QString &nonce, quint32 supported,
+                             quint32 active);
 };
 
 void PowerServiceResidencyTests::publishesSnapshotAndChangedSignalOverBus()
@@ -298,6 +306,29 @@ void PowerServiceResidencyTests::idleInhibitorMethodsFailClosedUntilConsumed()
     QVERIFY2(!active.isError(), qPrintable(active.error().message()));
     QCOMPARE(active.value(), quint32{0});
 
+    const QString nonce = QStringLiteral("0123456789abcdef0123456789abcdef");
+    QVERIFY(bus.connection.connect(
+        serviceConnection.baseService(), QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName),
+        QStringLiteral("IdleInhibitorStateReceipt"), this,
+        SLOT(onIdleInhibitorStateReceipt(QString,quint32,quint32))));
+    QSignalSpy receipt(this, &PowerServiceResidencyTests::idleReceiptReceived);
+    QDBusMessage request = QDBusMessage::createMethodCall(
+        serviceName, QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName),
+        QStringLiteral("RequestIdleInhibitorStateWithReceipt"));
+    request.setArguments({nonce});
+    QDBusPendingCallWatcher receiptProgress(bus.connection.asyncCall(request));
+    QSignalSpy receiptReplied(&receiptProgress,
+                              &QDBusPendingCallWatcher::finished);
+    QTRY_COMPARE(receiptReplied.size(), 1);
+    const QDBusPendingReply<> receiptReply = receiptProgress;
+    QVERIFY2(!receiptReply.isError(), qPrintable(receiptReply.error().message()));
+    QTRY_COMPARE(receipt.size(), 1);
+    QCOMPARE(receipt.first().at(0).toString(), nonce);
+    QCOMPARE(receipt.first().at(1).toUInt(), quint32{0});
+    QCOMPARE(receipt.first().at(2).toUInt(), quint32{0});
+
     QDBusMessage acquire = QDBusMessage::createMethodCall(
         serviceName, QString::fromLatin1(kObjectPath),
         QString::fromLatin1(kInterfaceName), QStringLiteral("AcquireIdleInhibitor"));
@@ -363,6 +394,10 @@ void PowerServiceResidencyTests::introspectionExposesExactPower1Signatures()
 
     QVERIFY(introspection.contains(
         QStringLiteral("name=\"GetIdleInhibitorCapabilities\"")));
+    QVERIFY(introspection.contains(
+        QStringLiteral("name=\"RequestIdleInhibitorStateWithReceipt\"")));
+    QVERIFY(introspection.contains(
+        QStringLiteral("name=\"IdleInhibitorStateReceipt\"")));
     QVERIFY(introspection.contains(
         QStringLiteral("name=\"AcquireIdleInhibitor\"")));
     QVERIFY(introspection.contains(

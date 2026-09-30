@@ -2,8 +2,11 @@
 
 #include "power_service_object_p.h"
 
+#include <qindaqt/services/power_protocol/power_limits.h>
+
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusServiceWatcher>
+#include <QtCore/QRegularExpression>
 
 namespace QindaQt::Power {
 
@@ -61,6 +64,33 @@ quint32 PowerServiceObject::GetActiveIdleInhibitorScopes() const
     const Snapshot current = m_coordinator->snapshot();
     synchronizeIdleInhibitorEpoch(current.epoch);
     return activeIdleInhibitorScopes();
+}
+
+void PowerServiceObject::RequestIdleInhibitorStateWithReceipt(
+    const QString &nonce)
+{
+    static const QRegularExpression noncePattern(QStringLiteral("^[0-9a-f]{32}$"));
+    if (!calledFromDBus() || !noncePattern.match(nonce).hasMatch()) {
+        if (calledFromDBus()) {
+            setDelayedReply(true);
+            m_connection.send(message().createErrorReply(
+                QStringLiteral("org.qindaqt.Power1.Error.Invalid"),
+                QStringLiteral("invalid-receipt-nonce")));
+        }
+        return;
+    }
+    const QDBusMessage call = message();
+    const Snapshot current = m_coordinator->snapshot();
+    synchronizeIdleInhibitorEpoch(current.epoch);
+    const auto supported =
+        static_cast<quint32>(m_idleInhibitors.consumedScopes().toInt());
+    const auto active = activeIdleInhibitorScopes();
+    QDBusMessage receipt = QDBusMessage::createTargetedSignal(
+        call.service(), QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName),
+        QStringLiteral("IdleInhibitorStateReceipt"));
+    receipt.setArguments({nonce, supported, active});
+    static_cast<void>(m_connection.send(receipt));
 }
 
 QindaQt::Power::Handle PowerServiceObject::AcquireIdleInhibitor(

@@ -52,7 +52,10 @@ it enforces service-epoch and unique-owner cookies, bounded capacity, atomic
 scope admission and owner cleanup in unit tests. It now backs additive resident D-Bus queries and acquire/release methods;
 these methods still report zero consumed scopes and reject every acquisition.
 It is not connected to idle stages, so the ScreenSaver facade remains
-Unsupported. This boundary must
+Unsupported. Its public state query uses an actual-owner, nonce-correlated
+targeted receipt because QtDBus method replies do not expose an authenticated
+actual sender; the legacy getters remain compatible but are not policy authority
+([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)). This boundary must
 stay explicit until the shared idle policy consumes every requested scope.
 
 Lock-before-sleep remains a KWin/KScreenLocker responsibility. Shell session actions acquire all three
