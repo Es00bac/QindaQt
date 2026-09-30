@@ -110,3 +110,13 @@ qt_add_executable(qindaqt_night_light_proof_helper
 target_link_libraries(qindaqt_night_light_proof_helper
                       PRIVATE QindaQt::NightLight Qt6::Core Qt6::DBus)
 qindaqt_enable_warnings(qindaqt_night_light_proof_helper)
+
+qt_add_executable(qindaqt_night_light_settings_importer_tests
+    tst_night_light_settings_importer.cpp)
+target_link_libraries(qindaqt_night_light_settings_importer_tests
+    PRIVATE QindaQt::NightLight QindaQt::SettingsClient Qt6::Test)
+qindaqt_enable_warnings(qindaqt_night_light_settings_importer_tests)
+add_test(NAME qindaqt.night-light-settings-importer
+    COMMAND qindaqt_night_light_settings_importer_tests)
+set_tests_properties(qindaqt.night-light-settings-importer PROPERTIES
+    LABELS "service;display;night-light;settings")

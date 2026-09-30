@@ -5,9 +5,13 @@
 #include "qindaqt/compositor_names/compositor_names.h"
 
 #include <qindaqt/apps/settings_display/display_night_light_model.h>
-#include <qindaqt/services/night_light/night_light_config_port.h>
+#include <qindaqt/services/night_light/night_light_schedule_client.h>
+#include <qindaqt/services/night_light/night_light_settings_importer.h>
 #include <qindaqt/services/night_light/night_light_state_port.h>
-#include <qindaqt/services/night_light/night_time_schedule_monitor.h>
+#include <qindaqt/services/night_light/night_light_config_port.h>
+#include <qindaqt/services/night_light/night_light_values.h>
+#include <qindaqt/services/settings_client/qt_settings_transport.h>
+#include <qindaqt/services/settings_client/settings_client.h>
 
 #include <QtCore/QLoggingCategory>
 #include <QtCore/QStandardPaths>
@@ -22,10 +26,26 @@ Q_LOGGING_CATEGORY(lcDisplayNightLightRoute,
 
 QString configFilePath(const QString &fileName)
 {
-    // KSharedConfig::openConfig resolves rc names against the generic config
-    // location: qindaqt-kwin's qindaqt/kwinrc (ADR-0291) and knighttimerc.
     return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
         + QLatin1Char('/') + fileName;
+}
+
+QStringList displayNightLightKeys()
+{
+    return {
+        QStringLiteral("display.nightLight.active"),
+        QStringLiteral("display.nightLight.mode"),
+        QStringLiteral("display.nightLight.dayTemperatureKelvin"),
+        QStringLiteral("display.nightLight.nightTemperatureKelvin"),
+        QStringLiteral("display.nightLight.scheduleSource"),
+        QStringLiteral("display.nightLight.automaticLocation"),
+        QStringLiteral("display.nightLight.latitudeDegrees"),
+        QStringLiteral("display.nightLight.longitudeDegrees"),
+        QStringLiteral("display.nightLight.sunriseStart"),
+        QStringLiteral("display.nightLight.sunsetStart"),
+        QStringLiteral("display.nightLight.transitionSeconds"),
+        QStringLiteral("display.nightLight.disabledOutputs"),
+        QStringLiteral("display.nightLight.legacyImported")};
 }
 
 } // namespace
@@ -33,34 +53,49 @@ QString configFilePath(const QString &fileName)
 class DisplayNightLightRoute::Private {
 public:
     Private()
+        : bus(QDBusConnection::sessionBus()),
+          settingsTransport(bus),
+          settingsClient(settingsTransport, displayNightLightKeys()),
+          legacyReader(
+              configFilePath(QString(QindaQt::CompositorNames::configFile)),
+              configFilePath(QStringLiteral("knighttimerc")), bus),
+          statePort(bus),
+          scheduleClient(bus),
+          importer(settingsClient, legacyReader),
+          model(settingsClient, statePort, scheduleClient, importer)
     {
-        const QDBusConnection session = QDBusConnection::sessionBus();
-        model = std::make_unique<DisplayNightLightModel>(configPort,
-                                                         statePort,
-                                                         scheduleMonitor);
-        // AGENT-GUARD: Without a connected session bus the ports never start,
-        // so no D-Bus machinery runs on busless hosts (Main.qml rows run
-        // QT_FATAL_WARNINGS=1); the model renders fail-closed unavailable
-        // truth, which is exactly its construction state.
-        if (session.isConnected()) {
-            statePort.start();
-            scheduleMonitor.start();
-        } else {
+        // AGENT-GUARD: Busless previews run with fatal Qt warnings. Clients
+        // stay stopped there, leaving each public model boundary unavailable.
+        if (!bus.isConnected()) {
             qCInfo(lcDisplayNightLightRoute,
-                   "no session bus; the night light section renders "
-                   "unavailable truth");
+                   "no session bus; night light renders unavailable truth");
+            return;
         }
+        QString error;
+        if (!settingsClient.start(&error)) {
+            qCWarning(lcDisplayNightLightRoute,
+                      "Settings1 client did not start: %s", qPrintable(error));
+        }
+        statePort.start();
+        scheduleClient.start();
+        importer.start();
     }
 
-    QindaQt::Services::NightLight::QtConfigNightLightPort configPort{
-        configFilePath(QString(QindaQt::CompositorNames::configFile)),
-        configFilePath(QStringLiteral("knighttimerc")),
-        QDBusConnection::sessionBus()};
-    QindaQt::Services::NightLight::QtNightLightStatePort statePort{
-        QDBusConnection::sessionBus()};
-    QindaQt::Services::NightLight::QtNightTimeScheduleMonitor scheduleMonitor{
-        QDBusConnection::sessionBus()};
-    std::unique_ptr<DisplayNightLightModel> model;
+    ~Private()
+    {
+        scheduleClient.stop();
+        statePort.stop();
+        settingsClient.stop();
+    }
+
+    QDBusConnection bus;
+    QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport;
+    QindaQt::Services::SettingsClient::SettingsClient settingsClient;
+    QindaQt::Services::NightLight::QtConfigNightLightPort legacyReader;
+    QindaQt::Services::NightLight::QtNightLightStatePort statePort;
+    QindaQt::Services::NightLight::QtNightLightScheduleClient scheduleClient;
+    QindaQt::Services::NightLight::NightLightSettingsImporter importer;
+    DisplayNightLightModel model;
 };
 
 DisplayNightLightRoute::DisplayNightLightRoute(QObject *parent)
@@ -72,7 +107,7 @@ DisplayNightLightRoute::~DisplayNightLightRoute() = default;
 
 QObject *DisplayNightLightRoute::model() const
 {
-    return d->model.get();
+    return &d->model;
 }
 
 } // namespace QindaQt::Apps::SettingsDisplay

@@ -216,6 +216,7 @@ void SettingsSchemaTests::nightLightKeysMatchBoundedPublicValues()
     const auto source = QStringLiteral("display.nightLight.scheduleSource");
     const auto sunrise = QStringLiteral("display.nightLight.sunriseStart");
     const auto outputs = QStringLiteral("display.nightLight.disabledOutputs");
+    const auto imported = QStringLiteral("display.nightLight.legacyImported");
     QCOMPARE(domainKeyPrefix(SettingDomain::Displays), QStringLiteral("displays"));
     QVERIFY(schema->definition(active)->domain == SettingDomain::Displays);
     QCOMPARE(schema->systemDefaults().value(active).toBool(), false);
@@ -224,6 +225,8 @@ void SettingsSchemaTests::nightLightKeysMatchBoundedPublicValues()
     QCOMPARE(schema->systemDefaults().value(source).toString(), QStringLiteral("Location"));
     QCOMPARE(schema->systemDefaults().value(sunrise).toString(), QStringLiteral("06:00:00"));
     QCOMPARE(schema->systemDefaults().value(outputs).metaType().id(), QMetaType::QStringList);
+    QVERIFY(schema->definition(imported)->domain == SettingDomain::Displays);
+    QCOMPARE(schema->systemDefaults().value(imported).toBool(), false);
 
     QVERIFY(schema->validateValue(mode, QStringLiteral("Constant")).isValid());
     QVERIFY(!schema->validateValue(mode, QStringLiteral("Automatic")).isValid());

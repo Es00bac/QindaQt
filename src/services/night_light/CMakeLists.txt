@@ -17,6 +17,7 @@ target_sources(
         src/night_light_values.cpp
         src/night_light_schedule.cpp
         src/night_light_schedule_client.cpp
+        src/night_light_settings_importer.cpp
         src/qt_config_night_light_port.cpp
         src/qt_night_light_state_port.cpp
         src/night_time_schedule_monitor.cpp
@@ -27,6 +28,7 @@ target_sources(
             include/qindaqt/services/night_light/night_light_values.h
             include/qindaqt/services/night_light/night_light_schedule.h
             include/qindaqt/services/night_light/night_light_schedule_client.h
+            include/qindaqt/services/night_light/night_light_settings_importer.h
             include/qindaqt/services/night_light/night_light_config_port.h
             include/qindaqt/services/night_light/night_light_state_port.h
             include/qindaqt/services/night_light/night_time_schedule_monitor.h

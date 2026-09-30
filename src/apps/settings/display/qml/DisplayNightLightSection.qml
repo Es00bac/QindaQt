@@ -11,8 +11,8 @@ import QindaQt.Shell.Icons 1.0 as ShellIcons
 // Night light section for the Display route: on/off, schedule, temperatures,
 // transition length, and live compositor truth in one short status line.
 // Explanations live in tooltips, never in paragraphs. Every control is
-// keyboard reachable with an accessible name; everything disables when the
-// compositor's night light service is unavailable (fail closed, ADR-0136).
+// keyboard reachable with an accessible name. Controls require Settings1
+// and compositor truth; schedule controls also require a healthy schedule frame.
 // The location, custom-times, and temperature rows live in their own files
 // beside this one.
 ColumnLayout {
@@ -96,19 +96,43 @@ ColumnLayout {
         objectName: "nightLightUnavailableNotice"
         Layout.fillWidth: true
         visible: !root.nightLight.available
-        reason: qsTr("Night light is unavailable: the compositor's night light service did not answer.")
+        reason: qsTr("Night light is unavailable: Settings or the compositor did not answer.")
     }
 
     Label {
         objectName: "nightLightScheduleUnavailableLabel"
         Layout.fillWidth: true
         visible: root.nightLight.available && !root.nightLight.scheduleAvailable
-        text: qsTr("Schedules are unavailable: the night light schedule service is not running. Temperatures still work.")
+        text: qsTr("The schedule is unavailable. Temperatures remain available.")
         font.pointSize: Tokens.type.caption
         muted: true
         textFormat: Text.PlainText
         Accessible.role: Accessible.StaticText
         Accessible.name: text
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        visible: root.nightLight.migrationMessage.length > 0
+
+        Label {
+            objectName: "nightLightMigrationMessage"
+            Layout.fillWidth: true
+            text: root.nightLight.migrationMessage
+            font.pointSize: Tokens.type.caption
+            color: Tokens.fg.default
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: text
+        }
+
+        Button {
+            objectName: "nightLightMigrationRetryButton"
+            visible: root.nightLight.migrationRetryable
+            text: qsTr("Retry import")
+            onClicked: root.nightLight.retryMigration()
+        }
     }
 
     RowLayout {

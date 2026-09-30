@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include <qindaqt/services/night_light/night_light_config_port.h>
+#include <qindaqt/services/night_light/night_light_schedule_client.h>
 #include <qindaqt/services/night_light/night_light_state_port.h>
-#include <qindaqt/services/night_light/night_time_schedule_monitor.h>
+#include <qindaqt/services/night_light/night_light_settings_importer.h>
+#include <qindaqt/services/settings_client/settings_client.h>
 
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
@@ -14,19 +15,11 @@
 
 namespace QindaQt::Apps::SettingsDisplay {
 
-// UI model for the Display route's night light section. One draft at a time:
-// truth (live KWin status, on-disk config) and the user's in-progress draft
-// are separate; apply() converges the draft into both owned files through the
-// injected config port. The model owns no ports' lifetimes; all are injected
-// and outlive it.
-//
-// AGENT-CONTRACT: Truth comes only from the injected ports. available is
-// false until the KWin night light service publishes a healthy frame, and
-// scheduleAvailable is false until org.kde.NightTime is observed, so a fresh
-// or broken session renders fail-closed rather than optimistic
-// (ADR-0136). External config changes refresh the draft base only while the
-// user has no unsaved draft, so an outside writer can never clobber in-flight
-// input.
+// Settings1-backed Display model. Live output truth remains on KWin's public
+// NightLight boundary; schedule health comes from the resident Schedule1 client.
+// Writes are asynchronous and the model reports success only after every
+// per-key commit has been acknowledged.
+
 class DisplayNightLightModel final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool available READ available NOTIFY truthChanged)
@@ -40,6 +33,8 @@ class DisplayNightLightModel final : public QObject {
     Q_PROPERTY(QDateTime nextChangeDateTime READ nextChangeDateTime NOTIFY
                    truthChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY truthChanged)
+    Q_PROPERTY(QString migrationMessage READ migrationMessage NOTIFY truthChanged)
+    Q_PROPERTY(bool migrationRetryable READ migrationRetryable NOTIFY truthChanged)
     // Draft (user intent until apply()).
     Q_PROPERTY(bool draftActive READ draftActive WRITE setDraftActive NOTIFY
                    draftChanged)
@@ -73,9 +68,10 @@ public:
     Q_ENUM(ScheduleMode)
 
     explicit DisplayNightLightModel(
-        QindaQt::Services::NightLight::NightLightConfigPort &configPort,
+        QindaQt::Services::SettingsClient::SettingsClient &settingsClient,
         QindaQt::Services::NightLight::NightLightStatePort &statePort,
-        QindaQt::Services::NightLight::NightTimeScheduleMonitor &monitor,
+        QindaQt::Services::NightLight::QtNightLightScheduleClient &scheduleClient,
+        QindaQt::Services::NightLight::NightLightSettingsImporter &importer,
         QObject *parent = nullptr);
     ~DisplayNightLightModel() override;
 
@@ -86,6 +82,9 @@ public:
     [[nodiscard]] int currentTemperatureKelvin() const;
     [[nodiscard]] QDateTime nextChangeDateTime() const;
     [[nodiscard]] QString statusText() const;
+    [[nodiscard]] QString migrationMessage() const;
+    [[nodiscard]] bool migrationRetryable() const;
+    Q_INVOKABLE void retryMigration();
 
     [[nodiscard]] bool draftActive() const;
     void setDraftActive(bool active);
@@ -109,8 +108,8 @@ public:
     [[nodiscard]] QString validationError() const;
     [[nodiscard]] bool applying() const;
 
-    // Validates the draft, writes kwinrc + knighttimerc through the config
-    // port and stops any in-flight preview: the write supersedes it.
+    // Validates the draft and writes changed Settings1 keys asynchronously.
+    // The applied signal follows authoritative replies for every write.
     Q_INVOKABLE bool apply();
     // Reverts the draft to the last applied (or externally changed) values.
     Q_INVOKABLE void resetDraft();

@@ -20,6 +20,7 @@
     "display.nightLight.sunriseStart": "06:00:00",
     "display.nightLight.sunsetStart": "18:00:00",
     "display.nightLight.transitionSeconds": 1800,
-    "display.nightLight.disabledOutputs": []
+    "display.nightLight.disabledOutputs": [],
+    "display.nightLight.legacyImported": false
   }
 }
