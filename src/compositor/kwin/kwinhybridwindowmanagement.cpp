@@ -6,6 +6,8 @@
 #include "kwinsemanticwindowplacement.h"
 #include "managedwindowregistry.h"
 #include <QJsonArray>
+#include <QUuid>
+#include <qindaqt/window_management/grouping_planner.h>
 #include <window.h>
 #include <workspace.h>
 namespace QindaQt::Compositor::KWinIntegration {
@@ -23,7 +25,6 @@ Result outcome(bool accepted, QString message, const ResolvedTarget &target) {
 Result KWinHybridSession::executeWindowManagementCommand(
     const Command &command, const ResolvedTarget &target,
     const ResolvedTarget &destination) {
-  Q_UNUSED(destination)
   auto *window = m_registry.window(target.windowId);
   if (!ready() || !window || window->isDeleted() || !window->isNormalWindow() ||
       m_registry.owner(target.windowId) != target.containerId)
@@ -74,9 +75,40 @@ Result KWinHybridSession::executeWindowManagementCommand(
     return false;
   };
   switch (command.operation) {
-  case Operation::Focus:
-    accepted = shell(ShellWindowAction::Activate);
+  case Operation::Focus: {
+    if (!grouped || command.target.kind == Target::Kind::Container) {
+      accepted = shell(ShellWindowAction::Activate);
+      break;
+    }
+    if (m_memberPolicy && !m_memberPolicy->focusStates().isEmpty()) {
+      error = QStringLiteral(
+          "restore temporary member focus before selecting a tab");
+      break;
+    }
+    QString pageId;
+    for (const auto &page : container->pages())
+      if (page.root().findWindow(target.windowId))
+        pageId = page.id();
+    if (pageId.isEmpty() || !shell(ShellWindowAction::Activate))
+      break;
+    const auto activated = m_runtime->activatePage(containerId, pageId);
+    if (!activated.topologyChanged() &&
+        activated.status != HybridRuntimeStatus::NoChange) {
+      error = activated.message;
+      break;
+    }
+    // AGENT-GUARD: shell task activation intentionally focuses the container's
+    // representative. A semantic window target must select its owning page
+    // and exact leaf, including a non-representative tile (ADR-0301).
+    auto *selected = m_registry.window(target.windowId);
+    if (!selected || selected->isDeleted() ||
+        m_registry.owner(target.windowId) != containerId)
+      break;
+    selected->setMinimized(false);
+    KWin::workspace()->activateWindow(selected, true);
+    accepted = true;
     break;
+  }
   case Operation::Raise:
     accepted = shell(ShellWindowAction::Raise);
     break;
@@ -243,7 +275,82 @@ Result KWinHybridSession::executeWindowManagementCommand(
     break;
   }
   case Operation::GroupTab:
-  case Operation::GroupTile:
+  case Operation::GroupTile: {
+    // AGENT-CONTRACT: semantic grouping moves one resolved leaf. An explicit
+    // source container must not silently lose only its foreground member.
+    if (command.target.kind == Target::Kind::Container) {
+      error = QStringLiteral("select a window when grouping; whole-container "
+                             "moves are unavailable");
+      break;
+    }
+    auto *destinationWindow = m_registry.window(destination.windowId);
+    if (!destinationWindow || destinationWindow->isDeleted() ||
+        !destinationWindow->isNormalWindow() ||
+        m_registry.owner(destination.windowId) != destination.containerId)
+      return {Status::Stale,
+              QStringLiteral("destination ownership changed"),
+              {},
+              {},
+              {},
+              {}};
+    const auto temporarilyHidden = [this](const ResolvedTarget &leaf) {
+      return isWindowIconified(leaf.windowId) ||
+             (!leaf.containerId.isEmpty() &&
+              (isContainerShaded(leaf.containerId) ||
+               m_minimizedContainers.contains(leaf.containerId)));
+    };
+    // An inactive group page uses native minimization for visibility. It is
+    // still a movable leaf; explicit whole-container minimization is fenced
+    // by temporarilyHidden, and tile destinations must be the active page.
+    if ((!grouped && window->isMinimized()) ||
+        (destination.containerId.isEmpty() &&
+         destinationWindow->isMinimized()) ||
+        window->isFullScreen() || destinationWindow->isFullScreen() ||
+        temporarilyHidden(target) || temporarilyHidden(destination) ||
+        (m_memberPolicy && !m_memberPolicy->focusStates().isEmpty())) {
+      error = QStringLiteral("restore temporary fullscreen, hidden or "
+                             "member-focus presentation before grouping");
+      break;
+    }
+    if (command.operation == Operation::GroupTile &&
+        !destination.containerId.isEmpty()) {
+      const auto *owner =
+          m_runtime->topology().container(destination.containerId);
+      const auto *page = owner ? owner->page(owner->activePageId()) : nullptr;
+      if (!page || !page->root().findWindow(destination.windowId)) {
+        error = QStringLiteral(
+            "activate the destination page before adding a tile");
+        break;
+      }
+    }
+    GroupingDirection direction = GroupingDirection::Right;
+    const auto requestedDirection =
+        command.arguments.value(QStringLiteral("direction")).toString();
+    if (requestedDirection == QStringLiteral("left"))
+      direction = GroupingDirection::Left;
+    else if (requestedDirection == QStringLiteral("up"))
+      direction = GroupingDirection::Above;
+    else if (requestedDirection == QStringLiteral("down"))
+      direction = GroupingDirection::Below;
+    const auto plan = planGrouping(
+        m_runtime->topology(),
+        {target.windowId, destination.windowId,
+         command.operation == Operation::GroupTab ? GroupingMode::Tab
+                                                  : GroupingMode::Tile,
+         direction,
+         command.arguments.value(QStringLiteral("ratio")).toDouble(0.5),
+         QUuid::createUuid().toString(QUuid::WithoutBraces)});
+    if (!plan.command) {
+      error = plan.error;
+      break;
+    }
+    // AGENT-GUARD: active-page choice is already part of this one scene
+    // candidate. A second activation after publish would escape rollback.
+    const auto result = m_runtime->execute(*plan.command);
+    accepted = result.topologyChanged();
+    error = result.message;
+    break;
+  }
   case Operation::Launch:
     break;
   }

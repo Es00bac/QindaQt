@@ -55,3 +55,11 @@ See [Native semantic commands](../architecture/window-management-commands.md),
 ## Source decomposition review
 
 Adding fractional restore state brings `hybridcontainerplacement.cpp` to 564 nonblank lines. It remains the cohesive geometry/drag/restore owner; maximize policy and shade policy already live in separate translation units. Ordinary window fraction state lives in `KWinSemanticWindowPlacement`, semantic dispatch in its own session translation unit, and authority/transport/runtime in separate collaborators. Keep this controller below 600 lines and split a new responsibility before extending it further. Fraction changes and cancelled drags must preserve the original restore frame; failed scene reflow rolls back fraction/restore state together.
+
+The grouping implementation uses a small Qt Core/Hybrid planner producing one
+coordinator command for every supported ownership case. Append-only activation
+flags on tab moves preserve old callers and put the moved page in the admitted
+candidate. Exact-window focus selects the owning page/leaf rather than the shell's
+container representative. Inactive-page native minimization is not explicit
+container minimization. These refinements preserve the single scene-publication
+rollback boundary; installed app launch correlation remains separate.

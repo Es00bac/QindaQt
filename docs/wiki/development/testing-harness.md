@@ -4262,3 +4262,17 @@ adapter; failed metadata permanently retires fallback. Existing private fixtures
 verify pinned owner/peer revocation and native late-result privacy separately
 from standard Secret Service sharing. No fixture reads a real collection or
 uses a live desktop.
+
+### Semantic grouping source qualification
+
+`qindaqt.window-grouping-planner` and `qindaqt.window-grouping-activation` cover
+all ownership cases, directions/first-child ratios, retained identity, candidate
+activation, invariant/JSON round trips and prepare/commit rollback. Together with
+the four exact Hybrid model rows and three semantic codec/context/endpoint rows,
+the manager focused selector passes9/9 fatal-warning CTests. The extended native
+probe passes7/7 at normal and actual150% DPR with74/73 scene snapshots, including
+exact addressed focus and refusal without topology mutation. The first native
+run reproduced representative-only focus; that behavior was repaired and both
+scales rechecked. A broad selector initially selected ten unbuilt unrelated
+Hybrid input/decoration rows; it was corrected to the nine built affected rows.
+This checkpoint does not claim installed-session or physical-input coverage.

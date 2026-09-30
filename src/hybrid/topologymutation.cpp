@@ -275,6 +275,9 @@ bool applyMove(WindowTopology &topology, const MoveMember &command, QString *err
     if (command.sourceContainerId == command.targetContainerId) {
         return fail(error, QStringLiteral("cross-container move requires different containers"));
     }
+    if (command.activateMovedPage && !std::holds_alternative<MoveAsPage>(command.destination)) {
+        return fail(error, QStringLiteral("activation requires a moved tab"));
+    }
     auto *source = mutableContainer(topology, command.sourceContainerId);
     auto *target = mutableContainer(topology, command.targetContainerId);
     if (!source || !target) {
@@ -291,7 +294,10 @@ bool applyMove(WindowTopology &topology, const MoveMember &command, QString *err
     if (!detached) {
         return false;
     }
-    return addMovedMember(*target, *detached, command.destination, error);
+    if (!addMovedMember(*target, *detached, command.destination, error)) return false;
+    // AGENT-GUARD: activation belongs to the candidate, before scene prepare.
+    return !command.activateMovedPage
+        || target->activatePage(std::get<MoveAsPage>(command.destination).pageId, error);
 }
 
 bool applyReorderPage(WindowTopology &topology,

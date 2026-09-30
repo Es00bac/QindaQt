@@ -487,3 +487,11 @@ See [ADR-0305](../adr/0305-public-ordinary-compositor-attachment.md),
 first-owner/legacy policy, persistence, input synthesis, privileged locker FD,
 authentication, RequestLock, sleep or unlock. Consumers migrate independently;
 no consumer may include another daemon’s private attachment/idle header.
+
+## Semantic grouping
+
+The [semantic grouping planner](window-management-commands.md#atomic-grouping-and-addressed-focus)
+is a transport-free Qt Core/Hybrid boundary below the compositor executor. It
+selects one ownership mutation and includes moved-tab activation in its candidate;
+consumers do not edit Core pages or activate again after scene publication.
+It remains internal to the product build because Hybrid has no installed export.

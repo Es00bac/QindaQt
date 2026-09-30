@@ -1,8 +1,14 @@
+# Atomic grouping source integration — 2026-09-30
+
+Exact candidate `46150c5d16747c7b507820b9fb4c3d4dab927fc2` includes the pure grouping planner, one-candidate tab/tile mutations and exact-leaf focus. Candidate focused9/9, native7/7 at normal and actual DPR1.50, strict MkDocs and453-document links pass. The prior candidate commit body incorrectly printed451;453 is the actual validator result. The UI integration below similarly corrects its earlier461 count to462. No source gate changed.
+
+Manager combined integration gates are pending while qualified lock/dependency sources are assembled; no installed or full-program completion is claimed. Correlated app launching and the shared interactive chooser remain open.
+
 ## 2026-09-30 — Passwords & Keys presentation source integration
 
 Exact integration candidate `297d6fbfc45a751a0d3464f80d3cfc4d86040bab` incorporates UI `07d1d182` with current public native privacy state. Reveal/Copy affordances require `secretsAllowed`, and the route owns a dedicated bus, model, gateway and sensitive clipboard; authority loss, secret invalidation and teardown clear copying state. Revealed text remains non-selectable and copying explicit.
 
-Manager integrated Settings build, strict MkDocs and 461-document link validation pass. Five fatal-warning route/model/clipboard CTests pass, plus the complete Settings page-construction row (all 22 active Loader witnesses) passes 1/1. These source fixtures do not qualify a real wallet, installed-prefix relocation, physical clipboard or a complete native prompt/UI journey. Native authenticated policy receipt qualification remains an active backend dependency before final delivery; no host secrets or installation occurred.
+Manager integrated Settings build, strict MkDocs and 462-document link validation pass. Five fatal-warning route/model/clipboard CTests pass, plus the complete Settings page-construction row (all 22 active Loader witnesses) passes 1/1. These source fixtures do not qualify a real wallet, installed-prefix relocation, physical clipboard or a complete native prompt/UI journey. Native authenticated policy receipt qualification remains an active backend dependency before final delivery; no host secrets or installation occurred.
 
 ## 2026-09-30 — Keyring public boundary consumption and Gabbee integration
 
