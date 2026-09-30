@@ -1,3 +1,37 @@
+# Combined Plasma-free source qualification — 2026-09-30
+
+The consumer source through `a55e542d` integrates the full synthetic GNOME
+Secret Service/KWallet acquisition, planning and atomic native collection import.
+The exact importer candidate is `939f33a9d7d9b78ffed2aaaf60a8f4f7f1dc9f35`.
+Manager configure/build and all five collection/planner/actual CLI/native Lock1
+service CTests pass. Password input uses an owned native prompt or anonymous FD;
+no real owner wallet, password, provider name switch or installed migration ran.
+
+The combined fork `6ab6c01ede8143a7ddb477d6f0040e9b2f3753e4` builds in
+production mode with test authorization OFF. Its private stage has 453 paths
+and zero collisions with the 1,059 stock package paths. The affected consumer
+build completes 1,706 Ninja actions. All 52 selected manager rows are qualified:
+51 passed initially; the input-adapter row passes after supplying the staged
+fork library path. Additional importer/service gates above pass 5/5 on the
+newer source. Broad upstream tests remain unavailable because testMaximized
+lacks its private KDecoration header dependency; this is not a full-suite pass.
+Logs are in `build/dev/manager-production-gates` and `build/dev/manager-importer`.
+
+SDK first-frame and registry-publication readiness candidate `a845e9ea49730407a6cb0cdcea9459d9f387b4c6`
+is integrated as `46e94e4d4cbd9a151f8bf54bd78c010e668fa2cd`. Candidate focused SDK tests pass 2/2;
+normal and actual-150% native scenes each pass 77 protocol responses with live
+model/geometry/focus evidence and the exact successful Qt plugin load trace.
+The producer's dump protection remains enabled. Manager integrated build
+completes 349 Ninja actions; both native scenarios repeat 77 responses and
+60 live snapshots with all checks passing, and focused SDK CTest passes 2/2.
+Strict MkDocs and the 469-document link/navigation validator pass on this
+combined source. Logs are in `build/dev/manager-sdk-readiness`.
+
+Remaining delivery boundaries include the actual native key-store UI journey,
+real legacy acquisition, production power consumers and hardware, native
+shortcuts/portals, night-light integration and consolidated Portage delivery.
+No product progress weight or installed-completion claim advances here.
+
 # Native Secret portal and exact synthetic legacy preservation — 2026-09-30
 
 Exact3736799e870c3a78ddd75c8539dd7e627faa6a9b (including PK5493 and qualified native/public receipt dependencies) is source admitted. Its six Secret CTests pass with46 Qt checks and native7/import3 fixture cases; twenty adjacent key-store/platform/lock rows pass. Strict MkDocs and463-document link validation pass. Source review preserves standard Secret Service wire, actual owner/nonce policy/secret/prompt receipts, atomic same-collection batch persistence and exact legacy opaque64 bytes alongside fresh native32 records.
