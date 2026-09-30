@@ -74,6 +74,8 @@ struct MoveMemberToPage final
     QString windowId;
     QString newPageId;
     QString targetPageId;
+    // Select the extracted tab in the same candidate transaction.
+    bool activateMovedPage = false;
 };
 
 // Forms a new tabbed container from one complete source page and an
@@ -168,6 +170,8 @@ struct RegroupMemberWithIndependent final
     QString independentWindowId;
     QString newContainerId;
     RegroupLayout layout;
+    // Only valid for RegroupAsPages; no fallible activation after publication.
+    bool activateMemberPage = false;
 };
 
 struct MoveMember final
@@ -176,6 +180,8 @@ struct MoveMember final
     QString targetContainerId;
     QString windowId;
     MemberDestination destination;
+    // Only valid for MoveAsPage; default preserves existing drag policy.
+    bool activateMovedPage = false;
 };
 
 struct ReorderPage final

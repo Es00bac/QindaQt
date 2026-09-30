@@ -28,3 +28,5 @@ install(TARGETS qindaqt_window_management_transport EXPORT QindaQtTargets
     FILE_SET public_headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES data/org.qindaqt.WindowManagement1.xml
     DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces)
+
+add_subdirectory(grouping)

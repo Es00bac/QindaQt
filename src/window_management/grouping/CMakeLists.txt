@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+add_library(qindaqt_window_management_grouping STATIC ../src/grouping_planner.cpp)
+add_library(QindaQt::WindowManagementGrouping ALIAS qindaqt_window_management_grouping)
+target_include_directories(qindaqt_window_management_grouping PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+target_link_libraries(qindaqt_window_management_grouping PUBLIC QindaQt::Hybrid Qt6::Core)
+target_compile_features(qindaqt_window_management_grouping PUBLIC cxx_std_20)
+set_target_properties(qindaqt_window_management_grouping PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON)
+if(COMMAND qindaqt_enable_warnings)
+    qindaqt_enable_warnings(qindaqt_window_management_grouping)
+endif()
