@@ -2,7 +2,7 @@
 #include <qindaqt/services/night_light/automatic_location_provider.h>
 
 #include <QDBusArgument>
-#include <QDBusConnectionInterface>
+#include <QDBusServiceWatcher>
 #include <QDBusMessage>
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
@@ -36,10 +36,12 @@ GeoClueLocationProvider::GeoClueLocationProvider(
     const QDBusConnection &systemBus, QObject *parent)
     : AutomaticLocationProvider(parent), m_bus(systemBus)
 {
-    if (!m_bus.isConnected() || !m_bus.interface()) return;
-    connect(m_bus.interface(), &QDBusConnectionInterface::serviceOwnerChanged,
-            this, [this](const QString &name, const QString &, const QString &newOwner) {
-        if (name != kService || !m_requested) return;
+    if (!m_bus.isConnected()) return;
+    m_serviceWatcher = std::make_unique<QDBusServiceWatcher>(
+        kService, m_bus, QDBusServiceWatcher::WatchForOwnerChange);
+    connect(m_serviceWatcher.get(), &QDBusServiceWatcher::serviceOwnerChanged,
+            this, [this](const QString &, const QString &, const QString &newOwner) {
+        if (!m_requested) return;
         if (m_owner.isEmpty()) {
             if (!newOwner.isEmpty()) request();
             return;

@@ -2,12 +2,16 @@
 #pragma once
 
 #include <QDateTime>
-#include <QVariant>
-#include <functional>
 #include <QDBusConnection>
 #include <QDBusObjectPath>
+#include <QVariant>
+
+#include <functional>
+#include <memory>
 #include <QObject>
 #include <optional>
+
+class QDBusServiceWatcher;
 
 namespace QindaQt::Services::NightLight {
 
@@ -65,6 +69,7 @@ private:
     void stopRemoteClient();
 
     QDBusConnection m_bus;
+    std::unique_ptr<QDBusServiceWatcher> m_serviceWatcher;
     QString m_owner;
     QString m_clientPath;
     AutomaticLocationState m_state = AutomaticLocationState::Stopped;
