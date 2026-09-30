@@ -236,7 +236,7 @@
             {
               "kind": "commit",
               "reference": "ce63d1bb7fea0b20a9a5cee47802643af1a19e19",
-              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File → New action succeed."
+              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File \u2192 New action succeed."
             },
             {
               "kind": "commit",
@@ -376,7 +376,7 @@
             {
               "kind": "commit",
               "reference": "f3abd4ab",
-              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by Rózsa Péter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
+              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by R\u00f3zsa P\u00e9ter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
             },
             {
               "kind": "commit",
@@ -1022,6 +1022,11 @@
             "kind": "source",
             "reference": "docs/wiki/development/implementation-roadmap.md",
             "summary": "The public roadmap marks Platform services In progress."
+          },
+          {
+            "kind": "commit",
+            "reference": "37ebb332569c9676564cea4d460197b7c1a07a3e",
+            "summary": "PF7 native private locker/PAM source integrated with fork dca1e5b3 (manager ae9d5ca9): real33-check private native matrix and manager integrated authentication4/4, strict docs passed. This records a bounded source foundation; PF8 services, installed trust binding, physical qualification and full Plasma-free delivery remain open."
           }
         ]
       },
@@ -1243,7 +1248,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1283,7 +1288,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1383,7 +1388,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1572,7 +1577,7 @@
           {
             "kind": "commit",
             "reference": "98f29fe2",
-            "summary": "Records installed r1 source8486e058, actual installed two-session workspace restoration, real daily controls and privilege prompt, and Settings1 10→11→default10 producing PowerDevil600→660→600 through production code. Native CI boots and tag remain pending."
+            "summary": "Records installed r1 source8486e058, actual installed two-session workspace restoration, real daily controls and privilege prompt, and Settings1 10\u219211\u2192default10 producing PowerDevil600\u2192660\u2192600 through production code. Native CI boots and tag remain pending."
           },
           {
             "kind": "test",

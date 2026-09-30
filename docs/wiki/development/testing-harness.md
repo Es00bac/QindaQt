@@ -4098,3 +4098,109 @@ blackening, not an external consumer's full revocation lifecycle. Physical DRM,
 installed root-owned greeter binding, PAM/account validation and native session
 services remain separate qualification gates. No live rollout is implied.
 See [Native session locking](../architecture/native-session-lock.md).
+
+### PF7 private launch and authentication slices
+
+The native fork matrix adds a real child protocol probe plus an actually loaded
+harmless preload module. The same executable sees the lock global only on the
+compositor-owned connection; hostile self-launch sees none. The owned launch
+omits injection variables and reports non-dumpable state; its parent is
+also denied ptrace access to that disposable protected child. Root-file/alias trust,
+whitelist environment and clientless physical Protected feedback have separate
+rows. The probe and injected module are never installed.
+
+`lock.authentication` covers authentication/account decisions, cancellation,
+request/epoch isolation, crash invalidation and one-shot approval. Its scripted
+port does not call PAM. `lock.native-pam-conversation` exercises the native libpam
+adapter against a temporary `pam_start_confdir` and a non-installed synthetic
+module: synthetic success, denial, account denial, cancellation, malformed style,
+oversize prompts/message counts and embedded-NUL responses. It never reads system
+PAM config or accepts an owner's password. The fixture-only constructor is
+compiled solely into that test executable; the production worker has none.
+
+`lock.worker-channel` runs the separate non-installed native worker on an owned
+socketpair. It covers synthetic authentication plus account approval, wrong
+password, account rejection, cancellation, stale response tokens, malformed
+conversation styles, prompt/message bounds, EOF and caller-selected identity
+rejection. Protocol rows reject altered magic/version/kind/reserved bytes,
+zero tokens, oversize or embedded-NUL payloads and incomplete frames; transport
+rows cover a bounded deadline and EOF. Actual ptrace attachment to the protected
+ordinary-UID disposable worker fails. Production has no configuration-directory
+argument; only the non-installed executable compiles the private-confdir adapter.
+The controller must enforce the whole-attempt deadline by terminating its own
+worker, including a PAM module blocked outside a conversation callback.
+
+These slices establish neither the installed Qt greeter nor real owner-password
+qualification. See [ADR-0299](../adr/0299-native-locker-private-launch-and-authentication.md).
+
+### PF7 native worker parent and Qt role interoperability
+
+`lock.worker-process` exercises the actual asynchronous native parent and its
+owned private-confdir worker: authenticated/account-approved completion,
+password/account failure, cancellation, missing child, one-shot completion and
+keyring notification fallback. A synthetic module reports entry into a blocking
+PAM call; the native parent then terminates only that disposable child at its
+whole-attempt deadline. Production root-managed executable/Qt paths reject a
+user-writable alias; no runtime path/configuration injection is compiled into
+the production client.
+
+The fork's non-installable authorization build accepts an explicit
+`QINDAQT_PRIVATE_QT_LOCK_PROBE` CMake FILEPATH pointing to the consumer's built
+`qindaqt-private-lock-window`. PF7 qualification requires this fixture and the
+`nativeQtSurfaces` rows; the baseline server matrix remains usable independently.
+The client is the real Qt Wayland shell adapter, not a protocol mock: the rows
+check two mapped/input-eligible roles and actual physical framebuffer pixels at
+100% and 150%, incremental output add/remove, and protected black fallback after
+owned-client termination. The fixture contains no PAM-success/unlock method and
+is never installed. Qt initial construction must not commit before configure
+acknowledgement; server protocol validation remains unchanged.
+
+
+### PF7 native QtQuick / owned PAM fixture
+
+Build `qindaqt-private-lock-greeter` and the fixed production `qindaqt-lock`
+target. The former is never installed and compiles its own private worker
+configuration constructor. It uses a temporary PAM configuration and real
+synthetic module, not the system stack or an owner's password. Its input
+commands represent bounded synthetic UI intent; no command asserts approval.
+
+The fork's non-installable test configuration sets
+`QINDAQT_PRIVATE_QT_LOCK_GREETER` to that exact built fixture. Native QtQuick
+rows cover two real output roles at normal and 150% scale, denied password,
+cancel/late response, account denial and current-worker standard unlock.
+The fixture keeps fatal Qt warnings enabled. Its compiled public Patrol/Reef
+scenes load on the actual role; the pure OSK model exercises the QML credential
+editing/submit sink. Credential screenshots contain only synthetic test data.
+
+The installed Reef module's Qt6.11 palette collision is corrected in the separate
+suite-source prerequisite. Private qualification explicitly sets
+`QINDAQT_PRIVATE_REEF_QML_ROOT` to its built `build-reef/qt/qml` root.
+This compile-time override exists only in the non-installed greeter fixture;
+the production target imports only root-managed installed Qt/QML modules.
+Released recipe/module replacement stays manager-held.
+
+Run the exact server CTest name `kwin-testNativeSessionLock` with
+`--no-tests=error`. Run the four LockAuthentication/worker CTests with
+`QT_FATAL_WARNINGS=1`. Physical DRM, installed root-owned greeter binding,
+owner-password/PAM-stack qualification and final coherent Portage delivery
+remain distinct held gates; private matrix success does not claim live rollout.
+
+
+### PF7 gathered scene and capture fence
+
+The fork's non-installable test cache `QINDAQT_PRIVATE_GATHERED_PLUGIN`
+accepts an exact matching built consumer KWin plugin. Its `nativeGatheredFence`
+row creates actual Hybrid geometry through Meta+Shift drag, a gathered icon
+through Meta+wheel, and a shaded group through the public QWidget popup UI.
+The compositor test QPA is offscreen; the row does not expose a new production
+command or patch the registry. It asserts chip/strip framebuffer ink before
+lock and after authenticated recovery, uniform owned-greeter coverage of both
+regions, screenshot rejection, black CPU/GL Window/Output/Region captures, and
+whole-output crash blackness. The row also requires a nonempty standard wl_keyboard layout name and a subsequent physical frame presentation; its private marker reports English (US) in the default test keymap. The full optional matrix contains 33 Qt checks.
+Run with the exact accepted consumer plugin artifact and rerun on integration.
+
+The worker process fixture's late/inactive response and failed-process cases
+remain covered. Outbound responses preflight a closed channel or occupied queue
+before encoding another plaintext allocation; the by-value original frame is
+wiped on every branch. No private production send/backlog bypass is added just
+to mirror this implementation detail in a test.

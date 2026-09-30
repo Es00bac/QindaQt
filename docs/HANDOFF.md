@@ -1,3 +1,11 @@
+## 2026-09-30 — Native compositor-launched locker and PAM (PF7)
+
+Exact fork candidate `dca1e5b3` and consumer `37ebb332` are integrated. The compositor creates the only privileged private locker connection; the fixed protected greeter delegates authentication to a disposable PAM worker. Only authentication plus account approval for the current controller epoch can unlock. Cancellation, late replies, owner death and hostile self-launch remain fail closed.
+
+Manager exact native CTest passes 1/1; the candidate matrix records 33/33 Qt checks without failures/skips, including real per-output greeter roles, actual DPR 1.50, keyboard layout, Patrol/Reef, OSK credential entry, PAM failures/cancellation/success and capture/input fencing. Manager integrated build229 actions and four fatal-warning authentication/worker rows pass; strict MkDocs and451-document link validation pass. Production artifacts have no KScreenLocker linkage or private authorization/PAM-confdir symbols. Reef source prerequisite `8583c74a` remains preserved in its hub for final Portage packaging.
+
+The combined native fence currently uses gathered candidate `599abed5`. The newer identity/hover overlay needs its own combined native gate before acceptance. PF8 native lock services, trusted installed executable/PAM binding, real owner credentials, physical DRM/input, real PipeWire consumers and final consolidated Portage deployment remain open. No live lock or installation occurred.
+
 ## 2026-09-29 — Native Secret Service integrated (PK2)
 
 Exact candidate `6e2832d2` adds the native Secret Service/Keyring1 daemon,
