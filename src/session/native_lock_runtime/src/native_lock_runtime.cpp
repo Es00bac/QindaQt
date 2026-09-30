@@ -91,6 +91,16 @@ void Runtime::idleChanged() {
     m_automaticCycleRequested = false;
     return;
   }
+  // A live Power1 owner may already hold accepted leases while its snapshot
+  // query is pending or has failed. Do not race that unknown state by firing
+  // an automatic lock stage; owner disappearance revokes those leases.
+  if (m_power && !m_power->owner().isEmpty() &&
+      !m_power->hasIdleInhibitorState()) {
+    m_automaticCycleRequested = false;
+    m_status = QStringLiteral("automatic lock waiting for current idle lease state");
+    Q_EMIT stateChanged();
+    return;
+  }
   if (m_power && m_power->hasIdleInhibitorState() &&
       m_power->activeIdleInhibitorScopes().testFlag(
           Power::IdleInhibitorScope::AutomaticLock)) {

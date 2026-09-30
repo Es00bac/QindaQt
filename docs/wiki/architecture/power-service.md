@@ -153,7 +153,9 @@ PB-1 implements the Wayland-free resident slice over the PB-0 protocol:
   validates scope masks and clears cached state on owner replacement or a
   failed query. NativeLockRuntime consumes the confirmed automatic-lock bit;
   scope support remains zero until the display-off and idle-suspend production
-  consumers are composed with it.
+  consumers are composed with it. If a Power1 owner exists while a consumer's
+  current-owner scope snapshot is unknown, automatic lock waits for that truth;
+  explicit lock remains independent and owner loss revokes leases.
 - The package installs the executable, private D-Bus activation descriptor
   paired with a hardened systemd user unit (`Type=dbus`, system-service
   syscall filter, no device or network families), introspection XML, and the
