@@ -56,6 +56,10 @@
 <method name="Shutdown"/>
 <method name="ChangePassword"><arg type="o" direction="in"/><arg type="(oayays)" direction="in"/><arg type="(oayays)" direction="in"/><arg type="b" direction="out"/></method>
 <signal name="CollectionStateChanged"><arg type="o"/><arg type="b"/><arg type="b"/></signal>
+<method name="DeleteItemWithPrompt"><arg type="o" direction="in"/><arg type="o" direction="out"/></method>
+<method name="ListItems"><arg type="o" direction="in"/><arg type="aa{sv}" direction="out"/></method>
+<method name="ReadSecretWithPrompt"><arg type="o" direction="in"/><arg type="o" direction="in"/><arg type="o" direction="out"/></method>
+<method name="ChangePasswordWithPrompt"><arg type="o" direction="in"/><arg type="o" direction="out"/></method>
 <method name="ListCollections"><arg type="a{sv}" direction="out"/></method>
 </interface>
 </node>

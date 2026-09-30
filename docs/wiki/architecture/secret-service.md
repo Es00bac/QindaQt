@@ -1,3 +1,5 @@
+> Historical deployed gnome-keyring integration is recorded below. Native source now owns its own provider, prompt and PAM boundary; see [native daemon](keyring-daemon.md), [native PAM](keyring-pam.md) and [client](keyring-client.md). ADR-0296 supersedes the provider choice for native deployments. Packaging/live replacement is a separate manager-owned gate; these source tests do not change the running provider.
+
 # Secret Service provider
 
 QindaQt ships no secret store of its own. Applications that follow the

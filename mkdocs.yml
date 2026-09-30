@@ -38,6 +38,7 @@ nav:
       - Documentation catalog: handbook/catalog/reading.md
   - Architecture:
       - Native keyring daemon: architecture/keyring-daemon.md
+      - Native keyring client: architecture/keyring-client.md
       - Native keyring PAM bridge: architecture/keyring-pam.md
       - Authentication overlay: architecture/authentication-overlay.md
       - Native keyring storage: architecture/keyring-storage.md
@@ -470,3 +471,5 @@ nav:
 
       - "ADR-0296: Own a native Secret Service daemon and session boundary": adr/0296-native-keyring-daemon-boundary.md
       - "ADR-0300: Authenticate native PAM token delivery through the system owner": adr/0300-trusted-native-keyring-pam.md
+
+      - "ADR-0302: Native Passwords & Keys client and prompt policy": adr/0302-native-passwords-keys-client-and-policy.md

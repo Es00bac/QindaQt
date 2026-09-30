@@ -173,3 +173,7 @@ lock/search/tamper, caller isolation, cancellation/disconnect, control
 rekey/bounds/activation, catalog recovery, sole-writer arbitration, session
 attachment and dump policy. Native rendering/output selection remains a
 nested/live Wayland qualification boundary; no live bus or unit is used here.
+
+## Native Settings prompt methods
+
+[ADR-0302](../adr/0302-native-passwords-keys-client-and-policy.md) adds ListItems authenticated metadata, caller-owned ReadSecretWithPrompt, old-token-authenticated ChangePasswordWithPrompt, and explicit DeleteItemWithPrompt. Reveal performs fresh password authentication even while unlocked. Native mutation completion requires actual durable save. Labels/caller metadata travel through a bounded stdin pipe; passwords and approvals use bounded stdout frames, never process arguments. See the [public client boundary](keyring-client.md).

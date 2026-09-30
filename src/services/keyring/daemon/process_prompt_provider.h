@@ -14,7 +14,7 @@ public:
     void cancel(quint64) override;
     bool bindSessionDisplay(const QString &,const QString &) override;
 private:
-    struct Active { ~Active(); std::unique_ptr<QProcess> process; PromptCompletion done; SecureBuffer input; std::size_t used = 0; int displayFd = -1; };
+    struct Active { ~Active(); std::unique_ptr<QProcess> process; PromptCompletion done; SecureBuffer input; QByteArray metadata; std::size_t used = 0, maximum = 4096; int displayFd = -1; };
     void finish(quint64 id, bool cancelled);
     // Borrowed GUI-thread collaborator outlives this provider; revocation cancels approval.
     SessionDisplayBinding *display_ = nullptr;

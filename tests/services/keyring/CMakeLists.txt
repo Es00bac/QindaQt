@@ -45,3 +45,11 @@ add_subdirectory(pam)
 
 add_test(NAME keyring_prompt_display COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_prompt_display.py" "$<TARGET_FILE:qindaqt-keyring>" "$<TARGET_FILE:qindaqt_pam_fixture_launcher>")
 set_tests_properties(keyring_prompt_display PROPERTIES TIMEOUT 90 LABELS "keyring;dbus;private-fixture")
+
+add_test(NAME keyring_native_prompts COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_native_prompts.py" "$<TARGET_FILE:qindaqt-keyring>")
+set_tests_properties(keyring_native_prompts PROPERTIES TIMEOUT 90 LABELS "keyring;dbus;private-fixture")
+
+add_executable(tst_keyring_prompt_metadata tst_prompt_metadata.cpp)
+target_link_libraries(tst_keyring_prompt_metadata PRIVATE QindaQt::KeyringProtocol Qt6::Test)
+qindaqt_enable_warnings(tst_keyring_prompt_metadata)
+add_test(NAME keyring_prompt_metadata COMMAND tst_keyring_prompt_metadata)
