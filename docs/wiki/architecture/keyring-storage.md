@@ -177,7 +177,8 @@ metadata field exactly after password authentication; they are then locked.
 They are never saved or overwritten. Wrong passwords report AuthenticationFailed.
 An exact retry with unchanged aliases writes nothing.
 
-New collections are sealed to previously absent files, then locked. Only one
+New collections are sealed to previously absent files, then loaded locked with
+no retained per-call admission callback. Only one
 durable catalog publication exposes the complete batch and aliases. A failure
 before catalog rename removes only newly staged unreferenced files and preserves
 existing collections/catalog. The pre-rename admission check refuses source loss.
@@ -192,5 +193,12 @@ close and reopen only after resolving storage availability. Existing resident
 create/delete behavior and catalog version1 remain compatible; entries optionally
 carry non-secret import provenance (`kind`, `source`) in the owning private schema.
 This is an owning one-time seam, not a resident untrusted bulk-mutation wire.
-The complete legacy reader/CLI remains a separate delivery step in
-[ADR-0312](../adr/0312-preserve-exact-legacy-portal-secrets.md).
+The optional borrowed same-thread cooperative checkpoint may dispatch queued
+retirement/cancellation between staging steps and directly before catalog
+publication. It is distinct from readonly admission and cannot destroy the
+catalog/password provider; nested commit is refused. No checkpoint runs inside
+atomic storage rename. This lets the event-driven importer observe native lock
+changes before publication without making persistence reentrant.
+
+The complete [one-time reader/CLI](keyring-import.md) consumes this public seam;
+[ADR-0312](../adr/0312-preserve-exact-legacy-portal-secrets.md) records the boundary.

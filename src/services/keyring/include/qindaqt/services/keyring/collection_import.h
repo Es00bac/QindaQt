@@ -39,6 +39,12 @@ public:
 // One-time importer seam; no resident bulk mutation service. Consumes all pages.
 // Borrowed admission callback is readonly/non-reentrant and joins accepted
 // source/session lifetime; it is checked before staging and catalog publication.
+// Optional same-thread checkpoint is borrowed only through commit. It may dispatch
+// queued native retirement/cancellation events between staging steps and directly
+// before publication; admission stays readonly/non-reentrant. Do not destroy this
+// catalog/password provider from a checkpoint. Nested commit is refused. A thrown
+// checkpoint fails/rolls back unlisted staging. No checkpoint runs inside storage
+// atomic rename. Omitting it is valid for synchronous non-event-driven callers.
 // At most 64 collections, existing storage item/aggregate bounds, exact-existing
 // idempotence or whole-batch conflict. One durable catalog publication exposes
 // all new files. Unknown durability reloads locked and never reports success.
@@ -46,7 +52,7 @@ class CollectionImportCatalog {
 public:
     virtual ~CollectionImportCatalog()=default;
     virtual CollectionImportReceipt commit(CollectionImportBatch,CollectionImportPasswords &,
-        const std::function<bool()> &admitted)=0;
+        const std::function<bool()> &admitted,const std::function<void()> &checkpoint={})=0;
 };
 // Owns the native private catalog/storage adapter and exclusive writer lease.
 // Absolute directory is constructor-visible; schema remains private to keyring.

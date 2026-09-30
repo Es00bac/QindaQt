@@ -224,3 +224,5 @@ shares the catalog lease and private schema through `QindaQt::KeyringImportStore
 It must be destroyed before the resident starts or claims the secrets name. No
 resident bulk import method is added. Optional source provenance is metadata,
 never source authentication or unrelated item disclosure authority.
+
+The separate [one-time importer](keyring-import.md) links its own confined libdbus reader and public catalog transaction. It runs before destination resident ownership, preserves source files and never performs a secrets-name switch. No legacy reader or bulk mutation wire is linked into the daemon.

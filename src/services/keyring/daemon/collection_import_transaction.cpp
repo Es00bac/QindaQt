@@ -34,7 +34,7 @@ bool valid(const CollectionImportRecord &record) {
 }
 }
 CollectionImportReceipt CollectionRepository::importCollections(CollectionImportBatch batch,
-        CollectionImportPasswords &passwords,const std::function<bool()> &admitted,KdfParameters parameters) {
+        CollectionImportPasswords &passwords,const std::function<bool()> &admitted,KdfParameters parameters,const std::function<void()> &checkpoint) {
     using Error=CollectionImportError;
     if(!importHealthy_) return {Error::Unavailable};
     if(!live(admitted)) return {Error::OwnerLost};
@@ -73,6 +73,7 @@ CollectionImportReceipt CollectionRepository::importCollections(CollectionImport
     try {
         // Validate and authenticate every existing collection before staging.
         for(auto &record:batch.collections) {
+            if(checkpoint) checkpoint();
             if(!live(admitted)) return reject(Error::OwnerLost);
             auto existing=find(record.id);
             if(existing && (existing->importKind!=record.sourceKind || existing->importSourceId!=record.sourceId
@@ -94,6 +95,8 @@ CollectionImportReceipt CollectionRepository::importCollections(CollectionImport
                 }
                 if(!exact) return reject(Error::Conflict);
                 ++receipt.collectionsUnchanged;receipt.itemsUnchanged+=record.items.size();
+                if(checkpoint) checkpoint();
+                if(!live(admitted)) return reject(Error::OwnerLost);
             } else {
                 auto candidate=std::make_unique<Collection>();
                 candidate->id=record.id;candidate->label=record.label;candidate->importKind=record.sourceKind;
@@ -103,6 +106,8 @@ CollectionImportReceipt CollectionRepository::importCollections(CollectionImport
                 const auto result=candidate->storage->create(password.value.bytes(),parameters);
                 if(result!=StoreError::None) return reject(Error::Unavailable,result);
                 pending.emplace(record.id,std::move(candidate));
+                if(checkpoint) checkpoint();
+                if(!live(admitted)) return reject(Error::OwnerLost);
             }
         }
         for(auto &record:batch.collections) {
@@ -113,10 +118,18 @@ CollectionImportReceipt CollectionRepository::importCollections(CollectionImport
             const auto result=record.items.empty()?i->second->storage->save()
                 :i->second->storage->insertBatchAndSave(std::move(record.items));
             i->second->storage->lock();
+            if(checkpoint) checkpoint();
             if(result!=StoreError::None) return reject(result==StoreError::DurabilityUnknown?Error::DurabilityUnknown
                 :live(admitted)?Error::Unavailable:Error::OwnerLost,result);
+            // AGENT-GUARD: the staging barrier borrows this call's admission.
+            // Retained catalog stores must not retain that callable after commit.
+            auto sealed=std::make_unique<CollectionStore>(directory_.toStdString(),record.id.toStdString());
+            const auto loaded=sealed->load();
+            if(loaded!=StoreError::None) return reject(Error::Unavailable,loaded);
+            i->second->storage=std::move(sealed);
             ++receipt.collectionsAdded;receipt.itemsAdded+=count;
         }
+        if(checkpoint) checkpoint();
         if(!live(admitted)) return reject(Error::OwnerLost);
         if(pending.empty() && mergedAliases==aliases_) return receipt;
         for(auto &[id,collection]:pending) collections_.emplace(id,std::move(collection));
@@ -127,7 +140,7 @@ CollectionImportReceipt CollectionRepository::importCollections(CollectionImport
         }
         if(result!=StoreError::None) return reject(live(admitted)?Error::Unavailable:Error::OwnerLost,result);
         published=true;return receipt;
-    } catch(const std::exception &) {
+    } catch(...) {
         if(!published) {try {rollback();} catch(const std::exception &) {}}
         // A cleanup/load failure is never a successful or retryable publication.
         try {loadCatalog();} catch(const std::exception &) {importHealthy_=false;}

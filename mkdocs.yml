@@ -43,6 +43,7 @@ nav:
       - Native keyring PAM bridge: architecture/keyring-pam.md
       - Authentication overlay: architecture/authentication-overlay.md
       - Native keyring storage: architecture/keyring-storage.md
+      - One-time native keyring import: architecture/keyring-import.md
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
       - Application window management: architecture/application-window-management.md
@@ -472,7 +473,7 @@ nav:
       - ADR-0314 Native lock receipts: adr/0314-native-lock-receipt-authentication.md
       - ADR-0305 Ordinary compositor attachment: adr/0305-public-ordinary-compositor-attachment.md
 
-      - ADR-0312 Preserve exact legacy portal secrets: adr/0312-preserve-exact-legacy-portal-secrets.md
+      - ADR-0312 Import complete legacy stores and preserve exact portal secrets: adr/0312-preserve-exact-legacy-portal-secrets.md
       - ADR-0310 Native Secret portal: adr/0310-native-per-application-secret-portal.md
       - ADR-0307 Ordinary FD idle observation: adr/0307-public-ordinary-fd-idle-observation.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md

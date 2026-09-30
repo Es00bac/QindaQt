@@ -8,11 +8,11 @@ class Catalog final:public CollectionImportCatalog {
 public:
     Catalog(const QString &directory,KdfParameters parameters):repository_(directory),parameters_(parameters) {}
     CollectionImportReceipt commit(CollectionImportBatch batch,CollectionImportPasswords &passwords,
-            const std::function<bool()> &admitted) override {
+            const std::function<bool()> &admitted,const std::function<void()> &checkpoint) override {
         if(active_) return {CollectionImportError::Unavailable};
         active_=true;
         struct Reset {bool &active;~Reset(){active=false;}} reset{active_};
-        return repository_.importCollections(std::move(batch),passwords,admitted,parameters_);
+        return repository_.importCollections(std::move(batch),passwords,admitted,parameters_,checkpoint);
     }
 private:
     service::CollectionRepository repository_;

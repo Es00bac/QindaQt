@@ -35,7 +35,7 @@ public:
     void remove(const QString &id);
     QString alias(const QString &name) const;
     void setAlias(const QString &name, const QString &id);
-    CollectionImportReceipt importCollections(CollectionImportBatch,CollectionImportPasswords &,const std::function<bool()> &,KdfParameters);
+    CollectionImportReceipt importCollections(CollectionImportBatch,CollectionImportPasswords &,const std::function<bool()> &,KdfParameters,const std::function<void()> &);
     void setLabel(const QString &id, const QString &label);
 private:
     void loadCatalog();

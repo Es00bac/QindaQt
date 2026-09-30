@@ -91,3 +91,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 add_test(NAME keyring_collection_import COMMAND tst_keyring_collection_import)
 set_tests_properties(keyring_collection_import PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 60)
+
+qt_add_executable(tst_keyring_legacy_plan tst_legacy_plan.cpp)
+target_link_libraries(tst_keyring_legacy_plan PRIVATE QindaQt::KeyringImportPolicy QindaQt::SecretPortalPolicy Qt6::Test)
+qindaqt_enable_warnings(tst_keyring_legacy_plan)
+add_test(NAME keyring_legacy_plan COMMAND tst_keyring_legacy_plan)
+set_tests_properties(keyring_legacy_plan PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 30)
+
+qt_add_executable(qindaqt_import_verify_fixture import_verify_fixture.cpp)
+target_link_libraries(qindaqt_import_verify_fixture PRIVATE QindaQt::KeyringStorage QindaQt::CompositorNames Qt6::Core)
+qindaqt_enable_warnings(qindaqt_import_verify_fixture)
+add_test(NAME keyring_legacy_import COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/test_legacy_import.py"
+    $<TARGET_FILE:qindaqt-keyring-import> $<TARGET_FILE:qindaqt_keyring_policy_compositor> $<TARGET_FILE:qindaqt_import_verify_fixture>)
+set_tests_properties(keyring_legacy_import PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 180 LABELS "keyring;dbus;private-fixture")

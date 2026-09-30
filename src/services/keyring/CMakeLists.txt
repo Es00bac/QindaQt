@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # OpenSSL 3.2 introduced Argon2; runtime provider availability fails closed.
-find_package(OpenSSL 3.2 REQUIRED COMPONENTS Crypto)
+# Static public storage/import targets cross sibling test scopes. Promote this
+# imported dependency rather than leaving Qt's dependency scan with a missing target.
+find_package(OpenSSL 3.2 REQUIRED GLOBAL COMPONENTS Crypto)
 add_library(qindaqt_keyring_storage STATIC
     src/secure_buffer.cpp src/crypto.cpp src/format.cpp
     src/atomic_file.cpp src/collection_store.cpp)
@@ -59,3 +61,23 @@ target_sources(qindaqt_keyring_service PRIVATE daemon/lock_policy.h daemon/lock_
 target_link_libraries(qindaqt_keyring_service PRIVATE QindaQt::SettingsClient QindaQt::SessionLockState)
 
 target_sources(qindaqt_keyring_service PRIVATE daemon/resident_lock_policy.h daemon/resident_lock_policy.cpp)
+
+# Legacy platform transport is confined to the one-time compatibility reader.
+add_library(qindaqt_keyring_import_policy STATIC import/legacy_snapshot_plan.cpp)
+add_library(QindaQt::KeyringImportPolicy ALIAS qindaqt_keyring_import_policy)
+target_link_libraries(qindaqt_keyring_import_policy PUBLIC QindaQt::KeyringStorage Qt6::Core PRIVATE QindaQt::SecretPortalPolicy)
+qindaqt_enable_warnings(qindaqt_keyring_import_policy)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(QINDAQT_IMPORT_DBUS REQUIRED IMPORTED_TARGET dbus-1)
+add_library(qindaqt_keyring_legacy_reader STATIC import/legacy_wire.cpp import/legacy_wire_codec.cpp
+    import/legacy_secret_service.cpp import/legacy_kwallet.cpp import/legacy_reader.cpp)
+add_library(QindaQt::KeyringLegacyReader ALIAS qindaqt_keyring_legacy_reader)
+target_link_libraries(qindaqt_keyring_legacy_reader PUBLIC QindaQt::KeyringStorage Qt6::Core PRIVATE PkgConfig::QINDAQT_IMPORT_DBUS OpenSSL::Crypto)
+qindaqt_enable_warnings(qindaqt_keyring_legacy_reader)
+
+qt_add_executable(qindaqt-keyring-import app/import_main.cpp import/import_passwords.cpp)
+target_link_libraries(qindaqt-keyring-import PRIVATE QindaQt::KeyringImportStore QindaQt::KeyringImportPolicy
+    QindaQt::KeyringLegacyReader qindaqt_keyring_service QindaQt::SessionLockState QindaQt::CompositorAttachment)
+target_compile_definitions(qindaqt-keyring-import PRIVATE QINDAQT_KEYRING_PROMPT_PATH="${CMAKE_INSTALL_FULL_BINDIR}/qindaqt-keyring-prompt")
+qindaqt_enable_warnings(qindaqt-keyring-import)
+install(TARGETS qindaqt-keyring-import RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT QindaQtKeyring)
