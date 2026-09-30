@@ -15,10 +15,13 @@ PowerClient::PowerClient(PowerTransport *transport, QObject *parent)
 {
     Q_ASSERT(m_transport != nullptr);
     m_fetchTimer.setSingleShot(true);
+    m_idleInhibitorTimer.setSingleShot(true);
     m_operationTimer.setSingleShot(true);
     m_retryTimer.setSingleShot(true);
     m_retryTimer.setInterval(200);
     connect(&m_fetchTimer, &QTimer::timeout, this, &PowerClient::onFetchTimeout);
+    connect(&m_idleInhibitorTimer, &QTimer::timeout, this,
+            &PowerClient::onIdleInhibitorStateTimeout);
     connect(&m_operationTimer, &QTimer::timeout, this,
             &PowerClient::onOperationTimeout);
     connect(&m_retryTimer, &QTimer::timeout, this, &PowerClient::requestSnapshot);
@@ -30,6 +33,10 @@ PowerClient::PowerClient(PowerTransport *transport, QObject *parent)
             &PowerClient::acceptSnapshotReply);
     connect(m_transport, &PowerTransport::operationReply, this,
             &PowerClient::acceptOperationReply);
+    connect(m_transport, &PowerTransport::idleInhibitorStateReply, this,
+            &PowerClient::acceptIdleInhibitorStateReply);
+    connect(m_transport, &PowerTransport::idleInhibitorsChanged, this,
+            &PowerClient::acceptIdleInhibitorsChanged);
 }
 
 void PowerClient::start()
@@ -53,11 +60,15 @@ void PowerClient::stop()
     cancelQueuedOperationCompletions();
     completeUncertain(QStringLiteral("client-stopped"));
     m_fetchTimer.stop();
+    m_idleInhibitorTimer.stop();
     m_operationTimer.stop();
     m_retryTimer.stop();
     m_fetchInFlight = false;
     m_refetchNeeded = false;
     m_fetchRequestId = 0;
+    m_idleInhibitorInFlight = false;
+    m_idleInhibitorRequestId = 0;
+    clearIdleInhibitorState(QStringLiteral("client-stopped"));
     m_snapshot.reset();
     m_owner.clear();
     m_transport->stop();
@@ -92,6 +103,26 @@ Snapshot PowerClient::snapshot() const
 bool PowerClient::operationPending() const noexcept
 {
     return m_operation.has_value();
+}
+
+bool PowerClient::hasIdleInhibitorState() const noexcept
+{
+    return m_idleInhibitorStateValid;
+}
+
+IdleInhibitorScopes PowerClient::supportedIdleInhibitorScopes() const noexcept
+{
+    return m_supportedIdleInhibitorScopes;
+}
+
+IdleInhibitorScopes PowerClient::activeIdleInhibitorScopes() const noexcept
+{
+    return m_activeIdleInhibitorScopes;
+}
+
+QString PowerClient::idleInhibitorReasonCode() const
+{
+    return m_idleInhibitorReasonCode;
 }
 
 void PowerClient::setRequestTimeout(const int milliseconds)
@@ -139,10 +170,15 @@ void PowerClient::acceptOwner(const QString &owner)
     // rather than replayed.
     completeUncertain(QStringLiteral("owner-replaced"));
     m_fetchTimer.stop();
+    m_idleInhibitorTimer.stop();
     m_retryTimer.stop();
     m_fetchInFlight = false;
     m_refetchNeeded = false;
     m_fetchRequestId = 0;
+    m_idleInhibitorInFlight = false;
+    m_idleInhibitorRequestId = 0;
+    clearIdleInhibitorState(owner.isEmpty() ? QStringLiteral("service-unavailable")
+                                           : QStringLiteral("owner-replaced"));
     m_snapshot.reset();
     m_owner = owner;
     if (m_owner.isEmpty()) {
@@ -152,6 +188,27 @@ void PowerClient::acceptOwner(const QString &owner)
     }
     publishState(PowerClientState::Starting, QStringLiteral("fetching-snapshot"));
     requestSnapshot();
+    static_cast<void>(refreshIdleInhibitorState());
+}
+
+quint64 PowerClient::refreshIdleInhibitorState()
+{
+    if (m_owner.isEmpty() || m_state == PowerClientState::Stopped) {
+        return 0;
+    }
+    if (m_idleInhibitorInFlight) {
+        return m_idleInhibitorRequestId;
+    }
+    if (m_nextRequestId == 0
+        || m_nextRequestId == std::numeric_limits<quint64>::max()) {
+        clearIdleInhibitorState(QStringLiteral("request-id-exhausted"));
+        return 0;
+    }
+    m_idleInhibitorInFlight = true;
+    m_idleInhibitorRequestId = m_nextRequestId++;
+    m_idleInhibitorTimer.start(m_requestTimeoutMs);
+    m_transport->queryIdleInhibitorState(m_owner, m_idleInhibitorRequestId);
+    return m_idleInhibitorRequestId;
 }
 
 void PowerClient::requestSnapshot()
@@ -254,6 +311,85 @@ void PowerClient::acceptSnapshotReply(const QString &owner, const quint64 reques
     if (m_refetchNeeded) {
         requestSnapshot();
     }
+}
+
+void PowerClient::acceptIdleInhibitorsChanged(const QString &owner,
+                                                const quint32 supportedScopes,
+                                                const quint32 activeScopes)
+{
+    if (owner != m_owner || owner.isEmpty()) {
+        return;
+    }
+    // AGENT-GUARD: This exact-owner signal carries one atomic scope pair. It
+    // retires any split query so replies from before the mutation/epoch change
+    // cannot overwrite the newer state or combine values from separate epochs.
+    m_idleInhibitorTimer.stop();
+    m_idleInhibitorInFlight = false;
+    m_idleInhibitorRequestId = 0;
+    publishIdleInhibitorState(supportedScopes, activeScopes);
+}
+
+void PowerClient::acceptIdleInhibitorStateReply(const QString &owner,
+                                                const quint64 requestId,
+                                                const bool transportSuccess,
+                                                const quint32 supportedScopes,
+                                                const quint32 activeScopes,
+                                                const QString &reasonCode)
+{
+    if (!m_idleInhibitorInFlight || owner != m_owner || owner.isEmpty()
+        || requestId != m_idleInhibitorRequestId) {
+        return;
+    }
+    m_idleInhibitorTimer.stop();
+    m_idleInhibitorInFlight = false;
+    m_idleInhibitorRequestId = 0;
+    if (!transportSuccess) {
+        clearIdleInhibitorState(reasonCode);
+        return;
+    }
+    publishIdleInhibitorState(supportedScopes, activeScopes);
+}
+
+void PowerClient::publishIdleInhibitorState(const quint32 supportedScopes,
+                                            const quint32 activeScopes)
+{
+    constexpr quint32 KnownScopes = 0x7U;
+    if ((supportedScopes & ~KnownScopes) != 0U
+        || (activeScopes & ~KnownScopes) != 0U
+        || (activeScopes & ~supportedScopes) != 0U) {
+        clearIdleInhibitorState(QStringLiteral("malformed-idle-inhibitor-state"));
+        return;
+    }
+    m_idleInhibitorStateValid = true;
+    m_supportedIdleInhibitorScopes = IdleInhibitorScopes::fromInt(supportedScopes);
+    m_activeIdleInhibitorScopes = IdleInhibitorScopes::fromInt(activeScopes);
+    m_idleInhibitorReasonCode.clear();
+    Q_EMIT idleInhibitorStateChanged();
+}
+
+void PowerClient::clearIdleInhibitorState(const QString &reasonCode)
+{
+    const bool changed = m_idleInhibitorStateValid
+        || m_supportedIdleInhibitorScopes != IdleInhibitorScopes{}
+        || m_activeIdleInhibitorScopes != IdleInhibitorScopes{}
+        || m_idleInhibitorReasonCode != reasonCode;
+    m_idleInhibitorStateValid = false;
+    m_supportedIdleInhibitorScopes = {};
+    m_activeIdleInhibitorScopes = {};
+    m_idleInhibitorReasonCode = reasonCode;
+    if (changed) {
+        Q_EMIT idleInhibitorStateChanged();
+    }
+}
+
+void PowerClient::onIdleInhibitorStateTimeout()
+{
+    if (!m_idleInhibitorInFlight) {
+        return;
+    }
+    m_idleInhibitorInFlight = false;
+    m_idleInhibitorRequestId = 0;
+    clearIdleInhibitorState(QStringLiteral("idle-inhibitor-state-timeout"));
 }
 
 void PowerClient::onFetchTimeout()

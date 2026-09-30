@@ -41,6 +41,7 @@ private Q_SLOTS:
     void succeededOperationPublishesResultAndRefetches();
     void internalBrightnessPreflightSharesTheTargetRule();
     void internalBrightnessOwnerLossAndTimeoutAreNeverReplayed();
+    void idleInhibitorStateIsOwnerFencedAndValidated();
     void malformedReplyIsUncertainAndRefetches();
     void stopCompletesInFlightOperationAsClientStopped();
     void snapshotTimeoutTransitionsToUnavailable();
@@ -413,6 +414,51 @@ void PowerClientTests::internalBrightnessOwnerLossAndTimeoutAreNeverReplayed()
              QStringLiteral("operation-timeout"));
     QTest::qWait(120);
     QCOMPARE(transport.operations.size(), 2);
+    client.stop();
+}
+
+void PowerClientTests::idleInhibitorStateIsOwnerFencedAndValidated()
+{
+    FakePowerTransport transport;
+    PowerClient client(&transport);
+    driveToReady(client, transport);
+    QCOMPARE(transport.idleStateRequests.size(), 1);
+    const auto oldQuery = transport.idleStateRequests.constFirst();
+    transport.replyIdleState(oldQuery, 0x7U, 0x1U);
+    QVERIFY(client.hasIdleInhibitorState());
+    QVERIFY(client.supportedIdleInhibitorScopes().testFlag(
+        IdleInhibitorScope::AutomaticLock));
+    QVERIFY(client.activeIdleInhibitorScopes().testFlag(
+        IdleInhibitorScope::AutomaticLock));
+
+    transport.announceOwner(QStringLiteral(":1.77"));
+    QVERIFY(!client.hasIdleInhibitorState());
+    QCOMPARE(client.idleInhibitorReasonCode(), QStringLiteral("owner-replaced"));
+    QCOMPARE(transport.idleStateRequests.size(), 2);
+    transport.replyIdleState(oldQuery, 0x7U, 0x2U);
+    QVERIFY(!client.hasIdleInhibitorState());
+
+    // The actual owner-scoped signal is an atomic state pair and supersedes
+    // the outstanding split query. Its late response cannot overwrite it.
+    transport.idleInhibitorsChanged(QStringLiteral(":1.77"), 0x7U, 0x1U);
+    QVERIFY(client.hasIdleInhibitorState());
+    transport.replyIdleState(transport.idleStateRequests.constLast(), 0x1U, 0x0U);
+    QVERIFY(client.activeIdleInhibitorScopes().testFlag(
+        IdleInhibitorScope::AutomaticLock));
+
+    // A malformed atomic signal cannot become policy truth.
+    transport.idleInhibitorsChanged(QStringLiteral(":1.77"), 0x1U, 0x2U);
+    QVERIFY(!client.hasIdleInhibitorState());
+    QCOMPARE(client.idleInhibitorReasonCode(),
+             QStringLiteral("malformed-idle-inhibitor-state"));
+
+    const quint64 requestId = client.refreshIdleInhibitorState();
+    QVERIFY(requestId != 0);
+    const auto currentQuery = transport.idleStateRequests.constLast();
+    QCOMPARE(currentQuery.requestId, requestId);
+    transport.replyIdleState(currentQuery, 0x7U, 0x0U);
+    QVERIFY(client.hasIdleInhibitorState());
+    QCOMPARE(client.activeIdleInhibitorScopes(), IdleInhibitorScopes{});
     client.stop();
 }
 

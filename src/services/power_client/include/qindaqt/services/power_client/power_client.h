@@ -44,6 +44,13 @@ public:
     [[nodiscard]] bool hasSnapshot() const noexcept;
     [[nodiscard]] Snapshot snapshot() const;
     [[nodiscard]] bool operationPending() const noexcept;
+    // Idle scope values are current-owner truth only while this cache is valid;
+    // owner replacement, malformed values, and transport failure clear it.
+    [[nodiscard]] bool hasIdleInhibitorState() const noexcept;
+    [[nodiscard]] IdleInhibitorScopes supportedIdleInhibitorScopes() const noexcept;
+    [[nodiscard]] IdleInhibitorScopes activeIdleInhibitorScopes() const noexcept;
+    [[nodiscard]] QString idleInhibitorReasonCode() const;
+    [[nodiscard]] quint64 refreshIdleInhibitorState();
 
     void setRequestTimeout(int milliseconds);
     [[nodiscard]] quint64 setProfile(const QString &profileId);
@@ -62,6 +69,7 @@ Q_SIGNALS:
     void snapshotChanged(const QindaQt::Power::Snapshot &snapshot);
     void operationCompleted(quint64 requestId,
                             const QindaQt::Power::OperationResult &result);
+    void idleInhibitorStateChanged();
 
 private Q_SLOTS:
     void acceptOwner(const QString &owner);
@@ -72,6 +80,12 @@ private Q_SLOTS:
     void acceptOperationReply(const QString &owner, quint64 requestId,
                               bool transportSuccess, const OperationResult &result,
                               const QString &reasonCode);
+    void acceptIdleInhibitorStateReply(const QString &owner, quint64 requestId,
+                                       bool transportSuccess, quint32 supportedScopes,
+                                       quint32 activeScopes, const QString &reasonCode);
+    void acceptIdleInhibitorsChanged(const QString &owner, quint32 supportedScopes,
+                                     quint32 activeScopes);
+    void onIdleInhibitorStateTimeout();
     void onFetchTimeout();
     void onOperationTimeout();
 
@@ -87,6 +101,8 @@ private:
     void publishSnapshotState(const Snapshot &snapshot);
     void requestSnapshot();
     void scheduleRefetch();
+    void clearIdleInhibitorState(const QString &reasonCode);
+    void publishIdleInhibitorState(quint32 supportedScopes, quint32 activeScopes);
     [[nodiscard]] quint64 beginOperation(const PowerClientRequest &request);
     void queueOperationCompletion(quint64 requestId, OperationResult result);
     void cancelQueuedOperationCompletions();
@@ -103,10 +119,17 @@ private:
     std::optional<PendingOperation> m_operation;
     QHash<quint64, OperationResult> m_queuedOperationCompletions;
     QTimer m_fetchTimer;
+    QTimer m_idleInhibitorTimer;
     QTimer m_operationTimer;
     QTimer m_retryTimer;
     quint64 m_nextRequestId = 1;
     quint64 m_fetchRequestId = 0;
+    quint64 m_idleInhibitorRequestId = 0;
+    IdleInhibitorScopes m_supportedIdleInhibitorScopes;
+    IdleInhibitorScopes m_activeIdleInhibitorScopes;
+    QString m_idleInhibitorReasonCode;
+    bool m_idleInhibitorStateValid = false;
+    bool m_idleInhibitorInFlight = false;
     bool m_fetchInFlight = false;
     bool m_refetchNeeded = false;
     int m_requestTimeoutMs = 5000;

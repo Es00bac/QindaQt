@@ -14,6 +14,8 @@ namespace QindaQt::Session::NativeLockRuntime {
 // must outlive Runtime. Manual requests never depend on idle policy. The
 // suspend callback runs only after actual Protected state, inline if already
 // protected, and is discarded on timeout/stop; it cannot veto external logind.
+// A current confirmed Power1 AutomaticLock lease suppresses automatic idle
+// locking only; it never suppresses explicit/manual locking.
 class Runtime final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool available READ available NOTIFY stateChanged)

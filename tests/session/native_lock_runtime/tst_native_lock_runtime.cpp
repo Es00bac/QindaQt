@@ -126,6 +126,7 @@ class NativeLockRuntimeTests final : public QObject {
 private Q_SLOTS:
     void automaticIdleUsesConfirmedTimeoutAndCancelableGrace();
     void manualLockWorksWhenAutomaticIdleIsDisabled();
+    void automaticLockLeaseDefersIdleButNotManual();
     void suspendWaitsForActualProtectedState();
     void resumeWaitsForAuthenticatedStateAndHonorsPreference();
 };
@@ -156,6 +157,28 @@ void NativeLockRuntimeTests::manualLockWorksWhenAutomaticIdleIsDisabled() {
     f.unlockState();
     QCOMPARE(f.idle.timeout, 0);
     QVERIFY(!f.idle.available());
+    QVERIFY(f.runtime->requestManualLock());
+    QCOMPARE(f.request.requests, 1);
+}
+
+void NativeLockRuntimeTests::automaticLockLeaseDefersIdleButNotManual() {
+    Fixture f;
+    f.seed(true, false, 0);
+    f.start(true);
+    f.powerTransport.announceOwner(QStringLiteral(":1.42"));
+    QCOMPARE(f.powerTransport.idleStateRequests.size(), 1);
+    f.powerTransport.replyIdleState(f.powerTransport.idleStateRequests.constLast(),
+                                    0x7U, 0x1U);
+    QVERIFY(f.power.hasIdleInhibitorState());
+    QVERIFY(f.power.activeIdleInhibitorScopes().testFlag(
+        Power::IdleInhibitorScope::AutomaticLock));
+    f.unlockState();
+    f.idle.setIdle(true);
+    QTest::qWait(100);
+    QCOMPARE(f.request.requests, 0);
+
+    // This lease only suppresses the automatic path; an explicit request still
+    // reaches NativeLockRequest while the same confirmed lease is active.
     QVERIFY(f.runtime->requestManualLock());
     QCOMPARE(f.request.requests, 1);
 }
