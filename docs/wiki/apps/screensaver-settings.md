@@ -30,19 +30,19 @@ section it replaces.
   pointer movement; it also closes if keyboard focus is not confirmed within
   one second. Every preview ends after at most 60 seconds. A saver that crashes
   or exits nonzero reports its exit status and code on the page. The preview
-  never starts the lock screen. It holds KScreenLocker's standard
-  `org.freedesktop.ScreenSaver.Inhibit` request while running, so automatic
-  idle locking cannot put the password screen over the preview; the request is
-  released when the preview ends or Settings quits. If the lock service cannot
-  grant the request, Preview does not start. The button is disabled while a
+  never starts the lock screen. It requests the standard
+  `org.freedesktop.ScreenSaver.Inhibit` while running. The current facade
+  returns Unsupported until Power1 consumes every declared idle-inhibitor
+  scope, so Preview remains unavailable when that request is refused; the
+  request is released when a future supported preview ends or Settings quits. The button is disabled while a
   preference write is in flight, a second preview cannot stack, and failures
   appear on the page.
 - **Locking** — the walk-away section: whether the session locks
   automatically when idle, and after how long. This is the same shared
   screen-lock model and store the Power route's Screen lock section uses;
-  the two pages can never disagree, because there is one `kscreenlockerrc`
-  `[Daemon]` truth. When that truth cannot be read or written, the section
-  says so with the reason.
+  the two pages can never disagree, because there is one Settings1 `lock.*`
+  truth. When Settings1 cannot be read or written, the section says so with
+  the reason; edits wait for a matching current snapshot before claiming save.
 
 The status line says which lock-screen behaviour is in effect: a saver with a
 wallpaper-plugin scene keeps showing while locked, any other saver leaves the
@@ -96,14 +96,15 @@ except the explicitly requested preview.
 - Preview never requests a lock or starts the greeter. Its bounded,
   preview-lifetime inhibitor prevents automatic idle locking from covering the
   preview; a failed inhibit request prevents preview startup. Manual locking
-  remains a separate user action, and KScreenLocker remains the lock authority.
+  remains a separate user action, and the native Lock1 service remains the lock authority.
 - The lock-screen take-over follows the saver only for savers that ship a
   QML scene in the wallpaper plugin; a saver without one leaves the lock
   wallpaper unchanged, and the page says so.
 - A saver package that is removed after being chosen reads back as `none` at
   the next snapshot; no stale icon or ghost entry is shown.
-- Lock-on-resume and the password-grace delay remain on the Power route's
-  Screen lock section; this page's Locking section covers idle locking only.
+- Lock-on-resume and idle grace are shared Settings1 `lock.*` values shown on
+  the Power route's Screen lock section; this page's Locking section covers
+  idle locking only.
 
 ## Verification
 

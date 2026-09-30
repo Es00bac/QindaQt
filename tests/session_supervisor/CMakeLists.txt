@@ -223,3 +223,19 @@ qindaqt_enable_warnings(qindaqt_session_activation_policy_tests)
 add_test(NAME qindaqt.session-activation-policy
     COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_session_activation_policy_tests>)
 set_tests_properties(qindaqt.session-activation-policy PROPERTIES TIMEOUT 15 LABELS "session;dbus")
+
+# Night Light remains available with Settings closed; the compositor session
+# supervises its D-Bus-activated authority through the session lifetime.
+qt_add_executable(qindaqt_night_light_lifetime_tests tst_night_light_lifetime.cpp)
+target_link_libraries(qindaqt_night_light_lifetime_tests PRIVATE
+    QindaQt::SessionSupervisorSupport Qt6::Test)
+target_compile_definitions(qindaqt_night_light_lifetime_tests PRIVATE
+    QINDAQT_SESSION_TOKEN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_token_child_helper>"
+    QINDAQT_SESSION_PLAIN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_plain_child_helper>")
+add_dependencies(qindaqt_night_light_lifetime_tests
+    qindaqt_session_token_child_helper qindaqt_session_plain_child_helper)
+qindaqt_enable_warnings(qindaqt_night_light_lifetime_tests)
+add_test(NAME qindaqt.session-night-light-lifetime
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_night_light_lifetime_tests>)
+set_tests_properties(qindaqt.session-night-light-lifetime PROPERTIES
+    TIMEOUT 30 LABELS "session;service;dbus")

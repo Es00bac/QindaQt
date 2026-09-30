@@ -67,6 +67,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
       , m_desktopControls(std::make_unique<OptionalSessionChild>(
             QStringLiteral("desktop-controls"), QStringList{}))
       , m_keyring(std::make_unique<KeyringSessionLifetime>(this))
+      , m_nightLight(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("night-light"), QStringList{}))
       , m_polkitAgent(std::make_unique<OptionalSessionChild>(
             QStringLiteral("polkit-agent"), QStringList{}))
       , m_powerDevil(std::make_unique<OptionalSessionChild>(
@@ -110,6 +112,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
     connect(m_globalShortcutDaemon.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_inputMethodDaemon.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_nightLight.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_xembedTrayProxy.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
@@ -165,6 +169,7 @@ bool SessionProcessSupervisor::start(QString *error)
     // previous session's children were stopped by stop()/finishSession().
     m_desktopControls->resetRestartCount();
     m_keyring->resetRestartCount();
+    m_nightLight->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
     m_globalShortcutDaemon->resetRestartCount();
@@ -235,6 +240,7 @@ void SessionProcessSupervisor::stop() noexcept
     stopChild(m_networkSecretAgent);
     m_desktopControls->stop();
     m_keyring->stop();
+    m_nightLight->stop();
     m_polkitAgent->stop();
     m_powerDevil->stop();
     m_globalShortcutDaemon->stop();
@@ -259,6 +265,7 @@ void SessionProcessSupervisor::stop() noexcept
     // next session.
     m_desktopControls->resetRestartCount();
     m_keyring->resetRestartCount();
+    m_nightLight->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
     m_globalShortcutDaemon->resetRestartCount();
@@ -425,6 +432,7 @@ void SessionProcessSupervisor::startOptionalChildren()
     // one-restart budget already bounds this to one retry, never a loop.
     m_polkitAgent->start(m_options.polkitAgentExecutable);
     m_keyring->start(m_options.keyringExecutable);
+    m_nightLight->start(resolveExecutable(m_options.nightLightExecutable));
 }
 
 void SessionProcessSupervisor::startWelcome()
@@ -505,6 +513,7 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     m_networkSecretAgentProcessId = 0;
     m_desktopControls->stop();
     m_keyring->stop();
+    m_nightLight->stop();
     m_polkitAgent->stop();
     m_powerDevil->stop();
     // AGENT-GUARD: these two were omitted here, so an abnormal session end

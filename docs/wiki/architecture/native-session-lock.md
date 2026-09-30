@@ -205,10 +205,22 @@ unsupported source and failed persistence remain retryable. The source is never
 written, and password bypass keys are never mapped. Completed migration is
 idempotent across startup even when the legacy source changes.
 
-This slice does not switch the existing legacy Settings UI or execute runtime
-policy. Grace is cancellable pre-acquisition idle delay only; it never permits
-unauthenticated unlock after acquisition. Manual locking and protected-before-
-sleep ordering require their separate native policy gates.
+The PF8 source candidate now composes the public attachment, idle observer,
+Settings1 lock provider, native request/state monitor, Lock1/ScreenSaver facade,
+and Power1 read-only client in the session supervisor. Its runtime applies the
+confirmed Settings1 idle timeout and cancellable grace, supports a manual lock
+request independent of idle policy, and evaluates lock-on-resume only against
+current authenticated native state. A resume observed while state is Unknown is
+held until state resolves; Locked/Locking needs no extra request. The Power and
+Screensaver Settings routes use lock.* Settings1 keys, show confirmed values,
+and report saved only after matching snapshot readback.
+
+The runtime has a protected-before-suspend callback seam, but no production
+suspend dispatch currently consumes it; owned suspend ordering remains pending
+PF2/PF3 Power1 wiring. It cannot prevent a privileged external logind caller
+from suspending. ScreenSaver Inhibit remains Unsupported until the Power1
+automatic-lock, display-off and idle-suspend scopes are all consumed together.
+No real lock or sleep is exercised by these candidate tests.
 
 
 Public [ordinary attachment and idle observation](compositor-attachment.md)
@@ -268,7 +280,19 @@ qualified Power1 scope consumer/registry must be composed before this facade
 can accept that request. Manual locking is independent of idle inhibition.
 There is no unlock/authentication-result or greeter-descriptor interface.
 
-This checkpoint is a source library with private-bus fixtures. Production
-supervisor attachment/bootstrap, activation, native idle/grace policy and
-resume/sleep ordering remain separate work; the library does not replace the
-currently launched legacy locker. No real lock or sleep is exercised here.
+The PF8 source candidate now composes the public attachment, idle observer,
+Settings1 lock provider, native request/state monitor, Lock1/ScreenSaver facade,
+and Power1 read-only client in the session supervisor. Its runtime applies the
+confirmed Settings1 idle timeout and cancellable grace, supports a manual lock
+request independent of idle policy, and evaluates lock-on-resume only against
+current authenticated native state. A resume observed while state is Unknown is
+held until state resolves; Locked/Locking needs no extra request. The Power and
+Screensaver Settings routes use lock.* Settings1 keys, show confirmed values,
+and report saved only after matching snapshot readback.
+
+The runtime has a protected-before-suspend callback seam, but no production
+suspend dispatch currently consumes it; owned suspend ordering remains pending
+PF2/PF3 Power1 wiring. It cannot prevent a privileged external logind caller
+from suspending. ScreenSaver Inhibit remains Unsupported until the Power1
+automatic-lock, display-off and idle-suspend scopes are all consumed together.
+No real lock or sleep is exercised by these candidate tests.
