@@ -26,6 +26,7 @@ enum class SettingDomain {
     Services,
     Shell,
     Power,
+    Keyring,
 };
 
 enum class SettingValueType {

@@ -3,6 +3,8 @@
 #include "collection_repository.h"
 #include "session_crypto.h"
 #include "prompt_provider.h"
+#include "lock_policy.h"
+#include <QPointer>
 #include <QDBusVirtualObject>
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -16,7 +18,8 @@ struct Prompt {
     Paths objects, completed;
     qsizetype next = 0;
     quint64 ticket = 0;
-    bool running = false;
+    bool running = false, relockOnCancel = false;
+    QString secretSession;
 };
 class SecretService final : public QDBusVirtualObject {
     Q_OBJECT
@@ -25,6 +28,9 @@ public:
     QString introspect(const QString &path) const override;
     bool handleMessage(const QDBusMessage &, const QDBusConnection &) override;
     void notifyCollectionState(const QString &id);
+    // Borrows same-thread QObject, auto-fenced on destruction. Native reveal
+    // remains unavailable without this independently admitted observer.
+    void observeLockPolicy(KeyringLockPolicy *);
     QString collectionPath(const QString &id) const;
     QString itemPath(const QString &id, const QString &item) const;
     QString collectionForPath(const QString &path) const;
@@ -36,9 +42,12 @@ private:
     bool itemMethod(const QDBusMessage &, const QString &id, const QString &item);
     bool propertyMethod(const QDBusMessage &);
     bool nativeMethod(const QDBusMessage &);
+    bool nativeItemMethod(const QDBusMessage &);
+    void changePromptPassword(const QString &,SecureBuffer);
     bool promptMethod(const QDBusMessage &);
     void startPrompt(const QString &path);
     void finishPrompt(const QString &path, bool dismissed);
+    bool nativeDisclosureAllowed() const;
     QString addPrompt(Prompt prompt);
     Session &session(const QString &path, const QString &owner);
     bool exists(const QString &path) const;
@@ -55,6 +64,7 @@ private:
     std::map<QString, std::unique_ptr<Session>> sessions_;
     std::map<QString, Prompt> prompts_;
     QString sessionOwner_;
+    QPointer<KeyringLockPolicy> lockPolicy_;
     int pendingRekeys_ = 0;
 };
 inline QDBusObjectPath objectPath(const QString &path = "/") { return QDBusObjectPath(path); }

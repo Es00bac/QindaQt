@@ -45,3 +45,40 @@ add_subdirectory(pam)
 
 add_test(NAME keyring_prompt_display COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_prompt_display.py" "$<TARGET_FILE:qindaqt-keyring>" "$<TARGET_FILE:qindaqt_pam_fixture_launcher>")
 set_tests_properties(keyring_prompt_display PROPERTIES TIMEOUT 90 LABELS "keyring;dbus;private-fixture")
+
+add_test(NAME keyring_native_prompts COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_native_prompts.py" "$<TARGET_FILE:qindaqt-keyring>" "$<TARGET_FILE:qindaqt_keyring_policy_compositor>")
+set_tests_properties(keyring_native_prompts PROPERTIES TIMEOUT 90 LABELS "keyring;dbus;private-fixture")
+
+add_executable(tst_keyring_prompt_metadata tst_prompt_metadata.cpp)
+target_link_libraries(tst_keyring_prompt_metadata PRIVATE QindaQt::KeyringProtocol Qt6::Test)
+qindaqt_enable_warnings(tst_keyring_prompt_metadata)
+add_test(NAME keyring_prompt_metadata COMMAND tst_keyring_prompt_metadata)
+
+find_package(Wayland REQUIRED COMPONENTS Server)
+find_program(QINDAQT_TEST_WAYLAND_SCANNER wayland-scanner REQUIRED)
+pkg_get_variable(QINDAQT_TEST_WAYLAND_PROTOCOL_DATA wayland-protocols pkgdatadir)
+set(QINDAQT_TEST_IDLE_XML "${QINDAQT_TEST_WAYLAND_PROTOCOL_DATA}/staging/ext-idle-notify/ext-idle-notify-v1.xml")
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-server.h"
+ COMMAND ${QINDAQT_TEST_WAYLAND_SCANNER} server-header ${QINDAQT_TEST_IDLE_XML} "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-server.h"
+ DEPENDS ${QINDAQT_TEST_IDLE_XML} VERBATIM)
+qt_add_executable(tst_keyring_idle tst_idle_observer.cpp "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-server.h")
+target_include_directories(tst_keyring_idle PRIVATE "${PROJECT_SOURCE_DIR}/src/services/keyring/daemon" "${CMAKE_CURRENT_BINARY_DIR}")
+target_link_libraries(tst_keyring_idle PRIVATE qindaqt_keyring_service Wayland::Server Qt6::Test)
+add_test(NAME keyring_idle_observer COMMAND tst_keyring_idle)
+set_tests_properties(keyring_idle_observer PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 30)
+
+qt_add_executable(tst_keyring_lock_policy tst_lock_policy.cpp)
+target_include_directories(tst_keyring_lock_policy PRIVATE "${PROJECT_SOURCE_DIR}/src/services/keyring/daemon")
+target_link_libraries(tst_keyring_lock_policy PRIVATE qindaqt_keyring_service QindaQt::SettingsService Qt6::Test)
+target_compile_definitions(tst_keyring_lock_policy PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+add_test(NAME keyring_lock_policy COMMAND tst_keyring_lock_policy)
+set_tests_properties(keyring_lock_policy PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 30)
+
+qt_add_executable(qindaqt_keyring_policy_compositor policy_compositor.cpp "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-server.h")
+target_include_directories(qindaqt_keyring_policy_compositor PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+target_link_libraries(qindaqt_keyring_policy_compositor PRIVATE qindaqt_keyring_service Wayland::Server QindaQt::CompositorNames Qt6::Core Qt6::DBus)
+
+add_test(NAME keyring_resident_policy COMMAND ${Python3_EXECUTABLE}
+ "${CMAKE_CURRENT_SOURCE_DIR}/test_resident_policy.py" $<TARGET_FILE:qindaqt-keyring>
+ $<TARGET_FILE:qindaqt-settings-service> $<TARGET_FILE:qindaqt_keyring_policy_compositor> "${PROJECT_SOURCE_DIR}/data/settings")
+set_tests_properties(keyring_resident_policy PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 90 LABELS "keyring;dbus;private-fixture")

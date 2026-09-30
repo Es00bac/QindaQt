@@ -211,3 +211,7 @@ the reconstruction paths replay the commit.
 Scheduling, per-application exceptions, inhibition, and the complete
 multi-page/applet-based settings catalog remain later work. See
 [ADR-0012](../adr/0012-persist-notification-quieting-through-settings1.md).
+
+## Native keyring preferences
+
+[KeyringPreferences](keyring-client.md) consumes keyring.lockOnScreenLock (boolean, default false) and keyring.lockAfterIdleMinutes (integer, 0–1440, default 0 means never) through the public asynchronous Settings1 client. The appended Keyring domain preserves existing enum ordinals and prefix validation; schema version remains 2. Values contain policy only, never passwords or item contents. Effective values change only after matching-owner confirmed snapshots, and uncertain saves are never automatically replayed or reported as persisted.

@@ -18,8 +18,11 @@ public:
     int openPromptConnection();
     bool live();
     QString basename() const { return basename_; }
+    QString compositorOwner() const { return compositorOwner_; }
+    quint64 compositorPid() const { return static_cast<quint64>(compositorPid_); }
 Q_SIGNALS:
     void revoked();
+    void attached(); // Emitted only after live owner/PID/ordinary-peer admission.
 private:
     int connectPeer(const QString &,qint64 expected,int *pidfd=nullptr);
     void clear();

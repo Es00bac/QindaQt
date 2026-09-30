@@ -173,3 +173,32 @@ lock/search/tamper, caller isolation, cancellation/disconnect, control
 rekey/bounds/activation, catalog recovery, sole-writer arbitration, session
 attachment and dump policy. Native rendering/output selection remains a
 nested/live Wayland qualification boundary; no live bus or unit is used here.
+
+## Native Settings prompt methods
+
+[ADR-0302](../adr/0302-native-passwords-keys-client-and-policy.md) adds ListItems authenticated metadata, caller-owned ReadSecretWithPrompt, old-token-authenticated ChangePasswordWithPrompt, and explicit DeleteItemWithPrompt. Reveal performs fresh password authentication even while unlocked. Native mutation completion requires actual durable save. Labels/caller metadata travel through a bounded stdin pipe; passwords and approvals use bounded stdout frames, never process arguments. See the [public client boundary](keyring-client.md).
+
+## Resident lock policy source checkpoint
+
+The in-progress PK4 composition consumes only confirmed typed Settings1
+`keyring.lockOnScreenLock` and `keyring.lockAfterIdleMinutes` values. It keeps
+last confirmed policy across Settings1 loss. Enabled screen policy locks on any
+state other than admitted native Unlocked. Enabled idle policy locks on actual
+`ext-idle-notify-v1` idle events and on observation uncertainty; resume never
+unlocks a collection. Standard Secret Service sharing still follows the
+collection preference, including the default false screen-lock preference.
+
+`GetPolicyState() -> a{sv}` and `PolicyStateChanged(a{sv})` carry exactly five
+booleans SettingsAvailable, ScreenLockAvailable, IdleAvailable, ScreenLocked,
+LockOnScreenLock, and one signed integer LockAfterIdleMinutes (0–1440). Native
+Settings disclosure requires admitted Unlocked independently of the collection
+preference. The client rechecks pinned-daemon policy before publishing a reveal.
+
+The private attachment and QCore idle seams remain checkpointed for extraction to
+public native session collaborators. They require an exact admitted compositor
+owner/PID and an owned ordinary display connection, never a locker connection
+or a guessed display. The complete 19-row private keyring suite passes, including
+five resident policy cases, eleven native prompt cases, real ordinary Wayland
+idle events, owner/peer loss and late reveal privacy with collection-lock disabled.
+Public service extraction/consumer rewiring and native rendered-overlay
+qualification remain separate PK4 acceptance boundaries.

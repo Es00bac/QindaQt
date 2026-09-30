@@ -18,7 +18,7 @@ custom and default names when restored under fresh IDs; unsaved live topology is
 automatically restored on restart. The fork consumer passes 16 manager checks plus the adjacent six; native polkit passes nine manager checks and strict documentation.
 The native keyring storage core passes four focused manager checks on both hosts and
 strict documentation. Its native Secret Service daemon passes nine manager gates, including
-20 private-bus protocol/lifetime cases with real clients. Native PAM login/rekey is source-integrated; the full UI, Secret portal and import remain active/queued. Remaining native service work
+20 private-bus protocol/lifetime cases with real clients. Native PAM login/rekey is source-integrated; resident disclosure/privacy and native client checkpoint `d8815298` passes 22 manager checks; the full rendered UI, Secret portal and import remain active/queued. Remaining native service work
 is active, with no complete-program or installed-delivery claim.
 
 ## September 29 — Gather minimized items and expose native application placement

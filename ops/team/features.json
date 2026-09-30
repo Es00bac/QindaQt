@@ -1037,6 +1037,11 @@
             "kind": "commit",
             "reference": "37ebb332569c9676564cea4d460197b7c1a07a3e",
             "summary": "PF7 native private locker/PAM source integrated with fork dca1e5b3 (manager ae9d5ca9): real33-check private native matrix and manager integrated authentication4/4, strict docs passed. This records a bounded source foundation; PF8 services, installed trust binding, physical qualification and full Plasma-free delivery remain open."
+          },
+          {
+            "kind": "commit",
+            "reference": "d881529861e5cd05b63f20375bb8b112f6788918",
+            "summary": "Resident keyring/privacy client source checkpoint: manager targeted build and 22/22 focused CTests pass. Observed native Unlocked gates reveal/copy independently of collection-lock preference; unknown/lock/owner/page/late-reply retirement and true ordinary Wayland idle are covered. Shared public extraction, fully rendered native UI and installed adoption remain open; no milestone state/weight change."
           }
         ]
       },
