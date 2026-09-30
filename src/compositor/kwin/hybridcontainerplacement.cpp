@@ -321,6 +321,7 @@ DirectInteractionResult HybridContainerPlacementController::handleShadedMove(
         // leaves maximize, so unrolling restores its restore size where the
         // strip was put rather than snapping back to the maximize area.
         if (moved) {
+            m_maximizeFractions.remove(containerId);
             if (const auto restoreFrame = m_maximizeRestoreFrames.take(containerId);
                 restoreFrame.isValid()) {
                 m_shadeRestoreSizes.insert(containerId, restoreFrame.size());
@@ -357,15 +358,18 @@ DirectInteractionResult HybridContainerPlacementController::handleResize(
         // border while maximized, so this is the keyboard resize): the
         // gesture starts from the maximized frame, and Cancel re-maximizes.
         const auto restoreFrame = m_maximizeRestoreFrames.take(containerId);
+        const auto fraction=m_maximizeFractions.take(containerId);
         if (beginDrag(m_resizeDrags, containerId, intent.source.edges, &error)) {
             if (restoreFrame.isValid()) {
                 auto &drag = m_resizeDrags[containerId];
                 drag.resumeMaximizeRestore = restoreFrame;
+                drag.resumeMaximizeFraction = fraction;
             }
             return DirectInteractionResult::handled();
         }
         if (restoreFrame.isValid()) {
             m_maximizeRestoreFrames.insert(containerId, restoreFrame);
+            m_maximizeFractions.insert(containerId,fraction);
         }
         m_refusedGestures.insert(containerId);
         return DirectInteractionResult::rejected(std::move(error));
@@ -573,6 +577,7 @@ void HybridContainerPlacementController::forgetContainer(
     m_resizeDrags.remove(containerId);
     m_refusedGestures.remove(containerId);
     m_maximizeRestoreFrames.remove(containerId);
+    m_maximizeFractions.remove(containerId);
     m_aspectPins.remove(containerId);
     m_shadeStripFrames.remove(containerId);
     m_shadeRestoreSizes.remove(containerId);

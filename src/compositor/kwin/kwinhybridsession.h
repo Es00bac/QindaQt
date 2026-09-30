@@ -11,6 +11,7 @@
 #include "hybridshadecontroller.h"
 #include "hybridtaskidentitypolicy.h"
 #include "windowmanagementconfig.h"
+#include <qindaqt/window_management/controller.h>
 
 #include <QObject>
 #include <QPalette>
@@ -62,6 +63,7 @@ class KWinDockPreview;
 class KWinGroupContextMenu;
 class KWinGroupContextManager;
 class KWinHybridSceneFactory;
+class KWinSemanticWindowPlacement;
 class KWinHybridGroupStacking;
 class KWinIconChipPresenter;
 class KWinInteractionFilter;
@@ -153,6 +155,12 @@ public:
         const QString &windowId,
         ShellWindowAction action,
         QString *error = nullptr);
+    // Native semantic broker dispatch; transport must authenticate opt-in/owner
+    // and capture currentness before this synchronous owning-thread admission.
+    [[nodiscard]] WindowManagement::Result executeWindowManagementCommand(
+        const WindowManagement::Command &command,
+        const WindowManagement::ResolvedTarget &target,
+        const WindowManagement::ResolvedTarget &destination = {});
     void setChromePalette(const HybridChrome::ChromePalette &palette);
     // Container chrome arrangement plus palette (ADR-0129).
     void setChromeStyle(const HybridChrome::ChromeStyle &style);
@@ -356,6 +364,7 @@ private:
     std::unique_ptr<KWinHybridSceneFactory> m_sceneFactory;
     std::unique_ptr<HybridInteractionRuntime> m_runtime;
     std::unique_ptr<KWinApplicationPlacementServer> m_applicationPlacement;
+    std::unique_ptr<KWinSemanticWindowPlacement> m_semanticWindowPlacement;
     std::unique_ptr<KWinChromeManager> m_chromeManager;
     std::unique_ptr<MemberChromeVisibilityController> m_memberChromeVisibility;
     std::unique_ptr<KWinChromeSceneLifecycle> m_chromeSceneLifecycle;

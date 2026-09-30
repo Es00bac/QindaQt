@@ -23,6 +23,7 @@ class ShellTaskFactsController;
 namespace QindaQt::Compositor::KWinIntegration {
 
 class KWinControlEndpoint;
+class KWinWindowManagementService;
 class KWinPointerCornerReserver;
 class KWinTouchEdgeReserver;
 class KWinTouchPreferences;
@@ -71,6 +72,7 @@ private:
     std::unique_ptr<KWinShellVisibilityPublisher> m_shellVisibility;
     std::unique_ptr<KWinChromeAppearance> m_chromeAppearance;
     std::unique_ptr<KWinHybridSession> m_hybridSession;
+    std::unique_ptr<KWinWindowManagementService> m_windowManagement;
     std::unique_ptr<KWinShellWindowIdentityPublisher> m_shellIdentity;
     std::unique_ptr<KWinShellTaskFactsPublisher> m_shellTaskFacts;
     std::unique_ptr<QtBusShellCredentialSource> m_shellCredentials;

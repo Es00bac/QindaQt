@@ -15,7 +15,7 @@ def main():
         evidence={"snapshots":[],"mappedLibraries":sorted({line.split()[-1] for line in Path(f"/proc/{os.getppid()}/maps").read_text().splitlines() if "qindaqt_compositor.so" in line})}
         try:
             while child.poll() is None and time.monotonic()<deadline:
-                snapshot = {"hybrid": control.hybrid(), "windows": control.windows()}
+                snapshot = {"hybrid": control.hybrid(), "windows": control.windows(), "outputs": control.call("Outputs")}
                 evidence["snapshots"].append(snapshot)
                 # AGENT-GUARD: Qt destroys surfaces before process exit. A
                 # trailing shutdown snapshot is not the committed result of

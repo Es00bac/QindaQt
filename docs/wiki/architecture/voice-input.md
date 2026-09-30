@@ -237,3 +237,14 @@ session.
 - [Voice console](../apps/voice.md)
 - [Gabbee interop evidence](../development/gabbee-interop-evidence.md)
 - [Module boundaries](module-boundaries.md)
+
+## Native window-management command extension
+
+The owner requested management through the existing command-mode hotkey, with
+composable operations, named subjects, appearance and fractional placement.
+[Native semantic commands](window-management-commands.md) and
+[ADR-0301](../adr/0301-share-semantic-window-management-with-voice.md) define the
+shared boundary. Its bounded command/geometry/context policy is executable in
+focused tests; compositor transport/native execution and Gabbee integration are
+in progress. This extension does not dispatch dictation or modify Voice1 capture
+methods, and unsupported/refused management is not typed as fallback text.

@@ -10,7 +10,7 @@ target_sources(qindaqt_voice_preferences
 target_link_libraries(qindaqt_voice_preferences
     PUBLIC QindaQt::SettingsClient QindaQt::VoiceProtocol Qt6::Core)
 target_compile_features(qindaqt_voice_preferences PUBLIC cxx_std_20)
-set_target_properties(qindaqt_voice_preferences PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(qindaqt_voice_preferences PROPERTIES CXX_EXTENSIONS OFF POSITION_INDEPENDENT_CODE ON)
 qindaqt_enable_warnings(qindaqt_voice_preferences)
 
 install(TARGETS qindaqt_voice_preferences EXPORT QindaQtTargets

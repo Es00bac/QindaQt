@@ -60,6 +60,12 @@ public:
     // shaded is still refused. Implemented in hybridcontainermaximize.cpp.
     [[nodiscard]] bool maximize(const QString &containerId, QString *error = nullptr);
     [[nodiscard]] bool restore(const QString &containerId, QString *error = nullptr);
+    // Input-independent fractional maximize follows usable-area changes and
+    // keeps the same pre-maximize restore frame even when its fraction changes.
+    [[nodiscard]] bool maximizeFraction(const QString &containerId, double fraction,
+                                       QString *error = nullptr);
+    [[nodiscard]] bool placeFrame(const QString &containerId, const QRect &frame,
+                                 QString *error = nullptr);
 
     // Aspect-ratio lock (ADR-0162). The pin holds the wanted content-area
     // ratio (outer frame minus shared chrome) and constrains every subsequent
@@ -145,6 +151,7 @@ private:
         // the maximized frame the gesture started from.
         std::optional<QRect> resumeMaximizeRestore;
         QRect cancelFrame;
+        double resumeMaximizeFraction = 1.0;
     };
 
     [[nodiscard]] const Core::WindowContainer *container(
@@ -169,6 +176,7 @@ private:
     // frame with the original restore frame reinstated.
     [[nodiscard]] DirectInteractionResult cancelMaximizedDrag(
         const QString &containerId, const FrameDrag &drag);
+    [[nodiscard]] std::optional<QRect> maximizedFrame(const QString &containerId) const;
     [[nodiscard]] static QRect resizedFrame(const FrameDrag &drag,
                                             const QPointF &delta,
                                             const std::optional<double> &pinnedContentRatio);
@@ -182,6 +190,7 @@ private:
     QHash<QString, FrameDrag> m_moveDrags;
     QHash<QString, FrameDrag> m_resizeDrags;
     QHash<QString, QRect> m_maximizeRestoreFrames;
+    QHash<QString, double> m_maximizeFractions;
     // AGENT-GUARD: containers whose Begin was refused (maximized, shaded).
     // The interaction controller keeps sending Update for the rest of the
     // gesture, and re-reporting "has no active baseline" once per pointer

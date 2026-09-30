@@ -384,6 +384,13 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinapplicationplacementserver.cpp
             kwin/kwinapplicationplacementserver.h
             kwin/kwinhybridapplicationplacement.cpp
+            kwin/kwinwindowmanagementruntime.h
+            kwin/kwinwindowmanagementruntime.cpp
+            kwin/kwinwindowmanagementservice.h
+            kwin/kwinwindowmanagementservice.cpp
+            kwin/kwinhybridwindowmanagement.cpp
+            kwin/kwinsemanticwindowplacement.cpp
+            kwin/kwinsemanticwindowplacement.h
             kwin/kwinhybridsession.cpp
             kwin/kwinhybridsession.h
             kwin/chromeappearancepalette.cpp
@@ -449,6 +456,8 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             QindaQt::DecorationPainter
             QindaQt::CompositorShellActions
             QindaQt::Hybrid
+            QindaQt::WindowManagement
+            QindaQt::WindowManagementTransport
             QindaQt::ApplicationWindowManagement
             QindaQt::ApplicationWindowProtocol
             PkgConfig::QINDAQT_APP_WM_WAYLAND_SERVER

@@ -22,6 +22,7 @@ target_link_libraries(
     qindaqt_hybrid_container_shade_tests
     PRIVATE
         QindaQt::Hybrid
+        QindaQt::WindowManagement
         QindaQt::HybridChrome
         QindaQt::HybridConstraints
         QindaQt::HybridInput

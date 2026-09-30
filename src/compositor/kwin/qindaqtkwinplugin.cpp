@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqtkwinplugin.h"
+#include "kwinwindowmanagementservice.h"
 
 #include "kwincontrolendpoint.h"
 #include "kwinpointercornerreserver.h"
@@ -189,6 +190,10 @@ QindaQtKWinPlugin::QindaQtKWinPlugin()
                                 // its delivery remains an authenticated unicast.
                                 QDBusConnection::ExportScriptableSlots
                                     | QDBusConnection::ExportScriptableSignals);
+    if (m_registeredObject) {
+        m_windowManagement=std::make_unique<KWinWindowManagementService>(*m_registry,*m_hybridSession,m_bus);
+        if(!m_windowManagement->start()) qWarning("QindaQt window-management service could not register");
+    }
     if (!m_registeredObject || !m_registeredShellActionObject) {
         qWarning("QindaQt compositor control could not register on the session bus");
     }
@@ -316,6 +321,7 @@ QindaQtKWinPlugin::~QindaQtKWinPlugin()
     m_endpoint->setHybridDiagnosticsProvider({});
     m_endpoint->setHybridStateProviders({}, {});
     m_endpoint->setDevelopmentCompositorReinitializer({});
+    m_windowManagement.reset();
     if (m_hybridSession) {
         m_hybridSession->shutdown();
         m_hybridSession.reset();

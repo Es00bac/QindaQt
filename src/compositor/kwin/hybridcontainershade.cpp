@@ -126,8 +126,8 @@ bool HybridContainerPlacementController::unshade(
     // ADR-0282: a container still maximized unrolls into the maximize area as
     // it is now (the panels may have changed while it was rolled up). Moving
     // the strip leaves maximize, so a maximized strip has not moved.
-    const QRect workArea = isMaximized(containerId) && m_workArea
-        ? m_workArea(containerId) : QRect{};
+    const QRect workArea = isMaximized(containerId)
+        ? maximizedFrame(containerId).value_or(QRect{}) : QRect{};
     const QRect restoreFrame = workArea.isValid()
         ? workArea : QRect(stripFound->topLeft(), *sizeFound);
     if (!reflow(containerId, restoreFrame, error)) {

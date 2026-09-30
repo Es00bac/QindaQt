@@ -2087,7 +2087,8 @@ reproduces on the clean tree and is unrelated.
 
 - [x] Optional versioned application SDK: same-connection source/new-window authority, atomic new tab or four-direction tile placement, and solo-source container creation (candidate `6db8864b`, ADR-0298).
 - [x] Private installed SDK consumer and real 1080p/150% native fixtures, each with 77 request results and independent scene evidence.
-- [ ] Shared semantic window-management commands and Gabbee command-hotkey integration, with bounded current/named targets, ambiguity refusal, inset maximize, regional geometry, container appearance, tabs/splits and application launches. The owner's spoken examples are not an exhaustive operation list. Dictation does not dispatch window management.
+- [x] Authenticated semantic compositor source endpoint20 capabilities (`e4ed1520`): current/named target admission, single-use expiry/owner/consent/lock fences, regional/inset geometry, restore, container appearance and tabs/splits; normal and actual150% private native rows pass.
+- [ ] Gabbee command-hotkey/parser consumer, atomic grouping and correlated installed-application launches. The owner's examples are not an exhaustive operation list. Dictation never dispatches window management.
 - [ ] Shared interactive placement chooser and consolidated installed-session qualification.
 
 ### Native key-store PAM and display source checkpoint

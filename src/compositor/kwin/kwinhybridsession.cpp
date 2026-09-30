@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "kwinhybridsession.h"
+#include "kwinsemanticwindowplacement.h"
 #include "kwinapplicationplacementserver.h"
 
 #include "qindaqt/decoration_painter/decoration_painter.h"
