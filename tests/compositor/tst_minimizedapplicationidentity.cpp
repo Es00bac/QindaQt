@@ -12,6 +12,7 @@ class MinimizedApplicationIdentityTests final : public QObject
 private Q_SLOTS:
     void desktopMetadataLeadsIconAndApplicationLabel();
     void desktopFileAndClassFallbacksRemainMeaningful();
+    void genericWaylandIconsAreNeverApplicationCandidates();
 };
 
 void MinimizedApplicationIdentityTests::desktopMetadataLeadsIconAndApplicationLabel()
@@ -26,6 +27,19 @@ void MinimizedApplicationIdentityTests::desktopMetadataLeadsIconAndApplicationLa
              QStringList({QStringLiteral("example-editor"),
                           QStringLiteral("org.example.Editor"),
                           QStringLiteral("editor")}));
+}
+
+void MinimizedApplicationIdentityTests::genericWaylandIconsAreNeverApplicationCandidates()
+{
+    const auto identity = resolveMinimizedApplicationIdentity(
+        QStringLiteral("org.example.Browser.desktop"), QStringLiteral("wayland"),
+        QStringLiteral("Example Browser"), QStringLiteral("application-x-executable"),
+        QStringLiteral("Private window"));
+    QCOMPARE(identity.iconThemeCandidates,
+             QStringList({QStringLiteral("org.example.Browser")}));
+    QVERIFY(isGenericMinimizedIconName(QStringLiteral("wayland")));
+    QVERIFY(isGenericMinimizedIconName(QStringLiteral("application-x-executable")));
+    QVERIFY(!isGenericMinimizedIconName(QStringLiteral("example-browser")));
 }
 
 void MinimizedApplicationIdentityTests::desktopFileAndClassFallbacksRemainMeaningful()

@@ -36,7 +36,7 @@ target_sources(
 # other modules (see docs/wiki/adr/0042-launcher-model-without-execution.md).
 target_link_libraries(qindaqt_shell_launcher PUBLIC Qt6::Core)
 target_compile_features(qindaqt_shell_launcher PUBLIC cxx_std_20)
-set_target_properties(qindaqt_shell_launcher PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(qindaqt_shell_launcher PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_shell_launcher)
 
 install(

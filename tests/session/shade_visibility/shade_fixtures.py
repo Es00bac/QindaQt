@@ -129,10 +129,13 @@ class FixtureLauncher:
         return process
 
     def gtk(self, title: str, colour: str, mode: str, width: int, height: int,
-            backend: str = "wayland") -> subprocess.Popen:
+            backend: str = "wayland", application_id: str = "") -> subprocess.Popen:
+        arguments = [sys.executable, str(_HERE / "shade_fixture_gtk.py"), title, colour,
+                     str(self._event_log), mode, str(width), str(height)]
+        if application_id:
+            arguments.append(application_id)
         return self.spawn(
-            [sys.executable, str(_HERE / "shade_fixture_gtk.py"), title, colour,
-             str(self._event_log), mode, str(width), str(height)],
+            arguments,
             {"GDK_BACKEND": backend, "GTK_A11Y": "none", "NO_AT_BRIDGE": "1",
              "SHADE_TOKEN_FILE": str(self._token_file)})
 

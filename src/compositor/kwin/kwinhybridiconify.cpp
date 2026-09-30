@@ -41,21 +41,20 @@ bool fail(QString *error, QString message)
     return false;
 }
 
-QImage chipIcon(const KWin::Window *window, qreal devicePixelRatio,
-                const QStringList &themeCandidates)
+QImage chipIcon(qreal devicePixelRatio, const QStringList &themeCandidates)
 {
     QIcon icon;
     for (const QString &candidate : themeCandidates) {
+        if (isGenericMinimizedIconName(candidate)) {
+            continue;
+        }
         icon = QIcon::fromTheme(candidate);
         if (!icon.isNull()) {
             break;
         }
     }
-    // KWin's client icon is a useful last resort, but some Wayland clients
-    // inherit the generic compositor icon, so metadata lookup must come first.
-    if (icon.isNull()) {
-        icon = window->icon();
-    }
+    // AGENT-GUARD: KWin's inherited Window::icon() can be the generic
+    // Wayland mark. Missing desktop icons use the app monogram in the chip.
     if (icon.isNull()) {
         return {};
     }
@@ -82,7 +81,7 @@ HybridChrome::IconChipRequest chipRequest(const QString &windowId,
         && window->caption().trimmed() != identity.label) {
         request.title += QStringLiteral(" — ") + window->caption().trimmed();
     }
-    request.icon = chipIcon(window, devicePixelRatio, identity.iconThemeCandidates);
+    request.icon = chipIcon(devicePixelRatio, identity.iconThemeCandidates);
     request.anchor = anchor;
     request.bounds = bounds;
     request.devicePixelRatio = devicePixelRatio;
@@ -209,7 +208,8 @@ bool KWinHybridSession::iconifyWindow(const QString &windowId, QString *error)
     const QString applicationId = ::QindaQt::Compositor::resolveApplicationId(
         window->desktopFileName(), window->resourceClass(), {});
     const auto desktopApp = m_workspaceApplications
-        ? m_workspaceApplications->find(applicationId) : std::nullopt;
+        ? m_workspaceApplications->findForWindow(window->desktopFileName(),
+              applicationId, window->resourceClass()) : std::nullopt;
     // The chip anchors at the title bar's leading edge: the frame's top-left.
     const auto plan = HybridChrome::ChromeIconChip::layout(
         chipRequest(windowId, window, frame.topLeft(), bounds, m_chromeStyle.palette,
@@ -311,7 +311,8 @@ bool KWinHybridSession::publishIconChip(const QString &windowId, QString *error)
     const QString applicationId = ::QindaQt::Compositor::resolveApplicationId(
         window->desktopFileName(), window->resourceClass(), {});
     const auto desktopApp = m_workspaceApplications
-        ? m_workspaceApplications->find(applicationId) : std::nullopt;
+        ? m_workspaceApplications->findForWindow(window->desktopFileName(),
+              applicationId, window->resourceClass()) : std::nullopt;
     const auto plan = HybridChrome::ChromeIconChip::layout(
         chipRequest(windowId, window, record->chipFrame.topLeft(), bounds,
                     m_chromeStyle.palette, desktopApp ? &*desktopApp : nullptr), error);

@@ -14,6 +14,8 @@ struct MinimizedApplicationIdentity final
 
 // Resolves display identity from an installed desktop entry first, then
 // compositor metadata, while retaining the window caption as a useful fallback.
+[[nodiscard]] bool isGenericMinimizedIconName(const QString &iconName);
+
 [[nodiscard]] MinimizedApplicationIdentity resolveMinimizedApplicationIdentity(
     const QString &desktopFileName,
     const QString &resourceClass,

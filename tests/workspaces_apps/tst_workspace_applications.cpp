@@ -4,12 +4,14 @@
 #include <QFile>
 #include <QGuiApplication>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QTemporaryDir>
 #include <QtTest>
 using namespace QindaQt::WorkspacesApps;
 class ApplicationsTest final : public QObject {
   Q_OBJECT
 private slots:
+  void init() { QTest::failOnWarning(); }
   void initTestCase() {
     const QString root = QString::fromUtf8(qgetenv("XDG_DATA_HOME"));
     QVERIFY(QDir().mkpath(root + QStringLiteral("/applications")));
@@ -39,11 +41,53 @@ private slots:
                         .replace(QStringLiteral("%%U"), QStringLiteral("%U"))));
     QVERIFY(desktop(QStringLiteral("workspace-broken"),
                     QStringLiteral("/nonexistent-qindaqt-test-command")));
+    auto identityEntry = [&](const QString &id, const QString &name,
+                             const QString &icon, const QString &startupClass) {
+      QFile file(root + QStringLiteral("/applications/") + id
+                 + QStringLiteral(".desktop"));
+      if (!file.open(QIODevice::WriteOnly))
+        return false;
+      const auto bytes = QStringLiteral(
+          "[Desktop Entry]\nType=Application\nName=%1\nIcon=%2\nExec=/bin/true\nStartupWMClass=%3\n")
+          .arg(name, icon, startupClass).toUtf8();
+      return file.write(bytes) == bytes.size();
+    };
+    QVERIFY(identityEntry(QStringLiteral("browser-variant"),
+                          QStringLiteral("Browser Variant"),
+                          QStringLiteral("browser-variant-icon"),
+                          QStringLiteral("Vendor.Browser.Window")));
+    QVERIFY(identityEntry(QStringLiteral("exact-browser"),
+                          QStringLiteral("Exact Browser"),
+                          QStringLiteral("exact-browser-icon"),
+                          QStringLiteral("LegacyBrowser")));
+    QVERIFY(identityEntry(QStringLiteral("shared-one"), QStringLiteral("Shared One"),
+                          QStringLiteral("shared-one-icon"),
+                          QStringLiteral("SharedWindowClass")));
+    QVERIFY(identityEntry(QStringLiteral("shared-two"), QStringLiteral("Shared Two"),
+                          QStringLiteral("shared-two-icon"),
+                          QStringLiteral("SharedWindowClass")));
     QProcess cache;
     cache.start(QStringLiteral("kbuildsycoca6"),
                 {QStringLiteral("--noincremental")});
     QVERIFY(cache.waitForFinished(10000));
     QCOMPARE(cache.exitCode(), 0);
+  }
+  void startupWmClassResolvesAUniqueWindowAlias() {
+    DesktopApplications applications;
+    const auto browser = applications.findForWindow(
+        {}, QStringLiteral("vendor.browser.window"), {});
+    QVERIFY(browser);
+    QCOMPARE(browser->id, QStringLiteral("browser-variant"));
+    QCOMPARE(browser->name, QStringLiteral("Browser Variant"));
+    QCOMPARE(browser->iconName, QStringLiteral("browser-variant-icon"));
+  }
+  void exactIdPrecedesAliasesAndAmbiguousAliasesFailClosed() {
+    DesktopApplications applications;
+    const auto exact = applications.findForWindow(
+        QStringLiteral("exact-browser"), {}, QStringLiteral("LegacyBrowser"));
+    QVERIFY(exact);
+    QCOMPARE(exact->id, QStringLiteral("exact-browser"));
+    QVERIFY(!applications.findForWindow({}, {}, QStringLiteral("SharedWindowClass")));
   }
   void missingApplicationIsReported() {
     DesktopApplications applications;
@@ -61,6 +105,8 @@ private slots:
     QCOMPARE(app->name, QStringLiteral("Workspace Test"));
     QSignalSpy finished(&applications, &DesktopApplications::launchFinished);
     QString error;
+    QTest::ignoreMessage(QtWarningMsg,
+        "Failed to determine systemd version, falling back to extremely legacy forking mode.");
     QVERIFY2(applications.launch(
                  QStringLiteral("workspace-test"),
                  {QStringLiteral("file:///tmp/a%20document.txt")}, {}, &error),
@@ -80,6 +126,8 @@ private slots:
   void failedExecutableReportsAsynchronousFailure() {
     DesktopApplications applications;
     QSignalSpy finished(&applications, &DesktopApplications::launchFinished);
+    QTest::ignoreMessage(QtWarningMsg,
+        QRegularExpression(QStringLiteral(".*Could not find the program.*")));
     QVERIFY(applications.launch(QStringLiteral("workspace-broken"), {}));
     QTRY_COMPARE_WITH_TIMEOUT(finished.count(), 1, 10000);
     QVERIFY(!finished.first().at(1).toBool());

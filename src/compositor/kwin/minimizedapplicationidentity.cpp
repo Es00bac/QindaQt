@@ -33,6 +33,18 @@ void appendUnique(QStringList *values, const QString &value)
 
 } // namespace
 
+bool isGenericMinimizedIconName(const QString &iconName)
+{
+    const QString name = iconName.trimmed().toLower();
+    return name.isEmpty() || name == QStringLiteral("wayland")
+        || name == QStringLiteral("xwayland") || name == QStringLiteral("unknown")
+        || name == QStringLiteral("application")
+        || name == QStringLiteral("application-x-executable")
+        || name == QStringLiteral("application-x-generic")
+        || name == QStringLiteral("application-x-unknown")
+        || name == QStringLiteral("application-default-icon");
+}
+
 MinimizedApplicationIdentity resolveMinimizedApplicationIdentity(
     const QString &desktopFileName,
     const QString &resourceClass,
@@ -62,9 +74,14 @@ MinimizedApplicationIdentity resolveMinimizedApplicationIdentity(
         result.label = QStringLiteral("Window");
     }
 
-    appendUnique(&result.iconThemeCandidates, desktopIconName);
-    appendUnique(&result.iconThemeCandidates, iconId(desktopFileName));
-    if (!isGenericClass(resourceClass)) {
+    if (!isGenericMinimizedIconName(desktopIconName)) {
+        appendUnique(&result.iconThemeCandidates, desktopIconName);
+    }
+    const QString desktopIcon = iconId(desktopFileName);
+    if (!isGenericMinimizedIconName(desktopIcon)) {
+        appendUnique(&result.iconThemeCandidates, desktopIcon);
+    }
+    if (!isGenericClass(resourceClass) && !isGenericMinimizedIconName(resourceClass)) {
         appendUnique(&result.iconThemeCandidates, resourceClass);
     }
     return result;
