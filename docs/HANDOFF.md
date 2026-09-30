@@ -1,3 +1,9 @@
+## 2026-09-30 — Shared ordinary compositor and idle boundaries
+
+Exact candidate `8c409f2cb506fc4e375ff6a5f2dc42027c891977` incorporates the public attachment/idle extraction and the first-owner lifetime repair. Selected session admission, actual unique bus owner/kernel peer/PIDFD and the same actual D-Bus daemon bind ordinary connections; this identity/lifetime proof does not grant locker authority or executable attestation. A queued initial owner advertisement preserves an already admitted live owner, while actual retained-owner loss/reclaim revokes it. Public idle observation consumes the validated descriptor with a single owner and uses real ext-idle-notify events.
+
+Manager integrated targeted build, five fatal-warning CTests, strict MkDocs and 461-document link validation pass, covering public attachment, actual Wayland idle, native monitor and both read-only transports. Candidate attachment repair passes 12 Qt checks without failure/skip. Keyring and native lock consumers, production lock policy and consolidated installation remain separate outcomes. No host display, lock or sleep operation occurred.
+
 ## 2026-09-30 — Native lock preferences and bounded migration
 
 Exact candidate `c5d0b7cac85d29b01745fbeb1e691c34cd9e1dd2` adds Settings1-native automatic lock, timeout, resume and grace preferences, with a read-only bounded legacy snapshot and atomic marker/value import. Explicit native choices win. The integrated schema retains both published Keyring domain 10 and appended Lock domain 11; the domain coverage fixture includes both.

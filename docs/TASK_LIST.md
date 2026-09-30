@@ -2096,3 +2096,7 @@ reproduces on the clean tree and is unrelated.
 ### Native key-store PAM and display source checkpoint
 
 Integrated candidate `f0d6edae17ea722a3d8604902cbe142e85f1ad69`: fixed SYSTEM owner/PIDFD token delivery and optional login/password-change handoff; native session display attachment pins an ordinary Wayland connection for prompts rather than guessing a socket. Manager integrated build22 targets and12/12 focused fatal-warning CTests pass, including actual private display-owner/FD/launcher and synthetic PAM failures. Production activation/install, real credential migration and physical native prompt qualification remain explicit gates; native Passwords & Keys PK4 follows.
+
+### Shared ordinary compositor and idle source boundary
+
+Integrated candidate `8c409f2cb506fc4e375ff6a5f2dc42027c891977` adds public ordinary compositor attachment and real Wayland idle modules. Manager targeted build and five fatal-warning focused CTests pass, including the first-owner advertisement repair and actual bus-daemon identity. Consumer rewiring and native policy composition remain separate gates; this does not claim installed locker authority.
