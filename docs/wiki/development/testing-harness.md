@@ -4204,3 +4204,19 @@ remain covered. Outbound responses preflight a closed channel or occupied queue
 before encoding another plaintext allocation; the by-value original frame is
 wiped on every branch. No private production send/backlog bypass is added just
 to mirror this implementation detail in a test.
+
+## Native readonly lock observation
+
+`qindaqt.native-lock-monitor` covers native protection combinations, exact
+owner/PID admission, stale unlocked replies, failed-query epochs, immediate
+getter revocation, direct signal-observer revocation, owner replacement and
+transport loss. `qindaqt.native-lock-qt-transport` runs a real disposable D-Bus
+daemon with QCoreApplication only: independently registered same-PID owners and
+forged signals cannot disclose state; accepted native Locked/Protected changes,
+denied attachment and bus loss are exercised. Its fixture exposes no RequestLock
+method. The native and legacy Qt transport tests share one isolated bus fixture.
+Run these focused rows with `QT_FATAL_WARNINGS=1` and `--no-tests=error`.
+
+These gates qualify the [readonly native API](../architecture/native-session-lock.md),
+not live sleep, a system bus, production locker deployment or a real owner
+password. PF8 service policy and Settings qualification remain distinct gates.
