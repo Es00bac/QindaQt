@@ -63,7 +63,9 @@ int main(int argc, char **argv)
             .filePath(QStringLiteral("powerdevilrc"));
     ResidentSettingsService service(sessionBus, std::move(*active),
                                     std::move(*legacy), profileDefaults, storage,
-                                    powerDevilPreferences);
+                                    powerDevilPreferences,
+                                    QDir(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation))
+                                        .filePath(QStringLiteral("kscreenlockerrc")));
     const auto started = service.start();
     if (!started.ok()) {
         std::fprintf(stderr, "qindaqt-settings-service: %s: %s\n",

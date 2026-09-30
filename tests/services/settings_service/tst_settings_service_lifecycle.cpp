@@ -144,7 +144,70 @@ private slots:
     void validatesProfileAndUserCompatibilityDocuments();
     void startsPastUserOverridesThisSchemaCannotNormalize();
     void importsPowerDevilPreferencesOnlyAfterOwningSettings1();
+    void importsNativeLockPreferencesAfterOwnershipAndOnlyOnce();
 };
+
+void SettingsServiceLifecycleTests::importsNativeLockPreferencesAfterOwnershipAndOnlyOnce()
+{
+    QProcess daemon;
+    daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
+                 {QStringLiteral("--session"), QStringLiteral("--nofork"), QStringLiteral("--print-address=1")});
+    QVERIFY(daemon.waitForStarted());
+    QVERIFY(daemon.waitForReadyRead());
+    const auto address = QString::fromUtf8(daemon.readLine()).trimmed();
+    const auto name = QStringLiteral("qindaqt-lock-import-%1").arg(QCoreApplication::applicationPid());
+    const auto competitorName = name + QStringLiteral("-competitor");
+    auto bus = QDBusConnection::connectToBus(address, name);
+    auto competitorBus = QDBusConnection::connectToBus(address, competitorName);
+    QVERIFY(bus.isConnected() && competitorBus.isConnected());
+    QString error;
+    const auto active = SettingsSchema::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    const auto legacy = SettingsSchema::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error, 1);
+    QVERIFY2(active && legacy, qPrintable(error));
+    QTemporaryDir directory;
+    const auto path = directory.filePath("kscreenlockerrc");
+    QFile source(path);
+    const QByteArray original("[Daemon]\nAutolock=false\nTimeout=7\nLockOnResume=false\nLockGrace=9\nRequirePassword=false\n");
+    QVERIFY(source.open(QIODevice::WriteOnly));
+    QCOMPARE(source.write(original), original.size());
+    source.close();
+    const auto storage = directory.filePath("native.json");
+    const SettingsDocument native{.schemaVersion = active->version(), .layer = SettingLayer::UserOverrides,
+        .values = {{"lock.onResume", true}}};
+    QVERIFY(SettingsFileStore::save(storage, native, *active, nullptr, &error));
+    const auto defaults = QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/profile-defaults/qindaqt.json");
+    ResidentSettingsService owner(bus, *active, *legacy, defaults, storage, {}, path);
+    QVERIFY(owner.start().ok());
+    QCOMPARE(owner.revision(), quint64(1));
+    const auto first = SettingsFileStore::load(storage, *active);
+    QVERIFY(first.ok);
+    QCOMPARE(first.document.values.value("lock.idleTimeoutSeconds").toLongLong(), 420);
+    QCOMPARE(first.document.values.value("lock.automaticEnabled").toBool(), false);
+    QCOMPARE(first.document.values.value("lock.onResume").toBool(), true);
+    QCOMPARE(first.document.values.value("lock.graceSeconds").toLongLong(), 9);
+    QCOMPARE(first.document.values.value("lock.migration.kscreenlockerImported").toBool(), true);
+    QVERIFY(source.open(QIODevice::ReadOnly));
+    QCOMPARE(source.readAll(), original);
+    source.close();
+    const auto competitorStorage = directory.filePath("competitor.json");
+    ResidentSettingsService competitor(competitorBus, *active, *legacy, defaults, competitorStorage, {}, path);
+    QCOMPARE(competitor.start().status, SettingsServiceStartStatus::NameOwnershipConflict);
+    QVERIFY(!QFileInfo::exists(competitorStorage));
+    owner.stop();
+    QVERIFY(source.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    source.write("[Daemon]\nTimeout=12\n");
+    source.close();
+    QVERIFY(owner.start().ok());
+    QCOMPARE(owner.revision(), quint64(0));
+    const auto second = SettingsFileStore::load(storage, *active);
+    QVERIFY(second.ok);
+    QCOMPARE(second.document.values, first.document.values);
+    owner.stop();
+    QDBusConnection::disconnectFromBus(competitorName);
+    QDBusConnection::disconnectFromBus(name);
+    daemon.terminate();
+    QVERIFY(daemon.waitForFinished(5'000));
+}
 
 void SettingsServiceLifecycleTests::importsPowerDevilPreferencesOnlyAfterOwningSettings1()
 {

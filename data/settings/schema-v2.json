@@ -1183,6 +1183,44 @@
           "suspend-then-hibernate"
         ]
       }
+    },
+    {
+      "key": "lock.automaticEnabled",
+      "domain": "lock",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "lock.idleTimeoutSeconds",
+      "domain": "lock",
+      "type": "integer",
+      "default": 300,
+      "constraints": {
+        "minimum": 60,
+        "maximum": 14400
+      }
+    },
+    {
+      "key": "lock.onResume",
+      "domain": "lock",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "lock.graceSeconds",
+      "domain": "lock",
+      "type": "integer",
+      "default": 5,
+      "constraints": {
+        "minimum": 0,
+        "maximum": 300
+      }
+    },
+    {
+      "key": "lock.migration.kscreenlockerImported",
+      "domain": "lock",
+      "type": "boolean",
+      "default": false
     }
   ]
 }

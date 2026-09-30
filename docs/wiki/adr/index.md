@@ -314,3 +314,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0296: Own a native Secret Service daemon and session boundary](0296-native-keyring-daemon-boundary.md)
 
 - [ADR-0300: Authenticate native PAM token delivery through the system owner](0300-trusted-native-keyring-pam.md)
+
+- [ADR-0308: Store native lock preferences in Settings1 and import once](0308-native-lock-preferences-and-atomic-import.md)
