@@ -23,6 +23,10 @@ public:
         quint64 requestId = 0;
         Power::PowerClientRequest request;
     };
+    struct IdleStateRequest {
+        QString owner;
+        quint64 requestId = 0;
+    };
 
     void start() override { ++startCalls; }
     void stop() override { ++stopCalls; }
@@ -38,6 +42,11 @@ public:
             operationSubmitted(operations.constLast());
         }
     }
+    void queryIdleInhibitorState(const QString &owner,
+                                 const quint64 requestId) override
+    {
+        idleStateRequests.push_back({owner, requestId});
+    }
 
     void announceOwner(const QString &owner) { Q_EMIT ownerChanged(owner); }
     void invalidate(const QString &owner, const quint64 epoch, const quint64 revision)
@@ -52,6 +61,17 @@ public:
     {
         Q_EMIT snapshotReply(fetch.owner, fetch.requestId, false, {}, reasonCode);
     }
+    void replyIdleState(const IdleStateRequest &request, const quint32 supported,
+                        const quint32 active)
+    {
+        Q_EMIT idleInhibitorStateReply(request.owner, request.requestId, true,
+                                       supported, active, {});
+    }
+    void failIdleState(const IdleStateRequest &request, const QString &reason)
+    {
+        Q_EMIT idleInhibitorStateReply(request.owner, request.requestId, false,
+                                       0, 0, reason);
+    }
     void finish(const Operation &operation, const Power::OperationResult &result)
     {
         Q_EMIT operationReply(operation.owner, operation.requestId, true, result, {});
@@ -63,6 +83,7 @@ public:
 
     QList<Fetch> fetches;
     QList<Operation> operations;
+    QList<IdleStateRequest> idleStateRequests;
     std::function<void(const Operation &)> operationSubmitted;
     int startCalls = 0;
     int stopCalls = 0;
