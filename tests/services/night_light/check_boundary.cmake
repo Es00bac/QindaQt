@@ -38,13 +38,14 @@ foreach(source IN LISTS night_light_sources)
        # module never resolves its own locations or spawns processes.
        OR content MATCHES "QStandardPaths" OR content MATCHES "qgetenv"
        OR content MATCHES "getenv" OR content MATCHES "QProcess"
-       # QindaQt service siblings stay out: no Display1/Settings/KWin-side
-       # module may become a dependency of the bounded night light values.
-       OR content MATCHES "qindaqt/services/(display_|settings_|power_|portal)"
-       OR content MATCHES "QindaQt::(Display|Settings|Power)"
+       # Public Settings1 and Display1 clients are allowed for the resident
+       # scheduler; private KWin/legacy authorities and unrelated services
+       # remain outside this module.
+       OR content MATCHES "qindaqt/services/(power_|portal)"
+       OR content MATCHES "QindaQt::(Power)"
        OR content MATCHES "org.freedesktop.impl.portal")
         message(FATAL_ERROR "Forbidden night-light dependency in ${source}")
     endif()
 endforeach()
 
-message(STATUS "Night light boundary is pure values plus injected config/state transports")
+message(STATUS "Night light public Settings1/Display1 composition is isolated from KWin internals and legacy schedule authorities")

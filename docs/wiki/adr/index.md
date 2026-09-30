@@ -322,3 +322,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0305: Share ordinary compositor attachment identity and lifetime](0305-public-ordinary-compositor-attachment.md)
 - [ADR-0307: Share readonly idle observation on an admitted ordinary display FD](0307-public-ordinary-fd-idle-observation.md)
+
+- [ADR-0313: Native night-light schedule authority and Settings1 preferences](0313-native-night-light.md)

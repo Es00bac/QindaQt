@@ -8,6 +8,18 @@
     "panels.layoutProfile": "macos-inspired",
     "windowManagement.dockingModifier": "super",
     "appearance.wallpaper": "qindaqt:qinda-punk",
-    "appearance.wallpaperMode": "scaled"
+    "appearance.wallpaperMode": "scaled",
+    "display.nightLight.active": false,
+    "display.nightLight.mode": "DarkLight",
+    "display.nightLight.dayTemperatureKelvin": 6500,
+    "display.nightLight.nightTemperatureKelvin": 4500,
+    "display.nightLight.scheduleSource": "Location",
+    "display.nightLight.automaticLocation": true,
+    "display.nightLight.latitudeDegrees": 0.0,
+    "display.nightLight.longitudeDegrees": 0.0,
+    "display.nightLight.sunriseStart": "06:00:00",
+    "display.nightLight.sunsetStart": "18:00:00",
+    "display.nightLight.transitionSeconds": 1800,
+    "display.nightLight.disabledOutputs": []
   }
 }
