@@ -4276,3 +4276,11 @@ run reproduced representative-only focus; that behavior was repaired and both
 scales rechecked. A broad selector initially selected ten unbuilt unrelated
 Hybrid input/decoration rows; it was corrected to the nine built affected rows.
 This checkpoint does not claim installed-session or physical-input coverage.
+
+### Gathered pager input linkage
+
+The private compositor input adapter compiles the Qt Core gathered-pager router
+once. Both the production plugin and the focused input-adapter executable link
+that same implementation, so pointer and touch pager calls cannot leave the
+standalone adapter with unresolved symbols. The existing
+`compositor.kwin-input-adapter` and pager router rows qualify this build boundary.
