@@ -152,4 +152,15 @@ qsizetype IdleInhibitorRegistry::leaseCount() const noexcept {
   return m_leases.size();
 }
 
+qsizetype IdleInhibitorRegistry::leaseCountForOwner(
+    const QString &uniqueOwner) const noexcept {
+  qsizetype count = 0;
+  for (auto it = m_leases.cbegin(); it != m_leases.cend(); ++it) {
+    if (it->uniqueOwner == uniqueOwner) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 } // namespace QindaQt::Power
