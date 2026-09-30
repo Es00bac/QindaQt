@@ -152,3 +152,5 @@ completion fence as well as the mapped plugin and actual scene geometry.
 The shared [semantic command boundary](window-management-commands.md) extends
 first-party input/voice management separately. It does not grant V1 clients
 global authority or change same-client surface authentication.
+
+The native placement scenario now verifies actual output scale and Qt client DPR in addition to scene membership, active page, tiled frames and unchanged unrelated foreground. The actual-150% row records 77 protocol results and 58 read-only snapshots; a scenario filename alone is not scale evidence.

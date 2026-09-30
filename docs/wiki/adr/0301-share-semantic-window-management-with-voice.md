@@ -51,3 +51,7 @@ boundary with explicit preview/confirm/cancel without revising V1 surface author
 See [Native semantic commands](../architecture/window-management-commands.md),
 [Voice input](../architecture/voice-input.md) and
 [Application SDK](../architecture/application-window-management.md).
+
+## Source decomposition review
+
+Adding fractional restore state brings `hybridcontainerplacement.cpp` to 558 nonblank lines. It remains the cohesive geometry/drag/restore owner; maximize policy and shade policy already live in separate translation units. Ordinary window fraction state lives in `KWinSemanticWindowPlacement`, semantic dispatch in its own session translation unit, and authority/transport/runtime in separate collaborators. Keep this controller below 600 lines and split a new responsibility before extending it further. Fraction changes and cancelled drags must preserve the original restore frame; failed scene reflow rolls back fraction/restore state together.

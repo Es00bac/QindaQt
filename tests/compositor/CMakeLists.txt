@@ -424,6 +424,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         PRIVATE
             QindaQtKWin::kwin
             QindaQt::Hybrid
+        QindaQt::WindowManagement
             QindaQt::HybridChrome
             QindaQt::HybridInput
             qindaqt_hybrid_chrome_pointer_router
@@ -553,6 +554,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         qindaqt_hybrid_chrome_drag_translator_tests
         PRIVATE
             QindaQt::Hybrid
+        QindaQt::WindowManagement
             QindaQt::HybridChrome
             QindaQt::HybridInput
             Qt6::Test
@@ -652,6 +654,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         qindaqt_hybrid_container_placement_tests
         PRIVATE
             QindaQt::Hybrid
+        QindaQt::WindowManagement
             QindaQt::HybridChrome
             QindaQt::HybridConstraints
             QindaQt::HybridInput
@@ -682,6 +685,7 @@ if(TARGET qindaqt_kwin_input_adapter)
         qindaqt_hybrid_container_rescue_tests
         PRIVATE
             QindaQt::Hybrid
+        QindaQt::WindowManagement
             QindaQt::HybridChrome
             QindaQt::HybridConstraints
             QindaQt::HybridInput
@@ -694,6 +698,7 @@ if(TARGET qindaqt_kwin_input_adapter)
 
     include("${CMAKE_CURRENT_LIST_DIR}/ContainerShadeTests.cmake")
     include("${CMAKE_CURRENT_LIST_DIR}/ContainerMaximizeTests.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/SemanticWindowManagementTests.cmake")
 
     qt_add_executable(
         qindaqt_hybrid_container_appearance_tests

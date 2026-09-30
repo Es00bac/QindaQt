@@ -1,10 +1,9 @@
 # Native semantic window-management commands
 
 The semantic command boundary is shared by native input adapters and the voice
-provider. Its current maturity is **MODELLED with executable policy evidence**:
-`src/window_management` implements bounded typed decoding, fractional geometry
-and expiring command admission; the production compositor transport, platform
-executor and Gabbee consumer are the next implementation boundary. The accepted
+provider. The policy and production transport pass focused private-bus/geometry tests and real private native scene qualification at normal and actual 150% scale. The Gabbee consumer, grouping and application launch remain the next acceptance boundary. `src/window_management` implements bounded
+typed decoding, fractional geometry and expiring command admission. The native
+transport and compositor executor remain uninstalled. The accepted
 choice is [ADR-0301](../adr/0301-share-semantic-window-management-with-voice.md).
 The separate [application SDK](application-window-management.md) is executable
 and retains its same-connection surface authority.
@@ -30,7 +29,7 @@ Submitted contexts are consumed even on invalid, ambiguous or unavailable result
 
 ## Versioned wire contract
 
-The planned production endpoint is service `org.qindaqt.Compositor`, object
+The production source endpoint is service `org.qindaqt.Compositor`, object
 `/org/qindaqt/WindowManagement`, interface `org.qindaqt.WindowManagement1`.
 It is distinct from development control and is not enabled by a development flag.
 
@@ -43,9 +42,10 @@ It is distinct from development control and is not enabled by a development flag
 The live Voice1 unique owner must also have a current-owner, exact boolean true
 confirmation of Settings1 `services.voiceInput`. A caller-supplied PID or provider
 claim is not authority. The compositor must revoke before a later re-enable can
-revive capture. Shell callers use their existing live panel-role credential join.
-Transport and native-launch receipts are pending implementation and are not
-advertised as deployed capabilities.
+revive capture. This first transport admits the voice provider only. Shell operations retain
+their existing panel-role credential join. Native launch receipts and
+`group-tab`, `group-tile`, `launch` execution remain pending and are omitted
+from capability replies. No deployed capability claim is made.
 
 Requests have exactly four fields:
 
@@ -100,8 +100,12 @@ inset geometry, thirds/quadrants and malformed/unsafe requests.
 `qindaqt.window-management-context_controller` verifies authority before lookup,
 single use, owner/context replacement, expiry, lock revocation, stale subjects,
 ambiguity without mutation, unsupported capabilities, cancellation and floods.
-Both pass with fatal Qt warnings. Production private-bus/native compositor
-scenarios, the Gabbee command-hotkey consumer and installed-session qualification
-remain required before this feature is executable in the desktop.
+Those rows, the real private-bus `qindaqt.window-management-qt_endpoint`
+owner/consent/replacement/lock scenarios, `compositor.semantic-fractional-maximize`
+and six affected placement/preference/bridge rows pass with fatal Qt warnings. Private native scenarios pass six Qt checks per normal/actual-150% run, with 59 read-only scene snapshots each: ordinary raise/maximize/restore and thirds, original geometry after three repeated inset/fullscreen round trips, grouped rename/color/maximize/shade/restore/tab traversal/detachment, temporary icon/minimize restore, stale resize rejection and consent revocation. Actual DPR is asserted by the Qt client. The Gabbee command-hotkey consumer, group/launch execution and installed-session qualification remain required before the feature is executable in the desktop.
 
 An empty desktop can capture a context for a named target or independent app launch. Current-window operations still require a live normal subject at resolution; foreground changes after capture revoke that context. The platform scene currentness check scopes topology/geometry to the captured subject so mapping a provider-owned command popup does not invalidate its own hotkey.
+
+Grouped fraction changes preserve the original restore rectangle, including roll-up/unroll and cancelled resize. Ordinary fractional maximize is owned by a small placement collaborator and refreshes when output/work-area reservations change. Provider popup exemption requires a Wayland surface whose kernel peer PID is the current Voice1 bus owner's PID; an X11 PID property is never enough. Scene currentness fingerprints only the captured subject geometry/state/container structure, so unrelated window mappings do not consume a valid hotkey.
+
+Ordinary Wayland geometry acknowledgements may round server decoration/client boundaries by one physical pixel at fractional scale. Keep exact floating restore geometry, tolerate only that acknowledgement difference, and abandon inset state when the user starts moving/resizing. Native 150% acceptance must verify actual Qt DPR/output scale, not just a scenario filename.
