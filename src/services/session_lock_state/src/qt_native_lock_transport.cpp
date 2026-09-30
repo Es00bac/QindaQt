@@ -6,6 +6,8 @@
 #include <QDBusPendingReply>
 #include <QDBusServiceWatcher>
 #include <QMetaType>
+#include <QTimer>
+#include <QUuid>
 #include <utility>
 namespace QindaQt::Services::SessionLockState {
 namespace {
@@ -60,6 +62,9 @@ void QtNativeLockTransport::stop() {
   m_bus.disconnect({}, QStringLiteral("/org/freedesktop/DBus/Local"),
                    QStringLiteral("org.freedesktop.DBus.Local"),
                    QStringLiteral("Disconnected"), this, SLOT(busLost()));
+  const auto receiptNonces = m_stateReceipts.keys();
+  for (const auto &nonce : receiptNonces)
+    failState(nonce, QStringLiteral("native-lock-transport-stopped"));
   for (auto *pending : std::as_const(m_pending)) {
     pending->disconnect(this);
     pending->deleteLater();
@@ -120,20 +125,21 @@ bool QtNativeLockTransport::subscribe(const QString &owner) {
   unsubscribe();
   if (!m_started || owner.isEmpty())
     return false;
-  bool connected =
-      m_bus.connect(owner, path(), interface(), QStringLiteral("lockedChanged"),
-                    this, SLOT(nativeChanged(bool, QDBusMessage)));
-  connected = m_bus.connect(owner, path(), interface(),
-                            QStringLiteral("protectedChanged"), this,
-                            SLOT(nativeChanged(bool, QDBusMessage))) &&
+  bool connected = m_bus.connect(
+      owner, path(), interface(), QStringLiteral("lockedChanged"),
+      QStringLiteral("b"), this, SLOT(nativeChanged(bool,QDBusMessage)));
+  connected = m_bus.connect(
+                  owner, path(), interface(),
+                  QStringLiteral("protectedChanged"), QStringLiteral("b"),
+                  this, SLOT(nativeChanged(bool,QDBusMessage))) &&
               connected;
   if (!connected) {
     m_bus.disconnect(owner, path(), interface(),
-                     QStringLiteral("lockedChanged"), this,
-                     SLOT(nativeChanged(bool, QDBusMessage)));
+                     QStringLiteral("lockedChanged"), QStringLiteral("b"),
+                     this, SLOT(nativeChanged(bool,QDBusMessage)));
     m_bus.disconnect(owner, path(), interface(),
-                     QStringLiteral("protectedChanged"), this,
-                     SLOT(nativeChanged(bool, QDBusMessage)));
+                     QStringLiteral("protectedChanged"), QStringLiteral("b"),
+                     this, SLOT(nativeChanged(bool,QDBusMessage)));
     return false;
   }
   m_signalOwner = owner;
@@ -144,42 +150,136 @@ void QtNativeLockTransport::unsubscribe() {
     return;
   const auto owner = std::exchange(m_signalOwner, {});
   m_bus.disconnect(owner, path(), interface(), QStringLiteral("lockedChanged"),
-                   this, SLOT(nativeChanged(bool, QDBusMessage)));
+                   QStringLiteral("b"), this,
+                   SLOT(nativeChanged(bool,QDBusMessage)));
   m_bus.disconnect(owner, path(), interface(),
-                   QStringLiteral("protectedChanged"), this,
-                   SLOT(nativeChanged(bool, QDBusMessage)));
+                   QStringLiteral("protectedChanged"), QStringLiteral("b"),
+                   this, SLOT(nativeChanged(bool,QDBusMessage)));
 }
-void QtNativeLockTransport::nativeChanged(bool, const QDBusMessage &message) {
-  // Queued signals may outlive an old subscription. Retain the authenticated
-  // sender from the actual message, never relabel it with the new owner.
-  if (m_started && !m_signalOwner.isEmpty() &&
-      message.service() == m_signalOwner)
-    Q_EMIT stateInvalidated(message.service());
+void QtNativeLockTransport::nativeChanged(bool value,
+                                          const QDBusMessage &message) {
+  const auto args = message.arguments();
+  if (!m_started || m_signalOwner.isEmpty() ||
+      message.type() != QDBusMessage::SignalMessage ||
+      message.service() != m_signalOwner || message.path() != path() ||
+      message.interface() != interface() ||
+      (message.member() != QStringLiteral("lockedChanged") &&
+       message.member() != QStringLiteral("protectedChanged")) ||
+      message.signature() != QStringLiteral("b") || args.size() != 1 ||
+      args.first().metaType() != QMetaType::fromType<bool>() ||
+      args.first().toBool() != value)
+    return;
+  Q_EMIT stateInvalidated(message.service());
 }
+
+void QtNativeLockTransport::failState(const QString &nonce,
+                                      const QString &error) {
+  const auto it = m_stateReceipts.find(nonce);
+  if (it == m_stateReceipts.end())
+    return;
+  const auto request = it.value();
+  m_stateReceipts.erase(it);
+  m_bus.disconnect(request.owner, path(), interface(),
+                   QStringLiteral("stateReceipt"), QStringList{nonce},
+                   QStringLiteral("sbb"), this,
+                   SLOT(nativeStateReceipt(QString,bool,bool,QDBusMessage)));
+  Q_EMIT failed(request.generation, request.serial, request.owner, error);
+}
+
+void QtNativeLockTransport::maybeFinishState(const QString &nonce) {
+  const auto it = m_stateReceipts.find(nonce);
+  if (it == m_stateReceipts.end() || !it->replyReady || !it->receiptReady)
+    return;
+  const auto request = it.value();
+  if (!m_started || request.lifetime != m_lifetime ||
+      request.owner != m_signalOwner) {
+    failState(nonce, QStringLiteral("native-lock-receipt-generation-changed"));
+    return;
+  }
+  m_stateReceipts.erase(it);
+  m_bus.disconnect(request.owner, path(), interface(),
+                   QStringLiteral("stateReceipt"), QStringList{nonce},
+                   QStringLiteral("sbb"), this,
+                   SLOT(nativeStateReceipt(QString,bool,bool,QDBusMessage)));
+  Q_EMIT stateResolved(request.generation, request.serial, request.owner,
+                       request.locked, request.protectedPresentation);
+}
+
+void QtNativeLockTransport::nativeStateReceipt(
+    const QString &nonce, bool locked, bool protectedPresentation,
+    const QDBusMessage &message) {
+  auto it = m_stateReceipts.find(nonce);
+  if (it == m_stateReceipts.end())
+    return;
+  const auto args = message.arguments();
+  if (message.type() != QDBusMessage::SignalMessage ||
+      message.service() != it->owner || message.path() != path() ||
+      message.interface() != interface() ||
+      message.member() != QStringLiteral("stateReceipt") ||
+      message.signature() != QStringLiteral("sbb") || args.size() != 3 ||
+      args.at(0).metaType() != QMetaType::fromType<QString>() ||
+      args.at(1).metaType() != QMetaType::fromType<bool>() ||
+      args.at(2).metaType() != QMetaType::fromType<bool>() ||
+      args.at(0).toString() != nonce || args.at(1).toBool() != locked ||
+      args.at(2).toBool() != protectedPresentation || it->receiptReady) {
+    failState(nonce, QStringLiteral("malformed-native-lock-state-receipt"));
+    return;
+  }
+  it->receiptReady = true;
+  it->locked = locked;
+  it->protectedPresentation = protectedPresentation;
+  maybeFinishState(nonce);
+}
+
 void QtNativeLockTransport::requestState(quint64 generation, quint64 serial,
                                          const QString &owner) {
+  if (!m_started || owner != m_signalOwner) {
+    Q_EMIT failed(generation, serial, owner,
+                  QStringLiteral("native-lock-state-owner-not-subscribed"));
+    return;
+  }
+  QString nonce = QUuid::createUuid().toString(QUuid::WithoutBraces);
+  nonce.remove(QLatin1Char('-'));
+  nonce = nonce.toLower();
+  if (!m_bus.connect(
+          owner, path(), interface(), QStringLiteral("stateReceipt"),
+          QStringList{nonce}, QStringLiteral("sbb"), this,
+          SLOT(nativeStateReceipt(QString,bool,bool,QDBusMessage)))) {
+    Q_EMIT failed(generation, serial, owner,
+                  QStringLiteral("native-lock-state-receipt-subscribe-failed"));
+    return;
+  }
+  StateReceipt state;
+  state.generation = generation;
+  state.serial = serial;
+  state.lifetime = m_lifetime;
+  state.owner = owner;
+  m_stateReceipts.insert(nonce, state);
+
   auto request = QDBusMessage::createMethodCall(
-      owner, path(), QStringLiteral("org.freedesktop.DBus.Properties"),
-      QStringLiteral("GetAll"));
-  request << interface();
-  call(request, [this, generation, serial, owner](const QDBusMessage &message) {
-    const QDBusPendingReply<QVariantMap> reply(message);
-    if (reply.isError()) {
-      Q_EMIT failed(generation, serial, owner, reply.error().name());
-      return;
-    }
-    const auto properties = reply.value();
-    const auto locked = properties.value(QStringLiteral("Locked"));
-    const auto protectedPresentation =
-        properties.value(QStringLiteral("Protected"));
-    if (locked.metaType() != QMetaType::fromType<bool>() ||
-        protectedPresentation.metaType() != QMetaType::fromType<bool>()) {
-      Q_EMIT failed(generation, serial, owner,
-                    QStringLiteral("malformed-native-lock-properties"));
-      return;
-    }
-    Q_EMIT stateResolved(generation, serial, owner, locked.toBool(),
-                         protectedPresentation.toBool());
+      owner, path(), interface(), QStringLiteral("RequestStateWithReceipt"));
+  request << nonce;
+  auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(request, 1500), this);
+  m_pending.append(watcher);
+  connect(watcher, &QDBusPendingCallWatcher::finished, this,
+          [this, watcher, nonce] {
+            m_pending.removeAll(watcher);
+            const auto it = m_stateReceipts.find(nonce);
+            if (it != m_stateReceipts.end()) {
+              const auto reply = watcher->reply();
+              if (reply.type() != QDBusMessage::ReplyMessage ||
+                  !reply.signature().isEmpty() || !reply.arguments().isEmpty()) {
+                failState(nonce, QStringLiteral("native-lock-state-request-failed"));
+              } else {
+                it->replyReady = true;
+                maybeFinishState(nonce);
+              }
+            }
+            watcher->deleteLater();
+          });
+  QTimer::singleShot(1500, this, [this, nonce] {
+    if (m_stateReceipts.contains(nonce))
+      failState(nonce, QStringLiteral("native-lock-state-receipt-timeout"));
   });
 }
 } // namespace QindaQt::Services::SessionLockState

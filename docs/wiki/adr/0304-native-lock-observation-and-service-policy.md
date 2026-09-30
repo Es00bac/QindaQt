@@ -1,6 +1,6 @@
 # ADR-0304: native lock observation and service policy
 
-- **Status:** Accepted; observer slice, service policy and migration have separate gates
+- **Status:** Accepted; NativeLock receipt transport superseded in part by ADR-0309
 - **Date:** 2026-09-30
 - **Owners:** native lock services and session lock state
 - **Related:** [ADR-0299](0299-native-locker-private-launch-and-authentication.md)
@@ -57,3 +57,9 @@ selected ordinary attachment identity/lifetime boundary. Its independent socket,
 kernel PIDFD and daemon lineage join explicitly admitted session selection; it
 does not claim executable or independent supervisor-process attestation. Native
 lock payloads are never a substitute for that attachment admission.
+
+The additive NativeLockService library implements the manual request/facade
+boundary described in [native session lock](../architecture/native-session-lock.md).
+Physical protection remains a readonly monitor fact; ScreenSaver Unknown is an
+error. Production attachment/activation and idle/resume/sleep policy remain
+explicitly unqualified in that checkpoint.
