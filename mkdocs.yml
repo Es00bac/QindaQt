@@ -461,6 +461,7 @@ nav:
       - "ADR-0293: Settings1 native power policy": adr/0293-settings1-native-power-policy-and-powerdevil-import.md
 
       - "ADR-0294: native protocol state owns the session lock": adr/0294-native-session-lock-authority.md
+      - ADR-0299 Native locker private launch: adr/0299-native-locker-private-launch-and-authentication.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
       - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md
       - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md

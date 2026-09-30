@@ -2079,7 +2079,7 @@ reproduces on the clean tree and is unrelated.
 ## 2026-09-29 native locking integration
 
 - [x] PF5–PF6 native lock server/input/output/capture fence (`qindaqt-kwin cf6cce99`, consumer docs `9a943c41`); private native matrix 23/23, manager CTest 1/1 and production test-auth-OFF build passed.
-- [ ] PF7 trusted compositor-launched greeter, native Qt lock surfaces, PAM/account authentication and private process/epoch gates.
+- [x] PF7 compositor-owned private launch and protected Qt greeter/PAM source boundary (fork `dca1e5b3`, consumer `37ebb332`): native33 checks, manager native1/1 and integrated authentication4/4 pass. Installed trust binding and physical qualification remain below.
 - [ ] PF8 Lock1, ScreenSaver compatibility, logind sleep ordering and native Settings routes.
 - [ ] Installed trusted-greeter binding, physical DRM and real PipeWire consumer pipeline qualification.
 
