@@ -47,7 +47,9 @@ void SettingsSchemaTests::loadsBuiltInSchemaWithEveryDomain()
                                  QStringLiteral("accessibility"),
                                  QStringLiteral("services"),
                                  QStringLiteral("shell"),
-                                 QStringLiteral("power")};
+                                 QStringLiteral("power"),
+                                 QStringLiteral("keyring"),
+                                 QStringLiteral("lock")};
     QCOMPARE(domains, expected);
 }
 

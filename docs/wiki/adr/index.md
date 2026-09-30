@@ -318,3 +318,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0302: Native Passwords & Keys client and prompt policy](0302-native-passwords-keys-client-and-policy.md)
 - [ADR-0301: Share semantic window management with voice](0301-share-semantic-window-management-with-voice.md)
 - [ADR-0303: Resolve window application identity through the neutral catalog](0303-resolve-window-identity-through-application-catalog.md)
+- [ADR-0308: Store native lock preferences in Settings1 and import once](0308-native-lock-preferences-and-atomic-import.md)

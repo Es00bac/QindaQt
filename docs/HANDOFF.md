@@ -1,3 +1,9 @@
+## 2026-09-30 — Native lock preferences and bounded migration
+
+Exact candidate `c5d0b7cac85d29b01745fbeb1e691c34cd9e1dd2` adds Settings1-native automatic lock, timeout, resume and grace preferences, with a read-only bounded legacy snapshot and atomic marker/value import. Explicit native choices win. The integrated schema retains both published Keyring domain 10 and appended Lock domain 11; the domain coverage fixture includes both.
+
+The candidate passes 11 fatal-warning CTests/109 Qt checks. Manager integrated targeted build passes; ten unaffected focused rows pass and the repaired combined-domain schema plus keyring preference regression pass 2/2. Strict MkDocs and 458-document links pass for this boundary. Native Settings UI and runtime idle/manual/resume/sleep policy remain separate active outcomes; no real configuration import, lock, sleep or installation occurred.
+
 ## 2026-09-30 — Resident key-store privacy and native client checkpoint
 
 Exact checkpoint `d881529861e5cd05b63f20375bb8b112f6788918` includes the typed keyring preferences, Passwords & Keys model, public native prompt/client contract, true ordinary-display idle observation, and read-only authenticated native lock/protection monitor. Reveal and copy require observed Unlocked independently of the optional collection-lock preference; uncertainty, lock, owner replacement, page departure and late replies retire visible/pending bytes. Clipboard clearing is composition-owned and remains part of UI qualification. Ordinary display admission proves selected identity/lifetime, not executable/supervisor attestation.

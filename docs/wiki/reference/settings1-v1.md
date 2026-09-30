@@ -190,3 +190,15 @@ stays an integer clamped to 1–240.
   enforces only the generic JSON/resource and top-level object constraints;
   the Display Color consumer performs the stricter assignment-record decode
   and refuses drafts while confirmed persisted content is unusable.
+
+## Native lock preferences
+
+Schema v2 adds `lock.automaticEnabled` (boolean, default true),
+`lock.idleTimeoutSeconds` (integer 60–14400, default 300), `lock.onResume`
+(boolean, default true), and `lock.graceSeconds` (integer 0–300, default 5),
+all in the additive lock domain. `lock.migration.kscreenlockerImported` is a boolean
+marker, default false. [ADR-0308](../adr/0308-native-lock-preferences-and-atomic-import.md)
+requires explicit native user values to win and the read-only four-key legacy
+import plus marker to persist atomically after Settings1 name ownership.
+See [native session locking](../architecture/native-session-lock.md) for the
+public exact-owner preference provider and the distinct runtime/UI boundary.

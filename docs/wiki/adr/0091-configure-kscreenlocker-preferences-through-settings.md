@@ -4,7 +4,7 @@
 - **Date:** 2026-09-06
 - **Owners:** Settings Power route
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0308](0308-native-lock-preferences-and-atomic-import.md) for native preference authority; the legacy route remains until native UI migration
 
 ## Context
 

@@ -45,3 +45,15 @@ target_link_libraries(qindaqt_powerdevil_import_tests PRIVATE
 target_compile_definitions(qindaqt_powerdevil_import_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 qindaqt_enable_warnings(qindaqt_powerdevil_import_tests)
 add_test(NAME qindaqt.powerdevil-import COMMAND qindaqt_powerdevil_import_tests)
+
+qt_add_executable(qindaqt_lock_preferences_import_tests tst_lock_preferences_import.cpp)
+target_link_libraries(qindaqt_lock_preferences_import_tests PRIVATE
+    QindaQt::LockPreferences QindaQt::SettingsService Qt6::Test)
+target_compile_definitions(qindaqt_lock_preferences_import_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+qindaqt_enable_warnings(qindaqt_lock_preferences_import_tests)
+add_test(NAME qindaqt.lock-preferences-import COMMAND qindaqt_lock_preferences_import_tests)
+
+qt_add_executable(qindaqt_lock_preferences_provider_tests tst_lock_preferences_provider.cpp)
+target_link_libraries(qindaqt_lock_preferences_provider_tests PRIVATE QindaQt::LockPreferences Qt6::Test)
+qindaqt_enable_warnings(qindaqt_lock_preferences_provider_tests)
+add_test(NAME qindaqt.lock-preferences-provider COMMAND qindaqt_lock_preferences_provider_tests)
