@@ -7,6 +7,7 @@ import QindaQt.SettingsApp.Startup
 import QindaQt.SettingsApp.ScreenSaver
 import QindaQt.SettingsApp.LoginScreen
 import QindaQt.SettingsApp.Voice
+import QindaQt.SettingsApp.Keyring
 
 // AGENT-CONTRACT: route page `Component`s that would otherwise be declared in
 // Main.qml. That file is already over its source-shape limit, and every new
@@ -88,6 +89,14 @@ QtObject {
         VoicePage {
             objectName: "voicePage"
             voiceSettings: VoiceRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    readonly property Component keyring: Component {
+        KeyringPage {
+            objectName: "keyringPage"
+            keyringSettings: KeyringRouteComposition.model
             onCloseRequested: root.closeRequested()
         }
     }

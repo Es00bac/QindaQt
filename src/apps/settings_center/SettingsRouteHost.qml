@@ -39,6 +39,7 @@ Item {
     property Component screensaverComponent: null
     property Component loginScreenComponent: null
     property Component voiceComponent: null
+    property Component keyringComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -88,6 +89,7 @@ Item {
             : navigation?.activeRouteComponent === "screensaver" ? supplementalLoaders.screensaverLoader
             : navigation?.activeRouteComponent === "login-screen" ? supplementalLoaders.loginScreenLoader
             : navigation?.activeRouteComponent === "voice" ? supplementalLoaders.voiceLoader
+            : navigation?.activeRouteComponent === "keyring" ? supplementalLoaders.keyringLoader
               : unavailableLoader
 
     SettingsRouteConstructionWitness {

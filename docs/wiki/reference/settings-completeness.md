@@ -1,8 +1,8 @@
 # Settings completeness inventory
 
-This is the source-backed inventory of the 21 routes registered by
+This is the source-backed inventory of the 22 routes registered by
 `SettingsRouteRegistry::registerBuiltInRoutes()` and
-`registerAppendedRoutes()` on the integrated qinda source branch (2026-09-23). Registration
+`registerAppendedRoutes()` on the current qinda source branch. Registration
 and the [active Loader witness](../adr/0250-require-active-loader-witness-for-every-settings-route.md)
 prove that each route can construct or show its declared unavailable state.
 They do not prove physical hardware behavior or that every stored schema key
@@ -33,8 +33,9 @@ authority outside Settings1.
 | 19 | `screensaver` | [Saver selection, delay, preview and lock-screen mirror](../apps/screensaver-settings.md) | Saver availability depends on installed packages; independent idle-lock preference remains with Power. |
 | 20 | `login-screen` | [SDDM theme, autologin/session, numeric lock and cursor theme](../apps/login-screen-settings.md) | Privileged helper/polkit and SDDM configuration own writes; no live greeter reboot test is implied. |
 | 21 | `voice` | [Desktop voice opt-in, provider preference and panel transcript choice](../apps/voice-settings.md) | Confirmed preference gates QindaQt activation; an independently running provider is not terminated. |
+| 22 | `passwords-keys` | [Native Passwords & Keys](../apps/keyring-settings.md) | Uses the standard Secret Service client; password entry is delegated to its prompt and resident lock policy requires separately confirmed observation. |
 
-The first ten routes keep Ctrl+1 through Ctrl+0 respectively. Routes 11–21
+The first ten routes keep Ctrl+1 through Ctrl+0 respectively. Routes 11–22
 are reached from the wide sidebar or compact tabs and retain their registry
 order. A route's unavailable diagnostic is a supported construction result,
 not proof that its backing service or device is present on this computer.

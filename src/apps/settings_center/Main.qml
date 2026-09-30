@@ -24,6 +24,7 @@ import QindaQt.SettingsApp.Windows
 import QindaQt.SettingsApp.DefaultApplications
 import QindaQt.SettingsApp.AboutComputer
 import QindaQt.SettingsApp.Startup
+import QindaQt.SettingsApp.Keyring
 
 T.ApplicationWindow {
     id: root
@@ -241,6 +242,7 @@ T.ApplicationWindow {
             screensaverComponent: addedRouteComponents.screensaver
             loginScreenComponent: addedRouteComponents.loginScreen
             voiceComponent: addedRouteComponents.voice
+            keyringComponent: addedRouteComponents.keyring
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -302,6 +304,7 @@ T.ApplicationWindow {
             screensaverComponent: addedRouteComponents.screensaver
             loginScreenComponent: addedRouteComponents.loginScreen
             voiceComponent: addedRouteComponents.voice
+            keyringComponent: addedRouteComponents.keyring
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }

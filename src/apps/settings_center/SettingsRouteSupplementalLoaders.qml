@@ -13,6 +13,7 @@ Item {
     property alias screensaverLoader: screensaverLoader
     property alias loginScreenLoader: loginScreenLoader
     property alias voiceLoader: voiceLoader
+    property alias keyringLoader: keyringLoader
 
     Loader {
         id: defaultApplicationsLoader
@@ -91,4 +92,15 @@ Item {
         sourceComponent: host.voiceComponent
     }
 
+    Loader {
+        id: keyringLoader
+        objectName: host.objectNamePrefix + "KeyringLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && (host.navigation?.activeRouteAvailable ?? false)
+                && host.navigation?.activeRouteComponent === "keyring"
+                && host.keyringComponent !== null
+        sourceComponent: host.keyringComponent
+    }
 }
