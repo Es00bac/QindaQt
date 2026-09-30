@@ -174,6 +174,7 @@ nav:
       - Screenshot: apps/screenshot.md
       - Voice: apps/voice.md
       - Settings Voice route: apps/voice-settings.md
+      - Passwords & Keys Settings route: apps/keyring-settings.md
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
       - QindaLutris: apps/qindalutris.md
