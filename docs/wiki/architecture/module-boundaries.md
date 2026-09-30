@@ -467,3 +467,19 @@ and exposes no lock, timer, QML or persistence authority. SettingsService alone
 owns the source path and atomic repository commit after winning Settings1.
 Native policy and the separately migrated Settings UI consume this public
 boundary; they do not edit legacy configuration or private repository state.
+
+## Public ordinary attachment and idle
+
+`src/platform/compositor_attachment` owns public same-thread ordinary
+session/compositor identity/lifetime binding with constructor-visible caller
+session admission, daemon owner/PID, kernel ordinary socket/PIDFD and optional
+independent peer expectation. `src/platform/idle_observation` owns readonly
+single-seat standard idle observation over the transferred ordinary FD and
+borrowed live-lineage callback. Their public headers require Qt Core/DBus or Qt
+Core respectively; platform syscalls and libwayland are private implementations.
+See [ADR-0305](../adr/0305-public-ordinary-compositor-attachment.md),
+[ADR-0307](../adr/0307-public-ordinary-fd-idle-observation.md) and
+[compositor attachment](compositor-attachment.md). Neither module owns caller
+first-owner/legacy policy, persistence, input synthesis, privileged locker FD,
+authentication, RequestLock, sleep or unlock. Consumers migrate independently;
+no consumer may include another daemon’s private attachment/idle header.

@@ -273,3 +273,5 @@ code.
 See [Native keyring daemon](architecture/keyring-daemon.md) and the shared [authentication overlay](architecture/authentication-overlay.md) for the native credential process boundary.
 
 See the [native PAM bridge](architecture/keyring-pam.md) for trusted login-token delivery and source-only system activation.
+
+See [ordinary compositor attachment and idle observation](architecture/compositor-attachment.md) for selected session identity/lifetime and reusable readonly native idle observation.
