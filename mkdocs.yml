@@ -467,6 +467,7 @@ nav:
       - ADR-0308 Native lock preferences: adr/0308-native-lock-preferences-and-atomic-import.md
       - ADR-0309 Native lock receipts: adr/0309-native-lock-receipt-authentication.md
       - ADR-0305 Ordinary compositor attachment: adr/0305-public-ordinary-compositor-attachment.md
+      - ADR-0306 Power1 idle inhibition: adr/0306-power1-idle-inhibitors-and-stage-policy.md
       - ADR-0307 Ordinary FD idle observation: adr/0307-public-ordinary-fd-idle-observation.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
       - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md
