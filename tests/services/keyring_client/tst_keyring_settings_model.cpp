@@ -32,6 +32,17 @@ private Q_SLOTS:
         model.deactivate();auto late=std::make_shared<qindaqt::keyring::SecureBuffer>(5);
         emit gateway.secretReady(gateway.token,late,"text/plain");QCOMPARE(late->size(),0U);QVERIFY(!model.secretVisible());
     }
+    void screenLockRetiresPendingRevealAndWipesLateReply(){
+        FakeGateway gateway;KeyringSettingsModel model(gateway);model.reload();
+        emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","collection"},{"locked",false}}}});
+        emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","item"},{"locked",false},{"indexAuthenticated",true}}}});
+        model.revealItem("item");const auto pending=gateway.token;
+        emit gateway.secretsInvalidated();QVERIFY(!model.busy());QVERIFY(gateway.cancels>0);
+        auto late=std::make_shared<qindaqt::keyring::SecureBuffer>(5);
+        std::memcpy(late->bytes().data(),"value",5);
+        emit gateway.secretReady(pending,late,"text/plain");
+        QCOMPARE(late->size(),0U);QVERIFY(!model.secretVisible());
+    }
     void copyingRequiresAnActualSinkAcknowledgement(){
         FakeGateway gateway;KeyringSettingsModel model(gateway);model.reload();
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","collection"},{"locked",false}}}});

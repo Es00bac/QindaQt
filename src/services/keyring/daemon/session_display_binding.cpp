@@ -102,6 +102,7 @@ bool SessionDisplayBinding::attach(const QString &owner,const QString &name) {
     basename_=name;probe_=socketFd;pidfd_=life;
     watcher_.addWatchedService(owner);check_.start();
     if(!live()) { clear();return false; }
+    Q_EMIT attached();
     return true;
 }
 bool SessionDisplayBinding::sameOwners() {

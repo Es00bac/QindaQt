@@ -72,7 +72,14 @@ QString SecretService::introspect(const QString &path) const {
     }
     return result;
 }
+void SecretService::observeLockPolicy(KeyringLockPolicy *policy) {
+    lockPolicy_=policy;
+    if(policy) connect(policy,&KeyringLockPolicy::changed,this,[this]{
+        if(lockPolicy_) signal(Root,NativeInterface,"PolicyStateChanged",{lockPolicy_->status()});
+    });
+}
 void SecretService::notifyCollectionState(const QString &id) {
+    if(lockPolicy_) lockPolicy_->enforce();
     if (!repository_.find(id)) return;
     changed(collectionPath(id),CollectionInterface,{{"Locked",repository_.locked(id)}});
     for (const auto &item : repository_.search(id,{}).ids)
@@ -115,6 +122,9 @@ bool SecretService::handleMessage(const QDBusMessage &m, const QDBusConnection &
     const auto uid = bus_.interface()->serviceUid(m.service());
     if (!uid.isValid() || uid.value() != geteuid()) { error(m, "org.freedesktop.DBus.Error.AccessDenied"); return true; }
     try {
+        // Authenticated control rekey may temporarily hold decrypted pages.
+        // Every wire disclosure must re-evaluate resident policy first.
+        if(lockPolicy_) lockPolicy_->enforce();
         if (!exists(m.path())) { error(m,"org.freedesktop.Secret.Error.NoSuchObject"); return true; }
         if (m.interface() == "org.freedesktop.DBus.Properties") return propertyMethod(m);
         if (m.interface() == "org.freedesktop.Secret.Prompt") return promptMethod(m);

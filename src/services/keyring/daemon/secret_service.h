@@ -3,6 +3,8 @@
 #include "collection_repository.h"
 #include "session_crypto.h"
 #include "prompt_provider.h"
+#include "lock_policy.h"
+#include <QPointer>
 #include <QDBusVirtualObject>
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -26,6 +28,7 @@ public:
     QString introspect(const QString &path) const override;
     bool handleMessage(const QDBusMessage &, const QDBusConnection &) override;
     void notifyCollectionState(const QString &id);
+    void observeLockPolicy(KeyringLockPolicy *); // Optional same-thread borrowed QObject, auto-fenced on destruction.
     QString collectionPath(const QString &id) const;
     QString itemPath(const QString &id, const QString &item) const;
     QString collectionForPath(const QString &path) const;
@@ -58,6 +61,7 @@ private:
     std::map<QString, std::unique_ptr<Session>> sessions_;
     std::map<QString, Prompt> prompts_;
     QString sessionOwner_;
+    QPointer<KeyringLockPolicy> lockPolicy_;
     int pendingRekeys_ = 0;
 };
 inline QDBusObjectPath objectPath(const QString &path = "/") { return QDBusObjectPath(path); }

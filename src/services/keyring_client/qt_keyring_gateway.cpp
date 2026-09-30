@@ -60,6 +60,7 @@ public:
                     if(nativeOwner.signature()!="s" || nativeOwner.arguments().size()!=1 || nativeOwner.arguments()[0].toString()!=candidate) return;
                     owner=candidate;
                     bus.connect(owner,Root,Native,"CollectionStateChanged",&q,SLOT(collectionStateChanged(QDBusObjectPath,bool,bool,QDBusMessage)));
+                    bus.connect(owner,Root,Native,"PolicyStateChanged",&q,SLOT(policyStateChanged(QVariantMap,QDBusMessage)));
                     emit q.authorityChanged();
                 });
             });
@@ -84,8 +85,11 @@ public:
         unwatchPrompt();closeSession();timeout.stop();token=0;if(pending) ++generation;
     }
     void reset() { cancel();++generation;
-        if(!owner.isEmpty()) bus.disconnect(owner,Root,Native,"CollectionStateChanged",&q,SLOT(collectionStateChanged(QDBusObjectPath,bool,bool,QDBusMessage)));
-        owner.clear();emit q.authorityChanged(); }
+        if(!owner.isEmpty()) {
+            bus.disconnect(owner,Root,Native,"CollectionStateChanged",&q,SLOT(collectionStateChanged(QDBusObjectPath,bool,bool,QDBusMessage)));
+            bus.disconnect(owner,Root,Native,"PolicyStateChanged",&q,SLOT(policyStateChanged(QVariantMap,QDBusMessage)));
+        }
+        owner.clear();screenAvailable=false;screenLocked=true;emit q.authorityChanged(); }
     void fail(const QString &message) {
         if(!token) return;
         const auto id=token;cancel();emit q.actionFinished(id,false,message);
@@ -109,13 +113,23 @@ public:
         if(label.contains(QChar(0)) || label.toUtf8().size()>1024 || (request==Request::Create && label.trimmed().isEmpty())) {
             QTimer::singleShot(0,&q,[this,id]{emit q.actionFinished(id,false,"Invalid collection label");});return;
         }
+        if(request==Request::Reveal && (!screenAvailable || screenLocked)) {
+            QTimer::singleShot(0,&q,[this,id]{emit q.actionFinished(id,false,"Unlock the screen before revealing or copying secrets");});return;
+        }
         token=id;kind=request;timeout.start(45000);
         if(kind==Request::Collections || kind==Request::Items) {
             call(owner,Root,Native,kind==Request::Collections?"ListCollections":"ListItems",
                  kind==Request::Collections?QVariantList{}:QVariantList{path(object)},[this](const QDBusMessage &m){
                 if(m.arguments().size()!=1 || m.signature()!=(kind==Request::Collections?"a{sv}":"aa{sv}")) throw std::runtime_error("Metadata");
                 const auto rows=kind==Request::Collections?validateCollections(p::argument<QVariantMap>(m.arguments()[0])):validateItems(p::argument<p::MetadataRows>(m.arguments()[0]));
-                const auto completedToken=token;token=0;timeout.stop();++generation;emit q.rowsReady(completedToken,rows);
+                if(kind==Request::Collections) {
+                    call(owner,Root,Native,"GetPolicyState",{},[this,rows](const QDBusMessage &state){
+                        if(state.signature()!="a{sv}" || state.arguments().size()!=1) throw std::runtime_error("Policy");
+                        policy(p::argument<QVariantMap>(state.arguments()[0]));
+                        if(!token) return;
+                        const auto completedToken=token;token=0;timeout.stop();++generation;emit q.rowsReady(completedToken,rows);
+                    });
+                } else {const auto completedToken=token;token=0;timeout.stop();++generation;emit q.rowsReady(completedToken,rows);}
             });return;
         }
         if(kind==Request::Reveal) {
@@ -146,6 +160,11 @@ public:
             else watchPrompt(value);
         });
     }
+    void policy(const QVariantMap &wire) {
+        const auto value=validatePolicy(wire);screenAvailable=value.value("ScreenLockAvailable").toBool();screenLocked=value.value("ScreenLocked").toBool();
+        if(!screenAvailable || screenLocked) emit q.secretsInvalidated();
+        emit q.policyChanged(value);
+    }
     void nativePrompt(const QString &member,const QVariantList &args) {
         call(owner,Root,Native,member,args,[this](const QDBusMessage &m){
             if(m.signature()!="o" || m.arguments().size()!=1) throw std::runtime_error("Prompt");
@@ -169,13 +188,23 @@ public:
         }
         try {
             auto wire=p::argument<p::WireSecret>(result.variant());
-            if(wire.session.path()!=session || !wire.parameters.isEmpty() || wire.value.size()>1024*1024 || wire.contentType.toUtf8().size()>128 || wire.contentType.contains(QChar(0)))
+            if(!screenAvailable || screenLocked || wire.session.path()!=session || !wire.parameters.isEmpty() || wire.value.size()>1024*1024 || wire.contentType.toUtf8().size()>128 || wire.contentType.contains(QChar(0)))
                 throw std::runtime_error("Secret");
             auto bytes=std::make_shared<qindaqt::keyring::SecureBuffer>(static_cast<std::size_t>(wire.value.size()));
             if(!wire.value.isEmpty()) std::memcpy(bytes->bytes().data(),wire.value.constData(),bytes->size());
             p::wipe(wire.value);
-            const auto id=token;unwatchPrompt();closeSession();timeout.stop();token=0;++generation;
-            emit q.secretReady(id,std::move(bytes),wire.contentType);
+            // AGENT-GUARD: requery the pinned daemon before publishing a
+            // pre-lock prompt reply. Its native observer rechecks live lineage.
+            const auto contentType=wire.contentType;
+            unwatchPrompt();closeSession();
+            call(owner,Root,Native,"GetPolicyState",{},[this,bytes=std::move(bytes),contentType](const QDBusMessage &state) mutable {
+                if(state.signature()!="a{sv}" || state.arguments().size()!=1) throw std::runtime_error("Policy");
+                policy(p::argument<QVariantMap>(state.arguments()[0]));
+                if(!token) return;
+                if(!screenAvailable || screenLocked) { fail("Unlock the screen before revealing or copying secrets");return; }
+                const auto id=token;timeout.stop();token=0;++generation;
+                emit q.secretReady(id,std::move(bytes),contentType);
+            });
         } catch(const std::exception &) { fail("Secret unavailable"); }
     }
     QtKeyringGateway &q;
@@ -185,7 +214,7 @@ public:
     QString owner,prompt,session;
     quint64 token=0,generation=1;
     Request kind=Request::Collections;
-    bool protectedProcess=false;
+    bool protectedProcess=false,screenAvailable=false,screenLocked=true;
 };
 QtKeyringGateway::QtKeyringGateway(QDBusConnection bus,QObject *parent):KeyringGateway(parent),d(std::make_unique<Private>(*this,std::move(bus))) {}
 QtKeyringGateway::~QtKeyringGateway(){d->cancel();}
@@ -194,6 +223,10 @@ void QtKeyringGateway::request(quint64 token,Request kind,const QString &path,co
 void QtKeyringGateway::cancel(){d->cancel();}
 void QtKeyringGateway::promptCompleted(bool dismissed,const QDBusVariant &value,const QDBusMessage &message){d->completed(dismissed,value,message);}
 void QtKeyringGateway::disconnected(){d->reset();}
+void QtKeyringGateway::policyStateChanged(const QVariantMap &state,const QDBusMessage &message){
+    if(message.service()!=d->owner) return;
+    try {d->policy(state);} catch(const std::exception &) {d->reset();d->probe();}
+}
 void QtKeyringGateway::collectionStateChanged(const QDBusObjectPath &object,bool locked,bool authenticated,const QDBusMessage &message){
     if(message.service()!=d->owner || !validObjectPath(object.path(),"collection")) return;
     if(locked || !authenticated) emit secretsInvalidated();

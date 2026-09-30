@@ -38,6 +38,13 @@ QVariantMap validateMetadata(const QVariantMap &wire,bool collection) {
     }
     return row;
 }
+QVariantMap validatePolicy(const QVariantMap &wire) {
+    require(wire.size()==6);
+    for(const auto &key:{"SettingsAvailable","ScreenLockAvailable","IdleAvailable","ScreenLocked","LockOnScreenLock"}) boolean(wire.value(key));
+    const auto idle=wire.value("LockAfterIdleMinutes");
+    require(idle.metaType()==QMetaType::fromType<int>() && idle.toInt()>=0 && idle.toInt()<=1440);
+    return wire;
+}
 QVariantList validateCollections(const QVariantMap &wire) {
     require(wire.size()<=64); QVariantList rows;
     for(auto i=wire.begin();i!=wire.end();++i) {

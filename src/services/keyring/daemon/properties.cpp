@@ -66,6 +66,10 @@ bool SecretService::propertyMethod(const QDBusMessage &m) {
 }
 bool SecretService::nativeMethod(const QDBusMessage &m) {
     if (nativeItemMethod(m)) return true;
+    if (m.member()=="GetPolicyState" && m.signature().isEmpty()) {
+        const QVariantMap state=lockPolicy_?lockPolicy_->status():QVariantMap{{"SettingsAvailable",false},{"ScreenLockAvailable",false},{"IdleAvailable",false},{"ScreenLocked",true},{"LockOnScreenLock",false},{"LockAfterIdleMinutes",0}};
+        reply(m,{state});return true;
+    }
     if (m.member() == "ListCollections" && m.signature().isEmpty()) {
         QVariantMap result;
         for (const auto &id : repository_.names()) {
