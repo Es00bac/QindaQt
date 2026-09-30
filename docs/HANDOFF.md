@@ -1,3 +1,9 @@
+# Native lock receipts and service source — 2026-09-30
+
+Admitted consumer `d38bd59289a716132b3411482edd1252baf562d1` adds same-thread manual request transport, Lock1/ScreenSaver facades and authoritative read-only state receipts. Candidate build and seven focused CTests pass; strict MkDocs and457-document links pass. Exact producer `43256d90040ab64713a775d29ccd54ec2d11d40f` passes its private native27-check matrix without the external Qt probe. Receipt ADR is0314, preserving PF10 Activities allocation0309.
+
+Manager combined gates/source pin remain next. Admission does not claim physical protection; unsupported ScreenSaver inhibition stays unavailable. Native auto-idle/grace/resume/suspend policy and Settings production composition remain in the PF8 worker lane. No live lock/sleep or installed acceptance occurred.
+
 # Atomic grouping source integration — 2026-09-30
 
 Exact candidate `46150c5d16747c7b507820b9fb4c3d4dab927fc2` includes the pure grouping planner, one-candidate tab/tile mutations and exact-leaf focus. Candidate focused9/9, native7/7 at normal and actual DPR1.50, strict MkDocs and453-document links pass. The prior candidate commit body incorrectly printed451;453 is the actual validator result. The UI integration below similarly corrects its earlier461 count to462. No source gate changed.

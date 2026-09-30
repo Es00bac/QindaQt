@@ -4,6 +4,7 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QList>
+#include <QHash>
 #include <functional>
 class QDBusServiceWatcher;
 class QDBusPendingCallWatcher;
@@ -26,15 +27,30 @@ public:
                     const QString &uniqueOwner) override;
 private Q_SLOTS:
   void nativeChanged(bool value, const QDBusMessage &message);
+  void nativeStateReceipt(const QString &nonce, bool locked, bool protectedPresentation,
+                         const QDBusMessage &message);
   void busLost();
 
 private:
+  struct StateReceipt {
+    quint64 generation = 0;
+    quint64 serial = 0;
+    quint64 lifetime = 0;
+    QString owner;
+    bool replyReady = false;
+    bool receiptReady = false;
+    bool locked = false;
+    bool protectedPresentation = false;
+  };
+  void maybeFinishState(const QString &nonce);
+  void failState(const QString &nonce, const QString &error);
   void call(const QDBusMessage &message,
             std::function<void(const QDBusMessage &)> completion);
   QDBusConnection m_bus;
   QDBusServiceWatcher *m_watcher = nullptr;
   QList<QDBusPendingCallWatcher *> m_pending;
   QString m_signalOwner;
+  QHash<QString, StateReceipt> m_stateReceipts;
   quint64 m_lifetime = 0;
   bool m_started = false;
 };

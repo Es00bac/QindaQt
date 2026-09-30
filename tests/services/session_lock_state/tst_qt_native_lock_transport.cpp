@@ -4,6 +4,7 @@
 #include "qindaqt/services/session_lock_state/qt_native_lock_transport.h"
 #include "support/private_session_bus.h"
 #include <QCoreApplication>
+#include <QDBusContext>
 #include <QDBusMessage>
 #include <QProcess>
 #include <QSignalSpy>
@@ -12,14 +13,20 @@
 using namespace QindaQt::Services::SessionLockState;
 namespace {
 using PrivateBus = QindaQt::TestSupport::PrivateSessionBus;
+QString service();
+QString path();
+QString interface();
 // Explicit dummy authority confined to this test's private bus and admission
 // closure; this object is never part of the product service or installed.
-class NativeBackend final : public QObject {
+class NativeBackend final : public QObject, protected QDBusContext {
   Q_OBJECT
   Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.NativeLock1")
   Q_PROPERTY(bool Locked READ locked)
   Q_PROPERTY(bool Protected READ protectedPresentation)
 public:
+  QDBusConnection bus = QDBusConnection::sessionBus();
+  QDBusConnection attacker = bus;
+  QString stateMode = QStringLiteral("valid");
   bool locked() const { return m_locked; }
   bool protectedPresentation() const { return m_protected; }
   void set(bool locked, bool protectedPresentation) {
@@ -33,6 +40,21 @@ public:
     }
   }
   bool m_locked = false, m_protected = false;
+public Q_SLOTS:
+  void RequestStateWithReceipt(const QString &nonce) {
+    if (stateMode == QStringLiteral("missing"))
+      return;
+    QString receiptNonce = nonce;
+    if (stateMode == QStringLiteral("wrong-nonce"))
+      receiptNonce = QStringLiteral("00000000000000000000000000000000");
+    auto receipt = QDBusMessage::createTargetedSignal(
+        message().service(), path(), interface(), QStringLiteral("stateReceipt"));
+    receipt << receiptNonce << m_locked << m_protected;
+    auto &sender = stateMode == QStringLiteral("forged-sender") ? attacker : bus;
+    sender.send(receipt);
+    if (stateMode == QStringLiteral("duplicate"))
+      bus.send(receipt);
+  }
 Q_SIGNALS:
   void lockedChanged(bool locked);
   void protectedChanged(bool protectedPresentation);
@@ -45,8 +67,10 @@ QString interface() {
 bool expose(QDBusConnection &connection, NativeBackend &backend) {
   return connection.registerObject(path(), &backend,
                                    QDBusConnection::ExportAllProperties |
-                                       QDBusConnection::ExportAllSignals) &&
-         connection.registerService(service());
+                                       QDBusConnection::ExportAllSignals |
+                                       QDBusConnection::ExportAllSlots) &&
+         connection.registerService(service()) &&
+         (backend.bus = connection, true);
 }
 } // namespace
 class NativeTransportTests final : public QObject {
@@ -91,6 +115,41 @@ private Q_SLOTS:
     QVERIFY(!monitor.contentMayBeShown());
     monitor.refresh();
     QTRY_COMPARE(monitor.state(), LockState::Unknown);
+    monitor.stop();
+  }
+  void stateReceiptFaults_data() {
+    QTest::addColumn<QString>("mode");
+    QTest::newRow("missing") << QStringLiteral("missing");
+    QTest::newRow("wrong-nonce") << QStringLiteral("wrong-nonce");
+    QTest::newRow("duplicate") << QStringLiteral("duplicate");
+    QTest::newRow("forged-sender") << QStringLiteral("forged-sender");
+  }
+  void stateReceiptFaults() {
+    QFETCH(QString, mode);
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    auto server = bus.connect("native-server-"),
+         client = bus.connect("native-client-"),
+         attacker = bus.connect("native-attacker-");
+    NativeBackend backend;
+    backend.set(true, true);
+    QVERIFY(expose(server, backend));
+    backend.stateMode = mode;
+    backend.attacker = attacker;
+    QtNativeLockTransport transport(client);
+    QSignalSpy failed(&transport, &NativeLockTransport::failed);
+    NativeLockStateMonitor monitor(
+        transport, [&](const QString &owner, quint64 pid) {
+          return owner == server.baseService() &&
+                 pid == quint64(QCoreApplication::applicationPid());
+        });
+    QVERIFY(monitor.start());
+    QTRY_COMPARE_WITH_TIMEOUT(failed.size(), 1, 3000);
+    QCOMPARE(monitor.state(), LockState::Unknown);
+    // This fake endpoint focuses on receipt authentication. A synchronous
+    // GetAll here would block its same-thread property responder.
+    QCOMPARE(monitor.state(), LockState::Unknown);
+    QVERIFY(!monitor.contentMayBeShown());
     monitor.stop();
   }
   void samePidReplacementDenied() {
