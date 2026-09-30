@@ -17,7 +17,7 @@ action and client behavior would make those shortcuts stop working.
 
 Build a small policy/store core inside the compositor fork before changing the
 runtime wire. PF22's KWin::Shortcuts::Registry owns stable component/action
-bindings, named conflict refusal, component lifecycle cleanup, repeat policy,
+bindings, named conflict refusal, component lifecycle cleanup, repeat policy, runtime action activation,
 and dispatch admission for locked or shortcut-inhibited input contexts. Its
 Store reads and writes versioned shortcut values with an atomic file replace
 and records whether legacy import has completed. Existing native values take
@@ -30,6 +30,8 @@ current clients, and imports kglobalshortcutsrc through a concrete adapter.
 KGlobalAccelD remains until that compatibility path is qualified. PF24 moves
 Settings and portal consumers to org.qindaqt.Shortcuts1, then removes the
 separate kglobalacceld supervisor child.
+
+Inactive actions keep their registered key reservation but do not dispatch, matching the existing compatibility daemon behavior; runtime activation is intentionally not written to the user store. The PF23 policy slice adds this state contract but does not yet connect it to KWin input or D-Bus.
 
 The core stores complete Qt key sequences in portable form. KWin's input
 adapter is responsible for translating compositor key events to the same
@@ -50,7 +52,7 @@ repeat, lock, and keyboard-shortcuts-inhibitor semantics.
 ## Verification boundary
 
 The PF22 focused test covers registration, dispatch admission, named conflict
-reporting, atomic reassignment refusal, owner removal, persistence round-trip,
+reporting, atomic reassignment refusal, owner removal, inactive-action reservation and activation, persistence round-trip,
 one-time import, native value precedence, and malformed-store preservation.
 Private-bus compatibility calls, actual compositor key interception, complete
 KF6 client compatibility, Settings1 and portal integration belong to later
