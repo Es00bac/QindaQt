@@ -43,20 +43,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.freedesktop.secrets.service"
 
 add_subdirectory(pam)
 
-# QCore-only true idle observer consumes a caller-pinned ordinary display FD.
-find_package(Wayland REQUIRED COMPONENTS Client)
-find_package(PkgConfig REQUIRED)
-pkg_get_variable(QINDAQT_WAYLAND_PROTOCOL_DATA wayland-protocols pkgdatadir)
-find_program(QINDAQT_WAYLAND_SCANNER wayland-scanner REQUIRED)
-set(QINDAQT_IDLE_XML "${QINDAQT_WAYLAND_PROTOCOL_DATA}/staging/ext-idle-notify/ext-idle-notify-v1.xml")
-add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-client.h" "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-protocol.c"
- COMMAND ${QINDAQT_WAYLAND_SCANNER} client-header ${QINDAQT_IDLE_XML} "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-client.h"
- COMMAND ${QINDAQT_WAYLAND_SCANNER} private-code ${QINDAQT_IDLE_XML} "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-protocol.c"
- DEPENDS ${QINDAQT_IDLE_XML} VERBATIM)
-enable_language(C)
-target_sources(qindaqt_keyring_service PRIVATE daemon/idle_observer.h daemon/idle_observer.cpp "${CMAKE_CURRENT_BINARY_DIR}/ext-idle-notify-protocol.c")
-target_include_directories(qindaqt_keyring_service PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-target_link_libraries(qindaqt_keyring_service PRIVATE Wayland::Client)
+# Shared ordinary identity/idle boundaries; this daemon retains session selection,
+# legacy activation compatibility and collection lock/disclosure policy.
+target_link_libraries(qindaqt_keyring_service PUBLIC QindaQt::CompositorAttachment QindaQt::IdleObservation)
 
 target_sources(qindaqt_keyring_service PRIVATE daemon/lock_policy.h daemon/lock_policy.cpp)
 target_link_libraries(qindaqt_keyring_service PRIVATE QindaQt::SettingsClient QindaQt::SessionLockState)

@@ -4254,3 +4254,11 @@ rearm/refresh and bounded listener-context rotation. Both fixtures run with
 `QT_FATAL_WARNINGS=1` and Qt Core event loops; they qualify the public
 [attachment/idle boundary](../architecture/compositor-attachment.md), not
 consumer rewiring, runtime policy, attestation or live lock/sleep execution.
+
+The keyring consumer reruns `keyring_prompt_display`, `keyring_native_prompts`,
+`keyring_idle_observer`, `keyring_lock_policy` and `keyring_resident_policy` against
+those public modules. Its legacy activation sentinel belongs only to the daemon
+adapter; failed metadata permanently retires fallback. Existing private fixtures
+verify pinned owner/peer revocation and native late-result privacy separately
+from standard Secret Service sharing. No fixture reads a real collection or
+uses a live desktop.

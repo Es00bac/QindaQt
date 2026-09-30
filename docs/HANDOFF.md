@@ -1,3 +1,9 @@
+## 2026-09-30 — Keyring public boundary consumption and Gabbee integration
+
+Exact consumer candidate `070c0799a2e3e75072c2c2dd182553861627836d` rewires the resident keyring to the shared ordinary compositor attachment and real Wayland idle modules. The wrapper retains its selected-owner admission and permanent legacy display-2 retirement; duplicate private socket/idle implementations are removed. Manager targeted build and twenty focused fatal-warning CTests pass, covering eighteen keyring rows and both public platform modules. The separate existing keyring-check parser regression also passes 1/1; strict MkDocs and 461-document link validation pass.
+
+Gabbee exact candidate `31147a55021aec1f65fac62d979b229f79cf37cc` is integrated in its qinda main hub as `eadb8995ac8ffab99e35526e960118d1c11de232`. Manager private-bus/offscreen tests pass 88 tests plus 20 subtests with one existing PyGI deprecation warning. Command mode uses one-shot contexts and consumes recognized refused operations; late replies and owner replacement cannot reopen capture. No microphone, host window operations or installation occurred. Grouping and correlated application launch remain open compositor capabilities.
+
 ## 2026-09-30 — Shared ordinary compositor and idle boundaries
 
 Exact candidate `8c409f2cb506fc4e375ff6a5f2dc42027c891977` incorporates the public attachment/idle extraction and the first-owner lifetime repair. Selected session admission, actual unique bus owner/kernel peer/PIDFD and the same actual D-Bus daemon bind ordinary connections; this identity/lifetime proof does not grant locker authority or executable attestation. A queued initial owner advertisement preserves an already admitted live owner, while actual retained-owner loss/reclaim revokes it. Public idle observation consumes the validated descriptor with a single owner and uses real ext-idle-notify events.

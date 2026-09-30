@@ -2100,3 +2100,7 @@ Integrated candidate `f0d6edae17ea722a3d8604902cbe142e85f1ad69`: fixed SYSTEM ow
 ### Shared ordinary compositor and idle source boundary
 
 Integrated candidate `8c409f2cb506fc4e375ff6a5f2dc42027c891977` adds public ordinary compositor attachment and real Wayland idle modules. Manager targeted build and five fatal-warning focused CTests pass, including the first-owner advertisement repair and actual bus-daemon identity. Consumer rewiring and native policy composition remain separate gates; this does not claim installed locker authority.
+
+### Native key-store shared consumer and voice source checkpoints
+
+Candidate `070c0799` removes duplicate private attachment/idle implementations while retaining resident key-store policy. Manager targeted build, twenty fatal-warning keyring/public-module CTests and the separate keyring-check parser regression pass. Gabbee `31147a55` is integrated in its main hub as `eadb8995`; manager focused88 tests and20 subtests pass. Native command capability remains20 until grouping and app launch gates qualify. Full rendered key-store UI, portals, migration, and consolidated deployment remain open.
