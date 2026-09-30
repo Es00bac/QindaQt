@@ -44,7 +44,9 @@ including libwayland failure paths, and privately speaks standard
 ext-idle-notify-v1 without Qt GUI/QML or an input-method dependency.
 
 Timeouts request fresh notifications; elapsed local time never supplies idle.
-Exactly one wl_seat and one notifier must exist. Missing/duplicate globals,
+The public observer provides same-thread timeout, availability, idle, refresh
+and revoke operations so a policy owner can disable/rearm it without reaching
+into the Wayland implementation. Exactly one wl_seat and one notifier must exist. Missing/duplicate globals,
 dynamic second-seat/notifier, global removal, peer failure and lineage loss make
 both availability and idle false. A handshake deadline only fails unavailable.
 Invalidation precedes deferred teardown during dispatch. Callback identity and

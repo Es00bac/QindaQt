@@ -9,13 +9,18 @@
 #include <qindaqt/services/session_lock_state/native_lock_state_monitor.h>
 namespace QindaQt::Power { class PowerClient; }
 namespace QindaQt::Session::NativeLockRuntime {
+// AGENT-CONTRACT: Borrows the current Settings1 preferences, idle observer,
+// native request/state monitor and optional PowerClient on one Qt thread; all
+// must outlive Runtime. Manual requests never depend on idle policy. The
+// suspend callback runs only after actual Protected state, inline if already
+// protected, and is discarded on timeout/stop; it cannot veto external logind.
 class Runtime final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool available READ available NOTIFY stateChanged)
   Q_PROPERTY(QString status READ status NOTIFY stateChanged)
 public:
   Runtime(Services::LockPreferences::PreferencesProvider &preferences,
-          Platform::Idle::WaylandIdleObservation &idle,
+          Platform::Idle::IdleObservation &idle,
           Services::NativeLock::NativeLockRequest &request,
           Services::SessionLockState::NativeLockStateMonitor &state,
           Power::PowerClient *power, QObject *parent = nullptr);
@@ -42,7 +47,7 @@ private:
   bool acquireForReason(const QString &reason);
   void finishSuspend(bool protectedNow);
   Services::LockPreferences::PreferencesProvider &m_preferences;
-  Platform::Idle::WaylandIdleObservation &m_idle;
+  Platform::Idle::IdleObservation &m_idle;
   Services::NativeLock::NativeLockRequest &m_request;
   Services::SessionLockState::NativeLockStateMonitor &m_state;
   Power::PowerClient *m_power;
