@@ -17,7 +17,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core DBus)
 add_library(qindaqt_keyring_service STATIC
     daemon/session_crypto.cpp daemon/private_directory.cpp
     daemon/collection_repository.cpp daemon/secret_service.cpp daemon/service_methods.cpp
-    daemon/control_server.cpp daemon/item_methods.cpp daemon/properties.cpp daemon/prompts.cpp daemon/process_prompt_provider.cpp daemon/session_display_binding.cpp daemon/native_item_methods.cpp daemon/prompt_password_change.cpp daemon/portal_methods.cpp)
+    daemon/control_server.cpp daemon/item_methods.cpp daemon/properties.cpp daemon/prompts.cpp daemon/process_prompt_provider.cpp daemon/session_display_binding.cpp daemon/native_item_methods.cpp daemon/prompt_password_change.cpp daemon/portal_methods.cpp daemon/metadata_receipts.cpp)
 target_link_libraries(qindaqt_keyring_service PUBLIC QindaQt::KeyringStorage QindaQt::KeyringProtocol Qt6::Core Qt6::DBus PRIVATE OpenSSL::Crypto QindaQt::CompositorNames QindaQt::SecretPortalPolicy)
 target_include_directories(qindaqt_keyring_service PRIVATE daemon)
 qt_add_resources(qindaqt_keyring_service keyring_api PREFIX "/keyring" BASE data FILES data/api.xml)

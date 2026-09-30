@@ -66,7 +66,7 @@ bool SecretService::propertyMethod(const QDBusMessage &m) {
     error(m,"org.freedesktop.DBus.Error.UnknownMethod"); return true;
 }
 bool SecretService::nativeMethod(const QDBusMessage &m) {
-    if (portalMethod(m) || nativeItemMethod(m)) return true;
+    if (metadataMethod(m) || portalMethod(m) || nativeItemMethod(m)) return true;
     if(m.member()=="RequestPolicyState") {
         const auto nonce=m.arguments().value(0).toString();
         const auto parsed=QUuid::fromString(nonce);
@@ -83,12 +83,7 @@ bool SecretService::nativeMethod(const QDBusMessage &m) {
         reply(m,{state});return true;
     }
     if (m.member() == "ListCollections" && m.signature().isEmpty()) {
-        QVariantMap result;
-        for (const auto &id : repository_.names()) {
-            const auto c = repository_.find(id);
-            result[id] = QVariantMap{{"Path",variantPath(collectionPath(id))},{"Label",c->label},
-                {"Locked",repository_.locked(id)},{"IndexAuthenticated",repository_.search(id,{}).authenticated}};
-        }
+        const auto result=collectionMetadata();
         reply(m,{result}); return true;
     }
     if (m.member() == "AttachSessionWithDisplay" && m.signature() == "s") {

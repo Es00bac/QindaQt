@@ -42,6 +42,9 @@ private:
     bool itemMethod(const QDBusMessage &, const QString &id, const QString &item);
     bool propertyMethod(const QDBusMessage &);
     bool nativeMethod(const QDBusMessage &);
+    QVariantMap collectionMetadata();
+    protocol::MetadataRows itemMetadata(const QString &collectionPath);
+    bool metadataMethod(const QDBusMessage &);
     bool nativeItemMethod(const QDBusMessage &);
     bool portalMethod(const QDBusMessage &);
     bool portalCaller(const QString &) const;

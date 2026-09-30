@@ -62,6 +62,8 @@
 <method name="ChangePasswordWithPrompt"><arg type="o" direction="in"/><arg type="o" direction="out"/></method>
 <!-- Targeted nonce receipts prove actual daemon sender; method success is
      transport acknowledgement, never secret/state authority. -->
+<method name="RequestMetadata"><arg name="nonce" type="s" direction="in"/><arg name="kind" type="s" direction="in"/><arg name="object" type="o" direction="in"/></method>
+<signal name="MetadataReceipt"><arg name="nonce" type="s"/><arg name="kind" type="s"/><arg name="rows" type="v"/></signal>
 <method name="RequestPolicyState"><arg name="nonce" type="s" direction="in"/></method>
 <signal name="PolicyStateReceipt"><arg name="nonce" type="s"/><arg name="state" type="a{sv}"/></signal>
 <method name="RequestPortalSecret"><arg name="application" type="s" direction="in"/><arg name="nonce" type="s" direction="in"/></method>

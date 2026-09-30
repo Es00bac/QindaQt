@@ -13,7 +13,9 @@ namespace QindaQt::Services::KeyringClient {
 // Uses public Secret Service plain sessions; framework plaintext allocations
 // are short-lived, owned wire copies wiped, not universally locked pages.
 // Construction disables process cores/dumpability before any secret request;
-// failure leaves unavailable. No activation, password capture or storage access.
+// failure leaves unavailable. Native metadata requires targeted nonce receipts;
+// an older daemon without them fails closed. Secret bytes require the actual
+// owned prompt signal plus final native policy. No password capture or storage access.
 class QtKeyringGateway final : public KeyringGateway {
     Q_OBJECT
 public:
@@ -26,6 +28,7 @@ private Q_SLOTS:
     void promptCompleted(bool, const QDBusVariant &, const QDBusMessage &);
     void disconnected();
     void collectionStateChanged(const QDBusObjectPath &,bool,bool,const QDBusMessage &);
+    void metadataReceipt(const QString &,const QString &,const QDBusVariant &,const QDBusMessage &);
     void policyStateReceipt(const QString &,const QVariantMap &,const QDBusMessage &);
     void policyStateChanged(const QVariantMap &,const QDBusMessage &);
 private:
