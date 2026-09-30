@@ -187,7 +187,7 @@ identity, description, owner label, default sequences, current sequences, and
 repeat policy. Registration and reassignment reject a complete sequence
 already owned by another action and report that owner; a rejected edit leaves
 the existing binding intact. Removing a component releases its bindings.
-Locked and shortcut-inhibited contexts do not dispatch actions.
+Locked and shortcut-inhibited contexts do not dispatch actions. Runtime deactivation also blocks dispatch while preserving the action key reservation, so another owner cannot claim the key during a temporary component lifecycle transition. This is policy groundwork only: the current KGlobalAccel endpoint remains active until PF23 qualifies the full replacement.
 
 The store uses a versioned JSON document written through QSaveFile. The
 legacy import boundary accepts the bounded binding records produced by a
