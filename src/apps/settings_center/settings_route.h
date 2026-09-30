@@ -30,6 +30,7 @@ enum class SettingsRouteComponent {
   Screensaver,
   LoginScreen,
   Voice,
+  Keyring,
 };
 
 [[nodiscard]] QString
