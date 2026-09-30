@@ -336,3 +336,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0312: Import complete legacy stores and preserve exact portal secrets](0312-preserve-exact-legacy-portal-secrets.md)
 - [ADR-0313: Native night-light schedule authority and Settings1 preferences](0313-native-night-light.md)
+
+- [ADR-0317: Own the native global shortcut registry](0317-native-global-shortcut-registry.md)
