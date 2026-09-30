@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
+qt_add_executable(qindaqt_compositor_attachment_tests tst_compositor_attachment.cpp)
+target_link_libraries(qindaqt_compositor_attachment_tests PRIVATE QindaQt::CompositorAttachment QindaQt::CompositorNames Qt6::Test)
+target_compile_definitions(qindaqt_compositor_attachment_tests PRIVATE QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
+qindaqt_enable_warnings(qindaqt_compositor_attachment_tests)
+add_test(NAME qindaqt.compositor-attachment COMMAND qindaqt_compositor_attachment_tests)

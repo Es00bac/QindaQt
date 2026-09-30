@@ -319,3 +319,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0301: Share semantic window management with voice](0301-share-semantic-window-management-with-voice.md)
 - [ADR-0303: Resolve window application identity through the neutral catalog](0303-resolve-window-identity-through-application-catalog.md)
 - [ADR-0308: Store native lock preferences in Settings1 and import once](0308-native-lock-preferences-and-atomic-import.md)
+
+- [ADR-0305: Share ordinary compositor attachment identity and lifetime](0305-public-ordinary-compositor-attachment.md)
+- [ADR-0307: Share readonly idle observation on an admitted ordinary display FD](0307-public-ordinary-fd-idle-observation.md)

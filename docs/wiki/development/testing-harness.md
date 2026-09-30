@@ -4236,3 +4236,21 @@ Run these plus repository and existing PowerDevil import gates under
 `QT_FATAL_WARNINGS=1`. These tests qualify
 [ADR-0308](../adr/0308-native-lock-preferences-and-atomic-import.md), not native
 Settings UI, runtime policy, live lock/sleep or installed rollout.
+
+## Public ordinary compositor attachment and idle
+
+`qindaqt.compositor-attachment` uses a private bus and ordinary UNIX listeners to
+prove current caller session admission, actual owner/PID/kernel peer/PIDFD,
+optional independently accepted peer expectation, CLOEXEC transfer, unsafe path
+and symlink/name rejection, same-UID wrong process and pathname replacement,
+synchronous admission/owner loss, reentrant revocation and real owned-process
+death before owner watchers. No live compositor or session is contacted.
+
+`qindaqt.wayland-idle-observation` uses a real private libwayland server/socketpair
+to prove actual protocol idled/resumed, elapsed-local-time non-authority, exact
+live-lineage recheck, missing/duplicate initial globals, dynamic second-seat and
+notifier rejection, global removal, peer failure, old queued events, reentrant
+rearm/refresh and bounded listener-context rotation. Both fixtures run with
+`QT_FATAL_WARNINGS=1` and Qt Core event loops; they qualify the public
+[attachment/idle boundary](../architecture/compositor-attachment.md), not
+consumer rewiring, runtime policy, attestation or live lock/sleep execution.

@@ -213,3 +213,5 @@ add_subdirectory(application_window_management)
 
 add_subdirectory(services/keyring_client)
 add_subdirectory(window_management)
+add_subdirectory(platform/compositor_attachment)
+add_subdirectory(platform/idle_observation)
