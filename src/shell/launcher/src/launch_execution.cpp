@@ -178,6 +178,16 @@ bool expandToken(const QString &token, const ExecExpansionValues &values,
       continue;
     }
     const bool standalone = expanded.size() == 2;
+    if (isFileCode(code) && !values.urls.isEmpty()) {
+      if (!standalone || (code != QLatin1Char('u') && code != QLatin1Char('U'))) {
+        *error = ExecPlanError::UnsupportedFieldCode;
+        return false;
+      }
+      const QStringList urls = code == QLatin1Char('U') ? values.urls : values.urls.mid(0, 1);
+      replacement->append(urls);
+      *fileArguments = std::max(*fileArguments, urls.size());
+      return true;
+    }
     if (isFileCode(code) && !values.localFiles.isEmpty()) {
       // ADR-0269: the same whole-token rule as the dropped codes below; a
       // path spliced into a larger token would change its argument's meaning.
@@ -327,6 +337,10 @@ ExecutionParseResult LaunchExecutionParser::parse(const QString &documentText,
 ExecPlanResult ExecFieldCodeExpander::expand(const QString &decodedExec,
                                              const ExecExpansionValues &values)
 {
+  if (!values.urls.isEmpty() && !values.localFiles.isEmpty()) {
+    return planFailure(ExecPlanError::UnsupportedFieldCode,
+                       QStringLiteral("URI and local file inputs are exclusive"));
+  }
   if (decodedExec.size() > ExecutionBounds::maxExecCodeUnits) {
     return planFailure(ExecPlanError::ExecTooLarge,
                        QStringLiteral("Exec exceeds the execution ceiling"));

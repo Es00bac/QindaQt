@@ -292,3 +292,5 @@ if(TEST qindaqt.portal-frontend-routing)
     set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
                  DEPENDS "qindaqt.portal-frontend-routing;qindaqt.portal-frontend-routing-negative")
 endif()
+
+add_subdirectory(foundation)

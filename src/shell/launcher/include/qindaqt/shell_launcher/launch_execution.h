@@ -77,6 +77,11 @@ struct ExecExpansionValues {
   // for the URL codes, so no URL is ever built or guessed). The caller has
   // already validated the paths; this grammar never reads the filesystem.
   QStringList localFiles = {};
+  // ADR0318: encoded absolute URIs for native default-application opening.
+  // Exclusive with localFiles. Only standalone %u/%U consume them; file codes
+  // refuse URI input. Caller validates the scheme/content before this pure
+  // argv grammar, which never opens a URL, invokes a shell or reads a file.
+  QStringList urls = {};
 };
 
 enum class ExecPlanError {
@@ -91,7 +96,7 @@ enum class ExecPlanError {
 struct ExecPlan {
   QString program;
   QStringList arguments;
-  // ADR-0269: how many ExecExpansionValues::localFiles the argv carries -- 0
+  // ADR-0269/0318: how many localFiles or urls the argv carries -- 0
   // when Exec has no file code, 1 for %f/%u, all of them for %F/%U. A caller
   // holding more files than this plans one launch per file.
   qsizetype fileArguments = 0;
@@ -110,8 +115,9 @@ struct ExecPlanResult {
 // Turns a decoded Exec string into an argv vector without any shell
 // interpolation: double-quote grouping with the \" \\ \` \$ escapes, field
 // codes per the desktop-entry specification, and fixed output ceilings.
-// %f/%F/%u/%U expand to ExecExpansionValues::localFiles when there are any
-// and are otherwise dropped as whole tokens (the launcher supplies none), as
+// %f/%F/%u/%U expand to validated localFiles when there are any; %u/%U
+// can instead consume validated urls (the two inputs are exclusive). Local files
+// and URL codes without inputs drop as whole tokens (the launcher supplies none), as
 // are the deprecated %d/%D/%n/%N/%v/%m codes; an unknown or embedded file or
 // list code is a typed error, and so is a file code in the program position,
 // so a hostile Exec can never smuggle text into a different argument

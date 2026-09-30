@@ -16,7 +16,7 @@ keys and value meanings are defined by the upstream
 
 ## Responsibility and non-goals
 
-`src/services/portal` owns one narrow result: exporting confirmed QindaQt
+The appearance libraries in `src/services/portal` own one narrow result: exporting confirmed QindaQt
 appearance truth through the standard Settings portal. It has three internal
 layers:
 
@@ -27,7 +27,7 @@ layers:
 | Appearance adapter | Standard Settings marshalling, filtering and change signals | Persistence or Secret policy |
 | Resident composition | Service ownership, activation, bus-loss shutdown, separately borrowed Secret adaptor | Secret storage, app identity or prompt policy |
 
-The appearance module does **not** implement a chooser, OpenURI, notifications, inhibit, screencast, remote desktop, secret storage or a consent dialog. The resident additionally composes the separate [native Secret module](secret-portal.md); its `.portal` advertises exactly Settings and Secret. The module owns
+The appearance module does **not** implement a chooser, OpenURI, notifications, inhibit, screencast, remote desktop, secret storage or a consent dialog. The resident additionally composes the separate [native Secret module](secret-portal.md) and source-candidate [native portal foundation](portal-foundation.md); its `.portal` advertises exactly Settings and Secret. The module owns
 QindaQt's frontend selection file and keeps an explicit routing decision for
 every portal family ([ADR-0133](../adr/0133-route-every-portal-family.md)),
 but it does not replace, embed, or supervise `xdg-desktop-portal`; a routing
