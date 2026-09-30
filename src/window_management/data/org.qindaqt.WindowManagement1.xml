@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node name="/org/qindaqt/WindowManagement">
+  <interface name="org.qindaqt.WindowManagement1">
+    <method name="BeginCommand"><arg name="result" type="ay" direction="out"/></method>
+    <method name="ExecuteCommand"><arg name="contextId" type="s" direction="in"/><arg name="request" type="ay" direction="in"/><arg name="result" type="ay" direction="out"/></method>
+    <method name="CancelCommand"><arg name="contextId" type="s" direction="in"/><arg name="result" type="ay" direction="out"/></method>
+  </interface>
+</node>

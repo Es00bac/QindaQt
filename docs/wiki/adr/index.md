@@ -316,3 +316,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0300: Authenticate native PAM token delivery through the system owner](0300-trusted-native-keyring-pam.md)
 
 - [ADR-0302: Native Passwords & Keys client and prompt policy](0302-native-passwords-keys-client-and-policy.md)
+- [ADR-0301: Share semantic window management with voice](0301-share-semantic-window-management-with-voice.md)

@@ -3,6 +3,12 @@
 # The qindaqt-kwin names (ADR-0291) are shared by the session, services,
 # Settings, shell and compositor plugin, so they come first.
 add_subdirectory(compositor_names)
+add_subdirectory(lock_authentication)
+if(QINDAQT_BUILD_PRODUCTION_SHELL OR BUILD_TESTING)
+    add_subdirectory(lock_platform)
+    add_subdirectory(lock_worker_client)
+    add_subdirectory(lock_protocol)
+endif()
 add_subdirectory(profiles)
 add_subdirectory(shell_layout)
 add_subdirectory(panel_blur)
@@ -27,6 +33,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN OR BUILD_TESTING)
 endif()
 add_subdirectory(hybrid)
 add_subdirectory(application_window_management)
+add_subdirectory(window_management)
 add_subdirectory(hybrid_constraints)
 add_subdirectory(hybrid_gather)
 # Maps the task-list applet projection onto the gather planner's rectangles,
@@ -225,3 +232,7 @@ if(QINDAQT_BUILD_SHELL)
 endif()
 
 add_subdirectory(services/keyring)
+
+if(QINDAQT_BUILD_PRODUCTION_SHELL OR BUILD_TESTING)
+    add_subdirectory(lock_greeter)
+endif()
