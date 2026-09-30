@@ -56,3 +56,10 @@ headers or sharing the privileged locker connection.
 
 See [module boundaries](module-boundaries.md) and the focused
 [testing harness](../development/testing-harness.md).
+
+The additive `sameBus(connection)` query compares daemon `GetId` replies with
+explicit 250 ms call timeouts while rechecking live attachment admission. This
+is necessary for manual native requests because owner/PID strings can collide
+across two independent bus daemons. A queued initial advertisement of the
+already admitted owner does not revoke a freshly attached display; actual loss
+of the retained owner still revokes even when it reclaims its service name.

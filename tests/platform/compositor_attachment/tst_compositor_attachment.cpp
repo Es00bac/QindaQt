@@ -18,6 +18,8 @@
 using namespace QindaQt::Platform::Compositor;
 class Bus final {
 public:
+  inline static int next = 0;
+  int id = ++next;
   Bus() {
     daemon.start(QStringLiteral(QINDAQT_DBUS_DAEMON_EXECUTABLE),
                  {"--session", "--nofork", "--print-address=1"});
@@ -32,8 +34,9 @@ public:
     daemon.waitForFinished(5000);
   }
   QDBusConnection connect(const QString &suffix) {
-    const auto name = QStringLiteral("attachment-%1-%2")
+    const auto name = QStringLiteral("attachment-%1-%2-%3")
                           .arg(QCoreApplication::applicationPid())
+                          .arg(id)
                           .arg(suffix);
     names.append(name);
     return QDBusConnection::connectToBus(address, name);
@@ -161,6 +164,8 @@ class AttachmentTest final : public QObject {
   Q_OBJECT
 private slots:
   void pinsActualOrdinaryPeerAndTransfersCloexecDescriptor();
+  void initialAdvertisementDoesNotRevokeButActualLossDoes();
+  void separateDaemonCannotReuseOwnerAndPid();
   void rejectsDeniedSelectionAndIncorrectIndependentPeer();
   void authorityLossRevokesBeforeQueuedWatchers();
   void rejectsUnsafePathsAndCanonicalNameViolations();
@@ -200,6 +205,60 @@ void AttachmentTest::pinsActualOrdinaryPeerAndTransfersCloexecDescriptor() {
   QVERIFY(!attachment.identity());
   QCOMPARE(attachment.openConnection(), -1);
   QCOMPARE(revoked.count(), 1);
+}
+void AttachmentTest::initialAdvertisementDoesNotRevokeButActualLossDoes() {
+  Bus fixture;
+  auto compositor = fixture.connect("compositor"),
+       session = fixture.connect("session"), client = fixture.connect("client");
+  QTemporaryDir runtime;
+  const auto name =
+      QString(QindaQt::CompositorNames::waylandSocketPrefix) + "0";
+  Listener socket(runtime.filePath(name));
+  QVERIFY(socket.fd >= 0);
+  CompositorAttachment attachment(
+      client, runtime.path(),
+      [&](const QString &owner) { return owner == session.baseService(); });
+  QTest::qWait(10);
+  QSignalSpy revoked(&attachment, &CompositorAttachment::revoked);
+  QVERIFY(
+      compositor.registerService(QString(QindaQt::CompositorNames::service)));
+  QVERIFY(attachment.attach(session.baseService(), name));
+  QTest::qWait(150);
+  QVERIFY(attachment.live());
+  QVERIFY(revoked.isEmpty());
+  QVERIFY(
+      compositor.unregisterService(QString(QindaQt::CompositorNames::service)));
+  QVERIFY(
+      compositor.registerService(QString(QindaQt::CompositorNames::service)));
+  QTRY_COMPARE(revoked.size(), 1);
+  QVERIFY(!attachment.live());
+}
+void AttachmentTest::separateDaemonCannotReuseOwnerAndPid() {
+  Bus first, second;
+  auto compositor = first.connect("compositor"),
+       session = first.connect("session"), client = first.connect("client");
+  auto other = second.connect("compositor"),
+       otherSession = second.connect("session"),
+       otherClient = second.connect("client");
+  QVERIFY(
+      compositor.registerService(QString(QindaQt::CompositorNames::service)));
+  QVERIFY(other.registerService(QString(QindaQt::CompositorNames::service)));
+  QCOMPARE(compositor.baseService(), other.baseService());
+  QCOMPARE(client.interface()->servicePid(compositor.baseService()).value(),
+           otherClient.interface()->servicePid(other.baseService()).value());
+  QTemporaryDir runtime;
+  const auto name =
+      QString(QindaQt::CompositorNames::waylandSocketPrefix) + "0";
+  Listener socket(runtime.filePath(name));
+  QVERIFY(socket.fd >= 0);
+  CompositorAttachment attachment(
+      client, runtime.path(),
+      [&](const QString &owner) { return owner == session.baseService(); });
+  QVERIFY(!attachment.sameBus(client));
+  QVERIFY(attachment.attach(session.baseService(), name));
+  QVERIFY(attachment.sameBus(client));
+  QVERIFY(attachment.sameBus(session));
+  QVERIFY(!attachment.sameBus(otherClient));
 }
 void AttachmentTest::rejectsDeniedSelectionAndIncorrectIndependentPeer() {
   Bus fixture;

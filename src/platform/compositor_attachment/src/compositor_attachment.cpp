@@ -26,11 +26,15 @@ public:
                 QDBusServiceWatcher::WatchForOwnerChange, &q) {
     if (bus.interface())
       bus.interface()->setTimeout(250);
-    QObject::connect(&watcher, &QDBusServiceWatcher::serviceOwnerChanged, &q,
-                     [this](const QString &, const QString &, const QString &) {
-                       if (current)
-                         clear();
-                     });
+    QObject::connect(
+        &watcher, &QDBusServiceWatcher::serviceOwnerChanged, &q,
+        [this](const QString &, const QString &oldOwner, const QString &) {
+          // A queued initial advertisement may arrive after attach
+          // already admitted that exact owner. Actual loss of the
+          // retained owner revokes even if it later reclaims the name.
+          if (current && (oldOwner == current->compositorOwner || !live()))
+            clear();
+        });
     check.setInterval(100);
     QObject::connect(&check, &QTimer::timeout, &q, [this] {
       if (!live())
@@ -140,6 +144,18 @@ bool CompositorAttachment::attach(const QString &sessionOwner,
   return serial == d->generation && d->live();
 }
 bool CompositorAttachment::live() const { return d->live(); }
+bool CompositorAttachment::sameBus(const QDBusConnection &connection) const {
+  if (!d->live() || !connection.isConnected())
+    return false;
+  const auto request = QDBusMessage::createMethodCall(
+      QStringLiteral("org.freedesktop.DBus"),
+      QStringLiteral("/org/freedesktop/DBus"),
+      QStringLiteral("org.freedesktop.DBus"), QStringLiteral("GetId"));
+  const QDBusReply<QString> own = d->bus.call(request, QDBus::Block, 250);
+  const QDBusReply<QString> peer = connection.call(request, QDBus::Block, 250);
+  return own.isValid() && peer.isValid() && !own.value().isEmpty() &&
+         own.value() == peer.value() && d->live();
+}
 std::optional<AttachmentIdentity> CompositorAttachment::identity() const {
   return d->live() ? std::optional<AttachmentIdentity>(*d->current)
                    : std::nullopt;
