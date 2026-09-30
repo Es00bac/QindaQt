@@ -2,6 +2,15 @@
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus Test)
 
+qt_add_executable(qindaqt_night_light_schedule_tests tst_night_light_schedule.cpp)
+target_link_libraries(qindaqt_night_light_schedule_tests
+                      PRIVATE QindaQt::NightLight Qt6::Core Qt6::Test)
+qindaqt_enable_warnings(qindaqt_night_light_schedule_tests)
+add_test(NAME qindaqt.night-light-schedule
+         COMMAND qindaqt_night_light_schedule_tests)
+set_tests_properties(qindaqt.night-light-schedule
+                     PROPERTIES LABELS "service;night-light;display")
+
 qt_add_executable(qindaqt_night_light_values_tests tst_night_light_values.cpp)
 target_link_libraries(qindaqt_night_light_values_tests
                       PRIVATE QindaQt::NightLight Qt6::Core Qt6::Test)
@@ -25,6 +34,33 @@ add_test(NAME qindaqt.night-light-config-port
          COMMAND qindaqt_night_light_config_port_tests)
 set_tests_properties(qindaqt.night-light-config-port
                      PROPERTIES LABELS "service;night-light;display")
+
+
+qt_add_executable(qindaqt_night_light_schedule_service_tests
+                  tst_night_light_schedule_service.cpp
+                  ../display_client/support/fake_display_transport.h)
+target_link_libraries(qindaqt_night_light_schedule_service_tests
+    PRIVATE QindaQt::NightLightScheduleService QindaQt::NightLight
+            QindaQt::SettingsClient QindaQt::DisplayClient Qt6::Core Qt6::DBus Qt6::Test)
+target_compile_definitions(qindaqt_night_light_schedule_service_tests PRIVATE
+    QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
+qindaqt_enable_warnings(qindaqt_night_light_schedule_service_tests)
+add_test(NAME qindaqt.night-light-schedule-service
+         COMMAND qindaqt_night_light_schedule_service_tests)
+set_tests_properties(qindaqt.night-light-schedule-service
+                     PROPERTIES LABELS "service;night-light;display;dbus")
+
+qt_add_executable(qindaqt_night_light_schedule_client_tests
+                  tst_night_light_schedule_client.cpp)
+target_link_libraries(qindaqt_night_light_schedule_client_tests
+                      PRIVATE QindaQt::NightLight Qt6::Core Qt6::DBus Qt6::Test)
+target_compile_definitions(qindaqt_night_light_schedule_client_tests PRIVATE
+    QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
+qindaqt_enable_warnings(qindaqt_night_light_schedule_client_tests)
+add_test(NAME qindaqt.night-light-schedule-client
+         COMMAND qindaqt_night_light_schedule_client_tests)
+set_tests_properties(qindaqt.night-light-schedule-client
+                     PROPERTIES LABELS "service;night-light;display;dbus")
 
 qt_add_executable(qindaqt_night_light_state_port_tests
                   tst_night_light_state_port.cpp)

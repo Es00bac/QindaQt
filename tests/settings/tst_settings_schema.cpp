@@ -19,6 +19,7 @@ private slots:
     void canonicalizesRecursiveObjectValues();
     void rejectsObjectTextThatCannotRoundTripLosslessly();
     void doNotDisturbDefaultsToDisabled();
+    void nightLightKeysMatchBoundedPublicValues();
     void rejectsAnUnsupportedSchemaVersion();
     void dropsUndefinableEntriesOnlyWhenAsked();
 };
@@ -200,6 +201,39 @@ void SettingsSchemaTests::doNotDisturbDefaultsToDisabled()
     QCOMPARE(schema->systemDefaults().value(QStringLiteral("services.doNotDisturb")).toBool(), false);
     QVERIFY(schema->validateValue(QStringLiteral("services.doNotDisturb"), true).isValid());
     QVERIFY(!schema->validateValue(QStringLiteral("services.doNotDisturb"), QStringLiteral("on")).isValid());
+}
+
+void SettingsSchemaTests::nightLightKeysMatchBoundedPublicValues()
+{
+    QString error;
+    const auto schema = SettingsSchema::fromFile(
+        QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+    QVERIFY2(schema.has_value(), qPrintable(error));
+
+    const auto active = QStringLiteral("display.nightLight.active");
+    const auto mode = QStringLiteral("display.nightLight.mode");
+    const auto day = QStringLiteral("display.nightLight.dayTemperatureKelvin");
+    const auto source = QStringLiteral("display.nightLight.scheduleSource");
+    const auto sunrise = QStringLiteral("display.nightLight.sunriseStart");
+    const auto outputs = QStringLiteral("display.nightLight.disabledOutputs");
+    QCOMPARE(domainKeyPrefix(SettingDomain::Displays), QStringLiteral("displays"));
+    QVERIFY(schema->definition(active)->domain == SettingDomain::Displays);
+    QCOMPARE(schema->systemDefaults().value(active).toBool(), false);
+    QCOMPARE(schema->systemDefaults().value(mode).toString(), QStringLiteral("DarkLight"));
+    QCOMPARE(schema->systemDefaults().value(day).toLongLong(), 6500);
+    QCOMPARE(schema->systemDefaults().value(source).toString(), QStringLiteral("Location"));
+    QCOMPARE(schema->systemDefaults().value(sunrise).toString(), QStringLiteral("06:00:00"));
+    QCOMPARE(schema->systemDefaults().value(outputs).metaType().id(), QMetaType::QStringList);
+
+    QVERIFY(schema->validateValue(mode, QStringLiteral("Constant")).isValid());
+    QVERIFY(!schema->validateValue(mode, QStringLiteral("Automatic")).isValid());
+    QVERIFY(schema->validateValue(day, 1000).isValid());
+    QVERIFY(!schema->validateValue(day, 995).isValid());
+    QVERIFY(schema->validateValue(QStringLiteral("display.nightLight.transitionSeconds"), 7200).isValid());
+    QVERIFY(!schema->validateValue(QStringLiteral("display.nightLight.transitionSeconds"), 7201).isValid());
+    QVERIFY(schema->validateValue(outputs, QStringList{QStringLiteral("output-id")}).isValid());
+    QVERIFY(!schema->validateValue(outputs, QStringLiteral("output-id")).isValid());
+
 }
 
 void SettingsSchemaTests::rejectsAnUnsupportedSchemaVersion()

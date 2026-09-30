@@ -3,6 +3,8 @@
 #include <qindaqt/services/night_light/night_light_values.h>
 
 #include <cmath>
+#include <QRegularExpression>
+#include <QSet>
 
 namespace QindaQt::Services::NightLight {
 
@@ -51,10 +53,26 @@ bool isValidScheduleTimes(QTime sunriseStart, QTime sunsetStart)
            && sunriseStart < sunsetStart;
 }
 
+bool isValidStableOutputId(const QString &stableId)
+{
+    static const QRegularExpression pattern(
+        QStringLiteral("^[A-Za-z0-9][A-Za-z0-9_.:-]{0,109}(?:#[1-9][0-9]{0,2})?$") );
+    return stableId.toUtf8().size() <= 128 && pattern.match(stableId).hasMatch();
+}
+
 bool isValidOutput(const OutputSettings &output)
 {
-    return isValidTemperature(output.dayTemperatureKelvin)
-           && isValidTemperature(output.nightTemperatureKelvin);
+    if (!isValidTemperature(output.dayTemperatureKelvin)
+        || !isValidTemperature(output.nightTemperatureKelvin)
+        || output.disabledOutputs.size() > 32) {
+        return false;
+    }
+    QSet<QString> unique;
+    for (const QString &id : output.disabledOutputs) {
+        if (!isValidStableOutputId(id) || unique.contains(id)) return false;
+        unique.insert(id);
+    }
+    return true;
 }
 
 bool isValidSchedule(const ScheduleSettings &schedule)

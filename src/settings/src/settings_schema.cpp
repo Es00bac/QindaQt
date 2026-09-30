@@ -115,7 +115,11 @@ std::optional<SettingsSchema> SettingsSchema::fromJson(const QByteArray &json,
                        QStringLiteral("domain or type is unknown"));
             continue;
         }
-        if (!definition.key.startsWith(domainKeyPrefix(definition.domain) + QLatin1Char('.'))) {
+        const bool domainPrefixMatches =
+            definition.key.startsWith(domainKeyPrefix(definition.domain) + QLatin1Char('.'))
+            || (definition.domain == SettingDomain::Displays
+                && definition.key.startsWith(QStringLiteral("display.")));
+        if (!domainPrefixMatches) {
             result.add(definition.key,
                        QStringLiteral("domain-mismatch"),
                        QStringLiteral("key prefix does not match its domain"));

@@ -28,6 +28,7 @@ private Q_SLOTS:
     void configTokenMappingRejectsForeignTokens();
     void busModeMappingRejectsOutdatedDocumentation();
     void completeValueValidation();
+    void perOutputOptOutUsesBoundedStableIds();
 };
 
 void NightLightValuesTests::temperatureBoundsAndStep()
@@ -142,6 +143,24 @@ void NightLightValuesTests::busModeMappingRejectsOutdatedDocumentation()
     QVERIFY(!modeFromBusValue(2).has_value());
     QVERIFY(!modeFromBusValue(3).has_value());
     QVERIFY(!modeFromBusValue(4294967295u).has_value());
+}
+
+void NightLightValuesTests::perOutputOptOutUsesBoundedStableIds()
+{
+    QVERIFY(isValidStableOutputId(QStringLiteral("edid:00112233445566778899aabbccddeeff")));
+    QVERIFY(isValidStableOutputId(QStringLiteral("conn:DP-1")));
+    QVERIFY(isValidStableOutputId(QStringLiteral("conn:DP-1#2")));
+    QVERIFY(!isValidStableOutputId(QStringLiteral("DP 1")));
+    QVERIFY(!isValidStableOutputId(QString(129, QLatin1Char('a'))));
+
+    OutputSettings output;
+    output.disabledOutputs = {QStringLiteral("edid:00112233445566778899aabbccddeeff"),
+                              QStringLiteral("conn:DP-1")};
+    QVERIFY(isValidOutput(output));
+    output.disabledOutputs.append(QStringLiteral("conn:DP-1"));
+    QVERIFY(!isValidOutput(output));
+    output.disabledOutputs = QStringList(33, QStringLiteral("conn:DP-1"));
+    QVERIFY(!isValidOutput(output));
 }
 
 void NightLightValuesTests::completeValueValidation()
