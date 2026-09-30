@@ -147,10 +147,40 @@ scenes do not qualify physical lock/input/capture behavior.
 The native driver retains a live post-completion snapshot while the probe
 windows still exist; Qt surface teardown before process exit is not treated as
 the result of a completed placement request. Both output rows require that
-completion fence as well as the mapped plugin and actual scene geometry.
+completion fence as well as the exact loaded plugin and actual scene geometry.
 
 The shared [semantic command boundary](window-management-commands.md) extends
 first-party input/voice management separately. It does not grant V1 clients
 global authority or change same-client surface authentication.
 
 The native placement scenario now verifies actual output scale and Qt client DPR in addition to scene membership, active page, tiled frames and unchanged unrelated foreground. The actual-150% row records 77 protocol results and 58 read-only snapshots; a scenario filename alone is not scale evidence.
+
+## Placement before the first frame
+
+Applications may submit a request before showing their new window. A managed
+identity can exist before the compositor marks the window ready for painting;
+the server waits for both identity and readiness within the same five-second
+deadline. Destruction, cancellation and lock still retire the pending request.
+An early request never bypasses the ordinary foreground or ownership checks.
+
+The private native probe submits its initial tab request against an unshown
+window, then shows it 500 milliseconds later. The same request must complete
+with actual scene membership. Normal and actual-150% scenarios remain required;
+this source change alone is not installed-session qualification.
+
+The private SDK client retains fatal Qt warnings. The compositor fixture runs
+without that global switch because its copied, non-capability executable emits
+upstream's expected failure to acquire real-time priority. Its logs and actual
+scene checks remain mandatory; this is not a production priority qualification.
+The deadline is checked even when readiness arrives after a delayed event loop.
+
+The production fork disables dumpability at startup. Ordinary fixture clients
+do not read its protected process maps. The runner enables Qt plugin diagnostics
+for the compositor and requires the successful `qt.core.library` load record
+for the exact candidate plugin path; metadata discovery alone cannot pass.
+The probe disables those diagnostics and retains fatal Qt warnings. This
+provenance check requires no privilege or change to compositor hardening.
+
+Managed-window notifications queue placement processing until the registry
+publication has reached the Hybrid topology subscriber. A ready first frame
+alone does not mean the independent-window topology is already published.

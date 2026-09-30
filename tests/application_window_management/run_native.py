@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Run native application placement in an isolated bus and virtual compositor."""
-import argparse,json,os,shutil,subprocess,sys,tempfile
+import argparse,json,os,re,shutil,subprocess,sys,tempfile
 from pathlib import Path
 HERE=Path(__file__).resolve().parent
 sys.path.insert(0,str(HERE.parents[0]/"session"))
@@ -15,7 +15,7 @@ def main():
     spec=load_virtual_spec(args.scenario)
     with tempfile.TemporaryDirectory(prefix="qinda-app-",dir="/tmp") as private:
         root=Path(private);env=isolated_environment(root)
-        env.update(APP_PLACEMENT_OUTPUT=str(args.output.resolve()),APP_PLACEMENT_PROBE=str(args.probe.resolve()),PYTHONDONTWRITEBYTECODE="1",APP_PLACEMENT_EXPECTED_SCALE=str(spec.scale))
+        env.update(APP_PLACEMENT_OUTPUT=str(args.output.resolve()),APP_PLACEMENT_PROBE=str(args.probe.resolve()),PYTHONDONTWRITEBYTECODE="1",APP_PLACEMENT_EXPECTED_SCALE=str(spec.scale),QT_DEBUG_PLUGINS="1")
         # Preserve the fork basename: it participates in Qt plugin discovery.
         runtime=args.output/"kwin-nocap"/args.kwin.name;runtime.parent.mkdir(exist_ok=True)
         shutil.copyfile(args.kwin,runtime);runtime.chmod(0o755)
@@ -28,6 +28,12 @@ def main():
     if not evidence_file.exists():print("No private scene evidence; inspect session.log",file=sys.stderr);return 1
     evidence=json.loads(evidence_file.read_text());log=(args.output/"probe.log").read_text()
     mapped=str((args.plugin_root/"qindaqt-kwin"/"plugins"/"qindaqt_compositor.so").resolve())
+    # AGENT-GUARD: Metadata discovery is not a successful module load. Require
+    # the exact Qt library-loader success record, not a requested plugin path.
+    # Reading the hardened compositor's /proc maps from its child is forbidden.
+    loaded = bool(re.search(r'qt\.core\.library:\s*"' + re.escape(mapped) + r'"\s+loaded library\b', result.stdout+result.stderr))
+    evidence["pluginLoad"] = {"path":mapped,"successfulLoaderTrace":loaded}
+    evidence_file.write_text(json.dumps(evidence,indent=2))
     # Read-only scene evidence verifies membership, active tab and tiled frames;
     # completion events alone would miss a transport that reported false success.
     last=evidence.get("completionSnapshot")
@@ -44,7 +50,7 @@ def main():
     foreground=any(value.get("active") is True and not value.get("containerId") for value in windows.values())
     scales=last.get("outputs",{}).get("outputs",[])
     actual_scale=bool(scales) and all(abs(row.get("scale",0)-spec.scale)<.01 for row in scales) and f"ACTUAL_PLACEMENT_DPR={spec.scale:.2f}" in log
-    passed=actual_scale and foreground and same_group and active_page and split and evidence["probeExit"]==0 and "NATIVE_PLACEMENT_COMPLETED" in log and mapped in evidence["mappedLibraries"]
-    print(json.dumps({"probeExit":evidence["probeExit"],"sessionExit":result.returncode,"snapshotCount":len(evidence["snapshots"]),"sameGroup":same_group,"actualScale":actual_scale,"activePage":active_page,"splitFrames":split,"foregroundPreserved":foreground,"passed":passed,"output":str(args.output)},sort_keys=True))
+    passed=actual_scale and foreground and same_group and active_page and split and evidence["probeExit"]==0 and "NATIVE_PLACEMENT_COMPLETED" in log and loaded
+    print(json.dumps({"probeExit":evidence["probeExit"],"sessionExit":result.returncode,"snapshotCount":len(evidence["snapshots"]),"pluginLoaded":loaded,"sameGroup":same_group,"actualScale":actual_scale,"activePage":active_page,"splitFrames":split,"foregroundPreserved":foreground,"passed":passed,"output":str(args.output)},sort_keys=True))
     return 0 if passed else 1
 if __name__=="__main__":sys.exit(main())

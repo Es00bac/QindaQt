@@ -10,9 +10,17 @@ def main():
     output=Path(os.environ["APP_PLACEMENT_OUTPUT"])
     control=connect()
     with (output/"probe.log").open("w") as log:
-        child=subprocess.Popen([os.environ["APP_PLACEMENT_PROBE"]],stdout=log,stderr=subprocess.STDOUT)
+        # Only the SDK client uses fatal Qt warnings. The non-capability
+        # compositor fixture emits upstream's expected real-time-priority warning.
+        probe_env = os.environ.copy()
+        probe_env["QT_FATAL_WARNINGS"] = "1"
+        probe_env.pop("QT_DEBUG_PLUGINS", None)
+        child=subprocess.Popen([os.environ["APP_PLACEMENT_PROBE"]],stdout=log,stderr=subprocess.STDOUT,env=probe_env)
         deadline=time.monotonic()+25
-        evidence={"snapshots":[],"mappedLibraries":sorted({line.split()[-1] for line in Path(f"/proc/{os.getppid()}/maps").read_text().splitlines() if "qindaqt_compositor.so" in line})}
+        # The production compositor intentionally disables dumpability.
+        # The outer runner verifies its successful Qt library-load trace;
+        # this ordinary client must not require access to protected process maps.
+        evidence={"snapshots":[],"compositorPid":os.getppid()}
         try:
             while child.poll() is None and time.monotonic()<deadline:
                 snapshot = {"hybrid": control.hybrid(), "windows": control.windows(), "outputs": control.call("Outputs")}
