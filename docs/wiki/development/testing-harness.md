@@ -4339,3 +4339,11 @@ actual-owner rows. The held native read fixture confirms no GetSecret/GetSecrets
 call exists: foreign Completed bytes are rejected, while actual owned prompt
 bytes with a final authentic policy receipt publish. Assertions compare only
 synthetic lengths/booleans, never secret contents in diagnostics.
+
+The `keyring_collection_import` warning-fatal private filesystem gate exercises
+public catalog DTOs with synthetic encrypted collections: exact restart/retry,
+all item bytes, wrong-password/conflict/cancellation/bounds,64 empty collections,
+metadata/alias conflicts, pre-catalog file fsync/source-loss rollback, actual
+post-rename directory-fsync uncertainty with locked reload, orphan recovery and
+exclusive writer refusal. Test-only fsync wrapping is confined to its binary.
+It does not acquire real legacy providers or switch service names.

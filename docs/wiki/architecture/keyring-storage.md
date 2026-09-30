@@ -154,3 +154,43 @@ report saved/rolled back. Existing commit cancellation is readonly/non-reentrant
 This generic storage operation chooses no app/import conflict policy or paths;
 [ADR-0312](../adr/0312-preserve-exact-legacy-portal-secrets.md) supplies the separate
 portal policy. Format1 and existing save/rekey operations remain compatible.
+
+## One-time collection import transaction
+
+`QindaQt::KeyringImportStore` owns `CollectionImportCatalog`, a synchronous,
+thread-confined public DTO/receipt boundary. Its factory receives the native
+absolute directory and holds the daemon's exclusive catalog writer lease.
+Consumers supply owned item secrets, bounded native filename IDs, original
+source IDs/labels/dates and aliases; they never edit the private catalog JSON.
+`CollectionImportPasswords` returns owned SecureBuffer password pages or explicit
+cancellation/failure. Credentials are never arguments or metadata. The borrowed
+readonly admission callback joins independently accepted source/session lifetime
+and must outlive the call without reentering the transaction.
+
+The batch admits at most64 persistent collections, unique native IDs and unique
+source-kind/source-ID pairs. Existing per-collection item, secret, attribute and
+4 MiB payload limits still apply. Unsafe IDs, reserved volatile session ID,
+invalid provenance, duplicate IDs and conflicting aliases fail the whole batch.
+Aliases point only to collections in the accepted batch. Existing collections
+must match source provenance, labels/dates and every authenticated item byte and
+metadata field exactly after password authentication; they are then locked.
+They are never saved or overwritten. Wrong passwords report AuthenticationFailed.
+An exact retry with unchanged aliases writes nothing.
+
+New collections are sealed to previously absent files, then locked. Only one
+durable catalog publication exposes the complete batch and aliases. A failure
+before catalog rename removes only newly staged unreferenced files and preserves
+existing collections/catalog. The pre-rename admission check refuses source loss.
+A crash leaves unlisted encrypted orphans, which the existing catalog loader
+removes on restart. The factory initializes an empty catalog before staging, so
+an absent catalog cannot accidentally admit such orphan files.
+
+After catalog rename, failed directory fsync reports DurabilityUnknown with zero
+success counts and reloads the published catalog in locked state. It never
+claims rollback. A failed recovery disables further import on that adapter;
+close and reopen only after resolving storage availability. Existing resident
+create/delete behavior and catalog version1 remain compatible; entries optionally
+carry non-secret import provenance (`kind`, `source`) in the owning private schema.
+This is an owning one-time seam, not a resident untrusted bulk-mutation wire.
+The complete legacy reader/CLI remains a separate delivery step in
+[ADR-0312](../adr/0312-preserve-exact-legacy-portal-secrets.md).

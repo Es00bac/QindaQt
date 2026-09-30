@@ -4,6 +4,8 @@
 #include <QStringList>
 #include <QByteArray>
 #include <stdexcept>
+#include <functional>
+#include <qindaqt/services/keyring/collection_store.h>
 namespace qindaqt::keyring::service {
 struct PersistenceError : std::runtime_error {
     PersistenceError() : std::runtime_error("Persistence not acknowledged") {}
@@ -18,6 +20,10 @@ public:
     QStringList collections() const;
     QByteArray read(const QString &name, int maximum) const;
     void replace(const QString &name, const QByteArray &bytes);
+    // Import needs to distinguish the durable catalog publication point. The
+    // borrowed cancellation gate is readonly/non-reentrant; ordinary callers
+    // keep replace(), which maps any uncertainty to PersistenceError.
+    StoreError replaceForImport(const QString &name,const QByteArray &bytes,const std::function<bool()> &beforeRename);
     void remove(const QString &name);
     int descriptor() const { return directory_; }
 private:

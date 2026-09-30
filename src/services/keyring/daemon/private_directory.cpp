@@ -51,7 +51,9 @@ PrivateDirectory::~PrivateDirectory() {
     if (directory_ >= 0) close(directory_);
 }
 QStringList PrivateDirectory::collections() const {
-    DIR *dir = fdopendir(dup(directory_));
+    // dup shares the directory seek position: repeated import rollback/reload
+    // scans would otherwise observe EOF and miss encrypted files.
+    DIR *dir = fdopendir(openat(directory_,".",O_RDONLY|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW));
     if (!dir) fail();
     QStringList names;
     while (const auto *entry = readdir(dir)) {
@@ -83,15 +85,18 @@ QByteArray PrivateDirectory::read(const QString &name, int maximum) const {
     close(fd); if (!end) fail();
     return bytes;
 }
-void PrivateDirectory::replace(const QString &name, const QByteArray &bytes) {
+void PrivateDirectory::replace(const QString &name,const QByteArray &bytes) {
+    if(replaceForImport(name,bytes,{})!=StoreError::None) throw PersistenceError{};
+}
+StoreError PrivateDirectory::replaceForImport(const QString &name,const QByteArray &bytes,const std::function<bool()> &beforeRename) {
     const auto target = filename(name);
     const auto temporary = (".tmp-" + QUuid::createUuid().toString(QUuid::Id128)).toUtf8();
     struct stat directoryInfo{};
-    if (fstat(directory_,&directoryInfo) != 0 || !safe(directoryInfo,true)) throw PersistenceError{};
+    if (fstat(directory_,&directoryInfo) != 0 || !safe(directoryInfo,true)) return StoreError::IoError;
     struct stat s{};
-    if (fstatat(directory_, target.constData(), &s, AT_SYMLINK_NOFOLLOW) == 0 && !safe(s, false)) throw PersistenceError{};
+    if (fstatat(directory_, target.constData(), &s, AT_SYMLINK_NOFOLLOW) == 0 && !safe(s, false)) return StoreError::IoError;
     const int fd = openat(directory_, temporary.constData(), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
-    if (fd < 0) throw PersistenceError{};
+    if (fd < 0) return StoreError::IoError;
     qsizetype offset = 0;
     bool ok = fchmod(fd, 0600) == 0;
     while (ok && offset < bytes.size()) {
@@ -101,10 +106,12 @@ void PrivateDirectory::replace(const QString &name, const QByteArray &bytes) {
         offset += n;
     }
     ok = ok && fsync(fd) == 0; close(fd);
+    if(ok && beforeRename) {try {ok=beforeRename();} catch(const std::exception &) {ok=false;}}
     if (!ok || renameat(directory_, temporary.constData(), directory_, target.constData()) != 0) {
-        unlinkat(directory_, temporary.constData(), 0); throw PersistenceError{};
+        unlinkat(directory_, temporary.constData(), 0); return StoreError::IoError;
     }
-    if (fsync(directory_) != 0) throw PersistenceError{}; // Never acknowledge durability uncertainty.
+    if (fsync(directory_) != 0) return StoreError::DurabilityUnknown;
+    return StoreError::None;
 }
 void PrivateDirectory::remove(const QString &name) {
     const auto target = filename(name);

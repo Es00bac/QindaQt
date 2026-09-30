@@ -37,6 +37,10 @@ SecureBuffer copySecret(const SecureBuffer &source) {
 }
 CollectionRepository::CollectionRepository(QString directory)
     : directory_(std::move(directory)), files_(directory_) {
+    loadCatalog();
+}
+void CollectionRepository::loadCatalog() {
+    collections_.clear();aliases_.clear();
     const auto diskNames = files_.collections();
     const auto catalog = files_.read("catalog.json", 131072);
     QJsonObject meta, aliases;
@@ -60,6 +64,13 @@ CollectionRepository::CollectionRepository(QString directory)
             if (!info.value("label").isString() || !info.value("created").isString()
                 || !info.value("modified").isString()) fail();
             c->label = info.value("label").toString();
+            if(info.contains("import")) {
+                if(!info.value("import").isObject()) fail();
+                const auto origin=info.value("import").toObject();
+                c->importKind=origin.value("kind").toString();c->importSourceId=origin.value("source").toString();
+                if(origin.size()!=2 || (c->importKind!="secret-service" && c->importKind!="kwallet" && c->importKind!="portal-derived")
+                    || c->importSourceId.isEmpty() || c->importSourceId.contains(QChar(0)) || c->importSourceId.toUtf8().size()>1024) fail();
+            }
             if (c->label.size() > 1024 || c->label.toUtf8().size() > 1024) fail();
             bool validCreated = false, validModified = false;
             c->created = info.value("created").toString().toULongLong(&validCreated);
@@ -206,13 +217,19 @@ void CollectionRepository::setLabel(const QString &id, const QString &label) {
     auto c = find(id); if (!c || locked(id) || label.size() > 1024 || label.toUtf8().size() > 1024) fail();
     c->label = label; c->modified = now(); persistCatalog();
 }
-void CollectionRepository::persistCatalog() {
+QByteArray CollectionRepository::catalogBytes() const {
     QJsonObject meta, aliases;
-    for (const auto &[id, c] : collections_) if (id != "session")
-        meta[id] = QJsonObject{{"label", c->label}, {"created", QString::number(c->created)}, {"modified", QString::number(c->modified)}};
+    for (const auto &[id, c] : collections_) if (id != "session") {
+        QJsonObject info{{"label", c->label}, {"created", QString::number(c->created)}, {"modified", QString::number(c->modified)}};
+        if(!c->importKind.isEmpty()) info["import"]=QJsonObject{{"kind",c->importKind},{"source",c->importSourceId}};
+        meta[id]=info;
+    }
     for (auto i = aliases_.begin(); i != aliases_.end(); ++i) aliases[i.key()] = i.value();
     const auto bytes = QJsonDocument(QJsonObject{{"version", 1}, {"collections", meta}, {"aliases", aliases}}).toJson(QJsonDocument::Compact);
     if (bytes.size() > 131072) fail();
-    files_.replace("catalog.json", bytes);
+    return bytes;
+}
+void CollectionRepository::persistCatalog() {
+    files_.replace("catalog.json",catalogBytes());
 }
 }

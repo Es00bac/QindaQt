@@ -60,3 +60,23 @@ requires a fresh final authenticated native Unlocked policy receipt. Response 1
 means cancellation; response 2 means a record/persistence failure. Forged, stale
 or duplicate receipts grant no bytes. Standard `Prompt.Completed(b,v)` remains
 wire compatible for standard Secret Service clients.
+
+## Full collection acquisition boundary
+
+The normative PK6 outcome also copies every Secret Service collection/item and
+KWallet entry through one-time compatibility readers before a secrets-name
+switch. Opaque64 portal records are only one subset. Original provider files are
+not edited by the importer; acquiring real wallets and final deployment remain
+separate manager gates. The public owning collection transaction is implemented
+as documented in [keyring storage](../architecture/keyring-storage.md): staged
+new encrypted files, one catalog publication, exact-existing idempotence,
+whole-batch conflicts and locked recovery on durability uncertainty. Source IDs,
+labels/dates and aliases remain distinct from bounded native filename IDs.
+
+Legacy providers cannot implement the native nonce receipts. Their confined
+reader therefore uses libdbus-1's primary `dbus_message_get_sender` API to require
+the pinned actual unique owner on every accepted snapshot/secret reply, with
+source owner/PID/session lifetime fencing. That dependency belongs only to the
+one-time reader executable and never to the resident daemon. Its DTO boundary
+has no DBus internals. The reader/CLI and private provider acceptance matrix are
+still pending in this checkpoint; the complete import milestone is not claimed.
