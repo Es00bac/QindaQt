@@ -74,7 +74,9 @@ public:
         if(!lineageLive()) return;
         const int fd=opener();if(fd<0) return;
         display=wl_display_connect_to_fd(fd);
-        if(!display) {close(fd);return;}
+        // AGENT-GUARD: wl_display_connect_to_fd consumes fd even on failure.
+        // A second close could retire a descriptor reused by another thread.
+        if(!display) return;
         registry=wl_display_get_registry(display);
         static const wl_registry_listener globals{
             [](void *data,wl_registry *r,uint32_t name,const char *interface,uint32_t version){
