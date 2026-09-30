@@ -12,6 +12,7 @@ class MinimizedApplicationIdentityTests final : public QObject
 private Q_SLOTS:
     void desktopMetadataLeadsIconAndApplicationLabel();
     void desktopFileAndClassFallbacksRemainMeaningful();
+    void qualifiedApplicationIdsUseTheirHumanFinalComponent();
     void genericWaylandIconsAreNeverApplicationCandidates();
 };
 
@@ -27,6 +28,27 @@ void MinimizedApplicationIdentityTests::desktopMetadataLeadsIconAndApplicationLa
              QStringList({QStringLiteral("example-editor"),
                           QStringLiteral("org.example.Editor"),
                           QStringLiteral("editor")}));
+}
+
+
+void MinimizedApplicationIdentityTests::qualifiedApplicationIdsUseTheirHumanFinalComponent()
+{
+    const auto fallback = resolveMinimizedApplicationIdentity(
+        {}, QStringLiteral("org.qindaqt.gather.Fallback"), {}, {},
+        QStringLiteral("Fallback Fixture"));
+    QCOMPARE(fallback.applicationId, QStringLiteral("org.qindaqt.gather.Fallback"));
+    QCOMPARE(fallback.label, QStringLiteral("Fallback"));
+    QCOMPARE(fallback.iconThemeCandidates,
+             QStringList({QStringLiteral("org.qindaqt.gather.Fallback")}));
+
+    const auto simple = resolveMinimizedApplicationIdentity(
+        {}, QStringLiteral("Firefox"), {}, {}, QStringLiteral("Private window"));
+    QCOMPARE(simple.label, QStringLiteral("Firefox"));
+
+    const auto trailingDot = resolveMinimizedApplicationIdentity(
+        {}, QStringLiteral("org.example."), {}, {}, QStringLiteral("Project window"));
+    QCOMPARE(trailingDot.applicationId, QStringLiteral("org.example."));
+    QCOMPARE(trailingDot.label, QStringLiteral("Project window"));
 }
 
 void MinimizedApplicationIdentityTests::genericWaylandIconsAreNeverApplicationCandidates()
@@ -47,7 +69,7 @@ void MinimizedApplicationIdentityTests::desktopFileAndClassFallbacksRemainMeanin
     const auto desktop = resolveMinimizedApplicationIdentity(
         QStringLiteral("org.example.Clock.desktop"), QStringLiteral("wayland"),
         {}, {}, QStringLiteral("Alarm"));
-    QCOMPARE(desktop.label, QStringLiteral("org.example.Clock"));
+    QCOMPARE(desktop.label, QStringLiteral("Clock"));
     QCOMPARE(desktop.iconThemeCandidates,
              QStringList({QStringLiteral("org.example.Clock")}));
 
