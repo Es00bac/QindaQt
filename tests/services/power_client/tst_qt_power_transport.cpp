@@ -172,12 +172,36 @@ void QtPowerTransportTests::successiveOwnersDelayedOperationAndEpochFencing()
     QtPowerTransport transport(bus.connection, serviceName);
     PowerClient client(&transport);
     QSignalSpy completed(&client, &PowerClient::operationCompleted);
+    QSignalSpy inhibitorState(&transport, &PowerTransport::idleInhibitorStateReply);
+    QSignalSpy inhibitorAcquire(&transport, &PowerTransport::idleInhibitorAcquireReply);
+    QSignalSpy inhibitorRelease(&transport, &PowerTransport::idleInhibitorReleaseReply);
     client.start();
     QTRY_COMPARE(client.state(), PowerClientState::Ready);
     QVERIFY(client.snapshot().capabilities.testFlag(Capability::Supplies));
     const quint64 firstEpoch = client.snapshot().epoch;
     const QString firstOwner = client.owner();
     QVERIFY(firstOwner.startsWith(QLatin1Char(':')));
+
+    transport.queryIdleInhibitorState(firstOwner, 71);
+    QTRY_COMPARE(inhibitorState.size(), 1);
+    QCOMPARE(inhibitorState.constFirst().at(0).toString(), firstOwner);
+    QCOMPARE(inhibitorState.constFirst().at(1).toULongLong(), quint64(71));
+    QVERIFY(inhibitorState.constFirst().at(2).toBool());
+    QCOMPARE(inhibitorState.constFirst().at(3).toUInt(), quint32(0));
+    QCOMPARE(inhibitorState.constFirst().at(4).toUInt(), quint32(0));
+
+    transport.acquireIdleInhibitor(firstOwner, 72, QStringLiteral("Fixture"),
+                                   QStringLiteral("test"),
+                                   IdleInhibitorScope::AutomaticLock);
+    QTRY_COMPARE(inhibitorAcquire.size(), 1);
+    QVERIFY(!inhibitorAcquire.constFirst().at(2).toBool());
+    QCOMPARE(inhibitorAcquire.constFirst().at(4).toString(),
+             QStringLiteral("unsupported"));
+
+    transport.releaseIdleInhibitor(firstOwner, 73, {});
+    QTRY_COMPARE(inhibitorRelease.size(), 1);
+    QVERIFY(inhibitorRelease.constFirst().at(2).toBool());
+    QVERIFY(!inhibitorRelease.constFirst().at(3).toBool());
 
     // A delayed operation completes exactly once through the real transport.
     const quint64 requestId = client.setKeyboardBrightness(

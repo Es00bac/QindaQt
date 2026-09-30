@@ -30,6 +30,12 @@ public:
     void fetchSnapshot(const QString &owner, quint64 requestId) override;
     void submitOperation(const QString &owner, quint64 requestId,
                          const PowerClientRequest &request) override;
+    void queryIdleInhibitorState(const QString &owner, quint64 requestId) override;
+    void acquireIdleInhibitor(const QString &owner, quint64 requestId,
+                              const QString &application, const QString &reason,
+                              IdleInhibitorScopes scopes) override;
+    void releaseIdleInhibitor(const QString &owner, quint64 requestId,
+                              const Handle &handle) override;
 
 private:
     void queryInitialOwner();
@@ -40,6 +46,7 @@ private Q_SLOTS:
     void onServiceOwnerChanged(const QString &service, const QString &oldOwner,
                                const QString &newOwner);
     void onChanged(quint64 epoch, quint64 revision);
+    void onIdleInhibitorsChanged(quint32 supportedScopes, quint32 activeScopes);
 
 private:
     class Private;

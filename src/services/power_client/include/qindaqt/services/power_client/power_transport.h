@@ -40,6 +40,30 @@ public:
     virtual void fetchSnapshot(const QString &owner, quint64 requestId) = 0;
     virtual void submitOperation(const QString &owner, quint64 requestId,
                                  const PowerClientRequest &request) = 0;
+    // Older in-process transports remain source-compatible and fail closed
+    // until they explicitly implement the public idle-lease boundary.
+    virtual void queryIdleInhibitorState(const QString &owner, quint64 requestId)
+    {
+        Q_EMIT idleInhibitorStateReply(owner, requestId, false, 0, 0,
+                                       QStringLiteral("unsupported"));
+    }
+    virtual void acquireIdleInhibitor(const QString &owner, quint64 requestId,
+                                      const QString &application, const QString &reason,
+                                      IdleInhibitorScopes scopes)
+    {
+        Q_UNUSED(application);
+        Q_UNUSED(reason);
+        Q_UNUSED(scopes);
+        Q_EMIT idleInhibitorAcquireReply(owner, requestId, false, {},
+                                         QStringLiteral("unsupported"));
+    }
+    virtual void releaseIdleInhibitor(const QString &owner, quint64 requestId,
+                                      const Handle &handle)
+    {
+        Q_UNUSED(handle);
+        Q_EMIT idleInhibitorReleaseReply(owner, requestId, false, false,
+                                         QStringLiteral("unsupported"));
+    }
 
 Q_SIGNALS:
     void ownerChanged(const QString &owner);
@@ -50,6 +74,17 @@ Q_SIGNALS:
     void operationReply(const QString &owner, quint64 requestId, bool transportSuccess,
                         const QindaQt::Power::OperationResult &result,
                         const QString &reasonCode);
+    void idleInhibitorStateReply(const QString &owner, quint64 requestId,
+                                 bool transportSuccess, quint32 supportedScopes,
+                                 quint32 activeScopes, const QString &reasonCode);
+    void idleInhibitorAcquireReply(const QString &owner, quint64 requestId,
+                                   bool transportSuccess, const QindaQt::Power::Handle &handle,
+                                   const QString &reasonCode);
+    void idleInhibitorReleaseReply(const QString &owner, quint64 requestId,
+                                   bool transportSuccess, bool released,
+                                   const QString &reasonCode);
+    void idleInhibitorsChanged(const QString &owner, quint32 supportedScopes,
+                               quint32 activeScopes);
 };
 
 } // namespace QindaQt::Power

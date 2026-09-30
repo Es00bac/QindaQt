@@ -89,6 +89,13 @@ enum class BacklightReason : quint32 {
   WaylandUnavailable = 8,
 };
 
+enum class IdleInhibitorScope : quint32 {
+  AutomaticLock = 1U << 0U,
+  DisplayOff = 1U << 1U,
+  IdleSuspend = 1U << 2U,
+};
+Q_DECLARE_FLAGS(IdleInhibitorScopes, IdleInhibitorScope)
+
 enum class OperationKind : quint32 {
   SetProfile = 0,
   AcquireProfileHold = 1,
@@ -289,8 +296,11 @@ struct OperationResult {
 } // namespace QindaQt::Power
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QindaQt::Power::Capabilities)
+Q_DECLARE_OPERATORS_FOR_FLAGS(QindaQt::Power::IdleInhibitorScopes)
 Q_DECLARE_METATYPE(QindaQt::Power::Availability)
 Q_DECLARE_METATYPE(QindaQt::Power::Capabilities)
+Q_DECLARE_METATYPE(QindaQt::Power::IdleInhibitorScope)
+Q_DECLARE_METATYPE(QindaQt::Power::IdleInhibitorScopes)
 Q_DECLARE_METATYPE(QindaQt::Power::SupplyKind)
 Q_DECLARE_METATYPE(QindaQt::Power::ChargeState)
 Q_DECLARE_METATYPE(QindaQt::Power::WarningLevel)
