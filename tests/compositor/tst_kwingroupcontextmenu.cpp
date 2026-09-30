@@ -65,6 +65,7 @@ private Q_SLOTS:
     void rejectsStaleOrMalformedState();
     void exposesShadeRenameAndColorControls();
     void exposesAspectRatioLockChoices();
+    void hidesUnavailableActivitiesAndKeepsWorkspaceActions();
 };
 
 void KWinGroupContextMenuTest::reflectsStateAndDispatchesTypedCommands()
@@ -396,6 +397,29 @@ void KWinGroupContextMenuTest::exposesAspectRatioLockChoices()
         });
     QVERIFY(!badMenu.prepare(QStringLiteral("group-a"), &error));
     QVERIFY(error.contains(QStringLiteral("aspect ratio")));
+}
+
+void KWinGroupContextMenuTest::hidesUnavailableActivitiesAndKeepsWorkspaceActions()
+{
+    auto state = populatedState();
+    state.activities.clear();
+    KWinGroupContextMenu menu(
+        [state](const QString &containerId, QString *)
+            -> std::optional<GroupContextMenuState> {
+            return containerId == QStringLiteral("group-a")
+                ? std::optional(state) : std::nullopt;
+        },
+        [](const QString &, const GroupContextMenuCommand &, QString *) {
+            return true;
+        });
+
+    QString error;
+    QVERIFY2(menu.prepare(QStringLiteral("group-a"), &error),
+             qPrintable(error));
+    QVERIFY(!actionNamed(menu, QStringLiteral("qindaqt-context-activities")));
+    QVERIFY(!actionNamed(menu, QStringLiteral("qindaqt-context-all-activities")));
+    QVERIFY(menu.findChild<QMenu *>(QStringLiteral("qindaqt-context-workspaces")));
+    QVERIFY(actionNamed(menu, QStringLiteral("qindaqt-context-workspace-two")));
 }
 
 QTEST_MAIN(KWinGroupContextMenuTest)
