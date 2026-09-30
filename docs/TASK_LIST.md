@@ -18,7 +18,7 @@ custom and default names when restored under fresh IDs; unsaved live topology is
 automatically restored on restart. The fork consumer passes 16 manager checks plus the adjacent six; native polkit passes nine manager checks and strict documentation.
 The native keyring storage core passes four focused manager checks on both hosts and
 strict documentation. Its native Secret Service daemon passes nine manager gates, including
-20 private-bus protocol/lifetime cases with real clients. Native PAM login/rekey is source-integrated; resident disclosure/privacy and native client checkpoint `d8815298` passes 22 manager checks; the full rendered UI, Secret portal and import remain active/queued. Remaining native service work
+20 private-bus protocol/lifetime cases with real clients. Native PAM login/rekey is source-integrated; resident disclosure/privacy and native client checkpoint `d8815298` passes 22 manager checks; the native Secret portal and complete synthetic collection importer are source-integrated with focused manager evidence. The full native UI journey and real installed legacy acquisition remain active delivery gates. Remaining native service work
 is active, with no complete-program or installed-delivery claim.
 
 ## September 29 — Gather minimized items and expose native application placement
@@ -33,7 +33,7 @@ a container tab or as a tile beside its current window, creating a container for
 source. Shortcuts remain app-owned. Authentication and atomic model invariants are
 required. The native application SDK is source-integrated and passes native normal/actual 150% rows with 77 responses each. Gathered candidate `21809c56` is integrated with eleven focused manager CTests, 17 native verdicts and the exact-plugin 33-check lock privacy matrix. Installed delivery remains open.
 
-The shared authenticated command broker has 20 source-integrated capabilities, including 90% maximize, regional placement, names/colors and page/split operations. Gabbee command-mode wiring, atomic group-tab/group-tile, correlated installed-app launch and the interactive placement chooser remain active. Unsupported capabilities are not advertised.
+The shared authenticated command broker has 22 source-integrated capabilities, including 90% maximize, regional placement, names/colors and page/split operations. Gabbee command-mode wiring and atomic group-tab/group-tile are source-integrated. Correlated installed-app launch, the production application catalog and the interactive placement chooser remain active. Unsupported capabilities are not advertised.
 
 ## September 27 — Correct Corner Bar, light appearances and full icon themes
 
