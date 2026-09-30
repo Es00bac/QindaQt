@@ -134,6 +134,28 @@ def fresh_runtime_root(output_root: Path) -> Path:
     return root
 
 
+def write_gathered_application_fixtures(data_home: Path) -> None:
+    """Provide private desktop metadata and icon before the compositor scans XDG."""
+    applications = data_home / "applications"
+    icons = data_home / "icons" / "hicolor"
+    applications.mkdir(parents=True, exist_ok=True)
+    icon_dir = icons / "scalable" / "apps"
+    icon_dir.mkdir(parents=True, exist_ok=True)
+    (icons / "index.theme").write_text(
+        "[Icon Theme]\nName=Hicolor\nDirectories=scalable/apps\n"
+        "\n[scalable/apps]\nSize=64\nType=Scalable\nMinSize=16\n"
+        "MaxSize=128\nContext=Applications\n", encoding="utf-8")
+    (icon_dir / "gather-metadata-fixture.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" '
+        'viewBox="0 0 64 64"><rect width="64" height="64" rx="12" '
+        'fill="#e6007e"/><path d="M14 18h36v8H14zm0 12h24v8H14zm0 12h30v6H14z" '
+        'fill="#fff"/></svg>\n', encoding="utf-8")
+    (applications / "org.qindaqt.gather.Metadata.desktop").write_text(
+        "[Desktop Entry]\nType=Application\nName=Metadata Icon Fixture\n"
+        "Exec=/usr/bin/true\nIcon=gather-metadata-fixture\n"
+        "StartupWMClass=org.qindaqt.gather.Metadata\n", encoding="utf-8")
+
+
 def main() -> int:
     arguments = parse_arguments()
     missing = missing_executable(arguments.kind)
@@ -154,6 +176,8 @@ def main() -> int:
     root = fresh_runtime_root(arguments.output_root)
     environment = isolated_environment(root)
     write_virtual_output_config(Path(environment["XDG_CONFIG_HOME"]), spec)
+    if arguments.flow == "gathered":
+        write_gathered_application_fixtures(Path(environment["XDG_DATA_HOME"]))
     environment.update({
         "GATHERED_PANEL_FIXTURE": str(arguments.panel_fixture or ""),
         "SHADE_OUT": str(output), "SHADE_KIND": arguments.kind, "SHADE_FLOW": arguments.flow,

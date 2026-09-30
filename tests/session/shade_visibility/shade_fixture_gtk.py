@@ -84,6 +84,7 @@ def entry_column(area: Gtk.DrawingArea, record) -> Gtk.Box:
 
 def main() -> int:
     title, colour, log_path, mode, width, height = sys.argv[1:7]
+    application_id = sys.argv[7] if len(sys.argv) > 7 else ""
     rgb = tuple(int(colour[index : index + 2], 16) / 255 for index in (1, 3, 5))
     log = open(log_path, "a", buffering=1, encoding="utf-8")
     token_path = os.environ.get("SHADE_TOKEN_FILE")
@@ -93,7 +94,15 @@ def main() -> int:
             {"event": kind, "title": title, "time": time.monotonic(), **fields}) + "\n")
 
     Gtk.init()
+    application = None
+    if application_id:
+        application = Gtk.Application(
+            application_id=application_id,
+            flags=Gio.ApplicationFlags.NON_UNIQUE)
+        application.register(None)
     window = Gtk.Window(title=title)
+    if application is not None:
+        window.set_application(application)
     window.set_default_size(int(width), int(height))
     if mode in ("borderless", "maximized"):
         window.set_decorated(False)

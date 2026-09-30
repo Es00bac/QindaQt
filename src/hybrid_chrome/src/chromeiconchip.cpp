@@ -6,6 +6,7 @@
 #include <QLineF>
 #include <QPainter>
 #include <QPen>
+#include <QVector>
 
 #include <algorithm>
 #include <cmath>
@@ -52,20 +53,32 @@ QRectF clampInto(QRectF frame, const QRectF &bounds)
 
 void paintPlaceholderGlyph(QPainter &painter, const IconChipPlan &plan)
 {
-    // No application icon: an identity-filled rounded square carrying a
-    // miniature window outline, so the chip still reads as "a window".
+    // No application icon: keep a title-derived initial visible instead of
+    // substituting a generic compositor icon.
     const qreal radius = 6.0 * plan.scale;
     painter.setPen(Qt::NoPen);
     painter.setBrush(plan.identity.handlebarFill);
     painter.drawRoundedRect(plan.iconRect, radius, radius);
-    const QRectF window = plan.iconRect.adjusted(6.0 * plan.scale, 7.0 * plan.scale,
-                                                 -6.0 * plan.scale, -6.0 * plan.scale);
-    QPen pen(plan.identity.handlebarInk, std::max(1.0, 1.5 * plan.scale));
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(window, 2.0 * plan.scale, 2.0 * plan.scale);
-    painter.drawLine(QLineF(window.left(), window.top() + 4.0 * plan.scale,
-                            window.right(), window.top() + 4.0 * plan.scale));
+    const QVector<uint> codepoints = plan.title.toUcs4();
+    if (!codepoints.isEmpty()) {
+        QFont monogramFont = painter.font();
+        monogramFont.setBold(true);
+        monogramFont.setPixelSize(qMax(12, qRound(18.0 * plan.scale)));
+        painter.setFont(monogramFont);
+        painter.setPen(plan.identity.handlebarInk);
+        const char32_t initial = char32_t(codepoints.constFirst());
+        painter.drawText(plan.iconRect, Qt::AlignCenter,
+                         QString::fromUcs4(&initial, 1));
+    } else {
+        const QRectF window = plan.iconRect.adjusted(6.0 * plan.scale, 7.0 * plan.scale,
+                                                     -6.0 * plan.scale, -6.0 * plan.scale);
+        QPen pen(plan.identity.handlebarInk, std::max(1.0, 1.5 * plan.scale));
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(window, 2.0 * plan.scale, 2.0 * plan.scale);
+        painter.drawLine(QLineF(window.left(), window.top() + 4.0 * plan.scale,
+                                window.right(), window.top() + 4.0 * plan.scale));
+    }
 }
 
 } // namespace

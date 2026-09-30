@@ -95,14 +95,18 @@ class ShadeSession:
     def verdict(self, name: str, value: bool) -> None:
         self.evidence["verdicts"][name] = bool(value)
 
-    def capture(self, name: str) -> Frame:
-        """Capture the private compositor's current output and save a PNG."""
+    def capture(self, name: str, *, hover_point: tuple[float, float] | None = None) -> Frame:
+        """Capture output pixels, optionally keeping hover-only chrome visible."""
         width, height = self.config.pixel_width, self.config.pixel_height
         park = (self.config.logical_size[0] - 1, self.config.logical_size[1] - 1)
-        self.pointer.move(*park)
+        self.pointer.move(*(park if hover_point is None else hover_point))
         time.sleep(0.45)
         before = swapchain_buffers(os.getppid(), width, height)
-        self.pointer.move(park[0] - 1, park[1])
+        if hover_point is not None:
+            # Keep both refresh positions over the same chip so hover chrome remains visible.
+            self.pointer.move(hover_point[0] + 1, hover_point[1])
+        else:
+            self.pointer.move(park[0] - 1, park[1])
         time.sleep(0.3)
         after = swapchain_buffers(os.getppid(), width, height)
         pixels, method = select_fresh_buffer(before, after)

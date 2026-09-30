@@ -51,6 +51,7 @@ private Q_SLOTS:
     void skipsHiddenEntriesButRetainsValidatedDocuments();
     void rejectsEmptyRootLists();
     void mimeVisibilityPreservesWinningDocumentAndDeletion();
+    void retainsStartupWmClassForWindowIdentityLookup();
 };
 
 void ApplicationDirectoryScanTests::scansEntriesWithRootPrecedenceAndIds()
@@ -102,6 +103,18 @@ void ApplicationDirectoryScanTests::skipsHiddenEntriesButRetainsValidatedDocumen
              QStringLiteral("visible"));
     // Hidden documents are a normal producer hint, not a diagnostic.
     QVERIFY(scan.diagnostics.isEmpty());
+}
+
+void ApplicationDirectoryScanTests::retainsStartupWmClassForWindowIdentityLookup()
+{
+    ScanFixture fixture;
+    QVERIFY(writeFile(fixture.firstRoot.filePath("applications/browser.desktop"),
+        QString::fromUtf8(desktopTemplate).arg("Browser", "browser",
+            QStringLiteral("StartupWMClass=VendorBrowserWindow\n"))));
+    const auto scan = scanApplicationDirectories(fixture.roots());
+    const auto *browser = scan.application(QStringLiteral("browser"));
+    QVERIFY(browser);
+    QCOMPARE(browser->entry.startupWmClass, QStringLiteral("VendorBrowserWindow"));
 }
 
 void ApplicationDirectoryScanTests::mimeVisibilityPreservesWinningDocumentAndDeletion()

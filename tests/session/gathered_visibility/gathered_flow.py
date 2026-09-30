@@ -18,7 +18,8 @@ from shade_session import ShadeSession, window_summary
 
 MAXIMIZED_TITLE = "Gather maximized member"
 PEER_TITLE = "Gather group peer"
-ICON_TITLES = tuple(f"Gather icon {index}" for index in range(1, 18))
+ICON_TITLES = ("Metadata Fixture", "Fallback Fixture",
+               *(f"Gather icon {index}" for index in range(3, 18)))
 COLOURS = ("#a83232", "#324da8", "#728632", "#8a4380")
 
 
@@ -78,8 +79,14 @@ def _run_flow(session: ShadeSession) -> None:
     icon_processes = []
     for index, title in enumerate(ICON_TITLES, start=2):
         mode = "fullscreen" if title == ICON_TITLES[0] else "ssd"
-        icon_processes.append(
-            session.fixtures.gtk(title, COLOURS[index % len(COLOURS)], mode, 420, 280))
+        application_id = ""
+        if title == ICON_TITLES[0]:
+            application_id = "org.qindaqt.gather.Metadata"
+        elif title == ICON_TITLES[1]:
+            application_id = "org.qindaqt.gather.Fallback"
+        icon_processes.append(session.fixtures.gtk(
+            title, COLOURS[index % len(COLOURS)], mode, 420, 280,
+            application_id=application_id))
         wait_for(f"{title} mapped", lambda: title in control.windows(), 30)
         if mode == "fullscreen":
             wait_for(f"{title} entered native fullscreen",
@@ -121,12 +128,26 @@ def _run_flow(session: ShadeSession) -> None:
                  strips=hybrid.get("shadedStripFrames"), hybrid=hybrid)
     session.capture("mixed-page-zero")
     chips = [entry for entry in hybrid.get("iconifiedWindows", []) if entry.get("chipVisible")]
+    fallback_chip = next((entry for entry in chips if entry.get("windowId") == icon_ids[1]), None)
+    if fallback_chip is None:
+        raise RuntimeError("fallback application identity is not visible on page zero")
+    fallback_frame = rect(fallback_chip["chipFrame"])
+    session.capture("fallback-hover-label", hover_point=(
+        fallback_frame[0] + fallback_frame[2] / 2,
+        fallback_frame[1] + fallback_frame[3] / 2))
     strips = hybrid.get("shadedStripFrames") or []
     session.verdict("pagerHasOverflow", pager["pageCount"] > 1)
     session.verdict("firstPageShowsOldestIcon",
                     bool(chips) and chips[0]["windowId"] == icon_ids[0]
                     and len(chips) < len(ICON_TITLES)
                     and hybrid.get("visibleAnchoredChromeSceneItemCount") == 1)
+    identities = {entry.get("windowId"): entry for entry in chips}
+    session.verdict("metadataAndFallbackAppsBothGathered",
+                    icon_ids[0] in identities and icon_ids[1] in identities
+                    and control.windows()[ICON_TITLES[0]].get("applicationId")
+                    == "org.qindaqt.gather.Metadata"
+                    and control.windows()[ICON_TITLES[1]].get("applicationId")
+                    == "org.qindaqt.gather.Fallback")
     session.verdict("iconFramesInsideOutput",
                     all(_inside(entry["chipFrame"], session.config.logical_size) for entry in chips))
     session.verdict("topPanelReservedBeforePager",

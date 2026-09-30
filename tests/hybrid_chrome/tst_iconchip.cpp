@@ -64,6 +64,7 @@ private Q_SLOTS:
     void hitTestsTheCircleAndTheCloseGlyph();
     void paintsIconInkAndOnlyHoverGlyphsWhileHovered();
     void paintsAPlaceholderGlyphWithoutAnIcon();
+    void paintsAnAppMonogramWhenNoSpecificIconExists();
 };
 
 void IconChipTests::laysOutThePillIconCloseAndLabel()
@@ -213,6 +214,27 @@ void IconChipTests::paintsIconInkAndOnlyHoverGlyphsWhileHovered()
 
     const auto pressed = render(*plan, {.hovered = true, .pressed = true});
     QVERIFY(near(sample(pressed, *plan, pillPoint), plan->palette.surface, 40));
+}
+
+void IconChipTests::paintsAnAppMonogramWhenNoSpecificIconExists()
+{
+    const auto plan = ChromeIconChip::layout(request());
+    QVERIFY(plan.has_value());
+    const auto image = render(*plan);
+    int inkPixels = 0;
+    const QRect iconPixels(
+        qRound((plan->iconRect.left() - plan->imageRect.left()) * plan->devicePixelRatio),
+        qRound((plan->iconRect.top() - plan->imageRect.top()) * plan->devicePixelRatio),
+        qRound(plan->iconRect.width() * plan->devicePixelRatio),
+        qRound(plan->iconRect.height() * plan->devicePixelRatio));
+    for (int y = iconPixels.top(); y <= iconPixels.bottom(); ++y) {
+        for (int x = iconPixels.left(); x <= iconPixels.right(); ++x) {
+            if (image.pixelColor(x, y) == plan->identity.handlebarInk) {
+                ++inkPixels;
+            }
+        }
+    }
+    QVERIFY2(inkPixels >= 4, "missing application icons must show the title's monogram");
 }
 
 void IconChipTests::paintsAPlaceholderGlyphWithoutAnIcon()
