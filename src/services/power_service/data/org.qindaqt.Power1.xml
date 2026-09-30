@@ -30,9 +30,29 @@
       <arg name="value" type="u" direction="in"/>
       <arg name="result" type="(uuttttss)" direction="out"/>
     </method>
+    <method name="GetIdleInhibitorCapabilities">
+      <arg name="scopes" type="u" direction="out"/>
+    </method>
+    <method name="GetActiveIdleInhibitorScopes">
+      <arg name="scopes" type="u" direction="out"/>
+    </method>
+    <method name="AcquireIdleInhibitor">
+      <arg name="application" type="s" direction="in"/>
+      <arg name="reason" type="s" direction="in"/>
+      <arg name="scopes" type="u" direction="in"/>
+      <arg name="handle" type="(ts)" direction="out"/>
+    </method>
+    <method name="ReleaseIdleInhibitor">
+      <arg name="handle" type="(ts)" direction="in"/>
+      <arg name="released" type="b" direction="out"/>
+    </method>
     <signal name="Changed">
       <arg name="epoch" type="t"/>
       <arg name="revision" type="t"/>
+    </signal>
+    <signal name="IdleInhibitorsChanged">
+      <arg name="supportedScopes" type="u"/>
+      <arg name="activeScopes" type="u"/>
     </signal>
   </interface>
 </node>

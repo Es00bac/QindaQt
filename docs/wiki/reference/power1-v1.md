@@ -166,7 +166,22 @@ The resident PB-1 object at `/org/qindaqt/Power1` exposes exactly:
 | `ReleaseProfileHold` method | `(ts)` in, `(uuttttss)` out |
 | `SetKeyboardBrightness` method | `(ts)u` in, `(uuttttss)` out |
 | `SetInternalBrightness` method | `(ts)u` in, `(uuttttss)` out |
+| `GetIdleInhibitorCapabilities` method | no input, `u` out |
+| `GetActiveIdleInhibitorScopes` method | no input, `u` out |
+| `AcquireIdleInhibitor` method | `ssu` in, `(ts)` out |
+| `ReleaseIdleInhibitor` method | `(ts)` in, `b` out |
 | `Changed` signal | `tt` |
+| `IdleInhibitorsChanged` signal | `uu` |
+
+The additive idle-lease methods currently report no supported scopes. Acquisition
+therefore returns a typed D-Bus Unsupported error without a cookie. The
+service uses the actual incoming method sender's unique name for ownership and
+removes leases on owner disappearance; release from another unique name or
+service epoch returns false. Scope bits are automatic lock (1), display off
+(2), and idle suspend (4). The methods become usable only after the resident
+composition supplies real consumers for the complete requested scope set.
+This addition leaves the Power1 version-1 snapshot and mutation wire
+signatures unchanged.
 
 Mutation methods use delayed replies: the reply carries the initiating and
 observed lineage of exactly one dispatched operation and is sent exactly once.
