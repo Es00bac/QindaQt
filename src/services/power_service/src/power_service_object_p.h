@@ -5,9 +5,13 @@
 #include <qindaqt/services/power_service/power_service_coordinator.h>
 
 #include <QtCore/QHash>
+#include <QtCore/QSet>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusContext>
 #include <QtDBus/QDBusMessage>
+#include <QtDBus/QDBusServiceWatcher>
+
+#include "idle_inhibitor_registry_p.h"
 
 namespace QindaQt::Power {
 
@@ -43,8 +47,21 @@ class PowerServiceObject final : public QObject, protected QDBusContext
         "type=\"(ts)\" direction=\"in\"/><arg name=\"value\" type=\"u\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
         "direction=\"out\"/></method>"
+        "<method name=\"GetIdleInhibitorCapabilities\"><arg name=\"scopes\" type=\"u\" "
+        "direction=\"out\"/></method>"
+        "<method name=\"GetActiveIdleInhibitorScopes\"><arg name=\"scopes\" type=\"u\" "
+        "direction=\"out\"/></method>"
+        "<method name=\"AcquireIdleInhibitor\"><arg name=\"application\" type=\"s\" "
+        "direction=\"in\"/><arg name=\"reason\" type=\"s\" direction=\"in\"/>"
+        "<arg name=\"scopes\" type=\"u\" direction=\"in\"/><arg name=\"handle\" "
+        "type=\"(ts)\" direction=\"out\"/></method>"
+        "<method name=\"ReleaseIdleInhibitor\"><arg name=\"handle\" type=\"(ts)\" "
+        "direction=\"in\"/><arg name=\"released\" type=\"b\" direction=\"out\"/>"
+        "</method>"
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
-        "name=\"revision\" type=\"t\"/></signal></interface>")
+        "name=\"revision\" type=\"t\"/></signal>"
+        "<signal name=\"IdleInhibitorsChanged\"><arg name=\"supportedScopes\" type=\"u\"/>"
+        "<arg name=\"activeScopes\" type=\"u\"/></signal></interface>")
 
 public:
     explicit PowerServiceObject(PowerServiceCoordinator *coordinator,
@@ -62,17 +79,30 @@ public Q_SLOTS:
                                             quint32 value);
     Q_SCRIPTABLE void SetInternalBrightness(const QindaQt::Power::Handle &device,
                                             quint32 value);
+    Q_SCRIPTABLE quint32 GetIdleInhibitorCapabilities() const;
+    Q_SCRIPTABLE quint32 GetActiveIdleInhibitorScopes() const;
+    Q_SCRIPTABLE QindaQt::Power::Handle AcquireIdleInhibitor(
+        const QString &application, const QString &reason, quint32 scopes);
+    Q_SCRIPTABLE bool ReleaseIdleInhibitor(const QindaQt::Power::Handle &handle);
 
 Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);
+    Q_SCRIPTABLE void IdleInhibitorsChanged(quint32 supportedScopes,
+                                             quint32 activeScopes);
 
 private:
     void beginOperation(const PowerServiceRequest &request);
     void finishOperation(quint64 operationId, const OperationResult &result);
+    [[nodiscard]] quint32 activeIdleInhibitorScopes() const;
+    void synchronizeIdleInhibitorEpoch(quint64 epoch) const;
 
     PowerServiceCoordinator *m_coordinator = nullptr;
     QDBusConnection m_connection;
     QHash<quint64, QDBusMessage> m_pendingReplies;
+    mutable IdleInhibitorRegistry m_idleInhibitors;
+    QDBusServiceWatcher *m_ownerWatcher = nullptr;
+    mutable QSet<QString> m_watchedOwners;
+    mutable quint64 m_idleInhibitorEpoch = 0;
 };
 
 } // namespace QindaQt::Power

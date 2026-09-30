@@ -49,9 +49,10 @@ selects production; the wire contract is unchanged.
 but acquires no caller-scoped QindaQt idle leases. The private
 `IdleInhibitorRegistry` is currently only a compiled service-core foundation:
 it enforces service-epoch and unique-owner cookies, bounded capacity, atomic
-scope admission and owner cleanup in unit tests. It is not wired into the
-resident object, protocol, or idle stages, so no idle-inhibitor scope is
-supported and the ScreenSaver facade remains Unsupported. This boundary must
+scope admission and owner cleanup in unit tests. It now backs additive resident D-Bus queries and acquire/release methods;
+these methods still report zero consumed scopes and reject every acquisition.
+It is not connected to idle stages, so the ScreenSaver facade remains
+Unsupported. This boundary must
 stay explicit until the shared idle policy consumes every requested scope.
 
 Lock-before-sleep remains a KWin/KScreenLocker responsibility. Shell session actions acquire all three

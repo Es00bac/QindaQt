@@ -50,6 +50,7 @@ public:
   void ownerVanished(const QString &uniqueOwner);
   [[nodiscard]] bool isInhibited(IdleInhibitorScope scope) const noexcept;
   [[nodiscard]] qsizetype leaseCount() const noexcept;
+  [[nodiscard]] qsizetype leaseCountForOwner(const QString &uniqueOwner) const noexcept;
 
 private:
   struct Lease {
