@@ -275,3 +275,5 @@ See [Native keyring daemon](architecture/keyring-daemon.md) and the shared [auth
 See the [native PAM bridge](architecture/keyring-pam.md) for trusted login-token delivery and source-only system activation.
 
 See [ordinary compositor attachment and idle observation](architecture/compositor-attachment.md) for selected session identity/lifetime and reusable readonly native idle observation.
+
+See [one-time native keyring import](architecture/keyring-import.md) for complete public legacy acquisition, native sealing, compatibility limits and the separate operator delivery gate.

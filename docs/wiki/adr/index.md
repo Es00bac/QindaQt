@@ -332,4 +332,4 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0310: Native per-application Secret portal](0310-native-per-application-secret-portal.md)
 
-- [ADR-0312: Preserve exact legacy portal secrets atomically](0312-preserve-exact-legacy-portal-secrets.md)
+- [ADR-0312: Import complete legacy stores and preserve exact portal secrets](0312-preserve-exact-legacy-portal-secrets.md)

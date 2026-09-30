@@ -4347,3 +4347,20 @@ metadata/alias conflicts, pre-catalog file fsync/source-loss rollback, actual
 post-rename directory-fsync uncertainty with locked reload, orphan recovery and
 exclusive writer refusal. Test-only fsync wrapping is confined to its binary.
 It does not acquire real legacy providers or switch service names.
+
+
+`keyring_legacy_plan` checks complete source entry/type/metadata preservation,
+reserved-session/colliding filename mapping, independent native alias grammar,
+exact64 portal subset derivation and whole-plan rejection. `keyring_legacy_import`
+executes the real one-time CLI against private running standard Secret Service
+and KWallet providers plus ordinary native compositor/state receipts. It verifies
+complete raw password/map/stream bytes through public encrypted CollectionStore,
+fresh-process retry/idempotence, owned unlock/cancel, pinned reply provenance,
+malformed/missing/mutating/duplicate/oversized/rate-limited sources, owner changes,
+wrong destination passwords, closed/partial/oversized anonymous FD frames, native
+lock/session retirement and observed source mutation while awaiting passwords.
+The catalog fixture also queues retirement after file staging, proves checkpoint
+rollback and nested-commit refusal, then exact publication/retry. No live provider,
+real wallet/credential, installation, service-name switch or attack framework is
+used. Framework wire allocation zeroization and atomic source export are not
+claimed; compatibility limits are documented in [one-time import](../architecture/keyring-import.md).

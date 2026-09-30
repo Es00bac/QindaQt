@@ -146,9 +146,10 @@ unrelated records are preserved and reported as conflicts. The separate
 `commitLegacyImport` persistence collaborator uses public
 `CollectionStore::insertBatchAndSave` only. Durable success reports additions;
 pre-rename failure preserves old memory/file, and DurabilityUnknown reloads
-locked without reporting saved state. No runtime import bus method or wallet
-reader exists. The future acquisition owner must independently authorize
-fixed-login selection/unlock and exclusive writer lifetime.
+locked without reporting saved state. No resident runtime import bus method exists. The separate
+[one-time compatibility reader](keyring-import.md) independently admits source
+owners and native session/display, preserves every wallet entry and derives this
+fixed-login subset before destination writer startup.
 
 Native retrieval now validates either fresh-native-32 or strict legacy-opaque-64
 metadata and returns exactly32 or64 bytes under the same authenticated receipt

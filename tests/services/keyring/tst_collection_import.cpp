@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QDir>
 #include <QTemporaryDir>
+#include <QTimer>
 #include <QtTest>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -98,6 +99,36 @@ private slots:
         QCOMPARE(catalog->commit(std::move(invalid),passwords,[]{return admitted;}).error,CollectionImportError::InvalidInput);
         admitted=false;QCOMPARE(catalog->commit(batch(),passwords,[]{return admitted;}).error,CollectionImportError::OwnerLost);
         QCOMPARE(disk(temporary.path()+"/catalog.json"),before);QCOMPARE(QDir(temporary.path()).entryList({"*.qkr"}).size(),0);
+    }
+    void queuedRetirementBeforePublication() {
+        QTemporaryDir temporary;Passwords passwords;auto catalog=openCollectionImportCatalog(temporary.path(),{8192,1,1});
+        const auto before=disk(temporary.path()+"/catalog.json");bool staged=false,nested=false;
+        const auto receipt=catalog->commit(batch(),passwords,[]{return admitted;},[&]{
+            if(!nested) {
+                nested=true;
+                const auto denied=catalog->commit(batch(),passwords,[]{return admitted;});
+                QCOMPARE(denied.error,CollectionImportError::Unavailable);
+            }
+            if(!staged && !QDir(temporary.path()).entryList({"*.qkr"}).empty()) {
+                staged=true;QTimer::singleShot(0,[]{admitted=false;});
+            }
+            QCoreApplication::processEvents();
+        });
+        QVERIFY(staged && nested);QCOMPARE(receipt.error,CollectionImportError::OwnerLost);
+        QCOMPARE(disk(temporary.path()+"/catalog.json"),before);QCOMPARE(QDir(temporary.path()).entryList({"*.qkr"}).size(),0);
+        admitted=true;
+        QCOMPARE(catalog->commit(batch(),passwords,[]{return admitted;},[]{QCoreApplication::processEvents();}).error,CollectionImportError::None);
+        QCOMPARE(catalog->commit(batch(),passwords,[]{return admitted;},[]{QCoreApplication::processEvents();}).collectionsUnchanged,std::size_t(2));
+    }
+    void checkpointExceptionRollsBackStaging() {
+        QTemporaryDir temporary;Passwords passwords;auto catalog=openCollectionImportCatalog(temporary.path(),{8192,1,1});
+        const auto before=disk(temporary.path()+"/catalog.json");bool staged=false;
+        const auto receipt=catalog->commit(batch(),passwords,[]{return admitted;},[&]{
+            if(!QDir(temporary.path()).entryList({"*.qkr"}).empty()) {staged=true;throw 7;}
+        });
+        QVERIFY(staged);QCOMPARE(receipt.error,CollectionImportError::Unavailable);
+        QCOMPARE(disk(temporary.path()+"/catalog.json"),before);QCOMPARE(QDir(temporary.path()).entryList({"*.qkr"}).size(),0);
+        QCOMPARE(catalog->commit(batch(),passwords,[]{return admitted;}).error,CollectionImportError::None);
     }
     void catalogFailure_data() {QTest::addColumn<int>("failure");QTest::newRow("file-fsync")<<1;QTest::newRow("owner-before-rename")<<3;}
     void catalogFailure() {
