@@ -1234,6 +1234,11 @@
               "kind": "commit",
               "reference": "812b6cf73d4c8c55a5242e98cb28cb0a532f3b32",
               "summary": "Integrated common defaults add an independent PDF choice, inherited XDG lookup, category-only writes and valid NoDisplay MIME-handler discovery without changing launcher visibility. Same-reviewer21/21 gates and the integrated Settings route pass."
+            },
+            {
+              "kind": "commit",
+              "reference": "297d6fbfc45a751a0d3464f80d3cfc4d86040bab",
+              "summary": "Passwords & Keys presentation source integrated: manager Settings build, fatal5 route/model/clipboard and all22 page Loader witnesses pass. SecretsAllowed affordance and composition-owned clipboard retirement use public API. Native authenticated receipt authority, full prompt/UI and installed prefix remain open; no milestone state/weight change."
             }
           ],
           "caveat": "Font and portal Settings pages remain outside the requested scope; physical hardware and session-runtime proof remain release work."

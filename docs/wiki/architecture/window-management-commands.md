@@ -1,7 +1,7 @@
 # Native semantic window-management commands
 
 The semantic command boundary is shared by native input adapters and the voice
-provider. The policy and production transport pass focused private-bus/geometry tests and real private native scene qualification at normal and actual 150% scale. The Gabbee consumer, grouping and application launch remain the next acceptance boundary. `src/window_management` implements bounded
+provider. The policy and production transport pass focused private-bus/geometry tests and real private native scene qualification at normal and actual 150% scale. Gabbee consumer31147a55 is integrated as eadb8995 with manager88 tests and20 subtests; grouping and application launch remain the next acceptance boundary. `src/window_management` implements bounded
 typed decoding, fractional geometry and expiring command admission. The native
 transport and compositor executor remain uninstalled. The accepted
 choice is [ADR-0301](../adr/0301-share-semantic-window-management-with-voice.md).
@@ -102,7 +102,7 @@ single use, owner/context replacement, expiry, lock revocation, stale subjects,
 ambiguity without mutation, unsupported capabilities, cancellation and floods.
 Those rows, the real private-bus `qindaqt.window-management-qt_endpoint`
 owner/consent/replacement/lock scenarios, `compositor.semantic-fractional-maximize`
-and six affected placement/preference/bridge rows pass with fatal Qt warnings. Private native scenarios pass six Qt checks per normal/actual-150% run, with 59 read-only scene snapshots each: ordinary raise/maximize/restore and thirds, original geometry after three repeated inset/fullscreen round trips, grouped rename/color/maximize/shade/restore/tab traversal/detachment, temporary icon/minimize restore, stale resize rejection and consent revocation. Actual DPR is asserted by the Qt client. The Gabbee command-hotkey consumer, group/launch execution and installed-session qualification remain required before the feature is executable in the desktop.
+and six affected placement/preference/bridge rows pass with fatal Qt warnings. Private native scenarios pass six Qt checks per normal/actual-150% run, with 59 read-only scene snapshots each: ordinary raise/maximize/restore and thirds, original geometry after three repeated inset/fullscreen round trips, grouped rename/color/maximize/shade/restore/tab traversal/detachment, temporary icon/minimize restore, stale resize rejection and consent revocation. Actual DPR is asserted by the Qt client. The Gabbee command-hotkey source consumer is integrated (31147a55/eadb8995, manager88 tests and20 subtests); group/launch execution and installed-session qualification remain required before the feature is executable in the desktop.
 
 An empty desktop can capture a context for a named target or independent app launch. Current-window operations still require a live normal subject at resolution; foreground changes after capture revoke that context. The platform scene currentness check scopes topology/geometry to the captured subject so mapping a provider-owned command popup does not invalidate its own hotkey.
 

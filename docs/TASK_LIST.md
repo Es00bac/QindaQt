@@ -2104,3 +2104,7 @@ Integrated candidate `8c409f2cb506fc4e375ff6a5f2dc42027c891977` adds public ordi
 ### Native key-store shared consumer and voice source checkpoints
 
 Candidate `070c0799` removes duplicate private attachment/idle implementations while retaining resident key-store policy. Manager targeted build, twenty fatal-warning keyring/public-module CTests and the separate keyring-check parser regression pass. Gabbee `31147a55` is integrated in its main hub as `eadb8995`; manager focused88 tests and20 subtests pass. Native command capability remains20 until grouping and app launch gates qualify. Full rendered key-store UI, portals, migration, and consolidated deployment remain open.
+
+### Passwords & Keys presentation source integration
+
+Candidate `297d6fbf` incorporates UI07 with current native privacy affordances. Manager integrated Settings build, five fatal-warning route/model/clipboard rows and the 22-witness route-construction row pass. Fully rendered native backend/prompt, installed prefix and physical clipboard qualification remain open. Final native disclosure authority also requires the ongoing authenticated policy/state receipt gates.

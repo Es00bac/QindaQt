@@ -155,6 +155,9 @@ const char *routeKeywords(SettingsRouteComponent component) {
     return QT_TRANSLATE_NOOP("SettingsSearch",
                              "dictation, speech, speech to text, "
                              "transcription, voice typing, push to talk");
+  case SettingsRouteComponent::Keyring:
+    return QT_TRANSLATE_NOOP("SettingsSearch",
+                             "password, passwords, keys, keyring, wallet, secret, collection, credentials");
   }
   return "";
 }
