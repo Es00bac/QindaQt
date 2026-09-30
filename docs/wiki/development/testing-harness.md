@@ -4184,3 +4184,23 @@ Run the exact server CTest name `kwin-testNativeSessionLock` with
 `QT_FATAL_WARNINGS=1`. Physical DRM, installed root-owned greeter binding,
 owner-password/PAM-stack qualification and final coherent Portage delivery
 remain distinct held gates; private matrix success does not claim live rollout.
+
+
+### PF7 gathered scene and capture fence
+
+The fork's non-installable test cache `QINDAQT_PRIVATE_GATHERED_PLUGIN`
+accepts an exact matching built consumer KWin plugin. Its `nativeGatheredFence`
+row creates actual Hybrid geometry through Meta+Shift drag, a gathered icon
+through Meta+wheel, and a shaded group through the public QWidget popup UI.
+The compositor test QPA is offscreen; the row does not expose a new production
+command or patch the registry. It asserts chip/strip framebuffer ink before
+lock and after authenticated recovery, uniform owned-greeter coverage of both
+regions, screenshot rejection, black CPU/GL Window/Output/Region captures, and
+whole-output crash blackness. The row also requires a nonempty standard wl_keyboard layout name and a subsequent physical frame presentation; its private marker reports English (US) in the default test keymap. The full optional matrix contains 33 Qt checks.
+Run with the exact accepted consumer plugin artifact and rerun on integration.
+
+The worker process fixture's late/inactive response and failed-process cases
+remain covered. Outbound responses preflight a closed channel or occupied queue
+before encoding another plaintext allocation; the by-value original frame is
+wiped on every branch. No private production send/backlog bypass is added just
+to mirror this implementation detail in a test.

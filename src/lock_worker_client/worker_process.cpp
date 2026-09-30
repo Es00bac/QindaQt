@@ -84,9 +84,15 @@ bool WorkerProcess::respond(QString response) {
   return ok;
 }
 bool WorkerProcess::send(WireFrame frame) {
+  // Reject before creating an additional plaintext allocation. The by-value
+  // frame still owns the response and must be wiped on every rejection path.
+  if (!m_outgoing.empty() || m_fd < 0) {
+    explicit_bzero(frame.payload.data(), frame.payload.size());
+    return false;
+  }
   auto encoded = WorkerChannel::encode(frame);
   explicit_bzero(frame.payload.data(), frame.payload.size());
-  if (!encoded || !m_outgoing.empty() || m_fd < 0) return false;
+  if (!encoded) return false;
   m_outgoing = std::move(*encoded); m_written = 0;
   return flush();
 }

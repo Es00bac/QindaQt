@@ -137,3 +137,15 @@ The native worker sets a kernel parent-death signal and verifies its inherited
 socketpair's creation credentials against the launching parent. Greeter crash
 therefore terminates even a PAM module blocked outside conversation callbacks,
 while the compositor remains locked. These controls do not modify kernel policy.
+
+
+Gathered window chrome remains attached to ordinary window scene ownership.
+The private combined fixture proves both icon-chip and shaded-strip coverage by
+the real lock view, black screenshot/screencast source policy, whole-output black
+fallback after locker death, and restoration after current native authentication.
+Geometry inventory may persist during lock and is not content visibility proof.
+
+The PAM process client's outbound queue checks channel/queue availability before
+encoding another plaintext copy and wipes its owned response frame on every
+branch. This complements field clearing and bounded native response buffers; it
+does not imply that Qt implicit-sharing allocator history is a secure-memory API.

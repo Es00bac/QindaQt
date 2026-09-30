@@ -75,7 +75,8 @@ int main(int argc, char **argv) {
     QObject::connect(view, &QQuickWindow::frameSwapped, &app, [view, controller] {
       auto *field = view->rootObject() ? view->rootObject()->findChild<QObject *>("nativeLockPassword") : nullptr;
       if (controller->waiting() && field && field->property("visible").toBool()) {
-        std::printf("NATIVE_GREETER_UI_READY DPR=%.2f\n", static_cast<double>(view->devicePixelRatio())); std::fflush(stdout);
+        std::printf("NATIVE_GREETER_UI_READY DPR=%.2f LAYOUT=%s\n", static_cast<double>(view->devicePixelRatio()),
+                    qPrintable(controller->layout())); std::fflush(stdout);
       }
     });
   }
