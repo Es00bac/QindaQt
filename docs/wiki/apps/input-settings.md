@@ -16,7 +16,7 @@ records how a desk tablet keeps the screen's up and how its areas are mapped.
 | Mouse & touchpad | Pointer speed, acceleration profile, natural scrolling, left-handed, scroll speed, middle-click emulation; touchpads add tap to click, tap and drag, disable while typing, and scroll method | KWin device properties over D-Bus |
 | Pen & tablet | Which screen the pen draws on; for a desk tablet its rotation (kept upright on a rotated screen), left-handed, and the part of the tablet mapped onto a part of the screen; for a pen display the screen it turns with and its calibration; pen mode, the pressure curve and tip threshold, enabling the tablet, and what the pad has | KWin device properties over D-Bus; the intent is remembered in Settings1 `input.tabletMappings` |
 | Keyboard | Key repeat, delay and rate with a test field, NumLock at login, and layouts (add, remove, reorder, variant) | `qindaqt/kwininputrc [Keyboard]` and `qindaqt/kwinxkbrc [Layout]` |
-| Shortcuts | Every global shortcut, searchable; change by pressing keys, conflicts named, reset, clear; custom command shortcuts | kglobalaccel |
+| Shortcuts | Every global shortcut, searchable; change by pressing keys, conflicts named, reset, clear; custom command shortcuts | kglobalaccel compatibility during PF22–PF24 migration |
 | Touch | Touchscreen on or off (a real stop of every touch device at the compositor seat), how long a finger is held for the menu, the on-screen keyboard, and what a swipe from each screen edge opens | Settings1 `input.touch.*` ([ADR-0205](../adr/0205-touch-edges-and-touch-preferences-belong-to-the-compositor.md)) |
 
 Rows a device does not support are hidden rather than disabled. When KWin or
@@ -178,6 +178,26 @@ device at the seat, thresholds, edge reservations, the keyboard mode);
 decision 4). The Input page's Touch destination loads this section from the same
 purpose-scoped composition; its unavailable notice is visible before the
 first snapshot and the tab is reachable by mouse or keyboard.
+
+## Native shortcut registry migration
+
+The PF22 fork checkpoint adds a pure KWin::Shortcuts::Registry and Store
+core linked by the compositor. A binding keeps its stable component and action
+identity, description, owner label, default sequences, current sequences, and
+repeat policy. Registration and reassignment reject a complete sequence
+already owned by another action and report that owner; a rejected edit leaves
+the existing binding intact. Removing a component releases its bindings.
+Locked and shortcut-inhibited contexts do not dispatch actions.
+
+The store uses a versioned JSON document written through QSaveFile. The
+legacy import boundary accepts the bounded binding records produced by a
+future kglobalshortcutsrc adapter, imports only once, and preserves any
+already-present native record. PF22 does not replace the running
+org.kde.kglobalaccel endpoint or claim that this core is the active input
+path. PF23 must connect this policy to KWin input, keep the complete client
+compatibility surface, and provide actual legacy parsing before the embedded
+KGlobalAccel daemon can be removed; PF24 then moves Settings and the portal to
+org.qindaqt.Shortcuts1.
 
 ## Applying changes
 
