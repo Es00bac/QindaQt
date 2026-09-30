@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.core as PlasmaCore
+import QtQuick.Window
 import org.qindaqt.kwin as KWin
 
 // KWin remains the focus and activation authority. Its model already consumes
@@ -39,7 +39,7 @@ KWin.TabBoxSwitcher {
     }
 
     onVisibleChanged: {
-        if (!visible) {
+        if (!tabBox.visible) {
             // A mouse click is delayed briefly for selection feedback. Alt
             // release or a model withdrawal can close the popup first; never
             // let that stale callback activate a window after switching ended.
@@ -48,16 +48,20 @@ KWin.TabBoxSwitcher {
         }
     }
 
-    PlasmaCore.Dialog {
+    Window {
+        id: switcherWindow
         visible: tabBox.visible
         flags: Qt.Popup | Qt.FramelessWindowHint | Qt.X11BypassWindowManagerHint
-        backgroundHints: PlasmaCore.Dialog.NoBackground
+        color: "transparent"
+        width: switcherFrame.width
+        height: switcherFrame.height
         x: Math.round(tabBox.screenGeometry.x
-                      + (tabBox.screenGeometry.width - switcherFrame.width) / 2)
+                      + (tabBox.screenGeometry.width - width) / 2)
         y: Math.round(tabBox.screenGeometry.y
-                      + (tabBox.screenGeometry.height - switcherFrame.height) / 2)
+                      + (tabBox.screenGeometry.height - height) / 2)
 
-        mainItem: QindaQtSwitcherFrame {
+        QindaQtSwitcherFrame {
+            anchors.centerIn: parent
             id: switcherFrame
 
             nativeModel: tabBox.model

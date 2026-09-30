@@ -21,7 +21,7 @@ endforeach()
 file(READ "${metadata}" metadata_json)
 string(JSON package_structure ERROR_VARIABLE metadata_error
        GET "${metadata_json}" KPackageStructure)
-if(metadata_error OR NOT package_structure STREQUAL "KWin/WindowSwitcher")
+if(metadata_error OR NOT package_structure STREQUAL "QindaQtKWin/WindowSwitcher")
     message(FATAL_ERROR "window-switcher package has an invalid KPackageStructure")
 endif()
 string(JSON plugin_id ERROR_VARIABLE metadata_error
@@ -43,6 +43,14 @@ string(FIND "${presentation_qml}" "appearanceBridge.status === Loader.Ready" fal
 string(FIND "${appearance_bridge_qml}" "import QindaQt.Compositor.Appearance" bridge_import)
 if(fallback_guard EQUAL -1 OR bridge_import EQUAL -1)
     message(FATAL_ERROR "window-switcher omits optional appearance bridge fallback")
+endif()
+string(FIND "${presentation_qml}" "import QtQuick.Window" window_import)
+string(FIND "${presentation_qml}" "Window {" window_surface)
+string(FIND "${presentation_qml}" "org.kde.plasma.core" retired_plasma_import)
+string(FIND "${presentation_qml}" "PlasmaCore.Dialog" retired_plasma_dialog)
+if(window_import EQUAL -1 OR window_surface EQUAL -1
+        OR NOT retired_plasma_import EQUAL -1 OR NOT retired_plasma_dialog EQUAL -1)
+    message(FATAL_ERROR "window-switcher must use its QtQuick.Window surface without PlasmaCore")
 endif()
 foreach(required_contract IN ITEMS
         "KWin.TabBoxSwitcher" "nativeModel: tabBox.model" "model: frame.nativeModel"

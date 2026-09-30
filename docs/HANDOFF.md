@@ -1,3 +1,9 @@
+# Plasma-free compositor dependencies integrated source — 2026-09-30
+
+Reviewed fork3bb6d170 (including actual nonfocus/click-through OSD7 Qt checks) and consumer1a51751e are source integrated. The exact combined fork source is6ab6c01ede8143a7ddb477d6f0040e9b2f3753e4, including Activities capability removal and actual targeted native lock receipts. The consumer pin moves to that combined tree; manager private production/native stage and combined gates are now next.
+
+Candidate affected consumer14/14 and production staged manifests455/453 pass. A broad candidate build exposed a missing pager-router link, now repaired by integrated696fc9ad after exact standalone48-action build and focused2/2; no unrelated test results are inferred. Native night light, global shortcut dependency retirement and final Portage delivery remain open.
+
 # Activities-free compositor consumer source — 2026-09-30
 
 Accepted `a33d33c430c71ac63062d1def44c61e7a3c00ce5` consumes the fork Activities capability, preserves workspaces/outputs and refuses unavailable activity mutations. Candidate production consumer and seven focused gates pass; strict MkDocs and455-document links pass. Exact fork source79fa351f disables Activities by default and exports that capability; PF11 removes the discovery entirely.
