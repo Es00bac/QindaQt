@@ -72,3 +72,5 @@ wrong-password failure, actual durability, metadata trust, cancellation and
 short-lived reveal ownership. No live keyring, system PAM stack or installed
 unit is involved. Native rendered overlay/output qualification remains bounded
 by [ADR-0300](0300-trusted-native-keyring-pam.md).
+
+The GUI clipboard composition is now a separate public KeyringClipboard target. Its secure MIME provider marks selection data as secret, expires after 30 seconds and wipes owned bytes, preserving an unrelated replacement selection. The model requires actual sink acknowledgement before saying copied. Independent Qt/platform/requester copies remain explicitly outside universal wiping guarantees.

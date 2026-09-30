@@ -32,6 +32,14 @@ private Q_SLOTS:
         model.deactivate();auto late=std::make_shared<qindaqt::keyring::SecureBuffer>(5);
         emit gateway.secretReady(gateway.token,late,"text/plain");QCOMPARE(late->size(),0U);QVERIFY(!model.secretVisible());
     }
+    void copyingRequiresAnActualSinkAcknowledgement(){
+        FakeGateway gateway;KeyringSettingsModel model(gateway);model.reload();
+        emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","collection"},{"locked",false}}}});
+        emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","item"},{"locked",false},{"indexAuthenticated",true}}}});
+        model.copyItem("item");auto secret=std::make_shared<qindaqt::keyring::SecureBuffer>(5);
+        emit gateway.secretReady(gateway.token,secret,"text/plain");QCOMPARE(model.status(),"Copy unavailable");
+        model.acknowledgeCopy(true);QCOMPARE(model.status(),"Copied for 30 seconds");
+    }
     void uncertainMutationHasNoSuccessOrAutomaticReplay(){
         FakeGateway gateway;KeyringSettingsModel model(gateway);model.createCollection("Fixture");
         const auto before=gateway.calls;emit gateway.actionFinished(gateway.token,false,"Persistence uncertain");
