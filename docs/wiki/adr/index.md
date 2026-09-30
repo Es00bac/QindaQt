@@ -326,3 +326,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0309: Authenticate native lock state through targeted receipts](0314-native-lock-receipt-authentication.md)
 
 - [ADR-0309: Build QindaQt without Plasma Activities](0309-build-qindaqt-without-plasma-activities.md)
+
+- [ADR-0309: Build QindaQt without Plasma Activities](0309-build-qindaqt-without-plasma-activities.md) (superseded by ADR-0311)
+- [ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor](0311-remove-plasma-runtime-from-qindaqt-compositor.md)

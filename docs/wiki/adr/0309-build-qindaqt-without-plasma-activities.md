@@ -4,7 +4,7 @@
 - **Date:** 2026-09-29
 - **Owners:** Compositor and Platform
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0311](0311-remove-plasma-runtime-from-qindaqt-compositor.md)
 
 ## Context
 

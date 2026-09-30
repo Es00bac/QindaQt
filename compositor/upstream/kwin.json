@@ -1,39 +1,39 @@
 {
-  "schemaVersion": 2,
-  "fork": {
-    "project": "qindaqt-kwin",
-    "repository": "qinda:git/qindaqt-kwin.git",
-    "branch": "main",
-    "commit": "2446a7483bb0bed69ccf92fab5744df167718b5e",
-    "tree": "cecc76346e61bba8525ada6e93bbc86d66cb80b9",
-    "version": "6.6.6.1",
-    "package": "gui-wm/qindaqt-kwin-6.6.6_p1"
-  },
-  "upstream": {
-    "project": "KWin",
-    "repository": "https://invent.kde.org/plasma/kwin.git",
-    "release": "6.6.6",
-    "ref": "refs/tags/v6.6.6",
-    "tagObject": "43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff",
-    "commit": "9bf2235fad10de9048c634e376bf12e56b3023e6",
-    "tree": "88f96f8cde49c51552d82f60fd461b6e8b950685"
-  },
-  "integrationContract": {
-    "strategy": "co-installable KWin fork with release-matched binary plugins (ADR-0291)",
-    "executable": "qindaqt-kwin",
-    "cmakePackage": "QindaQtKWin",
-    "cmakeTarget": "QindaQtKWin::kwin",
-    "decorationCmakePackage": "QindaQtKWinDecoration",
-    "decorationCmakeTarget": "QindaQtKWinDecoration::KDecoration",
-    "factoryHeader": "plugin.h",
-    "factoryBase": "KWin::PluginFactory",
-    "pluginBase": "KWin::Plugin",
-    "pluginFactoryIidPrefix": "org.qindaqt.kwin.PluginFactoryInterface",
-    "pluginInstallNamespace": "qindaqt-kwin/plugins",
-    "decorationInstallNamespace": "qindaqt-kwin/decorations",
-    "windowSwitcherDirectory": "qindaqt-kwin/tabbox",
-    "binaryPluginAbi": "rebuild for every fork release",
-    "kwinQtMinimum": "6.10.0",
-    "qindaqtQtBaseline": "6.11"
-  }
+    "schemaVersion": 2,
+    "fork": {
+        "project": "qindaqt-kwin",
+        "repository": "qinda:git/qindaqt-kwin.git",
+        "branch": "main",
+        "commit": "2446a7483bb0bed69ccf92fab5744df167718b5e",
+        "tree": "cecc76346e61bba8525ada6e93bbc86d66cb80b9",
+        "version": "6.6.6.1",
+        "package": "gui-wm/qindaqt-kwin-6.6.6_p1"
+    },
+    "upstream": {
+        "project": "KWin",
+        "repository": "https://invent.kde.org/plasma/kwin.git",
+        "release": "6.6.6",
+        "ref": "refs/tags/v6.6.6",
+        "tagObject": "43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff",
+        "commit": "9bf2235fad10de9048c634e376bf12e56b3023e6",
+        "tree": "88f96f8cde49c51552d82f60fd461b6e8b950685"
+    },
+    "integrationContract": {
+        "strategy": "co-installable KWin fork with release-matched binary plugins (ADR-0291)",
+        "executable": "qindaqt-kwin",
+        "cmakePackage": "QindaQtKWin",
+        "cmakeTarget": "QindaQtKWin::kwin",
+        "decorationCmakePackage": "QindaQtKWinDecoration",
+        "decorationCmakeTarget": "QindaQtKWinDecoration::KDecoration",
+        "factoryHeader": "plugin.h",
+        "factoryBase": "KWin::PluginFactory",
+        "pluginBase": "KWin::Plugin",
+        "pluginFactoryIidPrefix": "org.qindaqt.kwin.PluginFactoryInterface",
+        "pluginInstallNamespace": "qindaqt-kwin/plugins",
+        "decorationInstallNamespace": "qindaqt-kwin/decorations",
+        "windowSwitcherDirectory": "qindaqt-kwin/tabbox",
+        "binaryPluginAbi": "rebuild for every fork release",
+        "kwinQtMinimum": "6.10.0",
+        "qindaqtQtBaseline": "6.11"
+    }
 }
