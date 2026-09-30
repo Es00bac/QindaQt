@@ -4,7 +4,7 @@
 namespace QindaQt::Session::NativeLockRuntime {
 using Services::SessionLockState::LockState;
 Runtime::Runtime(Services::LockPreferences::PreferencesProvider &preferences,
-                 Platform::Idle::WaylandIdleObservation &idle,
+                 Platform::Idle::IdleObservation &idle,
                  Services::NativeLock::NativeLockRequest &request,
                  Services::SessionLockState::NativeLockStateMonitor &state,
                  Power::PowerClient *power, QObject *parent)
