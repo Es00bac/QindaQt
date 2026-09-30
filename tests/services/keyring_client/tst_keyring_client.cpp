@@ -13,6 +13,7 @@
 #include <QDBusInterface>
 #include <QDBusVirtualObject>
 #include <cstring>
+#include <QUuid>
 #include <sys/stat.h>
 using namespace QindaQt::Services::KeyringClient;
 namespace p=qindaqt::keyring::protocol;
@@ -25,11 +26,41 @@ public:
     explicit PolicyDaemon(QDBusConnection connection):bus(std::move(connection)) {}
     QString introspect(const QString &) const override {return "<interface name=\"org.qindaqt.Keyring1\"/>";}
     bool handleMessage(const QDBusMessage &message,const QDBusConnection &) override {
-        if(message.member()=="ListCollections") {bus.send(message.createReply(QVariantList{QVariantMap{}}));return true;}
-        if(message.member()=="RequestPolicyState") {last=message;++requests;return true;}
+        if(message.member()=="RequestMetadata") {
+            metadata=message;
+            if(!holdMetadata) {auto receipt=QDBusMessage::createTargetedSignal(message.service(),message.path(),"org.qindaqt.Keyring1","MetadataReceipt");
+                const auto kind=message.arguments().value(1).toString();const auto rows=kind=="collections"?QVariant(QVariantMap{}):QVariant::fromValue(p::MetadataRows{});
+                receipt.setArguments({message.arguments()[0],kind,QVariant::fromValue(QDBusVariant(rows))});bus.send(receipt);bus.send(message.createReply());}
+            return true;
+        }
+        if(message.member()=="ListCollections") {metadata=message;if(!holdMetadata) bus.send(message.createReply(QVariantList{QVariantMap{}}));return true;}
+        if(message.member()=="RequestPolicyState") {
+            last=message;++requests;
+            if(automaticPolicy) {auto receipt=QDBusMessage::createTargetedSignal(message.service(),message.path(),"org.qindaqt.Keyring1","PolicyStateReceipt");receipt.setArguments({message.arguments()[0],unlocked()});bus.send(receipt);bus.send(message.createReply());}
+            return true;
+        }
+        if(message.member()=="OpenSession") {bus.send(message.createReply(QVariantList{QVariant::fromValue(QDBusVariant(QString())),QVariant::fromValue(QDBusObjectPath("/org/freedesktop/secrets/session/sfixture"))}));return true;}
+        if(message.member()=="ReadSecretWithPrompt") {read=message;return true;}
+        if(message.member()=="Prompt") {started=message;bus.send(message.createReply());return true;}
+        if(message.member()=="GetSecret" || message.member()=="GetSecrets") {++secretRpc;return true;}
+        if(message.member()=="Close" || message.member()=="Dismiss") {bus.send(message.createReply());return true;}
         return false;
     }
-    QDBusConnection bus;QDBusMessage last;int requests=0;
+    static QVariantMap unlocked() {return {{"SettingsAvailable",true},{"ScreenLockAvailable",true},{"IdleAvailable",false},{"ScreenLocked",false},{"LockOnScreenLock",false},{"LockAfterIdleMinutes",0}};}
+    QDBusConnection bus;QDBusMessage last,metadata,read,started;int requests=0,secretRpc=0;bool automaticPolicy=false,holdMetadata=false;
+};
+class ProvenanceBus final {
+public:
+    ProvenanceBus() {
+        QFile config(directory.path()+"/bus.conf");if(!config.open(QIODevice::WriteOnly)) throw std::runtime_error("private fixture config");
+        config.write("<busconfig><type>session</type><listen>unix:tmpdir=/tmp</listen><policy context='default'><allow send_destination='*' eavesdrop='true'/><allow eavesdrop='true'/><allow own='*'/></policy></busconfig>");config.close();
+        process.start("dbus-daemon",{"--config-file="+config.fileName(),"--nofork","--print-address=1"});
+        if(!process.waitForStarted() || !process.waitForReadyRead()) throw std::runtime_error("private fixture bus");
+        address=QString::fromUtf8(process.readLine()).trimmed();
+    }
+    ~ProvenanceBus() {for(const auto &name:names) QDBusConnection::disconnectFromBus(name);}
+    QDBusConnection connection() {const auto name=QUuid::createUuid().toString();names.append(name);return QDBusConnection::connectToBus(address,name);}
+    QTemporaryDir directory;QuietProcess process;QString address;QStringList names;
 };
 class KeyringClientTest : public QObject {
     Q_OBJECT
@@ -57,7 +88,7 @@ private Q_SLOTS:
     }
     void nativePolicyRequiresFreshActualOwnerReceipt() {
         QTemporaryDir temporary;QVERIFY(temporary.isValid());QFile config(temporary.path()+"/bus.conf");QVERIFY(config.open(QIODevice::WriteOnly));
-        config.write("<busconfig><type>session</type><listen>unix:tmpdir=/tmp</listen><policy context='default'><allow send_destination='*'/><allow receive_sender='*'/><allow own='*'/></policy></busconfig>");config.close();
+        config.write("<busconfig><type>session</type><listen>unix:tmpdir=/tmp</listen><policy context='default'><allow send_destination='*' eavesdrop='true'/><allow eavesdrop='true'/><allow own='*'/></policy></busconfig>");config.close();
         QuietProcess daemonProcess;daemonProcess.start("dbus-daemon",{"--config-file="+config.fileName(),"--nofork","--print-address=1"});QVERIFY(daemonProcess.waitForStarted());QVERIFY(daemonProcess.waitForReadyRead());const auto address=QString::fromUtf8(daemonProcess.readLine()).trimmed();
         auto service=QDBusConnection::connectToBus(address,"receipt-service"),client=QDBusConnection::connectToBus(address,"receipt-client"),attacker=QDBusConnection::connectToBus(address,"receipt-attacker");
         QVERIFY(service.registerService("org.qindaqt.Keyring1"));QVERIFY(service.registerService("org.freedesktop.secrets"));PolicyDaemon daemon(service);
@@ -73,6 +104,44 @@ private Q_SLOTS:
             auto locked=unlocked;locked["ScreenLocked"]=true;signal.setArguments({daemon.last.arguments()[0],locked});QVERIFY(service.send(signal));QTRY_COMPARE(rows.size(),1);QCOMPARE(policies.size(),1);QVERIFY(policies.last()[0].toMap().value("ScreenLocked").toBool());
         }
         for(const auto &name:{"receipt-attacker","receipt-client","receipt-service"}) QDBusConnection::disconnectFromBus(name);
+    }
+    void secretBytesRequireActualOwnedPromptEvenAfterForgedRpc() {
+        ProvenanceBus bus;auto service=bus.connection(),client=bus.connection(),attacker=bus.connection();
+        QVERIFY(service.registerService("org.qindaqt.Keyring1"));QVERIFY(service.registerService("org.freedesktop.secrets"));PolicyDaemon daemon(service);daemon.automaticPolicy=true;
+        QVERIFY(service.registerVirtualObject("/org/freedesktop/secrets",&daemon,QDBusConnection::SubPath));QtKeyringGateway gateway(client);
+        QSignalSpy rows(&gateway,&KeyringGateway::rowsReady),secrets(&gateway,&KeyringGateway::secretReady);QTRY_VERIFY(gateway.available());
+        gateway.request(1,Request::Collections);QTRY_COMPARE(rows.size(),1);
+        gateway.request(2,Request::Reveal,"/org/freedesktop/secrets/collection/login/item");QTRY_COMPARE(daemon.read.member(),QString("ReadSecretWithPrompt"));
+        const auto prompt=QString("/org/freedesktop/secrets/prompt/pfixture");
+        // Actual bus reproduces senderless Qt RPC acceptance for the path. That
+        // path never grants bytes: the owned actual-sender signal is mandatory.
+        QVERIFY(attacker.send(daemon.read.createReply(QVariantList{QVariant::fromValue(QDBusObjectPath(prompt))})));QTRY_COMPARE(daemon.started.member(),QString("Prompt"));
+        p::WireSecret wire{QDBusObjectPath("/org/freedesktop/secrets/session/sfixture"),{},QByteArray(8,char(0x66)),"application/octet-stream"};
+        auto completed=QDBusMessage::createTargetedSignal(client.baseService(),prompt,"org.freedesktop.Secret.Prompt","Completed");completed.setArguments({false,QVariant::fromValue(QDBusVariant(QVariant::fromValue(wire)))});
+        QVERIFY(attacker.send(completed));QTest::qWait(50);QCOMPARE(secrets.size(),0);QCOMPARE(daemon.secretRpc,0);QCOMPARE(daemon.requests,1);
+        wire.value=QByteArray(8,char(0x55));completed.setArguments({false,QVariant::fromValue(QDBusVariant(QVariant::fromValue(wire)))});QVERIFY(service.send(completed));QTRY_COMPARE(secrets.size(),1);
+        auto pages=qvariant_cast<std::shared_ptr<qindaqt::keyring::SecureBuffer>>(secrets.last()[1]);QVERIFY(pages);QCOMPARE(pages->size(),std::size_t{8});QVERIFY(std::all_of(pages->bytes().begin(),pages->bytes().end(),[](unsigned char value){return value==0x55;}));pages->clear();p::wipe(wire.value);QCOMPARE(daemon.requests,2);QCOMPARE(daemon.secretRpc,0);
+    }
+    void metadataRequiresFreshActualOwnerReceipt_data() {QTest::addColumn<bool>("collections");QTest::newRow("collections")<<true;QTest::newRow("items")<<false;}
+    void metadataRequiresFreshActualOwnerReceipt() {
+        QFETCH(bool,collections);ProvenanceBus bus;auto service=bus.connection(),client=bus.connection(),attacker=bus.connection();
+        QVERIFY(service.registerService("org.qindaqt.Keyring1"));QVERIFY(service.registerService("org.freedesktop.secrets"));PolicyDaemon daemon(service);daemon.automaticPolicy=true;daemon.holdMetadata=true;
+        QVERIFY(service.registerVirtualObject("/org/freedesktop/secrets",&daemon,QDBusConnection::SubPath));QtKeyringGateway gateway(client);QSignalSpy rows(&gateway,&KeyringGateway::rowsReady);QTRY_VERIFY(gateway.available());
+        gateway.request(1,collections?Request::Collections:Request::Items,"/org/freedesktop/secrets/collection/login");QTRY_COMPARE(daemon.metadata.member(),QString("RequestMetadata"));
+        const auto kind=collections?QString("collections"):QString("items"),nonce=daemon.metadata.arguments()[0].toString();
+        QVariantMap row{{"Path",QVariant::fromValue(QDBusObjectPath(collections?"/org/freedesktop/secrets/collection/login":"/org/freedesktop/secrets/collection/login/item"))},{"Locked",false},{"IndexAuthenticated",true},{"Label",QString("actual-label")},{"Created",QVariant::fromValue(quint64{1})},{"Modified",QVariant::fromValue(quint64{1})}};
+        const auto wire=collections?QVariant(QVariantMap{{"login",row}}):QVariant::fromValue(p::MetadataRows{row});
+        QVERIFY(attacker.send(daemon.metadata.createReply(QVariantList{wire})));QTest::qWait(30);QCOMPARE(rows.size(),0);
+        auto receipt=QDBusMessage::createTargetedSignal(client.baseService(),"/org/freedesktop/secrets","org.qindaqt.Keyring1","MetadataReceipt");receipt.setArguments({nonce,kind,QVariant::fromValue(QDBusVariant(wire))});
+        QVERIFY(attacker.send(receipt));QTest::qWait(30);QCOMPARE(rows.size(),0);
+        receipt.setArguments({QString("stale"),kind,QVariant::fromValue(QDBusVariant(wire))});QVERIFY(service.send(receipt));QTest::qWait(30);QCOMPARE(rows.size(),0);
+        receipt.setArguments({nonce,QString("other"),QVariant::fromValue(QDBusVariant(wire))});QVERIFY(service.send(receipt));QTest::qWait(30);QCOMPARE(rows.size(),0);
+        receipt.setArguments({nonce,kind,QVariant::fromValue(QDBusVariant(wire))});QVERIFY(service.send(receipt));QTRY_COMPARE(rows.size(),1);QCOMPARE(rows.last()[1].toList().first().toMap().value("label").toString(),QString("actual-label"));
+        QVERIFY(service.send(receipt));QTest::qWait(30);QCOMPARE(rows.size(),1);
+        gateway.request(2,collections?Request::Collections:Request::Items,"/org/freedesktop/secrets/collection/login");QTRY_VERIFY(daemon.metadata.arguments()[0].toString()!=nonce);
+        receipt.setArguments({daemon.metadata.arguments()[0],kind,QVariant::fromValue(QDBusVariant(wire))});gateway.cancel();QVERIFY(service.send(receipt));QTest::qWait(30);QCOMPARE(rows.size(),1);
+        gateway.request(3,collections?Request::Collections:Request::Items,"/org/freedesktop/secrets/collection/login");QTRY_VERIFY(daemon.metadata.arguments()[0].toString()!=receipt.arguments()[0].toString());
+        receipt.setArguments({daemon.metadata.arguments()[0],kind,QVariant::fromValue(QDBusVariant(wire))});QVERIFY(service.unregisterService("org.qindaqt.Keyring1"));QVERIFY(service.send(receipt));QTRY_VERIFY(!gateway.available());QTest::qWait(30);QCOMPARE(rows.size(),1);
     }
     void privateRealDaemonUsesOwnedPromptAndSession() {
         QTemporaryDir temporary;QVERIFY(temporary.isValid());

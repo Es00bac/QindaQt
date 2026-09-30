@@ -4330,3 +4330,12 @@ owned unlock, restart, malformed metadata and native lock failure. These gates
 read no actual wallet and do not qualify real sandbox identity, live PAM/lock,
 operator acquisition or installation. Adjacent standard sharing/client/storage
 and public lock/attachment/idle tests remain required.
+
+`keyring_client` additionally proves actual-owner metadata/byte provenance on a
+private bus copying the installed session-policy allowances. It holds real
+requests, injects other-sender method replies, checks forged/stale/kind-mismatched
+metadata signals, duplicates, cancellation and owner loss, and accepts only fresh
+actual-owner rows. The held native read fixture confirms no GetSecret/GetSecrets
+call exists: foreign Completed bytes are rejected, while actual owned prompt
+bytes with a final authentic policy receipt publish. Assertions compare only
+synthetic lengths/booleans, never secret contents in diagnostics.

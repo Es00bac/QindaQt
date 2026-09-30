@@ -4,23 +4,7 @@ namespace qindaqt::keyring::service {
 bool SecretService::nativeItemMethod(const QDBusMessage &message) {
     const auto args=message.arguments();
     if (message.member()=="ListItems" && message.signature()=="o") {
-        const auto id=collectionForPath(argument<QDBusObjectPath>(args[0]).path());
-        if (id.isEmpty()) throw std::runtime_error("Invalid collection");
-        const auto found=repository_.search(id,{});
-        protocol::MetadataRows rows;
-        for (const auto &value:found.ids) {
-            const auto itemId=QString::fromStdString(value);
-            QVariantMap row{{"Path",variantPath(itemPath(id,itemId))},
-                {"Locked",repository_.locked(id)},{"IndexAuthenticated",found.authenticated}};
-            const auto item=repository_.item(id,itemId);
-            if (item) {
-                row.insert("Label",QString::fromStdString(item->metadata.label));
-                row.insert("Created",QVariant::fromValue(static_cast<quint64>(item->metadata.created)));
-                row.insert("Modified",QVariant::fromValue(static_cast<quint64>(item->metadata.modified)));
-                if (!item->metadata.creator.empty()) row.insert("CreatedBy",QString::fromStdString(item->metadata.creator));
-            }
-            rows.append(row);
-        }
+        const auto rows=itemMetadata(argument<QDBusObjectPath>(args[0]).path());
         reply(message,{QVariant::fromValue(rows)});return true;
     }
     if (message.member()=="ReadSecretWithPrompt" && message.signature()=="oo") {

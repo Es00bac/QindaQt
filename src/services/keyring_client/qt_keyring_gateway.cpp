@@ -65,6 +65,7 @@ public:
                     bus.connect(owner,Root,Native,"CollectionStateChanged",&q,SLOT(collectionStateChanged(QDBusObjectPath,bool,bool,QDBusMessage)));
                     bus.connect(owner,Root,Native,"PolicyStateChanged",&q,SLOT(policyStateChanged(QVariantMap,QDBusMessage)));
                     bus.connect(owner,Root,Native,"PolicyStateReceipt",&q,SLOT(policyStateReceipt(QString,QVariantMap,QDBusMessage)));
+                    bus.connect(owner,Root,Native,"MetadataReceipt",&q,SLOT(metadataReceipt(QString,QString,QDBusVariant,QDBusMessage)));
                     emit q.authorityChanged();
                 });
             });
@@ -86,12 +87,13 @@ public:
         if(!prompt.isEmpty() && !owner.isEmpty()) {
             auto message=QDBusMessage::createMethodCall(owner,prompt,PromptInterface,"Dismiss");bus.send(message);
         }
-        unwatchPrompt();closeSession();timeout.stop();token=0;policyNonce.clear();policyNext={};
+        unwatchPrompt();closeSession();timeout.stop();token=0;policyNonce.clear();metadataNonce.clear();policyNext={};
         if(pendingSecret) pendingSecret->clear();
         pendingSecret.reset();if(pending) ++generation;
     }
     void reset() { cancel();++generation;
         if(!owner.isEmpty()) {
+            bus.disconnect(owner,Root,Native,"MetadataReceipt",&q,SLOT(metadataReceipt(QString,QString,QDBusVariant,QDBusMessage)));
             bus.disconnect(owner,Root,Native,"CollectionStateChanged",&q,SLOT(collectionStateChanged(QDBusObjectPath,bool,bool,QDBusMessage)));
             bus.disconnect(owner,Root,Native,"PolicyStateChanged",&q,SLOT(policyStateChanged(QVariantMap,QDBusMessage)));
             bus.disconnect(owner,Root,Native,"PolicyStateReceipt",&q,SLOT(policyStateReceipt(QString,QVariantMap,QDBusMessage)));
@@ -102,7 +104,7 @@ public:
         const auto id=token;cancel();emit q.actionFinished(id,false,message);
     }
     void done(bool confirmed,const QString &message={}) {
-        const auto id=token;unwatchPrompt();closeSession();timeout.stop();token=0;policyNonce.clear();policyNext={};++generation;
+        const auto id=token;unwatchPrompt();closeSession();timeout.stop();token=0;policyNonce.clear();metadataNonce.clear();policyNext={};++generation;
         emit q.actionFinished(id,confirmed,message);
     }
     void watchPrompt(const QString &value) {
@@ -125,17 +127,8 @@ public:
         }
         token=id;kind=request;timeout.start(45000);
         if(kind==Request::Collections || kind==Request::Items) {
-            call(owner,Root,Native,kind==Request::Collections?"ListCollections":"ListItems",
-                 kind==Request::Collections?QVariantList{}:QVariantList{path(object)},[this](const QDBusMessage &m){
-                if(m.arguments().size()!=1 || m.signature()!=(kind==Request::Collections?"a{sv}":"aa{sv}")) throw std::runtime_error("Metadata");
-                const auto rows=kind==Request::Collections?validateCollections(p::argument<QVariantMap>(m.arguments()[0])):validateItems(p::argument<p::MetadataRows>(m.arguments()[0]));
-                if(kind==Request::Collections) {
-                    requestPolicy([this,rows]{
-                        if(!token) return;
-                        const auto completedToken=token;token=0;timeout.stop();++generation;emit q.rowsReady(completedToken,rows);
-                    });
-                } else {const auto completedToken=token;token=0;timeout.stop();++generation;emit q.rowsReady(completedToken,rows);}
-            });return;
+            metadataNonce=QUuid::createUuid().toString(QUuid::WithoutBraces);
+            call(owner,Root,Native,"RequestMetadata",{metadataNonce,kind==Request::Collections?QString("collections"):QString("items"),path(kind==Request::Collections?QString("/"):object)},[](const QDBusMessage &){});return;
         }
         if(kind==Request::Reveal) {
             call(owner,Root,Secret,"OpenSession",{QString("plain"),QVariant::fromValue(QDBusVariant(QString()))},[this,object](const QDBusMessage &m){
@@ -164,6 +157,17 @@ public:
             if(value=="/") done(completed.contains(QDBusObjectPath(object)),"Keyring state confirmed");
             else watchPrompt(value);
         });
+    }
+    void metadata(const QString &nonce,const QString &value,const QDBusVariant &wire,const QDBusMessage &message) {
+        if(!token || metadataNonce.isEmpty() || nonce!=metadataNonce || message.service()!=owner || message.signature()!="ssv" || !liveOwner()) return;
+        if((kind!=Request::Collections && kind!=Request::Items) || value!=(kind==Request::Collections?QString("collections"):QString("items"))) return;
+        metadataNonce.clear();
+        const auto rows=kind==Request::Collections?validateCollections(p::argument<QVariantMap>(wire.variant())):validateItems(p::argument<p::MetadataRows>(wire.variant()));
+        auto publish=[this,rows] {
+            if(!token || !liveOwner()) {fail("Keyring unavailable");return;}
+            const auto completedToken=token;token=0;timeout.stop();++generation;emit q.rowsReady(completedToken,rows);
+        };
+        if(kind==Request::Collections) requestPolicy(std::move(publish));else publish();
     }
     bool liveOwner() const {
         if(owner.isEmpty() || !bus.isConnected() || !bus.interface()) return false;
@@ -239,7 +243,7 @@ public:
     QDBusConnection bus;
     QDBusServiceWatcher watcher;
     QTimer timeout;
-    QString owner,prompt,session,policyNonce;
+    QString owner,prompt,session,policyNonce,metadataNonce;
     std::function<void()> policyNext;
     // AGENT-GUARD: cancel wipes decoded bytes waiting for the final live-policy
     // readback immediately, even while its asynchronous callback still exists.
@@ -255,6 +259,9 @@ void QtKeyringGateway::request(quint64 token,Request kind,const QString &path,co
 void QtKeyringGateway::cancel(){d->cancel();}
 void QtKeyringGateway::promptCompleted(bool dismissed,const QDBusVariant &value,const QDBusMessage &message){d->completed(dismissed,value,message);}
 void QtKeyringGateway::disconnected(){d->reset();}
+void QtKeyringGateway::metadataReceipt(const QString &nonce,const QString &kind,const QDBusVariant &rows,const QDBusMessage &message){
+    try {d->metadata(nonce,kind,rows,message);} catch(const std::exception &) {d->fail("Invalid keyring metadata");}
+}
 void QtKeyringGateway::policyStateReceipt(const QString &nonce,const QVariantMap &state,const QDBusMessage &message){
     try {d->receipt(nonce,state,message);} catch(const std::exception &) {d->reset();d->probe();}
 }

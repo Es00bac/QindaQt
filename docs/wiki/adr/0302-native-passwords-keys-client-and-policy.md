@@ -89,3 +89,13 @@ independently admitted native Unlocked, regardless of collection-lock preference
 privacy loss retires prompts and pending gateway results and clears owned bytes.
 The final prompt encoding and client publication each recheck live admission.
 Standard Secret Service sharing remains governed by collection-lock policy.
+
+## Source provenance follow-up
+
+A private installed-policy bus reproduced foreign native metadata method replies
+accepted before an authentic policy receipt. The native gateway now consumes
+actual-owner nonce/kind-correlated MetadataReceipt snapshots; legacy native list
+RPCs remain compatible. Existing actual-owner owned Prompt.Completed continues
+to supply Reveal bytes, followed by a fresh policy receipt. A forged method
+path acknowledgement cannot grant foreign prompt bytes. This bounded native UI
+repair changes no standard Secret Service protocol or shared transport framework.

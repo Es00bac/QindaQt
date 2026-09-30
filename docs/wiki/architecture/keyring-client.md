@@ -61,4 +61,23 @@ sharing remains the separate collection-lock policy contract.
 
 ## Native Secret portal boundary
 
-The separate [native Secret portal](secret-portal.md) uses fixed login app records and fresh targeted nonce receipts for authenticated policy/secret results. Successful Qt RPC replies confer no native disclosure policy authority. The UI gateway reuses RequestPolicyState/PolicyStateReceipt before publishing revealed bytes; standard Secret Service sharing remains independent. PK5 fresh-native-32 records do not migrate legacy opaque64 secrets; exact versioned synthetic import is PK6, before installation/live replacement.
+The separate [native Secret portal](secret-portal.md) uses fixed login app records and fresh targeted nonce receipts for authenticated policy/secret results. Successful Qt RPC replies confer no native disclosure policy authority. The UI gateway reuses RequestPolicyState/PolicyStateReceipt before publishing revealed bytes; standard Secret Service sharing remains independent. PK5 fresh-native-32 records do not preserve old encrypted app data by themselves. The PK6 synthetic public planner/persistence boundary preserves strict legacy-opaque-64 records and exact version lengths; full wallet acquisition and installation/live replacement remain separate gates.
+
+## Native metadata source receipts
+
+The gateway requests bounded `RequestMetadata(s nonce, s kind, o object)`
+snapshots and accepts only targeted `MetadataReceipt(s nonce, s kind, v rows)`
+with the exact retained daemon sender, expected signature, fresh request nonce,
+kind and current owner generation. Collections then obtain a fresh authenticated
+policy receipt; that policy does not authenticate unrelated RPC row payloads.
+Existing `ListCollections` and `ListItems` remain wire compatible. Forged RPC
+replies, forged/stale receipts, duplicates, cancellation and owner loss grant
+no native rows.
+
+Reveal never calls `GetSecret` or `GetSecrets`. Its native method reply carries
+only an owned prompt path; secret bytes come exclusively from actual retained
+owner `Prompt.Completed` at that path, validated against the owned plain session,
+and a final fresh policy receipt gates publication. A private bus with the
+installed session policy allowances proves that a forged method path reply grants
+no foreign Completed bytes; only the actual owner signal produces secretReady.
+Standard Secret Service sharing stays separate.
