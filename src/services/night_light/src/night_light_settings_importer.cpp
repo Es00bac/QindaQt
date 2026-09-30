@@ -215,6 +215,16 @@ void NightLightSettingsImporter::writeNext()
         return;
     }
     const QString &key = d->pending.at(d->index);
+    // Import writes are sequential, so a native preference can become confirmed
+    // after the initial migration snapshot. Honor the newest accepted layer before
+    // each write; the marker remains last and retries still re-evaluate the snapshot.
+    const auto &snapshot = d->settings.snapshot();
+    if (importedKeys.contains(key) && snapshot
+        && snapshot->sourceLayers.value(key).toString() == QLatin1String("user-overrides")) {
+        ++d->index;
+        writeNext();
+        return;
+    }
     QString error;
     if (!d->settings.setUserValue(key, d->values.value(key), &error)) {
         d->writing = false;

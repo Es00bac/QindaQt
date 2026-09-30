@@ -40,6 +40,28 @@ public:
     qulonglong timestamp() const { return qulonglong(QDateTime::currentSecsSinceEpoch()); }
 };
 
+class FakeMissingLatitude final : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.GeoClue2.Location")
+    Q_PROPERTY(double Longitude READ longitude CONSTANT)
+    Q_PROPERTY(qulonglong Timestamp READ timestamp CONSTANT)
+public:
+    double longitude() const { return -105.27; }
+    qulonglong timestamp() const { return qulonglong(QDateTime::currentSecsSinceEpoch()); }
+};
+
+class FakeInvalidLatitude final : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.freedesktop.GeoClue2.Location")
+    Q_PROPERTY(QString Latitude READ latitude CONSTANT)
+    Q_PROPERTY(double Longitude READ longitude CONSTANT)
+    Q_PROPERTY(qulonglong Timestamp READ timestamp CONSTANT)
+public:
+    QString latitude() const { return QStringLiteral("not-a-coordinate"); }
+    double longitude() const { return -105.27; }
+    qulonglong timestamp() const { return qulonglong(QDateTime::currentSecsSinceEpoch()); }
+};
+
 class FakeClient final : public QObject {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.GeoClue2.Client")
@@ -105,6 +127,8 @@ private Q_SLOTS:
     void denialAndStopClearLocation();
     void lateCreateReplyCannotRestoreStoppedRequest();
     void ownerReplacementClearsOldFixAndUsesNewOwner();
+    void missingCoordinateIsUnavailable();
+    void mistypedCoordinateIsUnavailable();
 };
 
 void GeoClueLocationProviderTests::requestsWithStableDesktopIdentityAndCityAccuracy()
@@ -253,6 +277,67 @@ void GeoClueLocationProviderTests::ownerReplacementClearsOldFixAndUsesNewOwner()
     QDBusConnection::disconnectFromBus(QStringLiteral("geoclue-owner-client"));
     QDBusConnection::disconnectFromBus(QStringLiteral("geoclue-owner-first"));
     QDBusConnection::disconnectFromBus(QStringLiteral("geoclue-owner-second"));
+}
+
+
+void GeoClueLocationProviderTests::missingCoordinateIsUnavailable()
+{
+    PrivateBus daemon;
+    QVERIFY(!daemon.address.isEmpty());
+    auto serviceBus = QDBusConnection::connectToBus(daemon.address, QStringLiteral("geoclue-missing-server"));
+    auto bus = QDBusConnection::connectToBus(daemon.address, QStringLiteral("geoclue-missing-client"));
+    QVERIFY(serviceBus.isConnected());
+    QVERIFY(bus.isConnected());
+    FakeMissingLatitude location;
+    FakeClient client;
+    FakeManager manager(serviceBus);
+    QVERIFY(serviceBus.interface()->registerService(QStringLiteral("org.freedesktop.GeoClue2"))
+            == QDBusConnectionInterface::ServiceRegistered);
+    QVERIFY(serviceBus.registerObject(QStringLiteral("/org/freedesktop/GeoClue2/Manager"),
+                                      &manager, QDBusConnection::ExportAllSlots));
+    QVERIFY(serviceBus.registerObject(QStringLiteral("/org/freedesktop/GeoClue2/Client/1"),
+                                      &client, QDBusConnection::ExportAllSlots
+                                          | QDBusConnection::ExportAllProperties
+                                          | QDBusConnection::ExportAllSignals));
+    QVERIFY(serviceBus.registerObject(QStringLiteral("/org/freedesktop/GeoClue2/Location/current"),
+                                      &location, QDBusConnection::ExportAllProperties));
+    GeoClueLocationProvider provider(bus);
+    provider.request();
+    QTRY_COMPARE(provider.state(), AutomaticLocationState::Unavailable);
+    QVERIFY(!provider.fix());
+    QVERIFY(provider.diagnostic().contains(QStringLiteral("coordinates")));
+    QDBusConnection::disconnectFromBus(QStringLiteral("geoclue-missing-client"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("geoclue-missing-server"));
+}
+
+void GeoClueLocationProviderTests::mistypedCoordinateIsUnavailable()
+{
+    PrivateBus daemon;
+    QVERIFY(!daemon.address.isEmpty());
+    auto serviceBus = QDBusConnection::connectToBus(daemon.address, QStringLiteral("geoclue-mistyped-server"));
+    auto bus = QDBusConnection::connectToBus(daemon.address, QStringLiteral("geoclue-mistyped-client"));
+    QVERIFY(serviceBus.isConnected());
+    QVERIFY(bus.isConnected());
+    FakeInvalidLatitude location;
+    FakeClient client;
+    FakeManager manager(serviceBus);
+    QVERIFY(serviceBus.interface()->registerService(QStringLiteral("org.freedesktop.GeoClue2"))
+            == QDBusConnectionInterface::ServiceRegistered);
+    QVERIFY(serviceBus.registerObject(QStringLiteral("/org/freedesktop/GeoClue2/Manager"),
+                                      &manager, QDBusConnection::ExportAllSlots));
+    QVERIFY(serviceBus.registerObject(QStringLiteral("/org/freedesktop/GeoClue2/Client/1"),
+                                      &client, QDBusConnection::ExportAllSlots
+                                          | QDBusConnection::ExportAllProperties
+                                          | QDBusConnection::ExportAllSignals));
+    QVERIFY(serviceBus.registerObject(QStringLiteral("/org/freedesktop/GeoClue2/Location/current"),
+                                      &location, QDBusConnection::ExportAllProperties));
+    GeoClueLocationProvider provider(bus);
+    provider.request();
+    QTRY_COMPARE(provider.state(), AutomaticLocationState::Unavailable);
+    QVERIFY(!provider.fix());
+    QVERIFY(provider.diagnostic().contains(QStringLiteral("coordinates")));
+    QDBusConnection::disconnectFromBus(QStringLiteral("geoclue-mistyped-client"));
+    QDBusConnection::disconnectFromBus(QStringLiteral("geoclue-mistyped-server"));
 }
 
 QTEST_GUILESS_MAIN(GeoClueLocationProviderTests)
