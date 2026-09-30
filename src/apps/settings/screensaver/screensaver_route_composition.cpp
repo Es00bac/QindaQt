@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "screensaver_route_composition.h"
 
-#include <qindaqt/apps/settings_screen_lock/screen_lock_settings.h>
+#include <qindaqt/apps/settings_screen_lock/settings1_screen_lock_settings_model.h>
 #include <qindaqt/apps/settings_screensaver/lock_screen_saver_store.h>
 #include <qindaqt/apps/settings_screensaver/screensaver_preview.h>
 #include <qindaqt/apps/settings_screensaver/screensaver_settings_model.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
+#include <qindaqt/services/lock_preferences/lock_preferences.h>
 #include <qindaqt/session/desktop_controls/screensaver_catalog.h>
 #include <qindaqt/session/desktop_controls/settings1_screensaver_preferences.h>
 
@@ -24,20 +25,24 @@ public:
           preferences(client, catalog),
           preview(catalog),
           model(preferences, client, catalog, lockScreenSaver, preview),
-          screenLockStore(
-              std::make_unique<SettingsScreenLock::IniScreenLockPreferencesStore>(
-                  QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation))
-                      .filePath(QStringLiteral("kscreenlockerrc")))),
-          screenLockSettings(std::move(screenLockStore), screenLockConfigure)
+          lockTransport(QDBusConnection::sessionBus()),
+          lockClient(lockTransport, Services::LockPreferences::scopedKeys()),
+          lockPreferences(lockClient),
+          screenLockSettings(lockClient, lockPreferences)
     {
         QString error;
         if (!client.start(&error)) {
             qWarning("screensaver settings: preference client failed: %s",
                      qUtf8Printable(error));
         }
+        QString lockError;
+        if (!lockClient.start(&lockError) && QDBusConnection::sessionBus().isConnected()) {
+            qWarning("screensaver settings: lock preference client failed: %s",
+                     qUtf8Printable(lockError));
+        }
     }
 
-    ~Private() { client.stop(); }
+    ~Private() { lockClient.stop(); client.stop(); }
 
     Services::SettingsClient::QtSettingsTransport transport;
     Services::SettingsClient::SettingsClient client;
@@ -54,12 +59,10 @@ public:
             .filePath(QStringLiteral("kscreenlockerrc"))};
     ProcessScreensaverPreview preview;
     ScreensaverSettingsModel model;
-    // The walk-away section's truth: kscreenlockerrc [Daemon] plus the live
-    // configure request. Same model the Power route's Screen lock section
-    // uses, so the two pages can never disagree about what locking means.
-    std::unique_ptr<SettingsScreenLock::ScreenLockPreferencesStore> screenLockStore;
-    SettingsScreenLock::QtScreenLockConfigureClient screenLockConfigure;
-    SettingsScreenLock::ScreenLockSettingsModel screenLockSettings;
+    Services::SettingsClient::QtSettingsTransport lockTransport;
+    Services::SettingsClient::SettingsClient lockClient;
+    Services::LockPreferences::PreferencesProvider lockPreferences;
+    SettingsScreenLock::Settings1ScreenLockSettingsModel screenLockSettings;
 };
 
 ScreensaverRouteComposition::ScreensaverRouteComposition(QObject *parent)

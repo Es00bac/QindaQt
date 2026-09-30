@@ -37,6 +37,9 @@ struct SessionProcessOptions final {
     // Empty disables keyring ownership in private sessions. Production uses
     // the installed native executable; no distribution fallback (ADR-0296).
     QString keyringExecutable;
+    // Night Light schedule authority; D-Bus activation also starts it when
+    // Settings is closed, while this session-owned child keeps it resident.
+    QString nightLightExecutable = QStringLiteral("/usr/bin/qindaqt-night-light-service");
     // Empty disables the daemon in private sessions; production resolves the
     // distribution PowerDevil executable before constructing this supervisor.
     QString powerDevilExecutable;
@@ -115,6 +118,8 @@ public:
     [[nodiscard]] qint64 xembedTrayProxyProcessId() const noexcept;
     [[nodiscard]] qint64 polkitAgentProcessId() const noexcept;
     [[nodiscard]] int polkitAgentRestartCount() const noexcept;
+    [[nodiscard]] qint64 nightLightProcessId() const noexcept;
+    [[nodiscard]] int nightLightRestartCount() const noexcept;
     [[nodiscard]] qint64 welcomeProcessId() const noexcept;
 
 Q_SIGNALS:
@@ -159,6 +164,7 @@ private:
     std::unique_ptr<SessionAutostartRunner> m_autostart;
     std::unique_ptr<OptionalSessionChild> m_desktopControls;
     std::unique_ptr<KeyringSessionLifetime> m_keyring;
+    std::unique_ptr<OptionalSessionChild> m_nightLight;
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;
     std::unique_ptr<OptionalSessionChild> m_globalShortcutDaemon;

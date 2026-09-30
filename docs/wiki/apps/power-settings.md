@@ -51,26 +51,17 @@ pending, convergence-wait, failed, and uncertain states separately.
 
 ## Screen-lock preference boundary
 
-The Screen lock section is separate from Session actions. It reads and writes
-only KScreenLocker's documented `kscreenlockerrc` `[Daemon]` `Autolock`,
-`Timeout`, `LockOnResume`, and `LockGrace` keys, retaining `RequirePassword`
-and every other locker preference
-([ADR-0091](../adr/0091-configure-kscreenlocker-preferences-through-settings.md),
-[ADR-0132](../adr/0132-finish-session-locking.md)). Each mutation first
-re-reads the stored state and applies only the intended key, so an external
-edit to the untouched keys survives the save; a failed reload rejects the
-change instead of overwriting a config the page cannot read. Unchanged values
-are never written, so a no-op save leaves the locker file byte-identical. A
-successful save is followed by the standard KDE screen locker's `configure`
-request. The section reports a saved-but-not-reloaded result when that request
-fails and offers one explicit retry; it never silently rolls back or claims
-live adoption. Retry re-runs the step that actually failed — reload, save, or
-live reload — and only a persisted change may reach the `configure` request,
-so a reported success never describes an unsaved change. The current timeout
-stays stored while automatic locking is off, and the page disables its
-duration selector until it is turned on again. Selectors offer common
-durations and retain a previous valid custom value so opening the page never
-silently changes it.
+The Screen lock section reads its confirmed lock.* values from a purpose-
+scoped Settings1 client and writes individual keys through that same owner and
+revision-bound path ([ADR-0308](../adr/0308-native-lock-preferences-and-atomic-import.md)).
+It shows automatic locking, timeout, lock on resume and the cancellable idle
+grace. Timeout and grace changes are reported saved only after a current
+Settings1 snapshot reads back the committed value. If Settings1 is unavailable,
+editing stays disabled and no fallback is presented as user truth. The session
+runtime uses the confirmed timeout for native idle observation. Grace delays
+only automatic idle acquisition and never bypasses the Protected lock state;
+manual locking does not use idle grace or idle inhibitors. Resume locking follows
+the user's confirmed preference and current authenticated native state.
 
 ## Button and lid policy boundary
 
@@ -93,8 +84,7 @@ The Screensaver section moved to its own
 delay, and preview live there now, discovered from the installed saver
 packages rather than listed here. The Screen lock section above stays on this
 route and shares its model and store with the Screen saver route's Locking
-section, so both pages read and write the same `kscreenlockerrc` `[Daemon]`
-truth.
+section, so both pages read and write the same Settings1 `lock.*` truth.
 
 ## Display-power preference boundary
 
