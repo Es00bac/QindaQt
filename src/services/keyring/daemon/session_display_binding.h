@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <QObject>
 #include <QDBusConnection>
-#include <QDBusServiceWatcher>
-#include <QTimer>
 namespace qindaqt::keyring::service {
-// GUI-thread platform collaborator. Binding pins one session/compositor lineage.
-// openPromptConnection returns an owned connected fd, -1 rejected, or -2 for
-// untouched legacy mode. Any metadata attempt permanently fences
-// fallback; revocation cancels prompts, never chooses another display.
+// Same-thread keyring session selection and legacy compatibility policy. The
+// public platform collaborator owns all bus/socket/PIDFD identity proof.
+// openPromptConnection transfers an owned ordinary FD, -1 rejected, or -2 only
+// for untouched legacy activation. Any metadata attempt permanently retires
+// fallback; revocation cancels prompts and never chooses another display.
 class SessionDisplayBinding final : public QObject {
     Q_OBJECT
 public:
@@ -17,22 +17,15 @@ public:
     bool attach(const QString &sessionOwner,const QString &basename);
     int openPromptConnection();
     bool live();
-    QString basename() const { return basename_; }
-    QString compositorOwner() const { return compositorOwner_; }
-    quint64 compositorPid() const { return static_cast<quint64>(compositorPid_); }
+    QString basename() const;
+    QString compositorOwner() const;
+    quint64 compositorPid() const;
 Q_SIGNALS:
     void revoked();
-    void attached(); // Emitted only after live owner/PID/ordinary-peer admission.
+    void attached();
 private:
-    int connectPeer(const QString &,qint64 expected,int *pidfd=nullptr);
-    void clear();
-    bool sameOwners();
-    QDBusConnection bus_;
-    QString runtime_,sessionOwner_,compositorOwner_,basename_;
-    qint64 compositorPid_=0;
-    int probe_=-1,pidfd_=-1;
+    QString selectedSessionOwner_;
     bool required_=false;
-    QTimer check_;
-    QDBusServiceWatcher watcher_;
+    QindaQt::Platform::Compositor::CompositorAttachment attachment_;
 };
 }

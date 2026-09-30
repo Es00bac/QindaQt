@@ -244,7 +244,9 @@ The owner requested management through the existing command-mode hotkey, with
 composable operations, named subjects, appearance and fractional placement.
 [Native semantic commands](window-management-commands.md) and
 [ADR-0301](../adr/0301-share-semantic-window-management-with-voice.md) define the
-shared boundary. Its bounded command/geometry/context policy is executable in
-focused tests; compositor transport/native execution and Gabbee integration are
-in progress. This extension does not dispatch dictation or modify Voice1 capture
+shared boundary. The compositor source publishes 20 qualified operations with
+private native checks at normal and actual 150% scale. Gabbee candidate
+`31147a55`, integrated as `eadb8995`, passes manager private-bus/offscreen 88 tests
+and 20 subtests, including late-reply and owner-replacement retirement. Grouping,
+correlated app launch and installed-session qualification remain open. This extension does not dispatch dictation or modify Voice1 capture
 methods, and unsupported/refused management is not typed as fallback text.
