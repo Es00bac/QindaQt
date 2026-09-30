@@ -1338,6 +1338,12 @@
       "domain": "displays",
       "type": "string-list",
       "default": []
+    },
+    {
+      "key": "display.nightLight.legacyImported",
+      "domain": "displays",
+      "type": "boolean",
+      "default": false
     }
   ]
 }

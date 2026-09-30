@@ -25,6 +25,8 @@ class StubNightLightModel final : public QObject {
     Q_PROPERTY(QDateTime nextChangeDateTime MEMBER nextChangeDateTime NOTIFY
                    truthChanged)
     Q_PROPERTY(QString statusText MEMBER statusText NOTIFY truthChanged)
+    Q_PROPERTY(QString migrationMessage MEMBER migrationMessage NOTIFY truthChanged)
+    Q_PROPERTY(bool migrationRetryable MEMBER migrationRetryable NOTIFY truthChanged)
     Q_PROPERTY(bool draftActive MEMBER draftActive NOTIFY draftChanged)
     Q_PROPERTY(int draftScheduleMode MEMBER draftScheduleMode NOTIFY
                    draftChanged)
@@ -59,6 +61,7 @@ public:
         previewTemperatures.append(kelvin);
     }
     Q_INVOKABLE void stopPreview() { ++stopPreviewCalls; }
+    Q_INVOKABLE void retryMigration() { ++retryMigrationCalls; }
 
     bool available = true;
     bool scheduleAvailable = true;
@@ -69,6 +72,8 @@ public:
                                              QTime(19, 42, 0));
     QString statusText = QStringLiteral("Active — 3400 K now; next change "
                                         "19:42.");
+    QString migrationMessage;
+    bool migrationRetryable = false;
 
     bool draftActive = true;
     int draftScheduleMode = 0;
@@ -86,6 +91,7 @@ public:
     int applyCalls = 0;
     int resetCalls = 0;
     int stopPreviewCalls = 0;
+    int retryMigrationCalls = 0;
     bool applyResult = true;
     QList<int> previewTemperatures;
 
