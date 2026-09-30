@@ -166,7 +166,12 @@ Output IDs are KWin stable output names. Window IDs are KWin internal UUIDs,
 workspace IDs are stable virtual-desktop IDs, and an empty `activityIds` array
 means all activities. `onAllWorkspaces: true` requires an empty `workspaceIds`
 array. When Activities is unavailable, `scope.activityId` is the canonical
-KWin null UUID `00000000-0000-0000-0000-000000000000`, never empty.
+KWin null UUID `00000000-0000-0000-0000-000000000000`, never empty, and
+every window's `activityIds` remains empty. Workspace scope and memberships
+continue to use their ordinary IDs. Hybrid context commands that request an
+activity mutation return an explicit unavailable error; they never rely on
+KWin's no-op setter as a successful fallback. See
+[ADR-0309](../adr/0309-build-qindaqt-without-plasma-activities.md).
 
 Output geometry is KWin's exact integral desktop-logical geometry, matching the
 Qt screen boundary. Fractional window frames are conservatively aligned
