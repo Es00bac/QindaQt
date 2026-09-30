@@ -10,9 +10,9 @@
 namespace QindaQt::Apps::SettingsDisplay {
 
 // Process-lifetime QML singleton for the Display route's night light section.
-// It is the composition root: resolves the two owned config paths and the
-// session bus, constructs the public night light ports, and hands the UI one
-// model. No other component may build production night light ports.
+// It is the composition root for the Settings1 client, read-only legacy
+// importer, compositor state port and resident schedule client. The model sees
+// only these injected public boundaries.
 //
 // AGENT-GUARD: The route must stay warning-silent on a busless host (Main.qml
 // rows run QT_FATAL_WARNINGS=1): when the session bus is not connected the
