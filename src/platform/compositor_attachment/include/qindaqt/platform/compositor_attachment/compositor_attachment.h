@@ -19,8 +19,9 @@ struct AttachmentIdentity final {
 // Same-thread identity/lifetime binding to one explicitly admitted ordinary
 // display. This is not executable/supervisor attestation or locker authority.
 // Admission selects an accepted session unique owner and is rechecked on every
-// getter/open. Borrowed callback captures must outlive this QObject. No
-// fallback.
+// getter/open. Admission is readonly/non-reentrant: it must not query or mutate
+// this attachment. Borrowed callback captures must outlive this QObject. No
+// fallback. Signals may reenter public methods; callbacks may not.
 class CompositorAttachment final : public QObject {
   Q_OBJECT
 public:

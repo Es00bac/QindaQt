@@ -9,7 +9,8 @@ additive; each consumer owns its separately reviewed migration and policy.
 
 The public `QindaQt::CompositorAttachment` target exposes
 `QindaQt::Platform::Compositor::CompositorAttachment`. Constructor-visible
-`SessionAdmission` selects an already accepted session unique owner. `attach`
+`SessionAdmission` selects an already accepted session unique owner. Admission
+is readonly/non-reentrant and must not query or mutate its own attachment. `attach`
 takes that owner, a canonical native socket basename and optionally an
 independently accepted expected compositor owner/PID. It proves the actual
 ordinary UNIX peer matches exact daemon-resolved compositor owner/PID and same
@@ -35,7 +36,10 @@ exists on this platform target.
 
 `QindaQt::IdleObservation` exposes `QindaQt::Platform::Idle::IdleObservation`
 and `WaylandIdleObservation`. Borrowed same-thread callbacks transfer an ordinary
-FD from a live attachment and check current lineage. The adapter owns its FD,
+FD from a live attachment and check current lineage. The lineage callback is
+readonly/non-reentrant and cannot query or mutate its observer. Signal handlers
+remain reentrant for the documented rearm/refresh/revocation operations.
+The adapter owns its FD,
 including libwayland failure paths, and privately speaks standard
 ext-idle-notify-v1 without Qt GUI/QML or an input-method dependency.
 

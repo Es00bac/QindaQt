@@ -18,7 +18,8 @@ Q_SIGNALS:
 };
 // Owns each connected ordinary display FD transferred by opener, including
 // failure paths. Captures in borrowed same-thread callbacks must outlive this
-// object. lineageLive validates a public admitted attachment; revoke() follows
+// object. lineageLive is readonly/non-reentrant and must not query or mutate
+// this observer. It validates a public admitted attachment; revoke() follows
 // its loss. No pathname reconnect, privileged locker FD or GUI dependency.
 // Exactly one wl_seat and ext_idle_notifier_v1 global are supported; missing,
 // duplicate or dynamically ambiguous globals revoke until explicit refresh.
