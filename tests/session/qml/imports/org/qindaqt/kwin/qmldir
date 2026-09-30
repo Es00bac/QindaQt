@@ -1,2 +1,2 @@
-module org.kde.kwin
+module org.qindaqt.kwin
 TabBoxSwitcher 1.0 TabBoxSwitcher.qml
