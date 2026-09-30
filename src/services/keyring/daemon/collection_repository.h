@@ -3,11 +3,12 @@
 #include "private_directory.h"
 #include "wire_types.h"
 #include <qindaqt/services/keyring/collection_store.h>
+#include <qindaqt/services/keyring/collection_import.h>
 #include <QElapsedTimer>
 #include <map>
 namespace qindaqt::keyring::service {
 struct Collection {
-    QString id, label;
+    QString id, label, importKind, importSourceId;
     quint64 created = 0, modified = 0;
     std::unique_ptr<CollectionStore> storage;
     std::map<std::string, Item> volatileItems;
@@ -34,8 +35,11 @@ public:
     void remove(const QString &id);
     QString alias(const QString &name) const;
     void setAlias(const QString &name, const QString &id);
+    CollectionImportReceipt importCollections(CollectionImportBatch,CollectionImportPasswords &,const std::function<bool()> &,KdfParameters);
     void setLabel(const QString &id, const QString &label);
 private:
+    void loadCatalog();
+    QByteArray catalogBytes() const;
     void persistCatalog();
     bool kdfAllowed();
     QString directory_;
@@ -43,6 +47,7 @@ private:
     std::map<QString, std::unique_ptr<Collection>> collections_;
     QMap<QString, QString> aliases_;
     QElapsedTimer kdfClock_;
+    bool importHealthy_=true;
 };
 Attributes attributes(const StringMap &wire);
 StringMap attributes(const Attributes &stored);

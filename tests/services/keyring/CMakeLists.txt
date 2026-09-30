@@ -82,3 +82,12 @@ add_test(NAME keyring_resident_policy COMMAND ${Python3_EXECUTABLE}
  "${CMAKE_CURRENT_SOURCE_DIR}/test_resident_policy.py" $<TARGET_FILE:qindaqt-keyring>
  $<TARGET_FILE:qindaqt-settings-service> $<TARGET_FILE:qindaqt_keyring_policy_compositor> "${PROJECT_SOURCE_DIR}/data/settings")
 set_tests_properties(keyring_resident_policy PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 90 LABELS "keyring;dbus;private-fixture")
+
+qt_add_executable(tst_keyring_collection_import tst_collection_import.cpp)
+target_link_libraries(tst_keyring_collection_import PRIVATE QindaQt::KeyringImportStore Qt6::Test)
+qindaqt_enable_warnings(tst_keyring_collection_import)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_options(tst_keyring_collection_import PRIVATE "LINKER:--wrap=fsync")
+endif()
+add_test(NAME keyring_collection_import COMMAND tst_keyring_collection_import)
+set_tests_properties(keyring_collection_import PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 60)

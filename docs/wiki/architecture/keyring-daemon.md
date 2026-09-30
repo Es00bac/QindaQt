@@ -218,3 +218,9 @@ qualification remains a separate PK4 acceptance boundary.
 ## Native Secret portal boundary
 
 The separate [native Secret portal](secret-portal.md) uses fixed login app records and fresh targeted nonce receipts for authenticated policy/secret results. Successful Qt RPC replies confer no native disclosure policy authority. The UI gateway reuses RequestPolicyState/PolicyStateReceipt before publishing revealed bytes; standard Secret Service sharing remains independent. PK5 fresh-native-32 records do not preserve legacy encrypted app data by themselves. The PK6 public planner/persistence boundary imports exact legacy-opaque-64 records with strict provenance and whole-batch conflicts (ADR0312); runtime retrieval preserves either exact version length. Native portal prompt receipts distinguish cancellation from record/persistence failure while standard Prompt.Completed remains compatible. Actual wallet acquisition and installation/live replacement remain separate authorized gates.
+
+The one-time [owning collection import transaction](keyring-storage.md#one-time-collection-import-transaction)
+shares the catalog lease and private schema through `QindaQt::KeyringImportStore`.
+It must be destroyed before the resident starts or claims the secrets name. No
+resident bulk import method is added. Optional source provenance is metadata,
+never source authentication or unrelated item disclosure authority.
