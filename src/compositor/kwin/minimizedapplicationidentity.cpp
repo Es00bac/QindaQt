@@ -15,6 +15,21 @@ QString iconId(const QString &desktopFileName)
         ? base.left(base.size() - QStringLiteral(".desktop").size()) : base;
 }
 
+QString readableIdentityLabel(QString value)
+{
+    value = iconId(value);
+    if (value.contains(QLatin1Char('.'))) {
+        const qsizetype separator = value.lastIndexOf(QLatin1Char('.'));
+        const QString component = value.mid(separator + 1);
+        if (component.isEmpty()) {
+            return {};
+        }
+        value = component;
+        value[0] = value[0].toUpper();
+    }
+    return value;
+}
+
 bool isGenericClass(const QString &resourceClass)
 {
     const QString lowered = resourceClass.trimmed().toLower();
@@ -58,10 +73,11 @@ MinimizedApplicationIdentity resolveMinimizedApplicationIdentity(
     if (!desktopName.trimmed().isEmpty()) {
         result.label = desktopName.trimmed();
     } else if (!isGenericClass(resourceClass)) {
-        result.label = ::QindaQt::Compositor::resolveApplicationName(
-            resourceClass, {}, result.applicationId, {});
+        result.label = readableIdentityLabel(
+            ::QindaQt::Compositor::resolveApplicationName(
+                resourceClass, {}, result.applicationId, {}));
     } else {
-        result.label = iconId(desktopFileName);
+        result.label = readableIdentityLabel(desktopFileName);
     }
 
     if (result.label.isEmpty() || isGenericClass(result.label)) {

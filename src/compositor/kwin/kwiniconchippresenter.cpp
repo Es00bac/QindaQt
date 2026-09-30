@@ -92,6 +92,7 @@ bool KWinIconChipPresenter::publish(const QString &windowId,
         && m_hover->target == HybridChrome::IconChipHitKind::Close;
     render(entry);
     updateItem(entry);
+    updateHoverOverlay();
     return true;
 }
 
@@ -113,6 +114,7 @@ void KWinIconChipPresenter::setPointerHover(std::optional<IconChipPointerHit> hi
         render(entry);
         updateItem(entry);
     }
+    updateHoverOverlay();
 }
 
 void KWinIconChipPresenter::setVisible(const QString &windowId, bool visible)
@@ -123,6 +125,7 @@ void KWinIconChipPresenter::setVisible(const QString &windowId, bool visible)
     }
     found->second.visible = visible;
     updateItem(found->second);
+    updateHoverOverlay();
 }
 
 void KWinIconChipPresenter::remove(const QString &windowId) noexcept
@@ -131,15 +134,17 @@ void KWinIconChipPresenter::remove(const QString &windowId) noexcept
     if (found == m_entries.end()) {
         return;
     }
-    dropItem(found->second);
-    m_entries.erase(found);
     if (m_hover && m_hover->windowId == windowId) {
         m_hover.reset();
+        m_hoverOverlayItem.reset();
     }
+    dropItem(found->second);
+    m_entries.erase(found);
 }
 
 void KWinIconChipPresenter::releaseSceneItems() noexcept
 {
+    m_hoverOverlayItem.reset();
     for (auto &[windowId, entry] : m_entries) {
         Q_UNUSED(windowId)
         dropItem(entry);
@@ -233,6 +238,43 @@ void KWinIconChipPresenter::updateItem(Entry &entry) noexcept
     entry.item->setImage(entry.image);
     entry.item->setSize(entry.plan.imageRect.size());
     entry.item->setPosition(entry.plan.imageRect.topLeft() - entry.anchor->pos());
+}
+
+void KWinIconChipPresenter::updateHoverOverlay() noexcept
+{
+    if (!m_hover) {
+        m_hoverOverlayItem.reset();
+        return;
+    }
+    const auto found = m_entries.find(m_hover->windowId);
+    if (found == m_entries.end() || !found->second.visible || !found->second.anchor
+        || found->second.image.isNull()) {
+        m_hoverOverlayItem.reset();
+        return;
+    }
+    auto *const compositor = KWin::Compositor::self();
+    auto *const scene = compositor ? compositor->scene() : nullptr;
+    if (!scene || !scene->renderer() || !scene->overlayItem()) {
+        m_hoverOverlayItem.reset();
+        return;
+    }
+    if (!m_hoverOverlayItem) {
+        m_hoverOverlayItem = scene->renderer()->createImageItem(scene->overlayItem());
+    }
+    if (!m_hoverOverlayItem) {
+        return;
+    }
+    // AGENT-GUARD: the per-window chip stays in its owner's stacking slot;
+    // only its hover presentation is projected into KWin's lock-fenced overlay
+    // layer so the app label cannot be painted underneath neighboring chips.
+    if (m_hoverOverlayItem->parentItem() != scene->overlayItem()) {
+        m_hoverOverlayItem->setParentItem(scene->overlayItem());
+    }
+    m_hoverOverlayItem->setZ(0);
+    m_hoverOverlayItem->setImage(found->second.image);
+    m_hoverOverlayItem->setSize(found->second.plan.imageRect.size());
+    m_hoverOverlayItem->setPosition(found->second.plan.imageRect.topLeft());
+    m_hoverOverlayItem->setVisible(true);
 }
 
 void KWinIconChipPresenter::dropItem(Entry &entry) noexcept

@@ -75,11 +75,13 @@ private:
     [[nodiscard]] bool anchorItem(const QString &windowId, Entry &entry, QString *error);
     static void render(Entry &entry);
     static void updateItem(Entry &entry) noexcept;
+    void updateHoverOverlay() noexcept;
     static void dropItem(Entry &entry) noexcept;
 
     ManagedWindowRegistry &m_registry;
     std::map<QString, Entry> m_entries;
     std::optional<IconChipPointerHit> m_hover;
+    std::unique_ptr<KWin::ImageItem> m_hoverOverlayItem;
 };
 
 } // namespace QindaQt::Compositor::KWinIntegration
