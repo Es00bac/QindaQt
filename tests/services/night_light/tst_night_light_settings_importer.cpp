@@ -67,8 +67,16 @@ public:
             values.insert(key, operation.value(QStringLiteral("value")));
             layers.insert(key, QStringLiteral("user-overrides"));
             ++revision;
+            if (!interleaveKey.isEmpty()) {
+                values.insert(interleaveKey, interleaveValue);
+                layers.insert(interleaveKey, QStringLiteral("user-overrides"));
+                ++revision;
+                interleaveKey.clear();
+            }
         }
-        const quint64 after = fail ? baseRevision : revision;
+        // The commit receipt covers only its own one-step revision. The
+        // following native edit is revealed by the subsequent full snapshot.
+        const quint64 after = fail ? baseRevision : baseRevision + 1;
         const QVariantMap wire{
             {QString::fromLatin1(WireContract::FieldStatus), quint32(status)},
             {QString::fromLatin1(WireContract::FieldWireSchemaVersion), WireContract::WireSchemaVersion},
@@ -107,6 +115,8 @@ public:
     QList<QString> commitKeys;
     quint64 revision = 1;
     bool failNext = false;
+    QString interleaveKey;
+    QVariant interleaveValue;
 
     FakeTransport()
     {
@@ -131,6 +141,7 @@ class NightLightSettingsImporterTests final : public QObject {
 private Q_SLOTS:
     void nativeValuesWinAndFailedSaveRetriesBeforePersistingMarker();
     void malformedLegacyInputLeavesMarkerUnset();
+    void newlyConfirmedNativeOverrideWinsDuringSequentialImport();
 };
 
 void NightLightSettingsImporterTests::nativeValuesWinAndFailedSaveRetriesBeforePersistingMarker()
@@ -186,6 +197,39 @@ void NightLightSettingsImporterTests::malformedLegacyInputLeavesMarkerUnset()
     QCOMPARE(importer.message(), QStringLiteral("invalid stored temperature"));
     QVERIFY(transport.commitKeys.isEmpty());
     QVERIFY(!transport.values.value(Marker).toBool());
+    client.stop();
+}
+
+
+void NightLightSettingsImporterTests::newlyConfirmedNativeOverrideWinsDuringSequentialImport()
+{
+    FakeTransport transport;
+    const QString importedDay = Keys.at(2);
+    const QString nativeNight = Keys.at(3);
+    transport.interleaveKey = nativeNight;
+    transport.interleaveValue = qint64(5100);
+    SettingsClient client(transport, Keys,
+                          {.requestTimeoutMilliseconds = 1000, .debounceMilliseconds = 0,
+                           .retryMilliseconds = {10}});
+    QVERIFY(client.start());
+    Q_EMIT transport.ownerChanged(QStringLiteral(":1.72"));
+    QTRY_VERIFY(client.state() == ClientState::Ready);
+
+    FakeLegacy legacy;
+    legacy.result.outcome = NightLightConfigPort::ReadOutcome::Loaded;
+    legacy.result.values.output.dayTemperatureKelvin = 6200;
+    legacy.result.values.output.nightTemperatureKelvin = 4100;
+    NightLightSettingsImporter importer(client, legacy);
+    importer.start();
+    QTRY_VERIFY2(importer.status() == NightLightSettingsImporter::Status::Imported,
+        qPrintable(QStringLiteral("status=%1 message=%2")
+            .arg(int(importer.status())).arg(importer.message())));
+
+    QVERIFY(transport.commitKeys.contains(importedDay));
+    QVERIFY(!transport.commitKeys.contains(nativeNight));
+    QCOMPARE(transport.values.value(nativeNight).toLongLong(), qint64(5100));
+    QCOMPARE(transport.layers.value(nativeNight).toString(), QStringLiteral("user-overrides"));
+    QCOMPARE(transport.commitKeys.last(), Marker);
     client.stop();
 }
 

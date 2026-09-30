@@ -250,8 +250,27 @@ void GeoClueLocationProvider::readLocation(quint64 generation, const QString &pa
             return;
         }
         const QVariantMap values = reply.value();
-        const double latitude = values.value(QStringLiteral("Latitude")).toDouble();
-        const double longitude = values.value(QStringLiteral("Longitude")).toDouble();
+        const auto coordinate = [&values](const QString &name) -> std::optional<double> {
+            if (!values.contains(name)) return std::nullopt;
+            QVariant value = values.value(name);
+            if (value.metaType() == QMetaType::fromType<QDBusVariant>())
+                value = value.value<QDBusVariant>().variant();
+            // GeoClue defines both coordinate properties as D-Bus doubles. Reject
+            // missing or mistyped data instead of letting QVariant default it to 0.
+            if (value.metaType() != QMetaType::fromType<double>()) return std::nullopt;
+            bool ok = false;
+            const double result = value.toDouble(&ok);
+            return ok ? std::optional<double>(result) : std::nullopt;
+        };
+        const auto latitudeValue = coordinate(QStringLiteral("Latitude"));
+        const auto longitudeValue = coordinate(QStringLiteral("Longitude"));
+        if (!latitudeValue || !longitudeValue) {
+            fail(generation, false,
+                 QStringLiteral("GeoClue returned incomplete or invalid coordinates"));
+            return;
+        }
+        const double latitude = *latitudeValue;
+        const double longitude = *longitudeValue;
         QVariant timestamp = values.value(QStringLiteral("Timestamp"));
         if (timestamp.metaType() == QMetaType::fromType<QDBusVariant>())
             timestamp = timestamp.value<QDBusVariant>().variant();
