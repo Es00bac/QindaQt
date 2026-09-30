@@ -2,6 +2,7 @@
 #include "process_prompt_provider.h"
 #include "wire_types.h"
 #include "session_display_binding.h"
+#include <qindaqt/services/keyring_protocol/prompt_metadata.h>
 #include <QProcessEnvironment>
 #include <fcntl.h>
 #include <unistd.h>
@@ -19,7 +20,7 @@ ProcessPromptProvider::ProcessPromptProvider(QString executable, QObject *parent
 bool ProcessPromptProvider::bindSessionDisplay(const QString &owner,const QString &name) {
     return display_ && display_->attach(owner,name);
 }
-ProcessPromptProvider::Active::~Active() { if (displayFd >= 0) close(displayFd); }
+ProcessPromptProvider::Active::~Active() { if (displayFd >= 0) close(displayFd); protocol::wipe(metadata); }
 ProcessPromptProvider::~ProcessPromptProvider() {
     while (!active_.empty()) cancel(active_.begin()->first);
 }
@@ -35,7 +36,15 @@ quint64 ProcessPromptProvider::begin(PromptRequest request, PromptCompletion don
     }
     active->displayFd = displayFd;
     active->process = std::make_unique<QProcess>();
-    active->input = SecureBuffer(4097); active->done = std::move(done);
+    active->maximum = request.action == "change-password" ? 8200 : 4096;
+    try {
+        active->input = SecureBuffer(active->maximum + 1);
+        active->metadata = protocol::encodePromptMetadata({request.label,request.caller});
+    }
+    catch (const std::exception &) {
+        QTimer::singleShot(0,this,[done=std::move(done)]() mutable { done(SecureBuffer{},true); }); return 0;
+    }
+    active->done = std::move(done);
     auto *process = active->process.get();
     if (displayFd >= 0) {
         auto environment = QProcessEnvironment::systemEnvironment();
@@ -54,6 +63,12 @@ quint64 ProcessPromptProvider::begin(PromptRequest request, PromptCompletion don
         // AGENT-GUARD: inherit the exact validated connection, never reconnect by name.
         if (displayFd >= 0 && fcntl(displayFd,F_SETFD,0) != 0) _exit(2);
     });
+    connect(process,&QProcess::started,this,[this,id] {
+        const auto found = active_.find(id); if (found == active_.end()) return;
+        auto &value = *found->second;
+        if (value.process->write(value.metadata) != value.metadata.size()) { finish(id,true);return; }
+        value.process->closeWriteChannel(); protocol::wipe(value.metadata);
+    });
     process->setStandardErrorFile(QProcess::nullDevice());
     process->setProcessChannelMode(QProcess::SeparateChannels);
     // Protocol is raw UTF-8 password bytes on stdout, at most 4096. No newline,
@@ -67,15 +82,14 @@ quint64 ProcessPromptProvider::begin(PromptRequest request, PromptCompletion don
             if (n <= 0) break;
             a.used += static_cast<std::size_t>(n);
         }
-        if (a.used > 4096) finish(id,true);
+        if (a.used > a.maximum) finish(id,true);
     });
     connect(process,&QProcess::finished,this,[this,id](int code,QProcess::ExitStatus status) {
         finish(id,code != 0 || status != QProcess::NormalExit);
     });
     connect(process,&QProcess::errorOccurred,this,[this,id](QProcess::ProcessError) { finish(id,true); });
     active_.emplace(id,std::move(active));
-    process->start(executable_,{"--action",request.action,"--collection",request.collection,
-                               "--label",request.label,"--caller",request.caller});
+    process->start(executable_,{"--action",request.action,"--collection",request.collection});
     QTimer::singleShot(30000,this,[this,id] { finish(id,true); });
     return id;
 }
@@ -86,7 +100,7 @@ void ProcessPromptProvider::finish(quint64 id,bool cancelled) {
     a->process->disconnect(this);
     if (a->process->state() != QProcess::NotRunning) { a->process->kill(); a->process->waitForFinished(1000); }
     SecureBuffer password;
-    if (!cancelled && a->used > 0 && a->used <= 4096) {
+    if (!cancelled && a->used > 0 && a->used <= a->maximum) {
         password = SecureBuffer(a->used);
         std::copy_n(a->input.bytes().begin(),a->used,password.bytes().begin());
     } else cancelled = true;

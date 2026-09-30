@@ -72,7 +72,24 @@ QString SecretService::introspect(const QString &path) const {
     }
     return result;
 }
+bool SecretService::nativeDisclosureAllowed() const {
+    if(!lockPolicy_) return false;
+    const auto state=lockPolicy_->status();
+    return state.value("ScreenLockAvailable").toBool() && !state.value("ScreenLocked").toBool();
+}
+void SecretService::observeLockPolicy(KeyringLockPolicy *policy) {
+    lockPolicy_=policy;
+    if(policy) connect(policy,&KeyringLockPolicy::changed,this,[this]{
+        if(!nativeDisclosureAllowed()) {
+            QStringList retired;
+            for(const auto &[path,prompt]:prompts_) if(prompt.action=="reveal") retired.append(path);
+            for(const auto &path:retired) finishPrompt(path,true);
+        }
+        if(lockPolicy_) signal(Root,NativeInterface,"PolicyStateChanged",{lockPolicy_->status()});
+    });
+}
 void SecretService::notifyCollectionState(const QString &id) {
+    if(lockPolicy_) lockPolicy_->enforce();
     if (!repository_.find(id)) return;
     changed(collectionPath(id),CollectionInterface,{{"Locked",repository_.locked(id)}});
     for (const auto &item : repository_.search(id,{}).ids)
@@ -103,7 +120,9 @@ void SecretService::ownerLost(const QString &name, const QString &, const QStrin
         if (i->second->owner == name) i = sessions_.erase(i); else ++i;
     }
     for (auto i = prompts_.begin(); i != prompts_.end();) {
-        if (i->second.owner == name) { promptsProvider_.cancel(i->second.ticket); i = prompts_.erase(i); }
+        if (i->second.owner == name) {
+            const auto path = i->first; ++i; finishPrompt(path,true);
+        }
         else ++i;
     }
 }
@@ -113,6 +132,9 @@ bool SecretService::handleMessage(const QDBusMessage &m, const QDBusConnection &
     const auto uid = bus_.interface()->serviceUid(m.service());
     if (!uid.isValid() || uid.value() != geteuid()) { error(m, "org.freedesktop.DBus.Error.AccessDenied"); return true; }
     try {
+        // Authenticated control rekey may temporarily hold decrypted pages.
+        // Every wire disclosure must re-evaluate resident policy first.
+        if(lockPolicy_) lockPolicy_->enforce();
         if (!exists(m.path())) { error(m,"org.freedesktop.Secret.Error.NoSuchObject"); return true; }
         if (m.interface() == "org.freedesktop.DBus.Properties") return propertyMethod(m);
         if (m.interface() == "org.freedesktop.Secret.Prompt") return promptMethod(m);

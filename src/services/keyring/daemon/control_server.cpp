@@ -107,7 +107,7 @@ void ControlServer::receive(quint64 id) {
     try {
         if (bytes[4] == 3) { repository_.lock(collection); Q_EMIT collectionStateChanged(collection); finish(id,true); }
         else if (!repository_.unlock(collection,password)) { Q_EMIT collectionStateChanged(collection); finish(id,false); }
-        else if (bytes[4] == 1) { Q_EMIT collectionStateChanged(collection); finish(id,true); }
+        else if (bytes[4] == 1) { Q_EMIT collectionStateChanged(collection); finish(id,!repository_.locked(collection)); }
         else {
             const bool wasLocked = true; // Authentication may publish unlocked state; cancellation retires it.
             QTimer::singleShot(550,this,[this,id,collection,idSize,oldSize,newSize,wasLocked] {

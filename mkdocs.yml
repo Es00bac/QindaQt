@@ -38,6 +38,7 @@ nav:
       - Documentation catalog: handbook/catalog/reading.md
   - Architecture:
       - Native keyring daemon: architecture/keyring-daemon.md
+      - Native keyring client: architecture/keyring-client.md
       - Native keyring PAM bridge: architecture/keyring-pam.md
       - Authentication overlay: architecture/authentication-overlay.md
       - Native keyring storage: architecture/keyring-storage.md
@@ -463,6 +464,7 @@ nav:
 
       - "ADR-0294: native protocol state owns the session lock": adr/0294-native-session-lock-authority.md
       - ADR-0299 Native locker private launch: adr/0299-native-locker-private-launch-and-authentication.md
+      - ADR-0304 Native lock observation: adr/0304-native-lock-observation-and-service-policy.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
       - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md
       - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md
@@ -473,4 +475,6 @@ nav:
 
       - "ADR-0296: Own a native Secret Service daemon and session boundary": adr/0296-native-keyring-daemon-boundary.md
       - "ADR-0300: Authenticate native PAM token delivery through the system owner": adr/0300-trusted-native-keyring-pam.md
+
+      - "ADR-0302: Native Passwords & Keys client and prompt policy": adr/0302-native-passwords-keys-client-and-policy.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
