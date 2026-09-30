@@ -26,6 +26,9 @@ enum class SettingDomain {
     Services,
     Shell,
     Power,
+    // AGENT-CONTRACT: ordinal 10 is the published Keyring domain; reserve its
+    // slot on older branches. Merged trees keep Keyring=10 and Lock=11.
+    Lock = 11,
 };
 
 enum class SettingValueType {

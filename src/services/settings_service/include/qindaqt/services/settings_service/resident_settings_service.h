@@ -61,12 +61,14 @@ class ResidentSettingsService final {
 public:
     // Optional PowerDevil path is copied and read-only. Empty disables the
     // import; a missing or malformed file is ignored and remains retryable.
-    // Startup parsing and the Settings1 commit run on the constructing thread.
+    // The optional legacy screen-lock path follows the same read-only/atomic
+    // contract. Startup parsing and commits run on the constructing thread.
     ResidentSettingsService(QDBusConnection connection, Settings::SettingsSchema activeSchema,
                             Settings::SettingsSchema legacySchema,
                             QString profileDefaultsPath,
                             QString userOverridesPath,
-                            QString powerDevilPreferencesPath = {});
+                            QString powerDevilPreferencesPath = {},
+                            QString screenLockerPreferencesPath = {});
     ~ResidentSettingsService();
 
     ResidentSettingsService(const ResidentSettingsService &) = delete;

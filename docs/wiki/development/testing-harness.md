@@ -4220,3 +4220,19 @@ Run these focused rows with `QT_FATAL_WARNINGS=1` and `--no-tests=error`.
 These gates qualify the [readonly native API](../architecture/native-session-lock.md),
 not live sleep, a system bus, production locker deployment or a real owner
 password. PF8 service policy and Settings qualification remain distinct gates.
+
+## Native lock preference persistence
+
+`qindaqt.lock-preferences-import` covers exact four-key conversion, per-key native
+precedence, ignored password bypass, integer bounds, malformed UTF-8/config and
+oversized sources, read-only source preservation, typed native decoding and
+atomic failed-save/retry round-trip. `qindaqt.lock-preferences-provider` proves
+owner replacement, stale reply, malformed typed preferences and bus-loss revoke
+the public preference snapshot. `qindaqt.settings-service-lifecycle` additionally
+proves name-ownership-before-import, explicit user choice preservation, persisted
+marker and startup idempotence against changed legacy input on a private bus.
+Fixtures use only temporary files; they do not read live user configuration.
+Run these plus repository and existing PowerDevil import gates under
+`QT_FATAL_WARNINGS=1`. These tests qualify
+[ADR-0308](../adr/0308-native-lock-preferences-and-atomic-import.md), not native
+Settings UI, runtime policy, live lock/sleep or installed rollout.

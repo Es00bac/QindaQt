@@ -4,6 +4,7 @@
 #include "dbus_service_name_validation_p.h"
 #include "settings_object_p.h"
 #include "qindaqt/services/power_policy/powerdevil_import.h"
+#include "legacy_lock_import_p.h"
 
 #include "qindaqt/services/settings_protocol/settings_wire_contract.h"
 #include "qindaqt/services/settings_protocol/settings_wire_encode.h"
@@ -51,13 +52,14 @@ public:
             Settings::SettingsSchema previousSchema,
             QString defaultsPath,
             QString storagePath,
-            QString powerDevilPath)
+            QString powerDevilPath, QString screenLockerPath)
         : connection(std::move(busConnection))
         , activeSchema(std::move(currentSchema))
         , legacySchema(std::move(previousSchema))
         , profileDefaultsPath(std::move(defaultsPath))
         , userOverridesPath(std::move(storagePath))
         , powerDevilPreferencesPath(std::move(powerDevilPath))
+        , screenLockerPreferencesPath(std::move(screenLockerPath))
     {
     }
 
@@ -67,6 +69,7 @@ public:
     QString profileDefaultsPath;
     QString userOverridesPath;
     QString powerDevilPreferencesPath;
+    QString screenLockerPreferencesPath;
     QString serviceName;
     std::unique_ptr<SettingsRepository> repository;
     std::unique_ptr<QObject> object;
@@ -77,11 +80,12 @@ ResidentSettingsService::ResidentSettingsService(QDBusConnection connection,
                                                  Settings::SettingsSchema legacySchema,
                                                  QString profileDefaultsPath,
                                                  QString userOverridesPath,
-                                                 QString powerDevilPreferencesPath)
+                                                 QString powerDevilPreferencesPath,
+                                                 QString screenLockerPreferencesPath)
     : d(std::make_unique<Private>(std::move(connection), std::move(activeSchema),
                                   std::move(legacySchema), std::move(profileDefaultsPath),
                                   std::move(userOverridesPath),
-                                  std::move(powerDevilPreferencesPath)))
+                                  std::move(powerDevilPreferencesPath), std::move(screenLockerPreferencesPath)))
 {
 }
 
@@ -243,6 +247,8 @@ SettingsServiceStartResult ResidentSettingsService::start(const QString &service
         if (plan.sourceSupported && !operations.isEmpty())
             (void)d->repository->commitUserOverrides(d->repository->revision(), operations);
     }
+    ::QindaQt::Services::SettingsService::Private::applyLegacyLockImport(
+        *d->repository, d->screenLockerPreferencesPath);
     auto object = std::make_unique<
         ::QindaQt::Services::SettingsService::Private::SettingsObject>(
         d->connection, *d->repository);
