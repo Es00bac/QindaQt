@@ -211,8 +211,11 @@ hit-test over the intended target underneath.
 
 An ordinary right-button press and matching release on `OuterTitleDrag` emits
 one stable-ID context-menu request. Member-title right clicks remain native.
-The nonblocking group menu offers layer, workspace, activity, pin, and output
-commands plus Arrange windows, Detach active window, Ungroup, Minimize group,
+The nonblocking group menu offers layer, workspace, pin, and output commands,
+plus Activities only when the compositor exposes an activity inventory. An
+activity-free compositor omits that submenu and rejects direct activity
+mutations explicitly; the other scope commands remain available. The menu also
+offers Arrange windows, Detach active window, Ungroup, Minimize group,
 Roll up/Unroll group, Rename, and a Group Color submenu. It revalidates
 the active representative when each command is dispatched.
 

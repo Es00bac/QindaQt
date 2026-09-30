@@ -324,3 +324,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0307: Share readonly idle observation on an admitted ordinary display FD](0307-public-ordinary-fd-idle-observation.md)
 
 - [ADR-0309: Authenticate native lock state through targeted receipts](0314-native-lock-receipt-authentication.md)
+
+- [ADR-0309: Build QindaQt without Plasma Activities](0309-build-qindaqt-without-plasma-activities.md)

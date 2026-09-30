@@ -10,8 +10,10 @@
 #include "managedwindowregistry.h"
 #include "memberchromevisibilitycontroller.h"
 
-#include <activities.h>
 #include <config-kwin.h>
+#if KWIN_BUILD_ACTIVITIES
+#include <activities.h>
+#endif
 #include <core/output.h>
 #include <virtualdesktops.h>
 #include <window.h>
@@ -189,7 +191,11 @@ bool applyContextCommand(
             return true;
         }
 #endif
+#if KWIN_BUILD_ACTIVITIES
         return fail(error, QStringLiteral("current activity is unavailable"));
+#else
+        return fail(error, QStringLiteral("Activities are unavailable in this compositor."));
+#endif
     case GroupContextMenuCommandKind::ToggleActivity:
 #if KWIN_BUILD_ACTIVITIES
         if (auto *activities = workspace->activities();
@@ -202,7 +208,11 @@ bool applyContextCommand(
             return true;
         }
 #endif
+#if KWIN_BUILD_ACTIVITIES
         return fail(error, QStringLiteral("selected activity no longer exists"));
+#else
+        return fail(error, QStringLiteral("Activities are unavailable in this compositor."));
+#endif
     case GroupContextMenuCommandKind::MoveToOutput:
         if (auto *output = workspace->findOutput(command.destinationId)) {
             window.sendToOutput(output);

@@ -218,22 +218,23 @@ bool KWinGroupContextMenu::prepare(const QString &containerId, QString *error)
     }
     workspaceMenu->setEnabled(!state->workspaces.isEmpty());
 
-    auto *const activityMenu = addMenu(menuText("Activities"));
-    activityMenu->setObjectName(QStringLiteral("qindaqt-context-activities"));
-    addToggleAction(activityMenu, menuText("All Activities"),
-                    QStringLiteral("qindaqt-context-all-activities"),
-                    state->onAllActivities,
-                    {.kind = GroupContextMenuCommandKind::SetAllActivities,
-                     .destinationId = {},
-                     .enabled = false});
-    activityMenu->addSeparator();
-    for (const auto &destination : std::as_const(state->activities)) {
-        addDestinationAction(activityMenu, destination,
-                             QStringLiteral("qindaqt-context-activity-"),
-                             GroupContextMenuCommandKind::ToggleActivity,
-                             true);
+    if (!state->activities.isEmpty()) {
+        auto *const activityMenu = addMenu(menuText("Activities"));
+        activityMenu->setObjectName(QStringLiteral("qindaqt-context-activities"));
+        addToggleAction(activityMenu, menuText("All Activities"),
+                        QStringLiteral("qindaqt-context-all-activities"),
+                        state->onAllActivities,
+                        {.kind = GroupContextMenuCommandKind::SetAllActivities,
+                         .destinationId = {},
+                         .enabled = false});
+        activityMenu->addSeparator();
+        for (const auto &destination : std::as_const(state->activities)) {
+            addDestinationAction(activityMenu, destination,
+                                 QStringLiteral("qindaqt-context-activity-"),
+                                 GroupContextMenuCommandKind::ToggleActivity,
+                                 true);
+        }
     }
-    activityMenu->setEnabled(!state->activities.isEmpty());
 
     auto *const outputMenu = addMenu(menuText("Move to Output"));
     outputMenu->setObjectName(QStringLiteral("qindaqt-context-outputs"));

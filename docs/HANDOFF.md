@@ -1,3 +1,9 @@
+# Activities-free compositor consumer source — 2026-09-30
+
+Accepted `a33d33c430c71ac63062d1def44c61e7a3c00ce5` consumes the fork Activities capability, preserves workspaces/outputs and refuses unavailable activity mutations. Candidate production consumer and seven focused gates pass; strict MkDocs and455-document links pass. Exact fork source79fa351f disables Activities by default and exports that capability; PF11 removes the discovery entirely.
+
+Combined manager ABI/build/native gates and consolidated source pin follow the repaired PF11 candidate. No package deployment or installed completion is claimed.
+
 # Native lock receipts and service source — 2026-09-30
 
 Admitted consumer `d38bd59289a716132b3411482edd1252baf562d1` adds same-thread manual request transport, Lock1/ScreenSaver facades and authoritative read-only state receipts. Candidate build and seven focused CTests pass; strict MkDocs and457-document links pass. Exact producer `43256d90040ab64713a775d29ccd54ec2d11d40f` passes its private native27-check matrix without the external Qt probe. Receipt ADR is0314, preserving PF10 Activities allocation0309.

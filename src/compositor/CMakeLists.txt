@@ -105,9 +105,10 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
     find_package(KF6Config 6.0 REQUIRED CONFIG)
     # QindaQt's compositor is its own KWin fork, qindaqt-kwin (ADR-0291).
     find_package(QindaQtKWin ${_qindaqt_kwin_abi_version} EXACT REQUIRED CONFIG)
-    # KWin's public Activities header includes PlasmaActivities but its package
-    # does not propagate that include directory to extension plugins.
-    find_package(PlasmaActivities 6.6.6 EXACT REQUIRED CONFIG)
+    if(QINDAQT_KWIN_BUILD_ACTIVITIES)
+        # The exact fork exposes this only when it was built with Activities.
+        find_package(PlasmaActivities 6.6.6 EXACT REQUIRED CONFIG)
+    endif()
 
     add_library(qindaqt_hybrid_chrome_pointer_router STATIC
         kwin/hybridchromepointerrouter.cpp
@@ -486,10 +487,12 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             QindaQt::CompositorNames
             KF6::ConfigCore
             KF6::GlobalAccel
-            Plasma::Activities
             Qt6::DBus
             Qt6::Widgets
     )
+    if(QINDAQT_KWIN_BUILD_ACTIVITIES)
+        target_link_libraries(qindaqt_compositor PRIVATE Plasma::Activities)
+    endif()
     target_compile_definitions(
         qindaqt_compositor
         PRIVATE QINDAQT_KWIN_ABI_VERSION="${_qindaqt_kwin_abi_version}"
