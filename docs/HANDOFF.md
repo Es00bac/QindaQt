@@ -1,3 +1,9 @@
+# Native Secret portal and exact synthetic legacy preservation — 2026-09-30
+
+Exact3736799e870c3a78ddd75c8539dd7e627faa6a9b (including PK5493 and qualified native/public receipt dependencies) is source admitted. Its six Secret CTests pass with46 Qt checks and native7/import3 fixture cases; twenty adjacent key-store/platform/lock rows pass. Strict MkDocs and463-document link validation pass. Source review preserves standard Secret Service wire, actual owner/nonce policy/secret/prompt receipts, atomic same-collection batch persistence and exact legacy opaque64 bytes alongside fresh native32 records.
+
+Combined manager gates run against the newly pinned fork stage next. Complete one-time GNOME/KWallet collection acquisition/import remains actively assigned; this checkpoint neither copies real stores nor closes PK6. Native Settings bytes come from actual-owner, owned-path Prompt.Completed signals followed by a fresh policy receipt; a focused forgery fixture will establish additional executable evidence. Metadata RPC source authenticity remains a separate bounded audit. No host password, system bus, package installation or name switch occurred.
+
 # Plasma-free compositor dependencies integrated source — 2026-09-30
 
 Reviewed fork3bb6d170 (including actual nonfocus/click-through OSD7 Qt checks) and consumer1a51751e are source integrated. The exact combined fork source is6ab6c01ede8143a7ddb477d6f0040e9b2f3753e4, including Activities capability removal and actual targeted native lock receipts. The consumer pin moves to that combined tree; manager private production/native stage and combined gates are now next.

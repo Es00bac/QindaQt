@@ -69,7 +69,7 @@ PortalServiceStartStatus ResidentPortalService::start(QString *error)
     }
     if (!d->connection.registerObject(
             QString::fromLatin1(kPortalObjectPath), d->object.get(),
-            QDBusConnection::ExportScriptableSlots
+            QDBusConnection::ExportAdaptors | QDBusConnection::ExportScriptableSlots
                 | QDBusConnection::ExportScriptableSignals
                 | QDBusConnection::ExportScriptableProperties)) {
         setError(error, d->connection.lastError().message());
@@ -138,3 +138,5 @@ QString portalServiceStartStatusName(PortalServiceStartStatus status)
 }
 
 } // namespace QindaQt::Services::Portal
+
+QObject &QindaQt::Services::Portal::ResidentPortalService::backendHost() noexcept {return *d->object;}

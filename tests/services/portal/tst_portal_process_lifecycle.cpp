@@ -19,6 +19,10 @@
 
 #include <csignal>
 #include <optional>
+#include <map>
+#include <poll.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 using namespace QindaQt::Services::Portal;
 
@@ -84,43 +88,35 @@ class ActivatedProcessCleanup final {
 public:
     ~ActivatedProcessCleanup()
     {
-        for (const auto &[processId, executable] : m_processes) {
-            terminateIfExactProcess(processId, executable);
+        for (const auto &[processId, fd] : m_processes) {
+            if (isAlive(processId)) {
+                // PIDFD targets only the retained fixture process, never a
+                // recycled PID. Production dumpability must stay disabled.
+                ::syscall(SYS_pidfd_send_signal, fd, SIGTERM, nullptr, 0);
+                for (int attempt=0; attempt<50 && isAlive(processId); ++attempt) QTest::qSleep(20);
+                if (isAlive(processId)) ::syscall(SYS_pidfd_send_signal, fd, SIGKILL, nullptr, 0);
+            }
+            ::close(fd);
         }
     }
-
-    void track(qint64 processId, const QString &executable)
+    bool track(qint64 processId)
     {
-        m_processes.emplaceBack(
-            processId, QFileInfo(executable).canonicalFilePath());
+        // AGENT-CONTRACT: called only for unique owners just observed on this
+        // test's private daemon, activated from its exact staged descriptors.
+        // /proc/exe is intentionally unreadable for the secret-bearing backend.
+        const int fd=static_cast<int>(::syscall(SYS_pidfd_open, processId, 0));
+        if(fd<0) return false;
+        if(!m_processes.emplace(processId,fd).second) {::close(fd);return false;}
+        return isAlive(processId);
     }
-
-    [[nodiscard]] static bool isExactProcess(qint64 processId,
-                                             const QString &executable)
+    bool isAlive(qint64 processId) const
     {
-        return QFileInfo(QStringLiteral("/proc/%1/exe").arg(processId))
-                   .canonicalFilePath()
-               == QFileInfo(executable).canonicalFilePath();
+        const auto found=m_processes.find(processId);if(found==m_processes.end()) return false;
+        pollfd descriptor{found->second,POLLIN,0};
+        return ::poll(&descriptor,1,0)==0;
     }
-
 private:
-    static void terminateIfExactProcess(qint64 processId,
-                                        const QString &executable) noexcept
-    {
-        if (!isExactProcess(processId, executable)) {
-            return;
-        }
-        ::kill(static_cast<pid_t>(processId), SIGTERM);
-        for (int attempt = 0;
-             attempt < 50 && isExactProcess(processId, executable); ++attempt) {
-            QTest::qSleep(20);
-        }
-        if (isExactProcess(processId, executable)) {
-            ::kill(static_cast<pid_t>(processId), SIGKILL);
-        }
-    }
-
-    QList<std::pair<qint64, QString>> m_processes;
+    std::map<qint64,int> m_processes;
 };
 
 bool writeDescriptor(const QString &directory, const QByteArray &name,
@@ -265,6 +261,10 @@ void PortalProcessLifecycleTests::activatesBothProcessesAndExitsOnPrivateDaemonL
 
     QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
     environment.insert(QStringLiteral("XDG_DATA_DIRS"), dataRoot);
+    environment.insert(QStringLiteral("XDG_DATA_HOME"), dataRoot);
+    environment.insert(QStringLiteral("XDG_CACHE_HOME"), directory.path()+QStringLiteral("/cache"));
+    environment.remove(QStringLiteral("DISPLAY"));
+    environment.remove(QStringLiteral("WAYLAND_DISPLAY"));
     environment.insert(QStringLiteral("XDG_CONFIG_HOME"), configRoot);
     environment.insert(QStringLiteral("QINDAQT_SETTINGS_SCHEMA_DIR"),
                        schemaDirectory);
@@ -280,21 +280,17 @@ void PortalProcessLifecycleTests::activatesBothProcessesAndExitsOnPrivateDaemonL
     const auto first = activateAndObserve(
         firstDaemon.address(), QStringLiteral("portal-process-first"), &error);
     QVERIFY2(first.has_value(), qPrintable(error));
-    cleanup.track(first->portalProcessId, portalExecutable);
-    cleanup.track(first->settingsProcessId, settingsExecutable);
-    QVERIFY(ActivatedProcessCleanup::isExactProcess(
-        first->portalProcessId, portalExecutable));
-    QVERIFY(ActivatedProcessCleanup::isExactProcess(
-        first->settingsProcessId, settingsExecutable));
+    QVERIFY(cleanup.track(first->portalProcessId));
+    QVERIFY(cleanup.track(first->settingsProcessId));
+    QVERIFY(cleanup.isAlive(first->portalProcessId));
+    QVERIFY(cleanup.isAlive(first->settingsProcessId));
     QVERIFY(!QFileInfo::exists(
         QDir(configRoot).filePath(QStringLiteral("qindaqt/settings-v2.json"))));
 
     firstDaemon.stop();
-    QTRY_VERIFY_WITH_TIMEOUT(!ActivatedProcessCleanup::isExactProcess(
-                                 first->portalProcessId, portalExecutable),
+    QTRY_VERIFY_WITH_TIMEOUT(!cleanup.isAlive(first->portalProcessId),
                              5'000);
-    QTRY_VERIFY_WITH_TIMEOUT(!ActivatedProcessCleanup::isExactProcess(
-                                 first->settingsProcessId, settingsExecutable),
+    QTRY_VERIFY_WITH_TIMEOUT(!cleanup.isAlive(first->settingsProcessId),
                              5'000);
 
     PrivateBusDaemon secondDaemon;
@@ -310,8 +306,8 @@ void PortalProcessLifecycleTests::activatesBothProcessesAndExitsOnPrivateDaemonL
     const auto second = activateAndObserve(
         secondDaemon.address(), QStringLiteral("portal-process-second"), &error);
     QVERIFY2(second.has_value(), qPrintable(error));
-    cleanup.track(second->portalProcessId, portalExecutable);
-    cleanup.track(second->settingsProcessId, settingsExecutable);
+    QVERIFY(cleanup.track(second->portalProcessId));
+    QVERIFY(cleanup.track(second->settingsProcessId));
     QVERIFY(second->portalProcessId != first->portalProcessId);
     QVERIFY(second->settingsProcessId != first->settingsProcessId);
     QVERIFY(second->portalOwner != first->portalOwner);
@@ -320,11 +316,9 @@ void PortalProcessLifecycleTests::activatesBothProcessesAndExitsOnPrivateDaemonL
         QDir(configRoot).filePath(QStringLiteral("qindaqt/settings-v2.json"))));
 
     secondDaemon.stop();
-    QTRY_VERIFY_WITH_TIMEOUT(!ActivatedProcessCleanup::isExactProcess(
-                                 second->portalProcessId, portalExecutable),
+    QTRY_VERIFY_WITH_TIMEOUT(!cleanup.isAlive(second->portalProcessId),
                              5'000);
-    QTRY_VERIFY_WITH_TIMEOUT(!ActivatedProcessCleanup::isExactProcess(
-                                 second->settingsProcessId, settingsExecutable),
+    QTRY_VERIFY_WITH_TIMEOUT(!cleanup.isAlive(second->settingsProcessId),
                              5'000);
     QDBusConnection::disconnectFromBus(placeholderOneName);
     QDBusConnection::disconnectFromBus(placeholderTwoName);

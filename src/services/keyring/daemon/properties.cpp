@@ -2,6 +2,7 @@
 #include "secret_service.h"
 #include <QDateTime>
 #include <QTimer>
+#include <QUuid>
 #include <QCoreApplication>
 #include <QDBusConnectionInterface>
 namespace qindaqt::keyring::service {
@@ -65,7 +66,18 @@ bool SecretService::propertyMethod(const QDBusMessage &m) {
     error(m,"org.freedesktop.DBus.Error.UnknownMethod"); return true;
 }
 bool SecretService::nativeMethod(const QDBusMessage &m) {
-    if (nativeItemMethod(m)) return true;
+    if (portalMethod(m) || nativeItemMethod(m)) return true;
+    if(m.member()=="RequestPolicyState") {
+        const auto nonce=m.arguments().value(0).toString();
+        const auto parsed=QUuid::fromString(nonce);
+        if(m.signature()!="s" || parsed.isNull() || parsed.toString(QUuid::WithoutBraces)!=nonce) {
+            error(m,"org.freedesktop.DBus.Error.InvalidArgs");return true;
+        }
+        // AGENT-CONTRACT: UI and portal consume actual sender/nonce receipts.
+        // Existing GetPolicyState remains informational/wire-compatible.
+        const QVariantMap state=lockPolicy_?lockPolicy_->status():QVariantMap{{"SettingsAvailable",false},{"ScreenLockAvailable",false},{"IdleAvailable",false},{"ScreenLocked",true},{"LockOnScreenLock",false},{"LockAfterIdleMinutes",0}};
+        auto receipt=QDBusMessage::createTargetedSignal(m.service(),Root,NativeInterface,"PolicyStateReceipt");receipt.setArguments({nonce,state});bus_.send(receipt);reply(m);return true;
+    }
     if (m.member()=="GetPolicyState" && m.signature().isEmpty()) {
         const QVariantMap state=lockPolicy_?lockPolicy_->status():QVariantMap{{"SettingsAvailable",false},{"ScreenLockAvailable",false},{"IdleAvailable",false},{"ScreenLocked",true},{"LockOnScreenLock",false},{"LockAfterIdleMinutes",0}};
         reply(m,{state});return true;

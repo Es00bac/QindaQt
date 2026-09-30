@@ -85,6 +85,7 @@ add_subdirectory(services/dock_items)
 # Appearance route both link this pure value.
 add_subdirectory(services/wallpaper_assignments)
 add_subdirectory(session/window_management)
+add_subdirectory(services/secret_portal)
 add_subdirectory(services/portal)
 add_subdirectory(services/display_protocol)
 add_subdirectory(services/display_identity)

@@ -42,6 +42,10 @@ public:
     [[nodiscard]] PortalServiceStartStatus start(QString *error = nullptr);
     void stop() noexcept;
     [[nodiscard]] bool isRunning() const noexcept;
+    // Borrowed same-thread host for public standard-backend adaptors. Configure
+    // before start(); ownership transfers through QObject parenting. No private
+    // appearance type/state crosses this composition boundary.
+    [[nodiscard]] QObject &backendHost() noexcept;
 
 private:
     class Private;

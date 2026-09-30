@@ -1,6 +1,6 @@
 # ADR-0304: native lock observation and service policy
 
-- **Status:** Accepted; NativeLock receipt transport superseded in part by ADR-0309
+- **Status:** Accepted; NativeLock receipt transport superseded in part by ADR-0314
 - **Date:** 2026-09-30
 - **Owners:** native lock services and session lock state
 - **Related:** [ADR-0299](0299-native-locker-private-launch-and-authentication.md)

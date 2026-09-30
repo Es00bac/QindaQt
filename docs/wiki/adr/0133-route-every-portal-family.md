@@ -96,3 +96,7 @@ Revisit when an installed backend changes its `.portal` advertisement, the
 keyring provider decision is revised, a first-party backend for a family lands,
 KDE ships a wallpaper backend that can target QindaQt's own surfaces, or the
 frontend changes interface export so closed families become observable.
+
+## Subsequent native Secret choice
+
+[ADR-0310](0310-native-per-application-secret-portal.md) supersedes only the Secret routing row for native source deployments. Other routing decisions remain intact; legacy app-secret migration and installation are separate gates.

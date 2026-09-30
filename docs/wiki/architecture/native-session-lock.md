@@ -210,6 +210,7 @@ policy. Grace is cancellable pre-acquisition idle delay only; it never permits
 unauthenticated unlock after acquisition. Manual locking and protected-before-
 sleep ordering require their separate native policy gates.
 
+
 Public [ordinary attachment and idle observation](compositor-attachment.md)
 ([ADR-0305](../adr/0305-public-ordinary-compositor-attachment.md),
 [ADR-0307](../adr/0307-public-ordinary-fd-idle-observation.md)) provide selected

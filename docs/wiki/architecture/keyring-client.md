@@ -58,3 +58,7 @@ model exposes `secretsAllowed`, rejects stale/unadmitted replies and clears
 revealed bytes on invalidation. Composition must clear its SensitiveClipboard
 on both authority loss and secret invalidation. Standard Secret Service
 sharing remains the separate collection-lock policy contract.
+
+## Native Secret portal boundary
+
+The separate [native Secret portal](secret-portal.md) uses fixed login app records and fresh targeted nonce receipts for authenticated policy/secret results. Successful Qt RPC replies confer no native disclosure policy authority. The UI gateway reuses RequestPolicyState/PolicyStateReceipt before publishing revealed bytes; standard Secret Service sharing remains independent. PK5 fresh-native-32 records do not migrate legacy opaque64 secrets; exact versioned synthetic import is PK6, before installation/live replacement.

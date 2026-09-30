@@ -403,10 +403,10 @@ bool runRouting(QString *error)
     }
     pending = callFrontend(bus, "org.freedesktop.portal.Secret", "RetrieveSecret",
                            retrieveArguments);
-    if (!waitUntil([&] { return secret->calls() == 1; }, 5'000)) {
+    if (!waitUntil([&] { return pending.isFinished(); }, 5'000) || secret->calls() != 0) {
         return failWithCallReply(
             frontend, pending,
-            QStringLiteral("Secret did not reach the routed gnome-keyring backend"),
+            QStringLiteral("Secret native route did not retire or reached the old backend"),
             error);
     }
     return true;

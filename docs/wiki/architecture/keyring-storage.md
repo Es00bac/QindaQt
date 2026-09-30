@@ -140,3 +140,17 @@ remain the next slices. See the [testing harness](../development/testing-harness
 for later isolated service qualification.
 
 The [native daemon](keyring-daemon.md) supplies sole-writer, alias, prompt and process policy through this public storage boundary.
+
+## Atomic insertion batch
+
+`insertBatchAndSave(vector<Item>)` consumes additions and rejects empty batches,
+existing/duplicate IDs, individual bounds or aggregate limits. It stages a deep
+secure copy of the current collection and inserts only into that candidate.
+One durable save replaces the file before in-memory publication; pre-rename
+failure preserves original decrypted memory, borrowed pointers and disk bytes.
+Success invalidates borrowed pointers. DurabilityUnknown reloads locked and
+exposes no candidate pages; the caller must explicitly recover rather than
+report saved/rolled back. Existing commit cancellation is readonly/non-reentrant.
+This generic storage operation chooses no app/import conflict policy or paths;
+[ADR-0312](../adr/0312-preserve-exact-legacy-portal-secrets.md) supplies the separate
+portal policy. Format1 and existing save/rekey operations remain compatible.
