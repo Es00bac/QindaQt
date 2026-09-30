@@ -45,8 +45,16 @@ selects production; the wire contract is unchanged.
 | Keyboard backlight | UPower keyboard-backlight interface | `Power1` collaborator |
 | External-monitor brightness | KWin brightness control, through Display1 `SetOutputBrightness` ([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)) | Display D7; unavailable wherever KWin advertises no capability; presented per output by the [Power Settings route](../apps/power-settings.md) through the public Display client; DDC/CI policy remains PB-6 |
 
-`Power1` holds no inhibitors in version 1. Lock-before-sleep remains a
-KWin/KScreenLocker responsibility. Shell session actions acquire all three
+`Power1` version 1 reports the privacy-bounded logind inhibitor summary
+but acquires no caller-scoped QindaQt idle leases. The private
+`IdleInhibitorRegistry` is currently only a compiled service-core foundation:
+it enforces service-epoch and unique-owner cookies, bounded capacity, atomic
+scope admission and owner cleanup in unit tests. It is not wired into the
+resident object, protocol, or idle stages, so no idle-inhibitor scope is
+supported and the ScreenSaver facade remains Unsupported. This boundary must
+stay explicit until the shared idle policy consumes every requested scope.
+
+Lock-before-sleep remains a KWin/KScreenLocker responsibility. Shell session actions acquire all three
 `handle-power-key`, `handle-suspend-key`, and `handle-hibernate-key` locks as
 one transaction: partial acquisition releases every acquired lock and exposes
 no key action. Losing any lock unregisters all three actions before retry.
