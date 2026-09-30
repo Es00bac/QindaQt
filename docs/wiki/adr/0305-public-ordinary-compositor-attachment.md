@@ -57,3 +57,9 @@ configuration and does not qualify a live desktop, executable trust or sleep.
 See [compositor attachment and idle observation](../architecture/compositor-attachment.md),
 [module boundaries](../architecture/module-boundaries.md) and
 [testing harness](../development/testing-harness.md).
+
+Manual native request consumers also join actual bus daemon identity through
+`sameBus(connection)` using bounded 250 ms GetId calls. Owner/PID names can
+collide between independent daemons. A queued initial advertisement cannot
+revoke the same owner already admitted by attach; actual retained-owner loss
+still revokes even if it reclaims the name before queued delivery.
