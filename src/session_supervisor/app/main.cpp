@@ -24,6 +24,7 @@
 
 #include "../src/activation_environment.h"
 #include "../src/resident_service_refresh.h"
+#include "../src/native_lock_composition.h"
 #include "../src/replaced_activation_owner.h"
 
 #include <utility>
@@ -83,6 +84,9 @@ int main(int argc, char *argv[])
                         "never launches host binaries.")},
         {QStringLiteral("no-keyring"),
          QStringLiteral("Disable native keyring ownership in private sessions.")},
+        {QStringLiteral("night-light"),
+         QStringLiteral("Optional resident night-light schedule service."),
+         QStringLiteral("path"), QStringLiteral("/usr/bin/qindaqt-night-light-service")},
         {QStringLiteral("no-autostart"),
          QStringLiteral("Do not launch XDG autostart entries in a private or diagnostic session.")},
         {QStringLiteral("profile"), QStringLiteral("Shell profile id."),
@@ -140,6 +144,7 @@ int main(int argc, char *argv[])
     const auto keyring = QString::fromUtf8(QINDAQT_KEYRING_INSTALL_PATH);
     if (!parser.isSet(QStringLiteral("no-keyring")) && QFileInfo(keyring).isExecutable())
         options.keyringExecutable = keyring;
+    options.nightLightExecutable = parser.value(QStringLiteral("night-light"));
     if (!parser.isSet(QStringLiteral("no-autostart"))) {
         options.autostart = QindaQt::SessionAutostart::ScanOptions::fromEnvironment();
         options.autostart.supersedeDistributionPolkitAgents =
@@ -162,6 +167,16 @@ int main(int argc, char *argv[])
                             << error << '\n';
         return 2;
     }
+    // Native Lock1, the ScreenSaver facade and automatic idle/resume policy
+    // share the supervisor's selected session owner and ordinary compositor
+    // attachment. The lock path degrades closed without blocking login.
+    NativeLockComposition nativeLock;
+    if (!nativeLock.start(&error)) {
+        QTextStream(stderr) << QCoreApplication::applicationName()
+                            << ": native lock runtime unavailable: " << error << '\n';
+    }
+    QObject::connect(&application, &QCoreApplication::aboutToQuit,
+                     &application, [&nativeLock] { nativeLock.stop(); });
     // The windowManagement.* live bridge (ADR-0209): confirmed Settings1
     // values become qindaqt/kwinrc entries plus one reconfigure. It rides the
     // supervisor's lifetime and never blocks it; without Settings1 the last

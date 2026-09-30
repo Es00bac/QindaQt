@@ -1,10 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# The KScreenLocker preference boundary (kscreenlockerrc [Daemon] plus the
-# live configure request), shared by every Settings route that surfaces idle
-# locking: the Power route's Screen lock section (ADR-0091/ADR-0132) and the
-# Screen saver route's walk-away section (ADR-0226). One store and model, one
-# merge-latest semantics, whichever page the choice is made from.
+# Shared screen-lock Settings1 model for the Power and Screen saver routes.
+# The legacy file adapter remains isolated for migration compatibility; these
+# production routes use only confirmed Settings1 lock.* values.
 
 qt_add_library(qindaqt_settings_screen_lock STATIC)
 target_sources(
@@ -12,15 +10,17 @@ target_sources(
     PRIVATE
         screen_lock_settings.cpp
         qt_screen_lock_configurator.cpp
+        settings1_screen_lock_settings_model.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
             include/qindaqt/apps/settings_screen_lock/screen_lock_settings.h
+            include/qindaqt/apps/settings_screen_lock/settings1_screen_lock_settings_model.h
 )
 target_link_libraries(
     qindaqt_settings_screen_lock
-    PUBLIC Qt6::Core
+    PUBLIC Qt6::Core QindaQt::LockPreferences QindaQt::SettingsClient QindaQt::SettingsProtocol
     PRIVATE Qt6::DBus
 )
 target_compile_features(qindaqt_settings_screen_lock PUBLIC cxx_std_20)

@@ -29,6 +29,8 @@ target_sources(
         src/session_autostart_runner.cpp
         src/session_autostart_runner.h
         src/session_service.cpp
+        src/native_lock_composition.cpp
+        src/native_lock_composition.h
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -48,7 +50,7 @@ pkg_check_modules(libsystemd REQUIRED IMPORTED_TARGET libsystemd)
 
 target_link_libraries(
     qindaqt_session_supervisor_support
-    PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus
+    PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus QindaQt::NativeLockRuntime QindaQt::NativeLockService QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::IdleObservation QindaQt::LockPreferences QindaQt::PowerClient QindaQt::SettingsClient
     PRIVATE PkgConfig::libsystemd QindaQt::CompositorNames
 )
 target_compile_features(qindaqt_session_supervisor_support PUBLIC cxx_std_20)
@@ -70,6 +72,14 @@ target_link_libraries(
     qindaqt-session
     PRIVATE
         QindaQt::SessionSupervisorSupport
+        QindaQt::NativeLockRuntime
+        QindaQt::NativeLockService
+        QindaQt::SessionLockState
+        QindaQt::CompositorAttachment
+        QindaQt::IdleObservation
+        QindaQt::LockPreferences
+        QindaQt::PowerClient
+        QindaQt::SettingsClient
         QindaQt::WindowManagementBridge
         QindaQt::CompositorNames
         Qt6::Core
