@@ -272,13 +272,15 @@ held until state resolves; Locked/Locking needs no extra request. The Power and
 Screensaver Settings routes use lock.* Settings1 keys, show confirmed values,
 and report saved only after matching snapshot readback.
 
-The runtime now consumes PowerClient's current-owner validated idle-scope
-snapshot and defers automatic locking while `AutomaticLock` is active. This
-never blocks explicit/manual lock requests. Power1 still reports zero supported
-scopes by default, so this client behavior does not enable leases or establish
-that an inhibitor is active on a host. The production display-off and idle-
-suspend consumers are still required before any of the all-or-nothing scope set
-can be advertised.
+The runtime consumes PowerClient's current-owner validated idle-scope
+snapshot and defers automatic locking while `AutomaticLock` is active. While a
+Power1 owner is present but its scope snapshot is pending or unavailable, the
+runtime also defers automatic locking rather than racing an already accepted
+lease; owner loss revokes that owner's leases. This never blocks explicit/manual
+lock requests. Power1 still reports zero supported scopes by default, so this
+client behavior does not enable leases or establish that an inhibitor is active
+on a host. The production display-off and idle-suspend consumers are still
+required before any of the all-or-nothing scope set can be advertised.
 
 The runtime has a protected-before-suspend callback seam, but no production
 suspend dispatch currently consumes it; owned suspend ordering remains pending
