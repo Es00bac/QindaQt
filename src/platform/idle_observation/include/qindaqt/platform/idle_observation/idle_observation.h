@@ -6,6 +6,10 @@
 namespace QindaQt::Platform::Idle {
 // Thread-confined readonly compositor idle state. Loss clears availability and
 // idle; elapsed local time never manufactures compositor idle or unlocks.
+// AGENT-CONTRACT: Borrowed on one Qt thread; callers and lineage closures
+// outlive the observer. refresh() starts a new observation generation, while
+// revoke() drops current availability immediately. Neither operation grants
+// lock or sleep authority.
 class IdleObservation : public QObject {
   Q_OBJECT
 public:
@@ -13,6 +17,9 @@ public:
   virtual void setTimeout(int milliseconds) = 0;
   virtual bool available() const = 0;
   virtual bool idle() const = 0;
+  // Refresh or revoke the current observation generation on this same thread.
+  virtual void refresh() = 0;
+  virtual void revoke() = 0;
 Q_SIGNALS:
   void changed();
 };
@@ -35,8 +42,8 @@ public:
   void setTimeout(int milliseconds) override;
   bool available() const override;
   bool idle() const override;
-  void refresh();
-  void revoke();
+  void refresh() override;
+  void revoke() override;
 
 private:
   class Private;
