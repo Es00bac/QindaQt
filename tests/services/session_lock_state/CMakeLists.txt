@@ -47,3 +47,14 @@ set_tests_properties(
     qindaqt.session-lock-qt-transport
     PROPERTIES TIMEOUT 20 LABELS "service;dbus"
 )
+
+qt_add_executable(qindaqt_native_lock_monitor_tests tst_native_lock_monitor.cpp)
+target_link_libraries(qindaqt_native_lock_monitor_tests PRIVATE QindaQt::SessionLockState Qt6::Test)
+qindaqt_enable_warnings(qindaqt_native_lock_monitor_tests)
+add_test(NAME qindaqt.native-lock-monitor COMMAND qindaqt_native_lock_monitor_tests)
+
+qt_add_executable(qindaqt_qt_native_lock_transport_tests tst_qt_native_lock_transport.cpp)
+target_link_libraries(qindaqt_qt_native_lock_transport_tests PRIVATE QindaQt::SessionLockState qindaqt_compositor_names Qt6::Core Qt6::DBus Qt6::Test)
+qindaqt_enable_warnings(qindaqt_qt_native_lock_transport_tests)
+add_test(NAME qindaqt.native-lock-qt-transport COMMAND qindaqt_qt_native_lock_transport_tests)
+set_tests_properties(qindaqt.native-lock-qt-transport PROPERTIES TIMEOUT 20 LABELS "service;dbus")
