@@ -194,11 +194,22 @@ LockOnScreenLock, and one signed integer LockAfterIdleMinutes (0–1440). Native
 Settings disclosure requires admitted Unlocked independently of the collection
 preference. The client rechecks pinned-daemon policy before publishing a reveal.
 
-The private attachment and QCore idle seams remain checkpointed for extraction to
-public native session collaborators. They require an exact admitted compositor
-owner/PID and an owned ordinary display connection, never a locker connection
-or a guessed display. The complete 19-row private keyring suite passes, including
-five resident policy cases, eleven native prompt cases, real ordinary Wayland
-idle events, owner/peer loss and late reveal privacy with collection-lock disabled.
-Public service extraction/consumer rewiring and native rendered-overlay
-qualification remain separate PK4 acceptance boundaries.
+The daemon consumes the public [ordinary attachment and idle modules](compositor-attachment.md)
+([ADR-0305](../adr/0305-public-ordinary-compositor-attachment.md),
+[ADR-0307](../adr/0307-public-ordinary-fd-idle-observation.md)). Its thin
+`SessionDisplayBinding` retains only accepted session selection and permanent
+retirement of legacy inherited-display fallback after a metadata attempt.
+The constructor-visible admission callback names the session owner already
+accepted by SecretService's same-UID/first-owner boundary. Public attachment
+joins that selected owner's retained liveness to exact compositor bus owner/PID
+and actual ordinary socket/PIDFD. It does not attest executables or an independent
+supervisor PID; privileged locker launch trust remains a separate boundary.
+
+Keyring's private idle names alias the public module; no daemon-local Wayland
+implementation remains. Resident policy borrows an ordinary FD opener and
+selected-lineage predicate. It never receives a locker connection or guesses a
+display. Private keyring fixtures cover five resident policy cases, eleven native
+prompt cases, real idle events, owner/peer loss and late reveal privacy even with
+collection screen-lock disabled. Public hostile attachment/idle gates additionally
+cover dynamic ambiguity and reentrant lifetime changes. Native rendered-overlay
+qualification remains a separate PK4 acceptance boundary.
