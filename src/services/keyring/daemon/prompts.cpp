@@ -27,6 +27,9 @@ void SecretService::finishPrompt(const QString &path, bool dismissed) {
         WireSecret wire{objectPath(),{},{},"application/octet-stream"};
         try {
             if (!dismissed) {
+                // AGENT-GUARD: publication checks independently admitted native
+                // Unlocked, even when collection lock-on-screen policy is false.
+                if(!nativeDisclosureAllowed()) throw std::runtime_error("Unavailable");
                 const auto id = p.collections.first();
                 const auto item = repository_.item(id,itemForPath(p.objects.first().path(),id));
                 if (!item || repository_.locked(id)) throw std::runtime_error("Unavailable");
@@ -50,6 +53,7 @@ void SecretService::startPrompt(const QString &path) {
     // bursts and keep private password bytes absent during the wait.
     QTimer::singleShot(550,this,[this,path,request] {
         const auto pending = prompts_.find(path); if (pending == prompts_.end()) return;
+        if(pending->second.action=="reveal" && !nativeDisclosureAllowed()) {finishPrompt(path,true);return;}
         pending->second.ticket = promptsProvider_.begin(request,[this,path](SecureBuffer password,bool cancelled) {
             const auto found = prompts_.find(path); if (found == prompts_.end()) return;
             auto &p = found->second; p.ticket = 0;
@@ -69,7 +73,7 @@ void SecretService::startPrompt(const QString &path) {
                     finishPrompt(path,!saved);return;
                 }
                 if (p.action == "change-password") { changePromptPassword(path,std::move(password));return; }
-                if (p.action == "reveal" && (!sessions_.contains(p.secretSession)
+                if (p.action == "reveal" && (!nativeDisclosureAllowed() || !sessions_.contains(p.secretSession)
                     || sessions_.at(p.secretSession)->owner != p.owner)) { finishPrompt(path,true);return; }
                 if (p.action == "create") {
                     const auto id = repository_.create(p.label,p.alias,password.bytes());

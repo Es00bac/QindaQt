@@ -7,16 +7,15 @@ KeyringSettingsModel::KeyringSettingsModel(Services::KeyringClient::KeyringGatew
     m_revealTimeout.setSingleShot(true);m_revealTimeout.setInterval(15000);
     connect(&m_revealTimeout,&QTimer::timeout,this,&KeyringSettingsModel::clearSecret);
     connect(&gateway,&Services::KeyringClient::KeyringGateway::authorityChanged,this,[this]{
-        m_token=0;clearSecret();m_collections.clear();m_items.clear();m_selected.clear();
+        m_token=0;m_secretsAllowed=false;clearSecret();m_collections.clear();m_items.clear();m_selected.clear();
         m_status=available()?"":"Keyring unavailable";m_policyStatus="Policy observation unavailable";emit changed();
         if(m_active && available()) reload();
     });
-    connect(&gateway,&Services::KeyringClient::KeyringGateway::secretsInvalidated,this,[this]{
-        clearSecret();
-        if(m_token && m_request==Request::Reveal) {m_gateway.cancel();m_token=0;m_status="Keyring locked; authenticate again";emit changed();}
-    });
+    connect(&gateway,&Services::KeyringClient::KeyringGateway::secretsInvalidated,this,&KeyringSettingsModel::invalidateSecrets);
     connect(&gateway,&Services::KeyringClient::KeyringGateway::metadataChanged,this,[this]{if(m_active && !busy()) reload();});
     connect(&gateway,&Services::KeyringClient::KeyringGateway::policyChanged,this,[this](const QVariantMap &state){
+        m_secretsAllowed=state.value("ScreenLockAvailable").toBool() && !state.value("ScreenLocked").toBool();
+        if(!m_secretsAllowed) invalidateSecrets();
         if(!state.value("ScreenLockAvailable").toBool()) m_policyStatus="Screen lock state unavailable. Reveal and copy are disabled.";
         else if(state.value("ScreenLocked").toBool()) m_policyStatus="Unlock the screen to reveal or copy secrets.";
         else if(state.value("LockAfterIdleMinutes").toInt()>0 && !state.value("IdleAvailable").toBool()) m_policyStatus="Idle observation unavailable; collections stay locked";
@@ -31,7 +30,7 @@ KeyringSettingsModel::KeyringSettingsModel(Services::KeyringClient::KeyringGatew
         if(confirmed && m_active) reload();
     });
     connect(&gateway,&Services::KeyringClient::KeyringGateway::secretReady,this,[this](quint64 token,std::shared_ptr<qindaqt::keyring::SecureBuffer> bytes,const QString &){
-        if(token!=m_token || !token || !m_active) {if(bytes) bytes->clear();return;}
+        if(token!=m_token || !token || !m_active || !m_secretsAllowed) {if(bytes) bytes->clear();return;}
         m_token=0;
         if(m_copy) {m_status="Copy unavailable";emit copyRequested(bytes);m_copy=false;}
         else {m_secret=std::move(bytes);m_revealTimeout.start();m_status="Hidden automatically after 15 seconds";}
@@ -47,6 +46,10 @@ QString KeyringSettingsModel::secretText() const {
     QString result=decode(QByteArrayView(reinterpret_cast<const char *>(bytes.data()),static_cast<qsizetype>(bytes.size())));
     return decode.hasError()?QStringLiteral("Binary secret — use Copy"):result;
 }
+void KeyringSettingsModel::invalidateSecrets(){
+    m_secretsAllowed=false;m_copy=false;clearSecret();
+    if(m_token && m_request==Request::Reveal) {m_gateway.cancel();m_token=0;m_status="Keyring locked; authenticate again";emit changed();}
+}
 void KeyringSettingsModel::clearSecret(){
     m_revealTimeout.stop();if(m_secret) m_secret->clear();m_secret.reset();emit changed();
 }
@@ -54,10 +57,10 @@ void KeyringSettingsModel::acknowledgeCopy(bool confirmed){
     m_status=confirmed?"Copied for 30 seconds":"Copy unavailable";emit changed();
 }
 void KeyringSettingsModel::deactivate(){
-    m_active=false;m_gateway.cancel();m_token=0;m_copy=false;clearSecret();
+    m_active=false;m_secretsAllowed=false;m_gateway.cancel();m_token=0;m_copy=false;clearSecret();
 }
 void KeyringSettingsModel::begin(Request request,const QString &path,const QString &label){
-    if(busy() || !available() || !m_nextToken) return;
+    if(!m_active || busy() || !available() || !m_nextToken) return;
     clearSecret();m_request=request;m_token=m_nextToken++;m_status.clear();emit changed();
     m_gateway.request(m_token,request,path,label);
 }
@@ -87,7 +90,7 @@ void KeyringSettingsModel::lockCollection(){if(!m_selected.isEmpty()) begin(Requ
 void KeyringSettingsModel::unlockCollection(){if(!m_selected.isEmpty()) begin(Request::Unlock,m_selected);}
 void KeyringSettingsModel::changePassword(){if(!m_selected.isEmpty()) begin(Request::ChangePassword,m_selected);}
 void KeyringSettingsModel::createCollection(const QString &label){begin(Request::Create,{},label);}
-void KeyringSettingsModel::revealItem(const QString &path){if(!busy() && available() && knownItem(path)) {m_copy=false;begin(Request::Reveal,path);}}
-void KeyringSettingsModel::copyItem(const QString &path){if(!busy() && available() && knownItem(path)) {m_copy=true;begin(Request::Reveal,path);}}
+void KeyringSettingsModel::revealItem(const QString &path){if(!busy() && available() && m_secretsAllowed && knownItem(path)) {m_copy=false;begin(Request::Reveal,path);}}
+void KeyringSettingsModel::copyItem(const QString &path){if(!busy() && available() && m_secretsAllowed && knownItem(path)) {m_copy=true;begin(Request::Reveal,path);}}
 void KeyringSettingsModel::deleteItem(const QString &path){if(knownItem(path)) begin(Request::Delete,path);}
 }

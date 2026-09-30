@@ -28,7 +28,9 @@ public:
     QString introspect(const QString &path) const override;
     bool handleMessage(const QDBusMessage &, const QDBusConnection &) override;
     void notifyCollectionState(const QString &id);
-    void observeLockPolicy(KeyringLockPolicy *); // Optional same-thread borrowed QObject, auto-fenced on destruction.
+    // Borrows same-thread QObject, auto-fenced on destruction. Native reveal
+    // remains unavailable without this independently admitted observer.
+    void observeLockPolicy(KeyringLockPolicy *);
     QString collectionPath(const QString &id) const;
     QString itemPath(const QString &id, const QString &item) const;
     QString collectionForPath(const QString &path) const;
@@ -45,6 +47,7 @@ private:
     bool promptMethod(const QDBusMessage &);
     void startPrompt(const QString &path);
     void finishPrompt(const QString &path, bool dismissed);
+    bool nativeDisclosureAllowed() const;
     QString addPrompt(Prompt prompt);
     Session &session(const QString &path, const QString &owner);
     bool exists(const QString &path) const;

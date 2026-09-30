@@ -45,3 +45,16 @@ The separately borrowed KeyringPreferences adapter scopes SettingsClient to keyr
 ## Sensitive clipboard composition
 
 The separate GUI-only KeyringClipboard target exposes SensitiveClipboard. Its MIME provider retains only SecureBuffer ownership and allocates ordinary Qt/platform bytes on actual selection requests. The application/x-qindaqt-secret marker excludes existing clipboard history capture. The provider expires/wipes after 30 seconds; clear/destruction clears the platform selection only while its exact MIME object is still current, preserving replacements. The model reports copied only after composition calls acknowledgeCopy(true). Gateway owner loss and secret invalidation must clear the clipboard owner. Offscreen synthetic tests verify marker, expiry/wipe and replacement preservation; native compositor transfer qualification is a later manager gate. policyStatus is an additive availability label for enabled resident observations; until wired/confirmed it says unavailable.
+
+## Native disclosure privacy
+
+The gateway pins one same-UID owner for both Secret Service and Keyring1.
+Native policy loss, Locked or Unknown retires a pending reveal even without a
+presentation model. The client rechecks current pinned-daemon policy before
+publishing prompt bytes. Native reveal publication requires the daemon's
+independently admitted exact compositor owner/PID to remain Unlocked; the
+collection screen-lock preference does not relax this disclosure gate. The
+model exposes `secretsAllowed`, rejects stale/unadmitted replies and clears
+revealed bytes on invalidation. Composition must clear its SensitiveClipboard
+on both authority loss and secret invalidation. Standard Secret Service
+sharing remains the separate collection-lock policy contract.

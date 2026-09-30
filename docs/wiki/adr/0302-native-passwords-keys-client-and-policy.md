@@ -60,8 +60,10 @@ exclude clipboard history, and clear only its own still-current selection.
 ## Consequences and next boundary
 
 The native protocol/prompt/client/model form a reviewable vertical checkpoint.
-Settings route presentation, persisted lock preferences and resident public
-screen-lock/true-idle observation remain the next PK4 boundary. Defaults are
+The current candidate also supplies typed lock preferences and resident
+native screen-lock/true-idle consumption, qualified on private fixtures. Public
+attachment/idle service extraction, Settings route integration and rendered
+Wayland disclosure qualification remain the next PK4 acceptance boundary. Defaults are
 keyring.lockOnScreenLock=false and keyring.lockAfterIdleMinutes=0 (never);
 logout continues to retire all secrets. Settings1 stores only typed policy,
 never passwords or item values. A preference acknowledgement must reflect a
@@ -74,3 +76,13 @@ unit is involved. Native rendered overlay/output qualification remains bounded
 by [ADR-0300](0300-trusted-native-keyring-pam.md).
 
 The GUI clipboard composition is now a separate public KeyringClipboard target. Its secure MIME provider marks selection data as secret, expires after 30 seconds and wipes owned bytes, preserving an unrelated replacement selection. The model requires actual sink acknowledgement before saying copied. Independent Qt/platform/requester copies remain explicitly outside universal wiping guarantees.
+
+Resident policy retains only last confirmed typed Settings1 state across owner
+loss. Enabled screen or idle policy locks collections on uncertainty, and true
+idle comes from an ordinary compositor connection, never a local elapsed timer.
+Resume never unlocks. Additive GetPolicyState/PolicyStateChanged report bounded
+availability and effective policy. Native Settings disclosure separately requires
+independently admitted native Unlocked, regardless of collection-lock preference;
+privacy loss retires prompts and pending gateway results and clears owned bytes.
+The final prompt encoding and client publication each recheck live admission.
+Standard Secret Service sharing remains governed by collection-lock policy.

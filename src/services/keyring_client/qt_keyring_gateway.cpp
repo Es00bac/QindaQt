@@ -4,6 +4,7 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusServiceWatcher>
 #include <QTimer>
+#include <QScopeGuard>
 #include <cstring>
 #include <sys/prctl.h>
 #include <sys/resource.h>
@@ -82,7 +83,9 @@ public:
         if(!prompt.isEmpty() && !owner.isEmpty()) {
             auto message=QDBusMessage::createMethodCall(owner,prompt,PromptInterface,"Dismiss");bus.send(message);
         }
-        unwatchPrompt();closeSession();timeout.stop();token=0;if(pending) ++generation;
+        unwatchPrompt();closeSession();timeout.stop();token=0;
+        if(pendingSecret) pendingSecret->clear();
+        pendingSecret.reset();if(pending) ++generation;
     }
     void reset() { cancel();++generation;
         if(!owner.isEmpty()) {
@@ -162,7 +165,13 @@ public:
     }
     void policy(const QVariantMap &wire) {
         const auto value=validatePolicy(wire);screenAvailable=value.value("ScreenLockAvailable").toBool();screenLocked=value.value("ScreenLocked").toBool();
-        if(!screenAvailable || screenLocked) emit q.secretsInvalidated();
+        if(!screenAvailable || screenLocked) {
+            // AGENT-GUARD: the gateway owns retirement, even without a model.
+            // Unknown/locked invalidates native disclosure independently of the
+            // collection-lock preference and fences every later prompt reply.
+            if(token && kind==Request::Reveal) fail("Unlock the screen before revealing or copying secrets");
+            emit q.secretsInvalidated();
+        }
         emit q.policyChanged(value);
     }
     void nativePrompt(const QString &member,const QVariantList &args) {
@@ -188,6 +197,7 @@ public:
         }
         try {
             auto wire=p::argument<p::WireSecret>(result.variant());
+            const auto wipeWire=qScopeGuard([&wire]{p::wipe(wire.value);});
             if(!screenAvailable || screenLocked || wire.session.path()!=session || !wire.parameters.isEmpty() || wire.value.size()>1024*1024 || wire.contentType.toUtf8().size()>128 || wire.contentType.contains(QChar(0)))
                 throw std::runtime_error("Secret");
             auto bytes=std::make_shared<qindaqt::keyring::SecureBuffer>(static_cast<std::size_t>(wire.value.size()));
@@ -196,13 +206,14 @@ public:
             // AGENT-GUARD: requery the pinned daemon before publishing a
             // pre-lock prompt reply. Its native observer rechecks live lineage.
             const auto contentType=wire.contentType;
+            pendingSecret=bytes;
             unwatchPrompt();closeSession();
             call(owner,Root,Native,"GetPolicyState",{},[this,bytes=std::move(bytes),contentType](const QDBusMessage &state) mutable {
                 if(state.signature()!="a{sv}" || state.arguments().size()!=1) throw std::runtime_error("Policy");
                 policy(p::argument<QVariantMap>(state.arguments()[0]));
                 if(!token) return;
                 if(!screenAvailable || screenLocked) { fail("Unlock the screen before revealing or copying secrets");return; }
-                const auto id=token;timeout.stop();token=0;++generation;
+                const auto id=token;timeout.stop();token=0;++generation;pendingSecret.reset();
                 emit q.secretReady(id,std::move(bytes),contentType);
             });
         } catch(const std::exception &) { fail("Secret unavailable"); }
@@ -212,6 +223,9 @@ public:
     QDBusServiceWatcher watcher;
     QTimer timeout;
     QString owner,prompt,session;
+    // AGENT-GUARD: cancel wipes decoded bytes waiting for the final live-policy
+    // readback immediately, even while its asynchronous callback still exists.
+    std::shared_ptr<qindaqt::keyring::SecureBuffer> pendingSecret;
     quint64 token=0,generation=1;
     Request kind=Request::Collections;
     bool protectedProcess=false,screenAvailable=false,screenLocked=true;

@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Native metadata/reveal/rekey private real-client contracts."""
 import pathlib
+import select
+import subprocess
 import sys
 import time
 import unittest
@@ -10,18 +12,42 @@ import secretstorage
 from secretstorage.util import exec_prompt
 from jeepney import DBusErrorResponse
 
+COMPOSITOR=pathlib.Path(sys.argv.pop(1)).resolve()
+
 class NativeTest(unittest.TestCase):
-    setUp=protocol.SecretServiceTest.setUp
+    def setUp(self):
+        protocol.SecretServiceTest.setUp(self)
+        self.compositor=subprocess.Popen([str(COMPOSITOR),"qindaqt-7"],env=self.env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+        def stop():
+            if self.compositor.poll() is None: self.compositor.terminate()
+            self.compositor.wait(timeout=5);self.compositor.stdin.close();self.compositor.stdout.close()
+        self.addCleanup(stop)
+        self.assertTrue(select.select([self.compositor.stdout],[],[],5)[0])
+        self.assertEqual(self.compositor.stdout.readline(),b"ready\n")
+        self.attach()
+    def attach(self):
+        self.assertTrue(self.native("AttachSessionWithDisplay","s","qindaqt-7")[0])
+        deadline=time.monotonic()+5
+        while time.monotonic()<deadline:
+            state={key:value[1] for key,value in self.native("GetPolicyState")[0].items()}
+            if state["ScreenLockAvailable"] and not state["ScreenLocked"]: return
+            time.sleep(.05)
+        self.fail("private native screen did not admit Unlocked")
     cleanup=protocol.SecretServiceTest.cleanup
     stop=protocol.SecretServiceTest.stop
     call=protocol.SecretServiceTest.call
     native=protocol.SecretServiceTest.native
     control=protocol.SecretServiceTest.control
     def start(self):
-        previous=protocol.HELPER
+        previous=protocol.HELPER;previous_popen=protocol.subprocess.Popen
         protocol.HELPER=pathlib.Path(__file__).with_name("native_scripted_prompt.py")
+        def policy(args,*a,**kw):
+            if args[0]==str(protocol.DAEMON): args=args+["--policy-fixture"]
+            return previous_popen(args,*a,**kw)
+        protocol.subprocess.Popen=policy
         try: protocol.SecretServiceTest.start(self)
-        finally: protocol.HELPER=previous
+        finally: protocol.HELPER=previous;protocol.subprocess.Popen=previous_popen
+        if hasattr(self,"compositor"): self.attach()
     def collection(self,label="Synthetic login"):
         return secretstorage.create_collection(self.connection,label,"default")
     def session(self):

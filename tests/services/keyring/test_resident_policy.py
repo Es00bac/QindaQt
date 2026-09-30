@@ -16,6 +16,7 @@ SCHEMAS=pathlib.Path(sys.argv.pop(1)).resolve()
 import secretstorage
 from secretstorage.util import exec_prompt
 from secretstorage.exceptions import LockedException
+from jeepney import DBusAddress,new_method_call,MessageType
 class ResidentTest(unittest.TestCase):
     setUp=protocol.SecretServiceTest.setUp
     call=protocol.SecretServiceTest.call
@@ -31,7 +32,7 @@ class ResidentTest(unittest.TestCase):
         self.env["QINDAQT_SETTINGS_SCHEMA_DIR"]=str(SCHEMAS)
         if not hasattr(self,"settings"):
             preferences={"keyring.lockOnScreenLock":False,"keyring.lockAfterIdleMinutes":0}
-            if "screen" in self._testMethodName: preferences["keyring.lockOnScreenLock"]=True
+            if self._testMethodName.startswith("test_screen_"): preferences["keyring.lockOnScreenLock"]=True
             if "idle" in self._testMethodName: preferences["keyring.lockAfterIdleMinutes"]=1
             target=self.root/"config/qindaqt/settings-v2.json";target.parent.mkdir(parents=True)
             target.write_text(json.dumps({"schemaVersion":2,"layer":"user-overrides","values":preferences}))
@@ -79,6 +80,31 @@ class ResidentTest(unittest.TestCase):
         self.command(peer,"lock");time.sleep(.2)
         self.assertFalse(collection.is_locked());self.assertEqual(item.get_secret(),b"synthetic-value")
         self.assertFalse(self.state()["LockOnScreenLock"]);self.assertEqual(self.state()["LockAfterIdleMinutes"],0)
+    def test_native_screen_privacy_ignores_disabled_collection_lock_policy(self):
+        self.until(lambda:self.state()["SettingsAvailable"]);peer=self.compositor()
+        self.until(lambda:self.state()["ScreenLockAvailable"])
+        collection=self.collection();item=collection.create_item("fixture",{},b"synthetic-value")
+        session=self.call("org.freedesktop.Secret.Service","/org/freedesktop/secrets","OpenSession","sv","plain",("s",""))[1]
+        self.command(peer,"lock");self.until(lambda:self.state()["ScreenLocked"])
+        prompt=self.native("ReadSecretWithPrompt","oo",item.item_path,session)[0]
+        dismissed,(_,wire)=exec_prompt(self.connection,prompt,timeout=5)
+        self.assertTrue(dismissed);self.assertEqual(wire[2],b"")
+        self.assertFalse(collection.is_locked());self.assertEqual(item.get_secret(),b"synthetic-value")
+        self.command(peer,"unlock");self.until(lambda:not self.state()["ScreenLocked"])
+        late=collection.create_item("delayed-reveal-fixture",{},b"late-value")
+        prompt=self.native("ReadSecretWithPrompt","oo",late.item_path,session)[0]
+        address=DBusAddress(prompt,"org.freedesktop.secrets","org.freedesktop.Secret.Prompt")
+        # Register completion before beginning, then revoke admitted lineage while
+        # the real helper is delayed. Dismissal must arrive with no plaintext.
+        from jeepney.bus_messages import MatchRule
+        rule=MatchRule(type=MessageType.signal,interface="org.freedesktop.Secret.Prompt",member="Completed",path=prompt)
+        with self.connection.filter(rule) as queue:
+            self.connection.send_and_get_reply(new_method_call(address,"Prompt","s",("",)))
+            time.sleep(.7);self.command(peer,"drop")
+            self.until(lambda:not self.state()["ScreenLockAvailable"])
+            result=self.connection.recv_until_filtered(queue,timeout=5)
+            self.assertTrue(result.body[0]);self.assertEqual(result.body[1][1][2],b"")
+        self.assertFalse(collection.is_locked())
     def test_screen_lock_retains_policy_after_settings_owner_loss(self):
         self.until(lambda:self.state()["SettingsAvailable"]);peer=self.compositor()
         self.until(lambda:self.state()["ScreenLockAvailable"])
