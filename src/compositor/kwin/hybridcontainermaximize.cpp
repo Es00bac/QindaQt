@@ -14,6 +14,7 @@
 #include "hybridcontainerplacement.h"
 
 #include <QtMath>
+#include <qindaqt/window_management/command.h>
 
 #include <algorithm>
 #include <utility>
@@ -45,25 +46,55 @@ namespace {
 
 } // namespace
 
+std::optional<QRect> HybridContainerPlacementController::maximizedFrame(
+    const QString &containerId) const
+{
+    return WindowManagement::regionalFrame(m_workArea ? m_workArea(containerId) : QRect{},
+        WindowManagement::insetRegion(m_maximizeFractions.value(containerId,1.0)));
+}
+
 bool HybridContainerPlacementController::maximize(
     const QString &containerId, QString *error)
 {
-    if (isMaximized(containerId)) {
-        return true;
-    }
-    if (isShaded(containerId)) {
-        assignError(error, QStringLiteral("unroll a shaded container before maximizing it"));
+    return maximizeFraction(containerId,1.0,error);
+}
+
+bool HybridContainerPlacementController::maximizeFraction(
+    const QString &containerId, double fraction, QString *error)
+{
+    const auto target=WindowManagement::regionalFrame(
+        m_workArea ? m_workArea(containerId) : QRect{},WindowManagement::insetRegion(fraction));
+    const auto current=m_layout ? m_layout(containerId) : std::nullopt;
+    if(!target || !current || isShaded(containerId)
+        || m_moveDrags.contains(containerId) || m_resizeDrags.contains(containerId)) {
+        assignError(error,QStringLiteral("container cannot be maximized in its current placement state"));
         return false;
     }
-    const auto current = m_layout ? m_layout(containerId) : std::nullopt;
-    const auto workArea = m_workArea ? m_workArea(containerId) : QRect{};
-    if (!current || !workArea.isValid()) {
-        assignError(error, QStringLiteral("container has no valid maximize area"));
+    const bool wasMaximized=isMaximized(containerId);
+    const auto oldFraction=m_maximizeFractions.value(containerId,1.0);
+    if(wasMaximized && oldFraction==fraction && current->outerFrame==*target) return true;
+    if(!wasMaximized) m_maximizeRestoreFrames.insert(containerId,current->outerFrame);
+    m_maximizeFractions.insert(containerId,fraction);
+    if(!reflow(containerId,*target,error)) {
+        if(wasMaximized) m_maximizeFractions.insert(containerId,oldFraction);
+        else { m_maximizeRestoreFrames.remove(containerId); m_maximizeFractions.remove(containerId); }
         return false;
     }
-    m_maximizeRestoreFrames.insert(containerId, current->outerFrame);
-    if (!reflow(containerId, workArea, error)) {
-        m_maximizeRestoreFrames.remove(containerId);
+    return true;
+}
+
+bool HybridContainerPlacementController::placeFrame(
+    const QString &containerId, const QRect &frame, QString *error)
+{
+    if(!frame.isValid() || isShaded(containerId) || m_moveDrags.contains(containerId)
+        || m_resizeDrags.contains(containerId)) {
+        assignError(error,QStringLiteral("container cannot be placed in its current state"));
+        return false;
+    }
+    const auto restore=m_maximizeRestoreFrames.take(containerId);
+    const auto fraction=m_maximizeFractions.take(containerId);
+    if(!reflow(containerId,frame,error)) {
+        if(restore.isValid()) { m_maximizeRestoreFrames.insert(containerId,restore); m_maximizeFractions.insert(containerId,fraction); }
         return false;
     }
     return true;
@@ -78,6 +109,7 @@ bool HybridContainerPlacementController::restore(
         return false;
     }
     const auto frame = *found;
+    const auto fraction = m_maximizeFractions.value(containerId,1.0);
     // AGENT-GUARD: a rolled-up container's members are never reflowed
     // (ADR-0099). Restoring while rolled up only re-targets the unroll: the
     // strip moves to the restore position and unshade() brings back the
@@ -85,6 +117,7 @@ bool HybridContainerPlacementController::restore(
     if (const auto strip = m_shadeStripFrames.find(containerId);
         strip != m_shadeStripFrames.end()) {
         m_maximizeRestoreFrames.remove(containerId);
+        m_maximizeFractions.remove(containerId);
         strip->moveTopLeft(frame.topLeft());
         m_shadeRestoreSizes.insert(containerId, frame.size());
         if (m_changed) {
@@ -93,8 +126,10 @@ bool HybridContainerPlacementController::restore(
         return true;
     }
     m_maximizeRestoreFrames.erase(found);
+    m_maximizeFractions.remove(containerId);
     if (!reflow(containerId, frame, error)) {
         m_maximizeRestoreFrames.insert(containerId, frame);
+        m_maximizeFractions.insert(containerId,fraction);
         return false;
     }
     return true;
@@ -112,7 +147,7 @@ QStringList HybridContainerPlacementController::refreshMaximizedAreas()
             continue;
         }
         const auto current = m_layout ? m_layout(containerId) : std::nullopt;
-        const auto workArea = m_workArea ? m_workArea(containerId) : QRect{};
+        const auto workArea = maximizedFrame(containerId).value_or(QRect{});
         if (!current || !workArea.isValid()) {
             failures.append(QStringLiteral("container '%1' has no valid maximize area")
                                 .arg(containerId));
@@ -135,6 +170,7 @@ DirectInteractionResult HybridContainerPlacementController::beginMaximizedMove(
 {
     const auto current = m_layout ? m_layout(containerId) : std::nullopt;
     const auto restoreFrame = m_maximizeRestoreFrames.value(containerId);
+    const auto fraction=m_maximizeFractions.value(containerId,1.0);
     if (!container(containerId) || !current || !current->outerFrame.isValid()
         || !restoreFrame.isValid()) {
         m_refusedGestures.insert(containerId);
@@ -152,9 +188,11 @@ DirectInteractionResult HybridContainerPlacementController::beginMaximizedMove(
                                               qRound(intent.delta.y()));
     m_moveDrags.remove(containerId);
     m_maximizeRestoreFrames.remove(containerId);
+    m_maximizeFractions.remove(containerId);
     QString error;
     if (!reflow(containerId, applied, &error)) {
         m_maximizeRestoreFrames.insert(containerId, restoreFrame);
+        m_maximizeFractions.insert(containerId,fraction);
         m_refusedGestures.insert(containerId);
         return DirectInteractionResult::rejected(std::move(error));
     }
@@ -162,7 +200,8 @@ DirectInteractionResult HybridContainerPlacementController::beginMaximizedMove(
                                               .applied = applied,
                                               .edges = {},
                                               .resumeMaximizeRestore = restoreFrame,
-                                              .cancelFrame = maximized});
+                                              .cancelFrame = maximized,
+                                              .resumeMaximizeFraction = fraction});
     return DirectInteractionResult::handled();
 }
 
@@ -173,7 +212,8 @@ DirectInteractionResult HybridContainerPlacementController::cancelMaximizedDrag(
     // failed reflow still leaves the container reporting the state its frame
     // is closest to, and a later work-area refresh can retry the fit.
     m_maximizeRestoreFrames.insert(containerId, *drag.resumeMaximizeRestore);
-    const auto workArea = m_workArea ? m_workArea(containerId) : QRect{};
+    m_maximizeFractions.insert(containerId,drag.resumeMaximizeFraction);
+    const auto workArea = maximizedFrame(containerId).value_or(QRect{});
     const QRect target = workArea.isValid() ? workArea : drag.cancelFrame;
     QString error;
     if (drag.applied != target && !reflow(containerId, target, &error)) {

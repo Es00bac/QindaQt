@@ -3,6 +3,8 @@
 #include <QLabel>
 #include <QTimer>
 #include <QWidget>
+#include <QWindow>
+#include <cmath>
 #include <cstdio>
 #include <functional>
 #include <memory>
@@ -81,6 +83,9 @@ int main(int argc, char **argv) {
       submit(foreground, third, Placement::Tab, false);
       break;
     default:
+      const auto actual=source->windowHandle()->devicePixelRatio();
+      std::printf("ACTUAL_PLACEMENT_DPR=%.2f\n",actual);
+      if(std::abs(actual-qEnvironmentVariable("APP_PLACEMENT_EXPECTED_SCALE").toDouble())>0.01) { app.exit(3);return; }
       std::printf("NATIVE_PLACEMENT_COMPLETED\n");
       std::fflush(stdout);
       QTimer::singleShot(1200, &app, [&] { app.exit(0); });

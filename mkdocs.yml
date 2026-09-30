@@ -45,6 +45,7 @@ nav:
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
       - Application window management: architecture/application-window-management.md
+      - Native semantic window management: architecture/window-management-commands.md
       - QST-1 semantic design tokens: architecture/design-tokens.md
       - Qt platform appearance: architecture/qt-platform-theme.md
       - Compositor and session: architecture/compositor-session.md
@@ -462,12 +463,14 @@ nav:
       - "ADR-0293: Settings1 native power policy": adr/0293-settings1-native-power-policy-and-powerdevil-import.md
 
       - "ADR-0294: native protocol state owns the session lock": adr/0294-native-session-lock-authority.md
+      - ADR-0299 Native locker private launch: adr/0299-native-locker-private-launch-and-authentication.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
       - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md
       - "ADR-0291: Run QindaQt on qindaqt-kwin, its own co-installable KWin fork": adr/0291-run-on-qindaqt-kwin.md
       - "ADR-0290: Native QindaQt polkit agent, and a single-agent autostart rule": adr/0290-native-polkit-agent-and-single-agent-rule.md
       - "ADR-0292: Own a bounded native keyring storage core": adr/0292-native-keyring-storage.md
       - ADR-0298 native application window placement: adr/0298-native-application-window-placement.md
+      - "ADR-0301: Shared semantic and voice window management": adr/0301-share-semantic-window-management-with-voice.md
 
       - "ADR-0296: Own a native Secret Service daemon and session boundary": adr/0296-native-keyring-daemon-boundary.md
       - "ADR-0300: Authenticate native PAM token delivery through the system owner": adr/0300-trusted-native-keyring-pam.md
