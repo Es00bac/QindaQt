@@ -104,6 +104,9 @@ A merely *minimized* window is not iconified ([ADR-0203](../adr/0203-an-ordinary
 is specifically about rolling up to an icon), so it stays in the grid with the
 rest.
 
+
+The compositor's persistent minimized gather is separate from this transient overview: iconified windows and rolled-up containers share an output-local layout at the upper-left of the usable work area, with an accessible pager for overflow. Its placement and restore semantics are documented in [Hybrid chrome](../architecture/hybrid-chrome.md#minimized-gathering).
+
 The model also carries the truth a surface needs in order not to lie:
 
 - `interactive` is false when the source phase is `Degraded` — the retained
@@ -276,3 +279,7 @@ cannot look like it worked.
 - [ADR-0243: Stable Gather previews](../adr/0243-keep-gather-previews-by-window-identity.md)
 - [Window containers](../architecture/window-containers.md)
 - [Hybrid topology](../architecture/hybrid-topology.md)
+
+## Minimized-item integration evidence
+
+The gathered minimized source boundary (`21809c56`) shares overview columns and usable work-area geometry. Manager native replay covers a 640×480 output with a 40-pixel reserved top bar, 17 mixed items, paging, real metadata icons, identity fallback, and fullscreen-origin restoration. Eleven focused CTests and 17/17 native verdicts pass. The integrated identity/hover plugin also passes the compositor lock matrix 33/33 without failure or skip; hover labels cannot outlive the lock privacy fence. Physical multi-output/input acceptance and installed adoption remain later delivery gates. See the [native session-lock boundary](../architecture/native-session-lock.md).

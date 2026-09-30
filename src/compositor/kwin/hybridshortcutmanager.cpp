@@ -71,6 +71,10 @@ const std::function<void()> &triggerFor(const HybridShortcutTriggers &triggers,
         return triggers.restoreGroup;
     case HybridShortcutAction::ToggleMemberChrome:
         return triggers.toggleMemberChrome;
+    case HybridShortcutAction::NextMinimizedGatherPage:
+        return triggers.nextMinimizedGatherPage;
+    case HybridShortcutAction::PreviousMinimizedGatherPage:
+        return triggers.previousMinimizedGatherPage;
     case HybridShortcutAction::Count:
         break;
     }
@@ -109,6 +113,10 @@ QString actionText(HybridShortcutAction action)
         return QStringLiteral("Restore the active QindaQt window group");
     case HybridShortcutAction::ToggleMemberChrome:
         return QStringLiteral("Show or hide native titles in the active QindaQt window group");
+    case HybridShortcutAction::NextMinimizedGatherPage:
+        return QStringLiteral("Show the next QindaQt minimized-surface page");
+    case HybridShortcutAction::PreviousMinimizedGatherPage:
+        return QStringLiteral("Show the previous QindaQt minimized-surface page");
     case HybridShortcutAction::Count:
         return {};
     }
@@ -173,6 +181,10 @@ QKeySequence HybridShortcutManager::defaultShortcut(HybridShortcutAction action)
         return QKeySequence(Qt::META | Qt::CTRL | Qt::SHIFT | Qt::Key_U);
     case HybridShortcutAction::ToggleMemberChrome:
         return QKeySequence(Qt::META | Qt::SHIFT | Qt::Key_C);
+    case HybridShortcutAction::NextMinimizedGatherPage:
+        return QKeySequence(Qt::META | Qt::ALT | Qt::Key_PageDown);
+    case HybridShortcutAction::PreviousMinimizedGatherPage:
+        return QKeySequence(Qt::META | Qt::ALT | Qt::Key_PageUp);
     case HybridShortcutAction::Count:
         return {};
     }
@@ -210,6 +222,10 @@ QString HybridShortcutManager::stableActionId(HybridShortcutAction action)
         return QStringLiteral("qindaqt_keyboard_restore_group");
     case HybridShortcutAction::ToggleMemberChrome:
         return QStringLiteral("qindaqt_keyboard_toggle_member_chrome");
+    case HybridShortcutAction::NextMinimizedGatherPage:
+        return QStringLiteral("qindaqt_keyboard_minimized_gather_next_page");
+    case HybridShortcutAction::PreviousMinimizedGatherPage:
+        return QStringLiteral("qindaqt_keyboard_minimized_gather_previous_page");
     case HybridShortcutAction::Count:
         return {};
     }

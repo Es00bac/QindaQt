@@ -24,7 +24,7 @@ target_sources(
 
 target_link_libraries(qindaqt_application_catalog PUBLIC QindaQt::ShellLauncher)
 target_compile_features(qindaqt_application_catalog PUBLIC cxx_std_20)
-set_target_properties(qindaqt_application_catalog PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(qindaqt_application_catalog PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_application_catalog)
 
 install(

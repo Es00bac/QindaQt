@@ -18,7 +18,7 @@ custom and default names when restored under fresh IDs; unsaved live topology is
 automatically restored on restart. The fork consumer passes 16 manager checks plus the adjacent six; native polkit passes nine manager checks and strict documentation.
 The native keyring storage core passes four focused manager checks on both hosts and
 strict documentation. Its native Secret Service daemon passes nine manager gates, including
-20 private-bus protocol/lifetime cases with real clients; PAM/UI/portal/import remain active/queued. Remaining native service work
+20 private-bus protocol/lifetime cases with real clients. Native PAM login/rekey is source-integrated; the full UI, Secret portal and import remain active/queued. Remaining native service work
 is active, with no complete-program or installed-delivery claim.
 
 ## September 29 — Gather minimized items and expose native application placement
@@ -31,7 +31,9 @@ identify iconified windows. Accessible finite-capacity overflow is part of the o
 A documented native application API must let an app place its newly created window as
 a container tab or as a tile beside its current window, creating a container for a solo
 source. Shortcuts remain app-owned. Authentication and atomic model invariants are
-required. These outcomes are active/queued, with no completion claim.
+required. The native application SDK is source-integrated and passes native normal/actual 150% rows with 77 responses each. Gathered candidate `21809c56` is integrated with eleven focused manager CTests, 17 native verdicts and the exact-plugin 33-check lock privacy matrix. Installed delivery remains open.
+
+The shared authenticated command broker has 20 source-integrated capabilities, including 90% maximize, regional placement, names/colors and page/split operations. Gabbee command-mode wiring, atomic group-tab/group-tile, correlated installed-app launch and the interactive placement chooser remain active. Unsupported capabilities are not advertised.
 
 ## September 27 — Correct Corner Bar, light appearances and full icon themes
 
@@ -2087,7 +2089,7 @@ reproduces on the clean tree and is unrelated.
 
 - [x] Optional versioned application SDK: same-connection source/new-window authority, atomic new tab or four-direction tile placement, and solo-source container creation (candidate `6db8864b`, ADR-0298).
 - [x] Private installed SDK consumer and real 1080p/150% native fixtures, each with 77 request results and independent scene evidence.
-- [x] Authenticated semantic compositor source endpoint20 capabilities (`e4ed1520`): current/named target admission, single-use expiry/owner/consent/lock fences, regional/inset geometry, restore, container appearance and tabs/splits; normal and actual150% private native rows pass.
+- [x] Authenticated semantic compositor source endpoint20 capabilities (`e4ed1520`): current/named target admission, single-use expiry/owner/consent/lock fences, regional/inset geometry, restore, container appearance and tabs/splits; normal and actual 150% private native rows pass.
 - [ ] Gabbee command-hotkey/parser consumer, atomic grouping and correlated installed-application launches. The owner's examples are not an exhaustive operation list. Dictation never dispatches window management.
 - [ ] Shared interactive placement chooser and consolidated installed-session qualification.
 

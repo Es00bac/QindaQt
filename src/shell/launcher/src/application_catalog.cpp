@@ -103,6 +103,7 @@ ApplicationCatalog ApplicationCatalog::build(
     entry.genericName = parsed.entry->genericName;
     entry.comment = parsed.entry->comment;
     entry.iconName = parsed.entry->iconName;
+    entry.startupWmClass = parsed.entry->startupWmClass;
     entry.categories = parsed.entry->categories;
     entry.keywords = parsed.entry->keywords;
     entry.actions = parsed.entry->actions;
