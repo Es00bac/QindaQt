@@ -4220,3 +4220,20 @@ Run these focused rows with `QT_FATAL_WARNINGS=1` and `--no-tests=error`.
 These gates qualify the [readonly native API](../architecture/native-session-lock.md),
 not live sleep, a system bus, production locker deployment or a real owner
 password. PF8 service policy and Settings qualification remain distinct gates.
+## Public ordinary compositor attachment and idle
+
+`qindaqt.compositor-attachment` uses a private bus and ordinary UNIX listeners to
+prove current caller session admission, actual owner/PID/kernel peer/PIDFD,
+optional independently accepted peer expectation, CLOEXEC transfer, unsafe path
+and symlink/name rejection, same-UID wrong process and pathname replacement,
+synchronous admission/owner loss, reentrant revocation and real owned-process
+death before owner watchers. No live compositor or session is contacted.
+
+`qindaqt.wayland-idle-observation` uses a real private libwayland server/socketpair
+to prove actual protocol idled/resumed, elapsed-local-time non-authority, exact
+live-lineage recheck, missing/duplicate initial globals, dynamic second-seat and
+notifier rejection, global removal, peer failure, old queued events, reentrant
+rearm/refresh and bounded listener-context rotation. Both fixtures run with
+`QT_FATAL_WARNINGS=1` and Qt Core event loops; they qualify the public
+[attachment/idle boundary](../architecture/compositor-attachment.md), not
+consumer rewiring, runtime policy, attestation or live lock/sleep execution.

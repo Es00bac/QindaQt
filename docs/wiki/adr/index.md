@@ -317,3 +317,6 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0302: Native Passwords & Keys client and prompt policy](0302-native-passwords-keys-client-and-policy.md)
 - [ADR-0301: Share semantic window management with voice](0301-share-semantic-window-management-with-voice.md)
+
+- [ADR-0305: Share ordinary compositor attachment identity and lifetime](0305-public-ordinary-compositor-attachment.md)
+- [ADR-0307: Share readonly idle observation on an admitted ordinary display FD](0307-public-ordinary-fd-idle-observation.md)

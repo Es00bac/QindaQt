@@ -460,3 +460,18 @@ bounded row snapshots. DesktopControls consumes it through its existing public
 TaskList applet dependency; both controllers retain domain policy and intent
 fencing. The adapter owns only copied row data and incremental model signals
 ([ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md)).
+## Public ordinary attachment and idle
+
+`src/platform/compositor_attachment` owns public same-thread ordinary
+session/compositor identity/lifetime binding with constructor-visible caller
+session admission, daemon owner/PID, kernel ordinary socket/PIDFD and optional
+independent peer expectation. `src/platform/idle_observation` owns readonly
+single-seat standard idle observation over the transferred ordinary FD and
+borrowed live-lineage callback. Their public headers require Qt Core/DBus or Qt
+Core respectively; platform syscalls and libwayland are private implementations.
+See [ADR-0305](../adr/0305-public-ordinary-compositor-attachment.md),
+[ADR-0307](../adr/0307-public-ordinary-fd-idle-observation.md) and
+[compositor attachment](compositor-attachment.md). Neither module owns caller
+first-owner/legacy policy, persistence, input synthesis, privileged locker FD,
+authentication, RequestLock, sleep or unlock. Consumers migrate independently;
+no consumer may include another daemon’s private attachment/idle header.

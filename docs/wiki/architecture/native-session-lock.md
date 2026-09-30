@@ -180,3 +180,12 @@ unlock, authentication result or locker launch on this readonly port.
 This first executable slice is additive. Existing legacy quorum consumers are
 still a separate migration boundary; PF8 lock request, ScreenSaver compatibility,
 sleep policy and Settings migration are not completed by the observer alone.
+Public [ordinary attachment and idle observation](compositor-attachment.md)
+([ADR-0305](../adr/0305-public-ordinary-compositor-attachment.md),
+[ADR-0307](../adr/0307-public-ordinary-fd-idle-observation.md)) provide selected
+session identity/lifetime for native observation admission and true single-seat
+idle signals. Admission joins explicitly accepted session selection, exact bus
+owner/PID and actual ordinary socket/PIDFD; this is not executable or independent
+supervisor-process attestation. NativeLock property payloads supply no attachment
+authority. Existing consumer migration and native runtime policy remain separate
+from the public extraction gates.
