@@ -460,3 +460,14 @@ bounded row snapshots. DesktopControls consumes it through its existing public
 TaskList applet dependency; both controllers retain domain policy and intent
 fencing. The adapter owns only copied row data and incremental model signals
 ([ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md)).
+
+## Native lock preferences
+
+`src/services/lock_preferences` owns the four native preference values, exact
+SettingsClient snapshot decoding/provider and pure bounded legacy import planner
+([ADR-0308](../adr/0308-native-lock-preferences-and-atomic-import.md)). Its public
+boundary depends on Qt Core and SettingsClient, has borrowed same-thread lifetime,
+and exposes no lock, timer, QML or persistence authority. SettingsService alone
+owns the source path and atomic repository commit after winning Settings1.
+Native policy and the separately migrated Settings UI consume this public
+boundary; they do not edit legacy configuration or private repository state.

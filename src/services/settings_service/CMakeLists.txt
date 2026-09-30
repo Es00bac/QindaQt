@@ -9,6 +9,7 @@ target_sources(
         src/settings_object.cpp
         src/settings_repository.cpp
         src/resident_settings_service.cpp
+        src/legacy_lock_import.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -18,7 +19,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_settings_service
-    PUBLIC QindaQt::Settings QindaQt::SettingsProtocol QindaQt::PowerPolicy Qt6::Core Qt6::DBus
+    PUBLIC QindaQt::Settings QindaQt::SettingsProtocol QindaQt::PowerPolicy Qt6::Core Qt6::DBus PRIVATE QindaQt::LockPreferences
 )
 target_compile_features(qindaqt_settings_service PUBLIC cxx_std_20)
 set_target_properties(qindaqt_settings_service PROPERTIES CXX_EXTENSIONS OFF)

@@ -180,3 +180,28 @@ unlock, authentication result or locker launch on this readonly port.
 This first executable slice is additive. Existing legacy quorum consumers are
 still a separate migration boundary; PF8 lock request, ScreenSaver compatibility,
 sleep policy and Settings migration are not completed by the observer alone.
+
+## Native preferences and one-time import
+
+[ADR-0308](../adr/0308-native-lock-preferences-and-atomic-import.md) gives
+Settings1 durable native lock preferences. Schema v2 stores automatic enable,
+idle timeout (60–14400 seconds, default 300), lock on resume, and idle grace
+(0–300 seconds, default 5); both booleans default true. The public Core-compatible
+`QindaQt::LockPreferences` provider borrows a same-thread SettingsClient and
+returns values only for its ready, exact-current-owner, nonempty-epoch snapshot.
+It contains no timers, lock capability or storage. Invalid/missing/replaced state
+provides no preferences; consumers must choose an explicit fallback policy.
+
+After owning Settings1, the resident service reads at most one MiB of valid UTF-8
+from injected `kscreenlockerrc`, parsing a private bounded snapshot. Only Daemon
+Autolock, integer Timeout minutes, LockOnResume and integer LockGrace seconds
+are admitted. Explicit native user overrides win independently; a completion
+marker and imported values share one atomic repository commit. Malformed or
+unsupported source and failed persistence remain retryable. The source is never
+written, and password bypass keys are never mapped. Completed migration is
+idempotent across startup even when the legacy source changes.
+
+This slice does not switch the existing legacy Settings UI or execute runtime
+policy. Grace is cancellable pre-acquisition idle delay only; it never permits
+unauthenticated unlock after acquisition. Manual locking and protected-before-
+sleep ordering require their separate native policy gates.

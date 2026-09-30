@@ -31,6 +31,7 @@ constexpr std::array domainNames{
     EnumName{SettingDomain::Shell, "shell"},
     EnumName{SettingDomain::Power, "power"},
     EnumName{SettingDomain::Keyring, "keyring"},
+    EnumName{SettingDomain::Lock, "lock"},
 };
 
 constexpr std::array valueTypeNames{

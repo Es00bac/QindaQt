@@ -26,7 +26,9 @@ enum class SettingDomain {
     Services,
     Shell,
     Power,
-    Keyring,
+    // AGENT-CONTRACT: Settings1 domain ordinals are append-only.
+    Keyring = 10,
+    Lock = 11,
 };
 
 enum class SettingValueType {
