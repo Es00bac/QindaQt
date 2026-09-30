@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.qindaqt.NightLight
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/qindaqt-night-light-service

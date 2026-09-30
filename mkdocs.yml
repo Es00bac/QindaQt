@@ -471,6 +471,7 @@ nav:
       - ADR-0304 Native lock observation: adr/0304-native-lock-observation-and-service-policy.md
       - ADR-0308 Native lock preferences: adr/0308-native-lock-preferences-and-atomic-import.md
       - ADR-0314 Native lock receipts: adr/0314-native-lock-receipt-authentication.md
+      - ADR-0313 Native night-light authority: adr/0313-native-night-light.md
       - ADR-0305 Ordinary compositor attachment: adr/0305-public-ordinary-compositor-attachment.md
 
       - ADR-0312 Import complete legacy stores and preserve exact portal secrets: adr/0312-preserve-exact-legacy-portal-secrets.md

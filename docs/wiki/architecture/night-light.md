@@ -1,96 +1,101 @@
 # Night light
 
-The night light service owns bounded night-light values, one injected-path
-config port over the two persisted files, one live-state port over KWin's
-public NightLight interface, and one availability monitor for the schedule
-daemon. KWin's nightlight plugin stays the only live-output authority and
-`knighttimed` stays the only schedule authority; the decision record is
-[ADR-0136](../adr/0136-night-light-through-kwin.md). The Display route consumes the
-public boundary through its own composition singleton (see
-[display settings](../apps/display-settings.md)); the shell quick-toggle that
-can hold a real inhibition is a later outcome.
+The `night_light` service is the resident schedule authority. Settings1 owns
+persisted preferences under `display.nightLight.*`; this service calculates
+bounded schedule frames and sends them to the compositor over a nonce-bound
+session-bus stream. The KWin `nightlight` plugin remains the only live-output
+authority and applies temperature factors per output. The public KWin
+`org.qindaqt.KWin.NightLight` interface remains stable. This supersedes the
+legacy split between `kwinrc`, `knighttimerc`, and `knighttimed` described by
+[ADR-0136](../adr/0136-night-light-through-kwin.md); migration is covered by
+[ADR-0313](../adr/0313-native-night-light.md).
 
 ## Module boundary
 
-The module is Qt Core value types plus Qt DBus transports over injected
-connections, with `KConfig` (KF6::Config::Core) as the one allowed KDE
-dependency for owned-key IO. It owns no platform object, no KWin header, no
-schedule computation, no `knighttimestaterc` access, no Settings persistence,
-and no QML. File paths and `QDBusConnection` instances are constructor-injected, so
-the module never resolves HOME, XDG variables, or standard locations itself,
-and every consumer — including tests — stages its own disposable files and
-private buses. A source-policy test row rejects forbidden dependencies, and a
-poison-negative row plants one in a disposable copy to prove the policy is not
-vacuous.
+The module owns bounded night-light values, schedule calculation, a resident
+Settings1-backed schedule service, and an authenticated schedule client. It
+also retains the old config reader temporarily for one-time import only; it is
+never a live write path or schedule authority. The live-state port and preview
+continue to use the compositor's public NightLight interface. The module owns
+no KWin private headers or output object, and exposes no UI.
 
-## Values and bounds
+The schedule service is an argumentless session-bus activated executable,
+`/usr/bin/qindaqt-night-light-service`, and an optional resident child of the
+session supervisor. It borrows Settings1 and Display1 public clients and the
+constructing session bus connection. Display1 stable output IDs are resolved
+to current compositor UUIDs in each frame; ambiguous or unavailable mappings
+produce a fail-neutral frame so an opted-out display never receives a tint. When already started by D-Bus activation, a supervised sibling
+exits successfully after observing that the service name is owned. Both paths
+share one owner and teardown behavior.
 
-`NightLightSettings` is one output half (`qindaqt/kwinrc [NightColor]`) and one
-schedule half (`knighttimerc`). The enumerators persist exactly as the
-authoritative schemas define them — KWin's `nightlightsettings.kcfg` choice
-names `Constant`/`DarkLight` and the schedule daemon's `Location`/`Times` —
-never as integers. The installed D-Bus XML's "0 automatic … 3 constant" mode
-documentation is outdated and is rejected as hostile input. Bounds: night and
-day temperatures 1000–6500 K on a 100 K grid (the kcfg declares no range, so
-this module's bound is the contract), latitude ±90 and longitude ±180 decimal
-degrees with NaN/infinity refused, schedule times valid `QTime`s with sunrise
-strictly before sunset, and transition length 60–7200 seconds (default 1800,
-stored in seconds per the upstream migration). Validation is fail-closed:
-unknown tokens and out-of-bounds numbers never normalize silently.
+## Values and schedule
 
-## Config port
+The Settings1 keys are `display.nightLight.active` (false), `mode`
+(`Constant`/`DarkLight`, default `DarkLight`),
+`dayTemperatureKelvin` (6500 K), `nightTemperatureKelvin` (4500 K),
+`scheduleSource` (`Location`/`Times`, default `Location`),
+`automaticLocation` (true), `latitudeDegrees` and `longitudeDegrees` (0.0),
+`sunriseStart` (`06:00:00`), `sunsetStart` (`18:00:00`),
+`transitionSeconds` (1800), and `disabledOutputs` (empty). Temperatures are
+bounded to 1000–6500 K on a 100 K grid; coordinates reject non-finite values
+and are bounded to ±90/±180 degrees; times must be valid and sunrise must
+precede sunset; transition is bounded to 60–7200 seconds. Disabled output IDs
+are unique, bounded values using the compositor's public stable output
+identity. Invalid values fail closed.
 
-`NightLightConfigPort` reads and writes exactly the owned keys: `qindaqt/kwinrc
-[NightColor]` `Active`, `Mode`, `DayTemperature`, `NightTemperature`, and
-`knighttimerc` `General`/`Location`/`Times` `Source`, `Automatic`,
-`Latitude`, `Longitude`, `SunriseStart`, `SunsetStart`, `TransitionDuration`.
-Values are read as raw strings and parsed locally — a typed `readEntry` would
-silently swallow a malformed stored entry into its default, while this module
-must fail the whole read. Every other group and key survives untouched, values
-that already read back equal are never written, and the result distinguishes
-`Applied`, `Unchanged`, and `Failed`. Reads classify as `Absent` (nothing
-stored: defaults), `Loaded`, or `Failed` (a stored token or number is
-hostile); a failed read is never repaired by merging, a later write converges
-the two owned key sets with validated values. `changedExternally()` reports
-outside edits, with the port's own write echoes suppressed by comparing file
-identities, so subscribers never see their own writes as external intent.
+The pure calculator accepts an injected current time and optional automatic
+location. Fixed times work without location. Manual location computes solar
+events for the requested date and reports polar-day/night conditions as
+unavailable when the configured sunrise/sunset cannot exist. Automatic
+location is unavailable until a fresh, permitted location fix is available;
+no stale coordinate is substituted. A missing clock or location input is
+reported as unavailable instead of silently switching schedule source.
 
-## State port and schedule monitor
+## Schedule1 transport
 
-`NightLightStatePort` publishes complete `NightLightStatus` frames read from
-`org.qindaqt.KWin.NightLight` properties. Every bus read is an asynchronous queued
-pending call — blocking calls never reliably complete against peer
-connections in this environment — and `PropertiesChanged` is treated as an
-invalidation hint only: the frame that follows is always re-read through
-`GetAll`, so a hostile partial notification can never publish on its own. A
-frame with an unknown mode integer, an out-of-window temperature, a wrong
-property type, or missing properties is rejected whole; the last complete
-frame stays published and the port reports degradation. Service loss publishes
-the explicit unavailable frame; a frame that fails validation right after the
-service (re)appeared publishes the unavailable frame instead, so a hostile
-producer can never masquerade as a working one. `preview` forwards one
-in-range temperature to KWin's 15-second preview and refuses out-of-range
-values locally; `stopPreview` ends it early. `NightTimeScheduleMonitor`
-answers only whether `org.kde.NightTime` is currently on the bus, failing
-closed; it never subscribes to the schedule, never activates the daemon, and
-never becomes a second schedule authority.
+`org.qindaqt.NightLight` at `/org/qindaqt/NightLight`, interface
+`org.qindaqt.NightLight.Schedule1`, exposes `Subscribe(ay)`,
+`Unsubscribe(ay,t)`, and the `ScheduleFrame(ay,t,t,a{sv})` signal. A client
+creates a fresh 16-byte nonce for each owner generation. The service accepts
+only a unique bus caller and targets every frame to that caller's unique name.
+Frames carry the nonce, a nonzero subscription cookie, a monotonic revision,
+complete bounded settings and schedule values, and a diagnostic. Method replies
+do not authorize schedule application; only a correctly targeted signal from
+the pinned service owner does. Owner loss, replacement, malformed data,
+nonce/cookie mismatch, timeout, or revision rollback clears the published
+schedule and leaves the compositor in its neutral daylight state. A nonce is
+never reused across an owner generation.
+
+Settings1 owner loss clears the service's ready state and publishes an
+unavailable frame. A successful Settings1 snapshot is the only source for
+resident preferences. The service is active while Settings is closed and
+refreshes on Settings1 invalidation, owner changes, and the bounded schedule
+timer.
+
+## Live output and status
+
+The KWin plugin owns its DBus and output objects. Schedule frames select the
+existing constant or transitioning temperature policy; each output can opt
+out independently by its bounded stable identity. The resident service
+resolves stable IDs to current runtime compositor UUIDs; the plugin matches
+only those UUIDs. If selected identities cannot be mapped unambiguously, all
+outputs remain neutral until a valid frame arrives. Opted-out outputs receive
+unity channel factors against the existing ICC base. Schedule owner loss or
+unavailability cancels transitions and returns output factors to neutral.
+The QindaQt KWin interface remains the read/status and preview boundary for
+Settings; Settings does not write files or address outputs directly.
 
 ## Focused proof
 
 ```sh
-ctest --test-dir build/debug \
-  -R '^qindaqt\.night-light-' --output-on-failure --no-tests=error
+ctest --test-dir build/pf12 \
+  -R '^qindaqt\.(settings-schema|night-light-schedule|night-light-values|night-light-schedule-client|night-light-schedule-service)$' \
+  --output-on-failure --no-tests=error
 ```
 
-Six rows: values (bounds, snapping, coordinates, times, token and bus-mode
-mapping with the outdated documentation as negative control), the config port
-(temp-dir round-trips, byte-stable unchanged writes, unrelated-key survival,
-hostile stored values that fail closed and converge on rewrite, refused
-invalid writes, external-change truth with suppressed self-echoes), the state
-port against a faithful fake `org.qindaqt.KWin.NightLight` on a private bus
-(missing service, live updates, out-of-range and malformed frames, preview and
-stopPreview forwarding, connection-scoped inhibit release), the schedule
-monitor's fail-closed availability, the boundary policy row, and its poison
-negative. These are deterministic module evidence; the private headless KWin
-proof that writes temperatures through a real compositor is recorded
-separately in the ADR.
+The focused rows cover schema aliases and defaults, pure schedule boundaries,
+bounded IDs and values, exact-owner/nonce/cookie/revision stream handling,
+owner replacement and stale signal rejection, private-bus schedule service
+publication, and Settings1-backed preferences. The fork plugin must also build
+against the production KWin target. Hardware output coverage remains separate
+from these deterministic tests.
