@@ -61,7 +61,9 @@ set(kde_portal_dropin
     "${install_prefix}/${QINDAQT_INSTALL_SYSTEMDUSERUNITDIR}/plasma-xdg-desktop-portal-kde.service.d/20-qindaqt-remotedesktop.conf")
 set(theme_directory
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/qindaqt/themes")
-foreach(required_artifact IN ITEMS portal_executable dbus_descriptor systemd_unit
+set(consent_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-consent")
+set(uri_relay "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-uri-relay")
+foreach(required_artifact IN ITEMS portal_executable consent_executable uri_relay dbus_descriptor systemd_unit
         portal_metadata portal_selection kde_portal_dropin)
     if(NOT EXISTS "${${required_artifact}}")
         message(FATAL_ERROR "Staged portal package misses ${required_artifact}: ${${required_artifact}}")
@@ -226,7 +228,7 @@ endfunction()
 file(WRITE "${portal_metadata}"
     "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Background\nUseIn=QindaQt\n")
 expect_installed_metadata_rejection(
-    ".portal" "exact singleton Settings interface")
+    ".portal" "exact Settings and Secret interfaces")
 file(WRITE "${portal_metadata}" "${portal_content}")
 
 file(WRITE "${portal_selection}"

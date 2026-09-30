@@ -149,3 +149,11 @@ user/admin overrides, desktop-specific precedence, and QindaQt-only scoping.
 Its controlled desktop-entry fixtures are never launched. These gates do not
 claim a live file-open launch through a deployed desktop session. The separate
 installed-route test requires a complete Settings build with every route plugin.
+
+## Native URI consumers
+
+The independent [ApplicationUriOpener service](../architecture/portal-foundation.md)
+borrows this route's public store and ApplicationCatalog snapshot to resolve
+configured scheme handlers. The route remains process-free; it owns no portal,
+launcher process or display transport. The URI service handles native Email
+handoff with explicit unsupported-handler and cancellation results.

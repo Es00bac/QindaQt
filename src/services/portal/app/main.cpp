@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/services/portal/appearance_policy.h"
+#include <qindaqt/services/portal/foundation_composition.h>
 #include "qindaqt/services/portal/appearance_theme_catalog.h"
 #include "qindaqt/services/portal/resident_portal_service.h"
 #include "qindaqt/services/portal/settings1_appearance_source.h"
@@ -93,6 +94,16 @@ int main(int argc, char **argv)
     QindaQt::Services::SecretPortal::QtKeyringPortalBroker secrets(sessionBus);
     ResidentPortalService service(source, sessionBus);
     new QindaQt::Services::SecretPortal::SecretPortalAdaptor(service.backendHost(),secrets,sessionBus);
+    const QDir helpers(QCoreApplication::applicationDirPath());
+    PortalFoundationComposition foundation(service.backendHost(), sessionBus,
+        QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation),
+        helpers.filePath(QStringLiteral("qindaqt-portal-consent")),
+        helpers.filePath(QStringLiteral("qindaqt-uri-relay")),
+        QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation));
+    if (!foundation.start()) {
+        std::fprintf(stderr, "xdg-desktop-portal-qindaqt: native composition unavailable\n");
+        return 3;
+    }
     const PortalServiceStartStatus status = service.start(&error);
     if (status != PortalServiceStartStatus::Started) {
         std::fprintf(stderr, "xdg-desktop-portal-qindaqt: %s: %s\n",

@@ -447,3 +447,13 @@ inventory state and per-source diagnostics; enable
 per scan. If no applications can be loaded, the browser instead shows an
 actionable catalog-level message. These presentation rules preserve valid
 application launch behavior and never hide the detailed diagnostic data.
+
+## Public encoded-URL expansion
+
+The append-only `ExecExpansionValues.urls` field carries already encoded URLs
+exclusively with `localFiles`. Standalone `%u` and `%U` consume URL inputs as
+literal argv entries; `%f`/`%F`, embedded codes and mixed local/URL inputs refuse
+that handoff. Existing local-file expansion remains unchanged. The independent
+[ApplicationUriOpener service](../architecture/portal-foundation.md) uses this
+pure grammar for configured native scheme handlers and owns execution/FD
+lifetime. The Launcher model gains no process, GUI or transport dependency.
