@@ -34,6 +34,9 @@ public:
   bool attach(const QString &sessionOwner, const QString &socketBasename,
               std::optional<PeerExpectation> expectedPeer = std::nullopt);
   bool live() const;
+  // A live attachment and connection must name the same actual bus daemon ID.
+  // Unique owner/PID strings alone can collide across separate session buses.
+  bool sameBus(const QDBusConnection &connection) const;
   std::optional<AttachmentIdentity> identity() const;
   // Transfers one CLOEXEC connected ordinary FD (caller closes), or -1.
   // Caller must consume this descriptor rather than reconnecting by pathname.
