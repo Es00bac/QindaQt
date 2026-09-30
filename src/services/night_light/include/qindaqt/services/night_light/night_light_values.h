@@ -4,6 +4,7 @@
 
 #include <QtCore/QTime>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 
 #include <optional>
 
@@ -49,6 +50,7 @@ struct OutputSettings {
     Mode mode = Mode::DarkLight;
     int dayTemperatureKelvin = kDefaultDayTemperatureKelvin;
     int nightTemperatureKelvin = kDefaultNightTemperatureKelvin;
+    QStringList disabledOutputs;
 
     friend bool operator==(const OutputSettings &,
                            const OutputSettings &) = default;
@@ -105,6 +107,7 @@ bool isValidTransitionSeconds(int seconds);
 // matching KDarkLightSchedule::forecast's day-cycle requirement.
 bool isValidScheduleTimes(QTime sunriseStart, QTime sunsetStart);
 
+bool isValidStableOutputId(const QString &stableId);
 bool isValidOutput(const OutputSettings &output);
 bool isValidSchedule(const ScheduleSettings &schedule);
 

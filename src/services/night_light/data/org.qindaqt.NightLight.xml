@@ -1,0 +1,19 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name="org.qindaqt.NightLight.Schedule1">
+    <method name="Subscribe">
+      <arg name="nonce" type="ay" direction="in"/>
+    </method>
+    <method name="Unsubscribe">
+      <arg name="nonce" type="ay" direction="in"/>
+      <arg name="cookie" type="t" direction="in"/>
+    </method>
+    <signal name="ScheduleFrame">
+      <arg name="nonce" type="ay"/>
+      <arg name="cookie" type="t"/>
+      <arg name="revision" type="t"/>
+      <arg name="values" type="a{sv}"/>
+    </signal>
+  </interface>
+</node>

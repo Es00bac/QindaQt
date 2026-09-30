@@ -1234,6 +1234,110 @@
       "domain": "lock",
       "type": "boolean",
       "default": false
+    },
+    {
+      "key": "display.nightLight.active",
+      "domain": "displays",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "display.nightLight.mode",
+      "domain": "displays",
+      "type": "string",
+      "default": "DarkLight",
+      "constraints": {
+        "allowedValues": [
+          "Constant",
+          "DarkLight"
+        ]
+      }
+    },
+    {
+      "key": "display.nightLight.dayTemperatureKelvin",
+      "domain": "displays",
+      "type": "integer",
+      "default": 6500,
+      "constraints": {
+        "minimum": 1000,
+        "maximum": 6500
+      }
+    },
+    {
+      "key": "display.nightLight.nightTemperatureKelvin",
+      "domain": "displays",
+      "type": "integer",
+      "default": 4500,
+      "constraints": {
+        "minimum": 1000,
+        "maximum": 6500
+      }
+    },
+    {
+      "key": "display.nightLight.scheduleSource",
+      "domain": "displays",
+      "type": "string",
+      "default": "Location",
+      "constraints": {
+        "allowedValues": [
+          "Location",
+          "Times"
+        ]
+      }
+    },
+    {
+      "key": "display.nightLight.automaticLocation",
+      "domain": "displays",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "display.nightLight.latitudeDegrees",
+      "domain": "displays",
+      "type": "number",
+      "default": 0.0,
+      "constraints": {
+        "minimum": -90,
+        "maximum": 90
+      }
+    },
+    {
+      "key": "display.nightLight.longitudeDegrees",
+      "domain": "displays",
+      "type": "number",
+      "default": 0.0,
+      "constraints": {
+        "minimum": -180,
+        "maximum": 180
+      }
+    },
+    {
+      "key": "display.nightLight.sunriseStart",
+      "domain": "displays",
+      "type": "string",
+      "default": "06:00:00"
+    },
+    {
+      "key": "display.nightLight.sunsetStart",
+      "domain": "displays",
+      "type": "string",
+      "default": "18:00:00"
+    },
+    {
+      "key": "display.nightLight.transitionSeconds",
+      "domain": "displays",
+      "type": "integer",
+      "default": 1800,
+      "constraints": {
+        "minimum": 60,
+        "maximum": 7200
+      }
+    },
+    {
+      "key": "display.nightLight.disabledOutputs",
+      "domain": "displays",
+      "type": "string-list",
+      "default": []
     }
   ]
 }

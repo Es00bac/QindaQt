@@ -468,6 +468,7 @@ nav:
       - ADR-0299 Native locker private launch: adr/0299-native-locker-private-launch-and-authentication.md
       - ADR-0304 Native lock observation: adr/0304-native-lock-observation-and-service-policy.md
       - ADR-0308 Native lock preferences: adr/0308-native-lock-preferences-and-atomic-import.md
+      - ADR-0313 Native night-light authority: adr/0313-native-night-light.md
       - ADR-0305 Ordinary compositor attachment: adr/0305-public-ordinary-compositor-attachment.md
       - ADR-0307 Ordinary FD idle observation: adr/0307-public-ordinary-fd-idle-observation.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
