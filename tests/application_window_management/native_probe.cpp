@@ -48,9 +48,13 @@ int main(int argc, char **argv) {
   advance = [&] {
     switch (step) {
     case 0:
-      second = make(true);
-      QTimer::singleShot(
-          200, &app, [&] { submit(source, second, Placement::Tab, false); });
+      // Submit through the public SDK while the target has no mapped frame.
+      // Showing later must finish this same request, not require an app retry.
+      second = make(false);
+      submit(source, second, Placement::Tab, false);
+      std::printf("EARLY_PLACEMENT_SUBMITTED\n");
+      std::fflush(stdout);
+      QTimer::singleShot(500, &app, [&] { second->show(); });
       break;
     case 1:
       third = make(true);

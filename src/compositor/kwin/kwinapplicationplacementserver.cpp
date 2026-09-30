@@ -25,8 +25,11 @@ KWinApplicationPlacementServer::KWinApplicationPlacementServer(
   m_timer.setInterval(100);
   connect(&m_timer, &QTimer::timeout, this,
           &KWinApplicationPlacementServer::process);
+  // AGENT-GUARD: the registry emits before later Hybrid subscribers add
+  // the independent window to topology. Placement must run after that
+  // publication, even when the new frame is already ready for painting.
   connect(&m_registry, &ManagedWindowRegistry::managedWindowAdded, this,
-          [this] { process(); });
+          [this] { process(); }, Qt::QueuedConnection);
   connect(&m_registry, &ManagedWindowRegistry::managedWindowClosed, this,
           [this] { process(); });
   m_timer.start();
@@ -202,14 +205,18 @@ void KWinApplicationPlacementServer::process() {
                {Status::Denied, {}, QStringLiteral("source disappeared")});
         continue;
       }
-      if (createdId.isEmpty()) {
-        if (pending.deadline.hasExpired())
-          finish(manager, id,
-                 {Status::Timeout,
-                  {},
-                  QStringLiteral("new window did not map before deadline")});
+      // AGENT-GUARD: managed identity can precede the first committed frame.
+      // An SDK caller may submit before mapping; wait for native readiness
+      // instead of executing against an incompletely initialized window.
+      if (pending.deadline.hasExpired()) {
+        finish(manager, id,
+               {Status::Timeout,
+                {},
+                QStringLiteral("new window did not become ready before deadline")});
         continue;
       }
+      if (createdId.isEmpty() || !created || !created->readyForPainting())
+        continue;
       // Remove before synchronous scene publication: registry invalidation
       // can call process(), but may never execute this request twice.
       m_pending[manager].remove(id);
