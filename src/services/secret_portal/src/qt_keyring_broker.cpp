@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <qindaqt/services/secret_portal/secret_broker.h>
 #include <qindaqt/services/secret_portal/secret_policy.h>
+#include <qindaqt/services/secret_portal/legacy_import.h>
 #include <qindaqt/services/keyring_protocol/wire_types.h>
 #include <QDBusConnectionInterface>
 #include <QDBusPendingCallWatcher>
@@ -27,7 +28,7 @@ bool unlocked(const QVariantMap &map) {
 class SignalReceiver final:public QObject {
     Q_OBJECT
 public:
-    std::function<void(bool,const QDBusVariant &,const QDBusMessage &)> prompt;
+    std::function<void(const QString &,const QDBusObjectPath &,uint,const QByteArray &,const QDBusMessage &)> prompt;
     std::function<void(const QVariantMap &,const QDBusMessage &)> policy;
     std::function<void()> disconnected;
     std::function<void(const QString &,const QVariantMap &,const QDBusMessage &)> receipt;
@@ -36,27 +37,28 @@ public Q_SLOTS:
     void Disconnected() {disconnected();}
     void PolicyStateReceipt(const QString &nonce,const QVariantMap &state,const QDBusMessage &message) {receipt(nonce,state,message);}
     void PortalSecretResult(const QString &nonce,const QByteArray &bytes,const QDBusObjectPath &path,const QDBusMessage &message) {secret(nonce,bytes,path,message);}
-    void Completed(bool cancelled,const QDBusVariant &result,const QDBusMessage &message) {prompt(cancelled,result,message);}
+    void PortalPromptResult(const QString &nonce,const QDBusObjectPath &path,uint response,const QByteArray &bytes,const QDBusMessage &message) {prompt(nonce,path,response,bytes,message);}
     void PolicyStateChanged(const QVariantMap &state,const QDBusMessage &message) {policy(state,message);}
 };
 }
 class QtKeyringPortalBroker::Private {
 public:
-    struct Request {quint64 token=0;QString app,prompt,daemonOwner,policyNonce,secretNonce;SecretPages pages;std::function<void()> next;};
+    struct Request {quint64 token=0;QString app,prompt,daemonOwner,policyNonce,secretNonce,portalNonce;SecretPages pages;std::function<void()> next;};
     Private(QtKeyringPortalBroker &object,QDBusConnection connection):q(object),bus(std::move(connection)),
       watcher(Native,bus,QDBusServiceWatcher::WatchForOwnerChange,&q) {
         watcher.addWatchedService("org.freedesktop.secrets");
         receiver.disconnected=[this] {lose();};
         bus.connect(QString(),"/org/freedesktop/DBus/Local","org.freedesktop.DBus.Local","Disconnected",&receiver,SLOT(Disconnected()));
-        receiver.prompt=[this](bool dismissed,const QDBusVariant &value,const QDBusMessage &message) {
-            if(message.service()!=owner || message.signature()!="bv" || !liveOwner()) return;
+        receiver.prompt=[this](const QString &nonce,const QDBusObjectPath &path,uint response,const QByteArray &wire,const QDBusMessage &message) {
+            auto bytes=wire;auto scrub=qScopeGuard([&]{qindaqt::keyring::protocol::wipe(bytes);});
+            if(message.service()!=owner || message.signature()!="souay" || !liveOwner()) return;
             std::shared_ptr<Request> found;
-            for(const auto &[token,r]:requests) {(void)token;if(r->prompt==message.path()) {found=r;break;}}
+            for(const auto &[token,r]:requests) {(void)token;if(r->portalNonce==nonce && r->prompt==path.path()) {found=r;break;}}
             if(!found) return;
-            if(dismissed) {finish(found,{},BrokerError::Cancelled);return;}
-            const auto variant=value.variant();
-            if(variant.metaType()!=QMetaType::fromType<QByteArray>() && variant.metaType()!=QMetaType::fromType<QDBusArgument>()) {finish(found,{},BrokerError::Failed);return;}
-            auto bytes=argument<QByteArray>(variant);accept(found,bytes);
+            found->portalNonce.clear();
+            if(response>2 || (response && !bytes.isEmpty())) {finish(found,{},BrokerError::Failed);return;}
+            if(response) {finish(found,{},response==1?BrokerError::Cancelled:BrokerError::Failed);return;}
+            accept(found,bytes);
         };
         receiver.receipt=[this](const QString &nonce,const QVariantMap &state,const QDBusMessage &message) {
             if(message.service()!=owner || message.signature()!="sa{sv}" || !liveOwner()) return;
@@ -80,11 +82,10 @@ public:
                 }
                 receipts.erase(found);return;
             }
-            receipts.erase(found);r->secretNonce.clear();
+            receipts.erase(found);r->portalNonce=r->secretNonce;r->secretNonce.clear();
             if(prompt=="/") {accept(r,bytes);return;}
             if(!bytes.isEmpty() || !prompt.startsWith(QString(Root)+"/prompt/") || prompt.size()>256) {finish(r,{},BrokerError::Failed);return;}
             r->prompt=prompt;
-            if(!bus.connect(owner,prompt,"org.freedesktop.Secret.Prompt","Completed",&receiver,SLOT(Completed(bool,QDBusVariant,QDBusMessage)))) {finish(r,{},BrokerError::Failed);return;}
             auto start=QDBusMessage::createMethodCall(owner,prompt,"org.freedesktop.Secret.Prompt","Prompt");start.setArguments({QString()});
             auto *activation=new QDBusPendingCallWatcher(bus.asyncCall(start,2000),&q);
             QObject::connect(activation,&QDBusPendingCallWatcher::finished,&q,[this,r,activation] {
@@ -113,10 +114,9 @@ public:
         const auto it=requests.find(r->token);return it!=requests.end() && it->second==r;
     }
     void dismiss(const std::shared_ptr<Request> &r) {
-        r->next={};r->policyNonce.clear();
+        r->next={};r->policyNonce.clear();r->portalNonce.clear();
         if(!r->prompt.isEmpty()) {
             auto message=QDBusMessage::createMethodCall(owner,r->prompt,"org.freedesktop.Secret.Prompt","Dismiss");bus.asyncCall(message,1000);
-            bus.disconnect(owner,r->prompt,"org.freedesktop.Secret.Prompt","Completed",&receiver,SLOT(Completed(bool,QDBusVariant,QDBusMessage)));
             r->prompt.clear();
         }
         if(r->pages) r->pages->clear();
@@ -129,6 +129,7 @@ public:
         if(!owner.isEmpty()) {
             bus.disconnect(owner,Root,Native,"PolicyStateChanged",&receiver,SLOT(PolicyStateChanged(QVariantMap,QDBusMessage)));
             bus.disconnect(owner,Root,Native,"PolicyStateReceipt",&receiver,SLOT(PolicyStateReceipt(QString,QVariantMap,QDBusMessage)));
+            bus.disconnect(owner,Root,Native,"PortalPromptResult",&receiver,SLOT(PortalPromptResult(QString,QDBusObjectPath,uint,QByteArray,QDBusMessage)));
             bus.disconnect(owner,Root,Native,"PortalSecretResult",&receiver,SLOT(PortalSecretResult(QString,QByteArray,QDBusObjectPath,QDBusMessage)));
         }
         receipts.clear();owner.clear();if(publish) Q_EMIT q.authorityLost();
@@ -144,12 +145,13 @@ public:
         if(!liveOwner()) {owner.clear();return false;}
         if(!bus.connect(owner,Root,Native,"PolicyStateChanged",&receiver,SLOT(PolicyStateChanged(QVariantMap,QDBusMessage)))
             || !bus.connect(owner,Root,Native,"PolicyStateReceipt",&receiver,SLOT(PolicyStateReceipt(QString,QVariantMap,QDBusMessage)))
+            || !bus.connect(owner,Root,Native,"PortalPromptResult",&receiver,SLOT(PortalPromptResult(QString,QDBusObjectPath,uint,QByteArray,QDBusMessage)))
             || !bus.connect(owner,Root,Native,"PortalSecretResult",&receiver,SLOT(PortalSecretResult(QString,QByteArray,QDBusObjectPath,QDBusMessage)))) {lose(false);return false;}
         return true;
     }
-    void finish(const std::shared_ptr<Request> &r,SecretPages pages,BrokerError error) {
+    void finish(std::shared_ptr<Request> r,SecretPages pages,BrokerError error) {
         if(!active(r)) {if(pages) pages->clear();return;}
-        if(!r->prompt.isEmpty()) {bus.disconnect(owner,r->prompt,"org.freedesktop.Secret.Prompt","Completed",&receiver,SLOT(Completed(bool,QDBusVariant,QDBusMessage)));r->prompt.clear();}
+        r->prompt.clear();r->portalNonce.clear();
         requests.erase(r->token);r->next={};r->pages.reset();Q_EMIT q.completed(r->token,std::move(pages),error);
     }
     void policy(const std::shared_ptr<Request> &r,std::function<void()> next) {
@@ -167,9 +169,9 @@ public:
     }
     void accept(const std::shared_ptr<Request> &r,QByteArray &bytes) {
         auto scrub=qScopeGuard([&]{qindaqt::keyring::protocol::wipe(bytes);});
-        if(!active(r) || bytes.size()!=static_cast<qsizetype>(SecretSize) || !liveOwner()) {finish(r,{},BrokerError::Failed);return;}
+        if(!active(r) || (bytes.size()!=static_cast<qsizetype>(SecretSize) && bytes.size()!=static_cast<qsizetype>(LegacySecretSize)) || !liveOwner()) {finish(r,{},BrokerError::Failed);return;}
         try {
-            r->pages=std::make_shared<qindaqt::keyring::SecureBuffer>(SecretSize);
+            r->pages=std::make_shared<qindaqt::keyring::SecureBuffer>(static_cast<std::size_t>(bytes.size()));
             std::copy(bytes.cbegin(),bytes.cend(),r->pages->bytes().begin());
             policy(r,[this,r] {auto pages=std::move(r->pages);finish(r,std::move(pages),BrokerError::None);});
         } catch(const std::exception &) {finish(r,{},BrokerError::Failed);}

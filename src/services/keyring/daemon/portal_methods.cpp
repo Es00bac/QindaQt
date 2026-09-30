@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "secret_service.h"
 #include <qindaqt/services/secret_portal/secret_policy.h>
+#include <qindaqt/services/secret_portal/legacy_import.h>
 #include <QDBusConnectionInterface>
 #include <QScopeGuard>
 #include <QUuid>
@@ -24,7 +25,7 @@ SecureBuffer SecretService::portalSecret(const QString &app) {
         changed(collectionPath("login"),CollectionInterface,properties(collectionPath("login"),CollectionInterface));
     }
     const auto *item=repository_.item("login",itemId);
-    if(!item || !portal::matchesApplicationSecret(*item,app) || !nativeDisclosureAllowed())
+    if(!item || !portal::supportedPortalSecret(*item,app) || !nativeDisclosureAllowed())
         throw std::runtime_error("Portal secret unavailable");
     return copySecret(item->secret);
 }
@@ -44,7 +45,7 @@ bool SecretService::portalMethod(const QDBusMessage &message) {
         const bool create=!repository_.find("login");
         if(create && !repository_.alias("default").isEmpty()) {error(message,"org.freedesktop.DBus.Error.Failed");return true;}
         Prompt prompt;prompt.owner=message.service();prompt.action=create?"portal-create":"portal-unlock";
-        prompt.label="Login";prompt.portalApplication=app;prompt.relockOnCancel=!create;
+        prompt.label="Login";prompt.portalApplication=app;prompt.portalNonce=nonce;prompt.relockOnCancel=!create;
         if(!create) prompt.collections={"login"};
         publish(QByteArray{},variantPath(addPrompt(std::move(prompt))));return true;
     }

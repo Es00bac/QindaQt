@@ -16,6 +16,13 @@ private Q_SLOTS:
         Pair denied;QDBusPendingCallWatcher unauthenticated(stranger.asyncCall(retrieve("org.example.App",denied.fd[1],2)));QTRY_VERIFY(unauthenticated.isFinished());
         QCOMPARE(unauthenticated.reply().type(),QDBusMessage::ErrorMessage);QCOMPARE(broker.acquired,1);QVERIFY(denied.read().isEmpty());
     }
+    void legacy64WritesExactlyAndWipesOnClosedSink_data() {QTest::addColumn<bool>("closed");QTest::newRow("delivered")<<false;QTest::newRow("closed")<<true;}
+    void legacy64WritesExactlyAndWipesOnClosedSink() {
+        QFETCH(bool,closed);Bus bus;auto backend=bus.connection(),frontend=bus.connection();QVERIFY(backend.registerService(BackendName));QVERIFY(frontend.registerService(FrontendName));
+        MockBroker broker;broker.size=64;QObject host;new SecretPortalAdaptor(host,broker,backend);QVERIFY(backend.registerObject("/org/freedesktop/portal/desktop",&host,QDBusConnection::ExportAdaptors));Pair pair;if(closed) pair.closeRead();
+        QDBusPendingCallWatcher call(frontend.asyncCall(retrieve("org.example.Legacy",pair.fd[1])));QTRY_VERIFY(call.isFinished());QCOMPARE(call.reply().arguments()[0].toUInt(),closed?2U:0U);
+        if(!closed) {QCOMPARE(pair.read().size(),64);}QVERIFY(broker.last);QCOMPARE(broker.last->size(),std::size_t{0});
+    }
     void malformedDuplicateAndCloseAreExplicit() {
         Bus bus;auto backend=bus.connection(),frontend=bus.connection();QVERIFY(backend.registerService(BackendName));QVERIFY(frontend.registerService(FrontendName));
         MockBroker broker;QObject host;broker.hold=true;new SecretPortalAdaptor(host,broker,backend);

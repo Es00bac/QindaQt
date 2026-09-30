@@ -32,14 +32,14 @@ inline QDBusMessage retrieve(const QString &app,int fd,int id=1,QVariantMap opti
 }
 class MockBroker final:public SecretBroker {
 public:
-    bool ready=true,hold=false;int acquired=0,cancelled=0;SecretPages last;QMap<quint64,QString> requests;
+    bool ready=true,hold=false;std::size_t size=SecretSize;int acquired=0,cancelled=0;SecretPages last;QMap<quint64,QString> requests;
     void retrieve(quint64 token,const QString &app) override {
         ++acquired;requests.insert(token,app);
         if(!hold) QTimer::singleShot(0,this,[this,token] {release(token);});
     }
     void release(quint64 token) {
         if(!requests.contains(token)) return;
-        requests.remove(token);last=std::make_shared<qindaqt::keyring::SecureBuffer>(SecretSize);std::fill(last->bytes().begin(),last->bytes().end(),0x5a);
+        requests.remove(token);last=std::make_shared<qindaqt::keyring::SecureBuffer>(size);std::fill(last->bytes().begin(),last->bytes().end(),0x5a);
         Q_EMIT completed(token,last,BrokerError::None);
     }
     void cancel(quint64 token) override {if(requests.remove(token)) ++cancelled;}

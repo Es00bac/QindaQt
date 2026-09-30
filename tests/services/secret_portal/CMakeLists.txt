@@ -27,7 +27,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_subdirectory("${QINDAQT_ROOT}/src/services/secret_portal" "${CMAKE_BINARY_DIR}/portal")
 endif()
 find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
-foreach(behavior policy fd_wire broker)
+foreach(behavior policy fd_wire broker legacy_import)
     qt_add_executable(tst_secret_portal_${behavior} tst_${behavior}.cpp)
     target_link_libraries(tst_secret_portal_${behavior} PRIVATE QindaQt::SecretPortal Qt6::Test)
     target_compile_definitions(tst_secret_portal_${behavior} PRIVATE DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
@@ -44,4 +44,18 @@ if(TARGET qindaqt-keyring AND TARGET xdg-desktop-portal-qindaqt)
         "$<TARGET_FILE:qindaqt-settings-service>" "$<TARGET_FILE:qindaqt_keyring_policy_compositor>"
         "$<TARGET_FILE:xdg-desktop-portal-qindaqt>" "${PROJECT_SOURCE_DIR}")
     set_tests_properties(secret_portal_native_keyring PROPERTIES TIMEOUT 120 ENVIRONMENT "QT_FATAL_WARNINGS=1" LABELS "secret-portal;dbus;private-fixture")
+endif()
+
+# Private deterministic post-rename durability failure; never a production hook.
+target_link_options(tst_secret_portal_legacy_import PRIVATE "LINKER:--wrap=fsync")
+
+qt_add_executable(qindaqt_secret_portal_legacy_fixture legacy_fixture_seed.cpp)
+target_link_libraries(qindaqt_secret_portal_legacy_fixture PRIVATE QindaQt::SecretPortalPolicy)
+qindaqt_enable_warnings(qindaqt_secret_portal_legacy_fixture)
+if(TARGET qindaqt-keyring AND TARGET xdg-desktop-portal-qindaqt)
+    add_test(NAME secret_portal_native_import COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_native_import.py" "$<TARGET_FILE:qindaqt-keyring>"
+        "$<TARGET_FILE:qindaqt-settings-service>" "$<TARGET_FILE:qindaqt_keyring_policy_compositor>"
+        "$<TARGET_FILE:xdg-desktop-portal-qindaqt>" "${PROJECT_SOURCE_DIR}" "$<TARGET_FILE:qindaqt_secret_portal_legacy_fixture>")
+    set_tests_properties(secret_portal_native_import PROPERTIES TIMEOUT 120 ENVIRONMENT "QT_FATAL_WARNINGS=1" LABELS "secret-portal;dbus;synthetic-import;private-fixture")
 endif()

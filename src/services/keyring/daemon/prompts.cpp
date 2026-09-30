@@ -24,7 +24,7 @@ void SecretService::finishPrompt(const QString &path, bool dismissed) {
     QVariant result = p.action == "create"
         ? QVariant::fromValue(p.completed.isEmpty() ? objectPath() : p.completed.first())
         : QVariant::fromValue(p.completed);
-    QByteArray portalBytes;
+    QByteArray portalBytes;bool portalFailure=false;
     auto scrubPortal=qScopeGuard([&] {wipe(portalBytes);});
     if(p.action.startsWith("portal-")) {
         try {
@@ -34,8 +34,14 @@ void SecretService::finishPrompt(const QString &path, bool dismissed) {
                 portalBytes=QByteArray(reinterpret_cast<const char *>(pages.bytes().data()),static_cast<qsizetype>(pages.size()));
                 if(!portalCaller(p.owner) || !nativeDisclosureAllowed()) throw std::runtime_error("Portal authority unavailable");
             }
-        } catch(const PersistenceError &) {dismissed=true;wipe(portalBytes);QCoreApplication::exit(1);}
-          catch(const std::exception &) {dismissed=true;wipe(portalBytes);}
+        } catch(const PersistenceError &) {dismissed=true;portalFailure=true;wipe(portalBytes);QCoreApplication::exit(1);}
+          catch(const std::exception &) {dismissed=true;portalFailure=true;wipe(portalBytes);}
+        if(portalFailure && p.relockOnCancel) {repository_.lock(p.collections.first());notifyCollectionState(p.collections.first());}
+        // AGENT-CONTRACT: native portal consumers correlate the original nonce,
+        // retained daemon owner and prompt path. Standard Completed stays wire
+        // compatible, but cannot distinguish cancellation from storage failure.
+        auto receipt=QDBusMessage::createTargetedSignal(p.owner,Root,NativeInterface,"PortalPromptResult");
+        receipt.setArguments({p.portalNonce,variantPath(path),portalFailure?2U:(dismissed?1U:0U),portalBytes});bus_.send(receipt);
         result=portalBytes;
     }
     if (p.action == "reveal") {

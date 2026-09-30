@@ -3,8 +3,8 @@ find_package(Qt6 6.11 REQUIRED COMPONENTS Core DBus)
 find_package(OpenSSL 3.2 REQUIRED COMPONENTS Crypto)
 qt_add_library(qindaqt_secret_portal_policy STATIC)
 add_library(QindaQt::SecretPortalPolicy ALIAS qindaqt_secret_portal_policy)
-target_sources(qindaqt_secret_portal_policy PRIVATE src/secret_policy.cpp
-    PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/qindaqt/services/secret_portal/secret_policy.h)
+target_sources(qindaqt_secret_portal_policy PRIVATE src/secret_policy.cpp src/legacy_import.cpp src/legacy_import_store.cpp
+    PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/qindaqt/services/secret_portal/secret_policy.h include/qindaqt/services/secret_portal/legacy_import.h)
 target_link_libraries(qindaqt_secret_portal_policy PUBLIC QindaQt::KeyringStorage Qt6::Core PRIVATE OpenSSL::Crypto)
 target_compile_features(qindaqt_secret_portal_policy PUBLIC cxx_std_20)
 set_target_properties(qindaqt_secret_portal_policy PROPERTIES CXX_EXTENSIONS OFF)

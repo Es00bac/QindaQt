@@ -95,7 +95,7 @@ class PortalTest(unittest.TestCase):
         (portals/"qindaqt.portal").write_text((ROOT/"src/services/portal/data/qindaqt.portal").read_text())
         (portals/"qindaqt-portals.conf").write_text("[preferred]\ndefault=none\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Secret=qindaqt\n")
         applications=self.root/"data/applications";applications.mkdir(parents=True)
-        for app in ["org.example.Registered","org.example.Other"]:
+        for app in set(filter(None,getattr(self,"frontendApps",["org.example.Registered","org.example.Other"]))):
             (applications/(app+".desktop")).write_text("[Desktop Entry]\nType=Application\nName=Synthetic registered host\nExec=/bin/true\n")
         self.env.update(XDG_CURRENT_DESKTOP="qindaqt",XDG_DESKTOP_PORTAL_DIR=str(portals),XDG_DATA_DIRS=str(self.root/"empty-data"),XDG_CONFIG_DIRS=str(self.root/"empty-config"))
         self.env.pop("DISPLAY",None);self.env.pop("WAYLAND_DISPLAY",None)
@@ -108,7 +108,7 @@ class PortalTest(unittest.TestCase):
         self.addCleanup(stop)
         self.until(lambda:self.connection.send_and_get_reply(new_method_call(DBusAddress('/org/freedesktop/DBus','org.freedesktop.DBus','org.freedesktop.DBus'),'NameHasOwner','s',(FRONTEND_NAME,))).body[0])
         values=[]
-        for index,app in enumerate(["org.example.Registered","org.example.Registered","org.example.Other",None]):
+        for index,app in enumerate(getattr(self,"frontendApps",["org.example.Registered","org.example.Registered","org.example.Other",None])):
             actor=open_dbus_connection(self.env["DBUS_SESSION_BUS_ADDRESS"],enable_fds=True);self.addCleanup(actor.close)
             if app:
                 registered=actor.send_and_get_reply(new_method_call(DBusAddress('/org/freedesktop/portal/desktop',FRONTEND_NAME,'org.freedesktop.host.portal.Registry'),'Register','sa{sv}',(app,{})))
@@ -128,7 +128,7 @@ class PortalTest(unittest.TestCase):
                     if not block: break
                     value+=block
 
-                self.assertEqual(len(value),32 if app else 0);values.append(value)
+                self.assertEqual(len(value),getattr(self,"frontendLengths",{}).get(app,32) if app else 0);values.append(value)
             finally: read.close();write.close()
         self.assertTrue(values[0]==values[1]);self.assertFalse(values[0]==values[2])
     def test_direct_native_broker_from_other_actor_is_denied(self):

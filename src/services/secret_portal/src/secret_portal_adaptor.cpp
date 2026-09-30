@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <qindaqt/services/secret_portal/secret_portal_adaptor.h>
 #include <qindaqt/services/secret_portal/secret_policy.h>
+#include <qindaqt/services/secret_portal/legacy_import.h>
 #include "fd_writer_p.h"
 #include <QDBusConnectionInterface>
 #include <QDBusVirtualObject>
@@ -31,7 +32,7 @@ public:
         QObject::connect(&broker,&SecretBroker::completed,&q,[this](quint64 token,SecretPages pages,BrokerError error) {
             const auto found=requests.find(token);
             if(found==requests.end()) {if(pages) pages->clear();return;}
-            if(error!=BrokerError::None || !pages || pages->size()!=SecretSize || !liveFrontend(found->second->owner) || !broker.admitted()) {
+            if(error!=BrokerError::None || !pages || (pages->size()!=SecretSize && pages->size()!=LegacySecretSize) || !liveFrontend(found->second->owner) || !broker.admitted()) {
                 if(pages) pages->clear();
                 finish(token,error==BrokerError::Cancelled?1U:2U);return;
             }
