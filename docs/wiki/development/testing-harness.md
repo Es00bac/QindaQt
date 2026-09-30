@@ -4204,3 +4204,17 @@ remain covered. Outbound responses preflight a closed channel or occupied queue
 before encoding another plaintext allocation; the by-value original frame is
 wiped on every branch. No private production send/backlog bypass is added just
 to mirror this implementation detail in a test.
+
+### Semantic grouping source qualification
+
+`qindaqt.window-grouping-planner` and `qindaqt.window-grouping-activation` cover
+all ownership cases, directions/first-child ratios, retained identity, candidate
+activation, invariant/JSON round trips and prepare/commit rollback. Together with
+the four exact Hybrid model rows and three semantic codec/context/endpoint rows,
+the manager focused selector passes9/9 fatal-warning CTests. The extended native
+probe passes7/7 at normal and actual150% DPR with74/73 scene snapshots, including
+exact addressed focus and refusal without topology mutation. The first native
+run reproduced representative-only focus; that behavior was repaired and both
+scales rechecked. A broad selector initially selected ten unbuilt unrelated
+Hybrid input/decoration rows; it was corrected to the nine built affected rows.
+This checkpoint does not claim installed-session or physical-input coverage.

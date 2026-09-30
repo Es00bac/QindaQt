@@ -457,3 +457,9 @@ bounded row snapshots. DesktopControls consumes it through its existing public
 TaskList applet dependency; both controllers retain domain policy and intent
 fencing. The adapter owns only copied row data and incremental model signals
 ([ADR-0278](../adr/0278-retain-dock-delegates-by-presentation-identity.md)).
+
+The [semantic grouping planner](window-management-commands.md#atomic-grouping-and-addressed-focus)
+is a transport-free Qt Core/Hybrid boundary below the compositor executor. It
+selects one ownership mutation and includes moved-tab activation in its candidate;
+consumers do not edit Core pages or activate again after scene publication.
+It remains internal to the product build because Hybrid has no installed export.
