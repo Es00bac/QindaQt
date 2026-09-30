@@ -156,10 +156,13 @@ does not imply that Qt implicit-sharing allocator history is a secure-memory API
 PF8 observation boundary. The public `QindaQt::SessionLockState` target exports
 `QtNativeLockTransport` and `NativeLockStateMonitor`, requiring only Qt Core/DBus.
 The transport resolves the fork's NativeLock1 unique owner and process ID from
-the bus daemon, subscribes before querying, and obtains a fresh atomic
-`Locked`/`Protected` snapshot from that unique owner. Signals invalidate state;
-their payload never grants disclosure. Actual message senders, generation and
-request serials fence queued signals and replies.
+the bus daemon, subscribes before querying, and requests state with a fresh
+32-character lowercase hexadecimal nonce. Only the targeted
+`stateReceipt(nonce, locked, protected)` signal from the exact current unique
+owner, with a matching void method completion, supplies a snapshot. Method
+success replies and legacy properties do not supply state authority. Actual
+signal message sender, signature, nonce, generation and request serial fence
+queued state receipts. The same rule validates targeted lock-admission receipts.
 
 The monitor requires a constructor-injected synchronous readonly admission
 callback. It must consult an independently accepted live compositor attachment,
@@ -169,13 +172,14 @@ captures and the borrowed same-thread transport must outlive the monitor.
 Admission is rechecked before queries, replies, public state signals and getters,
 including immediate revocation before the queued owner watcher runs.
 
-Only an admitted `Locked=false, Protected=false` snapshot permits ordinary
+Only an admitted `Locked=false, Protected=false` receipt permits ordinary
 content. `Locked=true, Protected=false` means Locking; both true means physically
-protected Locked. An inconsistent combination, malformed properties, denied
-owner, owner replacement, bus loss or failed query yields Unknown and suppresses
+protected Locked. An inconsistent combination, malformed receipt, denied owner,
+owner replacement, bus loss or failed receipt yields Unknown and suppresses
 content/protection. Startup object absence receives a bounded retry only while
-the exact attachment remains admitted. There is no legacy fallback, RequestLock,
-unlock, authentication result or locker launch on this readonly port.
+the exact attachment remains admitted. Legacy properties remain compatible but
+do not update this monitor. There is no legacy fallback, RequestLock, unlock,
+authentication result or locker launch on this readonly port.
 
 This first executable slice is additive. Existing legacy quorum consumers are
 still a separate migration boundary; PF8 lock request, ScreenSaver compatibility,
@@ -189,3 +193,55 @@ owner/PID and actual ordinary socket/PIDFD; this is not executable or independen
 supervisor-process attestation. NativeLock property payloads supply no attachment
 authority. Existing consumer migration and native runtime policy remain separate
 from the public extraction gates.
+
+## Native Lock1 and ScreenSaver facade library
+
+`QindaQt::NativeLockService` composes a borrowed readonly native monitor and a
+separate manual `NativeLockRequest` port. The Qt request port uses the public
+[ordinary compositor attachment](compositor-attachment.md): actual daemon ID,
+unique compositor owner/PID and live socket/PIDFD admission must still match at
+submission and completion. Bus identity queries have explicit 250 ms timeouts; one pending native request
+uses a fresh 32-character lowercase hexadecimal nonce and a 1500 ms deadline.
+The transport subscribes to the exact compositor owner before sending
+`RequestLockWithReceipt(nonce)`. It accepts only the matching targeted
+`lockAdmissionReceipt(nonce, admitted)` from that owner after the void method
+completion. QtDBus success-reply metadata is not an identity proof. Cancellation,
+malformed, missing, late or duplicate receipts, authority loss and timeout
+produce an uncertain outcome without replay. Admission means **request
+accepted**, never physical protection.
+
+`ResidentLockService` claims `org.qindaqt.Lock1`,
+`org.freedesktop.ScreenSaver` and `org.kde.screensaver`; native object path is
+`/org/qindaqt/Lock1`, compatibility paths are `/ScreenSaver` and
+`/org/freedesktop/ScreenSaver`. Partial registration rolls back only objects and
+names this instance claimed. Same-thread borrowed ports must outlive the
+facade; the composition owner controls monitor/admission lifecycle. Actual
+D-Bus sender UID is resolved through the daemon for method admission. There is
+one pending manual call across every facade endpoint, and no queue.
+
+| Native Lock1 operation | Contract |
+| --- | --- |
+| `GetState() -> a{sv}` | Version 1; opaque epoch, unsigned 64-bit revision, state `unknown/unlocked/locking/locked`, bool `available` and bool `protected`. Unknown means unavailable and unprotected. |
+| `RequestLock() -> bool` | True only for fresh native admission; false for explicit rejection; uncertainty is an error. |
+| `Changed(epoch, revision)` | Invalidation; clients fetch a fresh state. Epoch/revision never provide authority by themselves. |
+
+ScreenSaver `Lock()` and `SetActive(true)` use the same manual admission path;
+`SetActive(true)` retains its standard bool reply. `GetActive()` returns false
+only for admitted Unlocked, true for Locking/Locked, and an error for Unknown.
+`ActiveChanged(false)` is never synthesized from admission loss. Legacy
+ScreenSaver has no Unknown signal, so its cached bool is insufficient for
+content disclosure or suspend ordering; those consumers need the admitted
+native readonly observer and actual Protected value.
+
+`SetActive(false)`, `SimulateUserActivity`, activity-duration queries,
+Throttle/UnThrottle and Inhibit/UnInhibit return Unsupported. In particular,
+ScreenSaver's inhibition request covers all automatic-lock/display-off/idle-
+suspend scopes atomically: accepting only one would misrepresent support. The
+qualified Power1 scope consumer/registry must be composed before this facade
+can accept that request. Manual locking is independent of idle inhibition.
+There is no unlock/authentication-result or greeter-descriptor interface.
+
+This checkpoint is a source library with private-bus fixtures. Production
+supervisor attachment/bootstrap, activation, native idle/grace policy and
+resume/sleep ordering remain separate work; the library does not replace the
+currently launched legacy locker. No real lock or sleep is exercised here.

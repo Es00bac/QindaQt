@@ -4245,3 +4245,19 @@ adapter; failed metadata permanently retires fallback. Existing private fixtures
 verify pinned owner/peer revocation and native late-result privacy separately
 from standard Secret Service sharing. No fixture reads a real collection or
 uses a live desktop.
+### Native manual lock facade
+
+`qindaqt.resident_lock_service` uses a private session bus to check Unknown
+ScreenSaver errors, admitted request vs actual protection, rejection and
+uncertainty, one pending request across endpoints, stop cancellation, unsupported
+unlock/activity/inhibition, and service-name collision rollback.
+`qindaqt.qt_native_lock_request` joins that bus to an actual private ordinary
+socket/PIDFD attachment and checks targeted actual-sender receipts, malformed
+method progress, wrong-nonce and forged-sender signals, duplicate/missing
+receipts, stale completion after cancel/rearm, owner loss/replacement, timeout
+without replay, and a second daemon with colliding owner/PID identities. Its
+composed monitor uses only RequestStateWithReceipt; properties and change
+payloads cannot establish Protected. The compositor fixture separately proves
+real caller-targeted admission and state receipts. Adjacent public
+attachment/idle rows remain required. These source gates do not claim
+production activation, real host lock/sleep, PAM or mixed-output qualification.

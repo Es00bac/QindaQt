@@ -217,3 +217,4 @@ add_subdirectory(platform/compositor_attachment)
 add_subdirectory(platform/idle_observation)
 
 add_subdirectory(services/secret_portal)
+add_subdirectory(services/native_lock_service)
