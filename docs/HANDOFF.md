@@ -1,3 +1,9 @@
+## 2026-09-30 — Passwords & Keys presentation source integration
+
+Exact integration candidate `297d6fbfc45a751a0d3464f80d3cfc4d86040bab` incorporates UI `07d1d182` with current public native privacy state. Reveal/Copy affordances require `secretsAllowed`, and the route owns a dedicated bus, model, gateway and sensitive clipboard; authority loss, secret invalidation and teardown clear copying state. Revealed text remains non-selectable and copying explicit.
+
+Manager integrated Settings build, strict MkDocs and 461-document link validation pass. Five fatal-warning route/model/clipboard CTests pass, plus the complete Settings page-construction row (all 22 active Loader witnesses) passes 1/1. These source fixtures do not qualify a real wallet, installed-prefix relocation, physical clipboard or a complete native prompt/UI journey. Native authenticated policy receipt qualification remains an active backend dependency before final delivery; no host secrets or installation occurred.
+
 ## 2026-09-30 — Keyring public boundary consumption and Gabbee integration
 
 Exact consumer candidate `070c0799a2e3e75072c2c2dd182553861627836d` rewires the resident keyring to the shared ordinary compositor attachment and real Wayland idle modules. The wrapper retains its selected-owner admission and permanent legacy display-2 retirement; duplicate private socket/idle implementations are removed. Manager targeted build and twenty focused fatal-warning CTests pass, covering eighteen keyring rows and both public platform modules. The separate existing keyring-check parser regression also passes 1/1; strict MkDocs and 461-document link validation pass.

@@ -1,12 +1,12 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. Its registry currently contains **21 routes**, in
+modular settings routes. Its registry currently contains **22 routes**, in
 stable order: Notifications, Appearance, Display, Network, Customize, Audio,
 Bluetooth, Power, Clipboard, Color, Accessibility, Input, Streaming,
 Date & time, Windows & workspaces, Default applications, About this computer,
-Startup applications, Screen saver, Login screen, and Voice. The shell owns
-route identity, selection, responsive presentation, and navigation
+Startup applications, Screen saver, Login screen, Voice, and Passwords & Keys.
+The shell owns route identity, selection, responsive presentation, and navigation
 accessibility. Each route owns its domain model, service scope, page state,
 and mutations. Appending a route must preserve existing indices and digit
 shortcuts.
@@ -26,11 +26,12 @@ Route behavior is documented in the corresponding [Appearance](appearance-settin
 [About this computer](about-this-computer.md),
 [Startup applications](startup-settings.md),
 [Screen saver](screensaver-settings.md),
-[Login screen](login-screen-settings.md), and [Voice](voice-settings.md) pages.
+[Login screen](login-screen-settings.md), [Voice](voice-settings.md), and
+[Passwords & Keys](keyring-settings.md) pages.
 Notifications includes Do Not Disturb, Quiet Hours, and per-application
 mute/sound controls; their shell policy is documented under
 [notification presentation](../shell/notification-presentation.md).
-The [21-route completeness inventory](../reference/settings-completeness.md)
+The [22-route completeness inventory](../reference/settings-completeness.md)
 separates registered pages from effective controls and outstanding gaps.
 Route construction or installed-package success does not establish physical
 Bluetooth pairing, battery/lid behavior, color calibration, network radio
@@ -51,9 +52,8 @@ Route IDs are 1–64 lowercase ASCII alphanumeric, hyphen, or underscore
 characters and must begin with an alphanumeric character. Titles, descriptions,
 icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
-must not hide one. The closed component kind maps to one of the 21
-compiled route components, from Notifications through Voice. It is not a QML
-URL, plugin path, or service locator.
+must not hide one. The closed component kind maps to one of the 22
+compiled route components, from Notifications through Passwords & Keys. It is not a QML URL, plugin path, or service locator.
 
 The public command accepts `--page <id>` for any ID in the default
 registry. `--list-routes` emits those IDs in registry order for package
@@ -264,7 +264,8 @@ The interaction contract is:
   position; Ctrl+8 selects Power in its appended eighth position, and Ctrl+9
   selects Clipboard in its appended ninth position; Ctrl+0 selects Color in
   its appended tenth position; all later routes, from Accessibility (11)
-  through Voice (21), have no digit shortcut and are reached from the sidebar
+  through Passwords & Keys (22), have no digit shortcut and are reached from
+  the sidebar
   or compact tab list;
 - Alt+Left selects the immediately previous route; and
 - the platform Quit shortcut closes the ordinary application window unless
@@ -363,7 +364,7 @@ ctest --test-dir build/dev --output-on-failure \
 - the missing-theme poison removes every generic data directory and requires
   exit 3 before QML construction instead of token-less presentation;
 - construction takes the route inventory from `--list-routes`, checks the
-  current count of 21 and unique canonical IDs, and launches every registered
+  current count of 22 and unique canonical IDs, and launches every registered
   intent under absent private **session and system buses**. Each run must exit
   after its active Loader reaches Ready with a real item, or shows the
   registry-declared unavailable diagnostic. A timeout, exit without an exact
@@ -375,9 +376,9 @@ ctest --test-dir build/dev --output-on-failure \
   display/Wayland/QML/library overrides, withholds its required Appearance QML
   module while the developer tree remains present and requires exit 3, then
   repeats that poison for the Network, Audio, and Accessibility modules, then
-  reinstalls and proves all 21 routes, including the Customize catalogs and
-  later Date & time, Windows, Startup, Screen saver, Login screen, and Voice
-  modules, from only the complete relocated prefix; and
+  reinstalls and proves all 22 routes, including the Customize catalogs and
+  later Date & time, Windows, Startup, Screen saver, Login screen, Voice, and
+  Passwords & Keys modules, from only the complete relocated prefix; and
 - the same no-borrowing contract is enforced at startup, not only by the
   test: before any engine work the executable preflights its own QML root for
   every directory-resolved route module (the Customize and `*Backend` modules
