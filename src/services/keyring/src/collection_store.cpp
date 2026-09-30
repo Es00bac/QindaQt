@@ -5,6 +5,7 @@
 #include <openssl/crypto.h>
 #include <algorithm>
 #include <stdexcept>
+#include <set>
 
 namespace qindaqt::keyring {
 using namespace detail;
@@ -156,6 +157,33 @@ StoreError CollectionStore::save() {
         }
         return error;
     } catch (const std::runtime_error &) { return StoreError::SecureMemoryUnavailable; }
+}
+StoreError CollectionStore::insertBatchAndSave(std::vector<Item> additions) {
+    if(locked()) return StoreError::Locked;
+    if(additions.empty() || additions.size()>MaxItems || state_->items.size()>MaxItems-additions.size()) return StoreError::InvalidInput;
+    std::set<std::string> ids;
+    for(const auto &item:additions)
+        if(!validItem(item) || state_->items.contains(item.id) || !ids.insert(item.id).second) return StoreError::InvalidInput;
+    try {
+        CollectionStore candidate(state_->directory,state_->file.substr(0,state_->file.size()-4),state_->barrier);
+        auto &staged=*candidate.state_;
+        staged.envelope=state_->envelope;staged.initialized=state_->initialized;
+        staged.authenticated=state_->authenticated;staged.newCollection=state_->newCollection;
+        staged.key=SecureBuffer(state_->key.size());std::copy(state_->key.bytes().begin(),state_->key.bytes().end(),staged.key.bytes().begin());
+        for(const auto &[id,item]:state_->items) {
+            Item copy;copy.id=id;copy.metadata=item.metadata;copy.attributes=item.attributes;copy.secret=SecureBuffer(item.secret.size());
+            std::copy(item.secret.bytes().begin(),item.secret.bytes().end(),copy.secret.bytes().begin());staged.items.emplace(id,std::move(copy));
+        }
+        for(auto &item:additions) {
+            const auto result=candidate.put(std::move(item));if(result!=StoreError::None) return result;
+        }
+        // AGENT-GUARD: candidate owns every provisional page. No mutation is
+        // published before the single atomic file commit (ADR0312).
+        const auto result=candidate.save();
+        if(result==StoreError::None) state_.swap(candidate.state_);
+        else if(result==StoreError::DurabilityUnknown) load();
+        return result;
+    } catch(const std::runtime_error &) {return StoreError::SecureMemoryUnavailable;}
 }
 StoreError CollectionStore::rekey(std::span<const unsigned char> password, KdfParameters parameters) {
     if (locked()) return StoreError::Locked;

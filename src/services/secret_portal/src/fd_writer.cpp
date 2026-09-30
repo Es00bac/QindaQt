@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "fd_writer_p.h"
 #include <qindaqt/services/secret_portal/secret_policy.h>
+#include <qindaqt/services/secret_portal/legacy_import.h>
 #include <QSocketNotifier>
 #include <cerrno>
 #include <fcntl.h>
@@ -39,14 +40,14 @@ public:
     void clear() {watcher.reset();closeFd();if(pages) pages->clear();pages.reset();}
     void finish(bool success) {auto callback=std::move(completed);clear();if(callback) callback(success);}
     void send() {
-        if(!pages || pages->size()!=SecretSize || fd<0 || !admitted || !admitted()) {finish(false);return;}
+        if(!pages || (pages->size()!=SecretSize && pages->size()!=LegacySecretSize) || fd<0 || !admitted || !admitted()) {finish(false);return;}
         const auto bytes=pages->bytes();
         const auto written=socket?::send(fd,bytes.data()+offset,bytes.size()-offset,MSG_DONTWAIT|MSG_NOSIGNAL)
             :pipeWrite(fd,bytes.data()+offset,bytes.size()-offset);
         if(written<0 && (errno==EAGAIN || errno==EWOULDBLOCK || errno==EINTR)) {watcher->setEnabled(true);return;}
         if(written<=0) {finish(false);return;}
         offset+=static_cast<std::size_t>(written);
-        if(offset==SecretSize) {finish(admitted());return;}
+        if(offset==pages->size()) {finish(admitted());return;}
         watcher->setEnabled(true);
     }
     FdWriter &q;int fd=-1;bool socket=false;std::size_t offset=0;SecretPages pages;

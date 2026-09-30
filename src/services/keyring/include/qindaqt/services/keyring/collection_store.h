@@ -68,6 +68,12 @@ public:
     // Borrowed secret invalidated by put/erase/lock/load/unlock/rekey/destruction.
     [[nodiscard]] SearchResult search(const Attributes &query) const;
     StoreError save();
+    // Consumes additions, rejects duplicate/existing IDs and stages the complete
+    // current collection without mutating it. One durable save publishes all.
+    // Pre-rename failures preserve memory/disk and borrowed pointers. Success
+    // invalidates pointers; DurabilityUnknown reloads locked and publishes no
+    // decrypted candidate. Empty batches are invalid; no domain/import policy.
+    StoreError insertBatchAndSave(std::vector<Item> additions);
     StoreError rekey(std::span<const unsigned char> password, KdfParameters parameters = {});
 private:
     struct State;

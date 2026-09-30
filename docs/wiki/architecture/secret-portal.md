@@ -111,9 +111,10 @@ not the general KDE portal metadata provider.
 
 PK6 therefore needs a versioned `legacy-opaque-64` import boundary preserving
 exact64 bytes, original app identity and provenance, with atomic persistence
-and explicit conflict policy. PK5 accepts only fresh-native-32; it cannot claim
-migration compatibility or regenerate/truncate legacy records. Synthetic import
-qualification precedes manager-controlled installation/live replacement. No
+and explicit conflict policy. PK5 accepts only fresh-native-32. PK6 adds strict legacy-opaque-64 retrieval
+under [ADR-0312](../adr/0312-preserve-exact-legacy-portal-secrets.md); it never
+regenerates/truncates legacy records. Synthetic import qualification precedes
+manager-controlled installation/live replacement. No
 real wallet access, import or installation is part of these tests.
 
 ## Private verification
@@ -128,3 +129,40 @@ late-prompt dismissal, plaintext buffer wipe and forged RPC/signal receipts.
 Installed frontend host registration uses valid staged desktop entries and checks the registration method succeeded before any portal call. Empty-ID behavior is also tested on the
 private bus; these are not live desktop or Flatpak sandbox qualification.
 See [portal service](portal-service.md) for adjacent appearance gates and routing.
+
+## Synthetic legacy import boundary
+
+`LegacyPortalRecord` consumes exact64 SecureBuffer bytes, original app ID and
+bounded nonempty source-wallet identity. Its pure planner uses a borrowed
+readonly lookup, accepts at most128 records and produces dedicated
+legacy-opaque-64 items with fixed kwallet-secret-portal-v1/folder provenance.
+It does not authenticate source claims or acquire data. Wallet identities are
+opaque non-secret UTF8 metadata, at most255 bytes without controls; they do not
+choose paths. Empty host IDs and non64 legacy bytes remain explicit failures.
+
+One conflict, malformed entry or duplicate rejects the entire plan. Existing
+exact bytes/provenance are idempotent; existing fresh32, changed legacy or
+unrelated records are preserved and reported as conflicts. The separate
+`commitLegacyImport` persistence collaborator uses public
+`CollectionStore::insertBatchAndSave` only. Durable success reports additions;
+pre-rename failure preserves old memory/file, and DurabilityUnknown reloads
+locked without reporting saved state. No runtime import bus method or wallet
+reader exists. The future acquisition owner must independently authorize
+fixed-login selection/unlock and exclusive writer lifetime.
+
+Native retrieval now validates either fresh-native-32 or strict legacy-opaque-64
+metadata and returns exactly32 or64 bytes under the same authenticated receipt
+and native-Unlocked gate. FD length is bounded to those two versions; no
+truncation occurs. Synthetic tests import before resident writer startup and
+cover exact bytes/provenance/restart, idempotence, whole-batch conflicts,
+cancelled atomic commit and real post-rename directory-fsync failure. Actual
+installed frontend and private native lock tests remain separate from live
+wallet access, operator import or installation qualification.
+
+Owned portal prompts use targeted native `PortalPromptResult(s,o,u,ay)`
+receipts. A fresh acquisition nonce, exact owned prompt path, retained daemon
+owner and actual signal provenance fence completion; final authenticated
+Unlocked policy still gates publication. Cancel response1 carries no bytes.
+Metadata or persistence failure response2 carries no bytes and relocks a
+collection temporarily unlocked by the owned prompt. Standard Secret Service
+`Prompt.Completed(b,v)` remains compatible.

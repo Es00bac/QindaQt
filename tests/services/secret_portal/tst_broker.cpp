@@ -15,23 +15,23 @@ public:
             auto signal=QDBusMessage::createTargetedSignal(m.service(),m.path(),"org.qindaqt.Keyring1","PolicyStateReceipt");signal.setArguments({m.arguments().value(0),map});bus.send(signal);bus.send(m.createReply());return true;
         }
         if(m.member()=="RequestPortalSecret") {
-            ++retrieved;
+            ++retrieved;secretNonce=m.arguments().value(1).toString();
             QTimer::singleShot(delay,this,[this,m] {
-                auto signal=QDBusMessage::createTargetedSignal(m.service(),m.path(),"org.qindaqt.Keyring1","PortalSecretResult");signal.setArguments({m.arguments().value(1),prompt?QByteArray{}:QByteArray(32,char(0x33)),QVariant::fromValue(QDBusObjectPath(prompt?"/org/freedesktop/secrets/prompt/pfixture":"/"))});bus.send(signal);bus.send(m.createReply());
+                auto signal=QDBusMessage::createTargetedSignal(m.service(),m.path(),"org.qindaqt.Keyring1","PortalSecretResult");signal.setArguments({m.arguments().value(1),prompt?QByteArray{}:QByteArray(size,char(0x33)),QVariant::fromValue(QDBusObjectPath(prompt?"/org/freedesktop/secrets/prompt/pfixture":"/"))});bus.send(signal);bus.send(m.createReply());
             });return true;
         }
         if(m.member()=="Prompt") {
-            bus.send(m.createReply());
+            bus.send(m.createReply());lastPrompt=m;if(holdPrompt) return true;
             QTimer::singleShot(delay,this,[this,m] {
-                auto completed=QDBusMessage::createTargetedSignal(m.service(),m.path(),"org.freedesktop.Secret.Prompt","Completed");
-                completed.setArguments({cancelled,QVariant::fromValue(QDBusVariant(cancelled?QByteArray{}:QByteArray(32,char(0x33))))});bus.send(completed);
+                auto completed=QDBusMessage::createTargetedSignal(m.service(),"/org/freedesktop/secrets","org.qindaqt.Keyring1","PortalPromptResult");
+                completed.setArguments({secretNonce,QVariant::fromValue(QDBusObjectPath(m.path())),cancelled?1U:(failure?2U:0U),cancelled||failure?QByteArray{}:QByteArray(size,char(0x33))});bus.send(completed);
             });return true;
         }
         if(m.member()=="Dismiss") {++dismissed;bus.send(m.createReply());return true;}
         return false;
     }
     void losePrivacy() {ready=false;auto m=QDBusMessage::createSignal("/org/freedesktop/secrets","org.qindaqt.Keyring1","PolicyStateChanged");m.setArguments({policy()});bus.send(m);}
-    QDBusConnection bus;QDBusMessage lastPolicy;bool holdPolicy=false,ready=true,malformed=false,prompt=false,cancelled=false;int delay=0,policies=0,retrieved=0,dismissed=0;
+    QString secretNonce;QDBusConnection bus;QDBusMessage lastPolicy,lastPrompt;bool holdPrompt=false,holdPolicy=false,ready=true,malformed=false,prompt=false,cancelled=false,failure=false;int size=32,delay=0,policies=0,retrieved=0,dismissed=0;
 };
 class BrokerTest final:public QObject {
     Q_OBJECT
@@ -75,6 +75,14 @@ private Q_SLOTS:
         if(malformed) {QVERIFY(!owned);QVERIFY(result!=BrokerError::None);}else {QVERIFY(result==BrokerError::None);QVERIFY(owned);QCOMPARE(owned->size(),std::size_t{32});owned->clear();}
         QCOMPARE(daemon.policies,2);QCOMPARE(daemon.retrieved,1);
     }
+    void legacySizeIsRetainedAndOtherSizesAreRejected_data() {QTest::addColumn<int>("size");QTest::newRow("legacy64")<<64;QTest::newRow("unsupported63")<<63;QTest::newRow("unsupported65")<<65;}
+    void legacySizeIsRetainedAndOtherSizesAreRejected() {
+        QFETCH(int,size);Bus bus;auto service=bus.connection(),client=bus.connection();QVERIFY(service.registerService("org.qindaqt.Keyring1"));QVERIFY(service.registerService("org.freedesktop.secrets"));Daemon daemon(service);daemon.size=size;QVERIFY(service.registerVirtualObject("/org/freedesktop/secrets",&daemon,QDBusConnection::SubPath));
+        QtKeyringPortalBroker broker(client);int completed=0;SecretPages pages;BrokerError error=BrokerError::Failed;
+        connect(&broker,&SecretBroker::completed,&broker,[&](quint64,SecretPages value,BrokerError result) {++completed;pages=std::move(value);error=result;});broker.retrieve(1,"org.example.Legacy");QTRY_COMPARE(completed,1);
+        if(size==64) {QVERIFY(error==BrokerError::None);QVERIFY(pages);QCOMPARE(pages->size(),std::size_t{64});QVERIFY(std::all_of(pages->bytes().begin(),pages->bytes().end(),[](unsigned char byte){return byte==0x33;}));pages->clear();}
+        else {QVERIFY(!pages);QVERIFY(error!=BrokerError::None);}
+    }
     void freshCompositionDeliversFirstRequest() {
         Bus bus;auto service=bus.connection(),backend=bus.connection(),frontend=bus.connection();
         QVERIFY(service.registerService("org.qindaqt.Keyring1"));QVERIFY(service.registerService("org.freedesktop.secrets"));
@@ -114,6 +122,25 @@ private Q_SLOTS:
         if(reason==2) daemon.losePrivacy();
         if(reason==3) broker.retrieve(1,"org.example.App");
         QTest::qWait(300);QVERIFY(!delivered);QCOMPARE(completed,reason==0?0:1);
+    }
+    void promptReceiptFencesForgeryAndDuplicate_data() {
+        QTest::addColumn<uint>("response");QTest::newRow("cancel")<<1U;QTest::newRow("failure")<<2U;
+    }
+    void promptReceiptFencesForgeryAndDuplicate() {
+        QFETCH(uint,response);Bus bus;auto service=bus.connection(),client=bus.connection(),attacker=bus.connection();
+        QVERIFY(service.registerService("org.qindaqt.Keyring1"));QVERIFY(service.registerService("org.freedesktop.secrets"));
+        Daemon daemon(service);daemon.prompt=true;daemon.holdPrompt=true;QVERIFY(service.registerVirtualObject("/org/freedesktop/secrets",&daemon,QDBusConnection::SubPath));
+        QtKeyringPortalBroker broker(client);int completed=0;BrokerError error=BrokerError::None;
+        connect(&broker,&SecretBroker::completed,&broker,[&](quint64,SecretPages pages,BrokerError result) {++completed;QVERIFY(!pages);error=result;});
+        broker.retrieve(1,"org.example.App");QTRY_COMPARE(daemon.lastPrompt.member(),QString("Prompt"));
+        auto signal=QDBusMessage::createTargetedSignal(client.baseService(),"/org/freedesktop/secrets","org.qindaqt.Keyring1","PortalPromptResult");
+        const auto path=QVariant::fromValue(QDBusObjectPath(daemon.lastPrompt.path()));
+        signal.setArguments({daemon.secretNonce,path,0U,QByteArray(64,char(0x44))});QVERIFY(attacker.send(signal));QTest::qWait(30);QCOMPARE(completed,0);
+        signal.setArguments({QString("stale"),path,0U,QByteArray(64,char(0x44))});QVERIFY(service.send(signal));QTest::qWait(30);QCOMPARE(completed,0);
+        signal.setArguments({daemon.secretNonce,QVariant::fromValue(QDBusObjectPath("/org/freedesktop/secrets/prompt/other")),0U,QByteArray(64,char(0x44))});QVERIFY(service.send(signal));QTest::qWait(30);QCOMPARE(completed,0);
+        signal.setArguments({daemon.secretNonce,path,response,QByteArray{}});QVERIFY(service.send(signal));QTRY_COMPARE(completed,1);
+        QVERIFY(error==(response==1?BrokerError::Cancelled:BrokerError::Failed));
+        signal.setArguments({daemon.secretNonce,path,0U,QByteArray(64,char(0x44))});QVERIFY(service.send(signal));QTest::qWait(50);QCOMPARE(completed,1);
     }
     void promptCancelIsBounded() {
         Bus bus;auto service=bus.connection(),client=bus.connection();QVERIFY(service.registerService("org.qindaqt.Keyring1"));QVERIFY(service.registerService("org.freedesktop.secrets"));

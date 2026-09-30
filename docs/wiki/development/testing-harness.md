@@ -4261,3 +4261,29 @@ payloads cannot establish Protected. The compositor fixture separately proves
 real caller-targeted admission and state receipts. Adjacent public
 attachment/idle rows remain required. These source gates do not claim
 production activation, real host lock/sleep, PAM or mixed-output qualification.
+
+### Native Secret portal and synthetic legacy import
+
+`secret_portal_policy`, `secret_portal_fd_wire` and `secret_portal_broker`
+exercise actual private DBus FD transport, exact frontend/native daemon owners,
+nonce-correlated policy/secret/native prompt receipts, caller/app isolation,
+request Close, malformed/duplicate/rate bounds, closed/backpressured FD and
+owned secret wipe on retirement. Native prompt rows distinguish failure2 from
+cancel1 and reject forged/stale/duplicate completions.
+
+`secret_portal_legacy_import` uses actual encrypted public CollectionStore and
+checks exact opaque64 bytes/provenance/restart, idempotence, case-sensitive
+app isolation, malformed/duplicate/whole-batch conflicts, pre-rename rejection
+and a test-only wrapped directory fsync failure after rename. Unknown
+durability leaves the store reloaded locked, never falsely reported committed.
+The wrapper is linked only into that fixture, not production storage.
+
+`secret_portal_native_keyring` and `secret_portal_native_import` compose real
+native keyring, ordinary Wayland compositor state receipts, Settings1 and portal
+backend on private buses. The installed frontend uses temporary Registry desktop
+entries to prove host app-ID delivery, empty host failure and exact native32 or
+legacy64 FD delivery. Synthetic imports precede daemon writer startup and cover
+owned unlock, restart, malformed metadata and native lock failure. These gates
+read no actual wallet and do not qualify real sandbox identity, live PAM/lock,
+operator acquisition or installation. Adjacent standard sharing/client/storage
+and public lock/attachment/idle tests remain required.

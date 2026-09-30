@@ -19,7 +19,7 @@ struct Prompt {
     qsizetype next = 0;
     quint64 ticket = 0;
     bool running = false, relockOnCancel = false;
-    QString secretSession, portalApplication;
+    QString secretSession, portalApplication, portalNonce;
 };
 class SecretService final : public QDBusVirtualObject {
     Q_OBJECT
