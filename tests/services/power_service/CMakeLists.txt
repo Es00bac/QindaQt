@@ -305,3 +305,23 @@ set_tests_properties(
     qindaqt.power-service-boundary
     PROPERTIES LABELS "service;power;policy"
 )
+
+qt_add_executable(
+    qindaqt_power_idle_inhibitor_registry_tests
+    tst_power_idle_inhibitor_registry.cpp
+    ../../../src/services/power_service/src/idle_inhibitor_registry.cpp
+    ../../../src/services/power_service/src/idle_inhibitor_registry_p.h
+)
+target_link_libraries(
+    qindaqt_power_idle_inhibitor_registry_tests
+    PRIVATE QindaQt::PowerService Qt6::Core Qt6::Test
+)
+qindaqt_enable_warnings(qindaqt_power_idle_inhibitor_registry_tests)
+add_test(
+    NAME qindaqt.power-idle-inhibitor-registry
+    COMMAND qindaqt_power_idle_inhibitor_registry_tests
+)
+set_tests_properties(
+    qindaqt.power-idle-inhibitor-registry
+    PROPERTIES LABELS "service;power" TIMEOUT 20
+)

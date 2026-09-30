@@ -13,6 +13,8 @@ target_sources(
         src/power_service_coordinator.cpp
         src/power_service_object.cpp
         src/power_service_object_p.h
+        src/idle_inhibitor_registry.cpp
+        src/idle_inhibitor_registry_p.h
         src/power_service_operations.cpp
         src/resident_power_service.cpp
         src/unavailable_power_collaborators.cpp
