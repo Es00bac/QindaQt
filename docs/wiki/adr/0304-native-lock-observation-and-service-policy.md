@@ -51,3 +51,9 @@ released package revision.
 See [native session lock](../architecture/native-session-lock.md),
 [module boundaries](../architecture/module-boundaries.md) and
 [testing harness](../development/testing-harness.md).
+
+[ADR-0305](0305-public-ordinary-compositor-attachment.md) supplies the public
+selected ordinary attachment identity/lifetime boundary. Its independent socket,
+kernel PIDFD and daemon lineage join explicitly admitted session selection; it
+does not claim executable or independent supervisor-process attestation. Native
+lock payloads are never a substitute for that attachment admission.

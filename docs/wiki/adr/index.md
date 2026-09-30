@@ -316,3 +316,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0300: Authenticate native PAM token delivery through the system owner](0300-trusted-native-keyring-pam.md)
 
 - [ADR-0308: Store native lock preferences in Settings1 and import once](0308-native-lock-preferences-and-atomic-import.md)
+
+- [ADR-0305: Share ordinary compositor attachment identity and lifetime](0305-public-ordinary-compositor-attachment.md)
+- [ADR-0307: Share readonly idle observation on an admitted ordinary display FD](0307-public-ordinary-fd-idle-observation.md)
