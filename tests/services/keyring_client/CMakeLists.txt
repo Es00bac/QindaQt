@@ -17,3 +17,8 @@ target_link_libraries(tst_keyring_preferences PRIVATE QindaQt::SettingsKeyring Q
 target_compile_definitions(tst_keyring_preferences PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 add_test(NAME keyring_preferences COMMAND tst_keyring_preferences)
 set_tests_properties(keyring_preferences PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 30)
+
+qt_add_executable(tst_keyring_clipboard tst_sensitive_clipboard.cpp)
+target_link_libraries(tst_keyring_clipboard PRIVATE QindaQt::KeyringClipboard Qt6::Test)
+add_test(NAME keyring_sensitive_clipboard COMMAND tst_keyring_clipboard)
+set_tests_properties(keyring_sensitive_clipboard PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1;QT_QPA_PLATFORM=offscreen" TIMEOUT 30)

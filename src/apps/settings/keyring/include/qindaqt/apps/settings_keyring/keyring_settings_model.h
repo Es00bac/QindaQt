@@ -14,6 +14,7 @@ class KeyringSettingsModel final : public QObject {
     Q_PROPERTY(bool available READ available NOTIFY changed)
     Q_PROPERTY(bool busy READ busy NOTIFY changed)
     Q_PROPERTY(QString status READ status NOTIFY changed)
+    Q_PROPERTY(QString policyStatus READ policyStatus NOTIFY changed)
     Q_PROPERTY(QVariantList collections READ collections NOTIFY changed)
     Q_PROPERTY(QVariantList items READ items NOTIFY changed)
     Q_PROPERTY(QString selectedCollectionPath READ selectedCollectionPath NOTIFY changed)
@@ -26,6 +27,7 @@ public:
     bool available() const;
     bool busy() const {return m_token!=0;}
     QString status() const {return m_status;}
+    QString policyStatus() const {return m_policyStatus;}
     QVariantList collections() const {return m_collections;}
     QVariantList items() const {return m_items;}
     QString selectedCollectionPath() const {return m_selected;}
@@ -41,6 +43,7 @@ public:
     Q_INVOKABLE void copyItem(const QString &path);
     Q_INVOKABLE void deleteItem(const QString &path);
     Q_INVOKABLE void clearSecret();
+    Q_INVOKABLE void acknowledgeCopy(bool confirmed);
     Q_INVOKABLE void deactivate();
 Q_SIGNALS:
     void changed();
@@ -54,7 +57,7 @@ private:
     Services::KeyringClient::KeyringGateway &m_gateway;
     KeyringPreferences *m_preferences; // Optional borrowed same-thread adapter outlives model.
     QVariantList m_collections,m_items;
-    QString m_selected,m_status;
+    QString m_selected,m_status,m_policyStatus=QStringLiteral("Policy observation unavailable");
     std::shared_ptr<qindaqt::keyring::SecureBuffer> m_secret;
     QTimer m_revealTimeout;
     quint64 m_nextToken=1,m_token=0;

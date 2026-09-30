@@ -25,7 +25,7 @@ KeyringSettingsModel::KeyringSettingsModel(Services::KeyringClient::KeyringGatew
     connect(&gateway,&Services::KeyringClient::KeyringGateway::secretReady,this,[this](quint64 token,std::shared_ptr<qindaqt::keyring::SecureBuffer> bytes,const QString &){
         if(token!=m_token || !token || !m_active) {if(bytes) bytes->clear();return;}
         m_token=0;
-        if(m_copy) {emit copyRequested(bytes);m_status="Copied for 30 seconds";m_copy=false;}
+        if(m_copy) {m_status="Copy unavailable";emit copyRequested(bytes);m_copy=false;}
         else {m_secret=std::move(bytes);m_revealTimeout.start();m_status="Hidden automatically after 15 seconds";}
         emit changed();
     });
@@ -41,6 +41,9 @@ QString KeyringSettingsModel::secretText() const {
 }
 void KeyringSettingsModel::clearSecret(){
     m_revealTimeout.stop();if(m_secret) m_secret->clear();m_secret.reset();emit changed();
+}
+void KeyringSettingsModel::acknowledgeCopy(bool confirmed){
+    m_status=confirmed?"Copied for 30 seconds":"Copy unavailable";emit changed();
 }
 void KeyringSettingsModel::deactivate(){
     m_active=false;m_gateway.cancel();m_token=0;m_copy=false;clearSecret();
