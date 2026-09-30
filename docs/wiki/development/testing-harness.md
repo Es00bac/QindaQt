@@ -4364,3 +4364,50 @@ rollback and nested-commit refusal, then exact publication/retry. No live provid
 real wallet/credential, installation, service-name switch or attack framework is
 used. Framework wire allocation zeroization and atomic source export are not
 claimed; compatibility limits are documented in [one-time import](../architecture/keyring-import.md).
+
+
+## Ordinary native keyring UI journey
+
+The focused `keyring_native_ui_journey` CTest requires `QINDAQT_KWIN_WAYLAND`
+to name a qualified private production compositor. A missing producer skips
+with exit77; qualification requires an actual run with no skip. Build
+`tst_keyring_native_ui`, `qindaqt_keyring_ui_prompt`,
+`qindaqt_keyring_clipboard_probe`, `qindaqt-keyring` and
+`qindaqt-settings-service` using the configured host job/load limits and shared
+exclusive build lease, then run:
+
+```sh
+ctest --test-dir build/dev -R '^keyring_native_ui_journey$' --output-on-failure
+```
+
+The orchestrator creates a private bus, ordinary Wayland socket, HOME/XDG roots
+and synthetic sealed login; it never claims the ambient names/display or reads
+host data, and its bus has no activation service directories. The actual production KeyringPage/route composition runs with fatal
+warnings and published public theme tokens. A test-only prompt executable links
+production main/controller/Main.qml; visible Qt event input supplies compiled
+synthetic passwords. Approval remains production controller behavior, with no
+fake output/result seam. The prompt checks ordinary kernel peer PID and exposed
+window. A separate mapped Qt Wayland process checks actual clipboard transfer
+without printing bytes. All secret-handling fixture processes disable cores and
+dumpability. Teardown terminates/reaps only fixture children and removes their
+private data.
+
+Seven Qt checks (init, five journey behaviors, cleanup) cover create/unlock,
+reauthenticated reveal/copy, sealed rekey, page retirement, exact daemon owner
+loss, persisted confirmation/delete, and native lock retirement despite the
+confirmed false collection-lock preference. Fourteen real exposed prompt
+approvals are counted by action. Receiver/source empty bytes establish clearing;
+QtWayland may retain the now-empty MIME provider's format marker. The owning
+model/clipboard rows remain adjacent gates. Production locked-item omission and
+asynchronous delegate replacement also run under fatal warnings; neutral locked
+labels and explicit guarded row bindings preserve disclosure policy.
+
+Qualified producer: `6ab6c01ede8143a7ddb477d6f0040e9b2f3753e4`, authorization OFF.
+The real producer's native Locked receipt retires disclosure through its
+clientless fallback while the compositor remains alive. This is ordinary
+Wayland plus a test Window and injected Qt events; no physical/installed Settings,
+DRM/PAM, trusted greeter admission or authenticated unlock is claimed. There is
+no authorization fixture build or installation in this row. The
+[native client](../architecture/keyring-client.md#ordinary-native-route-journey)
+records the consumer/lifetime contract; installed/live delivery remains a
+separate manager gate.

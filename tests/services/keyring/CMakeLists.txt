@@ -104,3 +104,7 @@ qindaqt_enable_warnings(qindaqt_import_verify_fixture)
 add_test(NAME keyring_legacy_import COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/test_legacy_import.py"
     $<TARGET_FILE:qindaqt-keyring-import> $<TARGET_FILE:qindaqt_keyring_policy_compositor> $<TARGET_FILE:qindaqt_import_verify_fixture>)
 set_tests_properties(keyring_legacy_import PROPERTIES ENVIRONMENT "QT_FATAL_WARNINGS=1" TIMEOUT 180 LABELS "keyring;dbus;private-fixture")
+
+if(TARGET qindaqt_settings_keyring_qml AND TARGET qindaqt-keyring-prompt)
+    add_subdirectory(journey)
+endif()

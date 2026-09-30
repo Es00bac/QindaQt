@@ -57,7 +57,7 @@ void KeyringSettingsModel::acknowledgeCopy(bool confirmed){
     m_status=confirmed?"Copied for 30 seconds":"Copy unavailable";emit changed();
 }
 void KeyringSettingsModel::deactivate(){
-    m_active=false;m_secretsAllowed=false;m_gateway.cancel();m_token=0;m_copy=false;clearSecret();
+    m_active=false;m_secretsAllowed=false;m_gateway.cancel();m_token=0;m_copy=false;clearSecret();emit deactivated();
 }
 void KeyringSettingsModel::begin(Request request,const QString &path,const QString &label){
     if(!m_active || busy() || !available() || !m_nextToken) return;

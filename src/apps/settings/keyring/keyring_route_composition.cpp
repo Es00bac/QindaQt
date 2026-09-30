@@ -37,6 +37,8 @@ public:
             const bool copied = clipboard->copy(bytes);
             model->acknowledgeCopy(copied);
         });
+        QObject::connect(model.get(), &KeyringSettingsModel::deactivated,
+                         clipboard.get(), &SensitiveClipboard::clear);
         QObject::connect(gateway.get(), &Services::KeyringClient::KeyringGateway::authorityChanged,
                          clipboard.get(), &SensitiveClipboard::clear);
         QObject::connect(gateway.get(), &Services::KeyringClient::KeyringGateway::secretsInvalidated,

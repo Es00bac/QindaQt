@@ -15,6 +15,8 @@ There is no service activation or direct storage access in the client.
 Collections/items are validated bounded metadata maps. Item label, captured
 creator and dates are available only while unlocked and authenticated. Fresh
 locked search rows remain explicitly unverified and cannot authorize a reveal.
+The Settings page displays a neutral “Locked item” label for those rows and
+guards delegate row lifetime during asynchronous metadata replacement.
 Collection labels and aliases are public metadata. Creator is a captured
 basename hint, never a trustworthy executable identity.
 
@@ -31,20 +33,21 @@ allocation. The process disables cores/dumpability before secret requests;
 owned wire byte copies are scrubbed. Plain sessions carry plaintext on the
 same-user bus and provide no cryptographic transport authentication.
 
-The current checkpoint delivers native prompt operations and client/model
-interfaces; Settings presentation and resident policy are the next slice.
-The composition must call deactivate() on departure and provide a secret MIME
-clipboard owner with a bounded clear deadline. See the
+The native route composes the async client, model, typed preferences and a
+separate sensitive clipboard owner. The page calls deactivate() on departure;
+its synchronous deactivated signal clears the composition-owned clipboard even
+while the QML singleton survives navigation. Owner loss and native disclosure
+invalidation independently clear the same clipboard owner. See the
 [native daemon](keyring-daemon.md), [storage](keyring-storage.md) and
 [trusted PAM boundary](keyring-pam.md).
 
 ## Typed lock preferences
 
-The separately borrowed KeyringPreferences adapter scopes SettingsClient to keyring.lockOnScreenLock (boolean, default false) and keyring.lockAfterIdleMinutes (integer, 0–1440, default 0 means never). SettingDomain::Keyring is appended without changing existing enum ordinals; the schema stays version 2 and enforces the keyring prefix. Only matching-owner confirmed snapshots change effective values. Pending/uncertain writes never claim persistence, and last confirmed policy remains available as read-only state while Settings1 is unavailable. The route exposes this adapter through model.preferences. Resident policy consumption remains the next slice.
+The separately borrowed KeyringPreferences adapter scopes SettingsClient to keyring.lockOnScreenLock (boolean, default false) and keyring.lockAfterIdleMinutes (integer, 0–1440, default 0 means never). SettingDomain::Keyring is appended without changing existing enum ordinals; the schema stays version 2 and enforces the keyring prefix. Only matching-owner confirmed snapshots change effective values. Pending/uncertain writes never claim persistence, and last confirmed policy remains available as read-only state while Settings1 is unavailable. The route exposes this adapter through model.preferences. The resident daemon consumes confirmed values through the independently admitted native lock and true-idle observers.
 
 ## Sensitive clipboard composition
 
-The separate GUI-only KeyringClipboard target exposes SensitiveClipboard. Its MIME provider retains only SecureBuffer ownership and allocates ordinary Qt/platform bytes on actual selection requests. The application/x-qindaqt-secret marker excludes existing clipboard history capture. The provider expires/wipes after 30 seconds; clear/destruction clears the platform selection only while its exact MIME object is still current, preserving replacements. The model reports copied only after composition calls acknowledgeCopy(true). Gateway owner loss and secret invalidation must clear the clipboard owner. Offscreen synthetic tests verify marker, expiry/wipe and replacement preservation; native compositor transfer qualification is a later manager gate. policyStatus is an additive availability label for enabled resident observations; until wired/confirmed it says unavailable.
+The separate GUI-only KeyringClipboard target exposes SensitiveClipboard. Its MIME provider retains only SecureBuffer ownership and allocates ordinary Qt/platform bytes on actual selection requests. The application/x-qindaqt-secret marker excludes existing clipboard history capture. The provider expires/wipes after 30 seconds; clear/destruction clears the platform selection only while its exact MIME object is still current, preserving replacements. The model reports copied only after composition calls acknowledgeCopy(true). Gateway owner loss and secret invalidation must clear the clipboard owner. Offscreen synthetic tests verify marker, expiry/wipe and replacement preservation. The ordinary native journey below additionally verifies actual transfer and lifecycle clearing. QtWayland may retain format metadata for a wiped source after platform clear: actual empty bytes, rather than marker disappearance, establish clearing. policyStatus reports confirmed native policy availability.
 
 ## Native disclosure privacy
 
@@ -61,7 +64,7 @@ sharing remains the separate collection-lock policy contract.
 
 ## Native Secret portal boundary
 
-The separate [native Secret portal](secret-portal.md) uses fixed login app records and fresh targeted nonce receipts for authenticated policy/secret results. Successful Qt RPC replies confer no native disclosure policy authority. The UI gateway reuses RequestPolicyState/PolicyStateReceipt before publishing revealed bytes; standard Secret Service sharing remains independent. PK5 fresh-native-32 records do not preserve old encrypted app data by themselves. The PK6 synthetic public planner/persistence boundary preserves strict legacy-opaque-64 records and exact version lengths; full wallet acquisition and installation/live replacement remain separate gates.
+The separate [native Secret portal](secret-portal.md) uses fixed login app records and fresh targeted nonce receipts for authenticated policy/secret results. Successful Qt RPC replies confer no native disclosure policy authority. The UI gateway reuses RequestPolicyState/PolicyStateReceipt before publishing revealed bytes; standard Secret Service sharing remains independent. PK5 fresh-native-32 records do not preserve old encrypted app data by themselves. The PK6 synthetic public planner/persistence boundary preserves strict legacy-opaque-64 records and exact version lengths; the separate [one-time importer](keyring-import.md) acquires complete synthetic legacy snapshots through pinned actual-owner replies. Real user-data acquisition and installation/live replacement remain separate delivery gates.
 
 ## Native metadata source receipts
 
@@ -81,3 +84,36 @@ and a final fresh policy receipt gates publication. A private bus with the
 installed session policy allowances proves that a forged method path reply grants
 no foreign Completed bytes; only the actual owner signal produces secretReady.
 Standard Secret Service sharing stays separate.
+
+## Ordinary native route journey
+
+`keyring_native_ui_journey` runs the production KeyringPage and
+KeyringRouteComposition in a test Window on a real private ordinary Wayland
+compositor. Its isolated HOME/XDG roots, bus and display contain only synthetic
+records. The private bus has no activation service directories. A test-only executable links the unchanged production prompt main,
+controller and QML; Qt test input fills visible fields and clicks approval. The
+prompt remains responsible for password protocol output. Every helper verifies
+its actual ordinary connection's kernel peer PID and exposed window; no helper
+response is scripted and no fixture binary is installed.
+
+The journey creates a collection, unlocks login, reveals/copies a synthetic item,
+changes its password, locks/unlocks with the new password, and confirms deletion.
+The public sealed store independently proves old-password refusal, new-password
+success and persisted deletion. A separate mapped Wayland client receives the
+selection. Page departure, actual daemon owner loss and actual native lock each
+leave that receiver and the source with empty bytes. Native lock is enabled,
+uses the real producer receipt path, and is tested with the confirmed collection
+screen-lock preference false. The producer stays alive; the route reports actual
+Locked rather than unavailable. Fourteen exposed prompt approvals cover create,
+three unlocks, eight reauthentications, rekey and delete.
+
+The qualified private producer source is
+`6ab6c01ede8143a7ddb477d6f0040e9b2f3753e4`, production authorization OFF. Native
+lock uses its clientless fallback; no trusted launcher admission is claimed.
+This journey proves
+disclosure retirement, not trusted greeter admission, PAM authentication,
+authenticated unlock, physical input, DRM protection, an installed helper, or a
+full installed Settings executable. The renderer is a test Window containing the
+production route, and input is Qt event injection. The earlier offscreen and
+scripted-prompt rows remain distinct evidence. See the
+[testing harness](../development/testing-harness.md#ordinary-native-keyring-ui-journey).

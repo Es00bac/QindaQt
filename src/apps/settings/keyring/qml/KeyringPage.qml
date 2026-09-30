@@ -93,15 +93,19 @@ T.Page {
             clip: true
             model: root.keyringSettings.items
             delegate: T.ItemDelegate {
+                id: itemRow
                 required property var modelData
+                // Locked native metadata intentionally omits labels.
+                readonly property bool rowAvailable: modelData !== undefined && modelData !== null
+                readonly property string displayLabel: rowAvailable && !modelData.locked ? modelData.label : qsTr("Locked item")
                 width: itemList.width
-                text: modelData.label
-                Accessible.name: modelData.label
+                text: itemRow.displayLabel
+                Accessible.name: itemRow.displayLabel
                 contentItem: RowLayout {
-                    T.Label { Layout.fillWidth: true; text: modelData.label; elide: Text.ElideRight }
-                    T.Button { text: qsTr("Reveal"); enabled: root.keyringSettings.secretsAllowed && root.keyringSettings.available && !root.keyringSettings.busy && !modelData.locked && modelData.indexAuthenticated; onClicked: root.keyringSettings.revealItem(modelData.path) }
-                    T.Button { text: qsTr("Copy"); enabled: root.keyringSettings.secretsAllowed && root.keyringSettings.available && !root.keyringSettings.busy && !modelData.locked && modelData.indexAuthenticated; onClicked: root.keyringSettings.copyItem(modelData.path) }
-                    T.Button { text: qsTr("Delete"); enabled: root.keyringSettings.available && !root.keyringSettings.busy && !modelData.locked && modelData.indexAuthenticated; onClicked: root.keyringSettings.deleteItem(modelData.path) }
+                    T.Label { Layout.fillWidth: true; text: itemRow.displayLabel; elide: Text.ElideRight }
+                    T.Button { text: qsTr("Reveal"); enabled: itemRow.rowAvailable && root.keyringSettings.secretsAllowed && root.keyringSettings.available && !root.keyringSettings.busy && !itemRow.modelData.locked && itemRow.modelData.indexAuthenticated; onClicked: if (itemRow.rowAvailable) root.keyringSettings.revealItem(itemRow.modelData.path) }
+                    T.Button { text: qsTr("Copy"); enabled: itemRow.rowAvailable && root.keyringSettings.secretsAllowed && root.keyringSettings.available && !root.keyringSettings.busy && !itemRow.modelData.locked && itemRow.modelData.indexAuthenticated; onClicked: if (itemRow.rowAvailable) root.keyringSettings.copyItem(itemRow.modelData.path) }
+                    T.Button { text: qsTr("Delete"); enabled: itemRow.rowAvailable && root.keyringSettings.available && !root.keyringSettings.busy && !itemRow.modelData.locked && itemRow.modelData.indexAuthenticated; onClicked: if (itemRow.rowAvailable) root.keyringSettings.deleteItem(itemRow.modelData.path) }
                 }
             }
             T.Label { anchors.centerIn: parent; visible: itemList.count === 0; text: qsTr("Select an unlocked collection to view its items."); wrapMode: Text.WordWrap }
