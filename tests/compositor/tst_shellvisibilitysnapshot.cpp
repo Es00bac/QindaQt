@@ -57,6 +57,7 @@ private Q_SLOTS:
     void publishesUnavailableAndRecoversAtANewRevision();
     void revisionExhaustionConvergesToUnavailable();
     void namesTheRejectedMemberAndWhy();
+    void keepsWorkspaceScopeWhenActivitiesAreUnavailable();
 };
 
 void ShellVisibilitySnapshotTest::publishesExactCanonicalWireShape()
@@ -367,6 +368,45 @@ void ShellVisibilitySnapshotTest::revisionExhaustionConvergesToUnavailable()
              ShellVisibilityPublishResult::RevisionExhausted);
     QVERIFY(!store.markUnavailable(QStringLiteral("revision-exhausted"),
                                    QStringLiteral("still exhausted")));
+}
+
+void ShellVisibilitySnapshotTest::keepsWorkspaceScopeWhenActivitiesAreUnavailable()
+{
+    constexpr auto noActivities = "00000000-0000-0000-0000-000000000000";
+    ShellVisibilitySnapshotStore store(QStringLiteral("epoch-no-activities"));
+    auto candidate = validCandidate();
+    candidate.scope = {QStringLiteral("workspace-one"),
+                       QString::fromLatin1(noActivities)};
+    for (auto &window : candidate.windows) {
+        window.activityIds.clear();
+    }
+    QCOMPARE(store.publish(candidate), ShellVisibilityPublishResult::Published);
+
+    auto snapshot = parse(store.snapshotJson());
+    auto scope = snapshot.value(QStringLiteral("scope")).toObject();
+    QCOMPARE(scope.value(QStringLiteral("workspaceId")).toString(),
+             QStringLiteral("workspace-one"));
+    QCOMPARE(scope.value(QStringLiteral("activityId")).toString(),
+             QString::fromLatin1(noActivities));
+    auto windows = snapshot.value(QStringLiteral("windows")).toArray();
+    QCOMPARE(windows.size(), 2);
+    for (const auto &value : windows) {
+        QVERIFY(value.toObject().value(QStringLiteral("activityIds"))
+                    .toArray().isEmpty());
+    }
+    const auto first = windows.at(0).toObject();
+    QCOMPARE(first.value(QStringLiteral("workspaceIds")).toArray(),
+             QJsonArray({QStringLiteral("workspace-1"),
+                         QStringLiteral("workspace-2")}));
+
+    candidate.scope.workspaceId = QStringLiteral("workspace-two");
+    QCOMPARE(store.publish(candidate), ShellVisibilityPublishResult::Published);
+    snapshot = parse(store.snapshotJson());
+    scope = snapshot.value(QStringLiteral("scope")).toObject();
+    QCOMPARE(scope.value(QStringLiteral("workspaceId")).toString(),
+             QStringLiteral("workspace-two"));
+    QCOMPARE(scope.value(QStringLiteral("activityId")).toString(),
+             QString::fromLatin1(noActivities));
 }
 
 QTEST_APPLESS_MAIN(ShellVisibilitySnapshotTest)

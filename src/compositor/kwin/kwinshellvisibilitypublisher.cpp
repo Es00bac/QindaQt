@@ -6,8 +6,10 @@
 #include "shellvisibilitywindowadmission.h"
 #include "managedwindowregistry.h"
 
-#include <activities.h>
 #include <config-kwin.h>
+#if KWIN_BUILD_ACTIVITIES
+#include <activities.h>
+#endif
 #include <effect/globals.h>
 #include <virtualdesktops.h>
 #include <window.h>
@@ -305,12 +307,18 @@ KWinShellVisibilityPublisher::sample(QString *error) const
             uuid.toString(QUuid::WithoutBraces));
         const bool hybridMaximized = !owner.isEmpty() && m_hybridMaximized
             && m_hybridMaximized(owner);
+        // AGENT-GUARD: Activity-free builds keep the wire membership empty;
+        // stale KWin window metadata would contradict the null-UUID scope (ADR-0309).
         candidate.windows.append({
             .id = uuid.toString(QUuid::WithoutBraces),
             .outputId = window->output()->name(),
             .frameGeometry = *geometry,
             .workspaceIds = window->desktopIds(),
+#if KWIN_BUILD_ACTIVITIES
             .activityIds = window->activities(),
+#else
+            .activityIds = {},
+#endif
             .onAllWorkspaces = window->isOnAllDesktops(),
             .active = window->isActive(),
             .maximized = window->maximizeMode() == KWin::MaximizeFull
