@@ -31,6 +31,10 @@ public:
     [[nodiscard]] ScheduleServiceStart start(QString *error = nullptr);
     void stop();
 
+private Q_SLOTS:
+    void nameOwnerChanged(const QString &name, const QString &oldOwner,
+                         const QString &newOwner);
+
 private:
     void refreshSettings();
     void publish();

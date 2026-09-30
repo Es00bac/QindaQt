@@ -6,7 +6,6 @@
 #include <qindaqt/services/display_protocol/display_types.h>
 
 #include <QDBusContext>
-#include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusMetaType>
 #include <QDBusServiceWatcher>
@@ -162,12 +161,12 @@ public:
             AutomaticLocationProvider &locationProvider,
             NightLightScheduleService &service)
         : connection(std::move(bus)), settings(client), display(displayClient),
-          location(locationProvider),
-          object(connection) { Q_UNUSED(service); }
+          location(locationProvider), owner(service), object(connection) {}
     QDBusConnection connection;
     QindaQt::Services::SettingsClient::SettingsClient &settings;
     QindaQt::DisplayClient::Client &display;
     AutomaticLocationProvider &location;
+    NightLightScheduleService &owner;
     ScheduleObject object;
     QTimer refreshTimer;
     NightLightSettings values;
@@ -178,6 +177,28 @@ public:
     QString identityDiagnostic;
     QStringList runtimeOutputUuids;
     bool started = false;
+    bool ownerChangeConnected = false;
+
+    bool watchBusOwners()
+    {
+        if (ownerChangeConnected) return true;
+        // Subscribe to the bus signal itself; Qt's connection-interface helper
+        // is deprecated and fatal-warning test runs must remain clean.
+        ownerChangeConnected = connection.connect(
+            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("NameOwnerChanged"),
+            &owner, SLOT(nameOwnerChanged(QString,QString,QString)));
+        return ownerChangeConnected;
+    }
+    void unwatchBusOwners()
+    {
+        if (!ownerChangeConnected) return;
+        connection.disconnect(
+            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+            QStringLiteral("org.freedesktop.DBus"), QStringLiteral("NameOwnerChanged"),
+            &owner, SLOT(nameOwnerChanged(QString,QString,QString)));
+        ownerChangeConnected = false;
+    }
 };
 
 NightLightScheduleService::NightLightScheduleService(
@@ -213,10 +234,6 @@ NightLightScheduleService::NightLightScheduleService(
         ++d->revision;
         publish();
     });
-    connect(d->connection.interface(), &QDBusConnectionInterface::serviceOwnerChanged,
-            this, [this](const QString &name, const QString &, const QString &) {
-        if (name.startsWith(QLatin1Char(':'))) d->object.ownerLost(name);
-    });
 }
 
 NightLightScheduleService::~NightLightScheduleService() { stop(); }
@@ -226,6 +243,10 @@ ScheduleServiceStart NightLightScheduleService::start(QString *error)
     if (d->started) return ScheduleServiceStart::Started;
     if (!d->connection.isConnected()) {
         if (error) *error = QStringLiteral("constructing session bus is disconnected");
+        return ScheduleServiceStart::Failed;
+    }
+    if (!d->watchBusOwners()) {
+        if (error) *error = QStringLiteral("could not subscribe to D-Bus owner lifecycle");
         return ScheduleServiceStart::Failed;
     }
     if (!d->connection.registerService(kService))
@@ -244,12 +265,23 @@ ScheduleServiceStart NightLightScheduleService::start(QString *error)
 
 void NightLightScheduleService::stop()
 {
-    if (!d->started) return;
+    if (!d->started) {
+        d->unwatchBusOwners();
+        return;
+    }
     d->started = false;
     d->refreshTimer.stop();
     d->location.stop();
     d->connection.unregisterObject(kPath);
     d->connection.unregisterService(kService);
+    d->unwatchBusOwners();
+}
+
+void NightLightScheduleService::nameOwnerChanged(
+    const QString &name, const QString &, const QString &newOwner)
+{
+    if (name.startsWith(QLatin1Char(':')) && newOwner.isEmpty())
+        d->object.ownerLost(name);
 }
 
 void NightLightScheduleService::refreshSettings()
