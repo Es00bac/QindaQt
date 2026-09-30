@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/night_light/night_light_schedule_client.h>
+#include <qindaqt/services/night_light/automatic_location_provider.h>
 #include <qindaqt/services/night_light/night_light_schedule_service.h>
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/services/settings_client/settings_transport.h>
@@ -19,6 +20,23 @@ using namespace QindaQt::Services::SettingsClient;
 using namespace QindaQt::Services::SettingsProtocol;
 namespace {
 const QString ServiceName = QStringLiteral("org.qindaqt.NightLight");
+
+class FakeLocationProvider final : public AutomaticLocationProvider {
+    Q_OBJECT
+public:
+    using AutomaticLocationProvider::AutomaticLocationProvider;
+    void request() override { ++requests; m_state = AutomaticLocationState::Pending; Q_EMIT changed(); }
+    void stop() override { ++stops; m_state = AutomaticLocationState::Stopped; m_fix.reset(); Q_EMIT changed(); }
+    AutomaticLocationState state() const override { return m_state; }
+    std::optional<AutomaticLocationFix> fix() const override { return m_fix; }
+    QString diagnostic() const override { return m_diagnostic; }
+    int requests = 0;
+    int stops = 0;
+private:
+    AutomaticLocationState m_state = AutomaticLocationState::Stopped;
+    std::optional<AutomaticLocationFix> m_fix;
+    QString m_diagnostic;
+};
 
 class PrivateBus final {
 public:
@@ -121,11 +139,13 @@ void NightLightScheduleServiceTests::residentServicePublishesSettingsBackedTarge
     displayTransport.replySnapshot(displayTransport.fetches.constLast(), outputSnapshot);
     QTRY_COMPARE(displayClient.state(), QindaQt::DisplayClient::ClientState::Ready);
 
-    NightLightScheduleService service(serviceBus, settings, displayClient);
+    FakeLocationProvider location;
+    NightLightScheduleService service(serviceBus, settings, displayClient, location);
     QString error;
     QCOMPARE(service.start(&error), ScheduleServiceStart::Started);
     QVERIFY2(error.isEmpty(), qPrintable(error));
     QVERIFY(serviceBus.baseService().startsWith(QLatin1Char(':')));
+    QCOMPARE(location.requests, 0); // Fixed-time preferences must not ask GeoClue.
 
     QtNightLightScheduleClient client(clientBus);
     QSignalSpy states(&client, &QtNightLightScheduleClient::stateChanged);

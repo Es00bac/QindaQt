@@ -51,6 +51,29 @@ location is unavailable until a fresh, permitted location fix is available;
 no stale coordinate is substituted. A missing clock or location input is
 reported as unavailable instead of silently switching schedule source.
 
+## Automatic location and consent
+
+The resident service creates a GeoClue2 client only while the Settings1
+preferences request an active `Location` schedule with `automaticLocation`
+enabled. Manual coordinates, fixed `Times`, a disabled schedule, and constant
+mode do not request a fix. The request uses DesktopId
+`org.qindaqt.NightLight` and asks for GeoClue's city accuracy level. Each call
+and `LocationUpdated` subscription is pinned to the current GeoClue unique
+owner. Stopping the preference or losing/changing that owner clears the fix and
+stops the client; late replies are ignored. Fixes must have finite bounded
+coordinates and a GeoClue timestamp no more than 15 minutes old or 60 seconds
+in the future.
+
+GeoClue remains the authorization authority. QindaQt installs the matching
+hidden desktop entry `org.qindaqt.NightLight.desktop` so GeoClue's agent can
+identify the request and show its reason. The QindaQt package must depend on
+`app-misc/geoclue`; Gentoo builds GeoClue's notification agent and autostart
+entry. No GeoClue app `allowed=true` override is installed, because that
+setting bypasses the agent prompt. A denied request, missing agent, missing
+GeoClue service, or stale response is displayed as the schedule diagnostic and
+leaves output neutral. The service never reads a cached or manual coordinate
+as a fallback for an automatic-location request.
+
 ## Schedule1 transport
 
 `org.qindaqt.NightLight` at `/org/qindaqt/NightLight`, interface
@@ -96,6 +119,9 @@ ctest --test-dir build/pf12 \
 The focused rows cover schema aliases and defaults, pure schedule boundaries,
 bounded IDs and values, exact-owner/nonce/cookie/revision stream handling,
 owner replacement and stale signal rejection, private-bus schedule service
-publication, and Settings1-backed preferences. The fork plugin must also build
+publication, and Settings1-backed preferences. A separate private system-bus
+fixture checks GeoClue's DesktopId/accuracy request, accepted fresh fix,
+permission denial, explicit stop, and a held CreateClient reply after stop.
+The fork plugin must also build
 against the production KWin target. Hardware output coverage remains separate
 from these deterministic tests.

@@ -34,7 +34,8 @@ int main(int argc, char **argv)
     QindaQt::DisplayClient::QtDisplayTransport displayTransport(bus);
     QindaQt::DisplayClient::Client displayClient(&displayTransport);
     displayClient.start();
-    NightLightScheduleService service(bus, settings, displayClient);
+    GeoClueLocationProvider location(QDBusConnection::systemBus());
+    NightLightScheduleService service(bus, settings, displayClient, location);
     const auto status = service.start(&error);
     if (status == ScheduleServiceStart::NameAlreadyOwned) {
         qInfo("NightLight startup stopped because a sibling owns its session service name");

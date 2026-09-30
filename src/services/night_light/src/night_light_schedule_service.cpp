@@ -159,12 +159,15 @@ public:
     Private(QDBusConnection bus,
             QindaQt::Services::SettingsClient::SettingsClient &client,
             QindaQt::DisplayClient::Client &displayClient,
+            AutomaticLocationProvider &locationProvider,
             NightLightScheduleService &service)
         : connection(std::move(bus)), settings(client), display(displayClient),
+          location(locationProvider),
           object(connection) { Q_UNUSED(service); }
     QDBusConnection connection;
     QindaQt::Services::SettingsClient::SettingsClient &settings;
     QindaQt::DisplayClient::Client &display;
+    AutomaticLocationProvider &location;
     ScheduleObject object;
     QTimer refreshTimer;
     NightLightSettings values;
@@ -181,8 +184,9 @@ NightLightScheduleService::NightLightScheduleService(
     const QDBusConnection &connection,
     QindaQt::Services::SettingsClient::SettingsClient &settings,
     QindaQt::DisplayClient::Client &display,
+    AutomaticLocationProvider &location,
     QObject *parent)
-    : QObject(parent), d(std::make_unique<Private>(connection, settings, display, *this))
+    : QObject(parent), d(std::make_unique<Private>(connection, settings, display, location, *this))
 {
     connect(&settings, &QindaQt::Services::SettingsClient::SettingsClient::snapshotChanged,
             this, [this] { refreshSettings(); });
@@ -192,6 +196,7 @@ NightLightScheduleService::NightLightScheduleService(
             && d->ready) {
             d->ready = false;
             d->schedule = {};
+            d->location.stop();
             ++d->revision;
             publish();
         }
@@ -200,6 +205,9 @@ NightLightScheduleService::NightLightScheduleService(
             this, [this] { refreshSettings(); });
     connect(&display, &QindaQt::DisplayClient::Client::stateChanged,
             this, [this] { refreshSettings(); });
+    connect(&location, &AutomaticLocationProvider::changed, this, [this] {
+        if (d->ready) { ++d->revision; publish(); }
+    });
     d->refreshTimer.setInterval(60'000);
     connect(&d->refreshTimer, &QTimer::timeout, this, [this] {
         ++d->revision;
@@ -239,6 +247,7 @@ void NightLightScheduleService::stop()
     if (!d->started) return;
     d->started = false;
     d->refreshTimer.stop();
+    d->location.stop();
     d->connection.unregisterObject(kPath);
     d->connection.unregisterService(kService);
 }
@@ -258,6 +267,7 @@ void NightLightScheduleService::refreshSettings()
     if (!mode || !source) {
         d->ready = false;
         d->schedule = {};
+        d->location.stop();
         ++d->revision;
         publish();
         return;
@@ -276,13 +286,19 @@ void NightLightScheduleService::refreshSettings()
     if (!isValidOutput(values.output) || !isValidSchedule(values.schedule)) {
         d->ready = false;
         d->schedule = {};
+        d->location.stop();
         ++d->revision;
         publish();
         return;
     }
     d->values = values;
     d->ready = true;
-    d->schedule = calculateSchedule(d->values, QDateTime::currentDateTime());
+    const bool wantsAutomaticLocation = values.output.active
+        && values.output.mode != Mode::Constant
+        && values.schedule.source == ScheduleSource::Location
+        && values.schedule.automaticLocation;
+    if (wantsAutomaticLocation) d->location.request();
+    else d->location.stop();
     ++d->revision;
     publish();
 }
@@ -290,7 +306,21 @@ void NightLightScheduleService::refreshSettings()
 void NightLightScheduleService::publish()
 {
     if (!d->started) return;
-    if (d->ready) d->schedule = calculateSchedule(d->values, QDateTime::currentDateTime());
+    if (d->ready) {
+        std::optional<QPair<double, double>> location;
+        const bool wantsAutomaticLocation = d->values.output.active
+            && d->values.output.mode != Mode::Constant
+            && d->values.schedule.source == ScheduleSource::Location
+            && d->values.schedule.automaticLocation;
+        const auto fix = wantsAutomaticLocation ? d->location.fix() : std::nullopt;
+        if (fix) location = QPair{fix->latitudeDegrees, fix->longitudeDegrees};
+        d->schedule = calculateSchedule(d->values, QDateTime::currentDateTime(), location);
+        if (wantsAutomaticLocation && !fix) {
+            if (d->location.state() == AutomaticLocationState::Available) d->location.request();
+            const QString reason = d->location.diagnostic();
+            if (!reason.isEmpty()) d->schedule.diagnostic = reason;
+        }
+    }
     d->identityReady = true;
     d->identityDiagnostic.clear();
     d->runtimeOutputUuids.clear();
