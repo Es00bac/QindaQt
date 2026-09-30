@@ -32,6 +32,8 @@ Runtime::Runtime(Services::LockPreferences::PreferencesProvider &preferences,
   if (m_power) {
     connect(m_power, &Power::PowerClient::snapshotChanged, this, &Runtime::powerSnapshotChanged);
     connect(m_power, &Power::PowerClient::stateChanged, this, &Runtime::powerSnapshotChanged);
+    connect(m_power, &Power::PowerClient::idleInhibitorStateChanged, this,
+            &Runtime::idleChanged);
   }
 }
 Runtime::~Runtime() { stop(); }
@@ -87,6 +89,14 @@ void Runtime::idleChanged() {
   if (!m_started || !m_values || !m_values->automaticLock ||
       !m_idle.available() || !m_idle.idle()) {
     m_automaticCycleRequested = false;
+    return;
+  }
+  if (m_power && m_power->hasIdleInhibitorState() &&
+      m_power->activeIdleInhibitorScopes().testFlag(
+          Power::IdleInhibitorScope::AutomaticLock)) {
+    m_automaticCycleRequested = false;
+    m_status = QStringLiteral("automatic lock deferred by confirmed idle lease");
+    Q_EMIT stateChanged();
     return;
   }
   if (m_automaticCycleRequested) return;

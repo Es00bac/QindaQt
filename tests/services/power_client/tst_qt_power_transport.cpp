@@ -181,6 +181,8 @@ void QtPowerTransportTests::successiveOwnersDelayedOperationAndEpochFencing()
     const quint64 firstEpoch = client.snapshot().epoch;
     const QString firstOwner = client.owner();
     QVERIFY(firstOwner.startsWith(QLatin1Char(':')));
+    QTRY_VERIFY_WITH_TIMEOUT(client.hasIdleInhibitorState(), 2000);
+    inhibitorState.clear();
 
     transport.queryIdleInhibitorState(firstOwner, 71);
     QTRY_COMPARE(inhibitorState.size(), 1);
