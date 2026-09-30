@@ -149,3 +149,34 @@ The PAM process client's outbound queue checks channel/queue availability before
 encoding another plaintext copy and wipes its owned response frame on every
 branch. This complements field clearing and bounded native response buffers; it
 does not imply that Qt implicit-sharing allocator history is a secure-memory API.
+
+## Native readonly observation
+
+[ADR-0304](../adr/0304-native-lock-observation-and-service-policy.md) defines the
+PF8 observation boundary. The public `QindaQt::SessionLockState` target exports
+`QtNativeLockTransport` and `NativeLockStateMonitor`, requiring only Qt Core/DBus.
+The transport resolves the fork's NativeLock1 unique owner and process ID from
+the bus daemon, subscribes before querying, and obtains a fresh atomic
+`Locked`/`Protected` snapshot from that unique owner. Signals invalidate state;
+their payload never grants disclosure. Actual message senders, generation and
+request serials fence queued signals and replies.
+
+The monitor requires a constructor-injected synchronous readonly admission
+callback. It must consult an independently accepted live compositor attachment,
+matching both exact unique owner and daemon-resolved PID. A supplied PID, same
+UID or same process behind another unique owner is insufficient. Callback
+captures and the borrowed same-thread transport must outlive the monitor.
+Admission is rechecked before queries, replies, public state signals and getters,
+including immediate revocation before the queued owner watcher runs.
+
+Only an admitted `Locked=false, Protected=false` snapshot permits ordinary
+content. `Locked=true, Protected=false` means Locking; both true means physically
+protected Locked. An inconsistent combination, malformed properties, denied
+owner, owner replacement, bus loss or failed query yields Unknown and suppresses
+content/protection. Startup object absence receives a bounded retry only while
+the exact attachment remains admitted. There is no legacy fallback, RequestLock,
+unlock, authentication result or locker launch on this readonly port.
+
+This first executable slice is additive. Existing legacy quorum consumers are
+still a separate migration boundary; PF8 lock request, ScreenSaver compatibility,
+sleep policy and Settings migration are not completed by the observer alone.

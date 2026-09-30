@@ -3,6 +3,7 @@
 #include "qindaqt/services/session_lock_state/session_lock_state_monitor.h"
 
 #include <QCoreApplication>
+#include "support/private_session_bus.h"
 #include <QDBusAbstractAdaptor>
 #include <QDBusConnection>
 #include <QProcess>
@@ -16,47 +17,7 @@ using namespace QindaQt::Services::SessionLockState;
 
 namespace {
 
-class PrivateSessionBus final {
-public:
-    ~PrivateSessionBus() { stop(); }
-
-    bool start(QString *error)
-    {
-        m_process.start(QStringLiteral("dbus-daemon"),
-                        {QStringLiteral("--session"), QStringLiteral("--nofork"),
-                         QStringLiteral("--nopidfile"),
-                         QStringLiteral("--print-address=1")});
-        if (!m_process.waitForStarted(5'000) ||
-            !m_process.waitForReadyRead(5'000)) {
-            *error = m_process.errorString();
-            return false;
-        }
-        m_address = QString::fromUtf8(m_process.readLine()).trimmed();
-        if (m_address.isEmpty()) {
-            *error = QStringLiteral("private dbus-daemon published no address");
-            return false;
-        }
-        return true;
-    }
-
-    void stop() noexcept
-    {
-        if (m_process.state() == QProcess::NotRunning) {
-            return;
-        }
-        m_process.terminate();
-        if (!m_process.waitForFinished(1'000)) {
-            m_process.kill();
-            m_process.waitForFinished(1'000);
-        }
-    }
-
-    const QString &address() const noexcept { return m_address; }
-
-private:
-    QProcess m_process;
-    QString m_address;
-};
+using QindaQt::TestSupport::PrivateSessionBus;
 
 class ScreenSaverBackend final : public QObject {
     Q_OBJECT
