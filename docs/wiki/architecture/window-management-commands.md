@@ -1,7 +1,7 @@
 # Native semantic window-management commands
 
 The semantic command boundary is shared by native input adapters and the voice
-provider. The policy and production transport pass focused private-bus/geometry tests and real private native scene qualification at normal and actual 150% scale. The Gabbee consumer, grouping and application launch remain the next acceptance boundary. `src/window_management` implements bounded
+provider. The policy and production transport pass focused private-bus/geometry tests and real private native scene qualification at normal and actual 150% scale. Gabbee source consumer31147a55 is integrated as eadb8995 with manager88 tests and20 subtests. Atomic grouping is qualified below; correlated application launch remains the next acceptance boundary. `src/window_management` implements bounded
 typed decoding, fractional geometry and expiring command admission. The native
 transport and compositor executor remain uninstalled. The accepted
 choice is [ADR-0301](../adr/0301-share-semantic-window-management-with-voice.md).
@@ -43,9 +43,9 @@ The live Voice1 unique owner must also have a current-owner, exact boolean true
 confirmation of Settings1 `services.voiceInput`. A caller-supplied PID or provider
 claim is not authority. The compositor must revoke before a later re-enable can
 revive capture. This first transport admits the voice provider only. Shell operations retain
-their existing panel-role credential join. Native launch receipts and
-`group-tab`, `group-tile`, `launch` execution remain pending and are omitted
-from capability replies. No deployed capability claim is made.
+their existing panel-role credential join. The source endpoint publishes22 operations, including atomic `group-tab` and
+`group-tile`. Correlated `launch` execution remains pending and is omitted from
+capability replies. No deployed capability claim is made.
 
 Requests have exactly four fields:
 
@@ -102,10 +102,45 @@ single use, owner/context replacement, expiry, lock revocation, stale subjects,
 ambiguity without mutation, unsupported capabilities, cancellation and floods.
 Those rows, the real private-bus `qindaqt.window-management-qt_endpoint`
 owner/consent/replacement/lock scenarios, `compositor.semantic-fractional-maximize`
-and six affected placement/preference/bridge rows pass with fatal Qt warnings. Private native scenarios pass six Qt checks per normal/actual-150% run, with 59 read-only scene snapshots each: ordinary raise/maximize/restore and thirds, original geometry after three repeated inset/fullscreen round trips, grouped rename/color/maximize/shade/restore/tab traversal/detachment, temporary icon/minimize restore, stale resize rejection and consent revocation. Actual DPR is asserted by the Qt client. The Gabbee command-hotkey consumer, group/launch execution and installed-session qualification remain required before the feature is executable in the desktop.
+and six affected placement/preference/bridge rows pass with fatal Qt warnings. Private native scenarios pass six Qt checks per normal/actual-150% run, with 59 read-only scene snapshots each: ordinary raise/maximize/restore and thirds, original geometry after three repeated inset/fullscreen round trips, grouped rename/color/maximize/shade/restore/tab traversal/detachment, temporary icon/minimize restore, stale resize rejection and consent revocation. Actual DPR is asserted by the Qt client. Gabbee command-hotkey source is integrated (31147a55/eadb8995, manager88 tests and20 subtests). Grouping qualification below extends the compositor source to22 operations; correlated launch and installed-session qualification remain open.
 
 An empty desktop can capture a context for a named target or independent app launch. Current-window operations still require a live normal subject at resolution; foreground changes after capture revoke that context. The platform scene currentness check scopes topology/geometry to the captured subject so mapping a provider-owned command popup does not invalidate its own hotkey.
 
 Grouped fraction changes preserve the original restore rectangle, including roll-up/unroll and cancelled resize. Ordinary fractional maximize is owned by a small placement collaborator and refreshes when output/work-area reservations change. Provider popup exemption requires a Wayland surface whose kernel peer PID is the current Voice1 bus owner's PID; an X11 PID property is never enough. Scene currentness fingerprints only the captured subject geometry/state/container structure, so unrelated window mappings do not consume a valid hotkey.
 
 Ordinary Wayland geometry acknowledgements may round server decoration/client boundaries by one physical pixel at fractional scale. Keep exact floating restore geometry, tolerate only that acknowledgement difference, and abandon inset state when the user starts moving/resizing. Native 150% acceptance must verify actual Qt DPR/output scale, not just a scenario filename.
+
+## Atomic grouping and addressed focus
+
+The transport-free `QindaQt::WindowManagementGrouping` planner maps two resolved
+leaf identities into one Hybrid topology command. It owns no scene, window,
+service or persistence object, and its input topology remains borrowed for the
+synchronous call. The caller supplies a fresh canonical UUID; the planner checks
+syntax and current structural collisions, while global freshness remains the
+caller's obligation. The target container ID and candidate activation are fixed
+before scene admission. This helper links Qt Core/Hybrid inside the compositor;
+it is not an installed SDK export.
+
+Independent-to-independent, independent-to-group, group-to-solo, cross-group and
+same-group moves share the existing coordinator rollback boundary. Tab grouping
+activates the moved page inside that one candidate; no fallible second activation
+runs after publication. A tile direction identifies where the moved leaf goes;
+ratio is the first child's share, so right/down moved leaves receive one minus
+that ratio. Tile destinations must belong to the active page. Native minimization
+of an inactive tab is visibility state and does not imply that its container was
+explicitly minimized. Shaded, explicitly minimized, fullscreen or temporary
+member-focus presentations must be restored before grouping.
+
+An explicit source container is refused rather than silently moving only one
+member. Grouping a leaf with itself or extracting a sole same-page leaf as a new
+tab is refused without mutation. A semantic window `focus` target selects its
+owning page and exact leaf; explicit container focus retains representative
+activation. Ordinary shell/task activation keeps its container semantics.
+
+Focused planner/activation and four Hybrid invariant/atomic rollback rows pass,
+along with the three semantic codec/context/private-bus rows: nine fatal-warning
+CTests. The native probe passes seven Qt checks at normal and actual DPR1.50,
+with74/73 read-only snapshots, covering new tabs, same-group tile/extraction,
+group-to-solo, insertion into a group, directional ratio geometry, exact addressed
+focus and unchanged topology after whole-container refusal. Full installed
+voice/application-launch and physical hardware qualification remain open.

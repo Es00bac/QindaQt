@@ -162,7 +162,8 @@ QStringList KWinWindowManagementRuntime::capabilities() const {
           QStringLiteral("color"),        QStringLiteral("place"),
           QStringLiteral("detach"),       QStringLiteral("next-tab"),
           QStringLiteral("previous-tab"), QStringLiteral("activate-tab"),
-          QStringLiteral("reorder-tab"),  QStringLiteral("resize-split")};
+          QStringLiteral("reorder-tab"),  QStringLiteral("resize-split"),
+          QStringLiteral("group-tab"),    QStringLiteral("group-tile")};
 }
 Result KWinWindowManagementRuntime::execute(const Command &command,
                                             const ResolvedTarget &target) {
