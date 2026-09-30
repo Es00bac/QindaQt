@@ -49,6 +49,9 @@ public:
     Q_INVOKABLE void deactivate();
 Q_SIGNALS:
     void changed();
+    // Page lifetime retirement is synchronous on the GUI thread. Composition
+    // clears its separately owned clipboard before retaining an inactive route.
+    void deactivated();
     // Composition owns the clipboard policy; bytes are borrowed synchronously
     // and must be copied into an owning sensitive MIME provider before return.
     void copyRequested(std::shared_ptr<qindaqt::keyring::SecureBuffer> bytes);
