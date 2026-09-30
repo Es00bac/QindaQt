@@ -16,6 +16,7 @@ target_sources(
     PRIVATE
         src/night_light_values.cpp
         src/night_light_schedule.cpp
+        src/geoclue_location_provider.cpp
         src/night_light_schedule_client.cpp
         src/night_light_settings_importer.cpp
         src/qt_config_night_light_port.cpp
@@ -27,6 +28,7 @@ target_sources(
         FILES
             include/qindaqt/services/night_light/night_light_values.h
             include/qindaqt/services/night_light/night_light_schedule.h
+            include/qindaqt/services/night_light/automatic_location_provider.h
             include/qindaqt/services/night_light/night_light_schedule_client.h
             include/qindaqt/services/night_light/night_light_settings_importer.h
             include/qindaqt/services/night_light/night_light_config_port.h
@@ -82,3 +84,5 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.NightLight.service"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/services")
 install(FILES data/org.qindaqt.NightLight.xml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces")
+install(FILES data/org.qindaqt.NightLight.desktop
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")

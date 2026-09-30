@@ -2,6 +2,7 @@
 #pragma once
 
 #include <qindaqt/services/night_light/night_light_schedule.h>
+#include <qindaqt/services/night_light/automatic_location_provider.h>
 
 #include <QDBusConnection>
 #include <QObject>
@@ -24,6 +25,7 @@ public:
     NightLightScheduleService(const QDBusConnection &connection,
                               QindaQt::Services::SettingsClient::SettingsClient &settings,
                               QindaQt::DisplayClient::Client &display,
+                              AutomaticLocationProvider &location,
                               QObject *parent = nullptr);
     ~NightLightScheduleService() override;
     [[nodiscard]] ScheduleServiceStart start(QString *error = nullptr);

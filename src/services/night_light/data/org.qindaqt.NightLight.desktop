@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt Night Light
+Comment=Schedule night light using an authorized approximate location
+Exec=/usr/bin/qindaqt-night-light-service
+Icon=weather-clear-night
+NoDisplay=true
+X-Geoclue-Reason=QindaQt uses your approximate location only while automatic sunset-to-sunrise night light is enabled. Turn that setting off to stop location updates.

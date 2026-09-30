@@ -58,6 +58,19 @@ automatic-location fix. Fixed `Times` schedules do not require location.
 Unavailable system clock, time zone, permission, or fresh location is reported
 as unavailable rather than silently changing behavior.
 
+For automatic schedules, the resident service requests GeoClue2 only while
+Settings1 has an active `Location` schedule and `automaticLocation=true`.
+It sends DesktopId `org.qindaqt.NightLight`, requests city accuracy, pins the
+client to GeoClue's resolved unique owner, and rejects stale or malformed fixes.
+Stopping or losing the service owner clears coordinates and stops the remote
+client. The installed `org.qindaqt.NightLight.desktop` entry gives GeoClue's
+agent a valid identity and user-facing reason. The desktop package depends on
+`app-misc/geoclue` and leaves GeoClue's per-app authorization unset so its
+agent handles consent. It must not add an `allowed=true` conf.d override:
+GeoClue documents that as bypassing agent authorization. Missing/denied agent
+authorization is surfaced as unavailable and never triggers cached-coordinate
+fallback.
+
 The old config port becomes read-only migration input. Import is attempted only
 while the persisted import marker is false. Existing native user-layer values
 win per key; valid legacy values fill only keys without a native override.
@@ -86,10 +99,12 @@ night-light factors while retaining its existing ICC color base.
 
 ## Verification
 
-PF12 verifies the pure schedule calculator, Settings schema/defaults,
+PF12 verification covers the pure schedule calculator, Settings schema/defaults,
 nonce/cookie/revision and exact-owner checks, owner replacement, malformed
-frame rejection, and a real private session-bus service/client receipt.
-PF13 verifies native precedence, one-time migration, malformed input, retry
+frame rejection, and a real private session-bus service/client receipt. The
+synthetic GeoClue fixture verifies DesktopId, city accuracy, fresh-fix
+acceptance, denial, stop cleanup, and rejection of a held client-creation
+reply. No live location or installation was exercised. PF13 verifies native precedence, one-time migration, malformed input, retry
 after failed saves, schema persistence of the completion marker, and the
 Display Settings route. The isolated compositor plugin build and output
 fixtures provide the compositor half of the acceptance evidence.

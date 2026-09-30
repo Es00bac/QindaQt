@@ -21,6 +21,18 @@ set_tests_properties(qindaqt.night-light-values
                      PROPERTIES LABELS "service;night-light;display")
 
 find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
+
+qt_add_executable(qindaqt_geoclue_location_provider_tests
+    tst_geoclue_location_provider.cpp)
+target_link_libraries(qindaqt_geoclue_location_provider_tests
+    PRIVATE QindaQt::NightLight Qt6::Core Qt6::DBus Qt6::Test)
+target_compile_definitions(qindaqt_geoclue_location_provider_tests PRIVATE
+    QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
+qindaqt_enable_warnings(qindaqt_geoclue_location_provider_tests)
+add_test(NAME qindaqt.geoclue-location-provider
+    COMMAND qindaqt_geoclue_location_provider_tests)
+set_tests_properties(qindaqt.geoclue-location-provider PROPERTIES
+    LABELS "service;night-light;location;dbus")
 qt_add_executable(qindaqt_night_light_config_port_tests
                   tst_night_light_config_port.cpp)
 target_link_libraries(qindaqt_night_light_config_port_tests
