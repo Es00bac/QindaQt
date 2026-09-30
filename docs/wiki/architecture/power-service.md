@@ -148,6 +148,10 @@ PB-1 implements the Wayland-free resident slice over the PB-0 protocol:
   serializes mutations with local preflight, applies bounded request
   timeouts, and never replays a timed-out or owner-interrupted mutation —
   those complete exactly once as `Uncertain` and the caller resnapshots.
+  Its Qt transport also exposes asynchronous Power1 idle-scope query,
+  acquire, and release calls with exact-owner/request-ID completion. This is a
+  wire boundary only: scope support remains zero until the automatic-lock,
+  display-off, and idle-suspend production consumers are composed together.
 - The package installs the executable, private D-Bus activation descriptor
   paired with a hardened systemd user unit (`Type=dbus`, system-service
   syscall filter, no device or network families), introspection XML, and the
