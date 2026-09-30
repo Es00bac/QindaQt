@@ -71,7 +71,17 @@ container-wm names the fork only through `QindaQt::CompositorNames`
 
 The fork's compiled-in defaults are QindaQt's: the `org.qindaqt` decoration,
 the `qindaqt` switcher, electric-border maximize and tiling off, CommandAll3
-"Nothing" and the Theming v2 blur strengths. On every start `qindaqt-wm` first
+"Nothing" and the Theming v2 blur strengths. The production fork does not discover Plasma Activities, libplasma, Breeze, or
+Aurorae. Its Activities API capability is fixed false while activity-neutral
+workspace and output scopes remain available. QindaQt-owned outline, notifications, and effect frames use QtQuick and
+QindaQt styling. The Plasma-backed output locator, bundled thumbnail-grid
+switcher, overview, window-view, desktop-change OSD, tile editor, and
+private-effect UI are not built or installed. The consumer-provided QindaQt
+switcher remains the single production layout; the compositor no longer ships
+a fallback switcher. The separate Plasma Wayland-protocol package supplies protocol
+code-generation/client code and is not libplasma ([ADR-0311](../adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md)).
+
+On every start `qindaqt-wm` first
 imports the user's KDE files (`kwinrc`, `kwinrulesrc`, `kwinoutputconfig.json`,
 `kcminputrc`, `kxkbrc`, `kwinstaterc`) into the fork's names once — only while
 the qindaqt-kwin file is absent, never writing KDE's — then seeds the remaining
@@ -102,8 +112,9 @@ These checks make no system installation or session switch. The root termination
 helper tests signal disposable unprivileged children only; real root-owned-window
 authorization and user interaction await the native polkit agent and final
 delivery. Physical DRM, input devices and laptop hardware remain release gates.
-Remaining Plasma services and their compatibility names are the later M2–M6
-boundaries; staged M1 qualification does not certify their removal.
+Remaining Plasma service compatibility names are later session boundaries;
+staged M1 qualification does not certify their removal. The compositor
+presentation-library removal is tracked separately by [ADR-0311](../adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md).
 
 ## `qindaqt-wm` launcher
 

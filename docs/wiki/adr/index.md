@@ -316,4 +316,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0300: Authenticate native PAM token delivery through the system owner](0300-trusted-native-keyring-pam.md)
 - [ADR-0301: Share semantic window management with voice](0301-share-semantic-window-management-with-voice.md)
 - [ADR-0303: Resolve window application identity through the neutral catalog](0303-resolve-window-identity-through-application-catalog.md)
-- [ADR-0309: Build QindaQt without Plasma Activities](0309-build-qindaqt-without-plasma-activities.md)
+- [ADR-0309: Build QindaQt without Plasma Activities](0309-build-qindaqt-without-plasma-activities.md) (superseded by ADR-0311)
+- [ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor](0311-remove-plasma-runtime-from-qindaqt-compositor.md)
