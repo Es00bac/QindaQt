@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+find_package(OpenSSL 3.2 REQUIRED COMPONENTS Crypto)
+find_package(Qt6 REQUIRED COMPONENTS Core DBus)
+add_library(qindaqt_keyring_protocol STATIC wire_types.cpp prompt_metadata.cpp)
+add_library(QindaQt::KeyringProtocol ALIAS qindaqt_keyring_protocol)
+target_include_directories(qindaqt_keyring_protocol PUBLIC include)
+target_link_libraries(qindaqt_keyring_protocol PUBLIC Qt6::Core Qt6::DBus PRIVATE OpenSSL::Crypto)
+target_compile_features(qindaqt_keyring_protocol PUBLIC cxx_std_20)
+set_target_properties(qindaqt_keyring_protocol PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
+qindaqt_enable_warnings(qindaqt_keyring_protocol)

@@ -103,7 +103,9 @@ void SecretService::ownerLost(const QString &name, const QString &, const QStrin
         if (i->second->owner == name) i = sessions_.erase(i); else ++i;
     }
     for (auto i = prompts_.begin(); i != prompts_.end();) {
-        if (i->second.owner == name) { promptsProvider_.cancel(i->second.ticket); i = prompts_.erase(i); }
+        if (i->second.owner == name) {
+            const auto path = i->first; ++i; finishPrompt(path,true);
+        }
         else ++i;
     }
 }

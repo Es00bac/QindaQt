@@ -2,6 +2,8 @@
 #include "secret_service.h"
 #include <QDateTime>
 #include <QUuid>
+#include <QDBusConnectionInterface>
+#include <QFileInfo>
 namespace qindaqt::keyring::service {
 bool SecretService::collectionMethod(const QDBusMessage &m, const QString &id) {
     const auto args = m.arguments();
@@ -29,12 +31,17 @@ bool SecretService::collectionMethod(const QDBusMessage &m, const QString &id) {
         item.metadata.label = label.toString().toStdString();
         if (item.metadata.label.size() > 1024) throw std::runtime_error("Invalid item");
         item.metadata.contentType = wire.contentType.toStdString();
-        item.metadata.creator = m.service().toStdString();
+        // Best-effort authenticated process hint, never an executable attestation.
+        // Protected/disappeared callers retain their captured unique bus identity.
+        const auto pid = bus_.interface()->servicePid(m.service());
+        const auto executable = pid.isValid() ? QFileInfo(QString("/proc/%1/exe").arg(pid.value())).symLinkTarget() : QString();
+        const auto creator = QFileInfo(executable).fileName();
+        item.metadata.creator = (creator.isEmpty() || creator.toUtf8().size() > 1024 ? m.service() : creator).toStdString();
         item.metadata.created = item.metadata.modified = static_cast<quint64>(QDateTime::currentSecsSinceEpoch());
         if (args[2].toBool()) {
             for (const auto &candidate : repository_.search(id,item.attributes).ids) {
                 const auto found = repository_.item(id,QString::fromStdString(candidate));
-                if (found && found->attributes == item.attributes) { item.id = candidate; item.metadata.created = found->metadata.created; break; }
+                if (found && found->attributes == item.attributes) { item.id = candidate; item.metadata.created = found->metadata.created; item.metadata.creator = found->metadata.creator; break; }
             }
         }
         const bool replaced = !item.id.empty();

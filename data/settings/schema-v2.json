@@ -1183,6 +1183,19 @@
           "suspend-then-hibernate"
         ]
       }
+    },
+    {
+      "key": "keyring.lockOnScreenLock",
+      "domain": "keyring",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "keyring.lockAfterIdleMinutes",
+      "domain": "keyring",
+      "type": "integer",
+      "default": 0,
+      "constraints": { "minimum": 0, "maximum": 1440 }
     }
   ]
 }
