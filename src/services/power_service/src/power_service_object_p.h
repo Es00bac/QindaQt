@@ -51,6 +51,8 @@ class PowerServiceObject final : public QObject, protected QDBusContext
         "direction=\"out\"/></method>"
         "<method name=\"GetActiveIdleInhibitorScopes\"><arg name=\"scopes\" type=\"u\" "
         "direction=\"out\"/></method>"
+        "<method name=\"RequestIdleInhibitorStateWithReceipt\"><arg name=\"nonce\" type=\"s\" "
+        "direction=\"in\"/></method>"
         "<method name=\"AcquireIdleInhibitor\"><arg name=\"application\" type=\"s\" "
         "direction=\"in\"/><arg name=\"reason\" type=\"s\" direction=\"in\"/>"
         "<arg name=\"scopes\" type=\"u\" direction=\"in\"/><arg name=\"handle\" "
@@ -61,7 +63,10 @@ class PowerServiceObject final : public QObject, protected QDBusContext
         "<signal name=\"Changed\"><arg name=\"epoch\" type=\"t\"/><arg "
         "name=\"revision\" type=\"t\"/></signal>"
         "<signal name=\"IdleInhibitorsChanged\"><arg name=\"supportedScopes\" type=\"u\"/>"
-        "<arg name=\"activeScopes\" type=\"u\"/></signal></interface>")
+        "<arg name=\"activeScopes\" type=\"u\"/></signal>"
+        "<signal name=\"IdleInhibitorStateReceipt\"><arg name=\"nonce\" type=\"s\"/>"
+        "<arg name=\"supportedScopes\" type=\"u\"/><arg name=\"activeScopes\" type=\"u\"/>"
+        "</signal></interface>")
 
 public:
     explicit PowerServiceObject(PowerServiceCoordinator *coordinator,
@@ -81,6 +86,7 @@ public Q_SLOTS:
                                             quint32 value);
     Q_SCRIPTABLE quint32 GetIdleInhibitorCapabilities() const;
     Q_SCRIPTABLE quint32 GetActiveIdleInhibitorScopes() const;
+    Q_SCRIPTABLE void RequestIdleInhibitorStateWithReceipt(const QString &nonce);
     Q_SCRIPTABLE QindaQt::Power::Handle AcquireIdleInhibitor(
         const QString &application, const QString &reason, quint32 scopes);
     Q_SCRIPTABLE bool ReleaseIdleInhibitor(const QindaQt::Power::Handle &handle);
@@ -89,6 +95,9 @@ Q_SIGNALS:
     Q_SCRIPTABLE void Changed(quint64 epoch, quint64 revision);
     Q_SCRIPTABLE void IdleInhibitorsChanged(quint32 supportedScopes,
                                              quint32 activeScopes);
+    Q_SCRIPTABLE void IdleInhibitorStateReceipt(const QString &nonce,
+                                                 quint32 supportedScopes,
+                                                 quint32 activeScopes);
 
 private:
     void beginOperation(const PowerServiceRequest &request);

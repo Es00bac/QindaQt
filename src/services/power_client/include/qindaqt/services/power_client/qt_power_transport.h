@@ -5,6 +5,7 @@
 #include <qindaqt/services/power_client/power_transport.h>
 
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusMessage>
 
 #include <memory>
 
@@ -41,12 +42,15 @@ private:
     void queryInitialOwner();
     void requestActivation();
     void setOwner(const QString &owner);
+    void finishIdleInhibitorQuery(bool succeeded, quint32 supportedScopes,
+                                  quint32 activeScopes, const QString &reasonCode);
 
 private Q_SLOTS:
     void onServiceOwnerChanged(const QString &service, const QString &oldOwner,
                                const QString &newOwner);
     void onChanged(quint64 epoch, quint64 revision);
-    void onIdleInhibitorsChanged(quint32 supportedScopes, quint32 activeScopes);
+    void onIdleInhibitorsChanged(const QDBusMessage &message);
+    void onIdleInhibitorStateReceipt(const QDBusMessage &message);
 
 private:
     class Private;

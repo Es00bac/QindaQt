@@ -6,6 +6,7 @@
 #include <qindaqt/services/power_protocol/power_limits.h>
 
 #include <QtCore/QTimer>
+#include <QtCore/QUuid>
 #include <memory>
 #include <utility>
 #include <QtDBus/QDBusError>
@@ -62,6 +63,13 @@ public:
     bool activationPending = false;
     bool ownerResolved = false;
     bool running = false;
+    QTimer idleReceiptTimeout;
+    QString idleReceiptOwner;
+    QString idleReceiptNonce;
+    quint64 idleReceiptRequestId = 0;
+    quint64 idleReceiptOwnerGeneration = 0;
+    QDBusPendingCallWatcher *idleReceiptCall = nullptr;
+    bool idleReceiptPending = false;
 };
 
 QtPowerTransport::QtPowerTransport(const QDBusConnection &connection,
@@ -74,6 +82,11 @@ QtPowerTransport::QtPowerTransport(const QDBusConnection &connection,
     registerDBusTypes();
     d->activationRetry.setSingleShot(true);
     d->activationRetry.setInterval(1000);
+    d->idleReceiptTimeout.setSingleShot(true);
+    d->idleReceiptTimeout.setInterval(1500);
+    connect(&d->idleReceiptTimeout, &QTimer::timeout, this, [this] {
+        finishIdleInhibitorQuery(false, 0, 0, QStringLiteral("receipt-timeout"));
+    });
     connect(&d->activationRetry, &QTimer::timeout, this,
             &QtPowerTransport::requestActivation);
 }
@@ -106,6 +119,7 @@ void QtPowerTransport::stop()
     d->running = false;
     d->activationRetry.stop();
     d->activationPending = false;
+    finishIdleInhibitorQuery(false, 0, 0, QStringLiteral("owner-unavailable"));
     ++d->ownerGeneration;
     setOwner({});
     d->watcher.reset();
@@ -181,6 +195,9 @@ void QtPowerTransport::onServiceOwnerChanged(const QString &service,
 
 void QtPowerTransport::setOwner(const QString &owner)
 {
+    if (d->idleReceiptPending && owner != d->idleReceiptOwner) {
+        finishIdleInhibitorQuery(false, 0, 0, QStringLiteral("owner-replaced"));
+    }
     if (owner == d->owner && d->ownerResolved) {
         return;
     }
@@ -192,7 +209,7 @@ void QtPowerTransport::setOwner(const QString &owner)
         d->connection.disconnect(d->owner, QString::fromLatin1(kObjectPath),
                                  QString::fromLatin1(kInterfaceName),
                                  QStringLiteral("IdleInhibitorsChanged"), this,
-                                 SLOT(onIdleInhibitorsChanged(quint32,quint32)));
+                                 SLOT(onIdleInhibitorsChanged(QDBusMessage)));
     }
     d->ownerResolved = true;
     d->owner = owner;
@@ -204,7 +221,7 @@ void QtPowerTransport::setOwner(const QString &owner)
         d->connection.connect(d->owner, QString::fromLatin1(kObjectPath),
                               QString::fromLatin1(kInterfaceName),
                               QStringLiteral("IdleInhibitorsChanged"), this,
-                              SLOT(onIdleInhibitorsChanged(quint32,quint32)));
+                              SLOT(onIdleInhibitorsChanged(QDBusMessage)));
     }
     Q_EMIT ownerChanged(d->owner);
 }
@@ -216,12 +233,69 @@ void QtPowerTransport::onChanged(const quint64 epoch, const quint64 revision)
     }
 }
 
-void QtPowerTransport::onIdleInhibitorsChanged(const quint32 supportedScopes,
-                                                const quint32 activeScopes)
+void QtPowerTransport::onIdleInhibitorsChanged(const QDBusMessage &message)
 {
-    if (d->running && !d->owner.isEmpty()) {
-        Q_EMIT idleInhibitorsChanged(d->owner, supportedScopes, activeScopes);
+    const auto arguments = message.arguments();
+    if (!d->running || d->owner.isEmpty() ||
+        message.type() != QDBusMessage::SignalMessage ||
+        message.service() != d->owner ||
+        message.path() != QString::fromLatin1(kObjectPath) ||
+        message.interface() != QString::fromLatin1(kInterfaceName) ||
+        message.member() != QStringLiteral("IdleInhibitorsChanged") ||
+        message.signature() != QStringLiteral("uu") || arguments.size() != 2 ||
+        arguments.at(0).metaType() != QMetaType::fromType<quint32>() ||
+        arguments.at(1).metaType() != QMetaType::fromType<quint32>()) {
+        return;
     }
+    Q_EMIT idleInhibitorsChanged(d->owner, arguments.at(0).toUInt(),
+                                 arguments.at(1).toUInt());
+}
+
+void QtPowerTransport::onIdleInhibitorStateReceipt(const QDBusMessage &message)
+{
+    const auto arguments = message.arguments();
+    if (!d->idleReceiptPending || !d->running ||
+        d->idleReceiptOwner != d->owner ||
+        d->idleReceiptOwnerGeneration != d->ownerGeneration ||
+        message.type() != QDBusMessage::SignalMessage ||
+        message.service() != d->idleReceiptOwner ||
+        message.path() != QString::fromLatin1(kObjectPath) ||
+        message.interface() != QString::fromLatin1(kInterfaceName) ||
+        message.member() != QStringLiteral("IdleInhibitorStateReceipt") ||
+        message.signature() != QStringLiteral("suu") || arguments.size() != 3 ||
+        arguments.at(0).metaType() != QMetaType::fromType<QString>() ||
+        arguments.at(1).metaType() != QMetaType::fromType<quint32>() ||
+        arguments.at(2).metaType() != QMetaType::fromType<quint32>() ||
+        arguments.at(0).toString() != d->idleReceiptNonce) {
+        return;
+    }
+    finishIdleInhibitorQuery(true, arguments.at(1).toUInt(),
+                             arguments.at(2).toUInt(), {});
+}
+
+void QtPowerTransport::finishIdleInhibitorQuery(
+    const bool succeeded, const quint32 supportedScopes,
+    const quint32 activeScopes, const QString &reasonCode)
+{
+    if (!d->idleReceiptPending) {
+        return;
+    }
+    const QString owner = d->idleReceiptOwner;
+    const quint64 requestId = d->idleReceiptRequestId;
+    d->idleReceiptTimeout.stop();
+    d->connection.disconnect(
+        owner, QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName),
+        QStringLiteral("IdleInhibitorStateReceipt"), this,
+        SLOT(onIdleInhibitorStateReceipt(QDBusMessage)));
+    d->idleReceiptPending = false;
+    d->idleReceiptOwner.clear();
+    d->idleReceiptNonce.clear();
+    d->idleReceiptRequestId = 0;
+    d->idleReceiptOwnerGeneration = 0;
+    d->idleReceiptCall = nullptr;
+    Q_EMIT idleInhibitorStateReply(owner, requestId, succeeded,
+                                   supportedScopes, activeScopes, reasonCode);
 }
 
 void QtPowerTransport::queryIdleInhibitorState(const QString &owner,
@@ -232,48 +306,46 @@ void QtPowerTransport::queryIdleInhibitorState(const QString &owner,
                                        QStringLiteral("owner-unavailable"));
         return;
     }
-    struct Query final {
-        int remaining = 2;
-        bool succeeded = true;
-        quint32 supported = 0;
-        quint32 active = 0;
-        QString reasonCode;
-    };
-    const auto query = std::make_shared<Query>();
-    const auto finish = [this, query, owner, requestId] {
-        --query->remaining;
-        if (query->remaining == 0) {
-            Q_EMIT idleInhibitorStateReply(owner, requestId, query->succeeded,
-                                           query->supported, query->active,
-                                           query->reasonCode);
-        }
-    };
-    for (const auto &[method, supported] :
-         {std::pair{QStringLiteral("GetIdleInhibitorCapabilities"), true},
-          std::pair{QStringLiteral("GetActiveIdleInhibitorScopes"), false}}) {
-        QDBusMessage call = QDBusMessage::createMethodCall(
-            owner, QString::fromLatin1(kObjectPath),
-            QString::fromLatin1(kInterfaceName), method);
-        auto *watcher =
-            new QDBusPendingCallWatcher(d->connection.asyncCall(call), this);
-        connect(watcher, &QDBusPendingCallWatcher::finished, this,
-                [this, watcher, query, owner, requestId, supported, finish] {
-                    const QDBusPendingReply<quint32> reply = *watcher;
-                    watcher->deleteLater();
-                    if (!d->running || d->owner != owner) {
-                        query->succeeded = false;
-                        query->reasonCode = QStringLiteral("owner-replaced");
-                    } else if (reply.isError()) {
-                        query->succeeded = false;
-                        query->reasonCode = normalizedError(reply.error());
-                    } else if (supported) {
-                        query->supported = reply.value();
-                    } else {
-                        query->active = reply.value();
-                    }
-                    finish();
-                });
+    if (d->idleReceiptPending) {
+        finishIdleInhibitorQuery(false, 0, 0, QStringLiteral("superseded"));
     }
+    d->idleReceiptPending = true;
+    d->idleReceiptOwner = owner;
+    d->idleReceiptRequestId = requestId;
+    d->idleReceiptNonce = QUuid::createUuid().toString(QUuid::Id128).toLower();
+    d->idleReceiptOwnerGeneration = d->ownerGeneration;
+    const auto slot = SLOT(onIdleInhibitorStateReceipt(QDBusMessage));
+    if (!d->connection.connect(
+            owner, QString::fromLatin1(kObjectPath),
+            QString::fromLatin1(kInterfaceName),
+            QStringLiteral("IdleInhibitorStateReceipt"), this, slot)) {
+        finishIdleInhibitorQuery(false, 0, 0, QStringLiteral("receipt-subscribe-failed"));
+        return;
+    }
+    d->idleReceiptTimeout.start();
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        owner, QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName),
+        QStringLiteral("RequestIdleInhibitorStateWithReceipt"));
+    call.setArguments({d->idleReceiptNonce});
+    auto *watcher = new QDBusPendingCallWatcher(d->connection.asyncCall(call, 1500), this);
+    d->idleReceiptCall = watcher;
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, watcher, owner, requestId](QDBusPendingCallWatcher *) {
+                const QDBusPendingReply<> reply = *watcher;
+                watcher->deleteLater();
+                if (!d->idleReceiptPending || d->idleReceiptOwner != owner ||
+                    d->idleReceiptRequestId != requestId) {
+                    return;
+                }
+                d->idleReceiptCall = nullptr;
+                if (reply.isError()) {
+                    finishIdleInhibitorQuery(false, 0, 0,
+                                             normalizedError(reply.error()));
+                }
+                // A successful method reply is transport progress only. The
+                // matching current-owner nonce receipt alone supplies state.
+            });
 }
 
 void QtPowerTransport::acquireIdleInhibitor(const QString &owner,

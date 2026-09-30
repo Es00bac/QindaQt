@@ -36,6 +36,9 @@
     <method name="GetActiveIdleInhibitorScopes">
       <arg name="scopes" type="u" direction="out"/>
     </method>
+    <method name="RequestIdleInhibitorStateWithReceipt">
+      <arg name="nonce" type="s" direction="in"/>
+    </method>
     <method name="AcquireIdleInhibitor">
       <arg name="application" type="s" direction="in"/>
       <arg name="reason" type="s" direction="in"/>
@@ -51,6 +54,11 @@
       <arg name="revision" type="t"/>
     </signal>
     <signal name="IdleInhibitorsChanged">
+      <arg name="supportedScopes" type="u"/>
+      <arg name="activeScopes" type="u"/>
+    </signal>
+    <signal name="IdleInhibitorStateReceipt">
+      <arg name="nonce" type="s"/>
       <arg name="supportedScopes" type="u"/>
       <arg name="activeScopes" type="u"/>
     </signal>

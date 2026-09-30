@@ -172,6 +172,8 @@ The resident PB-1 object at `/org/qindaqt/Power1` exposes exactly:
 | `ReleaseIdleInhibitor` method | `(ts)` in, `b` out |
 | `Changed` signal | `tt` |
 | `IdleInhibitorsChanged` signal | `uu` |
+| `RequestIdleInhibitorStateWithReceipt` method | `s` in, no output |
+| `IdleInhibitorStateReceipt` signal | `suu`, targeted to the requesting unique owner |
 
 The additive idle-lease methods currently report no supported scopes. Acquisition
 therefore returns a typed D-Bus Unsupported error without a cookie. The
@@ -182,6 +184,13 @@ service epoch returns false. Scope bits are automatic lock (1), display off
 composition supplies real consumers for the complete requested scope set.
 This addition leaves the Power1 version-1 snapshot and mutation wire
 signatures unchanged.
+The two legacy getters remain wire-compatible, but their method replies do not
+authenticate their actual sender on the supported QtDBus stack. They are not
+authority for policy. The client subscribes to the exact current owner before
+requesting a nonce-correlated targeted state receipt; only a matching actual
+signal message within the bounded request lifetime supplies the state. The
+void method reply indicates transport progress only. See [ADR-0316](../adr/0316-power-idle-state-receipt-authority.md).
+
 The public Qt Power transport can query the two scope values and issue acquire or
 release calls asynchronously against the exact current unique owner. The public
 PowerClient validates the supported and active masks, rejects unknown bits or
