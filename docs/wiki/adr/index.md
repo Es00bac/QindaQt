@@ -322,6 +322,7 @@ integration retains every accepted decision in numeric order.
 
 
 - [ADR-0305: Share ordinary compositor attachment identity and lifetime](0305-public-ordinary-compositor-attachment.md)
+- [ADR-0306: Keep idle-inhibitor scopes and policy in Power1](0306-power1-idle-inhibitors-and-stage-policy.md)
 - [ADR-0307: Share readonly idle observation on an admitted ordinary display FD](0307-public-ordinary-fd-idle-observation.md)
 
 - [ADR-0314: Authenticate native lock state through targeted receipts](0314-native-lock-receipt-authentication.md)
