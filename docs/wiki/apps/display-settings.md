@@ -22,7 +22,7 @@ The Display settings route provides comprehensive monitor and layout management:
 | Scale | Segmented presets (100% – 300% in fractional increments) with per-display guidance: the current preset's logical size, whether it divides into whole pixels, and the typical preset for the display's resolution | Validated against protocol scale constraints (1.0× to 3.0×); only the chosen preset carries the amber fill |
 | Transform | Orientation presets (0°, 90°, 180°, 270°) | Normal, 90°, 180°, 270° clockwise rotation |
 | Primary Output | "Make Primary" toggle / button | Designates primary output for default desktop surfaces and taskbars |
-| Night light | On/off switch, schedule choice (sunset to sunrise by automatic location or manual coordinates, custom times, always on), night and day temperature sliders (1000–6500 K, 100 K steps), transition length, and one status line (active now, current temperature, next change) | Live truth from `org.qindaqt.KWin.NightLight`; drafts write `qindaqt/kwinrc [NightColor]` and `knighttimerc` through the [night light service](../architecture/night-light.md) (ADR-0136). The temperature slider previews live through KWin's 15-second preview, one debounced call per settled value, withdrawn on release-without-apply or page close. When the compositor service is absent the section says so and disables its controls; when the schedule daemon is absent the schedule rows disable while temperatures stay usable. Automatic location is used only when the user picks it — the route never sees positioning data |
+| Night light | On/off switch, schedule choice (sunset to sunrise by automatic location or manual coordinates, custom times, always on), night and day temperature sliders (1000–6500 K, 100 K steps), transition length, and live status | Preferences are saved through Settings1 under `display.nightLight.*`; the resident schedule service provides authenticated frames and KWin keeps sole live-output authority ([night light service](../architecture/night-light.md), [ADR-0313](../adr/0313-native-night-light.md)). The temperature slider previews through KWin's 15-second preview, one debounced call per settled value, withdrawn on release-without-apply or page close. Settings reports malformed legacy input and exposes a retry action for incomplete imports. When Settings1 or compositor state is unavailable, controls fail closed; schedule controls additionally require an available schedule frame. Automatic location is used only by the opted-in resident authority, and unavailable location is reported without reusing stale coordinates |
 
 A card carries the **Pen display** badge when its EDID manufacturer is a
 display-tablet vendor, decided by the one shared table the session uses to map
@@ -46,17 +46,19 @@ reverted.
 
 ### Night light composition
 
-The night light section is composed inside the Display QML module itself: a
-`DisplayNightLightRoute` QML singleton is the composition root — it resolves
-`$XDG_CONFIG_HOME/kwinrc` and `knighttimerc`, builds the one production
-config/state pair from the public night light service, and hands the section
-one model — because the Settings Center executable owns the route
-registration and this lane must not edit it. `DisplayPage.qml` gains exactly
-one import (the module's own URI, for the singleton) plus the section
-instance; `Main.qml` is untouched. The section decomposes into the location
-row, the custom-times rows, and a shared temperature row beside it. Manual
-coordinates and custom times resynchronize from the model whenever the user
-is not mid-edit, so an external writer and the text fields can never fight.
+The `DisplayNightLightRoute` QML singleton is the composition root. It injects
+one Settings1 client, the public `org.qindaqt.KWin.NightLight` state/preview
+port, the owner-pinned resident Schedule1 client, and the read-only legacy
+configuration importer into the model. The importer reads the old
+`qindaqt/kwinrc [NightColor]` and `knighttimerc` values once, preserves native
+Settings1 user overrides, and writes its completion marker only after the
+remaining values receive successful Settings1 acknowledgements. A malformed
+legacy value leaves the marker false and appears in the section with a Retry
+import action. After import, these files are not consulted for live night-light
+state. The model writes asynchronously and reports Apply success only after
+Settings1 confirms every changed key. It keeps an unsaved draft when external
+Settings1 truth refreshes. Manual coordinates and custom times resynchronize
+from the model whenever the user is not mid-edit.
 
 A connected display that is currently disabled remains in this selector. Its
 card clearly states that state; selecting it exposes **Enable display**. Enabling
