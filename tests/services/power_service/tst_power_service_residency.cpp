@@ -95,6 +95,7 @@ private Q_SLOTS:
     void secondOwnerTakesNameAndPublishesNewEpoch();
     void alreadyOwnedNameReportsTheft();
     void introspectionExposesExactPower1Signatures();
+    void idleInhibitorMethodsFailClosedUntilConsumed();
 
 private Q_SLOTS:
     void onChanged(quint64 epoch, quint64 revision)
@@ -261,6 +262,68 @@ void PowerServiceResidencyTests::alreadyOwnedNameReportsTheft()
     bus.connection.unregisterService(serviceName);
 }
 
+void PowerServiceResidencyTests::idleInhibitorMethodsFailClosedUntilConsumed()
+{
+    registerDBusTypes();
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    const QString serviceName = QStringLiteral("org.qindaqt.PowerTest.h%1")
+                                    .arg(QCoreApplication::applicationPid());
+    const QString connectionName = bus.name + QStringLiteral("-service");
+    QDBusConnection serviceConnection =
+        QDBusConnection::connectToBus(bus.address, connectionName);
+    QVERIFY(serviceConnection.isConnected());
+    FakeBatteryCollaborator *battery = nullptr;
+    FakeProfileCollaborator *profiles = nullptr;
+    FakeSessionCollaborator *session = nullptr;
+    auto service = residentOnBus(serviceConnection, serviceName, &battery,
+                                 &profiles, &session);
+    QCOMPARE(service->start(), PowerServiceStartStatus::Started);
+    battery->publish(fixtureBatteryFacts());
+    profiles->publish(fixtureProfileFacts());
+    session->publish(fixtureSessionFacts());
+
+    const auto query = [&](const QString &method) {
+        return QDBusPendingReply<quint32>(
+            bus.connection.asyncCall(QDBusMessage::createMethodCall(
+                serviceName, QString::fromLatin1(kObjectPath),
+                QString::fromLatin1(kInterfaceName), method)));
+    };
+    auto capabilities = query(QStringLiteral("GetIdleInhibitorCapabilities"));
+    QTRY_VERIFY(capabilities.isFinished());
+    QVERIFY2(!capabilities.isError(), qPrintable(capabilities.error().message()));
+    QCOMPARE(capabilities.value(), quint32{0});
+    auto active = query(QStringLiteral("GetActiveIdleInhibitorScopes"));
+    QTRY_VERIFY(active.isFinished());
+    QVERIFY2(!active.isError(), qPrintable(active.error().message()));
+    QCOMPARE(active.value(), quint32{0});
+
+    QDBusMessage acquire = QDBusMessage::createMethodCall(
+        serviceName, QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName), QStringLiteral("AcquireIdleInhibitor"));
+    acquire.setArguments({QStringLiteral("browser"),
+                          QStringLiteral("video playback"), quint32{1}});
+    QDBusPendingReply<Handle> rejected(bus.connection.asyncCall(acquire));
+    QTRY_VERIFY(rejected.isFinished());
+    QVERIFY(rejected.isError());
+    QCOMPARE(rejected.error().name(),
+             QStringLiteral("org.qindaqt.Power1.Error.Unsupported"));
+
+    QDBusMessage release = QDBusMessage::createMethodCall(
+        serviceName, QString::fromLatin1(kObjectPath),
+        QString::fromLatin1(kInterfaceName), QStringLiteral("ReleaseIdleInhibitor"));
+    release.setArguments({QVariant::fromValue(
+        Handle{.epoch = service->coordinator()->snapshot().epoch,
+               .opaqueId = QStringLiteral("not-issued")})});
+    QDBusPendingReply<bool> unknown(bus.connection.asyncCall(release));
+    QTRY_VERIFY(unknown.isFinished());
+    QVERIFY2(!unknown.isError(), qPrintable(unknown.error().message()));
+    QVERIFY(!unknown.value());
+
+    service->stop();
+    QDBusConnection::disconnectFromBus(connectionName);
+}
+
 void PowerServiceResidencyTests::introspectionExposesExactPower1Signatures()
 {
     registerDBusTypes();
@@ -297,6 +360,15 @@ void PowerServiceResidencyTests::introspectionExposesExactPower1Signatures()
     QVERIFY(introspection.contains(QStringLiteral("name=\"AcquireProfileHold\"")));
     QVERIFY(introspection.contains(QStringLiteral("name=\"SetKeyboardBrightness\"")));
     QVERIFY(introspection.contains(QStringLiteral("name=\"SetInternalBrightness\"")));
+
+    QVERIFY(introspection.contains(
+        QStringLiteral("name=\"GetIdleInhibitorCapabilities\"")));
+    QVERIFY(introspection.contains(
+        QStringLiteral("name=\"AcquireIdleInhibitor\"")));
+    QVERIFY(introspection.contains(
+        QStringLiteral("name=\"ReleaseIdleInhibitor\"")));
+    QVERIFY(introspection.contains(
+        QStringLiteral("name=\"IdleInhibitorsChanged\"")));
 
     service->stop();
     QDBusConnection::disconnectFromBus(connectionName);
