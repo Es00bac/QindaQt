@@ -205,6 +205,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwininteractionfilter_touch.cpp
             kwin/kwininteractionfilter_chords.cpp
             kwin/kwininteractionfilter.h
+            kwin/minimizedgatherpagerrouter.cpp
             kwin/kwininputadapter.cpp
             kwin/kwininputadapter.h
             kwin/normalizedinputevent.cpp
@@ -417,7 +418,6 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             kwin/kwinhybridgatheredminimized.cpp
             kwin/minimizedgatherpager.cpp
             kwin/minimizedgatherpager.h
-            kwin/minimizedgatherpagerrouter.cpp
             kwin/minimizedapplicationidentity.cpp
             kwin/minimizedapplicationidentity.h
             kwin/kwinhybridiconifyinput.cpp
