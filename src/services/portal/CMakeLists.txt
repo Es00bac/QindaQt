@@ -55,7 +55,7 @@ qindaqt_enable_warnings(qindaqt_portal_service)
 qt_add_executable(xdg-desktop-portal-qindaqt app/main.cpp)
 target_link_libraries(
     xdg-desktop-portal-qindaqt
-    PRIVATE QindaQt::PortalService QindaQt::SettingsClient Qt6::Core Qt6::DBus
+    PRIVATE QindaQt::PortalService QindaQt::SecretPortal QindaQt::SettingsClient Qt6::Core Qt6::DBus
 )
 target_compile_definitions(
     xdg-desktop-portal-qindaqt PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}"

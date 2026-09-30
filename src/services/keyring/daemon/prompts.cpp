@@ -3,6 +3,7 @@
 #include <QTimer>
 #include <QUuid>
 #include <QCoreApplication>
+#include <QScopeGuard>
 namespace qindaqt::keyring::service {
 QString SecretService::addPrompt(Prompt prompt) {
     int owned = 0;
@@ -23,6 +24,20 @@ void SecretService::finishPrompt(const QString &path, bool dismissed) {
     QVariant result = p.action == "create"
         ? QVariant::fromValue(p.completed.isEmpty() ? objectPath() : p.completed.first())
         : QVariant::fromValue(p.completed);
+    QByteArray portalBytes;
+    auto scrubPortal=qScopeGuard([&] {wipe(portalBytes);});
+    if(p.action.startsWith("portal-")) {
+        try {
+            if(!dismissed) {
+                if(!portalCaller(p.owner)) throw std::runtime_error("Portal authority unavailable");
+                auto pages=portalSecret(p.portalApplication);
+                portalBytes=QByteArray(reinterpret_cast<const char *>(pages.bytes().data()),static_cast<qsizetype>(pages.size()));
+                if(!portalCaller(p.owner) || !nativeDisclosureAllowed()) throw std::runtime_error("Portal authority unavailable");
+            }
+        } catch(const PersistenceError &) {dismissed=true;wipe(portalBytes);QCoreApplication::exit(1);}
+          catch(const std::exception &) {dismissed=true;wipe(portalBytes);}
+        result=portalBytes;
+    }
     if (p.action == "reveal") {
         WireSecret wire{objectPath(),{},{},"application/octet-stream"};
         try {
@@ -48,18 +63,26 @@ void SecretService::startPrompt(const QString &path) {
     const auto &initialPrompt = initial->second;
     const auto requestedId = initialPrompt.action == "create" ? QString() : initialPrompt.collections.value(initialPrompt.next);
     const auto c = repository_.find(requestedId);
-    PromptRequest request{initialPrompt.action,requestedId,(initialPrompt.action == "create" || initialPrompt.action == "confirm-delete") ? initialPrompt.label : c ? c->label : requestedId,initialPrompt.owner,{}};
+    PromptRequest request{initialPrompt.action=="portal-create"?QString("create"):initialPrompt.action=="portal-unlock"?QString("unlock"):initialPrompt.action,requestedId,(initialPrompt.action == "create" || initialPrompt.action == "portal-create" || initialPrompt.action == "confirm-delete") ? initialPrompt.label : c ? c->label : requestedId,initialPrompt.owner,{}};
     // Rate-limit admission globally in the repository; paced prompts avoid
     // bursts and keep private password bytes absent during the wait.
     QTimer::singleShot(550,this,[this,path,request] {
         const auto pending = prompts_.find(path); if (pending == prompts_.end()) return;
-        if(pending->second.action=="reveal" && !nativeDisclosureAllowed()) {finishPrompt(path,true);return;}
+        if((pending->second.action=="reveal" || pending->second.action.startsWith("portal-")) && !nativeDisclosureAllowed()) {finishPrompt(path,true);return;}
         pending->second.ticket = promptsProvider_.begin(request,[this,path](SecureBuffer password,bool cancelled) {
             const auto found = prompts_.find(path); if (found == prompts_.end()) return;
             auto &p = found->second; p.ticket = 0;
             const std::size_t maximum = p.action == "change-password" ? 8200 : 4096;
             if (cancelled || password.size() == 0 || password.size() > maximum) { finishPrompt(path,true); return; }
             try {
+                if(p.action.startsWith("portal-") && (!nativeDisclosureAllowed() || !portalCaller(p.owner))) {finishPrompt(path,true);return;}
+                if(p.action=="portal-create") {
+                    if(repository_.find("login") || !repository_.alias("default").isEmpty()) {finishPrompt(path,true);return;}
+                    const auto id=repository_.create("Login","default",password.bytes());
+                    if(id!="login") {finishPrompt(path,true);return;}
+                    notifyCollectionState(id);signal(Root,ServiceInterface,"CollectionCreated",{variantPath(collectionPath(id))});
+                    changed(Root,ServiceInterface,properties(Root,ServiceInterface));finishPrompt(path,false);return;
+                }
                 if (p.action == "confirm-delete") {
                     const auto bytes = password.bytes();
                     const bool approved = bytes.size() == 4 && bytes[0]=='Q' && bytes[1]=='K' && bytes[2]=='O' && bytes[3]=='K';

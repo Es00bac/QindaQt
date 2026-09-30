@@ -19,7 +19,7 @@ struct Prompt {
     qsizetype next = 0;
     quint64 ticket = 0;
     bool running = false, relockOnCancel = false;
-    QString secretSession;
+    QString secretSession, portalApplication;
 };
 class SecretService final : public QDBusVirtualObject {
     Q_OBJECT
@@ -43,6 +43,9 @@ private:
     bool propertyMethod(const QDBusMessage &);
     bool nativeMethod(const QDBusMessage &);
     bool nativeItemMethod(const QDBusMessage &);
+    bool portalMethod(const QDBusMessage &);
+    bool portalCaller(const QString &) const;
+    SecureBuffer portalSecret(const QString &app);
     void changePromptPassword(const QString &,SecureBuffer);
     bool promptMethod(const QDBusMessage &);
     void startPrompt(const QString &path);

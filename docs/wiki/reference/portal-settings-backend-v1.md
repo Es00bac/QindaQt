@@ -40,7 +40,7 @@ family.
 | ScreenCast | `kde;gtk;lxqt` | None |
 | RemoteDesktop | `kde;gtk;lxqt` | None |
 | GlobalShortcuts | `kde` | None |
-| Secret | `gnome-keyring` | None; adopted Secret Service provider |
+| Secret | `qindaqt` | Separate [native Secret module](../architecture/secret-portal.md) |
 | InputCapture | `kde` | None |
 | Clipboard | `kde` | None |
 | Usb | `kde` | None |
@@ -53,8 +53,7 @@ family.
 
 The frontend filters the ordered names by the staged providers that advertise
 the requested implementation interface. The first available match wins.
-QindaQt's `.portal` declaration continues to advertise only Settings, so no
-fallback family can resolve to the QindaQt process.
+QindaQt's `.portal` advertises exactly Settings and Secret. Every other family retains its explicit fallback or closed route.
 
 Every family routed to `kde` depends on the KDE backend running under the
 compatibility identity QindaQt's systemd drop-in supplies

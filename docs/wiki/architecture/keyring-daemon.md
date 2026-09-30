@@ -213,3 +213,7 @@ prompt cases, real idle events, owner/peer loss and late reveal privacy even wit
 collection screen-lock disabled. Public hostile attachment/idle gates additionally
 cover dynamic ambiguity and reentrant lifetime changes. Native rendered-overlay
 qualification remains a separate PK4 acceptance boundary.
+
+## Native Secret portal boundary
+
+The separate [native Secret portal](secret-portal.md) uses fixed login app records and fresh targeted nonce receipts for authenticated policy/secret results. Successful Qt RPC replies confer no native disclosure policy authority. The UI gateway reuses RequestPolicyState/PolicyStateReceipt before publishing revealed bytes; standard Secret Service sharing remains independent. PK5 fresh-native-32 records do not migrate legacy opaque64 secrets; exact versioned synthetic import is PK6, before installation/live replacement.
