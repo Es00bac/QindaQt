@@ -464,6 +464,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
             QindaQt::Hybrid
             QindaQt::WindowManagement
             QindaQt::WindowManagementTransport
+            QindaQt::WindowManagementGrouping
             QindaQt::ApplicationWindowManagement
             QindaQt::ApplicationWindowProtocol
             PkgConfig::QINDAQT_APP_WM_WAYLAND_SERVER

@@ -362,6 +362,97 @@ private Q_SLOTS:
              QStringLiteral("accepted"));
     QTRY_VERIFY(!window(second.windowTitle()).value("minimized").toBool());
   }
+  void nativeAtomicGrouping() {
+    const auto secondId = window(second.windowTitle()).value("id").toString();
+    QVERIFY(!secondId.isEmpty());
+    const auto leaf = [](const QString &id) {
+      return QJsonObject{{"kind", "window"}, {"id", id}};
+    };
+    QCOMPARE(
+        submit("group-tab", {{"destination", leaf(secondId)}}, leaf(firstId))
+            .value("status")
+            .toString(),
+        QStringLiteral("accepted"));
+    QTRY_VERIFY(
+        !window(first.windowTitle()).value("containerId").toString().isEmpty());
+    containerId = window(first.windowTitle()).value("containerId").toString();
+    QTRY_COMPARE(window(second.windowTitle()).value("containerId").toString(),
+                 containerId);
+    QTRY_VERIFY(window(first.windowTitle()).value("active").toBool());
+    const auto unchanged = container();
+    QCOMPARE(submit("group-tab", {{"destination", leaf(secondId)}},
+                    {{"kind", "container"}, {"id", containerId}})
+                 .value("status")
+                 .toString(),
+             QStringLiteral("unavailable"));
+    QCOMPARE(container(), unchanged);
+
+    QCOMPARE(submit("focus", {}, leaf(secondId)).value("status").toString(),
+             QStringLiteral("accepted"));
+    QTRY_VERIFY(window(second.windowTitle()).value("active").toBool());
+    QCOMPARE(submit("group-tile",
+                    {{"destination", leaf(secondId)},
+                     {"direction", "left"},
+                     {"ratio", 1.0 / 3}},
+                    leaf(firstId))
+                 .value("status")
+                 .toString(),
+             QStringLiteral("accepted"));
+    QTRY_COMPARE(window(first.windowTitle()).value("containerId").toString(),
+                 containerId);
+    QTRY_VERIFY(
+        rectangle(window(first.windowTitle()).value("geometry")).right() <
+        rectangle(window(second.windowTitle()).value("geometry")).left());
+    const auto left = rectangle(window(first.windowTitle()).value("geometry"));
+    const auto right =
+        rectangle(window(second.windowTitle()).value("geometry"));
+    QVERIFY(qAbs(double(left.width()) / (left.width() + right.width()) -
+                 1.0 / 3) < .02);
+    QCOMPARE(
+        submit("group-tab", {{"destination", leaf(secondId)}}, leaf(firstId))
+            .value("status")
+            .toString(),
+        QStringLiteral("accepted"));
+    QTRY_VERIFY(window(first.windowTitle()).value("active").toBool());
+
+    QWidget third;
+    third.setWindowTitle("Native command third");
+    third.resize(480, 320);
+    third.show();
+    QTRY_VERIFY(window(third.windowTitle()).value("active").toBool());
+    const auto thirdId = window(third.windowTitle()).value("id").toString();
+    QVERIFY(!thirdId.isEmpty());
+    QCOMPARE(
+        submit("group-tab", {{"destination", leaf(thirdId)}}, leaf(firstId))
+            .value("status")
+            .toString(),
+        QStringLiteral("accepted"));
+    QTRY_VERIFY(
+        window(second.windowTitle()).value("containerId").toString().isEmpty());
+    const auto regrouped =
+        window(first.windowTitle()).value("containerId").toString();
+    QVERIFY(!regrouped.isEmpty());
+    QTRY_COMPARE(window(third.windowTitle()).value("containerId").toString(),
+                 regrouped);
+    QTRY_VERIFY(window(first.windowTitle()).value("active").toBool());
+    QCOMPARE(submit("focus", {}, leaf(thirdId)).value("status").toString(),
+             QStringLiteral("accepted"));
+    QTRY_VERIFY(window(third.windowTitle()).value("active").toBool());
+    QCOMPARE(submit("group-tile",
+                    {{"destination", leaf(thirdId)},
+                     {"direction", "down"},
+                     {"ratio", .6}},
+                    leaf(secondId))
+                 .value("status")
+                 .toString(),
+             QStringLiteral("accepted"));
+    QTRY_COMPARE(window(second.windowTitle()).value("containerId").toString(),
+                 regrouped);
+    QTRY_VERIFY(
+        rectangle(window(second.windowTitle()).value("geometry")).top() >
+        rectangle(window(third.windowTitle()).value("geometry")).bottom());
+    namedTarget = leaf(firstId);
+  }
   void optOutRevokesPriorCapture() {
     QTest::qWait(350);
     const auto capture = commandCall("BeginCommand");

@@ -204,6 +204,9 @@ bool TopologyPlacementMutation::apply(
     const RegroupMemberWithIndependent &command,
     QString *error)
 {
+    if (command.activateMemberPage && !std::holds_alternative<RegroupAsPages>(command.layout)) {
+        return fail(error, QStringLiteral("activation requires a regrouped tab"));
+    }
     if (command.memberWindowId == command.independentWindowId) {
         return fail(error, QStringLiteral("regrouping requires two different windows"));
     }
@@ -271,6 +274,10 @@ bool TopologyPlacementMutation::apply(
     if (!grouped) {
         return false;
     }
+    if (command.activateMemberPage
+        && !group.activatePage(std::get<RegroupAsPages>(command.layout).memberPageId, error)) {
+        return false;
+    }
 
     // AGENT-GUARD: The independent target changes ownership only after the new
     // group is valid. The coordinator discards this entire candidate if source
@@ -306,8 +313,8 @@ bool TopologyPlacementMutation::apply(WindowTopology &candidate,
                     QStringLiteral("unknown target page ID '%1'")
                         .arg(command.targetPageId));
     }
-    if (sourcePage->id() == command.targetPageId) {
-        return fail(error, QStringLiteral("source member is already on target page"));
+    if (sourcePage->id() == command.targetPageId && !sourcePage->root().isSplit()) {
+        return fail(error, QStringLiteral("the target page must retain another leaf"));
     }
 
     const auto detached = container->detachWindow(command.windowId, error);
@@ -333,8 +340,9 @@ bool TopologyPlacementMutation::apply(WindowTopology &candidate,
     const qsizetype destination = targetIndex + 1;
     // addPage appends, so avoid turning an already-correct append into a
     // rejected no-op movePage command.
-    return destination == container->pages().size() - 1
-        || container->movePage(command.newPageId, destination, error);
+    if (destination != container->pages().size() - 1
+        && !container->movePage(command.newPageId, destination, error)) return false;
+    return !command.activateMovedPage || container->activatePage(command.newPageId, error);
 }
 
 bool TopologyPlacementMutation::apply(
