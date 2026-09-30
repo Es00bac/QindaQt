@@ -18,6 +18,7 @@ class KeyringSettingsModel final : public QObject {
     Q_PROPERTY(QVariantList collections READ collections NOTIFY changed)
     Q_PROPERTY(QVariantList items READ items NOTIFY changed)
     Q_PROPERTY(QString selectedCollectionPath READ selectedCollectionPath NOTIFY changed)
+    Q_PROPERTY(bool secretsAllowed READ secretsAllowed NOTIFY changed)
     Q_PROPERTY(bool secretVisible READ secretVisible NOTIFY changed)
     Q_PROPERTY(QString secretText READ secretText NOTIFY changed)
 public:
@@ -31,6 +32,7 @@ public:
     QVariantList collections() const {return m_collections;}
     QVariantList items() const {return m_items;}
     QString selectedCollectionPath() const {return m_selected;}
+    bool secretsAllowed() const {return m_secretsAllowed;}
     bool secretVisible() const {return static_cast<bool>(m_secret);}
     QString secretText() const;
     Q_INVOKABLE void reload();
@@ -51,6 +53,7 @@ Q_SIGNALS:
     // and must be copied into an owning sensitive MIME provider before return.
     void copyRequested(std::shared_ptr<qindaqt::keyring::SecureBuffer> bytes);
 private:
+    void invalidateSecrets();
     void begin(Services::KeyringClient::Request,const QString &path={},const QString &label={});
     bool knownItem(const QString &) const;
     void rows(quint64,const QVariantList &);
@@ -62,6 +65,6 @@ private:
     QTimer m_revealTimeout;
     quint64 m_nextToken=1,m_token=0;
     Services::KeyringClient::Request m_request=Services::KeyringClient::Request::Collections;
-    bool m_copy=false,m_active=true;
+    bool m_copy=false,m_active=true,m_secretsAllowed=false;
 };
 }

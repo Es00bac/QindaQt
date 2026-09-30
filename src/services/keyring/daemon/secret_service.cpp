@@ -72,9 +72,19 @@ QString SecretService::introspect(const QString &path) const {
     }
     return result;
 }
+bool SecretService::nativeDisclosureAllowed() const {
+    if(!lockPolicy_) return false;
+    const auto state=lockPolicy_->status();
+    return state.value("ScreenLockAvailable").toBool() && !state.value("ScreenLocked").toBool();
+}
 void SecretService::observeLockPolicy(KeyringLockPolicy *policy) {
     lockPolicy_=policy;
     if(policy) connect(policy,&KeyringLockPolicy::changed,this,[this]{
+        if(!nativeDisclosureAllowed()) {
+            QStringList retired;
+            for(const auto &[path,prompt]:prompts_) if(prompt.action=="reveal") retired.append(path);
+            for(const auto &path:retired) finishPrompt(path,true);
+        }
         if(lockPolicy_) signal(Root,NativeInterface,"PolicyStateChanged",{lockPolicy_->status()});
     });
 }

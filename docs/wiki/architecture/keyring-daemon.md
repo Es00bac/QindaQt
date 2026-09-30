@@ -194,8 +194,11 @@ LockOnScreenLock, and one signed integer LockAfterIdleMinutes (0–1440). Native
 Settings disclosure requires admitted Unlocked independently of the collection
 preference. The client rechecks pinned-daemon policy before publishing a reveal.
 
-The private attachment and QCore idle seams are checkpointed for extraction to
+The private attachment and QCore idle seams remain checkpointed for extraction to
 public native session collaborators. They require an exact admitted compositor
 owner/PID and an owned ordinary display connection, never a locker connection
-or a guessed display. Source qualification is still in progress; this checkpoint
-is neither a PK4 acceptance nor native rendered-overlay qualification.
+or a guessed display. The complete 19-row private keyring suite passes, including
+five resident policy cases, eleven native prompt cases, real ordinary Wayland
+idle events, owner/peer loss and late reveal privacy with collection-lock disabled.
+Public service extraction/consumer rewiring and native rendered-overlay
+qualification remain separate PK4 acceptance boundaries.

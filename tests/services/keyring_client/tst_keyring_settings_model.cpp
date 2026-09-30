@@ -15,14 +15,16 @@ class ModelTest : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void lockedUnauthenticatedMetadataCannotRevealOrDelete(){
-        FakeGateway gateway;KeyringSettingsModel model(gateway);model.reload();
+        FakeGateway gateway;KeyringSettingsModel model(gateway);
+        emit gateway.policyChanged({{"ScreenLockAvailable",true},{"ScreenLocked",false},{"SettingsAvailable",true}});model.reload();
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","collection"},{"label","Public collection"},{"locked",true}}}});
         QCOMPARE(gateway.kind,Request::Items);
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","item"},{"locked",true},{"indexAuthenticated",false}}}});
         const auto before=gateway.calls;model.revealItem("item");model.deleteItem("item");QCOMPARE(gateway.calls,before);
     }
     void departureAndOwnerLossFenceLateSecretAndClearVisibleBytes(){
-        FakeGateway gateway;KeyringSettingsModel model(gateway);model.reload();
+        FakeGateway gateway;KeyringSettingsModel model(gateway);
+        emit gateway.policyChanged({{"ScreenLockAvailable",true},{"ScreenLocked",false},{"SettingsAvailable",true}});model.reload();
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","collection"},{"locked",false}}}});
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","item"},{"locked",false},{"indexAuthenticated",true}}}});
         model.revealItem("item");auto secret=std::make_shared<qindaqt::keyring::SecureBuffer>(5);
@@ -33,7 +35,8 @@ private Q_SLOTS:
         emit gateway.secretReady(gateway.token,late,"text/plain");QCOMPARE(late->size(),0U);QVERIFY(!model.secretVisible());
     }
     void screenLockRetiresPendingRevealAndWipesLateReply(){
-        FakeGateway gateway;KeyringSettingsModel model(gateway);model.reload();
+        FakeGateway gateway;KeyringSettingsModel model(gateway);
+        emit gateway.policyChanged({{"ScreenLockAvailable",true},{"ScreenLocked",false},{"SettingsAvailable",true}});model.reload();
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","collection"},{"locked",false}}}});
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","item"},{"locked",false},{"indexAuthenticated",true}}}});
         model.revealItem("item");const auto pending=gateway.token;
@@ -43,8 +46,22 @@ private Q_SLOTS:
         emit gateway.secretReady(pending,late,"text/plain");
         QCOMPARE(late->size(),0U);QVERIFY(!model.secretVisible());
     }
-    void copyingRequiresAnActualSinkAcknowledgement(){
+    void uncertainNativeLockNeverAdmitsPresentation(){
         FakeGateway gateway;KeyringSettingsModel model(gateway);model.reload();
+        emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","collection"},{"locked",false}}}});
+        emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","item"},{"locked",false},{"indexAuthenticated",true}}}});
+        const auto before=gateway.calls;model.revealItem("item");model.copyItem("item");
+        QCOMPARE(gateway.calls,before);QVERIFY(!model.secretsAllowed());
+        emit gateway.policyChanged({{"ScreenLockAvailable",true},{"ScreenLocked",false},{"SettingsAvailable",true}});
+        QVERIFY(model.secretsAllowed());model.revealItem("item");const auto pending=gateway.token;
+        emit gateway.policyChanged({{"ScreenLockAvailable",false},{"ScreenLocked",true},{"SettingsAvailable",true}});
+        auto late=std::make_shared<qindaqt::keyring::SecureBuffer>(5);
+        emit gateway.secretReady(pending,late,"text/plain");QCOMPARE(late->size(),0U);
+        QVERIFY(!model.secretVisible());QVERIFY(!model.secretsAllowed());
+    }
+    void copyingRequiresAnActualSinkAcknowledgement(){
+        FakeGateway gateway;KeyringSettingsModel model(gateway);
+        emit gateway.policyChanged({{"ScreenLockAvailable",true},{"ScreenLocked",false},{"SettingsAvailable",true}});model.reload();
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","collection"},{"locked",false}}}});
         emit gateway.rowsReady(gateway.token,{{QVariantMap{{"path","item"},{"locked",false},{"indexAuthenticated",true}}}});
         model.copyItem("item");auto secret=std::make_shared<qindaqt::keyring::SecureBuffer>(5);

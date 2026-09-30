@@ -25,6 +25,9 @@ Q_SIGNALS:
     void authorityChanged();
     void secretsInvalidated();
     void metadataChanged();
+    // Fixed Keyring1 policy map; ScreenLocked includes native Unknown.
+    // Reveal/copy admission always requires available, admitted Unlocked,
+    // independently of the collection-lock preference.
     void policyChanged(const QVariantMap &state);
     void rowsReady(quint64 token, const QVariantList &rows);
     void actionFinished(quint64 token, bool confirmed, const QString &message);

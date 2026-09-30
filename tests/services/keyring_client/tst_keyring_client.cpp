@@ -32,6 +32,17 @@ private Q_SLOTS:
         p::MetadataRows rows(1025);QVERIFY_EXCEPTION_THROWN(validateItems(rows),std::exception);
         QVERIFY(!validObjectPath("/org/freedesktop/secrets/collection/../bad","collection"));
     }
+    void hostilePolicyCannotAdmitDisclosure() {
+        const QVariantMap admitted{{"SettingsAvailable",true},{"ScreenLockAvailable",true},{"IdleAvailable",false},{"ScreenLocked",false},{"LockOnScreenLock",false},{"LockAfterIdleMinutes",0}};
+        QCOMPARE(validatePolicy(admitted),admitted);
+        for(const auto &key:{"SettingsAvailable","ScreenLockAvailable","IdleAvailable","ScreenLocked","LockOnScreenLock"}) {
+            auto wire=admitted;wire[key]=QString("true");QVERIFY_EXCEPTION_THROWN(validatePolicy(wire),std::exception);
+        }
+        for(const auto &invalid:QVariantList{QVariant(-1),QVariant(1441),QVariant(0U),QVariant(QString("0"))}) {
+            auto wire=admitted;wire["LockAfterIdleMinutes"]=invalid;QVERIFY_EXCEPTION_THROWN(validatePolicy(wire),std::exception);
+        }
+        auto extended=admitted;extended["Forged"]=false;QVERIFY_EXCEPTION_THROWN(validatePolicy(extended),std::exception);
+    }
     void privateRealDaemonUsesOwnedPromptAndSession() {
         QTemporaryDir temporary;QVERIFY(temporary.isValid());
         const auto runtime=temporary.path()+"/runtime",storage=temporary.path()+"/storage";
@@ -70,7 +81,7 @@ private Q_SLOTS:
             QSignalSpy actions(&gateway,&KeyringGateway::actionFinished),rows(&gateway,&KeyringGateway::rowsReady),secrets(&gateway,&KeyringGateway::secretReady);
             QTRY_VERIFY_WITH_TIMEOUT(gateway.available(),5000);
             gateway.request(1,Request::Create,{},"Synthetic login");
-            QTRY_COMPARE_WITH_TIMEOUT(actions.size(),1,5000);QVERIFY(actions.last()[1].toBool());
+            QTRY_COMPARE_WITH_TIMEOUT(actions.size(),1,5000);QVERIFY2(actions.last()[1].toBool(),qPrintable(actions.last()[2].toString()));
             gateway.request(2,Request::Collections);
             QTRY_COMPARE_WITH_TIMEOUT(rows.size(),1,5000);
             const auto values=rows.last()[1].toList();QCOMPARE(values.size(),2);
