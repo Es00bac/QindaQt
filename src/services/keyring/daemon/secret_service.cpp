@@ -82,7 +82,7 @@ void SecretService::observeLockPolicy(KeyringLockPolicy *policy) {
     if(policy) connect(policy,&KeyringLockPolicy::changed,this,[this]{
         if(!nativeDisclosureAllowed()) {
             QStringList retired;
-            for(const auto &[path,prompt]:prompts_) if(prompt.action=="reveal") retired.append(path);
+            for(const auto &[path,prompt]:prompts_) if(prompt.action=="reveal" || prompt.action.startsWith("portal-")) retired.append(path);
             for(const auto &path:retired) finishPrompt(path,true);
         }
         if(lockPolicy_) signal(Root,NativeInterface,"PolicyStateChanged",{lockPolicy_->status()});
@@ -114,6 +114,11 @@ Session &SecretService::session(const QString &path, const QString &owner) {
     return *i->second;
 }
 void SecretService::ownerLost(const QString &name, const QString &, const QString &newOwner) {
+    if(name=="org.freedesktop.impl.portal.desktop.qindaqt") {
+        QStringList retired;
+        for(const auto &[path,prompt]:prompts_) if(prompt.action.startsWith("portal-")) retired.append(path);
+        for(const auto &path:retired) finishPrompt(path,true);
+    }
     if (name == sessionOwner_ && newOwner.isEmpty()) { QCoreApplication::quit(); return; }
     if (!name.startsWith(':') || !newOwner.isEmpty()) return;
     for (auto i = sessions_.begin(); i != sessions_.end();) {

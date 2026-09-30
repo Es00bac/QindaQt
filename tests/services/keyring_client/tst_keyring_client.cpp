@@ -11,6 +11,7 @@
 #include <QDBusConnection>
 #include <QDBusReply>
 #include <QDBusInterface>
+#include <QDBusVirtualObject>
 #include <cstring>
 #include <sys/stat.h>
 using namespace QindaQt::Services::KeyringClient;
@@ -18,6 +19,17 @@ namespace p=qindaqt::keyring::protocol;
 class QuietProcess : public QProcess {
 public:
     ~QuietProcess() override {if(state()!=NotRunning) {kill();waitForFinished(3000);}}
+};
+class PolicyDaemon final:public QDBusVirtualObject {
+public:
+    explicit PolicyDaemon(QDBusConnection connection):bus(std::move(connection)) {}
+    QString introspect(const QString &) const override {return "<interface name=\"org.qindaqt.Keyring1\"/>";}
+    bool handleMessage(const QDBusMessage &message,const QDBusConnection &) override {
+        if(message.member()=="ListCollections") {bus.send(message.createReply(QVariantList{QVariantMap{}}));return true;}
+        if(message.member()=="RequestPolicyState") {last=message;++requests;return true;}
+        return false;
+    }
+    QDBusConnection bus;QDBusMessage last;int requests=0;
 };
 class KeyringClientTest : public QObject {
     Q_OBJECT
@@ -42,6 +54,25 @@ private Q_SLOTS:
             auto wire=admitted;wire["LockAfterIdleMinutes"]=invalid;QVERIFY_EXCEPTION_THROWN(validatePolicy(wire),std::exception);
         }
         auto extended=admitted;extended["Forged"]=false;QVERIFY_EXCEPTION_THROWN(validatePolicy(extended),std::exception);
+    }
+    void nativePolicyRequiresFreshActualOwnerReceipt() {
+        QTemporaryDir temporary;QVERIFY(temporary.isValid());QFile config(temporary.path()+"/bus.conf");QVERIFY(config.open(QIODevice::WriteOnly));
+        config.write("<busconfig><type>session</type><listen>unix:tmpdir=/tmp</listen><policy context='default'><allow send_destination='*'/><allow receive_sender='*'/><allow own='*'/></policy></busconfig>");config.close();
+        QuietProcess daemonProcess;daemonProcess.start("dbus-daemon",{"--config-file="+config.fileName(),"--nofork","--print-address=1"});QVERIFY(daemonProcess.waitForStarted());QVERIFY(daemonProcess.waitForReadyRead());const auto address=QString::fromUtf8(daemonProcess.readLine()).trimmed();
+        auto service=QDBusConnection::connectToBus(address,"receipt-service"),client=QDBusConnection::connectToBus(address,"receipt-client"),attacker=QDBusConnection::connectToBus(address,"receipt-attacker");
+        QVERIFY(service.registerService("org.qindaqt.Keyring1"));QVERIFY(service.registerService("org.freedesktop.secrets"));PolicyDaemon daemon(service);
+        QVERIFY(service.registerVirtualObject("/org/freedesktop/secrets",&daemon,QDBusConnection::SubPath));
+        {
+            QtKeyringGateway gateway(client);QSignalSpy rows(&gateway,&KeyringGateway::rowsReady),policies(&gateway,&KeyringGateway::policyChanged);QTRY_VERIFY(gateway.available());
+            gateway.request(1,Request::Collections);QTRY_COMPARE(daemon.requests,1);
+            const QVariantMap unlocked{{"SettingsAvailable",true},{"ScreenLockAvailable",true},{"IdleAvailable",false},{"ScreenLocked",false},{"LockOnScreenLock",false},{"LockAfterIdleMinutes",0}};
+            QVERIFY(attacker.send(daemon.last.createReply(QVariantList{unlocked})));
+            auto signal=QDBusMessage::createTargetedSignal(client.baseService(),"/org/freedesktop/secrets","org.qindaqt.Keyring1","PolicyStateReceipt");signal.setArguments({daemon.last.arguments()[0],unlocked});
+            QVERIFY(attacker.send(signal));QTest::qWait(100);QCOMPARE(policies.size(),0);QCOMPARE(rows.size(),0);
+            signal.setArguments({QString("stale"),unlocked});QVERIFY(service.send(signal));QTest::qWait(50);QCOMPARE(policies.size(),0);
+            auto locked=unlocked;locked["ScreenLocked"]=true;signal.setArguments({daemon.last.arguments()[0],locked});QVERIFY(service.send(signal));QTRY_COMPARE(rows.size(),1);QCOMPARE(policies.size(),1);QVERIFY(policies.last()[0].toMap().value("ScreenLocked").toBool());
+        }
+        for(const auto &name:{"receipt-attacker","receipt-client","receipt-service"}) QDBusConnection::disconnectFromBus(name);
     }
     void privateRealDaemonUsesOwnedPromptAndSession() {
         QTemporaryDir temporary;QVERIFY(temporary.isValid());

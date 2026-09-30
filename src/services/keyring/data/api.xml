@@ -60,6 +60,13 @@
 <method name="ListItems"><arg type="o" direction="in"/><arg type="aa{sv}" direction="out"/></method>
 <method name="ReadSecretWithPrompt"><arg type="o" direction="in"/><arg type="o" direction="in"/><arg type="o" direction="out"/></method>
 <method name="ChangePasswordWithPrompt"><arg type="o" direction="in"/><arg type="o" direction="out"/></method>
+<!-- Targeted nonce receipts prove actual daemon sender; method success is
+     transport acknowledgement, never secret/state authority. -->
+<method name="RequestPolicyState"><arg name="nonce" type="s" direction="in"/></method>
+<signal name="PolicyStateReceipt"><arg name="nonce" type="s"/><arg name="state" type="a{sv}"/></signal>
+<method name="RequestPortalSecret"><arg name="application" type="s" direction="in"/><arg name="nonce" type="s" direction="in"/></method>
+<signal name="PortalSecretResult"><arg name="nonce" type="s"/><arg name="secret" type="ay"/><arg name="prompt" type="o"/></signal>
+<signal name="PortalPromptResult"><arg name="nonce" type="s"/><arg name="prompt" type="o"/><arg name="response" type="u"/><arg name="secret" type="ay"/></signal>
 <method name="GetPolicyState"><arg type="a{sv}" direction="out"/></method>
 <signal name="PolicyStateChanged"><arg type="a{sv}"/></signal>
 <method name="ListCollections"><arg type="a{sv}" direction="out"/></method>

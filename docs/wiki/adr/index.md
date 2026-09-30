@@ -320,12 +320,16 @@ integration retains every accepted decision in numeric order.
 - [ADR-0303: Resolve window application identity through the neutral catalog](0303-resolve-window-identity-through-application-catalog.md)
 - [ADR-0308: Store native lock preferences in Settings1 and import once](0308-native-lock-preferences-and-atomic-import.md)
 
+
 - [ADR-0305: Share ordinary compositor attachment identity and lifetime](0305-public-ordinary-compositor-attachment.md)
 - [ADR-0307: Share readonly idle observation on an admitted ordinary display FD](0307-public-ordinary-fd-idle-observation.md)
 
-- [ADR-0309: Authenticate native lock state through targeted receipts](0314-native-lock-receipt-authentication.md)
+- [ADR-0314: Authenticate native lock state through targeted receipts](0314-native-lock-receipt-authentication.md)
 
-- [ADR-0309: Build QindaQt without Plasma Activities](0309-build-qindaqt-without-plasma-activities.md)
 
 - [ADR-0309: Build QindaQt without Plasma Activities](0309-build-qindaqt-without-plasma-activities.md) (superseded by ADR-0311)
 - [ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor](0311-remove-plasma-runtime-from-qindaqt-compositor.md)
+
+- [ADR-0310: Native per-application Secret portal](0310-native-per-application-secret-portal.md)
+
+- [ADR-0312: Preserve exact legacy portal secrets atomically](0312-preserve-exact-legacy-portal-secrets.md)

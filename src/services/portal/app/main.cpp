@@ -6,6 +6,9 @@
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 
+#include <qindaqt/services/secret_portal/secret_portal_adaptor.h>
+#include <sys/prctl.h>
+#include <sys/resource.h>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -43,7 +46,13 @@ QStringList themeDirectories()
 
 int main(int argc, char **argv)
 {
+    struct rlimit cores{0,0};
+    if(setrlimit(RLIMIT_CORE,&cores)!=0 || prctl(PR_SET_DUMPABLE,0)!=0) return 2;
     QCoreApplication application(argc, argv);
+    // Secret transport may pass through framework marshalling. Keep Qt debug
+    // argument dumps out of resident logs; sanitized startup diagnostics below
+    // remain available, and no secret is formatted by this process.
+    qInstallMessageHandler([](QtMsgType,const QMessageLogContext &,const QString &) {});
     QCoreApplication::setApplicationName(
         QStringLiteral("xdg-desktop-portal-qindaqt"));
     QCoreApplication::setApplicationVersion(QStringLiteral(QINDAQT_VERSION));
@@ -81,7 +90,9 @@ int main(int argc, char **argv)
     SettingsClient client(transport,
                           AppearancePolicyProjector::scopedSettingsKeys());
     Settings1AppearanceSource source(client, projector);
+    QindaQt::Services::SecretPortal::QtKeyringPortalBroker secrets(sessionBus);
     ResidentPortalService service(source, sessionBus);
+    new QindaQt::Services::SecretPortal::SecretPortalAdaptor(service.backendHost(),secrets,sessionBus);
     const PortalServiceStartStatus status = service.start(&error);
     if (status != PortalServiceStartStatus::Started) {
         std::fprintf(stderr, "xdg-desktop-portal-qindaqt: %s: %s\n",

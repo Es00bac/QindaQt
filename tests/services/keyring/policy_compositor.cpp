@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <QDBusAbstractAdaptor>
 #include <QDBusConnection>
+#include <QDBusMessage>
 #include <QTextStream>
 #include <QSocketNotifier>
 #include <sys/stat.h>
@@ -25,6 +26,14 @@ public:
     void publish(bool lockedValue,bool protectedValue){
         state_.locked=lockedValue;state_.protectedPresentation=protectedValue;
         emit lockedChanged(lockedValue);emit protectedChanged(protectedValue);
+    }
+public Q_SLOTS:
+    void RequestStateWithReceipt(const QString &nonce,const QDBusMessage &call) {
+        if(nonce.size()!=32) return;
+        for(const auto character:nonce)
+            if(!((character>=QLatin1Char('0') && character<=QLatin1Char('9')) || (character>=QLatin1Char('a') && character<=QLatin1Char('f')))) return;
+        auto receipt=QDBusMessage::createTargetedSignal(call.service(),"/org/qindaqt/KWin/NativeLock","org.qindaqt.KWin.NativeLock1","stateReceipt");
+        receipt.setArguments({nonce,state_.locked,state_.protectedPresentation});QDBusConnection::sessionBus().send(receipt);
     }
 Q_SIGNALS:
     void lockedChanged(bool);
