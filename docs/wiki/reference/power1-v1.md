@@ -182,6 +182,14 @@ service epoch returns false. Scope bits are automatic lock (1), display off
 composition supplies real consumers for the complete requested scope set.
 This addition leaves the Power1 version-1 snapshot and mutation wire
 signatures unchanged.
+The public Qt Power transport can query the two scope values and issue acquire or
+release calls asynchronously against the exact current unique owner. Every
+completion carries the caller's request ID and owner; replies from a replaced
+owner fail as `owner-replaced`. The transport does not infer support from an
+ordinary method reply and does not enable any scope. Other in-process transport
+implementations that have not adopted these methods return `unsupported` by
+default. A higher-level idle-policy client and production stage consumers are
+still pending; the zero-scope response remains authoritative until then.
 
 Mutation methods use delayed replies: the reply carries the initiating and
 observed lineage of exactly one dispatched operation and is sent exactly once.
