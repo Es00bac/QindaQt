@@ -2,8 +2,10 @@
 #include <qindaqt/services/keyring_client/qt_keyring_gateway.h>
 #include "keyring_reply_validation.h"
 #include <QDBusPendingCallWatcher>
+#include <QDBusConnectionInterface>
 #include <QDBusServiceWatcher>
 #include <QTimer>
+#include <QUuid>
 #include <QScopeGuard>
 #include <cstring>
 #include <sys/prctl.h>
@@ -62,6 +64,7 @@ public:
                     owner=candidate;
                     bus.connect(owner,Root,Native,"CollectionStateChanged",&q,SLOT(collectionStateChanged(QDBusObjectPath,bool,bool,QDBusMessage)));
                     bus.connect(owner,Root,Native,"PolicyStateChanged",&q,SLOT(policyStateChanged(QVariantMap,QDBusMessage)));
+                    bus.connect(owner,Root,Native,"PolicyStateReceipt",&q,SLOT(policyStateReceipt(QString,QVariantMap,QDBusMessage)));
                     emit q.authorityChanged();
                 });
             });
@@ -83,7 +86,7 @@ public:
         if(!prompt.isEmpty() && !owner.isEmpty()) {
             auto message=QDBusMessage::createMethodCall(owner,prompt,PromptInterface,"Dismiss");bus.send(message);
         }
-        unwatchPrompt();closeSession();timeout.stop();token=0;
+        unwatchPrompt();closeSession();timeout.stop();token=0;policyNonce.clear();policyNext={};
         if(pendingSecret) pendingSecret->clear();
         pendingSecret.reset();if(pending) ++generation;
     }
@@ -91,6 +94,7 @@ public:
         if(!owner.isEmpty()) {
             bus.disconnect(owner,Root,Native,"CollectionStateChanged",&q,SLOT(collectionStateChanged(QDBusObjectPath,bool,bool,QDBusMessage)));
             bus.disconnect(owner,Root,Native,"PolicyStateChanged",&q,SLOT(policyStateChanged(QVariantMap,QDBusMessage)));
+            bus.disconnect(owner,Root,Native,"PolicyStateReceipt",&q,SLOT(policyStateReceipt(QString,QVariantMap,QDBusMessage)));
         }
         owner.clear();screenAvailable=false;screenLocked=true;emit q.authorityChanged(); }
     void fail(const QString &message) {
@@ -98,7 +102,7 @@ public:
         const auto id=token;cancel();emit q.actionFinished(id,false,message);
     }
     void done(bool confirmed,const QString &message={}) {
-        const auto id=token;unwatchPrompt();closeSession();timeout.stop();token=0;++generation;
+        const auto id=token;unwatchPrompt();closeSession();timeout.stop();token=0;policyNonce.clear();policyNext={};++generation;
         emit q.actionFinished(id,confirmed,message);
     }
     void watchPrompt(const QString &value) {
@@ -126,9 +130,7 @@ public:
                 if(m.arguments().size()!=1 || m.signature()!=(kind==Request::Collections?"a{sv}":"aa{sv}")) throw std::runtime_error("Metadata");
                 const auto rows=kind==Request::Collections?validateCollections(p::argument<QVariantMap>(m.arguments()[0])):validateItems(p::argument<p::MetadataRows>(m.arguments()[0]));
                 if(kind==Request::Collections) {
-                    call(owner,Root,Native,"GetPolicyState",{},[this,rows](const QDBusMessage &state){
-                        if(state.signature()!="a{sv}" || state.arguments().size()!=1) throw std::runtime_error("Policy");
-                        policy(p::argument<QVariantMap>(state.arguments()[0]));
+                    requestPolicy([this,rows]{
                         if(!token) return;
                         const auto completedToken=token;token=0;timeout.stop();++generation;emit q.rowsReady(completedToken,rows);
                     });
@@ -162,6 +164,23 @@ public:
             if(value=="/") done(completed.contains(QDBusObjectPath(object)),"Keyring state confirmed");
             else watchPrompt(value);
         });
+    }
+    bool liveOwner() const {
+        if(owner.isEmpty() || !bus.isConnected() || !bus.interface()) return false;
+        const auto native=bus.interface()->serviceOwner(Native),service=bus.interface()->serviceOwner(Service);
+        const auto uid=bus.interface()->serviceUid(owner);
+        return native.isValid() && service.isValid() && native.value()==owner && service.value()==owner && uid.isValid() && uid.value()==geteuid();
+    }
+    void requestPolicy(std::function<void()> next) {
+        policyNonce=QUuid::createUuid().toString(QUuid::WithoutBraces);policyNext=std::move(next);
+        // AGENT-GUARD: Qt RPC replies do not prove sender. Only the targeted
+        // retained-owner receipt for this fresh nonce admits positive policy.
+        call(owner,Root,Native,"RequestPolicyState",{policyNonce},[](const QDBusMessage &){});
+    }
+    void receipt(const QString &nonce,const QVariantMap &state,const QDBusMessage &message) {
+        if(!token || policyNonce.isEmpty() || nonce!=policyNonce || message.service()!=owner || message.signature()!="sa{sv}" || !liveOwner()) return;
+        policyNonce.clear();auto next=std::move(policyNext);
+        policy(state);if(token && next) next();
     }
     void policy(const QVariantMap &wire) {
         const auto value=validatePolicy(wire);screenAvailable=value.value("ScreenLockAvailable").toBool();screenLocked=value.value("ScreenLocked").toBool();
@@ -208,9 +227,7 @@ public:
             const auto contentType=wire.contentType;
             pendingSecret=bytes;
             unwatchPrompt();closeSession();
-            call(owner,Root,Native,"GetPolicyState",{},[this,bytes=std::move(bytes),contentType](const QDBusMessage &state) mutable {
-                if(state.signature()!="a{sv}" || state.arguments().size()!=1) throw std::runtime_error("Policy");
-                policy(p::argument<QVariantMap>(state.arguments()[0]));
+            requestPolicy([this,bytes=std::move(bytes),contentType]() mutable {
                 if(!token) return;
                 if(!screenAvailable || screenLocked) { fail("Unlock the screen before revealing or copying secrets");return; }
                 const auto id=token;timeout.stop();token=0;++generation;pendingSecret.reset();
@@ -222,7 +239,8 @@ public:
     QDBusConnection bus;
     QDBusServiceWatcher watcher;
     QTimer timeout;
-    QString owner,prompt,session;
+    QString owner,prompt,session,policyNonce;
+    std::function<void()> policyNext;
     // AGENT-GUARD: cancel wipes decoded bytes waiting for the final live-policy
     // readback immediately, even while its asynchronous callback still exists.
     std::shared_ptr<qindaqt::keyring::SecureBuffer> pendingSecret;
@@ -237,8 +255,11 @@ void QtKeyringGateway::request(quint64 token,Request kind,const QString &path,co
 void QtKeyringGateway::cancel(){d->cancel();}
 void QtKeyringGateway::promptCompleted(bool dismissed,const QDBusVariant &value,const QDBusMessage &message){d->completed(dismissed,value,message);}
 void QtKeyringGateway::disconnected(){d->reset();}
+void QtKeyringGateway::policyStateReceipt(const QString &nonce,const QVariantMap &state,const QDBusMessage &message){
+    try {d->receipt(nonce,state,message);} catch(const std::exception &) {d->reset();d->probe();}
+}
 void QtKeyringGateway::policyStateChanged(const QVariantMap &state,const QDBusMessage &message){
-    if(message.service()!=d->owner) return;
+    if(message.service()!=d->owner || message.signature()!="a{sv}" || !d->liveOwner()) return;
     try {d->policy(state);} catch(const std::exception &) {d->reset();d->probe();}
 }
 void QtKeyringGateway::collectionStateChanged(const QDBusObjectPath &object,bool locked,bool authenticated,const QDBusMessage &message){

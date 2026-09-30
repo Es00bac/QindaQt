@@ -3,7 +3,7 @@
 QindaQt provides a production, read-only XDG desktop-portal backend for its
 appearance policy. Sandboxed applications and toolkits continue to call the
 standard `org.freedesktop.portal.Settings` frontend owned by
-`xdg-desktop-portal`; QindaQt implements only the desktop-specific
+`xdg-desktop-portal`; QindaQt implements the desktop-specific
 `org.freedesktop.impl.portal.Settings` backend selected by that frontend.
 
 The upstream [backend authoring contract](https://flatpak.github.io/xdg-desktop-portal/docs/writing-a-new-backend.html)
@@ -24,16 +24,14 @@ layers:
 | --- | --- | --- |
 | Appearance policy | Exact Settings1 field validation, theme selection, QST-1 derivation, and standard value projection | D-Bus, activation, persistence, or theme discovery |
 | Appearance source | A four-key, exact-owner/epoch Settings1 subscription and atomic ready/unavailable truth | Settings files, Settings1 service implementation, or UI |
-| Portal adapter/process | Standard D-Bus marshalling, filtering, change signals, service-name ownership, activation, and shutdown on bus loss | Appearance persistence or any non-Settings portal |
+| Appearance adapter | Standard Settings marshalling, filtering and change signals | Persistence or Secret policy |
+| Resident composition | Service ownership, activation, bus-loss shutdown, separately borrowed Secret adaptor | Secret storage, app identity or prompt policy |
 
-The backend does **not** implement a chooser, OpenURI, notifications, inhibit,
-screencast, remote desktop, secret storage, or a consent dialog. Its `.portal`
-file advertises only `org.freedesktop.impl.portal.Settings`. The module owns
+The appearance module does **not** implement a chooser, OpenURI, notifications, inhibit, screencast, remote desktop, secret storage or a consent dialog. The resident additionally composes the separate [native Secret module](secret-portal.md); its `.portal` advertises exactly Settings and Secret. The module owns
 QindaQt's frontend selection file and keeps an explicit routing decision for
 every portal family ([ADR-0133](../adr/0133-route-every-portal-family.md)),
 but it does not replace, embed, or supervise `xdg-desktop-portal`; a routing
-row names another backend's authority, and non-Settings calls remain that
-backend's responsibility.
+row names another backend's authority, and each routed family remains its owning module/backend's responsibility.
 
 ## Standard endpoint
 
@@ -121,8 +119,7 @@ and `qindaqt-portals.conf`. The selector binds
 `org.freedesktop.impl.portal.Settings` only to `qindaqt`, explicitly orders
 `kde;gtk;lxqt` for the reviewed multi-provider families, orders
 GlobalShortcuts to `kde` alone because it is the only installed provider whose
-`.portal` metadata advertises that interface, routes Secret to the adopted
-`gnome-keyring` Secret Service provider, routes InputCapture, Clipboard, Usb,
+`.portal` metadata advertises that interface, routes Secret to the native Secret module at `qindaqt`, routes InputCapture, Clipboard, Usb,
 Account, and DynamicLauncher to `kde`, closes Wallpaper and Background on
 purpose, and uses `default=none` so an unreviewed family cannot silently
 escape the table. OpenURI is implemented by the frontend itself and therefore
@@ -170,8 +167,8 @@ desktop, injected KDE FileChooser and GlobalShortcuts fallback routing (after
 confirming the installed KDE backend's own `.portal` metadata still advertises
 `GlobalShortcuts`), and the closed Background escape. Two more P1 rows stage
 fake `kde` and `gnome-keyring` backends behind the real frontend and prove
-that FileChooser, Screenshot, ScreenCast, RemoteDesktop, InputCapture, and
-Secret requests reach the routed fake backend, that Wallpaper and Background
+that FileChooser, Screenshot, ScreenCast, RemoteDesktop and InputCapture
+requests reach the routed fake backend while Secret resolves only to the native resident, that Wallpaper and Background
 stay unexported, and that removing the Secret routing row withdraws the Secret
 interface (negative control). The Qt row runs an offscreen Qt 6 process with
 `QT_QPA_PLATFORMTHEME=xdgdesktopportal`, observes Dark then a live Light
@@ -179,7 +176,7 @@ interface (negative control). The Qt row runs an offscreen Qt 6 process with
 hint. It does not claim that Qt replaces an application's explicit palette.
 
 The metadata gate compares the complete `.portal` and selector contracts, so
-duplicate entries, QindaQt ownership of a non-Settings family, a rerouted or
+duplicate entries, QindaQt ownership of a family beyond Settings/Secret, a rerouted or
 dropped Secret/Wallpaper row, or a reopened Background/default route fail both
 source and staged-installed controls. The
 staged-package row repeats every frontend row against the installed artifacts.
@@ -190,7 +187,7 @@ they neither contact nor modify the host portal or host D-Bus services.
 This proves package selection, non-Settings routing to declared backends, and
 Qt reaction on the private bus. It does not qualify an installed desktop, a
 host session bus, GTK/GSettings or Flatpak sandbox reaction, a real chooser
-UI, or any non-Settings portal implementation. Real-backend reachability is
+UI, or any other portal implementation. Real-backend reachability is
 evidenced by the recorded headless smoke
 (`tests/services/portal/proof/private-portal-proof.sh`): it starts a virtual
 KWin, a private PipeWire stack, the real KDE portal backend, and the real
@@ -202,3 +199,5 @@ The durable process/protocol choice is recorded in
 [ADR-0054](../adr/0054-export-appearance-through-the-standard-settings-portal.md).
 The fail-closed fallback routing policy is recorded in
 [ADR-0059](../adr/0059-route-unimplemented-portal-families-explicitly.md).
+
+The secret-bearing resident disables cores/dumpability before requests. Its activation lifetime fixture retains PIDFDs for private-daemon observed owners, so exit/restart verification and cleanup cannot target a recycled PID and do not require readable `/proc/PID/exe`. No production dumpability exception is introduced for tests.

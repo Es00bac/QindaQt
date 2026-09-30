@@ -99,3 +99,7 @@ prompts for Wi-Fi passwords and hands them to NetworkManager, which stores
 remembered credentials in the same keyring through the Secret Service API.
 User-facing guidance lives in the handbook under
 [Passwords and keys](../handbook/privacy.md#passwords-and-keys).
+
+## Native Secret portal boundary
+
+The separate [native Secret portal](secret-portal.md) uses fixed login app records and fresh targeted nonce receipts for authenticated policy/secret results. Successful Qt RPC replies confer no native disclosure policy authority. The UI gateway reuses RequestPolicyState/PolicyStateReceipt before publishing revealed bytes; standard Secret Service sharing remains independent. PK5 fresh-native-32 records do not migrate legacy opaque64 secrets; exact versioned synthetic import is PK6, before installation/live replacement.
