@@ -1,0 +1,5 @@
+# PF12/PF13 progress — 2026-09-29 22:35 MDT
+
+The Settings schema/profile and service/client skeleton are in place, and the consumer focused gate passes 5/5: schema, pure schedule, bounded values, exact-owner schedule client, and private-bus service receipt. The service test proves targeted frames carry Settings-backed values and a schedule receipt. The qinda fork production plugin target is compiling in its isolated build under the required shared lock; 645 of 942 Ninja actions were complete at this update. The night-light architecture page now describes the native schedule service and owner/nonce/cookie/revision signal contract.
+
+I asked the manager to choose the automatic-location authorization identity. The installed GeoClue2 path requires a stable desktop identity and policy/agent authorization; I have not claimed that the automatic source works. PF13 remains outstanding: native Settings preference routing, legacy read-once migration with native precedence and retryable persisted marker, and its tests/ADR. No live output action, installation, or laptop work was performed.

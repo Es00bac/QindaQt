@@ -1,0 +1,5 @@
+# PF12/PF13 progress — 2026-09-29 22:58 MDT
+
+The fork's nightlight plugin now builds in the isolated Release worktree and contains no KNightTime/knighttime NEEDED entry. In the consumer, the resident service executable and Display Settings QML target build, and the six existing focused rows pass: schema, schedule calculation, value bounds, schedule client, private-bus service and the Settings section. I added a read-once importer with native user-layer precedence, marker-last persistence, surfaced malformed legacy input, and a Retry import action.
+
+The new focused importer test covers malformed input and a failed persistence attempt followed by retry, including asserting the marker is written last and the existing native active value is preserved. Its compile is queued behind the current keyring build under the required common flock; I have not started another compiler outside that lease. Automatic GeoClue authorization identity and mapping the documented stable Display1 ID to KWin's runtime output identity remain open questions. No live output action or installation was performed.
