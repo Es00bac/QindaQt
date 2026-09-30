@@ -8,6 +8,8 @@ add_library(QindaQt::SessionLockState ALIAS qindaqt_session_lock_state)
 target_sources(
     qindaqt_session_lock_state
     PRIVATE
+        src/qt_native_lock_transport.cpp
+        src/native_lock_state_monitor.cpp
         src/qt_session_lock_transport.cpp
         src/session_lock_state.cpp
         src/session_lock_state_monitor.cpp
@@ -15,12 +17,15 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/session_lock_state/native_lock_transport.h
+            include/qindaqt/services/session_lock_state/native_lock_state_monitor.h
+            include/qindaqt/services/session_lock_state/qt_native_lock_transport.h
             include/qindaqt/services/session_lock_state/qt_session_lock_transport.h
             include/qindaqt/services/session_lock_state/session_lock_state.h
             include/qindaqt/services/session_lock_state/session_lock_state_monitor.h
             include/qindaqt/services/session_lock_state/session_lock_transport.h
 )
-target_link_libraries(qindaqt_session_lock_state PUBLIC Qt6::Core Qt6::DBus)
+target_link_libraries(qindaqt_session_lock_state PUBLIC Qt6::Core Qt6::DBus PRIVATE $<BUILD_INTERFACE:qindaqt_compositor_names>)
 target_compile_features(qindaqt_session_lock_state PUBLIC cxx_std_20)
 set_target_properties(qindaqt_session_lock_state PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_session_lock_state)
