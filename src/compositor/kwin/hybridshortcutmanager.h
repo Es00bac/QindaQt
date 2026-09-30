@@ -26,6 +26,8 @@ enum class HybridShortcutAction {
     MaximizeGroup,
     RestoreGroup,
     ToggleMemberChrome,
+    NextMinimizedGatherPage,
+    PreviousMinimizedGatherPage,
     Count,
 };
 
@@ -45,6 +47,8 @@ struct HybridShortcutTriggers final
     std::function<void()> maximizeGroup;
     std::function<void()> restoreGroup;
     std::function<void()> toggleMemberChrome;
+    std::function<void()> nextMinimizedGatherPage;
+    std::function<void()> previousMinimizedGatherPage;
 };
 
 class HybridShortcutManager final

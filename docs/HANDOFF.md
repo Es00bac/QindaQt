@@ -1,3 +1,9 @@
+## 2026-09-30 — Gathered minimized windows and application identity
+
+Exact candidate `21809c5615c1fe423cafd1be5853dbfc23b879e5` is integrated with the semantic fractional-maximize branch. Rolled containers and iconified windows use the overview column convention in the usable upper-left work area, preserve restore positions, and expose finite overflow pages. Desktop-entry/StartupWMClass resolution supplies real application icons and labels; ambiguous metadata stays unresolved. Hover captions use the owned scene overlay and retire with their chip.
+
+Manager integrated target build of 390 actions and eleven focused CTests pass. The actual 640×480 mixed native fixture passes 17/17 verdicts with a reserved 40-pixel top bar, metadata icon, identity fallback, fullscreen origin, and overflow paging. The exact integrated plugin SHA256 `da451a4a1b2e51fe9601006461368fb434e14cbb631e9609e7e5e3ce5fe5abf2` passes the combined native lock matrix 33/33, zero failure/skip, using fork test addon `cd32a863` integrated as `2446a748`. Private fork-library lookup was supplied explicitly to the runner. Semantic native regression passes six Qt checks at normal and actual150% scale (58/59 read-only snapshots). Strict MkDocs and repository documentation-link validation pass. Physical input/output qualification and consolidated Portage deployment remain open; no live session was replaced.
+
 ## 2026-09-30 — Authenticated semantic window commands source boundary
 
 Exact candidate `e4ed1520` implements the Voice1-owner/confirmed-consent production `WindowManagement1` endpoint and20 capabilities. Captured foreground contexts are single-use, expire, and revoke on lock, owner/consent change or stale subject state. Rename/color, tabs/splits, regional geometry and 90% maximize/restore use model/native APIs. Wayland provider popups are joined to the actual kernel peer PID. Ordinary floating restore geometry survives actual fractional-scale acknowledgement rounding and repeated fullscreen/inset cycles.
@@ -10,7 +16,7 @@ Exact fork candidate `dca1e5b3` and consumer `37ebb332` are integrated. The comp
 
 Manager exact native CTest passes 1/1; the candidate matrix records 33/33 Qt checks without failures/skips, including real per-output greeter roles, actual DPR 1.50, keyboard layout, Patrol/Reef, OSK credential entry, PAM failures/cancellation/success and capture/input fencing. Manager integrated build229 actions and four fatal-warning authentication/worker rows pass; strict MkDocs and451-document link validation pass. Production artifacts have no KScreenLocker linkage or private authorization/PAM-confdir symbols. Reef source prerequisite `8583c74a` remains preserved in its hub for final Portage packaging.
 
-The combined native fence currently uses gathered candidate `599abed5`. The newer identity/hover overlay needs its own combined native gate before acceptance. PF8 native lock services, trusted installed executable/PAM binding, real owner credentials, physical DRM/input, real PipeWire consumers and final consolidated Portage deployment remain open. No live lock or installation occurred.
+The combined native fence now covers the integrated identity/hover plugin as recorded in the gathered boundary above. PF8 native lock services, trusted installed executable/PAM binding, real owner credentials, physical DRM/input, real PipeWire consumers and final consolidated Portage deployment remain open. No live lock or installation occurred.
 
 ## 2026-09-29 — Native Secret Service integrated (PK2)
 

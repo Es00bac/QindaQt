@@ -86,6 +86,12 @@ public:
                                     const QPointF &topLeft,
                                     const QRectF &bounds,
                                     QString *error = nullptr);
+    // Automatic page placement moves presentation only; unroll still restores
+    // the exact frame captured by iconify(). Manual dragging keeps the paired
+    // chip/restore-frame behavior of relocateChip().
+    [[nodiscard]] bool placeChipForGather(const QString &windowId,
+                                          const QPointF &topLeft,
+                                          QString *error = nullptr);
     // Re-applies the platform treatment (after a compositor scene restart).
     [[nodiscard]] bool reapply(const QString &windowId, QString *error = nullptr);
     // The window closed while iconified: drop it, never target it again.

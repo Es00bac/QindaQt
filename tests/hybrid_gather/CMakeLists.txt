@@ -31,3 +31,17 @@ add_test(NAME qindaqt.gather-layout COMMAND qindaqt_gather_layout_tests)
 set_tests_properties(
     qindaqt.gather-layout PROPERTIES LABELS "unit;pure;compositor"
 )
+
+qt_add_executable(qindaqt_minimized_gather_layout_tests tst_minimized_gather_layout.cpp)
+target_link_libraries(
+    qindaqt_minimized_gather_layout_tests
+    PRIVATE QindaQt::HybridGather Qt6::Test
+)
+set_target_properties(
+    qindaqt_minimized_gather_layout_tests PROPERTIES AUTOMOC ON CXX_EXTENSIONS OFF
+)
+qindaqt_enable_warnings(qindaqt_minimized_gather_layout_tests)
+add_test(NAME qindaqt.minimized-gather-layout COMMAND qindaqt_minimized_gather_layout_tests)
+set_tests_properties(
+    qindaqt.minimized-gather-layout PROPERTIES LABELS "unit;pure;compositor"
+)

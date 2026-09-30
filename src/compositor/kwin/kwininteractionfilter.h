@@ -40,6 +40,8 @@ namespace QindaQt::Compositor::KWinIntegration {
 class HybridChromePointerRouter;
 struct ChromePointerDecision;
 class HybridIconChipRouter;
+class MinimizedGatherPagerRouter;
+struct MinimizedPagerHit;
 struct IconChipPointerDecision;
 
 // Iconified-window input (ADR-0203). Every member is optional; a missing
@@ -48,7 +50,9 @@ struct IconChipPointerDecision;
 struct IconifyInputHooks final
 {
     HybridIconChipRouter *chipRouter = nullptr;
+    MinimizedGatherPagerRouter *pagerRouter = nullptr;
     std::function<void(const IconChipPointerDecision &)> chipSink;
+    std::function<void(const MinimizedPagerHit &)> pagerSink;
     // Resolves the independent, server-decorated window whose title bar lies
     // under the pointer, or nothing when another input owner covers it.
     std::function<std::optional<QString>(const QPointF &)> titleWheelTarget;

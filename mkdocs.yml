@@ -473,3 +473,4 @@ nav:
 
       - "ADR-0296: Own a native Secret Service daemon and session boundary": adr/0296-native-keyring-daemon-boundary.md
       - "ADR-0300: Authenticate native PAM token delivery through the system owner": adr/0300-trusted-native-keyring-pam.md
+      - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md

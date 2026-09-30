@@ -41,6 +41,7 @@ struct ApplicationEntry {
   QString genericName;
   QString comment;
   QString iconName;
+  QString startupWmClass;
   QStringList categories;
   QStringList keywords;
   QVector<DesktopEntryAction> actions;

@@ -118,6 +118,8 @@ close, or rollback; neither field is silently substituted for the other.
 `decorationClass` is the live decoration instance's Qt meta-object class (empty
 when no server decoration exists). These fields distinguish a mapped
 `QindaDecoration` from artifact discovery or `qindaqt/kwinrc` selection alone.
+`fullscreen` reports KWin's current Window::isFullScreen() state and is
+invalidated with the rest of the window inventory when that state changes.
 `active`, `skipTaskbar`, and `skipSwitcher` expose KWin's current presentation
 policy. `stackIndex` is the window's absolute zero-based index in
 `Workspace::stackingOrder()`, ordered bottom to top, or `-1` if a managed

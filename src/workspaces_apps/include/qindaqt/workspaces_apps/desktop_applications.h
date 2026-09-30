@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
+#include <QHash>
 #include <QObject>
 #include <QStringList>
+#include <QVector>
 #include <optional>
 namespace QindaQt::WorkspacesApps {
 struct DesktopApplication {
@@ -19,6 +21,12 @@ public:
   explicit DesktopApplications(QObject *parent = nullptr);
   [[nodiscard]] std::optional<DesktopApplication>
   find(const QString &desktopEntryId) const;
+  // Uses one cached public XDG catalog scan. Exact desktop-entry/app ids win;
+  // otherwise a unique case-insensitive StartupWMClass alias may resolve.
+  // Ambiguous aliases return empty. GUI-thread only.
+  [[nodiscard]] std::optional<DesktopApplication> findForWindow(
+      const QString &desktopEntryId, const QString &applicationId,
+      const QString &resourceClass) const;
   [[nodiscard]] bool launch(const QString &desktopEntryId,
                             const QStringList &urls,
                             const QByteArray &activationToken = {},
@@ -26,5 +34,10 @@ public:
 Q_SIGNALS:
   void launchFinished(const QString &desktopEntryId, bool started,
                       const QString &error);
+
+private:
+  QVector<DesktopApplication> m_catalogApplications;
+  QHash<QString, qsizetype> m_catalogByExactId;
+  QHash<QString, QStringList> m_idsByStartupWmClass;
 };
 } // namespace QindaQt::WorkspacesApps

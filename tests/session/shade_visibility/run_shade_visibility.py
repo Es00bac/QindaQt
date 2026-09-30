@@ -45,7 +45,7 @@ from shade_fixtures import KINDS, missing_executable  # noqa: E402
 SKIP_CODE = 77
 # Unix socket paths are limited to 108 bytes including the terminator.
 MAXIMUM_BUS_SOCKET_PATH = 100
-MINIMUM_VERDICTS = {"cycles": 15, "lifecycle": 13}
+MINIMUM_VERDICTS = {"cycles": 15, "lifecycle": 13, "gathered": 15}
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -58,6 +58,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--flow", choices=sorted(MINIMUM_VERDICTS), required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--name")
+    parser.add_argument("--panel-fixture", type=Path)
     return parser.parse_args()
 
 
@@ -72,9 +73,15 @@ def evaluate(evidence: dict[str, Any], flow: str, plugin_root: Path) -> list[str
                         f"{MINIMUM_VERDICTS[flow]}")
     failures.extend(f"verdict failed: {name}" for name, value in sorted(verdicts.items())
                     if value is not True)
-    compositor = str((plugin_root / "kwin" / "plugins" / "qindaqt_compositor.so").resolve())
-    if compositor not in evidence.get("mappedQindaqtLibraries", []):
-        failures.append(f"private compositor did not map {compositor}")
+    # The stock build uses kwin/plugins; the QindaQt fork publishes its
+    # integrationContract namespace as qindaqt-kwin/plugins. Keep the test
+    # root generic and verify the artifact that the running compositor mapped.
+    candidates = (plugin_root / "kwin" / "plugins" / "qindaqt_compositor.so",
+                  plugin_root / "qindaqt-kwin" / "plugins" / "qindaqt_compositor.so")
+    compositor_paths = {str(path.resolve()) for path in candidates}
+    if not compositor_paths.intersection(evidence.get("mappedQindaqtLibraries", [])):
+        failures.append("private compositor did not map any supported namespace: "
+                        + ", ".join(sorted(compositor_paths)))
     return failures
 
 
@@ -85,7 +92,9 @@ def capability_free_kwin(source: Path, output_root: Path) -> Path:
     its framebuffer memfds unreadable to the session driver. Copying drops the
     security.capability xattr; the program bytes are unchanged.
     """
-    target = output_root / "kwin-nocap" / "kwin_wayland"
+    # Keep the executable basename: the patched KWin fork selects its private
+    # platform plugin from argv[0], so renaming qindaqt-kwin breaks startup.
+    target = output_root / "kwin-nocap" / source.name
     target.parent.mkdir(parents=True, exist_ok=True)
     if not target.exists() or target.read_bytes() != source.read_bytes():
         shutil.copyfile(source, target)
@@ -125,6 +134,28 @@ def fresh_runtime_root(output_root: Path) -> Path:
     return root
 
 
+def write_gathered_application_fixtures(data_home: Path) -> None:
+    """Provide private desktop metadata and icon before the compositor scans XDG."""
+    applications = data_home / "applications"
+    icons = data_home / "icons" / "hicolor"
+    applications.mkdir(parents=True, exist_ok=True)
+    icon_dir = icons / "scalable" / "apps"
+    icon_dir.mkdir(parents=True, exist_ok=True)
+    (icons / "index.theme").write_text(
+        "[Icon Theme]\nName=Hicolor\nDirectories=scalable/apps\n"
+        "\n[scalable/apps]\nSize=64\nType=Scalable\nMinSize=16\n"
+        "MaxSize=128\nContext=Applications\n", encoding="utf-8")
+    (icon_dir / "gather-metadata-fixture.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" '
+        'viewBox="0 0 64 64"><rect width="64" height="64" rx="12" '
+        'fill="#e6007e"/><path d="M14 18h36v8H14zm0 12h24v8H14zm0 12h30v6H14z" '
+        'fill="#fff"/></svg>\n', encoding="utf-8")
+    (applications / "org.qindaqt.gather.Metadata.desktop").write_text(
+        "[Desktop Entry]\nType=Application\nName=Metadata Icon Fixture\n"
+        "Exec=/usr/bin/true\nIcon=gather-metadata-fixture\n"
+        "StartupWMClass=org.qindaqt.gather.Metadata\n", encoding="utf-8")
+
+
 def main() -> int:
     arguments = parse_arguments()
     missing = missing_executable(arguments.kind)
@@ -145,7 +176,10 @@ def main() -> int:
     root = fresh_runtime_root(arguments.output_root)
     environment = isolated_environment(root)
     write_virtual_output_config(Path(environment["XDG_CONFIG_HOME"]), spec)
+    if arguments.flow == "gathered":
+        write_gathered_application_fixtures(Path(environment["XDG_DATA_HOME"]))
     environment.update({
+        "GATHERED_PANEL_FIXTURE": str(arguments.panel_fixture or ""),
         "SHADE_OUT": str(output), "SHADE_KIND": arguments.kind, "SHADE_FLOW": arguments.flow,
         "SHADE_PIXEL_WIDTH": str(spec.pixel_width), "SHADE_PIXEL_HEIGHT": str(spec.pixel_height),
         "SHADE_SCALE": f"{spec.scale:.12g}", "PYTHONDONTWRITEBYTECODE": "1"})

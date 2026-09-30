@@ -179,10 +179,16 @@ See [ADR-0097](../adr/0097-separate-workspace-slots-from-live-windows.md),
 asynchronous launch through KF6 Service and KIOGui. Missing applications return
 a useful error immediately; failed process startup arrives through
 `launchFinished`. The caller must display that failure and refresh the live
-window inventory separately. A successful launch is not a window assignment.
+window inventory separately. The adapter also takes one bounded public
+ApplicationCatalog scan at construction for window identity: exact desktop-entry
+and application IDs precede a unique case-insensitive StartupWMClass match;
+ambiguous aliases return no match. Existing exact lookup and launch behavior is
+unchanged, and compositor presentation consumes the cached result without
+rescanning desktop files per window. A successful launch is not a window assignment.
 The adapter accepts a caller-supplied Wayland activation token and keeps URL
 expansion in the platform launcher. See
-[ADR-0101](../adr/0101-launch-workspace-apps-through-desktop-entries.md).
+[ADR-0101](../adr/0101-launch-workspace-apps-through-desktop-entries.md) and
+[ADR-0303](../adr/0303-resolve-window-identity-through-application-catalog.md).
 
 `workspaces.desktop-applications` runs on a private test bus with a temporary
 XDG application catalog. It exercises missing-app rejection, real desktop-file

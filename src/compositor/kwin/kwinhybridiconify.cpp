@@ -6,20 +6,27 @@
 #include "hybridinteractionruntime.h"
 #include "kwinchromescenelifecycle.h"
 #include "kwiniconchippresenter.h"
+#include "minimizedgatherpager.h"
 #include "kwiniconifyplatform.h"
 #include "managedwindowregistry.h"
+#include "minimizedapplicationidentity.h"
 
 #include "qindaqt/hybrid_chrome/chromeiconchip.h"
+#include "qindaqt/compositor/foreignwindowidentity.h"
+#include "qindaqt/workspaces_apps/desktop_applications.h"
 
 #include <compositor.h>
 #include <core/output.h>
 #include <window.h>
 #include <workspace.h>
+#include <wayland_server.h>
 
 #include <QApplication>
 #include <QIcon>
 #include <QPixmap>
+#include <QTimer>
 
+#include <algorithm>
 #include <optional>
 #include <utility>
 
@@ -34,9 +41,20 @@ bool fail(QString *error, QString message)
     return false;
 }
 
-QImage chipIcon(const KWin::Window *window, qreal devicePixelRatio)
+QImage chipIcon(qreal devicePixelRatio, const QStringList &themeCandidates)
 {
-    const QIcon &icon = window->icon();
+    QIcon icon;
+    for (const QString &candidate : themeCandidates) {
+        if (isGenericMinimizedIconName(candidate)) {
+            continue;
+        }
+        icon = QIcon::fromTheme(candidate);
+        if (!icon.isNull()) {
+            break;
+        }
+    }
+    // AGENT-GUARD: KWin's inherited Window::icon() can be the generic
+    // Wayland mark. Missing desktop icons use the app monogram in the chip.
     if (icon.isNull()) {
         return {};
     }
@@ -48,13 +66,22 @@ HybridChrome::IconChipRequest chipRequest(const QString &windowId,
                                          const KWin::Window *window,
                                          const QPointF &anchor,
                                          const QRectF &bounds,
-                                         const HybridChrome::ChromePalette &palette)
+                                         const HybridChrome::ChromePalette &palette,
+                                         const WorkspacesApps::DesktopApplication *desktopApp)
 {
     const qreal devicePixelRatio = window->output() ? window->output()->scale() : 1.0;
     HybridChrome::IconChipRequest request;
     request.windowId = windowId;
-    request.title = window->caption();
-    request.icon = chipIcon(window, devicePixelRatio);
+    const auto identity = resolveMinimizedApplicationIdentity(
+        window->desktopFileName(), window->resourceClass(),
+        desktopApp ? desktopApp->name : QString{},
+        desktopApp ? desktopApp->iconName : QString{}, window->caption());
+    request.title = identity.label;
+    if (!window->caption().trimmed().isEmpty()
+        && window->caption().trimmed() != identity.label) {
+        request.title += QStringLiteral(" — ") + window->caption().trimmed();
+    }
+    request.icon = chipIcon(devicePixelRatio, identity.iconThemeCandidates);
     request.anchor = anchor;
     request.bounds = bounds;
     request.devicePixelRatio = devicePixelRatio;
@@ -80,9 +107,58 @@ void KWinHybridSession::ensureIconify()
     m_iconifyPlatform = std::make_unique<KWinIconifyPlatform>(m_registry, std::move(callbacks));
     m_iconify = std::make_unique<HybridIconifyController>(*m_iconifyPlatform);
     m_iconChips = std::make_unique<KWinIconChipPresenter>(m_registry);
+    m_minimizedGatherPager = std::make_unique<KWinMinimizedGatherPager>(m_registry);
+    m_minimizedGatherPagerRouter = std::make_unique<MinimizedGatherPagerRouter>(
+        [this](const QPointF &position) {
+            return m_minimizedGatherPager
+                ? m_minimizedGatherPager->hitAt(position) : std::nullopt;
+        });
     m_iconChipRouter = std::make_unique<HybridIconChipRouter>(
         [this](const QPointF &position) { return iconChipHitAt(position); },
         QApplication::startDragDistance());
+
+    // KWin recreates scene resources before this notification, but its earlier
+    // chrome synchronization can return before iconified scene children are
+    // republished. Queue one focused refresh for the surviving iconify records.
+    if (auto *const compositor = KWin::Compositor::self()) {
+        connect(compositor, &KWin::Compositor::compositingToggled, this,
+                [this](bool active) {
+            if (!active || m_iconifySceneRefreshPending || !m_iconify
+                || m_iconify->count() == 0) {
+                return;
+            }
+            m_iconifySceneRefreshPending = true;
+            QTimer::singleShot(0, this, [this] {
+                m_iconifySceneRefreshPending = false;
+                if (m_shutdown || !ready() || !m_iconify || !m_iconChips
+                    || (KWin::waylandServer() && KWin::waylandServer()->isScreenLocked())
+                    || m_iconify->count() == 0) {
+                    return;
+                }
+                for (const auto &windowId : m_iconify->iconifiedWindowIds()) {
+                    if (!m_iconify->isIconified(windowId)) {
+                        continue;
+                    }
+                    auto *const window = m_registry.window(windowId);
+                    if (!window || window->isDeleted()) {
+                        continue;
+                    }
+                    QString error;
+                    if (!m_iconify->reapply(windowId, &error)) {
+                        qWarning("QindaQt could not restore iconified scene treatment for '%s': %s",
+                                 qPrintable(windowId), qPrintable(error));
+                        continue;
+                    }
+                    error.clear();
+                    if (!publishIconChip(windowId, &error)) {
+                        qWarning("QindaQt could not republish iconified chip '%s': %s",
+                                 qPrintable(windowId), qPrintable(error));
+                    }
+                }
+                synchronizeMinimizedGather();
+            });
+        });
+    }
 }
 
 bool KWinHybridSession::isWindowIconified(const QString &windowId) const noexcept
@@ -129,9 +205,15 @@ bool KWinHybridSession::iconifyWindow(const QString &windowId, QString *error)
     }
     const QRectF frame = window->frameGeometry();
     const QRectF bounds = iconChipBounds(windowId);
+    const QString applicationId = ::QindaQt::Compositor::resolveApplicationId(
+        window->desktopFileName(), window->resourceClass(), {});
+    const auto desktopApp = m_workspaceApplications
+        ? m_workspaceApplications->findForWindow(window->desktopFileName(),
+              applicationId, window->resourceClass()) : std::nullopt;
     // The chip anchors at the title bar's leading edge: the frame's top-left.
     const auto plan = HybridChrome::ChromeIconChip::layout(
-        chipRequest(windowId, window, frame.topLeft(), bounds, m_chromeStyle.palette), error);
+        chipRequest(windowId, window, frame.topLeft(), bounds, m_chromeStyle.palette,
+                    desktopApp ? &*desktopApp : nullptr), error);
     if (!plan) {
         return false;
     }
@@ -226,9 +308,14 @@ bool KWinHybridSession::publishIconChip(const QString &windowId, QString *error)
         return fail(error, QStringLiteral("window '%1' is not iconified").arg(windowId));
     }
     const QRectF bounds = iconChipBounds(windowId);
+    const QString applicationId = ::QindaQt::Compositor::resolveApplicationId(
+        window->desktopFileName(), window->resourceClass(), {});
+    const auto desktopApp = m_workspaceApplications
+        ? m_workspaceApplications->findForWindow(window->desktopFileName(),
+              applicationId, window->resourceClass()) : std::nullopt;
     const auto plan = HybridChrome::ChromeIconChip::layout(
         chipRequest(windowId, window, record->chipFrame.topLeft(), bounds,
-                    m_chromeStyle.palette), error);
+                    m_chromeStyle.palette, desktopApp ? &*desktopApp : nullptr), error);
     if (!plan) {
         return false;
     }
@@ -277,6 +364,9 @@ void KWinHybridSession::releaseIconChipSceneItems() noexcept
 {
     if (m_iconChips) {
         m_iconChips->releaseSceneItems();
+    }
+    if (m_minimizedGatherPager) {
+        m_minimizedGatherPager->releaseSceneItems();
     }
 }
 

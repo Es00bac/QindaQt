@@ -126,6 +126,8 @@ void KWinHybridSession::initializeTaskIdentityAndShortcuts()
             dispatchSemanticShortcut(HybridSemanticCommand::RestoreGroup);
         },
         .toggleMemberChrome = [this] { toggleActiveMemberChrome(); },
+        .nextMinimizedGatherPage = [this] { changeActiveMinimizedGatherPage(1); },
+        .previousMinimizedGatherPage = [this] { changeActiveMinimizedGatherPage(-1); },
     });
 }
 

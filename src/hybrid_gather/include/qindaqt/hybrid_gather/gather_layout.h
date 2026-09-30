@@ -118,4 +118,41 @@ struct GatherLayout final
 // Deterministic: the same request always yields the same layout.
 [[nodiscard]] GatherLayout planGather(const GatherRequest &request);
 
+// Persistent placement for real minimized surfaces. Unlike the transient
+// overview, this planner paginates overflow so no item is placed off-screen.
+struct MinimizedGatherRequest final
+{
+    // KWin MaximizeArea in desktop-logical coordinates, excluding reserved panels.
+    QRectF workArea;
+    qreal margin = 90;
+    qreal gap = 16;
+    qreal iconExtent = 48;
+    // Follow the overview compact-card convention; restoration stays compositor-owned.
+    qreal containerWidthLimit = GatherRequest{}.cardSize.width();
+    QVector<QString> iconifiedWindowIds; // oldest first
+    QVector<GatherTile> shadedContainers; // sourceSize is the visible strip frame
+};
+
+struct MinimizedGatherLayout final
+{
+    bool ok = false;
+    QString diagnostic;
+    QRectF field; // Work area inset by the effective margin.
+    QRectF itemArea; // Field below the reserved pager row, when paging.
+    QRectF pagerFrame;
+    QRectF pagerPreviousButton;
+    QRectF pagerCounter;
+    QRectF pagerNextButton;
+    int pageCount = 0;
+    int appliedPage = 0;
+    QVector<GatherPlacement> icons;
+    QVector<GatherPlacement> containers;
+};
+
+// Every item appears on exactly one page. Within a page icons precede strips;
+// both lanes stack down and wrap rightward. Invalid geometry is rejected, and
+// pages prevent off-work-area placements for arbitrarily long inventories.
+[[nodiscard]] MinimizedGatherLayout planMinimizedGather(
+    const MinimizedGatherRequest &request, int requestedPage = 0);
+
 } // namespace QindaQt::HybridGather

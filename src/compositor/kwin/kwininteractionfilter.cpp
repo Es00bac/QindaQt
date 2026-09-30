@@ -3,6 +3,7 @@
 
 #include "hybridchromepointerrouter.h"
 #include "hybridiconchiprouter.h"
+#include "minimizedgatherpager.h"
 
 #include "qindaqt/hybrid_input/containerchords.h"
 
@@ -282,6 +283,10 @@ bool KWinInteractionFilter::pointerMotion(KWin::PointerMotionEvent *event)
 
 bool KWinInteractionFilter::routeMotion(const HybridInput::PointerEvent &normalized)
 {
+    if (m_iconify.pagerRouter
+        && m_iconify.pagerRouter->pointerMove(normalized.position)) {
+        return true;
+    }
     if (!m_controller.active() && m_chromeRouter
         && dispatchChrome(m_chromeRouter->pointerMove(normalized))) {
         return true;
@@ -309,6 +314,20 @@ bool KWinInteractionFilter::pointerButton(KWin::PointerButtonEvent *event)
 bool KWinInteractionFilter::routeButton(const HybridInput::PointerEvent &normalized,
                                         bool pressed)
 {
+    if (m_iconify.pagerRouter) {
+        if (pressed && m_iconify.pagerRouter->pointerPress(
+                           normalized.position,
+                           normalized.changedButton == Qt::LeftButton)) {
+            return true;
+        }
+        if (!pressed && m_iconify.pagerRouter->pointerActive()) {
+            const auto hit = m_iconify.pagerRouter->pointerRelease(normalized.position);
+            if (hit && m_iconify.pagerSink) {
+                m_iconify.pagerSink(*hit);
+            }
+            return true;
+        }
+    }
     if (!m_controller.active() && m_chromeRouter) {
         const auto chromeDecision = pressed ? m_chromeRouter->pointerPress(normalized)
                                             : m_chromeRouter->pointerRelease(normalized);

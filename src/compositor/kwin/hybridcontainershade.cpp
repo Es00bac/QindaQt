@@ -128,15 +128,47 @@ bool HybridContainerPlacementController::unshade(
     // the strip leaves maximize, so a maximized strip has not moved.
     const QRect workArea = isMaximized(containerId)
         ? maximizedFrame(containerId).value_or(QRect{}) : QRect{};
+    // AGENT-GUARD: Automatic gather placement preserves the original position;
+    // native inset maximize still restores its own current fractional frame.
+    const QPoint restorePosition = m_gatherRestorePositions.value(
+        containerId, stripFound->topLeft());
     const QRect restoreFrame = workArea.isValid()
-        ? workArea : QRect(stripFound->topLeft(), *sizeFound);
+        ? workArea : QRect(restorePosition, *sizeFound);
     if (!reflow(containerId, restoreFrame, error)) {
         return false;
     }
     m_shadeStripFrames.erase(stripFound);
     m_shadeRestoreSizes.remove(containerId);
+    m_gatherRestorePositions.remove(containerId);
     m_moveDrags.remove(containerId);
     return true;
+}
+
+bool HybridContainerPlacementController::placeShadeStripForGather(
+    const QString &containerId, const QRect &frame)
+{
+    auto found = m_shadeStripFrames.find(containerId);
+    if (found == m_shadeStripFrames.end() || !frame.isValid()) {
+        return false;
+    }
+    if (*found == frame) {
+        return true;
+    }
+    if (!m_gatherRestorePositions.contains(containerId)) {
+        m_gatherRestorePositions.insert(containerId, found->topLeft());
+    }
+    // Automatic compaction changes only the visible strip. The independent
+    // restore-size ledger remains the full committed container geometry.
+    *found = frame;
+    return true;
+}
+
+bool HybridContainerPlacementController::placeShadeStripForGather(
+    const QString &containerId, const QPoint &topLeft)
+{
+    const auto current = m_shadeStripFrames.constFind(containerId);
+    return current != m_shadeStripFrames.cend()
+        && placeShadeStripForGather(containerId, QRect(topLeft, current->size()));
 }
 
 std::optional<QRect> HybridContainerPlacementController::shadedFrame(

@@ -124,6 +124,13 @@ public:
     // The strip's current logical frame while shaded (moves under drag);
     // nullopt when the container is not shaded.
     [[nodiscard]] std::optional<QRect> shadedFrame(const QString &containerId) const;
+    // Moves only the visible strip during automatic gathering. The first
+    // gathered location retains the original unroll position; a later manual
+    // drag supersedes that automatic presentation placement.
+    [[nodiscard]] bool placeShadeStripForGather(const QString &containerId,
+                                                const QRect &frame);
+    [[nodiscard]] bool placeShadeStripForGather(const QString &containerId,
+                                                const QPoint &topLeft);
     // Re-sizes a shaded container's strip for a badge label of labelWidth
     // logical pixels, keeping its current top-left. Returns true when the
     // width actually changed, so the caller can skip republishing chrome.
@@ -201,6 +208,7 @@ private:
     QSet<QString> m_refusedGestures;
     QHash<QString, double> m_aspectPins;
     QHash<QString, QRect> m_shadeStripFrames;
+    QHash<QString, QPoint> m_gatherRestorePositions;
     // Original (pre-shade) size only; position is not tracked here because
     // the strip's own current position (which may have moved under drag) is
     // exactly the position the container reflows back to on unshade.
