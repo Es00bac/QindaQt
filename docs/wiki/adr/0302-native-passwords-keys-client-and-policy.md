@@ -62,8 +62,11 @@ exclude clipboard history, and clear only its own still-current selection.
 The native protocol/prompt/client/model form a reviewable vertical checkpoint.
 The current candidate also supplies typed lock preferences and resident
 native screen-lock/true-idle consumption, qualified on private fixtures. Public
-attachment/idle service extraction, Settings route integration and rendered
-Wayland disclosure qualification remain the next PK4 acceptance boundary. Defaults are
+ordinary attachment/idle modules are now consumed through their public boundaries
+([ADR-0305](0305-public-ordinary-compositor-attachment.md),
+[ADR-0307](0307-public-ordinary-fd-idle-observation.md)); keyring retains selected-session
+and legacy fallback policy only. Settings route integration and rendered Wayland
+disclosure qualification remain the next PK4 acceptance boundary. Defaults are
 keyring.lockOnScreenLock=false and keyring.lockAfterIdleMinutes=0 (never);
 logout continues to retire all secrets. Settings1 stores only typed policy,
 never passwords or item values. A preference acknowledgement must reflect a
