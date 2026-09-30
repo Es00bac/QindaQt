@@ -3,6 +3,7 @@
 #include "../daemon/process_prompt_provider.h"
 #include "../daemon/control_server.h"
 #include "../daemon/session_display_binding.h"
+#include "../daemon/resident_lock_policy.h"
 #include <QCoreApplication>
 #include <QCommandLineParser>
 #include <QStandardPaths>
@@ -30,7 +31,8 @@ int main(int argc,char **argv) {
     QCoreApplication::setApplicationName("qindaqt-keyring");
     qInstallMessageHandler([](QtMsgType,const QMessageLogContext &,const QString &) {});
     QCommandLineParser parser; parser.addHelpOption();
-    parser.addOptions({{"require-session-display","Require validated native session attachment before prompts."},
+    parser.addOptions({{"policy-fixture","Enable resident policy only with explicit private bus/storage/runtime roots."},
+                       {"require-session-display","Require validated native session attachment before prompts."},
                        {"storage-root","Explicit collection directory.","path"},
                        {"runtime-root","Explicit private runtime directory.","path"},
                        {"private-bus","Explicit isolated bus address for qualification.","address"},
@@ -58,6 +60,11 @@ int main(int argc,char **argv) {
         SecretService service(repository,provider,bus);
         QObject::connect(&control,&ControlServer::collectionStateChanged,&service,&SecretService::notifyCollectionState);
         if (!bus.registerVirtualObject(Root,&service,QDBusConnection::SubPath)) return 2;
+        const bool fixture=parser.isSet("policy-fixture");
+        if(fixture && (!parser.isSet("private-bus") || !parser.isSet("storage-root") || !parser.isSet("runtime-root"))) return 2;
+        std::unique_ptr<ResidentLockPolicy> policy;
+        if(fixture || (!parser.isSet("storage-root") && !parser.isSet("runtime-root") && !parser.isSet("private-bus")))
+            policy=std::make_unique<ResidentLockPolicy>(repository,service,display,bus);
         QSocketNotifier ending(signalFd,QSocketNotifier::Read);
         QObject::connect(&ending,&QSocketNotifier::activated,&application,[&] {
             signalfd_siginfo info{}; ::read(signalFd,&info,sizeof(info)); application.quit();

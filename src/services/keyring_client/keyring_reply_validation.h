@@ -4,6 +4,7 @@
 namespace QindaQt::Services::KeyringClient {
 bool validObjectPath(const QString &path, const QString &component);
 QVariantMap validateMetadata(const QVariantMap &wire, bool collection);
+QVariantMap validatePolicy(const QVariantMap &);
 QVariantList validateCollections(const QVariantMap &wire);
 QVariantList validateItems(const qindaqt::keyring::protocol::MetadataRows &wire);
 }

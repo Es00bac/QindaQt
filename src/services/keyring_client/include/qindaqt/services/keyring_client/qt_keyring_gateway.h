@@ -26,6 +26,7 @@ private Q_SLOTS:
     void promptCompleted(bool, const QDBusVariant &, const QDBusMessage &);
     void disconnected();
     void collectionStateChanged(const QDBusObjectPath &,bool,bool,const QDBusMessage &);
+    void policyStateChanged(const QVariantMap &,const QDBusMessage &);
 private:
     class Private;
     std::unique_ptr<Private> d;

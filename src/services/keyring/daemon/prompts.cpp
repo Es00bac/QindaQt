@@ -74,6 +74,7 @@ void SecretService::startPrompt(const QString &path) {
                 if (p.action == "create") {
                     const auto id = repository_.create(p.label,p.alias,password.bytes());
                     p.completed.append(objectPath(collectionPath(id)));
+                    notifyCollectionState(id); // Newly created collections obey resident lock policy before disclosure.
                     signal(Root,ServiceInterface,"CollectionCreated",{variantPath(collectionPath(id))});
                     changed(Root,ServiceInterface,properties(Root,ServiceInterface));
                     finishPrompt(path,false);

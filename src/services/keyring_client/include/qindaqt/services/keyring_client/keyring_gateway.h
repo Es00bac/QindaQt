@@ -25,6 +25,7 @@ Q_SIGNALS:
     void authorityChanged();
     void secretsInvalidated();
     void metadataChanged();
+    void policyChanged(const QVariantMap &state);
     void rowsReady(quint64 token, const QVariantList &rows);
     void actionFinished(quint64 token, bool confirmed, const QString &message);
     void secretReady(quint64 token, std::shared_ptr<qindaqt::keyring::SecureBuffer> bytes,

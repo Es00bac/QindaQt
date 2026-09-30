@@ -7,6 +7,7 @@
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QDir>
+#include <QFile>
 #include <QDBusConnection>
 #include <QDBusReply>
 #include <QDBusInterface>
@@ -35,16 +36,34 @@ private Q_SLOTS:
         QTemporaryDir temporary;QVERIFY(temporary.isValid());
         const auto runtime=temporary.path()+"/runtime",storage=temporary.path()+"/storage";
         QVERIFY(QDir().mkpath(runtime));QVERIFY(QDir().mkpath(storage));chmod(runtime.toUtf8().constData(),0700);chmod(storage.toUtf8().constData(),0700);
-        QuietProcess broker;broker.start("dbus-daemon",{"--session","--nofork","--print-address=1"});
+        QFile configuration(temporary.path()+"/bus.conf");QVERIFY(configuration.open(QIODevice::WriteOnly));
+        configuration.write("<busconfig><type>session</type><listen>unix:tmpdir=/tmp</listen><policy context='default'><allow send_destination='*'/><allow eavesdrop='true'/><allow own='*'/></policy></busconfig>");
+        configuration.close();
+        QuietProcess broker;broker.start("dbus-daemon",{"--config-file="+configuration.fileName(),"--nofork","--print-address=1"});
         QVERIFY(broker.waitForStarted());QVERIFY(broker.waitForReadyRead());const auto address=QString::fromUtf8(broker.readLine()).trimmed();
         QuietProcess daemon;auto env=QProcessEnvironment::systemEnvironment();
         env.insert("DBUS_SESSION_BUS_ADDRESS",address);env.insert("XDG_RUNTIME_DIR",runtime);
         daemon.setProcessEnvironment(env);
-        daemon.start(QINDAQT_KEYRING_BINARY,{"--storage-root",storage,"--runtime-root",runtime,"--prompt-program",QINDAQT_PROMPT_SCRIPT});
+        daemon.start(QINDAQT_KEYRING_BINARY,{"--private-bus",address,"--storage-root",storage,"--runtime-root",runtime,"--prompt-program",QINDAQT_PROMPT_SCRIPT,"--policy-fixture"});
         QVERIFY(daemon.waitForStarted());
         const auto name=QStringLiteral("keyring-client-private");
         auto bus=QDBusConnection::connectToBus(address,name);
         QVERIFY(bus.isConnected());
+        QuietProcess compositor;compositor.setProcessEnvironment(env);
+        compositor.start(QINDAQT_POLICY_COMPOSITOR,{"qindaqt-7"});
+        QVERIFY(compositor.waitForStarted());QVERIFY(compositor.waitForReadyRead());
+        QCOMPARE(compositor.readLine(),QByteArray("ready\n"));
+        QDBusInterface native("org.qindaqt.Keyring1","/org/freedesktop/secrets","org.qindaqt.Keyring1",bus);
+        QTRY_VERIFY_WITH_TIMEOUT(native.isValid(),5000);
+        const auto attachment=native.call("AttachSessionWithDisplay","qindaqt-7");
+        QCOMPARE(attachment.type(),QDBusMessage::ReplyMessage);QVERIFY(attachment.arguments().first().toBool());
+        auto screenReady=[&]{
+            const auto reply=native.call("GetPolicyState");
+            if(reply.type()!=QDBusMessage::ReplyMessage) return false;
+            const auto state=p::argument<QVariantMap>(reply.arguments().first());
+            return state.value("ScreenLockAvailable").toBool() && !state.value("ScreenLocked").toBool();
+        };
+        QTRY_VERIFY_WITH_TIMEOUT(screenReady(),5000);
         {
             QtKeyringGateway gateway(bus);
             QSignalSpy invalidated(&gateway,&KeyringGateway::secretsInvalidated);
@@ -73,10 +92,24 @@ private Q_SLOTS:
             gateway.request(4,Request::Reveal,item);QTRY_COMPARE_WITH_TIMEOUT(secrets.size(),1,5000);
             const auto secret=qvariant_cast<std::shared_ptr<qindaqt::keyring::SecureBuffer>>(secrets.last()[1]);
             QVERIFY(secret);QCOMPARE(secret->size(),15U);QVERIFY(std::memcmp(secret->bytes().data(),"synthetic-value",15)==0);secret->clear();secrets.clear();
-            gateway.request(5,Request::Lock,collection);QTRY_COMPARE_WITH_TIMEOUT(actions.size(),2,5000);QVERIFY(actions.last()[1].toBool());
-            QCOMPARE(invalidated.size(),1);
+            // A real prompt holds its reply until after the native screen locks.
+            const QVariantMap delayedProps{{"org.freedesktop.Secret.Item.Label","delayed-reveal-fixture"},{"org.freedesktop.Secret.Item.Attributes",QVariant::fromValue(p::StringMap{})}};
+            p::WireSecret delayedWire{session,{},QByteArray("late-value"),"text/plain"};
+            const auto delayedCreate=col.call("CreateItem",delayedProps,QVariant::fromValue(delayedWire),false);
+            QCOMPARE(delayedCreate.type(),QDBusMessage::ReplyMessage);p::wipe(delayedWire.value);
+            const auto delayedItem=p::argument<QDBusObjectPath>(delayedCreate.arguments()[0]).path();
+            gateway.request(40,Request::Reveal,delayedItem);QTest::qWait(150);
+            compositor.write("lock\n");QVERIFY(compositor.waitForBytesWritten());
+            QTRY_VERIFY_WITH_TIMEOUT(actions.size()==2,5000);
+            QVERIFY(!actions.last()[1].toBool());QCOMPARE(secrets.size(),0);
+            // Default collection policy remains false: the UI fence is stricter.
+            QCOMPARE(col.property("Locked").toBool(),false);
+            compositor.write("unlock\n");QVERIFY(compositor.waitForBytesWritten());
+            QTRY_VERIFY_WITH_TIMEOUT(screenReady(),5000);
+            gateway.request(5,Request::Lock,collection);QTRY_COMPARE_WITH_TIMEOUT(actions.size(),3,5000);QVERIFY(actions.last()[1].toBool());
+            QVERIFY(invalidated.size()>=1);
             gateway.request(6,Request::Unlock,collection);gateway.cancel();
-            QTest::qWait(1200);QCOMPARE(actions.size(),2);
+            QTest::qWait(1200);QCOMPARE(actions.size(),3);
             gateway.request(7,Request::Collections);QTRY_COMPARE_WITH_TIMEOUT(rows.size(),3,5000);
             daemon.terminate();QVERIFY(daemon.waitForFinished(5000));QTRY_VERIFY(!gateway.available());
         }

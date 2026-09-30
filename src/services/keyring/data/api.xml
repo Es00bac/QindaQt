@@ -60,6 +60,8 @@
 <method name="ListItems"><arg type="o" direction="in"/><arg type="aa{sv}" direction="out"/></method>
 <method name="ReadSecretWithPrompt"><arg type="o" direction="in"/><arg type="o" direction="in"/><arg type="o" direction="out"/></method>
 <method name="ChangePasswordWithPrompt"><arg type="o" direction="in"/><arg type="o" direction="out"/></method>
+<method name="GetPolicyState"><arg type="a{sv}" direction="out"/></method>
+<signal name="PolicyStateChanged"><arg type="a{sv}"/></signal>
 <method name="ListCollections"><arg type="a{sv}" direction="out"/></method>
 </interface>
 </node>
