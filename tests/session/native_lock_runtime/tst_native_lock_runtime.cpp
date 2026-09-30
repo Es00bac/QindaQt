@@ -127,6 +127,7 @@ private Q_SLOTS:
     void automaticIdleUsesConfirmedTimeoutAndCancelableGrace();
     void manualLockWorksWhenAutomaticIdleIsDisabled();
     void automaticLockLeaseDefersIdleButNotManual();
+    void automaticLockWaitsForCurrentPowerOwnerLeaseState();
     void suspendWaitsForActualProtectedState();
     void resumeWaitsForAuthenticatedStateAndHonorsPreference();
 };
@@ -181,6 +182,23 @@ void NativeLockRuntimeTests::automaticLockLeaseDefersIdleButNotManual() {
     // reaches NativeLockRequest while the same confirmed lease is active.
     QVERIFY(f.runtime->requestManualLock());
     QCOMPARE(f.request.requests, 1);
+}
+
+void NativeLockRuntimeTests::automaticLockWaitsForCurrentPowerOwnerLeaseState() {
+    Fixture f;
+    f.seed(true, false, 0);
+    f.start(true);
+    f.powerTransport.announceOwner(QStringLiteral(":1.42"));
+    f.unlockState();
+    f.idle.setIdle(true);
+    QTest::qWait(100);
+    QCOMPARE(f.request.requests, 0);
+
+    // Once the exact current owner confirms no active scopes, the idle stage
+    // may proceed. A delayed or failed query must never race an accepted lease.
+    const auto query = f.powerTransport.idleStateRequests.constLast();
+    f.powerTransport.replyIdleState(query, 0x7U, 0x0U);
+    QTRY_COMPARE_WITH_TIMEOUT(f.request.requests, 1, 1000);
 }
 
 void NativeLockRuntimeTests::suspendWaitsForActualProtectedState() {
