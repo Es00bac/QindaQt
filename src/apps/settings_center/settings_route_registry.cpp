@@ -282,6 +282,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   registerScreensaverRoute();
   registerLoginScreenRoute();
   registerVoiceRoute();
+  registerKeyringRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -451,6 +452,23 @@ void SettingsRouteRegistry::registerVoiceRoute() {
       .unavailableReason = QString(),
   };
   const bool registered = registerRoute(voiceRoute);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerKeyringRoute() {
+  const SettingsRoute route{
+      .id = QStringLiteral("passwords-keys"),
+      .component = SettingsRouteComponent::Keyring,
+      .title = QCoreApplication::translate("SettingsCenter", "Passwords & Keys"),
+      .description = QCoreApplication::translate(
+          "SettingsCenter", "Secret Service collections, passwords, and lock policy"),
+      .iconName = QStringLiteral("dialog-password"),
+      .category = QCoreApplication::translate("SettingsCenter", "Privacy"),
+      .available = true,
+      .unavailableReason = QString(),
+  };
+  const bool registered = registerRoute(route);
   Q_ASSERT(registered);
   Q_UNUSED(registered);
 }
