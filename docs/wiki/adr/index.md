@@ -322,3 +322,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0307: Share readonly idle observation on an admitted ordinary display FD](0307-public-ordinary-fd-idle-observation.md)
 
 - [ADR-0310: Native per-application Secret portal](0310-native-per-application-secret-portal.md)
+- [ADR-0314: Authenticate native lock state through targeted receipts](0314-native-lock-receipt-authentication.md)
