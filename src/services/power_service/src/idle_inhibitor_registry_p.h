@@ -9,13 +9,6 @@
 
 namespace QindaQt::Power {
 
-enum class IdleInhibitorScope : quint32 {
-  AutomaticLock = 1U << 0U,
-  DisplayOff = 1U << 1U,
-  IdleSuspend = 1U << 2U,
-};
-Q_DECLARE_FLAGS(IdleInhibitorScopes, IdleInhibitorScope)
-
 enum class IdleInhibitorAcquireStatus : quint8 {
   Accepted,
   Unsupported,
@@ -64,5 +57,3 @@ private:
 };
 
 } // namespace QindaQt::Power
-
-Q_DECLARE_OPERATORS_FOR_FLAGS(QindaQt::Power::IdleInhibitorScopes)
