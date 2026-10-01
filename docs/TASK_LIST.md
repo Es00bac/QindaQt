@@ -13,11 +13,15 @@ Both use the same signed binary, with all 7,172 named PNGs matching the original
 inputs, 7,231 package files verified, and twelve source-exact Qt render samples.
 Editable source and notices are preserved; the saved icon choice stays unchanged.
 
-The separate hand-rendered family is actively authored in QindaIconArt. Its
-acceptance requires the same 7,172 category/name paths, all 3,261 distinct original
-artwork groups redrawn in visibly hand-rendered media, transparent PNG output,
-per-atlas provenance and actual-size visual inspection. Partial artwork is not
-installed or counted as complete. See [Icon themes](wiki/shell/icon-theme.md).
+The separate `QindaQt-Handdrawn` family is complete at QindaIconArt `6cdcfecc`:
+7,172 exact category/name paths, 3,261 distinct hand-rendered raster drawings,
+transparent PNG output, complete provenance and actual-size visual inspection.
+Independent review accepts the exact QindaGentoo package recipe `07ab05d`.
+Portage installs and retains version `1.0.0_p20261001` on qinda; all 7,213 package
+files, icon bytes, signed binary, twelve native Qt samples and production theme
+discovery pass. The saved preference is unchanged. The laptop installation
+waits for its test lock to disappear and will use the same signed binary.
+See [Icon themes](wiki/shell/icon-theme.md).
 
 The requested live working gallery is delivered on the recovery branch from
 `d93a6c99`, with independent exact review `8f348f61`. It opens the current pack
@@ -25,6 +29,24 @@ with filename search, category filtering and larger views, and automatically
 refreshes additions every five seconds. Its counts describe present working
 files, including additions awaiting review. The gallery does not advance full
 artwork acceptance or the Plasma-free milestone.
+
+Supported native source-profile policy `ce84b0a5` is independently accepted and
+integrated at `ac689f42`. The manager's actual integrated build and five CTests
+pass all 65 Qt cases, with strict documentation checks. Power-saver and
+performance holds preserve external holds and manual cancellation; automatic
+balanced policy remains deferred. Production defaults to off until explicit
+native-exclusive cutover. The next bounded PF2 outcome is a cancellable critical
+battery countdown and authenticated configured-action dispatch; whole PF2,
+lid policy and shared idle-inhibitor consumption remain open.
+
+Capture fixture identity and authentic PipeWire object-serial selection repairs
+produce real Screenshot pixels and continuous decoded frames in the first
+seven-case native group. Native lock exposes a synchronous scene-view lifetime
+defect in accepted fork `447eed96`. Narrow lifetime candidate `68c4d74f` keeps
+immediate capture revocation and defers source destruction; its monitored lock
+test passes three Qt checks and compositor survival. Independent review is in
+progress. A recurring unmonitored initial capture refusal remains under
+diagnosis, and the full matrix, production stage and installed routing remain open.
 
 ## September 30 — Graphical removable media
 

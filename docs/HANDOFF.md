@@ -1,5 +1,26 @@
 # Plasma-free recovery boundary — 2026-10-01
 
+Complete hand-rendered artwork is frozen at QindaIconArt `6cdcfecc`: 7,172 named
+icons and 3,261 distinct drawings, with no missing entries and preserved raster
+generation/crop/review provenance. Exact QindaGentoo recipe `07ab05d` is
+independently accepted and integrated in its authoritative hub. Actual Portage
+installation on qinda passes all 7,213 file checks, exact icon bytes, forced
+binary signature verification, twelve native Qt samples and production theme
+discovery. Version `1.0.0_p20261001`, build ID 1, has binary SHA256
+`fd9bee16c877ac65f0cce15175b3f123c4163d8b4e5bbe9219e74969a6a0684a`.
+The saved icon preference remains unchanged. Laptop installation waits for its
+test lock; all builds and GPU tests use qinda while Claude tests the game on
+the laptop.
+The supplied painted theme and live working gallery are already delivered.
+
+Native supported source-profile policy `ce84b0a5` and independent exact review
+`5fc7910be` are integrated at `ac689f42`. Manager integrated build and five CTests
+pass 65 Qt cases, and the 485-document validator plus strict MkDocs pass.
+Automatic balanced base policy is deferred; production defaults off until
+explicit native-exclusive cutover. The next bounded PF2 worker outcome is the
+cancellable critical-battery countdown and configured action. Whole PF2 and
+installed PowerDevil retirement remain open.
+
 Native configured sleep candidate `50fb9c11` and exact independent ACCEPT
 `1d397416` are preserved on the recovery integration branch at `8b471794`.
 The source audit and genuine independent replay qualify eight private rows and
@@ -12,16 +33,20 @@ Initial namespace failures and two exact task-generated core artifacts remain
 disclosed in the immutable handoff, with opaque copies preserved and only the
 verified originals removed. No host sleep or PF2 completion follows.
 
-Protected capture source `e1b06401` passes its strict affected rebuild, but the
-unchanged actual frontend probes fail: Screenshot reports native NoAuthorized
-and Response2 without a URI; ScreenCast creates/selects its session but Start
-returns Response2 with no streams. Immutable handoff `0c156360` preserves both
-failures and bounded isolation evidence. Capture-only compositor authority
-design `a8a57854` is independently accepted by `bf7b26ca`. The coordinated public
-wire `91e1c202` is clarified by `bd4eacd1` to export configured fixed launch paths
-through an installed Qt-free header; compositor and separate broker/helper
-implementation remain candidate work. Production capture, revocation, actual
-pixels/PipeWire frames and installed staging must qualify before routing changes.
+Capture-only compositor authority fork `447eed96` is independently accepted
+by exact review `3a1429bd`, including real owner-loss, wire, launch, filtering
+and the constructor-watch negative reproduction. Consumer fixture repair
+`ca29910d` gives the real pixel producer a valid desktop identity and resolves
+offered PipeWire node IDs to their actual object serials. The first unchanged
+native group passes seven Qt cases with actual pixels, decoded changing frames
+and revocation. Fresh native lock then exposes a synchronous scene-view lifetime
+defect: immediate stream source destruction invalidates a snapshotted view.
+Narrow fork candidate `68c4d74f` (production code `42604a8f`) preserves immediate
+closed/privacy fences and defers source destruction until the event loop.
+Its unchanged monitored lock test passes three Qt cases and compositor survival;
+different-worker exact review is in progress. Recurring unmonitored initial
+capture refusal remains unresolved, so the full matrix is held. Prior failures
+are retained. Production staging and installed routing remain separate gates.
 
 The read-only local icon gallery candidate `d93a6c99`, independently accepted
 by `8f348f61`, is integrated on this recovery branch. It lists current working

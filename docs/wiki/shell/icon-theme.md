@@ -62,12 +62,23 @@ the original index, notices and editable source preserved. Its runtime package
 depends only on the system hicolor theme. Installation makes it available in
 the **Icons** chooser; it does not change the saved preference.
 
-The requested `QindaQt-Handdrawn` sibling is authored separately in QindaIconArt.
-Its delivery gate requires the exact same category/name inventory, a distinct
-hand-rendered drawing for every original artwork group, transparent raster
-output, preserved generation provenance and inspection at the actual icon size.
-Source-identical aliases may share a drawing; unrelated meanings cannot use
-generic replacement art. The partial source set is not an installed family.
+The `QindaQt-Handdrawn` sibling is complete in QindaIconArt at
+`6cdcfeccf22411534f2b0fb07579c7c53c5e73b6`: all 7,172 category/name paths,
+3,261 distinct raster drawings, and no missing or invalid entries. The colorful
+AI-generated hand-rendered artwork uses transparent 128 × 128 PNGs. Preserved
+provenance records the original references, generation prompts and outputs,
+unchanged-pixel crops, per-atlas review and inspection at the actual icon size.
+Only source-identical aliases share a drawing; unrelated meanings have distinct
+artwork. Original editable sources and licensing notices remain preserved.
+
+The independently reviewed QindaGentoo recipe `07ab05d` packages the complete
+source as `x11-themes/qinda-breeze-handdrawn-1.0.0_p20261001`, with only hicolor
+as a runtime dependency. It is installed and retained through Portage on qinda.
+The installed checks verify all 7,172 icon hashes, 7,213 Portage files, twelve
+source-exact native Qt pixmaps, production theme discovery and the signed
+binary. The saved icon preference is unchanged. Laptop delivery uses the same
+signed binary when its `~/.cache/laptop-test.lock` disappears; builds and GPU
+tests run on qinda while the laptop is reserved for game testing.
 
 ### Live working gallery
 
