@@ -2,7 +2,7 @@
 
 - Identity: pf-native-popup-sol-20261001
 - Role: focused native notification-live harness implementer
-- Status: waiting — source checkpoint341c9c76 preserved; strict helper compilation/private native mapping pending manager grants, no resources held
+- Status: working — granted strict own helper build and subsequent bounded two-row private native popup gate; compiler active, production artifacts immutable
 - Base: 3dfe915bcbd8d62afa0401686471b4c9197324a6
 - Branch: worker/pf-native-popup-20261001
 - Worktree: .cache/pf-native-popup-20261001
@@ -19,3 +19,5 @@
 - 2026-10-01T12:44:44Z — Actual root combined faaaf746 has zero relevant-source delta from base3dfe for reused shell/host/Settings/launcher/supervisor/attachment/native monitor; actual Debug/pluginON cache selects qualified690. Fork build.ninja confirms fixed /usr/bin/qindaqt-lock macro and /usr prefix. Disabled installed OSK discovery in the private launcher environment and bounded fixture identity queries to250ms. Static preparation complete; no compiler/private display/bus scenario executed.
 
 - 2026-10-01T12:47:08Z — Source/static preparation complete; pending compiler request has no grant yet. Marked waiting to release live worker capacity rather than retain idle process. Exact source checkpoint341c9c76 is not an accepted/executed candidate. No compiler, private display/bus fixture, host action or install occurred. Resume same worker for focused helper build and actual native gate once manager grants resources.
+
+- 2026-10-01T12:57:21Z — Root granted compiler/private runtime after configure reviewer released its slot. Beginning own strict Debug/sharedON/pluginOFF target qindaqt_native_notification_live_tests and required dependencies only; MAKEOPTS j24/l24 unchanged. Actual native gate follows successful build, with no installed locker/PAM/unlock and preserved raw logs.
