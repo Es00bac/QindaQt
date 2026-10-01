@@ -3,6 +3,7 @@
 """Real frontend/native input/frames in entirely private brokers and EGL display."""
 import os
 import pathlib
+import resource
 import select
 import signal
 import subprocess
@@ -10,9 +11,10 @@ import sys
 import tempfile
 import time
 
-if len(sys.argv) not in (10, 12):
-    sys.exit("expected nine artifacts and optional --case NAME")
-fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection = map(pathlib.Path, sys.argv[1:10])
+resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+if len(sys.argv) not in (12, 14):
+    sys.exit("expected eleven artifacts and optional --case NAME")
+fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection, broker, qualified_compositor = map(pathlib.Path, sys.argv[1:12])
 if not compositor.is_file():
     print("qualified private compositor unavailable")
     sys.exit(77)
@@ -20,16 +22,16 @@ if not compositor.is_file():
 # fresh private compositor; no unlock seam or host service is used.
 groups = [
     ["screenshotActualPixelsColorAndCancel", "closeInvalidParentAndRequesterLoss",
-     "validForeignParentGrantAndLossRetireCaptureAndStream", "actualPipeWireNodeFramesSessionCloseAndCancel", "frontendAndSupervisorLossWithdrawCaptureAndFiles"],
+     "validForeignParentGrantAndLossRetireCaptureAndStream", "actualPipeWireNodeFramesSessionCloseAndCancel", "frontendAndBrokerLossWithdrawCaptureAndFiles"],
     ["nativeLockStopsActualStreamPendingCaptureAndRetainedFile"],
     ["compositorLossWithdrawsStreamsFilesAndPendingPublication"],
 ]
 # A bounded diagnostic selects unchanged Qt assertions. Only the default command
 # qualifies the whole journey; a selected case cannot be reported as full coverage.
-if len(sys.argv) == 12:
-    if sys.argv[10] != "--case" or sys.argv[11] not in {case for group in groups for case in group}:
+if len(sys.argv) == 14:
+    if sys.argv[12] != "--case" or sys.argv[13] not in {case for group in groups for case in group}:
         sys.exit("unknown native capture diagnostic case")
-    groups = [[sys.argv[11]]]
+    groups = [[sys.argv[13]]]
 
 
 def group_alive(process):
@@ -57,7 +59,7 @@ for group in groups:
         runtime = root / "runtime"
         runtime.mkdir(mode=0o700)
         env = dict(os.environ)
-        for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR", "WIREPLUMBER_CONFIG_DIR", "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS", "KWIN_WAYLAND_NO_PERMISSION_CHECKS"):
+        for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR", "WIREPLUMBER_CONFIG_DIR", "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS", "KWIN_WAYLAND_NO_PERMISSION_CHECKS", "LD_LIBRARY_PATH"):
             env.pop(key, None)
         env.update(HOME=str(root), XDG_RUNTIME_DIR=str(runtime), XDG_CONFIG_HOME=str(root / "config"),
             XDG_DATA_HOME=str(root / "data"), XDG_CACHE_HOME=str(root / "cache"), XDG_STATE_HOME=str(root / "state"),
@@ -68,31 +70,23 @@ for group in groups:
             PIPEWIRE_REMOTE="pipewire-capture", PIPEWIRE_RUNTIME_DIR=str(runtime))
         portals = root / "portals"
         portals.mkdir()
-        lines = metadata.read_text().splitlines()
-        for index, line in enumerate(lines):
-            if line.startswith("Interfaces="):
-                interfaces = line.removeprefix("Interfaces=").split(";")
-                interfaces += ["org.freedesktop.impl.portal.Screenshot", "org.freedesktop.impl.portal.ScreenCast"]
-                lines[index] = "Interfaces=" + ";".join(dict.fromkeys(interfaces))
-        (portals / "qindaqt.portal").write_text("\n".join(lines) + "\n")
-        chosen = selection.read_text()
-        for family in ("Screenshot", "ScreenCast"):
-            chosen = chosen.replace(f"org.freedesktop.impl.portal.{family}=kde;gtk;lxqt", f"org.freedesktop.impl.portal.{family}=qindaqt")
-        (portals / "qindaqt-portals.conf").write_text(chosen)
+        # Only this task-owned overlay selects the capture-only service. The
+        # production metadata/selector remains KDE until all actual gates pass.
+        (portals / "qindaqt-capture.portal").write_text("[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt.capture\nInterfaces=org.freedesktop.impl.portal.Screenshot;org.freedesktop.impl.portal.ScreenCast;\nUseIn=qindaqt;\n")
+        (portals / "qindaqt-portals.conf").write_text("[preferred]\ndefault=none\norg.freedesktop.impl.portal.Screenshot=qindaqt-capture\norg.freedesktop.impl.portal.ScreenCast=qindaqt-capture\n")
         (portals / "portals.conf").write_text("[preferred]\ndefault=none\n")
         env.update(XDG_CURRENT_DESKTOP="qindaqt", XDG_DESKTOP_PORTAL_DIR=str(portals))
         applications = root / "data/applications"
         applications.mkdir(parents=True)
         # Actual restricted peer belongs to resident fixture, not an app-ID hint.
         for name, executable, permission in (
-            ("org.test.CaptureResident", fixture, "X-QindaQt-KWin-Wayland-Interfaces=zkde_screencast_unstable_v1"),
+            ("org.test.CaptureResident", broker, ""),
             ("org.test.CaptureHelper", helper, "X-QindaQt-KWin-DBus-Restricted-Interfaces=org.kde.KWin.ScreenShot2"),
         ):
             (applications / (name + ".desktop")).write_text(f"[Desktop Entry]\nType=Application\nName=Private capture fixture\nExec={executable}\nNoDisplay=true\n{permission}\n")
         (applications / "org.test.Capture.desktop").write_text("[Desktop Entry]\nType=Application\nName=Private capture caller\nExec=/usr/bin/true\nNoDisplay=true\n")
-        env["PATH"] = str(compositor.parent) + os.pathsep + env.get("PATH", "/usr/bin:/bin")
-        env["LD_LIBRARY_PATH"] = str(compositor.parent.parent / "lib64")
-        env["QT_PLUGIN_PATH"] = str(compositor.parent.parent / "lib64/qt6/plugins")
+        env["PATH"] = str(qualified_compositor.parent) + os.pathsep + env.get("PATH", "/usr/bin:/bin")
+        env["QT_PLUGIN_PATH"] = str(qualified_compositor.parent.parent / "lib64/qt6/plugins")
         pwconfig = root / "pipewire-private.conf"
         pwconfig.write_text("""context.properties = { core.daemon = true core.name = pipewire-capture support.dbus = false }
 context.spa-libs = { support.* = support/libspa-support }
@@ -146,15 +140,18 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             logs.append(handle)
             producer = dict(env)
             producer.pop("QT_FATAL_WARNINGS", None)
-            comp = subprocess.Popen([str(compositor), "--virtual", "--width", "1100", "--height", "820", "--socket", "qindaqt-8", "--no-global-shortcuts"], env=producer, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
+            comp = subprocess.Popen([str(compositor), "serveNativeCapture"], env=producer, stdin=subprocess.PIPE, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
             children.append(comp)
             env["QINDAQT_PORTAL_TEST_COMPOSITOR_PID"] = str(comp.pid)
             env["WAYLAND_DISPLAY"] = "qindaqt-8"
             deadline = time.monotonic() + 15
-            while not (runtime / "qindaqt-8").exists() and comp.poll() is None and time.monotonic() < deadline:
+            while comp.poll() is None and time.monotonic() < deadline:
+                handle.flush()
+                if b"CAPTURE_AUTHORITY_READY qindaqt-8 1100x820\n" in (root / "compositor.log").read_bytes():
+                    break
                 time.sleep(.05)
-            if not (runtime / "qindaqt-8").exists():
-                raise RuntimeError("private EGL compositor unavailable")
+            if not (runtime / "qindaqt-8").exists() or b"CAPTURE_AUTHORITY_READY qindaqt-8 1100x820\n" not in (root / "compositor.log").read_bytes():
+                raise RuntimeError("protected private EGL compositor/broker Ready unavailable")
             driver = subprocess.Popen([str(fixture), *group], env=env, start_new_session=True)
             children.append(driver)
             driver_code = driver.wait(timeout=180)
@@ -175,6 +172,12 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
         finally:
             cleanup_errors = []
             for child in reversed(children):
+                if child.stdin is not None and not child.stdin.closed:
+                    child.stdin.close()
+                    try:
+                        child.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        pass
                 if group_alive(child):
                     os.killpg(child.pid, signal.SIGTERM)
                 try:

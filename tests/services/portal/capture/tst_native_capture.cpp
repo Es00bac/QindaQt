@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "pipewire_frames.h"
-#include <qindaqt/services/portal/foundation_composition.h>
-#include <qindaqt/services/portal/resident_portal_service.h>
-#include <qindaqt/services/portal/appearance_source.h>
 #include <qindaqt/services/portal/capture_types.h>
-#include <qindaqt/services/portal/session_binding.h>
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <QProcessEnvironment>
@@ -17,6 +13,11 @@
 #include <QDBusPendingReply>
 #include <QDBusUnixFileDescriptor>
 #include <QFile>
+#include <QDir>
+#include <QSaveFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <cerrno>
 #include <QElapsedTimer>
 #include <QWindow>
 #include <utility>
@@ -31,12 +32,6 @@
 #include <sys/resource.h>
 #include <unistd.h>
 using namespace QindaQt::Services::Portal;
-class Appearance final : public AppearanceSource {
-public: bool start(QString *) override { return true; } void stop() override {}
-    const std::optional<AppearanceTruth> &current() const override { return value; }
-    QString diagnostic() const override { return {}; }
-private: std::optional<AppearanceTruth> value;
-};
 class Responses final : public QObject {
     Q_OBJECT
 public: int count = 0; quint32 response = 99; QVariantMap results;
@@ -52,10 +47,14 @@ private Q_SLOTS:
         QCOMPARE(prctl(PR_GET_DUMPABLE), 1); registerCaptureWireTypes(); QVERIFY(bus.isConnected()); QTRY_VERIFY(bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).isValid());
         QVERIFY(bus.registerService("org.freedesktop.portal.Documents")); QVERIFY(bus.registerService("org.freedesktop.impl.portal.PermissionStore")); QVERIFY(bus.registerService("org.qindaqt.Power1"));
         selected = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), "capture-supervisor"));
-        backend.start(QCoreApplication::applicationFilePath(), {"--native-backend"}); QVERIFY(backend.waitForStarted());
-        QByteArray backendReady; QTRY_VERIFY_WITH_TIMEOUT((backendReady += backend.readAllStandardOutput()).contains("protected native backend ready"), 10000);
-        auto attach = QDBusMessage::createMethodCall(kNativePortalService, kNativePortalPath, kNativePortalService, "AttachSessionWithDisplay"); attach << QStringLiteral("qindaqt-8");
-        QDBusPendingCallWatcher attaching(selected->asyncCall(attach)); QTRY_VERIFY(attaching.isFinished()); const QDBusPendingReply<bool> attached = attaching; QVERIFY(!attached.isError()); QVERIFY(attached.value());
+        QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").isValid(), 10000);
+        const auto brokerOwner = bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").value();
+        const auto brokerPid = bus.interface()->servicePid(brokerOwner); QVERIFY(brokerPid.isValid()); QVERIFY(brokerPid.value() > 0);
+        char executable[4096]; errno = 0;
+        const auto proc = QByteArray("/proc/")+QByteArray::number(brokerPid.value())+"/exe";
+        const auto executableResult = readlink(proc.constData(), executable, sizeof(executable)); const int executableError = errno;
+        QCOMPARE(executableResult, ssize_t(-1)); QCOMPARE(executableError, EACCES);
+        qputenv("QINDAQT_CAPTURE_TEST_AUDIT", QFile::encodeName(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("qindaqt-capture.audit")));
         QindaQt::Platform::Compositor::CompositorAttachment attachment(*selected, qEnvironmentVariable("XDG_RUNTIME_DIR"), [this](const QString &owner) { return owner == selected->baseService(); });
         QVERIFY(attachment.attach(selected->baseService(), "qindaqt-8")); const int pixelFd = attachment.openConnection(); QVERIFY(pixelFd >= 0);
         auto pixelEnv = QProcessEnvironment::systemEnvironment(); pixelEnv.remove("WAYLAND_DISPLAY"); pixelEnv.insert("WAYLAND_SOCKET", QString::number(pixelFd)); pixels.setProcessEnvironment(pixelEnv);
@@ -75,6 +74,7 @@ private Q_SLOTS:
         const QImage image(uri.toLocalFile()); QVERIFY(!image.isNull()); QCOMPARE(image.size(), QSize(1100, 820)); QVERIFY(containsFixturePixels(image));
         QFile file(uri.toLocalFile()); QCOMPARE(file.permissions() & (QFileDevice::ReadGroup | QFileDevice::WriteGroup | QFileDevice::ReadOther | QFileDevice::WriteOther), QFileDevice::Permissions{});
         reset("allow"); screenshot("PickColor"); success(); const auto color = qdbus_cast<CaptureColor>(responses.results.value("color")); QVERIFY(color.red >= 0 && color.red <= 1); QVERIFY(color.green >= 0 && color.green <= 1); QVERIFY(color.blue >= 0 && color.blue <= 1);
+        QVERIFY((color.red > .7 && color.green < .35) || (color.green > .7 && color.red < .35));
         reset("cancel"); screenshot("Screenshot"); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 1U);
     }
     void closeInvalidParentAndRequesterLoss() {
@@ -131,12 +131,20 @@ private Q_SLOTS:
         // Production authorization OFF qualifies native black/locked retirement,
         // not PAM, trusted greeter/unlock or recall of already consumed buffers.
     }
-    void frontendAndSupervisorLossWithdrawCaptureAndFiles() {
+    void frontendAndBrokerLossWithdrawCaptureAndFiles() {
         screenshot("Screenshot"); success(); const auto result = QUrl(responses.results.value("uri").toString()).toLocalFile(); QVERIFY(QFile::exists(result));
         reset("hold"); screenshot("Screenshot"); mapped(); const auto pid = helperPid(); frontend.terminate(); QVERIFY(frontend.waitForFinished(5000)); QTRY_VERIFY(kill(pid, 0) < 0);
-        startFrontend(); reset("hold"); screenshot("Screenshot"); mapped(); const auto next = helperPid(); selected.reset(); QDBusConnection::disconnectFromBus("capture-supervisor"); QTRY_VERIFY(kill(next, 0) < 0); QTRY_VERIFY(!QFile::exists(result)); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 2U);
+        QTRY_VERIFY(!QFile::exists(result)); startFrontend(); reset("allow"); screenshot("Screenshot"); success();
+        const auto retained = QUrl(responses.results.value("uri").toString()).toLocalFile(); QVERIFY(QFile::exists(retained));
+        reset("hold"); screenshot("Screenshot"); mapped(); const auto next = helperPid();
+        const auto owner = bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture"); QVERIFY(owner.isValid());
+        const auto pidOfBroker = bus.interface()->servicePid(owner.value()); QVERIFY(pidOfBroker.isValid()); QVERIFY(pidOfBroker.value() > 0);
+        QCOMPARE(kill(static_cast<pid_t>(pidOfBroker.value()), SIGTERM), 0);
+        QTRY_VERIFY(kill(next, 0) < 0); QTRY_VERIFY(!QFile::exists(retained));
+        QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 2U);
+
     }
-    void cleanupTestCase() { frontend.terminate(); frontend.waitForFinished(5000); if (backend.state() != QProcess::NotRunning) { backend.closeWriteChannel(); QVERIFY(backend.waitForFinished(5000)); } if (pixels.state() != QProcess::NotRunning) { pixels.kill(); pixels.waitForFinished(3000); } }
+    void cleanupTestCase() { frontend.terminate(); frontend.waitForFinished(5000); if (pixels.state() != QProcess::NotRunning) { pixels.kill(); pixels.waitForFinished(3000); } }
 private:
     void startFrontend() {
         frontend.start(QString::fromUtf8(QINDAQT_FRONTEND_EXECUTABLE), {"--replace", "--verbose"}); QVERIFY(frontend.waitForStarted());
@@ -161,39 +169,38 @@ private:
     void createSession(QString &session) { reset("allow"); request("ScreenCast", "CreateSession", {QVariantMap{{"session_handle_token", "s" + QUuid::createUuid().toString(QUuid::Id128)}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); const auto handle = responses.results.value("session_handle"); QCOMPARE(handle.metaType(), QMetaType::fromType<QString>()); session = handle.toString(); }
     void select(const QString &session) { reset("allow"); request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"cursor_mode", 1U}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); }
     void close(const QString &path, const char *family) { auto call = QDBusMessage::createMethodCall("org.freedesktop.portal.Desktop", path, "org.freedesktop.portal."+QString::fromLatin1(family), "Close"); QDBusPendingCallWatcher closing(bus.asyncCall(call)); QTRY_VERIFY(closing.isFinished()); }
-    void reset(const char *action) { responses.count = 0; responses.response = 99; responses.results.clear(); QFile(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT")).remove(); qputenv("QINDAQT_CAPTURE_TEST_ACTION", action); }
+    void reset(const char *action) {
+        responses.count = 0; responses.response = 99; responses.results.clear(); QFile(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT")).remove();
+        QSaveFile control(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("qindaqt-capture-input.json")); QVERIFY(control.open(QIODevice::WriteOnly));
+        const auto data = QJsonDocument(QJsonObject{{"action", QString::fromLatin1(action)}}).toJson(QJsonDocument::Compact);
+        QCOMPARE(control.write(data), data.size()); QVERIFY(control.commit());
+    }
     QByteArray audit() const { QFile f(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT")); return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray{}; }
-    void mapped() { QTRY_VERIFY_WITH_TIMEOUT(audit().contains("ordinary exact-peer mapped"), 15000); }
-    void success() { QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 0U); mapped(); }
-    pid_t helperPid() const { return static_cast<pid_t>(audit().split(' ').value(0).toLongLong()); }
+    void mapped() {
+        QTRY_VERIFY_WITH_TIMEOUT(audit().contains("ordinary exact-peer mapped"), 15000);
+        QTRY_VERIFY_WITH_TIMEOUT(audit().contains("ordinary fd4 globals complete"), 5000);
+        const QByteArrayList forbidden{"org_kde_plasma_window_management", "org_kde_kwin_fake_input", "zkde_screencast_unstable_v1",
+            "org_kde_plasma_activation_feedback", "kde_lockscreen_overlay_v1", "ext_session_lock_manager_v1",
+            "zwp_input_panel_v1", "zwp_input_method_v1", "zwp_xwayland_keyboard_grab_manager_v1", "xwayland_shell_v1", "wp_security_context_manager_v1"};
+        const auto observed = audit();
+        for (const auto &name : forbidden) QVERIFY2(!observed.contains("ordinary fd4 global "+name+'\n'), name.constData());
+        for (const auto &line : observed.split('\n')) {
+            const auto prefix = line.indexOf("capture fd5 global "); if (prefix < 0) continue;
+            const auto name = line.mid(prefix+19);
+            QVERIFY2(name == "wl_output" || name == "zxdg_output_manager_v1" || name == "zkde_screencast_unstable_v1", name.constData());
+        }
+        for (const auto &name : {"wl_output", "zxdg_output_manager_v1", "zkde_screencast_unstable_v1"})
+            QVERIFY(observed.contains(QByteArray("capture fd5 global ")+name+'\n'));
+    }
+    void success() { QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 0U); mapped(); QVERIFY(audit().contains("control CaptureReady")); }
+    pid_t helperPid() const { for (const auto &line : audit().split('\n')) if (line.contains("ordinary exact-peer mapped")) return static_cast<pid_t>(line.split(' ').value(0).toLongLong()); return -1; }
     static bool containsFixturePixels(const QImage &image) { for (int y = 0; y < image.height(); y += 17) for (int x = 0; x < image.width(); x += 17) { const auto c = image.pixelColor(x, y); if ((c.red() > 180 && c.green() < 80) || (c.green() > 170 && c.red() < 80)) return true; } return false; }
-    QDBusConnection bus = QDBusConnection::sessionBus(); QProcess frontend; Responses responses; ExportProcess pixels, backend;
+    QDBusConnection bus = QDBusConnection::sessionBus(); QProcess frontend; Responses responses; ExportProcess pixels;
     std::unique_ptr<QDBusConnection> selected; QStringList requests;
 };
-int serveBackend() {
-    // AGENT-GUARD: The protected resident is a distinct real process from the
-    // frontend caller. Its ordinary capture FDs retain this protected PID.
-    if (prctl(PR_GET_DUMPABLE) != 0) return 2;
-    Appearance appearance;
-    auto bus = QDBusConnection::sessionBus();
-    ResidentPortalService resident(appearance, bus);
-    PortalFoundationComposition composition(resident.backendHost(), bus, qEnvironmentVariable("XDG_RUNTIME_DIR"),
-        qEnvironmentVariable("QINDAQT_PORTAL_TEST_HELPER"), qEnvironmentVariable("QINDAQT_PORTAL_TEST_RELAY"),
-        QStringList{qEnvironmentVariable("XDG_DATA_HOME")}, QString{}, qEnvironmentVariable("QINDAQT_CAPTURE_TEST_HELPER"));
-    if (!composition.start() || resident.start() != PortalServiceStartStatus::Started) return 3;
-    QSocketNotifier parentLifetime(STDIN_FILENO, QSocketNotifier::Read);
-    QObject::connect(&parentLifetime, &QSocketNotifier::activated, QCoreApplication::instance(), [&parentLifetime] {
-        char byte = 0; static_cast<void>(read(STDIN_FILENO, &byte, 1)); parentLifetime.setEnabled(false); QCoreApplication::quit();
-    });
-    std::puts("protected native backend ready"); std::fflush(stdout);
-    return QCoreApplication::exec();
-}
 int main(int argc, char **argv) {
-    const bool backend = argc == 2 && std::strcmp(argv[1], "--native-backend") == 0;
-    struct rlimit cores{0, 0};
-    if (setrlimit(RLIMIT_CORE, &cores) != 0 || (backend && prctl(PR_SET_DUMPABLE, 0) != 0)) return 2;
+    struct rlimit cores{0, 0}; if (setrlimit(RLIMIT_CORE, &cores) != 0) return 2;
     QCoreApplication application(argc, argv);
-    if (backend) return serveBackend();
     // The caller is an ordinary app; do not weaken resident/helper protection
     // merely to satisfy the frontend's proc-root caller identity lookup.
     NativeCaptureTest test;

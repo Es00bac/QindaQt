@@ -46,33 +46,35 @@ PermissionStore hints never substitute for native consent/authority.
 
 ## Authority and lifetime
 
-The resident exports actor-fenced standard Request and Session handles through
-public RequestRegistry/PortalSessionBinding. A session binds actual frontend
-unique owner, caller unique name encoded in standard handles, app ID and caller
-PIDFD. Calls cannot mutate or close another app/caller's session. Bounds include
-8 sessions,16 process jobs,16KiB helper frames,16 offered monitors and128MiB result
-files. Pre-start sessions expire after60 seconds; screenshot files live at most
-5 minutes in owned private temporary directories.
+The capture-only broker exports actor-fenced standard Request and Session handles
+through public RequestRegistry and the capture session policy. A session binds
+the actual frontend unique owner, caller unique name encoded in standard handles,
+app ID and caller PIDFD. Calls cannot mutate or close another caller's session.
+Bounds include8 sessions,16 jobs,16KiB helper frames,16 offered monitors and128MiB
+result files. Created/selected sessions expire after60 seconds; starting requests
+have a bounded100-second registry budget for consent plus the protected operation.
+Screenshot files live at most5 minutes in owned private temporary directories.
 
-The resident supplies two ordinary FDs from the admitted selected compositor:
-Qt GUI and generated capture protocol. Package-owned desktop entries request
-only the needed restricted interfaces; protected-process authorization remains
-a blocking public compositor seam, described below. The native helper independently verifies
-ordinary peer credentials, PIDFD, current native bus owner and nonce-authenticated
-read-only NativeLockStateMonitor receipts. Unknown/locked authority disables
-consent and prevents operation/publication. Empty parents are explicitly
-unparented; nonempty native foreign parents must import before Allow and their
-loss withdraws the request/stream.
+The compositor launches the fixed protected broker and helper. The broker owns
+publication but never opens an ambient display or launches a helper. The helper
+uses separate ordinary GUI/foreign-parent fd4 and tagged capture fd5; control fd3
+joins actual kernel credentials, current native bus owner and PIDFD. Authenticated
+read-only NativeLockStateMonitor receipts additionally gate consent, operation and
+publication. Unknown/locked authority denies. Empty parents are explicitly
+unparented; nonempty parents must import before Allow and their loss withdraws
+requests/streams. The general supervisor-owned backend and Session1 remain intact.
 
-Request Close, Session Close, frontend/caller/supervisor/compositor/parent loss,
+Request Close, Session Close, frontend/caller/broker/compositor/parent loss,
 native lock uncertainty and teardown retire pending operations, discard late
-output, kill children, end streams and delete retained screenshot files. Result
-publication rechecks current admission before delivering a canonical private
-file URI or actual node. Values already copied by a client and already consumed
-stream buffers cannot be recalled; no physical-frame privacy claim follows from
-queued signals alone.
+output, end streams and delete retained screenshot files. A surviving helper
+also unlinks only its own created image when the broker pipe/control disappears.
+Publication reconciles queued control revocations and rechecks current admission
+before delivering a canonical private URI or actual node. Values already copied
+by a client and consumed stream buffers cannot be recalled; no physical-frame
+privacy claim follows from queued signals alone. Hard simultaneous destruction
+of both processes does not imply universal cleanup of already materialized files.
 
-## Protected capture admission blocker
+## Preserved predecessor admission blocker
 
 Fork690 resolves restricted-interface permission through `/proc/<pid>/exe`:
 `utils/executable_path_proc.cpp` supplies the path used by DBus Screenshot2 and
@@ -100,7 +102,7 @@ inputs and assertions remain preserved. Backend and helper retain protection
 before Qt startup; the runner clears both inherited permission bypasses. A
 dumpable backend or bypass cannot qualify production.
 
-The runner accepts an optional `--case NAME` after its nine artifact paths for
+The predecessor runner accepts an optional `--case NAME` after its nine artifact paths for
 bounded diagnostics using unchanged Qt assertions. Only the default three-group
 command qualifies the full journey. A protected admission failure is expected to
 produce a failed success assertion, not a capture-usability pass.
@@ -117,7 +119,7 @@ this candidate preserves process protection and existing permission checks.
 
 ## Evidence still required
 
-Focused `qindaqt.portal-capture-policy` and `portal-capture-requests` rows cover wire shape, bounds, caller/app/session fencing, Close, late replies and owner loss. The source `qindaqt.portal-native-capture` runner provides three fresh private compositor groups, including irreversible native Locked retirement and actual compositor owner loss. It uses zero-activation-directory custom D-Bus, explicit nonexistent system bus, a private minimal PipeWire core and policy-only WirePlumber with hardware monitors absent. The direct qualified fork receives no opt-in Xwayland, positional session/app, exit-with-session or input-method argument; its CLI has no launcher-specific empty-session switch. Every top-level broker/producer/controller uses a private process group and postexit audits require all descendants to disappear. Qt input links unchanged helper sources; a changing fullscreen ordinary test client supplies known pixels. The consumer connects only to the actual frontend-returned remote FD and checks node visibility, decoded frames and cessation after Close/native lock. The eleven named capture/resident/Screenshot targets build successfully at exact e78bf9f4. Earlier diagnostics stop in registration; corrected b3670dda observes Screenshot failure2 but no Start response. These failures do not qualify capture usability. Focused/adjacent runtime, complete native journey and staged gates remain pending. Actual
+Focused `qindaqt.portal-capture-policy` and `portal-capture-requests` rows cover wire shape, bounds, caller/app/session fencing, Close, late replies and owner loss. The source `qindaqt.portal-native-capture` runner provides three fresh private compositor groups, including irreversible native Locked retirement and actual compositor owner loss. It uses zero-activation-directory custom D-Bus, explicit nonexistent system bus, a private minimal PipeWire core and policy-only WirePlumber with hardware monitors absent. The predecessor direct fork receives no opt-in Xwayland, positional session/app, exit-with-session or input-method argument; its CLI has no launcher-specific empty-session switch. Every top-level broker/producer/controller uses a private process group and postexit audits require all descendants to disappear. Qt input links unchanged helper sources; a changing fullscreen ordinary test client supplies known pixels. The consumer connects only to the actual frontend-returned remote FD and checks node visibility, decoded frames and cessation after Close/native lock. The eleven named capture/resident/Screenshot targets build successfully at exact e78bf9f4. Earlier diagnostics stop in registration; corrected b3670dda observes Screenshot failure2 but no Start response. These failures do not qualify capture usability. Focused/adjacent runtime, complete native journey and staged gates remain pending. Actual
 frontend methods and mapped ordinary Qt input must produce real captures and
 private PipeWire frames; cancellation, Close, caller/dependency/parent loss and
 native lock/uncertainty must withdraw results/streams. Staged helper permission
@@ -166,5 +168,29 @@ These source changes are uncompiled/unexecuted until separately granted gates;
 wire freeze and source presence do not qualify native capture usability. The helper source now follows fixed FD/control consent and retention.
 Non-installable variants pass bounded per-job actual-input directives through
 opaque pipes, removed before the strict production parser; no installed input
-hook or permission bypass exists. Hostile wire tests are source only; actual
-fork-launched native fixture conversion and all granted gates remain in progress, and prior exact denial evidence above stays preserved.
+hook or permission bypass exists. Hostile packet and authenticated-channel tests are source only. Channel cases
+include real private-bus owner replacement before queued reads, kernel sender
+mismatch, consent ordering/stale generation, HUP, ancillary counts, FD ownership
+and monotonic job replay rejection. No compiled/runtime result is inferred.
+
+The new native runner takes eleven artifact paths, including a separately selected
+non-installable fork `testNativeCaptureAuthority` driver and ordinary qualified
+fork executable for its runtime prefix. It invokes `serveNativeCapture` within its
+single private bus/PipeWire environment, waits for the exact protected broker Ready
+marker and closes stdin for normal shutdown. Driver configuration fixes test broker
+and helper paths before compositor startup; production has no path override. The
+ordinary caller starts the actual1.20.4 frontend and supplies bounded per-job test
+input controls through opaque request pipes. Actual mapped Qt input audits fd4
+ordinary registry denial of capture/lock/input-method/Xwayland/security-context
+privileges and exact three-global fd5 announcements, with real public listener
+forwarding. Ready/CaptureReady/revocation observations are test-only. The fork's
+fd4 self-PID bypass repair and these observations require actual native gates.
+The runner sets core limit0 before every child, clears permission bypasses and
+preserves normal assertion failures. Selected cases remain diagnostics only.
+
+Staging requires the separate broker/helper and exact selected public fixed paths
+only when the qualified authority target exists. Otherwise capture artifacts are
+absent and unavailable; no capture family may advertise or activate. Existing
+positive/poison package and support-target guards remain unchanged. Metadata still
+routes both families to KDE. All granted source/native gates remain pending, and
+prior exact denial evidence above stays preserved.

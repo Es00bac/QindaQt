@@ -17,6 +17,24 @@
 namespace {
 bool audited = false, allowed = false;
 QString testAction, testAudit; qint64 expectedPeer = 0;
+bool ordinaryObserved = false;
+void auditOrdinary(wl_display *display) {
+    // An extra registry on Qt's actual ordinary connection observes its
+    // announcements without replacing Qt listeners or owning its display.
+    static const wl_registry_listener events{
+        [](void *, wl_registry *, uint32_t, const char *interface, uint32_t) {
+            QFile file(testAudit); if (file.open(QIODevice::WriteOnly | QIODevice::Append))
+                file.write(QByteArray::number(getpid()) + " ordinary fd4 global " + interface + '\n');
+        }, [](void *, wl_registry *, uint32_t) {}};
+    auto *registry = wl_display_get_registry(display); wl_registry_add_listener(registry, &events, nullptr);
+    auto *barrier = wl_display_sync(display);
+    static const wl_callback_listener completed{[](void *, wl_callback *callback, uint32_t) {
+        wl_callback_destroy(callback); QFile file(testAudit);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Append))
+            file.write(QByteArray::number(getpid()) + " ordinary fd4 globals complete\n");
+    }};
+    wl_callback_add_listener(barrier, &completed, nullptr); wl_display_flush(display);
+}
 class FailureObserver final : public QObject {
 public:
     using QObject::QObject;
@@ -48,6 +66,7 @@ void input() {
             if (!native || getsockopt(wl_display_get_fd(native->display()), SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0 || peer.pid != expectedPeer) { QCoreApplication::exit(3); return; }
             QFile audit(testAudit); if (!audit.open(QIODevice::WriteOnly | QIODevice::Append)) { QCoreApplication::exit(4); return; }
             audit.write(QByteArray::number(getpid()) + " ordinary exact-peer mapped\n"); audited = true;
+            if (!ordinaryObserved) { ordinaryObserved = true; auditOrdinary(native->display()); }
         }
         if (action == "hold") return;
         if (action == "cancel") { if (auto *button = window->findChild<QPushButton *>("captureCancel")) QTest::mouseClick(button, Qt::LeftButton); return; }

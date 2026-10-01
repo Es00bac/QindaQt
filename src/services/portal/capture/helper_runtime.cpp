@@ -18,6 +18,7 @@ namespace QindaQt::Services::Portal {
 // Linked solely into a non-installable actual-input helper. Production's
 // strict frame parser never accepts these test-only presentation directives.
 bool captureTestFrame(QJsonObject &, qint64 compositorPid);
+void captureTestControlEvent(const char *);
 #endif
 namespace {
 bool pipeEnd(int fd, int mode) {
@@ -60,6 +61,12 @@ public:
     }
     void receive(CaptureAuthority::ReceivedPacket packet) {
         using Message = CaptureAuthority::Wire::Message;
+#ifdef QINDAQT_CAPTURE_ACTUAL_INPUT_TEST
+        if (packet.packet.message == Message::Hello) captureTestControlEvent("Ready");
+        else if (packet.packet.message == Message::CaptureReady) captureTestControlEvent("CaptureReady");
+        else if (packet.packet.message == Message::JobRevoked) captureTestControlEvent("JobRevoked");
+        else if (packet.packet.message == Message::Error) captureTestControlEvent("Error");
+#endif
         if (packet.packet.message == Message::Hello) { inputDeadline.start(2000); readRequest(); return; }
         if (packet.packet.message == Message::CaptureReady && request && dialog && live() && !granted) {
             granted = true; dialog->captureReady(); return;
@@ -139,7 +146,12 @@ public:
         resultWriter = new QSocketNotifier(CaptureAuthority::Wire::ResultWriteFd, QSocketNotifier::Write, &q); resultWriter->setEnabled(false);
         QObject::connect(requestReader, &QSocketNotifier::activated, &q, [this] { readRequest(); });
         QObject::connect(resultWriter, &QSocketNotifier::activated, &q, [this] { writeResult(); });
-        return control.start([this](CaptureAuthority::ReceivedPacket &&packet) { receive(std::move(packet)); }, [this] { retire(); });
+        return control.start([this](CaptureAuthority::ReceivedPacket &&packet) { receive(std::move(packet)); }, [this] {
+#ifdef QINDAQT_CAPTURE_ACTUAL_INPUT_TEST
+            captureTestControlEvent("lost");
+#endif
+            retire();
+        });
     }
 };
 HelperRuntime::HelperRuntime(QDBusConnection bus) : d(std::make_unique<Private>(*this, std::move(bus))) {}

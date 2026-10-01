@@ -22,7 +22,7 @@ Screenshot's old private include paths remain thin compatibility wrappers. Its
 command-line, save policy, capture flow, UI and recording/OBS boundary remain
 app-owned. Consumers include public module headers, never app-private headers.
 
-`QindaQt::WaylandScreenCast` owns a supplied ordinary Wayland FD and generated
+`QindaQt::WaylandScreenCast` owns a supplied native Wayland FD (ordinary or separately tagged) and generated
 installed screencast/xdg-output protocol objects. It enumerates actual named
 monitor sources and their logical position/size. It requires same-thread,
 read-only borrowed callbacks for current compositor lineage and pixel permission;

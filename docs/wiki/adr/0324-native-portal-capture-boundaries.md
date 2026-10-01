@@ -16,7 +16,7 @@ and withdraw retained results and streams.
 
 Extract shared request building, bounded raw decoder, region geometry and the
 restricted screenshot transport into a public CompositorCapture module. Retain
-thin Screenshot compatibility headers. Add an independently owned ordinary-FD
+thin Screenshot compatibility headers. Add an independently owned supplied-native-FD
 Wayland ScreenCast port; the generated installed primary protocol is the only
 compositor protocol dependency, never fork-private headers.
 
@@ -27,8 +27,8 @@ the general ADR0318 resident ambient capture permission. Frozen fork wire
 91e1c202, with configured-path correctionbd4eacd1, defines fixed broker/helper images and private authenticated control;
 consumers include its installed Qt-free public header only. The general resident
 and native Session1 attachment remain supervisor-owned. This interface agreement
-is not code/runtime acceptance; both families remain routed to KDE pending gates. Package-owned helper
-and resident desktop entries request only needed restricted interfaces. Selected
+is not code/runtime acceptance; both families remain routed to KDE pending gates. The helper retains its legacy Screenshot2 compatibility desktop entry; the
+capture broker has no ambient restricted-global desktop permission or activation. Selected
 ordinary peer/PIDFD/current native owner and authenticated read-only lock receipts
 gate consent, operation and publication. Native authority loss withdraws pending
 results, deletes temporary screenshot files and ends streams. Already copied
@@ -49,6 +49,7 @@ and routing change only after actual native frontend/PipeWire/privacy gates.
 ## Consequences
 
 Policy and resident lifetime components have no GUI/PipeWire dependency. Native
-helpers own presentation and actual capture; private test input links unchanged
+helpers own presentation and actual capture over separate ordinary GUI and
+tagged capture connections; private test input links unchanged
 GUI sources. Installed desktop/sandbox delivery remains manager-owned and cannot
 be inferred from temporary private frontend and compositor qualification.
