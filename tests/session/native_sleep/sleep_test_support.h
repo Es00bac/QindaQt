@@ -7,6 +7,7 @@
 #include <qindaqt/services/native_lock_service/qt_native_lock_request.h>
 #include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
 #include <qindaqt/session/native_sleep/sleep_service.h>
+#include "fake_logind_wire.h"
 #include <QDBusArgument>
 #include <QDBusMetaType>
 #include <QDBusUnixFileDescriptor>
@@ -22,16 +23,6 @@ using namespace QindaQt;
 using namespace Session::NativeSleep;
 using namespace Services::SessionLockState;
 using namespace Platform::Compositor;
-struct UserWire { quint32 uid; QDBusObjectPath path; };
-inline QDBusArgument &operator<<(QDBusArgument &a, const UserWire &u) {
-  a.beginStructure(); a << u.uid << u.path; a.endStructure(); return a;
-}
-inline const QDBusArgument &operator>>(const QDBusArgument &a, UserWire &u) {
-  a.beginStructure(); a >> u.uid >> u.path; a.endStructure(); return a;
-}
-}
-Q_DECLARE_METATYPE(SleepTest::UserWire)
-namespace SleepTest {
 class FakeLogind final : public QDBusVirtualObject {
 public:
   explicit FakeLogind(QDBusConnection connection) : bus(std::move(connection)) { qDBusRegisterMetaType<UserWire>(); }

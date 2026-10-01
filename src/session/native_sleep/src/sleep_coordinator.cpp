@@ -9,7 +9,7 @@ SleepCoordinator::SleepCoordinator(LogindSleepTransport &transport,
   m_deadline.setSingleShot(true);
   m_deadline.setInterval(17000);
   connect(&m_deadline, &QTimer::timeout, this, [this] {
-    ++m_serial; m_runtime.cancelSuspend(); finishManual(false);
+    ++m_serial; m_runtime.cancelSuspend(); refuseManual();
   });
   connect(&m_transport, &LogindSleepTransport::availabilityChanged,
           this, &SleepCoordinator::authorityChanged);
@@ -29,7 +29,7 @@ SleepCoordinator::SleepCoordinator(LogindSleepTransport &transport,
   connect(&m_state, &Services::SessionLockState::NativeLockStateMonitor::protectionChanged,
           this, &SleepCoordinator::syncLockedHint);
   connect(&m_runtime, &NativeLockRuntime::Runtime::suspendDispatchFinished,
-          this, [this](bool dispatched) { if (!dispatched) finishManual(false); });
+          this, [this](bool dispatched) { if (!dispatched) refuseManual(); });
 }
 SleepCoordinator::~SleepCoordinator() { stop(); }
 void SleepCoordinator::start() {
@@ -42,7 +42,7 @@ void SleepCoordinator::stop() {
   m_started = false; ++m_serial;
   m_sleepGate = false;
   m_runtime.cancelSuspend();
-  finishManual(false);
+  refuseManual();
   m_transport.stop();
 }
 bool SleepCoordinator::canSuspend() const {
@@ -64,9 +64,9 @@ bool SleepCoordinator::requestSuspend() {
         !m_transport.requestSuspend([this, serial] {
           return m_started && m_manual && serial == m_serial &&
                  m_state.presentationProtected();
-        })) finishManual(false);
+        })) refuseManual();
   });
-  if (!accepted && m_manual) finishManual(false);
+  if (!accepted && m_manual) refuseManual();
   return accepted;
 }
 void SleepCoordinator::preparing(bool value) {
@@ -87,7 +87,7 @@ void SleepCoordinator::preparing(bool value) {
   } else {
     m_sleepGate = false;
     m_runtime.cancelSuspend();
-    finishManual(false);
+    refuseManual();
     m_transport.acquireDelayInhibitor();
   }
   Q_EMIT availabilityChanged();
@@ -96,7 +96,7 @@ void SleepCoordinator::authorityChanged() {
   if (!m_started) return;
   if (!m_transport.available()) {
     ++m_serial; m_sleepGate = false;
-    m_runtime.cancelSuspend(); finishManual(false);
+    m_runtime.cancelSuspend(); refuseManual();
   }
   syncLockedHint();
   Q_EMIT availabilityChanged();
@@ -111,11 +111,14 @@ void SleepCoordinator::syncLockedHint() {
   // Unknown/Locking never forge an unlocked hint or release a delay FD.
   Q_EMIT availabilityChanged();
 }
-void SleepCoordinator::finishManual(bool confirmed) {
+void SleepCoordinator::refuseManual() {
+  finishManual(m_transport.suspendDispatched() ? SleepResult::Uncertain : SleepResult::Refused);
+}
+void SleepCoordinator::finishManual(SleepResult result) {
   if (!m_manual) return;
   m_manual = false;
   m_deadline.stop();
-  Q_EMIT suspendFinished(confirmed);
+  Q_EMIT suspendFinished(result);
   Q_EMIT availabilityChanged();
 }
 }
