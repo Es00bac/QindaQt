@@ -26,6 +26,16 @@ open. See [Removable media](wiki/apps/removable-media.md) and [Handoff](HANDOFF.
 
 ## September 29 — Complete the Plasma-free program
 
+October 1 recovery fetched the authoritative hubs and preserved unrelated laptop
+and workstation work. The independently accepted PF25 dependency guard is integrated
+in QindaGentoo at `c78ac162`; both independent and integrated runs pass 28/28 tests,
+including actual private Portage resolver cases. Installed diagnostic closures on
+both hosts still contain 28 forbidden Plasma packages. The final two-root fork/desktop
+closure cannot qualify until consolidated recipes exist. Native display-idle and
+portal candidates are in exact-source review; native shell notification privacy has
+passed four focused candidate gates and awaits independent review. No milestone or
+installed Plasma-removal completion advances from these candidates.
+
 The owner confirmed the complete [native replacement program](plans/2026-09-28-plasma-free-qindaqt.md),
 including the compositor fork, lock/power services, helpers, portals, shortcuts, and key store.
 The exact integration and packaging boundaries are recorded in [Handoff](HANDOFF.md).

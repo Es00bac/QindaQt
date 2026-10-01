@@ -11,3 +11,5 @@
 ## Updates
 
 - 2026-10-01T08:37:49+00:00 — Fetched qinda hub, preserved showcase checkout and unrelated .obsidian files. Isolated integration and three migrant branches pushed to qinda. Runtime and portal workers use gpt-6.1-sol/high for lifecycle/platform contracts; packaging guard worker uses gpt-6.1-sol/medium for bounded tooling. Audits found real remaining source/packaging gaps; no installed completion or progress increase.
+
+- 2026-10-01T09:10:47+00:00 — PF25 exact solver guard accepted after independent 28/28 rerun, overlay hub and checkout integrated c78ac162 and repeated 28/28. Native portal candidate passed 21 scoped gates after fixture ordering repair; DPMS exact independent review follows. Own native notification observer production shell compiled (1,705 actions), first focused regression passed; adjacent gates next. Supplied 7,172-icon packaging and independent 3,261-drawing hand-rendered generation are actively scoped in separate source worktrees. No installed Plasma removal claim.

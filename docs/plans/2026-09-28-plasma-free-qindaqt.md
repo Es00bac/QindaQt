@@ -2,7 +2,10 @@
 
 - **Date:** 2026-09-28 (revised the same day after the owner's answers to questions 1 and 2)
 - **Author:** Claude (Opus 5.5), lane PF, for Jarrod
-- **Status:** Proposed. This is a plan only: no code, ebuild or profile has changed.
+- **Status:** Authorized and in progress. The September 29 owner instruction adopted the
+  complete program. The original inventory below records the September 28 planning
+  baseline; current integrated and installed evidence is in [Task list](../TASK_LIST.md)
+  and [Handoff](../HANDOFF.md). Source integration is not installed completion.
 - **Source base:** container-wm hub `main` at `190e49ba`; QindaGentoo checkout at `69e0ce9`
   (`kde-plasma/kwin-6.6.6-r2`, `gui-wm/qindaqt-desktop-0.1.0_pre20260928-r2`, profile
   `qindaqt/systemd`); the KWin `6.6.6` release tarball; stock KWin's install manifest on qinda
