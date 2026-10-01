@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — repairing owned capture broker Qt connection mutability after the bounded build
+- Status: working — compiling immutable ed7a4e16 capture slice after audited Qt connection/header repairs
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler/private-runtime released; next exact bounded compiler grant requested
+- Resources: qinda-only bounded17-target compiler granted; no runtime/install/staging grant
 
 ## Updates
+
+- 2026-10-01T19:05:40Z — Root inspected c8f→ed7 public Qt handle/include delta and granted exactclean ed7a4e16 qinda-only same17 targets/declareddeps-j8-l24. Full own registration/const and split-header audit completed, guards unchanged. PreflightMemAvailable21838352kB (~20.83GiB), no ninja/cc1plus observed; strict/mixeddevelopmentprefix/native-driver-empty config unchanged. New ed7 rawlog/status with owned-group monitor, immediate failure/completion release; global MAKEOPTS unchanged. All three failed predecessors retained, no private runtime grant.
 
 - 2026-10-01T19:03:00Z — Exactc8f8e2ef bounded17-target Ninja exits1 in56.0s; final83/132 dynamic progress, rawlog/status retained, minimumRAM18487360kB/no intervention, ownedPGID161310 absent. First new failure capture/backend/main.cpp holds const Qt connection yet registers service/object through nonconst APIs; making only that owned handle mutable. Root requested full own translation-unit Qt const/split-header audit; only native fixture additionally relied on QtTest to supply QList for QByteArray::split, now explicit. Admission/helper/broker objects compile, new regression MOC generated but not yet compiled/run. Compiler released immediately, no private grant used. Both preceding failures remain. Same target/config/header scope requested on frozen repair; metadata/fullPF19 claims unchanged.
 
