@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — repairing strict formatting and capture admission teardown lifetime with a focused regression
+- Status: working — compiling immutable c8f8e2ef capture/Screenshot slice and teardown regression
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler/private-runtime released; source-only repairs before a new exact grant
+- Resources: qinda-only compiler granted for bounded17-target-j8-l24; no CTest/private-native/install/staging grant
 
 ## Updates
+
+- 2026-10-01T19:00:38Z — Root granted exactclean c8f8e2ef qinda-only compiler, same17 targets plus declared dependencies, per-command Ninja-j8-l24/global MAKEOPTS unchanged. Clean pin/config/development-prefix identity verified; MemAvailable21987712kB (~20.97GiB), no live ninja/cc1plus observed. Starting distinct c8f8e2ef raw log/status with owned-group lowRAM/stall stop, firstfailure/completion release. Teardown regression source included; no CTests/private runtime/staging grant. Board-only child stays off compiler source.
 
 - 2026-10-01T18:56:05Z — Owned teardown repair disconnects monitor forwarding and stops timer before monitor.stop; live denial remains unchanged. Existing authority-channel target now compiles the real admission collaborator and public SessionLockState dependency, with two actual private-bus nonce receipt rows for admitted teardown and live Locked denial followed by teardown. Regression reproduces jobs-before-admission destruction order without accessing destroyed storage. Strict formatting/explicit include audit completed on new paths; docs486/strict MkDocs, portal boundary, focused capture17/test14 shape with zero skips/warnings and diff pass. Tests remain uncompiled/unrun, metadata unchanged; freezing descendant for same bounded17-target compiler request, slots unheld.
 
