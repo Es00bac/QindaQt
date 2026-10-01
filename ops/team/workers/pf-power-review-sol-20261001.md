@@ -4,7 +4,7 @@
 - Status: working — independent exact68c4d74f capture scene-source lifetime review.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: sole qinda compiler granted/claimed for own exact68c one-TU/link; private remains graphics-owned.
+- Resource state: compiler released; sole private qinda lease claimed for one unchanged unmonitored lock row; conditional one monitored comparison only if initial admission blocks.
 - Outcome: review exact qindaqt-kwin68c4d74f revocation and scene-view lifetime; prior power/package verdicts preserved.
 
 ## Updates
@@ -40,3 +40,5 @@
 - 2026-10-01T23:52:19Z: Claimed distinct exact68c4d74f source-lifetime review in isolated qinda fork worktree. Read fork instructions and exact consumer586c handoff/cause2e; two changed paths only. Compiler/private resources held by graphics, none claimed here. Startup admission/full matrix remain unresolved gates.
 
 - 2026-10-01T23:55:00Z: Source/evidence audit P0/P1=0 so far; immediate closure/source notifications/timer and three record fences retained, manager close observer deleteLater/thread notifier verified. Graphics explicitly releases compiler; own one-TU/link now starts, untouched447 artifacts/MOC dependencies frozen. Private still held by graphics. Retained unmonitored admission failure remains distinct from monitored real lock PASS.
+
+- 2026-10-01T23:56:36Z: Own exact68c compile/link exit0/0 5.410/.603s, min14,089,964kB/core0; PGIDs444356/444387 absent and compiler released. Sourcecopy exactbc0382 SHA, 33linkinputs/fouroutputhashes stable, onlytwochangedpaths/diffcheck0. Graphics private diagnostic releases; root explicit private grant now claimed for unchanged unmonitored row against ownplugin+original447driver/ca299caller.
