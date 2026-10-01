@@ -15,7 +15,7 @@
 #include <QThread>
 #include <QTimer>
 
-#include <wayland-client-core.h>
+#include <wayland-client.h>
 
 #include <algorithm>
 #include <cerrno>
@@ -28,6 +28,58 @@ namespace QindaQt::Session::IdlePolicy {
 namespace {
 
 constexpr int ConnectTimeoutMilliseconds = 5'000;
+constexpr int RestoreTimeoutMilliseconds = 250;
+
+void acknowledgeRestore(ConnectionThread *connection)
+{
+    wl_display *const display = connection->display();
+    if (display == nullptr) return;
+    wl_event_queue *const queue = wl_display_create_queue(display);
+    if (queue == nullptr) return;
+    wl_callback *const callback = wl_display_sync(display);
+    if (callback == nullptr) {
+        wl_event_queue_destroy(queue);
+        return;
+    }
+    wl_proxy_set_queue(reinterpret_cast<wl_proxy *>(callback), queue);
+    bool acknowledged = false;
+    static constexpr wl_callback_listener listener{
+        [](void *data, wl_callback *, uint32_t) {
+            *static_cast<bool *>(data) = true;
+        }};
+    wl_callback_add_listener(callback, &listener, &acknowledged);
+
+    // AGENT-GUARD: flush only hands bytes to the socket. libwayland-server
+    // processes HANGUP before unread requests; keep this peer open until its
+    // ordered sync proves dispatch, or the one bounded restore deadline ends.
+    // The worker exclusively reads here. A private queue avoids dispatching
+    // GUI-owned KWayland wrappers while their thread waits for this operation.
+    QDeadlineTimer deadline(RestoreTimeoutMilliseconds);
+    const int fd = wl_display_get_fd(display);
+    while (!deadline.hasExpired()) {
+        if (wl_display_dispatch_queue_pending(display, queue) < 0 || acknowledged) break;
+        if (wl_display_prepare_read_queue(display, queue) != 0) continue;
+        const int flushed = wl_display_flush(display);
+        if (flushed < 0 && errno != EAGAIN) {
+            wl_display_cancel_read(display);
+            break;
+        }
+        const short events = static_cast<short>(POLLIN | (flushed < 0 ? POLLOUT : 0));
+        pollfd ready{fd, events, 0};
+        const int waited = poll(&ready, 1, static_cast<int>(deadline.remainingTime()));
+        if (waited > 0 && (ready.revents & POLLIN) != 0) {
+            if (wl_display_read_events(display) < 0) break;
+        } else {
+            wl_display_cancel_read(display);
+            if (waited <= 0 && !(waited < 0 && errno == EINTR)) break;
+            if ((ready.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0) break;
+        }
+    }
+    // The callback must die before its queue and before display disconnect,
+    // including when the peer never acknowledges the restore.
+    wl_callback_destroy(callback);
+    wl_event_queue_destroy(queue);
+}
 
 } // namespace
 
@@ -194,28 +246,15 @@ void KWaylandDpmsController::requestOn() { requestModeAll(true); }
 
 void KWaylandDpmsController::restoreAndStop()
 {
-    // The final On is sent on the already-admitted peer. Flush it on the
-    // ConnectionThread before proxy/display teardown; quitting first can drop
-    // KWayland's buffered request and leave a monitor powered down.
+    // Restore only through the retained admitted peer, even after revocation.
+    // Ordered sync bounds the dispatch wait before closing that same socket.
     requestModeAll(true, true);
     if (m_connection != nullptr && m_connectionThread != nullptr &&
         m_connectionThread->isRunning() && m_connected) {
         ConnectionThread *const connection = m_connection;
-        QMetaObject::invokeMethod(
-            connection, [connection] {
-                connection->flush();
-                wl_display *const display = connection->display();
-                if (display == nullptr) return;
-                const int fd = wl_display_get_fd(display);
-                int remainingMilliseconds = 250;
-                while (remainingMilliseconds >= 0) {
-                    if (wl_display_flush(display) >= 0 || errno != EAGAIN) return;
-                    pollfd writable{fd, POLLOUT, 0};
-                    const int waited = poll(&writable, 1, remainingMilliseconds);
-                    if (waited <= 0) return;
-                    remainingMilliseconds = 0;
-                }
-            }, Qt::BlockingQueuedConnection);
+        QMetaObject::invokeMethod(connection, [connection] {
+            acknowledgeRestore(connection);
+        }, Qt::BlockingQueuedConnection);
     }
     stop();
 }

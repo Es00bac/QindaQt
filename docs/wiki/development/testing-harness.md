@@ -4368,6 +4368,15 @@ used. Framework wire allocation zeroization and atomic source export are not
 claimed; compatibility limits are documented in [one-time import](../architecture/keyring-import.md).
 
 
+`qindaqt.kwayland-dpms-controller` uses a private libwayland socketpair server
+and fatal Qt warnings to exercise actual per-output requests, capability/removal,
+reconnect and final restore. It holds server reads for 80 ms to prove final `On`
+is dispatched before disconnect on both live and revoked lineage, with exactly
+one admitted connection. A stalled peer exercises the one 250 ms sync deadline;
+absent/disconnected peers exercise safe bounded teardown. These checks neither
+change host DPMS nor qualify physical outputs or a nested compositor row. See
+[Native idle display stage](../architecture/idle-policy.md).
+
 ## Ordinary native keyring UI journey
 
 The focused `keyring_native_ui_journey` CTest requires `QINDAQT_KWIN_WAYLAND`
@@ -4437,6 +4446,13 @@ selected supervisor connection loss. `qindaqt.session-portal-lifetime` verifies
 canonical display selection, same caller lifetime across backend unique-owner
 replacement and disconnect-on-stop on a private bus. Neither row qualifies the
 installed desktop, physical devices or PAM. Both require serialized runtime.
+The frontend fixture is registered only when its production
+`QindaQt::SessionSupervisorSupport` target exists. Bridge-only configurations
+with the production shell disabled retain the other portal tests and the
+existing compositor dependency-contract gate without referencing that omitted
+target. The composite `qindaqt.portal-staged-package` row also requires that
+native frontend fixture; its full runner and positive/poison assertions remain
+unchanged. Full production-shell builds retain both rows and their helpers.
 
 
 ### Native protected sleep wire gate
