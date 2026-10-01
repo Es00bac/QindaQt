@@ -27,6 +27,9 @@ struct SessionProcessOptions final {
     QString networkSecretAgentExecutable =
         QStringLiteral("qindaqt-network-secret-agent");
     QString welcomeExecutable = QStringLiteral("qindaqt-welcome");
+    // Production main resolves this; empty isolates private supervisor tests
+    // from the host's physical storage and remembered insertion choices.
+    QString removableMediaExecutable;
     // Media keys, screenshot launch, and idle display-off. Started after the
     // shell so the compositor's global-shortcut service already exists.
     QString desktopControlsExecutable = QStringLiteral("qindaqt-desktop-controls");
@@ -116,6 +119,7 @@ public:
     [[nodiscard]] qint64 polkitAgentProcessId() const noexcept;
     [[nodiscard]] int polkitAgentRestartCount() const noexcept;
     [[nodiscard]] qint64 welcomeProcessId() const noexcept;
+    [[nodiscard]] qint64 removableMediaProcessId() const noexcept;
 
 Q_SIGNALS:
     void shellRestarted(qint64 previousProcessId, qint64 processId);
@@ -158,6 +162,7 @@ private:
     std::unique_ptr<FirstLaunchWelcome> m_welcome;
     std::unique_ptr<SessionAutostartRunner> m_autostart;
     std::unique_ptr<OptionalSessionChild> m_desktopControls;
+    std::unique_ptr<OptionalSessionChild> m_removableMedia;
     std::unique_ptr<KeyringSessionLifetime> m_keyring;
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;

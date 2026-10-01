@@ -290,7 +290,7 @@ def _add_presentation_evidence(
         "parentArguments": parent_arguments,
         "sessionArguments": [
             "--profile", scenario.profile_id, "--theme", scenario.theme_id,
-            "--no-polkit-agent", "--no-powerdevil",
+            "--no-removable-media", "--no-polkit-agent", "--no-powerdevil",
             "--no-global-shortcut-daemon", "--no-autostart",
         ],
         "editorArguments": ["--theme", scenario.theme_id],
