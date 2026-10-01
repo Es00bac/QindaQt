@@ -4,7 +4,7 @@ qt_add_library(qindaqt_settings_power STATIC)
 target_sources(
     qindaqt_settings_power
     PRIVATE power_settings_model.cpp power_settings_projection.cpp
-            idle_display_settings.cpp lid_power_button_settings.cpp
+            idle_display_settings.cpp source_idle_display_settings.cpp lid_power_button_settings.cpp
             external_display_brightness_model.cpp
     PUBLIC
         FILE_SET HEADERS
@@ -13,12 +13,13 @@ target_sources(
             include/qindaqt/apps/settings_power/power_settings_model.h
             include/qindaqt/apps/settings_power/external_display_brightness_model.h
             include/qindaqt/apps/settings_power/idle_display_settings.h
+            include/qindaqt/apps/settings_power/source_idle_display_settings.h
             include/qindaqt/apps/settings_power/lid_power_button_settings.h
             include/qindaqt/apps/settings_power/automatic_power_profile_policy_port.h
 )
 target_link_libraries(
     qindaqt_settings_power
-    PUBLIC QindaQt::PowerClient QindaQt::DisplayClient QindaQt::BrightnessModel
+    PUBLIC QindaQt::PowerClient QindaQt::DisplayClient QindaQt::BrightnessModel QindaQt::IdlePolicy
            QindaQt::DesktopControls QindaQt::SettingsClient Qt6::Core Qt6::DBus
            qindaqt_settings_screen_lock
 )

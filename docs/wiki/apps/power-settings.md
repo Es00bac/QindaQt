@@ -5,8 +5,9 @@ brightness and session-control surface. The route model receives an injected
 `PowerClient`, a purpose-built `SessionActionsClient`, and an external-display
 brightness model over the public Display client; a narrow process-lifetime QML
 composition owns those clients and their injected Qt bus connections. The same
-composition separately owns the bounded KScreenLocker
-preference adapter described in [ADR-0091](../adr/0091-configure-kscreenlocker-preferences-through-settings.md).
+composition separately owns the Settings1-native lock preference model
+([ADR-0308](../adr/0308-native-lock-preferences-and-atomic-import.md)) and the
+per-source display-off model described below.
 UPower, power-profiles-daemon, login1, ScreenSaver, sysfs, the resident Power
 and Display services, KWin output management, and the supervisor never cross
 into the Power model or page.
@@ -30,7 +31,7 @@ The route presents only validated, bounded public snapshot copies:
 | Screen lock | Saved automatic-idle-lock preference and timeout, resume-lock preference, and unlock grace | Enable/disable idle locking; adjust the retained one-to-240-minute timeout only while it is enabled; toggle lock-after-wake and choose the stored grace delay |
 | Lid presence | Validated Power1 `SourceTruth` lid-presence fact under the shared admission predicate | Read-only visibility input: the lid rows of the power policy section render only when admitted truth says a lid exists |
 | Button and lid policy | PowerDevil's `SuspendAndShutdown` `LidAction`, `InhibitLidActionWhenExternalMonitorPresent`, and `PowerButtonAction` profile entries | Choose the supported do-nothing/sleep/hibernate/shut-down/lock/turn-off-screen actions and the external-monitor exception; both lid rows hide without an admitted lid |
-| Display power | Purpose-scoped Settings1 `power.idleDisplayOffMinutes` truth (-1 = never, 1–240 minutes) | Enable/disable idle display-off; choose the retained timeout only while it is enabled; never locks and never touches the screen-lock preference |
+| Display power | Confirmed Settings1 enabled state and bounded seconds for AC, battery and low battery, with the current Power1 source indicated | Edit each source independently; choose a timeout while that source is enabled; never dispatch DPMS or change screen-lock policy |
 | Session | Typed availability for Lock, Log out, Suspend, Restart, and Shut down | Lock and Suspend dispatch directly; Log out, Restart, and Shut down require confirmation |
 
 Every state and warning has visible text; meaning is not carried by color
@@ -88,29 +89,28 @@ section, so both pages read and write the same Settings1 `lock.*` truth.
 
 ## Display-power preference boundary
 
-The Display power section is display energy only. It reads and writes exactly
-one purpose-scoped Settings1 key, `power.idleDisplayOffMinutes`, through the
-route's own scoped client: `-1` (and any value at or below zero) means the
-display never turns off, positive values are clamped to 1–240 minutes, and
-the documented default is ten. The resident
-[`qindaqt-desktop-controls`](../architecture/desktop-controls.md) process
-may use that fallback while Settings1 is absent. Settings does not present the
-fallback as the user's confirmed policy: before a current-owner snapshot it
-shows an unavailable message and hides the unconfirmed switch and timeout;
-after owner loss it labels any retained value as last confirmed and disables
-edits. The route never dispatches DPMS itself and never locks the session.
+The Display power section reads and writes the six purpose-scoped Settings1
+`power.idle.<ac|battery|lowBattery>.displayOffEnabled` and
+`displayOffSeconds` keys. Timeouts range from 0 to 14400 seconds, retaining
+sub-minute choices. Each source has its own enable switch and timeout; the
+current validated Power1 snapshot marks the active source. Low, Critical and
+Action warning levels select low-battery preferences. Unknown Power1 source
+leaves the active profile unknown instead of inventing AC or battery truth.
 
-The switch and timeout accept a write only when the scoped SettingsClient
-admits that key. The visible value remains the last confirmed snapshot while
-a write is pending. An Applied reply starts a bounded wait for an accepted
-same-owner, same-epoch snapshot at or above the reply revision; only a matching
-value confirms the save. A stale snapshot keeps the request pending, a
-mismatch reports conflict, and refusal, lost reply, owner replacement, or
-expired readback reports an error or uncertainty without replay. Diagnostics
-survive an unchanged refresh. **Refresh display preference** reads authority
-only; it never repeats a write. The timeout selector stays disabled while
-idle display-off is off or authority is unavailable. The section shares no
-storage or authority with the screen-lock preference above.
+The route shows only confirmed current-owner Settings1 values and disables
+editing on authority loss. One per-key write is pending at a time; an Applied
+reply waits for fresh matching same-owner/epoch readback at or above the
+committed revision. Refusal, mismatch, missing readback or owner replacement
+shows an error or uncertainty without replay. Refresh requests readback only.
+The native [idle display stage](../architecture/idle-policy.md) consumes those
+preferences in the session supervisor through an admitted ordinary compositor
+FD. Settings does not dispatch DPMS or share the automatic-lock timer.
+
+The old `power.idleDisplayOffMinutes` key and legacy model remain compatibility
+APIs. A stored v1 value migrates to all three source profiles; an absent value
+stays absent so schema defaults apply. The native route edits per-source keys.
+Native dim, lock-before-display-off, idle suspend and complete inhibition
+remain separate delivery outcomes.
 
 ## Exact admission and operation lifetime
 

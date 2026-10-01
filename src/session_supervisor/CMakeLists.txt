@@ -50,7 +50,7 @@ pkg_check_modules(libsystemd REQUIRED IMPORTED_TARGET libsystemd)
 
 target_link_libraries(
     qindaqt_session_supervisor_support
-    PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus QindaQt::NativeLockRuntime QindaQt::NativeLockService QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::IdleObservation QindaQt::LockPreferences QindaQt::PowerClient QindaQt::SettingsClient
+    PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus QindaQt::IdlePolicy QindaQt::DesktopControls QindaQt::NativeLockRuntime QindaQt::NativeLockService QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::IdleObservation QindaQt::LockPreferences QindaQt::PowerClient QindaQt::SettingsClient
     PRIVATE PkgConfig::libsystemd QindaQt::CompositorNames
 )
 target_compile_features(qindaqt_session_supervisor_support PUBLIC cxx_std_20)

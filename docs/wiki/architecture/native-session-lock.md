@@ -306,3 +306,11 @@ PF2/PF3 Power1 wiring. It cannot prevent a privileged external logind caller
 from suspending. ScreenSaver Inhibit remains Unsupported until the Power1
 automatic-lock, display-off and idle-suspend scopes are all consumed together.
 No real lock or sleep is exercised by these candidate tests.
+
+## Independent native display-off consumer
+
+The session composition also owns the [native idle display stage](idle-policy.md).
+Its separate Settings1 scope and ordinary idle connection preserve the independent
+automatic-lock timeout. It consumes only the current Power1 source and authenticated
+DisplayOff scope receipt; owner/state uncertainty disarms display-off. This adds no
+suspend consumer and keeps Power1 scope capability advertisement at zero.

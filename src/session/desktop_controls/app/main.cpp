@@ -5,9 +5,7 @@
 #include "qindaqt/session/desktop_controls/freedesktop_feedback_notifier.h"
 #include "qindaqt/session/desktop_controls/mic_mute_key_controller.h"
 #include "qindaqt/session/desktop_controls/powerdevil_brightness_feedback_observer.h"
-#include "qindaqt/session/desktop_controls/settings1_idle_preferences.h"
 #include "qindaqt/session/desktop_controls/settings1_screensaver_preferences.h"
-#include "qindaqt/session/desktop_controls/powerdevil_idle_preferences_binding.h"
 #include "qindaqt/session/desktop_controls/screensaver_catalog.h"
 #include "qindaqt/session/desktop_controls/screenshot_launcher.h"
 #include "qindaqt/session/desktop_controls/tablet_arrival_notifier.h"
@@ -32,7 +30,6 @@
 #include "kglobal_accel_registrar.h"
 #include "screensaver_launcher.h"
 
-#include <qindaqt/session/powerdevil_idle/powerdevil_idle_adapter.h>
 
 #include <QCommandLineParser>
 #include <QGuiApplication>
@@ -96,11 +93,9 @@ int main(int argc, char *argv[])
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        QStringLiteral("QindaQt media keys and idle display-off policy."));
+        QStringLiteral("QindaQt media keys and screenshot shortcuts."));
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.addOption({QStringLiteral("no-idle-policy"),
-                      QStringLiteral("Do not turn displays off after user idle time.")});
     parser.addOption({QStringLiteral("no-tablet-policy"),
                       QStringLiteral("Do not map pen displays to their own screen.")});
     parser.process(application);
@@ -237,17 +232,6 @@ int main(int argc, char *argv[])
             .registerScreenshot = true,
         });
 
-    QindaQt::Services::SettingsClient::QtSettingsTransport settingsTransport(sessionBus);
-    QindaQt::Services::SettingsClient::SettingsClient settingsClient(
-        settingsTransport,
-        QindaQt::Session::DesktopControls::Settings1IdlePreferences::scopedKey());
-    QString settingsError;
-    if (!settingsClient.start(&settingsError)) {
-        QTextStream(stderr) << "qindaqt-desktop-controls: settings client failed: "
-                            << settingsError << '\n';
-    }
-    QindaQt::Session::DesktopControls::Settings1IdlePreferences idlePreferences(settingsClient);
-
     // AGENT-CONTRACT: The tablet ledger gets its own Settings1 client scoped
     // to `input.tabletMappings`. Settings1 rejects a whole snapshot on one
     // unknown key (ADR-0126), so widening the idle client's scope instead
@@ -323,13 +307,6 @@ int main(int argc, char *argv[])
                 << "qindaqt-desktop-controls: tablet hotplug unavailable: "
                 << tabletError << '\n';
         }
-    }
-
-    QindaQt::Session::PowerDevilIdle::PowerDevilIdleAdapter powerDevilIdle(sessionBus);
-    QindaQt::Session::DesktopControls::PowerDevilIdlePreferencesBinding idleBinding(
-        idlePreferences, powerDevilIdle, &application);
-    if (!parser.isSet(QStringLiteral("no-idle-policy"))) {
-        idleBinding.start();
     }
 
     // AGENT-CONTRACT: the idle screensaver gets its own Settings1 client

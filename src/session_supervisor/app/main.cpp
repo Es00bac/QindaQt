@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("no-removable-media"),
          QStringLiteral("Disable physical removable-media handling in a private session.")},
         {QStringLiteral("desktop-controls"),
-         QStringLiteral("Optional media-key/screenshot/idle-display helper."),
+         QStringLiteral("Optional media-key and screenshot helper."),
          QStringLiteral("path"), QStringLiteral("qindaqt-desktop-controls")},
         {QStringLiteral("powerdevil"),
          QStringLiteral("PowerDevil daemon executable."), QStringLiteral("path"),

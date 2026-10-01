@@ -79,13 +79,13 @@ install(
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-# The production process needs the compositor-provided KGlobalAccel service and
-# the session-owned PowerDevil idle preference adapter. Missing frameworks
-# degrade to no resident process while the library and focused tests build.
+# The production process needs compositor-provided KGlobalAccel and idle-time
+# observation. Missing frameworks degrade to no resident process while the
+# library and focused tests build.
 find_package(KF6GlobalAccel 6.0 CONFIG)
 find_package(KF6IdleTime 6.0 CONFIG)
 
-if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime AND TARGET QindaQt::PowerDevilIdle)
+if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime)
     qt_add_library(qindaqt_desktop_controls_production STATIC)
     add_library(QindaQt::DesktopControlsProduction ALIAS
         qindaqt_desktop_controls_production)
@@ -106,7 +106,6 @@ if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime AND TARGET QindaQt::PowerDev
             QindaQt::DesktopControls
             KF6::GlobalAccel
             KF6::IdleTime
-            QindaQt::PowerDevilIdle
             Qt6::Core
             Qt6::Gui
             Qt6::DBus
@@ -141,6 +140,6 @@ if(TARGET KF6::GlobalAccel AND TARGET KF6::IdleTime AND TARGET QindaQt::PowerDev
 else()
     message(
         STATUS
-            "qindaqt-desktop-controls: KF6GlobalAccel/PowerDevilIdle not all found; resident process not built"
+            "qindaqt-desktop-controls: KF6GlobalAccel/KF6IdleTime not all found; resident process not built"
     )
 endif()
