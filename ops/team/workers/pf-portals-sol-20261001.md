@@ -2,11 +2,11 @@
 
 - Identity: pf-portals-sol-20261001; scoped portal/key-store audit worker
 - Provider/model: OpenAI; inherited parent runtime (manager assignment names gpt-6.1-sol, high; no independent provider attestation available)
-- Status: working — Independently review exact native DPMS and Settings candidate 891092f6
+- Status: waiting — PF17 candidate and independent DPMS ACCEPT handed off; awaiting next compatible assignment
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: worker/pf-portals-20261001
 - Ownership: this record and new messages under ops/team/messages/plasma-finish-20261001/ only
-- Runtime: background collaboration worker; no speech; manager grants exclusive compiler/private fixture slots for exact review
+- Runtime: background collaboration worker; no speech; compiler and private fixture slots released
 
 ## Updates
 
@@ -18,3 +18,5 @@
 - 2026-10-01T03:10:50-06:00 — Verification/handoff: focused production build passes (configured -j24 -l24), original selected20/21 passes, stage deletion-order repair repeats1/1 pass; all21 scoped rows qualified without skips. Strict MkDocs/477-document links/diff pass. Compiler and private runtime slots released. Source boundary9c3d0489; new board-only handoff commit preserves exact tests/limits. Read platform queue/relevant runtime peer state; offer exact DPMS891 independent review when assigned.
 
 - 2026-10-01T03:13:41-06:00 — Manager explicitly assigns independent read-only review of immutable runtime891092f66029fdffa50258e98b6d52d3ed61007b. Fresh isolated source/build planned; writes restricted to own board/messages. Review retained-FD revocation/teardown, per-source Settings degraded authority, supervisor stage lease and docs; rerun22 scoped gates with configured MAKEOPTS under released slots. PF17 immutable candidate remains1d733b7f.
+
+- 2026-10-01T03:20:04-06:00 — Independent immutable runtime891092f6 verdict ACCEPT: fresh private qinda build/review production supervisor/desktop-controls plus22 scoped fixture targets exit0; exact22/22 CTests pass exit0,30.14s, zero skips. Inspected retained peer final-On/revocation/teardown, independent timer, Settings degraded/owner/readback/uncertain source and zero capability lease contract; strict MkDocs/477 links/diff pass. Source untouched. Slots released. Read platform queue; offer bounded PF17 reviewer repair or explicit PF18 family audit/first implementation slice. Status waiting.
