@@ -19,6 +19,7 @@ namespace QindaQt::SessionSupervisor {
 class FirstLaunchWelcome;
 class OptionalSessionChild;
 class KeyringSessionLifetime;
+class PortalSessionLifetime;
 class SessionAutostartRunner;
 
 struct SessionProcessOptions final {
@@ -40,6 +41,9 @@ struct SessionProcessOptions final {
     // Empty disables keyring ownership in private sessions. Production uses
     // the installed native executable; no distribution fallback (ADR-0296).
     QString keyringExecutable;
+    // Empty isolates private sessions; production supplies the sibling native
+    // portal. Its dedicated session connection binds ordinary display lifetime.
+    QString portalExecutable;
     // Night Light schedule authority; D-Bus activation also starts it when
     // Settings is closed, while this session-owned child keeps it resident.
     QString nightLightExecutable = QStringLiteral("/usr/bin/qindaqt-night-light-service");
@@ -169,6 +173,7 @@ private:
     std::unique_ptr<OptionalSessionChild> m_desktopControls;
     std::unique_ptr<OptionalSessionChild> m_removableMedia;
     std::unique_ptr<KeyringSessionLifetime> m_keyring;
+    std::unique_ptr<PortalSessionLifetime> m_portal;
     std::unique_ptr<OptionalSessionChild> m_nightLight;
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;

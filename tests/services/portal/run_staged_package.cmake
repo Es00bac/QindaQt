@@ -61,7 +61,9 @@ set(kde_portal_dropin
     "${install_prefix}/${QINDAQT_INSTALL_SYSTEMDUSERUNITDIR}/plasma-xdg-desktop-portal-kde.service.d/20-qindaqt-remotedesktop.conf")
 set(theme_directory
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/qindaqt/themes")
-foreach(required_artifact IN ITEMS portal_executable dbus_descriptor systemd_unit
+set(consent_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-consent")
+set(uri_relay "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-uri-relay")
+foreach(required_artifact IN ITEMS portal_executable consent_executable uri_relay dbus_descriptor systemd_unit
         portal_metadata portal_selection kde_portal_dropin)
     if(NOT EXISTS "${${required_artifact}}")
         message(FATAL_ERROR "Staged portal package misses ${required_artifact}: ${${required_artifact}}")
@@ -226,7 +228,7 @@ endfunction()
 file(WRITE "${portal_metadata}"
     "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Background\nUseIn=QindaQt\n")
 expect_installed_metadata_rejection(
-    ".portal" "exact singleton Settings interface")
+    ".portal" "exact Settings and Secret interfaces")
 file(WRITE "${portal_metadata}" "${portal_content}")
 
 file(WRITE "${portal_selection}"
@@ -240,6 +242,20 @@ file(WRITE "${portal_selection}"
 expect_installed_metadata_rejection(
     "selector-secret-drop" "exact Settings/fallback routing policy")
 file(WRITE "${portal_selection}" "${selection_content}")
+
+# Repeat actual frontend positive and closed-default withdrawal controls with
+# installed metadata/URI relay. Input remains the explicit production-source
+# test driver; this does not claim physical installed consent qualification.
+execute_process(
+    COMMAND "${QINDAQT_CMAKE}" -E env --unset=DBUS_SESSION_BUS_ADDRESS
+        python3 "${QINDAQT_NATIVE_FRONTEND_RUNNER}" "${QINDAQT_NATIVE_FRONTEND_TEST}"
+        "${QINDAQT_NATIVE_CONSENT_INPUT}" "${QINDAQT_NATIVE_COMPOSITOR}"
+        "${uri_relay}" "${QINDAQT_NATIVE_MAIL}" "${portal_metadata}" "${portal_selection}"
+    RESULT_VARIABLE native_frontend_status OUTPUT_VARIABLE native_frontend_output ERROR_VARIABLE native_frontend_error)
+if(NOT native_frontend_status EQUAL 0)
+    message(FATAL_ERROR "Staged native frontend qualification failed:\n${native_frontend_output}${native_frontend_error}")
+endif()
+message(STATUS "Staged native frontend and routing withdrawal controls pass")
 
 # Self-guard: a private header planted in the disposable installed namespace
 # must make the same checker fail.
@@ -263,3 +279,4 @@ endif()
 
 file(REMOVE_RECURSE "${install_prefix}")
 message(STATUS "Staged portal package, private lifecycle, and installed poison passed")
+

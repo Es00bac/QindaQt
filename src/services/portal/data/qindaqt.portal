@@ -1,4 +1,4 @@
 [portal]
 DBusName=org.freedesktop.impl.portal.desktop.qindaqt
-Interfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Secret
+Interfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Secret;org.freedesktop.impl.portal.Access;org.freedesktop.impl.portal.Notification;org.freedesktop.impl.portal.Email
 UseIn=QindaQt

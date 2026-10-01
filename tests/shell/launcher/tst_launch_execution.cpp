@@ -33,6 +33,7 @@ private Q_SLOTS:
     void rejectsUnsatisfiableFieldCodes();
     void enforcesOutputCeilings();
     void expandsHandedOverLocalFiles();
+    void expandsEncodedUrls();
 };
 
 void LaunchExecutionTests::parsesPrimaryAndActionExecutionKeys()
@@ -274,6 +275,21 @@ void LaunchExecutionTests::expandsHandedOverLocalFiles()
     QVERIFY(launcher.ok());
     QCOMPARE(launcher.plan->arguments, QStringList{ QStringLiteral("--flag") });
     QCOMPARE(launcher.plan->fileArguments, 0);
+}
+
+void LaunchExecutionTests::expandsEncodedUrls()
+{
+    auto input = values();
+    input.urls = {QStringLiteral("mailto:fixture@example.invalid?subject=Two%20words%20%24%28id%29")};
+    const auto plan = ExecFieldCodeExpander::expand(QStringLiteral("fixture %u --end"), input);
+    QVERIFY(plan.ok());
+    QCOMPARE(plan.plan->arguments, QStringList({input.urls.first(), QStringLiteral("--end")}));
+    QCOMPARE(plan.plan->fileArguments, 1);
+    QVERIFY(!ExecFieldCodeExpander::expand(QStringLiteral("fixture %f"), input).ok());
+    QVERIFY(!ExecFieldCodeExpander::expand(QStringLiteral("fixture --uri=%u"), input).ok());
+    QVERIFY(!ExecFieldCodeExpander::expand(QStringLiteral("%u --end"), input).ok());
+    input.localFiles = {QStringLiteral("/tmp/fixture")};
+    QVERIFY(!ExecFieldCodeExpander::expand(QStringLiteral("fixture %U"), input).ok());
 }
 
 QTEST_GUILESS_MAIN(LaunchExecutionTests)

@@ -4415,3 +4415,23 @@ separate manager gate.
 ## Removable media acceptance
 
 The [removable-media handler](../apps/removable-media.md) is covered by `qindaqt.removable-media-policy`, `qindaqt.removable-media-udisks`, `qindaqt.removable-media-notifications`, `qindaqt.removable-media-qml` and `qindaqt.session-removable-media-lifetime`. Policy tests cover insertion once per attachment, remembered-choice persistence, serialized automatic read-only mounts, stale notification/format refusal and failed-save rollback. The UDisks test runs on a private session bus used as its injected system connection and covers real method/options dispatch, hidden-sibling busy refusal, ordered unmount/power-off, delayed owner-loss replies and Mount/Remove continuations after attachment replacement. Notification transport tests cover owner loss during insertion, superseded updates sharing a current ID, withdrawal before the Notify reply and withdrawal before owner loss. QML tests activate real mount, read-only, preferences, unlock and format controls. Session tests prove start/restart, orderly stop-before-notifications, abnormal teardown and absent-helper login. Private desktop launch wrappers explicitly pass `--no-removable-media`; these tests never mount/format host storage. Physical disc/hotplug and disposable-media formatting remain separate hardware qualification.
+## Native portal foundation fixtures
+
+The [native portal foundation](../architecture/portal-foundation.md) has focused
+private real-bus Access/Notification/Email/Inhibit rows and an ordinary private
+Wayland consent/mail-draft fixture. The latter uses production QindaTK consent
+QML/controller with test-only pointer input and verifies the selected compositor
+peer on inherited ordinary FDs. Native clientless-lock retirement is distinct
+from authorization/PAM or installed trusted-locker qualification. Native Power
+zero-scope refusal is production evidence; injected public-port positive lease
+rows do not qualify a real inhibitor scope. No host mail, notifications, data or
+session services are used.
+
+The `qindaqt.portal-native-frontend` row runs the real frontend over source
+metadata and the production resident/foundation on a private ordinary display;
+Camera routes Access consent, Email maps a synthetic configured handler, and
+Notification reaches the native host. It checks public Close, frontend loss and
+selected supervisor connection loss. `qindaqt.session-portal-lifetime` verifies
+canonical display selection, same caller lifetime across backend unique-owner
+replacement and disconnect-on-stop on a private bus. Neither row qualifies the
+installed desktop, physical devices or PAM. Both require serialized runtime.

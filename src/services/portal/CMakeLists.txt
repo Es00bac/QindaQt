@@ -52,10 +52,13 @@ target_compile_definitions(qindaqt_portal_service PRIVATE QT_NO_KEYWORDS)
 set_target_properties(qindaqt_portal_service PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt_portal_service)
 
+add_subdirectory(foundation)
+add_subdirectory(consent)
+
 qt_add_executable(xdg-desktop-portal-qindaqt app/main.cpp)
 target_link_libraries(
     xdg-desktop-portal-qindaqt
-    PRIVATE QindaQt::PortalService QindaQt::SecretPortal QindaQt::SettingsClient Qt6::Core Qt6::DBus
+    PRIVATE QindaQt::PortalService QindaQt::PortalComposition QindaQt::SecretPortal QindaQt::SettingsClient Qt6::Core Qt6::DBus
 )
 target_compile_definitions(
     xdg-desktop-portal-qindaqt PRIVATE QINDAQT_VERSION="${PROJECT_VERSION}"
