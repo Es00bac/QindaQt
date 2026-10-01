@@ -44,6 +44,7 @@ private Q_SLOTS:
     void usesConfirmedTimeoutAndRestoresOnActivity();
     void displayLeaseAndUnknownOwnerStateSuppressTheStage();
     void disablingPreferenceRestoresAndDisarms();
+    void losingConfirmedPreferencesRestoresWithoutFallback();
     void attachmentRevocationRestoresAndStopsTheStage();
     void missingAdmittedFdDoesNotFallbackToWaylandDisplay();
     void sourceSelectionUsesAdmittedWarningWithAcPriority();
@@ -187,6 +188,28 @@ void DisplayOffStageTests::sourcePreferencesRequireCurrentLineageAndBoundedValue
     QVERIFY(disabled.has_value());
     QVERIFY(!disabled->enabled);
     QCOMPARE(disabled->timeoutSeconds, 0);
+}
+
+void DisplayOffStageTests::losingConfirmedPreferencesRestoresWithoutFallback()
+{
+    FakeIdle idle;
+    FakeDisplay display;
+    FakePowerTransport transport;
+    Power::PowerClient power(&transport);
+    std::optional<DisplayOffPreferences> confirmed = DisplayOffPreferences{true, 20};
+    DisplayOffStage stage(idle, display, power, [&] { return confirmed; });
+    stage.start();
+    idle.setIdle(true);
+    QCOMPARE(display.offRequests, 1);
+
+    confirmed.reset();
+    stage.refreshPreferences();
+    QCOMPARE(idle.timeout, 0);
+    QCOMPARE(display.onRequests, 1);
+    QVERIFY(!stage.displaysOffRequested());
+    idle.setIdle(true);
+    QCOMPARE(display.offRequests, 1);
+    stage.stop();
 }
 
 void DisplayOffStageTests::attachmentRevocationRestoresAndStopsTheStage()
