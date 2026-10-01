@@ -30,7 +30,8 @@ QList<FakeUpowerService::DeviceSpec> supplies(bool battery, uint warning = 2)
 struct Runtime {
     ProfilePolicyBus bus;
     QDBusConnection settingsBus{QStringLiteral("unused-settings")};
-    QDBusConnection upstreamBus{QStringLiteral("unused-upstream")};
+    QDBusConnection profilesBus{QStringLiteral("unused-profiles")};
+    QDBusConnection upowerBus{QStringLiteral("unused-upower")};
     QDBusConnection clientBus{QStringLiteral("unused-client")};
     QDBusConnection legacyBus{QStringLiteral("unused-legacy")};
     std::unique_ptr<ResidentSettingsService> service;
@@ -48,7 +49,8 @@ struct Runtime {
     bool refuse(const QString &message) { qWarning().noquote() << message; return false; }
     bool start(bool exclusive = true, bool legacy = false) {
         if (!bus.start()) return refuse(QStringLiteral("private bus startup failed"));
-        settingsBus = bus.open(); upstreamBus = bus.open();
+        // Separate owners also avoid nested SubPath virtual-object registries.
+        settingsBus = bus.open(); profilesBus = bus.open(); upowerBus = bus.open();
         clientBus = bus.open(); legacyBus = bus.open();
         if (legacy && !legacyBus.registerService(QStringLiteral("org.kde.Solid.PowerManagement"))) return false;
         QString error;
@@ -62,12 +64,12 @@ struct Runtime {
         if (!settingsStatus.ok()) return refuse(QStringLiteral("fixture Settings1 startup: ")
             + settingsServiceStartStatusName(settingsStatus.status) + QLatin1Char(' ')
             + settingsStatus.message);
-        ppd = std::make_unique<FakePpdService>(upstreamBus, false);
+        ppd = std::make_unique<FakePpdService>(profilesBus, false);
         ppd->setProfiles({QStringLiteral("power-saver"), QStringLiteral("balanced"), QStringLiteral("performance")});
         ppd->setActiveProfile(QStringLiteral("balanced"));
         ppd->setHolds({{QStringLiteral("power-saver"), QStringLiteral("External"), QStringLiteral("untouched")}});
         if (!ppd->registerService()) return refuse(QStringLiteral("fixture profiles registration failed"));
-        upower = std::make_unique<FakeUpowerService>(upstreamBus);
+        upower = std::make_unique<FakeUpowerService>(upowerBus);
         upower->setDevices(supplies(false));
         if (!upower->registerService()) return refuse(QStringLiteral("fixture supplies registration failed"));
         transport = std::make_unique<QtSettingsTransport>(clientBus);
