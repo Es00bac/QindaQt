@@ -10,6 +10,11 @@ qindaqt_enable_warnings(qindaqt_portal_capture_request_tests)
 add_test(NAME qindaqt.portal-capture-requests COMMAND qindaqt_portal_capture_request_tests)
 set_tests_properties(qindaqt.portal-capture-policy qindaqt.portal-capture-requests
     PROPERTIES TIMEOUT 45 LABELS "portal;capture;private-bus;hostile")
+qt_add_executable(qindaqt_portal_capture_transport_tests tst_capture_transport.cpp)
+target_link_libraries(qindaqt_portal_capture_transport_tests PRIVATE QindaQt::CompositorCapture Qt6::Test)
+qindaqt_enable_warnings(qindaqt_portal_capture_transport_tests)
+add_test(NAME qindaqt.portal-capture-transport COMMAND qindaqt_portal_capture_transport_tests)
+set_tests_properties(qindaqt.portal-capture-transport PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE LABELS "portal;capture;private-bus;deadline;hostile")
 
 # Protected native fixtures need the selected installed public fork contract;
 # absence keeps ordinary policy/request tests but advertises no native gate.
