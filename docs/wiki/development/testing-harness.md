@@ -4516,7 +4516,8 @@ llvmpipe. Both modes keep every real pixel/frame/privacy assertion.
 
 The retained exact447 software probes on scope-correct consumer97c63 return an
 actual1100x820 fully transparent black Screenshot PNG and a real ScreenCast node/
-remote FD without decoded frames. VirtualEglLayer allocates through EglSwapchain and the
+remote FD that fails the required decoded-frame count. Earlier assertions did
+not print the count; they do not establish zero frames. VirtualEglLayer allocates through EglSwapchain and the
 GBM allocator, whose software allocation requires DRM_IOCTL_MODE_CREATE_DUMB;
 render-only isolation denies that operation and the actual layer fails repeatedly.
 These failures establish rendering limits, and do not qualify screenshots or
@@ -4529,3 +4530,20 @@ The fixture follows the existing foreign-exporter native-surface access pattern;
 it fabricates no Wayland buffer, image, or callback. The retained producer-frame
 audit distinguishes local exposure/paint from compositor frame completion.
 A missing callback fails the bounded initialization before Screenshot/ScreenCast.
+
+Exact consumer3a8e48a1 with fork447 and matching driver/plugin/library images
+passes actual AMD/radeonsi renderer provenance and producer callback readiness.
+The retained producer audit records a real Qt paint and `wl_surface.frame`
+completion before the request. Screenshot still returns Response0/local1100x820
+PNG whose902000 pixels are entirely RGBA(0,0,0,0); the unchanged fixture-color
+assertion fails. A separate ScreenCast diagnostic obtains the actual node and
+frontend remote FD, then fails the unchanged requirement for more than3 decoded
+frames: the diagnostic reports2 decoded frames,3 visible nodes and an empty
+consumer error string. Neither probe has cleanup errors, owned survivors or
+task-local core files. The completed callback proves frame callback readiness,
+not presentation or useful captured scene content. The remaining bounded blocker
+is actual captured scene pixels and continuing changed frames; cancellation,
+PickColor, Close and the remaining native privacy matrix remain unqualified.
+All earlier failure logs/commands/hashes and this actual PNG remain preserved
+in ignored qinda evidence directories. An incorrect diagnostic case spelling
+was rejected before any compositor launch and is retained separately.
