@@ -35,6 +35,10 @@ public:
   // Dispatches only after an actual Protected receipt; cannot control a
   // privileged external logind caller.
   bool requestSuspend(std::function<void()> dispatch);
+  // Owner loss/stop cancels without replay. Selected logind lifecycle can feed
+  // resume directly; Power1 read-only truth remains a compatibility input.
+  void cancelSuspend();
+  void prepareForSleep(bool preparing);
 Q_SIGNALS:
   void stateChanged();
   void lockFinished(QindaQt::Services::NativeLock::RequestResult result);

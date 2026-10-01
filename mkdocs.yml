@@ -483,6 +483,7 @@ nav:
       - ADR-0306 Power1 idle inhibition: adr/0306-power1-idle-inhibitors-and-stage-policy.md
       - ADR-0316 Power1 idle state receipts: adr/0316-power-idle-state-receipt-authority.md
       - ADR-0319 Supervisor native idle display policy: adr/0319-supervisor-owned-native-idle-display-policy.md
+      - ADR-0321 Supervisor native sleep admission: adr/0321-supervisor-owned-native-sleep-admission.md
       - ADR-0307 Ordinary FD idle observation: adr/0307-public-ordinary-fd-idle-observation.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
       - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md

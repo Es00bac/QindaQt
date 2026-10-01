@@ -1,4 +1,5 @@
 #include "native_lock_composition.h"
+#include "native_sleep_composition.h"
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <qindaqt/platform/idle_observation/idle_observation.h>
@@ -50,6 +51,7 @@ public:
   std::unique_ptr<Power::QtPowerTransport> powerTransport;
   std::unique_ptr<Power::PowerClient> power;
   std::unique_ptr<Session::NativeLockRuntime::Runtime> runtime;
+  std::unique_ptr<NativeSleepComposition> sleep;
   bool active = false;
 };
 
@@ -128,6 +130,11 @@ bool NativeLockComposition::start(QString *error) {
   d->runtime = std::make_unique<Session::NativeLockRuntime::Runtime>(
       *d->preferences, *d->idle, *d->request, *d->monitor, d->power.get());
   d->runtime->start();
+  d->sleep = std::make_unique<NativeSleepComposition>(d->bus, *d->runtime, *d->monitor,
+      [this] { return d->attachment && d->attachment->sameBus(d->bus) &&
+                      d->attachment->live(); });
+  if (!d->sleep->start())
+    return fail(QStringLiteral("native sleep handoff registration failed"));
 
   // Display power uses its own Settings1 scope and compositor observer so
   // source-specific timeout changes cannot overwrite the automatic-lock timer.
@@ -189,6 +196,8 @@ bool NativeLockComposition::start(QString *error) {
 
 void NativeLockComposition::stop() {
   if (!d) return;
+  if (d->sleep) d->sleep->stop();
+  d->sleep.reset();
   if (d->displayStage) d->displayStage->stop();
   d->displayStage.reset();
   // AGENT-GUARD: logout must flush the retained peer restore before destroying

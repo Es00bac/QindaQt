@@ -457,3 +457,26 @@ The Qt Power client now requests installed-service activation at startup and
 after owner loss, with one in-flight activation request and a one-second retry
 interval. Exact-owner snapshot resolution follows activation, without replaying
 controls. Cold-client activation and daemon replacement are private-bus gates.
+
+
+## Protected manual and system sleep admission
+
+[ADR-0321](../adr/0321-supervisor-owned-native-sleep-admission.md) moves manual
+SessionActions suspend to the supervisor-owned `org.qindaqt.Sleep1` handoff.
+The client joins its exact unique owner to Session1, repeats CanSuspend, and
+never sends direct logind Suspend. The coordinator consumes the authenticated
+native lock runtime's actual protected receipt before logind dispatch, rechecks
+protection after the bounded CanSuspend call, and refuses unknown/incomplete
+locking. Reboot/PowerOff retain their existing separate logind admission.
+
+The selected-session login1 adapter validates root-owned logind, explicit
+session ID, actual supervisor PID, Id/User UID and object paths, and live
+supervisor/ordinary attachment admission. It owns one sleep delay FD. Exact
+PrepareForSleep(true) releases that descriptor only after current native
+protection; failed protection retains it within logind's finite delay. Resume
+rearms the FD and feeds confirmed lock-on-resume. Lock requests native manual
+admission, Unlock never authenticates, and LockedHint mirrors only authenticated
+Unlocked/protected Locked state. Stop/owner/peer/supervisor loss closes the FD
+and fences late replies. Power1 remains read-only for sleep projection and its
+supported idle inhibitor scopes remain zero; source-specific idle/lid/button
+policy and installed/hardware sleep qualification remain separate gates.

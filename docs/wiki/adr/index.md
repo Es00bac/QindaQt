@@ -343,3 +343,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0315: Session-owned removable media through UDisks](0315-session-owned-removable-media-through-udisks.md)
 
 - [ADR-0319: Compose native idle display policy in the session supervisor](0319-supervisor-owned-native-idle-display-policy.md)
+
+- [ADR-0321: Supervisor-owned native sleep admission](0321-supervisor-owned-native-sleep-admission.md)
