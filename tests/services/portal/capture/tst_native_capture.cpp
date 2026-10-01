@@ -72,7 +72,14 @@ private Q_SLOTS:
         QVERIFY(attachment.attach(selected->baseService(), "qindaqt-8")); const int pixelFd = attachment.openConnection(); QVERIFY(pixelFd >= 0);
         auto pixelEnv = QProcessEnvironment::systemEnvironment(); pixelEnv.remove("WAYLAND_DISPLAY"); pixelEnv.insert("WAYLAND_SOCKET", QString::number(pixelFd)); pixels.setProcessEnvironment(pixelEnv);
         pixels.setChildProcessModifier([pixelFd] { if (fcntl(pixelFd, F_SETFD, 0) < 0) _exit(2); }); pixels.start(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_PIXELS")); const bool pixelStarted = pixels.waitForStarted(); ::close(pixelFd); QVERIFY(pixelStarted);
-        QByteArray pixelReady; QTRY_VERIFY_WITH_TIMEOUT((pixelReady += pixels.readAllStandardOutput()).contains("mapped private pixels"), 10000); startFrontend();
+        QByteArray pixelReady;
+        const auto pixelFrameReady = [&] {
+            pixelReady += pixels.readAllStandardOutput();
+            QFile audit(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("producer-frame.audit"));
+            if (!audit.open(QIODevice::WriteOnly) || audit.write(pixelReady) != pixelReady.size()) return false;
+            return pixelReady.contains("completed private pixels frame ");
+        };
+        QTRY_VERIFY_WITH_TIMEOUT(pixelFrameReady(), 10000); startFrontend();
         QVERIFY(bus.connect("org.freedesktop.portal.Desktop", {}, "org.freedesktop.portal.Request", "Response", &responses, SLOT(receive(quint32,QVariantMap))));
     }
     void init() { reset("allow"); }

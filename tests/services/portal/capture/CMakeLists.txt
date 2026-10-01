@@ -67,7 +67,7 @@ target_link_libraries(qindaqt_portal_capture_test_backend PRIVATE qindaqt_portal
 qindaqt_enable_warnings(qindaqt_portal_capture_test_backend)
 
 qt_add_executable(qindaqt_portal_capture_pixels capture_pixels.cpp)
-target_link_libraries(qindaqt_portal_capture_pixels PRIVATE Qt6::Widgets)
+target_link_libraries(qindaqt_portal_capture_pixels PRIVATE Qt6::Widgets Qt6::GuiPrivate Wayland::Client)
 qindaqt_enable_warnings(qindaqt_portal_capture_pixels)
 
 find_package(PkgConfig REQUIRED)

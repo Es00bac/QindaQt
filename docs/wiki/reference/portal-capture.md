@@ -251,3 +251,10 @@ render-only isolation denies that operation and the actual layer fails repeatedl
 These failures establish rendering limits, and do not qualify screenshots or
 streams. Hardware render-node allocation uses GBM dma-bufs; explicit native
 qualification remains separate, without a primary-card/host-display fallback.
+
+The changing Qt widget producer now reports readiness only after an actual
+public `wl_surface.frame` completion on its own painted/committed Qt surface.
+The fixture follows the existing foreign-exporter native-surface access pattern;
+it fabricates no Wayland buffer, image, or callback. The retained producer-frame
+audit distinguishes local exposure/paint from compositor frame completion.
+A missing callback fails the bounded initialization before Screenshot/ScreenCast.
