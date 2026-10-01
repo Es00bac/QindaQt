@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — compiling immutable c8f8e2ef capture/Screenshot slice and teardown regression
+- Status: working — repairing owned capture broker Qt connection mutability after the bounded build
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: qinda-only compiler granted for bounded17-target-j8-l24; no CTest/private-native/install/staging grant
+- Resources: compiler/private-runtime released; next exact bounded compiler grant requested
 
 ## Updates
+
+- 2026-10-01T19:03:00Z — Exactc8f8e2ef bounded17-target Ninja exits1 in56.0s; final83/132 dynamic progress, rawlog/status retained, minimumRAM18487360kB/no intervention, ownedPGID161310 absent. First new failure capture/backend/main.cpp holds const Qt connection yet registers service/object through nonconst APIs; making only that owned handle mutable. Admission/helper/broker objects compile, new regression MOC generated but not yet compiled/run. Compiler released immediately, no private grant used. Both preceding failures remain. Same target/config/header scope requested on frozen repair; metadata/fullPF19 claims unchanged.
 
 - 2026-10-01T19:00:38Z — Root granted exactclean c8f8e2ef qinda-only compiler, same17 targets plus declared dependencies, per-command Ninja-j8-l24/global MAKEOPTS unchanged. Clean pin/config/development-prefix identity verified; MemAvailable21987712kB (~20.97GiB), no live ninja/cc1plus observed. Starting distinct c8f8e2ef raw log/status with owned-group lowRAM/stall stop, firstfailure/completion release. Teardown regression source included; no CTests/private runtime/staging grant. Board-only child stays off compiler source.
 

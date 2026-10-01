@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     rlimit cores{0, 0};
     if (argc != 1 || setrlimit(RLIMIT_CORE, &cores) || prctl(PR_SET_DUMPABLE, 0) || prctl(PR_GET_DUMPABLE) != 0) return 2;
     signal(SIGPIPE, SIG_IGN); umask(0077);
-    QCoreApplication app(argc, argv); const auto bus = QDBusConnection::sessionBus();
+    QCoreApplication app(argc, argv); auto bus = QDBusConnection::sessionBus();
     const auto runtime = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
     struct stat directory{}; const auto path = runtime.toUtf8();
     if (runtime.isEmpty() || lstat(path.constData(), &directory) || !S_ISDIR(directory.st_mode)
