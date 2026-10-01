@@ -1061,6 +1061,51 @@ inverse traversal plus the Qt Accessible roles/names of every required control.
 None of these tests opens a production surface or injects input.
 
 These focused presentation checks do not start a compositor or inject input.
+The focused `shell.notification-native-popup` fixture is the native replacement
+for the legacy live row's lock/privacy proof. Its test-owned `Session1` connection
+selects the actual production compositor through daemon UID/PID and a real
+ordinary socket/PIDFD attachment. Both the independent public native monitor and
+the unchanged production shell consume current targeted nonce receipts from the
+actual fork; the fixture exports no native backend or presentation decision.
+The public descriptor launcher provisions the unchanged notification host and
+shell without putting their shared access token in argv, environment, or logs.
+
+The native fixture checks a committed, mapped production popup in the compositor
+inventory, then releases only its own selected Session1 name. The live shell and
+host must remain running while privacy becomes Unknown, all private models clear,
+and no notification popup/center remains mapped. A fresh shell/selection maps
+another popup before the actual native lock request. Current Locked/Protected
+receipts must prove clientless black protection, and critical submissions during
+both denials must remain cleared. The runner requires the fixed native locker to
+be absent and refuses its presence; it exercises no PAM, authentication, unlock,
+or input. Locker-launch refusal is expected and never reported as successful
+lock admission. The temporary broker has no activation entries and the system
+bus points to a nonexistent private path. Each invocation preserves its fixture,
+compositor and production-child logs, including failures.
+The launcher explicitly receives `--session ''` and `--no-xwayland`; omitting
+the empty session starts its installed default supervisor and optional children.
+The runner uses a short disposable transport root, canonical numeric socket
+basename and private 077 umask, and stops the compositor before its empty broker.
+The retained manifest records the actual fork PID and socket mode/UID. The
+qualified 1080p/100% private row passed both behavior cases plus Qt lifecycle
+cases (4 passes, zero failures/skips) with one mapped popup before each transition
+and zero mapped notification surfaces afterward. This is clientless native
+privacy qualification; it supplies no authentication or physical-output claim.
+
+`QINDAQT_NATIVE_POPUP_PRODUCTION_BUILD` optionally selects an immutable compatible
+production build for the runner's shell/host/Settings/launcher/plugin artifacts;
+it defaults to the active build. `QINDAQT_KWIN_WAYLAND` must select the exact
+qualified native fork. This does not qualify physical output protection,
+authentication, the historical keyboard/settings/restart matrix, or installed
+deployment. Run its focused gate with:
+
+```sh
+ctest --test-dir build/native-popup -R '^shell\.notification-native-popup$' \
+  --output-on-failure -V
+```
+
+The historical live matrix below still contains its legacy KScreenLocker and
+shortcut assumptions; those rows do not supply native receipt/privacy proof.
 Their separate live counterpart is selected with:
 
 ```sh
