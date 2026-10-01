@@ -42,6 +42,26 @@ set(foundation_files
     "include/qindaqt/services/portal/file_chooser_adaptor.h"
     "include/qindaqt/services/portal/app_chooser_adaptor.h"
     "include/qindaqt/services/portal/process_chooser.h"
+    "capture/CMakeLists.txt"
+    "capture/main.cpp"
+    "capture/native_capture_admission.h"
+    "capture/native_capture_admission.cpp"
+    "capture/capture_dialog.h"
+    "capture/capture_dialog.cpp"
+    "capture/color_picker.h"
+    "capture/color_picker.cpp"
+    "src/capture_policy.cpp"
+    "src/capture_wire.cpp"
+    "src/capture_sessions.cpp"
+    "src/capture_sessions_p.h"
+    "src/screenshot_adaptor.cpp"
+    "src/screencast_adaptor.cpp"
+    "src/process_capture.cpp"
+    "include/qindaqt/services/portal/capture_types.h"
+    "include/qindaqt/services/portal/capture_ui.h"
+    "include/qindaqt/services/portal/process_capture.h"
+    "include/qindaqt/services/portal/screenshot_adaptor.h"
+    "include/qindaqt/services/portal/screencast_adaptor.h"
     "src/access_adaptor.cpp"
     "src/access_policy.cpp"
     "src/email_adaptor.cpp"
@@ -88,7 +108,7 @@ foreach(source IN LISTS portal_sources)
     foreach(backend_interface IN LISTS backend_interfaces)
         if(NOT backend_interface STREQUAL "org.freedesktop.impl.portal.Settings")
             if(NOT relative IN_LIST foundation_files OR NOT backend_interface MATCHES
-                "^org\\.freedesktop\\.impl\\.portal\\.(Access|Notification|Email|Inhibit|Request|FileChooser|AppChooser)$")
+                "^org\\.freedesktop\\.impl\\.portal\\.(Access|Notification|Email|Inhibit|Request|FileChooser|AppChooser|Screenshot|ScreenCast|Session)$")
                 message(FATAL_ERROR "Portal imports an out-of-scope standard interface in ${source}: ${backend_interface}")
             endif()
         endif()
@@ -152,6 +172,11 @@ if(DEFINED STAGE_ROOT)
         "app_chooser_adaptor.h"
         "chooser_types.h"
         "chooser_ui.h"
+        "capture_types.h"
+        "capture_ui.h"
+        "process_capture.h"
+        "screenshot_adaptor.h"
+        "screencast_adaptor.h"
         "email_adaptor.h"
         "email_policy.h"
         "file_chooser_adaptor.h"
