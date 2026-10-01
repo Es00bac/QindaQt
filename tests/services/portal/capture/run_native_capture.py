@@ -4,6 +4,7 @@
 import os
 import pathlib
 import select
+import signal
 import subprocess
 import sys
 import tempfile
@@ -21,15 +22,32 @@ groups = [
     ["nativeLockStopsActualStreamPendingCaptureAndRetainedFile"],
     ["compositorLossWithdrawsStreamsFilesAndPendingPublication"],
 ]
+def group_alive(process):
+    try:
+        os.killpg(process.pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+
+
+def audit_exit(process):
+    deadline = time.monotonic() + 2
+    while group_alive(process) and time.monotonic() < deadline:
+        time.sleep(.02)
+    if group_alive(process):
+        raise RuntimeError(f"private process group {process.pid} leaked descendants")
+
+
 os.umask(0o077)
 for group in groups:
     children = []
+    logs = []
     with tempfile.TemporaryDirectory(prefix="qindaqt-native-capture-") as tmp:
         root = pathlib.Path(tmp)
         runtime = root / "runtime"
         runtime.mkdir(mode=0o700)
         env = dict(os.environ)
-        for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR", "WIREPLUMBER_CONFIG_DIR"):
+        for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR", "WIREPLUMBER_CONFIG_DIR", "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS", "KWIN_WAYLAND_NO_PERMISSION_CHECKS"):
             env.pop(key, None)
         env.update(HOME=str(root), XDG_RUNTIME_DIR=str(runtime), XDG_CONFIG_HOME=str(root / "config"),
             XDG_DATA_HOME=str(root / "data"), XDG_CACHE_HOME=str(root / "cache"), XDG_STATE_HOME=str(root / "state"),
@@ -61,6 +79,7 @@ for group in groups:
             ("org.test.CaptureHelper", helper, "X-QindaQt-KWin-DBus-Restricted-Interfaces=org.kde.KWin.ScreenShot2"),
         ):
             (applications / (name + ".desktop")).write_text(f"[Desktop Entry]\nType=Application\nName=Private capture fixture\nExec={executable}\nNoDisplay=true\n{permission}\n")
+        (applications / "org.test.Capture.desktop").write_text("[Desktop Entry]\nType=Application\nName=Private capture caller\nExec=/usr/bin/true\nNoDisplay=true\n")
         env["PATH"] = str(compositor.parent) + os.pathsep + env.get("PATH", "/usr/bin:/bin")
         env["LD_LIBRARY_PATH"] = str(compositor.parent.parent / "lib64")
         env["QT_PLUGIN_PATH"] = str(compositor.parent.parent / "lib64/qt6/plugins")
@@ -88,19 +107,22 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
         try:
             config = root / "bus.conf"
             config.write_text("<busconfig><type>session</type><listen>unix:path=" + str(root / "bus") + "</listen><auth>EXTERNAL</auth><policy context='default'><allow own='*'/><allow send_destination='*'/><allow receive_sender='*'/></policy></busconfig>")
-            bus = subprocess.Popen(["dbus-daemon", "--nofork", "--config-file=" + str(config), "--print-address=1"], env=env, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            bus = subprocess.Popen(["dbus-daemon", "--nofork", "--config-file=" + str(config), "--print-address=1"], env=env, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True)
             children.append(bus)
             if not select.select([bus.stdout], [], [], 5)[0]:
                 raise RuntimeError("private broker unavailable")
             env["DBUS_SESSION_BUS_ADDRESS"] = bus.stdout.readline().decode().strip()
-            subprocess.run(["kbuildsycoca6", "--noincremental"], env=env, check=True, timeout=30, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            logs = []
+            cache = subprocess.Popen(["kbuildsycoca6", "--noincremental"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            children.append(cache)
+            if cache.wait(timeout=30):
+                raise RuntimeError("private desktop cache unavailable")
+            audit_exit(cache)
             for name, command in [("pipewire", ["pipewire", "-c", str(pwconfig)]), ("wireplumber", ["wireplumber", "-p", "policy"])]:
                 handle = (root / (name + ".log")).open("wb")
                 logs.append(handle)
                 producer = dict(env)
                 producer.pop("QT_FATAL_WARNINGS", None)
-                children.append(subprocess.Popen(command, env=producer, stdout=handle, stderr=subprocess.STDOUT))
+                children.append(subprocess.Popen(command, env=producer, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True))
                 if name == "pipewire":
                     deadline = time.monotonic() + 10
                     while not (runtime / "pipewire-capture").exists() and time.monotonic() < deadline:
@@ -111,7 +133,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             logs.append(handle)
             producer = dict(env)
             producer.pop("QT_FATAL_WARNINGS", None)
-            comp = subprocess.Popen([str(compositor), "--virtual", "--width", "1100", "--height", "820", "--socket", "qindaqt-8", "--no-global-shortcuts"], env=producer, stdout=handle, stderr=subprocess.STDOUT)
+            comp = subprocess.Popen([str(compositor), "--virtual", "--width", "1100", "--height", "820", "--socket", "qindaqt-8", "--no-global-shortcuts"], env=producer, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
             children.append(comp)
             env["QINDAQT_PORTAL_TEST_COMPOSITOR_PID"] = str(comp.pid)
             env["WAYLAND_DISPLAY"] = "qindaqt-8"
@@ -120,22 +142,41 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
                 time.sleep(.05)
             if not (runtime / "qindaqt-8").exists():
                 raise RuntimeError("private EGL compositor unavailable")
-            result = subprocess.run([str(fixture), *group], env=env, timeout=180)
-            if result.returncode:
-                for log in root.glob("*.log"):
-                    print(log.name, log.read_text(errors="replace")[-32768:], file=sys.stderr)
-                sys.exit(result.returncode)
+            driver = subprocess.Popen([str(fixture), *group], env=env, start_new_session=True)
+            children.append(driver)
+            driver_code = driver.wait(timeout=180)
+            audit_exit(driver)
+            if driver_code:
+                sys.exit(driver_code)
             if "compositorLossWithdrawsStreamsFilesAndPendingPublication" in group:
                 comp.wait(timeout=5)
-                assert all(child.poll() is None for child in children if child is not comp), "other private dependency exited"
+                assert all(child.poll() is None for child in children if child not in (comp, cache, driver)), "other private dependency exited"
             else:
-                assert all(child.poll() is None for child in children), "private dependency exited"
+                assert all(child.poll() is None for child in children if child not in (cache, driver)), "private dependency exited"
+        except BaseException:
+            for handle in logs:
+                handle.flush()
+            for log in root.glob("*.log"):
+                print(log.name, log.read_text(errors="replace")[-32768:], file=sys.stderr)
+            raise
         finally:
+            cleanup_errors = []
             for child in reversed(children):
-                if child.poll() is None:
-                    child.terminate()
+                if group_alive(child):
+                    os.killpg(child.pid, signal.SIGTERM)
                 try:
                     child.wait(timeout=5)
                 except subprocess.TimeoutExpired:
-                    child.kill()
+                    if group_alive(child):
+                        os.killpg(child.pid, signal.SIGKILL)
                     child.wait(timeout=5)
+                if group_alive(child):
+                    os.killpg(child.pid, signal.SIGKILL)
+                try:
+                    audit_exit(child)
+                except RuntimeError as error:
+                    cleanup_errors.append(str(error))
+            for handle in logs:
+                handle.close()
+            if cleanup_errors:
+                raise RuntimeError("; ".join(cleanup_errors))

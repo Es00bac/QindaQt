@@ -5,14 +5,18 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — repairing owned dialog public response include after second strict build; compiler released, private runtime unclaimed
+- Status: working — freezing owned build/isolation fixes and protected-process capture admission evidence; no compiler/private resource held
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler released after second build; no private runtime used/granted; chooser history preserved
+- Resources: compiler released after exact f79512c4 failure; no private runtime used/granted; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T13:56:51Z — Exact f79512c4 named rebuild exited 1, retained build/f79512c4-build.log (last reported 44/60, not completed-action count); sole compile failure is owned QDBusMetaType spelling in policy assertions. Compiler released before repair. Native fixture now matches resident PR_SET_DUMPABLE=0 before Qt/peers; source inspection predicts fork690 proc-executable restricted admission cannot identify protected resident/helper. Root acknowledged missing public authentication seam and owns coordination; no protection bypass/fork edits. Runner removes inherited permission bypasses, uses unique caller desktop executable, and audits owned process groups. Freezing corrected source; no native runtime or routing claim.
+
+- 2026-10-01T13:39:57Z — Root compiler-only grant on clean exactf79512c485ca234877851f0ace6f0995694d8537; unchanged11 named target rebuild active with-j24-l24, log build/f79512c4-build.log. Private runner launch must explicitly disable session command/Xwayland and audit postexit child lifetime before a separate runtime grant. No native execution/routing claim.
 
 - 2026-10-01T13:36:48Z — Exacte6afb200 remaining Ninja build exit1, retained build/e6afb200-build.log. Prior Session/adaptor API errors cleared and composition compiled; sole new root cause is native CaptureDialog header missing public RequestRegistry declaration of RequestResponse, causing helper/input moc cascade. Compiler released before one-line owned header repair; no registry/accepted-family changes or runtime claims. Last reported79/131 is not a completed-action count.
 

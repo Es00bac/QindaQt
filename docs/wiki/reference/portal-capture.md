@@ -55,8 +55,9 @@ files. Pre-start sessions expire after60 seconds; screenshot files live at most
 5 minutes in owned private temporary directories.
 
 The resident supplies two ordinary FDs from the admitted selected compositor:
-Qt GUI and generated capture protocol. Package-owned desktop entries authorize
-only the needed restricted interfaces. The native helper independently verifies
+Qt GUI and generated capture protocol. Package-owned desktop entries request
+only the needed restricted interfaces; protected-process authorization remains
+a blocking public compositor seam, described below. The native helper independently verifies
 ordinary peer credentials, PIDFD, current native bus owner and nonce-authenticated
 read-only NativeLockStateMonitor receipts. Unknown/locked authority disables
 consent and prevents operation/publication. Empty parents are explicitly
@@ -71,9 +72,31 @@ file URI or actual node. Values already copied by a client and already consumed
 stream buffers cannot be recalled; no physical-frame privacy claim follows from
 queued signals alone.
 
+## Protected capture admission blocker
+
+Fork690 resolves restricted-interface permission through `/proc/<pid>/exe`:
+`utils/executable_path_proc.cpp` supplies the path used by DBus Screenshot2 and
+Wayland restricted-global admission. The resident and capture helper both set
+`PR_SET_DUMPABLE=0` before opening connections. Same-UID peers normally cannot
+read that protected proc link, so source inspection predicts denied capture;
+a native runtime reproduction is still required. The test controller now applies
+the same protection before Qt startup, and the runner removes inherited
+Screenshot/Wayland permission-bypass variables. A dumpable controller or bypass
+cannot qualify production.
+
+The missing public seam must authenticate both the resident Wayland capture
+peer and child DBus screenshot caller without making either process dumpable.
+It must bind the selected current compositor, authenticated UID/PID/PIDFD,
+current frontend/requester/session/parent lineage and native privacy authority.
+A grant must be interface-specific and revocable on owner, parent, request,
+session or privacy loss; stale grants cannot authorize reconnection or late
+publication. Self-reported executable paths, desktop app IDs and host/root
+fallback are insufficient. Fork changes require separate ownership and review;
+this candidate preserves process protection and existing permission checks.
+
 ## Evidence still required
 
-Focused `qindaqt.portal-capture-policy` and `portal-capture-requests` rows cover wire shape, bounds, caller/app/session fencing, Close, late replies and owner loss. The source `qindaqt.portal-native-capture` runner provides three fresh private compositor groups, including irreversible native Locked retirement and actual compositor owner loss. It uses zero-activation-directory custom D-Bus, explicit nonexistent system bus, a private minimal PipeWire core and policy-only WirePlumber with hardware monitors absent. Qt input links unchanged helper sources; a changing fullscreen ordinary test client supplies known pixels. The consumer connects only to the actual frontend-returned remote FD and checks node visibility, decoded frames and cessation after Close/native lock. All these new runtime rows remain uncompiled/unexecuted at this source checkpoint. Actual
+Focused `qindaqt.portal-capture-policy` and `portal-capture-requests` rows cover wire shape, bounds, caller/app/session fencing, Close, late replies and owner loss. The source `qindaqt.portal-native-capture` runner provides three fresh private compositor groups, including irreversible native Locked retirement and actual compositor owner loss. It uses zero-activation-directory custom D-Bus, explicit nonexistent system bus, a private minimal PipeWire core and policy-only WirePlumber with hardware monitors absent. The direct qualified fork receives no opt-in Xwayland, positional session/app, exit-with-session or input-method argument; its CLI has no launcher-specific empty-session switch. Every top-level broker/producer/controller uses a private process group and postexit audits require all descendants to disappear. Qt input links unchanged helper sources; a changing fullscreen ordinary test client supplies known pixels. The consumer connects only to the actual frontend-returned remote FD and checks node visibility, decoded frames and cessation after Close/native lock. These new native runtime rows remain unexecuted, and the complete named-target build has not yet passed at this source checkpoint. Actual
 frontend methods and mapped ordinary Qt input must produce real captures and
 private PipeWire frames; cancellation, Close, caller/dependency/parent loss and
 native lock/uncertainty must withdraw results/streams. Staged helper permission
