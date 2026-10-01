@@ -1,6 +1,6 @@
 # PF capture scene diagnosis
 
-- Status: working — authorized fork-only in-process fault observation for native-lock compositor crash
+- Status: working — native-lock fault localized to stale scene view dispatch; awaiting narrow production ownership decision
 - Base: consumer c03b0b708464c3b7a154089f0cc5f71437c01905; fork 447eed969a8692754d29f62f46cd177181ccbdae
 - Branch: worker/pf-capture-scene-astra-20261001 in isolated qinda worktrees
 - Ownership: authorized consumer capture_pixels.cpp, run_native_capture.py, tst_native_capture.cpp, pipewire_frames.{cpp,h}; two affected wiki paragraphs; own board/messages; diagnostic fork driver only
@@ -25,3 +25,5 @@
 - 2026-10-01T23:14:07+00:00 — Manager assigned new bounded immutable447 native-lock crash diagnosis. Fork diagnostic072e36b66471167165d57e429a8cea7f6401550e adds only own test-driver fault-stack/mapping observation; no production changes, PR0/core0 unchanged. Requested one-TU compiler grant, private runtime held for power reviewer. Consumer executable ca299 and review checkpoint f501 remain immutable.
 
 - 2026-10-01T23:18:42+00:00 — Diagnostic072 one-TU/link0/0 (5.008s/1.203s,min17,686,208kB); unchanged monitored lock probe exits1/4.722s, Qt3/3 but compositor fault handler reaches marker and unwinder emits no frames. PGIDs409967/409992/410268 exited, no survivors/cores/cleanup errors, both leases released. Refined fork f015169b26540557f2cdb29fad9cfab590f0f6a3 records kernel fault registers before any library unwind and executable-only bounded stack candidates; requested next compiler/private grant.
+
+- 2026-10-01T23:27:12+00:00 — Exact f015 one-TU/link0/0 (5.207s/1.003s,min16,250,284kB); one unchanged ca299 lock probe exits1/3.844s with Qt3/3 but survivalFAIL. Kernel RIP/si_addr in non-executable heap; top stack return+disassembly proves virtual call view->shouldRenderItem at Item::scheduleSceneRepaintInternal item.cpp508. Source links synchronous damage notification to stream close deleting snapshotted views. Both leases released, PGIDs413480/413533/413804 exited, no survivors/cores/cleanup errors. No production edit; proposed immediate logical close with deferred source destruction.
