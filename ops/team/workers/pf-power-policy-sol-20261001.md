@@ -1,12 +1,12 @@
 # Native source profile policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: waiting — exact fixture startup diagnostic prepared; sole qinda compiler/private resources held by native frame-readiness lane
+- Status: waiting — source Settings replacement fixture corrected; tiny rebuild and changed owner-recovery replay queued
 - Base: 4011a663
 - Branch: worker/pf-power-policy-runtime-20261001
 - Worktree: .cache/pf-power-policy-runtime-20261001
 - Ownership: narrow power policy/service collaborators, existing-hold composition, focused power tests and primary power documentation; own record/messages
-- Compiler/private runtime: released; native capture currently owns both serialized resources
+- Compiler/private runtime: both released; awaiting next bounded fixture repair grant
 
 ## Updates
 
@@ -16,3 +16,11 @@
 - 2026-10-01T22:05:34Z — Granted own qinda strict Debug compile completed exit0 at b1de94be: resident executable and four focused targets built, five artifact SHA256 values recorded. Initial nonexistent publication-target spelling and runtime-fixture macro substitution failures retained and repaired; final actual build clean. Compiler released to manager immediately for queued catalog probe. Serialized private tests await manager grant; no runtime acceptance claim yet.
 
 - 2026-10-01T22:14:04Z — First private gate at362e00e4:4/5 CTests pass,50 existing Qt checks pass; new13 runtime rows fail fixture startup before resident launch. Actual27 logged bus PIDs all absent afterward, five artifact hashes unchanged. Exact diagnostic5d976a37 preserves mandatory startup assertions and reports refusal stage; tiny rebuild/single-row replay queued. No native policy runtime qualification yet.
+
+- 2026-10-01T22:17:38Z — Source comparison with existing production fixture exposed nested SubPath fakes sharing one unique owner. Exact c2441803 separates injected PPD/UPower owners and retains refusal diagnostics. Sole qinda tiny target build started PID/PGID351312, -j8/-l24/core0/min3GiB30s. No new private runtime yet; native capture owns runtime.
+
+- 2026-10-01T22:26:03Z — Exact c244 mandatory startup replay reached real Power1 child and AC/battery holds. Failed fixture expected extra hold when battery and low preferences were equivalent; equivalence correctly caused no churn. Revised source sequence601d821f uses AC performance/battery none/low power-saver for observable source boundaries. Two exact private run PIDs absent and binary hash unchanged after failure. Tiny fixture-only rebuild and changed replay requested, no passing native runtime claim.
+
+- 2026-10-01T22:29:06Z — Exact601d821f corrected single actual-runtime row passes3/0/0 Qt cases819ms. Granted unchanged full13 behavior plus existing publication/operations/provider and boundary gates running; five artifact hashes frozen, ambient buses dead, untyped activation-free daemon and core0. Compiler released immediately; no wholePF2 claim.
+
+- 2026-10-01T22:33:39Z — Frozen601 full gate4/5 CTests,64 Qt pass/1 failure. Only Settings owner recovery fixture reused same uniqueowner with changedepoch, correctly refused by public client; exacteb3cb0e6 uses a fresh private owner and unchanged temp preferences. Forty exact PIDs and all logged roots absent, artifacts unchanged. All policy behavior rows including revision regression/uncertainty/manual override otherwise pass; full candidate not yet accepted. Resources released and tiny repair queued.
