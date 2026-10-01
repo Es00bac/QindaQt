@@ -55,7 +55,7 @@ NativePopupFixture::~NativePopupFixture()
 }
 bool NativePopupFixture::start(QString *error)
 {
-    const auto bus = QDBusConnection::sessionBus();
+    auto bus = QDBusConnection::sessionBus();
     auto *const daemon = bus.interface();
     if (!daemon || !session.isConnected() || !session.registerService(SessionName)) {
         *error = QStringLiteral("test-owned Session1 selection failed"); return false;
