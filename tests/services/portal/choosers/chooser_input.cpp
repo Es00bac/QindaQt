@@ -92,7 +92,8 @@ void input() {
                 for (int index = 0; index < desired.value("filter").toInt(); ++index) QTest::keyClick(filter, Qt::Key_Down);
             }
             if (desired.value("check").toBool()) {
-                auto *check = window->findChild<QCheckBox *>(QStringLiteral("portalChoice_check")); if (check && !check->isChecked()) QTest::mouseClick(check, Qt::LeftButton);
+                auto *check = window->findChild<QCheckBox *>(QStringLiteral("portalChoice_check"));
+                if (check && !check->isChecked()) { check->setFocus(); QTest::keyClick(check, Qt::Key_Space); }
             }
             if (desired.value("choice").isDouble()) {
                 auto *choice = window->findChild<QComboBox *>(QStringLiteral("portalChoice_encoding"));
