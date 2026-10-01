@@ -38,6 +38,9 @@ bool SleepService::start() {
 }
 void SleepService::stop() {
   ++m_generation;
+  // A retired public handoff cannot leave its accepted mutation alive. Stop
+  // emits Refused before dispatch or Uncertain after dispatch, then fences it.
+  if (m_pending) m_coordinator.stop();
   finish(SleepResult::Refused);
   if (m_started) { m_bus.unregisterService(Service); m_bus.unregisterObject(Path); }
   m_started = false;
@@ -77,6 +80,7 @@ bool SleepService::handleMessage(const QDBusMessage &message, const QDBusConnect
     const QDBusPendingReply<quint32> reply = *watcher;
     watcher->deleteLater();
     if (!m_started || generation != m_generation || !m_pending) return;
+    if (!m_bus.isConnected() || !m_bus.interface()) { finish(SleepResult::Refused); return; }
     const auto owner = m_bus.interface()->serviceOwner(Session);
     if (!owner.isValid() || owner.value() != m_bus.baseService() || reply.isError() ||
         reply.value() != m_uid || !m_coordinator.requestSuspend()) finish(SleepResult::Refused);

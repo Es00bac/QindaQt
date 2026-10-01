@@ -17,6 +17,7 @@ private Q_SLOTS:
   void manualPrepareRaceStillReleasesOnlyProtected();
   void dispatchedSleepTimeoutIsUncertainWithoutReplay();
   void facadeAuthenticatesActualCallerUid();
+  void stoppedFacadeCannotLeaveLateSleepDispatch();
 };
 void SleepCoordinatorTests::manualSuspendRequiresTargetedProtectedReceipt() {
   Fixture f; f.start(); QSignalSpy result(&f.coordinator, &SleepCoordinator::suspendFinished);
@@ -115,6 +116,18 @@ void SleepCoordinatorTests::facadeAuthenticatesActualCallerUid() {
   const auto reply = waitReply(f.attacker.asyncCall(call));
   QCOMPARE(reply.type(), QDBusMessage::ReplyMessage); QVERIFY(!reply.arguments().first().toBool());
   QCOMPARE(f.native.requests, 0); QCOMPARE(f.logind.suspendCalls, 0);
+}
+void SleepCoordinatorTests::stoppedFacadeCannotLeaveLateSleepDispatch() {
+  Fixture f; f.start(); f.logind.deferCan = true;
+  f.native.state(true, true); QTRY_VERIFY(f.monitor.presentationProtected());
+  auto call = QDBusMessage::createMethodCall(QStringLiteral("org.qindaqt.Sleep1"),
+      QStringLiteral("/org/qindaqt/Sleep1"), QStringLiteral("org.qindaqt.Sleep1"), QStringLiteral("Suspend"));
+  auto pending = f.attacker.asyncCall(call, 5000); QTRY_COMPARE(f.logind.canCalls, 1);
+  f.service.stop(); QTRY_VERIFY(f.logind.inhibitorClosed());
+  const auto reply = waitReply(pending); QCOMPARE(reply.type(), QDBusMessage::ReplyMessage);
+  QVERIFY(!reply.arguments().first().toBool());
+  f.logindBus.send(f.logind.deferredCan.createReply(QStringLiteral("yes")));
+  QTest::qWait(100); QCOMPARE(f.logind.suspendCalls, 0);
 }
 QTEST_GUILESS_MAIN(SleepCoordinatorTests)
 #include "tst_sleep_coordinator.moc"
