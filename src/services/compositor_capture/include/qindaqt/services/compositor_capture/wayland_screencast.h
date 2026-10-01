@@ -11,13 +11,15 @@ namespace QindaQt::CompositorCapture {
 struct MonitorSource { QString id, name; QPoint position; QSize size; };
 // Owns one supplied ordinary FD, one monitor stream and generated protocol
 // resources. No pathname/display fallback, permission, persistence or UI policy.
-// Same-thread borrowed admission is readonly/non-reentrant and outlives the port.
-// Sources and node publication recheck admission; loss invalidates getters before
+// Same-thread borrowed lineage/pixel callbacks are readonly/non-reentrant and
+// outlive the port. Source enumeration requires lineage; stream creation and
+// publication additionally require pixel permission. Loss invalidates getters before
 // notifying and tears down safely after protocol dispatch. Never restart/replay.
 class WaylandScreenCast final : public QObject {
     Q_OBJECT
 public:
-    WaylandScreenCast(int ownedOrdinaryFd, std::function<bool()> admission, QObject *parent = nullptr);
+    WaylandScreenCast(int ownedOrdinaryFd, std::function<bool()> lineage,
+        std::function<bool()> pixelsAllowed, QObject *parent = nullptr);
     ~WaylandScreenCast() override;
     QList<MonitorSource> sources() const;
     bool start(const QString &offeredId); // one monitor, Hidden cursor only

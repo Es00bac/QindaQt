@@ -62,7 +62,7 @@ target_link_libraries(qindaqt_portal_email PUBLIC QindaQt::PortalRequests QindaQ
 portal_library(qindaqt_portal_composition PortalComposition)
 target_sources(qindaqt_portal_composition PRIVATE ../src/foundation_composition.cpp
     PUBLIC FILE_SET HEADERS BASE_DIRS ../include FILES ../include/qindaqt/services/portal/foundation_composition.h)
-target_link_libraries(qindaqt_portal_composition PUBLIC QindaQt::PortalFoundation QindaQt::PortalNotifications QindaQt::PortalEmail QindaQt::PortalChoosers)
+target_link_libraries(qindaqt_portal_composition PUBLIC QindaQt::PortalFoundation QindaQt::PortalNotifications QindaQt::PortalEmail QindaQt::PortalChoosers QindaQt::PortalCapture)
 
 portal_library(qindaqt_portal_chooser_policy PortalChooserPolicy)
 target_sources(qindaqt_portal_chooser_policy PRIVATE ../src/chooser_wire.cpp ../src/chooser_frames.cpp
@@ -75,3 +75,15 @@ target_sources(qindaqt_portal_choosers PRIVATE ../src/file_chooser_adaptor.cpp .
     ../include/qindaqt/services/portal/file_chooser_adaptor.h ../include/qindaqt/services/portal/app_chooser_adaptor.h
     ../include/qindaqt/services/portal/process_chooser.h)
 target_link_libraries(qindaqt_portal_choosers PUBLIC QindaQt::PortalChooserPolicy QindaQt::PortalSession)
+
+portal_library(qindaqt_portal_capture_policy PortalCapturePolicy)
+target_sources(qindaqt_portal_capture_policy PRIVATE ../src/capture_policy.cpp ../src/capture_wire.cpp
+    PUBLIC FILE_SET HEADERS BASE_DIRS ../include FILES ../include/qindaqt/services/portal/capture_types.h)
+target_link_libraries(qindaqt_portal_capture_policy PUBLIC QindaQt::PortalAccessPolicy)
+portal_library(qindaqt_portal_capture PortalCapture)
+target_sources(qindaqt_portal_capture PRIVATE ../src/capture_sessions.cpp ../src/capture_sessions_p.h
+    ../src/screenshot_adaptor.cpp ../src/screencast_adaptor.cpp ../src/process_capture.cpp
+    PUBLIC FILE_SET HEADERS BASE_DIRS ../include FILES ../include/qindaqt/services/portal/capture_ui.h
+    ../include/qindaqt/services/portal/process_capture.h ../include/qindaqt/services/portal/screenshot_adaptor.h
+    ../include/qindaqt/services/portal/screencast_adaptor.h)
+target_link_libraries(qindaqt_portal_capture PUBLIC QindaQt::PortalCapturePolicy QindaQt::PortalSession)

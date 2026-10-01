@@ -1,0 +1,3 @@
+# PF19 capture source work resumed
+
+Exact native frontend guard review37347fe4 completed independently and pushed; configure-only resource released. Preserved capture checkpoint8002a795 and owned pending changes remain in the same isolated implementation worktree. Native capture helper, public compositor transport, focused policy/actor/Close adversarial tests and documentation source work resumes. No compiler/private-runtime resource claimed and no routing flip. New capture test CMake is owned; parent tests/services/portal registration waits root shared-path release. Real native frontend/private PipeWire frame/session/lock evidence remains required before a first-slice candidate, and full PF19 capability/restore successor remains open.
