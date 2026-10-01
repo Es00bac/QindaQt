@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "kwin_capture_port.h"
+#include <qindaqt/services/compositor_capture/kwin_capture_port.h>
 
 #include <QCoreApplication>
+#include <qindaqt/compositor_names/compositor_names.h>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
@@ -14,13 +15,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-namespace QindaQt::Screenshot {
+namespace QindaQt::CompositorCapture {
 namespace {
 
-constexpr auto ScreenshotService = "org.kde.KWin.ScreenShot2";
-constexpr auto ScreenshotPath = "/org/kde/KWin/ScreenShot2";
-constexpr auto ScreenshotInterface = "org.kde.KWin.ScreenShot2";
-constexpr auto KWinService = "org.kde.KWin";
+const auto ScreenshotService = QindaQt::CompositorNames::screenshotService;
+const auto ScreenshotPath = QindaQt::CompositorNames::screenshotPath;
+const auto ScreenshotInterface = QindaQt::CompositorNames::screenshotInterface;
+const auto KWinService = QindaQt::CompositorNames::service;
 // The pipe may still be draining after the reply; allow for a large
 // multi-output capture on a busy machine.
 constexpr int PipeGraceMilliseconds = 10000;
@@ -32,12 +33,12 @@ DecodedCapture failure(const QString &error)
     return result;
 }
 
-QString ownerOf(const QDBusConnection &bus, const char *service)
+QString ownerOf(const QDBusConnection &bus, QLatin1StringView service)
 {
     auto *interface = bus.interface();
     if (!interface)
         return {};
-    const QDBusReply<QString> owner = interface->serviceOwner(QString::fromLatin1(service));
+    const QDBusReply<QString> owner = interface->serviceOwner(QString(service));
     return owner.isValid() ? owner.value() : QString();
 }
 
@@ -97,8 +98,8 @@ bool KWinCapturePort::capture(const KWinCaptureCall &call)
     m_readFd = descriptors[0];
 
     QDBusMessage message = QDBusMessage::createMethodCall(
-        QString::fromLatin1(ScreenshotService), QString::fromLatin1(ScreenshotPath),
-        QString::fromLatin1(ScreenshotInterface), call.method);
+        QString(ScreenshotService), QString(ScreenshotPath),
+        QString(ScreenshotInterface), call.method);
     QVariantList arguments = call.leadingArguments;
     arguments.append(call.options);
     arguments.append(QVariant::fromValue(QDBusUnixFileDescriptor(descriptors[1])));
@@ -226,4 +227,4 @@ void KWinCapturePort::closePipe()
     }
 }
 
-} // namespace QindaQt::Screenshot
+} // namespace QindaQt::CompositorCapture
