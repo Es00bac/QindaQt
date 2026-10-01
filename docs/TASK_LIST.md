@@ -60,10 +60,14 @@ native and hardware qualification remains. Native FileChooser/AppChooser
 staged and adjacent gates and merged on the recovery branch. Installed/sandbox
 and combined-tree qualification remain. Inherited keyring idle fixture `f1d7b89b` passes
 independent build and 2/2 tests and is integrated. The combined production/plugin
-and affected-module build passes its 229-target scope against exact fork
-`690c0112`. Combined runtime/privacy/sleep checks pass 32/33; retained final-On
-DPMS teardown is under isolated causal repair. Combined chooser build and native
-scenarios remain pending. No milestone or installed
+and affected-module build passes its expanded 248-target scope, including choosers,
+Screenshot and adjacent Secret portal fixtures, against exact fork `690c0112`.
+The prior combined runtime/privacy/sleep run passed 32/33 and exposed a lost
+final-On DPMS request. Exact repair `d08e49d1` is independently accepted with
+2/2 private CTests and 18 Qt checks and merged on the recovery branch; it waits
+for acknowledgement or a bounded deadline before teardown. The original assertion
+remains unchanged. Its combined rebuild, chooser tests and native scenarios remain
+pending. No milestone or installed
 Plasma-removal completion advances from candidate activity.
 
 The owner confirmed the complete [native replacement program](plans/2026-09-28-plasma-free-qindaqt.md),
