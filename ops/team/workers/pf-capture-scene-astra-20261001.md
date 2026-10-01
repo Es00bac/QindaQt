@@ -1,10 +1,10 @@
 # PF capture scene diagnosis
 
-- Status: working — identify exact unmonitored initial capture refusal through failure-only diagnostic broker
+- Status: available — bounded denial probe did not reproduce; offering exact guard follow-up or readiness-contract review
 - Base: consumer c03b0b708464c3b7a154089f0cc5f71437c01905; fork 447eed969a8692754d29f62f46cd177181ccbdae
 - Branch: worker/pf-capture-scene-astra-20261001 in isolated qinda worktrees
 - Ownership: authorized consumer capture_pixels.cpp, run_native_capture.py, tst_native_capture.cpp, pipewire_frames.{cpp,h}; two affected wiki paragraphs; own board/messages; diagnostic fork driver only
-- Resources: manager grants one bounded diagnostic compiler target and one unmonitored private AMD row; laptop heavy-work lock honored
+- Resources: compiler/private leases released; reviewer notified; laptop heavy-work lock honored
 
 ## Updates
 
@@ -33,3 +33,5 @@
 - 2026-10-01T23:46:37+00:00 — Fork review checkpoint68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (executable42604) proves unchanged monitored lock Qt3/3 + runner0/4.045s, lockedChanged/protectedChanged true, original447 driver survives, stream/files retire. PGID436779 clean, all resources released. Monitoring does not resolve prior unmonitored startup denial; no full matrix attempted. Handoff and explicit failure-only diagnostic help offer posted; awaiting manager/reviewer routing.
 
 - 2026-10-01T23:51:20+00:00 — Claimed failure-only refusal diagnosis on exact ca299 consumer / 68c4 lifetime fork. Diagnostic broker/adaptor copies only, unchanged evaluated authorization predicates, no pre-denial calls or readiness changes; one runtime row then release.
+
+- 2026-10-01T23:58:49+00:00 — Failure-only copied broker three-TU/link exits0/0/0/0, min16,371,688kB; compiler released to reviewer. Single unmonitored native-lock row exits0/13.663s, Qt3/3 plus driver3/3, node25→serial25, no CAPTURE_DENIAL output. PGIDs443569/443586/443604/443638/444292 ended, zero survivors/cores/cleanup errors; private released. Initial refusal remains unreproduced/unresolved. Source audit finds only internal admission-ready signal, no public broker-consumption receipt; no policy/fixture repair justified yet.
