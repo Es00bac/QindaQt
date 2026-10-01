@@ -66,6 +66,7 @@ qt_add_executable(qindaqt_portal_capture_test_backend "${capture_dir}/backend/ma
 target_link_libraries(qindaqt_portal_capture_test_backend PRIVATE qindaqt_portal_capture_test_broker)
 qindaqt_enable_warnings(qindaqt_portal_capture_test_backend)
 
+find_package(Qt6 6.11 REQUIRED COMPONENTS GuiPrivate)
 qt_add_executable(qindaqt_portal_capture_pixels capture_pixels.cpp)
 target_link_libraries(qindaqt_portal_capture_pixels PRIVATE Qt6::Widgets Qt6::GuiPrivate Wayland::Client)
 qindaqt_enable_warnings(qindaqt_portal_capture_pixels)
