@@ -233,14 +233,28 @@ void SourceProfileRuntimeTests::holdLimitRetriesOnlyAfterAdmissionChanges()
 void SourceProfileRuntimeTests::knownRejectionDoesNotSpin()
 {
     Runtime row; QVERIFY(row.start()); row.ppd->setRejectHold(true);
+    QList<FakePpdService::HoldSpec> holds{
+        {QStringLiteral("power-saver"), QStringLiteral("External"), QStringLiteral("untouched")},
+        {QStringLiteral("performance"), QStringLiteral("External2"), QStringLiteral("untouched")}};
+    row.ppd->setHolds(holds); row.ppd->emitPropertiesChanged();
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
     SET_PROFILE(row, "power.profile.ac", "performance");
     QTRY_COMPARE(row.ppd->holdRequests.size(), 1);
     row.source(false); row.ppd->emitPropertiesChanged(); QTest::qWait(150);
     QCOMPARE(row.ppd->holdRequests.size(), 1);
+    // The same authenticated inventory in another order is no new admission.
+    holds.move(0, 1); row.ppd->setHolds(holds); row.ppd->emitPropertiesChanged();
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.first().applicationName, QStringLiteral("External2"));
+    QTest::qWait(150); QCOMPARE(row.ppd->holdRequests.size(), 1);
+    row.ppd->setProfiles({QStringLiteral("performance"), QStringLiteral("balanced"), QStringLiteral("power-saver")});
+    row.ppd->emitPropertiesChanged();
+    QTRY_COMPARE(row.power->snapshot().profiles.supported.first().id, QStringLiteral("performance"));
+    QTest::qWait(150); QCOMPARE(row.ppd->holdRequests.size(), 1);
     row.ppd->setRejectHold(false);
     SET_PROFILE(row, "power.profile.ac", "power-saver");
     QTRY_COMPARE(row.ppd->holdRequests.size(), 2);
-    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 3);
+    QVERIFY(row.ppd->releaseRequests.isEmpty());
 }
 void SourceProfileRuntimeTests::timeoutDoesNotReplay()
 {

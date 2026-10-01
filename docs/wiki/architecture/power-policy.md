@@ -113,7 +113,9 @@ facts and retires the cookie. User cancellation suppresses acquisition until
 a new source/preference/authority input or explicit retry, preserving manual
 choice. Each successful hold operation refreshes authenticated provider
 facts. Known refusals have no timer retry: changed admission or confirmed
-preferences, or local explicit retry, may retry. Hold calls are bounded to
+preferences, or local explicit retry, may retry. Inventory membership is
+canonicalized: reordering the same supported profiles or external holds is
+not a new admission and never retries a known refusal. Hold calls are bounded to
 three seconds; malformed successes, transport uncertainty and missing
 convergence quarantine acquisition until a new runtime. A late observed tagged
 hold may be cleaned up only if its returned cookie was recorded; a timed-out
