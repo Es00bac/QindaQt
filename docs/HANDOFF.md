@@ -37,8 +37,16 @@ source the 229-target production/plugin/affected-module build passes against the
 exact `690c0112` fork stage. The Ninja graph dynamically changes its action count;
 the retained log is the evidence, not an inferred total. Combined CTests and
 native mapping remain pending; this is not an all-target or installed pass.
-Native FileChooser/AppChooser remains a separate active candidate: actual
-frontend journeys pass, with final family routing and staged gates pending.
+Native FileChooser/AppChooser source `684ca904b3b997d293795abb413cb1e2f94aa666`
+is independently accepted and merged at `4b946ad1`, with review evidence included
+at `01d9e50b`. Its actual frontend, native input, routing and staged gates pass
+24/24 independently; installed/sandbox and combined-tree gates remain open.
+
+The combined runtime/privacy/sleep run on `32bf9f77` passes 32/33 rows, with
+`qindaqt.kwayland-dpms-controller` failing the retained final-On teardown count
+(4 observed, 5 required). A separate isolated worker investigates and repairs
+that exact failure; no failing assertion is relaxed. Native/plugin/key-store
+gates follow its immutable review and the combined chooser build.
 
 The supplied painted icon family is independently delivered on both hosts as
 Portage package `x11-themes/qinda-breeze-painted-1.0.0_p20260929`, using overlay
