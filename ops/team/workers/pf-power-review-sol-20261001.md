@@ -4,7 +4,7 @@
 - Status: working — final bounded retry-order causal audit for exact candidate 0c326be58a61810e33913a2daac71c2921541a78.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: compiler/private both released; awaiting separate manager-routed outcome; laptop test lock honored.
+- Resource state: none; bounded qinda data/read-only guards only, no compiler/compositor/GPU/system merge; laptop test lock honored.
 - Outcome: ACCEPT or bounded causal REJECT of supported per-source native profile holds; no wider PF2/install claim.
 
 ## Updates
@@ -30,3 +30,5 @@
 - 2026-10-01T23:12:22Z: Root grants serialized private replay after graphics release. Unchanged originalscratch causal probePID407821 against repaired frozen actualresident, then mandatoryknownrefusal row and unchanged5/65 onlyifbothPASS. Original failed logs/SHA retained; no compile/productedit; testshape exit0/preexisting518warning retained.
 
 - 2026-10-01T23:14:12Z: Exactce84 ACCEPTP0/P1=0. Identical originalscratch now3/0/0, mandatorybothorderings3/0/0, unchanged5/5+65/0/0. Sixartifacts+originalscratchhashesunchanged, all44privatePIDs+3runners/29roots absent. Ownstrict485docs/shape/boundary/diffPASS. Bothresourcesreleased; exactverdictpublished, managerintegration requested; distinct boundediconreview help offered.
+
+- 2026-10-01T23:16:38Z: Root routes distinct data-only exactoverlay07ab05d1/base54eb7964 packaging review. Read overlayREADME/CLAUDE and audited sixpaths, isolated qinda overlayreviewtree created from exacthubcandidate. Original powerACCEPT/REJECT preserved; no package/integration edits. Actual image/source/archive/header/license/completeness/12Qt/catalog checks next; no compile/privateGPU/livehost or merge.
