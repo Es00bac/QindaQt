@@ -4,7 +4,7 @@
 - Status: working — final bounded retry-order causal audit for exact candidate 0c326be58a61810e33913a2daac71c2921541a78.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: sole bounded scratch compiler/private grants claimed; unchanged originals preserved; laptop test lock honored.
+- Resource state: both compiler/private released; unchanged originals and scratch failure retained; laptop test lock honored.
 - Outcome: ACCEPT or bounded causal REJECT of supported per-source native profile holds; no wider PF2/install claim.
 
 ## Updates
@@ -20,3 +20,5 @@
 - 2026-10-01T22:56:24Z: Independent unchanged private suite PASS5of5CTests/65Qt/0fail/0skip; all40loggedprivatePIDs+runner absent and27roots absent, five binary hashes unchanged. Compiler/private both released. Authorized single copied-fixture order-only refusal probe prepared; no source edits or scratch execution yet, awaiting graphics compiler release.
 
 - 2026-10-01T22:57:01Z: Root grants after graphics exact2TU release. One copied runtime TU compile/linkPID388844 started/core0/ownedmemorymonitor, then only knownRejectionDoesNotSpin order-only case. Source delta/argv/hashes retained separately; no product edit or original artifact replacement.
+
+- 2026-10-01T22:59:14Z: Exact0c326be5 REJECTP0=0/P1=1. Authorized copied order-only known refusal probe actual2expected1,exit1/2pass1fail0skip; original5/65 stillPASS/fivehashesunchanged. All scratchPIDs/roots absent; bothresourcesreleased. Full exact verdict/repro posted; queue read and same-reviewer repaired-descendant help offered.
