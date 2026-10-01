@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Removable Media
+Comment=Mount, open, and safely remove USB drives and discs
+Exec=qindaqt-removable-media
+Icon=drive-removable-media
+Terminal=false
+Categories=System;Utility;
+StartupNotify=true
+StartupWMClass=org.qindaqt.RemovableMedia
