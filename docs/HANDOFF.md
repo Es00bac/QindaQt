@@ -74,9 +74,12 @@ gate exposed an unconditional native frontend fixture reference while the
 production shell was disabled. Isolated repair `37347fe4` passes the unchanged
 four-branch configure gate and full-production target/test-presence checks and
 is independently accepted and merged with review at `61e07eb8`. Its integrated
-configuration rerun follows the serialized native popup gate. Its staged runner, positive/poison
-assertions and production behavior are unchanged. Actual production native
-notification-window mapping and consolidated Portage delivery remain open.
+configuration rerun passes on integrated `addccb7a` (exit0; all four unchanged
+configure branches). Its staged runner, positive/poison assertions and production
+behavior are unchanged. Native popup candidate `6181566a` passes its corrected
+private gate with 1/1 CTest and four Qt passes; different-worker exact review is
+active. Earlier failed fixture isolation and its zero-survivor audit remain
+preserved. Consolidated Portage delivery remains open.
 
 The supplied painted icon family is independently delivered on both hosts as
 Portage package `x11-themes/qinda-breeze-painted-1.0.0_p20260929`, using overlay
