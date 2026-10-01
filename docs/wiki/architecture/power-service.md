@@ -485,3 +485,13 @@ Unlocked/protected Locked state. Stop/owner/peer/supervisor loss closes the FD
 and fences late replies. Power1 remains read-only for sleep projection and its
 supported idle inhibitor scopes remain zero; source-specific idle/lid/button
 policy and installed/hardware sleep qualification remain separate gates.
+
+## Exclusive native source-profile holds
+
+The resident executable now optionally composes source-dependent automatic
+holds from the public SettingsClient and coordinator. The owned-hold,
+current-authority, timeout/no-replay and dormant production cutover contracts
+live in [Native power policy](power-policy.md#native-source-profile-runtime)
+and [ADR-0330](../adr/0330-gate-native-source-profile-holds.md). Power1 v1 wire
+and the supported idle scope mask are unchanged. This bounded PF2 slice does
+not retire PowerDevil or implement lid/critical-battery actions.

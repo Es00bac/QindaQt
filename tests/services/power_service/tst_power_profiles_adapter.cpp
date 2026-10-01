@@ -65,6 +65,7 @@ private Q_SLOTS:
     void setProfileUsesStandardPropertySet();
     void setProfileErrorCompletesFailed();
     void acquireHoldRecordsUpstreamAndIsReleasable();
+    void balancedHoldIsUnsupported();
     void foreignHoldIsNotReleasable();
     void propertiesChangedUpdatesFacts();
     void ownerLossFailsClosedUnavailable();
@@ -381,5 +382,23 @@ void PowerProfilesAdapterTests::hostileWrongTypedActiveProfileFailsClosedMalform
     QDBusConnection::disconnectFromBus(hostileConnection.name());
 }
 
+void PowerProfilesAdapterTests::balancedHoldIsUnsupported()
+{
+    ProfilesRow row; QVERIFY(row.start());
+    row.battery.publish(fixtureBatteryFacts());
+    row.session.publish(fixtureSessionFacts());
+    QTRY_VERIFY(row.coordinator->snapshot().capabilities.testFlag(Capability::ProfileHolds));
+    PowerServiceRequest request;
+    request.kind = OperationKind::AcquireProfileHold;
+    request.profileId = QStringLiteral("balanced");
+    request.applicationName = QStringLiteral("QindaQt");
+    request.reason = QStringLiteral("unsupported balanced hold");
+    QSignalSpy completed(row.coordinator.get(), &PowerServiceCoordinator::operationCompleted);
+    QVERIFY(row.coordinator->submit(request).pending);
+    QTRY_COMPARE(completed.size(), 1);
+    QCOMPARE(completed.first().at(1).value<OperationResult>().status, OperationStatus::Unsupported);
+    QCOMPARE(completed.first().at(1).value<OperationResult>().reasonCode, QStringLiteral("profile-not-holdable"));
+    QVERIFY(row.fake->holdRequests.isEmpty());
+}
 QTEST_GUILESS_MAIN(PowerProfilesAdapterTests)
 #include "tst_power_profiles_adapter.moc"

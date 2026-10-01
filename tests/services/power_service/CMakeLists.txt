@@ -325,3 +325,19 @@ set_tests_properties(
     qindaqt.power-idle-inhibitor-registry
     PROPERTIES LABELS "service;power" TIMEOUT 20
 )
+
+qt_add_executable(qindaqt_source_profile_runtime_tests
+    tst_source_profile_runtime.cpp
+    support/fake_ppd_service.cpp support/fake_ppd_service.h
+    support/fake_upower_service.cpp support/fake_upower_service.h
+    support/profile_policy_bus.h support/profile_settings_source.h)
+target_link_libraries(qindaqt_source_profile_runtime_tests PRIVATE
+    QindaQt::PowerService QindaQt::PowerClient QindaQt::SettingsService Qt6::Test)
+target_compile_definitions(qindaqt_source_profile_runtime_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    QINDAQT_POWER_SERVICE_EXECUTABLE="$<TARGET_FILE:qindaqt-power-service>")
+add_dependencies(qindaqt_source_profile_runtime_tests qindaqt-power-service)
+qindaqt_enable_warnings(qindaqt_source_profile_runtime_tests)
+add_test(NAME qindaqt.power-source-profile-runtime COMMAND qindaqt_source_profile_runtime_tests)
+set_tests_properties(qindaqt.power-source-profile-runtime PROPERTIES
+    LABELS "service;power;dbus" TIMEOUT 60 RUN_SERIAL TRUE)

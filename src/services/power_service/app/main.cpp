@@ -3,6 +3,9 @@
 #include <qindaqt/services/power_service/adapters/sysfs_backlight_source.h>
 #include <qindaqt/services/power_service/adapters/upstream_composition.h>
 #include <qindaqt/services/power_service/resident_power_service.h>
+#include <qindaqt/services/power_service/source_profile_policy.h>
+#include <qindaqt/services/power_service/adapters/native_profile_authority.h>
+#include <qindaqt/services/settings_client/qt_settings_transport.h>
 
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
@@ -28,6 +31,9 @@ int main(int argc, char **argv)
     parser.setApplicationDescription(
         QStringLiteral("QindaQt resident Power1 service"));
     parser.addOptions({
+        {QStringLiteral("profile-policy"),
+         QStringLiteral("Automatic source profiles: off or native-exclusive (explicit cutover)."),
+         QStringLiteral("mode"), QStringLiteral("off")},
         {QStringLiteral("upstream"),
          QStringLiteral("Upstream collaborator mode: production or unavailable."),
          QStringLiteral("mode"),
@@ -46,6 +52,12 @@ int main(int argc, char **argv)
     if (!mode.has_value()) {
         qCritical("Power1 rejected unknown upstream mode '%s'",
                   qPrintable(parser.value(QStringLiteral("upstream"))));
+        return 1;
+    }
+    const QString profilePolicy = parser.value(QStringLiteral("profile-policy"));
+    if (profilePolicy != QStringLiteral("off")
+        && profilePolicy != QStringLiteral("native-exclusive")) {
+        qCritical("Power1 rejected unknown profile policy mode");
         return 1;
     }
     const QString backlightRoot = parser.value(QStringLiteral("backlight-root"));
@@ -90,6 +102,28 @@ int main(int argc, char **argv)
         qCritical("Power1 startup failed with status %u",
                   static_cast<unsigned int>(status));
         return 1;
+    }
+
+    // Explicit composition is dormant in packaged production until the final
+    // PowerDevil cutover. The same assembly runs against private fixture buses.
+    using namespace QindaQt::Services::SettingsClient;
+    std::unique_ptr<QtSettingsTransport> settingsTransport;
+    std::unique_ptr<SettingsClient> settings;
+    std::unique_ptr<SourceProfilePolicy> sourcePolicy;
+    std::unique_ptr<Upstream::NativeProfileAuthority> authority;
+    if (profilePolicy == QStringLiteral("native-exclusive")) {
+        settingsTransport = std::make_unique<QtSettingsTransport>(sessionConnection);
+        settings = std::make_unique<SettingsClient>(*settingsTransport,
+                                                    SourceProfilePolicy::settingsKeys());
+        sourcePolicy = std::make_unique<SourceProfilePolicy>(*service.coordinator(), *settings);
+        authority = std::make_unique<Upstream::NativeProfileAuthority>(sessionConnection, true);
+        QObject::connect(authority.get(), &Upstream::NativeProfileAuthority::admissionChanged,
+                         sourcePolicy.get(), &SourceProfilePolicy::setNativeAuthority);
+        authority->start();
+        sourcePolicy->setNativeAuthority(authority->admitted());
+        if (!settings->start()) {
+            qCritical("Power1 source profile Settings1 observation failed");
+        }
     }
 
     QObject::connect(&application, &QCoreApplication::aboutToQuit, &service,
