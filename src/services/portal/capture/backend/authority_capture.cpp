@@ -26,7 +26,8 @@ bool augmentCaptureTestFrame(QJsonObject &);
 namespace {
 bool pidAlive(int fd) { pollfd event{fd, POLLIN, 0}; return fd >= 0 && poll(&event, 1, 0) == 0; }
 QString nativeOwner(const QDBusConnection &bus) {
-    if (!bus.interface()) return {}; const QDBusReply<QString> owner = bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service));
+    if (!bus.interface()) return {};
+    const QDBusReply<QString> owner = bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service));
     return owner.isValid() ? owner.value() : QString{};
 }
 bool pipeEnd(int fd, int mode) {
@@ -79,7 +80,12 @@ public:
         if (channel.live()) channel.send(CaptureAuthority::Wire::Message::RevokeJob, job->id);
         if (!job->request.session.isEmpty()) Q_EMIT q.closed(job->request.session);
     }
-    RequestToken tokenFor(quint64 id) const { for (auto it = jobs.cbegin(); it != jobs.cend(); ++it) if (it.value()->id == id) return it.key(); return 0; }
+    RequestToken tokenFor(quint64 id) const {
+        for (auto it = jobs.cbegin(); it != jobs.cend(); ++it) {
+            if (it.value()->id == id) return it.key();
+        }
+        return 0;
+    }
     void receive(CaptureAuthority::ReceivedPacket packet) {
         using Message = CaptureAuthority::Wire::Message;
         if (packet.packet.message == Message::Hello) return;

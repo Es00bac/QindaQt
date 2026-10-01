@@ -123,7 +123,12 @@ void Channel::reconcile() {
     }
     m_reading = false;
 }
-void Channel::fail() { if (m_failed) return; m_failed = true; stop(); if (m_lost) m_lost(); }
+void Channel::fail() {
+    if (m_failed) return;
+    m_failed = true;
+    stop();
+    if (m_lost) m_lost();
+}
 void Channel::stop() {
     m_ready = false; m_handshake.stop();
     if (m_notifier) { m_notifier->setEnabled(false); m_notifier->deleteLater(); m_notifier = nullptr; }

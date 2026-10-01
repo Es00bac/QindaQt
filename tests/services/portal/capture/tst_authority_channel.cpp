@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "authority/channel.h"
+#include "native_capture_admission.h"
+#include <QDBusContext>
+#include <QDBusMessage>
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <QDir>
 #include <QFile>
@@ -11,12 +14,38 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
+#include <memory>
+#include <utility>
+#include <vector>
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
 using namespace QindaQt::Services::Portal::CaptureAuthority;
 namespace {
+// This actual private-bus receipt endpoint exercises the public native lock
+// transport; it is neither compositor authority nor a production admission hook.
+class NativeReceipt final : public QObject, protected QDBusContext {
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.NativeLock1")
+public:
+    explicit NativeReceipt(QDBusConnection connection) : bus(std::move(connection)) {}
+    void lock() { locked = true; Q_EMIT lockedChanged(true); }
+public Q_SLOTS:
+    void RequestStateWithReceipt(const QString &nonce) {
+        auto receipt = QDBusMessage::createTargetedSignal(message().service(),
+            QString(QindaQt::CompositorNames::nativeLockPath),
+            QString(QindaQt::CompositorNames::nativeLockInterface), "stateReceipt");
+        receipt << nonce << locked << false;
+        bus.send(receipt);
+    }
+Q_SIGNALS:
+    void lockedChanged(bool);
+    void protectedChanged(bool);
+private:
+    QDBusConnection bus;
+    bool locked = false;
+};
 struct Fd { int value = -1; ~Fd() { if (value >= 0) ::close(value); } int take() { return std::exchange(value, -1); } };
 bool sendPacket(int fd, const Packet &packet, const std::vector<int> &fds = {}) {
     const auto bytes = encode(packet); iovec data{const_cast<char *>(bytes.constData()), static_cast<size_t>(bytes.size())};
@@ -47,8 +76,62 @@ private Q_SLOTS:
         owner = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(address, "capture-authority-owner"));
         QVERIFY(owner->isConnected()); QVERIFY(owner->registerService(QString(QindaQt::CompositorNames::service)));
     }
-    void cleanup() { owner->unregisterService(QString(QindaQt::CompositorNames::service)); owner.reset(); QDBusConnection::disconnectFromBus("capture-authority-owner"); }
+    void cleanup() { owner->unregisterObject(QString(QindaQt::CompositorNames::nativeLockPath)); owner->unregisterService(QString(QindaQt::CompositorNames::service)); owner.reset(); QDBusConnection::disconnectFromBus("capture-authority-owner"); QDBusConnection::disconnectFromBus("capture-admission-client"); }
     void cleanupTestCase() { daemon.terminate(); QVERIFY(daemon.waitForFinished(5000)); }
+    void admissionTeardownDoesNotReenterDestroyedStorage_data() {
+        QTest::addColumn<bool>("denyWhileLive");
+        QTest::newRow("admitted-teardown") << false;
+        QTest::newRow("live-denial-then-teardown") << true;
+    }
+    void admissionTeardownDoesNotReenterDestroyedStorage() {
+        QFETCH(bool, denyWhileLive);
+        NativeReceipt endpoint(*owner);
+        QVERIFY(owner->registerObject(QString(QindaQt::CompositorNames::nativeLockPath), &endpoint,
+            QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals));
+        auto client = QDBusConnection::connectToBus(address, "capture-admission-client");
+        QVERIFY(client.isConnected());
+        int pair[2]; QCOMPARE(socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, pair), 0);
+        Fd server{pair[0]}, peer{pair[1]};
+        bool storageDestroyed = false;
+        int losses = 0, callbacksAfterStorage = 0;
+        // Match broker member order: jobs unwind before admission, while the
+        // QObject subscriber still exists. External counters avoid touching the
+        // destroyed storage even if the regression reintroduces a callback.
+        struct Storage { bool &destroyed; ~Storage() { destroyed = true; } };
+        struct Subscriber final : QObject {
+            std::unique_ptr<QindaQt::Services::Portal::NativeCaptureAdmission> admission;
+            Storage jobs;
+            Subscriber(QDBusConnection bus, const QString &name, int fd, bool &destroyed,
+                       int &losses, int &afterStorage)
+                : admission(std::make_unique<QindaQt::Services::Portal::NativeCaptureAdmission>(bus, name, fd)), jobs{destroyed} {
+                QObject::connect(admission.get(), &QindaQt::Services::Portal::NativeCaptureAdmission::lost,
+                    this, [&destroyed, &losses, &afterStorage] {
+                        ++losses;
+                        if (destroyed) ++afterStorage;
+                    });
+            }
+        };
+        auto subscriber = std::make_unique<Subscriber>(client, owner->baseService(), peer.value,
+            storageDestroyed, losses, callbacksAfterStorage);
+        QSignalSpy ready(subscriber->admission.get(), &QindaQt::Services::Portal::NativeCaptureAdmission::ready);
+        QTRY_VERIFY_WITH_TIMEOUT(subscriber->admission->admitted(), 5000);
+        QVERIFY(!ready.isEmpty());
+        QCOMPARE(losses, 0);
+        if (denyWhileLive) {
+            endpoint.lock();
+            QTRY_VERIFY_WITH_TIMEOUT(losses > 0, 5000);
+            QVERIFY(!subscriber->admission->admitted());
+            QCOMPARE(callbacksAfterStorage, 0);
+        }
+        const auto lossesBeforeTeardown = losses;
+        subscriber.reset();
+        QVERIFY(storageDestroyed);
+        QCOMPARE(callbacksAfterStorage, 0);
+        QCOMPARE(losses, lossesBeforeTeardown);
+        QCoreApplication::processEvents();
+        QCOMPARE(losses, lossesBeforeTeardown);
+        QDBusConnection::disconnectFromBus("capture-admission-client");
+    }
     void consentOrderingAndDuplicateGrant() {
         int pair[2]; QCOMPARE(socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, pair), 0); Fd server{pair[0]};
         Channel helper(pair[1], Role::Helper, *owner); int received = 0, lost = 0;
