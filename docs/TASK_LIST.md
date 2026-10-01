@@ -19,6 +19,13 @@ artwork groups redrawn in visibly hand-rendered media, transparent PNG output,
 per-atlas provenance and actual-size visual inspection. Partial artwork is not
 installed or counted as complete. See [Icon themes](wiki/shell/icon-theme.md).
 
+The requested live working gallery is delivered on the recovery branch from
+`d93a6c99`, with independent exact review `8f348f61`. It opens the current pack
+with filename search, category filtering and larger views, and automatically
+refreshes additions every five seconds. Its counts describe present working
+files, including additions awaiting review. The gallery does not advance full
+artwork acceptance or the Plasma-free milestone.
+
 ## September 30 — Graphical removable media
 
 The independently accepted handler source `5bff539e` provides insertion prompts,
