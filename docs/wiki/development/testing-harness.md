@@ -4590,6 +4590,13 @@ trace shows the broker received the authentic unlocked state receipt before
 Screenshot, then no lock-state or admission receipt before compositor loss.
 Thus this probe does not reproduce the earlier initial denial, and does not
 qualify native-lock retirement: compositor survival remains an explicit gate.
-No further runtime or production repair is included in this fixture candidate.
+The separately owned fork repair68c4d74f (executable42604a8f) defers source QObject
+destruction until synchronous scene-view snapshots finish, while revocation and
+frame gating remain immediate. Its original447 driver plus repaired plugin
+passes one unchanged monitored native-lock row (Qt3/3, runner0), including real
+locked/protected transitions, stream/file retirement and compositor survival.
+The same unmonitored row had failed initial Screenshot admission before lock;
+the monitored success does not resolve that recurring prerequisite. Full matrix
+and independent review remain held, and no routing or milestone is advanced.
 All earlier blank PNG, two-frame and startup-order failures remain retained.
 No installed routing or full PF19 completion is claimed.

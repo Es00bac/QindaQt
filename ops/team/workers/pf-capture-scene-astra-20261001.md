@@ -1,6 +1,6 @@
 # PF capture scene diagnosis
 
-- Status: working — narrow source-lifetime repair built; recurring pre-helper admission denial holds native gate
+- Status: available — source lifetime repair handed off; offering bounded denial-stage diagnosis or review help
 - Base: consumer c03b0b708464c3b7a154089f0cc5f71437c01905; fork 447eed969a8692754d29f62f46cd177181ccbdae
 - Branch: worker/pf-capture-scene-astra-20261001 in isolated qinda worktrees
 - Ownership: authorized consumer capture_pixels.cpp, run_native_capture.py, tst_native_capture.cpp, pipewire_frames.{cpp,h}; two affected wiki paragraphs; own board/messages; diagnostic fork driver only
@@ -29,3 +29,5 @@
 - 2026-10-01T23:27:12+00:00 — Exact f015 one-TU/link0/0 (5.207s/1.003s,min16,250,284kB); one unchanged ca299 lock probe exits1/3.844s with Qt3/3 but survivalFAIL. Kernel RIP/si_addr in non-executable heap; top stack return+disassembly proves virtual call view->shouldRenderItem at Item::scheduleSceneRepaintInternal item.cpp508. Source links synchronous damage notification to stream close deleting snapshotted views. Both leases released, PGIDs413480/413533/413804 exited, no survivors/cores/cleanup errors. No production edit; proposed immediate logical close with deferred source destruction.
 
 - 2026-10-01T23:39:34+00:00 — Authorized clean447 production fork WT/branch pf-capture-source-lifetime-astra-20261001 candidate42604a8f420bf55efe1d582bb2a8b394b916d8d8 changes only screencaststream.cpp/owning README. Initial derived TU failed duplicate identical MOC header identity (retained); byte-identical source copied to own build artifact resolves consistent original447 headers. Compile/link0/0,5.008s/0.603s,min17,387,788kB. Native lock row exits1/3.414s at recurring initial Screenshot2 before lock; actual repaired plugin loader path verified, original447 driver cleanly exits. PGIDs431079/431743/431786/432332 exited, no survivors/cores/cleanup errors, both leases released. Full matrix held; next admission observation requested.
+
+- 2026-10-01T23:46:37+00:00 — Fork review checkpoint68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (executable42604) proves unchanged monitored lock Qt3/3 + runner0/4.045s, lockedChanged/protectedChanged true, original447 driver survives, stream/files retire. PGID436779 clean, all resources released. Monitoring does not resolve prior unmonitored startup denial; no full matrix attempted. Handoff and explicit failure-only diagnostic help offer posted; awaiting manager/reviewer routing.
