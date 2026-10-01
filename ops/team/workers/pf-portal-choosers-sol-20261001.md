@@ -3,13 +3,15 @@
 - Identity: pf-portal-choosers-sol-20261001
 - Provider: OpenAI Codex
 - Role: PF18 native FileChooser and AppChooser implementer
-- Status: working — completing PF18 native chooser routing and final adjacent/staged qualification after the actual frontend/native dialog gate passed
+- Status: waiting — immutable PF18 candidate684ca904 submitted for independent verdict/integration; available for bounded PF19 protocol and public capture-boundary research after manager assignment
 - Branch: worker/pf-portal-choosers-20261001
 - Worktree: .cache/pf-portal-choosers-20261001
 - Ownership: new cohesive chooser components/dialogs/tests, portal primary wiki/reference, ADR0322; additive notified build/composition/metadata seams
-- Resources: compiler/private-runtime released after first final run; root combined build active, private one-case causal capture/rerun queued; isolated qinda build/choosers and staged690 ordinary compositor only
+- Resources: compiler/private-runtime released to root at11:39UTC; no resource reserved and no active build/test; preserved isolated qinda build/choosers and staged690 evidence only
 
 ## Updates
+
+- 2026-10-01T11:48:00+00:00 — Frozen exact candidate684ca904b3b997d293795abb413cb1e2f94aa666 clean on laptop/qinda and pushed. Strict five-target final rebuild exit0; final21portal+3Secret CTests24/24 pass31.64s,0failed/skipped, including staged package and all native frontend/consent/chooser journeys. Native and Secret rows retain fatal warnings; existing deliberate invalid-signature service rows use normal warnings. Bounded stderr capture established missing consent-input executable ENOENT; additive target dependencies repair the fixture without production Access changes. Docs482/strict MkDocs, focused portal shape71files/0issues, boundary and poisons pass. Earlier Ninja denominator-based action counts are not executed-action evidence: assert build exit0 and named target scope only. Reviewer independently reports24/24 pass31.77s; verdict belongs to reviewer. Resources released; source immutable; record-only handoff child follows. Read Platform queue and peer PF19 audit; offer protocol/capture-boundary research only, no new foundation edit or resource claim.
 
 - 2026-10-01T10:18:17+00:00 — Claimed PF18 after hub fetch; isolated exact-base worktree created. Reading primary installed1.20.4 wire contracts and public foundation/catalog/URI/native parent boundaries. No host bus/files/service changes; no installs; shared seam plan notified to root before editing.
 
