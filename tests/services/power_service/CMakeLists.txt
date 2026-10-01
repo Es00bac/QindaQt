@@ -330,7 +330,7 @@ qt_add_executable(qindaqt_source_profile_runtime_tests
     tst_source_profile_runtime.cpp
     support/fake_ppd_service.cpp support/fake_ppd_service.h
     support/fake_upower_service.cpp support/fake_upower_service.h
-    support/profile_policy_bus.h)
+    support/profile_policy_bus.h support/profile_settings_source.h)
 target_link_libraries(qindaqt_source_profile_runtime_tests PRIVATE
     QindaQt::PowerService QindaQt::PowerClient QindaQt::SettingsService Qt6::Test)
 target_compile_definitions(qindaqt_source_profile_runtime_tests PRIVATE
