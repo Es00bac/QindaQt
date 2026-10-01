@@ -82,6 +82,15 @@ private Q_SLOTS:
         QVERIFY(port->capture(request)); QTRY_COMPARE(endpoint->calls, 1); port->cancel(); QVERIFY(!port->busy());
         QTest::qWait(400); QVERIFY(results.isEmpty());
     }
+    void nativeOwnerReplacementCannotPublishOldCompatibilityPixels() {
+        endpoint->delay = 40; auto request = kwinCallFor({}); request.timeoutMilliseconds = 2000; request.pipeGraceMilliseconds = 0;
+        QVERIFY(port->capture(request)); QTRY_COMPARE(endpoint->calls, 1);
+        auto replacement = fixture->connect(); QVERIFY(compositor->unregisterService(QString(QindaQt::CompositorNames::service)));
+        QVERIFY(replacement->registerService(QString(QindaQt::CompositorNames::service)));
+        // Keep the old Screenshot2 owner and writer alive. Only the actual
+        // native owner changed; success must still be withdrawn at decoding.
+        QTRY_COMPARE(results.size(), 1); QVERIFY(!results.first().ok()); QVERIFY(results.first().image.isNull());
+    }
     void invalidBudgetsAndLegacySelectionCompatibility() {
         auto request = kwinCallFor({}); request.timeoutMilliseconds = 0; QVERIFY(!port->capture(request));
         request.timeoutMilliseconds = 100; request.pipeGraceMilliseconds = -1; QVERIFY(!port->capture(request));

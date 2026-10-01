@@ -204,7 +204,9 @@ void KWinCapturePort::finishIfReady()
 {
     if (!m_active || !m_replyReceived || !m_pipeEnded)
         return;
-    if (ownerOf(m_bus, ScreenshotService) != m_kwinOwner) {
+    // AGENT-GUARD: Name replacement can precede queued watchers while the old process
+    // still owns the compatibility screenshot name. Both must remain joined.
+    if (ownerOf(m_bus, ScreenshotService) != m_kwinOwner || ownerOf(m_bus, KWinService) != m_kwinOwner) {
         finish(failure(tr("KWin restarted during the screenshot.")));
         return;
     }
