@@ -57,6 +57,26 @@ or skips, and the original count/last-On assertions unchanged. Root owns the
 affected combined rebuild, original suites and native/plugin/key-store gates.
 The native notification mapping harness has its own isolated source-only lane.
 
+The repaired combined `faaaf746` then passes its 248-target affected build,
+runtime/privacy/sleep 33/33, fatal privacy 9/9, portal/chooser 24/24 and Screenshot
+6/6. Exact-fork ABI pin and rejection pass. Seven private native plugin/output
+rows pass at 1080p, WUXGA, 1440p and actual 125% scaling, including plugin load,
+unload restoration and read-only production controls. The initial native run
+omitted the staged fork binary directory from PATH; its failures are preserved,
+and the corrected exact-stage environment passes all seven without source edits.
+The native synthetic key-store UI journey passes with seven Qt cases, zero
+failures/skips and fourteen visible production-prompt approvals; actual creation,
+unlock, reveal, copy, rekey, deletion and page/owner/native-lock clipboard
+withdrawal use private fixture storage, not owner credentials or installed names.
+
+The remaining existing `compositor.kwin-plugin-dependency-contract` configuration
+gate exposed an unconditional native frontend fixture reference while the
+production shell was disabled. Isolated repair `37347fe4` passes the unchanged
+four-branch configure gate and full-production target/test-presence checks and
+is awaiting exact independent acceptance. Its staged runner, positive/poison
+assertions and production behavior are unchanged. Actual production native
+notification-window mapping and consolidated Portage delivery remain open.
+
 The supplied painted icon family is independently delivered on both hosts as
 Portage package `x11-themes/qinda-breeze-painted-1.0.0_p20260929`, using overlay
 `54eb7964` and the identical signed binary SHA256
