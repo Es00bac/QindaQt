@@ -619,6 +619,7 @@ if(QINDAQT_DBUS_RUN_SESSION AND QINDAQT_KWIN_WAYLAND AND QINDAQT_XDPYINFO AND QI
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/GabbeeTests.cmake")
+add_subdirectory(native_notification_live)
 add_subdirectory(voice)
 
 # The real app fixtures render on a private native Wayland compositor; this
