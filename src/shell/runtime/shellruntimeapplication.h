@@ -62,12 +62,9 @@ class SettingsClient;
 class QtSettingsTransport;
 }
 
-namespace QindaQt::Services::SessionLockState {
-class QtSessionLockTransport;
-class SessionLockStateMonitor;
-}
-
 namespace QindaQt::Shell {
+
+class NativeNotificationLockObserver;
 
 class RuntimePanelWindowFactory;
 class AudioAppletComposition;
@@ -229,11 +226,9 @@ private:
         m_notificationClient;
     // AGENT-GUARD: declaration order makes each borrowed dependency outlive
     // its consumer even if a future teardown bypasses resetRuntime. The lock
-    // transport precedes its monitor; the client and both policies precede the
-    // presentation controller.
-    std::unique_ptr<Services::SessionLockState::QtSessionLockTransport>
-        m_sessionLockTransport;
-    std::unique_ptr<Services::SessionLockState::SessionLockStateMonitor>
+    // native observer owns its attachment/transport; the client and both
+    // policies precede the presentation controller.
+    std::unique_ptr<NativeNotificationLockObserver>
         m_sessionLockMonitor;
     std::unique_ptr<Services::NotificationPresentationPolicy::
                         NotificationInterruptionPolicy>

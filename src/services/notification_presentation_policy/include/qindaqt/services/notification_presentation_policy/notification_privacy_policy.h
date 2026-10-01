@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QObject>
+#include <functional>
 
 namespace QindaQt::Services::NotificationPresentationPolicy {
 
@@ -11,10 +12,15 @@ class NotificationPrivacyPolicy final : public QObject {
                    privatePresentationAllowedChanged)
 
 public:
-    // AGENT-CONTRACT: This thread-confined policy contains only the current
-    // fail-closed decision. A platform lock observer owns the evidence and
-    // must set true only after authenticating an unlocked compositor lineage.
+    // AGENT-CONTRACT: Same-thread policy; the observer owns evidence. Production
+    // supplies a read-only admission dependency that outlives this object and
+    // neither dispatches events nor mutates/deletes consumers. Every disclosure
+    // read rechecks it: queued owner-loss signals cannot retain permission.
+    // An admission exception denies access. The signal-only constructor remains
+    // available for source-compatible deterministic/non-platform consumers.
+    using Admission = std::function<bool()>;
     explicit NotificationPrivacyPolicy(QObject *parent = nullptr);
+    explicit NotificationPrivacyPolicy(Admission admission, QObject *parent = nullptr);
 
     [[nodiscard]] bool privatePresentationAllowed() const noexcept;
 
@@ -28,6 +34,7 @@ Q_SIGNALS:
 
 private:
     bool m_privatePresentationAllowed = false;
+    Admission m_admission;
 };
 
 } // namespace QindaQt::Services::NotificationPresentationPolicy

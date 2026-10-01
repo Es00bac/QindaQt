@@ -5,6 +5,7 @@
 
 #include <QAbstractListModel>
 #include <QVector>
+#include <functional>
 
 namespace QindaQt::Services::NotificationPresentationModel {
 
@@ -32,6 +33,10 @@ public:
     Q_ENUM(Role)
 
     explicit NotificationListModel(QObject *parent = nullptr);
+    // Borrowed read-only, non-reentrant, nonthrowing admission, on this thread,
+    // outlives the model. Retained QML/model pointers cannot bypass privacy by
+    // reading a role before queued authority-loss invalidation clears storage.
+    explicit NotificationListModel(std::function<bool()> admission, QObject *parent = nullptr);
 
     [[nodiscard]] int rowCount(const QModelIndex &parent = {}) const override;
     [[nodiscard]] QVariant data(const QModelIndex &index,
@@ -44,6 +49,7 @@ public:
     [[nodiscard]] const QVector<NotificationListEntry> &entries() const noexcept;
 
 private:
+    std::function<bool()> m_admission;
     QVector<NotificationListEntry> m_entries;
 };
 
