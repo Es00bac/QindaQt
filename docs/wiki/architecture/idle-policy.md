@@ -15,13 +15,18 @@ owner of identity and lifetime evidence
 ([ADR-0305](../adr/0305-public-ordinary-compositor-attachment.md),
 [ADR-0307](../adr/0307-public-ordinary-fd-idle-observation.md)). Revocation
 disarms the idle stage, drops the observer, makes a best-effort `On` request
-over the already-connected descriptor, flushes it on the connection worker,
-then destroys DPMS, manager, output, registry, and event-queue wrappers before
-disconnecting. Connection death uses local proxy destruction because protocol
-release requests are no longer valid. Activity also requests `On`. Normal supervisor teardown calls the same flushed
-restore before destroying the display-power port, so logout cannot discard a
-buffered restore. A
-replacement at the old socket path cannot receive either request through this
+over the already-connected descriptor, then waits on the connection worker
+for ordered Wayland sync acknowledgement within one 250 ms deadline. A private
+worker-only event queue keeps GUI-owned KWayland callbacks off that worker.
+Client flush alone does not prove server dispatch: libwayland can process peer
+hangup before unread requests. Missing acknowledgement remains best effort and
+does not delay teardown beyond the bounded wait. The sync callback and private
+queue are destroyed first, followed by DPMS, manager, output, registry, and
+event-queue wrappers before disconnecting. Connection death uses local proxy
+destruction because protocol release requests are no longer valid. Activity also
+requests `On`. Normal supervisor teardown calls the same bounded restore before
+destroying the display-power port, so a responsive compositor processes the
+restore before disconnect. A replacement at the old socket path cannot receive either request through this
 retained descriptor.
 
 The display-off stage reads confirmed Settings1 values for each source:
@@ -56,8 +61,11 @@ source selection and transitions, source preference bounds and Settings
 lineage, confirmed timing, activity restore, inhibitor receipt gating,
 disabled preference, and attachment revocation. A private in-process Wayland
 server exercises the actual KWayland adapter asynchronous capability arrival,
-per-output requests, output removal, resume restore, final flushed `On`,
-reconnect, and repeated teardown with Qt warnings fatal. This validates the
+per-output requests, output removal, resume restore, final acknowledged `On`,
+reconnect, and repeated teardown with Qt warnings fatal. Held server socket reads
+prove live and revoked final restore survives an 80 ms scheduling delay without
+opening a replacement descriptor; a stalled peer proves the 250 ms wait expires,
+and absent/disconnected peers prove teardown returns safely. This validates the
 client protocol lifecycle without changing host display power; it does not
 replace a nested compositor integration row.
 
