@@ -46,7 +46,9 @@ metadata or a retained stale epoch. A changed global Power1 epoch retires local
 handles. Exact current-owner targeted ProfileReleased retires the stored cookie
 and refreshes facts; unexpected cancellation suppresses reacquisition until a
 new source/preference/authority input or explicit retry. Known refusals retry only after material admission/confirmed preference
-changes or explicit local retry. Repeated equivalent facts never retry. A
+changes or explicit local retry. Admission keys sort supported profile and hold
+identifiers independently; provider array order alone is not a material change.
+Repeated equivalent facts never retry. A
 bounded dispatch or observation timeout, malformed success or Uncertain result
 quarantines new acquisitions for this runtime; late authenticated observation
 may clean up the tagged hold only if the adapter recorded its cookie, but
