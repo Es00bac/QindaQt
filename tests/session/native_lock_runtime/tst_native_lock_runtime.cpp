@@ -133,6 +133,7 @@ private Q_SLOTS:
     void canceledSleepCannotDispatchLateProtection();
     void stopAndRestartRetireNativeRequest();
     void selectedLogindResumeUsesConfirmedNativeState();
+    void stoppedRuntimeDoesNotRearmIdleFromSettings();
 };
 
 void NativeLockRuntimeTests::automaticIdleUsesConfirmedTimeoutAndCancelableGrace() {
@@ -272,6 +273,16 @@ void NativeLockRuntimeTests::selectedLogindResumeUsesConfirmedNativeState() {
     f.runtime->prepareForSleep(true); f.runtime->prepareForSleep(false);
     QCOMPARE(f.request.requests, 0); f.unlockState();
     QCOMPARE(f.request.requests, 1);
+}
+void NativeLockRuntimeTests::stoppedRuntimeDoesNotRearmIdleFromSettings() {
+    Fixture f; f.seed(false, false, 0); f.start(); f.unlockState();
+    f.runtime->stop(); QCOMPARE(f.idle.timeout, 0);
+    f.seed(true, false, 0); f.settings.stop(); QVERIFY(f.settings.start());
+    f.settingsTransport.announceOwner();
+    QTRY_VERIFY(f.preferences.preferences().has_value());
+    QVERIFY(f.preferences.preferences()->automaticLock);
+    QCOMPARE(f.idle.timeout, 0);
+    QCOMPARE(f.runtime->status(), QStringLiteral("native lock runtime stopped"));
 }
 QTEST_GUILESS_MAIN(NativeLockRuntimeTests)
 #include "tst_native_lock_runtime.moc"
