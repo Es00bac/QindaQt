@@ -4479,8 +4479,8 @@ input over unchanged helper sources. Private policy-only WirePlumber excludes
 hardware monitors; private PipeWire has no device nodes. Custom D-Bus has no
 host activation directories and the system bus address is explicitly nonexistent.
 EGL software compositor rendering is required because the qualified fork cannot
-create streams from QPainter composition. Two fresh private compositor groups
-isolate native Locked retirement without any unlock/PAM seam. The returned remote
+create streams from QPainter composition. Three fresh private compositor groups
+isolate native Locked and actual compositor-owner-loss retirement without any unlock/PAM seam. The test controller remains GUI-free; a separate admitted ordinary Qt child supplies changing pixels, so compositor loss cannot kill the controller before it verifies withdrawal. The returned remote
 FD is consumed directly; policy mocks and node integers alone do not prove frames.
 These new rows are source-only and still await compilation/native execution;
 metadata retains KDE Screenshot/ScreenCast routing until actual family gates pass.
