@@ -18,6 +18,20 @@ from nested_session_scenario import isolated_environment, running_private_sessio
 from notification_live_process import run_private_process_group, terminate
 
 
+def await_compositor_owner(environment: dict[str, str], child: subprocess.Popen) -> None:
+    """A listening socket precedes plugin/name readiness; await actual daemon PID."""
+    deadline = time.monotonic() + 15
+    while child.poll() is None and time.monotonic() < deadline:
+        result = subprocess.run(["/usr/bin/busctl", "--address=" + environment["DBUS_SESSION_BUS_ADDRESS"],
+            "--timeout=1", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
+            "org.freedesktop.DBus", "GetConnectionUnixProcessID", "s", "org.qindaqt.Compositor"],
+            env=environment, capture_output=True, text=True, timeout=2, check=False)
+        if result.returncode == 0 and result.stdout.strip() == f"u {child.pid}":
+            return
+        time.sleep(.05)
+    raise RuntimeError(f"actual compositor bus owner was not ready (exit={child.poll()})")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("probe", "compositor", "launcher", "plugin-root", "shell", "host", "settings", "scenario", "artifacts"):
@@ -66,6 +80,7 @@ def main() -> int:
                     time.sleep(.05)
                 if not (root / "runtime/qindaqt-popup").exists():
                     raise RuntimeError("actual ordinary compositor socket did not appear")
+                await_compositor_owner(environment, child)
                 environment.update(WAYLAND_DISPLAY="qindaqt-popup", QINDAQT_NATIVE_POPUP_COMPOSITOR_PID=str(child.pid),
                     QINDAQT_NATIVE_POPUP_LOG_ROOT=str(root), QINDAQT_NATIVE_POPUP_LOCKER=str(locker),
                     QINDAQT_NATIVE_POPUP_SHELL=str(arguments.shell.resolve()), QINDAQT_NATIVE_POPUP_HOST=str(arguments.host.resolve()),
