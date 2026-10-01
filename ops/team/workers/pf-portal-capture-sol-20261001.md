@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — repairing required frontend tokens and observing existing public capture failure signal after immutable b3670dda method findings
+- Status: working — correcting primary string session handle after exact df68e649 restricted Screenshot denial and pre-Start fixture failure
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: both slots released after b3670dda probes; conditional affected-fixture build grant after freeze, no resource reserved; chooser history preserved
+- Resources: compiler and private runtime released after exact df68e649 build/two probes; no resource reserved; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T15:34:00Z — Exact df68e649 affected native target build PASS exit0, final6/7 dynamic progress; compiler released. Two private selected probes each exit1, Qt2pass/1fail/0skip in0.87s/0.66s, no CTests executed. Screenshot actual helper maps and public failure is exact Screenshot2 Error.NoAuthorized; frontend Response2/no URI. ScreenCast CreateSession Response0, then fixture casts standard string session_handle as object path and stops before Start. Primary installed XML/source confirmed compatibility string; correcting only owned assertion/extraction. Private slot released, groups/audits pass, scoped task core scans empty; all earlier evidence preserved. No Start/node/frame/routing/usability qualification.
 
 - 2026-10-01T15:21:31Z — Root directed minimal primary session_handle_token/handle_token fixture repair and optional existing-public-failure observability. Installed frontend XML/cached primary xdp-session token validation checked; unique standard tokens now supplied by actual caller. Test-only application event observer subscribes to public CapturePort::finished and records bounded failure text, with no production hook/authority/pixel fabrication. Freezing this owned fixture repair, then conditional affected-target build and only two selected probes authorized by root after integrated Sleep slot release. Native journey/routing remain unqualified.
 

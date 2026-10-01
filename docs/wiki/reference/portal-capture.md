@@ -81,19 +81,22 @@ Wayland restricted-global admission. The resident and capture helper both set
 read that protected proc link. A task-owned non-dumpable child experiment
 confirmed denied executable-link access (errno13), and private fork690 logs
 reported that the protected ordinary Wayland peer could not be identified.
-Restricted Screenshot2 denial remains source-predicted; it was not exercised.
 The e78bf9f4 diagnostic fixture combined protected resident and frontend caller,
-so primary frontend registration instead failed to open the caller proc root.
-Its source successor separates a real caller from a protected child hosting the
+so primary frontend registration failed to open the caller proc root. Its
+successor separates the ordinary caller from a protected backend child hosting
 unchanged public resident/composition, and supplies the installed primary client
-context in the private PipeWire configuration. That repair compiles at b3670dda: both private frontend setups pass, Screenshot
-returns failure2/no URI, and ScreenCast stops at missing CreateSession token
-before Start. The source successor supplies primary request/session tokens and
-observes the existing public capture failure signal in the actual-input helper.
-Restricted Screenshot2 error provenance and Start outcome remain to qualify. The test controller now applies
-the same protection before Qt startup, and the runner removes inherited
-Screenshot/Wayland permission-bypass variables. A dumpable controller or bypass
-cannot qualify production.
+context in private PipeWire configuration. At df68e649 both setups pass:
+Screenshot maps the actual-input helper and returns frontend Response2/no URI;
+the existing public capture failure signal reports the exact Screenshot2
+`Error.NoAuthorized` mapping. This is an exercised restricted denial, not a
+request to weaken protection or install another component. ScreenCast
+CreateSession returns Response0, but the fixture incorrectly decodes its
+`session_handle` as `o`, so Start is not reached. Installed primary frontend XML
+and source preserve this result as `s`; the owned fixture successor asserts and
+reads that type. No Start, node or frame result is yet qualified. Earlier failed
+inputs and assertions remain preserved. Backend and helper retain protection
+before Qt startup; the runner clears both inherited permission bypasses. A
+dumpable backend or bypass cannot qualify production.
 
 The runner accepts an optional `--case NAME` after its nine artifact paths for
 bounded diagnostics using unchanged Qt assertions. Only the default three-group
