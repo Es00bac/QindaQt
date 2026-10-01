@@ -23,6 +23,9 @@ public:
     int openClientFd();
     quint32 addOutput();
     void removeOutput(quint32 name);
+    // Hold actual socket reads to expose flush-versus-peer-close scheduling.
+    void pauseDispatch(int milliseconds);
+    void disconnectClients();
     int setRequestCount() const { return m_setRequestCount.load(); }
     quint32 lastRequestedMode() const { return m_lastRequestedMode.load(); }
 
