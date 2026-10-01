@@ -1,0 +1,7 @@
+# Source checkpoint, no executable claim
+
+Runtime source composition complete at this checkpoint: explicit dormant/native-exclusive option, authenticated legacy-name absence gate, public SettingsClient/coordinator policy and nonce-owned holds. ADR0330 and minimal navigation/index entries added with manager approval; module-boundaries power-service row updated for the approved dependency.
+
+Focused subprocess private fixture contains nine behavior rows, including UPower source authority loss, provider loss in flight, timeout no-replay, rejected and limit admission changes. Private daemon configuration is explicit and untyped, has no includes or service directories, and does not read standard session configuration. Pending/uncertain cookie-less acquisition cannot invent release authority; the fixture asserts no fabricated release. No executable runtime yet; compile/private slots remain native capture's.
+
+Static gates: docs validator485 exit0; Power boundary exit0; source shape43 service files exit0, test shape29 exit0 with pre-existing activation test518-line warning; diff check exit0. Initial strict MkDocs failed on an out-of-docroot plan link, repaired to owning wiki; subsequent strict MkDocs exit0. First shape invocation used unsupported positional arguments; corrected root-based checks pass. Compiler request is qinda only, -j8/-l24, core0 and min3GiB30s; laptop heavy-work lock honored.

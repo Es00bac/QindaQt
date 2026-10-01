@@ -1,7 +1,7 @@
 # Native power policy preferences
 
-PF1 establishes the Settings1 authority used by the later Power1 and idle
-policy work. It does not execute power actions. Power1 remains the sole
+PF1 establishes the Settings1 authority consumed by Power1 and idle policy.
+The bounded native source-profile runtime is described below. Power1 remains the sole
 runtime power-state authority; the shell and logind keep their existing
 session-action boundary in [Power and brightness](power-service.md).
 
@@ -82,3 +82,44 @@ migration, where an explicit old choice is copied to all three sources. The
 stage boundary and limits are in [Native idle display stage](idle-policy.md).
 Dim, lock-before-display-off, idle suspend, and capability masks remain
 separate work until their consumers are complete.
+
+## Native source-profile runtime
+
+[ADR-0330](../adr/0330-gate-native-source-profile-holds.md) composes the public
+SettingsClient with Power1's validated coordinator facts in the resident
+executable. Confirmed source facts select `power.profile.ac`,
+`power.profile.battery` or `power.profile.lowBattery`; Low, Critical and Action
+warnings choose low-battery only while on battery. Unknown source, unsupported
+profiles or unconfirmed Settings authority admit no new hold. `none` releases
+only this runtime's automatic hold and leaves external/user holds untouched.
+
+The executable defaults to `--profile-policy=off`, including packaged
+production. Explicit `--profile-policy=native-exclusive` composes policy and a
+subscribe-before-query current-owner guard for PowerDevil's canonical session
+bus name. Its confirmed absence admits policy; arrival or query/bus failure
+revokes admission and schedules owned-hold cleanup. This option declares an
+exclusive cutover; it never disables or launches the legacy writer. Final
+supervisor and package cutover remain separate work.
+
+One serialized nonce-tagged hold is replaced by releasing and observing its
+absence before acquiring the next profile. Equivalent repeated facts cause no
+hold churn. Each successful hold operation refreshes authenticated provider
+facts. Known refusals have no timer retry: changed admission or confirmed
+preferences, or local explicit retry, may retry. Hold calls are bounded to
+three seconds; malformed successes, transport uncertainty and missing
+convergence quarantine acquisition until a new runtime. A late observed tagged
+hold may be cleaned up only if its returned cookie was recorded; a timed-out
+acquire with no cookie cannot invent release authority. Uncertain acquisition
+is never replayed.
+Settings owner loss or a pending/unconfirmed refresh prevents selecting a
+new hold from retained preferences. A pending refresh may retain the already
+confirmed hold; failure withdraws it. Global Power1 epoch changes discard retained handles.
+
+`qindaqt.power-source-profile-runtime` executes the actual resident subprocess
+against private UPower/PPD and resident Settings1, checking source transitions,
+leave-alone cleanup, equivalent-fact stability, external holds, dormant default,
+legacy authority arrival/loss, Settings owner loss, unsupported/provider loss,
+hold limit admission changes, known rejection and timeout no-replay. The daemon
+has no host include or activation directory. These are private fixtures, not
+installed or physical power qualification. Idle scopes stay zero; PF2 lid and
+critical countdown, full idle policy, and PowerDevil retirement remain separate.

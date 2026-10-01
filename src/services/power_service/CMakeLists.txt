@@ -8,6 +8,8 @@ add_library(QindaQt::PowerService ALIAS qindaqt_power_service)
 target_sources(
     qindaqt_power_service
     PRIVATE
+        src/source_profile_policy.cpp
+        src/adapters/native_profile_authority.cpp
         src/power_service_assembly.cpp
         src/power_service_assembly_p.h
         src/power_service_coordinator.cpp
@@ -36,6 +38,8 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/power_service/source_profile_policy.h
+            include/qindaqt/services/power_service/adapters/native_profile_authority.h
             include/qindaqt/services/power_service/power_collaborators.h
             include/qindaqt/services/power_service/power_service_coordinator.h
             include/qindaqt/services/power_service/resident_power_service.h
@@ -52,7 +56,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_power_service
-    PUBLIC QindaQt::PowerProtocol Qt6::Core Qt6::DBus
+    PUBLIC QindaQt::PowerProtocol QindaQt::SettingsClient Qt6::Core Qt6::DBus
 )
 target_compile_features(qindaqt_power_service PUBLIC cxx_std_20)
 target_compile_definitions(qindaqt_power_service PRIVATE QT_NO_KEYWORDS)
