@@ -19,11 +19,19 @@ SourceProfilePolicy::SourceProfilePolicy(
     m_deadline.setSingleShot(true);
     m_deadline.setInterval(qMax(1, timeout));
     connect(&m_deadline, &QTimer::timeout, this, [this] {
+        if (m_kind == OperationKind::ReleaseProfileHold && m_owned.isValid())
+            m_uncertainReleases.insert(m_owned.opaqueId);
         m_operation = 0;
         m_awaitingObservation = false;
         m_quarantined = true;
         schedule();
     });
+    connect(&power, &PowerServiceCoordinator::profileHoldCancelled, this,
+            [this](const Handle &handle) {
+                if (handle != m_owned || !handle.isValid()) return;
+                m_manualSuppressed = selectionKey();
+                schedule();
+            });
     connect(&power, &PowerServiceCoordinator::snapshotChanged, this,
             [this] { schedule(); });
     connect(&power, &PowerServiceCoordinator::operationCompleted, this,
@@ -50,6 +58,7 @@ void SourceProfilePolicy::setNativeAuthority(const bool admitted)
 void SourceProfilePolicy::retry()
 {
     m_failedKey.clear();
+    m_manualSuppressed.clear();
     schedule();
 }
 void SourceProfilePolicy::schedule()
@@ -81,17 +90,41 @@ QString SourceProfilePolicy::desiredProfile() const
     const QVariant value = settings->values.value(QStringLiteral("power.profile.") + source);
     if (value.metaType() != QMetaType::fromType<QString>()) return {};
     const QString desired = value.toString();
-    if (desired != QStringLiteral("balanced") && desired != QStringLiteral("power-saver")
+    if (desired != QStringLiteral("power-saver")
         && desired != QStringLiteral("performance")) return {};
     for (const auto &profile : power.profiles.supported)
         if (profile.id == desired) return desired;
     return {};
 }
+QString SourceProfilePolicy::selectionKey() const
+{
+    const auto &snapshot = m_power.snapshot();
+    const auto &settings = m_settings.snapshot();
+    QString source = QStringLiteral("unknown");
+    if (snapshot.capabilities.testFlag(Capability::Supplies)) {
+        if (snapshot.source.onBattery) {
+            const auto warning = snapshot.composite.warning;
+            source = warning == WarningLevel::Low || warning == WarningLevel::Critical
+                    || warning == WarningLevel::Action
+                ? QStringLiteral("lowBattery") : QStringLiteral("battery");
+        } else if (snapshot.source.acPresent) source = QStringLiteral("ac");
+    }
+    return QString::number(m_authority) + QLatin1Char('|') + source + QLatin1Char('|')
+        + (settings ? settings->owner + settings->epoch + QLatin1Char('|')
+                       + settings->values.value(QStringLiteral("power.profile.") + source).toString()
+                    : QString());
+}
 void SourceProfilePolicy::reconcile()
 {
     const auto &snapshot = m_power.snapshot();
+    if (!m_manualSuppressed.isEmpty() && m_manualSuppressed != selectionKey())
+        m_manualSuppressed.clear();
     if (m_epoch != 0 && snapshot.epoch != m_epoch) {
-        if (m_operation != 0 || m_awaitingObservation) m_quarantined = true;
+        if (m_operation != 0 || m_awaitingObservation) {
+            m_quarantined = true;
+            if (m_kind == OperationKind::ReleaseProfileHold && m_owned.isValid())
+                m_uncertainReleases.insert(m_owned.opaqueId);
+        }
         m_operation = 0;
         m_awaitingObservation = false;
         m_deadline.stop();
@@ -106,6 +139,11 @@ void SourceProfilePolicy::reconcile()
             observed = &hold;
             break;
         }
+    }
+    if (!observed && m_owned.isValid() && m_operation == 0 && !m_awaitingObservation) {
+        // A user changing the provider's base profile cancels its holds.
+        // Equivalent observations must not fight that manual override.
+        m_manualSuppressed = selectionKey();
     }
     m_owned = observed ? observed->handle : Handle{};
     if (m_operation != 0) return;
@@ -134,7 +172,7 @@ void SourceProfilePolicy::reconcile()
         // never select a different source from its retained preference map.
         if (!desired.isEmpty() && !m_quarantined
             && !m_settings.canSetUserValue(QStringLiteral("power.profile.ac"))) return;
-        if (m_failedKey == key) return;
+        if (m_failedKey == key || m_uncertainReleases.contains(m_owned.opaqueId)) return;
         m_attemptKey = key;
         PowerServiceRequest request;
         request.kind = OperationKind::ReleaseProfileHold;
@@ -143,6 +181,7 @@ void SourceProfilePolicy::reconcile()
         return;
     }
     if (m_quarantined || desired.isEmpty() || m_failedKey == key
+        || m_manualSuppressed == selectionKey()
         || !m_settings.canSetUserValue(QStringLiteral("power.profile.ac"))) return;
     m_reason = QStringLiteral("Automatic source profile %1")
                    .arg(QUuid::createUuid().toString(QUuid::Id128));
@@ -175,7 +214,11 @@ void SourceProfilePolicy::completed(const quint64 id, const OperationResult &res
     } else {
         m_deadline.stop();
         m_failedKey = m_attemptKey;
-        if (result.status == OperationStatus::Uncertain) m_quarantined = true;
+        if (result.status == OperationStatus::Uncertain) {
+            m_quarantined = true;
+            if (m_kind == OperationKind::ReleaseProfileHold && m_owned.isValid())
+                m_uncertainReleases.insert(m_owned.opaqueId);
+        }
     }
     schedule();
 }

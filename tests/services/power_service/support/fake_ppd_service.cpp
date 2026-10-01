@@ -143,6 +143,18 @@ QVariant FakePpdService::holdsValue() const
     return arrayOfStringVariantMaps(entries);
 }
 
+void FakePpdService::manualProfileChange(const QString &profile)
+{
+    m_activeProfile = profile;
+    m_holds.clear();
+    for (const auto &request : holdRequests) {
+        auto signal = QDBusMessage::createTargetedSignal(request.owner, objectPath(),
+            interfaceName(), QStringLiteral("ProfileReleased"));
+        signal.setArguments({QVariant::fromValue(request.cookie)});
+        m_connection.send(signal);
+    }
+}
+
 QString FakePpdService::introspect(const QString &path) const
 {
     Q_UNUSED(path)
@@ -171,6 +183,7 @@ bool FakePpdService::handleMessage(const QDBusMessage &message,
             == QMetaType::fromType<uint>()) {
         const quint32 cookie = message.arguments().constFirst().toUInt();
         releaseRequests.push_back(cookie);
+        if (m_dropReleaseReply) return true;
         const auto request = std::find_if(
             holdRequests.cbegin(), holdRequests.cend(),
             [cookie](const HoldRequest &candidate) {
@@ -204,8 +217,10 @@ bool FakePpdService::handleMessage(const QDBusMessage &message,
             request.reason = message.arguments().at(1).toString();
             request.applicationId = message.arguments().at(2).toString();
             request.cookie = nextCookie++;
+            request.owner = message.service();
             holdRequests.push_back(request);
-            if (m_rejectHold) {
+            if (m_rejectHold || (request.profile != QStringLiteral("power-saver")
+                                 && request.profile != QStringLiteral("performance"))) {
                 sendError(message, QStringLiteral("org.freedesktop.DBus.Error.AccessDenied"),
                           QStringLiteral("Rejected fake hold"));
                 return true;

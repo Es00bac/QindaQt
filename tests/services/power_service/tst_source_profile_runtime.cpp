@@ -60,7 +60,7 @@ struct Runtime {
         ppd = std::make_unique<FakePpdService>(upstreamBus, false);
         ppd->setProfiles({QStringLiteral("power-saver"), QStringLiteral("balanced"), QStringLiteral("performance")});
         ppd->setActiveProfile(QStringLiteral("balanced"));
-        ppd->setHolds({{QStringLiteral("balanced"), QStringLiteral("External"), QStringLiteral("untouched")}});
+        ppd->setHolds({{QStringLiteral("power-saver"), QStringLiteral("External"), QStringLiteral("untouched")}});
         if (!ppd->registerService()) return false;
         upower = std::make_unique<FakeUpowerService>(upstreamBus);
         upower->setDevices(supplies(false));
@@ -107,6 +107,9 @@ private Q_SLOTS:
     void timeoutDoesNotReplay();
     void dispatchedProviderLossDoesNotReplay();
     void sourceAuthorityLossRemovesOwnedHold();
+    void releaseTimeoutDoesNotReplay();
+    void balancedPreferenceReleasesOnlyOwnedHold();
+    void manualProfileOverrideWaitsForNewPolicyInput();
 };
 #define SET_PROFILE(row, key, value) \
     QTRY_VERIFY(row.settings->canSetUserValue(QStringLiteral(key))); \
@@ -117,7 +120,7 @@ void SourceProfileRuntimeTests::sourceSequenceNoneAndExternalHold()
 {
     Runtime row; QVERIFY(row.start());
     SET_PROFILE(row, "power.profile.ac", "performance");
-    SET_PROFILE(row, "power.profile.battery", "balanced");
+    SET_PROFILE(row, "power.profile.battery", "power-saver");
     SET_PROFILE(row, "power.profile.lowBattery", "power-saver");
     QTRY_VERIFY(row.power->hasSnapshot() && row.power->snapshot().profiles.holds.size() == 2);
     QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("performance"));
@@ -127,7 +130,7 @@ void SourceProfileRuntimeTests::sourceSequenceNoneAndExternalHold()
     QCOMPARE(row.ppd->holdRequests.size(), count);
     row.source(true);
     QTRY_COMPARE(row.ppd->holdRequests.size(), count + 1);
-    QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("balanced"));
+    QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("power-saver"));
     QCOMPARE(row.ppd->releaseRequests.size(), count);
     row.source(true, 3);
     QTRY_COMPARE(row.ppd->holdRequests.size(), count + 2);
@@ -176,7 +179,7 @@ void SourceProfileRuntimeTests::ownerLossAndUnsupportedProfiles()
     QTRY_VERIFY(!row.power->snapshot().capabilities.testFlag(Capability::ProfileHolds));
     row.source(true); QTest::qWait(150);
     QCOMPARE(row.ppd->holdRequests.size(), 2);
-    row.ppd->setHolds({{QStringLiteral("balanced"), QStringLiteral("External"), QStringLiteral("untouched")}});
+    row.ppd->setHolds({{QStringLiteral("power-saver"), QStringLiteral("External"), QStringLiteral("untouched")}});
     row.source(false); QTest::qWait(100);
     QVERIFY(row.ppd->registerService());
     QTRY_VERIFY(row.power->snapshot().capabilities.testFlag(Capability::ProfileHolds));
@@ -196,7 +199,7 @@ void SourceProfileRuntimeTests::holdLimitRetriesOnlyAfterAdmissionChanges()
     Runtime row; QVERIFY(row.start());
     QList<FakePpdService::HoldSpec> holds;
     for (int i = 0; i < 8; ++i)
-        holds.append({QStringLiteral("balanced"), QStringLiteral("External%1").arg(i), QStringLiteral("untouched")});
+        holds.append({QStringLiteral("power-saver"), QStringLiteral("External%1").arg(i), QStringLiteral("untouched")});
     row.ppd->setHolds(holds); row.ppd->emitPropertiesChanged();
     QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 8);
     SET_PROFILE(row, "power.profile.ac", "performance");
@@ -217,7 +220,7 @@ void SourceProfileRuntimeTests::knownRejectionDoesNotSpin()
     row.source(false); row.ppd->emitPropertiesChanged(); QTest::qWait(150);
     QCOMPARE(row.ppd->holdRequests.size(), 1);
     row.ppd->setRejectHold(false);
-    SET_PROFILE(row, "power.profile.ac", "balanced");
+    SET_PROFILE(row, "power.profile.ac", "power-saver");
     QTRY_COMPARE(row.ppd->holdRequests.size(), 2);
     QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
 }
@@ -233,7 +236,7 @@ void SourceProfileRuntimeTests::timeoutDoesNotReplay()
     // The timed-out acquire yielded no cookie. Metadata cannot authorize an
     // invented release; the provider's connection lifetime owns retirement.
     QVERIFY(row.ppd->releaseRequests.isEmpty());
-    SET_PROFILE(row, "power.profile.ac", "balanced");
+    SET_PROFILE(row, "power.profile.ac", "power-saver");
     row.source(true); row.source(false); QTest::qWait(150);
     QCOMPARE(row.ppd->holdRequests.size(), 1);
     QVERIFY(row.ppd->releaseRequests.isEmpty());
@@ -246,10 +249,10 @@ void SourceProfileRuntimeTests::dispatchedProviderLossDoesNotReplay()
     row.ppd->unregisterService();
     QTRY_VERIFY(!row.power->snapshot().capabilities.testFlag(Capability::ProfileHolds));
     row.ppd->setDropHoldReply(false);
-    row.ppd->setHolds({{QStringLiteral("balanced"), QStringLiteral("External"), QStringLiteral("untouched")}});
+    row.ppd->setHolds({{QStringLiteral("power-saver"), QStringLiteral("External"), QStringLiteral("untouched")}});
     QVERIFY(row.ppd->registerService());
     QTRY_VERIFY(row.power->snapshot().capabilities.testFlag(Capability::ProfileHolds));
-    SET_PROFILE(row, "power.profile.ac", "balanced");
+    SET_PROFILE(row, "power.profile.ac", "power-saver");
     QTest::qWait(150);
     QCOMPARE(row.ppd->holdRequests.size(), 1);
     QVERIFY(row.ppd->releaseRequests.isEmpty());
@@ -268,6 +271,49 @@ void SourceProfileRuntimeTests::sourceAuthorityLossRemovesOwnedHold()
     QTRY_COMPARE(row.ppd->holdRequests.size(), 2);
     QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
     QCOMPARE(row.ppd->releaseRequests.size(), 1);
+}
+void SourceProfileRuntimeTests::releaseTimeoutDoesNotReplay()
+{
+    Runtime row; QVERIFY(row.start());
+    SET_PROFILE(row, "power.profile.ac", "performance");
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
+    row.ppd->setDropReleaseReply(true);
+    SET_PROFILE(row, "power.profile.ac", "none");
+    QTRY_COMPARE(row.ppd->releaseRequests.size(), 1);
+    QTest::qWait(3300);
+    SET_PROFILE(row, "power.profile.ac", "power-saver");
+    row.source(true); row.source(false); row.ppd->emitPropertiesChanged();
+    QTest::qWait(150);
+    QCOMPARE(row.ppd->releaseRequests.size(), 1);
+    QCOMPARE(row.ppd->holdRequests.size(), 1);
+}
+void SourceProfileRuntimeTests::balancedPreferenceReleasesOnlyOwnedHold()
+{
+    Runtime row; QVERIFY(row.start());
+    SET_PROFILE(row, "power.profile.ac", "performance");
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
+    SET_PROFILE(row, "power.profile.ac", "balanced");
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 1);
+    QCOMPARE(row.ppd->releaseRequests.size(), 1);
+    QCOMPARE(row.ppd->holdRequests.size(), 1);
+    QCOMPARE(row.power->snapshot().profiles.activeProfileId, QStringLiteral("balanced"));
+    QVERIFY(row.ppd->setProfileRequests.isEmpty());
+}
+void SourceProfileRuntimeTests::manualProfileOverrideWaitsForNewPolicyInput()
+{
+    Runtime row; QVERIFY(row.start());
+    SET_PROFILE(row, "power.profile.ac", "performance");
+    SET_PROFILE(row, "power.profile.battery", "power-saver");
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
+    // Only the exact-owner targeted ProfileReleased signal initiates readback.
+    row.ppd->manualProfileChange(QStringLiteral("balanced"));
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 0);
+    row.source(false); row.ppd->emitPropertiesChanged(); QTest::qWait(150);
+    QCOMPARE(row.ppd->holdRequests.size(), 1);
+    QVERIFY(row.ppd->releaseRequests.isEmpty());
+    row.source(true);
+    QTRY_COMPARE(row.ppd->holdRequests.size(), 2);
+    QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("power-saver"));
 }
 QTEST_GUILESS_MAIN(SourceProfileRuntimeTests)
 #include "tst_source_profile_runtime.moc"
