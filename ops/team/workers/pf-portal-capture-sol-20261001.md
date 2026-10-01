@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — implementing frozen-wire control and capture-only broker/helper source; native evidence remains pending
+- Status: working — compiling immutable433f9570 capture/Screenshot targets on qinda; protected native gates remain pending
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: source-only; no compiler/private runtime slots granted or held
+- Resources: qinda-only compiler granted for17 named targets with per-command-j8-l24; no private runtime grant
 
 ## Updates
+
+- 2026-10-01T18:35:23Z — Root granted distinct qinda-only compiler on exact433f9570 for17 named targets plus declared dependencies, per-command-j8-l24 due observed RAM; global MAKEOPTS remains-j24-l24. Clean immutable qinda source/header hashes/strict Debug sharedON/pluginOFF/native-driver-empty configuration rechecked. Early MemAvailable21775692kB (~20.77GiB), no live ninja/cc1/cc1plus observed. Build will use owned process group and stop only it if RAM below3GiB plus stalled progress; preserve raw failure/count/pin. Laptop record-only branch update does not move the qinda compiler worktree off433f9570. No CTest/native grant; mixed header prefix remains development-only.
 
 - 2026-10-01T18:26:45Z — Exact13983959 configure-only PASS on documented mixed development prefix; protocol/launchpaths hashes match root provenance, canonical4path/desktop Exec guards unchanged. Read-only Ninja/CTest generation confirms17 aliases,5 capture unit rows and native row absent; zero tests/builds. Log preserves unrelated existing QtSvg/QML warnings. Further public-port audit found send-time native/Screenshot2 join was only Screenshot2-rechecked at finish; smallest final native-owner check and real private-bus replacement fixture added, protected helper had independent admission already. Freezing this descendant before heavy compile; no slot held, static public/test shape12/14 and diff pass.
 
