@@ -3,6 +3,11 @@
 #include <qindaqt/session_supervisor/session_optional_child.h>
 #include "first_launch_welcome.h"
 namespace QindaQt::SessionSupervisor {
+
+qint64 SessionProcessSupervisor::removableMediaProcessId() const noexcept
+{
+    return m_removableMedia->processId();
+}
 bool SessionProcessSupervisor::isRunning() const noexcept
 {
     // A missing shell is a recoverable interval. The notification host keeps

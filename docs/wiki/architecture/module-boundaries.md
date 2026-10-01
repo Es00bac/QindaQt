@@ -8,6 +8,7 @@ tests, and the wiki page describing its contract.
 
 | Area | Responsibility | Allowed inward dependencies |
 | --- | --- | --- |
+| `src/apps/removable_media` | Removable-media detection, per-media user choices, notification/window presentation and fenced UDisks operations | Qt Core/DBus, public AppAppearance/Controls/Tokens; UDisks remains privileged authority, File Manager receives only mount paths (ADR-0315) |
 | `compositor` | Immutable qindaqt-kwin fork pin (fork commit, version and upstream KWin base), its verifier, and checked-in compositor IPC descriptors (ADR-0291) | Repository tooling and fork source metadata; never shell implementation or a patch series |
 | `src/window_management` | Input-independent typed window-management commands, normalized geometry and expiring admission policy | Public Qt Core values and borrowed authority/scene/executor interfaces; speech parsing and compositor platform execution stay in their owners (ADR-0301) |
 | `src/application_window_management` | Optional versioned application-owned surface placement, Qt client and installed native protocol | Public Qt GUI client and raw Wayland protocol; pure planner crosses through Hybrid topology commands, authenticated compositor transport owns admission and atomic scene execution (ADR-0298) |

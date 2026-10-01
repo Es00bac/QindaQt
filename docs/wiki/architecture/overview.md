@@ -16,6 +16,7 @@ system-service state.
 | `xdg-desktop-portal-qindaqt` | Standard Settings-backend projection of confirmed Settings1/QST appearance truth, activation name, and change signals | Portal frontend, settings persistence, consent UI, or any non-Settings portal interface |
 | `qindaqt-settings` | Ordinary notifications settings page and honest async save/conflict/error presentation | Shell internals, settings files, or notification host authority |
 | Notification host | Standard application submission, bounded active state, expiration, and authenticated presentation snapshots | Popup/history QML or shell authority |
+| Removable media application | Session-owned insertion notification/window, saved media choices and UDisks operations | File Manager internals, system mount policy, automatic formatting or media content execution |
 | Audio service | Bounded typed PipeWire graph snapshots and validated controls through the running WirePlumber authority | Samples, devices, WirePlumber policy, PipeWire configuration, or UI |
 | Display foundation (D1) | Bounded values, privacy-preserving identity/registry, topology validation, and injected-port preview/revert model | A runtime service, KWin/Wayland mutation, Settings persistence, timers, or UI |
 | Session and platform services | Session restore, portals, metrics, audio/network/power/device adapters | Shell layout and application UI |

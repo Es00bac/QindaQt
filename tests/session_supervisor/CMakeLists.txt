@@ -169,6 +169,21 @@ add_test(NAME qindaqt.session-xembed-tray-proxy-lifetime
 set_tests_properties(qindaqt.session-xembed-tray-proxy-lifetime PROPERTIES
     TIMEOUT 30 LABELS "session;service;dbus")
 
+qt_add_executable(qindaqt_removable_media_lifetime_tests tst_removable_media_lifetime.cpp)
+target_link_libraries(qindaqt_removable_media_lifetime_tests PRIVATE
+    QindaQt::SessionSupervisorSupport Qt6::Test)
+target_compile_definitions(qindaqt_removable_media_lifetime_tests PRIVATE
+    QINDAQT_SESSION_TOKEN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_token_child_helper>"
+    QINDAQT_SESSION_PLAIN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_plain_child_helper>")
+add_dependencies(qindaqt_removable_media_lifetime_tests
+    qindaqt_session_token_child_helper qindaqt_session_plain_child_helper)
+qindaqt_enable_warnings(qindaqt_removable_media_lifetime_tests)
+add_test(NAME qindaqt.session-removable-media-lifetime
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_removable_media_lifetime_tests>)
+set_tests_properties(qindaqt.session-removable-media-lifetime PROPERTIES
+    TIMEOUT 30 LABELS "session;service;dbus"
+    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent")
+
 # A unit whose only activation is `WantedBy=graphical-session.target` is
 # started by nothing in a QindaQt session, which is how the tray proxy shipped
 # without ever running. Source shape, so it costs nothing and catches the next

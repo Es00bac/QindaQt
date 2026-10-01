@@ -338,3 +338,6 @@ integration retains every accepted decision in numeric order.
 - [ADR-0313: Native night-light schedule authority and Settings1 preferences](0313-native-night-light.md)
 
 - [ADR-0317: Own the native global shortcut registry](0317-native-global-shortcut-registry.md)
+
+
+- [ADR-0315: Session-owned removable media through UDisks](0315-session-owned-removable-media-through-udisks.md)

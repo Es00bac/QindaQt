@@ -1,5 +1,7 @@
 # QindaQt File Manager
 
+[Removable media](removable-media.md) owns insertion notifications and graphical mounting, read-only access, unmounting and safe removal. It opens mounted directories in this browser; the browser itself has no UDisks authority.
+
 `qindaqt-file-manager` is QindaQt's first-party local-directory browser. S0
 landed bounded listing, navigation, and regular-file launch. S1 adds local new
 folder, rename, copy, same-filesystem move, home Trash, restore, and

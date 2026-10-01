@@ -53,3 +53,7 @@ or persist run history.
 
 Focused gates use disposable XDG roots and a private D-Bus session. See the
 [Startup Settings verification](../apps/startup-settings.md#verification).
+
+## Removable media child
+
+The [removable-media application](../apps/removable-media.md) is an optional supervisor-owned `--watch` child, started after shell/polkit and stopped before notification teardown. Production main configures it; `--no-removable-media` and the empty support-library default isolate private sessions. A component-only package may provide a QindaQt-only XDG startup entry for desktops predating the supervisor integration. Its session-bus singleton keeps a second watcher inert; that compatibility entry is not required by the integrated supervisor.

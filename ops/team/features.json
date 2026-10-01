@@ -1561,6 +1561,11 @@
             "kind": "install",
             "reference": "gui-wm/qindaqt-desktop-0.1.0_pre20260919-r6",
             "summary": "Both hosts now have exact source 41c9a2fd plus QindaMPV 6bfde664 and all five current saver packages installed through Portage. Each host passes 1652/1652 file integrity checks and the requested MIME associations. The user-selected explicit qinda-sync workflow passes actual no-op updates on both machines; wider milestone weights/state remain unchanged."
+          },
+          {
+            "kind": "commit",
+            "reference": "5bff539edd232b3b23c62b0301aaab2f1c25ff21",
+            "summary": "The separate removable-media handler is independently accepted and combined with current qinda source. Manager gates pass 9/9 CTests and 25/25 wrappers; installed Portage component r1 passes fixture UI, Activate-only singleton and 13/13 integrity checks on qinda-top. The current inserted NTFS data volume mounts read-only through UDisks after filesystem errors. Physical optical/hotplug/destructive qualification remains open; no broader milestone weights or state advance."
           }
         ]
       },

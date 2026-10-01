@@ -154,6 +154,7 @@ nav:
       - Calendar: apps/calendar.md
       - Text Editor: apps/text-editor.md
       - File Manager: apps/file-manager.md
+      - Removable media: apps/removable-media.md
       - Image and PDF Viewer: apps/viewer.md
       - Settings Center: apps/settings-center.md
       - Settings Appearance route: apps/appearance-settings.md
@@ -495,3 +496,5 @@ nav:
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md
       - "ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor": adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md
+
+      - "ADR-0315: Session-owned removable media through UDisks": adr/0315-session-owned-removable-media-through-udisks.md

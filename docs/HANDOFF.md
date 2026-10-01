@@ -1,3 +1,34 @@
+# Graphical removable-media delivery — 2026-09-30
+
+Independent exact source ACCEPT: `5bff539edd232b3b23c62b0301aaab2f1c25ff21`;
+review records `55b5b79a27be6e85b704c373184731fde2aae70a` are incorporated here.
+The review first rejected four executable late-reply/notification races; the
+unchanged external reproductions and three immediate identity-revocation rows
+pass on the repaired candidate. Candidate media CTests pass 4/4. The manager
+preserved qinda's newer source `ab47a4b3`, combined both optional media/night-light
+starts, and reran the affected build, 9/9 media/session/profile CTests,
+25/25 wrapper tests, strict MkDocs, 475-document links and focused source shape.
+
+Overlay `9c8c9cd77298d4d6739f8716a9043b4a2cb7417d` provides
+`gui-apps/qindaqt-removable-media-0.1.0_p20260930-r1`, exact source `5bff539e`.
+Portage built and merged only that component on qinda-top. Installed fixture-only
+QML construction passes, `qcheck` verifies 13/13 package files, runtime libraries
+resolve, the public session endpoint exposes only Activate and a second watcher
+exits successfully. The installed watcher is active in the current desktop via a
+transient user service; no desktop restart was performed. The packaged XDG
+compatibility entry owns future installed-session startup; new source supervisors
+own the helper and stop it before notifications. Future full-desktop recipes must
+set `QINDAQT_BUILD_REMOVABLE_MEDIA=OFF` while the component package owns its files.
+
+At the owner's explicit request, the existing external NTFS data volume was
+mounted through UDisks. Writable mounting failed for reported NTFS errors;
+read-only mounting succeeded and `findmnt` confirms `ro,nosuid,nodev` at its
+normal per-user media path. The ignored Windows recovery partition stays hidden.
+No repair, formatting or forced write was performed. Physical insertion/ejection,
+audio/blank optical discs and disposable-media destructive formatting remain
+separate qualification; the broader preexisting source-shape violations are not
+changed or represented as a repository-wide pass.
+
 # Combined Plasma-free source qualification — 2026-09-30
 
 The consumer source through `a55e542d` integrates the full synthetic GNOME
