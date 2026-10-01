@@ -6,6 +6,7 @@
 #include <QtCore/QTimer>
 #include <QtCore/QtTypes>
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusMessage>
 
 #include <memory>
 #include <optional>
@@ -48,7 +49,7 @@ struct SessionActionResult final {
 };
 
 // GUI-thread asynchronous client for the three platform authorities used by
-// session controls. Both bus connections are injected and borrowed by value;
+// session controls and the supervisor-owned protected Sleep1 handoff. Both bus connections are injected and borrowed by value;
 // tests may point them at one private broker. Owner changes trigger one
 // coalesced refresh, never a recurring poll.
 //
@@ -68,7 +69,7 @@ class SessionActionsClient final : public QObject {
 
 public:
     static constexpr int RefreshTimeoutMilliseconds = 3'000;
-    static constexpr int ActionTimeoutMilliseconds = 5'000;
+    static constexpr int ActionTimeoutMilliseconds = 20'000;
 
     SessionActionsClient(QDBusConnection sessionBus,
                          QDBusConnection systemBus,
@@ -101,6 +102,9 @@ Q_SIGNALS:
     void feedbackChanged();
     void actionFinished(const QindaQt::Services::SessionActions::SessionActionResult &result);
 
+private Q_SLOTS:
+    void sleepAvailabilityChanged(const QDBusMessage &message);
+
 private:
     struct RefreshQuery;
     struct PendingAction {
@@ -119,6 +123,7 @@ private:
     void authorizeLock();
     void authorizeLogout();
     void authorizeLogind();
+    void authorizeSuspend();
     void dispatchMutation();
     void completePending(ActionStatus status, const QString &reasonCode);
     void publishFeedback(QString feedback);
@@ -133,6 +138,7 @@ private:
     QDBusServiceWatcher *m_sessionWatcher = nullptr;
     QDBusServiceWatcher *m_screenSaverWatcher = nullptr;
     QDBusServiceWatcher *m_logindWatcher = nullptr;
+    QDBusServiceWatcher *m_sleepWatcher = nullptr;
     QTimer m_refreshDebounce;
     QTimer m_refreshDeadline;
     QTimer m_actionDeadline;
@@ -144,6 +150,7 @@ private:
     quint64 m_screenSaverEpoch = 0;
     quint64 m_sessionEpoch = 0;
     quint64 m_logindEpoch = 0;
+    quint64 m_sleepEpoch = 0;
     bool m_running = false;
 };
 

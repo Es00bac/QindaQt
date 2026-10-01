@@ -34,7 +34,8 @@ selects production; the wire contract is unchanged.
 | --- | --- | --- |
 | Batteries, AC/UPS state, estimates | UPower | `Power1` collaborator and typed snapshot |
 | Power profiles and holds | the standard Power Profiles D-Bus provider (`power-profiles-daemon` or Gentoo `tuned[ppd]`) | `Power1` collaborator |
-| Suspend, hibernate, reboot, power off | systemd-logind | Shell session-action controller |
+| Manual suspend and system sleep preparation | systemd-logind plus authenticated native protected presentation | Supervisor NativeSleep coordinator; shell uses Sleep1 through SessionActions (ADR-0321) |
+| Reboot, power off; later hibernate | systemd-logind | SessionActions reboot/power-off; hibernate has no shell presentation |
 | Caller-relative `Can*` authorization | systemd-logind | Shell controller; never cached in `Power1` |
 | Power/suspend/hibernate keys | logind `handle-*` inhibitor locks | Shell controller |
 | Idle hint | compositor idle protocol plus logind | `Power1` idle collaborator |
@@ -58,7 +59,9 @@ actual sender; the legacy getters remain compatible but are not policy authority
 ([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)). This boundary must
 stay explicit until the shared idle policy consumes every requested scope.
 
-Lock-before-sleep remains a KWin/KScreenLocker responsibility. Shell session actions acquire all three
+Lock-before-sleep belongs to the authenticated native lock runtime and the
+supervisor NativeSleep coordinator (ADR-0321). The later key-action policy must
+acquire all three
 `handle-power-key`, `handle-suspend-key`, and `handle-hibernate-key` locks as
 one transaction: partial acquisition releases every acquired lock and exposes
 no key action. Losing any lock unregisters all three actions before retry.
@@ -457,3 +460,28 @@ The Qt Power client now requests installed-service activation at startup and
 after owner loss, with one in-flight activation request and a one-second retry
 interval. Exact-owner snapshot resolution follows activation, without replaying
 controls. Cold-client activation and daemon replacement are private-bus gates.
+
+
+## Protected manual and system sleep admission
+
+[ADR-0321](../adr/0321-supervisor-owned-native-sleep-admission.md) moves manual
+SessionActions suspend to the supervisor-owned `org.qindaqt.Sleep1` handoff.
+The client joins its exact unique owner to Session1, repeats CanSuspend, and
+never sends direct logind Suspend. Sleep1 Changed invalidations converge its
+async startup availability without polling; unconfirmed dispatched sleep is
+reported as Uncertain and never replayed. The coordinator consumes the authenticated
+native lock runtime's actual protected receipt before logind dispatch, rechecks
+protection after the bounded CanSuspend call, and refuses unknown/incomplete
+locking. Reboot/PowerOff retain their existing separate logind admission.
+
+The selected-session login1 adapter validates root-owned logind, explicit
+session ID, actual supervisor PID, Id/User UID and object paths, and live
+supervisor/ordinary attachment admission. It owns one sleep delay FD. Exact
+PrepareForSleep(true) releases that descriptor only after current native
+protection; failed protection retains it within logind's finite delay. Resume
+rearms the FD and feeds confirmed lock-on-resume. Lock requests native manual
+admission, Unlock never authenticates, and LockedHint mirrors only authenticated
+Unlocked/protected Locked state. Stop/owner/peer/supervisor loss closes the FD
+and fences late replies. Power1 remains read-only for sleep projection and its
+supported idle inhibitor scopes remain zero; source-specific idle/lid/button
+policy and installed/hardware sleep qualification remain separate gates.

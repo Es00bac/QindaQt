@@ -39,6 +39,7 @@ Runtime::Runtime(Services::LockPreferences::PreferencesProvider &preferences,
 Runtime::~Runtime() { stop(); }
 bool Runtime::start() {
   if (m_started) return true;
+  if (!m_state.start()) return false;
   m_started = true;
   refreshPreferences();
   m_idle.refresh();
@@ -54,7 +55,11 @@ void Runtime::stop() {
   m_started = false;
   m_grace.stop();
   m_suspendDeadline.stop();
-  m_suspendDispatch = {};
+  cancelSuspend();
+  m_request.cancel();
+  m_requestPending = false;
+  m_preparingForSleep = false;
+  m_resumeLockPending = false;
   m_idle.setTimeout(0);
   m_idle.revoke();
   if (m_power) m_power->stop();
@@ -68,6 +73,7 @@ bool Runtime::available() const noexcept {
 }
 QString Runtime::status() const { return m_status; }
 void Runtime::refreshPreferences() {
+  if (!m_started) return;
   m_values = m_preferences.preferences();
   if (!m_values || !m_values->lockOnResume) m_resumeLockPending = false;
   m_grace.stop();
@@ -175,17 +181,22 @@ void Runtime::nativeStateChanged() {
   }
   if (m_started && m_idle.idle() && !m_automaticCycleRequested) idleChanged();
 }
-void Runtime::finishSuspend(const bool protectedNow) {
+void Runtime::finishSuspend(bool protectedNow) {
   if (!m_suspendDispatch) return;
   m_suspendDeadline.stop();
   auto dispatch = std::move(m_suspendDispatch);
   m_suspendDispatch = {};
-  if (protectedNow) dispatch();
+  if (protectedNow && m_started && m_state.presentationProtected()) dispatch();
+  else protectedNow = false;
   Q_EMIT suspendDispatchFinished(protectedNow);
 }
 void Runtime::powerSnapshotChanged() {
   if (!m_power || !m_power->hasSnapshot()) return;
-  const bool preparing = m_power->snapshot().source.preparingForSleep;
+  prepareForSleep(m_power->snapshot().source.preparingForSleep);
+}
+void Runtime::cancelSuspend() { finishSuspend(false); }
+void Runtime::prepareForSleep(const bool preparing) {
+  if (!m_started) return;
   if (m_preparingForSleep && !preparing && m_values && m_values->lockOnResume) {
     m_resumeLockPending = true;
     nativeStateChanged();

@@ -32,6 +32,8 @@ target_sources(
         src/session_autostart_runner.h
         src/session_service.cpp
         src/native_lock_composition.cpp
+        src/native_sleep_composition.cpp
+        src/native_sleep_composition.h
         src/native_lock_composition.h
     PUBLIC
         FILE_SET HEADERS
@@ -52,7 +54,7 @@ pkg_check_modules(libsystemd REQUIRED IMPORTED_TARGET libsystemd)
 
 target_link_libraries(
     qindaqt_session_supervisor_support
-    PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus QindaQt::IdlePolicy QindaQt::DesktopControls QindaQt::NativeLockRuntime QindaQt::NativeLockService QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::IdleObservation QindaQt::LockPreferences QindaQt::PowerClient QindaQt::SettingsClient
+    PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus QindaQt::IdlePolicy QindaQt::DesktopControls QindaQt::NativeSleep QindaQt::NativeLockRuntime QindaQt::NativeLockService QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::IdleObservation QindaQt::LockPreferences QindaQt::PowerClient QindaQt::SettingsClient
     PRIVATE PkgConfig::libsystemd QindaQt::CompositorNames
 )
 target_compile_features(qindaqt_session_supervisor_support PUBLIC cxx_std_20)
@@ -74,7 +76,7 @@ target_link_libraries(
     qindaqt-session
     PRIVATE
         QindaQt::SessionSupervisorSupport
-        QindaQt::NativeLockRuntime
+        QindaQt::NativeSleep QindaQt::NativeLockRuntime
         QindaQt::NativeLockService
         QindaQt::SessionLockState
         QindaQt::CompositorAttachment

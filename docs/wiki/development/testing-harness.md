@@ -4435,3 +4435,18 @@ selected supervisor connection loss. `qindaqt.session-portal-lifetime` verifies
 canonical display selection, same caller lifetime across backend unique-owner
 replacement and disconnect-on-stop on a private bus. Neither row qualifies the
 installed desktop, physical devices or PAM. Both require serialized runtime.
+
+
+### Native protected sleep wire gate
+
+ADR-0321 adds `qindaqt.logind_sleep_transport` and `qindaqt.sleep_coordinator`.
+Disposable brokers inject the logind fixture as the system authority, while
+real ordinary Unix socket/PIDFD admission and production targeted native nonce
+receipt ports drive the lock gate. Pipe-backed D-Bus Unix FDs prove owned
+inhibitor retention, release, stop/restart and late-reply closure. Identity
+mismatch, daemon UID, foreign signals, owner/peer/supervisor loss, unknown and
+incomplete protection, Lock/Unlock/LockedHint, resume rearming and protected
+Sleep1 dispatch are covered without host bus/power actions. SessionActions also
+proves native handoff and refuses suspend when only logind is available.
+These gates do not qualify installed logind delay timing, physical DRM output
+protection, PAM or hardware resume. Keep those separate managed runtime gates.

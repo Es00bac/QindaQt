@@ -215,10 +215,12 @@ held until state resolves; Locked/Locking needs no extra request. The Power and
 Screensaver Settings routes use lock.* Settings1 keys, show confirmed values,
 and report saved only after matching snapshot readback.
 
-The runtime has a protected-before-suspend callback seam, but no production
-suspend dispatch currently consumes it; owned suspend ordering remains pending
-PF2/PF3 Power1 wiring. It cannot prevent a privileged external logind caller
-from suspending. ScreenSaver Inhibit remains Unsupported until the Power1
+The supervisor-owned [native sleep admission](../adr/0321-supervisor-owned-native-sleep-admission.md)
+now consumes the runtime's protected-before-suspend callback for Sleep1 manual
+suspend and selected-logind PrepareForSleep delay release. Authenticated native
+Locked/Protected receipts precede dispatch/release; unknown state, incomplete
+locking and failed admission never manufacture success. External privileged
+sleep can exceed logind's finite delay and is not vetoed by this gate. ScreenSaver Inhibit remains Unsupported until the Power1
 automatic-lock, display-off and idle-suspend scopes are all consumed together.
 No real lock or sleep is exercised by these candidate tests.
 
@@ -300,10 +302,12 @@ client behavior does not enable leases or establish that an inhibitor is active
 on a host. The production display-off and idle-suspend consumers are still
 required before any of the all-or-nothing scope set can be advertised.
 
-The runtime has a protected-before-suspend callback seam, but no production
-suspend dispatch currently consumes it; owned suspend ordering remains pending
-PF2/PF3 Power1 wiring. It cannot prevent a privileged external logind caller
-from suspending. ScreenSaver Inhibit remains Unsupported until the Power1
+The supervisor-owned [native sleep admission](../adr/0321-supervisor-owned-native-sleep-admission.md)
+now consumes the runtime's protected-before-suspend callback for Sleep1 manual
+suspend and selected-logind PrepareForSleep delay release. Authenticated native
+Locked/Protected receipts precede dispatch/release; unknown state, incomplete
+locking and failed admission never manufacture success. External privileged
+sleep can exceed logind's finite delay and is not vetoed by this gate. ScreenSaver Inhibit remains Unsupported until the Power1
 automatic-lock, display-off and idle-suspend scopes are all consumed together.
 No real lock or sleep is exercised by these candidate tests.
 
@@ -314,3 +318,32 @@ Its separate Settings1 scope and ordinary idle connection preserve the independe
 automatic-lock timeout. It consumes only the current Power1 source and authenticated
 DisplayOff scope receipt; owner/state uncertainty disarms display-off. This adds no
 suspend consumer and keeps Power1 scope capability advertisement at zero.
+
+
+## Selected logind lifecycle and manual sleep
+
+`QindaQt::NativeSleep` owns a bounded selected-session login1 adapter, separate
+sleep coordinator and supervisor-owned Sleep1 facade (ADR-0321). Production
+selects the real supervisor PID/UID and explicit XDG_SESSION_ID, joins
+GetSession/GetSessionByPID with exact Id/User `(uo)` properties, and admits the
+root-owned logind unique owner only while the ordinary compositor attachment
+and Session1 supervisor remain live. One CLOEXEC delay FD is closed on stop,
+revocation and owner replacement; retired asynchronous replies cannot leak it
+into a restart.
+
+Selected Lock signals request native admission. Unlock signals only refresh
+observation; they provide no authentication. LockedHint follows authenticated
+Unlocked or physically protected Locked state. PrepareForSleep(true) retains
+its delay FD until native protection; false evaluates confirmed resume policy
+and rearms. No timeout, property boolean, logind hint or successful native
+request admission supplies a protected receipt. The finite logind deadline
+still bounds an external privileged caller.
+
+SessionActions sends manual suspend through Sleep1, whose owner must equal
+Session1. The facade resolves the actual caller UID, serializes one request,
+waits for native protection, repeats logind CanSuspend, and reports the
+conclusive Suspend reply or an explicit Uncertain error after unconfirmed
+dispatch. Advisory Changed invalidations converge asynchronous startup
+availability without polling. Protection is rechecked after CanSuspend; authority
+loss cancels the callback. Unknown/Locking refuses a new manual action. This
+does not enable idle-suspend policy or advertise Power1 inhibitor scopes.

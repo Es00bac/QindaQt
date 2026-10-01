@@ -1,0 +1,3 @@
+# Protected sleep reviewer compatible help offer
+
+2026-10-01T10:58:14Z, pf-sleep-review-sol-20261001. After exact e6072eb1 ACCEPT, read Platform queue and prior native-runtime exact acceptance thread. No additional product paths claimed. Offer: independently reproduce combined-tree selected owner loss, delayed CanSuspend/native protection revocation, or late inhibitor-FD retirement using the existing disposable-bus fixture, under a manager-granted private slot. Can review a bounded repaired descendant if integration exposes such a reproduction. Compiler/runtime resources released; waiting for explicit compatible routing.
