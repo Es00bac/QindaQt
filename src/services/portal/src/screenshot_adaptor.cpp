@@ -9,9 +9,9 @@ ScreenshotAdaptor::ScreenshotAdaptor(QObject &host, RequestRegistry &requests, C
         if (!m_ui.admitted() || !m_requests.live(token) || (response == RequestResponse::Success && !validCapturePublication(m_pending.value(token), results))) response = RequestResponse::Failed;
         m_requests.finish(token, response, results);
     });
-    connect(&ui, &CaptureUI::authorityLost, this, [this] { const auto tokens = m_pending.keys(); for (const auto token : tokens) m_requests.retire(token); });
+    connect(&ui, &CaptureUI::authorityLost, this, [this] { const auto tokens = m_pending.keys(); for (const auto token : tokens) m_requests.retire(token, RequestResponse::Failed); });
 }
-ScreenshotAdaptor::~ScreenshotAdaptor() { const auto tokens = m_pending.keys(); for (const auto token : tokens) m_requests.retire(token); }
+ScreenshotAdaptor::~ScreenshotAdaptor() { const auto tokens = m_pending.keys(); for (const auto token : tokens) m_requests.retire(token, RequestResponse::Failed); }
 quint32 ScreenshotAdaptor::begin(bool color, const QDBusObjectPath &handle, const QString &app, const QString &parent, const QVariantMap &options, const QDBusMessage &call, QVariantMap &results) {
     results.clear(); const auto slot = std::make_shared<RequestToken>(0);
     const auto token = m_requests.begin(call, handle.path(), app, [this, slot](RequestResponse response) { m_pending.remove(*slot); if (response != RequestResponse::Success) m_ui.cancel(*slot); });

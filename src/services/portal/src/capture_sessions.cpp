@@ -17,8 +17,8 @@ public:
         if (call.interface() == "org.freedesktop.impl.portal.Session" && call.member() == "Close") { m_close(call); return true; }
         if (call.interface() != "org.freedesktop.DBus.Properties") return false;
         const auto args = call.arguments();
-        if (call.member() == "Get" && call.signature() == "ss" && args[0].toString() == "org.freedesktop.impl.portal.Session" && args[1].toString() == "version") bus.send(call.createReply({QVariant::fromValue(QDBusVariant(1U))}));
-        else if (call.member() == "GetAll" && call.signature() == "s" && args[0].toString() == "org.freedesktop.impl.portal.Session") bus.send(call.createReply({QVariantMap{{"version", 1U}}}));
+        if (call.member() == "Get" && call.signature() == "ss" && args[0].toString() == "org.freedesktop.impl.portal.Session" && args[1].toString() == "version") bus.send(call.createReply(QVariantList{QVariant::fromValue(QDBusVariant(1U))}));
+        else if (call.member() == "GetAll" && call.signature() == "s" && args[0].toString() == "org.freedesktop.impl.portal.Session") bus.send(call.createReply(QVariantList{QVariant::fromValue(QVariantMap{{"version", 1U}})}));
         else bus.send(call.createErrorReply("org.freedesktop.DBus.Error.InvalidArgs", "Property refused"));
         return true;
     }
@@ -78,7 +78,7 @@ void CaptureSessions::close(const QString &path, bool notify) {
     const auto it = m_entries.find(path); if (it == m_entries.end()) return;
     const auto e = it.value(); m_entries.erase(it); m_bus.unregisterObject(path); e.object->deleteLater(); ::close(e.pidfd);
     if (notify) { auto signal = QDBusMessage::createTargetedSignal(e.frontend, path, "org.freedesktop.impl.portal.Session", "Closed"); m_bus.send(signal); }
-    if (e.pending) m_requests.retire(e.pending);
+    if (e.pending) m_requests.retire(e.pending, RequestResponse::Failed);
     Q_EMIT retired(path);
 }
 void CaptureSessions::clear() { const auto paths = m_entries.keys(); for (const auto &path : paths) close(path); }
