@@ -22,7 +22,7 @@ void SleepCoordinatorTests::manualSuspendRequiresTargetedProtectedReceipt() {
   QCOMPARE(f.logind.suspendCalls, 0);
   f.native.state(true, true); QTRY_VERIFY(f.monitor.presentationProtected());
   QTRY_COMPARE(f.logind.suspendCalls, 1); QVERIFY(!f.logind.interactive);
-  QTRY_COMPARE(result.size(), 1); QVERIFY(result.first().first().toBool());
+  QTRY_COMPARE(result.size(), 1); QCOMPARE(qvariant_cast<SleepResult>(result.first().first()), SleepResult::Confirmed);
 }
 void SleepCoordinatorTests::systemPrepareRetainsDelayUntilProtectedThenRearms() {
   Fixture f; f.start(); f.logind.prepare(true);

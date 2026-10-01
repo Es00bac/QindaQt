@@ -35,7 +35,7 @@ bool SleepService::start() {
 }
 void SleepService::stop() {
   ++m_generation;
-  finish(false);
+  finish(SleepResult::Refused);
   if (m_started) { m_bus.unregisterService(Service); m_bus.unregisterObject(Path); }
   m_started = false;
   delete m_supervisorWatcher; m_supervisorWatcher = nullptr;
@@ -49,11 +49,11 @@ bool SleepService::handleMessage(const QDBusMessage &message, const QDBusConnect
   if (message.path() != Path || message.interface() != Service ||
       !message.signature().isEmpty()) return false;
   if (message.member() == QStringLiteral("CanSuspend")) {
-    m_bus.send(message.createReply({m_started && m_coordinator.canSuspend()})); return true;
+    m_bus.send(message.createReply(QVariant(m_started && m_coordinator.canSuspend()))); return true;
   }
   if (message.member() != QStringLiteral("Suspend")) return false;
   if (!m_started || m_pending) {
-    m_bus.send(message.createReply({false})); return true;
+    m_bus.send(message.createReply(QVariant(false))); return true;
   }
   m_pending = message;
   const auto generation = m_generation;
@@ -68,13 +68,16 @@ bool SleepService::handleMessage(const QDBusMessage &message, const QDBusConnect
     if (!m_started || generation != m_generation || !m_pending) return;
     const auto owner = m_bus.interface()->serviceOwner(Session);
     if (!owner.isValid() || owner.value() != m_bus.baseService() || reply.isError() ||
-        reply.value() != m_uid || !m_coordinator.requestSuspend()) finish(false);
+        reply.value() != m_uid || !m_coordinator.requestSuspend()) finish(SleepResult::Refused);
   });
   return true;
 }
-void SleepService::finish(bool confirmed) {
+void SleepService::finish(SleepResult result) {
   if (!m_pending) return;
-  const auto reply = m_pending->createReply({confirmed});
+  const auto reply = result == SleepResult::Uncertain
+      ? m_pending->createErrorReply(QStringLiteral("org.qindaqt.Sleep1.Uncertain"),
+          QStringLiteral("Sleep dispatch could not be confirmed; it was not replayed"))
+      : m_pending->createReply(QVariant(result == SleepResult::Confirmed));
   m_pending.reset(); m_bus.send(reply);
 }
 }

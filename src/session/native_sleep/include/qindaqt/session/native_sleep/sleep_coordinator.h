@@ -22,12 +22,13 @@ public:
   bool requestSuspend();
 Q_SIGNALS:
   void availabilityChanged();
-  void suspendFinished(bool confirmed);
+  void suspendFinished(QindaQt::Session::NativeSleep::SleepResult result);
 private:
   void preparing(bool preparing);
   void authorityChanged();
   void syncLockedHint();
-  void finishManual(bool confirmed);
+  void finishManual(SleepResult result);
+  void refuseManual();
   LogindSleepTransport &m_transport;
   NativeLockRuntime::Runtime &m_runtime;
   Services::SessionLockState::NativeLockStateMonitor &m_state;

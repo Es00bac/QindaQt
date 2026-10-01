@@ -20,7 +20,7 @@ public:
   QString introspect(const QString &path) const override;
   bool handleMessage(const QDBusMessage &message, const QDBusConnection &connection) override;
 private:
-  void finish(bool confirmed);
+  void finish(SleepResult result);
   QDBusConnection m_bus;
   SleepCoordinator &m_coordinator;
   const quint32 m_uid;

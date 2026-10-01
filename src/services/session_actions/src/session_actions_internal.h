@@ -17,6 +17,7 @@ inline QString serviceOwner(const QDBusConnection &connection, const char *servi
     if (!connection.isConnected() || connection.interface() == nullptr) {
         return {};
     }
+    connection.interface()->setTimeout(250);
     const QDBusReply<QString> reply =
         connection.interface()->serviceOwner(QString::fromLatin1(service));
     return reply.isValid() ? reply.value() : QString{};

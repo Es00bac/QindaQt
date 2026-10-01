@@ -146,7 +146,10 @@ void LogindSleepTransport::revoke() {
     m_bus.disconnect(m_owner, ManagerPath, Manager, QStringLiteral("PrepareForSleep"), this, SLOT(receivePrepare(bool,QDBusMessage)));
   }
   m_owner.clear(); m_path.clear();
-  if (m_suspendPending) { m_suspendPending = false; Q_EMIT suspendFinished(false); }
+  if (m_suspendPending) {
+    const auto result = m_mutationDispatched ? SleepResult::Uncertain : SleepResult::Refused;
+    m_suspendPending = false; m_mutationDispatched = false; Q_EMIT suspendFinished(result);
+  }
   Q_EMIT availabilityChanged();
 }
 void LogindSleepTransport::acquireDelayInhibitor() {
@@ -177,17 +180,21 @@ bool LogindSleepTransport::requestSuspend(std::function<bool()> protectedAdmissi
   if (!hasDelayInhibitor() || m_preparing || m_suspendPending ||
       !protectedAdmission || !protectedAdmission()) return false;
   m_suspendPending = true;
+  m_mutationDispatched = false;
   call(m_owner, ManagerPath, Manager, QStringLiteral("CanSuspend"), {}, m_generation,
       [this, protectedAdmission = std::move(protectedAdmission)](const QDBusMessage &reply) {
     if (!hasDelayInhibitor() || !protectedAdmission() ||
         !validReply(reply, QStringLiteral("s")) ||
         reply.arguments().first().toString() != QStringLiteral("yes")) {
-      m_suspendPending = false; Q_EMIT suspendFinished(false); return;
+      m_suspendPending = false; Q_EMIT suspendFinished(SleepResult::Refused); return;
     }
+    m_mutationDispatched = true;
     call(m_owner, ManagerPath, Manager, QStringLiteral("Suspend"), {false}, m_generation,
         [this](const QDBusMessage &result) {
       m_suspendPending = false;
-      Q_EMIT suspendFinished(validReply(result, QString{}));
+      m_mutationDispatched = false;
+      Q_EMIT suspendFinished(validReply(result, QString{})
+          ? SleepResult::Confirmed : SleepResult::Uncertain);
     });
   });
   return true;

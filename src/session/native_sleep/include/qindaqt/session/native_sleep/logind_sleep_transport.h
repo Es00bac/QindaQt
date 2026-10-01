@@ -7,6 +7,7 @@
 #include <functional>
 class QDBusServiceWatcher;
 namespace QindaQt::Session::NativeSleep {
+enum class SleepResult { Confirmed, Refused, Uncertain };
 // AGENT-CONTRACT: same-thread, injected bus and selected identity. Admission is
 // readonly and checks supervisor/ordinary-peer lifetime; captures outlive this
 // object. Production expects UID 0 for logind. Tests inject a private broker
@@ -26,6 +27,7 @@ public:
   bool hasDelayInhibitor() const;
   bool preparingForSleep() const { return available() && m_preparing; }
   bool requestSuspend(std::function<bool()> protectedAdmission);
+  bool suspendDispatched() const { return m_suspendPending && m_mutationDispatched; }
   bool setLockedHint(bool protectedLocked);
   void releaseDelayInhibitor();
   void acquireDelayInhibitor();
@@ -34,7 +36,7 @@ Q_SIGNALS:
   void lockRequested();
   void unlockRequested();
   void prepareForSleep(bool preparing);
-  void suspendFinished(bool confirmed);
+  void suspendFinished(QindaQt::Session::NativeSleep::SleepResult result);
 private Q_SLOTS:
   void receiveLock(const QDBusMessage &message);
   void receiveUnlock(const QDBusMessage &message);
@@ -60,6 +62,8 @@ private:
   quint64 m_generation = 0;
   int m_delayFd = -1;
   bool m_started = false, m_ready = false, m_preparing = false;
-  bool m_acquiring = false, m_suspendPending = false;
+  bool m_acquiring = false, m_suspendPending = false, m_mutationDispatched = false;
 };
 }
+
+Q_DECLARE_METATYPE(QindaQt::Session::NativeSleep::SleepResult)
