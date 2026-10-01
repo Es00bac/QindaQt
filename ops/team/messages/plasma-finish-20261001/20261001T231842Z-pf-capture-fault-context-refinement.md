@@ -1,0 +1,9 @@
+# Fault observation result and bounded refinement
+
+Exact diagnostic072e36b66471167165d57e429a8cea7f6401550e compiles/links0/0 in5.008s/1.203s, minimum17,686,208kB. Driver SHA256f740326ee7f36d6f4c7d4900bc5772fe04f94077fe8c960672983ee9d75191d4. Own fork build/fault-diagnostic retains all argv/log/status and immutable447 link inputs.
+
+One unchanged ca299 native-lock row with task-private monitor and that driver exits1/4.722s. Qt3/3 passes but compositor dies, and original runner survival guard fails. CAPTURE_DIAGNOSTIC_FAULT_STACK marker is reached but glibc backtrace emits no frames; this is insufficient to name a faulting function. Own startup mappings and all raw evidence remain in consumer build/native-lock-fault-stack. PGIDs409967/409992/410268 ended, no survivors/cores/cleanup errors, leases immediately released.
+
+Exact refined fork diagnostic f015169b26540557f2cdb29fad9cfab590f0f6a3 uses SA_SIGINFO kernel fault RIP/RSP/RBP/si_addr and write-only hex output first. A maximum256-word scan of recorded main-stack bounds emits only values within recorded executable mappings, explicitly candidate return addresses rather than a validated unwind. It emits no arbitrary stack data, does no library unwind/recovery, and preserves PR0/core0/immutable447 runtime. Own build/build_fault_context_driver.py writes a new artifact directory preserving072. Compiler and one unchanged private lock row requested; no resource held or further runtime run.
+
+Read-only potential source hazard: ScreenCastStream::close resets m_source synchronously, while recordFrame dereferences m_source in addHeader after rendering before the final captureAllowed guard. This may matter for reentrant revocation during rendering, but is not a causal finding without the fault context. No production source has changed.
