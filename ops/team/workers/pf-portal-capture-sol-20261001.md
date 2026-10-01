@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — correcting primary string session handle after exact df68e649 restricted Screenshot denial and pre-Start fixture failure
+- Status: waiting — immutable protected-capture blocker handed to root; ready to repair own native fixture and qualify actual frames after separately owned secure authority seam
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler and private runtime released after exact df68e649 build/two probes; no resource reserved; chooser history preserved
+- Resources: compiler and private runtime released; no resources reserved; chooser and capture history preserved
 
 ## Updates
+
+- 2026-10-01T15:44:00Z — Bounded immutable source e1b06401d17aa85bc098e04d848fd63f94099974 handed off after affected native build exit0 and two corrected selected private probes, each exit1/Qt2pass1fail0skip in0.87s/0.91s. Screenshot maps and public Screenshot2 NoAuthorized reaches frontend Response2/no URI. ScreenCast CreateSession/SelectSources Response0 then Start Response2/empty streams, no mapped share/node/frame. All raw predecessor/assertion evidence preserved; groups/scoped audits pass, task core arrays empty. Both slots released. Full PF19, first-slice usability, privacy/adjacent/staged acceptance and routing remain unqualified. Read Platform queue; concrete compatible help offered: retained fixture/control lifetime and actual frontend/private frames/privacy/stage gates after separate secure fork authority candidate, then window/multiple/cursor/revocable restore successor. No new public edits started.
 
 - 2026-10-01T15:34:00Z — Exact df68e649 affected native target build PASS exit0, final6/7 dynamic progress; compiler released. Two private selected probes each exit1, Qt2pass/1fail/0skip in0.87s/0.66s, no CTests executed. Screenshot actual helper maps and public failure is exact Screenshot2 Error.NoAuthorized; frontend Response2/no URI. ScreenCast CreateSession Response0, then fixture casts standard string session_handle as object path and stops before Start. Primary installed XML/source confirmed compatibility string; correcting only owned assertion/extraction. Private slot released, groups/audits pass, scoped task core scans empty; all earlier evidence preserved. No Start/node/frame/routing/usability qualification.
 
