@@ -1,0 +1,5 @@
+# Bounded native frontend configuration guard
+
+Root owns one isolated fixture registration repair at exact base `faaaf74646f638bc5074163e45e950faa2cea230`, branch `worker/pf-portal-native-target-guard-20261001`, worktree `.cache/pf-portal-native-target-guard-20261001`.
+
+The original `compositor.kwin-plugin-dependency-contract` gate failed because its shell-OFF/plugin-OFF/testing-ON configuration omitted production SessionSupervisorSupport while unconditionally linking the native portal frontend fixture. Guard that fixture's target, registered row and helper dependencies by actual support-target existence; retain all other portal tests and the unchanged configure gate. Own only foundation test CMake, the relevant harness note and own records. PF19 owner notified. Acceptance is the original gate plus explicit target/row presence in full production configuration, strict docs and exact independent review. No new runtime source, host service, installation or weaker assertions. Compiler/private runtime are currently root-owned; this repair needs only bounded CMake configuration.

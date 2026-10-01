@@ -2,6 +2,7 @@
 #include "dpms_wayland_fixture.h"
 
 #include <QMetaObject>
+#include <QTimer>
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -120,6 +121,22 @@ void DpmsWaylandFixture::removeOutput(const quint32 name)
         delete m_outputBindings.take(name);
         wl_display_flush_clients(m_display);
     });
+}
+
+void DpmsWaylandFixture::pauseDispatch(const int milliseconds)
+{
+    runOnServerThread([this, milliseconds] {
+        m_watcher->setEnabled(false);
+        QTimer::singleShot(milliseconds, m_worker, [this] {
+            m_watcher->setEnabled(true);
+            dispatch();
+        });
+    });
+}
+
+void DpmsWaylandFixture::disconnectClients()
+{
+    runOnServerThread([this] { wl_display_destroy_clients(m_display); });
 }
 
 void DpmsWaylandFixture::dispatch()

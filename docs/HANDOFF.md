@@ -37,8 +37,45 @@ source the 229-target production/plugin/affected-module build passes against the
 exact `690c0112` fork stage. The Ninja graph dynamically changes its action count;
 the retained log is the evidence, not an inferred total. Combined CTests and
 native mapping remain pending; this is not an all-target or installed pass.
-Native FileChooser/AppChooser remains a separate active candidate: actual
-frontend journeys pass, with final family routing and staged gates pending.
+Native FileChooser/AppChooser source `684ca904b3b997d293795abb413cb1e2f94aa666`
+is independently accepted and merged at `4b946ad1`, with review evidence included
+at `01d9e50b`. Its actual frontend, native input, routing and staged gates pass
+24/24 independently; installed/sandbox and combined-tree gates remain open.
+
+The expanded combined build on `f5f8db6a` passes all 248 requested production,
+plugin and affected-module targets, including choosers, Screenshot and adjacent
+Secret portal fixtures. This remains a scoped build, not an all-target pass.
+
+The earlier combined runtime/privacy/sleep run on `32bf9f77` passes 32/33 rows, with
+`qindaqt.kwayland-dpms-controller` failing the retained final-On teardown count
+(4 observed, 5 required). Exact repair `d08e49d13747cb0b71c3f13abfc8ecf058c46a4c`
+is independently accepted and merged with review records at `3dfe915b`. A dedicated
+retained-display queue acknowledges the final On or expires after 250 ms before
+teardown; ordinary requests after revocation remain forbidden and no connection
+is reopened. Independent DPMS/idle gates pass 2/2 with 18 Qt checks, zero failures
+or skips, and the original count/last-On assertions unchanged. Root owns the
+affected combined rebuild, original suites and native/plugin/key-store gates.
+The native notification mapping harness has its own isolated source-only lane.
+
+The repaired combined `faaaf746` then passes its 248-target affected build,
+runtime/privacy/sleep 33/33, fatal privacy 9/9, portal/chooser 24/24 and Screenshot
+6/6. Exact-fork ABI pin and rejection pass. Seven private native plugin/output
+rows pass at 1080p, WUXGA, 1440p and actual 125% scaling, including plugin load,
+unload restoration and read-only production controls. The initial native run
+omitted the staged fork binary directory from PATH; its failures are preserved,
+and the corrected exact-stage environment passes all seven without source edits.
+The native synthetic key-store UI journey passes with seven Qt cases, zero
+failures/skips and fourteen visible production-prompt approvals; actual creation,
+unlock, reveal, copy, rekey, deletion and page/owner/native-lock clipboard
+withdrawal use private fixture storage, not owner credentials or installed names.
+
+The remaining existing `compositor.kwin-plugin-dependency-contract` configuration
+gate exposed an unconditional native frontend fixture reference while the
+production shell was disabled. Isolated repair `37347fe4` passes the unchanged
+four-branch configure gate and full-production target/test-presence checks and
+is awaiting exact independent acceptance. Its staged runner, positive/poison
+assertions and production behavior are unchanged. Actual production native
+notification-window mapping and consolidated Portage delivery remain open.
 
 The supplied painted icon family is independently delivered on both hosts as
 Portage package `x11-themes/qinda-breeze-painted-1.0.0_p20260929`, using overlay

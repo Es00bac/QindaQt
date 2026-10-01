@@ -212,35 +212,40 @@ add_test(
         "-DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_boundary_negative.cmake"
 )
-add_test(
-    NAME qindaqt.portal-staged-package
-    COMMAND
-        "${CMAKE_COMMAND}"
-        "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
-        "-DQINDAQT_BUILD_DIRECTORY=${CMAKE_BINARY_DIR}"
-        "-DQINDAQT_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-portal-stage"
-        "-DQINDAQT_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}"
-        "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
-        "-DQINDAQT_INSTALL_LIBEXECDIR=${KDE_INSTALL_LIBEXECDIR}"
-        "-DQINDAQT_INSTALL_DBUSSERVICEDIR=${KDE_INSTALL_DBUSSERVICEDIR}"
-        "-DQINDAQT_INSTALL_SYSTEMDUSERUNITDIR=${KDE_INSTALL_SYSTEMDUSERUNITDIR}"
-        "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
-        "-DQINDAQT_KDE_PORTAL_DBUS_SERVICE=${QINDAQT_KDE_PORTAL_DBUS_SERVICE}"
-        "-DQINDAQT_EXPECTED_PORTAL_EXECUTABLE=${KDE_INSTALL_FULL_LIBEXECDIR}/xdg-desktop-portal-qindaqt"
-        "-DQINDAQT_EXPECTED_SETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings-service>"
-        "-DQINDAQT_EXPECTED_SCHEMA_DIR=${PROJECT_SOURCE_DIR}/data/settings"
-        "-DQINDAQT_PROCESS_TEST=$<TARGET_FILE:qindaqt_portal_process_lifecycle_tests>"
-        "-DQINDAQT_NATIVE_FRONTEND_TEST=$<TARGET_FILE:qindaqt_portal_native_frontend_tests>"
-        "-DQINDAQT_NATIVE_FRONTEND_RUNNER=${CMAKE_CURRENT_SOURCE_DIR}/foundation/run_native_frontend.py"
-        "-DQINDAQT_NATIVE_CONSENT_INPUT=$<TARGET_FILE:qindaqt_portal_consent_input>"
-        "-DQINDAQT_NATIVE_MAIL=$<TARGET_FILE:qindaqt_portal_mail_draft>"
-        "-DQINDAQT_NATIVE_COMPOSITOR=${QINDAQT_KWIN_WAYLAND}"
-        ${portal_p1_package_arguments}
-        "-DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
-        "-DSOURCE_PORTAL_ROOT=${PROJECT_SOURCE_DIR}/src/services/portal"
-        "-DQINDAQT_CONFIGURATION=$<CONFIG>"
-        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_staged_package.cmake"
-)
+# AGENT-GUARD: foundation below declares its native frontend only when this
+# support target exists. Use the already-defined public dependency here, not
+# that later fixture target, or production builds silently lose staged coverage.
+if(TARGET QindaQt::SessionSupervisorSupport)
+    add_test(
+        NAME qindaqt.portal-staged-package
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DQINDAQT_CMAKE=${CMAKE_COMMAND}"
+            "-DQINDAQT_BUILD_DIRECTORY=${CMAKE_BINARY_DIR}"
+            "-DQINDAQT_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/installed-portal-stage"
+            "-DQINDAQT_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}"
+            "-DQINDAQT_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+            "-DQINDAQT_INSTALL_LIBEXECDIR=${KDE_INSTALL_LIBEXECDIR}"
+            "-DQINDAQT_INSTALL_DBUSSERVICEDIR=${KDE_INSTALL_DBUSSERVICEDIR}"
+            "-DQINDAQT_INSTALL_SYSTEMDUSERUNITDIR=${KDE_INSTALL_SYSTEMDUSERUNITDIR}"
+            "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
+            "-DQINDAQT_KDE_PORTAL_DBUS_SERVICE=${QINDAQT_KDE_PORTAL_DBUS_SERVICE}"
+            "-DQINDAQT_EXPECTED_PORTAL_EXECUTABLE=${KDE_INSTALL_FULL_LIBEXECDIR}/xdg-desktop-portal-qindaqt"
+            "-DQINDAQT_EXPECTED_SETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings-service>"
+            "-DQINDAQT_EXPECTED_SCHEMA_DIR=${PROJECT_SOURCE_DIR}/data/settings"
+            "-DQINDAQT_PROCESS_TEST=$<TARGET_FILE:qindaqt_portal_process_lifecycle_tests>"
+            "-DQINDAQT_NATIVE_FRONTEND_TEST=$<TARGET_FILE:qindaqt_portal_native_frontend_tests>"
+            "-DQINDAQT_NATIVE_FRONTEND_RUNNER=${CMAKE_CURRENT_SOURCE_DIR}/foundation/run_native_frontend.py"
+            "-DQINDAQT_NATIVE_CONSENT_INPUT=$<TARGET_FILE:qindaqt_portal_consent_input>"
+            "-DQINDAQT_NATIVE_MAIL=$<TARGET_FILE:qindaqt_portal_mail_draft>"
+            "-DQINDAQT_NATIVE_COMPOSITOR=${QINDAQT_KWIN_WAYLAND}"
+            ${portal_p1_package_arguments}
+            "-DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
+            "-DSOURCE_PORTAL_ROOT=${PROJECT_SOURCE_DIR}/src/services/portal"
+            "-DQINDAQT_CONFIGURATION=$<CONFIG>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_staged_package.cmake"
+    )
+endif()
 if(QINDAQT_KDE_PORTAL_METADATA AND QINDAQT_KDE_PORTAL_DBUS_SERVICE)
     add_test(
         NAME qindaqt.portal-kde-compat
@@ -279,25 +284,27 @@ set_tests_properties(
     qindaqt.portal-source-boundary qindaqt.portal-source-boundary-negative
     PROPERTIES LABELS "service;portal;appearance;boundary;hostile" TIMEOUT 20
 )
-set_tests_properties(
-    qindaqt.portal-staged-package
-    PROPERTIES
-        LABELS "service;portal;appearance;package;dbus;hostile"
-        TIMEOUT 120
-        RUN_SERIAL TRUE
-        DEPENDS "qindaqt.portal-process-lifecycle"
-)
+if(TEST qindaqt.portal-staged-package)
+    set_tests_properties(
+        qindaqt.portal-staged-package
+        PROPERTIES
+            LABELS "service;portal;appearance;package;dbus;hostile"
+            TIMEOUT 120
+            RUN_SERIAL TRUE
+            DEPENDS "qindaqt.portal-process-lifecycle"
+    )
+endif()
 if(TEST qindaqt.portal-kde-compat)
     set_tests_properties(
         qindaqt.portal-kde-compat
         PROPERTIES LABELS "service;portal;activation;compat" TIMEOUT 20
     )
 endif()
-if(TEST qindaqt.portal-frontend-selection)
+if(TEST qindaqt.portal-staged-package AND TEST qindaqt.portal-frontend-selection)
     set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
                  DEPENDS "qindaqt.portal-frontend-selection;qindaqt.portal-frontend-toolkit")
 endif()
-if(TEST qindaqt.portal-frontend-routing)
+if(TEST qindaqt.portal-staged-package AND TEST qindaqt.portal-frontend-routing)
     set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
                  DEPENDS "qindaqt.portal-frontend-routing;qindaqt.portal-frontend-routing-negative")
 endif()
