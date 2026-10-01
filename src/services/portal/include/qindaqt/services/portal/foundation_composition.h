@@ -16,6 +16,12 @@ public:
     PortalFoundationComposition(QObject &backendHost, QDBusConnection,
         QString privateRuntimeDirectory, QString consentExecutable,
         QString uriRelayExecutable, QStringList applicationDataRoots);
+    // Additive chooser composition; original callers remain source/link
+    // compatible and do not gain an ambient/default helper executable.
+    PortalFoundationComposition(QObject &backendHost, QDBusConnection,
+        QString privateRuntimeDirectory, QString consentExecutable,
+        QString uriRelayExecutable, QStringList applicationDataRoots,
+        QString chooserExecutable);
     ~PortalFoundationComposition();
     bool start();
     void stop();
