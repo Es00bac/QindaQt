@@ -226,6 +226,11 @@ add_test(
         "-DQINDAQT_EXPECTED_SETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings-service>"
         "-DQINDAQT_EXPECTED_SCHEMA_DIR=${PROJECT_SOURCE_DIR}/data/settings"
         "-DQINDAQT_PROCESS_TEST=$<TARGET_FILE:qindaqt_portal_process_lifecycle_tests>"
+        "-DQINDAQT_NATIVE_FRONTEND_TEST=$<TARGET_FILE:qindaqt_portal_native_frontend_tests>"
+        "-DQINDAQT_NATIVE_FRONTEND_RUNNER=${CMAKE_CURRENT_SOURCE_DIR}/foundation/run_native_frontend.py"
+        "-DQINDAQT_NATIVE_CONSENT_INPUT=$<TARGET_FILE:qindaqt_portal_consent_input>"
+        "-DQINDAQT_NATIVE_MAIL=$<TARGET_FILE:qindaqt_portal_mail_draft>"
+        "-DQINDAQT_NATIVE_COMPOSITOR=${QINDAQT_KWIN_WAYLAND}"
         ${portal_p1_package_arguments}
         "-DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
         "-DSOURCE_PORTAL_ROOT=${PROJECT_SOURCE_DIR}/src/services/portal"
@@ -292,3 +297,5 @@ if(TEST qindaqt.portal-frontend-routing)
     set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
                  DEPENDS "qindaqt.portal-frontend-routing;qindaqt.portal-frontend-routing-negative")
 endif()
+
+add_subdirectory(foundation)

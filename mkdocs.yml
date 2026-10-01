@@ -58,6 +58,7 @@ nav:
       - Hybrid chrome: architecture/hybrid-chrome.md
       - Settings model: architecture/settings-service.md
       - XDG Settings portal appearance backend: architecture/portal-service.md
+      - Native portal foundation: architecture/portal-foundation.md
       - Display service: architecture/display-service.md
       - Display client: architecture/display-client.md
       - Display compositor writer: architecture/display-writer.md
@@ -500,3 +501,4 @@ nav:
       - "ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor": adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md
 
       - "ADR-0315: Session-owned removable media through UDisks": adr/0315-session-owned-removable-media-through-udisks.md
+      - "0318: Native portal foundation": adr/0318-native-portal-foundation.md
