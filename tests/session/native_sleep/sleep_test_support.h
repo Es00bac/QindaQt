@@ -9,6 +9,7 @@
 #include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
 #include <qindaqt/session/native_sleep/sleep_service.h>
 #include "fake_logind_wire.h"
+#include <QDBusConnectionInterface>
 #include <QDBusArgument>
 #include <QDBusMetaType>
 #include <QDBusUnixFileDescriptor>
