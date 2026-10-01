@@ -346,7 +346,7 @@ void PowerProfilesCollaborator::submitAcquireProfileHold(
         owner, m_activeObjectPath, m_activeInterfaceName,
         QStringLiteral("HoldProfile"));
     call.setArguments({profileId, reason, applicationName});
-    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
+    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(call, 3000), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [this, watcher, generation, operationId, profileId, applicationName,
              reason, owner]() {
@@ -365,9 +365,14 @@ void PowerProfilesCollaborator::submitAcquireProfileHold(
                     || reply.arguments().size() != 1
                     || reply.arguments().constFirst().metaType()
                         != QMetaType::fromType<uint>()) {
+                    const bool uncertain = reply.type() == QDBusMessage::ReplyMessage
+                        || reply.errorName() == QStringLiteral("org.freedesktop.DBus.Error.NoReply")
+                        || reply.errorName() == QStringLiteral("org.freedesktop.DBus.Error.Timeout")
+                        || reply.errorName() == QStringLiteral("org.freedesktop.DBus.Error.Disconnected");
                     finishOperation(generation, operationId,
-                                    CollaboratorStatus::Failed,
-                                    QStringLiteral("profiles-rejected"));
+                                    uncertain ? CollaboratorStatus::Uncertain : CollaboratorStatus::Failed,
+                                    uncertain ? QStringLiteral("profiles-uncertain")
+                                              : QStringLiteral("profiles-rejected"));
                     return;
                 }
                 const quint32 cookie = reply.arguments().constFirst().toUInt();
@@ -376,6 +381,7 @@ void PowerProfilesCollaborator::submitAcquireProfileHold(
                     profileId + QLatin1Char('|') + applicationName
                         + QLatin1Char('|') + reason);
                 m_acquiredHolds.insert(opaqueId, cookie);
+                refreshFacts(generation);
                 finishOperation(generation, operationId,
                                 CollaboratorStatus::Succeeded,
                                 QStringLiteral("applied"));
@@ -402,7 +408,7 @@ void PowerProfilesCollaborator::callRelease(
         ownerAtSubmission, m_activeObjectPath, m_activeInterfaceName,
         QStringLiteral("ReleaseProfile"));
     call.setArguments({cookie});
-    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(call), this);
+    auto *watcher = new QDBusPendingCallWatcher(m_connection.asyncCall(call, 3000), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [this, watcher, generation, operationId, cookie, ownerAtSubmission]() {
                 const QDBusMessage reply = watcher->reply();
@@ -417,9 +423,14 @@ void PowerProfilesCollaborator::callRelease(
                     return;
                 }
                 if (reply.type() != QDBusMessage::ReplyMessage) {
+                    const bool uncertain = reply.type() == QDBusMessage::ReplyMessage
+                        || reply.errorName() == QStringLiteral("org.freedesktop.DBus.Error.NoReply")
+                        || reply.errorName() == QStringLiteral("org.freedesktop.DBus.Error.Timeout")
+                        || reply.errorName() == QStringLiteral("org.freedesktop.DBus.Error.Disconnected");
                     finishOperation(generation, operationId,
-                                    CollaboratorStatus::Failed,
-                                    QStringLiteral("profiles-rejected"));
+                                    uncertain ? CollaboratorStatus::Uncertain : CollaboratorStatus::Failed,
+                                    uncertain ? QStringLiteral("profiles-uncertain")
+                                              : QStringLiteral("profiles-rejected"));
                     return;
                 }
                 for (auto it = m_acquiredHolds.begin();
@@ -429,6 +440,7 @@ void PowerProfilesCollaborator::callRelease(
                         break;
                     }
                 }
+                refreshFacts(generation);
                 finishOperation(generation, operationId,
                                 CollaboratorStatus::Succeeded,
                                 QStringLiteral("applied"));

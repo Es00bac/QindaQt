@@ -350,3 +350,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0322: Keep native portal choosers outside the resident](0322-native-portal-choosers.md)
 
 - [ADR-0325: Add bounded native sleep modes to Sleep1](0325-additive-native-sleep-modes.md)
+
+- [ADR-0330: Gate native source profile holds behind exclusive authority](0330-gate-native-source-profile-holds.md)

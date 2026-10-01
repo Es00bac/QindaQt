@@ -205,11 +205,17 @@ bool FakePpdService::handleMessage(const QDBusMessage &message,
             request.applicationId = message.arguments().at(2).toString();
             request.cookie = nextCookie++;
             holdRequests.push_back(request);
+            if (m_rejectHold) {
+                sendError(message, QStringLiteral("org.freedesktop.DBus.Error.AccessDenied"),
+                          QStringLiteral("Rejected fake hold"));
+                return true;
+            }
             HoldSpec spec;
             spec.profile = request.profile;
             spec.application = request.applicationId;
             spec.reason = request.reason;
             m_holds.push_back(spec);
+            if (m_dropHoldReply) return true;
             QDBusMessage reply = message.createReply();
             reply.setArguments({QVariant::fromValue(request.cookie)});
             m_connection.send(reply);
