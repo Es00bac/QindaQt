@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <QDBusConnection>
 #include <QDBusMessage>
+#include <QDBusObjectPath>
 #include <functional>
 class QDBusServiceWatcher;
 namespace QindaQt::Session::NativeSleep {
@@ -41,6 +42,7 @@ private Q_SLOTS:
   void receiveLock(const QDBusMessage &message);
   void receiveUnlock(const QDBusMessage &message);
   void receivePrepare(bool preparing, const QDBusMessage &message);
+  void receiveRemoved(const QString &id, const QDBusObjectPath &path, const QDBusMessage &message);
 private:
   using Completion = std::function<void(const QDBusMessage &)>;
   void call(QString destination, QString path, QString interface,
@@ -61,7 +63,7 @@ private:
   QString m_owner, m_path;
   quint64 m_generation = 0;
   int m_delayFd = -1;
-  bool m_started = false, m_ready = false, m_preparing = false;
+  bool m_started = false, m_ready = false, m_preparing = false, m_preparationSeen = false;
   bool m_acquiring = false, m_suspendPending = false, m_mutationDispatched = false;
 };
 }

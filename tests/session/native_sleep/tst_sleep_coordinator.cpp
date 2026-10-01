@@ -13,6 +13,8 @@ private Q_SLOTS:
   void unknownOrLockingManualSleepIsRefused();
   void supervisorLossRevokesFacadeAndDescriptor();
   void facadeReturnsConclusiveResult();
+  void selectedLockSignalRequestsNativeAdmission();
+  void manualPrepareRaceStillReleasesOnlyProtected();
 };
 void SleepCoordinatorTests::manualSuspendRequiresTargetedProtectedReceipt() {
   Fixture f; f.start(); QSignalSpy result(&f.coordinator, &SleepCoordinator::suspendFinished);
@@ -79,6 +81,16 @@ void SleepCoordinatorTests::facadeReturnsConclusiveResult() {
   const auto reply = waitReply(pending);
   QCOMPARE(reply.type(), QDBusMessage::ReplyMessage); QCOMPARE(reply.signature(), QStringLiteral("b"));
   QVERIFY(reply.arguments().first().toBool()); QCOMPARE(f.logind.suspendCalls, 1);
+}
+void SleepCoordinatorTests::selectedLockSignalRequestsNativeAdmission() {
+  Fixture f; f.start(); f.logind.signal(QStringLiteral("Lock"), f.logind.path);
+  QTRY_COMPARE(f.native.requests, 1); QCOMPARE(f.logind.suspendCalls, 0);
+}
+void SleepCoordinatorTests::manualPrepareRaceStillReleasesOnlyProtected() {
+  Fixture f; f.start(); f.logind.autoPrepare = true;
+  QVERIFY(f.coordinator.requestSuspend()); QTRY_COMPARE(f.native.requests, 1);
+  f.native.state(true, true); QTRY_COMPARE(f.logind.suspendCalls, 1);
+  QTRY_VERIFY(f.logind.inhibitorClosed());
 }
 QTEST_GUILESS_MAIN(SleepCoordinatorTests)
 #include "tst_sleep_coordinator.moc"
