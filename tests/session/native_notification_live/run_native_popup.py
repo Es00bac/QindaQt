@@ -38,7 +38,9 @@ def main() -> int:
     artifacts = arguments.artifacts.resolve()
     artifacts.mkdir(parents=True, exist_ok=True)
     # Preserve every invocation without overwriting earlier failures.
-    with tempfile.TemporaryDirectory(prefix="native-popup-", dir=artifacts) as tmp:
+    # AF_UNIX has a small pathname limit. Logs live in the build tree, while
+    # the disposable transport root uses the system's short temporary path.
+    with tempfile.TemporaryDirectory(prefix="qindaqt-native-popup-") as tmp:
         root = Path(tmp)
         log_destination = artifacts / (root.name + "-evidence")
         environment = isolated_environment(root)
@@ -73,6 +75,9 @@ def main() -> int:
                 print(result.stdout, end="")
                 print(result.stderr, end="", file=sys.stderr)
                 return result.returncode
+        except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+            (root / "runner-error.log").write_text(str(error))
+            raise
         finally:
             terminate(child)
             log_destination.mkdir()
