@@ -3,6 +3,7 @@
 #include "media_backend.h"
 #include "media_preferences.h"
 #include <QSet>
+#include <QQueue>
 #include <optional>
 
 namespace QindaQt::Apps::RemovableMedia {
@@ -56,10 +57,12 @@ private:
     void completed(const QString &token, bool success, const QString &message,
                    const QString &mountPath);
     void prompt(const Volume &volume);
+    void nextAutomaticMount();
     MediaBackend &m_backend;
     MediaPreferences &m_preferences;
     QVector<Volume> m_volumes;
     QSet<QString> m_seen;
+    QQueue<Request> m_automatic;
     QString m_selected, m_status, m_pendingToken, m_rememberMode, m_rememberKey;
     std::optional<Volume> m_formatTarget;
     bool m_watchInsertions, m_openAfter = false;
