@@ -116,6 +116,7 @@ for group in groups:
         # control/consent leases may authorize the protected helper's pixels.
         for name, executable in (
             ("org.test.CaptureResident", broker), ("org.test.CaptureHelper", helper),
+            ("org.test.CapturePixels", pixels),
         ):
             (applications / (name + ".desktop")).write_text(f"[Desktop Entry]\nType=Application\nName=Private capture fixture\nExec={executable}\nNoDisplay=true\n")
         (applications / "org.test.Capture.desktop").write_text("[Desktop Entry]\nType=Application\nName=Private capture caller\nExec=/usr/bin/true\nNoDisplay=true\n")
@@ -243,7 +244,8 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
                 shutil.copyfile(snapshot, evidence / snapshot.name)
             for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]),
                           runtime / "qindaqt-capture-history.audit", runtime / "native-renderer.audit",
-                          runtime / "producer-frame.audit"):
+                          runtime / "producer-frame.audit", runtime / "producer-stderr.audit",
+                          runtime / "producer-lifecycle.audit"):
                 if audit.is_file():
                     shutil.copyfile(audit, evidence / audit.name)
             cores = [str(path.relative_to(root)) for path in root.rglob("*")

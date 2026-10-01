@@ -71,7 +71,18 @@ private Q_SLOTS:
         QindaQt::Platform::Compositor::CompositorAttachment attachment(*selected, qEnvironmentVariable("XDG_RUNTIME_DIR"), [this](const QString &owner) { return owner == selected->baseService(); });
         QVERIFY(attachment.attach(selected->baseService(), "qindaqt-8")); const int pixelFd = attachment.openConnection(); QVERIFY(pixelFd >= 0);
         auto pixelEnv = QProcessEnvironment::systemEnvironment(); pixelEnv.remove("WAYLAND_DISPLAY"); pixelEnv.insert("WAYLAND_SOCKET", QString::number(pixelFd)); pixels.setProcessEnvironment(pixelEnv);
+        // Preserve child diagnostics: a completed frame callback is not proof
+        // that the producer survives Qt host-portal registration or capture.
+        pixels.setStandardErrorFile(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("producer-stderr.audit"));
+        connect(&pixels, &QProcess::finished, this, [](int code, QProcess::ExitStatus status) {
+            QFile lifecycle(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("producer-lifecycle.audit"));
+            if (lifecycle.open(QIODevice::WriteOnly | QIODevice::Append))
+                lifecycle.write("finished code=" + QByteArray::number(code) + " status=" + QByteArray::number(int(status)) + '\n');
+        });
         pixels.setChildProcessModifier([pixelFd] { if (fcntl(pixelFd, F_SETFD, 0) < 0) _exit(2); }); pixels.start(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_PIXELS")); const bool pixelStarted = pixels.waitForStarted(); ::close(pixelFd); QVERIFY(pixelStarted);
+        QFile lifecycle(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("producer-lifecycle.audit"));
+        QVERIFY(lifecycle.open(QIODevice::WriteOnly | QIODevice::Append));
+        QVERIFY(lifecycle.write("started pid=" + QByteArray::number(pixels.processId()) + '\n') > 0); lifecycle.close();
         QByteArray pixelReady;
         const auto pixelFrameReady = [&] {
             pixelReady += pixels.readAllStandardOutput();
@@ -80,9 +91,10 @@ private Q_SLOTS:
             return pixelReady.contains("completed private pixels frame ");
         };
         QTRY_VERIFY_WITH_TIMEOUT(pixelFrameReady(), 10000); startFrontend();
+        QCOMPARE(pixels.state(), QProcess::Running);
         QVERIFY(bus.connect("org.freedesktop.portal.Desktop", {}, "org.freedesktop.portal.Request", "Response", &responses, SLOT(receive(quint32,QVariantMap))));
     }
-    void init() { reset("allow"); }
+    void init() { QCOMPARE(pixels.state(), QProcess::Running); reset("allow"); }
     void cleanup() {
         if (QTest::currentTestFailed()) { qInfo().noquote() << frontend.readAllStandardError().right(32768); qInfo().noquote() << "native input/failure audit:" << audit().left(8192); }
         for (const auto &path : std::as_const(requests)) close(path, "Request");
@@ -125,6 +137,7 @@ private Q_SLOTS:
         auto remote = method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}});
         QDBusPendingCallWatcher opened(bus.asyncCall(remote)); QTRY_VERIFY(opened.isFinished()); const QDBusPendingReply<QDBusUnixFileDescriptor> fd = opened; QVERIFY2(!fd.isError(), qPrintable(fd.error().message())); QVERIFY(fd.value().isValid());
         PipeWireFrames frames(dup(fd.value().fileDescriptor()), streams.first().node); QVERIFY(frames.valid()); QTRY_VERIFY2_WITH_TIMEOUT(frames.count() > 3, qPrintable(QString("decoded frames=%1; visible nodes=%2; actual error=%3").arg(frames.count()).arg(frames.nodes().size()).arg(frames.error())), 15000); QTRY_VERIFY_WITH_TIMEOUT(frames.checksums().size() > 1, 15000); QVERIFY2(frames.error().isEmpty(), qPrintable(frames.error())); QVERIFY(containsFixturePixels(frames.image())); QVERIFY(frames.nodes().contains(streams.first().node));
+        QCOMPARE(pixels.state(), QProcess::Running);
         const auto pid = helperPid(); close(session, "Session"); QTRY_VERIFY(kill(pid, 0) < 0); QTRY_VERIFY(!frames.nodes().contains(streams.first().node)); QTest::qWait(150); const auto stopped = frames.count(); QTest::qWait(300); QCOMPARE(frames.count(), stopped);
         reset("allow"); QString cancelled; createSession(cancelled); select(cancelled); reset("cancel"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(cancelled)), QString{}, QVariantMap{}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 1U);
     }
@@ -259,7 +272,7 @@ private:
             QVERIFY(observed.contains(QByteArray("capture fd5 global ")+name+'\n'));
         QCOMPARE(observed.contains("capture fd5 global zkde_screencast_unstable_v1\n"), screenCast);
     }
-    void success(bool screenCast = false) { QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 0U); mapped(screenCast); QVERIFY(audit().contains("control CaptureReady")); }
+    void success(bool screenCast = false) { QCOMPARE(pixels.state(), QProcess::Running); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 0U); mapped(screenCast); QVERIFY(audit().contains("control CaptureReady")); }
     pid_t helperPid() const {
         for (const auto &line : audit().split('\n')) {
             if (line.contains("ordinary exact-peer mapped")) return static_cast<pid_t>(line.split(' ').value(0).toLongLong());
