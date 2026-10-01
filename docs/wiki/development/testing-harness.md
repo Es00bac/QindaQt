@@ -4263,6 +4263,8 @@ adapter; failed metadata permanently retires fallback. Existing private fixtures
 verify pinned owner/peer revocation and native late-result privacy separately
 from standard Secret Service sharing. No fixture reads a real collection or
 uses a live desktop.
+The policy fixture implements the complete public idle port: refresh discards
+the prior idle sample, and revoke clears both availability and idle state.
 
 ### Semantic grouping source qualification
 
