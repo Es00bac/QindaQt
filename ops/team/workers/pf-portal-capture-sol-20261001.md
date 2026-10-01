@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — diagnose actual protected Screenshot and ScreenCast on accepted exact447 fork
+- Status: available — bounded exact447 native scene failures retained; final candidate requires independent review and scene-owner diagnosis
 - Branch: worker/pf-native-capture-recovery-20261001
 - Base: a0c0cae7fac8ccaab29eb8a52d847ef1c47ced35
 - Worktree: .cache/pf-native-capture-recovery-20261001; matching isolated qinda worktree; prior laptop/qinda capture lane/history preserved
-- Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
+- Ownership: focused native capture fixture/runner and affected capture/testing documentation; production fork and manager features excluded
 - Resources: none held; exact frame-readiness build complete; private runtime queued through root; core0; only renderD128 and RO sysfs; no laptop heavywork
 
 ## Updates
+
+- 2026-10-01T22:27:00Z — Bounded failure candidate handed to manager: current source preserves authentic Access prerequisite, explicit frontend export, scope-correct fd5 globals, actual AMD renderer provenance and real producer callback readiness with all pixel/frame/privacy assertions unchanged. Built/run executable source3a8e48a1; current docs/evidence descendantfcffcaa3 passes validate-docs486, source-shape14/0skips/0warnings, Pythoncompile/diffcheck. Strictmkdocs qinda unavailable exit127; laptoplock pauses heavy verification, earlier2f50 strictdocs pass is historical only. Focused6 privateCTests/49Qt passes at2f50 remain unchanged-unit evidence, not latestnative usability. All runtime/compiler resources released; status available. Concrete help offer: retain a bounded actual client Wayland protocol trace and producer damage/commit sequence once root routes private slot; request fork owner exact447 Scene/VirtualBackend diagnosis. No laptopGPU/installation/productionrouting changes.
 
 - 2026-10-01T22:21:30Z — Exact3a8e48a1 actual AMD producer paint1 and completed wl_surface.frame pass before both requests. Screenshot FAIL1/2.203s, Qt2pass/1fail/0skip at unchanged actualcolor assertion; returned1100x820 PNG has902000 transparentblack RGBA pixels. Separate actualPipeWire case FAIL1/47.232s, Qt2pass/1fail/0skip: decodedframes2, visiblenodes3, error empty. Earlier historical zero-frame wording was inference from an unprinted count and is not supported; correction recorded here and current docs corrected. Invalid diagnostic case spelling rejected before compositor launch exit1/0.223s, raw preserved; fresh correct-case evidence retained. PGIDs351038/351192/351674 finished; no survivors/cores/cleanuperrors. Both resources released. Read-only help requested from fork owner on exact447 Scene/VirtualBackend/capture content after actualproducer callback; no forkedits or additional runtime granted. Remaining nativecases unqualified.
 
