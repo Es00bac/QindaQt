@@ -87,7 +87,9 @@ target_link_libraries(
         Qt6::Core
         Qt6::DBus
 )
-target_compile_definitions(qindaqt-session PRIVATE QINDAQT_KEYRING_INSTALL_PATH="${CMAKE_INSTALL_FULL_BINDIR}/qindaqt-keyring" QINDAQT_VERSION="${PROJECT_VERSION}")
+get_filename_component(QINDAQT_PORTAL_LIBEXEC_ABSOLUTE "${KDE_INSTALL_LIBEXECDIR}" ABSOLUTE BASE_DIR "${CMAKE_INSTALL_PREFIX}")
+file(RELATIVE_PATH QINDAQT_PORTAL_RELATIVE_PATH "${CMAKE_INSTALL_FULL_BINDIR}" "${QINDAQT_PORTAL_LIBEXEC_ABSOLUTE}/xdg-desktop-portal-qindaqt")
+target_compile_definitions(qindaqt-session PRIVATE QINDAQT_PORTAL_RELATIVE_PATH="${QINDAQT_PORTAL_RELATIVE_PATH}" QINDAQT_KEYRING_INSTALL_PATH="${CMAKE_INSTALL_FULL_BINDIR}/qindaqt-keyring" QINDAQT_VERSION="${PROJECT_VERSION}")
 set_target_properties(qindaqt-session PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-session)
 
