@@ -66,8 +66,14 @@ The prior combined runtime/privacy/sleep run passed 32/33 and exposed a lost
 final-On DPMS request. Exact repair `d08e49d1` is independently accepted with
 2/2 private CTests and 18 Qt checks and merged on the recovery branch; it waits
 for acknowledgement or a bounded deadline before teardown. The original assertion
-remains unchanged. Its combined rebuild, chooser tests and native scenarios remain
-pending. No milestone or installed
+remains unchanged. The repaired combined source `faaaf746` passes the 248-target
+build, runtime/privacy/sleep 33/33, fatal privacy 9/9, portals/choosers 24/24 and
+Screenshot 6/6. Exact-fork ABI pin/rejection and seven private plugin/output
+scenarios pass. The synthetic native key-store UI journey passes with seven Qt
+cases and fourteen visible production-prompt approvals. A shell-disabled test
+configuration repair is under exact independent review; actual native shell
+popup mapping, hardware and consolidated installed qualification remain open.
+No milestone or installed
 Plasma-removal completion advances from candidate activity.
 
 The owner confirmed the complete [native replacement program](plans/2026-09-28-plasma-free-qindaqt.md),
