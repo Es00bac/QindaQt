@@ -172,10 +172,7 @@ void LogindSleepTransport::revoke() {
     m_bus.disconnect(m_owner, ManagerPath, Manager, QStringLiteral("SessionRemoved"), this, SLOT(receiveRemoved(QString,QDBusObjectPath,QDBusMessage)));
   }
   m_owner.clear(); m_path.clear();
-  if (m_suspendPending) {
-    const auto result = m_mutationDispatched ? SleepResult::Uncertain : SleepResult::Refused;
-    m_suspendPending = false; m_mutationDispatched = false; Q_EMIT suspendFinished(result);
-  }
+  cancelSleep();
   Q_EMIT availabilityChanged();
 }
 void LogindSleepTransport::acquireDelayInhibitor() {
@@ -202,21 +199,46 @@ bool LogindSleepTransport::setLockedHint(bool locked) {
   });
   return true;
 }
-bool LogindSleepTransport::requestSuspend(std::function<bool()> protectedAdmission) {
-  if (!hasDelayInhibitor() || m_preparing || m_suspendPending ||
+void LogindSleepTransport::queryCapability(SleepMode mode, std::function<void(bool)> completion) {
+  const auto method = capabilityMethod(mode);
+  if (method.isEmpty() || !hasDelayInhibitor() || m_preparing) { completion(false); return; }
+  const auto generation = m_generation;
+  auto message = QDBusMessage::createMethodCall(m_owner, ManagerPath, Manager, method);
+  auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(message, 250), this);
+  connect(watcher, &QDBusPendingCallWatcher::finished, this,
+      [this, watcher, generation, completion = std::move(completion)] {
+    const auto reply = watcher->reply(); watcher->deleteLater();
+    completion(current(generation) && hasDelayInhibitor() && !m_preparing &&
+        validReply(reply, QStringLiteral("s")) &&
+        reply.arguments().first().toString() == QStringLiteral("yes"));
+  });
+}
+void LogindSleepTransport::cancelSleep() {
+  ++m_requestSerial;
+  if (!m_suspendPending) return;
+  const auto result = m_mutationDispatched ? SleepResult::Uncertain : SleepResult::Refused;
+  m_suspendPending = false; m_mutationDispatched = false;
+  Q_EMIT suspendFinished(result);
+}
+bool LogindSleepTransport::requestSleep(SleepMode mode, std::function<bool()> protectedAdmission) {
+  const auto action = actionMethod(mode);
+  if (action.isEmpty() || !hasDelayInhibitor() || m_preparing || m_suspendPending ||
       !protectedAdmission || !protectedAdmission()) return false;
   m_suspendPending = true;
   m_mutationDispatched = false;
-  call(m_owner, ManagerPath, Manager, QStringLiteral("CanSuspend"), {}, m_generation,
-      [this, protectedAdmission = std::move(protectedAdmission)](const QDBusMessage &reply) {
-    if (!hasDelayInhibitor() || !protectedAdmission() ||
+  const auto serial = ++m_requestSerial;
+  call(m_owner, ManagerPath, Manager, capabilityMethod(mode), {}, m_generation,
+      [this, serial, action, protectedAdmission = std::move(protectedAdmission)](const QDBusMessage &reply) {
+    if (!m_suspendPending || serial != m_requestSerial) return;
+    if (!hasDelayInhibitor() || m_preparing || !protectedAdmission() ||
         !validReply(reply, QStringLiteral("s")) ||
         reply.arguments().first().toString() != QStringLiteral("yes")) {
-      m_suspendPending = false; Q_EMIT suspendFinished(SleepResult::Refused); return;
+      cancelSleep(); return;
     }
     m_mutationDispatched = true;
-    call(m_owner, ManagerPath, Manager, QStringLiteral("Suspend"), {false}, m_generation,
-        [this](const QDBusMessage &result) {
+    call(m_owner, ManagerPath, Manager, action, {false}, m_generation,
+        [this, serial](const QDBusMessage &result) {
+      if (!m_suspendPending || serial != m_requestSerial) return;
       m_suspendPending = false;
       m_mutationDispatched = false;
       Q_EMIT suspendFinished(validReply(result, QString{})

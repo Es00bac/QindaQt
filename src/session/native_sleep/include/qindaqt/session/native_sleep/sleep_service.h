@@ -4,6 +4,7 @@
 #include <QDBusConnection>
 #include <qindaqt/session/native_sleep/sleep_coordinator.h>
 #include <optional>
+#include <QHash>
 class QDBusServiceWatcher;
 namespace QindaQt::Session::NativeSleep {
 // Supervisor-owned public manual handoff. Claims only Sleep1, requires the
@@ -23,12 +24,14 @@ public:
   bool handleMessage(const QDBusMessage &message, const QDBusConnection &connection) override;
 private:
   void finish(SleepResult result);
+  void finishQuery(quint64 id, bool capable);
   QDBusConnection m_bus;
   SleepCoordinator &m_coordinator;
   const quint32 m_uid;
   QDBusServiceWatcher *m_supervisorWatcher = nullptr;
   std::optional<QDBusMessage> m_pending;
-  quint64 m_generation = 0;
+  QHash<quint64, QDBusMessage> m_queries;
+  quint64 m_generation = 0, m_querySerial = 0;
   bool m_started = false;
 };
 }
