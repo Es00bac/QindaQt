@@ -1082,6 +1082,15 @@ or input. Locker-launch refusal is expected and never reported as successful
 lock admission. The temporary broker has no activation entries and the system
 bus points to a nonexistent private path. Each invocation preserves its fixture,
 compositor and production-child logs, including failures.
+The launcher explicitly receives `--session ''` and `--no-xwayland`; omitting
+the empty session starts its installed default supervisor and optional children.
+The runner uses a short disposable transport root, canonical numeric socket
+basename and private 077 umask, and stops the compositor before its empty broker.
+The retained manifest records the actual fork PID and socket mode/UID. The
+qualified 1080p/100% private row passed both behavior cases plus Qt lifecycle
+cases (4 passes, zero failures/skips) with one mapped popup before each transition
+and zero mapped notification surfaces afterward. This is clientless native
+privacy qualification; it supplies no authentication or physical-output claim.
 
 `QINDAQT_NATIVE_POPUP_PRODUCTION_BUILD` optionally selects an immutable compatible
 production build for the runner's shell/host/Settings/launcher/plugin artifacts;
