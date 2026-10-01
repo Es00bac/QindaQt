@@ -4,7 +4,7 @@
 - Status: working — final bounded retry-order causal audit for exact candidate 0c326be58a61810e33913a2daac71c2921541a78.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: both compiler/private released; unchanged originals and scratch failure retained; laptop test lock honored.
+- Resource state: sole qinda compiler granted/claimed for repair; private replay pending graphics release; laptop test lock honored.
 - Outcome: ACCEPT or bounded causal REJECT of supported per-source native profile holds; no wider PF2/install claim.
 
 ## Updates
@@ -22,3 +22,5 @@
 - 2026-10-01T22:57:01Z: Root grants after graphics exact2TU release. One copied runtime TU compile/linkPID388844 started/core0/ownedmemorymonitor, then only knownRejectionDoesNotSpin order-only case. Source delta/argv/hashes retained separately; no product edit or original artifact replacement.
 
 - 2026-10-01T22:59:14Z: Exact0c326be5 REJECTP0=0/P1=1. Authorized copied order-only known refusal probe actual2expected1,exit1/2pass1fail0skip; original5/65 stillPASS/fivehashesunchanged. All scratchPIDs/roots absent; bothresourcesreleased. Full exact verdict/repro posted; queue read and same-reviewer repaired-descendant help offered.
+
+- 2026-10-01T23:08:07Z: Root routes same-reviewer exactce84b0a5 repair. Inspected canonical sorting/public key and readback-confirmed mandatory external-hold/profile-order permutations, original repeated-fact/material-preference controls retained. Previous exact0cREJECT remains preserved. Own isolated tree advanced by immutable candidate merge only; no product source edits. Sole compiler granted; private replay waits explicit graphics release.
