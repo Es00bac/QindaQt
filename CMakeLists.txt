@@ -48,6 +48,7 @@ option(QINDAQT_BUILD_VIEWER "Build the QindaTK image/PDF viewer" ON)
 # installs every component, so the two collide on /usr/bin unless one of them
 # turns this off. Leave it ON for the standalone package.
 option(QINDAQT_BUILD_SYSTEM_MONITOR "Build the System Monitor application" ON)
+option(QINDAQT_BUILD_REMOVABLE_MEDIA "Build the removable-media desktop application" ON)
 # AGENT-GUARD: media-plugins/obs-qindaqt installs this libobs module from its
 # own build of src/obs. Until this option existed the bridge was gated only on
 # whether libobs happened to be findable, so a desktop package built on a host

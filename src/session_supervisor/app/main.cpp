@@ -55,6 +55,11 @@ int main(int argc, char *argv[])
         {QStringLiteral("welcome"),
          QStringLiteral("Optional first-launch guide executable."),
          QStringLiteral("path"), QStringLiteral("qindaqt-welcome")},
+        {QStringLiteral("removable-media"),
+         QStringLiteral("Removable media insertion handler executable."),
+         QStringLiteral("path"), QStringLiteral("qindaqt-removable-media")},
+        {QStringLiteral("no-removable-media"),
+         QStringLiteral("Disable physical removable-media handling in a private session.")},
         {QStringLiteral("desktop-controls"),
          QStringLiteral("Optional media-key/screenshot/idle-display helper."),
          QStringLiteral("path"), QStringLiteral("qindaqt-desktop-controls")},
@@ -128,6 +133,8 @@ int main(int argc, char *argv[])
     options.networkSecretAgentExecutable =
         parser.value(QStringLiteral("network-secret-agent"));
     options.welcomeExecutable = parser.value(QStringLiteral("welcome"));
+    if (!parser.isSet(QStringLiteral("no-removable-media")))
+        options.removableMediaExecutable = parser.value(QStringLiteral("removable-media"));
     options.powerDevilExecutable = parser.isSet(QStringLiteral("no-powerdevil"))
         ? QString{} : parser.value(QStringLiteral("powerdevil"));
     options.globalShortcutDaemonExecutable =

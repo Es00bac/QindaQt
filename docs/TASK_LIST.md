@@ -5,6 +5,24 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## September 30 — Graphical removable media
+
+The independently accepted handler source `5bff539e` provides insertion prompts,
+mount/open, read-only access, per-media automatic choices, safe removal,
+encrypted unlock and separate typed-device format confirmation through UDisks.
+Combined manager gates pass 9/9 CTests and 25/25 wrapper tests; strict wiki
+build and the 475-document validator pass on the combined source.
+
+Installed on qinda-top through Portage as
+`gui-apps/qindaqt-removable-media-0.1.0_p20260930-r1`, pinned by overlay `9c8c9cd`.
+The installed synthetic UI, Activate-only singleton endpoint and 13/13 file
+integrity checks pass. Its watcher is active in the existing desktop; a packaged
+XDG entry handles future logins until the new supervisor is delivered.
+The already-connected NTFS data volume is mounted read-only because writable
+mounting was refused for filesystem errors; its ignored recovery partition is
+preserved. Optical/hotplug and destructive disposable-media qualification remain
+open. See [Removable media](wiki/apps/removable-media.md) and [Handoff](HANDOFF.md).
+
 ## September 29 — Complete the Plasma-free program
 
 The owner confirmed the complete [native replacement program](plans/2026-09-28-plasma-free-qindaqt.md),
