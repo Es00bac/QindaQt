@@ -2,6 +2,7 @@
 #include <qindaqt/services/portal/capture_types.h>
 #include <QDBusMetaType>
 #include <QJsonArray>
+#include <QUrl>
 #include <QtTest>
 #include <limits>
 using namespace QindaQt::Services::Portal;
@@ -30,7 +31,16 @@ private Q_SLOTS:
         malformed = frame; malformed.insert("directory", "relative"); QVERIFY(!captureRequestFromFrame(malformed));
     }
     void realPublicationShapeAndNoLatePayload() {
-        const auto image = captureResults(CaptureKind::Screenshot, {{"uri", "file:///private/literal%20%25%24%60/screenshot.png"}}, "/private/literal %$`"); QVERIFY(image); QVERIFY(validCapturePublication(CaptureKind::Screenshot, *image));
+        // AGENT-CONTRACT: FullyEncoded preserves legal '$' path sub-delimiters;
+        // space, percent and backtick are encoded. The literal filename must
+        // round-trip without shell expansion or a second encoding pass.
+        const QString uri = "file:///private/literal%20%25$%60/screenshot.png";
+        const QString filename = "/private/literal %$`/screenshot.png";
+        QCOMPARE(QUrl::fromLocalFile(filename).toString(QUrl::FullyEncoded), uri);
+        const auto image = captureResults(CaptureKind::Screenshot, {{"uri", uri}}, "/private/literal %$`");
+        QVERIFY(image); QVERIFY(validCapturePublication(CaptureKind::Screenshot, *image));
+        QCOMPARE(QUrl(image->value("uri").toString()).toLocalFile(), filename);
+        QVERIFY(!captureResults(CaptureKind::Screenshot, {{"uri", "file:///private/literal%20%25%24%60/screenshot.png"}}, "/private/literal %$`"));
         QVERIFY(!captureResults(CaptureKind::Screenshot, {{"uri", "file:///other/screenshot.png"}}, "/private/literal %$`"));
         QVERIFY(!validCapturePublication(CaptureKind::Screenshot, {{"uri", "file:///private/../secret"}}));
         QVERIFY(!validCapturePublication(CaptureKind::Screenshot, {{"uri", "file://server/private/file"}}));

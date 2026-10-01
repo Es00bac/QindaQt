@@ -5,14 +5,18 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — verifying immutable ed7a4e16 capture/private-bus and adjacent Screenshot rows
+- Status: working — repairing literal-path URI fixture after the first bounded private-bus failure
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler released; qinda-only bounded11-row private-bus grant, no native compositor/install/staging grant
+- Resources: compiler/private slots released; next fixture compile queued behind root fork driver
 
 ## Updates
+
+- 2026-10-01T19:14:47Z — Literal URI fixture repair frozen after primary-source diagnosis; static docs486/strictMkDocs/tests14shape0skips0warnings/diff pass. Only policy fixture and reference/records change; production validation and all hostile assertions intact. Next compiler scope can be sole qindaqt_portal_capture_policy_tests plus dependencies; unchanged broker/helper/native caller image hashes remain ed7 manifest. Source-only while root builds fork native driver, no resources reserved.
+
+- 2026-10-01T19:11:15Z — Exacted7 11-row private gate stops immediately at first policy failure: CTestexit8, attempted1/11,0CTestpass/1fail, Qt4pass/1fail/0skip, elapsed0.095s. Raw ed7-unit log/status preserved, group171914 gone, no survivors/scopedcores/crash. Public policy image fixture encoded '$' as %24 unlike exact QUrl::fromLocalFile serialization. Exact upstream Qt6.11.1 qurl.cpp/qurlrecode primary source confirms legal '$' LeaveCharacter versus encoded spaces/percent/backtick. Source fixture now asserts expected serialization and literal roundtrip, retains alternate-serialization/wrongdir/traversal/remotehost negatives; product validation unchanged. Private slot released before repair, new compile queues behind root driver. Teardown/other10rows/native still unrun.
 
 - 2026-10-01T19:08:57Z — Exacted7a4e16 strict17-target build PASS exit0/14.0s, raw ed7 buildlog/status/images manifest retained. Final49/50 dynamic progress not action total, minimumRAM17058416kB/no intervention, ownedPGID167440 gone; compiler released. Production/test broker/helper and native caller linked, new teardown regression compiled. Root now grants only11 private-bus/offscreen rows with core0/dead buses/180s group bound/firstfailure stop; native driver remains absent and no pixels/frame/staging/routing qualification. Taking that separate private slot, own record child stays off tested source.
 
