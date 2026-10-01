@@ -25,7 +25,15 @@ both count and privacy signals, and nine independent focused tests plus the
 unchanged failure reproduction pass. Its source is merged on the recovery branch.
 Actual native window mapping remains in the combined gate. Combined exact-fork ABI
 and native gates remain before recovery-branch integration to main. Native
-logind sleep coordination is an isolated subsequent candidate, not delivered.
+logind sleep candidate `e6072eb1d736fa017ae3d9de0aa5385da42dd34c` is independently
+accepted and merged at `fc54afd8`: seven private gates pass with 71 Qt checks.
+It joins the selected logind session to supervisor identity, retains a delay
+descriptor until a current native ProtectedLocked receipt, and fences stop,
+owner loss and resume. Combined plugin/native gates and hardware remain open.
+After storage recovery, the combined build found an inherited abstract keyring
+idle fake; isolated fixture repair `f1d7b89b` awaits independent execution/review.
+Native FileChooser/AppChooser remains a separate active candidate: actual
+frontend journeys pass, with final family routing and staged gates pending.
 
 The supplied painted icon family is independently delivered on both hosts as
 Portage package `x11-themes/qinda-breeze-painted-1.0.0_p20260929`, using overlay
