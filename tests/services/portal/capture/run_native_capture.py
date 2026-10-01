@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Real frontend/native input/frames in entirely private brokers and EGL display."""
 import os
+import json
+import hashlib
+import shutil
 import pathlib
 import resource
 import select
@@ -12,9 +15,12 @@ import tempfile
 import time
 
 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-if len(sys.argv) not in (12, 14):
-    sys.exit("expected eleven artifacts and optional --case NAME")
-fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection, broker, qualified_compositor = map(pathlib.Path, sys.argv[1:12])
+if len(sys.argv) not in (13, 15):
+    sys.exit("expected eleven artifacts, matching native plugin prefix and optional --case NAME")
+fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection, broker, qualified_support_program = map(pathlib.Path, sys.argv[1:12])
+plugin_prefix = pathlib.Path(sys.argv[12]).resolve()
+if plugin_prefix != compositor.resolve().parent or not (plugin_prefix / "qindaqt-kwin/plugins").is_dir():
+    sys.exit("private native driver requires its matching built plugin prefix")
 if not compositor.is_file():
     print("qualified private compositor unavailable")
     sys.exit(77)
@@ -28,10 +34,10 @@ groups = [
 ]
 # A bounded diagnostic selects unchanged Qt assertions. Only the default command
 # qualifies the whole journey; a selected case cannot be reported as full coverage.
-if len(sys.argv) == 14:
-    if sys.argv[12] != "--case" or sys.argv[13] not in {case for group in groups for case in group}:
+if len(sys.argv) == 15:
+    if sys.argv[13] != "--case" or sys.argv[14] not in {case for group in groups for case in group}:
         sys.exit("unknown native capture diagnostic case")
-    groups = [[sys.argv[13]]]
+    groups = [[sys.argv[14]]]
 
 
 def group_alive(process):
@@ -59,7 +65,7 @@ for group in groups:
         runtime = root / "runtime"
         runtime.mkdir(mode=0o700)
         env = dict(os.environ)
-        for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR", "WIREPLUMBER_CONFIG_DIR", "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS", "KWIN_WAYLAND_NO_PERMISSION_CHECKS", "LD_LIBRARY_PATH"):
+        for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH", "QML_IMPORT_PATH", "QML2_IMPORT_PATH", "LD_PRELOAD", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR", "WIREPLUMBER_CONFIG_DIR", "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS", "KWIN_WAYLAND_NO_PERMISSION_CHECKS", "LD_LIBRARY_PATH"):
             env.pop(key, None)
         env.update(HOME=str(root), XDG_RUNTIME_DIR=str(runtime), XDG_CONFIG_HOME=str(root / "config"),
             XDG_DATA_HOME=str(root / "data"), XDG_CACHE_HOME=str(root / "cache"), XDG_STATE_HOME=str(root / "state"),
@@ -78,15 +84,17 @@ for group in groups:
         env.update(XDG_CURRENT_DESKTOP="qindaqt", XDG_DESKTOP_PORTAL_DIR=str(portals))
         applications = root / "data/applications"
         applications.mkdir(parents=True)
-        # Actual restricted peer belongs to resident fixture, not an app-ID hint.
-        for name, executable, permission in (
-            ("org.test.CaptureResident", broker, ""),
-            ("org.test.CaptureHelper", helper, "X-QindaQt-KWin-DBus-Restricted-Interfaces=org.kde.KWin.ScreenShot2"),
+        # These desktop entries grant no capture permission. Only compositor
+        # control/consent leases may authorize the protected helper's pixels.
+        for name, executable in (
+            ("org.test.CaptureResident", broker), ("org.test.CaptureHelper", helper),
         ):
-            (applications / (name + ".desktop")).write_text(f"[Desktop Entry]\nType=Application\nName=Private capture fixture\nExec={executable}\nNoDisplay=true\n{permission}\n")
+            (applications / (name + ".desktop")).write_text(f"[Desktop Entry]\nType=Application\nName=Private capture fixture\nExec={executable}\nNoDisplay=true\n")
         (applications / "org.test.Capture.desktop").write_text("[Desktop Entry]\nType=Application\nName=Private capture caller\nExec=/usr/bin/true\nNoDisplay=true\n")
-        env["PATH"] = str(qualified_compositor.parent) + os.pathsep + env.get("PATH", "/usr/bin:/bin")
-        env["QT_PLUGIN_PATH"] = str(qualified_compositor.parent.parent / "lib64/qt6/plugins")
+        # The qualified ordinary program supplies tool PATH only; it is never
+        # executed as the compositor. Native plugins belong to this exact driver.
+        env["PATH"] = str(qualified_support_program.parent) + os.pathsep + env.get("PATH", "/usr/bin:/bin")
+        env["QT_PLUGIN_PATH"] = str(plugin_prefix)
         pwconfig = root / "pipewire-private.conf"
         pwconfig.write_text("""context.properties = { core.daemon = true core.name = pipewire-capture support.dbus = false }
 context.spa-libs = { support.* = support/libspa-support }
@@ -194,5 +202,28 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
                     cleanup_errors.append(str(error))
             for handle in logs:
                 handle.close()
+            # Retain task-owned raw authority evidence before TemporaryDirectory
+            # cleanup, including failures. These traces contain synthetic fixture
+            # state only; this path is ignored build output, never an installation.
+            evidence = fixture.parent / "native-capture-evidence" / root.name
+            evidence.mkdir(parents=True, exist_ok=True)
+            for log in root.glob("*.log"):
+                shutil.copyfile(log, evidence / log.name)
+            for name in ("qindaqt-capture.audit", "qindaqt-capture-history.audit"):
+                if (runtime / name).is_file():
+                    shutil.copyfile(runtime / name, evidence / name)
+            cores = [str(path.relative_to(root)) for path in root.rglob("*")
+                     if path.is_file() and (path.name == "core" or path.name.startswith("core."))]
+            # Unexpected task-local cores are preserved opaque, never printed.
+            for name in cores:
+                path = root / name
+                if not path.is_symlink():
+                    with path.open("rb") as core:
+                        digest = hashlib.file_digest(core, "sha256").hexdigest()
+                    shutil.copyfile(path, evidence / ("core-" + digest))
+            report = dict(cases=group, evidence=str(evidence), cleanup_errors=cleanup_errors,
+                          scoped_core_files=cores, plugin_prefix=str(plugin_prefix))
+            (evidence / "audit.json").write_text(json.dumps(report, indent=2) + "\n")
+            print("CAPTURE_GROUP_AUDIT " + json.dumps(report), flush=True)
             if cleanup_errors:
                 raise RuntimeError("; ".join(cleanup_errors))

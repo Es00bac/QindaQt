@@ -171,7 +171,14 @@ private:
     void select(const QString &session) { reset("allow"); request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"cursor_mode", 1U}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); }
     void close(const QString &path, const char *family) { auto call = QDBusMessage::createMethodCall("org.freedesktop.portal.Desktop", path, "org.freedesktop.portal."+QString::fromLatin1(family), "Close"); QDBusPendingCallWatcher closing(bus.asyncCall(call)); QTRY_VERIFY(closing.isFinished()); }
     void reset(const char *action) {
-        responses.count = 0; responses.response = 99; responses.results.clear(); QFile(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT")).remove();
+        responses.count = 0; responses.response = 99; responses.results.clear();
+        const auto previous = audit();
+        if (!previous.isEmpty()) {
+            QFile history(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("qindaqt-capture-history.audit"));
+            QVERIFY(history.open(QIODevice::WriteOnly | QIODevice::Append));
+            QCOMPARE(history.write(previous), previous.size());
+        }
+        QFile(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT")).remove();
         QSaveFile control(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("qindaqt-capture-input.json")); QVERIFY(control.open(QIODevice::WriteOnly));
         const auto data = QJsonDocument(QJsonObject{{"action", QString::fromLatin1(action)}}).toJson(QJsonDocument::Compact);
         QCOMPARE(control.write(data), data.size()); QVERIFY(control.commit());

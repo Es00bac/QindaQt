@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — compiling exact7bc9e6a5 URI fixture then conditional11-row private gate
+- Status: working — freezing matching native plugin and raw-evidence fixture repairs before namespace preflight
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: sole-policy qinda compiler granted then conditional11-row private gate; no native/stage/install grant
+- Resources: compiler/private slots released; new native fixture build and namespace-only grants requested
 
 ## Updates
+
+- 2026-10-01T19:43:46Z — Exact7bc sole policy rebuild PASS0/6.0s (final3/4 dynamic); compiler released. Same11 CTests PASS11/11 in7.12s, Qt87pass/0fail/0skip across11 summaries, including both real nonce admission teardown/live-denial rows. Raw7bc logs/status retained, group189078 absent/no survivors/scopedcores/crashes; private slot released. Root separately built exactdba test-auth driver and authorized minimal fixture plugin-prefix/legacy-permission/evidence repairs. New source explicitly selects matching driver bin/plugins, rejects mismatched/missing image/prefix; removes legacy desktop capture permission, records per-request raw audit history/producerlogs/cleanup/core artifacts in ignored output. Native namespace must hide host devices and expose images RO, only evidence/tmp RW. Docs486/strictMkDocs/tests14shape0warnings0skips/Python/diff pass; freezing before affected caller compile and harmless namespace-only preflight. No actual native/staging/routing/fullPF19 acceptance.
 
 - 2026-10-01T19:23:25Z — Root fork driver compile completed/released; grants exactclean7bc9e6a5 sole qinda policy-target rebuild-j8-l24, then conditionalPASS same11-row/core0/deadbus/180s firstfailure-stop gate. Clean mirror/config verified, availableRAM22102336kB/no ninja/cc1plus observed; global unchanged. Earlier raw ed7 firstrow failure preserved, repaired literal URI production checks unchanged. Native driver compiled separately by root, not yet run/accepted. Own compile and private resources taken sequentially only.
 
