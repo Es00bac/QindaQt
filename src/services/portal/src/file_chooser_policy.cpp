@@ -34,7 +34,20 @@ bool validFilter(const FileFilter &filter) {
 }
 std::optional<FileChooserRequest> fileChooserRequest(FileChooserMode mode, const QString &app,
     const QString &parent, const QString &title, const QVariantMap &options) {
-    const auto question = accessQuestion(app, parent, title, {}, {}, options);
+    auto normalized = options;
+    if (options.contains(QStringLiteral("choices"))) {
+        auto choices = typed<AccessChoices>(options.value(QStringLiteral("choices")), QStringLiteral("a(ssa(ss)s)"));
+        if (!choices) return {};
+        for (auto &choice : *choices) {
+            if (choice.label.isEmpty()) return {};
+            for (const auto &option : choice.options) if (option.label.isEmpty()) return {};
+            // FileChooser permits an empty initial Boolean choice; choose false
+            // without weakening the separate Access question contract.
+            if (choice.options.isEmpty() && choice.initial.isEmpty()) choice.initial = QStringLiteral("false");
+        }
+        normalized.insert(QStringLiteral("choices"), QVariant::fromValue(*choices));
+    }
+    const auto question = accessQuestion(app, parent, title, {}, {}, normalized);
     if (!question) return {};
     FileChooserRequest r; r.mode = mode; r.question = *question;
     r.question.grantLabel = mode == FileChooserMode::Open ? QStringLiteral("Open") : QStringLiteral("Save");
@@ -64,7 +77,12 @@ std::optional<FileChooserRequest> fileChooserRequest(FileChooserMode mode, const
         const auto filters = typed<FileFilters>(options.value(QStringLiteral("filters")), QStringLiteral("a(sa(us))"));
         if (!filters || filters->size() > 32) return {};
         r.filters = *filters;
-        for (const auto &filter : r.filters) if (!validFilter(filter)) return {};
+        qsizetype total = 0;
+        for (const auto &filter : r.filters) {
+            if (!validFilter(filter)) return {};
+            total += filter.label.size(); for (const auto &rule : filter.rules) total += rule.pattern.size();
+            if (total > 32768) return {};
+        }
     }
     if (options.contains(QStringLiteral("current_filter"))) {
         const auto filter = typed<FileFilter>(options.value(QStringLiteral("current_filter")), QStringLiteral("(sa(us))"));
@@ -76,7 +94,10 @@ std::optional<FileChooserRequest> fileChooserRequest(FileChooserMode mode, const
     if (mode == FileChooserMode::SaveMany) {
         const auto names = typed<FileNames>(options.value(QStringLiteral("files")), QStringLiteral("aay"));
         if (!names || names->isEmpty() || names->size() > 128) return {};
-        for (const auto &bytes : *names) { const auto name = path(bytes, true); if (!name) return {}; r.files.append(*name); }
+        qsizetype total = 0;
+        for (const auto &bytes : *names) {
+            const auto name = path(bytes, true); if (!name || (total += bytes.size()) > 32768) return {}; r.files.append(*name);
+        }
     }
     return r;
 }

@@ -299,3 +299,4 @@ if(TEST qindaqt.portal-frontend-routing)
 endif()
 
 add_subdirectory(foundation)
+add_subdirectory(choosers)

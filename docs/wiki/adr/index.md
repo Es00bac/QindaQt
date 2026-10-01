@@ -344,3 +344,4 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0319: Compose native idle display policy in the session supervisor](0319-supervisor-owned-native-idle-display-policy.md)
 - [ADR-0320: Gate notification disclosure on native compositor receipts](0320-native-notification-lock-observation.md)
+- [ADR-0322: Keep native portal choosers outside the resident](0322-native-portal-choosers.md)

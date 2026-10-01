@@ -14,7 +14,12 @@ std::optional<ApplicationCandidates> applicationCandidates(const QStringList &ch
         seen.insert(choice);
         // Missing/uninstalled entries are never substituted or launched; a
         // later UpdateChoices can introduce newly catalogued candidates.
-        if (const auto *application = catalog.application(choice)) candidates.append({choice, application->entry.name});
+        if (const auto *application = catalog.application(choice)) {
+            const auto &label = application->entry.name;
+            if (label.isEmpty() || label.size() > 512) return {};
+            for (const auto c : label) if (c.isNull() || c.category() == QChar::Other_Control) return {};
+            candidates.append({choice, label});
+        }
     }
     return candidates;
 }
