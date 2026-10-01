@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import ExitStack
+import json
 import os
 from pathlib import Path
 import shutil
@@ -69,25 +71,32 @@ def main() -> int:
         environment["QT_PLUGIN_PATH"] = str(arguments.plugin_root.resolve()) + os.pathsep + str(fork_prefix / "lib64/qt6/plugins")
         child = None
         try:
-            with running_private_session_bus(root, arguments.dbus_daemon, environment):
+            with ExitStack() as resources:
+                resources.enter_context(running_private_session_bus(root, arguments.dbus_daemon, environment))
                 with (root / "compositor.log").open("w") as log:
                     child = subprocess.Popen([str(arguments.launcher.resolve()), "--kwin", str(arguments.compositor.resolve()),
                         "--virtual", "--width", "1920", "--height", "1080", "--scale", "1", "--output-count", "1",
-                        "--socket", "qindaqt-popup", "--session", "", "--no-xwayland",
+                        "--socket", "qindaqt-9", "--session", "", "--no-xwayland",
                         "--no-global-shortcuts", "--test-scenario", str(arguments.scenario.resolve()),
                         "--plugin-root", str(arguments.plugin_root.resolve())], env=environment, stdout=log, stderr=subprocess.STDOUT)
+                # Stop the compositor while its broker is alive, including on
+                # failure. Closing the broker first obscures teardown evidence.
+                resources.callback(terminate, child)
+                (root / "process.json").write_text(json.dumps({"compositorPid": child.pid, "runtimeRoot": str(root)}))
                 deadline = time.monotonic() + 20
-                while not (root / "runtime/qindaqt-popup").exists() and child.poll() is None and time.monotonic() < deadline:
+                while not (root / "runtime/qindaqt-9").exists() and child.poll() is None and time.monotonic() < deadline:
                     time.sleep(.05)
-                if not (root / "runtime/qindaqt-popup").exists():
+                if not (root / "runtime/qindaqt-9").exists():
                     raise RuntimeError("actual ordinary compositor socket did not appear")
                 await_compositor_owner(environment, child)
-                environment.update(WAYLAND_DISPLAY="qindaqt-popup", QINDAQT_NATIVE_POPUP_COMPOSITOR_PID=str(child.pid),
+                environment.update(WAYLAND_DISPLAY="qindaqt-9", QINDAQT_NATIVE_POPUP_COMPOSITOR_PID=str(child.pid),
                     QINDAQT_NATIVE_POPUP_LOG_ROOT=str(root), QINDAQT_NATIVE_POPUP_LOCKER=str(locker),
                     QINDAQT_NATIVE_POPUP_SHELL=str(arguments.shell.resolve()), QINDAQT_NATIVE_POPUP_HOST=str(arguments.host.resolve()),
                     QINDAQT_NATIVE_POPUP_SETTINGS=str(arguments.settings.resolve()), QT_FATAL_WARNINGS="1")
                 result = run_private_process_group([str(arguments.probe.resolve())], environment, 75)
                 (root / "fixture.log").write_text(result.stdout + result.stderr)
+                if result.returncode == 0 and child.poll() is not None:
+                    raise RuntimeError("production compositor exited during native popup gate")
                 print(result.stdout, end="")
                 print(result.stderr, end="", file=sys.stderr)
                 return result.returncode
@@ -97,8 +106,9 @@ def main() -> int:
         finally:
             terminate(child)
             log_destination.mkdir()
-            for log in root.glob("*.log"):
-                shutil.copy2(log, log_destination / log.name)
+            for pattern in ("*.log", "*.json"):
+                for log in root.glob(pattern):
+                    shutil.copy2(log, log_destination / log.name)
             print(f"native popup evidence: {log_destination}", file=sys.stderr)
 
 
