@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt Protected Capture Backend
+Exec=@KDE_INSTALL_FULL_LIBEXECDIR@/qindaqt-portal-capture-backend
+NoDisplay=true

@@ -125,3 +125,39 @@ entries, metadata/selection/poison gates, existing accepted portal/Screenshot
 regressions, strict docs and source shape must pass before routing changes. No
 successful capture-runtime qualification or installed full-portal completion is
 asserted by this page.
+
+## Protected authority source successor
+
+The fork and consumer jointly froze wire version1 at fork
+`91e1c20272b891add2455c648f49e097c9d8baaa`. Its public installed
+`qindaqt-kwin/capture-authority/protocol.h` describes the fixed compositor-launched
+`qindaqt-portal-capture-backend` and helper, with capture-only backend bus name
+`org.freedesktop.impl.portal.desktop.qindaqt.capture`. It does not change the
+general supervisor-owned ADR0318 portal backend or install activation for the
+capture broker. Qualified header absence explicitly leaves this new backend
+unavailable; no fork-private source include or legacy permission fallback exists.
+
+The source consumer separates pure bounded packet codec, authenticated control
+channel, broker-owned Request/Session/private-output lifetime and native helper
+presentation. Control fd3 uses seqpacket32-byte headers and kernel credentials,
+current compositor owner/PID/PIDFD, generation and role/state checks. JobStarted
+passes only broker request-writer/result-reader ends; helper fd4 is ordinary Qt
+Wayland/foreign-parent, fd5 tagged capture, fd6 request-read and fd7 result-write.
+Captured result bytes cannot replace the authenticated channel or native privacy.
+
+The broker owns bounded private files and does not launch helpers or open an
+ambient display socket. The helper must send ParentReady after actual import and
+ConsentGranted after actual Allow/Share, then wait CaptureReady. Screenshot has
+one privileged invocation and hidden idle helper/control while its broker-owned
+URI remains retained for at most300000ms after result. PickColor publishes before
+intentional retirement. Streams follow live Session/actor/parent/native authority;
+30s applies to Screenshot2 operation, not stream length.
+
+The public KWin capture call now carries a pipe grace field defaulting to the
+legacy10s; protected helpers select the frozen30s pending-call/total with zero
+grace. A monotonic send-time deadline also rejects completion before queued timer
+delivery, including during drain/decode. Legacy interactive120s remains unchanged.
+These source changes are uncompiled/unexecuted until separately granted gates;
+wire freeze and source presence do not qualify native capture usability. Actual
+helper control/consent adaptation and non-installable actual-input fixtures remain
+in progress, and prior exact denial evidence above stays preserved.

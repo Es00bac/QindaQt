@@ -47,6 +47,10 @@ struct KWinCaptureCall {
     QVariantMap options;
     // Interactive picking waits on the user, not on KWin.
     int timeoutMilliseconds = 15000;
+    // Legacy desktop callers retain pipe grace after the pending-call timeout.
+    // Protected authority jobs set this field to zero and timeout to the
+    // installed wire's30s earlier total; no reply may extend that total.
+    int pipeGraceMilliseconds = 10000;
 
     friend bool operator==(const KWinCaptureCall &, const KWinCaptureCall &) = default;
 };

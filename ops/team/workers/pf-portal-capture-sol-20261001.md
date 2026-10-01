@@ -5,7 +5,7 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — completing exact public-wire consumer freeze before separated protected capture broker implementation
+- Status: working — implementing frozen-wire control and capture-only broker/helper source; native evidence remains pending
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
@@ -13,6 +13,8 @@
 - Resources: source-only; no compiler/private runtime slots granted or held
 
 ## Updates
+
+- 2026-10-01T16:58:45Z — Root confirmed joint freeze91e1c202; source implementation begun only afterwards. Pure installed-header bounded codec and compositor-credential/current-owner/PIDFD control channel, capture-only broker Request/Session/private-result port/main and additive qualified-header CMake registration drafted. No ordinary helper launch/display fallback in protected broker. Public capture call gains source-compatible legacy10s pipe-grace field; protected path chooses30s zero-grace monotonic send-time deadline. Native helper control/consent and non-installable actual-input propagation remain in progress; peer fork test program seam coordinated. Source-only/no compiler/runtime grant, no usability/routing claim, predecessor evidence retained.
 
 - 2026-10-01T16:34:32Z — Exact fork wire91e1c20272b891add2455c648f49e097c9d8baaa and delta from3fbc reviewed; consumer ACCEPT sent to root/fork owner. Bilateral packet credentials/live PIDFD/current compositor owner and explicit one-shot Screenshot hidden retention <=300000ms/publish-before-retire PickColor resolve compatibility concern. Fixed paths/fd3/4–7/SCM_RIGHTS order/IDs/scopes/deadlines compatible. Await root joint freeze before installed-header dependent source. New qinda isolated worktree clean at own pushed fdf85089; no compiler/private runtime held. General ADR0318 service and KDE routing remain unchanged.
 

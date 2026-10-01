@@ -21,7 +21,13 @@ Wayland ScreenCast port; the generated installed primary protocol is the only
 compositor protocol dependency, never fork-private headers.
 
 Portal pure wire policy, actor-fenced standard Requests/Sessions, child-process
-lifetime and native Qt dialogs remain separate components. Package-owned helper
+lifetime and native Qt dialogs remain separate components. The protected source
+successor uses a compositor-launched capture-only broker rather than granting
+the general ADR0318 resident ambient capture permission. Frozen fork wire
+91e1c202 defines fixed broker/helper images and private authenticated control;
+consumers include its installed Qt-free public header only. The general resident
+and native Session1 attachment remain supervisor-owned. This interface agreement
+is not code/runtime acceptance; both families remain routed to KDE pending gates. Package-owned helper
 and resident desktop entries request only needed restricted interfaces. Selected
 ordinary peer/PIDFD/current native owner and authenticated read-only lock receipts
 gate consent, operation and publication. Native authority loss withdraws pending

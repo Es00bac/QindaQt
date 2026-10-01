@@ -12,7 +12,10 @@ choice is recorded in [ADR-0324](../adr/0324-native-portal-capture-boundaries.md
 payloads before allocating/copying images. The port owns an asynchronous pipe,
 expects a complete raw response and reports one decoded result or failure. It
 has one operation at a time; cancel closes the operation and suppresses late
-replies. All calls and signals stay on the creating Qt thread. Request policy
+replies. Each call carries a default legacy10s pipe grace; protected authority
+consumers explicitly choose the frozen30s pending-call/total with zero grace.
+The monotonic send-time deadline is checked during drain, reply and decode,
+so queued timer delivery cannot admit late bytes. Legacy interactive120s remains. All calls and signals stay on the creating Qt thread. Request policy
 and transport do not grant application permission or show consent.
 
 Screenshot's old private include paths remain thin compatibility wrappers. Its
