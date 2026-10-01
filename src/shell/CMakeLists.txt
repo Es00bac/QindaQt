@@ -233,6 +233,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/shellruntimeapplication_tokens.cpp
         runtime/shellruntimeapplication_wallpaper.cpp
         runtime/shellruntimeapplication.h
+        runtime/native_notification_lock_observer.cpp
+        runtime/native_notification_lock_observer.h
         runtime/settingsroutelauncher.cpp
         runtime/settingsroutelauncher.h
         runtime/shellappearancebridge.cpp
@@ -340,6 +342,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::NotificationPresentationModel
             QindaQt::NotificationPresentationPolicy
             QindaQt::SessionLockState
+            QindaQt::CompositorAttachment
             QindaQt::SettingsClient
             QindaQt::VoicePreferences
             QindaQt::ShellCustomizationEditor

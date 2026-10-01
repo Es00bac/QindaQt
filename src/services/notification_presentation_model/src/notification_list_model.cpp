@@ -9,18 +9,23 @@
 namespace QindaQt::Services::NotificationPresentationModel {
 
 NotificationListModel::NotificationListModel(QObject *parent)
-    : QAbstractListModel(parent)
+    : NotificationListModel({}, parent)
+{
+}
+
+NotificationListModel::NotificationListModel(std::function<bool()> admission, QObject *parent)
+    : QAbstractListModel(parent), m_admission(std::move(admission))
 {
 }
 
 int NotificationListModel::rowCount(const QModelIndex &parent) const
 {
-    return parent.isValid() ? 0 : int(m_entries.size());
+    return parent.isValid() || (m_admission && !m_admission()) ? 0 : int(m_entries.size());
 }
 
 QVariant NotificationListModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid() || index.row() < 0 ||
+    if ((m_admission && !m_admission()) || !index.isValid() || index.row() < 0 ||
         index.row() >= m_entries.size()) {
         return {};
     }
@@ -69,6 +74,7 @@ QHash<int, QByteArray> NotificationListModel::roleNames() const
 
 void NotificationListModel::replace(QVector<NotificationListEntry> entries)
 {
+    if (m_admission && !m_admission()) entries.clear();
     if (m_entries == entries) {
         return;
     }
@@ -80,6 +86,10 @@ void NotificationListModel::replace(QVector<NotificationListEntry> entries)
 const QVector<NotificationListEntry> &
 NotificationListModel::entries() const noexcept
 {
+    if (m_admission && !m_admission()) {
+        static const QVector<NotificationListEntry> empty;
+        return empty;
+    }
     return m_entries;
 }
 

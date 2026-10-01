@@ -151,6 +151,13 @@ NotificationWindowController::NotificationWindowController(
                          &Services::NotificationPresentationModel::
                              NotificationPresentationController::popupCountChanged,
                          &m_engine, [this] { updateVisibility(); });
+    // AGENT-GUARD: privacy is an independent mapping boundary. Reconcile even
+    // when guarded getters already report empty rows before queued cleanup.
+    m_privacyConnection =
+        QObject::connect(&m_presentation,
+                         &Services::NotificationPresentationModel::
+                             NotificationPresentationController::privatePresentationAllowedChanged,
+                         &m_engine, [this] { updateVisibility(); });
     m_centerOpenConnection =
         QObject::connect(&m_presentation,
                          &Services::NotificationPresentationModel::
@@ -174,6 +181,7 @@ NotificationWindowController::~NotificationWindowController()
     // AGENT-GUARD: both senders outlive this non-QObject controller during
     // shell teardown. Disconnect before invalidating the lambdas' `this`.
     QObject::disconnect(m_popupCountConnection);
+    QObject::disconnect(m_privacyConnection);
     QObject::disconnect(m_centerOpenConnection);
     QObject::disconnect(m_operationBusyConnection);
     QObject::disconnect(m_operationErrorConnection);

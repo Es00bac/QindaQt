@@ -31,6 +31,7 @@
 #include "notificationwindowcontroller.h"
 #include "notificationquietingsettingsbridge.h"
 #include "notificationapplicationsettingsbridge.h"
+#include "native_notification_lock_observer.h"
 #include "notificationsoundoutput.h"
 #include "panelvisibilityruntime.h"
 #include "powerappletcomposition.h"
@@ -55,8 +56,6 @@
 #include "qindaqt/services/notification_presentation_policy/notification_application_policy.h"
 #include "qindaqt/services/notification_presentation_policy/notification_interruption_policy.h"
 #include "qindaqt/services/notification_presentation_policy/notification_privacy_policy.h"
-#include "qindaqt/services/session_lock_state/qt_session_lock_transport.h"
-#include "qindaqt/services/session_lock_state/session_lock_state_monitor.h"
 #include "qindaqt/services/settings_client/qt_settings_transport.h"
 #include "qindaqt/services/settings_client/settings_client.h"
 #include "qindaqt/shell_orchestration/panel_interaction_store.h"
@@ -510,17 +509,19 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             NotificationPresentationClient::NotificationPresentationClient>(
                 *m_notificationTransport, std::move(*m_presentationAccessToken));
         m_presentationAccessToken.reset();
-        m_sessionLockTransport = std::make_unique<Services::SessionLockState::
-            QtSessionLockTransport>();
-        m_sessionLockMonitor = std::make_unique<Services::SessionLockState::
-            SessionLockStateMonitor>(*m_sessionLockTransport,
-                                     *options.compositorProcessId);
+        const auto environment = QProcessEnvironment::systemEnvironment();
+        m_sessionLockMonitor = std::make_unique<NativeNotificationLockObserver>(
+            QDBusConnection::sessionBus(), *options.compositorProcessId,
+            environment.value(QStringLiteral("XDG_RUNTIME_DIR")),
+            environment.value(QStringLiteral("WAYLAND_DISPLAY")));
         m_notificationInterruptionPolicy = std::make_unique<Services::
             NotificationPresentationPolicy::NotificationInterruptionPolicy>();
         m_notificationApplicationPolicy = std::make_unique<Services::
             NotificationPresentationPolicy::NotificationApplicationPolicy>();
         m_notificationPrivacyPolicy = std::make_unique<Services::
-            NotificationPresentationPolicy::NotificationPrivacyPolicy>();
+            NotificationPresentationPolicy::NotificationPrivacyPolicy>([this] {
+                return m_sessionLockMonitor && m_sessionLockMonitor->contentMayBeShown();
+            });
         m_quietingSettingsBridge =
             std::make_unique<NotificationQuietingSettingsBridge>(
                 *m_quietingSettingsClient, *m_notificationInterruptionPolicy);
@@ -558,8 +559,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
                     m_notificationCenterAccess->publishDoNotDisturbEnabled(enabled);
                 });
         connect(m_sessionLockMonitor.get(),
-                &Services::SessionLockState::SessionLockStateMonitor::
-                    contentMayBeShownChanged,
+                &NativeNotificationLockObserver::contentMayBeShownChanged,
                 m_notificationPrivacyPolicy.get(),
                 &Services::NotificationPresentationPolicy::
                     NotificationPrivacyPolicy::setPrivatePresentationAllowed);
@@ -761,7 +761,6 @@ void ShellRuntimeApplication::resetRuntime()
     m_notificationApplicationPolicy.reset();
     m_notificationInterruptionPolicy.reset();
     m_sessionLockMonitor.reset();
-    m_sessionLockTransport.reset();
     m_notificationClient.reset();
     m_notificationTransport.reset();
     m_tokenPublisher.reset();

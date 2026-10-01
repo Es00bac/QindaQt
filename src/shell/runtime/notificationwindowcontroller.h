@@ -66,6 +66,7 @@ private:
     std::unique_ptr<QQuickWindow> m_centerWindow;
     QPointer<QScreen> m_screen;
     QMetaObject::Connection m_popupCountConnection;
+    QMetaObject::Connection m_privacyConnection;
     QMetaObject::Connection m_centerOpenConnection;
     QMetaObject::Connection m_operationBusyConnection;
     QMetaObject::Connection m_operationErrorConnection;

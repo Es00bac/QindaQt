@@ -131,6 +131,7 @@ private Q_SLOTS:
     void denialClearsEveryPresentationProjection();
     void denialSuppressesAnInFlightOutcomeAcrossUnlock();
     void privacyOutranksDndAndCriticalUrgency();
+    void retainedConsumersRecheckAdmissionBeforeQueuedDenial();
 };
 
 void NotificationPresentationPrivacyTests::startsDeniedAndBaselinesOnFirstGrant()
@@ -325,6 +326,64 @@ void NotificationPresentationPrivacyTests::privacyOutranksDndAndCriticalUrgency(
     privacy.setPrivatePresentationAllowed(false);
     QCOMPARE(controller.popupCount(), 0);
     QCOMPARE(controller.activeModel()->rowCount(), 0);
+}
+
+void NotificationPresentationPrivacyTests::retainedConsumersRecheckAdmissionBeforeQueuedDenial()
+{
+    FakeTransport transport;
+    NotificationPresentationClient::NotificationPresentationClient client(
+        transport, token(), clientTiming());
+    NotificationPresentationPolicy::NotificationInterruptionPolicy interruption;
+    bool admitted = true;
+    NotificationPresentationPolicy::NotificationPrivacyPolicy privacy([&] { return admitted; });
+    privacy.setPrivatePresentationAllowed(true);
+    NotificationPresentationModel::NotificationPresentationController controller(
+        client, interruption, privacy, presentationTiming());
+    auto *active = controller.activeModel();
+    auto *popups = controller.popupModel();
+    auto *history = controller.historyModel();
+    QVERIFY(client.start());
+    const QString owner = QStringLiteral(":1.91");
+    const QString epoch = QStringLiteral("90909090-9090-9090-9090-909090909090");
+    transport.owner(owner);
+    QTRY_COMPARE_WITH_TIMEOUT(transport.requests.size(), 1, 100);
+    transport.reply(transport.requests.last(), wire(epoch, 1,
+        {notification(39, QStringLiteral("Removed private")), notification(40, QStringLiteral("Baseline"))}));
+    QTRY_COMPARE_WITH_TIMEOUT(active->rowCount(), 2, 100);
+    transport.changed(owner, epoch, 2);
+    QTRY_COMPARE_WITH_TIMEOUT(transport.requests.size(), 2, 100);
+    transport.reply(transport.requests.last(), wire(epoch, 2,
+        {notification(40, QStringLiteral("Baseline")), notification(41, QStringLiteral("Fresh private"), 2)}));
+    QTRY_COMPARE_WITH_TIMEOUT(popups->rowCount(), 1, 100);
+    const auto activeIndex = active->index(0, 0), popupIndex = popups->index(0, 0);
+    const auto historyIndex = history->index(0, 0);
+    QVERIFY(activeIndex.isValid());
+    QVERIFY(popupIndex.isValid());
+    QVERIFY(historyIndex.isValid());
+    QSignalSpy popupCountChanges(&controller,
+        &NotificationPresentationModel::NotificationPresentationController::popupCountChanged);
+    admitted = false; // The observer's queued denial has not run.
+    QVERIFY(!active->data(activeIndex, NotificationPresentationModel::NotificationListModel::SummaryRole).isValid());
+    QVERIFY(!popups->data(popupIndex, NotificationPresentationModel::NotificationListModel::BodyRole).isValid());
+    QVERIFY(!history->data(historyIndex, NotificationPresentationModel::NotificationListModel::SummaryRole).isValid());
+    QVERIFY(!controller.privatePresentationAllowed());
+    QVERIFY(!controller.centerOpen());
+    QCOMPARE(controller.popupCount(), 0);
+    QVERIFY(!controller.dismiss(40));
+    QVERIFY(!controller.invokeAction(40, QStringLiteral("open")));
+    QCOMPARE(transport.operations.size(), 0);
+    controller.setCenterOpen(true);
+    QVERIFY(!controller.centerOpen());
+    QCOMPARE(popupCountChanges.size(), 0); // Reads never invalidate models reentrantly.
+    privacy.setPrivatePresentationAllowed(false); // Normal invalidation clears storage.
+    QCOMPARE(popupCountChanges.size(), 1); // Popup-only surfaces must receive retirement.
+    QCOMPARE(active->rowCount(), 0);
+    admitted = true;
+    privacy.setPrivatePresentationAllowed(true);
+    controller.setCenterOpen(true);
+    QVERIFY(controller.centerOpen());
+    admitted = false;
+    QVERIFY(!controller.centerOpen());
 }
 
 QTEST_GUILESS_MAIN(NotificationPresentationPrivacyTests)
