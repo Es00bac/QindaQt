@@ -4,7 +4,7 @@
 - Status: working — final bounded retry-order causal audit for exact candidate 0c326be58a61810e33913a2daac71c2921541a78.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: compiler/private both released after independent125/125 and5/65; scratch grants pending; laptop test lock honored.
+- Resource state: sole bounded scratch compiler/private grants claimed; unchanged originals preserved; laptop test lock honored.
 - Outcome: ACCEPT or bounded causal REJECT of supported per-source native profile holds; no wider PF2/install claim.
 
 ## Updates
@@ -18,3 +18,5 @@
 - 2026-10-01T22:54:35Z: Own qinda configure exit0/build125of125 exit0, compilerPID385980 released. Candidate30paths allSHA256 equal. Direct Portage MkDocs1.6.1 provenance and own strict485links/docs/shape/boundary pass. Unchanged private5/65 replayPID387430 started with dead ambient buses/no display/core0 and five frozen artifact hashes. One manager-approved scratch equivalent-hold-order probe queued after required gates; original binaries remain separate.
 
 - 2026-10-01T22:56:24Z: Independent unchanged private suite PASS5of5CTests/65Qt/0fail/0skip; all40loggedprivatePIDs+runner absent and27roots absent, five binary hashes unchanged. Compiler/private both released. Authorized single copied-fixture order-only refusal probe prepared; no source edits or scratch execution yet, awaiting graphics compiler release.
+
+- 2026-10-01T22:57:01Z: Root grants after graphics exact2TU release. One copied runtime TU compile/linkPID388844 started/core0/ownedmemorymonitor, then only knownRejectionDoesNotSpin order-only case. Source delta/argv/hashes retained separately; no product edit or original artifact replacement.
