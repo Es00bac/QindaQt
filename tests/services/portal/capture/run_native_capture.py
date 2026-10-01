@@ -212,6 +212,8 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
                 shutil.copyfile(log, evidence / log.name)
             # The current audit uses the explicit helper path, while completed
             # requests are archived under runtime by the caller's reset().
+            for snapshot in runtime.glob("qindaqt-capture-observed.png"):
+                shutil.copyfile(snapshot, evidence / snapshot.name)
             for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]),
                           runtime / "qindaqt-capture-history.audit"):
                 if audit.is_file():

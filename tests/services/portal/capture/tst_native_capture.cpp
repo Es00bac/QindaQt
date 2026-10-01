@@ -83,7 +83,11 @@ private Q_SLOTS:
     void screenshotActualPixelsColorAndCancel() {
         screenshot("Screenshot"); success();
         const QUrl uri(responses.results.value("uri").toString()); QVERIFY(uri.isLocalFile()); QCOMPARE(uri.toString(QUrl::FullyEncoded), responses.results.value("uri").toString());
-        const QImage image(uri.toLocalFile()); QVERIFY(!image.isNull()); QCOMPARE(image.size(), QSize(1100, 820)); QVERIFY(containsFixturePixels(image));
+        const QImage image(uri.toLocalFile()); QVERIFY(!image.isNull()); QCOMPARE(image.size(), QSize(1100, 820));
+        // Retain the actual synthetic frame before helper/broker retirement so
+        // a failed pixel assertion can distinguish admission from rendering.
+        QVERIFY(image.save(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("qindaqt-capture-observed.png")));
+        QVERIFY(containsFixturePixels(image));
         QFile file(uri.toLocalFile()); QCOMPARE(file.permissions() & (QFileDevice::ReadGroup | QFileDevice::WriteGroup | QFileDevice::ReadOther | QFileDevice::WriteOther), QFileDevice::Permissions{});
         reset("allow"); screenshot("PickColor"); success(); const auto color = qdbus_cast<CaptureColor>(responses.results.value("color")); QVERIFY(color.red >= 0 && color.red <= 1); QVERIFY(color.green >= 0 && color.green <= 1); QVERIFY(color.blue >= 0 && color.blue <= 1);
         QVERIFY((color.red > .7 && color.green < .35) || (color.green > .7 && color.red < .35));
@@ -101,14 +105,14 @@ private Q_SLOTS:
         ExportProcess exporter; auto env = QProcessEnvironment::systemEnvironment(); env.remove("WAYLAND_DISPLAY"); env.insert("WAYLAND_SOCKET", QString::number(fd)); exporter.setProcessEnvironment(env);
         exporter.setChildProcessModifier([fd] { if (fcntl(fd, F_SETFD, 0) < 0) _exit(2); }); exporter.start(qEnvironmentVariable("QINDAQT_PORTAL_FOREIGN_EXPORTER")); const bool started = exporter.waitForStarted(); ::close(fd); QVERIFY(started);
         QByteArray output; QTRY_VERIFY_WITH_TIMEOUT((output += exporter.readAllStandardOutput()).contains('\n'), 5000); const auto parent = QString::fromUtf8(output.trimmed());
-        screenshot("Screenshot", parent); success(); QString session; createSession(session); select(session); reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), parent, QVariantMap{}}); success();
+        screenshot("Screenshot", parent); success(); QString session; createSession(session); select(session); reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), parent, QVariantMap{}}); success(true);
         const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1); QVERIFY(streams.first().node > 0); const auto streamPid = helperPid();
         reset("hold"); screenshot("Screenshot", parent); mapped(); const auto pendingPid = helperPid(); exporter.kill(); QVERIFY(exporter.waitForFinished());
         QTRY_VERIFY(kill(streamPid, 0) < 0); QTRY_VERIFY(kill(pendingPid, 0) < 0); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 2U);
     }
     void actualPipeWireNodeFramesSessionCloseAndCancel() {
         QString session; createSession(session); QVERIFY(!session.isEmpty()); select(session); reset("allow");
-        request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success();
+        request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
         const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1); QVERIFY(streams.first().node > 0);
         auto remote = method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}});
         QDBusPendingCallWatcher opened(bus.asyncCall(remote)); QTRY_VERIFY(opened.isFinished()); const QDBusPendingReply<QDBusUnixFileDescriptor> fd = opened; QVERIFY2(!fd.isError(), qPrintable(fd.error().message())); QVERIFY(fd.value().isValid());
@@ -118,7 +122,7 @@ private Q_SLOTS:
     }
     void compositorLossWithdrawsStreamsFilesAndPendingPublication() {
         screenshot("Screenshot"); success(); const auto file = QUrl(responses.results.value("uri").toString()).toLocalFile();
-        QString session; createSession(session); select(session); reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success();
+        QString session; createSession(session); select(session); reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
         const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1);
         QDBusPendingCallWatcher opened(bus.asyncCall(method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}}))); QTRY_VERIFY(opened.isFinished()); const QDBusPendingReply<QDBusUnixFileDescriptor> remote = opened; QVERIFY(!remote.isError());
         PipeWireFrames frames(dup(remote.value().fileDescriptor()), streams.first().node); QTRY_VERIFY_WITH_TIMEOUT(frames.count() > 3, 15000); const auto streamPid = helperPid();
@@ -131,7 +135,7 @@ private Q_SLOTS:
     }
     void nativeLockStopsActualStreamPendingCaptureAndRetainedFile() {
         screenshot("Screenshot"); success(); const auto file = QUrl(responses.results.value("uri").toString()).toLocalFile(); QVERIFY(QFile::exists(file));
-        QString session; createSession(session); select(session); reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success();
+        QString session; createSession(session); select(session); reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
         const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1);
         QDBusPendingCallWatcher opened(bus.asyncCall(method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}}))); QTRY_VERIFY(opened.isFinished()); const QDBusPendingReply<QDBusUnixFileDescriptor> remote = opened; QVERIFY(!remote.isError());
         PipeWireFrames frames(dup(remote.value().fileDescriptor()), streams.first().node); QTRY_VERIFY_WITH_TIMEOUT(frames.count() > 3, 15000); const auto streamPid = helperPid();
@@ -200,7 +204,7 @@ private:
         QCOMPARE(control.write(data), data.size()); QVERIFY(control.commit());
     }
     QByteArray audit() const { QFile f(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT")); return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray{}; }
-    void mapped() {
+    void mapped(bool screenCast = false) {
         QTRY_VERIFY_WITH_TIMEOUT(audit().contains("ordinary exact-peer mapped"), 15000);
         QTRY_VERIFY_WITH_TIMEOUT(audit().contains("ordinary fd4 globals complete"), 5000);
         const QByteArrayList forbidden{"org_kde_plasma_window_management", "org_kde_kwin_fake_input", "zkde_screencast_unstable_v1",
@@ -211,12 +215,15 @@ private:
         for (const auto &line : observed.split('\n')) {
             const auto prefix = line.indexOf("capture fd5 global "); if (prefix < 0) continue;
             const auto name = line.mid(prefix+19);
-            QVERIFY2(name == "wl_output" || name == "zxdg_output_manager_v1" || name == "zkde_screencast_unstable_v1", name.constData());
+            QVERIFY2(name == "wl_output" || name == "zxdg_output_manager_v1" || (screenCast && name == "zkde_screencast_unstable_v1"), name.constData());
         }
-        for (const auto &name : {"wl_output", "zxdg_output_manager_v1", "zkde_screencast_unstable_v1"})
+        // AGENT-CONTRACT: fork captureauthorityinterfaces grants the screencast
+        // global only to ScreenCast scope. Screenshot fd5 has outputs only.
+        for (const auto &name : {"wl_output", "zxdg_output_manager_v1"})
             QVERIFY(observed.contains(QByteArray("capture fd5 global ")+name+'\n'));
+        QCOMPARE(observed.contains("capture fd5 global zkde_screencast_unstable_v1\n"), screenCast);
     }
-    void success() { QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 0U); mapped(); QVERIFY(audit().contains("control CaptureReady")); }
+    void success(bool screenCast = false) { QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 0U); mapped(screenCast); QVERIFY(audit().contains("control CaptureReady")); }
     pid_t helperPid() const {
         for (const auto &line : audit().split('\n')) {
             if (line.contains("ordinary exact-peer mapped")) return static_cast<pid_t>(line.split(' ').value(0).toLongLong());
