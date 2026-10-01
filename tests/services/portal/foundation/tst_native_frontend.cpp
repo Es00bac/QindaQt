@@ -61,7 +61,7 @@ private Q_SLOTS:
         QVERIFY(QDir().mkpath(data + QStringLiteral("/applications")));
         QFile desktop(data + QStringLiteral("/applications/org.test.Mail.desktop")); QVERIFY(desktop.open(QIODevice::WriteOnly));
         desktop.write("[Desktop Entry]\nType=Application\nName=Private Mail\nNoDisplay=true\nMimeType=x-scheme-handler/mailto;\nExec=" + qEnvironmentVariable("QINDAQT_PORTAL_TEST_MAIL").toUtf8() + " %u\n"); desktop.close();
-        QFile defaults(data + QStringLiteral("/mimeapps.list")); QVERIFY(defaults.open(QIODevice::WriteOnly));
+        QFile defaults(data + QStringLiteral("/applications/mimeapps.list")); QVERIFY(defaults.open(QIODevice::WriteOnly));
         defaults.write("[Default Applications]\nx-scheme-handler/mailto=org.test.Mail.desktop;\n"); defaults.close();
         QFile app(data + QStringLiteral("/applications/org.test.PrivateApp.desktop")); QVERIFY(app.open(QIODevice::WriteOnly));
         app.write("[Desktop Entry]\nType=Application\nName=Synthetic frontend caller\nExec=/bin/true\n"); app.close();

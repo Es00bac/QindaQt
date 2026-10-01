@@ -8,7 +8,7 @@
 namespace QindaQt::SessionSupervisor {
 // Same-thread optional portal child and selected-session D-Bus lifetime. The
 // dedicated connection is retained across backend replacement, then disconnected
-// before child teardown so native consent/URI authority retires synchronously.
+// before child teardown so native consent/URI authority retires through the retained owner-loss boundary.
 // Missing helper/display or failed admission never blocks login. RPC replies are
 // only transport acknowledgements; the backend owns display/privacy admission.
 class PortalSessionLifetime final : public QObject {
