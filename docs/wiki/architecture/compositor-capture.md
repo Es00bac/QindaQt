@@ -44,7 +44,9 @@ policy. The standard portal frontend owns the remote and node permissions.
 The qualified fork690 still exports its legacy ScreenShot2 interface and
 `org.kde.KWin` owner alongside the native compositor identity. Public
 `CompositorNames` constants describe those deliberate PF21 carve-outs. Screenshot
-transport verifies that restricted screenshot and native compositor owners agree;
+transport verifies that restricted screenshot and native compositor owners agree
+both at send and before final decoding/publication; a replaced native owner
+cannot publish an old process's still-live compatibility response;
 there is no invented renamed interface or ambient legacy fallback.
 
 The fork refuses screenshot and stream creation while native lock is active,

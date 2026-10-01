@@ -175,7 +175,8 @@ and monotonic job replay rejection. No compiled/runtime result is inferred.
 The public transport fixture separately uses synthetic raw bytes on a zero-activation
 private bus to test drain-before-metadata/EOF, early metadata with delayed pipe
 completion beyond zero grace, event-loop delay, cancel/late reply suppression and
-legacy interactive120s/default10s compatibility. This tests transport budgets,
+legacy interactive120s/default10s compatibility, plus native-owner replacement
+while the old compatibility screenshot writer stays alive. This tests transport budgets,
 not protected capture permission or actual pixels.
 
 The new native runner takes eleven artifact paths, including a separately selected
