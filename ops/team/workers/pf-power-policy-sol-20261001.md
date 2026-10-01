@@ -1,7 +1,7 @@
 # Native source profile policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: working — repairing independently reproduced refusal retry on reordered provider inventories
+- Status: available — repaired inventory-order candidate passes qinda gates; awaiting exact independent rereview or compatible help
 - Base: 4011a663
 - Branch: worker/pf-power-policy-runtime-20261001
 - Worktree: .cache/pf-power-policy-runtime-20261001
@@ -32,3 +32,5 @@
 - 2026-10-01T22:46:05Z — Documentation provenance clarification: prior strict MkDocs485-page/static PASS was laptop light documentation verification, not qinda. Final qinda exact-candidate strict docs gate is pending manager Portage-only tool availability. No further laptop heavy work; qinda compiler/private remain released and executable evidence unchanged.
 
 - 2026-10-01T23:00:06Z — Independent reviewer rejects exact0c with actual resident refusal count2 after reversing identical external holds (expected1). Repair scope is canonical membership-only admission key plus mandatory known-refusal regression and precise power wiki/ADR consequence. Public Settings/epoch/manual/uncertainty/defaultOFF and zero scopes remain; source first, no compiler/private resource claim while graphics owns them. Qinda MkDocs availability now supplied by manager Portage install.
+
+- 2026-10-01T23:06:10Z — Exactce84 repair built two targets/deps exit0/13.820s/9 Ninja actions; compilerPID400006 released. Mandatory refusal regression3/0/0 Qt766ms; full original5/5 CTests,65/0/0 Qt14.32s. Qinda Portage MkDocs1.6.1 strict PASS7.59s,485-page checker and static gates exit0. Six executable/archive hashes unchanged;42 logged private PIDs+2 runners/28 roots directly absent. Both resources released, same reviewer notified for exactce84 rereview. Platform queue and independent REJECT thread read; no new path claim, available for exact review repair/public Power1 contract help.
