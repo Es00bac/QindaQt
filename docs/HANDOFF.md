@@ -42,11 +42,20 @@ is independently accepted and merged at `4b946ad1`, with review evidence include
 at `01d9e50b`. Its actual frontend, native input, routing and staged gates pass
 24/24 independently; installed/sandbox and combined-tree gates remain open.
 
-The combined runtime/privacy/sleep run on `32bf9f77` passes 32/33 rows, with
+The expanded combined build on `f5f8db6a` passes all 248 requested production,
+plugin and affected-module targets, including choosers, Screenshot and adjacent
+Secret portal fixtures. This remains a scoped build, not an all-target pass.
+
+The earlier combined runtime/privacy/sleep run on `32bf9f77` passes 32/33 rows, with
 `qindaqt.kwayland-dpms-controller` failing the retained final-On teardown count
-(4 observed, 5 required). A separate isolated worker investigates and repairs
-that exact failure; no failing assertion is relaxed. Native/plugin/key-store
-gates follow its immutable review and the combined chooser build.
+(4 observed, 5 required). Exact repair `d08e49d13747cb0b71c3f13abfc8ecf058c46a4c`
+is independently accepted and merged with review records at `3dfe915b`. A dedicated
+retained-display queue acknowledges the final On or expires after 250 ms before
+teardown; ordinary requests after revocation remain forbidden and no connection
+is reopened. Independent DPMS/idle gates pass 2/2 with 18 Qt checks, zero failures
+or skips, and the original count/last-On assertions unchanged. Root owns the
+affected combined rebuild, original suites and native/plugin/key-store gates.
+The native notification mapping harness has its own isolated source-only lane.
 
 The supplied painted icon family is independently delivered on both hosts as
 Portage package `x11-themes/qinda-breeze-painted-1.0.0_p20260929`, using overlay
