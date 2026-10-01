@@ -60,7 +60,7 @@ public:
       ++suspendCalls;
       interactive = m.arguments().first().toBool();
       if (autoPrepare) prepare(true);
-      bus.send(m.createReply());
+      if (deferSuspend) deferredSuspend = m; else bus.send(m.createReply());
     } else return false;
     return true;
   }
@@ -96,7 +96,7 @@ public:
   QString pidPath = path;
   quint32 uid = static_cast<quint32>(getuid());
   bool malformedUser = false, deferInhibit = false, deferCan = false, autoPrepare = false;
-  bool interactive = true, preparing = false;
+  bool interactive = true, preparing = false, deferSuspend = false;
   QString canAnswer = QStringLiteral("yes");
   int canCalls = 0, suspendCalls = 0;
   QStringList selectedIds;
@@ -104,7 +104,7 @@ public:
   QList<QVariantList> inhibitors;
   QList<int> readEnds;
   QList<bool> hints;
-  QDBusMessage deferredInhibit, deferredCan;
+  QDBusMessage deferredInhibit, deferredCan, deferredSuspend;
 };
 class NativeWire final : public QDBusVirtualObject {
 public:

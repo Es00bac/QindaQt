@@ -14,6 +14,9 @@ SleepService::SleepService(QDBusConnection bus, SleepCoordinator &coordinator,
     quint32 uid, QObject *parent)
     : QDBusVirtualObject(parent), m_bus(std::move(bus)), m_coordinator(coordinator), m_uid(uid) {
   connect(&m_coordinator, &SleepCoordinator::suspendFinished, this, &SleepService::finish);
+  connect(&m_coordinator, &SleepCoordinator::availabilityChanged, this, [this] {
+    if (m_started) m_bus.send(QDBusMessage::createSignal(Path, Service, QStringLiteral("Changed")));
+  });
 }
 SleepService::~SleepService() { stop(); }
 bool SleepService::start() {
@@ -43,7 +46,8 @@ void SleepService::stop() {
 QString SleepService::introspect(const QString &) const {
   return QStringLiteral("<interface name=\"org.qindaqt.Sleep1\">"
       "<method name=\"CanSuspend\"><arg type=\"b\" direction=\"out\"/></method>"
-      "<method name=\"Suspend\"><arg type=\"b\" direction=\"out\"/></method></interface>");
+      "<method name=\"Suspend\"><arg type=\"b\" direction=\"out\"/></method>"
+      "<signal name=\"Changed\"/></interface>");
 }
 bool SleepService::handleMessage(const QDBusMessage &message, const QDBusConnection &) {
   if (message.path() != Path || message.interface() != Service ||

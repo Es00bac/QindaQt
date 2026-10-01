@@ -15,6 +15,8 @@ private Q_SLOTS:
   void facadeReturnsConclusiveResult();
   void selectedLockSignalRequestsNativeAdmission();
   void manualPrepareRaceStillReleasesOnlyProtected();
+  void dispatchedSleepTimeoutIsUncertainWithoutReplay();
+  void facadeAuthenticatesActualCallerUid();
 };
 void SleepCoordinatorTests::manualSuspendRequiresTargetedProtectedReceipt() {
   Fixture f; f.start(); QSignalSpy result(&f.coordinator, &SleepCoordinator::suspendFinished);
@@ -91,6 +93,28 @@ void SleepCoordinatorTests::manualPrepareRaceStillReleasesOnlyProtected() {
   QVERIFY(f.coordinator.requestSuspend()); QTRY_COMPARE(f.native.requests, 1);
   f.native.state(true, true); QTRY_COMPARE(f.logind.suspendCalls, 1);
   QTRY_VERIFY(f.logind.inhibitorClosed());
+}
+void SleepCoordinatorTests::dispatchedSleepTimeoutIsUncertainWithoutReplay() {
+  Fixture f; f.start(); f.logind.deferSuspend = true;
+  auto call = QDBusMessage::createMethodCall(QStringLiteral("org.qindaqt.Sleep1"),
+      QStringLiteral("/org/qindaqt/Sleep1"), QStringLiteral("org.qindaqt.Sleep1"), QStringLiteral("Suspend"));
+  auto pending = f.attacker.asyncCall(call, 5000); QTRY_COMPARE(f.native.requests, 1);
+  f.native.state(true, true); QTRY_COMPARE(f.logind.suspendCalls, 1);
+  const auto reply = waitReply(pending);
+  QCOMPARE(reply.type(), QDBusMessage::ErrorMessage);
+  QCOMPARE(reply.errorName(), QStringLiteral("org.qindaqt.Sleep1.Uncertain"));
+  f.logindBus.send(f.logind.deferredSuspend.createReply()); QTest::qWait(100);
+  QCOMPARE(f.logind.suspendCalls, 1);
+}
+void SleepCoordinatorTests::facadeAuthenticatesActualCallerUid() {
+  Fixture f; f.start(); f.service.stop();
+  SleepService denied(f.supervisor, f.coordinator, static_cast<quint32>(getuid() + 1));
+  QVERIFY(denied.start());
+  auto call = QDBusMessage::createMethodCall(QStringLiteral("org.qindaqt.Sleep1"),
+      QStringLiteral("/org/qindaqt/Sleep1"), QStringLiteral("org.qindaqt.Sleep1"), QStringLiteral("Suspend"));
+  const auto reply = waitReply(f.attacker.asyncCall(call));
+  QCOMPARE(reply.type(), QDBusMessage::ReplyMessage); QVERIFY(!reply.arguments().first().toBool());
+  QCOMPARE(f.native.requests, 0); QCOMPARE(f.logind.suspendCalls, 0);
 }
 QTEST_GUILESS_MAIN(SleepCoordinatorTests)
 #include "tst_sleep_coordinator.moc"

@@ -130,6 +130,9 @@ private Q_SLOTS:
     void automaticLockWaitsForCurrentPowerOwnerLeaseState();
     void suspendWaitsForActualProtectedState();
     void resumeWaitsForAuthenticatedStateAndHonorsPreference();
+    void canceledSleepCannotDispatchLateProtection();
+    void stopAndRestartRetireNativeRequest();
+    void selectedLogindResumeUsesConfirmedNativeState();
 };
 
 void NativeLockRuntimeTests::automaticIdleUsesConfirmedTimeoutAndCancelableGrace() {
@@ -247,6 +250,28 @@ void NativeLockRuntimeTests::resumeWaitsForAuthenticatedStateAndHonorsPreference
     f.lockTransport.authority();
     f.unlockState();
     QTRY_COMPARE(f.request.requests, 1);
+}
+void NativeLockRuntimeTests::canceledSleepCannotDispatchLateProtection() {
+    Fixture f; f.seed(false, false, 0); f.start(); f.unlockState();
+    bool dispatched = false;
+    QVERIFY(f.runtime->requestSuspend([&] { dispatched = true; }));
+    f.runtime->cancelSuspend();
+    f.request.completed(RequestResult::Admitted);
+    f.lockTransport.invalidate(); f.lockTransport.answer(true, true);
+    QVERIFY(f.monitor.presentationProtected()); QVERIFY(!dispatched);
+}
+void NativeLockRuntimeTests::stopAndRestartRetireNativeRequest() {
+    Fixture f; f.seed(false, false, 0); f.start(); f.unlockState();
+    QVERIFY(f.runtime->requestManualLock());
+    f.runtime->stop(); QVERIFY(f.runtime->start());
+    f.lockTransport.authority(); f.unlockState();
+    QVERIFY(f.runtime->requestManualLock()); QCOMPARE(f.request.requests, 2);
+}
+void NativeLockRuntimeTests::selectedLogindResumeUsesConfirmedNativeState() {
+    Fixture f; f.seed(false, true, 0); f.start();
+    f.runtime->prepareForSleep(true); f.runtime->prepareForSleep(false);
+    QCOMPARE(f.request.requests, 0); f.unlockState();
+    QCOMPARE(f.request.requests, 1);
 }
 QTEST_GUILESS_MAIN(NativeLockRuntimeTests)
 #include "tst_native_lock_runtime.moc"

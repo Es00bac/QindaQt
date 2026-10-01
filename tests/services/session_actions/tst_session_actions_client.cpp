@@ -78,6 +78,8 @@ public:
 public Q_SLOTS:
     bool CanSuspend() { ++canCount; return allowed; }
     bool Suspend() { ++suspendCount; return allowed; }
+Q_SIGNALS:
+    void Changed();
 };
 
 class FakeLogind final : public QObject {
@@ -179,6 +181,7 @@ private Q_SLOTS:
     void mutationTimeoutIsUncertainAndNeverReplays();
     void ownerLossWithdrawsAvailabilityWithoutPolling();
     void logindAloneCannotOfferSuspend();
+    void nativeSleepInvalidationRefreshesAvailability();
 };
 
 void SessionActionsClientTest::canChecksPublishTypedFailClosedTruth()
@@ -340,6 +343,16 @@ void SessionActionsClientTest::logindAloneCannotOfferSuspend() {
     client.start(); QTRY_VERIFY(client.canLock());
     QTest::qWait(100); QVERIFY(!client.canSuspend()); QVERIFY(!client.requestSuspend());
     QCOMPARE(services.logind.suspendCount, 0);
+}
+
+void SessionActionsClientTest::nativeSleepInvalidationRefreshesAvailability() {
+    PrivateServices services; services.sleep.allowed = false;
+    SessionActionsClient client(services.clientBus, services.clientBus);
+    client.start(); QTRY_VERIFY(client.canLock()); QVERIFY(!client.canSuspend());
+    services.sleep.allowed = true; Q_EMIT services.sleep.Changed();
+    QTRY_VERIFY(client.canSuspend());
+    services.sleep.allowed = false; Q_EMIT services.sleep.Changed();
+    QTRY_VERIFY(!client.canSuspend());
 }
 
 QTEST_GUILESS_MAIN(SessionActionsClientTest)
