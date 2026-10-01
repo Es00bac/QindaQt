@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — repairing owned first strict-build capture adaptor API errors; compiler released, private runtime unclaimed
+- Status: working — strict remaining capture/resident/Screenshot build at exacte6afb200; compiler grant active, private runtime unclaimed
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler released after first build failure; no private runtime used/granted; chooser history preserved
+- Resources: bounded compiler grant active for unchanged named scope; no private runtime used/granted; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T13:36:08Z — Popup reviewer released resources; root granted heavy compiler only for exacte6afb200c2158ecd164ae3fd37ae5518c4b90422. Clean qinda source identity rechecked; resuming unchanged approved11 named targets with-j24-l24 in build/focused, separate build/e6afb200-build.log. Prior fbade failure and API repair preserved. No private runtime or routing changes.
 
 - 2026-10-01T13:30:17Z — Exactfbadebc3 strict configure exit0; named-target Ninja exit1, retained build/fbadebc3-build.log. Owned CaptureSessions ambiguous createReply initializer and missing required RequestRegistry retirement reason in CaptureSessions/ScreenshotAdaptor blocked compile. Raw generated Wayland capture port compiled. Compiler released immediately for popup reviewer; source repair uses explicit QVariantList replies and public Failed retirement reason, no registry/accepted family edits. No runtime claim.
 
