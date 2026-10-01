@@ -73,9 +73,11 @@ scenarios pass. The synthetic native key-store UI journey passes with seven Qt
 cases and fourteen visible production-prompt approvals. A shell-disabled test
 configuration repair `37347fe4` is independently accepted and merged with review
 at `61e07eb8`; the unchanged four-branch configuration gate also passes on
-integrated source `addccb7a`. Native popup candidate `6181566a` passes its
-private mapping/privacy gate; exact different-worker review is active. Hardware
-and consolidated installed qualification remain open.
+integrated source `addccb7a`. Native popup `6181566a` is independently accepted and merged at `e21c1757`;
+the integrated strict helper build and focused native gate pass (1/1 CTest,
+four Qt passes). Native sleep-mode source `052697d3` passes its private eight-row
+gate but awaits exact different-worker review. Hardware and consolidated
+installed qualification remain open.
 No milestone or installed
 Plasma-removal completion advances from candidate activity.
 
