@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include <qindaqt/services/portal/capture_types.h>
+#include <qindaqt/services/portal/request_registry.h>
 #include <qindaqt/services/compositor_capture/kwin_capture_port.h>
 #include <qindaqt/services/compositor_capture/wayland_screencast.h>
 #include "native_capture_admission.h"
