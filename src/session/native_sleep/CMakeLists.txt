@@ -4,6 +4,7 @@ add_library(QindaQt::NativeSleep ALIAS qindaqt_native_sleep)
 target_sources(qindaqt_native_sleep PRIVATE
   src/logind_sleep_transport.cpp src/sleep_coordinator.cpp src/sleep_service.cpp
   PUBLIC FILE_SET HEADERS BASE_DIRS include FILES
+  include/qindaqt/session/native_sleep/sleep_mode.h
   include/qindaqt/session/native_sleep/logind_sleep_transport.h
   include/qindaqt/session/native_sleep/sleep_coordinator.h
   include/qindaqt/session/native_sleep/sleep_service.h)

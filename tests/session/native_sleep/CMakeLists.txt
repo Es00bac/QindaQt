@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-foreach(test IN ITEMS logind_sleep_transport sleep_coordinator)
+foreach(test IN ITEMS logind_sleep_transport sleep_coordinator sleep_modes)
   qt_add_executable(qindaqt_${test}_tests tst_${test}.cpp sleep_test_support.h)
   target_link_libraries(qindaqt_${test}_tests PRIVATE QindaQt::NativeSleep
     QindaQt::NativeLockService QindaQt::SessionLockState QindaQt::CompositorAttachment

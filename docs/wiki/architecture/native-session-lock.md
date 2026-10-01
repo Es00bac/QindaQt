@@ -347,3 +347,13 @@ dispatch. Advisory Changed invalidations converge asynchronous startup
 availability without polling. Protection is rechecked after CanSuspend; authority
 loss cancels the callback. Unknown/Locking refuses a new manual action. This
 does not enable idle-suspend policy or advertise Power1 inhibitor scopes.
+
+### Additive native sleep modes
+
+The candidate [ADR-0325](../adr/0325-additive-native-sleep-modes.md) extends the
+same Sleep1 protection gate to Hibernate, HybridSleep and SuspendThenHibernate,
+with matching caller-admitted Can methods. Suspend keeps its existing signature.
+All modes repeat the exact logind capability after current Locked/Protected
+receipt and dispatch noninteractively; capability hints never replace protection.
+Explicit cancellation fences the exact mode/request serial. Lid, critical-battery
+and idle policy are separate prerequisites, with no PF2 completion claim.

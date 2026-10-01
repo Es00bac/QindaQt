@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/session/native_sleep/sleep_coordinator.h>
+#include <QPointer>
 namespace QindaQt::Session::NativeSleep {
 using Services::SessionLockState::LockState;
 SleepCoordinator::SleepCoordinator(LogindSleepTransport &transport,
@@ -52,18 +53,26 @@ bool SleepCoordinator::canSuspend() const {
          (state == LockState::Unlocked ||
           (state == LockState::Locked && m_state.presentationProtected()));
 }
-bool SleepCoordinator::requestSuspend() {
-  if (!canSuspend()) return false;
+void SleepCoordinator::queryCapability(SleepMode mode, std::function<void(bool)> completion) {
+  if (!canSuspend()) { completion(false); return; }
+  const auto serial = m_serial;
+  m_transport.queryCapability(mode, [self = QPointer<SleepCoordinator>(this), serial,
+      completion = std::move(completion)](bool capable) {
+    if (self) completion(capable && serial == self->m_serial && self->canSuspend());
+  });
+}
+bool SleepCoordinator::requestSleep(SleepMode mode) {
+  if (actionMethod(mode).isEmpty() || !canSuspend()) return false;
   m_manual = true;
   const auto serial = ++m_serial;
   m_deadline.start();
   Q_EMIT availabilityChanged();
-  const bool accepted = m_runtime.requestSuspend([this, serial] {
+  const bool accepted = m_runtime.requestSuspend([this, serial, mode] {
     if (!m_started || !m_manual || serial != m_serial ||
-        !m_state.presentationProtected() ||
-        !m_transport.requestSuspend([this, serial] {
+        m_state.state() != LockState::Locked || !m_state.presentationProtected() ||
+        !m_transport.requestSleep(mode, [this, serial] {
           return m_started && m_manual && serial == m_serial &&
-                 m_state.presentationProtected();
+                 m_state.state() == LockState::Locked && m_state.presentationProtected();
         })) refuseManual();
   });
   if (!accepted && m_manual) refuseManual();
@@ -112,7 +121,11 @@ void SleepCoordinator::syncLockedHint() {
   Q_EMIT availabilityChanged();
 }
 void SleepCoordinator::refuseManual() {
-  finishManual(m_transport.suspendDispatched() ? SleepResult::Uncertain : SleepResult::Refused);
+  const auto result = m_transport.suspendDispatched() ? SleepResult::Uncertain : SleepResult::Refused;
+  // Retire before observers can start another request; old Can/action replies
+  // must never complete a new mode in the same logind generation.
+  m_transport.cancelSleep();
+  finishManual(result);
 }
 void SleepCoordinator::finishManual(SleepResult result) {
   if (!m_manual) return;
