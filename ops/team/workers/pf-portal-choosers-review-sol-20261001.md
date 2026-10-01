@@ -2,8 +2,8 @@
 
 - Identity: pf-portal-choosers-review-sol-20261001
 - Role: independent PF18 chooser review
-- Status: waiting — 9aa source/static audit complete; awaiting repaired immutable handoff and manager private-runtime grant; no resource held
-- Candidate: 9aa6c3a54d811e87d2e624158ac599f7bf218fad
+- Status: working — reviewing repaired exact684ca904b3b997d293795abb413cb1e2f94aa666 and executing manager-granted independent private24-row rerun; no compiler claim
+- Candidate: 684ca904b3b997d293795abb413cb1e2f94aa666
 - Base: 8c717c826e334674a0a39224361af07bf49fd9ac
 - Branch: review/pf-portal-choosers-sol-20261001
 - Worktree: .cache/pf-portal-choosers-review-20261001
@@ -15,3 +15,4 @@
 - 2026-10-01T11:28:13Z — Audited chooser product modules, GUI and actual frontend/private input tests plus directly read installed backend XML. No additional consequential product-source finding so far. Root/implementer identified frontend Response2 uris=[] fixture expectation and private Power1 activation isolation repair; final verdict will target repaired descendant, not9aa. Local docs482/diff pass; strict MkDocs pending process completion. No runtime/compiler used.
 - 2026-10-01T11:30:13Z — Static9aa review complete; strict MkDocs/docs482/diff/focused-shape41 all exit0. Executable rerun not authorized until final descendant and root private grant. Existing Access helper no-mapping causal investigation remains implementer-owned; provided readonly environment-isolation clue without claiming cause or modifying production. Waiting honestly; no compiler or fixture held.
 - 2026-10-01T11:35:34Z — Directly read implementer one-case stderr/log: native-consent input binary absent (exec ENOENT), admitted setup passes but expected grant receives failure. This explains earlier no-mapping evidence without attributing a production regression. Implementer owns minimal test dependency repair/build and repaired frozen handoff. Reviewer remains waiting with no runtime/compiler grants.
+- 2026-10-01T11:42:48Z — Same reviewer resumed on root private grant. Fetched and merged exact repaired684ca into own review branch; only candidate test/docs delta plus reviewer records, no source edits. Direct qinda HEAD684ca and product diff to684ca exit0. Delta fixes primary frontend failure expectation, closed systembus/Power1 activation isolation and missing native fixture helpers; previous ENOENT cause preserved. Preparing independent24 rows using immutable binaries, no compile.
