@@ -7,6 +7,7 @@
 #include "qindaqt/session_supervisor/tokenized_process_launcher.h"
 #include "first_launch_welcome.h"
 #include "keyring_session_lifetime.h"
+#include "portal_session_lifetime.h"
 #include "session_autostart_runner.h"
 
 #include <QCoreApplication>
@@ -69,6 +70,7 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
       , m_removableMedia(std::make_unique<OptionalSessionChild>(
             QStringLiteral("removable-media"), QStringList{QStringLiteral("--watch")}))
       , m_keyring(std::make_unique<KeyringSessionLifetime>(this))
+      , m_portal(std::make_unique<PortalSessionLifetime>(this))
       , m_nightLight(std::make_unique<OptionalSessionChild>(
             QStringLiteral("night-light"), QStringList{}))
       , m_polkitAgent(std::make_unique<OptionalSessionChild>(
@@ -174,6 +176,7 @@ bool SessionProcessSupervisor::start(QString *error)
     m_desktopControls->resetRestartCount();
     m_removableMedia->resetRestartCount();
     m_keyring->resetRestartCount();
+    m_portal->resetRestartCount();
     m_nightLight->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
@@ -245,6 +248,7 @@ void SessionProcessSupervisor::stop() noexcept
     }
     stopChild(m_networkSecretAgent);
     m_desktopControls->stop();
+    m_portal->stop();
     m_keyring->stop();
     m_nightLight->stop();
     m_polkitAgent->stop();
@@ -272,6 +276,7 @@ void SessionProcessSupervisor::stop() noexcept
     m_desktopControls->resetRestartCount();
     m_removableMedia->resetRestartCount();
     m_keyring->resetRestartCount();
+    m_portal->resetRestartCount();
     m_nightLight->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
@@ -439,6 +444,7 @@ void SessionProcessSupervisor::startOptionalChildren()
     // one-restart budget already bounds this to one retry, never a loop.
     m_polkitAgent->start(m_options.polkitAgentExecutable);
     m_keyring->start(m_options.keyringExecutable);
+    m_portal->start(resolveExecutable(m_options.portalExecutable), qEnvironmentVariable("WAYLAND_DISPLAY"));
     m_nightLight->start(resolveExecutable(m_options.nightLightExecutable));
 
     m_removableMedia->start(resolveExecutable(m_options.removableMediaExecutable));
@@ -522,6 +528,7 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     stopChild(m_networkSecretAgent);
     m_networkSecretAgentProcessId = 0;
     m_desktopControls->stop();
+    m_portal->stop();
     m_keyring->stop();
     m_nightLight->stop();
     m_polkitAgent->stop();

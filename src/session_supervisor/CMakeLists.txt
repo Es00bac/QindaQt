@@ -10,6 +10,8 @@ target_sources(
         src/direct_parent_process.cpp
         src/keyring_session_lifetime.cpp
         src/keyring_session_lifetime.h
+        src/portal_session_lifetime.cpp
+        src/portal_session_lifetime.h
         src/first_launch_welcome.cpp
         src/first_launch_welcome.h
         src/session_optional_child.cpp

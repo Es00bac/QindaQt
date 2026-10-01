@@ -2,11 +2,10 @@
 
 The resident composes independent standard Access, Notification, Email and
 Inhibit backends alongside the unchanged [appearance backend](portal-service.md)
-and separate [Secret backend](secret-portal.md). The current package declaration
-and selector still advertise/select only Settings and Secret for QindaQt.
-Foundation methods are source candidates until manager integration, selected
-session startup wiring and the relevant native capability gates qualify a
-routing change. KDE remains the selected backend for these four families.
+and separate [Secret backend](secret-portal.md). The source package declaration and selector route Settings, Secret, Access,
+Notification and Email to QindaQt. Inhibit retains KDE fallback because native
+Power consumes no complete idle scopes. Installed session and sandbox delivery
+remain manager gates; no selector change claims physical qualification.
 
 [ADR-0318](../adr/0318-native-portal-foundation.md) records this process boundary.
 The primary upstream contracts are the current backend XML for
@@ -64,7 +63,13 @@ A different caller cannot replace it. Public
 private ordinary socket peer/PIDFD joined to exact bus-daemon compositor owner
 and PID plus retained selected-session liveness. This proves identity and
 lifetime, not executable attestation. Frontend options cannot supply that
-attachment. Supervisor startup wiring is a separate integration responsibility.
+attachment. The supervisor's independent PortalSessionLifetime starts the optional native
+backend after the shell, retains a dedicated selected-session connection and
+supplies the canonical ordinary display basename. It uses bounded asynchronous
+exact-owner/same-UID admission attempts, reattaches backend replacement on the
+same session connection, and disconnects before stopping the child. Replies are
+transport acknowledgements; the backend still owns actual peer/privacy admission.
+Missing helper/display or failed attachment does not prevent login.
 
 Access and Email start and publish only while that attachment is live and the
 public exact-owner NativeLockStateMonitor admits Unlocked. Uncertainty, native
@@ -184,6 +189,12 @@ contains an intentional wrong-signature ReadAll call: Qt emits its own
 method-dispatch diagnostics, so that unchanged row runs with ordinary QtTest
 warning handling. This does not weaken native-family runtime warning gates or
 production warning behavior. The staged-package gate verifies the new helpers
-and exact public headers while preserving the Settings/Secret selector and its
-negative controls. Frontend family selection and supervisor attachment remain
-separate integration gates before any routing change.
+and exact public headers while preserving Settings/Secret and all remaining
+fallback/closed selector rows. The native frontend row composes the production
+resident/foundation over synthetic appearance and notifications, calls the real
+Camera.AccessCamera path into Access (the frontend has no Access interface),
+Email.ComposeEmail and Notification, and observes native mapped input, URI peer
+receipts and notification actions/removal. Public Close, frontend owner loss and
+supervisor disconnect retire pending consent. The separate session lifetime
+fixture verifies same-session attachment across distinct backend unique owners.
+These private fixtures do not contact the host or install a portal.

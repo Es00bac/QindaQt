@@ -27,7 +27,7 @@ layers:
 | Appearance adapter | Standard Settings marshalling, filtering and change signals | Persistence or Secret policy |
 | Resident composition | Service ownership, activation, bus-loss shutdown, separately borrowed Secret adaptor | Secret storage, app identity or prompt policy |
 
-The appearance module does **not** implement a chooser, OpenURI, notifications, inhibit, screencast, remote desktop, secret storage or a consent dialog. The resident additionally composes the separate [native Secret module](secret-portal.md) and source-candidate [native portal foundation](portal-foundation.md); its `.portal` advertises exactly Settings and Secret. The module owns
+The appearance module does **not** implement a chooser, OpenURI, notifications, inhibit, screencast, remote desktop, secret storage or a consent dialog. The resident additionally composes the separate [native Secret module](secret-portal.md) and source-candidate [native portal foundation](portal-foundation.md); its `.portal` advertises Settings, Secret, Access, Notification and Email. The module owns
 QindaQt's frontend selection file and keeps an explicit routing decision for
 every portal family ([ADR-0133](../adr/0133-route-every-portal-family.md)),
 but it does not replace, embed, or supervise `xdg-desktop-portal`; a routing
@@ -116,7 +116,7 @@ The `QindaQtPortalP0` install component contains the resident executable,
 public policy/source headers and libraries, six built-in QST themes, the
 D-Bus activation descriptor, a hardened user systemd unit, `qindaqt.portal`,
 and `qindaqt-portals.conf`. The selector binds
-`org.freedesktop.impl.portal.Settings` only to `qindaqt`, explicitly orders
+`org.freedesktop.impl.portal.Settings`, Access, Notification and Email only to `qindaqt`, explicitly orders
 `kde;gtk;lxqt` for the reviewed multi-provider families, orders
 GlobalShortcuts to `kde` alone because it is the only installed provider whose
 `.portal` metadata advertises that interface, routes Secret to the native Secret module at `qindaqt`, routes InputCapture, Clipboard, Usb,
@@ -176,7 +176,7 @@ interface (negative control). The Qt row runs an offscreen Qt 6 process with
 hint. It does not claim that Qt replaces an application's explicit palette.
 
 The metadata gate compares the complete `.portal` and selector contracts, so
-duplicate entries, QindaQt ownership of a family beyond Settings/Secret, a rerouted or
+duplicate entries, QindaQt ownership of a family beyond Settings/Secret/Access/Notification/Email, a rerouted or
 dropped Secret/Wallpaper row, or a reopened Background/default route fail both
 source and staged-installed controls. The
 staged-package row repeats every frontend row against the installed artifacts.
