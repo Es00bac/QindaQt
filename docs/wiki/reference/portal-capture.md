@@ -209,7 +209,8 @@ fd4 self-PID bypass repair and these observations require actual native gates.
 The runner sets core limit0 before every child, clears permission bypasses and
 preserves normal assertion failures. Fixture desktop entries grant no restricted
 interface permission: successful pixels must use the protected control/consent lease.
-Raw per-request fd4/fd5 history, producer logs and structured cleanup/core records
+The current `capture.audit` from the explicit helper audit path, completed
+per-request fd4/fd5 history, producer logs and structured cleanup/core records
 are retained under ignored `native-capture-evidence` beside the test caller before
 temporary-directory deletion. Unexpected task-local cores remain opaque artifacts.
 Actual groups require a task-only bwrap namespace with new proc and private dev,

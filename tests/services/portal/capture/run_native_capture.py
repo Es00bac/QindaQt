@@ -209,9 +209,12 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             evidence.mkdir(parents=True, exist_ok=True)
             for log in root.glob("*.log"):
                 shutil.copyfile(log, evidence / log.name)
-            for name in ("qindaqt-capture.audit", "qindaqt-capture-history.audit"):
-                if (runtime / name).is_file():
-                    shutil.copyfile(runtime / name, evidence / name)
+            # The current audit uses the explicit helper path, while completed
+            # requests are archived under runtime by the caller's reset().
+            for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]),
+                          runtime / "qindaqt-capture-history.audit"):
+                if audit.is_file():
+                    shutil.copyfile(audit, evidence / audit.name)
             cores = [str(path.relative_to(root)) for path in root.rglob("*")
                      if path.is_file() and (path.name == "core" or path.name.startswith("core."))]
             # Unexpected task-local cores are preserved opaque, never printed.
