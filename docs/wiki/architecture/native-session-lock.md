@@ -342,6 +342,8 @@ still bounds an external privileged caller.
 SessionActions sends manual suspend through Sleep1, whose owner must equal
 Session1. The facade resolves the actual caller UID, serializes one request,
 waits for native protection, repeats logind CanSuspend, and reports the
-conclusive Suspend reply. Protection is rechecked after CanSuspend; authority
+conclusive Suspend reply or an explicit Uncertain error after unconfirmed
+dispatch. Advisory Changed invalidations converge asynchronous startup
+availability without polling. Protection is rechecked after CanSuspend; authority
 loss cancels the callback. Unknown/Locking refuses a new manual action. This
 does not enable idle-suspend policy or advertise Power1 inhibitor scopes.

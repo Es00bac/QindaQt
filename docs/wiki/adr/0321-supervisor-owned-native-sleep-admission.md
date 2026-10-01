@@ -35,7 +35,8 @@ expects logind UID zero; private tests inject their fixture UID through the
 constructor, never through an environment switch. The readonly same-thread
 admission callback joins the already accepted ordinary compositor attachment
 and live Session1 supervisor owner. Loss revokes authority and closes the FD.
-Late replies and descriptors cannot enter a retired generation.
+Late replies and descriptors cannot enter a retired generation. Bounded readonly
+owner checks also refuse a retired target before queued watcher delivery.
 
 Exact-owner selected-session `Lock` requests native manual admission. `Unlock`
 only refreshes observation and never authenticates or calls native unlock.
@@ -45,7 +46,9 @@ unlocked hint. Neither hint supplies native protection authority.
 
 Manual Sleep1 `Suspend() -> bool` admits the actual daemon-resolved same-UID
 caller, serializes one request, and returns true only after the bounded logind
-Suspend reply. `CanSuspend() -> bool` is a presentation hint requiring an owned
+Suspend reply. A lost/error reply after dispatch is an explicit Uncertain D-Bus
+error, never a fabricated refusal or replay. Advisory Changed invalidations
+refresh presentation when asynchronous identity/inhibitor startup completes. `CanSuspend() -> bool` is a presentation hint requiring an owned
 inhibitor and current Unlocked or protected Locked state. Unknown/Locking refuses
 manual dispatch. The coordinator asks the native runtime to protect an unlocked
 session; logind CanSuspend and Suspend are reached only after the current native
@@ -58,7 +61,7 @@ Exact-owner `PrepareForSleep(true)` runs the same protection gate and releases
 the delay FD only while the authenticated native presentation remains protected.
 Failure, unknown state, incomplete locking or absent receipt retains the FD;
 no timeout invents success. `false` feeds the runtime's confirmed lock-on-resume
-policy, cancels stale sleep work and rearms a fresh delay FD. Stop, supervisor or
+policy, cancels stale sleep work and rearms a fresh delay FD. Selected session removal, stop, supervisor or
 ordinary peer loss, bus loss and logind replacement close retained descriptors
 and invalidate late replies.
 

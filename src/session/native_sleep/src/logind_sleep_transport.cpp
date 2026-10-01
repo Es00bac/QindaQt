@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/session/native_sleep/logind_sleep_transport.h>
 #include <QDBusArgument>
+#include <QDBusConnectionInterface>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 #include <QDBusServiceWatcher>
@@ -26,6 +27,7 @@ LogindSleepTransport::LogindSleepTransport(QDBusConnection bus, QString id,
     QObject *parent)
     : QObject(parent), m_bus(std::move(bus)), m_id(std::move(id)), m_uid(uid),
       m_pid(pid), m_logindUid(logindUid), m_admission(std::move(admission)) {
+  if (m_bus.interface()) m_bus.interface()->setTimeout(250);
   m_lifetime.setInterval(250);
   connect(&m_lifetime, &QTimer::timeout, this, [this] {
     if (m_started && (!m_bus.isConnected() || !m_admission || !m_admission())) revoke();
@@ -50,12 +52,16 @@ void LogindSleepTransport::stop() {
   m_watcher = nullptr;
 }
 bool LogindSleepTransport::available() const {
-  return m_started && m_ready && m_bus.isConnected() && m_admission && m_admission();
+  return m_ready && current(m_generation);
 }
 bool LogindSleepTransport::hasDelayInhibitor() const { return available() && m_delayFd >= 0; }
 bool LogindSleepTransport::current(quint64 generation) const {
-  return m_started && generation == m_generation && m_bus.isConnected() &&
-         m_admission && m_admission();
+  if (!m_started || generation != m_generation || !m_bus.isConnected() ||
+      !m_admission || !m_admission()) return false;
+  if (m_owner.isEmpty()) return true; // Startup has not resolved a target yet.
+  if (!m_bus.interface()) return false;
+  const auto owner = m_bus.interface()->serviceOwner(Service);
+  return owner.isValid() && owner.value() == m_owner;
 }
 void LogindSleepTransport::call(QString destination, QString path, QString interface,
     QString method, QVariantList arguments, quint64 generation, Completion completion) {

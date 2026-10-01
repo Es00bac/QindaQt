@@ -464,7 +464,9 @@ controls. Cold-client activation and daemon replacement are private-bus gates.
 [ADR-0321](../adr/0321-supervisor-owned-native-sleep-admission.md) moves manual
 SessionActions suspend to the supervisor-owned `org.qindaqt.Sleep1` handoff.
 The client joins its exact unique owner to Session1, repeats CanSuspend, and
-never sends direct logind Suspend. The coordinator consumes the authenticated
+never sends direct logind Suspend. Sleep1 Changed invalidations converge its
+async startup availability without polling; unconfirmed dispatched sleep is
+reported as Uncertain and never replayed. The coordinator consumes the authenticated
 native lock runtime's actual protected receipt before logind dispatch, rechecks
 protection after the bounded CanSuspend call, and refuses unknown/incomplete
 locking. Reboot/PowerOff retain their existing separate logind admission.
