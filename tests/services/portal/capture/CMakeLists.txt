@@ -81,7 +81,18 @@ qindaqt_enable_warnings(qindaqt_portal_native_capture_tests)
 add_dependencies(qindaqt_portal_native_capture_tests qindaqt_portal_capture_input
     qindaqt-portal-capture qindaqt_portal_capture_test_backend qindaqt-portal-consent qindaqt-uri-relay qindaqt_portal_foreign_exporter qindaqt_portal_capture_pixels)
 set(QINDAQT_PRIVATE_CAPTURE_COMPOSITOR "" CACHE FILEPATH "Non-installable fork testNativeCaptureAuthority executable")
+set(QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX "" CACHE PATH "Matching local fork bin plugin prefix for the private capture driver")
 if(QINDAQT_PRIVATE_CAPTURE_COMPOSITOR)
+    file(REAL_PATH "${QINDAQT_PRIVATE_CAPTURE_COMPOSITOR}" capture_driver)
+    get_filename_component(capture_driver_bin "${capture_driver}" DIRECTORY)
+    if(NOT EXISTS "${capture_driver}" OR IS_DIRECTORY "${capture_driver}")
+        message(FATAL_ERROR "Selected private native capture driver image does not exist")
+    endif()
+    file(REAL_PATH "${QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX}" capture_plugin_prefix)
+    if(NOT QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX OR NOT capture_plugin_prefix STREQUAL capture_driver_bin
+        OR NOT IS_DIRECTORY "${capture_plugin_prefix}/qindaqt-kwin/plugins")
+        message(FATAL_ERROR "Private native capture driver requires its exact matching local plugin prefix")
+    endif()
 add_test(NAME qindaqt.portal-native-capture COMMAND "${Python3_EXECUTABLE}"
     "${CMAKE_CURRENT_SOURCE_DIR}/run_native_capture.py"
     "$<TARGET_FILE:qindaqt_portal_native_capture_tests>" "$<TARGET_FILE:qindaqt_portal_capture_input>"
@@ -89,7 +100,7 @@ add_test(NAME qindaqt.portal-native-capture COMMAND "${Python3_EXECUTABLE}"
     "$<TARGET_FILE:qindaqt_portal_foreign_exporter>" "$<TARGET_FILE:qindaqt_portal_capture_pixels>"
     "${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt.portal"
     "${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt-portals.conf" "$<TARGET_FILE:qindaqt_portal_capture_test_backend>"
-    "${QINDAQT_KWIN_WAYLAND}")
+    "${QINDAQT_KWIN_WAYLAND}" "${capture_plugin_prefix}")
 set_tests_properties(qindaqt.portal-native-capture PROPERTIES TIMEOUT 420 SKIP_RETURN_CODE 77
     RUN_SERIAL TRUE LABELS "portal;capture;frontend;private-wayland;private-pipewire;privacy")
 else()

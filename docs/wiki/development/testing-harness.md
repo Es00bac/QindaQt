@@ -4482,6 +4482,14 @@ EGL software compositor rendering is required because the qualified fork cannot
 create streams from QPainter composition. The direct fork argv omits its opt-in Xwayland and every session/app/input-method argument; launcher-only flags are not invented. Private process groups plus postexit audits cover broker/producer/controller descendants. Three fresh private compositor groups
 isolate native Locked and actual compositor-owner-loss retirement without any unlock/PAM seam. The test controller remains GUI-free; a separate admitted ordinary Qt child supplies changing pixels, so compositor loss cannot kill the controller before it verifies withdrawal. The returned remote
 FD is consumed directly; policy mocks and node integers alone do not prove frames.
-These new rows are source-only and still await compilation/native execution;
-metadata retains KDE Screenshot/ScreenCast routing until actual family gates pass.
+The five focused capture and six adjacent Screenshot rows pass on candidate7bc9e6a5
+(11 CTests,87 Qt passes, zero failures/skips); actual native groups remain pending.
+The protected driver is selected separately with its exact built bin/plugin prefix,
+required by `QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX`; ordinary qualified tools supply
+PATH only. Fixture desktop entries grant no restricted permission. The runner
+retains raw authority/history/log and cleanup/core evidence beside the caller in
+ignored build output. Actual native execution requires task-only bwrap isolation,
+new proc/private dev without dri/input/snd nodes and harmless namespace preflight;
+no inherited legacy plugin prefix or LD_LIBRARY_PATH substitutes the selected fork.
+Metadata retains KDE Screenshot/ScreenCast routing until actual family gates pass.
 Full window/multiple/cursor/revocable-restore delivery remains a PF19 successor.

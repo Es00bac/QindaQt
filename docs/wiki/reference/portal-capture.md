@@ -125,7 +125,9 @@ this candidate preserves process protection and existing permission checks.
 
 ## Evidence still required
 
-Focused `qindaqt.portal-capture-policy` and `portal-capture-requests` rows cover wire shape, bounds, caller/app/session fencing, Close, late replies and owner loss. The source `qindaqt.portal-native-capture` runner provides three fresh private compositor groups, including irreversible native Locked retirement and actual compositor owner loss. It uses zero-activation-directory custom D-Bus, explicit nonexistent system bus, a private minimal PipeWire core and policy-only WirePlumber with hardware monitors absent. The predecessor direct fork receives no opt-in Xwayland, positional session/app, exit-with-session or input-method argument; its CLI has no launcher-specific empty-session switch. Every top-level broker/producer/controller uses a private process group and postexit audits require all descendants to disappear. Qt input links unchanged helper sources; a changing fullscreen ordinary test client supplies known pixels. The consumer connects only to the actual frontend-returned remote FD and checks node visibility, decoded frames and cessation after Close/native lock. The eleven named capture/resident/Screenshot targets build successfully at exact e78bf9f4. Earlier diagnostics stop in registration; corrected b3670dda observes Screenshot failure2 but no Start response. These failures do not qualify capture usability. Focused/adjacent runtime, complete native journey and staged gates remain pending. Actual
+Focused `qindaqt.portal-capture-policy` and `portal-capture-requests` rows cover wire shape, bounds, caller/app/session fencing, Close, late replies and owner loss. The source `qindaqt.portal-native-capture` runner provides three fresh private compositor groups, including irreversible native Locked retirement and actual compositor owner loss. It uses zero-activation-directory custom D-Bus, explicit nonexistent system bus, a private minimal PipeWire core and policy-only WirePlumber with hardware monitors absent. The predecessor direct fork receives no opt-in Xwayland, positional session/app, exit-with-session or input-method argument; its CLI has no launcher-specific empty-session switch. Every top-level broker/producer/controller uses a private process group and postexit audits require all descendants to disappear. Qt input links unchanged helper sources; a changing fullscreen ordinary test client supplies known pixels. The consumer connects only to the actual frontend-returned remote FD and checks node visibility, decoded frames and cessation after Close/native lock. The eleven named capture/resident/Screenshot targets build successfully at exact e78bf9f4. Earlier diagnostics stop in registration; corrected b3670dda observes Screenshot failure2 but no Start response. These failures do not qualify capture usability. At those predecessor commits, focused/adjacent runtime, complete native journey
+and staged gates remained pending. Current protected consumer candidate evidence
+is recorded below. Actual
 frontend methods and mapped ordinary Qt input must produce real captures and
 private PipeWire frames; cancellation, Close, caller/dependency/parent loss and
 native lock/uncertainty must withdraw results/streams. Staged helper permission
@@ -174,10 +176,13 @@ These source changes are uncompiled/unexecuted until separately granted gates;
 wire freeze and source presence do not qualify native capture usability. The helper source now follows fixed FD/control consent and retention.
 Non-installable variants pass bounded per-job actual-input directives through
 opaque pipes, removed before the strict production parser; no installed input
-hook or permission bypass exists. Hostile packet and authenticated-channel tests are source only. Channel cases
+hook or permission bypass exists. Exact candidate7bc9e6a5 passes11 focused/adjacent
+CTests (87 Qt passes, zero failures/skips), including packet/channel and live
+native-admission teardown regressions on private buses; this is candidate evidence,
+not integration or actual protected pixels/frames. Channel cases
 include real private-bus owner replacement before queued reads, kernel sender
 mismatch, consent ordering/stale generation, HUP, ancillary counts, FD ownership
-and monotonic job replay rejection. No compiled/runtime result is inferred.
+and monotonic job replay rejection. No native authority usability is inferred.
 The public transport fixture separately uses synthetic raw bytes on a zero-activation
 private bus to test drain-before-metadata/EOF, early metadata with delayed pipe
 completion beyond zero grace, event-loop delay, cancel/late reply suppression and
@@ -185,9 +190,13 @@ legacy interactive120s/default10s compatibility, plus native-owner replacement
 while the old compatibility screenshot writer stays alive. This tests transport budgets,
 not protected capture permission or actual pixels.
 
-The new native runner takes eleven artifact paths, including a separately selected
-non-installable fork `testNativeCaptureAuthority` driver and ordinary qualified
-fork executable for its runtime prefix. It invokes `serveNativeCapture` within its
+The new native runner takes eleven artifact paths plus an explicit matching native
+plugin prefix. It selects a non-installable fork `testNativeCaptureAuthority` driver;
+`QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX` must equal that driver's built bin directory
+and contain its `qindaqt-kwin/plugins`. Missing/mismatched images or prefixes fail
+configuration. The ordinary qualified fork executable supplies tool PATH only and
+is never executed as the compositor. Native plugins come from the selected driver,
+without inherited legacy prefixes or LD_LIBRARY_PATH substitutions. It invokes `serveNativeCapture` within its
 single private bus/PipeWire environment, waits for the exact protected broker Ready
 marker and closes stdin for normal shutdown. Driver configuration fixes test broker
 and helper paths before compositor startup; production has no path override. The
@@ -198,11 +207,20 @@ privileges and exact three-global fd5 announcements, with real public listener
 forwarding. Ready/CaptureReady/revocation observations are test-only. The fork's
 fd4 self-PID bypass repair and these observations require actual native gates.
 The runner sets core limit0 before every child, clears permission bypasses and
-preserves normal assertion failures. Selected cases remain diagnostics only.
+preserves normal assertion failures. Fixture desktop entries grant no restricted
+interface permission: successful pixels must use the protected control/consent lease.
+Raw per-request fd4/fd5 history, producer logs and structured cleanup/core records
+are retained under ignored `native-capture-evidence` beside the test caller before
+temporary-directory deletion. Unexpected task-local cores remain opaque artifacts.
+Actual groups require a task-only bwrap namespace with new proc and private dev,
+no dri/input/snd nodes, isolated PID/network/IPC/UTS/user where supported, read-only
+runtime dependencies and private0700 HOME/XDG/tmp/brokers/PipeWire. A harmless
+namespace preflight must pass before native execution. Selected cases remain
+diagnostics only.
 
 Staging requires the separate broker/helper and exact selected public fixed paths
 only when the qualified authority target exists. Otherwise capture artifacts are
 absent and unavailable; no capture family may advertise or activate. Existing
 positive/poison package and support-target guards remain unchanged. Metadata still
-routes both families to KDE. All granted source/native gates remain pending, and
+routes both families to KDE. Focused candidate unit/source gates pass; actual native/staged gates remain pending, and
 prior exact denial evidence above stays preserved.
