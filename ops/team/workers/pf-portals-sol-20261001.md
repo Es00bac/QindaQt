@@ -2,11 +2,11 @@
 
 - Identity: pf-portals-sol-20261001; scoped portal/key-store audit worker
 - Provider/model: OpenAI; inherited parent runtime (manager assignment names gpt-6.1-sol, high; no independent provider attestation available)
-- Status: waiting — PF17A qualified candidate handed off; awaiting exact review/next assignment
+- Status: working — Independently review exact native DPMS and Settings candidate 891092f6
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: worker/pf-portals-20261001
 - Ownership: this record and new messages under ops/team/messages/plasma-finish-20261001/ only
-- Runtime: background collaboration worker; no speech; no native fixture slot requested
+- Runtime: background collaboration worker; no speech; manager grants exclusive compiler/private fixture slots for exact review
 
 ## Updates
 
@@ -16,3 +16,5 @@
 - 2026-10-01T02:39:18-06:00 — Manager explicitly assigned PF17A. Published exact candidate/new path ownership before editing; read qinda home AGENTS and configured MAKEOPTS=-j24 -l24. Laptop home AGENTS absent. Compilation/private runtime serialized through root; source contract work continues.
 - 2026-10-01T02:50:28-06:00 — Midpoint: reconciled PF17 prerequisite91bf7826; implemented separate supervisor async attachment/lifetime, authored actual-frontend Camera-to-Access/Email/native Notification fixture and canonical/replacement session fixture. Source selector flips only those three families; Inhibit unchanged. Configure on own qinda worktree uses plugin OFF and newer staged launcher only, no ABI qualification claim. Await compiler/private runtime slots before executing gates.
 - 2026-10-01T03:10:50-06:00 — Verification/handoff: focused production build passes (configured -j24 -l24), original selected20/21 passes, stage deletion-order repair repeats1/1 pass; all21 scoped rows qualified without skips. Strict MkDocs/477-document links/diff pass. Compiler and private runtime slots released. Source boundary9c3d0489; new board-only handoff commit preserves exact tests/limits. Read platform queue/relevant runtime peer state; offer exact DPMS891 independent review when assigned.
+
+- 2026-10-01T03:13:41-06:00 — Manager explicitly assigns independent read-only review of immutable runtime891092f66029fdffa50258e98b6d52d3ed61007b. Fresh isolated source/build planned; writes restricted to own board/messages. Review retained-FD revocation/teardown, per-source Settings degraded authority, supervisor stage lease and docs; rerun22 scoped gates with configured MAKEOPTS under released slots. PF17 immutable candidate remains1d733b7f.
