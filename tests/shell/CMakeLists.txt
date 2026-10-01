@@ -12,7 +12,8 @@ qt_add_executable(qindaqt_native_notification_lock_observer_tests
 target_include_directories(qindaqt_native_notification_lock_observer_tests PRIVATE
     "${PROJECT_SOURCE_DIR}/src/shell/runtime")
 target_link_libraries(qindaqt_native_notification_lock_observer_tests PRIVATE
-    QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::CompositorNames Qt6::Test)
+    QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::CompositorNames
+    QindaQt::NotificationPresentationPolicy QindaQt::NotificationPresentationModel Qt6::Test)
 target_compile_definitions(qindaqt_native_notification_lock_observer_tests PRIVATE
     QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
 qindaqt_enable_warnings(qindaqt_native_notification_lock_observer_tests)

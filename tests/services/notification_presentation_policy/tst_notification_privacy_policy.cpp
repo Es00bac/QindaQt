@@ -13,6 +13,7 @@ class NotificationPrivacyPolicyTest final : public QObject {
 private Q_SLOTS:
     void startsDeniedAndCannotBeGrantedThroughTheMetaObject();
     void emitsOnlyForEffectiveStateChanges();
+    void liveAdmissionOutranksCachedGrant();
 };
 
 void NotificationPrivacyPolicyTest::startsDeniedAndCannotBeGrantedThroughTheMetaObject()
@@ -49,6 +50,22 @@ void NotificationPrivacyPolicyTest::emitsOnlyForEffectiveStateChanges()
     policy.setPrivatePresentationAllowed(false);
     QCOMPARE(changed.count(), 2);
     QCOMPARE(changed.at(1).at(0).toBool(), false);
+}
+
+void NotificationPrivacyPolicyTest::liveAdmissionOutranksCachedGrant()
+{
+    bool live = true;
+    NotificationPrivacyPolicy policy([&] { return live; });
+    QVERIFY(!policy.privatePresentationAllowed());
+    policy.setPrivatePresentationAllowed(true);
+    QVERIFY(policy.privatePresentationAllowed());
+    QSignalSpy changed(&policy, &NotificationPrivacyPolicy::privatePresentationAllowedChanged);
+    live = false; // Evidence loss before its queued signal reaches the policy.
+    QVERIFY(!policy.privatePresentationAllowed());
+    QCOMPARE(changed.count(), 0);
+    NotificationPrivacyPolicy throwing([]() -> bool { throw 1; });
+    throwing.setPrivatePresentationAllowed(true);
+    QVERIFY(!throwing.privatePresentationAllowed());
 }
 
 QTEST_MAIN(NotificationPrivacyPolicyTest)

@@ -2,6 +2,8 @@
 #include "native_notification_lock_observer.h"
 #include "../services/session_lock_state/support/private_session_bus.h"
 #include <qindaqt/compositor_names/compositor_names.h>
+#include <qindaqt/services/notification_presentation_policy/notification_privacy_policy.h>
+#include <qindaqt/services/notification_presentation_model/notification_list_model.h>
 #include <QDBusContext>
 #include <QDBusMessage>
 #include <QFile>
@@ -150,10 +152,27 @@ private Q_SLOTS:
         NativeNotificationLockObserver observer(client, getpid(), runtime.path(), basename);
         QVERIFY(observer.start());
         QTRY_VERIFY(observer.contentMayBeShown());
+        QindaQt::Services::NotificationPresentationPolicy::NotificationPrivacyPolicy policy(
+            [&] { return observer.contentMayBeShown(); });
+        connect(&observer, &NativeNotificationLockObserver::contentMayBeShownChanged,
+            &policy, &QindaQt::Services::NotificationPresentationPolicy::NotificationPrivacyPolicy::setPrivatePresentationAllowed);
+        policy.setPrivatePresentationAllowed(observer.contentMayBeShown());
+        QindaQt::Services::NotificationPresentationModel::NotificationListModel projection(
+            [&] { return policy.privatePresentationAllowed(); });
+        QindaQt::Services::NotificationPresentation::PresentationNotification privateNotification;
+        privateNotification.id = 9;
+        privateNotification.summary = QStringLiteral("Private retained title");
+        projection.replace({{privateNotification, true}});
+        const auto retainedIndex = projection.index(0);
+        QVERIFY(projection.data(retainedIndex, projection.SummaryRole).isValid());
         QSignalSpy changed(&observer, &NativeNotificationLockObserver::contentMayBeShownChanged);
         QVERIFY(session.unregisterService(sessionName));
         QVERIFY(replacement.registerService(sessionName));
-        // No event-loop turn: admission getters must catch real owner loss.
+        // No event-loop turn or prior observer getter: a retained production
+        // model pointer must not declassify through its cached role/index.
+        QVERIFY(!projection.data(retainedIndex, projection.SummaryRole).isValid());
+        QCOMPARE(projection.rowCount(), 0);
+        QVERIFY(!policy.privatePresentationAllowed());
         QVERIFY(!observer.contentMayBeShown());
         QTRY_VERIFY(!changed.isEmpty());
         QCOMPARE(changed.last().at(0).toBool(), false);
