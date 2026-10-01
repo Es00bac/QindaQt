@@ -8,7 +8,9 @@ class QDBusServiceWatcher;
 namespace QindaQt::Session::NativeSleep {
 // Supervisor-owned public manual handoff. Claims only Sleep1, requires the
 // connection's own Session1 owner, and admits actual daemon-resolved caller UID.
-// Same-thread borrowed coordinator outlives the facade. No queue or replay.
+// Same-thread borrowed coordinator outlives the facade. Stopping a pending
+// handoff also revokes the coordinator to cancel its accepted work and FD.
+// The composition owner restarts it explicitly. No queue or replay.
 class SleepService final : public QDBusVirtualObject {
   Q_OBJECT
 public:
