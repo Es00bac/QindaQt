@@ -10,7 +10,9 @@ import sys
 import tempfile
 import time
 
-fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection = map(pathlib.Path, sys.argv[1:])
+if len(sys.argv) not in (10, 12):
+    sys.exit("expected nine artifacts and optional --case NAME")
+fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection = map(pathlib.Path, sys.argv[1:10])
 if not compositor.is_file():
     print("qualified private compositor unavailable")
     sys.exit(77)
@@ -22,6 +24,14 @@ groups = [
     ["nativeLockStopsActualStreamPendingCaptureAndRetainedFile"],
     ["compositorLossWithdrawsStreamsFilesAndPendingPublication"],
 ]
+# A bounded diagnostic selects unchanged Qt assertions. Only the default command
+# qualifies the whole journey; a selected case cannot be reported as full coverage.
+if len(sys.argv) == 12:
+    if sys.argv[10] != "--case" or sys.argv[11] not in {case for group in groups for case in group}:
+        sys.exit("unknown native capture diagnostic case")
+    groups = [[sys.argv[11]]]
+
+
 def group_alive(process):
     try:
         os.killpg(process.pid, 0)
