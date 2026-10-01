@@ -9,6 +9,9 @@ target_sources(
     qindaqt_session_actions
     PRIVATE
         src/session_actions_client.cpp
+        src/session_actions_availability.cpp
+        src/session_actions_suspend.cpp
+        src/session_actions_internal.h
         src/session_actions_state.cpp
     PUBLIC
         FILE_SET HEADERS

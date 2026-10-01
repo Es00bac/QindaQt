@@ -11,3 +11,4 @@
 ## Updates
 
 - 2026-10-01T09:55:26Z — Claimed isolated exact-base worktree after origin fetch. No pre-existing logind-lock/sleep candidate found in fetched hub refs. Found unused protected runtime callback and direct SessionActions login1 Suspend bypass; proposed dedicated transport/policy/facade module and minimal supervisor composition seam to manager.
+- 2026-10-01T10:12:00Z — Implemented dedicated NativeSleep transport/coordinator/facade and Sleep1-only manual SessionActions handoff. Shared seams explicitly granted. Real ordinary socket/PIDFD + production native targeted receipt ports compose private logind wire tests; delay FD is pipe-backed for closure evidence. Existing large SessionActions query source decomposed into cohesive availability/dispatch helpers. Root granted qinda compiler only; runtime fixtures still queued.

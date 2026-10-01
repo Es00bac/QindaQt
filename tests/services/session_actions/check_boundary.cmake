@@ -47,7 +47,7 @@ endforeach()
 
 if("${SCAN_ROOT}" STREQUAL "${SOURCE_ROOT}")
     file(READ
-        "${SOURCE_ROOT}/src/services/session_actions/src/session_actions_client.cpp"
+        "${SOURCE_ROOT}/src/services/session_actions/src/session_actions_internal.h"
         action_client)
     foreach(required IN ITEMS
             "org.freedesktop.login1"
