@@ -4,6 +4,7 @@
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <QProcessEnvironment>
+#include <QList>
 #include <QSocketNotifier>
 #include <cstdio>
 #include <cstring>
