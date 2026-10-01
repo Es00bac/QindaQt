@@ -10,6 +10,7 @@ class KWaylandDpmsControllerTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void admittedConnectionTracksCapabilityRemovalAndRestore();
+    void revokedLineageAllowsOnlyRetainedFinalRestore();
 };
 
 void KWaylandDpmsControllerTest::admittedConnectionTracksCapabilityRemovalAndRestore()
@@ -67,6 +68,41 @@ void KWaylandDpmsControllerTest::admittedConnectionTracksCapabilityRemovalAndRes
     QCOMPARE(server.lastRequestedMode(),
              static_cast<quint32>(ORG_KDE_KWIN_DPMS_MODE_ON));
     controller.stop();
+}
+
+void KWaylandDpmsControllerTest::revokedLineageAllowsOnlyRetainedFinalRestore()
+{
+    DpmsWaylandFixture server;
+    QVERIFY(server.addOutput() != 0);
+    bool admitted = true;
+    int openedConnections = 0;
+    KWaylandDpmsController controller;
+    QString error;
+    QVERIFY(controller.start([&] {
+        ++openedConnections;
+        return server.openClientFd();
+    }, [&] { return admitted; }, &error));
+    QTRY_VERIFY_WITH_TIMEOUT(controller.available(), 3'000);
+    controller.requestOff();
+    QTRY_COMPARE_WITH_TIMEOUT(server.setRequestCount(), 1, 3'000);
+
+    admitted = false;
+    QVERIFY(!controller.available());
+    controller.requestOn();
+    controller.requestOff();
+    controller.restoreAndStop();
+    // Only the final restore reaches the retained peer after revocation. No
+    // supplier call may reopen a same-name replacement compositor connection.
+    QTRY_COMPARE_WITH_TIMEOUT(server.setRequestCount(), 2, 3'000);
+    QCOMPARE(server.lastRequestedMode(),
+             static_cast<quint32>(ORG_KDE_KWIN_DPMS_MODE_ON));
+    QCOMPARE(openedConnections, 1);
+    QVERIFY(!controller.start([&] {
+        ++openedConnections;
+        return server.openClientFd();
+    }, [&] { return admitted; }, &error));
+    QCOMPARE(openedConnections, 1);
+    QVERIFY(!error.isEmpty());
 }
 
 QTEST_GUILESS_MAIN(KWaylandDpmsControllerTest)
