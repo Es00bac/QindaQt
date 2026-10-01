@@ -20,6 +20,9 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 namespace QindaQt::Services::Portal {
+#ifdef QINDAQT_CAPTURE_ACTUAL_INPUT_TEST
+bool augmentCaptureTestFrame(QJsonObject &);
+#endif
 namespace {
 bool pidAlive(int fd) { pollfd event{fd, POLLIN, 0}; return fd >= 0 && poll(&event, 1, 0) == 0; }
 QString nativeOwner(const QDBusConnection &bus) {
@@ -157,7 +160,11 @@ void AuthorityCapture::request(RequestToken token, const CaptureRequest &request
     auto job = std::make_shared<Private::Job>(); job->id = ++d->next; job->request = request; job->frontend = d->requests.frontendOwner();
     job->callerPidfd = static_cast<int>(syscall(SYS_pidfd_open, pid.value(), 0)); job->directory = std::make_unique<QTemporaryDir>(QDir(d->runtime).filePath("portal-capture-XXXXXX"));
     if (!pidAlive(job->callerPidfd) || !job->directory->isValid() || !d->live(*job)) { d->fail(token); return; }
-    job->input = QJsonDocument(captureFrame(request, job->directory->path(), d->channel.owner())).toJson(QJsonDocument::Compact) + '\n';
+    auto frame = captureFrame(request, job->directory->path(), d->channel.owner());
+#ifdef QINDAQT_CAPTURE_ACTUAL_INPUT_TEST
+    if (!augmentCaptureTestFrame(frame)) { d->fail(token); return; }
+#endif
+    job->input = QJsonDocument(frame).toJson(QJsonDocument::Compact) + '\n';
     if (job->input.size() > 16384) { d->fail(token); return; }
     d->jobs.insert(token, job);
     const auto scope = request.kind == CaptureKind::Stream ? CaptureAuthority::Wire::Scope::ScreenCast : CaptureAuthority::Wire::Scope::Screenshot;

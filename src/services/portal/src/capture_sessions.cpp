@@ -56,7 +56,7 @@ bool CaptureSessions::create(const QDBusMessage &call, const QString &requestPat
     m_entries.insert(path, {call.service(), *caller, app, pidfd, CaptureSessionPhase::Created, 0, object});
     // Only pre-start inactivity expires. A live share is ended by explicit stop
     // or actual actor/dependency lifetime, never by arbitrary wall-clock success.
-    QTimer::singleShot(60000, this, [this, path] { const auto e = m_entries.constFind(path); if (e != m_entries.cend() && e->phase != CaptureSessionPhase::Streaming) close(path); });
+    QTimer::singleShot(60000, this, [this, path] { const auto e = m_entries.constFind(path); if (e != m_entries.cend() && (e->phase == CaptureSessionPhase::Created || e->phase == CaptureSessionPhase::Selected)) close(path); });
     return live(path);
 }
 bool CaptureSessions::live(const QString &path) const {

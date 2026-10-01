@@ -2,6 +2,9 @@
 #include <QApplication>
 #include <qindaqt/services/compositor_capture/capture_port.h>
 #include <QFile>
+#include <QDir>
+#include <QJsonObject>
+#include <QStandardPaths>
 #include <QListWidget>
 #include <QPushButton>
 #include <QTimer>
@@ -13,6 +16,7 @@
 #include <unistd.h>
 namespace {
 bool audited = false, allowed = false;
+QString testAction, testAudit; qint64 expectedPeer = 0;
 class FailureObserver final : public QObject {
 public:
     using QObject::QObject;
@@ -26,7 +30,7 @@ public:
             QObject::connect(port, &QindaQt::CompositorCapture::CapturePort::finished, this,
                 [](const QindaQt::CompositorCapture::DecodedCapture &capture) {
                     if (capture.ok()) return;
-                    QFile audit(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT"));
+                    QFile audit(testAudit);
                     if (audit.open(QIODevice::WriteOnly | QIODevice::Append))
                         audit.write("public capture failure: " + capture.error.toUtf8().left(1024) + "\n");
                 });
@@ -36,13 +40,13 @@ public:
 private: bool connected = false;
 };
 void input() {
-    const auto action = qEnvironmentVariable("QINDAQT_CAPTURE_TEST_ACTION");
+    const auto action = testAction;
     for (auto *window : QApplication::topLevelWidgets()) {
         if (window->objectName() != "nativeCaptureDialog" || !window->isVisible() || !window->windowHandle() || !window->windowHandle()->isExposed()) continue;
         if (!audited) {
             auto *native = qGuiApp->nativeInterface<QNativeInterface::QWaylandApplication>(); ucred peer{}; socklen_t size = sizeof(peer);
-            if (!native || getsockopt(wl_display_get_fd(native->display()), SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0 || peer.pid != qEnvironmentVariableIntValue("QINDAQT_PORTAL_TEST_COMPOSITOR_PID")) { QCoreApplication::exit(3); return; }
-            QFile audit(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT")); if (!audit.open(QIODevice::WriteOnly | QIODevice::Append)) { QCoreApplication::exit(4); return; }
+            if (!native || getsockopt(wl_display_get_fd(native->display()), SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0 || peer.pid != expectedPeer) { QCoreApplication::exit(3); return; }
+            QFile audit(testAudit); if (!audit.open(QIODevice::WriteOnly | QIODevice::Append)) { QCoreApplication::exit(4); return; }
             audit.write(QByteArray::number(getpid()) + " ordinary exact-peer mapped\n"); audited = true;
         }
         if (action == "hold") return;
@@ -56,4 +60,13 @@ void input() {
 }
 void install() { auto *app = QCoreApplication::instance(); app->installEventFilter(new FailureObserver(app)); auto *timer = new QTimer(qApp); timer->setInterval(50); QObject::connect(timer, &QTimer::timeout, qApp, input); timer->start(); }
 Q_COREAPP_STARTUP_FUNCTION(install)
+}
+
+namespace QindaQt::Services::Portal {
+bool captureTestFrame(QJsonObject &frame, qint64 compositorPid) {
+    testAction = frame.take("test_action").toString(); testAudit = frame.take("test_audit").toString();
+    expectedPeer = compositorPid;
+    return expectedPeer > 0 && (testAction == "allow" || testAction == "cancel" || testAction == "hold")
+        && testAudit == QDir(QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)).filePath("qindaqt-capture.audit");
+}
 }

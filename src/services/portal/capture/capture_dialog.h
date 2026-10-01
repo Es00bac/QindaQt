@@ -18,9 +18,11 @@ public:
     CaptureDialog(CaptureRequest, QString directory, NativeCaptureAdmission &,
         CompositorCapture::KWinCapturePort &, CompositorCapture::WaylandScreenCast &);
     void parentReady();
+    void captureReady();
     void fail();
 Q_SIGNALS:
     void result(RequestResponse, const QJsonObject &);
+    void consented();
 private:
     void refresh();
     void begin();
@@ -30,6 +32,6 @@ private:
     NativeCaptureAdmission &m_admission; CompositorCapture::KWinCapturePort &m_capture;
     CompositorCapture::WaylandScreenCast &m_stream;
     QVBoxLayout *m_layout; QListWidget *m_sources; QPushButton *m_allow, *m_cancel;
-    bool m_parent = false, m_busy = false, m_sent = false, m_finished = false;
+    bool m_parent = false, m_busy = false, m_sent = false, m_finished = false, m_granted = false;
 };
 }

@@ -5,7 +5,7 @@
 #include <QDBusConnection>
 #include <QTimer>
 namespace QindaQt::Services::Portal {
-// Helper-private joining of the actual inherited ordinary UNIX peer, retained
+// Capture-private joining of the inherited compositor UNIX peer, retained
 // PIDFD, current bus owner/PID and nonce-authenticated native lock observer.
 // No frontend-supplied lock bit, owner string alone or bare UID admits pixels.
 class NativeCaptureAdmission final : public QObject {

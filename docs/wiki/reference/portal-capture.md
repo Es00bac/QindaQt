@@ -129,7 +129,12 @@ asserted by this page.
 ## Protected authority source successor
 
 The fork and consumer jointly froze wire version1 at fork
-`91e1c20272b891add2455c648f49e097c9d8baaa`. Its public installed
+`91e1c20272b891add2455c648f49e097c9d8baaa`, then corrected only configured
+package paths at `bd4eacd1eff51f81e4757ec3cd236015a0e73d7e`. Installed Qt-free
+`launchpaths.h` beside the protocol header exports fixed executable/desktop
+paths; consumer configure rejects destination mismatches. On qinda the actual
+configured libexec directory is `/usr/lib64/libexec`. No runtime path discovery
+or frame/FD/lifetime authority changed. Its public installed
 `qindaqt-kwin/capture-authority/protocol.h` describes the fixed compositor-launched
 `qindaqt-portal-capture-backend` and helper, with capture-only backend bus name
 `org.freedesktop.impl.portal.desktop.qindaqt.capture`. It does not change the
@@ -158,6 +163,8 @@ legacy10s; protected helpers select the frozen30s pending-call/total with zero
 grace. A monotonic send-time deadline also rejects completion before queued timer
 delivery, including during drain/decode. Legacy interactive120s remains unchanged.
 These source changes are uncompiled/unexecuted until separately granted gates;
-wire freeze and source presence do not qualify native capture usability. Actual
-helper control/consent adaptation and non-installable actual-input fixtures remain
-in progress, and prior exact denial evidence above stays preserved.
+wire freeze and source presence do not qualify native capture usability. The helper source now follows fixed FD/control consent and retention.
+Non-installable variants pass bounded per-job actual-input directives through
+opaque pipes, removed before the strict production parser; no installed input
+hook or permission bypass exists. Hostile wire tests are source only; actual
+fork-launched native fixture conversion and all granted gates remain in progress, and prior exact denial evidence above stays preserved.
