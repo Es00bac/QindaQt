@@ -4468,3 +4468,20 @@ Sleep1 dispatch are covered without host bus/power actions. SessionActions also
 proves native handoff and refuses suspend when only logind is available.
 These gates do not qualify installed logind delay timing, physical DRM output
 protection, PAM or hardware resume. Keep those separate managed runtime gates.
+
+
+### Native capture source qualification boundary
+
+The PF19 [capture candidate](../reference/portal-capture.md) adds focused
+wire/actor rows and `qindaqt.portal-native-capture`. Its source fixture uses the
+real1.20.4 frontend, ordinary Qt dialogs and test-only actual pointer/keyboard
+input over unchanged helper sources. Private policy-only WirePlumber excludes
+hardware monitors; private PipeWire has no device nodes. Custom D-Bus has no
+host activation directories and the system bus address is explicitly nonexistent.
+EGL software compositor rendering is required because the qualified fork cannot
+create streams from QPainter composition. Two fresh private compositor groups
+isolate native Locked retirement without any unlock/PAM seam. The returned remote
+FD is consumed directly; policy mocks and node integers alone do not prove frames.
+These new rows are source-only and still await compilation/native execution;
+metadata retains KDE Screenshot/ScreenCast routing until actual family gates pass.
+Full window/multiple/cursor/revocable-restore delivery remains a PF19 successor.

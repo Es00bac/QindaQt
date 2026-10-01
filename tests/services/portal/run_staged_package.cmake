@@ -63,13 +63,25 @@ set(theme_directory
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/qindaqt/themes")
 set(consent_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-consent")
 set(chooser_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-chooser")
+set(capture_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-capture")
+set(capture_desktop "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/applications/org.qindaqt.PortalCapture.desktop")
+set(capture_resident_desktop "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/applications/org.qindaqt.PortalBackend.desktop")
 set(uri_relay "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-uri-relay")
-foreach(required_artifact IN ITEMS portal_executable consent_executable chooser_executable uri_relay dbus_descriptor systemd_unit
+foreach(required_artifact IN ITEMS portal_executable consent_executable chooser_executable capture_executable capture_desktop capture_resident_desktop uri_relay dbus_descriptor systemd_unit
         portal_metadata portal_selection kde_portal_dropin)
     if(NOT EXISTS "${${required_artifact}}")
         message(FATAL_ERROR "Staged portal package misses ${required_artifact}: ${${required_artifact}}")
     endif()
 endforeach()
+
+file(READ "${capture_desktop}" capture_permission_entry)
+file(READ "${capture_resident_desktop}" capture_resident_permission_entry)
+if(NOT capture_permission_entry MATCHES "X-QindaQt-KWin-DBus-Restricted-Interfaces=org.kde.KWin.ScreenShot2"
+   OR NOT capture_permission_entry MATCHES "Exec=[^\n]*qindaqt-portal-capture"
+   OR NOT capture_resident_permission_entry MATCHES "X-QindaQt-KWin-Wayland-Interfaces=zkde_screencast_unstable_v1"
+   OR NOT capture_resident_permission_entry MATCHES "Exec=[^\n]*xdg-desktop-portal-qindaqt")
+    message(FATAL_ERROR "Staged capture desktop permissions differ from actual restricted helper/resident interfaces")
+endif()
 
 # AGENT-GUARD: These names are integration entry points discovered by external
 # daemons. A duplicate anywhere in the staged component makes package selection
