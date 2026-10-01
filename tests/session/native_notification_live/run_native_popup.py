@@ -73,7 +73,8 @@ def main() -> int:
                 with (root / "compositor.log").open("w") as log:
                     child = subprocess.Popen([str(arguments.launcher.resolve()), "--kwin", str(arguments.compositor.resolve()),
                         "--virtual", "--width", "1920", "--height", "1080", "--scale", "1", "--output-count", "1",
-                        "--socket", "qindaqt-popup", "--no-global-shortcuts", "--test-scenario", str(arguments.scenario.resolve()),
+                        "--socket", "qindaqt-popup", "--session", "", "--no-xwayland",
+                        "--no-global-shortcuts", "--test-scenario", str(arguments.scenario.resolve()),
                         "--plugin-root", str(arguments.plugin_root.resolve())], env=environment, stdout=log, stderr=subprocess.STDOUT)
                 deadline = time.monotonic() + 20
                 while not (root / "runtime/qindaqt-popup").exists() and child.poll() is None and time.monotonic() < deadline:
