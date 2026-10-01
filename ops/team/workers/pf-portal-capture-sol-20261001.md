@@ -5,14 +5,18 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — freezing owned build/isolation fixes and protected-process capture admission evidence; no compiler/private resource held
+- Status: working — approved exact e78bf9f4 build passed; preparing protected-admission negative gates under separate runtime coordination
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler released after exact f79512c4 failure; no private runtime used/granted; chooser history preserved
+- Resources: compiler released after approved eleven-target build pass; no private runtime used/granted; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T14:12:47Z — Exact e78bf9f4 approved eleven-target remaining Ninja build PASS exit0, preserved build/e78bf9f4-build.log. Final progress17/18 is dynamic, not an asserted eighteen executed actions. Native fixture and actual frontend-FD PipeWire frame consumer now compile; compiler immediately released to root. Protected admission denial remains source-predicted, no runtime yet. Bounded negative native cases await separate grant after Sleep retry; metadata/routing unchanged, full PF19 open.
+
+- 2026-10-01T14:11:31Z — Root granted remaining heavy compiler on frozen e78bf9f4ca8202450880890934934c72f9fc1fbb, clean qinda identity checked. Starting unchanged eleven named targets with actual MAKEOPTS -j24 -l24; log build/e78bf9f4-build.log. Truthful non-dumpable fixture and no-bypass private runner blob4637e3704f19ff8931dec11c6a33bd3386875683 include allowlisted one-case diagnostics; full three-group acceptance unchanged. Strict docs exit0,486-doc validation, focused shape9/12/8 with zero skips and Python/diff pass. Protected native admission remains predicted denial, no runtime/routing claim.
 
 - 2026-10-01T13:56:51Z — Exact f79512c4 named rebuild exited 1, retained build/f79512c4-build.log (last reported 44/60, not completed-action count); sole compile failure is owned QDBusMetaType spelling in policy assertions. Compiler released before repair. Native fixture now matches resident PR_SET_DUMPABLE=0 before Qt/peers; source inspection predicts fork690 proc-executable restricted admission cannot identify protected resident/helper. Root acknowledged missing public authentication seam and owns coordination; no protection bypass/fork edits. Runner removes inherited permission bypasses, uses unique caller desktop executable, and audits owned process groups. Freezing corrected source; no native runtime or routing claim.
 
