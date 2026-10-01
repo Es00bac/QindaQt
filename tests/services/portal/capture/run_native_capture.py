@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 
-fixture, helper, compositor, consent, relay, metadata, selection = map(pathlib.Path, sys.argv[1:])
+fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection = map(pathlib.Path, sys.argv[1:])
 if not compositor.is_file():
     print("qualified private compositor unavailable")
     sys.exit(77)
@@ -17,8 +17,9 @@ if not compositor.is_file():
 # fresh private compositor; no unlock seam or host service is used.
 groups = [
     ["screenshotActualPixelsColorAndCancel", "closeInvalidParentAndRequesterLoss",
-     "actualPipeWireNodeFramesSessionCloseAndCancel", "frontendAndSupervisorLossWithdrawCaptureAndFiles"],
+     "validForeignParentGrantAndLossRetireCaptureAndStream", "actualPipeWireNodeFramesSessionCloseAndCancel", "frontendAndSupervisorLossWithdrawCaptureAndFiles"],
     ["nativeLockStopsActualStreamPendingCaptureAndRetainedFile"],
+    ["compositorLossWithdrawsStreamsFilesAndPendingPublication"],
 ]
 os.umask(0o077)
 for group in groups:
@@ -35,7 +36,7 @@ for group in groups:
             DBUS_SYSTEM_BUS_ADDRESS="unix:path=" + str(root / "no-system-bus"), QT_QPA_PLATFORM="wayland",
             QT_QUICK_BACKEND="software", KWIN_COMPOSE="O2", LIBGL_ALWAYS_SOFTWARE="1", QT_STYLE_OVERRIDE="Fusion", QT_FATAL_WARNINGS="1",
             QINDAQT_CAPTURE_TEST_HELPER=str(helper), QINDAQT_PORTAL_TEST_HELPER=str(consent), QINDAQT_PORTAL_TEST_RELAY=str(relay),
-            QINDAQT_CAPTURE_TEST_AUDIT=str(root / "capture.audit"), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
+            QINDAQT_CAPTURE_TEST_AUDIT=str(root / "capture.audit"), QINDAQT_CAPTURE_TEST_PIXELS=str(pixels), QINDAQT_PORTAL_FOREIGN_EXPORTER=str(exporter), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
             PIPEWIRE_REMOTE="pipewire-capture", PIPEWIRE_RUNTIME_DIR=str(runtime))
         portals = root / "portals"
         portals.mkdir()
@@ -61,7 +62,6 @@ for group in groups:
         ):
             (applications / (name + ".desktop")).write_text(f"[Desktop Entry]\nType=Application\nName=Private capture fixture\nExec={executable}\nNoDisplay=true\n{permission}\n")
         env["PATH"] = str(compositor.parent) + os.pathsep + env.get("PATH", "/usr/bin:/bin")
-        subprocess.run(["kbuildsycoca6", "--noincremental"], env=env, check=True, timeout=30, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         env["LD_LIBRARY_PATH"] = str(compositor.parent.parent / "lib64")
         env["QT_PLUGIN_PATH"] = str(compositor.parent.parent / "lib64/qt6/plugins")
         pwconfig = root / "pipewire-private.conf"
@@ -93,6 +93,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             if not select.select([bus.stdout], [], [], 5)[0]:
                 raise RuntimeError("private broker unavailable")
             env["DBUS_SESSION_BUS_ADDRESS"] = bus.stdout.readline().decode().strip()
+            subprocess.run(["kbuildsycoca6", "--noincremental"], env=env, check=True, timeout=30, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             logs = []
             for name, command in [("pipewire", ["pipewire", "-c", str(pwconfig)]), ("wireplumber", ["wireplumber", "-p", "policy"])]:
                 handle = (root / (name + ".log")).open("wb")
@@ -124,7 +125,11 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
                 for log in root.glob("*.log"):
                     print(log.name, log.read_text(errors="replace")[-32768:], file=sys.stderr)
                 sys.exit(result.returncode)
-            assert all(child.poll() is None for child in children), "private dependency exited"
+            if "compositorLossWithdrawsStreamsFilesAndPendingPublication" in group:
+                comp.wait(timeout=5)
+                assert all(child.poll() is None for child in children if child is not comp), "other private dependency exited"
+            else:
+                assert all(child.poll() is None for child in children), "private dependency exited"
         finally:
             for child in reversed(children):
                 if child.poll() is None:

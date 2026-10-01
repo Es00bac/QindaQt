@@ -3,6 +3,7 @@
 #include <spa/param/video/format-utils.h>
 #include <spa/pod/builder.h>
 #include <cstring>
+#include <algorithm>
 #include <unistd.h>
 PipeWireFrames::PipeWireFrames(int fd, quint32 node) {
     pw_init(nullptr, nullptr); m_loop = pw_loop_new(nullptr);
@@ -26,7 +27,7 @@ PipeWireFrames::PipeWireFrames(int fd, quint32 node) {
         v.param_changed = [](void *p, uint32_t idValue, const spa_pod *param) { if (param && idValue == SPA_PARAM_Format) spa_format_video_raw_parse(param, &static_cast<PipeWireFrames *>(p)->m_format); };
         v.process = process; return v; }();
     pw_stream_add_listener(m_stream, &m_listener, &streamEvents, this);
-    uint8_t buffer[1024]; spa_pod_builder builder = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
+    uint8_t buffer[1024]; spa_pod_builder builder{}; spa_pod_builder_init(&builder, buffer, sizeof(buffer));
     const spa_rectangle size{1100, 820}, minimum{1, 1}, maximum{4096, 4096}; const spa_fraction rate{30, 1}, low{0, 1}, high{60, 1};
     const auto *format = static_cast<const spa_pod *>(spa_pod_builder_add_object(&builder, SPA_TYPE_OBJECT_Format, SPA_PARAM_EnumFormat,
         SPA_FORMAT_mediaType, SPA_POD_Id(SPA_MEDIA_TYPE_video), SPA_FORMAT_mediaSubtype, SPA_POD_Id(SPA_MEDIA_SUBTYPE_raw),
