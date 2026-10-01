@@ -68,7 +68,8 @@ std::optional<FileChooserRequest> fileChooserFromFrame(const QJsonObject &frame)
     addPath("folder", "current_folder"); addPath("currentFile", "current_file");
     if (!frame.value("currentName").toString().isEmpty()) options.insert(QStringLiteral("current_name"), frame.value("currentName").toString());
     FileNames names; for (const auto &value : frame.value("files").toArray()) {
-        if (!value.isString()) return {}; names.append(QFile::encodeName(value.toString()) + '\0');
+        if (!value.isString()) return {};
+        names.append(QFile::encodeName(value.toString()) + '\0');
     }
     options.insert(QStringLiteral("files"), QVariant::fromValue(names));
     FileFilters filters;
