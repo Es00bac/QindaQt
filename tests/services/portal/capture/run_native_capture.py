@@ -106,6 +106,9 @@ context.modules = [
 ]
 context.objects = [ { factory = spa-node-factory args = { factory.name = support.node.driver node.name = Private-Driver priority.driver = 20000 } } ]
 """)
+        # Primary client context is needed by compositor/frontend/FD consumer;
+        # the separate daemon config still creates no hardware/audio sources.
+        (root / "client.conf").write_text(pathlib.Path("/usr/share/pipewire/client.conf").read_text())
         # Installed policy scripts only, no hardware/audio/camera monitor profile.
         wpdir = root / "wireplumber"
         wpdir.mkdir()

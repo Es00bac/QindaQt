@@ -8,6 +8,9 @@
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <QProcessEnvironment>
+#include <QSocketNotifier>
+#include <cstdio>
+#include <cstring>
 #include <fcntl.h>
 #include <QDBusConnectionInterface>
 #include <QDBusPendingCallWatcher>
@@ -46,14 +49,11 @@ class NativeCaptureTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void initTestCase() {
-        registerCaptureWireTypes(); QVERIFY(bus.isConnected()); QTRY_VERIFY(bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).isValid());
+        QCOMPARE(prctl(PR_GET_DUMPABLE), 1); registerCaptureWireTypes(); QVERIFY(bus.isConnected()); QTRY_VERIFY(bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).isValid());
         QVERIFY(bus.registerService("org.freedesktop.portal.Documents")); QVERIFY(bus.registerService("org.freedesktop.impl.portal.PermissionStore")); QVERIFY(bus.registerService("org.qindaqt.Power1"));
-        backend = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), "capture-backend"));
         selected = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), "capture-supervisor"));
-        resident = std::make_unique<ResidentPortalService>(appearance, *backend);
-        composition = std::make_unique<PortalFoundationComposition>(resident->backendHost(), *backend, qEnvironmentVariable("XDG_RUNTIME_DIR"),
-            qEnvironmentVariable("QINDAQT_PORTAL_TEST_HELPER"), qEnvironmentVariable("QINDAQT_PORTAL_TEST_RELAY"), QStringList{qEnvironmentVariable("XDG_DATA_HOME")}, QString{}, qEnvironmentVariable("QINDAQT_CAPTURE_TEST_HELPER"));
-        QVERIFY(composition->start()); QCOMPARE(resident->start(), PortalServiceStartStatus::Started);
+        backend.start(QCoreApplication::applicationFilePath(), {"--native-backend"}); QVERIFY(backend.waitForStarted());
+        QByteArray backendReady; QTRY_VERIFY_WITH_TIMEOUT((backendReady += backend.readAllStandardOutput()).contains("protected native backend ready"), 10000);
         auto attach = QDBusMessage::createMethodCall(kNativePortalService, kNativePortalPath, kNativePortalService, "AttachSessionWithDisplay"); attach << QStringLiteral("qindaqt-8");
         QDBusPendingCallWatcher attaching(selected->asyncCall(attach)); QTRY_VERIFY(attaching.isFinished()); const QDBusPendingReply<bool> attached = attaching; QVERIFY(!attached.isError()); QVERIFY(attached.value());
         QindaQt::Platform::Compositor::CompositorAttachment attachment(*selected, qEnvironmentVariable("XDG_RUNTIME_DIR"), [this](const QString &owner) { return owner == selected->baseService(); });
@@ -136,7 +136,7 @@ private Q_SLOTS:
         reset("hold"); screenshot("Screenshot"); mapped(); const auto pid = helperPid(); frontend.terminate(); QVERIFY(frontend.waitForFinished(5000)); QTRY_VERIFY(kill(pid, 0) < 0);
         startFrontend(); reset("hold"); screenshot("Screenshot"); mapped(); const auto next = helperPid(); selected.reset(); QDBusConnection::disconnectFromBus("capture-supervisor"); QTRY_VERIFY(kill(next, 0) < 0); QTRY_VERIFY(!QFile::exists(result)); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 2U);
     }
-    void cleanupTestCase() { frontend.terminate(); frontend.waitForFinished(5000); composition.reset(); resident.reset(); if (pixels.state() != QProcess::NotRunning) { pixels.kill(); pixels.waitForFinished(3000); } }
+    void cleanupTestCase() { frontend.terminate(); frontend.waitForFinished(5000); if (backend.state() != QProcess::NotRunning) { backend.closeWriteChannel(); QVERIFY(backend.waitForFinished(5000)); } if (pixels.state() != QProcess::NotRunning) { pixels.kill(); pixels.waitForFinished(3000); } }
 private:
     void startFrontend() {
         frontend.start(QString::fromUtf8(QINDAQT_FRONTEND_EXECUTABLE), {"--replace", "--verbose"}); QVERIFY(frontend.waitForStarted());
@@ -165,16 +165,35 @@ private:
     void success() { QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 0U); mapped(); }
     pid_t helperPid() const { return static_cast<pid_t>(audit().split(' ').value(0).toLongLong()); }
     static bool containsFixturePixels(const QImage &image) { for (int y = 0; y < image.height(); y += 17) for (int x = 0; x < image.width(); x += 17) { const auto c = image.pixelColor(x, y); if ((c.red() > 180 && c.green() < 80) || (c.green() > 170 && c.red() < 80)) return true; } return false; }
-    QDBusConnection bus = QDBusConnection::sessionBus(); QProcess frontend; Appearance appearance; Responses responses; ExportProcess pixels;
-    std::unique_ptr<QDBusConnection> backend, selected; std::unique_ptr<ResidentPortalService> resident; std::unique_ptr<PortalFoundationComposition> composition; QStringList requests;
+    QDBusConnection bus = QDBusConnection::sessionBus(); QProcess frontend; Responses responses; ExportProcess pixels, backend;
+    std::unique_ptr<QDBusConnection> selected; QStringList requests;
 };
+int serveBackend() {
+    // AGENT-GUARD: The protected resident is a distinct real process from the
+    // frontend caller. Its ordinary capture FDs retain this protected PID.
+    if (prctl(PR_GET_DUMPABLE) != 0) return 2;
+    Appearance appearance;
+    auto bus = QDBusConnection::sessionBus();
+    ResidentPortalService resident(appearance, bus);
+    PortalFoundationComposition composition(resident.backendHost(), bus, qEnvironmentVariable("XDG_RUNTIME_DIR"),
+        qEnvironmentVariable("QINDAQT_PORTAL_TEST_HELPER"), qEnvironmentVariable("QINDAQT_PORTAL_TEST_RELAY"),
+        QStringList{qEnvironmentVariable("XDG_DATA_HOME")}, QString{}, qEnvironmentVariable("QINDAQT_CAPTURE_TEST_HELPER"));
+    if (!composition.start() || resident.start() != PortalServiceStartStatus::Started) return 3;
+    QSocketNotifier parentLifetime(STDIN_FILENO, QSocketNotifier::Read);
+    QObject::connect(&parentLifetime, &QSocketNotifier::activated, qApp, [&parentLifetime] {
+        char byte = 0; static_cast<void>(read(STDIN_FILENO, &byte, 1)); parentLifetime.setEnabled(false); QCoreApplication::quit();
+    });
+    std::puts("protected native backend ready"); std::fflush(stdout);
+    return QCoreApplication::exec();
+}
 int main(int argc, char **argv) {
-    // AGENT-GUARD: Match protected resident startup before opening any peer.
-    // Dumpable fixtures can falsely qualify restricted capture unavailable to
-    // the production backend; desktop metadata alone is not authentication.
+    const bool backend = argc == 2 && std::strcmp(argv[1], "--native-backend") == 0;
     struct rlimit cores{0, 0};
-    if (setrlimit(RLIMIT_CORE, &cores) != 0 || prctl(PR_SET_DUMPABLE, 0) != 0) return 2;
+    if (setrlimit(RLIMIT_CORE, &cores) != 0 || (backend && prctl(PR_SET_DUMPABLE, 0) != 0)) return 2;
     QCoreApplication application(argc, argv);
+    if (backend) return serveBackend();
+    // The caller is an ordinary app; do not weaken resident/helper protection
+    // merely to satisfy the frontend's proc-root caller identity lookup.
     NativeCaptureTest test;
     return QTest::qExec(&test, argc, argv);
 }
