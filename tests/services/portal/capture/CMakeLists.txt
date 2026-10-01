@@ -74,7 +74,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(CAPTURE_TEST_PIPEWIRE REQUIRED IMPORTED_TARGET libpipewire-0.3)
 qt_add_executable(qindaqt_portal_native_capture_tests tst_native_capture.cpp pipewire_frames.cpp pipewire_frames.h)
 target_link_libraries(qindaqt_portal_native_capture_tests PRIVATE QindaQt::PortalCapturePolicy
-    QindaQt::CompositorAttachment QindaQt::CompositorNames Qt6::Widgets Qt6::Test PkgConfig::CAPTURE_TEST_PIPEWIRE)
+    QindaQt::CompositorAttachment QindaQt::CompositorNames QindaQt::PortalComposition Qt6::Widgets Qt6::Test PkgConfig::CAPTURE_TEST_PIPEWIRE)
 target_compile_definitions(qindaqt_portal_native_capture_tests PRIVATE
     QINDAQT_FRONTEND_EXECUTABLE="${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}")
 qindaqt_enable_warnings(qindaqt_portal_native_capture_tests)

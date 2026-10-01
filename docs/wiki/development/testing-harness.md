@@ -4488,8 +4488,17 @@ The protected driver is selected separately with its exact built bin/plugin pref
 required by `QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX`; ordinary qualified tools supply
 PATH only. Fixture desktop entries grant no restricted permission. The runner
 retains raw authority/history/log and cleanup/core evidence beside the caller in
-ignored build output. Actual native execution requires task-only bwrap isolation,
-new proc/private dev without dri/input/snd nodes and harmless namespace preflight;
+ignored build output. The real1.20.4 frontend requires an Access implementation before exporting
+Screenshot. The private fixture selects the existing real foundation composition
+for Access, and separately selects the protected broker for Screenshot/ScreenCast.
+It introspects both actual frontend interfaces before the first request. Interactive
+Screenshot still uses its actual protected native consent; no synthetic Access
+reply supplies authorization. Current and historical helper audits are retained
+from their exact runtime paths.
+Actual native execution requires task-only bwrap isolation,
+new proc/private dev with only renderD128 (AMD1002:731f), read-only sysfs, no card/input/snd
+nodes, and harmless namespace preflight. Software selection requires
+LIBGL_ALWAYS_SOFTWARE=1, MESA_LOADER_DRIVER_OVERRIDE=swrast, GALLIUM_DRIVER=llvmpipe;
 no inherited legacy plugin prefix or LD_LIBRARY_PATH substitutes the selected fork.
 Metadata retains KDE Screenshot/ScreenCast routing until actual family gates pass.
 Full window/multiple/cursor/revocable-restore delivery remains a PF19 successor.

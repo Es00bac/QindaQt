@@ -72,14 +72,15 @@ for group in groups:
             DBUS_SYSTEM_BUS_ADDRESS="unix:path=" + str(root / "no-system-bus"), QT_QPA_PLATFORM="wayland",
             QT_QUICK_BACKEND="software", KWIN_COMPOSE="O2", LIBGL_ALWAYS_SOFTWARE="1", QT_STYLE_OVERRIDE="Fusion", QT_FATAL_WARNINGS="1",
             QINDAQT_CAPTURE_TEST_HELPER=str(helper), QINDAQT_PORTAL_TEST_HELPER=str(consent), QINDAQT_PORTAL_TEST_RELAY=str(relay),
-            QINDAQT_CAPTURE_TEST_AUDIT=str(root / "capture.audit"), QINDAQT_CAPTURE_TEST_PIXELS=str(pixels), QINDAQT_PORTAL_FOREIGN_EXPORTER=str(exporter), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
+            QINDAQT_CAPTURE_TEST_AUDIT=str(runtime / "qindaqt-capture.audit"), QINDAQT_CAPTURE_TEST_PIXELS=str(pixels), QINDAQT_PORTAL_FOREIGN_EXPORTER=str(exporter), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
             PIPEWIRE_REMOTE="pipewire-capture", PIPEWIRE_RUNTIME_DIR=str(runtime))
         portals = root / "portals"
         portals.mkdir()
         # Only this task-owned overlay selects the capture-only service. The
         # production metadata/selector remains KDE until all actual gates pass.
+        (portals / "qindaqt-access.portal").write_text("[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Access;\nUseIn=qindaqt;\n")
         (portals / "qindaqt-capture.portal").write_text("[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt.capture\nInterfaces=org.freedesktop.impl.portal.Screenshot;org.freedesktop.impl.portal.ScreenCast;\nUseIn=qindaqt;\n")
-        (portals / "qindaqt-portals.conf").write_text("[preferred]\ndefault=none\norg.freedesktop.impl.portal.Screenshot=qindaqt-capture\norg.freedesktop.impl.portal.ScreenCast=qindaqt-capture\n")
+        (portals / "qindaqt-portals.conf").write_text("[preferred]\ndefault=none\norg.freedesktop.impl.portal.Access=qindaqt-access\norg.freedesktop.impl.portal.Screenshot=qindaqt-capture\norg.freedesktop.impl.portal.ScreenCast=qindaqt-capture\n")
         (portals / "portals.conf").write_text("[preferred]\ndefault=none\n")
         env.update(XDG_CURRENT_DESKTOP="qindaqt", XDG_DESKTOP_PORTAL_DIR=str(portals))
         applications = root / "data/applications"
