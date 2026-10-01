@@ -1,6 +1,6 @@
 # ADR-0322: Keep native portal choosers outside the resident
 
-- **Status:** Proposed; executable frontend qualification pending
+- **Status:** Accepted; private actual frontend/native-input qualification passed
 - **Date:** 2026-10-01
 - **Amends:** [ADR-0318](0318-native-portal-foundation.md) for chooser families
 
@@ -45,8 +45,9 @@ contract is added.
 
 Other portal families and zero-scope Inhibit retain their boundaries. Qt Widgets
 is an existing project dependency; no new package or resident GUI linkage is
-added. Chooser routing stays on compatibility providers until all advertised
-methods pass the private actual frontend/native-input gate. Those fixtures do
+added. Chooser routing selects QindaQt after all advertised methods passed the
+private actual frontend/native-input gate. A missing selected attachment fails
+with response 2, without retrying a compatibility provider. Those fixtures do
 not prove installed/physical-session or sandbox document-permission coverage.
 
 ## References

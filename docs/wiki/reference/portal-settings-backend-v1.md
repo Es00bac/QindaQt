@@ -30,8 +30,8 @@ family.
 | --- | --- | --- |
 | Settings / `org.freedesktop.impl.portal.Settings` | `qindaqt` | This version-1 backend |
 | Access | `qindaqt` | [Native foundation](../architecture/portal-foundation.md) |
-| AppChooser | `kde;gtk;lxqt` | None |
-| FileChooser | `kde;gtk;lxqt` | None |
+| AppChooser | `qindaqt` | [Native chooser version 1](portal-choosers.md) |
+| FileChooser | `qindaqt` | [Native chooser version 4](portal-choosers.md) |
 | Email | `qindaqt` | [Native foundation](../architecture/portal-foundation.md) |
 | Inhibit | `kde;gtk;lxqt` | None |
 | Notification | `qindaqt` | [Native foundation](../architecture/portal-foundation.md) |
@@ -53,7 +53,9 @@ family.
 
 The frontend filters the ordered names by the staged providers that advertise
 the requested implementation interface. The first available match wins.
-QindaQt's `.portal` advertises Settings, Secret, Access, Notification and Email. Every other family retains its explicit fallback or closed route.
+QindaQt's `.portal` advertises Settings, Secret, Access, Notification, Email,
+FileChooser and AppChooser. Every other family retains its explicit fallback or
+closed route. An unavailable native chooser fails closed without fallback.
 
 Every family routed to `kde` depends on the KDE backend running under the
 compatibility identity QindaQt's systemd drop-in supplies

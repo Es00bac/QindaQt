@@ -118,7 +118,7 @@ if(NOT EXISTS "${portal_file}")
 endif()
 file(READ "${portal_file}" portal_content)
 set(expected_portal_content
-    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Secret;org.freedesktop.impl.portal.Access;org.freedesktop.impl.portal.Notification;org.freedesktop.impl.portal.Email\nUseIn=QindaQt\n")
+    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Secret;org.freedesktop.impl.portal.Access;org.freedesktop.impl.portal.Notification;org.freedesktop.impl.portal.Email;org.freedesktop.impl.portal.FileChooser;org.freedesktop.impl.portal.AppChooser\nUseIn=QindaQt\n")
 if(NOT portal_content STREQUAL expected_portal_content)
     message(FATAL_ERROR
         "Portal .portal differs from exact Settings and Secret interfaces")
@@ -134,7 +134,7 @@ if(NOT EXISTS "${selection_file}")
 endif()
 file(READ "${selection_file}" selection_content)
 set(expected_selection_content
-    "[preferred]\ndefault=none\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Access=qindaqt\norg.freedesktop.impl.portal.AppChooser=kde;gtk;lxqt\norg.freedesktop.impl.portal.FileChooser=kde;gtk;lxqt\norg.freedesktop.impl.portal.Email=qindaqt\norg.freedesktop.impl.portal.Inhibit=kde;gtk;lxqt\norg.freedesktop.impl.portal.Notification=qindaqt\norg.freedesktop.impl.portal.Print=kde;gtk;lxqt\norg.freedesktop.impl.portal.Screenshot=kde;gtk;lxqt\norg.freedesktop.impl.portal.ScreenCast=kde;gtk;lxqt\norg.freedesktop.impl.portal.RemoteDesktop=kde;gtk;lxqt\norg.freedesktop.impl.portal.GlobalShortcuts=kde\norg.freedesktop.impl.portal.Secret=qindaqt\norg.freedesktop.impl.portal.InputCapture=kde\norg.freedesktop.impl.portal.Clipboard=kde\norg.freedesktop.impl.portal.Usb=kde\norg.freedesktop.impl.portal.Account=kde\norg.freedesktop.impl.portal.DynamicLauncher=kde\norg.freedesktop.impl.portal.Wallpaper=none\norg.freedesktop.impl.portal.Background=none\n")
+    "[preferred]\ndefault=none\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Access=qindaqt\norg.freedesktop.impl.portal.AppChooser=qindaqt\norg.freedesktop.impl.portal.FileChooser=qindaqt\norg.freedesktop.impl.portal.Email=qindaqt\norg.freedesktop.impl.portal.Inhibit=kde;gtk;lxqt\norg.freedesktop.impl.portal.Notification=qindaqt\norg.freedesktop.impl.portal.Print=kde;gtk;lxqt\norg.freedesktop.impl.portal.Screenshot=kde;gtk;lxqt\norg.freedesktop.impl.portal.ScreenCast=kde;gtk;lxqt\norg.freedesktop.impl.portal.RemoteDesktop=kde;gtk;lxqt\norg.freedesktop.impl.portal.GlobalShortcuts=kde\norg.freedesktop.impl.portal.Secret=qindaqt\norg.freedesktop.impl.portal.InputCapture=kde\norg.freedesktop.impl.portal.Clipboard=kde\norg.freedesktop.impl.portal.Usb=kde\norg.freedesktop.impl.portal.Account=kde\norg.freedesktop.impl.portal.DynamicLauncher=kde\norg.freedesktop.impl.portal.Wallpaper=none\norg.freedesktop.impl.portal.Background=none\n")
 if(NOT selection_content STREQUAL expected_selection_content)
     message(FATAL_ERROR
         "Portal selector differs from exact Settings/fallback routing policy")
