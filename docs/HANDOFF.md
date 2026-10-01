@@ -1,6 +1,6 @@
 # Graphical removable-media delivery — 2026-09-30
 
-Independent exact source ACCEPT: `5bff539edd232b3b23c62b0301aaab2f1c25ff21`;
+Integrated source `25628a65`. Independent exact source ACCEPT: `5bff539edd232b3b23c62b0301aaab2f1c25ff21`;
 review records `55b5b79a27be6e85b704c373184731fde2aae70a` are incorporated here.
 The review first rejected four executable late-reply/notification races; the
 unchanged external reproductions and three immediate identity-revocation rows
@@ -9,15 +9,22 @@ preserved qinda's newer source `ab47a4b3`, combined both optional media/night-li
 starts, and reran the affected build, 9/9 media/session/profile CTests,
 25/25 wrapper tests, strict MkDocs, 475-document links and focused source shape.
 
-Overlay `9c8c9cd77298d4d6739f8716a9043b4a2cb7417d` provides
-`gui-apps/qindaqt-removable-media-0.1.0_p20260930-r1`, exact source `5bff539e`.
-Portage built and merged only that component on qinda-top. Installed fixture-only
-QML construction passes, `qcheck` verifies 13/13 package files, runtime libraries
-resolve, the public session endpoint exposes only Activate and a second watcher
-exits successfully. The installed watcher is active in the current desktop via a
+Shared overlay `d2fe9adf6469a396f6417c1864b8a01fd31f2851` provides
+`gui-apps/qindaqt-removable-media-0.1.0_p20260930-r2`, exact source `5bff539e`.
+Portage built and merged the component on both hosts. Revision r2 retains the
+same source bytes and lowers only the desktop dependency floor to the shared
+pre20260927-r7 checkpoint. The public Controls/Tokens runtime is unchanged;
+AppAppearance is static in the component. Installed fixture-only QML construction,
+13/13 package integrity and runtime library resolution pass on both hosts,
+including the older r7 desktop on qinda. The initial laptop r1 delivery remains
+preserved in the overlay; the shared delivery pin now names r2.
+The public session endpoint exposes only Activate and a second watcher exits
+successfully on qinda-top. The installed watcher is active in qinda-top's current desktop via a
 transient user service; no desktop restart was performed. The packaged XDG
 compatibility entry owns future installed-session startup; new source supervisors
-own the helper and stop it before notifications. Future full-desktop recipes must
+own the helper and stop it before notifications. Qinda's compatibility entry is
+installed for its next login; no ambiguous remote graphical session was selected.
+Future full-desktop recipes must
 set `QINDAQT_BUILD_REMOVABLE_MEDIA=OFF` while the component package owns its files.
 
 At the owner's explicit request, the existing external NTFS data volume was
