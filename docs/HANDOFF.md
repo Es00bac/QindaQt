@@ -1,3 +1,21 @@
+# Plasma-free recovery boundary — 2026-10-01
+
+PF25 guard source `c78ac162a28f23039d117df37046b25465619a9a` is independently
+accepted and integrated in the authoritative QindaGentoo hub and checkout.
+Independent and integrated resolver tests each pass 28/28. This installs no
+runtime payload and removes no package. Both installed diagnostic closures
+still contain 28 forbidden packages; missing final fork recipes fail closed.
+
+Native display-idle candidate `891092f66029fdffa50258e98b6d52d3ed61007b`
+has 22 focused implementer gates; exact independent review is next. Native
+portal foundation/routing has qualified 21 scoped candidate gates and awaits
+independent source acceptance. Native shell notification-lock observer
+`5487e1083d9556cc4f5f4bc61d30d577a464dd9e` compiles with the production shell
+and passes its observer/native monitor/transport/attachment gates 4/4;
+independent review is next. These are candidate evidence, not integration or
+installed-delivery evidence. The recovery integration branch remains separate
+from main until exact accepted source and combined gates qualify.
+
 # Graphical removable-media delivery — 2026-09-30
 
 Integrated source `25628a65`. Independent exact source ACCEPT: `5bff539edd232b3b23c62b0301aaab2f1c25ff21`;

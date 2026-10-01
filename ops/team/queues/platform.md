@@ -1,5 +1,18 @@
 # Platform delivery queue
 
+## October 1 recovery — current Plasma-free boundary
+
+Program Manager owns the isolated `integrate/plasma-finish-20261001` branch.
+Historical active claims below are not current liveness evidence.
+
+| Outcome | Exact boundary and state | Reviewer/next gate | Resource and collision |
+| --- | --- | --- | --- |
+| PF25 runtime dependency guard | QindaGentoo `c78ac162`, independently accepted and integrated; 28/28 integrated tests | Final selected fork+desktop recipes must pass actual Portage closure; current installed diagnostics fail with 28 forbidden packages | Guard tooling only; no runtime package mutation |
+| Source-dependent native display idle | `891092f6`, 22 candidate gates; in independent review | pf-portals-sol exact source and 22 scoped gates | Separate runtime worktree; shared registry edits integrated only by manager |
+| Native portal foundation/routing | Candidate scoped 21 gates qualified; final immutable handoff next | Program Manager exact source review then combined integration gates | Private fixture/build slot released by implementer |
+| Native shell notification privacy | `5487e108`, production shell build and 4/4 candidate gates | Different worker exact review next | Manager isolated shell worktree; no live desktop change |
+
+
 - Workgroup manager: Codex Program Manager (OpenAI Codex `gpt-5.6-sol`, reasoning high)
 - Last observation: 2026-09-06T22:15:50-06:00
 
