@@ -10,6 +10,8 @@
 
 ## Updates
 
+- 2026-10-01T12:42:00+00:00 — Different-worker static review rejects initial candidate and finds parent-stage declaration-order plus test-property assumptions. Stage now gates on already-defined public SessionSupervisorSupport, matching foundation's later condition; properties/dependency appends gate on actual TEST existence. No declaration reorder or stage runner changes. Original configure and full-production row-presence gates rerun on repaired descendant; exact review pending.
+
 - 2026-10-01T12:39:00+00:00 — Initial 139090f9 unchanged configure gate exposes a second absent-target reference in the parent composite staged-package row. Guard its registration by actual native frontend target; preserve the entire staged runner and all positive/poison assertions. Full production must retain both rows; bridge-only keeps ordinary source/boundary tests. Exact descendant verification and independent review remain pending.
 
 - 2026-10-01T12:34:00+00:00 — Existing combined dependency-contract gate fails when shell/plugin are OFF and testing is ON: native frontend test references absent SessionSupervisorSupport. Exact base and unrelated work preserved. Guard only that target, registered test and helper dependencies by actual support-target existence; other portal tests and original configure gate remain. Root owns bounded configure resources; no production behavior or installed state changes. Exact candidate plus different-worker review is the stopping point.

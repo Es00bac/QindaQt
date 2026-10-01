@@ -212,9 +212,10 @@ add_test(
         "-DCHECK_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/check_boundary.cmake"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_boundary_negative.cmake"
 )
-# The composite stage runs the native frontend fixture; bridge-only builds
-# have no supervised fixture and must not reference its absent target.
-if(TARGET qindaqt_portal_native_frontend_tests)
+# AGENT-GUARD: foundation below declares its native frontend only when this
+# support target exists. Use the already-defined public dependency here, not
+# that later fixture target, or production builds silently lose staged coverage.
+if(TARGET QindaQt::SessionSupervisorSupport)
     add_test(
         NAME qindaqt.portal-staged-package
         COMMAND
@@ -283,25 +284,27 @@ set_tests_properties(
     qindaqt.portal-source-boundary qindaqt.portal-source-boundary-negative
     PROPERTIES LABELS "service;portal;appearance;boundary;hostile" TIMEOUT 20
 )
-set_tests_properties(
-    qindaqt.portal-staged-package
-    PROPERTIES
-        LABELS "service;portal;appearance;package;dbus;hostile"
-        TIMEOUT 120
-        RUN_SERIAL TRUE
-        DEPENDS "qindaqt.portal-process-lifecycle"
-)
+if(TEST qindaqt.portal-staged-package)
+    set_tests_properties(
+        qindaqt.portal-staged-package
+        PROPERTIES
+            LABELS "service;portal;appearance;package;dbus;hostile"
+            TIMEOUT 120
+            RUN_SERIAL TRUE
+            DEPENDS "qindaqt.portal-process-lifecycle"
+    )
+endif()
 if(TEST qindaqt.portal-kde-compat)
     set_tests_properties(
         qindaqt.portal-kde-compat
         PROPERTIES LABELS "service;portal;activation;compat" TIMEOUT 20
     )
 endif()
-if(TEST qindaqt.portal-frontend-selection)
+if(TEST qindaqt.portal-staged-package AND TEST qindaqt.portal-frontend-selection)
     set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
                  DEPENDS "qindaqt.portal-frontend-selection;qindaqt.portal-frontend-toolkit")
 endif()
-if(TEST qindaqt.portal-frontend-routing)
+if(TEST qindaqt.portal-staged-package AND TEST qindaqt.portal-frontend-routing)
     set_property(TEST qindaqt.portal-staged-package APPEND PROPERTY
                  DEPENDS "qindaqt.portal-frontend-routing;qindaqt.portal-frontend-routing-negative")
 endif()
