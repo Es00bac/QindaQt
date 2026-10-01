@@ -1,0 +1,3 @@
+# Desktop resource routing and final art repairs
+
+Observed 2026-10-01T22:09:08.294888+00:00. User authorizes desktopbuild/GPUtesting while laptopgame uses itsGPU. While `/home/cabewse/.cache/laptop-test.lock` exists, laptop builds/GPUcaptures/otherheavywork pause; lightcoordination continues and qinda remains available. Root owncataloghelper compilation onqinda passes, no installedbinary. Artwork final batch hasthree canonicalfailures only after31/34 repairreviewPASS; sourcefreeze/image/install remain. Capture AMD renderer confirms allocatorissuecleared but actualpixel/decodedframechecks stillfail; actual producerframecompletion fixture queued. PF2 supportedholdprofile slice is sourcebuilt, privategates next. Nofeatureprogress is derived from activity.
