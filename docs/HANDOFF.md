@@ -31,7 +31,12 @@ It joins the selected logind session to supervisor identity, retains a delay
 descriptor until a current native ProtectedLocked receipt, and fences stop,
 owner loss and resume. Combined plugin/native gates and hardware remain open.
 After storage recovery, the combined build found an inherited abstract keyring
-idle fake; isolated fixture repair `f1d7b89b` awaits independent execution/review.
+idle fake. Exact fixture repair `f1d7b89b` independently passes its own strict
+build and two focused tests and is integrated at `32bf9f77`. On that combined
+source the 229-target production/plugin/affected-module build passes against the
+exact `690c0112` fork stage. The Ninja graph dynamically changes its action count;
+the retained log is the evidence, not an inferred total. Combined CTests and
+native mapping remain pending; this is not an all-target or installed pass.
 Native FileChooser/AppChooser remains a separate active candidate: actual
 frontend journeys pass, with final family routing and staged gates pending.
 
