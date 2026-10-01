@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — strict remaining capture/resident/Screenshot build at exacte6afb200; compiler grant active, private runtime unclaimed
+- Status: working — repairing owned dialog public response include after second strict build; compiler released, private runtime unclaimed
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: bounded compiler grant active for unchanged named scope; no private runtime used/granted; chooser history preserved
+- Resources: compiler released after second build; no private runtime used/granted; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T13:36:48Z — Exacte6afb200 remaining Ninja build exit1, retained build/e6afb200-build.log. Prior Session/adaptor API errors cleared and composition compiled; sole new root cause is native CaptureDialog header missing public RequestRegistry declaration of RequestResponse, causing helper/input moc cascade. Compiler released before one-line owned header repair; no registry/accepted-family changes or runtime claims. Last reported79/131 is not a completed-action count.
 
 - 2026-10-01T13:36:08Z — Popup reviewer released resources; root granted heavy compiler only for exacte6afb200c2158ecd164ae3fd37ae5518c4b90422. Clean qinda source identity rechecked; resuming unchanged approved11 named targets with-j24-l24 in build/focused, separate build/e6afb200-build.log. Prior fbade failure and API repair preserved. No private runtime or routing changes.
 
