@@ -4574,6 +4574,14 @@ object serial or node name. The decoder fixture now resolves only the offered
 node ID through the actual returned remote registry, waits for its bounded real
 sync barrier, and connects by its authentic object serial using PW_ID_ANY. It
 records each ID-to-serial pair and fails closed on missing/retired targets; there
-is no default-node fallback. The repaired full matrix remains to be rerun.
+is no default-node fallback. The repaired executable ca29910d passes the first
+five-case compositor group (7/7 Qt results), including real returned node25 to
+serial27 after retirement and continuous changed colored frames. The fresh
+second compositor fails its initial Screenshot before any lock request, with
+response2 and no helper audit; its lock assertions and the third compositor-loss
+group remain unqualified. Source review identifies a separate asynchronous
+native-state admission handshake beyond the fixture readiness checks; whether
+that timing causes this denial remains to be traced. No admission guard is
+relaxed and no delay or retry is substituted for a public readiness condition.
 All earlier blank PNG, two-frame and startup-order failures remain retained.
 No installed routing or full PF19 completion is claimed.
