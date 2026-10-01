@@ -76,10 +76,26 @@ four-branch configure gate and full-production target/test-presence checks and
 is independently accepted and merged with review at `61e07eb8`. Its integrated
 configuration rerun passes on integrated `addccb7a` (exit0; all four unchanged
 configure branches). Its staged runner, positive/poison assertions and production
-behavior are unchanged. Native popup candidate `6181566a` passes its corrected
-private gate with 1/1 CTest and four Qt passes; different-worker exact review is
-active. Earlier failed fixture isolation and its zero-survivor audit remain
-preserved. Consolidated Portage delivery remains open.
+behavior are unchanged. Native popup `6181566a` is independently accepted by exact review `6cfd7453`
+and merged at `e21c1757`. The integrated strict helper build and original focused
+CTest pass (1/1, four Qt passes, zero failures/skips); both actual mapped popup
+rows retire on owner loss/current native protection. Direct integrated cleanup
+audit finds no recorded PID or exact runtime-root survivor; four limited process
+reads are disclosed. Earlier failed fixture isolation and its zero-survivor audit
+remain preserved.
+
+Native sleep-mode source `052697d3` passes its strict seven-target build and
+corrected private eight-row gate (143 Qt passes, zero failures/skips); exact
+different-worker review is pending. The first namespace run failed before bus
+setup because the read-only mount made `/dev/null` unavailable. It created two
+verified test coredumps; compressed failure bytes and hashes were preserved,
+then only those exact originals were removed. The corrected null-only device
+bind, zero activation directories, unchanged installed configuration hash and
+core-storage limit are evidenced. This is no host power/PAM qualification.
+Capture source `e78bf9f4` compiles its eleven-target scope; protected Screenshot
+and ScreenCast permission probes remain before its actual native/frontend
+qualification. Both family routes stay KDE. Consolidated Portage delivery
+remains open.
 
 The supplied painted icon family is independently delivered on both hosts as
 Portage package `x11-themes/qinda-breeze-painted-1.0.0_p20260929`, using overlay
