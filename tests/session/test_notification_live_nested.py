@@ -136,7 +136,7 @@ def _write_session_wrapper(
         profile,
         "--theme",
         theme,
-        "--no-polkit-agent", "--no-powerdevil",
+        "--no-removable-media", "--no-polkit-agent", "--no-powerdevil",
         "--no-global-shortcut-daemon", "--no-autostart",
     ]
     wrapper.write_text(

@@ -62,7 +62,11 @@ void MediaController::inventoryChanged()
     for (const auto &old : std::as_const(m_seen))
         if (!attached.contains(old)) Q_EMIT notificationWithdrawn(old);
     if (!find(m_selected)) m_selected = m_volumes.isEmpty() ? QString{} : m_volumes.constFirst().token;
-    if (m_formatTarget && !find(m_formatTarget->token)) m_formatTarget.reset();
+    if (m_formatTarget) {
+        const auto *current = find(m_formatTarget->token);
+        if (!current || current->identity != m_formatTarget->identity) m_formatTarget.reset();
+        else m_formatTarget = *current;
+    }
     // Publish the complete inventory before signals may synchronously invoke
     // a consumer's action. Capture candidates so a callback cannot invalidate
     // the iterator over our current inventory.
@@ -172,7 +176,7 @@ void MediaController::remember(const QString &token, const QString &mode)
 void MediaController::requestFormat(const QString &token)
 {
     const auto *v = find(token);
-    if (!busy() && v && v->canFormat && v->mountPath.isEmpty() && !formatTypes().isEmpty()) {
+    if (!busy() && v && v->canFormat && !formatTypes().isEmpty()) {
         m_formatTarget = *v;
     } else m_status = QStringLiteral("Unmount writable media before formatting it.");
     Q_EMIT changed();

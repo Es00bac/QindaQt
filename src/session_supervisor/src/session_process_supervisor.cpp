@@ -66,6 +66,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
       , m_autostart(std::make_unique<SessionAutostartRunner>(m_options.autostart))
       , m_desktopControls(std::make_unique<OptionalSessionChild>(
             QStringLiteral("desktop-controls"), QStringList{}))
+      , m_removableMedia(std::make_unique<OptionalSessionChild>(
+            QStringLiteral("removable-media"), QStringList{QStringLiteral("--watch")}))
       , m_keyring(std::make_unique<KeyringSessionLifetime>(this))
       , m_polkitAgent(std::make_unique<OptionalSessionChild>(
             QStringLiteral("polkit-agent"), QStringList{}))
@@ -104,6 +106,8 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
     connect(m_desktopControls.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_polkitAgent.get(), &OptionalSessionChild::stopRequested, this,
+            [this](const QString &role) { Q_EMIT childStopRequested(role); });
+    connect(m_removableMedia.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
     connect(m_powerDevil.get(), &OptionalSessionChild::stopRequested, this,
             [this](const QString &role) { Q_EMIT childStopRequested(role); });
@@ -164,6 +168,7 @@ bool SessionProcessSupervisor::start(QString *error)
     // AGENT-GUARD: optional budgets are per session; reset only now that any
     // previous session's children were stopped by stop()/finishSession().
     m_desktopControls->resetRestartCount();
+    m_removableMedia->resetRestartCount();
     m_keyring->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
@@ -221,6 +226,7 @@ void SessionProcessSupervisor::stop() noexcept
     }
     m_welcome->stop();
     m_autostart->stop();
+    m_removableMedia->stop();
     if (m_shell.state() != QProcess::NotRunning) {
         Q_EMIT childStopRequested(QStringLiteral("shell"));
     }
@@ -258,6 +264,7 @@ void SessionProcessSupervisor::stop() noexcept
     // All optional children are stopped above; their budgets belong to the
     // next session.
     m_desktopControls->resetRestartCount();
+    m_removableMedia->resetRestartCount();
     m_keyring->resetRestartCount();
     m_polkitAgent->resetRestartCount();
     m_powerDevil->resetRestartCount();
@@ -425,6 +432,7 @@ void SessionProcessSupervisor::startOptionalChildren()
     // one-restart budget already bounds this to one retry, never a loop.
     m_polkitAgent->start(m_options.polkitAgentExecutable);
     m_keyring->start(m_options.keyringExecutable);
+    m_removableMedia->start(resolveExecutable(m_options.removableMediaExecutable));
 }
 
 void SessionProcessSupervisor::startWelcome()
@@ -485,6 +493,7 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     }
     m_welcome->stop();
     m_autostart->stop();
+    m_removableMedia->stop();
     if (role == ChildRole::NotificationHost) {
         if (m_shell.state() != QProcess::NotRunning) {
             Q_EMIT childStopRequested(QStringLiteral("shell"));
