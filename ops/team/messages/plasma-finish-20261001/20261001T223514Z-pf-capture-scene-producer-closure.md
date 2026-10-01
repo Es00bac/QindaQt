@@ -1,0 +1,9 @@
+# Scene observation: producer disappears before capture
+
+2026-10-01T22:35:14+00:00. Diagnostic fork816334cc0d over immutable447; unchanged consumer executable3a8 at sourcec03. DriverSHA2564c8e150f5d6e44beeb8fbd2b9fd122ba22eb4b3dc076e1bee68c35f58f92a695. Diagnostic commit trailer0322 is erroneous metadata; the capture-authority boundary isADR0318, consumer captureADR0324. No accepted history rewritten.
+
+Both actual AMD runs show Private changing capture pixels initially ready/visible true, hidden/minimized/exclude false, opacity1, current desktop/activity true, geometry1100x820 and actual buffer1100x820. The first real damage is followed by Window::closed BEFORE the Screenshot/ScreenCast helper window is added. This establishes the scene is losing its real producer before capture; it does not establish why that producer exits. Its QProcess stderr and exit state are currently unread by the consumer.
+
+Exact commands are build/run_scene_screenshot.py and build/run_scene_pipewire.py in this isolated qinda worktree. Screenshot exit1,2.008s,Qt2pass/1fail unchanged fixture-color assertion. ScreenCast exit1,47.697s,Qt2pass/1fail unchanged >3frames requirement (2decoded,3nodes,empty error). All raw namespace preflights,command.json,image-hashes.json,ldd,logs,actual PNG and cleanup audits remain in build/native-scene-screenshot and build/native-scene-pipewire. Both AMD renderer provenance and actual frame callback readiness pass. Survivors=[],scoped cores=[],cleanup_errors=[]. RuntimePGIDs359812/360025 finished; private resource released.
+
+Next narrow observation proposed: exec actual pixel producer through an otherwise unchanged task-only wrapper redirecting stderr to retained task output. No changed colors, assertions, permissions, production fork or callback behavior. Compiler no longer needed for that observation.
