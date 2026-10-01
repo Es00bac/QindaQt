@@ -197,4 +197,7 @@ Email.ComposeEmail and Notification, and observes native mapped input, URI peer
 receipts and notification actions/removal. Public Close, frontend owner loss and
 supervisor disconnect retire pending consent. The separate session lifetime
 fixture verifies same-session attachment across distinct backend unique owners.
-These private fixtures do not contact the host or install a portal.
+The staged-package row repeats native frontend positive/withdrawal controls using
+installed metadata and URI relay. Consent input remains the explicit production-source
+test driver, so this does not establish installed physical consent. These private
+fixtures do not contact the host or install a portal.
