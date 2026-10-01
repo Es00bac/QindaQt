@@ -18,7 +18,9 @@ disarms the idle stage, drops the observer, makes a best-effort `On` request
 over the already-connected descriptor, flushes it on the connection worker,
 then destroys DPMS, manager, output, registry, and event-queue wrappers before
 disconnecting. Connection death uses local proxy destruction because protocol
-release requests are no longer valid. Activity also requests `On`. A
+release requests are no longer valid. Activity also requests `On`. Normal supervisor teardown calls the same flushed
+restore before destroying the display-power port, so logout cannot discard a
+buffered restore. A
 replacement at the old socket path cannot receive either request through this
 retained descriptor.
 

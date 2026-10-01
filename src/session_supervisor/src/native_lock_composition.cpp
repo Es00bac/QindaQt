@@ -185,6 +185,9 @@ void NativeLockComposition::stop() {
   if (!d) return;
   if (d->displayStage) d->displayStage->stop();
   d->displayStage.reset();
+  // AGENT-GUARD: logout must flush the retained peer restore before destroying
+  // DPMS proxies; stage.stop() alone only queues On (ADR-0319).
+  if (d->dpms) d->dpms->restoreAndStop();
   d->dpms.reset();
   d->displayIdle.reset();
   if (d->displaySettings) d->displaySettings->stop();
