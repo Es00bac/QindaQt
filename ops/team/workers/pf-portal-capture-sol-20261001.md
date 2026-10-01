@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — compiling immutable ed7a4e16 capture slice after audited Qt connection/header repairs
+- Status: working — verifying immutable ed7a4e16 capture/private-bus and adjacent Screenshot rows
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: qinda-only bounded17-target compiler granted; no runtime/install/staging grant
+- Resources: compiler released; qinda-only bounded11-row private-bus grant, no native compositor/install/staging grant
 
 ## Updates
+
+- 2026-10-01T19:08:57Z — Exacted7a4e16 strict17-target build PASS exit0/14.0s, raw ed7 buildlog/status/images manifest retained. Final49/50 dynamic progress not action total, minimumRAM17058416kB/no intervention, ownedPGID167440 gone; compiler released. Production/test broker/helper and native caller linked, new teardown regression compiled. Root now grants only11 private-bus/offscreen rows with core0/dead buses/180s group bound/firstfailure stop; native driver remains absent and no pixels/frame/staging/routing qualification. Taking that separate private slot, own record child stays off tested source.
 
 - 2026-10-01T19:05:40Z — Root inspected c8f→ed7 public Qt handle/include delta and granted exactclean ed7a4e16 qinda-only same17 targets/declareddeps-j8-l24. Full own registration/const and split-header audit completed, guards unchanged. PreflightMemAvailable21838352kB (~20.83GiB), no ninja/cc1plus observed; strict/mixeddevelopmentprefix/native-driver-empty config unchanged. New ed7 rawlog/status with owned-group monitor, immediate failure/completion release; global MAKEOPTS unchanged. All three failed predecessors retained, no private runtime grant.
 
