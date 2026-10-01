@@ -242,7 +242,8 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             for snapshot in runtime.glob("qindaqt-capture-observed.png"):
                 shutil.copyfile(snapshot, evidence / snapshot.name)
             for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]),
-                          runtime / "qindaqt-capture-history.audit", runtime / "native-renderer.audit"):
+                          runtime / "qindaqt-capture-history.audit", runtime / "native-renderer.audit",
+                          runtime / "producer-frame.audit"):
                 if audit.is_file():
                     shutil.copyfile(audit, evidence / audit.name)
             cores = [str(path.relative_to(root)) for path in root.rglob("*")
