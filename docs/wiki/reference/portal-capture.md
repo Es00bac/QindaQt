@@ -89,11 +89,13 @@ context in private PipeWire configuration. At df68e649 both setups pass:
 Screenshot maps the actual-input helper and returns frontend Response2/no URI;
 the existing public capture failure signal reports the exact Screenshot2
 `Error.NoAuthorized` mapping. This is an exercised restricted denial, not a
-request to weaken protection or install another component. ScreenCast
-CreateSession returns Response0, but the fixture incorrectly decodes its
-`session_handle` as `o`, so Start is not reached. Installed primary frontend XML
-and source preserve this result as `s`; the owned fixture successor asserts and
-reads that type. No Start, node or frame result is yet qualified. Earlier failed
+request to weaken protection or install another component. At e1b06401 the
+fixture correctly asserts and reads the primary compatibility string
+`session_handle`: ScreenCast CreateSession and SelectSources return Response0,
+then actual Start returns Response2/empty streams. No mapped sharing dialog,
+remote node or frame is reached. Fork logs separately report that the protected
+resident ordinary Wayland peer cannot be identified; source denies its restricted
+capture global when the executable identity is unavailable. Earlier failed
 inputs and assertions remain preserved. Backend and helper retain protection
 before Qt startup; the runner clears both inherited permission bypasses. A
 dumpable backend or bypass cannot qualify production.
