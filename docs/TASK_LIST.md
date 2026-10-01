@@ -75,8 +75,9 @@ configuration repair `37347fe4` is independently accepted and merged with review
 at `61e07eb8`; the unchanged four-branch configuration gate also passes on
 integrated source `addccb7a`. Native popup `6181566a` is independently accepted and merged at `e21c1757`;
 the integrated strict helper build and focused native gate pass (1/1 CTest,
-four Qt passes). Native sleep-mode source `052697d3` passes its private eight-row
-gate but awaits exact different-worker review. Hardware and consolidated
+four Qt passes). Native sleep-mode candidate `50fb9c11` is independently accepted with eight private
+rows and 143 Qt checks, and merged with exact review at `8b471794`; its integrated
+affected rebuild and eight-row rerun remain next. Hardware and consolidated
 installed qualification remain open.
 No milestone or installed
 Plasma-removal completion advances from candidate activity.

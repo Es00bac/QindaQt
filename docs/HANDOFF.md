@@ -1,5 +1,21 @@
 # Plasma-free recovery boundary — 2026-10-01
 
+Native configured sleep candidate `50fb9c11` and exact independent ACCEPT
+`1d397416` are preserved on the recovery integration branch at `8b471794`.
+The source audit and genuine independent replay qualify eight private rows and
+143 Qt checks; the final reviewer inspected that replay and did not claim another.
+The integrated affected build and unchanged eight-row namespace gate remain next.
+Initial namespace failures and two exact task-generated core artifacts remain
+disclosed in the immutable handoff, with opaque copies preserved and only the
+verified originals removed. No host sleep or PF2 completion follows.
+
+Protected capture source `b3670dda` passes its eleven-target strict rebuild.
+Only two corrected negative probes are authorized, with a normal frontend caller
+and a separately protected backend. Actual method responses remain unobserved
+until those probes finish. A separately owned fork authority proposal must
+preserve non-dumpability and qualify both restricted capture entrypoints before
+any routing switch.
+
 PF25 guard source `c78ac162a28f23039d117df37046b25465619a9a` is independently
 accepted and integrated in the authoritative QindaGentoo hub and checkout.
 Independent and integrated resolver tests each pass 28/28. This installs no
