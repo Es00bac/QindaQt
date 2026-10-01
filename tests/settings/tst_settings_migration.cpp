@@ -17,6 +17,9 @@ private slots:
     void initTestCase();
     void migratesAValidV1DocumentLosslessly();
     void migratedDocumentDefaultsDoNotDisturbToFalse();
+    void migratesExplicitLegacyDisplayOffChoiceToAllSources();
+    void migratesMaximumLegacyDurationWithinV2Bound();
+    void migratesLegacyDisabledDisplayOffWithoutInventingDefault();
     void rejectsCorruptOrInvalidV1Input();
     void rejectsMismatchedSchemaObjects();
     void compatibilityLoaderReadsActiveVersionDirectly();
@@ -92,6 +95,93 @@ void SettingsMigrationTests::migratedDocumentDefaultsDoNotDisturbToFalse()
     }
 }
 
+void SettingsMigrationTests::migratesExplicitLegacyDisplayOffChoiceToAllSources()
+{
+    constexpr auto v1Document = R"json({
+      "schemaVersion": 1,
+      "layer": "user-overrides",
+      "values": {"power.idleDisplayOffMinutes": 7}
+    })json";
+    const auto migrated = SettingsMigration::migrateV1ToV2(
+        v1Document, QStringLiteral("fixture"), *m_v1Schema, *m_v2Schema);
+    QVERIFY2(migrated.ok, qPrintable(migrated.error));
+    for (const QString &source : {QStringLiteral("ac"),
+                                  QStringLiteral("battery"),
+                                  QStringLiteral("lowBattery")}) {
+        QCOMPARE(migrated.document.values.value(
+                     QStringLiteral("power.idle.%1.displayOffEnabled").arg(source)).toBool(),
+                 true);
+        QCOMPARE(migrated.document.values.value(
+                     QStringLiteral("power.idle.%1.displayOffSeconds").arg(source)).toInt(),
+                 420);
+    }
+    LayeredSettings settings(*m_v2Schema);
+    const auto applied = settings.replaceLayer(migrated.document.layer,
+                                                migrated.document.values);
+    QVERIFY2(applied.ok(), qPrintable(applied.message));
+    QCOMPARE(settings.value(QStringLiteral("power.idle.ac.displayOffSeconds")).toInt(), 420);
+    QVERIFY(settings.sourceLayer(QStringLiteral("power.idle.ac.displayOffSeconds"))
+            == std::optional(SettingLayer::UserOverrides));
+}
+
+void SettingsMigrationTests::migratesMaximumLegacyDurationWithinV2Bound()
+{
+    constexpr auto v1Document = R"json({
+      "schemaVersion": 1,
+      "layer": "user-overrides",
+      "values": {"power.idleDisplayOffMinutes": 240}
+    })json";
+    const auto migrated = SettingsMigration::migrateV1ToV2(
+        v1Document, QStringLiteral("fixture"), *m_v1Schema, *m_v2Schema);
+    QVERIFY2(migrated.ok, qPrintable(migrated.error));
+    for (const QString &source : {QStringLiteral("ac"),
+                                  QStringLiteral("battery"),
+                                  QStringLiteral("lowBattery")}) {
+        const QString secondsKey =
+            QStringLiteral("power.idle.%1.displayOffSeconds").arg(source);
+        QCOMPARE(migrated.document.values.value(secondsKey).toInt(), 14400);
+        QVERIFY(m_v2Schema->validateValue(secondsKey, 14400).isValid());
+    }
+}
+
+void SettingsMigrationTests::migratesLegacyDisabledDisplayOffWithoutInventingDefault()
+{
+    for (const int legacyMinutes : {-1, 0}) {
+        const QByteArray document = QByteArray("{\"schemaVersion\":1,\"layer\":\"user-overrides\",\"values\":{\"power.idleDisplayOffMinutes\":")
+            + QByteArray::number(legacyMinutes) + "}}";
+        const auto migrated = SettingsMigration::migrateV1ToV2(
+            document, QStringLiteral("fixture"), *m_v1Schema, *m_v2Schema);
+        QVERIFY2(migrated.ok, qPrintable(migrated.error));
+        for (const QString &source : {QStringLiteral("ac"),
+                                      QStringLiteral("battery"),
+                                      QStringLiteral("lowBattery")}) {
+            QCOMPARE(migrated.document.values.value(
+                         QStringLiteral("power.idle.%1.displayOffEnabled").arg(source)).toBool(),
+                     false);
+            QCOMPARE(migrated.document.values.value(
+                         QStringLiteral("power.idle.%1.displayOffSeconds").arg(source)).toInt(),
+                     0);
+        }
+        QVERIFY(!migrated.document.values.contains(QStringLiteral("power.lid.ac.action")));
+        QVERIFY(!migrated.document.values.contains(QStringLiteral("power.critical.action")));
+    }
+
+    constexpr auto noExplicitLegacyChoice = R"json({
+      "schemaVersion": 1, "layer": "user-overrides", "values": {}
+    })json";
+    const auto defaults = SettingsMigration::migrateV1ToV2(
+        noExplicitLegacyChoice, QStringLiteral("fixture"), *m_v1Schema, *m_v2Schema);
+    QVERIFY2(defaults.ok, qPrintable(defaults.error));
+    QVERIFY(!defaults.document.values.contains(QStringLiteral("power.idle.ac.displayOffEnabled")));
+    QVERIFY(!defaults.document.values.contains(QStringLiteral("power.idle.ac.displayOffSeconds")));
+    LayeredSettings settings(*m_v2Schema);
+    QVERIFY(settings.replaceLayer(defaults.document.layer, defaults.document.values).ok());
+    QCOMPARE(settings.value(QStringLiteral("power.idle.ac.displayOffEnabled")).toBool(), true);
+    QCOMPARE(settings.value(QStringLiteral("power.idle.ac.displayOffSeconds")).toInt(), 600);
+    QVERIFY(settings.sourceLayer(QStringLiteral("power.idle.ac.displayOffEnabled"))
+            == std::optional(SettingLayer::SystemDefaults));
+}
+
 void SettingsMigrationTests::rejectsCorruptOrInvalidV1Input()
 {
     const auto corrupt =
@@ -107,6 +197,16 @@ void SettingsMigrationTests::rejectsCorruptOrInvalidV1Input()
         SettingsMigration::migrateV1ToV2(invalidV1, QStringLiteral("fixture"), *m_v1Schema, *m_v2Schema);
     QVERIFY(!invalid.ok);
     QVERIFY(invalid.validation.issues().size() == 2);
+
+    constexpr auto oversizedLegacyTimeout = R"json({
+      "schemaVersion": 1,
+      "layer": "user-overrides",
+      "values": {"power.idleDisplayOffMinutes": 241}
+    })json";
+    const auto outOfBounds = SettingsMigration::migrateV1ToV2(
+        oversizedLegacyTimeout, QStringLiteral("fixture"), *m_v1Schema, *m_v2Schema);
+    QVERIFY(!outOfBounds.ok);
+    QVERIFY(!outOfBounds.validation.isValid());
 }
 
 void SettingsMigrationTests::rejectsMismatchedSchemaObjects()

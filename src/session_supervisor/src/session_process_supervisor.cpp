@@ -408,13 +408,12 @@ void SessionProcessSupervisor::startNetworkSecretAgent()
 void SessionProcessSupervisor::startOptionalChildren()
 {
     // AGENT-CONTRACT: these children start after the shell establishes the
-    // compositor session. KGlobalAccel is a separate Plasma 6 daemon; keeping
+    // compositor session. KGlobalAccel is a separate desktop daemon; keeping
     // it in this tree makes shortcuts available on QindaQt's private bus where
-    // the distribution's systemd user activation cannot run. PowerDevil starts before desktop-controls so
-    // idle preferences can follow its owner arrival; polkit registers prompts
-    // for this session. Missing optional executables never prevent login.
-    // PowerDevil owns the idle timer and inhibitors. Keep it in this process
-    // tree because QindaQt does not activate graphical-session.target. The
+    // the distribution's systemd user activation cannot run. PowerDevil remains
+    // an optional transitional child for desktop integrations; native display
+    // off runs in NativeLockComposition. Polkit registers prompts for this
+    // session. Missing optional executables never prevent login. The
     // XEmbed tray proxy is here for exactly that reason too: its own systemd
     // unit was `WantedBy=graphical-session.target`, so nothing ever started
     // it and Wine/Proton/Steam tray icons had no selection owner to dock

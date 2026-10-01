@@ -1,6 +1,6 @@
 # ADR-0306: Keep idle-inhibitor scopes and policy in Power1
 
-- **Status:** Accepted
+- **Status:** Accepted; idle-stage process location amended by [ADR-0319](0319-supervisor-owned-native-idle-display-policy.md)
 - **Date:** 2026-09-30
 - **Related:** [ADR-0023](0023-split-power-authority-across-service-and-shell.md), [ADR-0293](0293-settings1-native-power-policy-and-powerdevil-import.md), [ADR-0304](0304-native-lock-observation-and-service-policy.md), [ADR-0307](0307-public-ordinary-fd-idle-observation.md), [ADR-0308](0308-native-lock-preferences-and-atomic-import.md)
 

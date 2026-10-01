@@ -7,10 +7,10 @@
 namespace QindaQt::Settings {
 
 // AGENT-CONTRACT: migrates only schemaVersion 1 documents to the active v2
-// schema. Every v1 value carries forward unchanged; the v2-only
-// "services.doNotDisturb" key is intentionally left unset in the migrated
-// document so it resolves through the ordinary layered-resolution default
-// (false) rather than being invented by the migrator. A document that is not
+// schema. Every v1 value carries forward; a stored legacy global idle
+// display-off timeout is additionally normalized to enabled/seconds values
+// for all v2 source profiles. Unstored values remain absent, and unrelated
+// v2-only keys resolve through normal default backfill. A document that is not
 // valid against v1Schema, or schema objects that are not exactly versions 1
 // and 2, fail without producing a document.
 class SettingsMigration final {

@@ -6,6 +6,8 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 
+#include <array>
+
 namespace QindaQt::Settings {
 namespace {
 
@@ -39,12 +41,27 @@ DocumentLoadResult SettingsMigration::migrateV1ToV2(const QByteArray &v1Json,
     SettingsDocument migrated;
     migrated.schemaVersion = v2Schema.version();
     migrated.layer = loaded.document.layer;
-    // AGENT-NOTE: every v1 key is also a v2 key (v2 only adds
-    // "services.doNotDisturb"), so every normalized v1 value carries forward
-    // unchanged. The new key is deliberately left absent here so it resolves
-    // through ordinary layered-resolution default backfill (false) instead
-    // of the migrator inventing a value the user never chose.
     migrated.values = loaded.document.values;
+    // AGENT-CONTRACT: the old global timeout was an explicit user preference;
+    // copy it to each v2 source only when the v1 layer actually stored it.
+    // V1 validation bounds it to -1..240 minutes, so conversion remains within
+    // the v2 0..14400-second schema. Non-positive values represented disabled.
+    const QString legacyKey = QStringLiteral("power.idleDisplayOffMinutes");
+    if (migrated.values.contains(legacyKey)) {
+        const int minutes = migrated.values.value(legacyKey).toInt();
+        const bool enabled = minutes > 0;
+        const int seconds = enabled ? minutes * 60 : 0;
+        for (const QString &source : {QStringLiteral("ac"),
+                                      QStringLiteral("battery"),
+                                      QStringLiteral("lowBattery")}) {
+            migrated.values.insert(
+                QStringLiteral("power.idle.%1.displayOffEnabled").arg(source),
+                enabled);
+            migrated.values.insert(
+                QStringLiteral("power.idle.%1.displayOffSeconds").arg(source),
+                seconds);
+        }
+    }
 
     ValidationResult validation;
     const auto normalized = v2Schema.normalizedLayer(migrated.values, &validation);
