@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: waiting — immutable protected-capture blocker handed to root; ready to repair own native fixture and qualify actual frames after separately owned secure authority seam
-- Branch: worker/pf-portal-capture-20261001
-- Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
-- Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
+- Status: working — checking public protected capture wire and preparing separated capture-only broker after immutable permission denial
+- Branch: worker/pf-portal-protected-capture-20261001
+- Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
+- Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler and private runtime released; no resources reserved; chooser and capture history preserved
+- Resources: source-only; no compiler/private runtime slots granted or held
 
 ## Updates
+
+- 2026-10-01T16:31:48Z — Root resumed protected native capture outcome from preserved0c156360; fetched hub and created NEW isolated branch/worktree without touching predecessor. Exact fork public wire d8c55676 then framing descendant3fbc1098 read; concrete path/FD/consumer compatibility feedback sent FIRST to root/fork owner. Fixed compositor launches, fd3/4–7 and JobStarted pipe ownership fit separated capture-only broker. No unfrozen wire dependency or source implementation begun; requested explicit hidden idle Screenshot helper retention while broker owns private URI up to5min to avoid helper-HUP publication race. General ADR0318 policy untouched, legacy Screenshot timeout preserved; protected30s/long-lived ScreenCast and test-only control propagation planned. Source-only, metadata KDE unchanged, no resource held.
 
 - 2026-10-01T15:44:00Z — Bounded immutable source e1b06401d17aa85bc098e04d848fd63f94099974 handed off after affected native build exit0 and two corrected selected private probes, each exit1/Qt2pass1fail0skip in0.87s/0.91s. Screenshot maps and public Screenshot2 NoAuthorized reaches frontend Response2/no URI. ScreenCast CreateSession/SelectSources Response0 then Start Response2/empty streams, no mapped share/node/frame. All raw predecessor/assertion evidence preserved; groups/scoped audits pass, task core arrays empty. Both slots released. Full PF19, first-slice usability, privacy/adjacent/staged acceptance and routing remain unqualified. Read Platform queue; concrete compatible help offered: retained fixture/control lifetime and actual frontend/private frames/privacy/stage gates after separate secure fork authority candidate, then window/multiple/cursor/revocable restore successor. No new public edits started.
 
