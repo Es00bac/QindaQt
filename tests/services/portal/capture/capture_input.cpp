@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <QApplication>
+#include <qindaqt/services/compositor_capture/capture_port.h>
 #include <QFile>
 #include <QListWidget>
 #include <QPushButton>
@@ -12,6 +13,28 @@
 #include <unistd.h>
 namespace {
 bool audited = false, allowed = false;
+class FailureObserver final : public QObject {
+public:
+    using QObject::QObject;
+    bool eventFilter(QObject *receiver, QEvent *) override {
+        // AGENT-NOTE: The port is a stack QObject. Public application event
+        // filtering observes its events without a production test hook or
+        // private GUI access; only its existing public failure signal is read.
+        auto *port = qobject_cast<QindaQt::CompositorCapture::CapturePort *>(receiver);
+        if (port && !connected) {
+            connected = true;
+            QObject::connect(port, &QindaQt::CompositorCapture::CapturePort::finished, this,
+                [](const QindaQt::CompositorCapture::DecodedCapture &capture) {
+                    if (capture.ok()) return;
+                    QFile audit(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT"));
+                    if (audit.open(QIODevice::WriteOnly | QIODevice::Append))
+                        audit.write("public capture failure: " + capture.error.toUtf8().left(1024) + "\n");
+                });
+        }
+        return false;
+    }
+private: bool connected = false;
+};
 void input() {
     const auto action = qEnvironmentVariable("QINDAQT_CAPTURE_TEST_ACTION");
     for (auto *window : QApplication::topLevelWidgets()) {
@@ -31,6 +54,6 @@ void input() {
         if (button && button->isEnabled()) { allowed = true; QTest::mouseClick(button, Qt::LeftButton); }
     }
 }
-void install() { auto *timer = new QTimer(qApp); timer->setInterval(50); QObject::connect(timer, &QTimer::timeout, qApp, input); timer->start(); }
+void install() { auto *app = QCoreApplication::instance(); app->installEventFilter(new FailureObserver(app)); auto *timer = new QTimer(qApp); timer->setInterval(50); QObject::connect(timer, &QTimer::timeout, qApp, input); timer->start(); }
 Q_COREAPP_STARTUP_FUNCTION(install)
 }
