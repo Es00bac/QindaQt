@@ -2,7 +2,7 @@
 
 - Identity: pf-native-popup-sol-20261001
 - Role: focused native notification-live harness implementer
-- Status: working — granted strict own helper build and subsequent bounded two-row private native popup gate; compiler active, production artifacts immutable
+- Status: working — granted strict own helper build and subsequent bounded two-row private native popup gate; compiler released, private runtime active, production artifacts immutable
 - Base: 3dfe915bcbd8d62afa0401686471b4c9197324a6
 - Branch: worker/pf-native-popup-20261001
 - Worktree: .cache/pf-native-popup-20261001
@@ -25,3 +25,5 @@
 - 2026-10-01T12:59:55Z — Own strict configure exit0 (36.3s + generation6.8s). Initial293-action helper/dependency build failed at291 on two new fixture calls to undeclared legacy processProbeEventsFor; raw build-first.log retained. Replaced only those waits with QtTest::qWait and rebuilding affected helper under current grant. No product source/admission changed; no private scenario yet.
 
 - 2026-10-01T13:00:50Z — Full error scan corrects earlier tail-only compile summary: initial build also had a const QDBusConnection passed to mutable connect(). First repair retained that companion failure. Changed fixture bus handle to nonconst; build-first/build-repair raw failures preserved. Continuing same bounded own-helper compile, no product source changes.
+
+- 2026-10-01T13:02:35Z — Final own strict helper build exit0 after fixture-only repairs; compiler released to root. First private CTest exit8 (0/1) before compositor/UI startup: runtime socket path under long build directory exceeded AF_UNIX limit. tests-first.log retains raw broker error. Runner now uses short system-temp transport root, mirrors logs to persistent build evidence; no admission change or C++ rebuild needed.
