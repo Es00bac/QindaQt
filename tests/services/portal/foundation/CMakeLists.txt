@@ -60,3 +60,20 @@ target_link_libraries(qindaqt_portal_foreign_exporter PRIVATE Qt6::Gui Qt6::Quic
 qindaqt_enable_warnings(qindaqt_portal_foreign_exporter)
 target_compile_definitions(qindaqt_portal_native_consent_tests PRIVATE QINDAQT_PORTAL_FOREIGN_EXPORTER="$<TARGET_FILE:qindaqt_portal_foreign_exporter>")
 add_dependencies(qindaqt_portal_native_consent_tests qindaqt_portal_foreign_exporter)
+
+qt_add_executable(qindaqt_portal_native_frontend_tests tst_native_frontend.cpp)
+target_include_directories(qindaqt_portal_native_frontend_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(qindaqt_portal_native_frontend_tests PRIVATE QindaQt::PortalService
+    QindaQt::PortalComposition QindaQt::SecretPortal QindaQt::NotificationHost
+    QindaQt::SessionSupervisorSupport Qt6::Test)
+target_compile_definitions(qindaqt_portal_native_frontend_tests PRIVATE
+    QINDAQT_FRONTEND_EXECUTABLE="${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}")
+qindaqt_enable_warnings(qindaqt_portal_native_frontend_tests)
+add_test(NAME qindaqt.portal-native-frontend COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/run_native_frontend.py" "$<TARGET_FILE:qindaqt_portal_native_frontend_tests>"
+    "$<TARGET_FILE:qindaqt_portal_consent_input>" "${QINDAQT_KWIN_WAYLAND}"
+    "$<TARGET_FILE:qindaqt-uri-relay>" "$<TARGET_FILE:qindaqt_portal_mail_draft>"
+    "${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt.portal"
+    "${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt-portals.conf")
+set_tests_properties(qindaqt.portal-native-frontend PROPERTIES TIMEOUT 150
+    SKIP_RETURN_CODE 77 RUN_SERIAL TRUE LABELS "portal;frontend;private-wayland")

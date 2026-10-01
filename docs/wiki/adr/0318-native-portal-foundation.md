@@ -39,9 +39,12 @@ policy, service lookup or install authority.
 
 Portal idle inhibition requires the complete public native idle-stage mask;
 zero or partial capability fails. Session monitoring and unsupported flags fail
-explicitly. The current real producer advertises zero scopes. Keep the package
-selector on KDE until native functionality and integration gates qualify each
-family. No generic success stubs or restore tokens are permitted.
+explicitly. The current real producer advertises zero scopes. Route Access, Notification and Email to the native backend through explicit
+metadata and real-frontend qualification. The supervisor owns one retained
+session connection plus optional backend child; backend replacement reattaches
+the same selected ordinary display, while session loss revokes authority before
+child teardown. Keep Inhibit on KDE until actual native consumers qualify its
+complete scopes. No generic success stubs or restore tokens are permitted.
 
 ## Consequences
 

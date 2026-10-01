@@ -1,0 +1,98 @@
+# PF17A implementation claim and exact path ownership
+
+- Time: 2026-10-01T02:39:18-06:00
+- Worker: pf-portals-sol-20261001
+- Audit commit: a86b6046675664a55b1cb810c8f6a4f4cbd7939f (pushed origin).
+- Product base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
+- Candidate prerequisite: b8b621da074c288e1808e54ed7893c6a0e7b5c50
+- Manager authorized outcome: native actual frontend Access/Notification/Email routing plus supervisor selected ordinary-display attachment; no Inhibit selector change or PF18+ stubs.
+- Compilation requires root exclusive compiler slot, configured MAKEOPTS equivalent (-j24 -l24 observed on qinda), isolated source/build. No reduced job override.
+- Private runtime requires separate root slot. No host services, real data or installation.
+
+## Exact source paths claimed before editing
+
+- `docs/wiki/adr/0318-native-portal-foundation.md`
+- `docs/wiki/apps/default-applications.md`
+- `docs/wiki/architecture/module-boundaries.md`
+- `docs/wiki/architecture/portal-foundation.md`
+- `docs/wiki/architecture/portal-service.md`
+- `docs/wiki/development/testing-harness.md`
+- `docs/wiki/shell/launcher.md`
+- `mkdocs.yml`
+- `src/CMakeLists.txt`
+- `src/platform/foreign_parent/CMakeLists.txt`
+- `src/platform/foreign_parent/include/qindaqt/platform/foreign_parent/foreign_parent.h`
+- `src/platform/foreign_parent/src/foreign_parent.cpp`
+- `src/services/application_uri/CMakeLists.txt`
+- `src/services/application_uri/app/uri_relay.cpp`
+- `src/services/application_uri/application_uri_opener.cpp`
+- `src/services/application_uri/include/qindaqt/services/application_uri/application_uri_opener.h`
+- `src/services/portal/CMakeLists.txt`
+- `src/services/portal/app/main.cpp`
+- `src/services/portal/consent/CMakeLists.txt`
+- `src/services/portal/consent/Main.qml`
+- `src/services/portal/consent/consent_controller.cpp`
+- `src/services/portal/consent/consent_controller.h`
+- `src/services/portal/consent/main.cpp`
+- `src/services/portal/foundation/CMakeLists.txt`
+- `src/services/portal/include/qindaqt/services/portal/access_adaptor.h`
+- `src/services/portal/include/qindaqt/services/portal/access_consent.h`
+- `src/services/portal/include/qindaqt/services/portal/email_adaptor.h`
+- `src/services/portal/include/qindaqt/services/portal/email_policy.h`
+- `src/services/portal/include/qindaqt/services/portal/foundation_composition.h`
+- `src/services/portal/include/qindaqt/services/portal/idle_inhibition.h`
+- `src/services/portal/include/qindaqt/services/portal/inhibit_adaptor.h`
+- `src/services/portal/include/qindaqt/services/portal/native_notifications.h`
+- `src/services/portal/include/qindaqt/services/portal/notification_adaptor.h`
+- `src/services/portal/include/qindaqt/services/portal/notification_policy.h`
+- `src/services/portal/include/qindaqt/services/portal/process_consent.h`
+- `src/services/portal/include/qindaqt/services/portal/request_registry.h`
+- `src/services/portal/include/qindaqt/services/portal/session_binding.h`
+- `src/services/portal/src/access_adaptor.cpp`
+- `src/services/portal/src/access_policy.cpp`
+- `src/services/portal/src/email_adaptor.cpp`
+- `src/services/portal/src/email_policy.cpp`
+- `src/services/portal/src/foundation_composition.cpp`
+- `src/services/portal/src/idle_inhibition.cpp`
+- `src/services/portal/src/inhibit_adaptor.cpp`
+- `src/services/portal/src/native_notifications.cpp`
+- `src/services/portal/src/notification_adaptor.cpp`
+- `src/services/portal/src/notification_icon.cpp`
+- `src/services/portal/src/notification_policy.cpp`
+- `src/services/portal/src/process_consent.cpp`
+- `src/services/portal/src/request_registry.cpp`
+- `src/services/portal/src/session_binding.cpp`
+- `src/shell/launcher/include/qindaqt/shell_launcher/launch_execution.h`
+- `src/shell/launcher/src/launch_execution.cpp`
+- `tests/services/portal/CMakeLists.txt`
+- `tests/services/portal/check_boundary.cmake`
+- `tests/services/portal/foundation/CMakeLists.txt`
+- `tests/services/portal/foundation/consent_input.cpp`
+- `tests/services/portal/foundation/foreign_exporter.cpp`
+- `tests/services/portal/foundation/mail_draft.cpp`
+- `tests/services/portal/foundation/run_native_consent.py`
+- `tests/services/portal/foundation/support/private_bus.h`
+- `tests/services/portal/foundation/tst_access.cpp`
+- `tests/services/portal/foundation/tst_email.cpp`
+- `tests/services/portal/foundation/tst_inhibit.cpp`
+- `tests/services/portal/foundation/tst_native_consent.cpp`
+- `tests/services/portal/foundation/tst_notifications.cpp`
+- `tests/services/portal/run_staged_package.cmake`
+- `tests/shell/launcher/tst_launch_execution.cpp`
+- `src/session_supervisor/src/portal_session_lifetime.h`
+- `src/session_supervisor/src/portal_session_lifetime.cpp`
+- `src/session_supervisor/src/session_process_supervisor.cpp`
+- `src/session_supervisor/include/qindaqt/session_supervisor/session_process_supervisor.h`
+- `src/session_supervisor/app/main.cpp`
+- `src/session_supervisor/CMakeLists.txt`
+- `tests/session_supervisor/tst_portal_session_lifetime.cpp`
+- `tests/session_supervisor/CMakeLists.txt`
+- `src/services/portal/data/qindaqt.portal`
+- `src/services/portal/data/qindaqt-portals.conf`
+- `tests/services/portal/portal_frontend_test_support.cpp`
+- `tests/services/portal/portal_frontend_test_support.h`
+- `tests/services/portal/tst_portal_frontend_routing.cpp`
+- `tests/services/portal/tst_portal_frontend_native.cpp`
+- `docs/wiki/reference/portal-settings-backend-v1.md`
+
+Candidate prerequisite paths are listed completely. New frontend fixture composition may use a narrow new file under tests/services/portal/foundation, announced before editing. Shared supervisor/build/registry edits remain additive and coordinated with manager. Runtime worker owns power/idle/DPMS; no edits in those modules.

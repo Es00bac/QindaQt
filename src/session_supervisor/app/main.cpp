@@ -148,6 +148,8 @@ int main(int argc, char *argv[])
     options.polkitAgentExecutable = resolvePolkitAgentExecutable(
         parser.isSet(QStringLiteral("no-polkit-agent")),
         parser.value(QStringLiteral("polkit-agent")));
+    const auto portal = QCoreApplication::applicationDirPath() + QStringLiteral("/xdg-desktop-portal-qindaqt");
+    if (QFileInfo(portal).isExecutable()) options.portalExecutable = portal;
     const auto keyring = QString::fromUtf8(QINDAQT_KEYRING_INSTALL_PATH);
     if (!parser.isSet(QStringLiteral("no-keyring")) && QFileInfo(keyring).isExecutable())
         options.keyringExecutable = keyring;

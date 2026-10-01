@@ -4426,3 +4426,12 @@ from authorization/PAM or installed trusted-locker qualification. Native Power
 zero-scope refusal is production evidence; injected public-port positive lease
 rows do not qualify a real inhibitor scope. No host mail, notifications, data or
 session services are used.
+
+The `qindaqt.portal-native-frontend` row runs the real frontend over source
+metadata and the production resident/foundation on a private ordinary display;
+Camera routes Access consent, Email maps a synthetic configured handler, and
+Notification reaches the native host. It checks public Close, frontend loss and
+selected supervisor connection loss. `qindaqt.session-portal-lifetime` verifies
+canonical display selection, same caller lifetime across backend unique-owner
+replacement and disconnect-on-stop on a private bus. Neither row qualifies the
+installed desktop, physical devices or PAM. Both require serialized runtime.
