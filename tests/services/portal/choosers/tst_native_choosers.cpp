@@ -143,6 +143,14 @@ private:
     void installApplication(const QString &id) {
         QFile file(qEnvironmentVariable("XDG_DATA_HOME") + QStringLiteral("/applications/") + id + QStringLiteral(".desktop")); QVERIFY(file.open(QIODevice::WriteOnly));
         file.write("[Desktop Entry]\nType=Application\nName=" + id.toUtf8() + "\nMimeType=x-scheme-handler/qindaqtfixture;\nExec=/bin/true %u\n"); file.close();
+        // GIO resolves recommended handlers from XDG MIME association data,
+        // independently of the backend's ApplicationCatalog directory scan.
+        QByteArray handlers;
+        for (const auto *candidate : {"org.test.First", "org.test.Second", "org.test.Third"}) {
+            if (QFile::exists(qEnvironmentVariable("XDG_DATA_HOME") + QStringLiteral("/applications/") + QString::fromLatin1(candidate) + QStringLiteral(".desktop"))) handlers += QByteArray(candidate) + ".desktop;";
+        }
+        QFile associations(qEnvironmentVariable("XDG_DATA_HOME") + QStringLiteral("/applications/mimeapps.list")); QVERIFY(associations.open(QIODevice::WriteOnly));
+        associations.write("[Added Associations]\nx-scheme-handler/qindaqtfixture=" + handlers + "\n[Default Applications]\nx-scheme-handler/qindaqtfixture=org.test.First.desktop;\n"); associations.close();
     }
     void setInput(const QJsonObject &object) { qputenv("QINDAQT_CHOOSER_TEST_INPUT", QJsonDocument(object).toJson(QJsonDocument::Compact)); }
     void reset() { responses.count = 0; responses.response = 99; responses.results.clear(); QFile(qEnvironmentVariable("QINDAQT_CHOOSER_TEST_AUDIT")).remove(); }
