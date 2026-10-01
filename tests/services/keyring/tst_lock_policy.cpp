@@ -43,6 +43,10 @@ public:
     void setTimeout(int value) override{timeout=value;}
     bool available() const override{return ready;}
     bool idle() const override{return active;}
+    // AGENT-CONTRACT: the public idle port's new generation never retains
+    // prior idle; revocation clears availability as well as the idle sample.
+    void refresh() override{active=false;publish();}
+    void revoke() override{ready=false;active=false;publish();}
     void publish(){emit changed();}
 };
 class PolicyTest : public QObject {
