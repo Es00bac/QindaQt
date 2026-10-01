@@ -22,7 +22,7 @@ using namespace Detail;
 QString canMethod(SessionAction action)
 {
     switch (action) {
-    case SessionAction::Suspend: return QStringLiteral("CanSuspend");
+    case SessionAction::Suspend: break;
     case SessionAction::Reboot: return QStringLiteral("CanReboot");
     case SessionAction::PowerOff: return QStringLiteral("CanPowerOff");
     case SessionAction::Lock:
@@ -36,7 +36,7 @@ QString actionMethod(SessionAction action)
     switch (action) {
     case SessionAction::Lock: return QStringLiteral("Lock");
     case SessionAction::Logout: return QStringLiteral("Logout");
-    case SessionAction::Suspend: return QStringLiteral("Suspend");
+    case SessionAction::Suspend: break;
     case SessionAction::Reboot: return QStringLiteral("Reboot");
     case SessionAction::PowerOff: return QStringLiteral("PowerOff");
     }

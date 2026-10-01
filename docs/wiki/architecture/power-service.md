@@ -34,7 +34,8 @@ selects production; the wire contract is unchanged.
 | --- | --- | --- |
 | Batteries, AC/UPS state, estimates | UPower | `Power1` collaborator and typed snapshot |
 | Power profiles and holds | the standard Power Profiles D-Bus provider (`power-profiles-daemon` or Gentoo `tuned[ppd]`) | `Power1` collaborator |
-| Suspend, hibernate, reboot, power off | systemd-logind | Shell session-action controller |
+| Manual suspend and system sleep preparation | systemd-logind plus authenticated native protected presentation | Supervisor NativeSleep coordinator; shell uses Sleep1 through SessionActions (ADR-0321) |
+| Reboot, power off; later hibernate | systemd-logind | SessionActions reboot/power-off; hibernate has no shell presentation |
 | Caller-relative `Can*` authorization | systemd-logind | Shell controller; never cached in `Power1` |
 | Power/suspend/hibernate keys | logind `handle-*` inhibitor locks | Shell controller |
 | Idle hint | compositor idle protocol plus logind | `Power1` idle collaborator |
@@ -58,7 +59,9 @@ actual sender; the legacy getters remain compatible but are not policy authority
 ([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)). This boundary must
 stay explicit until the shared idle policy consumes every requested scope.
 
-Lock-before-sleep remains a KWin/KScreenLocker responsibility. Shell session actions acquire all three
+Lock-before-sleep belongs to the authenticated native lock runtime and the
+supervisor NativeSleep coordinator (ADR-0321). The later key-action policy must
+acquire all three
 `handle-power-key`, `handle-suspend-key`, and `handle-hibernate-key` locks as
 one transaction: partial acquisition releases every acquired lock and exposes
 no key action. Losing any lock unregisters all three actions before retry.
