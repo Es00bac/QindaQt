@@ -355,8 +355,8 @@ void NotificationPresentationPrivacyTests::retainedConsumersRecheckAdmissionBefo
     transport.reply(transport.requests.last(), wire(epoch, 2,
         {notification(40, QStringLiteral("Baseline")), notification(41, QStringLiteral("Fresh private"), 2)}));
     QTRY_COMPARE_WITH_TIMEOUT(popups->rowCount(), 1, 100);
-    const auto activeIndex = active->index(0), popupIndex = popups->index(0);
-    const auto historyIndex = history->index(0);
+    const auto activeIndex = active->index(0, 0), popupIndex = popups->index(0, 0);
+    const auto historyIndex = history->index(0, 0);
     QVERIFY(activeIndex.isValid());
     QVERIFY(popupIndex.isValid());
     QVERIFY(historyIndex.isValid());
