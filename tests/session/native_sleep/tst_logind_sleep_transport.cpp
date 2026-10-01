@@ -70,6 +70,8 @@ void LogindSleepTests::peerLossClosesDescriptorBeforeAnyMutation() {
 }
 void LogindSleepTests::ownerReplacementClosesAndRevalidates() {
   Fixture f; f.start(); f.logindBus.unregisterService("org.freedesktop.login1");
+  QVERIFY(!f.transport.available()); // Revoke getters before queued watcher delivery.
+  QVERIFY(!f.coordinator.requestSuspend());
   QTRY_VERIFY(f.logind.inhibitorClosed()); QVERIFY(!f.transport.available());
   auto replacementBus = f.broker.connect("replacement"); FakeLogind replacement(replacementBus);
   replacement.uid++; replacement.claim(); QTest::qWait(200);
