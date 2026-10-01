@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — PF19 capture helper, focused adversarial tests and native/PipeWire fixture source work resumed after exact guard review; compiler/private runtime unclaimed
+- Status: working — strict Debug/sharedON first capture build at frozenfbadebc3; compiler grant active, private runtime unclaimed
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: no compiler/private-runtime grant; source/research/docs only; existing chooser worktree/history preserved
+- Resources: bounded compiler grant active for named capture/resident/Screenshot targets; no private runtime grant; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T13:25:27Z — Root granted heavy compiler only. Laptop and qinda clean source exactfbadebc3d779e66534a43458d1147731d7a44763 verified; actual /etc/portage/make.conf MAKEOPTS remains-j24-l24. Starting strict Debug/sharedON/pluginOFF configure against qualified fork690 stage for named capture policy/request/native/helper/resident and six Screenshot adjacent targets with declared helper dependencies. No native/PipeWire runtime grant or claim, metadata unchanged. Own board records do not alter immutable tested source.
 
 - 2026-10-01T13:15:17Z — Checkpointea8b3a02 pushed, then accepted integration61e07eb8 merged and minimal capture test registration pusheda8a41810; matching qinda source preserved clean before native fixture edits. Source native acceptance now contains real frontend methods, mapped Qt input, private minimal PipeWire/policy-only WirePlumber, returned-remote-FD frame consumer and separate irreversible native Locked group. Source boundary passes with exact additive capture files/interfaces, metadata unchanged; portal shape91/public module12/helper8 pass, largest208lines. New rows still uncompiled/unexecuted; native parent-loss/unsupported/uncertainty adversarial coverage and actual diagnostic outcomes remain to qualify. Compiler/private slots owned by popup worker, none claimed.
 
