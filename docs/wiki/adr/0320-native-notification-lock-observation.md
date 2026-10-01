@@ -16,13 +16,25 @@ Unknown, Locking, Locked, malformed or missing receipt, ordinary peer loss, sele
 
 The observer owns its attachment, transport and monitor, uses the shell thread, stops the monitor before releasing borrowed dependencies, and exposes only the notification admission Boolean. It does not acquire a privileged display, request lock/unlock, process credentials, read service storage or link a resident service implementation.
 
+Production NotificationPrivacyPolicy borrows the observer through a constructor-visible,
+read-only admission callback. Its cached signal decision alone cannot authorize a
+disclosure: every policy read rechecks live native admission. The controller composes
+that public decision into each active/popup/history model's read boundary, including
+retained model pointers and indices, and gates center/operation admission. Unknown
+authority returns no role data or entries before queued watchers clear stored models.
+Callbacks do not dispatch events or mutate consumers; storage clearing remains the
+normal denial signal's responsibility, avoiding model reset inside a role read.
+An admission exception fails closed. These public source interfaces require consumers
+to rebuild; their existing signal-only constructors remain available to deterministic
+or independently scoped consumers.
+
 ## Consequences
 
 The native supervisor and compositor may retain separate owners without suppressing all notification presentation. Standalone or unauthenticated shells still cannot disclose. The legacy monitor remains available to independently scoped legacy consumers during migration.
 
 ## Verification
 
-Focused private-bus fixtures exercise actual targeted native receipts and kernel ordinary socket peers with separate compositor and supervisor owners, including Locking/Locked transitions, trusted-PID mismatch, initial missing receipt, selected Session1 replacement, same-PID compositor owner replacement and stop invalidation. Adjacent public attachment/native monitor and notification gates remain required. Physical installed-session privacy is a release qualification; these fixtures do not claim it.
+Focused private-bus fixtures exercise actual targeted native receipts and kernel ordinary socket peers with separate compositor and supervisor owners, including Locking/Locked transitions, trusted-PID mismatch, initial missing receipt, selected Session1 replacement, same-PID compositor owner replacement and stop invalidation. Selected-owner replacement must deny the production policy and retained model role before an event-loop turn. Focused controller coverage checks all retained projections, center and operation admission before queued denial, plus normal invalidation. Adjacent public attachment/native monitor and notification gates remain required. Physical installed-session privacy is a release qualification; these fixtures do not claim it.
 
 ## References
 

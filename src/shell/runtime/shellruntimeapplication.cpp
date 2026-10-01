@@ -519,7 +519,9 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
         m_notificationApplicationPolicy = std::make_unique<Services::
             NotificationPresentationPolicy::NotificationApplicationPolicy>();
         m_notificationPrivacyPolicy = std::make_unique<Services::
-            NotificationPresentationPolicy::NotificationPrivacyPolicy>();
+            NotificationPresentationPolicy::NotificationPrivacyPolicy>([this] {
+                return m_sessionLockMonitor && m_sessionLockMonitor->contentMayBeShown();
+            });
         m_quietingSettingsBridge =
             std::make_unique<NotificationQuietingSettingsBridge>(
                 *m_quietingSettingsClient, *m_notificationInterruptionPolicy);

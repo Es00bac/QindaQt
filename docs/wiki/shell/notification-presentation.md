@@ -26,7 +26,14 @@ The production path is:
    PID, and the selected Session1 owner remains pinned. Only conclusive `Unlocked`
    opens privacy. The native ScreenSaver facades may have the separate supervisor
    owner. Unknown, missing receipts and revoked/replaced owners keep disclosure
-   closed; see [ADR-0320](../adr/0320-native-notification-lock-observation.md).
+   closed. Production privacy borrows a read-only live-admission callback rather
+   than authorizing from the last signal alone. Each retained list model checks
+   that public policy before disclosing role data, rows or C++ entries; center,
+   operations and error reads also deny before queued invalidation. Normal denial
+   signals clear storage without resetting a model inside a read. The observer
+   outlives the policy, which outlives every borrowed presentation model. These
+   public source interfaces require a consumer rebuild; existing signal-only
+   constructors remain supported. See [ADR-0320](../adr/0320-native-notification-lock-observation.md).
 5. `NotificationPresentationController` projects that snapshot into separate
    active, popup, and recent list models using injected per-application,
    interruption, and higher-priority privacy policies.

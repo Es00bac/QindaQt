@@ -78,6 +78,9 @@ NotificationPresentationController::NotificationPresentationController(
     , m_applicationPolicy(applicationPolicy)
     , m_privacyPolicy(privacyPolicy)
     , m_timing(timing.isValid() ? std::move(timing) : PresentationTiming{})
+    , m_active([this] { return privatePresentationAllowed(); })
+    , m_popups([this] { return privatePresentationAllowed(); })
+    , m_history([this] { return privatePresentationAllowed(); })
 {
     m_clock.start();
     m_popupTimer.setSingleShot(true);
@@ -173,7 +176,7 @@ QAbstractItemModel *NotificationPresentationController::historyModel() noexcept
 
 bool NotificationPresentationController::centerOpen() const noexcept
 {
-    return m_centerOpen;
+    return privatePresentationAllowed() && m_centerOpen;
 }
 
 bool NotificationPresentationController::doNotDisturbEnabled() const noexcept
@@ -207,6 +210,10 @@ bool NotificationPresentationController::allowsPopup(
 const QString &
 NotificationPresentationController::operationErrorText() const noexcept
 {
+    if (!privatePresentationAllowed()) {
+        static const QString empty;
+        return empty;
+    }
     return m_operationError;
 }
 
