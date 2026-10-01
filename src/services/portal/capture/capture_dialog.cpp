@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "capture_dialog.h"
+#include "authority/packet.h"
 #include "color_picker.h"
 #include <QDir>
 #include <QLabel>
@@ -41,14 +42,20 @@ void CaptureDialog::parentReady() { m_parent = true; refresh(); }
 void CaptureDialog::refresh() { m_allow->setEnabled(m_parent && m_admission.admitted() && !m_busy && (m_request.kind != CaptureKind::Stream || m_sources->currentItem())); }
 void CaptureDialog::begin() {
     if (!m_parent || !m_admission.admitted() || m_busy || m_finished) { fail(); return; }
-    m_busy = true; refresh();
+    m_busy = true; refresh(); Q_EMIT consented();
+}
+void CaptureDialog::captureReady() {
+    if (!m_busy || !m_parent || !m_admission.admitted() || m_finished || m_granted) { fail(); return; }
+    m_granted = true;
     if (m_request.kind == CaptureKind::Stream) {
         const auto *selected = m_sources->currentItem(); if (!selected || !m_stream.start(selected->data(Qt::UserRole).toString())) fail(); return;
     }
     hide(); QTimer::singleShot(100, this, [this] {
         if (!m_parent || !m_admission.admitted() || m_finished) { fail(); return; }
         CompositorCapture::CaptureOptions options; options.mode = CompositorCapture::CaptureMode::AllScreens;
-        if (!m_capture.capture(CompositorCapture::kwinCallFor(options))) fail();
+        auto call = CompositorCapture::kwinCallFor(options);
+        call.timeoutMilliseconds = CaptureAuthority::Wire::ProtectedTotalMilliseconds; call.pipeGraceMilliseconds = 0;
+        if (!m_capture.capture(call)) fail();
     });
 }
 void CaptureDialog::image(const CompositorCapture::DecodedCapture &result) {

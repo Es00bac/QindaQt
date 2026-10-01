@@ -14,7 +14,9 @@ ScreenshotAdaptor::ScreenshotAdaptor(QObject &host, RequestRegistry &requests, C
 ScreenshotAdaptor::~ScreenshotAdaptor() { const auto tokens = m_pending.keys(); for (const auto token : tokens) m_requests.retire(token, RequestResponse::Failed); }
 quint32 ScreenshotAdaptor::begin(bool color, const QDBusObjectPath &handle, const QString &app, const QString &parent, const QVariantMap &options, const QDBusMessage &call, QVariantMap &results) {
     results.clear(); const auto slot = std::make_shared<RequestToken>(0);
-    const auto token = m_requests.begin(call, handle.path(), app, [this, slot](RequestResponse response) { m_pending.remove(*slot); if (response != RequestResponse::Success) m_ui.cancel(*slot); });
+    // AGENT-CONTRACT: request lifetime bounds60s native selection plus30s
+    // protected write/margin. The operation itself never extends its30s clock.
+    const auto token = m_requests.begin(call, handle.path(), app, [this, slot](RequestResponse response) { m_pending.remove(*slot); if (response != RequestResponse::Success) m_ui.cancel(*slot); }, 100000);
     *slot = token; if (!token) return 2;
     auto request = screenshotRequest(app, parent, options, color);
     if (!request || !m_ui.admitted()) { m_requests.finish(token, RequestResponse::Failed); return 2; }

@@ -26,7 +26,7 @@ public:
         const auto slot = std::make_shared<RequestToken>(0);
         const auto token = requests.begin(call, handle, app, [this, slot, path](RequestResponse response) {
             pending.remove(*slot); const bool owns = owned.remove(*slot); if (response != RequestResponse::Success) { ui.cancel(*slot); if (owns) sessions.close(path); }
-        });
+        }, 100000);
         *slot = token; return token;
     }
 };

@@ -35,6 +35,7 @@ public:
     void reconcile();
     void stop();
     QString owner() const { return m_owner; }
+    qint64 peerPid() const { return m_pid; }
     quint64 generation() const { return m_generation; }
     quint64 job() const { return m_job; }
 private:

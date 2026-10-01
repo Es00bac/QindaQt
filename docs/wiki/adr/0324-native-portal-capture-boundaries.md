@@ -24,7 +24,7 @@ Portal pure wire policy, actor-fenced standard Requests/Sessions, child-process
 lifetime and native Qt dialogs remain separate components. The protected source
 successor uses a compositor-launched capture-only broker rather than granting
 the general ADR0318 resident ambient capture permission. Frozen fork wire
-91e1c202 defines fixed broker/helper images and private authenticated control;
+91e1c202, with configured-path correctionbd4eacd1, defines fixed broker/helper images and private authenticated control;
 consumers include its installed Qt-free public header only. The general resident
 and native Session1 attachment remain supervisor-owned. This interface agreement
 is not code/runtime acceptance; both families remain routed to KDE pending gates. Package-owned helper

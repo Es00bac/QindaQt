@@ -48,8 +48,10 @@ bool Channel::identityLive() const {
     const auto current = daemon(m_bus, "GetNameOwner", QString(QindaQt::CompositorNames::service));
     if (current.type() != QDBusMessage::ReplyMessage || current.signature() != "s" || current.arguments().value(0).toString() != m_owner) return false;
     const auto pid = daemon(m_bus, "GetConnectionUnixProcessID", m_owner), uid = daemon(m_bus, "GetConnectionUnixUser", m_owner);
-    return pid.type() == QDBusMessage::ReplyMessage && pid.signature() == "u" && pid.arguments().value(0).toLongLong() == m_pid
-        && uid.type() == QDBusMessage::ReplyMessage && uid.signature() == "u" && uid.arguments().value(0).toUInt() == geteuid();
+    if (pid.type() != QDBusMessage::ReplyMessage || pid.signature() != "u" || pid.arguments().value(0).toLongLong() != m_pid
+        || uid.type() != QDBusMessage::ReplyMessage || uid.signature() != "u" || uid.arguments().value(0).toUInt() != geteuid()) return false;
+    const auto after = daemon(m_bus, "GetNameOwner", QString(QindaQt::CompositorNames::service));
+    return alive(m_pidfd) && after.type() == QDBusMessage::ReplyMessage && after.signature() == "s" && after.arguments().value(0).toString() == m_owner;
 }
 bool Channel::live() const {
     pollfd event{m_fd, POLLIN | POLLHUP, 0};
