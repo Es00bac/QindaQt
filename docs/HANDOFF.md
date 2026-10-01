@@ -12,12 +12,21 @@ Initial namespace failures and two exact task-generated core artifacts remain
 disclosed in the immutable handoff, with opaque copies preserved and only the
 verified originals removed. No host sleep or PF2 completion follows.
 
-Protected capture source `b3670dda` passes its eleven-target strict rebuild.
-Only two corrected negative probes are authorized, with a normal frontend caller
-and a separately protected backend. Actual method responses remain unobserved
-until those probes finish. A separately owned fork authority proposal must
-preserve non-dumpability and qualify both restricted capture entrypoints before
-any routing switch.
+Protected capture source `e1b06401` passes its strict affected rebuild, but the
+unchanged actual frontend probes fail: Screenshot reports native NoAuthorized
+and Response2 without a URI; ScreenCast creates/selects its session but Start
+returns Response2 with no streams. Immutable handoff `0c156360` preserves both
+failures and bounded isolation evidence. Capture-only compositor authority
+design `a8a57854` is independently accepted by `bf7b26ca`. The coordinated public
+wire `91e1c202` is clarified by `bd4eacd1` to export configured fixed launch paths
+through an installed Qt-free header; compositor and separate broker/helper
+implementation remain candidate work. Production capture, revocation, actual
+pixels/PipeWire frames and installed staging must qualify before routing changes.
+
+The read-only local icon gallery candidate `d93a6c99`, independently accepted
+by `8f348f61`, is integrated on this recovery branch. It lists current working
+PNG files and refreshes every five seconds; it does not count unreviewed files
+as delivered artwork. See [Icon themes](wiki/shell/icon-theme.md).
 
 PF25 guard source `c78ac162a28f23039d117df37046b25465619a9a` is independently
 accepted and integrated in the authoritative QindaGentoo hub and checkout.
