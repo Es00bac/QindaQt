@@ -160,9 +160,15 @@ void SourceProfilePolicy::reconcile()
     }
     const QString desired = desiredProfile();
     const auto &settings = m_settings.snapshot();
-    QString admission;
-    for (const auto &profile : snapshot.profiles.supported) admission += profile.id + QLatin1Char(',');
-    for (const auto &hold : snapshot.profiles.holds) admission += hold.handle.opaqueId + QLatin1Char(',');
+    QStringList profiles, holds;
+    for (const auto &profile : snapshot.profiles.supported) profiles.append(profile.id);
+    for (const auto &hold : snapshot.profiles.holds) holds.append(hold.handle.opaqueId);
+    // AGENT-GUARD: Refusal admission depends on inventory membership, not
+    // provider array order. Reordering identical facts must not replay a hold.
+    profiles.sort();
+    holds.sort();
+    const QString admission = profiles.join(QLatin1Char(',')) + QLatin1Char('|')
+        + holds.join(QLatin1Char(',')) + QLatin1Char('|');
     const QString key = admission + QString::number(snapshot.epoch) + QLatin1Char('|') + desired
         + QLatin1Char('|') + (settings ? settings->owner + settings->epoch
                                                : QString());
