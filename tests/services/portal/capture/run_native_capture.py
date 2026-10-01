@@ -13,10 +13,11 @@ import subprocess
 import sys
 import tempfile
 import time
+import stat
 
 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-if len(sys.argv) not in (13, 15):
-    sys.exit("expected eleven artifacts, matching native plugin prefix and optional --case NAME")
+if len(sys.argv) not in (13, 15, 17):
+    sys.exit("expected eleven artifacts, matching native plugin prefix and optional --case NAME / --renderer llvmpipe|render-node")
 fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection, broker, qualified_support_program = map(pathlib.Path, sys.argv[1:12])
 plugin_prefix = pathlib.Path(sys.argv[12]).resolve()
 if plugin_prefix != compositor.resolve().parent or not (plugin_prefix / "qindaqt-kwin/plugins").is_dir():
@@ -32,12 +33,33 @@ groups = [
     ["nativeLockStopsActualStreamPendingCaptureAndRetainedFile"],
     ["compositorLossWithdrawsStreamsFilesAndPendingPublication"],
 ]
-# A bounded diagnostic selects unchanged Qt assertions. Only the default command
-# qualifies the whole journey; a selected case cannot be reported as full coverage.
-if len(sys.argv) == 15:
-    if sys.argv[13] != "--case" or sys.argv[14] not in {case for group in groups for case in group}:
+# A bounded diagnostic selects unchanged Qt assertions. Only all seven cases
+# qualify the selected renderer; a selected case never means full coverage.
+options = {}
+for index in range(13, len(sys.argv), 2):
+    key, value = sys.argv[index:index + 2]
+    if key not in ("--case", "--renderer") or key in options:
+        sys.exit("unknown or duplicate native capture diagnostic option")
+    options[key] = value
+renderer = options.get("--renderer", "llvmpipe")
+if renderer not in ("llvmpipe", "render-node"):
+    sys.exit("unknown native capture renderer")
+if "--case" in options:
+    if options["--case"] not in {case for group in groups for case in group}:
         sys.exit("unknown native capture diagnostic case")
-    groups = [[sys.argv[14]]]
+    groups = [[options["--case"]]]
+if renderer == "render-node":
+    # AGENT-GUARD: this opt-in fixture mode permits allocation/rendering only.
+    # A primary DRM card, input, sound, or writable sysfs is never a fallback.
+    node = pathlib.Path("/dev/dri/renderD128")
+    info = node.stat()
+    if (not stat.S_ISCHR(info.st_mode) or (os.major(info.st_rdev), os.minor(info.st_rdev)) != (226, 128)
+        or list(node.parent.iterdir()) != [node]
+        or not os.statvfs("/sys").f_flag & os.ST_RDONLY
+        or any(pathlib.Path(path).exists() for path in ("/dev/input", "/dev/snd"))
+        or pathlib.Path("/sys/class/drm/renderD128/device/vendor").read_text().strip() != "0x1002"
+        or pathlib.Path("/sys/class/drm/renderD128/device/device").read_text().strip() != "0x731f"):
+        sys.exit("native render-node mode requires the isolated AMD1002:731f render-only device")
 
 
 def group_alive(process):
@@ -65,7 +87,7 @@ for group in groups:
         runtime = root / "runtime"
         runtime.mkdir(mode=0o700)
         env = dict(os.environ)
-        for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH", "QML_IMPORT_PATH", "QML2_IMPORT_PATH", "LD_PRELOAD", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR", "WIREPLUMBER_CONFIG_DIR", "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS", "KWIN_WAYLAND_NO_PERMISSION_CHECKS", "LD_LIBRARY_PATH"):
+        for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH", "QML_IMPORT_PATH", "QML2_IMPORT_PATH", "LD_PRELOAD", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR", "WIREPLUMBER_CONFIG_DIR", "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS", "KWIN_WAYLAND_NO_PERMISSION_CHECKS", "LD_LIBRARY_PATH", "MESA_LOADER_DRIVER_OVERRIDE", "GALLIUM_DRIVER"):
             env.pop(key, None)
         env.update(HOME=str(root), XDG_RUNTIME_DIR=str(runtime), XDG_CONFIG_HOME=str(root / "config"),
             XDG_DATA_HOME=str(root / "data"), XDG_CACHE_HOME=str(root / "cache"), XDG_STATE_HOME=str(root / "state"),
@@ -74,6 +96,11 @@ for group in groups:
             QINDAQT_CAPTURE_TEST_HELPER=str(helper), QINDAQT_PORTAL_TEST_HELPER=str(consent), QINDAQT_PORTAL_TEST_RELAY=str(relay),
             QINDAQT_CAPTURE_TEST_AUDIT=str(runtime / "qindaqt-capture.audit"), QINDAQT_CAPTURE_TEST_PIXELS=str(pixels), QINDAQT_PORTAL_FOREIGN_EXPORTER=str(exporter), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
             PIPEWIRE_REMOTE="pipewire-capture", PIPEWIRE_RUNTIME_DIR=str(runtime))
+        env["QINDAQT_CAPTURE_TEST_RENDERER"] = renderer
+        if renderer == "llvmpipe":
+            env.update(MESA_LOADER_DRIVER_OVERRIDE="swrast", GALLIUM_DRIVER="llvmpipe")
+        else:
+            env["LIBGL_ALWAYS_SOFTWARE"] = "0"
         portals = root / "portals"
         portals.mkdir()
         # Only this task-owned overlay selects the capture-only service. The
@@ -215,7 +242,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             for snapshot in runtime.glob("qindaqt-capture-observed.png"):
                 shutil.copyfile(snapshot, evidence / snapshot.name)
             for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]),
-                          runtime / "qindaqt-capture-history.audit"):
+                          runtime / "qindaqt-capture-history.audit", runtime / "native-renderer.audit"):
                 if audit.is_file():
                     shutil.copyfile(audit, evidence / audit.name)
             cores = [str(path.relative_to(root)) for path in root.rglob("*")
@@ -228,7 +255,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
                         digest = hashlib.file_digest(core, "sha256").hexdigest()
                     shutil.copyfile(path, evidence / ("core-" + digest))
             report = dict(cases=group, evidence=str(evidence), cleanup_errors=cleanup_errors,
-                          scoped_core_files=cores, plugin_prefix=str(plugin_prefix))
+                          scoped_core_files=cores, plugin_prefix=str(plugin_prefix), renderer=renderer)
             (evidence / "audit.json").write_text(json.dumps(report, indent=2) + "\n")
             print("CAPTURE_GROUP_AUDIT " + json.dumps(report), flush=True)
             if cleanup_errors:

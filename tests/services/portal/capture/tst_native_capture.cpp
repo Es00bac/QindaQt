@@ -62,6 +62,7 @@ private Q_SLOTS:
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").isValid(), 10000);
         const auto brokerOwner = bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").value();
         const auto brokerPid = bus.interface()->servicePid(brokerOwner); QVERIFY(brokerPid.isValid()); QVERIFY(brokerPid.value() > 0);
+        verifyRenderer(); if (QTest::currentTestFailed()) return;
         char executable[4096]; errno = 0;
         const auto proc = QByteArray("/proc/")+QByteArray::number(brokerPid.value())+"/exe";
         const auto executableResult = readlink(proc.constData(), executable, sizeof(executable)); const int executableError = errno;
@@ -162,6 +163,34 @@ private Q_SLOTS:
     }
     void cleanupTestCase() { frontend.terminate(); frontend.waitForFinished(5000); if (pixels.state() != QProcess::NotRunning) { pixels.kill(); pixels.waitForFinished(3000); } foundation.reset(); accessBackend.reset(); QDBusConnection::disconnectFromBus("capture-access-backend"); }
 private:
+    void verifyRenderer() {
+        const auto compositorPid = qEnvironmentVariableIntValue("QINDAQT_PORTAL_TEST_COMPOSITOR_PID");
+        QVERIFY(compositorPid > 0);
+        const auto reportedPid = bus.interface()->servicePid("org.qindaqt.KWin");
+        QVERIFY(reportedPid.isValid()); QCOMPARE(reportedPid.value(), quint32(compositorPid));
+        auto support = QDBusMessage::createMethodCall("org.qindaqt.KWin", "/org/qindaqt/KWin", "org.qindaqt.KWin", "supportInformation");
+        QDBusPendingCallWatcher pending(bus.asyncCall(support)); QTRY_VERIFY(pending.isFinished());
+        const QDBusPendingReply<QString> information = pending; QVERIFY2(!information.isError(), qPrintable(information.error().message()));
+        QString vendor, renderer; QByteArray audit;
+        for (const auto &line : information.value().split('\n')) {
+            if (line.startsWith("OpenGL vendor string: ")) vendor = line.mid(22);
+            if (line.startsWith("OpenGL renderer string: ")) renderer = line.mid(24);
+            if (line.startsWith("OpenGL vendor string: ") || line.startsWith("OpenGL renderer string: ")) audit += line.toUtf8() + '\n';
+        }
+        QVERIFY(!vendor.isEmpty()); QVERIFY(!renderer.isEmpty());
+        QFile file(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("native-renderer.audit"));
+        QVERIFY(file.open(QIODevice::WriteOnly)); QCOMPARE(file.write(audit), audit.size());
+        qInfo().noquote() << audit;
+        const auto mode = qEnvironmentVariable("QINDAQT_CAPTURE_TEST_RENDERER");
+        if (mode == "llvmpipe") QVERIFY(renderer.contains("llvmpipe", Qt::CaseInsensitive));
+        else {
+            QCOMPARE(mode, QStringLiteral("render-node"));
+            QVERIFY(vendor.contains("AMD", Qt::CaseInsensitive));
+            QVERIFY(renderer.contains("radeonsi", Qt::CaseInsensitive));
+            QVERIFY(renderer.contains("Radeon", Qt::CaseInsensitive));
+            QVERIFY(!renderer.contains("llvmpipe", Qt::CaseInsensitive));
+        }
+    }
     void startFrontend() {
         frontend.start(QString::fromUtf8(QINDAQT_FRONTEND_EXECUTABLE), {"--replace", "--verbose"}); QVERIFY(frontend.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered("org.freedesktop.portal.Desktop").value(), 10000);

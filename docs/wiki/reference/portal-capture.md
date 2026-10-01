@@ -233,3 +233,21 @@ absent and unavailable; no capture family may advertise or activate. Existing
 positive/poison package and support-target guards remain unchanged. Metadata still
 routes both families to KDE. Focused candidate unit/source gates pass; actual native/staged gates remain pending, and
 prior exact denial evidence above stays preserved.
+
+The non-installable runner accepts `--renderer llvmpipe|render-node`, with
+`llvmpipe` as the unchanged default. Explicit `render-node` mode verifies the
+sole AMD1002:731f renderD128 character device, read-only sysfs and absent card/input/
+sound nodes, clears swrast/llvmpipe overrides, and sets LIBGL_ALWAYS_SOFTWARE=0.
+The caller authenticates the private compositor PID and queries its public
+`supportInformation`; actual OpenGL vendor/renderer lines are retained. Software
+requires reported llvmpipe; render-node requires AMD/Radeon/radeonsi and rejects
+llvmpipe. Both modes keep every real pixel/frame/privacy assertion.
+
+The retained exact447 software probes on scope-correct consumer97c63 return an
+actual1100x820 fully transparent black Screenshot PNG and a real ScreenCast node/
+remote FD without frames. VirtualEglLayer allocates through EglSwapchain and the
+GBM allocator, whose software allocation requires DRM_IOCTL_MODE_CREATE_DUMB;
+render-only isolation denies that operation and the actual layer fails repeatedly.
+These failures establish rendering limits, and do not qualify screenshots or
+streams. Hardware render-node allocation uses GBM dma-bufs; explicit native
+qualification remains separate, without a primary-card/host-display fallback.
