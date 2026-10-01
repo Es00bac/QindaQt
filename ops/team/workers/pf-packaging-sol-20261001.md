@@ -1,10 +1,10 @@
 # pf-packaging-sol-20261001
 
 - Provider/model: OpenAI gpt-6.1-sol, manager-assigned medium (no independent model attestation).
-- Scope: read-only Plasma-free packaging audit.
+- Scope: assigned Plasma-free packaging guard, supplied-theme delivery, and independent fork review.
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: worker/pf-packaging-20261001
-- Status: waiting — complete supplied family installed and verified on both hosts; ready next bounded manager assignment.
+- Status: waiting — exact fork KNightTime dependency retirement ACCEPT handed off; available for next bounded review.
 
 ## Updates
 
@@ -29,3 +29,7 @@
 - 2026-10-01T09:18:49Z — Root independently ACCEPTED/integrated exact54eb7964 recipe/archive/image. Authorized exact-atom qinda first signed build+merge then laptop same binary; no world sweep/theme selection/service restart. Starting publication/pretend gate; unexpected native dependencies require resource coordination.
 
 - 2026-10-01T09:29:31Z — Delivery complete: both hosts exact1.0.0_p20260929/buildID1 from identical signedgpkgSHA2564347ca34051d97943e20f63ff0e713e16b7c876c7126d1c5cd4d999b7aed09ea. Each passes7172PNG/path/hash/RGBA/index/metadata/source,7231PortageobjMD5+ownership, actualproductionThemes enumeration/resolve and12Qt exactpixelrenders; forcedcryptographicgpkgverifyPASS. Original appearance.iconTheme unchanged, package explicitly retained in Portageworld on both via manager-approved exact-atom --select --noreplace. Logs/laptopQA copied to qinda; no service restart or world sweep.
+
+- 2026-10-01T09:33:30Z — Claims independent source review exactfork690c0112d13ca7d861e070865c9054d657946b75 over2e4e1961, isolated qinda review/pf-knighttime-20261001 worktree. Scope two-path dependency retirement only; repeat configure/identity/helper/collision checks; no fork edits or installed actions.
+
+- 2026-10-01T09:38:38Z — Independent ACCEPT exact690c0112: two-path diff removes unused discovery; fresh disabled-package Release configure exit0, identity exit0, 453stage/1059stock collision check exit0, exact helper1/1CTest and28Qt cases PASS, staged nightlight/compositor ELF no KNightTime NEEDED. Root1411-action compile/stage logs inspected; no fresh full compile claimed. Production test authorization OFF; no installed/live power actions. Platform queue read; offers next exact dependency/recipe review.
