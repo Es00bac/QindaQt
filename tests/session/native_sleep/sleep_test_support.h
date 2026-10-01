@@ -9,7 +9,9 @@
 #include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
 #include <qindaqt/session/native_sleep/sleep_service.h>
 #include "fake_logind_wire.h"
+#include "private_sleep_bus.h"
 #include <QDBusConnectionInterface>
+#include <QDBusError>
 #include <QDBusArgument>
 #include <QDBusMetaType>
 #include <QDBusUnixFileDescriptor>
@@ -52,15 +54,21 @@ public:
     } else if (m.member() == "SetLockedHint") {
       hints.append(m.arguments().first().toBool());
       bus.send(m.createReply());
-    } else if (m.member() == "CanSuspend") {
+    } else if (methodMode(m.member(), true)) {
+      capabilityMethods.append(m.member());
       ++canCalls;
       if (deferCan) deferredCan = m;
-      else bus.send(m.createReply(canAnswer));
-    } else if (m.member() == "Suspend") {
+      else if (unsupportedMethods.contains(m.member()))
+        bus.send(m.createErrorReply(QDBusError::UnknownMethod, QStringLiteral("Fixture unsupported mode")));
+      else bus.send(m.createReply(capabilityAnswers.value(m.member(), canAnswer)));
+    } else if (methodMode(m.member(), false)) {
+      actionMethods.append(m.member());
       ++suspendCalls;
       interactive = m.arguments().first().toBool();
       if (autoPrepare) prepare(true);
-      if (deferSuspend) deferredSuspend = m; else bus.send(m.createReply());
+      if (deferSuspend) deferredSuspend = m;
+      else if (malformedActionReply) bus.send(m.createReply(QVariant(true)));
+      else bus.send(m.createReply());
     } else return false;
     return true;
   }
@@ -98,6 +106,9 @@ public:
   bool malformedUser = false, deferInhibit = false, deferCan = false, autoPrepare = false;
   bool interactive = true, preparing = false, deferSuspend = false;
   QString canAnswer = QStringLiteral("yes");
+  QHash<QString, QVariant> capabilityAnswers;
+  QStringList capabilityMethods, actionMethods, unsupportedMethods;
+  bool malformedActionReply = false;
   int canCalls = 0, suspendCalls = 0;
   QStringList selectedIds;
   QList<quint32> selectedPids;
@@ -144,7 +155,7 @@ public:
   void revoke() override {}
 };
 struct Fixture {
-  PrivateBus broker;
+  PrivateSleepBus broker;
   QDBusConnection supervisor = broker.connect("supervisor");
   QDBusConnection logindBus = broker.connect("logind");
   QDBusConnection compositorBus = broker.connect("compositor");

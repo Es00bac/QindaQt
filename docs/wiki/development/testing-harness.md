@@ -4513,3 +4513,20 @@ Sleep1 dispatch are covered without host bus/power actions. SessionActions also
 proves native handoff and refuses suspend when only logind is available.
 These gates do not qualify installed logind delay timing, physical DRM output
 protection, PAM or hardware resume. Keep those separate managed runtime gates.
+
+### Native sleep mode wire gate
+
+`qindaqt.sleep_modes` exercises the additive [Sleep1 mode
+contract](../adr/0325-additive-native-sleep-modes.md), alongside the original
+native-sleep/runtime/request and SessionActions regression gates. Every mode
+uses a disposable broker with no service activation directories and an absent
+system bus. The fixture uses actual daemon caller credentials, ordinary Unix
+socket/kernel PIDFD admission, production Qt native nonce receipt ports and
+pipe-backed inhibitor FDs. It covers mode-specific Can/action pairing, current
+Protected Locked admission, duplicate/pending requests, no/na/challenge/missing
+or malformed capabilities, contradictory/stale replies, owner loss before and
+after dispatch, lost/malformed dispatch replies, exact serial cancellation,
+unknown/incomplete state and missing current nonce. Existing suspend assertions
+remain intact. Executable results are pending the manager's resource grant;
+source/static work alone does not qualify this candidate. No host sleep, lock,
+PAM, hardware hibernation or installed policy behavior is exercised.
