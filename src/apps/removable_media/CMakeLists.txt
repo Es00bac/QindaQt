@@ -42,15 +42,15 @@ qindaqt_enable_warnings(qindaqt-removable-media)
 
 if(BUILD_TESTING)
     find_program(QINDAQT_MEDIA_DBUS_RUN_SESSION dbus-run-session REQUIRED)
-    foreach(behavior policy udisks)
+    foreach(behavior policy udisks notifications)
         qt_add_executable(qindaqt_media_${behavior}_tests tests/tst_media_${behavior}.cpp)
         target_link_libraries(qindaqt_media_${behavior}_tests PRIVATE
             qindaqt_removable_media_core Qt6::Test)
         qindaqt_enable_warnings(qindaqt_media_${behavior}_tests)
-        if(behavior STREQUAL "udisks")
-            add_test(NAME qindaqt.removable-media-udisks
-                COMMAND "${QINDAQT_MEDIA_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_media_udisks_tests>)
-            set_tests_properties(qindaqt.removable-media-udisks PROPERTIES
+        if(NOT behavior STREQUAL "policy")
+            add_test(NAME qindaqt.removable-media-${behavior}
+                COMMAND "${QINDAQT_MEDIA_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_media_${behavior}_tests>)
+            set_tests_properties(qindaqt.removable-media-${behavior} PROPERTIES
                 ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
                 LABELS "apps;media;integration;private-bus" TIMEOUT 60)
         else()

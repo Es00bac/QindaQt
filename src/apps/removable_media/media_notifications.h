@@ -4,6 +4,7 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusServiceWatcher>
+#include <QSet>
 
 namespace QindaQt::Apps::RemovableMedia {
 // Freedesktop notification transport only. Exact notification owner and
@@ -25,6 +26,7 @@ private:
     QDBusServiceWatcher m_watcher;
     QMap<uint, QString> m_tokens;
     QMap<QString, quint64> m_sequences;
+    QSet<QString> m_pendingTokens;
     QString m_owner;
     quint64 m_epoch = 0;
 };

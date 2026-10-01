@@ -45,6 +45,13 @@ QString objectPath(const QVariant &value)
     return qdbus_cast<QDBusObjectPath>(value).path();
 }
 
+QString physicalMediaIdentity(const QString &path, const QVariantMap &drive)
+{
+    return path + QLatin1Char('|') + drive.value(QStringLiteral("Id")).toString()
+        + QLatin1Char('|') + QString::number(drive.value(QStringLiteral("TimeDetected")).toULongLong())
+        + QLatin1Char('|') + QString::number(drive.value(QStringLiteral("TimeMediaDetected")).toULongLong());
+}
+
 QVector<Volume> projectVolumes(const ManagedObjects &objects)
 {
     QVector<Volume> result;
@@ -88,6 +95,8 @@ QVector<Volume> projectVolumes(const ManagedObjects &objects)
         Volume volume;
         volume.path = it.key().path();
         volume.drive = drivePath;
+        volume.driveIdentity = physicalMediaIdentity(drivePath, drive);
+        volume.cryptoBackingDevice = backingPath;
         volume.device = bytePath(block.value(QStringLiteral("PreferredDevice")));
         if (volume.device.isEmpty()) volume.device = bytePath(block.value(QStringLiteral("Device")));
         volume.size = block.value(QStringLiteral("Size")).toULongLong();
@@ -115,10 +124,8 @@ QVector<Volume> projectVolumes(const ManagedObjects &objects)
             : block.value(QStringLiteral("IdType")).toString().toUpper();
         const QString uuid = block.value(QStringLiteral("IdUUID")).toString();
         const QString driveId = drive.value(QStringLiteral("Id")).toString();
-        volume.identity = volume.path + QLatin1Char('|') + drivePath + QLatin1Char('|') + uuid
-            + QLatin1Char('|') + QString::number(volume.size) + QLatin1Char('|')
-            + QString::number(drive.value(QStringLiteral("TimeDetected")).toULongLong())
-            + QLatin1Char('|') + QString::number(drive.value(QStringLiteral("TimeMediaDetected")).toULongLong());
+        volume.identity = volume.path + QLatin1Char('|') + volume.driveIdentity + QLatin1Char('|') + uuid
+            + QLatin1Char('|') + QString::number(volume.size) + QLatin1Char('|') + backingPath;
         // Remember only a filesystem on a named physical device. Device-node
         // reuse must never transfer an automatic choice to an unrelated disk.
         if (!uuid.isEmpty() && !driveId.isEmpty()) {

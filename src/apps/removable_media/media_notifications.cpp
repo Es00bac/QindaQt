@@ -3,6 +3,7 @@
 #include <QDBusConnectionInterface>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
+#include <utility>
 
 namespace QindaQt::Apps::RemovableMedia {
 namespace {
@@ -17,7 +18,12 @@ MediaNotifications::MediaNotifications(MediaController &controller, QDBusConnect
     if (m_bus.interface()) m_owner = m_bus.interface()->serviceOwner(Service).value();
     connect(&m_watcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
             [this](const QString &, const QString &, const QString &owner) {
-        ++m_epoch; m_owner = owner; m_tokens.clear(); m_sequences.clear();
+        auto affected = m_pendingTokens;
+        for (const auto &token : std::as_const(m_tokens)) affected.insert(token);
+        ++m_epoch; m_owner = owner; m_tokens.clear(); m_sequences.clear(); m_pendingTokens.clear();
+        // AGENT-GUARD: losing Notify's owner must not consume the sole
+        // insertion prompt. show() rejects attachments already withdrawn.
+        for (const auto &token : std::as_const(affected)) m_controller.show(token);
     });
     connect(&controller, &MediaController::notificationRequested, this, &MediaNotifications::notify);
     connect(&controller, &MediaController::notificationWithdrawn, this, &MediaNotifications::withdraw);
@@ -35,6 +41,7 @@ void MediaNotifications::notify(const QString &token, const QString &summary,
         if (it.value() == token) { previous = it.key(); break; }
     const auto epoch = m_epoch;
     const auto sequence = ++m_sequences[token];
+    m_pendingTokens.insert(token);
     auto message = QDBusMessage::createMethodCall(m_owner, Path, Service, QStringLiteral("Notify"));
     message.setArguments({QStringLiteral("Removable Media"), previous, QStringLiteral("drive-removable-media"),
         summary.toHtmlEscaped(), body.toHtmlEscaped(), actions,
@@ -49,13 +56,16 @@ void MediaNotifications::notify(const QString &token, const QString &summary,
         if (sequence != m_sequences.value(token)) {
             // Unplug may arrive before Notify's id. Withdraw the eventual
             // notification too, rather than leaving a dead action on screen.
-            if (!reply.isError()) {
+            // Updates may share the previous id. Closing that id would also
+            // close the current update; withdrawal removes its mapping first.
+            if (!reply.isError() && m_tokens.value(reply.value()) != token) {
                 auto closeMessage = QDBusMessage::createMethodCall(m_owner, Path, Service, QStringLiteral("CloseNotification"));
                 closeMessage.setArguments({reply.value()});
                 m_bus.asyncCall(closeMessage, 5000);
             }
             return;
         }
+        m_pendingTokens.remove(token);
         if (reply.isError()) { m_controller.show(token); return; }
         m_tokens.remove(previous);
         m_tokens.insert(reply.value(), token);
@@ -64,6 +74,7 @@ void MediaNotifications::notify(const QString &token, const QString &summary,
 void MediaNotifications::withdraw(const QString &token)
 {
     ++m_sequences[token];
+    m_pendingTokens.remove(token);
     for (auto it = m_tokens.begin(); it != m_tokens.end();) {
         if (it.value() != token) { ++it; continue; }
         auto message = QDBusMessage::createMethodCall(m_owner, Path, Service, QStringLiteral("CloseNotification"));

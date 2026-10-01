@@ -22,6 +22,7 @@ void UDisksBackend::execute(const Request &request)
     m_request = request;
     m_expected = *v;
     m_resultMount.clear();
+    m_unlockedRemovalTransition = false;
     const auto serial = ++m_mutationSerial;
     // AGENT-GUARD: confirmation captures an attachment, not /dev/sdX. Read
     // current UDisks state immediately before admission, and never replay
@@ -130,12 +131,16 @@ void UDisksBackend::runNext()
         finish(true, message, m_resultMount);
         return;
     }
+    const auto currentDrive = m_objects.value(QDBusObjectPath(m_expected.drive)).value(Drive);
+    const bool sameDrive = !currentDrive.isEmpty()
+        && physicalMediaIdentity(m_expected.drive, currentDrive) == m_expected.driveIdentity;
     const bool stillPresent = m_request->operation == Operation::Remove
-        ? m_objects.contains(QDBusObjectPath(m_expected.drive)) : find(m_request->token) != nullptr;
+        ? sameDrive && (find(m_request->token) != nullptr || m_unlockedRemovalTransition)
+        : find(m_request->token) != nullptr;
     if (!stillPresent) { finish(false, QStringLiteral("The media was removed during the operation.")); return; }
     const Step step = m_steps.dequeue();
     const auto serial = m_mutationSerial;
-    call(step, [this, serial, method = step.method](const QDBusMessage &reply) {
+    call(step, [this, serial, method = step.method, path = step.path](const QDBusMessage &reply) {
         if (!m_request || serial != m_mutationSerial) return;
         if (reply.type() == QDBusMessage::ErrorMessage) {
             QString message;
@@ -147,6 +152,11 @@ void UDisksBackend::runNext()
             return;
         }
         if (method == QStringLiteral("Mount")) {
+            const auto *current = find(m_request->token);
+            if (!current || current->identity != m_expected.identity) {
+                finish(false, QStringLiteral("The media changed while mounting. The old reply was ignored."));
+                return;
+            }
             const QDBusReply<QString> mountReply(reply);
             if (!mountReply.isValid() || !QDir::isAbsolutePath(mountReply.value())) {
                 finish(false, QStringLiteral("The disk service did not return a mount location. Refresh to check its state."));
@@ -169,6 +179,10 @@ void UDisksBackend::runNext()
                 }
             }
         }
+        // Only our Lock of this selected cleartext child's backing volume
+        // may remove its token while the remaining physical removal proceeds.
+        if (method == QStringLiteral("Lock") && path == m_expected.cryptoBackingDevice)
+            m_unlockedRemovalTransition = true;
         runNext();
     });
 }
