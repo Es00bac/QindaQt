@@ -5,6 +5,11 @@
 #include <QDBusPendingReply>
 namespace QindaQt::Services::SessionActions {
 using namespace Detail;
+void SessionActionsClient::sleepAvailabilityChanged(const QDBusMessage &message) {
+    if (m_running && message.type() == QDBusMessage::SignalMessage &&
+        message.signature().isEmpty() &&
+        message.service() == currentOwner(SessionAction::Suspend)) scheduleRefresh();
+}
 void SessionActionsClient::authorizeSuspend() {
     const PendingAction request = *m_pending;
     auto call = QDBusMessage::createMethodCall(request.owner, QString::fromLatin1(SleepPath),

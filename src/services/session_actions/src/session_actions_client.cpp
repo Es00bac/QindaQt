@@ -111,6 +111,9 @@ void SessionActionsClient::start()
     if (m_sessionBus.isConnected()) {
         installWatcher(m_sessionWatcher, SessionService, m_sessionBus,
                        SessionAction::Logout);
+        m_sessionBus.connect({}, QString::fromLatin1(SleepPath),
+            QString::fromLatin1(SleepInterface), QStringLiteral("Changed"),
+            this, SLOT(sleepAvailabilityChanged(QDBusMessage)));
         installWatcher(m_sleepWatcher, SleepService, m_sessionBus,
                        SessionAction::Suspend);
         installWatcher(m_screenSaverWatcher, ScreenSaverService, m_sessionBus,
@@ -137,6 +140,9 @@ void SessionActionsClient::stop()
                                                       : ActionStatus::Unavailable,
                         QStringLiteral("client-stopped"));
     }
+    m_sessionBus.disconnect({}, QString::fromLatin1(SleepPath),
+        QString::fromLatin1(SleepInterface), QStringLiteral("Changed"),
+        this, SLOT(sleepAvailabilityChanged(QDBusMessage)));
     delete m_sessionWatcher;
     delete m_screenSaverWatcher;
     delete m_logindWatcher;

@@ -6,6 +6,7 @@
 #include <QtCore/QTimer>
 #include <QtCore/QtTypes>
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusMessage>
 
 #include <memory>
 #include <optional>
@@ -100,6 +101,9 @@ Q_SIGNALS:
     void pendingChanged();
     void feedbackChanged();
     void actionFinished(const QindaQt::Services::SessionActions::SessionActionResult &result);
+
+private Q_SLOTS:
+    void sleepAvailabilityChanged(const QDBusMessage &message);
 
 private:
     struct RefreshQuery;

@@ -39,6 +39,7 @@ Runtime::Runtime(Services::LockPreferences::PreferencesProvider &preferences,
 Runtime::~Runtime() { stop(); }
 bool Runtime::start() {
   if (m_started) return true;
+  if (!m_state.start()) return false;
   m_started = true;
   refreshPreferences();
   m_idle.refresh();
