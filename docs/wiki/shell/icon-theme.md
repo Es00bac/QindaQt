@@ -69,6 +69,25 @@ output, preserved generation provenance and inspection at the actual icon size.
 Source-identical aliases may share a drawing; unrelated meanings cannot use
 generic replacement art. The partial source set is not an installed family.
 
+### Live working gallery
+
+`tools/icon-gallery/server.py` provides a read-only development preview of a
+selected raster theme directory. It binds to loopback only, lists every PNG
+with search/category filters and a larger inspection view, and refreshes the
+working inventory every five seconds. Counts describe files currently present,
+including additions awaiting review; they do not advance artwork acceptance or
+installed delivery. The optional original CSV manifest supplies the expected
+name count and distinct source-group count.
+
+```sh
+python3 tools/icon-gallery/server.py /path/to/QindaQt-Handdrawn \
+  --manifest /path/to/QindaIconArt/sources/full-manifest.csv
+```
+
+Open the printed local URL in a browser. Keep the process running while
+inspecting; stop it with Ctrl-C. The gallery never writes the theme, changes
+the saved icon preference, or serves files outside the selected PNG directory.
+
 ## Visual language
 
 The palette is the icon-side spelling of the Pearl / Smoked Plum identity in
