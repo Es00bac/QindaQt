@@ -77,3 +77,10 @@ add_test(NAME qindaqt.portal-native-frontend COMMAND "${Python3_EXECUTABLE}"
     "${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt-portals.conf")
 set_tests_properties(qindaqt.portal-native-frontend PROPERTIES TIMEOUT 150
     SKIP_RETURN_CODE 77 RUN_SERIAL TRUE LABELS "portal;frontend;private-wayland")
+
+# Focused builds must produce every executable named by these private runners,
+# rather than turning a missing input helper into a false admission regression.
+add_dependencies(qindaqt_portal_native_consent_tests qindaqt_portal_consent_input
+    qindaqt_portal_mail_draft qindaqt-uri-relay)
+add_dependencies(qindaqt_portal_native_frontend_tests qindaqt_portal_consent_input
+    qindaqt_portal_mail_draft qindaqt-uri-relay)

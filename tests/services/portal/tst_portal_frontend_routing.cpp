@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/services/portal/resident_portal_service.h"
 #include "portal_frontend_test_support.h"
+#include "portal_chooser_routing_probe.h"
 
 #include <QCoreApplication>
 #include <QDBusAbstractAdaptor>
@@ -211,6 +212,7 @@ bool registerRoutingFakes(QDBusConnection &bus, FakePortalRoot &root,
         || !bus.registerService(QStringLiteral(
                                     "org.freedesktop.impl.portal.desktop.gnome-keyring"))
         || !bus.registerService(QString::fromLatin1(DocumentsService))
+        || !bus.registerService(QStringLiteral("org.qindaqt.Power1"))
         || !bus.registerService(QString::fromLatin1(PermissionStoreService))) {
         *error = QStringLiteral("cannot register injected private-bus routing backends");
         return false;
@@ -353,19 +355,11 @@ bool runRouting(QString *error)
         return false;
     }
 
-    QDBusPendingCall pending = callFrontend(
-        bus, "org.freedesktop.portal.FileChooser", "OpenFile",
-        {QString{}, QStringLiteral("QindaQt routing proof"),
-         optionsWithToken("qt_Routing_OpenFile")});
-    if (!waitUntil([&] { return chooser->calls() == 1; }, 5'000)
-        || chooser->lastTitle() != QStringLiteral("QindaQt routing proof")) {
-        return failWithCallReply(
-            frontend, pending,
-            QStringLiteral("FileChooser did not reach the routed kde backend"), error);
+    if (!nativeChooserRefusesWithoutAttachment(bus, QStringLiteral("qt_Routing_OpenFile"), error)
+        || chooser->calls() != 0) {
+        return failWithFrontendLog(frontend, QStringLiteral("native FileChooser route/fallback withdrawal failed"), error);
     }
-    Q_UNUSED(pending)
-
-    pending = callFrontend(bus, "org.freedesktop.portal.Screenshot", "Screenshot",
+    QDBusPendingCall pending = callFrontend(bus, "org.freedesktop.portal.Screenshot", "Screenshot",
                            {QString{}, optionsWithToken("qt_Routing_Screenshot")});
     if (!waitUntil([&] { return screenshot->calls() == 1; }, 5'000)) {
         return failWithCallReply(

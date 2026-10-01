@@ -3,11 +3,16 @@
 The resident composes independent standard Access, Notification, Email and
 Inhibit backends alongside the unchanged [appearance backend](portal-service.md)
 and separate [Secret backend](secret-portal.md). The source package declaration and selector route Settings, Secret, Access,
-Notification and Email to QindaQt. Inhibit retains KDE fallback because native
+Notification, Email, FileChooser and AppChooser to QindaQt. Inhibit retains KDE fallback because native
 Power consumes no complete idle scopes. Installed session and sandbox delivery
 remain manager gates; no selector change claims physical qualification.
 
 [ADR-0318](../adr/0318-native-portal-foundation.md) records this process boundary.
+The [native chooser components](../reference/portal-choosers.md) adds independent
+wire policy, adaptors and ordinary native-dialog helper under
+[ADR-0322](../adr/0322-native-portal-choosers.md). Their actual private frontend/
+native-input gate passed all methods, updates and lifetime scenarios before the
+source family selector changed; no unavailable native chooser retries KDE.
 The primary upstream contracts are the current backend XML for
 [Access](https://github.com/flatpak/xdg-desktop-portal/blob/main/data/org.freedesktop.impl.portal.Access.xml),
 [Notification](https://github.com/flatpak/xdg-desktop-portal/blob/main/data/org.freedesktop.impl.portal.Notification.xml),
