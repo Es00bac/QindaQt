@@ -55,6 +55,20 @@ resolves to `QindaQt` instead of reaching Qt as a name that would fall straight
 to `hicolor` and lose every icon. `qindaqt.themes` pins the table above and
 `qindaqt.icon-theme-catalog` the fallback.
 
+The independently selectable raster family `QindaQt-Breeze-Painted` is installed
+on both hosts through `x11-themes/qinda-breeze-painted-1.0.0_p20260929`.
+It contains the complete supplied 7,172 category/name PNGs at 128 × 128, with
+the original index, notices and editable source preserved. Its runtime package
+depends only on the system hicolor theme. Installation makes it available in
+the **Icons** chooser; it does not change the saved preference.
+
+The requested `QindaQt-Handdrawn` sibling is authored separately in QindaIconArt.
+Its delivery gate requires the exact same category/name inventory, a distinct
+hand-rendered drawing for every original artwork group, transparent raster
+output, preserved generation provenance and inspection at the actual icon size.
+Source-identical aliases may share a drawing; unrelated meanings cannot use
+generic replacement art. The partial source set is not an installed family.
+
 ## Visual language
 
 The palette is the icon-side spelling of the Pearl / Smoked Plum identity in

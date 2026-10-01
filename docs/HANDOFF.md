@@ -6,15 +6,32 @@ Independent and integrated resolver tests each pass 28/28. This installs no
 runtime payload and removes no package. Both installed diagnostic closures
 still contain 28 forbidden packages; missing final fork recipes fail closed.
 
-Native display-idle candidate `891092f66029fdffa50258e98b6d52d3ed61007b`
-has 22 focused implementer gates; exact independent review is next. Native
-portal foundation/routing has qualified 21 scoped candidate gates and awaits
-independent source acceptance. Native shell notification-lock observer
-`5487e1083d9556cc4f5f4bc61d30d577a464dd9e` compiles with the production shell
-and passes its observer/native monitor/transport/attachment gates 4/4;
-independent review is next. These are candidate evidence, not integration or
-installed-delivery evidence. The recovery integration branch remains separate
-from main until exact accepted source and combined gates qualify.
+Native display-idle source `891092f66029fdffa50258e98b6d52d3ed61007b`
+passes an independent 22/22 scoped run and is merged on the recovery integration
+branch. Native portal foundation/routing source `9c3d0489` is independently
+accepted with 21/21 manager gates and merged there. These do not advertise full
+power/inhibition or the later portal families. Fork source
+`690c0112d13ca7d861e070865c9054d657946b75` is independently accepted, production
+built with test authorization OFF, privately staged with 453 paths and zero
+stock-package collisions, and integrated into its hub and clean checkout. The
+consumer manifest now pins its exact tree `b507de4f9b0deba11eb9ecee1980f0d593e4a4df`.
+
+Shell privacy source `5487e108` was rejected because queued owner-loss handling
+left the notification consumer's cached admission true. Repaired candidate
+`1e2ab3ef600a800a49e94280107dd560ddcfd879` wires read-through native admission
+into the policy, retained models and operations; its production shell builds and
+nine focused tests pass. Independent rereview is active. Combined exact-fork ABI
+and native gates remain before recovery-branch integration to main. Native
+logind sleep coordination is an isolated subsequent candidate, not delivered.
+
+The supplied painted icon family is independently delivered on both hosts as
+Portage package `x11-themes/qinda-breeze-painted-1.0.0_p20260929`, using overlay
+`54eb7964` and the identical signed binary SHA256
+`4347ca34051d97943e20f63ff0e713e16b7c876c7126d1c5cd4d999b7aed09ea`.
+All 7,172 original named PNGs and editable source match, all 7,231 package files
+verify, and twelve Qt render samples pass on each host. The saved icon choice
+stays unchanged. Full hand-rendered sibling artwork remains active in QindaIconArt
+and requires complete matching coverage before its own package can be delivered.
 
 # Graphical removable-media delivery — 2026-09-30
 
