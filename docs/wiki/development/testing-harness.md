@@ -4583,5 +4583,13 @@ group remain unqualified. Source review identifies a separate asynchronous
 native-state admission handshake beyond the fixture readiness checks; whether
 that timing causes this denial remains to be traced. No admission guard is
 relaxed and no delay or retry is substituted for a public readiness condition.
+One unchanged fresh-lock probe with an observational private-bus monitor passes
+its initial Screenshot and all three Qt results, but the runner correctly fails
+because the compositor exits with SIGSEGV during RequestLockWithReceipt. The
+trace shows the broker received the authentic unlocked state receipt before
+Screenshot, then no lock-state or admission receipt before compositor loss.
+Thus this probe does not reproduce the earlier initial denial, and does not
+qualify native-lock retirement: compositor survival remains an explicit gate.
+No further runtime or production repair is included in this fixture candidate.
 All earlier blank PNG, two-frame and startup-order failures remain retained.
 No installed routing or full PF19 completion is claimed.
