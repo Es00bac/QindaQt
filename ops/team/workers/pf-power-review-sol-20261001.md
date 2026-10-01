@@ -4,7 +4,7 @@
 - Status: working — final bounded retry-order causal audit for exact candidate 0c326be58a61810e33913a2daac71c2921541a78.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: compiler released after affected strict build; private replay pending graphics release; laptop test lock honored.
+- Resource state: compiler released; sole private runtime claimed after explicit graphics release; laptop test lock honored.
 - Outcome: ACCEPT or bounded causal REJECT of supported per-source native profile holds; no wider PF2/install claim.
 
 ## Updates
@@ -26,3 +26,5 @@
 - 2026-10-01T23:08:07Z: Root routes same-reviewer exactce84b0a5 repair. Inspected canonical sorting/public key and readback-confirmed mandatory external-hold/profile-order permutations, original repeated-fact/material-preference controls retained. Previous exact0cREJECT remains preserved. Own isolated tree advanced by immutable candidate merge only; no product source edits. Sole compiler granted; private replay waits explicit graphics release.
 
 - 2026-10-01T23:09:26Z: Own exactce84 affected build9actualactions exit0/14.006s/policyTU+archive+resident+runtime rebuilt, minMem19.19GB/core0; compilerPID403836 absent/released. Own33changedpathsSHA allequal, docs485/strictMkDocs/shape/boundary/diff exit0. Original scratch+six repaired artifacts frozen separately; private replay waits root graphics releasegrant.
+
+- 2026-10-01T23:12:22Z: Root grants serialized private replay after graphics release. Unchanged originalscratch causal probePID407821 against repaired frozen actualresident, then mandatoryknownrefusal row and unchanged5/65 onlyifbothPASS. Original failed logs/SHA retained; no compile/productedit; testshape exit0/preexisting518warning retained.
