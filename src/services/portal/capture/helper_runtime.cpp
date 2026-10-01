@@ -53,7 +53,9 @@ public:
         for (auto *timer : {&inputDeadline, &consentDeadline, &outputDeadline, &retentionDeadline}) timer->stop();
         if (requestReader) requestReader->setEnabled(false);
         if (resultWriter) resultWriter->setEnabled(false);
-        if (pixels) pixels->cancel(); if (stream) stream->stop(); if (dialog) dialog->fail();
+        if (pixels) pixels->cancel();
+        if (stream) stream->stop();
+        if (dialog) dialog->fail();
         // Broker exit closes its request pipe; this surviving helper also
         // withdraws only the image it actually created for that trusted job.
         if (imageCreated) QFile::remove(QDir(directory).filePath("screenshot.png"));
@@ -102,7 +104,8 @@ public:
         dialog = std::make_unique<CaptureDialog>(*request, frame.value("directory").toString(), *admission, *pixels, *stream);
         QObject::connect(admission.get(), &NativeCaptureAdmission::lost, &q, [this] { retire(); });
         QObject::connect(&parent, &QindaQt::Platform::ForeignParent::ForeignParent::ready, &q, [this] {
-            if (!control.send(CaptureAuthority::Wire::Message::ParentReady, control.job())) { retire(); return; } dialog->parentReady();
+            if (!control.send(CaptureAuthority::Wire::Message::ParentReady, control.job())) { retire(); return; }
+            dialog->parentReady();
         });
         QObject::connect(&parent, &QindaQt::Platform::ForeignParent::ForeignParent::lost, &q, [this] { retire(); });
         QObject::connect(dialog.get(), &CaptureDialog::consented, &q, [this] {

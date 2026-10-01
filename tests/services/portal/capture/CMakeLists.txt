@@ -27,11 +27,13 @@ target_link_libraries(qindaqt_portal_capture_authority_packet_tests PRIVATE qind
 qindaqt_enable_warnings(qindaqt_portal_capture_authority_packet_tests)
 add_test(NAME qindaqt.portal-capture-authority-packet COMMAND qindaqt_portal_capture_authority_packet_tests)
 set_tests_properties(qindaqt.portal-capture-authority-packet PROPERTIES TIMEOUT 30 LABELS "portal;capture;wire;hostile")
-qt_add_executable(qindaqt_portal_capture_authority_channel_tests tst_authority_channel.cpp)
+qt_add_executable(qindaqt_portal_capture_authority_channel_tests tst_authority_channel.cpp
+    "${PROJECT_SOURCE_DIR}/src/services/portal/capture/native_capture_admission.cpp"
+    "${PROJECT_SOURCE_DIR}/src/services/portal/capture/native_capture_admission.h")
 target_include_directories(qindaqt_portal_capture_authority_channel_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/services/portal/capture")
 target_compile_definitions(qindaqt_portal_capture_authority_channel_tests PRIVATE
     QINDAQT_CAPTURE_TEST_DBUS="${QINDAQT_PORTAL_DBUS_DAEMON_EXECUTABLE}")
-target_link_libraries(qindaqt_portal_capture_authority_channel_tests PRIVATE qindaqt_portal_capture_authority Qt6::Test QindaQt::CompositorNames)
+target_link_libraries(qindaqt_portal_capture_authority_channel_tests PRIVATE qindaqt_portal_capture_authority Qt6::Test QindaQt::CompositorNames QindaQt::SessionLockState)
 qindaqt_enable_warnings(qindaqt_portal_capture_authority_channel_tests)
 add_test(NAME qindaqt.portal-capture-authority-channel COMMAND qindaqt_portal_capture_authority_channel_tests)
 set_tests_properties(qindaqt.portal-capture-authority-channel PROPERTIES TIMEOUT 45 RUN_SERIAL TRUE LABELS "portal;capture;private-bus;wire;hostile")

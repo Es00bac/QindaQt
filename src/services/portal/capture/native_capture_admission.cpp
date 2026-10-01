@@ -2,6 +2,7 @@
 #include "native_capture_admission.h"
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <QDBusMessage>
+#include <utility>
 #include <poll.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
@@ -28,7 +29,16 @@ NativeCaptureAdmission::NativeCaptureAdmission(QDBusConnection bus, QString owne
     connect(&m_lifetime, &QTimer::timeout, this, [this] { if (m_once && !admitted()) Q_EMIT lost(); });
     m_lifetime.start(); m_monitor.start();
 }
-NativeCaptureAdmission::~NativeCaptureAdmission() { m_monitor.stop(); if (m_pidfd >= 0) ::close(m_pidfd); }
+NativeCaptureAdmission::~NativeCaptureAdmission() {
+    // AGENT-GUARD: stop() publishes denial. During member destruction the
+    // owner's job storage may already be gone; only a live monitor may forward
+    // that transition to subscribers (docs/wiki/reference/portal-capture.md).
+    m_lifetime.stop();
+    m_once = false;
+    QObject::disconnect(&m_monitor, nullptr, this, nullptr);
+    m_monitor.stop();
+    if (m_pidfd >= 0) ::close(std::exchange(m_pidfd, -1));
+}
 bool NativeCaptureAdmission::identityLive(const QString &owner, quint64 pid) const {
     pollfd event{m_pidfd, POLLIN, 0};
     if (m_pidfd < 0 || poll(&event, 1, 0) != 0 || owner != m_owner || pid != m_pid || !m_pid) return false;

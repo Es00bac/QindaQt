@@ -193,7 +193,12 @@ private:
             QVERIFY(observed.contains(QByteArray("capture fd5 global ")+name+'\n'));
     }
     void success() { QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 0U); mapped(); QVERIFY(audit().contains("control CaptureReady")); }
-    pid_t helperPid() const { for (const auto &line : audit().split('\n')) if (line.contains("ordinary exact-peer mapped")) return static_cast<pid_t>(line.split(' ').value(0).toLongLong()); return -1; }
+    pid_t helperPid() const {
+        for (const auto &line : audit().split('\n')) {
+            if (line.contains("ordinary exact-peer mapped")) return static_cast<pid_t>(line.split(' ').value(0).toLongLong());
+        }
+        return -1;
+    }
     static bool containsFixturePixels(const QImage &image) { for (int y = 0; y < image.height(); y += 17) for (int x = 0; x < image.width(); x += 17) { const auto c = image.pixelColor(x, y); if ((c.red() > 180 && c.green() < 80) || (c.green() > 170 && c.red() < 80)) return true; } return false; }
     QDBusConnection bus = QDBusConnection::sessionBus(); QProcess frontend; Responses responses; ExportProcess pixels;
     std::unique_ptr<QDBusConnection> selected; QStringList requests;

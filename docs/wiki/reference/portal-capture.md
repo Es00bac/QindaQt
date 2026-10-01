@@ -60,7 +60,10 @@ publication but never opens an ambient display or launches a helper. The helper
 uses separate ordinary GUI/foreign-parent fd4 and tagged capture fd5; control fd3
 joins actual kernel credentials, current native bus owner and PIDFD. Authenticated
 read-only NativeLockStateMonitor receipts additionally gate consent, operation and
-publication. Unknown/locked authority denies. Empty parents are explicitly
+publication. Unknown/locked authority denies. A live monitor forwards denial to
+its owner; admission destruction stops timers and disconnects that forwarding
+before stopping the monitor, because the owner’s job storage may already be
+unwinding. Teardown cannot emit a new owner-facing loss callback. Empty parents are explicitly
 unparented; nonempty parents must import before Allow and their loss withdraws
 requests/streams. The general supervisor-owned backend and Session1 remain intact.
 

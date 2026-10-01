@@ -3,6 +3,9 @@
 #include <qindaqt/services/compositor_capture/kwin_capture_port.h>
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <QDBusVirtualObject>
+#include <QDBusMessage>
+#include <QImage>
+#include <QTimer>
 #include <QDBusUnixFileDescriptor>
 #include <QThread>
 #include <QtTest>
@@ -30,7 +33,8 @@ public:
         else if (count < 0 && (errno == EAGAIN || errno == EINTR)) return;
         if (bytes.isEmpty() || count < 0) {
             timer.stop(); ::close(fd); fd = -1;
-            if (!replied) connection.send(response); deleteLater();
+            if (!replied) connection.send(response);
+            deleteLater();
         }
     }
 private:

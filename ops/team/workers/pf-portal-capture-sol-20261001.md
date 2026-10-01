@@ -5,14 +5,18 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — rebuilding immutable6df1606a capture/Screenshot targets after the owned QList include repair
+- Status: working — repairing strict formatting and capture admission teardown lifetime with a focused regression
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: qinda-only compiler granted for bounded17-target-j8-l24 rebuild; no CTest/private/native runtime grant
+- Resources: compiler/private-runtime released; source-only repairs before a new exact grant
 
 ## Updates
+
+- 2026-10-01T18:56:05Z — Owned teardown repair disconnects monitor forwarding and stops timer before monitor.stop; live denial remains unchanged. Existing authority-channel target now compiles the real admission collaborator and public SessionLockState dependency, with two actual private-bus nonce receipt rows for admitted teardown and live Locked denial followed by teardown. Regression reproduces jobs-before-admission destruction order without accessing destroyed storage. Strict formatting/explicit include audit completed on new paths; docs486/strict MkDocs, portal boundary, focused capture17/test14 shape with zero skips/warnings and diff pass. Tests remain uncompiled/unrun, metadata unchanged; freezing descendant for same bounded17-target compiler request, slots unheld.
+
+- 2026-10-01T18:51:52Z — Exact6df1606a second bounded build exit1 in14s; raw build/6df1606a-build.log and status retained, final96/207 dynamic progress not an action total. Minimum RAM19251708kB, no memory intervention. First new failure is owned nativeOwner same-line unbraced return/declaration under strict misleading-indentation; QList repair compiled. Compiler released to root before source repair. Separately found NativeCaptureAdmission destructor stop emits monitor denial into an owner whose job storage can already be destroyed; root requires suppression only during teardown plus a real private-bus regression proving ordinary live denial still propagates. No CTests/native/runtime qualifications or routing change.
 
 - 2026-10-01T18:42:38Z — Root granted qinda-only remaining17 targets at frozen6df1606a one-line QList repair, same mixed development headers and per-command-j8-l24; global MAKEOPTS unchanged. Clean qinda source/config rechecked, actual MemAvailable21688144kB (~20.68GiB), no live ninja/cc1/cc1plus at preflight. Distinct new raw6df log/status with same owned-group <3GiB+30s-stall guard; previous433 failure retained. Record-only child does not move compiler source off6df. No CTests/private native run, first failure/completion releases slot.
 
