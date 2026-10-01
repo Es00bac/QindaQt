@@ -2,6 +2,7 @@
 #include "support/profile_policy_bus.h"
 #include "support/fake_ppd_service.h"
 #include "support/fake_upower_service.h"
+#include "support/profile_settings_source.h"
 #include <qindaqt/services/power_client/power_client.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
 #include <qindaqt/services/settings_client/settings_client.h>
@@ -80,11 +81,13 @@ struct Runtime {
         environment.insert(QStringLiteral("XDG_DATA_HOME"), bus.root.path());
         environment.insert(QStringLiteral("XDG_RUNTIME_DIR"), bus.root.path());
         process.setProcessEnvironment(environment);
-        process.start(QStringLiteral(QINDAQT_POWER_SERVICE_EXECUTABLE),
-            {QStringLiteral("--upstream=production"),
-             QStringLiteral("--backlight-root=") + bus.root.filePath(QStringLiteral("backlight")),
-             exclusive ? QStringLiteral("--profile-policy=native-exclusive") : QStringLiteral("--profile-policy=off")});
+        QStringList arguments{QStringLiteral("--upstream=production"),
+             QStringLiteral("--backlight-root=") + bus.root.filePath(QStringLiteral("backlight"))};
+        if (exclusive) arguments.append(QStringLiteral("--profile-policy=native-exclusive"));
+        process.start(QStringLiteral(QINDAQT_POWER_SERVICE_EXECUTABLE), arguments);
         if (!process.waitForStarted()) return false;
+        qInfo().noquote() << "source-profile-service pid" << process.processId()
+                         << "root" << bus.root.path();
         power->start();
         return true;
     }
@@ -110,6 +113,7 @@ private Q_SLOTS:
     void releaseTimeoutDoesNotReplay();
     void balancedPreferenceReleasesOnlyOwnedHold();
     void manualProfileOverrideWaitsForNewPolicyInput();
+    void regressedSettingsRevisionCannotSelectStalePreferences();
 };
 #define SET_PROFILE(row, settingKey, settingValue) \
     QTRY_VERIFY(row.settings->canSetUserValue(QStringLiteral(settingKey))); \
@@ -314,6 +318,25 @@ void SourceProfileRuntimeTests::manualProfileOverrideWaitsForNewPolicyInput()
     row.source(true);
     QTRY_COMPARE(row.ppd->holdRequests.size(), 2);
     QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("power-saver"));
+}
+void SourceProfileRuntimeTests::regressedSettingsRevisionCannotSelectStalePreferences()
+{
+    Runtime row; QVERIFY(row.start());
+    QTRY_VERIFY(row.power->hasSnapshot());
+    row.service->stop();
+    auto replacementBus = row.bus.open();
+    ProfileSettingsSource replacement(replacementBus);
+    QVERIFY(replacement.start());
+    QTRY_COMPARE(row.ppd->holdRequests.size(), 1);
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
+    replacement.revision = 9;
+    replacement.values[QStringLiteral("power.profile.ac")] = QStringLiteral("power-saver");
+    replacement.invalidate(11);
+    QTRY_COMPARE(row.ppd->releaseRequests.size(), 1);
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 1);
+    row.source(true); QTest::qWait(150);
+    QCOMPARE(row.ppd->holdRequests.size(), 1);
+    QVERIFY(row.ppd->setProfileRequests.isEmpty());
 }
 QTEST_GUILESS_MAIN(SourceProfileRuntimeTests)
 #include "tst_source_profile_runtime.moc"

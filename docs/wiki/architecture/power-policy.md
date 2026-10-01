@@ -127,7 +127,8 @@ confirmed hold; failure withdraws it. Global Power1 epoch changes discard retain
 `qindaqt.power-source-profile-runtime` executes the actual resident subprocess
 against private UPower/PPD and resident Settings1, checking source transitions,
 leave-alone cleanup, equivalent-fact stability, external holds, dormant default,
-legacy authority arrival/loss, Settings owner loss, unsupported/provider loss,
+legacy authority arrival/loss, Settings owner loss and same-owner revision
+regression, unsupported/provider loss,
 hold limit admission changes, known rejection, acquisition/release timeout
 no-replay, balanced deferral and actual targeted manual ProfileReleased. The daemon
 has no host include or activation directory. These are private fixtures, not
