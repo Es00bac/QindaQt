@@ -5,7 +5,7 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — checking public protected capture wire and preparing separated capture-only broker after immutable permission denial
+- Status: working — completing exact public-wire consumer freeze before separated protected capture broker implementation
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
@@ -13,6 +13,8 @@
 - Resources: source-only; no compiler/private runtime slots granted or held
 
 ## Updates
+
+- 2026-10-01T16:37:00Z — Exact fork wire91e1c20272b891add2455c648f49e097c9d8baaa and delta from3fbc reviewed; consumer ACCEPT sent to root/fork owner. Bilateral packet credentials/live PIDFD/current compositor owner and explicit one-shot Screenshot hidden retention <=300000ms/publish-before-retire PickColor resolve compatibility concern. Fixed paths/fd3/4–7/SCM_RIGHTS order/IDs/scopes/deadlines compatible. Await root joint freeze before installed-header dependent source. New qinda isolated worktree clean at own pushed fdf85089; no compiler/private runtime held. General ADR0318 service and KDE routing remain unchanged.
 
 - 2026-10-01T16:31:48Z — Root resumed protected native capture outcome from preserved0c156360; fetched hub and created NEW isolated branch/worktree without touching predecessor. Exact fork public wire d8c55676 then framing descendant3fbc1098 read; concrete path/FD/consumer compatibility feedback sent FIRST to root/fork owner. Fixed compositor launches, fd3/4–7 and JobStarted pipe ownership fit separated capture-only broker. No unfrozen wire dependency or source implementation begun; requested explicit hidden idle Screenshot helper retention while broker owns private URI up to5min to avoid helper-HUP publication race. General ADR0318 policy untouched, legacy Screenshot timeout preserved; protected30s/long-lived ScreenCast and test-only control propagation planned. Source-only, metadata KDE unchanged, no resource held.
 
