@@ -7,7 +7,7 @@
 #include <optional>
 namespace QindaQt::Services::Portal {
 enum class CaptureKind { Screenshot, Color, Stream };
-struct CaptureRequest { CaptureKind kind; QString app, parent, session, caller; bool interactive = false, modal = true; };
+struct CaptureRequest { CaptureKind kind = CaptureKind::Screenshot; QString app, parent, session, caller; bool interactive = false, modal = true; };
 struct CaptureColor { double red = 0, green = 0, blue = 0; };
 struct CaptureCoordinate { qint32 first = 0, second = 0; };
 struct CaptureStream { quint32 node = 0; QVariantMap properties; };
@@ -18,6 +18,9 @@ QDBusArgument &operator<<(QDBusArgument &, const CaptureCoordinate &);
 const QDBusArgument &operator>>(const QDBusArgument &, CaptureCoordinate &);
 QDBusArgument &operator<<(QDBusArgument &, const CaptureStream &);
 const QDBusArgument &operator>>(const QDBusArgument &, CaptureStream &);
+// Value-only policy: no display, files, authorization or persistence. Refusals
+// return false/empty optional; wire registration precedes adaptor export on the
+// resident thread. Actual pixels/nodes and actor lifetimes belong to their ports.
 void registerCaptureWireTypes();
 std::optional<CaptureRequest> screenshotRequest(const QString &app, const QString &parent,
     const QVariantMap &options, bool color);

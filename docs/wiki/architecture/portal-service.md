@@ -210,3 +210,5 @@ The fail-closed fallback routing policy is recorded in
 [ADR-0059](../adr/0059-route-unimplemented-portal-families-explicitly.md).
 
 The secret-bearing resident disables cores/dumpability before requests. Its activation lifetime fixture retains PIDFDs for private-daemon observed owners, so exit/restart verification and cleanup cannot target a recycled PID and do not require readable `/proc/PID/exe`. No production dumpability exception is introduced for tests.
+
+The [native capture candidate](../reference/portal-capture.md) composes separate Screenshot/ScreenCast policy, request/session lifetime and native helper ports. Metadata keeps both families on KDE pending actual frontend/private PipeWire/privacy qualification; the initial monitor-only slice does not close PF19 capability/restore delivery. The shared public pixel transport is owned by [CompositorCapture](compositor-capture.md), with no Screenshot app-private includes.
