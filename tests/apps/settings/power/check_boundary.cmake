@@ -24,8 +24,13 @@ set(allowed_public_include_prefixes
     "qindaqt/services/power_protocol/"
     "qindaqt/services/brightness_model/"
     "qindaqt/services/session_actions/"
-    # The idle display-off section consumes the public Settings1 client and
-    # the desktop-controls idle-preference seam; no service internals.
+    # Native lock preferences stay a public pure Settings1 provider. Idle
+    # selection uses only the pure per-source value header; the DPMS port and
+    # production factory never cross into the Settings route.
+    "qindaqt/services/lock_preferences/"
+    "qindaqt/session/idle_policy/source_preferences.h"
+    # The retained compatibility idle model uses the public desktop-controls
+    # idle-preference seam; no service internals.
     "qindaqt/services/settings_client/"
     "qindaqt/session/desktop_controls/"
     # The composition's lid/power-button port forwards to the session's
