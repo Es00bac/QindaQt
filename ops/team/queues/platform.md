@@ -11,8 +11,8 @@ Historical active claims below are not current liveness evidence.
 | Source-dependent native display idle | `891092f6`, independently accepted with 22/22; recovery branch merged | Combined exact-fork consumer/runtime gates | Runtime paths frozen until combined qualification |
 | Native portal foundation/routing | `9c3d0489`, independently accepted with 21/21; recovery branch merged | Combined gates, then separately scoped later portal families | No installed routing switch; Power1 scopes remain zero |
 | Fork KNightTime discovery retirement | `690c0112`, independent ACCEPT; production build and collision-free stage; consumer pin updated | Combined exact-fork plugin ABI and native scenarios | Authoritative fork hub/checkout updated; no installed replacement |
-| Native shell notification privacy | `1e2ab3ef`, repairs rejected cached-admission gap; 9/9 scoped tests | pf-privacy-review-sol exact rereview, including popup-only denial mapping | Reviewer owns compiler/private fixture slots; root isolated implementer repair |
-| Native lock-before-sleep/logind lifecycle | Base `53bf486b`, pf-power-sol isolated implementation | Private logind/receipt failure-mode tests, then different-worker exact review | NativeSleep/runtime/SessionActions owned paths; compiler queued after privacy |
+| Native shell notification privacy | `a8b20b06`, independent ACCEPT; 9/9 and unchanged blocker reproduction; recovery branch merged | Combined native mapping gate; production/plugin build paused after ENOSPC | Storage recovered21GiB; power repair short gate, then root resumes compiler |
+| Native lock-before-sleep/logind lifecycle | Base `53bf486b`, pf-power-sol isolated implementation/expanded failure repair | Exact repaired private logind/receipt gates, then different-worker review | Power owns next short compiler/private slot; scopes zero unchanged |
 | Supplied painted icon family | Overlay `54eb7964`, same signed binary installed on both hosts; 7172 exact icons | Delivered; hand-rendered sibling independently in progress | Data-only Portage installation; existing preference preserved |
 
 

@@ -50,9 +50,10 @@ closure cannot qualify until consolidated recipes exist. Native display-idle sou
 on the recovery integration branch; their independent scoped runs pass 22/22 and
 21/21. Fork `690c0112` removes the obsolete KNightTime discovery and is independently
 accepted, with a production build and collision-free private stage. The consumer
-pins that exact tree. Shell privacy candidate `1e2ab3ef` repairs a review-discovered
-cached-admission gap and passes nine focused gates; independent rereview is active.
-Combined consumer/plugin and native gates remain before main integration. Native
+pins that exact tree. Shell privacy `a8b20b06` repairs review-discovered cached
+admission and popup retirement gaps; independent rereview passes nine focused
+gates and the unchanged failure reproduction, and its source is merged on the
+recovery branch. Combined consumer/plugin and native gates remain before main integration. Native
 logind sleep coordination is separately assigned. No milestone or installed
 Plasma-removal completion advances from candidate activity.
 

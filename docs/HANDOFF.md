@@ -17,10 +17,13 @@ stock-package collisions, and integrated into its hub and clean checkout. The
 consumer manifest now pins its exact tree `b507de4f9b0deba11eb9ecee1980f0d593e4a4df`.
 
 Shell privacy source `5487e108` was rejected because queued owner-loss handling
-left the notification consumer's cached admission true. Repaired candidate
-`1e2ab3ef600a800a49e94280107dd560ddcfd879` wires read-through native admission
-into the policy, retained models and operations; its production shell builds and
-nine focused tests pass. Independent rereview is active. Combined exact-fork ABI
+left the notification consumer's cached admission true. Descendant `1e2ab3ef`
+closed that read boundary but lost the popup-only retirement signal. Exact
+`a8b20b06cd944ca3e8d6f66c89306f3bd0222c10` is independently accepted: all immediate
+policy/model/operation reads deny, queued denial retires popup-only windows through
+both count and privacy signals, and nine independent focused tests plus the
+unchanged failure reproduction pass. Its source is merged on the recovery branch.
+Actual native window mapping remains in the combined gate. Combined exact-fork ABI
 and native gates remain before recovery-branch integration to main. Native
 logind sleep coordination is an isolated subsequent candidate, not delivered.
 
