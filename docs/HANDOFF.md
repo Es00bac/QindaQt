@@ -4,7 +4,10 @@ Native configured sleep candidate `50fb9c11` and exact independent ACCEPT
 `1d397416` are preserved on the recovery integration branch at `8b471794`.
 The source audit and genuine independent replay qualify eight private rows and
 143 Qt checks; the final reviewer inspected that replay and did not claim another.
-The integrated affected build and unchanged eight-row namespace gate remain next.
+On integrated source `6d449d98`, the affected seven-target strict build passes
+and the unchanged eight-row namespace gate passes in 60.64 seconds, with
+143 Qt checks and no failures or skips. The actual namespace and process-group
+PIDs are gone, the source remains exact, and installed session.conf hashes match.
 Initial namespace failures and two exact task-generated core artifacts remain
 disclosed in the immutable handoff, with opaque copies preserved and only the
 verified originals removed. No host sleep or PF2 completion follows.

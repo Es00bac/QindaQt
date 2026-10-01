@@ -77,7 +77,8 @@ integrated source `addccb7a`. Native popup `6181566a` is independently accepted 
 the integrated strict helper build and focused native gate pass (1/1 CTest,
 four Qt passes). Native sleep-mode candidate `50fb9c11` is independently accepted with eight private
 rows and 143 Qt checks, and merged with exact review at `8b471794`; its integrated
-affected rebuild and eight-row rerun remain next. Hardware and consolidated
+affected seven-target rebuild and eight-row rerun pass on `6d449d98`, with
+143 Qt checks and no failures or skips. Hardware and consolidated
 installed qualification remain open.
 No milestone or installed
 Plasma-removal completion advances from candidate activity.
