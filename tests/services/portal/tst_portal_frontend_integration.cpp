@@ -2,6 +2,7 @@
 #include "qindaqt/services/portal/appearance_policy.h"
 #include "qindaqt/services/portal/resident_portal_service.h"
 #include "portal_frontend_test_support.h"
+#include "portal_chooser_routing_probe.h"
 
 #include <QCoreApplication>
 #include <QDBusAbstractAdaptor>
@@ -164,20 +165,11 @@ bool runSelection(QString *error)
         return false;
     }
 
-    QDBusMessage chooser = QDBusMessage::createMethodCall(
-        QString::fromLatin1(FrontendService), QString::fromLatin1(kPortalObjectPath),
-        QStringLiteral("org.freedesktop.portal.FileChooser"),
-        QStringLiteral("OpenFile"));
-    chooser << QString{} << QStringLiteral("QindaQt fallback proof")
-            << QVariantMap{{QStringLiteral("handle_token"),
-                            QStringLiteral("qindaqt_fallback_proof")}};
-    QDBusPendingCall pending = bus.asyncCall(chooser, 5'000);
-    if (!waitUntil([&] { return fallback.calls() == 1; }, 5'000)
-        || fallback.lastTitle() != QStringLiteral("QindaQt fallback proof")) {
-        *error = QStringLiteral("FileChooser did not resolve to the declared KDE fallback");
+    if (!nativeChooserRefusesWithoutAttachment(bus, QStringLiteral("qindaqt_native_closed_proof"), error)
+        || fallback.calls() != 0) {
+        *error = QStringLiteral("native FileChooser route/fallback withdrawal failed: %1").arg(*error);
         return false;
     }
-    Q_UNUSED(pending)
 
     QDBusMessage globalShortcuts = QDBusMessage::createMethodCall(
         QString::fromLatin1(FrontendService), QString::fromLatin1(kPortalObjectPath),

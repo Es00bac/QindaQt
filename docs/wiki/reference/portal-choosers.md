@@ -1,7 +1,8 @@
 # Native portal chooser contracts
 
-This is a source-candidate backend. Product routing remains with compatibility
-providers until the actual private frontend/native-input qualification passes.
+The source selector routes FileChooser and AppChooser to QindaQt. All advertised
+methods passed actual private frontend/native-input qualification; installed
+desktop and sandbox delivery remain separate manager gates.
 The process choice is in [ADR-0322](../adr/0322-native-portal-choosers.md), shared
 authority in [Native portal foundation](../architecture/portal-foundation.md),
 and selection in [Portal service](../architecture/portal-service.md).
@@ -59,10 +60,10 @@ retaining selection only while offered. Success contains exactly `choice=s`.
 Content-type, URI, basename and previous choice are bounded hints. The backend
 does not launch or invent a version2 activation token.
 
-Bounds:128 selected files/apps/save names;32 filters with32 rules each and32KiB
-aggregate text;16 choices with32 options and16KiB text;4096 native path bytes;
-512 title/label units. Helper request/update frames are at most128KiB and output
-at most2MiB, with128 updates and one live chooser child. Shared RequestRegistry
+Bounds: 128 selected files/apps/save names; 32 filters with 32 rules each and 32KiB
+aggregate text; 16 choices with 32 options and 16KiB text; 4096 native path bytes;
+512 title/label units. Helper request/update frames are at most 128KiB and output
+at most 2MiB, with 128 updates and one live chooser child. Shared RequestRegistry
 budgets remain unchanged. Missing/busy helper returns failure, never empty success.
 
 ## Lifetime and gates
@@ -81,4 +82,7 @@ sources with a separately linked test-only widget input driver. It uses only
 temporary private files/app entries. Its matrix includes all file methods,
 overwrite cancellation, filters/choices, actual OpenURI candidates and live
 updates, Close, caller/frontend/supervisor loss and foreign-parent validity/loss.
-Until executed, source presence does not qualify routing or installed completion.
+The same gate passed nine QtTest cases without failures or skips. Source and
+disposable staged routing proofs also require native response 2 with a zero KDE
+chooser counter when no session was selected. These gates do not qualify an
+installed physical desktop or a Flatpak document-permission journey.

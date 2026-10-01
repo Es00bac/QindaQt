@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
+#include <utility>
 using namespace QindaQt::Services::Portal;
 class ExportProcess final : public QProcess {
 public:
@@ -72,6 +73,14 @@ private Q_SLOTS:
         QVERIFY(bus.connect(QStringLiteral("org.freedesktop.portal.Desktop"), {}, QStringLiteral("org.freedesktop.portal.Request"), QStringLiteral("Response"), &responses, SLOT(receive(quint32,QVariantMap))));
     }
     void init() { responses.count = 0; responses.response = 99; responses.results.clear(); QFile(qEnvironmentVariable("QINDAQT_CHOOSER_TEST_AUDIT")).remove(); setInput({}); }
+    void cleanup() {
+        if (QTest::currentTestFailed()) qInfo().noquote() << QString::fromUtf8(frontend.readAllStandardError().right(32768));
+        for (const auto &path : std::as_const(ownedRequests)) {
+            auto close = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.portal.Desktop"), path, QStringLiteral("org.freedesktop.portal.Request"), QStringLiteral("Close"));
+            QDBusPendingCallWatcher closing(bus.asyncCall(close, 1000)); QTRY_VERIFY(closing.isFinished());
+        }
+        ownedRequests.clear();
+    }
     void openSingleMultipleAndDirectory() {
         setInput({{"name", "literal %$` space.txt"}}); file("OpenFile", {}); success();
         QCOMPARE(uris(), QStringList{QUrl::fromLocalFile(fixture->filePath(QStringLiteral("literal %$` space.txt"))).toString(QUrl::FullyEncoded)});
@@ -176,11 +185,14 @@ private:
         auto call = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.portal.Desktop"), QStringLiteral("/org/freedesktop/portal/desktop"), QString::fromLatin1(interface), QString::fromLatin1(member)); call.setArguments(args);
         QDBusPendingCallWatcher pending(caller.asyncCall(call, 20000)); QElapsedTimer timer; timer.start();
         while (!pending.isFinished() && timer.elapsed() < 5000) { QCoreApplication::processEvents(); QTest::qWait(5); }
-        const QDBusPendingReply<QDBusObjectPath> result = pending; if (result.isError()) { qWarning().noquote() << result.error().message(); return {}; } return result.value().path();
+        const QDBusPendingReply<QDBusObjectPath> result = pending; if (result.isError()) { qWarning().noquote() << result.error().message(); return {}; }
+        if (caller.name() == bus.name()) ownedRequests.append(result.value().path());
+        return result.value().path();
     }
     QDBusConnection bus = QDBusConnection::sessionBus(); QProcess frontend; Appearance appearance; Responses responses;
     std::unique_ptr<QDBusConnection> backend, selected; std::unique_ptr<ResidentPortalService> resident;
     std::unique_ptr<PortalFoundationComposition> composition; std::unique_ptr<QTemporaryDir> fixture;
+    QStringList ownedRequests;
 };
 QTEST_GUILESS_MAIN(NativeChoosersTest)
 #include "tst_native_choosers.moc"
