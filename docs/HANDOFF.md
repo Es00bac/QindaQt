@@ -73,7 +73,8 @@ The remaining existing `compositor.kwin-plugin-dependency-contract` configuratio
 gate exposed an unconditional native frontend fixture reference while the
 production shell was disabled. Isolated repair `37347fe4` passes the unchanged
 four-branch configure gate and full-production target/test-presence checks and
-is awaiting exact independent acceptance. Its staged runner, positive/poison
+is independently accepted and merged with review at `61e07eb8`. Its integrated
+configuration rerun follows the serialized native popup gate. Its staged runner, positive/poison
 assertions and production behavior are unchanged. Actual production native
 notification-window mapping and consolidated Portage delivery remain open.
 
