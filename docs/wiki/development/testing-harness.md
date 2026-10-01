@@ -4547,3 +4547,17 @@ PickColor, Close and the remaining native privacy matrix remain unqualified.
 All earlier failure logs/commands/hashes and this actual PNG remain preserved
 in ignored qinda evidence directories. An incorrect diagnostic case spelling
 was rejected before any compositor launch and is retained separately.
+
+
+Subsequent driver-only scene observations on exact447 show the synthetic pixel
+window initially eligible, visible and backed by a real1100x820 buffer, then
+closed before the capture helper maps. An unchanged-producer stderr probe
+identifies Qt host-portal registration failing with an empty desktop app ID;
+`QT_FATAL_WARNINGS=1` therefore terminates the producer after its first completed
+frame. The fixture now supplies `org.test.CapturePixels` as its QApplication
+desktop identity and a matching real task-only desktop entry. It retains fatal
+warnings, producer stderr/lifecycle evidence, and liveness checks alongside the
+unchanged actual pixel, continuing-frame and privacy assertions. This bounded
+fixture repair still requires executable native verification; the earlier blank
+PNG and two-frame failures remain retained and do not establish a production
+scene-rendering defect. No installed routing or full PF19 completion is claimed.

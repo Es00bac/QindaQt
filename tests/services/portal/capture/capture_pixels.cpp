@@ -21,7 +21,12 @@ private: QTimer timer; bool alternate = false; int paints = 0;
 };
 int main(int argc, char **argv) {
     if (qEnvironmentVariable("WAYLAND_SOCKET").isEmpty() || !qEnvironmentVariable("WAYLAND_DISPLAY").isEmpty()) return 2;
-    QApplication app(argc, argv); Pixels pixels; pixels.showFullScreen();
+    QApplication app(argc, argv);
+    // AGENT-CONTRACT: run_native_capture.py supplies this real task-only desktop
+    // entry. Qt registers with the host portal when its frontend appears; an
+    // empty identity produces a fatal warning after initial frame readiness.
+    QGuiApplication::setDesktopFileName(QStringLiteral("org.test.CapturePixels"));
+    Pixels pixels; pixels.showFullScreen();
     // Callback data survives Qt display teardown after a bounded early exit.
     static std::atomic_bool frameCompleted = false;
     QTimer mapped; mapped.setInterval(20); QObject::connect(&mapped, &QTimer::timeout, &app, [&] {
