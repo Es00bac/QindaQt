@@ -10,6 +10,10 @@
 
 ## Updates
 
+- 2026-10-01T01:13:41Z — Combined acceptance passes 9/9 CTests and 25/25 Python wrapper tests. After tightening the physical/cleartext identity contract, all four media CTests pass again, including both reviewed device replacements, controlled cleartext Lock/removal and four notification races. Strict MkDocs and the 471-document link validator pass; focused source shape passes. Requesting exact repaired-candidate review next.
+
+- 2026-10-01T01:09:00Z — Independent review rejected 0f78850 for two late device-operation continuations and two notification transport races. Repair carries drive/media identity through removal, revokes identity changes immediately, checks Mount replies before rollback, preserves shared replacement notification IDs and opens the media window on notification-owner loss. Adding the exact private-bus regressions before requesting rereview; initial Portage component build passed without installing the rejected candidate.
+
 - 2026-09-30T16:35:00Z — Claimed the user-requested removable-media outcome from fetched origin/main in an isolated worktree. Preserve the unrelated showcase checkout and its untracked Obsidian directory. Acceptance: insertion and owner-loss tests, actual QML actions, non-destructive UDisks inventory, session lifecycle, strict docs, and independent exact-commit review.
 
 - 2026-10-01T00:59:00Z — Backend, graphical controls and session composition are committed; the UI worker reports strict focused build and all three media tests green. Mounted the existing external NTFS data volume read-only through UDisks after writable mounting was refused for NTFS errors. Preparing independent exact-commit review, combined session gates and a Portage component package.

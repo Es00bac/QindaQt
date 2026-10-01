@@ -13,8 +13,8 @@ using Interfaces = QMap<QString, QVariantMap>;
 using ManagedObjects = QMap<QDBusObjectPath, Interfaces>;
 
 struct Volume final {
-    QString token, path, drive, device, label, kind, identity, preferenceKey;
-    QString mountPath;
+    QString token, path, drive, device, label, kind, identity, driveIdentity, preferenceKey;
+    QString mountPath, cryptoBackingDevice;
     quint64 size = 0;
     bool mountable = false;
     bool readOnly = false;
@@ -39,6 +39,7 @@ struct Request final {
 [[nodiscard]] QVector<Volume> projectVolumes(const ManagedObjects &objects);
 [[nodiscard]] QVariantMap volumeMap(const Volume &volume, const QString &preference);
 [[nodiscard]] QString objectPath(const QVariant &value);
+[[nodiscard]] QString physicalMediaIdentity(const QString &path, const QVariantMap &drive);
 void registerMediaDBusTypes();
 
 } // namespace QindaQt::Apps::RemovableMedia

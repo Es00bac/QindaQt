@@ -50,5 +50,6 @@ private:
     quint64 m_epoch = 0, m_attachment = 0, m_inventorySerial = 0;
     quint64 m_mutationSerial = 0;
     bool m_available = false;
+    bool m_unlockedRemovalTransition = false;
 };
 } // namespace QindaQt::Apps::RemovableMedia

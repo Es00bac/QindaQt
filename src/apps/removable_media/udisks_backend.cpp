@@ -161,11 +161,21 @@ void UDisksBackend::interfacesRemoved(const QDBusObjectPath &path, const QString
     m_debounce.start();
 }
 void UDisksBackend::propertiesChanged(const QString &interface, const QVariantMap &properties,
-                                     const QStringList &, const QDBusMessage &message)
+                                     const QStringList &invalidated, const QDBusMessage &message)
 {
     if (message.service() != m_owner || !interface.startsWith(Service)) return;
-    if (properties.contains(QStringLiteral("MediaAvailable"))
-        && !properties.value(QStringLiteral("MediaAvailable")).toBool()) {
+    const QStringList identityFields = interface == Service + QStringLiteral(".Drive")
+        ? QStringList{QStringLiteral("TimeDetected"), QStringLiteral("TimeMediaDetected"), QStringLiteral("Id")}
+        : interface == Service + QStringLiteral(".Block")
+        ? QStringList{QStringLiteral("IdUUID"), QStringLiteral("Size"), QStringLiteral("Drive"), QStringLiteral("CryptoBackingDevice")}
+        : QStringList{};
+    bool identityChanged = false;
+    for (const auto &field : identityFields)
+        if (properties.contains(field) || invalidated.contains(field)) identityChanged = true;
+    if (identityChanged || (properties.contains(QStringLiteral("MediaAvailable"))
+        && !properties.value(QStringLiteral("MediaAvailable")).toBool())) {
+        // Revoke identity immediately. Debouncing discovery is harmless;
+        // debouncing revocation allows a late reply to act on a reused path.
         interfacesRemoved(QDBusObjectPath(message.path()), {});
     } else m_debounce.start();
 }

@@ -15,6 +15,9 @@ once for the current attachment. The notification offers **Mount and open**,
 appropriate. Mounted media offers **Open** and **Safely remove** or **Eject**.
 The media window remains available from the application launcher after a
 notification is dismissed. If notifications are unavailable, it opens directly.
+If the notification service changes while a prompt is pending or visible, the
+media window opens for the still-connected attachment. Updating a notification
+preserves its current actions; withdrawing media closes even a late notification.
 It follows the current QindaQt appearance and uses keyboard-accessible controls.
 
 The window offers mount/open, read-only mount, unmount, safe removal, an
@@ -69,6 +72,9 @@ compiled QML. UDisks remains the privileged device authority. The public
 `org.qindaqt.RemovableMedia1` session endpoint exports only `Activate`, not mount
 or format methods. Attachment tokens are revoked on unplug and owner change;
 delayed results cannot open or act on replacement media.
+Every mount follow-up rechecks the attachment before read-only verification or
+rollback. Safe-removal steps retain the physical drive/media generation, even
+when locking a decrypted volume intentionally removes its cleartext child.
 
 Private desktop harnesses pass `--no-removable-media` to the supervisor.
 `SessionProcessOptions` leaves the helper unset unless production main configures
