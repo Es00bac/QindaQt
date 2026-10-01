@@ -4478,7 +4478,7 @@ real1.20.4 frontend, ordinary Qt dialogs and test-only actual pointer/keyboard
 input over unchanged helper sources. Private policy-only WirePlumber excludes
 hardware monitors; private PipeWire has no device nodes. Custom D-Bus has no
 host activation directories and the system bus address is explicitly nonexistent.
-EGL software compositor rendering is required because the qualified fork cannot
+EGL compositor rendering is required because the qualified fork cannot
 create streams from QPainter composition. The direct fork argv omits its opt-in Xwayland and every session/app/input-method argument; launcher-only flags are not invented. Private process groups plus postexit audits cover broker/producer/controller descendants. Three fresh private compositor groups
 isolate native Locked and actual compositor-owner-loss retirement without any unlock/PAM seam. The test controller remains GUI-free; a separate admitted ordinary Qt child supplies changing pixels, so compositor loss cannot kill the controller before it verifies withdrawal. The returned remote
 FD is consumed directly; policy mocks and node integers alone do not prove frames.
@@ -4504,3 +4504,21 @@ LIBGL_ALWAYS_SOFTWARE=1, MESA_LOADER_DRIVER_OVERRIDE=swrast, GALLIUM_DRIVER=llvm
 no inherited legacy plugin prefix or LD_LIBRARY_PATH substitutes the selected fork.
 Metadata retains KDE Screenshot/ScreenCast routing until actual family gates pass.
 Full window/multiple/cursor/revocable-restore delivery remains a PF19 successor.
+
+The non-installable runner accepts `--renderer llvmpipe|render-node`, with
+`llvmpipe` as the unchanged default. Explicit `render-node` mode verifies the
+sole AMD1002:731f renderD128 character device, read-only sysfs and absent card/input/
+sound nodes, clears swrast/llvmpipe overrides, and sets LIBGL_ALWAYS_SOFTWARE=0.
+The caller authenticates the private compositor PID and queries its public
+`supportInformation`; actual OpenGL vendor/renderer lines are retained. Software
+requires reported llvmpipe; render-node requires AMD/Radeon/radeonsi and rejects
+llvmpipe. Both modes keep every real pixel/frame/privacy assertion.
+
+The retained exact447 software probes on scope-correct consumer97c63 return an
+actual1100x820 fully transparent black Screenshot PNG and a real ScreenCast node/
+remote FD without frames. VirtualEglLayer allocates through EglSwapchain and the
+GBM allocator, whose software allocation requires DRM_IOCTL_MODE_CREATE_DUMB;
+render-only isolation denies that operation and the actual layer fails repeatedly.
+These failures establish rendering limits, and do not qualify screenshots or
+streams. Hardware render-node allocation uses GBM dma-bufs; explicit native
+qualification remains separate, without a primary-card/host-display fallback.
