@@ -5,14 +5,18 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — approved exact e78bf9f4 build passed; preparing protected-admission negative gates under separate runtime coordination
+- Status: working — repairing distinct real caller/protected resident fixture and primary private PipeWire client config; no resources held
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler released after approved eleven-target build pass; no private runtime used/granted; chooser history preserved
+- Resources: compiler and bounded private runtime released; no resource reserved; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T14:40:43Z — Root directed bounded owned fixture repair before another truthful probe/handoff. Source now has a distinct ordinary caller and PR0 child hosting unchanged public resident/composition; capture ordinary FDs originate in protected backend PID. Backend parent-stdin lifetime exits through RAII, not a fake result bridge. Primary installed PipeWire1.6.8 client.conf copied to private config alongside minimal daemon config; no hardware sources. Earlier two short runs remain setup failures before methods, with independent actual protected proc/Wayland lookup denial. Freezing repaired source; resources remain unheld pending grant.
+
+- 2026-10-01T14:31:25Z — Bounded e78bf9f4 native negative diagnostics complete and private slot released. Task-owned PR0 child exe readlink denied errno13, normal child exit/group absent. First two attempts exit1 before Qt because diagnostic deep TMPDIR exceeded108-byte PipeWire Unix path; retained. Short task-owned path reruns each exit1 in init: combined protected resident/caller cannot register primary frontend app ID because proc root inaccessible. Each Qt total1pass/1fail/0skip; no Screenshot/Start Response observed, no CTest execution/pass claimed. Private fork logs actual protected Wayland peer identification denied; missing private client.conf also prevents compositor PW context. No task core files observed in scanned retained directories; RLIMIT0 and no observed crash do not justify universal host-mutation claims. Source still clean built e78; records/docs child only. All resources released, full PF19/routing unchanged. Concrete help: separate real caller from protected backend and provision primary private client.conf, then requalify unchanged native gates under separately owned compositor-auth seam coordination. Root directed this bounded source repair before the next truthful probe/handoff.
 
 - 2026-10-01T14:12:47Z — Exact e78bf9f4 approved eleven-target remaining Ninja build PASS exit0, preserved build/e78bf9f4-build.log. Final progress17/18 is dynamic, not an asserted eighteen executed actions. Native fixture and actual frontend-FD PipeWire frame consumer now compile; compiler immediately released to root. Protected admission denial remains source-predicted, no runtime yet. Bounded negative native cases await separate grant after Sleep retry; metadata/routing unchanged, full PF19 open.
 
