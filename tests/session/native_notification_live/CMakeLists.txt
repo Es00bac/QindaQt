@@ -13,6 +13,13 @@ if(TARGET QindaQt::SessionSupervisorSupport AND TARGET qindaqt-shell)
     qindaqt_enable_warnings(qindaqt_native_notification_live_tests)
     set(QINDAQT_NATIVE_POPUP_PRODUCTION_BUILD "${CMAKE_BINARY_DIR}" CACHE PATH
         "Immutable compatible production artifacts for native notification qualification")
+    if(QINDAQT_NATIVE_POPUP_PRODUCTION_BUILD STREQUAL CMAKE_BINARY_DIR)
+        add_dependencies(qindaqt_native_notification_live_tests
+            qindaqt-wm qindaqt-shell qindaqt-notification-host qindaqt-settings-service)
+        if(TARGET qindaqt_compositor)
+            add_dependencies(qindaqt_native_notification_live_tests qindaqt_compositor)
+        endif()
+    endif()
     if(QINDAQT_KWIN_WAYLAND)
         add_test(NAME shell.notification-native-popup
             COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/run_native_popup.py"
