@@ -14,6 +14,8 @@ private Q_SLOTS:
   void ownerReplacementClosesAndRevalidates();
   void foreignSignalsAreIgnored();
   void delayedCanCannotBypassProtection();
+  void selectedSessionRemovalRevokesDescriptor();
+  void startingDuringSleepNeverAcquiresDelay();
 };
 void LogindSleepTests::selectedIdentityAndInhibitWireAreExact() {
   Fixture f; f.start();
@@ -88,6 +90,18 @@ void LogindSleepTests::delayedCanCannotBypassProtection() {
   f.logindBus.send(f.logind.deferredCan.createReply(QStringLiteral("yes")));
   QTest::qWait(100); QCOMPARE(f.logind.suspendCalls, 0);
   QTRY_VERIFY(f.logind.inhibitorClosed());
+}
+void LogindSleepTests::selectedSessionRemovalRevokesDescriptor() {
+  Fixture f; f.start();
+  f.logind.signal(QStringLiteral("SessionRemoved"), QStringLiteral("/org/freedesktop/login1"),
+      {f.logind.id, QVariant::fromValue(QDBusObjectPath(f.logind.path))});
+  QTRY_VERIFY(f.logind.inhibitorClosed()); QVERIFY(!f.transport.available());
+}
+void LogindSleepTests::startingDuringSleepNeverAcquiresDelay() {
+  Fixture f; f.startNative(); f.logind.preparing = true; f.logind.claim(); f.coordinator.start();
+  QTRY_VERIFY(f.transport.preparingForSleep()); QVERIFY(!f.transport.hasDelayInhibitor());
+  QVERIFY(!f.coordinator.requestSuspend()); QVERIFY(f.logind.inhibitors.isEmpty());
+  f.logind.prepare(false); QTRY_VERIFY(f.transport.hasDelayInhibitor());
 }
 QTEST_GUILESS_MAIN(LogindSleepTests)
 #include "tst_logind_sleep_transport.moc"

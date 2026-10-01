@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include "../../services/native_lock_service/private_bus.h"
+#include <qindaqt/services/settings_client/settings_client.h>
 #include "../../apps/settings/screensaver/screensaver_model_test_support.h"
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
@@ -11,6 +12,7 @@
 #include <QDBusArgument>
 #include <QDBusMetaType>
 #include <QDBusUnixFileDescriptor>
+#include <QDBusVariant>
 #include <QSocketNotifier>
 #include <QTemporaryDir>
 #include <fcntl.h>
@@ -35,6 +37,8 @@ public:
     } else if (m.member() == "GetSessionByPID") {
       selectedPids.append(m.arguments().first().toUInt());
       bus.send(m.createReply(QVariant::fromValue(QDBusObjectPath(pidPath))));
+    } else if (m.member() == "Get") {
+      bus.send(m.createReply(QVariant::fromValue(QDBusVariant(preparing))));
     } else if (m.member() == "GetAll") {
       QVariantMap properties{{"Id", id}, {"User", QVariant::fromValue(UserWire{
           uid, QDBusObjectPath(QStringLiteral("/org/freedesktop/login1/user/_%1").arg(uid))})}};
@@ -77,6 +81,7 @@ public:
     m.setArguments(args); (sender ? *sender : bus).send(m);
   }
   void prepare(bool value, QDBusConnection *sender = nullptr) {
+    preparing = value;
     signal(QStringLiteral("PrepareForSleep"), QStringLiteral("/org/freedesktop/login1"), {value}, sender);
   }
   void claim() {
@@ -90,7 +95,7 @@ public:
   QString pidPath = path;
   quint32 uid = static_cast<quint32>(getuid());
   bool malformedUser = false, deferInhibit = false, deferCan = false, autoPrepare = false;
-  bool interactive = true;
+  bool interactive = true, preparing = false;
   QString canAnswer = QStringLiteral("yes");
   int canCalls = 0, suspendCalls = 0;
   QStringList selectedIds;

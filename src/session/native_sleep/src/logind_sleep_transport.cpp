@@ -5,6 +5,7 @@
 #include <QDBusPendingReply>
 #include <QDBusServiceWatcher>
 #include <QDBusUnixFileDescriptor>
+#include <QDBusVariant>
 #include <QRegularExpression>
 #include <fcntl.h>
 #include <unistd.h>
@@ -123,10 +124,25 @@ void LogindSleepTransport::validateSession(quint64 generation) {
             !m_bus.connect(m_owner, m_path, Session, QStringLiteral("Unlock"),
                            this, SLOT(receiveUnlock(QDBusMessage))) ||
             !m_bus.connect(m_owner, ManagerPath, Manager, QStringLiteral("PrepareForSleep"),
-                           this, SLOT(receivePrepare(bool,QDBusMessage)))) { revoke(); return; }
+                           this, SLOT(receivePrepare(bool,QDBusMessage))) ||
+            !m_bus.connect(m_owner, ManagerPath, Manager, QStringLiteral("SessionRemoved"),
+                           this, SLOT(receiveRemoved(QString,QDBusObjectPath,QDBusMessage)))) { revoke(); return; }
         m_ready = true;
         Q_EMIT availabilityChanged();
-        if (current(generation)) acquireDelayInhibitor();
+        if (!current(generation)) return;
+        call(m_owner, ManagerPath, QStringLiteral("org.freedesktop.DBus.Properties"),
+            QStringLiteral("Get"), {Manager, QStringLiteral("PreparingForSleep")}, generation,
+            [this](const QDBusMessage &preparingReply) {
+          if (!validReply(preparingReply, QStringLiteral("v"))) { revoke(); return; }
+          const auto value = qvariant_cast<QDBusVariant>(preparingReply.arguments().first()).variant();
+          if (value.metaType() != QMetaType::fromType<bool>()) { revoke(); return; }
+          // A signal arriving during this snapshot query supersedes its value.
+          if (!m_preparationSeen) {
+            m_preparing = value.toBool();
+            Q_EMIT prepareForSleep(m_preparing);
+          }
+          if (!m_preparing) acquireDelayInhibitor();
+        });
       });
     });
   });
@@ -138,12 +154,14 @@ void LogindSleepTransport::revoke() {
   ++m_generation;
   m_ready = false;
   m_preparing = false;
+  m_preparationSeen = false;
   m_acquiring = false;
   closeDelay();
   if (!m_owner.isEmpty()) {
     m_bus.disconnect(m_owner, m_path, Session, QStringLiteral("Lock"), this, SLOT(receiveLock(QDBusMessage)));
     m_bus.disconnect(m_owner, m_path, Session, QStringLiteral("Unlock"), this, SLOT(receiveUnlock(QDBusMessage)));
     m_bus.disconnect(m_owner, ManagerPath, Manager, QStringLiteral("PrepareForSleep"), this, SLOT(receivePrepare(bool,QDBusMessage)));
+    m_bus.disconnect(m_owner, ManagerPath, Manager, QStringLiteral("SessionRemoved"), this, SLOT(receiveRemoved(QString,QDBusObjectPath,QDBusMessage)));
   }
   m_owner.clear(); m_path.clear();
   if (m_suspendPending) {
@@ -211,8 +229,15 @@ void LogindSleepTransport::receiveUnlock(const QDBusMessage &message) {
 }
 void LogindSleepTransport::receivePrepare(bool preparing, const QDBusMessage &message) {
   if (!signalAdmitted(message, ManagerPath) || message.signature() != QStringLiteral("b")) return;
+  m_preparationSeen = true;
   m_preparing = preparing;
   Q_EMIT prepareForSleep(preparing);
   if (!preparing) acquireDelayInhibitor();
 }
+void LogindSleepTransport::receiveRemoved(const QString &id, const QDBusObjectPath &path,
+    const QDBusMessage &message) {
+  if (signalAdmitted(message, ManagerPath) && message.signature() == QStringLiteral("so") &&
+      (id == m_id || path.path() == m_path)) revoke();
+}
+
 }
