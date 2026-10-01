@@ -7,7 +7,7 @@
 - Branch: worker/pf-portal-choosers-20261001
 - Worktree: .cache/pf-portal-choosers-20261001
 - Ownership: new cohesive chooser components/dialogs/tests, portal primary wiki/reference, ADR0322; additive notified build/composition/metadata seams
-- Resources: no compiler/private-runtime slot; implementation/docs/static only until manager grant
+- Resources: compiler and private-runtime slots granted for frozen PF18 source and repairs; isolated qinda build/choosers and staged690 ordinary compositor only
 
 ## Updates
 
@@ -18,3 +18,5 @@
 - 2026-10-01T10:44:30+00:00 — Midpoint: pure-policy/private-wire fixtures and actual frontend/native-widget journey authored for file modes/overwrite/filter/choice/app updates/cancel/foreign parent/caller/frontend/supervisor loss. Tests use only build-local temporary files and event input linked with unchanged GUI sources. No executable C++ claim before compiler grant. First scaffold824e2c51 preserved on qinda; next test/docs chunk preparing.
 
 - 2026-10-01T10:56:22+00:00 — Static verification: validate-docs482 and strict MkDocs pass; source boundary and all existing mutation poisons pass. Focused chooser source-shape issues0 (whole-tree checker exit1 with168 issues; not asserted as baseline-equivalent). Python runner syntax and diff check pass. Narrow checker/public-header and packaged-helper additions approved; product family routing still unchanged. C++ and native frontend execution remain pending the compiler slot, no runtime resource held.
+
+- 2026-10-01T11:00:57+00:00 — Resource grant received from root for isolated compiler/private frontend fixtures and bounded repairs. Frozen source0d86f4fb pushed and qinda lane clean before configure; production/staged690 qualification beginning. Root combined build paused until release. No host runtime or installed service scope.
