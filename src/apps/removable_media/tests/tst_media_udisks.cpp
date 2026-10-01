@@ -174,7 +174,7 @@ private Q_SLOTS:
             QTRY_COMPARE(results.size(), 1); QVERIFY(!results.constLast().at(1).toBool());
             QVERIFY(!backend.available()); QVERIFY(server.registerService(Service));
             QTRY_VERIFY(backend.available()); QVERIFY(backend.volumes().constFirst().token != oldToken);
-            server.send(data.pending.createReply({QStringLiteral("/media/stale")}));
+            server.send(data.pending.createReply(QVariantList{QStringLiteral("/media/stale")}));
             QTest::qWait(20); QCOMPARE(results.size(), 1); QCOMPARE(log.size(), 1);
         });
     }

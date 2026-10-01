@@ -34,7 +34,11 @@ UDisksBackend::UDisksBackend(QDBusConnection connection, QObject *parent)
     QTimer::singleShot(0, this, [this] {
         const auto reply = m_bus.interface() ? m_bus.interface()->serviceOwner(Service) : QDBusReply<QString>{};
         if (reply.isValid()) ownerChanged(reply.value());
-        else { m_diagnostic = QStringLiteral("The system disk service is unavailable. Install or start UDisks2."); Q_EMIT changed(); }
+        else {
+            m_diagnostic = QStringLiteral("The system disk service is unavailable. Refresh to try again.");
+            Q_EMIT changed();
+            refresh();
+        }
     });
 }
 const Volume *UDisksBackend::find(const QString &token) const
@@ -61,6 +65,12 @@ void UDisksBackend::refresh()
     if (m_owner.isEmpty() && m_bus.interface()) {
         const auto reply = m_bus.interface()->serviceOwner(Service);
         if (reply.isValid() && !reply.value().isEmpty()) { ownerChanged(reply.value()); return; }
+        // UDisks is system-bus activatable. Ordinary desktop users should not
+        // need a terminal to start an installed but currently idle daemon.
+        auto message = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
+            QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
+        message.setArguments({Service, uint(0)});
+        m_bus.asyncCall(message, 5000);
     }
     fetch();
 }

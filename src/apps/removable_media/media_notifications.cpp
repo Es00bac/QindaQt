@@ -45,7 +45,17 @@ void MediaNotifications::notify(const QString &token, const QString &summary,
             [this, epoch, sequence, token, previous](QDBusPendingCallWatcher *pending) {
         const QDBusPendingReply<uint> reply = *pending;
         pending->deleteLater();
-        if (epoch != m_epoch || sequence != m_sequences.value(token)) return;
+        if (epoch != m_epoch) return;
+        if (sequence != m_sequences.value(token)) {
+            // Unplug may arrive before Notify's id. Withdraw the eventual
+            // notification too, rather than leaving a dead action on screen.
+            if (!reply.isError()) {
+                auto closeMessage = QDBusMessage::createMethodCall(m_owner, Path, Service, QStringLiteral("CloseNotification"));
+                closeMessage.setArguments({reply.value()});
+                m_bus.asyncCall(closeMessage, 5000);
+            }
+            return;
+        }
         if (reply.isError()) { m_controller.show(token); return; }
         m_tokens.remove(previous);
         m_tokens.insert(reply.value(), token);
