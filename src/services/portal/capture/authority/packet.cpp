@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "packet.h"
 #include <QtEndian>
+#include <QList>
 namespace QindaQt::Services::Portal::CaptureAuthority {
 namespace {
 template<class T> T read(const QByteArray &bytes, qsizetype offset) { return qFromLittleEndian<T>(bytes.constData() + offset); }

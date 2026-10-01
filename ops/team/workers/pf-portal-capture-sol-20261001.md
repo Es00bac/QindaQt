@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — compiling immutable433f9570 capture/Screenshot targets on qinda; protected native gates remain pending
+- Status: working — repairing the owned parser include after bounded433f9570 compiler failure; native gates remain pending
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: qinda-only compiler granted for17 named targets with per-command-j8-l24; no private runtime grant
+- Resources: qinda compiler released after first real failure; no compiler/private runtime slot held
 
 ## Updates
+
+- 2026-10-01T18:38:46Z — Exact433f9570 qinda17-target Ninja build exit1 in24.0s; raw build/433f9570-build.log and JSON retained. Sole first failure is authority/packet.cpp QByteArray::split needing explicit QList include; owned channel/adaptors compiled. Last reported145/349 is dynamic progress, not a completed build action count. Minimum available18154864kB (~17.31GiB), no memory/stall stop; ownedPGID138361 absent and compiler explicitly released to root before one-line source repair. No CTests/native probes executed. Global MAKEOPTS unchanged, root per-command-j8-l24 grant required again on a frozen descendant.
 
 - 2026-10-01T18:35:23Z — Root granted distinct qinda-only compiler on exact433f9570 for17 named targets plus declared dependencies, per-command-j8-l24 due observed RAM; global MAKEOPTS remains-j24-l24. Clean immutable qinda source/header hashes/strict Debug sharedON/pluginOFF/native-driver-empty configuration rechecked. Early MemAvailable21775692kB (~20.77GiB), no live ninja/cc1/cc1plus observed. Build will use owned process group and stop only it if RAM below3GiB plus stalled progress; preserve raw failure/count/pin. Laptop record-only branch update does not move the qinda compiler worktree off433f9570. No CTest/native grant; mixed header prefix remains development-only.
 
