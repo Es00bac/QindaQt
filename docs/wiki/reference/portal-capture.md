@@ -245,7 +245,7 @@ llvmpipe. Both modes keep every real pixel/frame/privacy assertion.
 
 The retained exact447 software probes on scope-correct consumer97c63 return an
 actual1100x820 fully transparent black Screenshot PNG and a real ScreenCast node/
-remote FD without frames. VirtualEglLayer allocates through EglSwapchain and the
+remote FD without decoded frames. VirtualEglLayer allocates through EglSwapchain and the
 GBM allocator, whose software allocation requires DRM_IOCTL_MODE_CREATE_DUMB;
 render-only isolation denies that operation and the actual layer fails repeatedly.
 These failures establish rendering limits, and do not qualify screenshots or
