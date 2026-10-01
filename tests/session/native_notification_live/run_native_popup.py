@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -40,6 +41,7 @@ def main() -> int:
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--dbus-daemon", type=Path, default=Path("/usr/bin/dbus-daemon"))
     arguments = parser.parse_args()
+    prior_umask = os.umask(0o077)
     for name in ("probe", "compositor", "launcher", "shell", "host", "settings", "scenario", "dbus_daemon"):
         if not getattr(arguments, name).is_file():
             raise RuntimeError(f"required exact artifact absent: {name}")
@@ -88,6 +90,10 @@ def main() -> int:
                     time.sleep(.05)
                 if not (root / "runtime/qindaqt-9").exists():
                     raise RuntimeError("actual ordinary compositor socket did not appear")
+                socket_stat = (root / "runtime/qindaqt-9").stat()
+                (root / "process.json").write_text(json.dumps({"compositorPid": child.pid,
+                    "runtimeRoot": str(root), "priorUmask": oct(prior_umask),
+                    "socketMode": oct(stat.S_IMODE(socket_stat.st_mode)), "socketUid": socket_stat.st_uid}))
                 await_compositor_owner(environment, child)
                 environment.update(WAYLAND_DISPLAY="qindaqt-9", QINDAQT_NATIVE_POPUP_COMPOSITOR_PID=str(child.pid),
                     QINDAQT_NATIVE_POPUP_LOG_ROOT=str(root), QINDAQT_NATIVE_POPUP_LOCKER=str(locker),
