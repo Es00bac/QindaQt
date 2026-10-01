@@ -4364,3 +4364,7 @@ rollback and nested-commit refusal, then exact publication/retry. No live provid
 real wallet/credential, installation, service-name switch or attack framework is
 used. Framework wire allocation zeroization and atomic source export are not
 claimed; compatibility limits are documented in [one-time import](../architecture/keyring-import.md).
+
+## Removable media acceptance
+
+The [removable-media handler](../apps/removable-media.md) is covered by `qindaqt.removable-media-policy`, `qindaqt.removable-media-udisks`, `qindaqt.removable-media-qml` and `qindaqt.session-removable-media-lifetime`. Policy tests cover insertion once per attachment, remembered-choice persistence, serialized automatic read-only mounts, stale notification/format refusal and failed-save rollback. The UDisks test runs on a private session bus used as its injected system connection and covers real method/options dispatch, hidden-sibling busy refusal, ordered unmount/power-off and delayed owner-loss replies. QML tests activate real mount, read-only, preferences, unlock and format controls. Session tests prove start/restart, orderly stop-before-notifications, abnormal teardown and absent-helper login. Private desktop launch wrappers explicitly pass `--no-removable-media`; these tests never mount/format host storage. Physical disc/hotplug and disposable-media formatting remain separate hardware qualification.
