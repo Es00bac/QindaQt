@@ -31,7 +31,9 @@ AppChooser exports version 1:
 | UpdateChoices | `o,as`: live handle, replacement IDs | no values; named error on refusal |
 
 Responses use 0 for validated selection, 1 for cancellation and 2 for failure.
-Results exist only on success. Only the actual current same-UID frontend unique
+Backend result data exists only on success. The 1.20.4 frontend adds `uris=[]`
+to failed/cancelled FileChooser responses; this carries no selected path.
+Only the actual current same-UID frontend unique
 owner is accepted. The frontend supplies case-sensitive app IDs and owns caller
 connection/Request lifetime.
 
