@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "pipewire_frames.h"
+#include <qindaqt/services/portal/foundation_composition.h>
 #include <qindaqt/services/portal/capture_types.h>
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
@@ -45,7 +46,17 @@ class NativeCaptureTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void initTestCase() {
-        QCOMPARE(prctl(PR_GET_DUMPABLE), 1); registerCaptureWireTypes(); QVERIFY(bus.isConnected()); QTRY_VERIFY(bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).isValid());
+        QCOMPARE(prctl(PR_GET_DUMPABLE), 1); registerCaptureWireTypes(); QVERIFY(bus.isConnected());
+        // AGENT-CONTRACT: xdg-desktop-portal 1.20.4 exports Screenshot only
+        // when Access is selected. Compose the existing real backend separately;
+        // capture requests still select the protected compositor-owned broker.
+        accessBackend = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), "capture-access-backend"));
+        foundation = std::make_unique<PortalFoundationComposition>(accessHost, *accessBackend,
+            qEnvironmentVariable("XDG_RUNTIME_DIR"), qEnvironmentVariable("QINDAQT_PORTAL_TEST_HELPER"),
+            qEnvironmentVariable("QINDAQT_PORTAL_TEST_RELAY"), QStringList{qEnvironmentVariable("XDG_DATA_HOME")});
+        QVERIFY(accessBackend->registerService("org.freedesktop.impl.portal.desktop.qindaqt"));
+        QVERIFY(accessBackend->registerObject("/org/freedesktop/portal/desktop", &accessHost, QDBusConnection::ExportAdaptors));
+        QVERIFY(foundation->start()); QTRY_VERIFY(bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).isValid());
         QVERIFY(bus.registerService("org.freedesktop.portal.Documents")); QVERIFY(bus.registerService("org.freedesktop.impl.portal.PermissionStore")); QVERIFY(bus.registerService("org.qindaqt.Power1"));
         selected = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), "capture-supervisor"));
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").isValid(), 10000);
@@ -145,11 +156,16 @@ private Q_SLOTS:
         QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 2U);
 
     }
-    void cleanupTestCase() { frontend.terminate(); frontend.waitForFinished(5000); if (pixels.state() != QProcess::NotRunning) { pixels.kill(); pixels.waitForFinished(3000); } }
+    void cleanupTestCase() { frontend.terminate(); frontend.waitForFinished(5000); if (pixels.state() != QProcess::NotRunning) { pixels.kill(); pixels.waitForFinished(3000); } foundation.reset(); accessBackend.reset(); QDBusConnection::disconnectFromBus("capture-access-backend"); }
 private:
     void startFrontend() {
         frontend.start(QString::fromUtf8(QINDAQT_FRONTEND_EXECUTABLE), {"--replace", "--verbose"}); QVERIFY(frontend.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered("org.freedesktop.portal.Desktop").value(), 10000);
+        auto introspect = QDBusMessage::createMethodCall("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop", "org.freedesktop.DBus.Introspectable", "Introspect");
+        QDBusPendingCallWatcher exported(bus.asyncCall(introspect)); QTRY_VERIFY(exported.isFinished());
+        const QDBusPendingReply<QString> interfaces = exported; QVERIFY2(!interfaces.isError(), qPrintable(interfaces.error().message()));
+        QVERIFY2(interfaces.value().contains("org.freedesktop.portal.Screenshot"), "real frontend did not export Screenshot; Access selection is required");
+        QVERIFY2(interfaces.value().contains("org.freedesktop.portal.ScreenCast"), "real frontend did not export ScreenCast");
         QDBusPendingCallWatcher registering(bus.asyncCall(method("org.freedesktop.host.portal.Registry", "Register", {QStringLiteral("org.test.Capture"), QVariantMap{}}))); QTRY_VERIFY(registering.isFinished()); const QDBusPendingReply<> registered = registering; QVERIFY2(!registered.isError(), qPrintable(registered.error().message()));
     }
     QDBusMessage method(const char *family, const char *member, const QVariantList &args) {
@@ -209,6 +225,9 @@ private:
     }
     static bool containsFixturePixels(const QImage &image) { for (int y = 0; y < image.height(); y += 17) for (int x = 0; x < image.width(); x += 17) { const auto c = image.pixelColor(x, y); if ((c.red() > 180 && c.green() < 80) || (c.green() > 170 && c.red() < 80)) return true; } return false; }
     QDBusConnection bus = QDBusConnection::sessionBus(); QProcess frontend; Responses responses; ExportProcess pixels;
+    QObject accessHost;
+    std::unique_ptr<QDBusConnection> accessBackend;
+    std::unique_ptr<PortalFoundationComposition> foundation;
     std::unique_ptr<QDBusConnection> selected; QStringList requests;
 };
 int main(int argc, char **argv) {
