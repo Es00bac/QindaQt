@@ -152,7 +152,9 @@ bool NativeLockComposition::start(QString *error) {
   d->displayStage = std::make_unique<Session::IdlePolicy::DisplayOffStage>(
       *d->displayIdle, *d->dpms, *d->power, [this]()
           -> std::optional<Session::IdlePolicy::DisplayOffPreferences> {
-        if (!d->displaySettings || !d->displaySettings->snapshot() ||
+        if (!d->displaySettings ||
+            d->displaySettings->state() != Services::SettingsClient::ClientState::Ready ||
+            !d->displaySettings->snapshot() ||
             d->displaySettings->snapshot()->owner != d->displaySettings->currentOwner() ||
             !d->power || !d->power->hasSnapshot() ||
             (d->power->state() != Power::PowerClientState::Ready &&
@@ -170,6 +172,10 @@ bool NativeLockComposition::start(QString *error) {
                    &Session::IdlePolicy::DisplayOffStage::refreshPreferences);
   QObject::connect(d->displaySettings.get(),
                    &Services::SettingsClient::SettingsClient::ownerChanged,
+                   d->displayStage.get(),
+                   &Session::IdlePolicy::DisplayOffStage::refreshPreferences);
+  QObject::connect(d->displaySettings.get(),
+                   &Services::SettingsClient::SettingsClient::stateChanged,
                    d->displayStage.get(),
                    &Session::IdlePolicy::DisplayOffStage::refreshPreferences);
   QObject::connect(d->attachment.get(), &CompositorAttachment::revoked,

@@ -36,7 +36,8 @@ apply. Settings edits each source independently and shows the active profile.
 The compatibility key remains available to older callers.
 
 Positive confirmed timeouts arm one idle stage. Disabled values, missing
-confirmed Settings1 state, unavailable DPMS, a Power1 source without a usable
+confirmed Ready Settings1 state (including any degraded retained snapshot),
+unavailable DPMS, a Power1 source without a usable
 snapshot, and a live Power1 owner without an authenticated inhibitor-state
 receipt keep the stage disarmed. A current `DisplayOff` lease suppresses the
 display-off stage and restores `On`; owner disappearance removes its leases,

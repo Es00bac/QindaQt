@@ -24,7 +24,8 @@ selectPowerSourceProfile(const Power::Snapshot &snapshot);
 [[nodiscard]] QStringList perSourceDisplayOffSettingsKeys();
 
 // Settings1 values are effective merged truth; the caller must compare the
-// snapshot owner with SettingsClient::currentOwner() before relying on them.
+// snapshot owner with SettingsClient::currentOwner() and require ClientState::Ready
+// before relying on them. Degraded retained values do not arm automatic actions.
 [[nodiscard]] std::optional<DisplayOffPreferences>
 displayOffPreferencesFor(const Services::SettingsClient::SettingsSnapshot &snapshot,
                          const QString &expectedOwner,
