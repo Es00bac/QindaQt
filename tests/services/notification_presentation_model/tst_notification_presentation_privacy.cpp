@@ -360,6 +360,8 @@ void NotificationPresentationPrivacyTests::retainedConsumersRecheckAdmissionBefo
     QVERIFY(activeIndex.isValid());
     QVERIFY(popupIndex.isValid());
     QVERIFY(historyIndex.isValid());
+    QSignalSpy popupCountChanges(&controller,
+        &NotificationPresentationModel::NotificationPresentationController::popupCountChanged);
     admitted = false; // The observer's queued denial has not run.
     QVERIFY(!active->data(activeIndex, NotificationPresentationModel::NotificationListModel::SummaryRole).isValid());
     QVERIFY(!popups->data(popupIndex, NotificationPresentationModel::NotificationListModel::BodyRole).isValid());
@@ -372,7 +374,9 @@ void NotificationPresentationPrivacyTests::retainedConsumersRecheckAdmissionBefo
     QCOMPARE(transport.operations.size(), 0);
     controller.setCenterOpen(true);
     QVERIFY(!controller.centerOpen());
+    QCOMPARE(popupCountChanges.size(), 0); // Reads never invalidate models reentrantly.
     privacy.setPrivatePresentationAllowed(false); // Normal invalidation clears storage.
+    QCOMPARE(popupCountChanges.size(), 1); // Popup-only surfaces must receive retirement.
     QCOMPARE(active->rowCount(), 0);
     admitted = true;
     privacy.setPrivatePresentationAllowed(true);

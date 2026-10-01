@@ -21,7 +21,10 @@ void NotificationPresentationController::handlePrivacyPolicyChanged()
 
 void NotificationPresentationController::clearPrivatePresentation()
 {
-    const bool hadPopups = m_popups.rowCount() > 0;
+    // AGENT-GUARD: live admission already hides model rows before this queued
+    // invalidation. Inspect retained storage so popup-only windows still
+    // receive their count transition and unmap (ADR-0320).
+    const bool hadPopups = !m_popupEntries.isEmpty();
     const bool wasCenterOpen = m_centerOpen;
     const bool exposedBusy =
         !m_suppressCurrentOperationOutcome && m_client.operationInFlight();

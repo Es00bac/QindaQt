@@ -24,6 +24,9 @@ retained model pointers and indices, and gates center/operation admission. Unkno
 authority returns no role data or entries before queued watchers clear stored models.
 Callbacks do not dispatch events or mutate consumers; storage clearing remains the
 normal denial signal's responsibility, avoiding model reset inside a role read.
+Denial determines popup retirement from retained storage, not the already-hidden
+model row count. The shell window owner also reconciles directly on privacy
+changes, so popup-only surfaces unmap even when guarded getters already read empty.
 An admission exception fails closed. These public source interfaces require consumers
 to rebuild; their existing signal-only constructors remain available to deterministic
 or independently scoped consumers.

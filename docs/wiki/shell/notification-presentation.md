@@ -38,7 +38,9 @@ The production path is:
    active, popup, and recent list models using injected per-application,
    interruption, and higher-priority privacy policies.
 6. The shell window controller maps popup and center QML as nonexclusive
-   LayerShellQt overlay surfaces.
+   LayerShellQt overlay surfaces. Privacy changes directly reconcile their mapping;
+   normal denial also publishes popup retirement from retained storage rather
+   than the guarded model's already-empty row count.
 
 The client, model, and surfaces are constructed only when the shell receives a
 valid inherited descriptor. A standalone shell or host does not silently open
