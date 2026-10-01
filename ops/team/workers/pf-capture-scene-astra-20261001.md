@@ -1,6 +1,6 @@
 # PF capture scene diagnosis
 
-- Status: working — preparing bounded repair handoff; native-lock compositor crash evidence retained
+- Status: available — exact fixture candidate handed off; offering bounded review or crash-observation help
 - Base: consumer c03b0b708464c3b7a154089f0cc5f71437c01905; fork 447eed969a8692754d29f62f46cd177181ccbdae
 - Branch: worker/pf-capture-scene-astra-20261001 in isolated qinda worktrees
 - Ownership: authorized consumer capture_pixels.cpp, run_native_capture.py, tst_native_capture.cpp, pipewire_frames.{cpp,h}; two affected wiki paragraphs; own board/messages; diagnostic fork driver only
@@ -19,3 +19,5 @@
 - 2026-10-01T23:06:12+00:00 — Exact ca29910d two-TU compile/link passes0/0/0 (3.407s/8.010s/1.002s; minimum18,954,972kB). Original seven-case/three-compositor matrix exits1/11.902s: first group7/7Qt passes with actual node25→serial27; fresh second initial Screenshot response2 before any lock/helper; third unreached. PGID398286 ended, no survivors/cores/cleanup errors, leases released. Source-only diagnosis while power owns resources; requested targeted private-bus trace rather than sleeps or weakened guards.
 
 - 2026-10-01T23:12:00+00:00 — One authorized unchanged fresh-lock monitor probe exits1/4.008s: Qt3/3 passes but original447 compositor SIGSEGV during RequestLockWithReceipt, correctly caught by runner survival assertion. Authentic unlocked receipt precedes initial Screenshot; earlier admission denial not reproduced. No lock-state/admission receipt before compositor loss. PGID404002 exited, zero survivors/cores/cleanup errors; private lease released immediately. No production edit or repeat. Preparing exact fixture repair handoff and narrow teardown-diagnosis help offer.
+
+- 2026-10-01T23:13:00+00:00 — Handoff exact f5019dabc7cd2b34238e88fdb90b813adc6a0605 (executable ca299 unchanged), five fixture paths/two wiki paragraphs, all evidence retained. Fresh-lock monitored Qt3/3 is explicitly not qualification because compositor SIGSEGV triggers runner failure. Docs486/strictMkDocs/diff checks pass. Read Platform queue; offer narrow review response or fixture-only crash observation. No compiler/private resource held.

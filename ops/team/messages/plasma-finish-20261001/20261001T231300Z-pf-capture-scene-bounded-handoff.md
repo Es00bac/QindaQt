@@ -1,0 +1,38 @@
+# Bounded native scene-content fixture repair handoff
+
+Exact review candidate: **f5019dabc7cd2b34238e88fdb90b813adc6a0605**, pushed to qinda hub on worker/pf-capture-scene-astra-20261001. Executable sources are byte-identical to ca29910d15c99319834dd5a88c2485339fc1d015; f501 adds only wiki/own evidence after ca299. Base c03b0b708464c3b7a154089f0cc5f71437c01905. The production fork remains immutable447eed969a8692754d29f62f46cd177181ccbdae. This is a repair candidate with bounded native qualification still open, not PF19 completion.
+
+## Changed paths and contracts
+
+- tests/services/portal/capture/capture_pixels.cpp: actual QApplication stable desktopFileName org.test.CapturePixels.
+- tests/services/portal/capture/run_native_capture.py: real task-owned matching desktop entry and retained producer stderr/lifecycle audit.
+- tests/services/portal/capture/tst_native_capture.cpp: real frontend starts before the desktop-identified producer; assert producer alive at startup, request success and continuous-frame proof; retain PID/exit state.
+- tests/services/portal/capture/pipewire_frames.{cpp,h}: resolve only the returned exact native node through the actual returned remote registry and correlated sync; connect using authentic object.serial and PW_ID_ANY; refuse missing/retired/malformed serial; retain offered-ID-to-serial observation.
+- docs/wiki/{reference/portal-capture.md,development/testing-harness.md}: affected qualification paragraphs report actual repaired content and retained unresolved gates. Own worker record and timestamped messages are the only other tracked changes.
+- No production compositor, broker, helper, routing or permission change; no fabricated pixels, target fallback, frame threshold reduction, privacy assertion removal, arbitrary startup delay or retry. QT_FATAL_WARNINGS remains1. Diagnostic fork816334cc is separately preserved evidence only and is not required for integration.
+
+## Causal evidence and verification
+
+Original failure: actual window paints/maps/frame-completes then dies on Qt fatal host portal registration for an empty app ID. Stderr-only unchanged executable probe proves it. Stable desktop identity then exposes a real frontend ordering prerequisite, also retained as a failed run. Frontend-first identity repair produces actual Screenshot PNG902000 opaque fixture-green pixels and passes standalone Screenshot and actual continuously decoded PipeWire assertions (each3/3Qt,0skips).
+
+Full prior decoder run then fails after foreign-parent stream retirement because target.object receives a node ID. Installed PipeWire stream.h/keys.h and WirePlumber find-defined-target.lua define object.serial targeting. Exact ca299 two-TU compile/link passes exits0/0/0 in3.407s/8.010s/1.002s, minimum available18,954,972kB; full original first five-case compositor group passes7/7Qt,0skips, including actual offered node25→serial27 and unchanged >3frame/color/checksum/consent/cancel/retirement assertions. Thus both original scene-content and later stream-target blockers have causal repairs.
+
+Original seven-case/three-compositor matrix `python3 build/run_serial_matrix.py` exits1/11.902s. Fresh second group fails initial Screenshot response2/no helper before any lock call (Qt2pass/1fail); third compositor-loss group is unreached. Source inspection identifies a separate asynchronous native-state admission handshake beyond fixture readiness, but the cause of this particular denial is not proven. No readiness workaround was made.
+
+One authorized unchanged fresh-lock probe `python3 build/run_admission_trace.py` adds only a task-private bus monitor through an ignored runner copy, retaining exact ca299 caller/fork artifacts. It exits1/4.008s despite Qt3/3PASS: original447 compositor reports SIGSEGV/null access during RequestLockWithReceipt; unchanged runner correctly rejects dead private dependency. Initial Screenshot and real frames succeed. Broker :1.5 receives nonce-correlated stateReceipt(false,false) from compositor :1.3/PID9 at1790896099.557633, before backend Screenshot at1790896099.908249. RequestLockWithReceipt occurs1790896101.467000; no lockedChanged/protectedChanged or lockAdmissionReceipt appears before compositor loss. This is bounded evidence of a distinct native-lock compositor crash, not a passing lock revocation proof, and does not reproduce the initial admission denial. Source places the missing public state emission after synchronous aboutToLock teardown; there is no stack proof of the failing function. PR0/core0 prevented Qt external ptrace backtrace, as intended.
+
+Source gates pass: git diff --check exit0; Python runner compile exit0; tools/validate-docs exit0/486 documents; focused source shape exit0/14 files/0warnings; mkdocs build --strict --site-dir build/docs-scene exit0 (latest log build/mkdocs-scene-final.log). Historic c03 six focused CTests49Qt are prior-worker evidence, not a newly repeated gate for this candidate.
+
+## Reproducibility and retained failures
+
+All artifact paths are relative to own qinda worktree /home/cabewse/work_SPaC3/container-wm.worktrees/pf-capture-scene-astra-20261001. Build scripts, exact compiler/link argv, input hashes and statuses: build/build_scene_consumer.py, build/build_order_consumer.py, build/build_serial_consumer.py and respective consumer artifact directories. Current native caller SHA2565d31d9193ea202f74fec8091edb130278aaa4d15b22ee439d81f6e3f7a8149ea; original447 driver SHA2565f06d13d4749cc1ace859080ef8ce1b6b28f0a4f65750b82331470dbbc2a1086. Dependencies remain exact c03 artifacts and immutable447 libs/plugins; old development headers never replace runtime libs.
+
+Raw evidence directories: build/native-scene-{screenshot,pipewire,producer-stderr}, build/native-repaired-screenshot, build/native-order-{screenshot,pipewire,matrix}, build/native-serial-matrix, build/native-admission-trace. Each retains command, image hashes, actual runtime renderer/identity evidence, logs/status, raw PNG where produced, per-group cleanup audits. Trace group qindaqt-native-capture-vgosz5qm includes native-admission-bus.log; concise source-line-numbered trace excerpt and SHA256 are in build/native-admission-trace. Original failed second full-matrix group qindaqt-native-capture-3al0xgrm remains separate from monitored probe. No failure is overwritten.
+
+Isolation stayed unchanged: authorized AMD1002:731f renderD128 only, RO sysfs, no primary card/input/snd/host display/bus/power, private user/PID/net/IPC/UTS/process/device environment, core0, task0700 and taskRW/artifactsRO. All owned compile/runtime processes exited. Latest runtime PGIDs398286/404002 have no survivors, cores or cleanup errors. Compiler/private leases released; laptop heavy-work lock honored.
+
+## Requested next action and help
+
+A different worker should review exact f5019dabc7cd2b34238e88fdb90b813adc6a0605 before manager integration. Preserve all admission/pixel/frame/privacy/renderer/survival guards. Route the immutable447 native-lock crash for a narrow in-process stack/teardown diagnosis without ptrace/core/privacy relaxation; separately resolve the unreproduced fresh initial admission denial before the full unchanged seven-case/three-compositor qualification. Third group, integrated rerun and installed routing remain unqualified. No broader portal redesign or full PF19/install/physical-display/mixed-output claim is made.
+
+Worker read the Platform queue and current relevant parent/peer routing. Available for a bounded consumer source-review response or fixture-only in-process crash observation once explicitly assigned; no compiler/private resource remains held.
