@@ -45,32 +45,36 @@ struct Runtime {
         process.terminate();
         if (!process.waitForFinished(2000)) { process.kill(); process.waitForFinished(); }
     }
+    bool refuse(const QString &message) { qWarning().noquote() << message; return false; }
     bool start(bool exclusive = true, bool legacy = false) {
-        if (!bus.start()) return false;
+        if (!bus.start()) return refuse(QStringLiteral("private bus startup failed"));
         settingsBus = bus.open(); upstreamBus = bus.open();
         clientBus = bus.open(); legacyBus = bus.open();
         if (legacy && !legacyBus.registerService(QStringLiteral("org.kde.Solid.PowerManagement"))) return false;
         QString error;
         auto active = SettingsSchema::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
         auto old = SettingsSchema::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error, 1);
-        if (!active || !old) return false;
+        if (!active || !old) return refuse(QStringLiteral("fixture schema load: ") + error);
         service = std::make_unique<ResidentSettingsService>(settingsBus, *active, *old,
             QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/profile-defaults/qindaqt.json"),
             bus.root.filePath(QStringLiteral("settings.json")));
-        if (!service->start().ok()) return false;
+        const auto settingsStatus = service->start();
+        if (!settingsStatus.ok()) return refuse(QStringLiteral("fixture Settings1 startup: ")
+            + settingsServiceStartStatusName(settingsStatus.status) + QLatin1Char(' ')
+            + settingsStatus.message);
         ppd = std::make_unique<FakePpdService>(upstreamBus, false);
         ppd->setProfiles({QStringLiteral("power-saver"), QStringLiteral("balanced"), QStringLiteral("performance")});
         ppd->setActiveProfile(QStringLiteral("balanced"));
         ppd->setHolds({{QStringLiteral("power-saver"), QStringLiteral("External"), QStringLiteral("untouched")}});
-        if (!ppd->registerService()) return false;
+        if (!ppd->registerService()) return refuse(QStringLiteral("fixture profiles registration failed"));
         upower = std::make_unique<FakeUpowerService>(upstreamBus);
         upower->setDevices(supplies(false));
-        if (!upower->registerService()) return false;
+        if (!upower->registerService()) return refuse(QStringLiteral("fixture supplies registration failed"));
         transport = std::make_unique<QtSettingsTransport>(clientBus);
         settings = std::make_unique<SettingsClient>(*transport,
             QStringList{QStringLiteral("power.profile.ac"), QStringLiteral("power.profile.battery"), QStringLiteral("power.profile.lowBattery")},
             ClientTiming{500, 0, {10,20}});
-        if (!settings->start()) return false;
+        if (!settings->start(&error)) return refuse(QStringLiteral("fixture Settings client startup: ") + error);
         powerTransport = std::make_unique<QtPowerTransport>(clientBus);
         power = std::make_unique<PowerClient>(powerTransport.get());
         auto environment = QProcessEnvironment::systemEnvironment();
@@ -85,7 +89,7 @@ struct Runtime {
              QStringLiteral("--backlight-root=") + bus.root.filePath(QStringLiteral("backlight"))};
         if (exclusive) arguments.append(QStringLiteral("--profile-policy=native-exclusive"));
         process.start(QStringLiteral(QINDAQT_POWER_SERVICE_EXECUTABLE), arguments);
-        if (!process.waitForStarted()) return false;
+        if (!process.waitForStarted()) return refuse(QStringLiteral("fixture resident process startup: ") + process.errorString());
         qInfo().noquote() << "source-profile-service pid" << process.processId()
                          << "root" << bus.root.path();
         power->start();
