@@ -48,7 +48,7 @@ public:
           appChooser(std::make_unique<AppChooserAdaptor>(host, requests, chooser, [roots] {
               return QindaQt::ApplicationCatalog::scanApplicationDirectories(roots,
                   QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay);
-          })) {
+          }, bus)) {
         QObject::connect(&consent, &AccessConsent::authorityLost, &requests, [this] {
             requests.retireAll(); idle.revoke();
         });

@@ -7,6 +7,8 @@
 namespace QindaQt::Services::Portal {
 // Public catalog provider resamples installed choices on requests/updates.
 // Borrowed registry/UI/provider dependencies outlive this same-thread adaptor.
+// Bus is the same selected connection as the registry; it publishes named
+// UpdateChoices errors without a separate ambient session-bus lookup.
 // Version1 implements ChooseApplication and UpdateChoices, without promising
 // version2 activation-token generation or application launching.
 class AppChooserAdaptor final : public QDBusAbstractAdaptor {
@@ -15,7 +17,7 @@ class AppChooserAdaptor final : public QDBusAbstractAdaptor {
     Q_PROPERTY(uint version READ version CONSTANT)
 public:
     using Catalog = std::function<QindaQt::ApplicationCatalog::DirectoryScan()>;
-    AppChooserAdaptor(QObject &, RequestRegistry &, ChooserUi &, Catalog);
+    AppChooserAdaptor(QObject &, RequestRegistry &, ChooserUi &, Catalog, QDBusConnection);
     ~AppChooserAdaptor() override;
     uint version() const { return 1; }
 public Q_SLOTS:
@@ -23,6 +25,7 @@ public Q_SLOTS:
     void UpdateChoices(const QDBusObjectPath &, const QStringList &, const QDBusMessage &);
 private:
     RequestRegistry &m_requests; ChooserUi &m_ui; Catalog m_catalog;
+    QDBusConnection m_bus;
     QHash<RequestToken, AppChooserRequest> m_pending;
     QHash<QString, RequestToken> m_handles;
 };

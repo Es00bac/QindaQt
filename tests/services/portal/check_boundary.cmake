@@ -18,6 +18,30 @@ set(foundation_files
     "consent/main.cpp"
     "consent/consent_controller.h"
     "consent/consent_controller.cpp"
+    "choosers/CMakeLists.txt"
+    "choosers/main.cpp"
+    "choosers/chooser_dialog.h"
+    "choosers/chooser_dialog.cpp"
+    "choosers/choice_controls.h"
+    "choosers/choice_controls.cpp"
+    "choosers/file_filter_proxy.h"
+    "choosers/file_filter_proxy.cpp"
+    "choosers/file_chooser_dialog.h"
+    "choosers/file_chooser_dialog.cpp"
+    "choosers/app_chooser_dialog.h"
+    "choosers/app_chooser_dialog.cpp"
+    "src/chooser_wire.cpp"
+    "src/chooser_frames.cpp"
+    "src/file_chooser_policy.cpp"
+    "src/file_chooser_adaptor.cpp"
+    "src/app_chooser_policy.cpp"
+    "src/app_chooser_adaptor.cpp"
+    "src/process_chooser.cpp"
+    "include/qindaqt/services/portal/chooser_types.h"
+    "include/qindaqt/services/portal/chooser_ui.h"
+    "include/qindaqt/services/portal/file_chooser_adaptor.h"
+    "include/qindaqt/services/portal/app_chooser_adaptor.h"
+    "include/qindaqt/services/portal/process_chooser.h"
     "src/access_adaptor.cpp"
     "src/access_policy.cpp"
     "src/email_adaptor.cpp"
@@ -64,7 +88,7 @@ foreach(source IN LISTS portal_sources)
     foreach(backend_interface IN LISTS backend_interfaces)
         if(NOT backend_interface STREQUAL "org.freedesktop.impl.portal.Settings")
             if(NOT relative IN_LIST foundation_files OR NOT backend_interface MATCHES
-                "^org\\.freedesktop\\.impl\\.portal\\.(Access|Notification|Email|Inhibit|Request)$")
+                "^org\\.freedesktop\\.impl\\.portal\\.(Access|Notification|Email|Inhibit|Request|FileChooser|AppChooser)$")
                 message(FATAL_ERROR "Portal imports an out-of-scope standard interface in ${source}: ${backend_interface}")
             endif()
         endif()
@@ -125,8 +149,12 @@ if(DEFINED STAGE_ROOT)
         "appearance_policy.h"
         "appearance_source.h"
         "appearance_theme_catalog.h"
+        "app_chooser_adaptor.h"
+        "chooser_types.h"
+        "chooser_ui.h"
         "email_adaptor.h"
         "email_policy.h"
+        "file_chooser_adaptor.h"
         "foundation_composition.h"
         "idle_inhibition.h"
         "inhibit_adaptor.h"
@@ -134,6 +162,7 @@ if(DEFINED STAGE_ROOT)
         "notification_adaptor.h"
         "notification_policy.h"
         "process_consent.h"
+        "process_chooser.h"
         "request_registry.h"
         "resident_portal_service.h"
         "session_binding.h"
@@ -145,6 +174,7 @@ if(DEFINED STAGE_ROOT)
         list(APPEND actual_headers "${name}")
     endforeach()
     list(SORT actual_headers)
+    list(SORT expected_headers)
     if(NOT actual_headers STREQUAL expected_headers)
         message(FATAL_ERROR "Installed portal boundary differs from exact public family headers: ${actual_headers}")
     endif()

@@ -35,6 +35,11 @@ row names another backend's authority, and each routed family remains its owning
 
 ## Standard endpoint
 
+The [native chooser source candidate](../reference/portal-choosers.md) keeps
+FileChooser/AppChooser wire, request lifetime and separate ordinary GUI outside
+the appearance module. Its family selector rows remain on compatibility
+providers until actual frontend/native-input qualification.
+
 The resident process owns:
 
 - bus name `org.freedesktop.impl.portal.desktop.qindaqt`;
