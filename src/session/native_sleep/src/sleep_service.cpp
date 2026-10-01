@@ -28,8 +28,8 @@ bool SleepService::start() {
   m_supervisorWatcher = new QDBusServiceWatcher(Session, m_bus,
       QDBusServiceWatcher::WatchForOwnerChange, this);
   connect(m_supervisorWatcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
-      [this](const QString &, const QString &, const QString &owner) {
-    if (owner != m_bus.baseService()) { m_coordinator.stop(); stop(); }
+      [this](const QString &, const QString &, const QString &replacementOwner) {
+    if (replacementOwner != m_bus.baseService()) { m_coordinator.stop(); stop(); }
   });
   return true;
 }
