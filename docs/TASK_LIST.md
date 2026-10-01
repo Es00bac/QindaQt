@@ -13,10 +13,11 @@ encrypted unlock and separate typed-device format confirmation through UDisks.
 Combined manager gates pass 9/9 CTests and 25/25 wrapper tests; strict wiki
 build and the 475-document validator pass on the combined source.
 
-Installed on qinda-top through Portage as
-`gui-apps/qindaqt-removable-media-0.1.0_p20260930-r1`, pinned by overlay `9c8c9cd`.
+Installed on both hosts through Portage as
+`gui-apps/qindaqt-removable-media-0.1.0_p20260930-r2`, pinned by overlay `d2fe9ad`.
+The component supports both existing desktop checkpoints.
 The installed synthetic UI, Activate-only singleton endpoint and 13/13 file
-integrity checks pass. Its watcher is active in the existing desktop; a packaged
+integrity checks pass. Its watcher is active on qinda-top; a packaged
 XDG entry handles future logins until the new supervisor is delivered.
 The already-connected NTFS data volume is mounted read-only because writable
 mounting was refused for filesystem errors; its ignored recovery partition is

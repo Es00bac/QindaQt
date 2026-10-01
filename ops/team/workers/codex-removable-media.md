@@ -2,13 +2,15 @@
 
 - Role: Implementer and integration coordinator for removable-media desktop handling
 - Provider: OpenAI Codex
-- Status: working — integrating accepted media source and publishing verified Portage delivery
+- Status: idle — removable-media delivery complete; available for bounded hardware qualification help
 - Base: 6f5c132d40251b059a5f67ea1a13ffafbd1b8b36
-- Branch: feature/removable-media
+- Branch: integrate/removable-media
 - Worktree: container-wm-removable-media
 - Ownership: media backend/controller/policy, session composition, documentation and acceptance
 
 ## Updates
+
+- 2026-10-01T01:40:50Z — Outcome delivered: accepted source 5bff539e is integrated as 25628a65 and synchronized into qinda's checkout without altering unrelated dirty work. Shared overlay d2fe9ad publishes same-source r2 with the current shared desktop floor. Both hosts pass installed fixture UI, library resolution and 13/13 integrity; qinda-top's watcher remains active and its external NTFS volume remains mounted read-only. The separate laptop showcase branch/Obsidian work is preserved. Read the First-party and Platform queues; offer bounded optical/hotplug/disposable-media qualification when appropriate media is explicitly available. No active worker claim remains.
 
 - 2026-10-01T01:23:17Z — Independent exact 5bff539e ACCEPT received and all four former external race reproductions now pass. Combined newer qinda source passes build, 9/9 CTests, 25/25 wrappers and strict 475-document wiki gates. Portage r1 is installed on qinda-top with fixture UI, 13/13 integrity, Activate-only singleton and live watcher ownership verified. Final shared source/overlay publication is underway; hardware/destructive qualification remains bounded.
 

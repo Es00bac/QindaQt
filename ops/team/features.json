@@ -1565,7 +1565,7 @@
           {
             "kind": "commit",
             "reference": "5bff539edd232b3b23c62b0301aaab2f1c25ff21",
-            "summary": "The separate removable-media handler is independently accepted and combined with current qinda source. Manager gates pass 9/9 CTests and 25/25 wrappers; installed Portage component r1 passes fixture UI, Activate-only singleton and 13/13 integrity checks on qinda-top. The current inserted NTFS data volume mounts read-only through UDisks after filesystem errors. Physical optical/hotplug/destructive qualification remains open; no broader milestone weights or state advance."
+            "summary": "The separate removable-media handler is independently accepted and combined with current qinda source. Manager gates pass 9/9 CTests and 25/25 wrappers; installed Portage component r2 passes fixture UI and 13/13 integrity checks on both hosts, with Activate-only singleton and live watcher ownership verified on qinda-top. The current inserted NTFS data volume mounts read-only through UDisks after filesystem errors. Physical optical/hotplug/destructive qualification remains open; no broader milestone weights or state advance."
           }
         ]
       },

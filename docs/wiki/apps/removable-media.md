@@ -64,6 +64,16 @@ Unplugging/replacing media invalidates the confirmation even when Linux reuses
 the same device name. Failed/uncertain operations are visible and are never
 automatically replayed. Authentication stays with the session's polkit agent.
 
+## Installed startup and packaging
+
+Portage's `gui-apps/qindaqt-removable-media` component owns the executable and
+launcher. Its XDG autostart entry starts `--watch` on older installed QindaQt
+sessions; the session-bus singleton prevents duplicate watchers when the new
+supervisor also starts it. Shared Controls/Tokens runtime remains desktop-owned.
+The component supports the shared pre20260927-r7 desktop floor, and UDisks plus
+FAT/exFAT/ext4 format providers are Portage dependencies. A full-desktop recipe
+must set `QINDAQT_BUILD_REMOVABLE_MEDIA=OFF` while this package owns the component.
+
 ## Boundaries and evidence
 
 The application separates pure inventory projection, atomic choice persistence,
