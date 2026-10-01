@@ -19,7 +19,9 @@ public:
   void start();
   void stop();
   bool canSuspend() const;
-  bool requestSuspend();
+  void queryCapability(SleepMode mode, std::function<void(bool)> completion);
+  bool requestSleep(SleepMode mode);
+  bool requestSuspend() { return requestSleep(SleepMode::Suspend); }
 Q_SIGNALS:
   void availabilityChanged();
   void suspendFinished(QindaQt::Session::NativeSleep::SleepResult result);

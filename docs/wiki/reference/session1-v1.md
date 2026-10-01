@@ -49,6 +49,8 @@ arbitrary process control, or a general shell capability token. Lock uses the
 standard session-bus ScreenSaver interface. Manual suspend uses the separate
 supervisor-owned Sleep1 facade and authenticated native protection
 ([ADR-0321](../adr/0321-supervisor-owned-native-sleep-admission.md));
+the additive Sleep1 mode contract is in
+[ADR-0325](../adr/0325-additive-native-sleep-modes.md).
 reboot/power-off use login1 behind the separate injected
 [`session_actions`](../architecture/module-boundaries.md) client. Power1 stays
 unchanged.

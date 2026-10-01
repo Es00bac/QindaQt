@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
+#include <qindaqt/session/native_sleep/sleep_mode.h>
 #include <QObject>
 #include <QTimer>
 #include <QDBusConnection>
@@ -27,7 +28,15 @@ public:
   bool available() const;
   bool hasDelayInhibitor() const;
   bool preparingForSleep() const { return available() && m_preparing; }
-  bool requestSuspend(std::function<bool()> protectedAdmission);
+  // Capability is caller-relative to this admitted supervisor connection;
+  // completion always runs once, including timeout or retired authority.
+  void queryCapability(SleepMode mode, std::function<void(bool)> completion);
+  bool requestSleep(SleepMode mode, std::function<bool()> protectedAdmission);
+  bool requestSuspend(std::function<bool()> protectedAdmission) {
+    return requestSleep(SleepMode::Suspend, std::move(protectedAdmission));
+  }
+  // Retire the exact request; dispatched work is uncertain and never replayed.
+  void cancelSleep();
   bool suspendDispatched() const { return m_suspendPending && m_mutationDispatched; }
   bool setLockedHint(bool protectedLocked);
   void releaseDelayInhibitor();
@@ -61,7 +70,7 @@ private:
   QDBusServiceWatcher *m_watcher = nullptr;
   QTimer m_lifetime;
   QString m_owner, m_path;
-  quint64 m_generation = 0;
+  quint64 m_generation = 0, m_requestSerial = 0;
   int m_delayFd = -1;
   bool m_started = false, m_ready = false, m_preparing = false, m_preparationSeen = false;
   bool m_acquiring = false, m_suspendPending = false, m_mutationDispatched = false;
