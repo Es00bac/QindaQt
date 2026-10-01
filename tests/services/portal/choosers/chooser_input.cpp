@@ -56,7 +56,10 @@ void input() {
             const auto id = desired.value("app").toString(); bool found = false;
             for (int row = 0; row < list->count(); ++row) {
                 auto *item = list->item(row); if (item->data(Qt::UserRole).toString() != id) continue;
-                list->scrollToItem(item); QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, list->visualItemRect(item).center()); found = true; break;
+                list->scrollToItem(item); QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, list->visualItemRect(item).center());
+                QFile audit(qEnvironmentVariable("QINDAQT_CHOOSER_TEST_AUDIT"));
+                if (audit.open(QIODevice::WriteOnly | QIODevice::Append)) audit.write("selected-app " + item->data(Qt::UserRole).toString().toUtf8() + '\n');
+                found = true; break;
             }
             if (!found) { QTimer::singleShot(100, qApp, input); return; }
         } else {
@@ -90,6 +93,11 @@ void input() {
             }
             if (desired.value("check").toBool()) {
                 auto *check = window->findChild<QCheckBox *>(QStringLiteral("portalChoice_check")); if (check && !check->isChecked()) QTest::mouseClick(check, Qt::LeftButton);
+            }
+            if (desired.value("choice").isDouble()) {
+                auto *choice = window->findChild<QComboBox *>(QStringLiteral("portalChoice_encoding"));
+                choice->setFocus(); QTest::keyClick(choice, Qt::Key_Home);
+                for (int index = 0; index < desired.value("choice").toInt(); ++index) QTest::keyClick(choice, Qt::Key_Down);
             }
         }
         auto *button = window->findChild<QPushButton *>(QStringLiteral("portalChooserAccept"));

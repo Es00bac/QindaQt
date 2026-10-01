@@ -67,6 +67,7 @@ private Q_SLOTS:
         }
         QVERIFY(QDir().mkpath(qEnvironmentVariable("XDG_DATA_HOME") + QStringLiteral("/applications")));
         installApplication(QStringLiteral("org.test.First")); installApplication(QStringLiteral("org.test.Second"));
+        installApplication(QStringLiteral("org.test.Caller"));
         startFrontend();
         QVERIFY(bus.connect(QStringLiteral("org.freedesktop.portal.Desktop"), {}, QStringLiteral("org.freedesktop.portal.Request"), QStringLiteral("Response"), &responses, SLOT(receive(quint32,QVariantMap))));
     }
@@ -74,11 +75,14 @@ private Q_SLOTS:
     void openSingleMultipleAndDirectory() {
         setInput({{"name", "literal %$` space.txt"}}); file("OpenFile", {}); success();
         QCOMPARE(uris(), QStringList{QUrl::fromLocalFile(fixture->filePath(QStringLiteral("literal %$` space.txt"))).toString(QUrl::FullyEncoded)});
-        reset(); setInput({{"files", QJsonArray{"one.txt", "two.txt"}}}); file("OpenFile", {{QStringLiteral("multiple"), true}}); success(); QCOMPARE(uris().size(), 2);
+        reset(); setInput({{"files", QJsonArray{"one.txt", "two.txt"}}}); file("OpenFile", {{QStringLiteral("multiple"), true}}); success();
+        const auto multiple = uris();
+        QCOMPARE(QSet<QString>(multiple.cbegin(), multiple.cend()), QSet<QString>({QUrl::fromLocalFile(fixture->filePath(QStringLiteral("one.txt"))).toString(QUrl::FullyEncoded), QUrl::fromLocalFile(fixture->filePath(QStringLiteral("two.txt"))).toString(QUrl::FullyEncoded)}));
         reset(); setInput({{"files", QJsonArray{"folder"}}}); file("OpenFile", {{QStringLiteral("directory"), true}}); success(); QCOMPARE(uris(), QStringList{QUrl::fromLocalFile(fixture->filePath(QStringLiteral("folder"))).toString(QUrl::FullyEncoded)});
     }
     void savePathsOverwriteCancellationAndOrderedFiles() {
         setInput({{"name", "new %$.txt"}}); file("SaveFile", {}); success(); QVERIFY(!QFile::exists(fixture->filePath(QStringLiteral("new %$.txt"))));
+        QCOMPARE(uris(), QStringList{QUrl::fromLocalFile(fixture->filePath(QStringLiteral("new %$.txt"))).toString(QUrl::FullyEncoded)});
         reset(); setInput({{"name", "existing.txt"}, {"overwrite", false}}); file("SaveFile", {}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 1U);
         QFile existing(fixture->filePath(QStringLiteral("existing.txt"))); QVERIFY(existing.open(QIODevice::ReadOnly)); QCOMPARE(existing.readAll(), QByteArray("fixture"));
         reset(); setInput({{"name", "existing.txt"}, {"overwrite", true}}); file("SaveFile", {}); success();
@@ -87,17 +91,20 @@ private Q_SLOTS:
     }
     void filtersChoicesAndCancel() {
         const FileFilters filters{{QStringLiteral("All"), {{0, QStringLiteral("*")}}}, {QStringLiteral("Text"), {{1, QStringLiteral("text/plain")}}}};
-        const AccessChoices choices{{QStringLiteral("check"), QStringLiteral("Check"), {}, QStringLiteral("false")}};
-        setInput({{"name", "one.txt"}, {"filter", 1}, {"check", true}});
+        const AccessChoices choices{{QStringLiteral("check"), QStringLiteral("Check"), {}, QStringLiteral("false")},
+            {QStringLiteral("encoding"), QStringLiteral("Encoding"), {{QStringLiteral("utf8"), QStringLiteral("UTF-8")}, {QStringLiteral("latin1"), QStringLiteral("Latin-1")}}, QStringLiteral("utf8")}};
+        setInput({{"name", "one.txt"}, {"filter", 1}, {"check", true}, {"choice", 1}});
         file("OpenFile", {{QStringLiteral("filters"), QVariant::fromValue(filters)}, {QStringLiteral("choices"), QVariant::fromValue(choices)}}); success();
         const auto filter = qdbus_cast<FileFilter>(responses.results.value(QStringLiteral("current_filter"))); QCOMPARE(filter.label, QStringLiteral("Text"));
-        const auto values = qdbus_cast<ChoiceValues>(responses.results.value(QStringLiteral("choices"))); QCOMPARE(values.size(), 1); QCOMPARE(values.first().value, QStringLiteral("true"));
+        const auto values = qdbus_cast<ChoiceValues>(responses.results.value(QStringLiteral("choices"))); QCOMPARE(values.size(), 2); QCOMPARE(values.first().value, QStringLiteral("true")); QCOMPARE(values.last().value, QStringLiteral("latin1"));
         reset(); setInput({{"cancel", true}}); file("OpenFile", {}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 1U);
     }
     void appCandidatesActualFrontendUpdateAndCancel() {
         setInput({{"app", "org.test.First"}}); openUri(); success();
+        QVERIFY(audit().contains("selected-app org.test.First"));
         reset(); setInput({{"app", "org.test.Third"}}); openUri(); QTRY_VERIFY_WITH_TIMEOUT(audit().contains(" mapped"), 10000);
         installApplication(QStringLiteral("org.test.Third")); success(); // Real frontend GAppInfoMonitor calls UpdateChoices.
+        QVERIFY(audit().contains("selected-app org.test.Third"));
         reset(); setInput({{"cancel", true}}); openUri(); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 1U);
     }
     void invalidForeignParentAndValidParentLoss() {
@@ -142,6 +149,10 @@ private:
     void startFrontend() {
         frontend.start(QStringLiteral(QINDAQT_FRONTEND_EXECUTABLE), {QStringLiteral("--verbose")}); QVERIFY(frontend.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered(QStringLiteral("org.freedesktop.portal.Desktop")).value(), 10000);
+        auto registration = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.portal.Desktop"), QStringLiteral("/org/freedesktop/portal/desktop"), QStringLiteral("org.freedesktop.host.portal.Registry"), QStringLiteral("Register"));
+        registration << QStringLiteral("org.test.Caller") << QVariantMap{};
+        QDBusPendingCallWatcher registering(bus.asyncCall(registration)); QTRY_VERIFY(registering.isFinished());
+        const QDBusPendingReply<> registered = registering; QVERIFY2(!registered.isError(), qPrintable(registered.error().message()));
     }
     QByteArray audit() { QFile file(qEnvironmentVariable("QINDAQT_CHOOSER_TEST_AUDIT")); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray{}; }
     pid_t helperPid() { return static_cast<pid_t>(audit().split(' ').first().toInt()); }
