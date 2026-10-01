@@ -84,6 +84,11 @@ the same protection before Qt startup, and the runner removes inherited
 Screenshot/Wayland permission-bypass variables. A dumpable controller or bypass
 cannot qualify production.
 
+The runner accepts an optional `--case NAME` after its nine artifact paths for
+bounded diagnostics using unchanged Qt assertions. Only the default three-group
+command qualifies the full journey. A protected admission failure is expected to
+produce a failed success assertion, not a capture-usability pass.
+
 The missing public seam must authenticate both the resident Wayland capture
 peer and child DBus screenshot caller without making either process dumpable.
 It must bind the selected current compositor, authenticated UID/PID/PIDFD,
