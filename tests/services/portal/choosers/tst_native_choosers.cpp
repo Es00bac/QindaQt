@@ -5,6 +5,7 @@
 #include <qindaqt/services/portal/chooser_types.h>
 #include <qindaqt/services/portal/session_binding.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
+#include <qindaqt/compositor_names/compositor_names.h>
 #include <QDBusConnectionInterface>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
@@ -44,6 +45,9 @@ class NativeChoosersTest final : public QObject {
 private Q_SLOTS:
     void initTestCase() {
         registerChooserTypes(); QVERIFY(bus.isConnected());
+        // The socket is created before the public bus authority is ready.
+        // Wait for that actual owner, never infer it from pathname existence.
+        QTRY_VERIFY(bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).isValid());
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.portal.Documents")));
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.impl.portal.PermissionStore")));
         backend = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), QStringLiteral("chooser-backend")));

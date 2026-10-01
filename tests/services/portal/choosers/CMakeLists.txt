@@ -18,7 +18,7 @@ qt_add_executable(qindaqt_portal_chooser_input "${chooser_dir}/main.cpp" "${choo
 target_link_libraries(qindaqt_portal_chooser_input PRIVATE QindaQt::PortalChooserPolicy QindaQt::ForeignParent Qt6::Widgets Qt6::Test Wayland::Client)
 qindaqt_enable_warnings(qindaqt_portal_chooser_input)
 qt_add_executable(qindaqt_portal_native_chooser_tests tst_native_choosers.cpp)
-target_link_libraries(qindaqt_portal_native_chooser_tests PRIVATE QindaQt::PortalComposition QindaQt::PortalService Qt6::Test)
+target_link_libraries(qindaqt_portal_native_chooser_tests PRIVATE QindaQt::PortalComposition QindaQt::PortalService QindaQt::CompositorNames Qt6::Test)
 target_compile_definitions(qindaqt_portal_native_chooser_tests PRIVATE QINDAQT_FRONTEND_EXECUTABLE="${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}")
 qindaqt_enable_warnings(qindaqt_portal_native_chooser_tests)
 add_dependencies(qindaqt_portal_native_chooser_tests qindaqt_portal_chooser_input
