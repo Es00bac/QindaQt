@@ -130,7 +130,7 @@ void SourceProfileRuntimeTests::sourceSequenceNoneAndExternalHold()
 {
     Runtime row; QVERIFY(row.start());
     SET_PROFILE(row, "power.profile.ac", "performance");
-    SET_PROFILE(row, "power.profile.battery", "power-saver");
+    SET_PROFILE(row, "power.profile.battery", "none");
     SET_PROFILE(row, "power.profile.lowBattery", "power-saver");
     QTRY_VERIFY(row.power->hasSnapshot() && row.power->snapshot().profiles.holds.size() == 2);
     QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("performance"));
@@ -139,14 +139,14 @@ void SourceProfileRuntimeTests::sourceSequenceNoneAndExternalHold()
     row.source(false); row.ppd->emitPropertiesChanged(); QTest::qWait(150);
     QCOMPARE(row.ppd->holdRequests.size(), count);
     row.source(true);
-    QTRY_COMPARE(row.ppd->holdRequests.size(), count + 1);
-    QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("power-saver"));
+    QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 1);
+    QCOMPARE(row.ppd->holdRequests.size(), count);
     QCOMPARE(row.ppd->releaseRequests.size(), count);
     row.source(true, 3);
-    QTRY_COMPARE(row.ppd->holdRequests.size(), count + 2);
+    QTRY_COMPARE(row.ppd->holdRequests.size(), count + 1);
     QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("power-saver"));
     row.source(false);
-    QTRY_COMPARE(row.ppd->holdRequests.size(), count + 3);
+    QTRY_COMPARE(row.ppd->holdRequests.size(), count + 2);
     QCOMPARE(row.ppd->holdRequests.last().profile, QStringLiteral("performance"));
     SET_PROFILE(row, "power.profile.ac", "none");
     QTRY_VERIFY(row.power->snapshot().profiles.holds.size() == 1);
