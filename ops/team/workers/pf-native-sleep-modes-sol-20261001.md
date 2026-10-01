@@ -1,10 +1,10 @@
 # Native sleep modes implementer
 
-- Status: working — prepare exact-source private sleep-mode regression gate after successful focused build; awaiting runtime grant.
+- Status: working — execute manager-granted exact eight-row native sleep private regression gate in an empty-activation readonly namespace.
 - Base: e21c1757d45ee4814734ad646a8c95b2c5b14b00
 - Branch: worker/pf-native-sleep-modes-20261001
 - Ownership: src/session/native_sleep, focused tests/session/native_sleep, native sleep documentation, own records.
-- Compiler: released after exit0; private runtime: requested, not granted.
+- Compiler: released after exit0; private runtime: granted and executing exact eight rows.
 
 ## Updates
 
@@ -15,3 +15,5 @@
 - 2026-10-01T14:01:16+00:00 — Actual strict seven-target configure/build started on clean qinda052697d3 at13:59:55Z, retained exec18092 and build/native-sleep-modes logs. Portage MAKEOPTS directly -j24 -l24;13GiB free. No runtime started. Release compiler and request eight serialized private rows after successful build.
 
 - 2026-10-01T14:03:23+00:00 — Exact052 strict configure/build exit0; raw330 actual Ninja actions and no FAILED markers. Compiler released immediately to root/capture. Eight-row private-bus gate requested separately; no tests yet. Raw command/status JSON retained.
+
+- 2026-10-01T14:08:51+00:00 — Separate private grant executing retained24958 since14:08:08Z. Manager approved readonly session.conf mount overlay because installed dbus1.16 always appends compiled datadir. Exact source identity verified; namespace guard verifies UID and mount hash/readonly flags before tests. Installed conf before/after hash retained; no fallback.
