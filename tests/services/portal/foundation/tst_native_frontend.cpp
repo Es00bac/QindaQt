@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/portal/foundation_composition.h>
 #include <qindaqt/services/portal/resident_portal_service.h>
+#include <qindaqt/services/portal/appearance_source.h>
 #include <qindaqt/services/notification_host/resident_notification_host.h>
 #include <qindaqt/services/notification_host/qt_deadline_scheduler.h>
 #include <qindaqt/services/notifications/notification_clock.h>
@@ -118,6 +119,30 @@ private Q_SLOTS:
         QCOMPARE(actions.id, QStringLiteral("native")); QCOMPARE(actions.action, QStringLiteral("reply"));
         auto remove = method("org.freedesktop.portal.Notification", "RemoveNotification", {QStringLiteral("native")}); QTRY_VERIFY(remove->isFinished());
         QTRY_VERIFY(host->service().snapshot()->notifications.isEmpty());
+    }
+    void routingRowsAreRequiredWithClosedDefault() {
+        frontend.terminate(); QVERIFY(frontend.waitForFinished(5000));
+        QTRY_VERIFY(!bus.interface()->isServiceRegistered(QStringLiteral("org.freedesktop.portal.Desktop")).value());
+        const QString path = qEnvironmentVariable("XDG_DESKTOP_PORTAL_DIR") + QStringLiteral("/qindaqt-portals.conf");
+        QFile file(path); QVERIFY(file.open(QIODevice::ReadOnly)); const QByteArray original = file.readAll(); file.close();
+        QByteArray withdrawn = original;
+        for (const auto *family : {"Access", "Notification", "Email"}) {
+            const QByteArray row = QByteArray("org.freedesktop.impl.portal.") + family + "=qindaqt\n";
+            QVERIFY(withdrawn.contains(row)); withdrawn.replace(row, QByteArray{});
+        }
+        QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate)); QCOMPARE(file.write(withdrawn), withdrawn.size()); file.close();
+        startFrontend();
+        auto probe = method("org.freedesktop.DBus.Introspectable", "Introspect", {});
+        QTRY_VERIFY(probe->isFinished()); const QDBusPendingReply<QString> reply = *probe; QVERIFY(!reply.isError());
+        for (const auto *family : {"Camera", "Notification", "Email"})
+            QVERIFY2(!reply.value().contains(QStringLiteral("org.freedesktop.portal.") + QString::fromLatin1(family)), family);
+        QVERIFY(audit().isEmpty());
+        frontend.terminate(); QVERIFY(frontend.waitForFinished(5000));
+        QTRY_VERIFY(!bus.interface()->isServiceRegistered(QStringLiteral("org.freedesktop.portal.Desktop")).value());
+        QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate)); QCOMPARE(file.write(original), original.size()); file.close();
+        startFrontend();
+        auto registration = method("org.freedesktop.host.portal.Registry", "Register", {QStringLiteral("org.test.PrivateApp"), QVariantMap{}}); QTRY_VERIFY(registration->isFinished());
+        const QDBusPendingReply<> registered = *registration; QVERIFY(!registered.isError());
     }
     void frontendOwnerLossRetiresMappedHelper() {
         qputenv("QINDAQT_PORTAL_TEST_MODE", "hold"); request("org.freedesktop.portal.Camera", "AccessCamera", {QVariantMap{}});
