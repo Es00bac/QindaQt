@@ -13,6 +13,7 @@
 
 #include <cerrno>
 #include <fcntl.h>
+#include <limits>
 #include <unistd.h>
 
 namespace QindaQt::CompositorCapture {
@@ -22,9 +23,6 @@ const auto ScreenshotService = QindaQt::CompositorNames::screenshotService;
 const auto ScreenshotPath = QindaQt::CompositorNames::screenshotPath;
 const auto ScreenshotInterface = QindaQt::CompositorNames::screenshotInterface;
 const auto KWinService = QindaQt::CompositorNames::service;
-// The pipe may still be draining after the reply; allow for a large
-// multi-output capture on a busy machine.
-constexpr int PipeGraceMilliseconds = 10000;
 
 DecodedCapture failure(const QString &error)
 {
@@ -60,7 +58,8 @@ KWinCapturePort::~KWinCapturePort()
 
 bool KWinCapturePort::capture(const KWinCaptureCall &call)
 {
-    if (m_active)
+    if (m_active || call.timeoutMilliseconds <= 0 || call.pipeGraceMilliseconds < 0
+        || call.timeoutMilliseconds > std::numeric_limits<int>::max() - call.pipeGraceMilliseconds)
         return false;
     reset();
     m_active = true;
@@ -104,6 +103,10 @@ bool KWinCapturePort::capture(const KWinCaptureCall &call)
     arguments.append(call.options);
     arguments.append(QVariant::fromValue(QDBusUnixFileDescriptor(descriptors[1])));
     message.setArguments(arguments);
+    // AGENT-GUARD: a protected writer can reply after the whole pipe drains.
+    // Start the original outer clock at send, never after reply/EOF; elapsed
+    // checks also deny completion before queued timer delivery.
+    m_deadline = QDeadlineTimer(call.timeoutMilliseconds + call.pipeGraceMilliseconds, Qt::PreciseTimer);
     const QDBusPendingCall pending = m_bus.asyncCall(message, call.timeoutMilliseconds);
     // AGENT-GUARD: drop every local copy of the write end once sent. A copy
     // kept alive in the message or argument list prevents pipe EOF, and a
@@ -124,7 +127,7 @@ bool KWinCapturePort::capture(const KWinCaptureCall &call)
         else
             receivedReply(serial, reply.value(), {}, {});
     });
-    m_timeout.start(call.timeoutMilliseconds + PipeGraceMilliseconds);
+    m_timeout.start(static_cast<int>(m_deadline.remainingTime()));
     return true;
 }
 
@@ -137,6 +140,7 @@ void KWinCapturePort::cancel()
 void KWinCapturePort::reset()
 {
     m_timeout.stop();
+    m_deadline = QDeadlineTimer(QDeadlineTimer::Forever);
     closePipe();
     m_metadata.clear();
     m_bytes.clear();
@@ -152,6 +156,7 @@ void KWinCapturePort::drainPipe()
         return;
     char chunk[65536];
     while (true) {
+        if (m_deadline.hasExpired()) { finish(failure(tr("KWin did not finish the screenshot in time."))); return; }
         const ssize_t count = ::read(m_readFd, chunk, sizeof(chunk));
         if (count > 0) {
             if (m_bytes.size() > kMaxRawCaptureBytes - count) {
@@ -181,6 +186,7 @@ void KWinCapturePort::receivedReply(quint64 serial, const QVariantMap &metadata,
 {
     if (!m_active || serial != m_serial)
         return;
+    if (m_deadline.hasExpired()) { finish(failure(tr("KWin did not finish the screenshot in time."))); return; }
     if (!errorName.isEmpty()) {
         DecodedCapture result;
         result.cancelled = isKWinCancellation(errorName);
@@ -202,7 +208,9 @@ void KWinCapturePort::finishIfReady()
         finish(failure(tr("KWin restarted during the screenshot.")));
         return;
     }
-    finish(decodeRawCapture(m_metadata, m_bytes));
+    auto decoded = decodeRawCapture(m_metadata, m_bytes);
+    if (m_deadline.hasExpired()) finish(failure(tr("KWin did not finish the screenshot in time.")));
+    else finish(std::move(decoded));
 }
 
 void KWinCapturePort::finish(DecodedCapture result)

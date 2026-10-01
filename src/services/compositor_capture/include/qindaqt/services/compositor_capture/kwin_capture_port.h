@@ -4,6 +4,7 @@
 #include <qindaqt/services/compositor_capture/capture_port.h>
 
 #include <QByteArray>
+#include <QDeadlineTimer>
 #include <QDBusConnection>
 #include <QTimer>
 #include <QVariantMap>
@@ -14,12 +15,12 @@ namespace QindaQt::CompositorCapture {
 
 // Captures through KWin's restricted org.kde.KWin.ScreenShot2 interface.
 //
-// AGENT-CONTRACT (ADR-0289, following ADR-0241): KWin admits this process
-// only because the installed org.qindaqt.Screenshot desktop entry names the
-// exact executable and lists org.kde.KWin.ScreenShot2 in
-// X-KDE-DBUS-Restricted-Interfaces. The port refuses to talk to a
-// ScreenShot2 owner that is not also org.kde.KWin, reads the raw image from
-// a pipe it creates, and decodes it only after both the reply and pipe EOF.
+// AGENT-CONTRACT (ADR-0289/0324): permission belongs to the compositor's
+// ordinary desktop-entry or authenticated protected-job lease, never this
+// transport. Native and compatibility screenshot owners must agree. Decode
+// only after complete reply and pipe EOF within the call's original total.
+// Protected consumers set30s pending timeout/zero grace; legacy builders keep
+// their existing timeout plus10s grace, including interactive selection.
 class KWinCapturePort final : public CapturePort {
     Q_OBJECT
 
@@ -44,6 +45,7 @@ private:
     QDBusConnection m_bus;
     QSocketNotifier *m_notifier = nullptr;
     QTimer m_timeout;
+    QDeadlineTimer m_deadline;
     QVariantMap m_metadata;
     QByteArray m_bytes;
     QString m_kwinOwner;
