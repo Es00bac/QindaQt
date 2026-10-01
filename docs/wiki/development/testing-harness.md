@@ -4555,7 +4555,10 @@ closed before the capture helper maps. An unchanged-producer stderr probe
 identifies Qt host-portal registration failing with an empty desktop app ID;
 `QT_FATAL_WARNINGS=1` therefore terminates the producer after its first completed
 frame. The fixture now supplies `org.test.CapturePixels` as its QApplication
-desktop identity and a matching real task-only desktop entry. It retains fatal
+desktop identity and a matching real task-only desktop entry. The real frontend
+starts before that identified Qt producer because registration is immediate; an
+earlier repair attempt retained a fatal ServiceUnknown failure from the opposite
+startup order. It retains fatal
 warnings, producer stderr/lifecycle evidence, and liveness checks alongside the
 unchanged actual pixel, continuing-frame and privacy assertions. This bounded
 fixture repair still requires executable native verification; the earlier blank

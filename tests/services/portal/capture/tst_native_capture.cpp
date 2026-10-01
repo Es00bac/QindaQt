@@ -68,6 +68,9 @@ private Q_SLOTS:
         const auto executableResult = readlink(proc.constData(), executable, sizeof(executable)); const int executableError = errno;
         QCOMPARE(executableResult, ssize_t(-1)); QCOMPARE(executableError, EACCES);
         qputenv("QINDAQT_CAPTURE_TEST_AUDIT", QFile::encodeName(QDir(qEnvironmentVariable("XDG_RUNTIME_DIR")).filePath("qindaqt-capture.audit")));
+        // A desktop-identified Qt producer registers immediately with the real
+        // host frontend. Start that authority before launching its ordinary UI.
+        startFrontend();
         QindaQt::Platform::Compositor::CompositorAttachment attachment(*selected, qEnvironmentVariable("XDG_RUNTIME_DIR"), [this](const QString &owner) { return owner == selected->baseService(); });
         QVERIFY(attachment.attach(selected->baseService(), "qindaqt-8")); const int pixelFd = attachment.openConnection(); QVERIFY(pixelFd >= 0);
         auto pixelEnv = QProcessEnvironment::systemEnvironment(); pixelEnv.remove("WAYLAND_DISPLAY"); pixelEnv.insert("WAYLAND_SOCKET", QString::number(pixelFd)); pixels.setProcessEnvironment(pixelEnv);
@@ -90,7 +93,7 @@ private Q_SLOTS:
             if (!audit.open(QIODevice::WriteOnly) || audit.write(pixelReady) != pixelReady.size()) return false;
             return pixelReady.contains("completed private pixels frame ");
         };
-        QTRY_VERIFY_WITH_TIMEOUT(pixelFrameReady(), 10000); startFrontend();
+        QTRY_VERIFY_WITH_TIMEOUT(pixelFrameReady(), 10000);
         QCOMPARE(pixels.state(), QProcess::Running);
         QVERIFY(bus.connect("org.freedesktop.portal.Desktop", {}, "org.freedesktop.portal.Request", "Response", &responses, SLOT(receive(quint32,QVariantMap))));
     }
