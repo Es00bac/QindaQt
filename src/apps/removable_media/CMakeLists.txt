@@ -48,14 +48,14 @@ if(BUILD_TESTING)
             qindaqt_removable_media_core Qt6::Test)
         qindaqt_enable_warnings(qindaqt_media_${behavior}_tests)
         if(behavior STREQUAL "udisks")
-            add_test(NAME qindaqt.media-udisks
+            add_test(NAME qindaqt.removable-media-udisks
                 COMMAND "${QINDAQT_MEDIA_DBUS_RUN_SESSION}" -- $<TARGET_FILE:qindaqt_media_udisks_tests>)
-            set_tests_properties(qindaqt.media-udisks PROPERTIES
+            set_tests_properties(qindaqt.removable-media-udisks PROPERTIES
                 ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
                 LABELS "apps;media;integration;private-bus" TIMEOUT 60)
         else()
-            add_test(NAME qindaqt.media-policy COMMAND qindaqt_media_policy_tests)
-            set_tests_properties(qindaqt.media-policy PROPERTIES LABELS "apps;media;policy;pure")
+            add_test(NAME qindaqt.removable-media-policy COMMAND qindaqt_media_policy_tests)
+            set_tests_properties(qindaqt.removable-media-policy PROPERTIES LABELS "apps;media;policy;pure")
         endif()
     endforeach()
     qt_add_executable(qindaqt_media_qml_tests tests/tst_media_qml.cpp)
@@ -69,8 +69,8 @@ if(BUILD_TESTING)
         QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_dependencies(qindaqt_media_qml_tests qindaqt_controls_qmlplugin qindaqt_tokens_qmlplugin)
     qindaqt_enable_warnings(qindaqt_media_qml_tests)
-    add_test(NAME qindaqt.media-qml COMMAND qindaqt_media_qml_tests)
-    set_tests_properties(qindaqt.media-qml PROPERTIES
+    add_test(NAME qindaqt.removable-media-qml COMMAND qindaqt_media_qml_tests)
+    set_tests_properties(qindaqt.removable-media-qml PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
         LABELS "apps;media;qml;offscreen")
 endif()
