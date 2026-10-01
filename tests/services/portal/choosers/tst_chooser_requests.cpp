@@ -51,6 +51,23 @@ private Q_SLOTS:
         Q_EMIT ui->completed(token, RequestResponse::Success, QJsonObject{{"choice", "org.test.One"}});
         QTRY_VERIFY(reply->isFinished()); const QDBusPendingReply<quint32, QVariantMap> result = *reply; QCOMPARE(result.argumentAt<0>(), 2U); QVERIFY(result.argumentAt<1>().isEmpty());
     }
+    void appUpdatesFenceOwnerHandleAndKnownTypes() {
+        auto pending = app(); QTRY_COMPARE(ui->opens, 1);
+        const QVariantList offered{QVariant::fromValue(QDBusObjectPath(path)), QStringList{QStringLiteral("org.test.Two")}};
+        auto denied = call("org.freedesktop.impl.portal.AppChooser", "UpdateChoices", offered, *stranger);
+        QTRY_VERIFY(denied->isFinished()); const QDBusPendingReply<> deniedResult = *denied;
+        QVERIFY(deniedResult.isError()); QCOMPARE(deniedResult.error().name(), QStringLiteral("org.freedesktop.DBus.Error.AccessDenied")); QCOMPARE(ui->updates, 0);
+        auto missing = call("org.freedesktop.impl.portal.AppChooser", "UpdateChoices",
+            {QVariant::fromValue(QDBusObjectPath(path + QStringLiteral("missing"))), QStringList{QStringLiteral("org.test.Two")}});
+        QTRY_VERIFY(missing->isFinished()); const QDBusPendingReply<> missingResult = *missing;
+        QVERIFY(missingResult.isError()); QCOMPARE(missingResult.error().name(), QStringLiteral("org.freedesktop.portal.Error.NotFound")); QVERIFY(ui->token);
+        auto invalid = call("org.freedesktop.impl.portal.AppChooser", "UpdateChoices",
+            {QVariant::fromValue(QDBusObjectPath(path)), QStringList{QStringLiteral("not/a/canonical/id")}});
+        QTRY_VERIFY(invalid->isFinished()); const QDBusPendingReply<> invalidResult = *invalid;
+        QVERIFY(invalidResult.isError()); QCOMPARE(invalidResult.error().name(), QStringLiteral("org.freedesktop.DBus.Error.InvalidArgs"));
+        QTRY_VERIFY(pending->isFinished()); const QDBusPendingReply<quint32, QVariantMap> retired = *pending;
+        QCOMPARE(retired.argumentAt<0>(), 2U); QVERIFY(retired.argumentAt<1>().isEmpty()); QVERIFY(!ui->token);
+    }
     void frontendLossAuthorityLossAndUnauthorizedCaller() {
         auto denied = file("OpenFile", {}, *stranger); QTRY_VERIFY(denied->isFinished()); const QDBusPendingReply<quint32, QVariantMap> denial = *denied; QVERIFY(denial.isError()); QCOMPARE(ui->opens, 0);
         auto pending = file("OpenFile", {}); QTRY_VERIFY(ui->token != 0); ui->allowed = false; Q_EMIT ui->authorityLost();
