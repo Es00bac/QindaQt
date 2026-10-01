@@ -71,7 +71,9 @@ build, runtime/privacy/sleep 33/33, fatal privacy 9/9, portals/choosers 24/24 an
 Screenshot 6/6. Exact-fork ABI pin/rejection and seven private plugin/output
 scenarios pass. The synthetic native key-store UI journey passes with seven Qt
 cases and fourteen visible production-prompt approvals. A shell-disabled test
-configuration repair is under exact independent review; actual native shell
+configuration repair `37347fe4` is independently accepted and merged with review
+at `61e07eb8`; its integrated configuration rerun follows the current native
+popup worker's gate. Actual native shell
 popup mapping, hardware and consolidated installed qualification remain open.
 No milestone or installed
 Plasma-removal completion advances from candidate activity.
