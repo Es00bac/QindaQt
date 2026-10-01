@@ -62,4 +62,16 @@ target_link_libraries(qindaqt_portal_email PUBLIC QindaQt::PortalRequests QindaQ
 portal_library(qindaqt_portal_composition PortalComposition)
 target_sources(qindaqt_portal_composition PRIVATE ../src/foundation_composition.cpp
     PUBLIC FILE_SET HEADERS BASE_DIRS ../include FILES ../include/qindaqt/services/portal/foundation_composition.h)
-target_link_libraries(qindaqt_portal_composition PUBLIC QindaQt::PortalFoundation QindaQt::PortalNotifications QindaQt::PortalEmail)
+target_link_libraries(qindaqt_portal_composition PUBLIC QindaQt::PortalFoundation QindaQt::PortalNotifications QindaQt::PortalEmail QindaQt::PortalChoosers)
+
+portal_library(qindaqt_portal_chooser_policy PortalChooserPolicy)
+target_sources(qindaqt_portal_chooser_policy PRIVATE ../src/chooser_wire.cpp ../src/chooser_frames.cpp
+    ../src/file_chooser_policy.cpp ../src/app_chooser_policy.cpp
+    PUBLIC FILE_SET HEADERS BASE_DIRS ../include FILES ../include/qindaqt/services/portal/chooser_types.h)
+target_link_libraries(qindaqt_portal_chooser_policy PUBLIC QindaQt::PortalAccessPolicy QindaQt::ApplicationCatalog)
+portal_library(qindaqt_portal_choosers PortalChoosers)
+target_sources(qindaqt_portal_choosers PRIVATE ../src/file_chooser_adaptor.cpp ../src/app_chooser_adaptor.cpp ../src/process_chooser.cpp
+    PUBLIC FILE_SET HEADERS BASE_DIRS ../include FILES ../include/qindaqt/services/portal/chooser_ui.h
+    ../include/qindaqt/services/portal/file_chooser_adaptor.h ../include/qindaqt/services/portal/app_chooser_adaptor.h
+    ../include/qindaqt/services/portal/process_chooser.h)
+target_link_libraries(qindaqt_portal_choosers PUBLIC QindaQt::PortalChooserPolicy QindaQt::PortalSession)

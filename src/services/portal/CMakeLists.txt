@@ -54,6 +54,7 @@ qindaqt_enable_warnings(qindaqt_portal_service)
 
 add_subdirectory(foundation)
 add_subdirectory(consent)
+add_subdirectory(choosers)
 
 qt_add_executable(xdg-desktop-portal-qindaqt app/main.cpp)
 target_link_libraries(

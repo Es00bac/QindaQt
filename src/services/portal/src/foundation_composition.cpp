@@ -5,6 +5,9 @@
 #include <qindaqt/services/portal/notification_adaptor.h>
 #include <qindaqt/services/portal/inhibit_adaptor.h>
 #include <qindaqt/services/portal/email_adaptor.h>
+#include <qindaqt/services/portal/file_chooser_adaptor.h>
+#include <qindaqt/services/portal/app_chooser_adaptor.h>
+#include <qindaqt/services/portal/process_chooser.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
 #include <qindaqt/application_catalog/application_directory_scan.h>
 namespace QindaQt::Services::Portal {
@@ -13,6 +16,7 @@ public:
     PortalSessionBinding session;
     RequestRegistry requests;
     ProcessAccessConsent consent;
+    ProcessChooser chooser;
     QtNativeNotifications notifications;
     QindaQt::Power::QtPowerTransport power;
     PowerIdleInhibition idle;
@@ -24,10 +28,13 @@ public:
     std::unique_ptr<NotificationAdaptor> notification;
     std::unique_ptr<InhibitAdaptor> inhibit;
     std::unique_ptr<EmailAdaptor> email;
+    std::unique_ptr<FileChooserAdaptor> fileChooser;
+    std::unique_ptr<AppChooserAdaptor> appChooser;
     Private(QObject &host, QDBusConnection bus, QString runtime, QString helper,
         QString relay, const QStringList &roots,
-        QindaQt::ApplicationCatalog::DirectoryScan scan)
+        QindaQt::ApplicationCatalog::DirectoryScan scan, QString chooserHelper)
         : session(bus, std::move(runtime)), requests(bus), consent(session, bus, std::move(helper)),
+          chooser(session, consent, std::move(chooserHelper)),
           notifications(bus), power(bus), idle(power, [this] { return consent.admitted(); }),
           store(QindaQt::Apps::SettingsDefaultApps::createSessionDefaultApplicationsStore(roots, scan)),
           uri(*store, std::move(scan), std::move(relay),
@@ -36,7 +43,12 @@ public:
           access(std::make_unique<AccessAdaptor>(host, requests, consent)),
           notification(std::make_unique<NotificationAdaptor>(host, requests, notifications, bus)),
           inhibit(std::make_unique<InhibitAdaptor>(host, requests, idle, bus)),
-          email(std::make_unique<EmailAdaptor>(host, requests, uri, [this] { return consent.admitted(); })) {
+          email(std::make_unique<EmailAdaptor>(host, requests, uri, [this] { return consent.admitted(); })),
+          fileChooser(std::make_unique<FileChooserAdaptor>(host, requests, chooser)),
+          appChooser(std::make_unique<AppChooserAdaptor>(host, requests, chooser, [roots] {
+              return QindaQt::ApplicationCatalog::scanApplicationDirectories(roots,
+                  QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay);
+          })) {
         QObject::connect(&consent, &AccessConsent::authorityLost, &requests, [this] {
             requests.retireAll(); idle.revoke();
         });
@@ -44,9 +56,13 @@ public:
 };
 PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusConnection bus,
     QString runtime, QString consent, QString relay, QStringList roots)
+    : PortalFoundationComposition(host, std::move(bus), std::move(runtime), std::move(consent),
+        std::move(relay), std::move(roots), QString{}) {}
+PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusConnection bus,
+    QString runtime, QString consent, QString relay, QStringList roots, QString chooser)
     : d(std::make_unique<Private>(host, bus, std::move(runtime), std::move(consent), std::move(relay), roots,
         QindaQt::ApplicationCatalog::scanApplicationDirectories(roots,
-            QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay))) {}
+            QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay), std::move(chooser))) {}
 PortalFoundationComposition::~PortalFoundationComposition() { stop(); }
 bool PortalFoundationComposition::start() { return d->session.start(); }
 void PortalFoundationComposition::stop() { d->requests.retireAll(); d->idle.revoke(); d->session.stop(); }

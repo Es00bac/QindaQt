@@ -99,7 +99,8 @@ int main(int argc, char **argv)
         QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation),
         helpers.filePath(QStringLiteral("qindaqt-portal-consent")),
         helpers.filePath(QStringLiteral("qindaqt-uri-relay")),
-        QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation));
+        QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation),
+        helpers.filePath(QStringLiteral("qindaqt-portal-chooser")));
     if (!foundation.start()) {
         std::fprintf(stderr, "xdg-desktop-portal-qindaqt: native composition unavailable\n");
         return 3;
