@@ -24,6 +24,8 @@
 #include <QWidget>
 #include <QtTest>
 #include <signal.h>
+#include <sys/prctl.h>
+#include <sys/resource.h>
 #include <unistd.h>
 using namespace QindaQt::Services::Portal;
 class Appearance final : public AppearanceSource {
@@ -166,5 +168,14 @@ private:
     QDBusConnection bus = QDBusConnection::sessionBus(); QProcess frontend; Appearance appearance; Responses responses; ExportProcess pixels;
     std::unique_ptr<QDBusConnection> backend, selected; std::unique_ptr<ResidentPortalService> resident; std::unique_ptr<PortalFoundationComposition> composition; QStringList requests;
 };
-QTEST_GUILESS_MAIN(NativeCaptureTest)
+int main(int argc, char **argv) {
+    // AGENT-GUARD: Match protected resident startup before opening any peer.
+    // Dumpable fixtures can falsely qualify restricted capture unavailable to
+    // the production backend; desktop metadata alone is not authentication.
+    struct rlimit cores{0, 0};
+    if (setrlimit(RLIMIT_CORE, &cores) != 0 || prctl(PR_SET_DUMPABLE, 0) != 0) return 2;
+    QCoreApplication application(argc, argv);
+    NativeCaptureTest test;
+    return QTest::qExec(&test, argc, argv);
+}
 #include "tst_native_capture.moc"

@@ -10,9 +10,9 @@ class CapturePolicyTest final : public QObject {
 private Q_SLOTS:
     void exactWireAndSelectionSurface() {
         registerCaptureWireTypes();
-        QCOMPARE(QByteArray(qDBusMetaType::typeToSignature(QMetaType::fromType<CaptureColor>())), QByteArray("(ddd)"));
-        QCOMPARE(QByteArray(qDBusMetaType::typeToSignature(QMetaType::fromType<CaptureCoordinate>())), QByteArray("(ii)"));
-        QCOMPARE(QByteArray(qDBusMetaType::typeToSignature(QMetaType::fromType<CaptureStreams>())), QByteArray("a(ua{sv})"));
+        QCOMPARE(QByteArray(QDBusMetaType::typeToSignature(QMetaType::fromType<CaptureColor>())), QByteArray("(ddd)"));
+        QCOMPARE(QByteArray(QDBusMetaType::typeToSignature(QMetaType::fromType<CaptureCoordinate>())), QByteArray("(ii)"));
+        QCOMPARE(QByteArray(QDBusMetaType::typeToSignature(QMetaType::fromType<CaptureStreams>())), QByteArray("a(ua{sv})"));
         QVERIFY(validScreenCastSelection({})); QVERIFY(validScreenCastSelection({{"types", 1U}, {"multiple", false}, {"cursor_mode", 1U}}));
         for (const auto &options : {QVariantMap{{"types", 2U}}, QVariantMap{{"multiple", true}}, QVariantMap{{"cursor_mode", 2U}}, QVariantMap{{"types", 1}}, QVariantMap{{"persist_mode", 1U}}, QVariantMap{{"restore_data", "fake"}}}) QVERIFY(!validScreenCastSelection(options));
         QCOMPARE(captureCaller("/org/freedesktop/portal/desktop/request/1_28/test"), QString(":1.28"));
