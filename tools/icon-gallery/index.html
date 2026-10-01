@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QindaQt — Hand-rendered icon gallery</title>
+<style>
+  :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#17191e;color:#eeeee9}
+  *{box-sizing:border-box} body{margin:0} header{position:sticky;top:0;z-index:2;background:#17191ef5;padding:22px 28px 16px;border-bottom:1px solid #343843;backdrop-filter:blur(14px)}
+  h1{font-size:24px;margin:0 0 8px;font-weight:650} .sub{color:#afb6c5;font-size:14px;margin:0 0 16px}
+  .bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap} input,select,button{font:inherit;border:1px solid #474e5e;border-radius:8px;padding:9px 12px;background:#252934;color:#fafafa}
+  input{flex:1;min-width:220px;max-width:560px} .count{font-size:15px;color:#b3e7cd} .status{color:#a8b2c5;font-size:12px;margin-top:10px} .status.error{color:#ffaca5}
+  main{padding:22px 28px} #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(156px,1fr));gap:14px}
+  .card{border:1px solid #3b404c;border-radius:11px;padding:0;overflow:hidden;text-align:left;background:#23262e;cursor:pointer;color:inherit}
+  .card:hover{border-color:#9bcbdc} .art{height:145px;display:flex;justify-content:center;align-items:center;background-color:#deded9;background-image:linear-gradient(45deg,#c5c5c0 25%,transparent 25%),linear-gradient(-45deg,#c5c5c0 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#c5c5c0 75%),linear-gradient(-45deg,transparent 75%,#c5c5c0 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}
+  .art img{width:128px;height:128px;object-fit:contain} .caption{padding:10px 11px;overflow-wrap:anywhere;font-size:12px;line-height:1.45;min-height:73px} .category{color:#aeb8cc;font-size:10px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em}
+  dialog{max-width:600px;border:1px solid #606a7c;border-radius:15px;background:#222630;color:#fff;padding:20px} dialog::backdrop{background:#000b} dialog .art{height:300px;border-radius:8px} dialog img{width:256px;height:256px} #detailName{overflow-wrap:anywhere;line-height:1.5} .buttons{display:flex;gap:12px;align-items:center} a{color:#afdcd9} .empty{color:#afb6c5;padding:30px 0}
+  @media(max-width:600px){header,main{padding:16px}h1{font-size:20px}#grid{grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px}}
+</style>
+<header>
+  <h1>QindaQt · Hand-rendered icons</h1>
+  <p class="sub">The current pack, as it grows. New icons appear automatically.</p>
+  <div class="bar">
+    <input id="search" type="search" placeholder="Search filenames…" aria-label="Search filenames">
+    <select id="category" aria-label="Icon category"><option value="">All categories</option></select>
+    <span id="count" class="count">Loading icons…</span>
+  </div>
+  <div id="status" class="status" role="status">Refreshes every 5 seconds · shows current working files, including additions awaiting review.</div>
+</header>
+<main><div id="grid"></div><p id="empty" class="empty" hidden>No matching icons.</p></main>
+<dialog id="detail">
+  <div class="art"><img id="detailImage" alt=""></div>
+  <p id="detailName"></p>
+  <div class="buttons"><button id="close">Close</button><a id="download" download>Download PNG</a></div>
+</dialog>
+<script>
+  const $ = id => document.getElementById(id);
+  let inventory = [], version = '', expected = 0, canonical = 0;
+  const iconUrl = icon => '/icons/' + icon.path.split('/').map(encodeURIComponent).join('/') + '?v=' + icon.version;
+  function render() {
+    const query = $('search').value.trim().toLowerCase(), category = $('category').value;
+    const visible = inventory.filter(i => (!category || i.category === category) && i.path.toLowerCase().includes(query));
+    const fragment = document.createDocumentFragment();
+    for (const icon of visible) {
+      const card = document.createElement('button'); card.className = 'card'; card.title = icon.path;
+      const art = document.createElement('div'); art.className = 'art';
+      const image = document.createElement('img'); image.src = iconUrl(icon); image.alt = icon.name; image.loading = 'lazy'; image.decoding = 'async';
+      art.append(image);
+      const caption = document.createElement('div'); caption.className = 'caption';
+      const label = document.createElement('div'); label.className = 'category'; label.textContent = icon.category;
+      caption.append(label, document.createTextNode(icon.name)); card.append(art, caption);
+      card.onclick = () => { $('detailImage').src = iconUrl(icon); $('detailImage').alt = icon.name; $('detailName').textContent = icon.path; $('download').href = iconUrl(icon); $('download').download = icon.name + '.png'; $('detail').showModal(); };
+      fragment.append(card);
+    }
+    $('grid').replaceChildren(fragment); $('empty').hidden = visible.length > 0;
+    $('count').textContent = `${inventory.length.toLocaleString()} / ${expected.toLocaleString()} icons · ${visible.length.toLocaleString()} shown`;
+  }
+  async function refresh() {
+    try {
+      const response = await fetch('/api/inventory', {cache:'no-store'});
+      if (!response.ok) throw new Error('Inventory unavailable');
+      const data = await response.json();
+      if (data.version !== version) {
+        version = data.version; inventory = data.icons; expected = data.expected; canonical = data.canonical_present;
+        const selected = $('category').value;
+        $('category').replaceChildren(new Option('All categories',''), ...[...new Set(inventory.map(i=>i.category))].sort().map(c=>new Option(c,c)));
+        $('category').value = selected; render();
+      }
+      $('status').className = 'status';
+      $('status').textContent = `${canonical.toLocaleString()} distinct source groups present · checked ${new Date(data.checked_at).toLocaleTimeString()} · refreshes every 5 seconds · working files may await review`;
+    } catch (error) {
+      $('status').className = 'status error'; $('status').textContent = 'Connection interrupted. Retrying automatically…';
+    }
+  }
+  $('search').oninput = render; $('category').onchange = render;
+  $('close').onclick = () => $('detail').close();
+  $('detail').onclick = e => {if(e.target === $('detail')) $('detail').close();};
+  refresh(); setInterval(refresh,5000);
+</script>
+</html>
