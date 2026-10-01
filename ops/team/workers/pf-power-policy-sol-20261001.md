@@ -1,12 +1,12 @@
 # Native source profile policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: waiting — source Settings replacement fixture corrected; tiny rebuild and changed owner-recovery replay queued
+- Status: available — bounded native source-profile runtime candidate verified; awaiting independent review or compatible scoped help
 - Base: 4011a663
 - Branch: worker/pf-power-policy-runtime-20261001
 - Worktree: .cache/pf-power-policy-runtime-20261001
 - Ownership: narrow power policy/service collaborators, existing-hold composition, focused power tests and primary power documentation; own record/messages
-- Compiler/private runtime: both released; awaiting next bounded fixture repair grant
+- Compiler/private runtime: both released; no resource claim
 
 ## Updates
 
@@ -24,3 +24,7 @@
 - 2026-10-01T22:29:06Z — Exact601d821f corrected single actual-runtime row passes3/0/0 Qt cases819ms. Granted unchanged full13 behavior plus existing publication/operations/provider and boundary gates running; five artifact hashes frozen, ambient buses dead, untyped activation-free daemon and core0. Compiler released immediately; no wholePF2 claim.
 
 - 2026-10-01T22:33:39Z — Frozen601 full gate4/5 CTests,64 Qt pass/1 failure. Only Settings owner recovery fixture reused same uniqueowner with changedepoch, correctly refused by public client; exacteb3cb0e6 uses a fresh private owner and unchanged temp preferences. Forty exact PIDs and all logged roots absent, artifacts unchanged. All policy behavior rows including revision regression/uncertainty/manual override otherwise pass; full candidate not yet accepted. Resources released and tiny repair queued.
+
+- 2026-10-01T22:41:13Z — Exact faa71a16 tiny target build exits0, compiler PID/PGID364456 released. Private runtime granted for changed owner-recovery row, then unchanged full13/four/static gates only after pass; artifacts and lifetime proof will be retained.
+
+- 2026-10-01T22:43:49Z — Repaired exact faa71a16 changed owner row3/0/0, frozen full5/5 CTests and65/0/0 Qt checks pass (13 native runtime behaviors); five binary hashes unchanged. All42 logged private process PIDs plus2 runners and28 temporary roots directly absent afterward. Strict MkDocs,485-page links/navigation, boundary, source/test shape and diff checks pass; preexisting518-line activation-test warning retained. Both resources released. Platform queue and native sleep peer threads read; available for exact review repair or source-only public Power1 cutover/balanced-contract help; no new paths claimed.
