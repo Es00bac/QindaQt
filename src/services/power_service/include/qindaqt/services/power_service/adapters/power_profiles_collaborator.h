@@ -76,6 +76,7 @@ private:
 
 private Q_SLOTS:
     void onPpdPropertiesChanged(const QDBusMessage &message);
+    void onProfileReleased(const QDBusMessage &message);
 };
 
 } // namespace QindaQt::Power::Upstream

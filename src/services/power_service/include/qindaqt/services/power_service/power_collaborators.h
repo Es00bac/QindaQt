@@ -124,6 +124,9 @@ Q_SIGNALS:
                     const QindaQt::Power::ProfileFacts &facts);
   void statusUnavailable(quint64 generation, const QString &reasonCode);
   void authorityReplaced(quint64 generation);
+  // Current-owner targeted provider cancellation; opaque ID only, never the
+  // private cookie. Coordinator validates membership before forwarding.
+  void ownedHoldCancelled(quint64 generation, const QString &opaqueId);
   void operationFinished(quint64 generation, quint64 operationId,
                          const QindaQt::Power::CollaboratorOutcome &outcome);
 };

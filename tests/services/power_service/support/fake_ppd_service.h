@@ -29,6 +29,7 @@ public:
         QString reason;
         QString applicationId;
         quint32 cookie = 0;
+        QString owner;
     };
 
     FakePpdService(const QDBusConnection &connection, bool legacyOnly,
@@ -42,6 +43,10 @@ public:
     void setActiveProfile(const QString &profileId);
     void setHolds(const QList<HoldSpec> &holds);
     void setRejectSetProfile(bool reject);
+    void setRejectHold(bool reject) { m_rejectHold = reject; }
+    void setDropHoldReply(bool drop) { m_dropHoldReply = drop; }
+    void setDropReleaseReply(bool drop) { m_dropReleaseReply = drop; }
+    void manualProfileChange(const QString &profile);
     void emitPropertiesChanged();
 
     QString introspect(const QString &path) const override;
@@ -69,6 +74,9 @@ private:
     QList<HoldSpec> m_holds;
     bool m_legacyOnly;
     bool m_rejectSetProfile = false;
+    bool m_rejectHold = false;
+    bool m_dropHoldReply = false;
+    bool m_dropReleaseReply = false;
 };
 
 } // namespace QindaQt::Tests
