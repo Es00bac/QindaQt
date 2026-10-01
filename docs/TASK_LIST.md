@@ -55,12 +55,15 @@ admission and popup retirement gaps; independent rereview passes nine focused
 gates and the unchanged failure reproduction, and its source is merged on the
 recovery branch. Native logind sleep `e6072eb1` is independently accepted and
 merged, with seven private gates and 71 Qt checks; combined consumer/plugin,
-native and hardware qualification remains. Native FileChooser/AppChooser is
-actively qualifying its final family routing and staged delivery after real
-frontend journeys passed. Inherited keyring idle fixture `f1d7b89b` passes
+native and hardware qualification remains. Native FileChooser/AppChooser
+`684ca904` is independently accepted with 24/24 real frontend/native/routing/
+staged and adjacent gates and merged on the recovery branch. Installed/sandbox
+and combined-tree qualification remain. Inherited keyring idle fixture `f1d7b89b` passes
 independent build and 2/2 tests and is integrated. The combined production/plugin
 and affected-module build passes its 229-target scope against exact fork
-`690c0112`; combined CTests and native scenarios remain pending. No milestone or installed
+`690c0112`. Combined runtime/privacy/sleep checks pass 32/33; retained final-On
+DPMS teardown is under isolated causal repair. Combined chooser build and native
+scenarios remain pending. No milestone or installed
 Plasma-removal completion advances from candidate activity.
 
 The owner confirmed the complete [native replacement program](plans/2026-09-28-plasma-free-qindaqt.md),
