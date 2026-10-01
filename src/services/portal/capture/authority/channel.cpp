@@ -83,6 +83,7 @@ bool Channel::send(Wire::Message message, quint64 job, const QByteArray &payload
 }
 void Channel::reconcile() {
     if (m_reading || m_failed || m_fd < 0) return;
+    if (!identityLive()) { fail(); return; }
     m_reading = true;
     for (int iteration = 0; iteration < 32 && !m_failed; ++iteration) {
         std::array<char, Wire::HeaderBytes + Wire::MaxPayloadBytes> bytes{};

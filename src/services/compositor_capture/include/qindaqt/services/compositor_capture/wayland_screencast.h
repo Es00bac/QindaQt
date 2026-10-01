@@ -9,7 +9,7 @@
 #include <memory>
 namespace QindaQt::CompositorCapture {
 struct MonitorSource { QString id, name; QPoint position; QSize size; };
-// Owns one supplied ordinary FD, one monitor stream and generated protocol
+// Owns one supplied native Wayland FD (ordinary or separately tagged), one monitor stream and generated protocol
 // resources. No pathname/display fallback, permission, persistence or UI policy.
 // Same-thread borrowed lineage/pixel callbacks are readonly/non-reentrant and
 // outlive the port. Source enumeration requires lineage; stream creation and
@@ -18,7 +18,7 @@ struct MonitorSource { QString id, name; QPoint position; QSize size; };
 class WaylandScreenCast final : public QObject {
     Q_OBJECT
 public:
-    WaylandScreenCast(int ownedOrdinaryFd, std::function<bool()> lineage,
+    WaylandScreenCast(int ownedNativeFd, std::function<bool()> lineage,
         std::function<bool()> pixelsAllowed, QObject *parent = nullptr);
     ~WaylandScreenCast() override;
     QList<MonitorSource> sources() const;

@@ -6,6 +6,8 @@ foreach(required IN ITEMS QINDAQT_CMAKE QINDAQT_BUILD_DIRECTORY
         QINDAQT_INSTALL_SYSTEMDUSERUNITDIR QINDAQT_INSTALL_DATADIR
         QINDAQT_EXPECTED_PORTAL_EXECUTABLE QINDAQT_EXPECTED_SETTINGS_EXECUTABLE
         QINDAQT_EXPECTED_SCHEMA_DIR QINDAQT_PROCESS_TEST CHECK_SCRIPT
+        QINDAQT_PROTECTED_CAPTURE_AVAILABLE QINDAQT_CAPTURE_AUTHORITY_PATHS
+        QINDAQT_EXPECTED_CAPTURE_LIBEXEC QINDAQT_EXPECTED_CAPTURE_DATA
         SOURCE_PORTAL_ROOT)
     if(NOT DEFINED ${required})
         message(FATAL_ERROR "Missing staged portal package input: ${required}")
@@ -65,22 +67,60 @@ set(consent_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-
 set(chooser_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-chooser")
 set(capture_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-capture")
 set(capture_desktop "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/applications/org.qindaqt.PortalCapture.desktop")
-set(capture_resident_desktop "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/applications/org.qindaqt.PortalBackend.desktop")
+set(capture_broker "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-capture-backend")
+set(capture_broker_desktop "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/applications/org.qindaqt.PortalCaptureBackend.desktop")
 set(uri_relay "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-uri-relay")
-foreach(required_artifact IN ITEMS portal_executable consent_executable chooser_executable capture_executable capture_desktop capture_resident_desktop uri_relay dbus_descriptor systemd_unit
+foreach(required_artifact IN ITEMS portal_executable consent_executable chooser_executable uri_relay dbus_descriptor systemd_unit
         portal_metadata portal_selection kde_portal_dropin)
     if(NOT EXISTS "${${required_artifact}}")
         message(FATAL_ERROR "Staged portal package misses ${required_artifact}: ${${required_artifact}}")
     endif()
 endforeach()
 
-file(READ "${capture_desktop}" capture_permission_entry)
-file(READ "${capture_resident_desktop}" capture_resident_permission_entry)
-if(NOT capture_permission_entry MATCHES "X-QindaQt-KWin-DBus-Restricted-Interfaces=org.kde.KWin.ScreenShot2"
-   OR NOT capture_permission_entry MATCHES "Exec=[^\n]*qindaqt-portal-capture"
-   OR NOT capture_resident_permission_entry MATCHES "X-QindaQt-KWin-Wayland-Interfaces=zkde_screencast_unstable_v1"
-   OR NOT capture_resident_permission_entry MATCHES "Exec=[^\n]*xdg-desktop-portal-qindaqt")
-    message(FATAL_ERROR "Staged capture desktop permissions differ from actual restricted helper/resident interfaces")
+# Protected capture is optional only when the selected fork public contract is
+# unavailable. Its absent product cannot advertise/activate a capture family.
+if(QINDAQT_PROTECTED_CAPTURE_AVAILABLE)
+    foreach(artifact capture_executable capture_desktop capture_broker capture_broker_desktop)
+        if(NOT EXISTS "${${artifact}}")
+            message(FATAL_ERROR "Qualified protected capture package misses ${artifact}")
+        endif()
+    endforeach()
+    if(NOT EXISTS "${QINDAQT_CAPTURE_AUTHORITY_PATHS}")
+        message(FATAL_ERROR "Qualified protected capture package lost selected public launch paths")
+    endif()
+    file(READ "${QINDAQT_CAPTURE_AUTHORITY_PATHS}" selected_launch_paths)
+    set(expected_BrokerExecutable "${QINDAQT_EXPECTED_CAPTURE_LIBEXEC}/qindaqt-portal-capture-backend")
+    set(expected_HelperExecutable "${QINDAQT_EXPECTED_CAPTURE_LIBEXEC}/qindaqt-portal-capture")
+    set(expected_BrokerDesktop "${QINDAQT_EXPECTED_CAPTURE_DATA}/applications/org.qindaqt.PortalCaptureBackend.desktop")
+    set(expected_HelperDesktop "${QINDAQT_EXPECTED_CAPTURE_DATA}/applications/org.qindaqt.PortalCapture.desktop")
+    foreach(name BrokerExecutable HelperExecutable BrokerDesktop HelperDesktop)
+        string(REGEX MATCH "${name}\\[\\] = \"([^\"]+)\"" constant "${selected_launch_paths}")
+        if(NOT constant OR NOT "${CMAKE_MATCH_1}" STREQUAL "${expected_${name}}")
+            message(FATAL_ERROR "Staged protected capture/selected fork fixed path mismatch: ${name}")
+        endif()
+    endforeach()
+    file(STRINGS "${capture_desktop}" helper_exec REGEX "^Exec=")
+    file(STRINGS "${capture_broker_desktop}" broker_exec REGEX "^Exec=")
+    if(NOT helper_exec STREQUAL "Exec=${expected_HelperExecutable}"
+       OR NOT broker_exec STREQUAL "Exec=${expected_BrokerExecutable}")
+        message(FATAL_ERROR "Staged protected capture desktop Exec differs from fixed selected fork image")
+    endif()
+    file(READ "${capture_desktop}" capture_permission_entry)
+    file(READ "${capture_broker_desktop}" capture_broker_entry)
+    if(NOT capture_permission_entry MATCHES "X-QindaQt-KWin-DBus-Restricted-Interfaces=org.kde.KWin.ScreenShot2"
+       OR capture_broker_entry MATCHES "X-(QindaQt|KDE).*Interfaces=")
+        message(FATAL_ERROR "Capture helper compatibility entry/broker ambient permission contract differs")
+    endif()
+else()
+    foreach(artifact capture_executable capture_desktop capture_broker capture_broker_desktop)
+        if(EXISTS "${${artifact}}")
+            message(FATAL_ERROR "Unavailable protected capture left an unqualified artifact: ${artifact}")
+        endif()
+    endforeach()
+endif()
+if(EXISTS "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/applications/org.qindaqt.PortalBackend.desktop"
+   OR EXISTS "${install_prefix}/${QINDAQT_INSTALL_DBUSSERVICEDIR}/org.freedesktop.impl.portal.desktop.qindaqt.capture.service")
+    message(FATAL_ERROR "Capture-only authority gained ambient general-backend permission or activation")
 endif()
 
 # AGENT-GUARD: These names are integration entry points discovered by external

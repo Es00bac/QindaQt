@@ -40,7 +40,7 @@ if(QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR)
     install(TARGETS qindaqt-portal-capture RUNTIME DESTINATION "${KDE_INSTALL_LIBEXECDIR}" COMPONENT QindaQtPortalP0)
     configure_file(org.qindaqt.PortalCapture.desktop.in "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.PortalCapture.desktop" @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.PortalCapture.desktop"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications" COMPONENT QindaQtPortalP0)
+        DESTINATION "${KDE_INSTALL_DATADIR}/applications" COMPONENT QindaQtPortalP0)
 
     qt_add_library(qindaqt_portal_protected_capture STATIC
         backend/authority_capture.cpp backend/authority_capture.h
@@ -59,7 +59,18 @@ if(QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR)
     configure_file(org.qindaqt.PortalCaptureBackend.desktop.in
         "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.PortalCaptureBackend.desktop" @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.PortalCaptureBackend.desktop"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications" COMPONENT QindaQtPortalP0)
+        DESTINATION "${KDE_INSTALL_DATADIR}/applications" COMPONENT QindaQtPortalP0)
+    foreach(entry Helper Broker)
+        if(entry STREQUAL "Helper")
+            set(desktop_name PortalCapture)
+        else()
+            set(desktop_name PortalCaptureBackend)
+        endif()
+        file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.${desktop_name}.desktop" exec_line REGEX "^Exec=")
+        if(NOT exec_line STREQUAL "Exec=${expected_${entry}Executable}")
+            message(FATAL_ERROR "Generated capture desktop Exec differs from selected fork ${entry} image")
+        endif()
+    endforeach()
 else()
     message(STATUS "Protected capture backend unavailable: qualified installed authority header absent")
 endif()
