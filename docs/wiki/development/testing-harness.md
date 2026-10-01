@@ -4561,6 +4561,15 @@ earlier repair attempt retained a fatal ServiceUnknown failure from the opposite
 startup order. It retains fatal
 warnings, producer stderr/lifecycle evidence, and liveness checks alongside the
 unchanged actual pixel, continuing-frame and privacy assertions. This bounded
-fixture repair still requires executable native verification; the earlier blank
-PNG and two-frame failures remain retained and do not establish a production
-scene-rendering defect. No installed routing or full PF19 completion is claimed.
+fixture repair on consumerbf82b66b with immutable fork447 passes the original
+Screenshot/pixel/PickColor/cancel and PipeWire/changed-frame/Session.Close/cancel
+cases independently (3/3 Qt each, no skips). The actual Screenshot is1100x820,
+with902000 opaque fixture-green pixels; producer stderr is empty. The unchanged
+full matrix first group passes Screenshot, Close/requester loss, foreign-parent
+loss and frontend/broker loss, but the later stream decoder fails after prior
+stream retirement (0frames,2nodes, target not found; group6pass/1fail). The
+remaining fresh lock/compositor-loss groups were not reached. The decoder puts
+a returned node ID into PipeWire target.object, whose documented value is an
+object serial or node name; that separate bounded fixture issue is under review.
+All earlier blank PNG, two-frame and startup-order failures remain retained.
+No installed routing or full PF19 completion is claimed.
