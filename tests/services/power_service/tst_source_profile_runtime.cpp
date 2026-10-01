@@ -111,11 +111,11 @@ private Q_SLOTS:
     void balancedPreferenceReleasesOnlyOwnedHold();
     void manualProfileOverrideWaitsForNewPolicyInput();
 };
-#define SET_PROFILE(row, key, value) \
-    QTRY_VERIFY(row.settings->canSetUserValue(QStringLiteral(key))); \
-    QVERIFY(row.settings->setUserValue(QStringLiteral(key), QStringLiteral(value))); \
-    QTRY_VERIFY(row.settings->canSetUserValue(QStringLiteral(key)) \
-        && row.settings->snapshot()->values.value(QStringLiteral(key)).toString() == QStringLiteral(value))
+#define SET_PROFILE(row, settingKey, settingValue) \
+    QTRY_VERIFY(row.settings->canSetUserValue(QStringLiteral(settingKey))); \
+    QVERIFY(row.settings->setUserValue(QStringLiteral(settingKey), QStringLiteral(settingValue))); \
+    QTRY_VERIFY(row.settings->canSetUserValue(QStringLiteral(settingKey)) \
+        && row.settings->snapshot()->values.value(QStringLiteral(settingKey)).toString() == QStringLiteral(settingValue))
 void SourceProfileRuntimeTests::sourceSequenceNoneAndExternalHold()
 {
     Runtime row; QVERIFY(row.start());
