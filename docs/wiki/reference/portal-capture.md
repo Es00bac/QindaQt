@@ -29,7 +29,10 @@ Candidate adaptors at `/org/freedesktop/portal/desktop` provide:
 
 Response0 means a validated result,1 means cancellation and2 means failure;
 backend result maps are empty for cancellation/failure. Screenshot success has
-canonical fully encoded local `uri=s`; PickColor has `color=(ddd)`, finite RGB in
+canonical fully encoded local `uri=s`, using QUrl::fromLocalFile serialization
+and exact literal-path round-trip. Legal path sub-delimiters such as `$` can
+remain literal; spaces, percent signs and backticks are encoded. This is URI
+serialization, with no shell parsing or expansion. PickColor has `color=(ddd)`, finite RGB in
 [0,1]. Start has `streams=a(ua{sv})` containing exactly one actual node with
 `position=(ii)` and `size=(ii)`. The real frontend implements OpenPipeWireRemote
 and restricts the returned connection to the node set; the backend neither
