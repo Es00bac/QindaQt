@@ -129,6 +129,7 @@ if(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE AND QINDAQT_KDE_PORTAL_METADATA)
                 --unset=DBUS_SESSION_BUS_ADDRESS
                 --unset=DBUS_STARTER_ADDRESS
                 --unset=DBUS_STARTER_BUS_TYPE
+                "DBUS_SYSTEM_BUS_ADDRESS=unix:path=${CMAKE_CURRENT_BINARY_DIR}/unavailable-system-bus"
                 "${QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE}" --
                 "$<TARGET_FILE:qindaqt_portal_frontend_integration_tests>"
                 "${mode}"
@@ -139,6 +140,8 @@ if(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE AND QINDAQT_KDE_PORTAL_METADATA)
                       portal_frontend_test_support.cpp
                       portal_frontend_test_support.h
                       tst_portal_frontend_routing.cpp)
+    target_sources(qindaqt_portal_frontend_routing_tests PRIVATE portal_chooser_routing_probe.h)
+    target_sources(qindaqt_portal_frontend_integration_tests PRIVATE portal_chooser_routing_probe.h)
     target_compile_definitions(
         qindaqt_portal_frontend_routing_tests
         PRIVATE
@@ -171,6 +174,7 @@ if(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE AND QINDAQT_KDE_PORTAL_METADATA)
                 --unset=DBUS_SESSION_BUS_ADDRESS
                 --unset=DBUS_STARTER_ADDRESS
                 --unset=DBUS_STARTER_BUS_TYPE
+                "DBUS_SYSTEM_BUS_ADDRESS=unix:path=${CMAKE_CURRENT_BINARY_DIR}/unavailable-system-bus"
                 "${QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE}" --
                 "$<TARGET_FILE:qindaqt_portal_frontend_routing_tests>"
                 "${mode}"
@@ -299,3 +303,4 @@ if(TEST qindaqt.portal-frontend-routing)
 endif()
 
 add_subdirectory(foundation)
+add_subdirectory(choosers)

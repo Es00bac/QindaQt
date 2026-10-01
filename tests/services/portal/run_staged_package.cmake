@@ -62,8 +62,9 @@ set(kde_portal_dropin
 set(theme_directory
     "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/qindaqt/themes")
 set(consent_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-consent")
+set(chooser_executable "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-portal-chooser")
 set(uri_relay "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-uri-relay")
-foreach(required_artifact IN ITEMS portal_executable consent_executable uri_relay dbus_descriptor systemd_unit
+foreach(required_artifact IN ITEMS portal_executable consent_executable chooser_executable uri_relay dbus_descriptor systemd_unit
         portal_metadata portal_selection kde_portal_dropin)
     if(NOT EXISTS "${${required_artifact}}")
         message(FATAL_ERROR "Staged portal package misses ${required_artifact}: ${${required_artifact}}")
@@ -156,6 +157,7 @@ if(DEFINED QINDAQT_FRONTEND_TEST)
                 --unset=DBUS_SESSION_BUS_ADDRESS
                 --unset=DBUS_STARTER_ADDRESS
                 --unset=DBUS_STARTER_BUS_TYPE
+                "DBUS_SYSTEM_BUS_ADDRESS=unix:path=${install_prefix}/unavailable-system-bus"
                 "QINDAQT_TEST_PORTAL_EXECUTABLE=${portal_executable}"
                 "QINDAQT_TEST_PORTAL_METADATA=${portal_metadata}"
                 "QINDAQT_TEST_PORTAL_SELECTION=${portal_selection}"
@@ -279,4 +281,3 @@ endif()
 
 file(REMOVE_RECURSE "${install_prefix}")
 message(STATUS "Staged portal package, private lifecycle, and installed poison passed")
-

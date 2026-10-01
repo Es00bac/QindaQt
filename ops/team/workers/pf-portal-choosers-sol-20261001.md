@@ -1,0 +1,28 @@
+# Native portal chooser implementer
+
+- Identity: pf-portal-choosers-sol-20261001
+- Provider: OpenAI Codex
+- Role: PF18 native FileChooser and AppChooser implementer
+- Status: waiting — immutable PF18 candidate684ca904 submitted for independent verdict/integration; available for bounded PF19 protocol and public capture-boundary research after manager assignment
+- Branch: worker/pf-portal-choosers-20261001
+- Worktree: .cache/pf-portal-choosers-20261001
+- Ownership: new cohesive chooser components/dialogs/tests, portal primary wiki/reference, ADR0322; additive notified build/composition/metadata seams
+- Resources: compiler/private-runtime released to root at11:39UTC; no resource reserved and no active build/test; preserved isolated qinda build/choosers and staged690 evidence only
+
+## Updates
+
+- 2026-10-01T11:48:00+00:00 — Frozen exact candidate684ca904b3b997d293795abb413cb1e2f94aa666 clean on laptop/qinda and pushed. Strict five-target final rebuild exit0; final21portal+3Secret CTests24/24 pass31.64s,0failed/skipped, including staged package and all native frontend/consent/chooser journeys. Native and Secret rows retain fatal warnings; existing deliberate invalid-signature service rows use normal warnings. Bounded stderr capture established missing consent-input executable ENOENT; additive target dependencies repair the fixture without production Access changes. Docs482/strict MkDocs, focused portal shape71files/0issues, boundary and poisons pass. Earlier Ninja denominator-based action counts are not executed-action evidence: assert build exit0 and named target scope only. Reviewer independently reports24/24 pass31.77s; verdict belongs to reviewer. Resources released; source immutable; record-only handoff child follows. Read Platform queue and peer PF19 audit; offer protocol/capture-boundary research only, no new foundation edit or resource claim.
+
+- 2026-10-01T10:18:17+00:00 — Claimed PF18 after hub fetch; isolated exact-base worktree created. Reading primary installed1.20.4 wire contracts and public foundation/catalog/URI/native parent boundaries. No host bus/files/service changes; no installs; shared seam plan notified to root before editing.
+
+- 2026-10-01T10:27:25+00:00 — Material: installed primary1.20.4 backend XML read directly and frontend source checked. Implementing separate wire types, bounded pure file/app policy, frontend-owned adaptors, process port and ordinary Qt widget helper; AppChooser version1 intentionally omits unsupported activation-token generation. Routing remains fallback until actual frontend gate. Compiler/runtime not claimed.
+
+- 2026-10-01T10:44:30+00:00 — Midpoint: pure-policy/private-wire fixtures and actual frontend/native-widget journey authored for file modes/overwrite/filter/choice/app updates/cancel/foreign parent/caller/frontend/supervisor loss. Tests use only build-local temporary files and event input linked with unchanged GUI sources. No executable C++ claim before compiler grant. First scaffold824e2c51 preserved on qinda; next test/docs chunk preparing.
+
+- 2026-10-01T10:56:22+00:00 — Static verification: validate-docs482 and strict MkDocs pass; source boundary and all existing mutation poisons pass. Focused chooser source-shape issues0 (whole-tree checker exit1 with168 issues; not asserted as baseline-equivalent). Python runner syntax and diff check pass. Narrow checker/public-header and packaged-helper additions approved; product family routing still unchanged. C++ and native frontend execution remain pending the compiler slot, no runtime resource held.
+
+- 2026-10-01T11:00:57+00:00 — Resource grant received from root for isolated compiler/private frontend fixtures and bounded repairs. Frozen source0d86f4fb pushed and qinda lane clean before configure; production/staged690 qualification beginning. Root combined build paused until release. No host runtime or installed service scope.
+
+- 2026-10-01T11:18:30+00:00 — Actual native journey18c5805d passed9 QtTest cases,0 failed/skipped; CTest1/1 in4.34s, private real frontend/staged690/unchanged GUI with actual input. All file methods, overwrite deny/yes, MIME/filter/Boolean/combobox choices, registered caller, real AppChooser updates/cancel, parent validity/loss and caller/frontend/supervisor/Close lifetime passed. Initial strict-warning and fixture authority/input/MIME failures preserved; production compile repaired857677a4 passed90actions and adjacent fixture build passed340actions. Root authorized family selectors now native and bounded routing/integration fixture updates in actual tests/services/portal paths: native Response2 and KDE counter0 without selected attachment, retaining other KDE families. Added small test-only probe header/CMake entries; docs482/strict pass. Resources released during final source freeze; final adjacent/staged rerun queued after keyring review.
+
+- 2026-10-01T11:30:59+00:00 — First final9aa6c3a5 rebuild exit0; broad24CTest18 passed/6 failed,205.86s, native chooser passed. Failures retained: globally fatal expected bad-signature service warning; three new probe assertions incorrectly expected empty frontend dictionary (primary1.20.4 adds typed uris=[]); unchanged native-consent/native-frontend mapped helper failures. Probe now requires exact response2/typed empty uris/KDE0. Existing P1 private bus had autoactivated installed Power1, an isolation defect: test-owned exact name reservation before backend startup plus explicit nonexistent systembus added before any rerun. Resources released to root combined build. Private one-case unchanged helper stderr capture prepared, not executed before grant; no production Access edits. qinda theme/style environment empty, cause unproven. Docs482/strict and diff pass; source freeze preparing.
