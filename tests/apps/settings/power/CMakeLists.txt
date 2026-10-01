@@ -33,6 +33,17 @@ set_tests_properties(qindaqt.settings-idle-display-model PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
     LABELS "settings;power;idle-display")
 
+qt_add_executable(qindaqt_source_idle_display_settings_tests
+    tst_source_idle_display_settings.cpp power_settings_test_support.h)
+target_link_libraries(qindaqt_source_idle_display_settings_tests
+    PRIVATE qindaqt_settings_power Qt6::Test)
+qindaqt_enable_warnings(qindaqt_source_idle_display_settings_tests)
+add_test(NAME qindaqt.settings-source-idle-display-model
+    COMMAND qindaqt_source_idle_display_settings_tests)
+set_tests_properties(qindaqt.settings-source-idle-display-model PROPERTIES
+    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "settings;power;model;idle-display")
+
 qt_add_executable(qindaqt_power_settings_slider_tests
     tst_power_settings_slider.cpp power_settings_test_support.h)
 target_link_libraries(qindaqt_power_settings_slider_tests

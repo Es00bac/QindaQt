@@ -12,11 +12,11 @@ native Screenshot tool, [ADR-0291](../adr/0289-native-screenshot-and-record-tool
 presented an authentication dialog in installed QindaQt session 39, corroborated
 by the user; terminating the unapproved request removed the dialog and left
 the session healthy. No credential was entered or privileged command run.
-Private PowerDevil inhibition/display-off evidence is recorded below. Installed
-Settings1 now returns the ten-minute idle preference, matching the active AC
-PowerDevil profile exactly (enabled, 600 seconds). The obsolete Settings1 owner
-needed restarting after installation. Physical brightness hardware coverage
-remains outside this observed evidence.
+Earlier installed-session testing observed PowerDevil's idle/display behavior;
+that path has since been replaced in production by the native attached-FD stage.
+The current implementation has focused fake-stage lifecycle evidence and no
+live host DPMS action claim. Physical brightness hardware coverage remains
+outside this observed evidence.
 
 The durable choice of a separate supervised process over shell or compositor
 integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-process.md).
@@ -36,7 +36,7 @@ integration is [ADR-0100](../adr/0100-own-desktop-essentials-in-a-session-proces
 | Print screenshot and record toggle | desktop-controls `KGlobalAccelRegistrar` | `ScreenshotLauncher` starts `qindaqt-screenshot` (`--region`, `--fullscreen`, `--active`, `--record-toggle`), ADR-0291 |
 | Visible media-key feedback | resident notification host | `org.freedesktop.Notifications` with per-category replaces-id |
 | Brightness key feedback | PowerDevil `BrightnessChanged` with `(internal)` / `brightness_key` | `PowerDevilBrightnessFeedbackObserver` and existing notifier |
-| Idle observation and display power | PowerDevil 6.6.6 policy agent | session-owned PowerDevil idle adapter and binding |
+| Idle observation and display power | `ext-idle-notify-v1` and KWin `org_kde_kwin_dpms` | `qindaqt-session` native attached-FD display-off stage |
 | Idle display-off preference | Settings1 `power.idleDisplayOffMinutes` | purpose-scoped provider + Settings Power section |
 | Idle screensaver program | the saver package itself (the installed `x11-misc` savers, discovered from their desktop entries) | `ScreensaverLauncher`, started only while idle and unlocked |
 | Idle screensaver preference | Settings1 `power.screensaver` / `power.screensaverMinutes` | purpose-scoped provider + [Screen saver route](../apps/screensaver-settings.md) |
@@ -73,8 +73,7 @@ injected seam so focused tests need no compositor, bus, or hardware:
 | `BrightnessKeyController` | retained sysfs fixture seam for migration coverage; not instantiated or registered by production |
 | `ScreenshotLauncher` | one per screenshot action; launches `qindaqt-screenshot` detached, sibling-first, and reports an unavailable tool as feedback |
 | `FreedesktopFeedbackNotifier` | one replaceable notification per feedback category, bounded text, fail-quiet on host loss |
-| `PowerDevilIdlePreferencesBinding` | coalesces Settings1 preferences and applies them through the session-owned PowerDevil adapter |
-| `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes` with the documented default when truth is absent |
+| `Settings1IdlePreferences` | purpose-scoped Settings1 read of `power.idleDisplayOffMinutes`; consumed in the supervisor by the native attached-FD display-off stage |
 | `BatteryNotificationPolicy` | edge-triggered low/critical/action battery notifications from `PowerClient::snapshotChanged`; see [Battery notifications](#battery-notifications) |
 | `TabletMappingPolicy` | maps a tablet tool to its own screen once, re-maps when the screen arrives after the tablet, and never overrides a recorded user choice; on every pass it also plans each tool's rotation and areas for the screen it reaches (ADR-0285) |
 | `Settings1TabletMappings` (shared library) | purpose-scoped Settings1 read/write of `input.tabletMappings`, used by **both** the session policy and the Settings route so a choice made in Settings is not re-decided a moment later; stays unloaded until a real document arrives |
@@ -87,11 +86,12 @@ microphone mute, airplane mode, and the screenshot actions: Print and
 window) and `Meta+Alt+R` (OBS record toggle). They are appended after the
 original actions so stable indices and user remapping persist
 ([ADR-0291](../adr/0289-native-screenshot-and-record-tool.md)); `Meta+Shift+S`
-and `Meta+Shift+R` stay the compositor's container keys. PowerDevil owns monitor-brightness shortcut registration
-and the idle display-off policy; QindaQt only observes its documented public
-brightness signal and binds its idle preference. The retained KIdleTime,
-DPMS, and sysfs classes are migration seams for focused tests and are not
-instantiated by the resident process.
+and `Meta+Shift+R` stay the compositor's container keys. PowerDevil still owns monitor-brightness shortcut registration. QindaQt observes
+its documented public brightness signal. Native display-off is enforced in
+`qindaqt-session` by the admitted-FD `ext-idle-notify-v1`/KWin DPMS stage
+([Native idle display stage](idle-policy.md)); the `desktop-controls` process
+no longer binds idle preferences to PowerDevil. The old PowerDevil binding is
+retained only as a migration/test seam.
 
 ## Tablet mapping contract
 
@@ -257,15 +257,15 @@ in this module; a bounded follow-up if wanted.
 
 Inhibition follows the policy authority for each action:
 
-- **Display-off policy:** native Wayland idle inhibitors
-  (`zwp_idle_inhibitor_v1`), Portal Idle, and legacy
-  `org.freedesktop.ScreenSaver.Inhibit` are honored by PowerDevil's idle policy
-  and PolicyAgent when the session-owned PowerDevil service is present.
-  QindaQt does not inspect these inhibition sources or issue a competing DPMS
-  request. If the PowerDevil owner is absent, QindaQt does not provide idle
-  display-off; the display remains on. The installed-session gate must exercise
-  fullscreen video/game playback through native, portal, and ScreenSaver
-  inhibition with the real release-matched PowerDevil owner.
+- **Display-off policy:** the resident native idle stage consumes authenticated
+  Power1 `DisplayOff` leases and requests KWin DPMS over its admitted ordinary
+  Wayland connection. Portal Idle, native Wayland idle-inhibitor discovery, and
+  legacy `org.freedesktop.ScreenSaver.Inhibit` are not yet connected to this
+  policy, so those sources do not currently suppress QindaQt's native stage.
+  PowerDevil remains an optional session child for remaining transitional
+  desktop integrations, but no longer owns QindaQt's display-off timer. The
+  nested compositor gate must cover output hotplug and each supported inhibitor
+  source before the stage claims complete inhibition compatibility.
 - **Automatic lock policy:** KScreenLocker itself honors
   `org.freedesktop.ScreenSaver.Inhibit` for
   its automatic idle-lock timeout. Settings' Screen saver Preview holds this

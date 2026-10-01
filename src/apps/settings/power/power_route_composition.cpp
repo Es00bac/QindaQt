@@ -3,7 +3,7 @@
 #include "power_route_composition.h"
 
 #include <qindaqt/apps/settings_power/external_display_brightness_model.h>
-#include <qindaqt/apps/settings_power/idle_display_settings.h>
+#include <qindaqt/apps/settings_power/source_idle_display_settings.h>
 #include <qindaqt/apps/settings_power/power_settings_model.h>
 #include <qindaqt/apps/settings_screen_lock/settings1_screen_lock_settings_model.h>
 #include <qindaqt/services/display_client/client.h>
@@ -13,7 +13,7 @@
 #include <qindaqt/services/session_actions/session_actions_client.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 #include <qindaqt/services/lock_preferences/lock_preferences.h>
-#include <qindaqt/session/desktop_controls/settings1_idle_preferences.h>
+#include <qindaqt/session/idle_policy/source_preferences.h>
 #include <qindaqt/session/powerdevil_lid/powerdevil_lid_adapter.h>
 #include <qindaqt/session/powerdevil_profile/powerdevil_profile_adapter.h>
 
@@ -40,9 +40,8 @@ public:
         screenLockPreferences(screenLockClient),
         screenLockSettings(screenLockClient, screenLockPreferences),
         idleTransport(QDBusConnection::sessionBus()),
-        idleClient(idleTransport, Session::DesktopControls::Settings1IdlePreferences::scopedKey()),
-        idlePreferences(idleClient),
-        idleDisplaySettings(idlePreferences, idleClient),
+        idleClient(idleTransport, Session::IdlePolicy::perSourceDisplayOffSettingsKeys()),
+        idleDisplaySettings(client, idleClient),
         lidPowerButton(QDBusConnection::sessionBus()),
         lidPowerButtonPort(lidPowerButton),
         profilePowerAdapter(QDBusConnection::sessionBus()),
@@ -96,8 +95,7 @@ public:
   SettingsScreenLock::Settings1ScreenLockSettingsModel screenLockSettings;
   Services::SettingsClient::QtSettingsTransport idleTransport;
   Services::SettingsClient::SettingsClient idleClient;
-  Session::DesktopControls::Settings1IdlePreferences idlePreferences;
-  IdleDisplaySettingsModel idleDisplaySettings;
+  SourceIdleDisplaySettingsModel idleDisplaySettings;
   Session::PowerDevilLid::PowerDevilLidAdapter lidPowerButton;
   QtPowerDevilLidPolicyPort lidPowerButtonPort;
   Session::PowerDevilProfile::PowerDevilProfileAdapter profilePowerAdapter;

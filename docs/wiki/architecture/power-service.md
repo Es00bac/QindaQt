@@ -94,7 +94,7 @@ composition separate:
 | `power_service` | Resident ownership, collaborator orchestration, and confined platform adapters | PB-2 production upstreams implemented |
 | `power_client` | Exact-owner asynchronous snapshots and operations | PB-1 implemented |
 | `power_backlight_provider` | Identity gate, KWin binding, external observation, Wayland teardown | Pending later slice |
-| `power_idle` | Compositor-idle observation and logind idle hints | Pending later slice; the session-owned display-off behavior users configure today is enforced by [desktop controls](desktop-controls.md) through KIdleTime and org-kde-kwin-dpms with no Power1 wire surface |
+| `power_idle` | Compositor-idle observation and logind idle hints | Broader policy pending; the bounded display-off consumer now runs in the session supervisor over the admitted ordinary compositor FD ([native idle display stage](idle-policy.md)); Power1 scope support remains zero until the complete lock/display/suspend stages are consumed |
 | [`brightness_model`](brightness-model.md) | Pure display/keyboard brightness composition on injected values | PB-0 candidate |
 | [`power_applet`](../shell/power-applet.md) | Shell-private public-client projection, compiled panel interaction, and capability-gated operation dispatch | Production consumer of PB-1; no platform maturity claim |
 | [`settings/power`](../apps/power-settings.md) | Public-client-only supply/profile/hold/brightness Settings projection with debounced keyboard, internal-panel, and external-display mutation and no session actions | Installed eighth Settings route; no platform maturity claim |

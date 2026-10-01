@@ -82,6 +82,8 @@ Q_SIGNALS:
 
 class StubIdleDisplaySettings final : public QObject {
   Q_OBJECT
+  Q_PROPERTY(QVariantList sourceRows READ sourceRows NOTIFY changed)
+  Q_PROPERTY(QString activeSource MEMBER activeSource NOTIFY changed)
   Q_PROPERTY(bool hasConfirmed MEMBER hasConfirmed NOTIFY changed)
   Q_PROPERTY(bool available MEMBER available NOTIFY changed)
   Q_PROPERTY(bool canEdit MEMBER canEdit NOTIFY changed)
@@ -96,6 +98,13 @@ public:
   using QObject::QObject;
   bool hasConfirmed = true;
   bool available = true;
+  QString activeSource = QStringLiteral("ac");
+  bool acEnabled = true;
+  int acSeconds = 600;
+  bool batteryEnabled = true;
+  int batterySeconds = 600;
+  bool lowBatteryEnabled = false;
+  int lowBatterySeconds = 120;
   bool canEdit = true;
   bool enabled = true;
   int minutes = 10;
@@ -109,6 +118,45 @@ public:
   int enabledCalls = 0;
   int minutesCalls = 0;
   int retryCalls = 0;
+  QVariantList sourceRows() const {
+    const auto row = [this](const QString &source, const QString &label,
+                            bool rowEnabled, int seconds) {
+      return QVariantMap{
+          {QStringLiteral("source"), source}, {QStringLiteral("label"), label},
+          {QStringLiteral("enabled"), rowEnabled}, {QStringLiteral("seconds"), seconds},
+          {QStringLiteral("confirmed"), hasConfirmed},
+          {QStringLiteral("active"), activeSource == source},
+          {QStringLiteral("sourceLayer"), QStringLiteral("user-overrides")},
+          {QStringLiteral("effectiveEnabled"), rowEnabled && seconds > 0}};
+    };
+    return {row(QStringLiteral("ac"), QStringLiteral("On AC power"), acEnabled, acSeconds),
+            row(QStringLiteral("battery"), QStringLiteral("On battery"), batteryEnabled, batterySeconds),
+            row(QStringLiteral("lowBattery"), QStringLiteral("On low battery"), lowBatteryEnabled, lowBatterySeconds)};
+  }
+  Q_INVOKABLE bool setEnabled(const QString &source, bool value) {
+    ++enabledCalls;
+    if (!acceptEnabled) {
+      errorText = QStringLiteral("Display-off save refused");
+      Q_EMIT changed();
+      return false;
+    }
+    if (source == QLatin1String("ac")) acEnabled = value;
+    else if (source == QLatin1String("battery")) batteryEnabled = value;
+    else if (source == QLatin1String("lowBattery")) lowBatteryEnabled = value;
+    Q_EMIT changed(); return true;
+  }
+  Q_INVOKABLE bool setSeconds(const QString &source, int value) {
+    ++minutesCalls;
+    if (!acceptMinutes) {
+      errorText = QStringLiteral("Display-off save refused");
+      Q_EMIT changed();
+      return false;
+    }
+    if (source == QLatin1String("ac")) acSeconds = value;
+    else if (source == QLatin1String("battery")) batterySeconds = value;
+    else if (source == QLatin1String("lowBattery")) lowBatterySeconds = value;
+    Q_EMIT changed(); return true;
+  }
   Q_INVOKABLE bool setEnabled(bool value) {
     ++enabledCalls;
     if (!acceptEnabled) {

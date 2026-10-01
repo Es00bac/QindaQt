@@ -108,11 +108,18 @@ void PowerDevilImportTests::
   const QVariantMap legacy{
       {QStringLiteral("AC/Display/TurnOffDisplayWhenIdle"), false},
       {QStringLiteral("AC/Display/TurnOffDisplayIdleTimeoutSec"), 1200},
-      {QStringLiteral("AC/SuspendAndShutdown/LidAction"), 2}};
+      {QStringLiteral("AC/SuspendAndShutdown/LidAction"), 2},
+      {QStringLiteral("Battery/SuspendAndShutdown/LidAction"), 1},
+      {QStringLiteral("BatteryManagement/BatteryCriticalAction"), 8}};
   const QVariantMap native{
       {QStringLiteral("power.idle.ac.displayOffEnabled"), true},
+      {QStringLiteral("power.idle.ac.displayOffSeconds"), 840},
       {QStringLiteral("power.idleDisplayOffMinutes"), 7},
+      {QStringLiteral("power.idle.lowBattery.displayOffEnabled"), false},
+      {QStringLiteral("power.idle.lowBattery.displayOffSeconds"), 0},
       {QStringLiteral("power.lid.ac.action"), QStringLiteral("lock")},
+      {QStringLiteral("power.lid.battery.action"), QStringLiteral("hibernate")},
+      {QStringLiteral("power.critical.action"), QStringLiteral("suspend")},
       {QStringLiteral("power.sleep.ac.mode"), QStringLiteral("hybrid-sleep")}};
   const ImportPlan plan = planPowerDevilImport(legacy, native);
   QVariantMap imported;
@@ -120,11 +127,14 @@ void PowerDevilImportTests::
     imported.insert(entry.first, entry.second);
   QVERIFY(
       !imported.contains(QStringLiteral("power.idle.ac.displayOffEnabled")));
+  QVERIFY(!imported.contains(QStringLiteral("power.idle.ac.displayOffSeconds")));
+  QVERIFY(!imported.contains(QStringLiteral("power.idle.lowBattery.displayOffEnabled")));
+  QVERIFY(!imported.contains(QStringLiteral("power.idle.lowBattery.displayOffSeconds")));
   QVERIFY(!imported.contains(QStringLiteral("power.lid.ac.action")));
+  QVERIFY(!imported.contains(QStringLiteral("power.lid.battery.action")));
+  QVERIFY(!imported.contains(QStringLiteral("power.critical.action")));
   QVERIFY(!imported.contains(QStringLiteral("power.sleep.ac.mode")));
-  QCOMPARE(
-      imported.value(QStringLiteral("power.idle.ac.displayOffSeconds")).toInt(),
-      420);
+  QVERIFY(!imported.contains(QStringLiteral("power.idle.ac.displayOffSeconds")));
   QVERIFY(!planPowerDevilImport(
                legacy,
                {{QStringLiteral("power.migration.powerDevilImported"), true}})
