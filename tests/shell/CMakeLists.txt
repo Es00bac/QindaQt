@@ -5,6 +5,22 @@
 find_package(Qt6 REQUIRED COMPONENTS QuickTest Svg)
 find_program(DBUS_DAEMON_EXECUTABLE dbus-daemon REQUIRED)
 
+qt_add_executable(qindaqt_native_notification_lock_observer_tests
+    tst_native_notification_lock_observer.cpp
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/native_notification_lock_observer.cpp"
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime/native_notification_lock_observer.h")
+target_include_directories(qindaqt_native_notification_lock_observer_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/shell/runtime")
+target_link_libraries(qindaqt_native_notification_lock_observer_tests PRIVATE
+    QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::CompositorNames Qt6::Test)
+target_compile_definitions(qindaqt_native_notification_lock_observer_tests PRIVATE
+    QINDAQT_DBUS_DAEMON_EXECUTABLE="${DBUS_DAEMON_EXECUTABLE}")
+qindaqt_enable_warnings(qindaqt_native_notification_lock_observer_tests)
+add_test(NAME qindaqt.shell-native-notification-lock
+    COMMAND qindaqt_native_notification_lock_observer_tests)
+set_tests_properties(qindaqt.shell-native-notification-lock PROPERTIES
+    ENVIRONMENT "QT_FATAL_WARNINGS=1")
+
 add_test(
     NAME qindaqt.shell-icon-coverage
     COMMAND ${CMAKE_COMMAND}

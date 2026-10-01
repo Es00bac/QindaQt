@@ -474,6 +474,7 @@ nav:
       - ADR-0314 Native lock receipts: adr/0314-native-lock-receipt-authentication.md
       - ADR-0313 Native night-light authority: adr/0313-native-night-light.md
       - ADR-0317 Native shortcut registry: adr/0317-native-global-shortcut-registry.md
+      - Native notification lock observation: wiki/adr/0320-native-notification-lock-observation.md
       - ADR-0305 Ordinary compositor attachment: adr/0305-public-ordinary-compositor-attachment.md
 
       - ADR-0312 Import complete legacy stores and preserve exact portal secrets: adr/0312-preserve-exact-legacy-portal-secrets.md

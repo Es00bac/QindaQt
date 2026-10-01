@@ -20,10 +20,13 @@ The production path is:
 2. The host publishes snapshots through its private, token-bound D-Bus object.
 3. The owner-bound asynchronous shell client authenticates and accepts only a
    coherent owner, epoch, and monotonic revision lineage.
-4. A separate lock-state monitor requires the QindaQt compositor and both
-   KScreenLocker names to share one unique owner whose bus-daemon PID is the
-   provisioned KWin PID. Only its conclusive `Unlocked` state opens the privacy
-   gate.
+4. A shell-private observer joins the public ordinary display attachment to
+   authenticated native compositor lock receipts. The actual compositor owner,
+   daemon-resolved PID and kernel socket peer must match the supervisor-provisioned
+   PID, and the selected Session1 owner remains pinned. Only conclusive `Unlocked`
+   opens privacy. The native ScreenSaver facades may have the separate supervisor
+   owner. Unknown, missing receipts and revoked/replaced owners keep disclosure
+   closed; see [ADR-0320](../adr/0320-native-notification-lock-observation.md).
 5. `NotificationPresentationController` projects that snapshot into separate
    active, popup, and recent list models using injected per-application,
    interruption, and higher-priority privacy policies.
