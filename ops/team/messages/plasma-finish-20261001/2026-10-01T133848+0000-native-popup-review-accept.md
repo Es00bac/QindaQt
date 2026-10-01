@@ -1,0 +1,34 @@
+# ACCEPT — native popup candidate 6181566a68703cc2a1bb5b693c729cd2a89190a1
+
+- Reviewer: pf-native-popup-review-sol-20261001 (independent of implementer)
+- Timestamp: 2026-10-01T13:38:48+00:00
+- Exact candidate: `6181566a68703cc2a1bb5b693c729cd2a89190a1`
+- Exact handoff reviewed: `d9219191c2ecd6388c56f949b0d94a0796e717f3`
+- Verdict: ACCEPT for the stated private1080p/100% native popup mapping/privacy outcome. No blocking finding.
+- Requested action: manager integrates exact candidate and reruns its focused combined native gate.
+
+## Source and authority audit
+
+Review at exact candidate in isolated laptop/qinda worktrees; own only review board/messages. Read AGENTS/wiki notification/native-lock/workflow and new fixture/runner plus shared surface/evidence/cleanup helpers. Actual mapped popup validation uses compositor-owned inventory, committed/mapped flags, shell PID, scope, output/geometry/role and public authenticated shell evidence. Retirement separately requires no mapped popup/center belonging to the selected shell while private active/popup/history models clear and shell/host remain alive. This cannot pass only because QML visibility claims changed.
+
+Test-owned actual Session1 name selects exact compositor via daemon UID/PID and ordinary connected socket/PIDFD. On name release attachment.live() fails before queued owner notification delivery and public monitor resolves Unknown. Actual RequestLock reaches the fork's NativeLock1; expected launcher refusal precedes current real Locked/Protected receipt. Diagnostic nonce listener does not publish state; production transport joins target nonce/reply/current sender/serial and monitor repeats admitted lineage before publishing. Shell/host still use unchanged real production observer/model/transport and descriptor-only TokenizedProcessLauncher provisioning. No injected backend, decision, successful admission, native state or secret.
+
+`git diff --quiet faaaf74646f638bc5074163e45e950faa2cea230 6181566a68703cc2a1bb5b693c729cd2a89190a1 -- src`: exit0, all production source unchanged. Actual root source HEAD faaaf746 exact; fork source690c0112d13ca7d861e070865c9054d657946b75 exact. Runtime helper source e7018ba915412f8010a7ca67c2858314eb600979 and candidate src/tests are identical (exit0). Reused existing strict helper/production artifacts; no fresh full build claimed. SHA256 before/after manifests compare exit0 for helper, launcher, shell, notification host, Settings, compositor plugin and exact staged fork binary.
+
+## Independent corrected gate and evidence
+
+Executed own candidate `tests/session/native_notification_live/run_native_popup.py` directly with the exact CTest gate's existing helper/production/fork/scenario arguments, changing only source runner/evidence ownership to the review worktree. Explicitly unset WAYLAND_DISPLAY, WAYLAND_SOCKET, DISPLAY and both bus addresses before runner. No CTest/full-build rerun claimed. Direct gate exit0; raw Qt4 passed/0 failed/0 skipped in2.957s. `/usr/bin/qindaqt-lock` checked absent directly before invocation and again by fixed runner/helper guards. No installed session, host broker, real locker/PAM, physical display/input or secrets accessed by this replay.
+
+Own qinda evidence: `~/work_SPaC3/container-wm.worktrees/pf-native-popup-review-20261001/build/review/`. `replay.log` preserves raw gate output; `artifact-sha256-{before,after}.txt` preserves exact artifacts; `evidence/qindaqt-native-popup-9gvtmu4z-evidence/` preserves fixture/compositor/child logs, process.json and independent `review-summary.json`/`review-lifetime-audit.json`. Actual fork2695116 owner:1.0, selected owners:1.6/:1.11 and shells2695137/2695165. Parsed rows each mappedPopupCount1/retiredMappedCount0, active/popup/history0 and live shell/host; receipt nonce counts1/3, actual current Protected receipt true in native lock row.
+
+Post-exit direct audit checked44 same-UID processes: exact fork/shell PIDs gone, no exact runtime-root command/environment matches, temporary root removed. Four limited process reads (host systemd/sd-pam/sshd) retained as limitations; no unrelated process cleanup. Runner starts compositor without default session/Xwayland/global shortcuts, disables OSK discovery/portal activation, uses empty private-broker activation directory, unavailable system bus and disposable HOME/XDG. Probe is group-owned and boundedly cleaned including grandchildren; fixture destructors stop their real children. Compositor terminates while private broker is alive.
+
+Additional own checks: `python3 -B tests/session/test_notification_live_unit.py` exit0,11/11; `tools/check-source-shape --root tests/session/native_notification_live --config tools/source-shape.json --warnings-as-errors` exit0,5 files/largest210 nonblank; `tools/validate-docs` exit0,483 documents/navigation; `mkdocs build --strict --site-dir build/review/site` exit0; exact base-to-candidate `git diff --check` exit0. Static logs retained in own laptop build/review.
+
+## Earlier isolation failure explicitly assessed
+
+Preserved failed name-ready invocation really launched installed default qindaqt-session and optional children on the disposable bus. Inspected failed ryynq218 compositor log: running qindaqt-session destructor warning, Xembed display connection refusal and installed nm-applet2680778 warning. This is genuine invalid precursor verification, not acceptable production behavior or a hypothetical issue. Candidate corrects the causal omission with explicit `--session ''`; launcher parser and command builder confirm empty value suppresses `--exit-with-session`. Current replay contains no default supervisor/optional-child launch. Prior audit `build/native-popup/isolation-process-audit-complete.json` checked47 same-UID processes, no exact accidental root/socket matches, known nm-applet PID absent, and explicitly disclosed four limited host daemon environment reads. That audit supports zero observed survivors; it does not prove universal absence of host mutation. No blanket only-source-executables-ever-ran assertion is accepted. The invalid precursor does not provide passing evidence; the corrected independent replay does.
+
+## Limits and release
+
+Acceptance covers actual committed/mapped popup retirement under selected-owner loss and current native protection on private virtual1080p/100%. Clientless Protected receipt is not successful locker admission/authentication; no PAM/unlock, pixel capture, physical outputs, installed deployment or historical keyboard/settings/restart matrix claim. Existing compatible helper/artifacts reused, no full rebuild. Runtime/compiler slots released immediately after replay before static review; own board waiting. Concrete next-help offer: reproduce one exact bounded native popup finding after manager routes it and grants needed resources; no further source claim.
