@@ -180,7 +180,7 @@ int serveBackend() {
         QStringList{qEnvironmentVariable("XDG_DATA_HOME")}, QString{}, qEnvironmentVariable("QINDAQT_CAPTURE_TEST_HELPER"));
     if (!composition.start() || resident.start() != PortalServiceStartStatus::Started) return 3;
     QSocketNotifier parentLifetime(STDIN_FILENO, QSocketNotifier::Read);
-    QObject::connect(&parentLifetime, &QSocketNotifier::activated, qApp, [&parentLifetime] {
+    QObject::connect(&parentLifetime, &QSocketNotifier::activated, QCoreApplication::instance(), [&parentLifetime] {
         char byte = 0; static_cast<void>(read(STDIN_FILENO, &byte, 1)); parentLifetime.setEnabled(false); QCoreApplication::quit();
     });
     std::puts("protected native backend ready"); std::fflush(stdout);
