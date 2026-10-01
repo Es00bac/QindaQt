@@ -22,10 +22,12 @@ no-automatic-switch behavior when no PowerProfile key is stored.
 
 Existing `power.idleDisplayOffMinutes`, `power.screensaver`, and
 `power.screensaverMinutes` remain schema keys for the current Settings route
-and compatibility. A stored `power.idleDisplayOffMinutes` choice is copied
-to each per-source display-off duration during migration and takes precedence
-over the legacy PowerDevil timeout. Explicit values for any new native key
-also take precedence independently for enabled state and duration. An old
+and compatibility. A stored `power.idleDisplayOffMinutes` choice is copied to each per-source
+display-off enabled state and duration during schema migration (positive
+minutes become seconds; non-positive values remain disabled) and takes
+precedence over the legacy PowerDevil timeout. An absent legacy key stays
+absent so schema defaults apply. Explicit values for any new native key also
+take precedence independently for enabled state and duration. An old
 disabled global preference does not synthesize a zero timeout when a new
 per-source choice explicitly re-enables display-off. Defaults provide a usable policy where no supported
 legacy choice exists; unsupported or malformed legacy fields are omitted
@@ -69,6 +71,14 @@ marker, so a later Settings1 activation can retry. The marker and imported
 preferences share the user-override document and follow Settings1's atomic
 persistence contract.
 
-PF2–PF4 add policy runtime, idle-stage evaluation, and presentation. Until
-those slices land, this schema is durable configuration only; it does not
-inhibit logind, dim displays, lock, suspend, or change a Power Profiles hold.
+PF2–PF4 add policy runtime, idle-stage evaluation, and presentation. The
+native display-off stage now reads confirmed per-source Settings1 values and
+selects AC, battery, or low-battery settings from the current authenticated
+Power1 source and warning facts. `WarningLevel::Low`, `Critical`, and `Action`
+select low-battery; unknown, none, and discharging select battery. The native
+Settings route edits each source independently while showing which source is
+active. The legacy global minutes route remains for compatibility and schema
+migration, where an explicit old choice is copied to all three sources. The
+stage boundary and limits are in [Native idle display stage](idle-policy.md).
+Dim, lock-before-display-off, idle suspend, and capability masks remain
+separate work until their consumers are complete.
