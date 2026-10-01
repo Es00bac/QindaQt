@@ -90,7 +90,12 @@ SettingsClient with Power1's validated coordinator facts in the resident
 executable. Confirmed source facts select `power.profile.ac`,
 `power.profile.battery` or `power.profile.lowBattery`; Low, Critical and Action
 warnings choose low-battery only while on battery. Unknown source, unsupported
-profiles or unconfirmed Settings authority admit no new hold. `none` releases
+profiles or unconfirmed Settings authority admit no new hold. The upstream
+[HoldProfile contract](https://upower.pages.freedesktop.org/power-profiles-daemon/gdbus-org.freedesktop.UPower.PowerProfiles.html)
+only admits power-saver and performance. The stored balanced choice therefore
+releases the native hold without claiming that balanced was applied. An
+automatic balanced base-policy contract is deferred; changing ActiveProfile
+would cancel other callers' holds. `none` releases
 only this runtime's automatic hold and leaves external/user holds untouched.
 
 The executable defaults to `--profile-policy=off`, including packaged
@@ -103,14 +108,18 @@ supervisor and package cutover remain separate work.
 
 One serialized nonce-tagged hold is replaced by releasing and observing its
 absence before acquiring the next profile. Equivalent repeated facts cause no
-hold churn. Each successful hold operation refreshes authenticated provider
+hold churn. Current-owner targeted ProfileReleased refreshes authenticated
+facts and retires the cookie. User cancellation suppresses acquisition until
+a new source/preference/authority input or explicit retry, preserving manual
+choice. Each successful hold operation refreshes authenticated provider
 facts. Known refusals have no timer retry: changed admission or confirmed
 preferences, or local explicit retry, may retry. Hold calls are bounded to
 three seconds; malformed successes, transport uncertainty and missing
 convergence quarantine acquisition until a new runtime. A late observed tagged
 hold may be cleaned up only if its returned cookie was recorded; a timed-out
 acquire with no cookie cannot invent release authority. Uncertain acquisition
-is never replayed.
+is never replayed. An uncertain release also fences that exact hold against
+repeat dispatch, even after preferences change.
 Settings owner loss or a pending/unconfirmed refresh prevents selecting a
 new hold from retained preferences. A pending refresh may retain the already
 confirmed hold; failure withdraws it. Global Power1 epoch changes discard retained handles.
@@ -119,7 +128,8 @@ confirmed hold; failure withdraws it. Global Power1 epoch changes discard retain
 against private UPower/PPD and resident Settings1, checking source transitions,
 leave-alone cleanup, equivalent-fact stability, external holds, dormant default,
 legacy authority arrival/loss, Settings owner loss, unsupported/provider loss,
-hold limit admission changes, known rejection and timeout no-replay. The daemon
+hold limit admission changes, known rejection, acquisition/release timeout
+no-replay, balanced deferral and actual targeted manual ProfileReleased. The daemon
 has no host include or activation directory. These are private fixtures, not
 installed or physical power qualification. Idle scopes stay zero; PF2 lid and
 critical countdown, full idle policy, and PowerDevil retirement remain separate.

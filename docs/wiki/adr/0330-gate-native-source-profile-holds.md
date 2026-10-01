@@ -24,7 +24,12 @@ ActiveProfile: it acquires one tagged profile hold and releases only that hold.
 Confirmed AC, battery and low-battery facts choose the matching confirmed
 `power.profile.*` preference. `none`, unknown source or authority, missing
 capability, and an unsupported profile suppress acquisition and remove a
-currently observed owned hold when release remains admitted.
+currently observed owned hold when release remains admitted. The upstream
+[HoldProfile contract](https://upower.pages.freedesktop.org/power-profiles-daemon/gdbus-org.freedesktop.UPower.PowerProfiles.html)
+admits only power-saver and performance. Balanced preferences are deferred:
+release our hold without setting a base profile or claiming balanced applied.
+Automatic balanced base policy needs a separate contract because an
+ActiveProfile write cancels external holds.
 
 Bare and packaged execution default to `--profile-policy=off`. Explicit
 `--profile-policy=native-exclusive` declares the operator's exclusive native
@@ -38,13 +43,16 @@ Each acquisition uses a fresh per-runtime nonce in its reason. Successful
 operation completion must converge to an authenticated published hold before
 replacement. Cleanup uses the observed exact handle, never another caller's
 metadata or a retained stale epoch. A changed global Power1 epoch retires local
-handles. Known refusals retry only after material admission/confirmed preference
+handles. Exact current-owner targeted ProfileReleased retires the stored cookie
+and refreshes facts; unexpected cancellation suppresses reacquisition until a
+new source/preference/authority input or explicit retry. Known refusals retry only after material admission/confirmed preference
 changes or explicit local retry. Repeated equivalent facts never retry. A
 bounded dispatch or observation timeout, malformed success or Uncertain result
 quarantines new acquisitions for this runtime; late authenticated observation
 may clean up the tagged hold only if the adapter recorded its cookie, but
 never replays the acquire. A lost acquisition reply provides no cookie and
-cannot authorize a fabricated release. The provider adapter
+cannot authorize a fabricated release. An uncertain release fences that exact
+hold against repeat dispatch even after preferences change. The provider adapter
 bounds hold calls at three seconds and refreshes current-owner facts after
 successful acquire/release.
 

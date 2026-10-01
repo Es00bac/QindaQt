@@ -24,6 +24,7 @@ target_sources(
         src/adapters/logind_backlight_writer.cpp
         src/adapters/logind_session_collaborator.cpp
         src/adapters/power_profiles_collaborator.cpp
+        src/adapters/power_profiles_operations.cpp
         src/adapters/production_battery_collaborator.cpp
         src/adapters/sysfs_backlight_source.cpp
         src/adapters/upower_battery_collaborator.cpp

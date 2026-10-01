@@ -71,6 +71,16 @@ void PowerServiceCoordinator::connectProfile(ProfileCollaborator *profiles)
             &PowerServiceCoordinator::acceptProfileReplacement);
     connect(profiles, &ProfileCollaborator::operationFinished, this,
             &PowerServiceCoordinator::acceptProfileOutcome);
+    connect(profiles, &ProfileCollaborator::ownedHoldCancelled, this,
+            [this](quint64 generation, const QString &opaqueId) {
+                if (!generationCurrent(m_profileDomain.state, generation)) return;
+                for (const auto &hold : m_snapshot.profiles.holds) {
+                    if (hold.handle.opaqueId == opaqueId) {
+                        Q_EMIT profileHoldCancelled(hold.handle);
+                        return;
+                    }
+                }
+            });
 }
 
 void PowerServiceCoordinator::connectSession(SessionCollaborator *session)

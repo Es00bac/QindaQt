@@ -28,6 +28,7 @@ private:
     void schedule();
     void reconcile();
     QString desiredProfile() const;
+    QString selectionKey() const;
     void dispatch(PowerServiceRequest request);
     void completed(quint64 id, const OperationResult &result);
     PowerServiceCoordinator &m_power;
@@ -37,7 +38,9 @@ private:
     QString m_requestedProfile;
     QString m_attemptKey;
     QString m_failedKey;
+    QString m_manualSuppressed;
     Handle m_owned;
+    QSet<QString> m_uncertainReleases;
     quint64 m_operation = 0;
     quint64 m_epoch = 0;
     OperationKind m_kind = OperationKind::AcquireProfileHold;

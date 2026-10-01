@@ -69,6 +69,8 @@ public:
 Q_SIGNALS:
   void snapshotChanged(const QindaQt::Power::Snapshot &snapshot);
   void invalidated(quint64 epoch, quint64 revision);
+  // Same-thread current published handle; provider manual cancellation only.
+  void profileHoldCancelled(const QindaQt::Power::Handle &handle);
   void operationCompleted(quint64 operationId,
                           const QindaQt::Power::OperationResult &result);
 
