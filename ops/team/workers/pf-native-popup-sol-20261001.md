@@ -23,3 +23,5 @@
 - 2026-10-01T12:57:21Z — Root granted compiler/private runtime after configure reviewer released its slot. Beginning own strict Debug/sharedON/pluginOFF target qindaqt_native_notification_live_tests and required dependencies only; MAKEOPTS j24/l24 unchanged. Actual native gate follows successful build, with no installed locker/PAM/unlock and preserved raw logs.
 
 - 2026-10-01T12:59:55Z — Own strict configure exit0 (36.3s + generation6.8s). Initial293-action helper/dependency build failed at291 on two new fixture calls to undeclared legacy processProbeEventsFor; raw build-first.log retained. Replaced only those waits with QtTest::qWait and rebuilding affected helper under current grant. No product source/admission changed; no private scenario yet.
+
+- 2026-10-01T13:00:50Z — Full error scan corrects earlier tail-only compile summary: initial build also had a const QDBusConnection passed to mutable connect(). First repair retained that companion failure. Changed fixture bus handle to nonconst; build-first/build-repair raw failures preserved. Continuing same bounded own-helper compile, no product source changes.
