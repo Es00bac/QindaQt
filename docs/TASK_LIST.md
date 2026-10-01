@@ -53,8 +53,12 @@ accepted, with a production build and collision-free private stage. The consumer
 pins that exact tree. Shell privacy `a8b20b06` repairs review-discovered cached
 admission and popup retirement gaps; independent rereview passes nine focused
 gates and the unchanged failure reproduction, and its source is merged on the
-recovery branch. Combined consumer/plugin and native gates remain before main integration. Native
-logind sleep coordination is separately assigned. No milestone or installed
+recovery branch. Native logind sleep `e6072eb1` is independently accepted and
+merged, with seven private gates and 71 Qt checks; combined consumer/plugin,
+native and hardware qualification remains. Native FileChooser/AppChooser is
+actively qualifying its final family routing and staged delivery after real
+frontend journeys passed. Combined build is paused on an inherited keyring idle
+fixture repair under independent review. No milestone or installed
 Plasma-removal completion advances from candidate activity.
 
 The owner confirmed the complete [native replacement program](plans/2026-09-28-plasma-free-qindaqt.md),
