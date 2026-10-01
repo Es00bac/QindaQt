@@ -22,13 +22,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("probe", "compositor", "launcher", "plugin-root", "shell", "host", "settings", "scenario", "artifacts"):
         parser.add_argument("--" + name, type=Path, required=True)
-    parser.add_argument("--locker", type=Path, default=Path("/usr/bin/qindaqt-lock"))
     parser.add_argument("--dbus-daemon", type=Path, default=Path("/usr/bin/dbus-daemon"))
     arguments = parser.parse_args()
     for name in ("probe", "compositor", "launcher", "shell", "host", "settings", "scenario", "dbus_daemon"):
         if not getattr(arguments, name).is_file():
             raise RuntimeError(f"required exact artifact absent: {name}")
-    if arguments.locker.exists():
+    # Qualified fork690 is built with KDE_INSTALL_FULL_BINDIR=/usr/bin.
+    # This fixed guard cannot be redirected to a convenient absent file.
+    locker = Path("/usr/bin/qindaqt-lock")
+    if locker.exists():
         raise RuntimeError("refused real native locker/PAM executable; this row requires clientless black fallback")
     plugin = arguments.plugin_root / "qindaqt-kwin" / "plugins" / "qindaqt_compositor.so"
     if not plugin.is_file():
@@ -62,7 +64,7 @@ def main() -> int:
                 if not (root / "runtime/qindaqt-popup").exists():
                     raise RuntimeError("actual ordinary compositor socket did not appear")
                 environment.update(WAYLAND_DISPLAY="qindaqt-popup", QINDAQT_NATIVE_POPUP_COMPOSITOR_PID=str(child.pid),
-                    QINDAQT_NATIVE_POPUP_LOG_ROOT=str(root), QINDAQT_NATIVE_POPUP_LOCKER=str(arguments.locker),
+                    QINDAQT_NATIVE_POPUP_LOG_ROOT=str(root), QINDAQT_NATIVE_POPUP_LOCKER=str(locker),
                     QINDAQT_NATIVE_POPUP_SHELL=str(arguments.shell.resolve()), QINDAQT_NATIVE_POPUP_HOST=str(arguments.host.resolve()),
                     QINDAQT_NATIVE_POPUP_SETTINGS=str(arguments.settings.resolve()), QT_FATAL_WARNINGS="1")
                 result = run_private_process_group([str(arguments.probe.resolve())], environment, 75)

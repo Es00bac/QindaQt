@@ -20,6 +20,7 @@ private Q_SLOTS:
         QCOMPARE(qEnvironmentVariable("QINDAQT_NATIVE_POPUP_PRIVATE_BUS"), QStringLiteral("1"));
         QVERIFY(!qEnvironmentVariableIsEmpty("DBUS_SESSION_BUS_ADDRESS"));
         QVERIFY(qEnvironmentVariableIsEmpty("DISPLAY"));
+        QCOMPARE(qEnvironmentVariable("QINDAQT_NATIVE_POPUP_LOCKER"), QStringLiteral("/usr/bin/qindaqt-lock"));
         QVERIFY(!QFileInfo(qEnvironmentVariable("QINDAQT_NATIVE_POPUP_LOCKER")).exists());
     }
     void selectedOwnerLossRetiresActualPopup()
