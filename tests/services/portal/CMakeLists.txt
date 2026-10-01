@@ -129,6 +129,7 @@ if(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE AND QINDAQT_KDE_PORTAL_METADATA)
                 --unset=DBUS_SESSION_BUS_ADDRESS
                 --unset=DBUS_STARTER_ADDRESS
                 --unset=DBUS_STARTER_BUS_TYPE
+                "DBUS_SYSTEM_BUS_ADDRESS=unix:path=${CMAKE_CURRENT_BINARY_DIR}/unavailable-system-bus"
                 "${QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE}" --
                 "$<TARGET_FILE:qindaqt_portal_frontend_integration_tests>"
                 "${mode}"
@@ -173,6 +174,7 @@ if(QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE AND QINDAQT_KDE_PORTAL_METADATA)
                 --unset=DBUS_SESSION_BUS_ADDRESS
                 --unset=DBUS_STARTER_ADDRESS
                 --unset=DBUS_STARTER_BUS_TYPE
+                "DBUS_SYSTEM_BUS_ADDRESS=unix:path=${CMAKE_CURRENT_BINARY_DIR}/unavailable-system-bus"
                 "${QINDAQT_PORTAL_DBUS_RUN_SESSION_EXECUTABLE}" --
                 "$<TARGET_FILE:qindaqt_portal_frontend_routing_tests>"
                 "${mode}"

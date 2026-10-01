@@ -7,7 +7,7 @@
 - Branch: worker/pf-portal-choosers-20261001
 - Worktree: .cache/pf-portal-choosers-20261001
 - Ownership: new cohesive chooser components/dialogs/tests, portal primary wiki/reference, ADR0322; additive notified build/composition/metadata seams
-- Resources: compiler/private-runtime released during final source/docs edits; queued next after keyring bounded review; isolated qinda build/choosers and staged690 ordinary compositor only
+- Resources: compiler/private-runtime released after first final run; root combined build active, private one-case causal capture/rerun queued; isolated qinda build/choosers and staged690 ordinary compositor only
 
 ## Updates
 
@@ -22,3 +22,5 @@
 - 2026-10-01T11:00:57+00:00 — Resource grant received from root for isolated compiler/private frontend fixtures and bounded repairs. Frozen source0d86f4fb pushed and qinda lane clean before configure; production/staged690 qualification beginning. Root combined build paused until release. No host runtime or installed service scope.
 
 - 2026-10-01T11:18:30+00:00 — Actual native journey18c5805d passed9 QtTest cases,0 failed/skipped; CTest1/1 in4.34s, private real frontend/staged690/unchanged GUI with actual input. All file methods, overwrite deny/yes, MIME/filter/Boolean/combobox choices, registered caller, real AppChooser updates/cancel, parent validity/loss and caller/frontend/supervisor/Close lifetime passed. Initial strict-warning and fixture authority/input/MIME failures preserved; production compile repaired857677a4 passed90actions and adjacent fixture build passed340actions. Root authorized family selectors now native and bounded routing/integration fixture updates in actual tests/services/portal paths: native Response2 and KDE counter0 without selected attachment, retaining other KDE families. Added small test-only probe header/CMake entries; docs482/strict pass. Resources released during final source freeze; final adjacent/staged rerun queued after keyring review.
+
+- 2026-10-01T11:30:59+00:00 — First final9aa6c3a5 rebuild exit0; broad24CTest18 passed/6 failed,205.86s, native chooser passed. Failures retained: globally fatal expected bad-signature service warning; three new probe assertions incorrectly expected empty frontend dictionary (primary1.20.4 adds typed uris=[]); unchanged native-consent/native-frontend mapped helper failures. Probe now requires exact response2/typed empty uris/KDE0. Existing P1 private bus had autoactivated installed Power1, an isolation defect: test-owned exact name reservation before backend startup plus explicit nonexistent systembus added before any rerun. Resources released to root combined build. Private one-case unchanged helper stderr capture prepared, not executed before grant; no production Access edits. qinda theme/style environment empty, cause unproven. Docs482/strict and diff pass; source freeze preparing.

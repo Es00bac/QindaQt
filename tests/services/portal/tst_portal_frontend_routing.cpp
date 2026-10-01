@@ -212,6 +212,7 @@ bool registerRoutingFakes(QDBusConnection &bus, FakePortalRoot &root,
         || !bus.registerService(QStringLiteral(
                                     "org.freedesktop.impl.portal.desktop.gnome-keyring"))
         || !bus.registerService(QString::fromLatin1(DocumentsService))
+        || !bus.registerService(QStringLiteral("org.qindaqt.Power1"))
         || !bus.registerService(QString::fromLatin1(PermissionStoreService))) {
         *error = QStringLiteral("cannot register injected private-bus routing backends");
         return false;

@@ -2,6 +2,7 @@
 #pragma once
 #include "portal_frontend_test_support.h"
 #include <QDBusConnection>
+#include <QDBusArgument>
 #include <QDBusObjectPath>
 #include <QDBusPendingReply>
 namespace QindaQt::Tests::Portal {
@@ -30,7 +31,13 @@ inline bool nativeChooserRefusesWithoutAttachment(QDBusConnection bus, const QSt
         *error = QStringLiteral("native FileChooser did not retire its frontend request"); return false;
     }
     const QDBusPendingReply<QDBusObjectPath> reply = pending;
-    if (reply.isError() || reply.value().path() != receiver.path || receiver.response != 2 || !receiver.results.isEmpty()) {
+    // The 1.20.4 frontend adds uris=[] even for a failed FileChooser reply;
+    // backend RequestRegistry itself publishes an empty failure dictionary.
+    const auto uris = receiver.results.value(QStringLiteral("uris"));
+    const bool stringArray = uris.metaType() == QMetaType::fromType<QStringList>()
+        || (uris.metaType() == QMetaType::fromType<QDBusArgument>() && uris.value<QDBusArgument>().currentSignature() == QStringLiteral("as"));
+    const bool emptyUris = receiver.results.size() == 1 && stringArray && qdbus_cast<QStringList>(uris).isEmpty();
+    if (reply.isError() || reply.value().path() != receiver.path || receiver.response != 2 || !emptyUris) {
         *error = QStringLiteral("native FileChooser did not fail closed without selected attachment"); return false;
     }
     return true;
