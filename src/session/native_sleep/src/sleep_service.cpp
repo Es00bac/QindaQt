@@ -41,7 +41,14 @@ void SleepService::stop() {
   finish(SleepResult::Refused);
   if (m_started) { m_bus.unregisterService(Service); m_bus.unregisterObject(Path); }
   m_started = false;
-  delete m_supervisorWatcher; m_supervisorWatcher = nullptr;
+  if (m_supervisorWatcher) {
+    // AGENT-GUARD: Qt emits more than one watcher signal for owner loss. Retire
+    // callbacks now, but do not destroy the sender within its metacall.
+    m_supervisorWatcher->disconnect(this);
+    m_supervisorWatcher->setWatchedServices({});
+    m_supervisorWatcher->deleteLater();
+    m_supervisorWatcher = nullptr;
+  }
 }
 QString SleepService::introspect(const QString &) const {
   return QStringLiteral("<interface name=\"org.qindaqt.Sleep1\">"
