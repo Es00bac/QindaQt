@@ -26,9 +26,14 @@ void PortalSessionLifetime::start(const QString &program, const QString &display
     display_ = display;
     watcher_ = std::make_unique<QDBusServiceWatcher>(QString::fromLatin1(Service), *bus_, QDBusServiceWatcher::WatchForOwnerChange);
     connect(watcher_.get(), &QDBusServiceWatcher::serviceOwnerChanged, this,
-        [this](const QString &, const QString &, const QString &) {
+        [this](const QString &, const QString &, const QString &newOwner) {
+            // AGENT-GUARD: queued loss/arrival may follow a fresh owner lookup.
+            // Preserve an already selected identical owner instead of replaying
+            // its Attach call; loss still retires every in-flight generation.
+            if (!newOwner.isEmpty() && newOwner == owner_) return;
             ++generation_; pending_ = false; owner_.clear(); attempts_ = 0;
-            retry_.start(); attach();
+            retry_.start();
+            if (!newOwner.isEmpty()) attach();
         });
     child_.start(program);
     retry_.start(); attach();
