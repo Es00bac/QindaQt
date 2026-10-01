@@ -299,6 +299,10 @@ loss and frontend/broker loss, but the later stream decoder fails after prior
 stream retirement (0frames,2nodes, target not found; group6pass/1fail). The
 remaining fresh lock/compositor-loss groups were not reached. The decoder puts
 a returned node ID into PipeWire target.object, whose documented value is an
-object serial or node name; that separate bounded fixture issue is under review.
+object serial or node name. The decoder fixture now resolves only the offered
+node ID through the actual returned remote registry, waits for its bounded real
+sync barrier, and connects by its authentic object serial using PW_ID_ANY. It
+records each ID-to-serial pair and fails closed on missing/retired targets; there
+is no default-node fallback. The repaired full matrix remains to be rerun.
 All earlier blank PNG, two-frame and startup-order failures remain retained.
 No installed routing or full PF19 completion is claimed.

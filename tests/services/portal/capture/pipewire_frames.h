@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include <QImage>
+#include <QByteArray>
 #include <QObject>
 #include <QSet>
 #include <QTimer>
@@ -25,4 +26,6 @@ private:
     spa_hook m_listener{}, m_registryListener{}, m_coreListener{}; spa_video_info_raw m_format{};
     QTimer m_poll; int m_frames = 0; QImage m_image; QSet<quint64> m_checksums;
     QSet<quint32> m_nodes; QString m_error;
+    quint32 m_targetNode; QByteArray m_targetSerial;
+    int m_registrySync = -1; bool m_registryReady = false;
 };

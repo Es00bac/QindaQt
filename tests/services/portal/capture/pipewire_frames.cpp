@@ -4,23 +4,48 @@
 #include <spa/pod/builder.h>
 #include <cstring>
 #include <algorithm>
+#include <QElapsedTimer>
+#include <QDebug>
 #include <unistd.h>
-PipeWireFrames::PipeWireFrames(int fd, quint32 node) {
+PipeWireFrames::PipeWireFrames(int fd, quint32 node) : m_targetNode(node) {
     pw_init(nullptr, nullptr); m_loop = pw_loop_new(nullptr);
     if (m_loop) pw_loop_enter(m_loop);
     if (m_loop) m_context = pw_context_new(m_loop, nullptr, 0);
     if (m_context) m_core = pw_context_connect_fd(m_context, fd, nullptr, 0); else close(fd);
     if (!m_core) { m_error = "actual remote connect failed"; return; }
     static const pw_core_events coreEvents = [] { pw_core_events v{}; v.version = PW_VERSION_CORE_EVENTS;
+        v.done = [](void *p, uint32_t id, int seq) { auto &self = *static_cast<PipeWireFrames *>(p); if (id == PW_ID_CORE && seq == self.m_registrySync) self.m_registryReady = true; };
         v.error = [](void *p, uint32_t, int, int, const char *text) { static_cast<PipeWireFrames *>(p)->m_error = QString::fromUtf8(text); }; return v; }();
     pw_core_add_listener(m_core, &m_coreListener, &coreEvents, this);
     m_registry = pw_core_get_registry(m_core, PW_VERSION_REGISTRY, 0);
+    if (!m_registry) { m_error = "actual remote registry unavailable"; return; }
     static const pw_registry_events registryEvents = [] { pw_registry_events v{}; v.version = PW_VERSION_REGISTRY_EVENTS;
-        v.global = [](void *p, uint32_t id, uint32_t, const char *type, uint32_t, const spa_dict *) { if (strcmp(type, PW_TYPE_INTERFACE_Node) == 0) static_cast<PipeWireFrames *>(p)->m_nodes.insert(id); };
-        v.global_remove = [](void *p, uint32_t id) { static_cast<PipeWireFrames *>(p)->m_nodes.remove(id); }; return v; }();
+        v.global = [](void *p, uint32_t id, uint32_t, const char *type, uint32_t, const spa_dict *properties) {
+            if (strcmp(type, PW_TYPE_INTERFACE_Node) != 0) return;
+            auto &self = *static_cast<PipeWireFrames *>(p); self.m_nodes.insert(id);
+            if (id == self.m_targetNode && properties)
+                self.m_targetSerial = spa_dict_lookup(properties, PW_KEY_OBJECT_SERIAL);
+        };
+        v.global_remove = [](void *p, uint32_t id) {
+            auto &self = *static_cast<PipeWireFrames *>(p); self.m_nodes.remove(id);
+            if (id == self.m_targetNode) self.m_targetSerial.clear();
+        }; return v; }();
     pw_registry_add_listener(m_registry, &m_registryListener, &registryEvents, this);
-    const auto id = QByteArray::number(node);
-    m_stream = pw_stream_new(m_core, "private portal frame proof", pw_properties_new(PW_KEY_MEDIA_TYPE, "Video", PW_KEY_MEDIA_CATEGORY, "Capture", PW_KEY_MEDIA_ROLE, "Screen", PW_KEY_TARGET_OBJECT, id.constData(), nullptr));
+    // AGENT-CONTRACT: the portal offers a node ID, but PipeWire target.object
+    // takes object.serial (stream.h), which WirePlumber also enforces. Resolve
+    // only that offered node on the actual returned remote, never a default.
+    m_registrySync = pw_core_sync(m_core, PW_ID_CORE, 0);
+    if (m_registrySync < 0) { m_error = "actual registry sync failed"; return; }
+    QElapsedTimer deadline; deadline.start();
+    while (!m_registryReady && m_error.isEmpty() && deadline.elapsed() < 2000)
+        if (pw_loop_iterate(m_loop, 10) < 0) m_error = "actual registry loop failed";
+    bool validSerial = false; const auto serial = m_targetSerial.toULongLong(&validSerial);
+    if (!m_error.isEmpty()) return;
+    if (!m_registryReady || !m_nodes.contains(node) || !validSerial || serial == 0) {
+        m_error = "actual offered node serial unavailable"; return;
+    }
+    qInfo().noquote() << QStringLiteral("actual PipeWire target node=%1 serial=%2").arg(node).arg(serial);
+    m_stream = pw_stream_new(m_core, "private portal frame proof", pw_properties_new(PW_KEY_MEDIA_TYPE, "Video", PW_KEY_MEDIA_CATEGORY, "Capture", PW_KEY_MEDIA_ROLE, "Screen", PW_KEY_TARGET_OBJECT, m_targetSerial.constData(), nullptr));
     if (!m_stream) { m_error = "consumer stream creation failed"; return; }
     static const pw_stream_events streamEvents = [] { pw_stream_events v{}; v.version = PW_VERSION_STREAM_EVENTS;
         v.state_changed = [](void *p, pw_stream_state, pw_stream_state state, const char *error) { if (state == PW_STREAM_STATE_ERROR) static_cast<PipeWireFrames *>(p)->m_error = QString::fromUtf8(error); };
@@ -36,7 +61,7 @@ PipeWireFrames::PipeWireFrames(int fd, quint32 node) {
         SPA_FORMAT_VIDEO_framerate, SPA_POD_CHOICE_RANGE_Fraction(&rate, &low, &high)));
     const spa_pod *params[]{format};
     const auto flags = static_cast<pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_DONT_RECONNECT);
-    if (pw_stream_connect(m_stream, PW_DIRECTION_INPUT, node, flags, params, 1) < 0) { m_error = "actual node connection failed"; return; }
+    if (pw_stream_connect(m_stream, PW_DIRECTION_INPUT, PW_ID_ANY, flags, params, 1) < 0) { m_error = "actual node connection failed"; return; }
     m_poll.setInterval(5); connect(&m_poll, &QTimer::timeout, this, [this] { if (pw_loop_iterate(m_loop, 0) < 0) m_error = "private remote loop failed"; }); m_poll.start();
 }
 PipeWireFrames::~PipeWireFrames() {
