@@ -86,8 +86,11 @@ The e78bf9f4 diagnostic fixture combined protected resident and frontend caller,
 so primary frontend registration instead failed to open the caller proc root.
 Its source successor separates a real caller from a protected child hosting the
 unchanged public resident/composition, and supplies the installed primary client
-context in the private PipeWire configuration. Compilation and new method probes
-must qualify those repairs; neither predecessor probe reached Screenshot/Start. The test controller now applies
+context in the private PipeWire configuration. That repair compiles at b3670dda: both private frontend setups pass, Screenshot
+returns failure2/no URI, and ScreenCast stops at missing CreateSession token
+before Start. The source successor supplies primary request/session tokens and
+observes the existing public capture failure signal in the actual-input helper.
+Restricted Screenshot2 error provenance and Start outcome remain to qualify. The test controller now applies
 the same protection before Qt startup, and the runner removes inherited
 Screenshot/Wayland permission-bypass variables. A dumpable controller or bypass
 cannot qualify production.
@@ -109,7 +112,7 @@ this candidate preserves process protection and existing permission checks.
 
 ## Evidence still required
 
-Focused `qindaqt.portal-capture-policy` and `portal-capture-requests` rows cover wire shape, bounds, caller/app/session fencing, Close, late replies and owner loss. The source `qindaqt.portal-native-capture` runner provides three fresh private compositor groups, including irreversible native Locked retirement and actual compositor owner loss. It uses zero-activation-directory custom D-Bus, explicit nonexistent system bus, a private minimal PipeWire core and policy-only WirePlumber with hardware monitors absent. The direct qualified fork receives no opt-in Xwayland, positional session/app, exit-with-session or input-method argument; its CLI has no launcher-specific empty-session switch. Every top-level broker/producer/controller uses a private process group and postexit audits require all descendants to disappear. Qt input links unchanged helper sources; a changing fullscreen ordinary test client supplies known pixels. The consumer connects only to the actual frontend-returned remote FD and checks node visibility, decoded frames and cessation after Close/native lock. The eleven named capture/resident/Screenshot targets build successfully at exact e78bf9f4. Bounded native diagnostics stop in frontend registration before the journey methods; they do not qualify capture usability. Focused/adjacent runtime, complete native journey and staged gates remain pending. Actual
+Focused `qindaqt.portal-capture-policy` and `portal-capture-requests` rows cover wire shape, bounds, caller/app/session fencing, Close, late replies and owner loss. The source `qindaqt.portal-native-capture` runner provides three fresh private compositor groups, including irreversible native Locked retirement and actual compositor owner loss. It uses zero-activation-directory custom D-Bus, explicit nonexistent system bus, a private minimal PipeWire core and policy-only WirePlumber with hardware monitors absent. The direct qualified fork receives no opt-in Xwayland, positional session/app, exit-with-session or input-method argument; its CLI has no launcher-specific empty-session switch. Every top-level broker/producer/controller uses a private process group and postexit audits require all descendants to disappear. Qt input links unchanged helper sources; a changing fullscreen ordinary test client supplies known pixels. The consumer connects only to the actual frontend-returned remote FD and checks node visibility, decoded frames and cessation after Close/native lock. The eleven named capture/resident/Screenshot targets build successfully at exact e78bf9f4. Earlier diagnostics stop in registration; corrected b3670dda observes Screenshot failure2 but no Start response. These failures do not qualify capture usability. Focused/adjacent runtime, complete native journey and staged gates remain pending. Actual
 frontend methods and mapped ordinary Qt input must produce real captures and
 private PipeWire frames; cancellation, Close, caller/dependency/parent loss and
 native lock/uncertainty must withdraw results/streams. Staged helper permission

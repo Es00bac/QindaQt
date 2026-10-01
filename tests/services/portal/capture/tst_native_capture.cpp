@@ -65,7 +65,7 @@ private Q_SLOTS:
     }
     void init() { reset("allow"); }
     void cleanup() {
-        if (QTest::currentTestFailed()) qInfo().noquote() << frontend.readAllStandardError().right(32768);
+        if (QTest::currentTestFailed()) { qInfo().noquote() << frontend.readAllStandardError().right(32768); qInfo().noquote() << "native input/failure audit:" << audit().left(8192); }
         for (const auto &path : std::as_const(requests)) close(path, "Request");
         requests.clear();
     }
@@ -148,7 +148,9 @@ private:
         auto call = QDBusMessage::createMethodCall("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop", interface, member); call.setArguments(args); return call;
     }
     QString request(const char *family, const char *member, const QVariantList &args, const QDBusConnection &caller) {
-        QDBusPendingCallWatcher pending(caller.asyncCall(method(family, member, args), 20000)); QElapsedTimer clock; clock.start();
+        QVariantList tagged = args; auto options = tagged.last().toMap();
+        options.insert("handle_token", "r" + QUuid::createUuid().toString(QUuid::Id128)); tagged.last() = options;
+        QDBusPendingCallWatcher pending(caller.asyncCall(method(family, member, tagged), 20000)); QElapsedTimer clock; clock.start();
         while (!pending.isFinished() && clock.elapsed() < 5000) { QCoreApplication::processEvents(); QTest::qWait(5); }
         const QDBusPendingReply<QDBusObjectPath> result = pending; if (result.isError()) { qInfo().noquote() << result.error().message(); return {}; }
         if (caller.name() == bus.name()) requests.append(result.value().path());
@@ -156,7 +158,7 @@ private:
     }
     QString request(const char *family, const char *member, const QVariantList &args) { return request(family, member, args, bus); }
     QString screenshot(const char *member, const QString &parent = {}) { return request("Screenshot", member, {parent, QVariantMap{{"interactive", true}}}); }
-    void createSession(QString &session) { reset("allow"); request("ScreenCast", "CreateSession", {QVariantMap{}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); session = qdbus_cast<QDBusObjectPath>(responses.results.value("session_handle")).path(); }
+    void createSession(QString &session) { reset("allow"); request("ScreenCast", "CreateSession", {QVariantMap{{"session_handle_token", "s" + QUuid::createUuid().toString(QUuid::Id128)}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); session = qdbus_cast<QDBusObjectPath>(responses.results.value("session_handle")).path(); }
     void select(const QString &session) { reset("allow"); request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"cursor_mode", 1U}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); }
     void close(const QString &path, const char *family) { auto call = QDBusMessage::createMethodCall("org.freedesktop.portal.Desktop", path, "org.freedesktop.portal."+QString::fromLatin1(family), "Close"); QDBusPendingCallWatcher closing(bus.asyncCall(call)); QTRY_VERIFY(closing.isFinished()); }
     void reset(const char *action) { responses.count = 0; responses.response = 99; responses.results.clear(); QFile(qEnvironmentVariable("QINDAQT_CAPTURE_TEST_AUDIT")).remove(); qputenv("QINDAQT_CAPTURE_TEST_ACTION", action); }

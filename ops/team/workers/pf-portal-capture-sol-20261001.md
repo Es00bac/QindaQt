@@ -5,14 +5,18 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — exact b3670dda rebuild passed; preparing corrected protected-admission method probes under separate runtime coordination
+- Status: working — repairing required frontend tokens and observing existing public capture failure signal after immutable b3670dda method findings
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler released after approved rebuild; private runtime unclaimed; chooser history preserved
+- Resources: both slots released after b3670dda probes; conditional affected-fixture build grant after freeze, no resource reserved; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T15:21:31Z — Root directed minimal primary session_handle_token/handle_token fixture repair and optional existing-public-failure observability. Installed frontend XML/cached primary xdp-session token validation checked; unique standard tokens now supplied by actual caller. Test-only application event observer subscribes to public CapturePort::finished and records bounded failure text, with no production hook/authority/pixel fabrication. Freezing this owned fixture repair, then conditional affected-target build and only two selected probes authorized by root after integrated Sleep slot release. Native journey/routing remain unqualified.
+
+- 2026-10-01T15:08:26Z — Corrected exact b3670dda two selected private runs complete; slots released. Both initTestCase pass. Screenshot actual frontend Response2 and no local URI: raw exit1 in0.86s, Qt2pass/1fail/0skip. ScreenCast frontend CreateSession rejected Missing token before Start, raw exit1 in30.93s, Qt2pass/1fail/0skip; no Start/permission response claimed. Preserved build/b3670dda-private-negative command/status/raw logs. RLIMIT0, socket bound76bytes, group audits passed, scanned owned task core files zero/no observed crash; no universal host-mutation claim. Restricted Screenshot2 denial still not causally captured; protected proc/Wayland lookup denial remains independent evidence.
 
 - 2026-10-01T14:50:05Z — Exact b3670dda approved eleven-target strict rebuild PASS exit0, retained build/b3670dda-build.log; MOC/one compile/link, final3/4 dynamic progress not inferred four actions. Compiler released immediately. Source separate protected backend/default caller and primary private PW client configuration now compile. Two corrected native method probes require a fresh private grant; no response, capture or stream success yet.
 
