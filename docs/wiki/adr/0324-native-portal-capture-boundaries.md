@@ -1,0 +1,48 @@
+# ADR-0324: Separate native portal capture authority, consent and stream lifetime
+
+- Status: Proposed; source and actual frontend/PipeWire qualification pending
+- Date: 2026-10-01
+- Amends: [ADR-0318](0318-native-portal-foundation.md), [ADR-0289](0289-native-screenshot-and-record-tool.md)
+
+## Context
+
+Screenshot and ScreenCast need actual compositor pixels and long-lived streams,
+while the resident portal must remain a GUI-free composition of public ports.
+The Screenshot application's private capture implementation cannot become a
+cross-module portal dependency. Native lock uncertainty must suppress publication
+and withdraw retained results and streams.
+
+## Decision
+
+Extract shared request building, bounded raw decoder, region geometry and the
+restricted screenshot transport into a public CompositorCapture module. Retain
+thin Screenshot compatibility headers. Add an independently owned ordinary-FD
+Wayland ScreenCast port; the generated installed primary protocol is the only
+compositor protocol dependency, never fork-private headers.
+
+Portal pure wire policy, actor-fenced standard Requests/Sessions, child-process
+lifetime and native Qt dialogs remain separate components. Package-owned helper
+and resident desktop entries request only needed restricted interfaces. Selected
+ordinary peer/PIDFD/current native owner and authenticated read-only lock receipts
+gate consent, operation and publication. Native authority loss withdraws pending
+results, deletes temporary screenshot files and ends streams. Already copied
+image bytes or consumed stream buffers cannot be recalled.
+
+The real standard frontend owns OpenPipeWireRemote and node-specific permission
+filtering. Backend Start returns only a real created node. No fabricated remote,
+success placeholder, hidden auto-selection or ambient display fallback is allowed.
+The fork's existing ScreenShot2 and KDE owner compatibility names remain untilPF21.
+
+The first reviewable slice supports Screenshot/PickColor and ScreenCast version2
+monitor selection with one source and Hidden cursor. Unsupported types, multiple
+selection, cursor modes and restore/persist inputs fail explicitly. This does not
+complete PF19: window/multiple/cursor capabilities and shared revocable restore
+permissions remain a separately scoped successor before program closure. Metadata
+and routing change only after actual native frontend/PipeWire/privacy gates.
+
+## Consequences
+
+Policy and resident lifetime components have no GUI/PipeWire dependency. Native
+helpers own presentation and actual capture; private test input links unchanged
+GUI sources. Installed desktop/sandbox delivery remains manager-owned and cannot
+be inferred from temporary private frontend and compositor qualification.

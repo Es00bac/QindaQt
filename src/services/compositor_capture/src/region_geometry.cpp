@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "region_geometry.h"
+#include <qindaqt/services/compositor_capture/region_geometry.h>
 
 #include <QtMath>
 
 #include <algorithm>
 
-namespace QindaQt::Screenshot {
+namespace QindaQt::CompositorCapture {
 
 QRect WorkspaceFrame::logicalBounds() const
 {
@@ -73,4 +73,4 @@ QImage cropRegion(const WorkspaceFrame &frame, const QRect &logical)
     return pixels.isEmpty() ? QImage() : frame.image.copy(pixels);
 }
 
-} // namespace QindaQt::Screenshot
+} // namespace QindaQt::CompositorCapture
