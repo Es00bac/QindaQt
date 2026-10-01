@@ -4446,6 +4446,11 @@ selected supervisor connection loss. `qindaqt.session-portal-lifetime` verifies
 canonical display selection, same caller lifetime across backend unique-owner
 replacement and disconnect-on-stop on a private bus. Neither row qualifies the
 installed desktop, physical devices or PAM. Both require serialized runtime.
+The frontend fixture is registered only when its production
+`QindaQt::SessionSupervisorSupport` target exists. Bridge-only configurations
+with the production shell disabled retain the other portal tests and the
+existing compositor dependency-contract gate without referencing that omitted
+target; full production-shell builds retain the native frontend row and helpers.
 
 
 ### Native protected sleep wire gate
