@@ -60,6 +60,7 @@ bool NativePopupFixture::start(QString *error)
     if (!daemon || !session.isConnected() || !session.registerService(SessionName)) {
         *error = QStringLiteral("test-owned Session1 selection failed"); return false;
     }
+    daemon->setTimeout(250);
     selectedOwner = session.baseService();
     const auto owner = daemon->serviceOwner(QString(CompositorNames::service));
     const auto pid = daemon->servicePid(QString(CompositorNames::service));

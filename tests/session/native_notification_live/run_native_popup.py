@@ -46,6 +46,7 @@ def main() -> int:
             environment.pop(key, None)
         environment.update(DBUS_SYSTEM_BUS_ADDRESS="unix:path=" + str(root / "unavailable-system-bus"),
             QINDAQT_NATIVE_POPUP_PRIVATE_BUS="1", QINDAQT_DEVELOPMENT_CONTROL="1",
+            QINDAQT_OSK_DESKTOP_FILE=str(root / "unavailable-osk.desktop"),
             QINDAQT_TEST_SCENARIO=str(arguments.scenario.resolve()))
         fork_prefix = arguments.compositor.resolve().parent.parent
         environment["LD_LIBRARY_PATH"] = str(fork_prefix / "lib64")
