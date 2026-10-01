@@ -341,3 +341,5 @@ integration retains every accepted decision in numeric order.
 
 
 - [ADR-0315: Session-owned removable media through UDisks](0315-session-owned-removable-media-through-udisks.md)
+
+- [ADR-0320: Gate notification disclosure on native compositor receipts](0320-native-notification-lock-observation.md)
