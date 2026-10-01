@@ -4527,6 +4527,30 @@ Protected Locked admission, duplicate/pending requests, no/na/challenge/missing
 or malformed capabilities, contradictory/stale replies, owner loss before and
 after dispatch, lost/malformed dispatch replies, exact serial cancellation,
 unknown/incomplete state and missing current nonce. Existing suspend assertions
-remain intact. Executable results are pending the manager's resource grant;
-source/static work alone does not qualify this candidate. No host sleep, lock,
-PAM, hardware hibernation or installed policy behavior is exercised.
+remain intact. The strict Debug/sharedON/pluginOFF exact-source gate passes all
+original seven rows plus the mode row: 8/8 CTests in 60.10s, 143 Qt passes,
+0 failures/skips (72 mode cases including lifecycle). This is candidate
+qualification pending independent review, not PF2 completion. No host sleep,
+lock, PAM, hardware hibernation or installed policy behavior is exercised.
+
+The unchanged adjacent fixtures use `dbus-daemon --session` or
+`dbus-run-session`. D-Bus 1.16.2 always appends compiled DBUS_DATADIR even with
+private XDG roots, so use an empty-activation session.conf in a disposable
+readonly mount namespace for this combined gate; XDG variables alone do not
+prove isolation. Bind only `/dev/null` with device access: the readonly root
+bind otherwise has nodev and prevents broker standard-FD setup. Use private
+HOME/XDG roots, private `/tmp`, an unavailable system bus, fatal Qt warnings,
+actual unchanged UID/GID and no PID namespace remap. Check null O_RDWR and
+private temporary-file creation before tests; record mount entries, UID maps,
+exact argv and unchanged installed session.conf hashes. The passing run's
+private tmpfs was mode0755 owned by actual UID1000, and both preflights passed.
+
+Disable core storage before any subprocess with RLIMIT_CORE=(0,0). Installed
+systemd261.2 parses the kernel limit and returns before storage/processing for
+limits below a page; this does not promise that a piped kernel core handler
+cannot run or log metadata on a crash. The first nodev setup failure generated
+two host crash files. Their opaque compressed bytes/stat/SHA were preserved in
+task-owned ignored evidence, then only the exact task-generated originals were
+removed under explicit manager authorization. The corrected 8/8 run had no
+crashes or additional matching core files. Keep this failure history with the
+handoff; do not claim that the entire qualification created no host artifacts.
