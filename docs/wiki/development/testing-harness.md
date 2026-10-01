@@ -4368,6 +4368,15 @@ used. Framework wire allocation zeroization and atomic source export are not
 claimed; compatibility limits are documented in [one-time import](../architecture/keyring-import.md).
 
 
+`qindaqt.kwayland-dpms-controller` uses a private libwayland socketpair server
+and fatal Qt warnings to exercise actual per-output requests, capability/removal,
+reconnect and final restore. It holds server reads for 80 ms to prove final `On`
+is dispatched before disconnect on both live and revoked lineage, with exactly
+one admitted connection. A stalled peer exercises the one 250 ms sync deadline;
+absent/disconnected peers exercise safe bounded teardown. These checks neither
+change host DPMS nor qualify physical outputs or a nested compositor row. See
+[Native idle display stage](../architecture/idle-policy.md).
+
 ## Ordinary native keyring UI journey
 
 The focused `keyring_native_ui_journey` CTest requires `QINDAQT_KWIN_WAYLAND`
