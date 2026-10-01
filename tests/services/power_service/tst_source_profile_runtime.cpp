@@ -53,17 +53,8 @@ struct Runtime {
         settingsBus = bus.open(); profilesBus = bus.open(); upowerBus = bus.open();
         clientBus = bus.open(); legacyBus = bus.open();
         if (legacy && !legacyBus.registerService(QStringLiteral("org.kde.Solid.PowerManagement"))) return false;
+        if (!startSettings()) return false;
         QString error;
-        auto active = SettingsSchema::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
-        auto old = SettingsSchema::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error, 1);
-        if (!active || !old) return refuse(QStringLiteral("fixture schema load: ") + error);
-        service = std::make_unique<ResidentSettingsService>(settingsBus, *active, *old,
-            QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/profile-defaults/qindaqt.json"),
-            bus.root.filePath(QStringLiteral("settings.json")));
-        const auto settingsStatus = service->start();
-        if (!settingsStatus.ok()) return refuse(QStringLiteral("fixture Settings1 startup: ")
-            + settingsServiceStartStatusName(settingsStatus.status) + QLatin1Char(' ')
-            + settingsStatus.message);
         ppd = std::make_unique<FakePpdService>(profilesBus, false);
         ppd->setProfiles({QStringLiteral("power-saver"), QStringLiteral("balanced"), QStringLiteral("performance")});
         ppd->setActiveProfile(QStringLiteral("balanced"));
@@ -95,6 +86,21 @@ struct Runtime {
         qInfo().noquote() << "source-profile-service pid" << process.processId()
                          << "root" << bus.root.path();
         power->start();
+        return true;
+    }
+    bool startSettings(bool freshOwner = false) {
+        if (freshOwner) settingsBus = bus.open();
+        QString error;
+        auto active = SettingsSchema::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v2.json"), nullptr, &error);
+        auto old = SettingsSchema::fromFile(QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/schema-v1.json"), nullptr, &error, 1);
+        if (!active || !old) return refuse(QStringLiteral("fixture schema load: ") + error);
+        service = std::make_unique<ResidentSettingsService>(settingsBus, *active, *old,
+            QStringLiteral(QINDAQT_SOURCE_DIR "/data/settings/profile-defaults/qindaqt.json"),
+            bus.root.filePath(QStringLiteral("settings.json")));
+        const auto settingsStatus = service->start();
+        if (!settingsStatus.ok()) return refuse(QStringLiteral("fixture Settings1 startup: ")
+            + settingsServiceStartStatusName(settingsStatus.status) + QLatin1Char(' ')
+            + settingsStatus.message);
         return true;
     }
     void source(bool battery, uint warning = 2) {
@@ -177,7 +183,9 @@ void SourceProfileRuntimeTests::ownerLossAndUnsupportedProfiles()
     QTRY_COMPARE(row.ppd->releaseRequests.size(), 1);
     row.source(true); QTest::qWait(150);
     QCOMPARE(row.ppd->holdRequests.size(), 1);
-    QVERIFY(row.service->start().ok());
+    // A replacement service process must have a new unique bus owner. The
+    // same-owner epoch switch is deliberately refused by SettingsClient.
+    QVERIFY(row.startSettings(true));
     row.source(false);
     QTRY_COMPARE(row.ppd->holdRequests.size(), 2);
     QTRY_COMPARE(row.power->snapshot().profiles.holds.size(), 2);
