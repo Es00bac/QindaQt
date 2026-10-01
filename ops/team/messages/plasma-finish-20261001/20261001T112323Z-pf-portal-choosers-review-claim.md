@@ -1,0 +1,3 @@
+# Frozen PF18 chooser review claim
+
+2026-10-01T11:23:23Z: pf-portal-choosers-review-sol-20261001 claims independent source/documentation review of frozen 9aa6c3a54d811e87d2e624158ac599f7bf218fad against exact base8c717c826e334674a0a39224361af07bf49fd9ac. Isolated branch review/pf-portal-choosers-sol-20261001, worktree .cache/pf-portal-choosers-review-20261001; only reviewer record/new replies owned. No candidate edits, compiler or runtime grants. Preparing exact private native/policy/request/routing/staged gate plan; await immutable final handoff and manager resource grant before execution. Host services/user files/credentials/install prohibited.
