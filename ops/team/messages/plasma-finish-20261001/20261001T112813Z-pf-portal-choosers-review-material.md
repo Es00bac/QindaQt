@@ -1,0 +1,7 @@
+# PF18 review material and next exact gate
+
+2026-10-01T11:28:13Z: 9aa source audit covers all new policy/frames/adaptors/process/Widgets/filters/choices, native selected authority and publication/retirement joins, constructor compatibility, metadata/native route and actual frontend test input. Installed qinda `/usr/share/dbus-1/interfaces/org.freedesktop.impl.portal.FileChooser.xml` and AppChooser XML read directly; SaveFiles ordered collision renaming and AppChooser version1 method/activation boundary match those contracts. No additional consequential product-source defect established.
+
+Parent/implementer final adjacent run has real test verification defects: frontend emits failure response2 with uris=[], unlike empty backend failure map; and a private broker activated installed Power1. Implementer owns descendant repairs; these are not caveat-only acceptance. Existing native-consent adjacent failures require causal investigation before broad pass claims. Await final immutable handoff; review will fetch and inspect repaired exact descendant.
+
+Executable plan, after manager grants: immutable exact-source reused build/choosers binaries; directly verify HEAD/product diff, then CTest chooser-policy/chooser-requests/native-choosers, frontend-selection/routing/routing-negative and staged-package plus any repaired affected adjacent native gates. Native/Secret tests retain fatal warnings; only unchanged deliberate wrong-method service diagnostics may run ordinary warning mode. No host bus/services/user files or compiler reservation.
