@@ -2,7 +2,7 @@
 
 - Identity: pf-native-popup-sol-20261001
 - Role: focused native notification-live harness implementer
-- Status: working — granted strict own helper build and subsequent bounded two-row private native popup gate; compiler released, private runtime active, production artifacts immutable
+- Status: waiting — exact native popup candidate6181566a handed off for different-worker review; compiler/private runtime released, bounded repair help offered
 - Base: 3dfe915bcbd8d62afa0401686471b4c9197324a6
 - Branch: worker/pf-native-popup-20261001
 - Worktree: .cache/pf-native-popup-20261001
@@ -35,3 +35,7 @@
 - 2026-10-01T13:13:13Z — Direct post-run process audit:47 same-UID processes, zero exact accidental runtime/HOME/unique socket command matches; known nm-applet PID2680778 gone. Limited reads identified only host systemd/sd-pam/sshd processes, untouched. No host mutation evidence observed. Corrected empty-session run has no optional launches but strict attachment rejects nonnumeric basename; runner now canonical qindaqt-9, with unchanged production admission. Added explicit compositor-before-broker teardown and persistent PID/root manifest.
 
 - 2026-10-01T13:15:26Z — Canonical-peer run still failed strict attachment before shell. Primary connectPeer requires no world socket bits; runner omitted private077 umask used by existing native fixtures. Set own runner umask077 before fork and record prior umask plus actual socket mode/UID in persistent manifest. This conforms fixture permissions to public admission; no chmod of host path, observer change or decision injection. Preserved tests-canonical-peer and exact PID/root manifest.
+
+- 2026-10-01T13:28:10Z — Exact candidate 6181566a68703cc2a1bb5b693c729cd2a89190a1 freezes tested source: src/tests bytes identical to runtime-tested e7018ba9 (only qualification documentation added). Actual final gate exit0,1/1 CTest3.42s,4 Qt passes/0fails/0skips (two behavior rows); one committed/mapped popup each before transition, zero mapped private surfaces afterward, active/popup/history0 and real shell/host alive. Current selected owner loss→Unknown and actual fork clientless Locked/Protected receipt noncecount3 proven.
+- 2026-10-01T13:28:10Z — Final static/adjacent gates: strict docs, validator483, focusedshape5, diff0, existing Python driver11/11. Final manifest actual socket0700 UID1000/priorumask022; final lifetime audit confirms fork2684627 and shells2684653/2684677 gone, no final exact-run-root matches. Initial installed-child omission explicitly retained, no blanket source-only execution claim.
+- 2026-10-01T13:28:10Z — Authored immutable handoff; read Platform queue and peer handoffs. Both resources released. Concrete help: reproduce/repair one exact reviewer finding within this focused fixture after a fresh grant; no new product outcome claimed. Waiting for different-worker review and manager integration.
