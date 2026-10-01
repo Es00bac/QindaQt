@@ -157,6 +157,7 @@ if(DEFINED QINDAQT_FRONTEND_TEST)
                 --unset=DBUS_SESSION_BUS_ADDRESS
                 --unset=DBUS_STARTER_ADDRESS
                 --unset=DBUS_STARTER_BUS_TYPE
+                "DBUS_SYSTEM_BUS_ADDRESS=unix:path=${install_prefix}/unavailable-system-bus"
                 "QINDAQT_TEST_PORTAL_EXECUTABLE=${portal_executable}"
                 "QINDAQT_TEST_PORTAL_METADATA=${portal_metadata}"
                 "QINDAQT_TEST_PORTAL_SELECTION=${portal_selection}"

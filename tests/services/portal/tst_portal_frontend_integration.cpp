@@ -119,6 +119,7 @@ FakeGlobalShortcuts *registerInjectedServices(QDBusConnection &bus,
                                 | QDBusConnection::ExportAdaptors)
         || !bus.registerService(QString::fromLatin1(FallbackService))
         || !bus.registerService(QString::fromLatin1(DocumentsService))
+        || !bus.registerService(QStringLiteral("org.qindaqt.Power1"))
         || !bus.registerService(QString::fromLatin1(PermissionStoreService))) {
         *error = QStringLiteral("cannot register injected private-bus portal services");
         return nullptr;
