@@ -69,3 +69,13 @@ Disposable empty-activation brokers, an unavailable system bus and pipe-backed
 FDs qualify the protocol without host power/lock/PAM operations. Hardware mode
 support, hibernation images and real logind/polkit timing require later managed
 installed/hardware qualification.
+
+## Candidate verification
+
+The immutable source passes strict focused compilation and the original seven
+native sleep/SessionActions rows plus `qindaqt.sleep_modes`: 8/8 CTests,
+143 Qt passes with 0 failures/skips. The [testing
+harness](../development/testing-harness.md#native-sleep-mode-wire-gate) records
+the required empty-activation namespace, actual caller/ordinary credentials,
+initial broker setup failure and exact task-generated crash artifact handling.
+Independent review and integrated rerun remain required before adoption.
