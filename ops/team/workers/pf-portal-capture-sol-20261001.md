@@ -5,14 +5,18 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — repairing distinct real caller/protected resident fixture and primary private PipeWire client config; no resources held
+- Status: working — exact b3670dda rebuild passed; preparing corrected protected-admission method probes under separate runtime coordination
 - Branch: worker/pf-portal-capture-20261001
 - Base: 01d9e50b1e02b1bb4aba758f5fbd057a8a299e39
 - Worktree: .cache/pf-portal-capture-20261001; matching isolated qinda worktree
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: compiler and bounded private runtime released; no resource reserved; chooser history preserved
+- Resources: compiler released after approved rebuild; private runtime unclaimed; chooser history preserved
 
 ## Updates
+
+- 2026-10-01T14:50:05Z — Exact b3670dda approved eleven-target strict rebuild PASS exit0, retained build/b3670dda-build.log; MOC/one compile/link, final3/4 dynamic progress not inferred four actions. Compiler released immediately. Source separate protected backend/default caller and primary private PW client configuration now compile. Two corrected native method probes require a fresh private grant; no response, capture or stream success yet.
+
+- 2026-10-01T14:49:23Z — Root granted compiler only on frozen b3670dda6589f4955f794cbdd516b169198b33ae; clean qinda identity verified. Resuming unchanged eleven-target strict scope with actual -j24 -l24, log build/b3670dda-build.log. Runner blobbca579bed702ce505ba3e588f8cfdfc3eb96cb44 includes private primary client context; protected backend is now distinct real process from ordinary frontend caller. Earlier immutable failures preserved; no runtime or actual portal response yet.
 
 - 2026-10-01T14:40:43Z — Root directed bounded owned fixture repair before another truthful probe/handoff. Source now has a distinct ordinary caller and PR0 child hosting unchanged public resident/composition; capture ordinary FDs originate in protected backend PID. Backend parent-stdin lifetime exits through RAII, not a fake result bridge. Primary installed PipeWire1.6.8 client.conf copied to private config alongside minimal daemon config; no hardware sources. Earlier two short runs remain setup failures before methods, with independent actual protected proc/Wayland lookup denial. Freezing repaired source; resources remain unheld pending grant.
 
