@@ -4494,7 +4494,9 @@ for Access, and separately selects the protected broker for Screenshot/ScreenCas
 It introspects both actual frontend interfaces before the first request. Interactive
 Screenshot still uses its actual protected native consent; no synthetic Access
 reply supplies authorization. Current and historical helper audits are retained
-from their exact runtime paths.
+from their exact runtime paths, along with the actual returned synthetic PNG
+before helper retirement. Screenshot fd5 must expose only the two output globals;
+ScreenCast additionally requires its screencast global.
 Actual native execution requires task-only bwrap isolation,
 new proc/private dev with only renderD128 (AMD1002:731f), read-only sysfs, no card/input/snd
 nodes, and harmless namespace preflight. Software selection requires

@@ -203,20 +203,28 @@ and helper paths before compositor startup; production has no path override. The
 ordinary caller starts the actual1.20.4 frontend and supplies bounded per-job test
 input controls through opaque request pipes. Actual mapped Qt input audits fd4
 ordinary registry denial of capture/lock/input-method/Xwayland/security-context
-privileges and exact three-global fd5 announcements, with real public listener
+privileges and exact scope-bounded fd5 announcements (two output globals for Screenshot,
+three globals including screencast only for ScreenCast), with real public listener
 forwarding. Ready/CaptureReady/revocation observations are test-only. The fork's
 fd4 self-PID bypass repair and these observations require actual native gates.
 The runner sets core limit0 before every child, clears permission bypasses and
 preserves normal assertion failures. Fixture desktop entries grant no restricted
 interface permission: successful pixels must use the protected control/consent lease.
-The current `capture.audit` from the explicit helper audit path, completed
+The current `runtime/qindaqt-capture.audit` from the explicit helper audit path, completed
 per-request fd4/fd5 history, producer logs and structured cleanup/core records
 are retained under ignored `native-capture-evidence` beside the test caller before
 temporary-directory deletion. Unexpected task-local cores remain opaque artifacts.
 Actual groups require a task-only bwrap namespace with new proc and private dev,
-no dri/input/snd nodes, isolated PID/network/IPC/UTS/user where supported, read-only
+only renderD128 AMD1002:731f plus read-only sysfs, no DRM card/input/snd nodes,
+isolated PID/network/IPC/UTS/user where supported, read-only
 runtime dependencies and private0700 HOME/XDG/tmp/brokers/PipeWire. A harmless
-namespace preflight must pass before native execution. Selected cases remain
+namespace preflight must pass before native execution. Software rendering requires
+`LIBGL_ALWAYS_SOFTWARE=1`, `MESA_LOADER_DRIVER_OVERRIDE=swrast`, and
+`GALLIUM_DRIVER=llvmpipe`. The frontend also selects the existing real foundation
+Access composition: upstream1.20.4 creates Screenshot only if Access is selected.
+Screenshot/ScreenCast still select the separate protected broker. Before requests,
+the caller introspects both actual frontend interfaces, failing explicitly if absent.
+Selected cases remain
 diagnostics only.
 
 Staging requires the separate broker/helper and exact selected public fixed paths
