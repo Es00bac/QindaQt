@@ -1,6 +1,6 @@
 # ADR-0325: Add bounded native sleep modes to Sleep1
 
-- Status: Proposed (candidate implementation; independent review pending)
+- Status: Accepted (independently reviewed source and integrated private gates)
 - Date: 2026-10-01
 - Extends: [ADR-0321](0321-supervisor-owned-native-sleep-admission.md)
 - Related: [Native session locking](../architecture/native-session-lock.md),
@@ -70,7 +70,7 @@ FDs qualify the protocol without host power/lock/PAM operations. Hardware mode
 support, hibernation images and real logind/polkit timing require later managed
 installed/hardware qualification.
 
-## Candidate verification
+## Source and integrated verification
 
 The immutable source passes strict focused compilation and the original seven
 native sleep/SessionActions rows plus `qindaqt.sleep_modes`: 8/8 CTests,
@@ -78,4 +78,10 @@ native sleep/SessionActions rows plus `qindaqt.sleep_modes`: 8/8 CTests,
 harness](../development/testing-harness.md#native-sleep-mode-wire-gate) records
 the required empty-activation namespace, actual caller/ordinary credentials,
 initial broker setup failure and exact task-generated crash artifact handling.
-Independent review and integrated rerun remain required before adoption.
+Exact candidate `50fb9c11` is independently accepted in review `1d397416` and
+merged at `8b471794`. On integrated source `6d449d98`, the affected seven-target
+strict build passes and the unchanged eight-row private namespace gate passes
+in 60.64 seconds with the same 143 Qt checks. Actual namespace and process-group
+PIDs are gone; installed session.conf hashes match before and after. This adopts
+the bounded source contract while keeping installed and hardware qualification
+open.
