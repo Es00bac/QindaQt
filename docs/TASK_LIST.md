@@ -5,6 +5,20 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## October 1 — Supplied painted icons and complete hand-rendered sibling
+
+The supplied `QindaQt-Breeze-Painted` theme is installed and retained through
+Portage on both hosts as `x11-themes/qinda-breeze-painted-1.0.0_p20260929`.
+Both use the same signed binary, with all 7,172 named PNGs matching the original
+inputs, 7,231 package files verified, and twelve source-exact Qt render samples.
+Editable source and notices are preserved; the saved icon choice stays unchanged.
+
+The separate hand-rendered family is actively authored in QindaIconArt. Its
+acceptance requires the same 7,172 category/name paths, all 3,261 distinct original
+artwork groups redrawn in visibly hand-rendered media, transparent PNG output,
+per-atlas provenance and actual-size visual inspection. Partial artwork is not
+installed or counted as complete. See [Icon themes](wiki/shell/icon-theme.md).
+
 ## September 30 — Graphical removable media
 
 The independently accepted handler source `5bff539e` provides insertion prompts,
@@ -31,10 +45,16 @@ and workstation work. The independently accepted PF25 dependency guard is integr
 in QindaGentoo at `c78ac162`; both independent and integrated runs pass 28/28 tests,
 including actual private Portage resolver cases. Installed diagnostic closures on
 both hosts still contain 28 forbidden Plasma packages. The final two-root fork/desktop
-closure cannot qualify until consolidated recipes exist. Native display-idle and
-portal candidates are in exact-source review; native shell notification privacy has
-passed four focused candidate gates and awaits independent review. No milestone or
-installed Plasma-removal completion advances from these candidates.
+closure cannot qualify until consolidated recipes exist. Native display-idle source
+`891092f6` and portal foundation `9c3d0489` are independently accepted and merged
+on the recovery integration branch; their independent scoped runs pass 22/22 and
+21/21. Fork `690c0112` removes the obsolete KNightTime discovery and is independently
+accepted, with a production build and collision-free private stage. The consumer
+pins that exact tree. Shell privacy candidate `1e2ab3ef` repairs a review-discovered
+cached-admission gap and passes nine focused gates; independent rereview is active.
+Combined consumer/plugin and native gates remain before main integration. Native
+logind sleep coordination is separately assigned. No milestone or installed
+Plasma-removal completion advances from candidate activity.
 
 The owner confirmed the complete [native replacement program](plans/2026-09-28-plasma-free-qindaqt.md),
 including the compositor fork, lock/power services, helpers, portals, shortcuts, and key store.
