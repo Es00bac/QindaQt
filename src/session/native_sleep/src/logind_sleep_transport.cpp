@@ -154,6 +154,8 @@ void LogindSleepTransport::validateSession(quint64 generation) {
   });
 }
 void LogindSleepTransport::closeDelay() {
+  // AGENT-GUARD: Linux releases the FD even on EINTR; retrying close could
+  // close a reused descriptor. Qt retains ownership of unaccepted wire FDs.
   if (m_delayFd >= 0) { ::close(m_delayFd); m_delayFd = -1; }
 }
 void LogindSleepTransport::revoke() {

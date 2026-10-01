@@ -73,6 +73,7 @@ bool Runtime::available() const noexcept {
 }
 QString Runtime::status() const { return m_status; }
 void Runtime::refreshPreferences() {
+  if (!m_started) return;
   m_values = m_preferences.preferences();
   if (!m_values || !m_values->lockOnResume) m_resumeLockPending = false;
   m_grace.stop();
