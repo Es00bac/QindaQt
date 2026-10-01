@@ -126,12 +126,17 @@ disabled, deterministic fallback.
 
 The popup's Session section contains Lock, Log out, Suspend, Restart, and Shut
 down. Each button follows the client's typed availability and single pending
-fence. Lock and Suspend dispatch directly; Log out, Restart, and Shut down
+fence. Lock and Suspend submit without a modal confirmation; Log out, Restart, and Shut down
 require a focused modal confirmation whose Cancel and OK paths are keyboard
 operable. The client calls ScreenSaver on the session bus, authenticated
-Session1 for logout, and login1 only after an exact `Can* == "yes"` check.
-Owner loss or the five-second mutation deadline produces uncertain no-replay
-feedback. Meta+L is owned by KWin's ksmserver "Lock Session" component; the
+Session1 for logout, supervisor-owned Sleep1 for native protected suspend,
+and login1 reboot/power-off only after an exact `Can* == "yes"` check. Sleep1
+must share Session1's unique owner; its advisory Changed signals refresh startup
+availability without polling. Unknown/incomplete locking refuses a new suspend
+action. Authenticated native protection precedes logind dispatch
+([ADR-0321](../adr/0321-supervisor-owned-native-sleep-admission.md)). Owner loss
+or the whole-action deadline (20 seconds for native suspend, five for other
+actions) produces uncertain no-replay feedback after dispatch. Meta+L is owned by KWin's ksmserver "Lock Session" component; the
 shell composition registers no competing global lock shortcut, and every
 lock button keeps dispatching the same typed request through session_actions
 ([ADR-0132](../adr/0132-finish-session-locking.md)).

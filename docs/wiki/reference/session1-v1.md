@@ -46,7 +46,9 @@ The agent is non-essential and never affects `CanLogout`.
 
 Session1 does not expose lock, suspend, reboot, power-off, enumeration,
 arbitrary process control, or a general shell capability token. Lock uses the
-standard session-bus ScreenSaver interface; machine power actions use login1
-behind the separate injected
+standard session-bus ScreenSaver interface. Manual suspend uses the separate
+supervisor-owned Sleep1 facade and authenticated native protection
+([ADR-0321](../adr/0321-supervisor-owned-native-sleep-admission.md));
+reboot/power-off use login1 behind the separate injected
 [`session_actions`](../architecture/module-boundaries.md) client. Power1 stays
 unchanged.

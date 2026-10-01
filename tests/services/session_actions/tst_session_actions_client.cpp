@@ -69,6 +69,19 @@ public Q_SLOTS:
     void Logout() { ++logoutCount; }
 };
 
+class FakeSleep final : public QObject {
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.Sleep1")
+public:
+    bool allowed = true;
+    int canCount = 0, suspendCount = 0;
+public Q_SLOTS:
+    bool CanSuspend() { ++canCount; return allowed; }
+    bool Suspend() { ++suspendCount; return allowed; }
+Q_SIGNALS:
+    void Changed();
+};
+
 class FakeLogind final : public QObject {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.login1.Manager")
@@ -118,7 +131,7 @@ public:
         , clientBus(QDBusConnection::connectToBus(
               QDBusConnection::SessionBus, clientConnectionName))
     {
-        const auto flags = QDBusConnection::ExportAllSlots;
+        const auto flags = QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals;
         QVERIFY(bus.isConnected());
         QVERIFY(clientBus.isConnected());
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.ScreenSaver")));
@@ -127,12 +140,16 @@ public:
         }
         QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.Session1")));
         QVERIFY(bus.registerObject(QStringLiteral("/org/qindaqt/Session1"), &session, flags));
+        QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.Sleep1")));
+        QVERIFY(bus.registerObject(QStringLiteral("/org/qindaqt/Sleep1"), &sleep, flags));
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.login1")));
         QVERIFY(bus.registerObject(QStringLiteral("/org/freedesktop/login1"), &logind, flags));
     }
 
     ~PrivateServices()
     {
+        bus.unregisterObject(QStringLiteral("/org/qindaqt/Sleep1"));
+        bus.unregisterService(QStringLiteral("org.qindaqt.Sleep1"));
         bus.unregisterObject(QStringLiteral("/ScreenSaver"));
         bus.unregisterObject(QStringLiteral("/org/qindaqt/Session1"));
         bus.unregisterObject(QStringLiteral("/org/freedesktop/login1"));
@@ -148,6 +165,7 @@ public:
     FakeScreenSaver screenSaver;
     FakeSession session;
     FakeLogind logind;
+    FakeSleep sleep;
 };
 
 } // namespace
@@ -162,6 +180,8 @@ private Q_SLOTS:
     void delayedSuccessFromReplacedOwnerIsUncertain();
     void mutationTimeoutIsUncertainAndNeverReplays();
     void ownerLossWithdrawsAvailabilityWithoutPolling();
+    void logindAloneCannotOfferSuspend();
+    void nativeSleepInvalidationRefreshesAvailability();
 };
 
 void SessionActionsClientTest::canChecksPublishTypedFailClosedTruth()
@@ -180,7 +200,7 @@ void SessionActionsClientTest::canChecksPublishTypedFailClosedTruth()
         .reboot = false, .powerOff = false};
     QCOMPARE(client.availability(), expected);
     QVERIFY(services.session.canCount >= 1);
-    QVERIFY(services.logind.canSuspendCount >= 1);
+    QVERIFY(services.sleep.canCount >= 1);
     QVERIFY(!client.requestReboot());
     QCOMPARE(services.logind.rebootCount, 0);
     QVERIFY(client.feedback().contains(QStringLiteral("unavailable")));
@@ -206,15 +226,15 @@ void SessionActionsClientTest::dispatchRepeatsAdmissionAndSerializes()
     QSignalSpy finished(&client, &SessionActionsClient::actionFinished);
     client.start();
     QTRY_VERIFY(client.canSuspend());
-    const int baselineCan = services.logind.canSuspendCount;
+    const int baselineCan = services.sleep.canCount;
 
     QVERIFY(client.requestSuspend());
     QVERIFY(client.pending());
     QVERIFY(!client.requestLock());
     QTRY_COMPARE(finished.size(), 1);
-    QVERIFY(services.logind.canSuspendCount >= baselineCan + 1);
-    QCOMPARE(services.logind.suspendCount, 1);
-    QVERIFY(!services.logind.lastInteractive);
+    QVERIFY(services.sleep.canCount >= baselineCan + 1);
+    QCOMPARE(services.sleep.suspendCount, 1);
+    QCOMPARE(services.logind.suspendCount, 0);
     QVERIFY(!client.pending());
     const auto result = qvariant_cast<SessionActionResult>(finished.first().first());
     QCOMPARE(result.action, SessionAction::Suspend);
@@ -282,12 +302,12 @@ void SessionActionsClientTest::ownerLossWithdrawsAvailabilityWithoutPolling()
     SessionActionsClient client(services.clientBus, services.clientBus);
     client.start();
     QTRY_VERIFY(client.canSuspend());
-    const int baselineCan = services.logind.canSuspendCount;
+    const int baselineCan = services.sleep.canCount;
     QTest::qWait(50);
-    QCOMPARE(services.logind.canSuspendCount, baselineCan);
+    QCOMPARE(services.sleep.canCount, baselineCan);
 
-    services.bus.unregisterObject(QStringLiteral("/org/freedesktop/login1"));
-    services.bus.unregisterService(QStringLiteral("org.freedesktop.login1"));
+    services.bus.unregisterObject(QStringLiteral("/org/qindaqt/Sleep1"));
+    services.bus.unregisterService(QStringLiteral("org.qindaqt.Sleep1"));
     QTRY_VERIFY(!client.canSuspend());
     QVERIFY(!client.canReboot());
     QVERIFY(!client.canPowerOff());
@@ -314,6 +334,25 @@ void SessionActionsClientTest::mutationTimeoutIsUncertainAndNeverReplays()
     QCOMPARE(result.reasonCode, QStringLiteral("request-timeout"));
     QTest::qWait(50);
     QCOMPARE(services.screenSaver.lockCount, 1);
+}
+
+void SessionActionsClientTest::logindAloneCannotOfferSuspend() {
+    PrivateServices services;
+    services.bus.unregisterService(QStringLiteral("org.qindaqt.Sleep1"));
+    SessionActionsClient client(services.clientBus, services.clientBus);
+    client.start(); QTRY_VERIFY(client.canLock());
+    QTest::qWait(100); QVERIFY(!client.canSuspend()); QVERIFY(!client.requestSuspend());
+    QCOMPARE(services.logind.suspendCount, 0);
+}
+
+void SessionActionsClientTest::nativeSleepInvalidationRefreshesAvailability() {
+    PrivateServices services; services.sleep.allowed = false;
+    SessionActionsClient client(services.clientBus, services.clientBus);
+    client.start(); QTRY_VERIFY(client.canLock()); QVERIFY(!client.canSuspend());
+    services.sleep.allowed = true; Q_EMIT services.sleep.Changed();
+    QTRY_VERIFY(client.canSuspend());
+    services.sleep.allowed = false; Q_EMIT services.sleep.Changed();
+    QTRY_VERIFY(!client.canSuspend());
 }
 
 QTEST_GUILESS_MAIN(SessionActionsClientTest)
