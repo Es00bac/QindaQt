@@ -131,7 +131,7 @@ public:
         , clientBus(QDBusConnection::connectToBus(
               QDBusConnection::SessionBus, clientConnectionName))
     {
-        const auto flags = QDBusConnection::ExportAllSlots;
+        const auto flags = QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals;
         QVERIFY(bus.isConnected());
         QVERIFY(clientBus.isConnected());
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.ScreenSaver")));

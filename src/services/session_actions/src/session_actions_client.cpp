@@ -369,7 +369,7 @@ void SessionActionsClient::dispatchMutation()
         call.setArguments({false});
     }
     m_pending->mutationDispatched = true;
-    auto *watcher = new QDBusPendingCallWatcher(connection->asyncCall(call, request.action == SessionAction::Suspend ? ActionTimeoutMilliseconds : 5000), this);
+    auto *watcher = new QDBusPendingCallWatcher(connection->asyncCall(call, request.action == SessionAction::Suspend ? ActionTimeoutMilliseconds : 6000), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [this, watcher, request] {
                 const QDBusMessage reply = watcher->reply();
