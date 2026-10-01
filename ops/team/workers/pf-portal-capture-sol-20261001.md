@@ -5,14 +5,16 @@
 - Model: gpt-6.1-sol
 - Reasoning: high
 - Role: PF19 native Screenshot and ScreenCast implementer
-- Status: working — repairing the owned parser include after bounded433f9570 compiler failure; native gates remain pending
+- Status: working — rebuilding immutable6df1606a capture/Screenshot targets after the owned QList include repair
 - Branch: worker/pf-portal-protected-capture-20261001
 - Base: 0c15636087ddbf897ad18982cb3dbb6e89a1cc1b
 - Worktree: .cache/pf-portal-protected-capture-20261001; new matching isolated qinda worktree, old capture lane/history preserved
 - Ownership: capture-specific portal components/native dialogs/focused tests/wiki/ADR0324; smallest notified shared build/composition seams and public compositor_capture extraction if required
-- Resources: qinda compiler released after first real failure; no compiler/private runtime slot held
+- Resources: qinda-only compiler granted for bounded17-target-j8-l24 rebuild; no CTest/private/native runtime grant
 
 ## Updates
+
+- 2026-10-01T18:42:38Z — Root granted qinda-only remaining17 targets at frozen6df1606a one-line QList repair, same mixed development headers and per-command-j8-l24; global MAKEOPTS unchanged. Clean qinda source/config rechecked, actual MemAvailable21688144kB (~20.68GiB), no live ninja/cc1/cc1plus at preflight. Distinct new raw6df log/status with same owned-group <3GiB+30s-stall guard; previous433 failure retained. Record-only child does not move compiler source off6df. No CTests/private native run, first failure/completion releases slot.
 
 - 2026-10-01T18:38:46Z — Exact433f9570 qinda17-target Ninja build exit1 in24.0s; raw build/433f9570-build.log and JSON retained. Sole first failure is authority/packet.cpp QByteArray::split needing explicit QList include; owned channel/adaptors compiled. Last reported145/349 is dynamic progress, not a completed build action count. Minimum available18154864kB (~17.31GiB), no memory/stall stop; ownedPGID138361 absent and compiler explicitly released to root before one-line source repair. No CTests/native probes executed. Global MAKEOPTS unchanged, root per-command-j8-l24 grant required again on a frozen descendant.
 
