@@ -36,7 +36,7 @@ private Q_SLOTS:
         QCOMPARE(fixture.monitor->state(), LockState::Unknown);
         QVERIFY2(fixture.retired(&evidence, &error), qPrintable(error));
         QVERIFY2(fixture.submitCritical(&error), qPrintable(error));
-        processProbeEventsFor(300);
+        QTest::qWait(300);
         QVERIFY2(fixture.retired(&evidence, &error), qPrintable(error));
         QVERIFY(!fixture.malformedReceipt);
         QVERIFY(!fixture.receiptNonces.isEmpty());
@@ -71,7 +71,7 @@ private Q_SLOTS:
                 || fixture.states.contains(LockState::Locking));
         QVERIFY2(fixture.retired(&evidence, &error), qPrintable(error));
         QVERIFY2(fixture.submitCritical(&error), qPrintable(error));
-        processProbeEventsFor(300);
+        QTest::qWait(300);
         QVERIFY2(fixture.retired(&evidence, &error), qPrintable(error));
         evidence.insert(QStringLiteral("currentProtectedNativeReceipt"), true);
         evidence.insert(QStringLiteral("receiptNonceCount"), fixture.receiptNonces.size());
