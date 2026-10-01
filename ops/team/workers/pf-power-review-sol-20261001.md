@@ -4,7 +4,7 @@
 - Status: working — independent exact68c4d74f capture scene-source lifetime review.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none; source/evidence audit only; compiler/private runtime await explicit grant.
+- Resource state: sole qinda compiler granted/claimed for own exact68c one-TU/link; private remains graphics-owned.
 - Outcome: review exact qindaqt-kwin68c4d74f revocation and scene-view lifetime; prior power/package verdicts preserved.
 
 ## Updates
@@ -38,3 +38,5 @@
 - 2026-10-01T23:27:09Z: Corrected stale top-level status/outcome wording left by an unmatched record-text replacement; prior timestamped source/build/replay/package updates and exact verdict evidence remain intact. Current true state is AVAILABLE after exact07ab package ACCEPT, resourcesnone, no implementation or new task claim.
 
 - 2026-10-01T23:52:19Z: Claimed distinct exact68c4d74f source-lifetime review in isolated qinda fork worktree. Read fork instructions and exact consumer586c handoff/cause2e; two changed paths only. Compiler/private resources held by graphics, none claimed here. Startup admission/full matrix remain unresolved gates.
+
+- 2026-10-01T23:55:00Z: Source/evidence audit P0/P1=0 so far; immediate closure/source notifications/timer and three record fences retained, manager close observer deleteLater/thread notifier verified. Graphics explicitly releases compiler; own one-TU/link now starts, untouched447 artifacts/MOC dependencies frozen. Private still held by graphics. Retained unmonitored admission failure remains distinct from monitored real lock PASS.
