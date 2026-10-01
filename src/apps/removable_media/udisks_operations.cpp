@@ -34,6 +34,7 @@ void UDisksBackend::execute(const Request &request)
             finish(false, QStringLiteral("The media changed before the operation could start."));
             return;
         }
+        m_expected = *current;
         prepare(*m_request, *current);
     });
 }

@@ -86,6 +86,8 @@ boundary; QML has no filesystem authority.
   symlink-poison, orphan-payload, and racing-writer controls. A production-QML
   row must drive identity-carrying actions through AppShell and the real dialogs.
 
+The separately owned [removable-media application](../apps/removable-media.md) now supplies graphical mount authority through UDisks ([ADR-0315](0315-session-owned-removable-media-through-udisks.md)); its mount-specific deferral is superseded without moving that authority into the File Manager.
+
 ## Revisit when
 
 Per-volume Trash can be implemented and qualified without mount authority,
