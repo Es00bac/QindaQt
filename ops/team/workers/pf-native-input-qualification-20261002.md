@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — both-host SDDM PAM disposition verified; ready for installedDesktop discovery
+- Status: available — read-only keyring availability handoff complete; installedDesktop discovery awaits root grant
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -110,3 +110,7 @@
 - 2026-10-02T22:01:26.462615+00:00 — Claimed both-host actual three-file SDDM PAM versus VDB hashes and official accepted stock/native inputs. Read-only hashes/critical-block facts; no login/credentials/hostfiles/service/world mutation. Safe exact optional-only merge plan only if actual files require CONFIG_PROTECT handling.
 
 - 2026-10-02T22:09:43.615378+00:00 — Both hosts installedSDDM-r1 PAM3 files each matchVDB MD5 and officialsystemd stock; no manualPAM CONFIG_PROTECT merge. Acceptednative optionalcallbacks preservecritical/non-target bytes, greetercommonstock/native unchanged. Laptop01gentoo.conf custom, preserve SHA4f14078f; qinda configstock. Hash-only preinstall receipt ready; no credentials/login/hostfiles/service/world mutation. Rootinstall/posthashes and actual/usr discovery remain next.
+
+- 2026-10-02T22:29:49.477912+00:00 — Claimed bounded already-owned legacy Secret Service/KWallet metadata-only availability/count probe; native catalog existence/size only. No autostart/unlock/prompts/secret reads/import/host mutation; actual installed discovery awaits root grant.
+
+- 2026-10-02T22:35:11.509326+00:00 — Metadata probes exited0, no live query/runtime/compiler. Qinda bus has no Secret Service/KWallet owners; laptop bus connection refused, counts unavailable. Both default native catalogs absent; disk data untouched/unknown, no actual import/name-handoff approval. Sanitized exact29f normative receipt ready; reduced-resource request honored, no further laptop work.
