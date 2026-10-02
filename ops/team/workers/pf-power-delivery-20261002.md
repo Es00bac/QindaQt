@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: working — granted exact TrashCLI dependency source preflight and signed build-only
+- Status: available — fourteen plus required TrashCLI signed artifacts handed off; idle, no resource lease
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -107,3 +107,5 @@
 - 2026-10-02T21:52:53Z — ActualcorrectedKAuth-r1BUILDONLY PASS0/51.740s, signedGPkg09b3e02e/fullmetadata+imageverification0/56paths/nativeUSE+packedebuildc96+officialsource7419 proven. Artifactunprivileged0750discovery corrected viaPortagerootreadonlylisting, no rebuild. KIO2job unchangedcompile [243/342]/elapsed518.5s/minGiB8.83; granted8 subsequentstage resources only inowned/tmp/bashrc724d99e, hostsource/profile/USEunchanged. Rootpublicoverlay/keywordprep and laptoponlyinstalls explicitlycoordinated; no qindaVDB/worldmutation.
 
 - 2026-10-02T22:13:51Z — Fourteenexact signedBUILDONLY artifacts complete14build0/14fullsignature+payload+sourceverification0/8528paths/1558.325s/min8.832GiB;6014observedPIDstartticksallgone/world+trackedsourceunchanged. LeaseRELEASED; fullreadyJSONsentrootsha53ad5513. No install/runtime/credentials. Claimnewexplicitrootgrant exactGentooTrashCLI0.24.5.26 requirednativeClaude dependency; onlyactualBDEP/source+tiny2jobs/load24/6GiBsignedBUILDONLY, nootherdeps/harness.
+
+- 2026-10-02T22:36:03Z — ExactTrashCLI0.24.5.26 signedBUILDONLY PASS0/12.601s;normalresolverPASS0/53.345s/only1newpkg;fullsignature+image+packedrecipe/sourceverification0/676paths,GPkg59b27aa8/laptopPython3.14IUSEparitytrue. Own2094358/starttick43508786 observedchildrengone;leaseRELEASED. Earlier14handoff9269unchanged. Userrequestslessresources: existingtinyreceiptsatnice19/idleIOonly,nosource/GPkgrehash/newbuild/hostinstall/credential/sessionaction. Availableboundedreceipt-reviewoffer,otherwiseidle.
