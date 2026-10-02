@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "pipewire_frames.h"
+#include "private_graph_source.h"
 #include <pipewire/extensions/metadata.h>
 #include <QElapsedTimer>
 #include <QFile>
@@ -23,8 +24,8 @@ pw_stream *lastConsumer = nullptr;
 extern "C" int __real_pw_stream_connect(pw_stream *, pw_direction, uint32_t, pw_stream_flags, const spa_pod **, uint32_t);
 extern "C" int __wrap_pw_stream_connect(pw_stream *stream, pw_direction direction, uint32_t target,
                                          pw_stream_flags flags, const spa_pod **params, uint32_t count) {
-    lastConsumer = stream;
-    if (beforeConnect) { auto hook = std::move(beforeConnect); beforeConnect = {}; hook(stream); }
+    if (direction == PW_DIRECTION_INPUT) lastConsumer = stream;
+    if (direction == PW_DIRECTION_INPUT && beforeConnect) { auto hook = std::move(beforeConnect); beforeConnect = {}; hook(stream); }
     return __real_pw_stream_connect(stream, direction, target, flags, params, count);
 }
 namespace {
@@ -63,8 +64,7 @@ public:
     }
     ~PrivateGraph() {
         timer.stop(); beforeConnect = {}; lastConsumer = nullptr;
-        if (offered) pw_proxy_destroy(offered);
-        if (unrelated) pw_proxy_destroy(unrelated);
+        offered.reset(); unrelated.reset();
         if (metadata) { spa_hook_remove(&metadataListener); pw_proxy_destroy(reinterpret_cast<pw_proxy *>(metadata)); }
         if (registry) { spa_hook_remove(&registryListener); pw_proxy_destroy(reinterpret_cast<pw_proxy *>(registry)); }
         if (core) { spa_hook_remove(&coreListener); pw_core_disconnect(core); }
@@ -73,8 +73,9 @@ public:
     }
     bool valid() const { return registry && error.isEmpty(); }
     bool createSources() {
-        offered = create("private-offered-video", 1); unrelated = create("private-unrelated-video", 2);
-        return offered && unrelated && sync();
+        offered = std::make_unique<PrivateGraphSource>(core, "private-offered-video", false);
+        unrelated = std::make_unique<PrivateGraphSource>(core, "private-unrelated-video", true);
+        return offered->valid() && unrelated->valid() && sync();
     }
     quint32 node(const QString &name) const { for (auto it = nodes.cbegin(); it != nodes.cend(); ++it) if (it->name == name) return it.key(); return PW_ID_ANY; }
     bool configureDefault() {
@@ -82,7 +83,7 @@ public:
         const auto value = QJsonDocument(QJsonObject{{"name", "private-unrelated-video"}}).toJson(QJsonDocument::Compact);
         return pw_metadata_set_property(metadata, PW_ID_CORE, "default.configured.video.source", "Spa:String:JSON", value.constData()) >= 0;
     }
-    bool retireOffered() { if (!offered) return false; pw_proxy_destroy(offered); offered = nullptr; return sync(); }
+    bool retireOffered() { if (!offered) return false; offered.reset(); return sync(); }
     quint32 linkedSource(quint32 consumer) const { for (const auto &link : links) if (link.first == consumer) return link.second; return PW_ID_ANY; }
     bool sync() {
         synced = false; syncSequence = pw_core_sync(core, PW_ID_CORE, 0); if (syncSequence < 0) return false;
@@ -104,16 +105,9 @@ private:
         }();
         return events;
     }
-    pw_proxy *create(const char *name, int pattern) {
-        auto *props = pw_properties_new(PW_KEY_FACTORY_NAME, "videotestsrc", PW_KEY_NODE_NAME, name,
-            PW_KEY_MEDIA_CLASS, "Video/Source", "node.virtual", "true", nullptr);
-        const auto parameter = QByteArray("{ patternType = ") + QByteArray::number(pattern) + " }";
-        pw_properties_set(props, "node.param.Props", parameter.constData());
-        auto *proxy = static_cast<pw_proxy *>(pw_core_create_object(core, "spa-node-factory", PW_TYPE_INTERFACE_Node, PW_VERSION_NODE, &props->dict, 0));
-        pw_properties_free(props); return proxy;
-    }
     pw_loop *loop = nullptr; pw_context *context = nullptr; pw_core *core = nullptr;
-    pw_registry *registry = nullptr; pw_metadata *metadata = nullptr; pw_proxy *offered = nullptr, *unrelated = nullptr;
+    pw_registry *registry = nullptr; pw_metadata *metadata = nullptr;
+    std::unique_ptr<PrivateGraphSource> offered, unrelated;
     spa_hook coreListener{}, registryListener{}, metadataListener{}; QTimer timer;
     int syncSequence = -1; bool synced = false; QHash<quint32, QPair<quint32, quint32>> links;
 };
@@ -147,6 +141,7 @@ private Q_SLOTS:
         QTRY_VERIFY2_WITH_TIMEOUT(frames.count() > 3, qPrintable(frames.error()), 5000);
         QTRY_COMPARE_WITH_TIMEOUT(graph->linkedSource(pw_stream_get_node_id(lastConsumer)), selected, 3000);
         QVERIFY(frames.error().isEmpty()); QVERIFY(!frames.image().isNull());
+        QCOMPARE(frames.image().pixelColor(0, 0), useDefault ? QColor(Qt::blue) : QColor(Qt::red));
     }
     void retiredOfferedTargetNeverUsesDefault() {
         const auto offeredSerial = graph->nodes.value(offered).serial; bool retired = false; QString resolved;
@@ -158,7 +153,10 @@ private Q_SLOTS:
         const int fd = privateRemote(); QVERIFY(fd >= 0); PipeWireFrames frames(fd, offered);
         QCOMPARE(resolved, offeredSerial); QVERIFY(retired); QVERIFY(graph->nodes.contains(unrelated));
         QTRY_VERIFY_WITH_TIMEOUT(!frames.error().isEmpty() || frames.count() > 0, 5000);
-        if (frames.count() > 0) QTRY_COMPARE_WITH_TIMEOUT(graph->linkedSource(pw_stream_get_node_id(lastConsumer)), unrelated, 3000);
+        if (frames.count() > 0) {
+            QTRY_COMPARE_WITH_TIMEOUT(graph->linkedSource(pw_stream_get_node_id(lastConsumer)), unrelated, 3000);
+            QCOMPARE(frames.image().pixelColor(0, 0), QColor(Qt::blue));
+        }
         qInfo().noquote() << QString("actual retired-target result frames=%1 error=%2 linked-source=%3 unrelated=%4").arg(frames.count()).arg(frames.error()).arg(graph->linkedSource(pw_stream_get_node_id(lastConsumer))).arg(unrelated);
         QCOMPARE(frames.count(), 0); QVERIFY(!frames.error().isEmpty());
         QVERIFY(graph->nodes.contains(unrelated)); QCOMPARE(graph->defaultVideo, QStringLiteral("private-unrelated-video"));

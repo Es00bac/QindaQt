@@ -4619,8 +4619,10 @@ do not replace the original native pixel/frame/privacy matrix.
 ### PipeWire decoder target retirement
 
 `qindaqt.portal-decoder-target` runs its own private PipeWire/WirePlumber policy
-graph, actual default metadata and two SPA video source nodes. Available explicit
-targets must deliver mapped frames and link to their exact source. The destructive
+graph, actual default metadata and two task-only real `pw_stream` RGBA sources.
+Their frame clocks drive actual graph processing; red offered and blue default
+pixels distinguish the sources. Available explicit targets must deliver mapped
+frames with the expected color and link to their exact source. The destructive
 row removes the resolved offered node immediately before actual connection; the
 unrelated default remains present, and the corrected consumer must fail with zero
 frames. Its linker hook exists only in this separate test target. The old ca299
