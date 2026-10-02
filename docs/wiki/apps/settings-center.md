@@ -31,7 +31,7 @@ Route behavior is documented in the corresponding [Appearance](appearance-settin
 Notifications includes Do Not Disturb, Quiet Hours, and per-application
 mute/sound controls; their shell policy is documented under
 [notification presentation](../shell/notification-presentation.md).
-The [22-route completeness inventory](../reference/settings-completeness.md)
+The [23-route completeness inventory](../reference/settings-completeness.md)
 separates registered pages from effective controls and outstanding gaps.
 Route construction or installed-package success does not establish physical
 Bluetooth pairing, battery/lid behavior, color calibration, network radio
