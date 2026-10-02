@@ -54,6 +54,21 @@ private Q_SLOTS:
         QTRY_VERIFY(pending->isFinished()); QCOMPARE(response(*pending), 2U);
         QTRY_VERIFY(ui->stopped.contains(session));
     }
+    void persistenceOptionsAreValidatedButNotPersisted() {
+        create();
+        auto malformed = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"restore_data", "fake"}}});
+        QTRY_VERIFY(malformed->isFinished()); QCOMPARE(response(*malformed), 2U);
+        create();
+        QDBusArgument restore; restore.beginStructure(); restore << QStringLiteral("QindaQt") << 1U << QDBusVariant(QVariantMap{}); restore.endStructure();
+        auto selection = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"persist_mode", 2U}, {"restore_data", QVariant::fromValue(restore)}}});
+        QTRY_VERIFY(selection->isFinished()); QCOMPARE(response(*selection), 0U);
+        auto pending = sharing(); QTRY_COMPARE(ui->opens, 1);
+        const auto results = captureResults(CaptureKind::Stream, {{"node", 31}, {"x", 0}, {"y", 0}, {"width", 800}, {"height", 600}, {"name", "Monitor"}}, {}); QVERIFY(results);
+        Q_EMIT ui->completed(ui->token, RequestResponse::Success, *results);
+        QTRY_VERIFY(pending->isFinished()); const QDBusPendingReply<quint32, QVariantMap> reply = *pending;
+        // No restore_data means the frontend keeps persist_mode NONE and stores no token.
+        QCOMPARE(reply.argumentAt<0>(), 0U); QVERIFY(!reply.argumentAt<1>().contains("restore_data")); QVERIFY(!reply.argumentAt<1>().contains("persist_mode"));
+    }
     void sessionActualCallerHandleFenceAndInvalidSelection() {
         create();
         auto wrong = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Other", QVariantMap{}}); QTRY_VERIFY(wrong->isFinished()); QCOMPARE(response(*wrong), 2U); QVERIFY(ui->stopped.isEmpty());

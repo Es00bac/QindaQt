@@ -17,7 +17,9 @@ private Q_SLOTS:
         QVERIFY(validScreenCastSelection({})); QVERIFY(validScreenCastSelection({{"types", 1U}, {"multiple", false}, {"cursor_mode", 1U}}));
         QVERIFY(validScreenCastSelection({{"multiple", true}, {"cursor_mode", 2U}}));
         QVERIFY(validScreenCastSelection({{"multiple", true}, {"cursor_mode", 4U}}));
-        for (const auto &options : {QVariantMap{{"types", 2U}}, QVariantMap{{"multiple", 1}}, QVariantMap{{"cursor_mode", 3U}}, QVariantMap{{"cursor_mode", 0U}}, QVariantMap{{"cursor_mode", 2}}, QVariantMap{{"types", 1}}, QVariantMap{{"persist_mode", 1U}}, QVariantMap{{"restore_data", "fake"}}}) QVERIFY(!validScreenCastSelection(options));
+        for (const auto &options : {QVariantMap{{"types", 2U}}, QVariantMap{{"multiple", 1}}, QVariantMap{{"cursor_mode", 3U}}, QVariantMap{{"cursor_mode", 0U}}, QVariantMap{{"cursor_mode", 2}}, QVariantMap{{"types", 1}}, QVariantMap{{"persist_mode", 3U}}, QVariantMap{{"persist_mode", 1}}, QVariantMap{{"restore_data", "fake"}}, QVariantMap{{"window", 1U}}}) QVERIFY(!validScreenCastSelection(options));
+        // The frontend always forwards persist_mode for callers such as OBS.
+        QVERIFY(validScreenCastSelection({{"persist_mode", 2U}, {"cursor_mode", 2U}}));
         QCOMPARE(captureCaller("/org/freedesktop/portal/desktop/request/1_28/test"), QString(":1.28"));
         QVERIFY(captureCaller("/org/freedesktop/portal/desktop/request/stranger/test").isEmpty());
     }
