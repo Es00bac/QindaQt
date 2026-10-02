@@ -113,6 +113,14 @@ Close removal; denial; zone change disarming; native authority loss; and a
 forged activation from another peer. They prove wire and lifetime, not
 physical input.
 
+Candidate evidence (strict `-Werror` dev build, configured `-j24 -l24`): both
+focused rows pass (Qt 9/0 and 7/0, also with `QT_FATAL_WARNINGS=1`, 10/10
+repeats) beside portal-access, portal-service, portal-process-lifecycle and
+both source-boundary rows. The real resident on a zero-activation private bus
+exports both interfaces, and all 29 standard members match the installed
+backend XML wire signatures. The fork EIS edits pass `-fsyntax-only` with the
+configured fork flags; the plugin itself has not been built or run.
+
 Still required before routing changes: the fork plugin build plus a private
 native compositor row where a real frontend session receives an EIS FD,
 injects observable input, and loses it on Close and native lock; staged
