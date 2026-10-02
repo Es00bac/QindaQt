@@ -489,6 +489,7 @@ nav:
       - ADR-0325 Additive native sleep modes: adr/0325-additive-native-sleep-modes.md
       - ADR-0330 Exclusive native source profile holds: adr/0330-gate-native-source-profile-holds.md
       - ADR-0331 Native critical battery countdowns: adr/0331-fence-native-critical-battery-countdowns.md
+      - ADR-0332 Native lid FD ownership and edges: adr/0332-own-native-lid-handling-before-edge-dispatch.md
       - ADR-0307 Ordinary FD idle observation: adr/0307-public-ordinary-fd-idle-observation.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
       - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md

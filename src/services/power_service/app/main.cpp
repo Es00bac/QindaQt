@@ -9,6 +9,11 @@
 #include <qindaqt/services/power_service/critical_battery_policy.h>
 #include <qindaqt/services/power_service/adapters/critical_notification_adapter.h>
 #include <qindaqt/services/session_actions/session_actions_client.h>
+#include <qindaqt/services/power_service/lid_policy.h>
+#include <qindaqt/services/power_service/adapters/logind_lid_authority.h>
+#ifdef QINDAQT_PRIVATE_LID_FIXTURE
+#include <unistd.h>
+#endif
 
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
@@ -34,6 +39,9 @@ int main(int argc, char **argv)
     parser.setApplicationDescription(
         QStringLiteral("QindaQt resident Power1 service"));
     parser.addOptions({
+        {QStringLiteral("lid-policy"),
+         QStringLiteral("Native lid handling: off or native-exclusive (explicit cutover)."),
+         QStringLiteral("mode"), QStringLiteral("off")},
         {QStringLiteral("critical-policy"),
          QStringLiteral("Critical battery countdown: off or native-exclusive (explicit cutover)."),
          QStringLiteral("mode"), QStringLiteral("off")},
@@ -72,6 +80,11 @@ int main(int argc, char **argv)
         return 1;
     }
     const QString backlightRoot = parser.value(QStringLiteral("backlight-root"));
+    const QString lidPolicy = parser.value(QStringLiteral("lid-policy"));
+    if (lidPolicy != QStringLiteral("off") && lidPolicy != QStringLiteral("native-exclusive")) {
+        qCritical("Power1 rejected unknown lid policy mode");
+        return 1;
+    }
 
     QDBusConnection sessionConnection = QDBusConnection::sessionBus();
     // AGENT-GUARD: This activated process belongs to exactly the bus that
@@ -125,13 +138,18 @@ int main(int argc, char **argv)
     std::unique_ptr<QindaQt::Services::SessionActions::SessionActionsClient> actions;
     std::unique_ptr<Upstream::CriticalNotificationAdapter> criticalNotification;
     std::unique_ptr<CriticalBatteryPolicy> criticalBattery;
+    std::unique_ptr<QindaQt::Services::SessionActions::SessionActionsClient> lidActions;
+    std::unique_ptr<Upstream::LogindLidAuthority> lidHandling;
+    std::unique_ptr<LidPolicy> nativeLid;
     const bool profilesEnabled = profilePolicy == QStringLiteral("native-exclusive");
     const bool criticalEnabled = criticalPolicy == QStringLiteral("native-exclusive");
-    if (profilesEnabled || criticalEnabled) {
+    const bool lidEnabled = lidPolicy == QStringLiteral("native-exclusive");
+    if (profilesEnabled || criticalEnabled || lidEnabled) {
         settingsTransport = std::make_unique<QtSettingsTransport>(sessionConnection);
         QStringList keys;
         if (profilesEnabled) keys.append(SourceProfilePolicy::settingsKeys());
         if (criticalEnabled) keys.append(CriticalBatteryPolicy::settingsKeys());
+        if (lidEnabled) keys.append(LidPolicy::settingsKeys());
         settings = std::make_unique<SettingsClient>(*settingsTransport, keys);
         if (profilesEnabled) sourcePolicy = std::make_unique<SourceProfilePolicy>(*service.coordinator(), *settings);
         if (criticalEnabled) {
@@ -140,14 +158,31 @@ int main(int argc, char **argv)
             criticalBattery = std::make_unique<CriticalBatteryPolicy>(*service.coordinator(), *settings, *criticalNotification, *actions);
             actions->start();
         }
+        if (lidEnabled) {
+            // Installed resident has no CLI/environment credential override.
+            // Only the noninstalled test target injects its private actor UID.
+#ifdef QINDAQT_PRIVATE_LID_FIXTURE
+            const quint32 expectedLogindUid = quint32(::getuid());
+#else
+            constexpr quint32 expectedLogindUid = 0;
+#endif
+            lidActions = std::make_unique<QindaQt::Services::SessionActions::SessionActionsClient>(sessionConnection, upstreamConnection);
+            lidHandling = std::make_unique<Upstream::LogindLidAuthority>(sessionConnection, upstreamConnection, expectedLogindUid);
+            nativeLid = std::make_unique<LidPolicy>(*service.coordinator(), *settings, *lidHandling, *lidActions);
+            QObject::connect(&application, &QCoreApplication::aboutToQuit, nativeLid.get(),
+                [policy = nativeLid.get()] { policy->setNativeAuthority(false); });
+        }
         authority = std::make_unique<Upstream::NativeProfileAuthority>(sessionConnection, true);
         if (sourcePolicy) QObject::connect(authority.get(), &Upstream::NativeProfileAuthority::admissionChanged,
                          sourcePolicy.get(), &SourceProfilePolicy::setNativeAuthority);
         if (criticalBattery) QObject::connect(authority.get(), &Upstream::NativeProfileAuthority::admissionChanged,
                          criticalBattery.get(), &CriticalBatteryPolicy::setNativeAuthority);
+        if (nativeLid) QObject::connect(authority.get(), &Upstream::NativeProfileAuthority::admissionChanged,
+                         nativeLid.get(), &LidPolicy::setNativeAuthority);
         authority->start();
         if (sourcePolicy) sourcePolicy->setNativeAuthority(authority->admitted());
         if (criticalBattery) criticalBattery->setNativeAuthority(authority->admitted());
+        if (nativeLid) nativeLid->setNativeAuthority(authority->admitted());
         if (!settings->start()) {
             qCritical("Power1 source profile Settings1 observation failed");
         }
