@@ -43,6 +43,20 @@ quint64 CompositorEis::open(quint32 types) {
     });
     return ticket;
 }
+bool CompositorEis::call(const QString &path, const QString &interface, const QString &member,
+                         const QVariantList &arguments, Done done) {
+    const QString owner = currentOwner();
+    if (owner.isEmpty()) return false;
+    auto message = QDBusMessage::createMethodCall(owner, path, interface, member);
+    message.setAutoStartService(false);
+    message.setArguments(arguments);
+    auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(message, 5000), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [owner, done = std::move(done)](QDBusPendingCallWatcher *finished) {
+        finished->deleteLater();
+        done(finished->reply(), owner);
+    });
+    return true;
+}
 void CompositorEis::cancel(quint64 ticket) { m_pending.remove(ticket); }
 void CompositorEis::close(const QString &compositor, int cookie) {
     if (cookie <= 0 || compositor.isEmpty() || currentOwner() != compositor) return;

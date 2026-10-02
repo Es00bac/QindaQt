@@ -18,11 +18,14 @@ consent and lock admission.
 
 ## Decision
 
-Adapt xdg-desktop-portal-kde 6.6.6 RemoteDesktop session/device/EIS flow into
-`src/services/portal/remote_input`, composed in the existing resident. Input
-only flows through `connectToEIS` on the attachment-proven compositor owner
-after explicit native consent. Upstream LGPL-2.0-or-later notices stay on the
-adapted files. Legacy Notify* calls fail explicitly instead of adding a second
+Adapt xdg-desktop-portal-kde 6.6.6 RemoteDesktop and InputCapture
+session/device/EIS flow into `src/services/portal/remote_input`, composed in
+the existing resident. InputCapture zones come from a compositor `zones()`
+hook, so barriers are validated in the coordinates the compositor enforces.
+Input flows only through compositor EIS transports on the attachment-proven
+owner after explicit native consent. Upstream notices stay on the adapted
+files (RemoteDesktop LGPL-2.0-or-later; InputCapture LGPL-2.1-only OR
+LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL). Legacy Notify* calls fail explicitly instead of adding a second
 injection path.
 
 The fork EIS plugin admits only the current portal backend owner (the KDE name

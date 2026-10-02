@@ -111,6 +111,11 @@ RemoteSessions::Entry *RemoteSessions::entry(const QString &path) {
     const auto it = m_entries.find(path);
     return it == m_entries.end() ? nullptr : &it.value();
 }
+const RemoteSessions::Entry *RemoteSessions::find(const QString &path) const {
+    const auto it = m_entries.constFind(path);
+    return it == m_entries.cend() ? nullptr : &it.value();
+}
+QStringList RemoteSessions::paths() const { return m_entries.keys(); }
 QString RemoteSessions::sessionForTicket(quint64 ticket) const {
     for (auto it = m_entries.cbegin(); it != m_entries.cend(); ++it)
         if (ticket && it->eisTicket == ticket) return it.key();
