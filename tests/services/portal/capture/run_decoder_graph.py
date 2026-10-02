@@ -76,6 +76,9 @@ context.objects = []
         if not address.startswith("unix:") or bus.poll() is not None:
             raise RuntimeError("private bus did not publish its actual address")
         env["DBUS_SESSION_BUS_ADDRESS"] = address
+        result["private_bus_address"] = address
+        result["private_pipewire_remote"] = env["PIPEWIRE_REMOTE"]
+        result["pipewire_config_sha256"] = hashlib.sha256(config.read_bytes()).hexdigest()
         for name, command in (("pipewire", ["pipewire", "-c", str(config)]), ("wireplumber", ["wireplumber", "-p", "policy"])):
             log = (root / (name + ".log")).open("wb"); logs.append(log)
             process = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
