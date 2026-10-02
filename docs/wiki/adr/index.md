@@ -364,3 +364,11 @@ integration retains every accepted decision in numeric order.
 - [ADR-0334: Adapt the live shortcut authority and its native consumers](0334-native-shortcut-authority-and-consumers.md) — Proposed candidate
 
 - [ADR-0335: Native remote input through the compositor EIS engine](0335-native-remote-input-portal.md)
+
+- [ADR-0336: Own native monitor batches and cursor modes](0336-native-monitor-batches-and-cursor-modes.md)
+
+- [ADR-0337: Adapt the remaining standard portal families](0337-native-independent-portal-families.md)
+
+- [ADR-0338: Own scoped display power and complete shared idle consumers](0338-own-scoped-display-power-and-shared-idle-composition.md)
+
+- [ADR-0339: Manage portal grants through the frontend PermissionStore](0339-use-frontend-permission-store-for-settings-revocation.md)

@@ -5,6 +5,7 @@
 #include <memory>
 namespace QindaQt::Services::SessionLockState { class NativeLockStateMonitor; }
 namespace QindaQt::Session::NativeLockRuntime { class Runtime; }
+namespace QindaQt::Session::NativeSleep { class SleepCoordinator; }
 namespace QindaQt::SessionSupervisor {
 // Composition only. Borrowed same-thread runtime, monitor and readonly
 // supervisor/ordinary-attachment admission must outlive this owner.
@@ -17,6 +18,8 @@ public:
   ~NativeSleepComposition();
   bool start();
   void stop();
+  // Borrowed same-thread coordinator remains owned by this composition.
+  Session::NativeSleep::SleepCoordinator &coordinator();
 private:
   class Private;
   std::unique_ptr<Private> d;

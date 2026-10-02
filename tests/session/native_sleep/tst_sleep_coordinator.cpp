@@ -4,6 +4,7 @@ using namespace SleepTest;
 class SleepCoordinatorTests final : public QObject {
   Q_OBJECT
 private Q_SLOTS:
+  void exactOwnedRequestCancellationCannotCancelReplacement();
   void manualSuspendRequiresTargetedProtectedReceipt();
   void systemPrepareRetainsDelayUntilProtectedThenRearms();
   void failedAdmissionNeverReleasesDelay();
@@ -19,6 +20,17 @@ private Q_SLOTS:
   void facadeAuthenticatesActualCallerUid();
   void stoppedFacadeCannotLeaveLateSleepDispatch();
 };
+void SleepCoordinatorTests::exactOwnedRequestCancellationCannotCancelReplacement() {
+  Fixture f; f.start();
+  QVERIFY(f.coordinator.requestSuspend()); const auto old = f.coordinator.requestToken(); QVERIFY(old != 0);
+  QTRY_COMPARE(f.native.requests, 1);
+  QVERIFY(!f.coordinator.cancelRequest(old + 1));
+  QVERIFY(f.coordinator.cancelRequest(old)); QCOMPARE(f.logind.suspendCalls, 0);
+  QVERIFY(f.coordinator.requestSuspend()); const auto next = f.coordinator.requestToken(); QVERIFY(next != old);
+  QVERIFY(!f.coordinator.cancelRequest(old));
+  f.native.state(true, true); QTRY_COMPARE(f.logind.suspendCalls, 1);
+  QVERIFY(!f.coordinator.cancelRequest(old));
+}
 void SleepCoordinatorTests::manualSuspendRequiresTargetedProtectedReceipt() {
   Fixture f; f.start(); QSignalSpy result(&f.coordinator, &SleepCoordinator::suspendFinished);
   QVERIFY(f.coordinator.requestSuspend()); QTRY_COMPARE(f.native.requests, 1);

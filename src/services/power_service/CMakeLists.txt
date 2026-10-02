@@ -95,6 +95,14 @@ target_compile_definitions(
 set_target_properties(qindaqt-power-service PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-power-service)
 
+# Coherent package cutover knob: development and ordinary builds remain off.
+# Manager packaging must select this together with the reviewed fork adapter.
+option(QINDAQT_NATIVE_POWER_EXCLUSIVE "Compose native power and retire owned PowerDevil" OFF)
+set(QINDAQT_POWER_POLICY_ARGUMENTS "")
+if(QINDAQT_NATIVE_POWER_EXCLUSIVE)
+    set(QINDAQT_POWER_POLICY_ARGUMENTS "--profile-policy=native-exclusive --critical-policy=native-exclusive --lid-policy=native-exclusive --idle-policy=native-exclusive")
+endif()
+
 configure_file(
     data/org.qindaqt.Power1.service.in
     "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Power1.service"

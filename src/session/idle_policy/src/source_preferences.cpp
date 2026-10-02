@@ -92,7 +92,8 @@ displayOffPreferencesFor(const Services::SettingsClient::SettingsSnapshot &snaps
     if (!integerValue(timeoutValue, &seconds) || seconds < 0 || seconds > 14400)
         return std::nullopt;
     const bool enabled = enabledValue.toBool() && seconds > 0;
-    return DisplayOffPreferences{enabled, enabled ? static_cast<int>(seconds) : 0};
+    return DisplayOffPreferences{enabled, enabled ? static_cast<int>(seconds) : 0,
+        expectedOwner + QLatin1Char('|') + snapshot.epoch + QLatin1Char('|') + source};
 }
 
 } // namespace QindaQt::Session::IdlePolicy

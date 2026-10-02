@@ -33,6 +33,8 @@ target_sources(
         src/session_service.cpp
         src/native_lock_composition.cpp
         src/native_sleep_composition.cpp
+        src/native_power_composition.cpp
+        src/native_power_composition.h
         src/native_sleep_composition.h
         src/native_lock_composition.h
     PUBLIC
@@ -54,7 +56,7 @@ pkg_check_modules(libsystemd REQUIRED IMPORTED_TARGET libsystemd)
 
 target_link_libraries(
     qindaqt_session_supervisor_support
-    PUBLIC QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus QindaQt::IdlePolicy QindaQt::DesktopControls QindaQt::NativeSleep QindaQt::NativeLockRuntime QindaQt::NativeLockService QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::IdleObservation QindaQt::LockPreferences QindaQt::PowerClient QindaQt::SettingsClient
+    PUBLIC QindaQt::DisplayPower QindaQt::NotificationPresentationProtocol QindaQt::SessionAutostart Qt6::Core Qt6::DBus QindaQt::IdlePolicy QindaQt::DesktopControls QindaQt::NativeSleep QindaQt::NativeLockRuntime QindaQt::NativeLockService QindaQt::SessionLockState QindaQt::CompositorAttachment QindaQt::IdleObservation QindaQt::LockPreferences QindaQt::PowerClient QindaQt::SettingsClient
     PRIVATE PkgConfig::libsystemd QindaQt::CompositorNames
 )
 target_compile_features(qindaqt_session_supervisor_support PUBLIC cxx_std_20)
@@ -91,7 +93,12 @@ target_link_libraries(
 )
 get_filename_component(QINDAQT_PORTAL_LIBEXEC_ABSOLUTE "${KDE_INSTALL_LIBEXECDIR}" ABSOLUTE BASE_DIR "${CMAKE_INSTALL_PREFIX}")
 file(RELATIVE_PATH QINDAQT_PORTAL_RELATIVE_PATH "${CMAKE_INSTALL_FULL_BINDIR}" "${QINDAQT_PORTAL_LIBEXEC_ABSOLUTE}/xdg-desktop-portal-qindaqt")
-target_compile_definitions(qindaqt-session PRIVATE QINDAQT_PORTAL_RELATIVE_PATH="${QINDAQT_PORTAL_RELATIVE_PATH}" QINDAQT_KEYRING_INSTALL_PATH="${CMAKE_INSTALL_FULL_BINDIR}/qindaqt-keyring" QINDAQT_VERSION="${PROJECT_VERSION}")
+if(QINDAQT_NATIVE_POWER_EXCLUSIVE)
+    set(QINDAQT_NATIVE_POWER_DEFAULT "exclusive")
+else()
+    set(QINDAQT_NATIVE_POWER_DEFAULT "off")
+endif()
+target_compile_definitions(qindaqt-session PRIVATE QINDAQT_NATIVE_POWER_DEFAULT="${QINDAQT_NATIVE_POWER_DEFAULT}" QINDAQT_PORTAL_RELATIVE_PATH="${QINDAQT_PORTAL_RELATIVE_PATH}" QINDAQT_KEYRING_INSTALL_PATH="${CMAKE_INSTALL_FULL_BINDIR}/qindaqt-keyring" QINDAQT_VERSION="${PROJECT_VERSION}")
 set_target_properties(qindaqt-session PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-session)
 
