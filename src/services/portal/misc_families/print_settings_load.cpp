@@ -123,16 +123,13 @@ void loadPrintSettings(QPrinter *printer, const QVariantMap &settings, const QVa
             printer->setOutputFormat(QPrinter::PdfFormat);
         } else if (it.key() == QStringLiteral("output-uri")) {
             const QUrl uri = QUrl(it.value().toString());
-            // Check whether the uri is not just a directory name and whether we don't need to
-            // append output-basename
-            if (settings.contains(QStringLiteral("output-basename"))) {
-                const QString basename = settings.value(QStringLiteral("output-basename")).toString();
-                if (!uri.toDisplayString().endsWith(basename) && uri.toDisplayString().endsWith(QLatin1Char('/'))) {
-                    printer->setOutputFileName(uri.toLocalFile() + basename);
-                }
-            } else {
-                printer->setOutputFileName(uri.toLocalFile());
-            }
+            // AGENT-GUARD: QPrinter requires a local path, never file:// text.
+            // Preserve a complete URI path even when output-basename is also
+            // supplied; only directory URIs append the basename.
+            QString path = uri.toLocalFile();
+            if (uri.isLocalFile() && path.endsWith(QLatin1Char('/')) && settings.contains(QStringLiteral("output-basename")))
+                path += settings.value(QStringLiteral("output-basename")).toString();
+            printer->setOutputFileName(path);
         } else {
         }
     }

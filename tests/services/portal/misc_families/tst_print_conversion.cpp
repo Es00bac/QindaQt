@@ -2,6 +2,7 @@
 #include "print_conversion.h"
 #include "print_job.h"
 #include <QFile>
+#include <QBuffer>
 #include <QTemporaryDir>
 #include <QTemporaryFile>
 #include <QtTest>
@@ -25,6 +26,12 @@ private Q_SLOTS:
         QVERIFY(args.contains("-d")); QVERIFY(args.contains("fixture")); QVERIFY(args.contains("sides=two-sided-long-edge")); QCOMPARE(args.last(), QStringLiteral("--"));
         // Frontend already applies page ranges/number-up to the PDF.
         QVERIFY(!args.contains("-P")); QVERIFY(!args.contains("page-ranges=2-4"));
+    }
+    void realRunnerChecksExitStatusWithoutPrinter() {
+        QByteArray bytes("fixture"); QBuffer input(&bytes); QVERIFY(input.open(QIODevice::ReadOnly));
+        QVERIFY(runPrintCommand(QStringLiteral("/bin/cat"), {}, input));
+        QVERIFY(input.seek(0)); QVERIFY(!runPrintCommand(QStringLiteral("/bin/false"), {}, input));
+        QVERIFY(input.seek(0)); QVERIFY(!runPrintCommand(QStringLiteral("/does/not/exist"), {}, input));
     }
     void injectedSpoolAndSaveFileErrors() {
         QTemporaryDir temp; QVERIFY(temp.isValid()); QTemporaryFile input; QVERIFY(input.open()); const QByteArray data("%PDF-1.7\nfixture bytes"); QCOMPARE(input.write(data), data.size()); input.flush();

@@ -14,7 +14,7 @@ Print implements both `PreparePrint` and `Print`. Qt/CUPS settings, page geometr
 
 Sandbox print input is a duplicated readable regular-file descriptor, bounded to 512 MiB. The helper reads with `pread`, retaining the sandbox's shared file offset. Output to file succeeds only after checked atomic save; CUPS/lpr output uses fixed executable selection and separate argument vectors/stdin, with no shell or untrusted command path. Success requires real normal process exit zero. Preformatted PDFs do not apply page range, number-up or rotation twice. Close kills the helper and its spool child; already submitted physical jobs cannot be recalled. No tests contact real printers or devices.
 
-Focused gates are `qindaqt.portal-misc-policy`, `qindaqt.portal-misc-requests` and `qindaqt.portal-print-conversion`; the latter uses Qt offscreen and an injected spool runner. Production helper and resident must also compile. Routes remain fallback until these methods and gates pass and the manager accepts the candidate. Runtime Qt PrintSupport and the existing CUPS `lp`/`lpr` command are needed for physical printing; no KDE framework is added.
+Focused gates are `qindaqt.portal-misc-policy`, `qindaqt.portal-misc-requests` `qindaqt.portal-print-conversion` and `qindaqt.portal-misc-dialog`; the latter uses Qt offscreen and an injected spool runner. Production helper and resident must also compile. Routes remain fallback until these methods and gates pass and the manager accepts the candidate. Runtime Qt PrintSupport and the existing CUPS `lp`/`lpr` command are needed for physical printing; no KDE framework is added.
 
 ## Provenance
 
