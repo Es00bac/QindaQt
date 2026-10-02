@@ -2,6 +2,7 @@
 #include <qindaqt/apps/settings_appearance/appearance_qml_composition.h>
 #include <qindaqt/themes/theme_loader.h>
 #include <QtQml/QQmlComponent>
+#include <QtQml/QQmlContext>
 #include <QtQuick/QQuickView>
 #include <QtTest/QTest>
 #include <memory>
@@ -35,11 +36,20 @@ private Q_SLOTS:
     PageModel model;
     model.rows = {QVariantMap{{QStringLiteral("key"), QStringLiteral("opaque-row")},
         {QStringLiteral("app"), QStringLiteral("org.example.App")}, {QStringLiteral("family"), QStringLiteral("Screen sharing")}}};
-    QQmlComponent component(view.engine(), QUrl::fromLocalFile(QStringLiteral(QINDAQT_SOURCE_DIR
-        "/src/apps/settings/portal_permissions/qml/PortalPermissionsPage.qml")));
+    view.engine()->rootContext()->setContextProperty(QStringLiteral("testPermissions"), &model);
+    QQmlComponent component(view.engine());
+    component.setData(R"QML(
+import QtQuick
+import QindaQt.SettingsApp.PortalPermissions
+Loader {
+    active: true
+    sourceComponent: Component {
+        PortalPermissionsPage { permissions: testPermissions }
+    }
+}
+)QML", QUrl());
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
-    std::unique_ptr<QObject> page(component.createWithInitialProperties({
-        {QStringLiteral("permissions"), QVariant::fromValue(static_cast<QObject *>(&model))}}));
+    std::unique_ptr<QObject> page(component.create());
     QVERIFY2(page, qPrintable(component.errorString()));
     auto *item = qobject_cast<QQuickItem *>(page.get()); QVERIFY(item);
     item->setParentItem(view.contentItem()); item->setSize({640,480}); view.resize(640,480); view.show();
