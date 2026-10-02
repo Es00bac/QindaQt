@@ -1,0 +1,9 @@
+# Native lid source checkpoint boundary
+
+Manager approved the exact public-standard Session1 daemon UID/PID→current root login1 GetSessionByPID/typed User/Active authority, target-local noninstalled credential fixture and additive main/CMake lines before edits. Installed main fixes UID0, with no environment or CLI override.
+
+Core/FD adapter and 34 private behavior rows are authored but uncompiled/unrun. Initial public lid interpretation was corrected after the manager's direct source audit: valid SessionFacts grant Capability::Lid before lidPresent is proven, so admitted known-open can arm the first actual close; closed dispatch requires presence proof. Startup/readiness/preferences while closed cannot synthesize an edge. Unsupported screen-off or unavailable actions do not retain handle-lid ownership and suppress an event they cannot handle.
+
+Actual fixture will compile the same main/assembly as a distinct noninstalled private-UID resident, use real Settings1/UPower and public action wires, and prove returned descriptor ownership/cleanup through actual pipe peer EOF. Wrong production UID, user/PID/session facts, owner/active/session/source/Settings loss, each independent pending Can fence, late replacement FD and uncertain no-replay have explicit assertions. No hardware/PAM/live bus or config mutation. Critical/profile/Hibernate source remains frozen; exact prerequisite has since received independent ACCEPT, not an installed claim.
+
+Light boundary and source-shape scans currently pass; initial transport name in a core comment and test metatype/decomposition false grouping were corrected without widening the contract. Existing518-line activation-test warning retained. Qinda strict documentation/static verification follows the pushed source checkpoint; executable gates still require separately granted resources.

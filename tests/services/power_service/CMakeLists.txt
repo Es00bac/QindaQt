@@ -358,3 +358,30 @@ qindaqt_enable_warnings(qindaqt_critical_battery_runtime_tests)
 add_test(NAME qindaqt.power-critical-battery-runtime COMMAND qindaqt_critical_battery_runtime_tests)
 set_tests_properties(qindaqt.power-critical-battery-runtime PROPERTIES
     LABELS "service;power;dbus;policy" TIMEOUT 120 RUN_SERIAL TRUE)
+
+# Same actual resident assembly, constructor-only private UID expectation.
+# Never installed and never a global production authorization flag.
+qt_add_executable(qindaqt_power_lid_private_resident
+    "${CMAKE_SOURCE_DIR}/src/services/power_service/app/main.cpp")
+target_link_libraries(qindaqt_power_lid_private_resident PRIVATE QindaQt::PowerService)
+target_compile_definitions(qindaqt_power_lid_private_resident PRIVATE
+    QINDAQT_VERSION="${PROJECT_VERSION}" QINDAQT_PRIVATE_LID_FIXTURE=1)
+qindaqt_enable_warnings(qindaqt_power_lid_private_resident)
+
+qt_add_executable(qindaqt_lid_runtime_tests
+    tst_lid_runtime.cpp
+    support/lid_runtime_fixture.h support/lid_logind_wire.h support/lid_session_wire.h support/lid_user_wire.h
+    support/fake_upower_service.cpp support/fake_upower_service.h
+    support/fake_logind_service.cpp support/fake_logind_service.h
+    support/profile_policy_bus.h)
+target_link_libraries(qindaqt_lid_runtime_tests PRIVATE
+    QindaQt::PowerService QindaQt::PowerClient QindaQt::SettingsService Qt6::Test)
+target_compile_definitions(qindaqt_lid_runtime_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    QINDAQT_POWER_SERVICE_EXECUTABLE="$<TARGET_FILE:qindaqt-power-service>"
+    QINDAQT_LID_PRIVATE_RESIDENT="$<TARGET_FILE:qindaqt_power_lid_private_resident>")
+add_dependencies(qindaqt_lid_runtime_tests qindaqt-power-service qindaqt_power_lid_private_resident)
+qindaqt_enable_warnings(qindaqt_lid_runtime_tests)
+add_test(NAME qindaqt.power-lid-runtime COMMAND qindaqt_lid_runtime_tests)
+set_tests_properties(qindaqt.power-lid-runtime PROPERTIES
+    LABELS "service;power;dbus;policy" TIMEOUT 60 RUN_SERIAL TRUE)
