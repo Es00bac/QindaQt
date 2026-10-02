@@ -152,9 +152,17 @@ private:
             msghdr incoming{}; incoming.msg_iov = &data; incoming.msg_iovlen = 1;
             incoming.msg_control = ancillary.data(); incoming.msg_controllen = ancillary.size();
             const auto size = recvmsg(serverFd, &incoming, MSG_DONTWAIT | MSG_CMSG_CLOEXEC);
-            if (size < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return;
+            const int error = errno;
+            if (size < 0 && (error == EAGAIN || error == EWOULDBLOCK)) return;
+            if (size < 0 && error == ECONNRESET && broker.state() == QProcess::NotRunning) {
+                // Owner loss can close the child with Hello still unread. This
+                // terminal socket state contains no Ready; public name absence
+                // and all previously received packets are still checked.
+                qInfo() << "closed startup peer reset" << error;
+                return;
+            }
             if (size == 0) return;
-            QVERIFY(size > 0); QVERIFY(!(incoming.msg_flags & (MSG_TRUNC | MSG_CTRUNC)));
+            QVERIFY2(size > 0, std::strerror(error)); QVERIFY(!(incoming.msg_flags & (MSG_TRUNC | MSG_CTRUNC)));
             const auto *credentials = CMSG_FIRSTHDR(&incoming); QVERIFY(credentials);
             QCOMPARE(credentials->cmsg_level, SOL_SOCKET); QCOMPARE(credentials->cmsg_type, SCM_CREDENTIALS);
             QCOMPARE(credentials->cmsg_len, CMSG_LEN(sizeof(ucred)));
