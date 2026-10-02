@@ -46,8 +46,14 @@ activity; startup, rearm and lost availability cannot manufacture it or replay a
 consumed idle episode. Lid reopen/source/admission/owner loss cancels only its
 cause, and a physical wake cannot reblank a continuously closed lid.
 
-The final native-exclusive candidate must wire these consumers, expose explicit
-service activation arguments, and omit the supervisor's owned PowerDevil child.
+The native-exclusive candidate wires these consumers through NativePowerComposition.
+`QINDAQT_NATIVE_POWER_EXCLUSIVE=ON` configures all four Power1 native-exclusive
+activation flags and the supervisor exclusive default, omitting only its owned
+PowerDevil child. An explicit supervisor off override retains development behavior.
+Idle cancellation uses the existing SleepCoordinator's exact request token, so
+canceling a stale idle request cannot cancel a later manual request.
+Dim restores only authenticated unchanged own values after mutation readback;
+external/manual changes and uncertain writes remain outside its ownership.
 Bare development binaries remain default off. Manager package cutover follows
 independent review and integrated gates; no host hardware action is a source gate.
 
