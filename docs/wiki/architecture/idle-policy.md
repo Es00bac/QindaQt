@@ -75,3 +75,17 @@ does not disable PowerDevil policy already stored in its legacy configuration.
 Final PF2–PF4 retirement must remove that competing legacy display policy before
 claiming one production authority. This source slice does not retire PowerDevil
 or qualify ScreenSaver/portal inhibition.
+
+## Shared consumer admission boundary
+
+Power1 now exposes epoch-fenced `RegisterIdleConsumers` to the actual current
+Session1 owner only, behind explicit native-exclusive admission and confirmed
+PowerDevil absence. All three consumers must be declared together; unsupported
+partial composition still advertises zero. The public PowerClient registrar
+never infers that stages are composed: its owner supplies the real consumer mask
+and uses authenticated Power1 scope receipts. Withdrawal or supervisor/epoch
+replacement revokes capabilities and existing leases. This admission slice does
+not replace the raw DPMS port, wire idle suspend/dimming or claim PowerDevil
+retirement. Own-only blank release still needs the scoped compositor authority
+identified in the ScreenOff source audit. See
+[ADR-0333](../adr/0333-authenticate-shared-idle-consumer-registration.md).
