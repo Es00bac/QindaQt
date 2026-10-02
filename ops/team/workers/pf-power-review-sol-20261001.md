@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: working — independent corrected decoder source-first review; exact final runner descendant pending.
+- Status: working — independent exact critical-battery source review; decoder review parked pending compatible graph.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none; manager compiler and graphics private graph held elsewhere.
-- Outcome: qualify explicit offered-node no-fallback repair and authentic private graph regression independently.
+- Resource state: none; manager compiler owns coherent fork build; no private lease claimed.
+- Outcome: qualify exact f951 critical-battery episode/notification/action policy independently.
 
 ## Updates
 
@@ -64,3 +64,5 @@
 - 2026-10-02T00:56:44Z: Claimed corrected decoder99f24 source-first audit in own isolated qinda review tree. Literal no-fallback property and linker-only actual retirement seam inspected; no resource claimed. Graphics first graph setup path-length failure preserved; final short-runtime descendant pending, no behavior verdict from setup. Prior startup24fa ACCEPT/ca299 REJECT preserved.
 
 - 2026-10-02T01:02:16Z: Decoder sourceaudit noP0/P1found so far: authentic sameofferedserial/correlated2sec sync retained, literal nofallback matches installedWP stop path, linkerhook onlyprivategraph. Short0700 runtime/108byte check audited in f174 runner, firstpreQt setupfailure retained. Own99f strictdocs486/MkDocs7.66sPASS; preparedonly sixstrictbuildcommands with byteidenticalca299 controls. No compiler/private lease; finalgraphqualifiedhandoff pending.
+
+- 2026-10-02T01:04:10Z: Parked decoder review pending compatible real testproducer; direct shortgraph2pass3fail/exit3/PW-6/runner1 retained, nofallback behavior unqualified, no ACCEPT/REJECT. Root authorizes graphics producer repair. Claimed distinct critical-battery exactf951 source-first review; no resources held.
