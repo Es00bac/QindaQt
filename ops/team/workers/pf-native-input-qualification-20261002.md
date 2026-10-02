@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: working — granted final installed55d/plugin29f QA reconfigure/focusedbuild, then serialized existing gates
+- Status: working — installed55d/plugin29f private plugin and shell QA; two narrowly reviewed test graph repairs
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -82,3 +82,5 @@
 - 2026-10-02T21:08:23+00:00 — Parallel read-onlyPoweroverlay851 SOURCEACCEPT: originalrecipe/3patch/archive/provenancebytes verified; independent6testsPASS/0.280s, freshPortage3packages×5fields andnativeUSE7packages exact. Only unconditionalPlasma edges/profileintegrations removed, apps/PolkitQt retained. ColdKAuth6.27 source-dependency gap remainsexplicit; no app/runtime/installapproval, laterClaudeextensionneedsnewreview. FinalinstalledABI QA configurePASS58.236s, focused13targets live~133/255 withMem~11.6GiB; nativeleaseheld, no launchyet.
 
 - 2026-10-02T21:14:12.698538+00:00 — Installed55d ABI two PASS; dependency fixture blocked by child empty libexec. Preserved first failure, requested narrow fixture fix. Focused13-target build PASS; beginning unchanged private plugin runtime gate, sole native lease retained.
+
+- 2026-10-02T21:18:29.704558+00:00 — Private nested plugin PASS5.582s; profile/package/resolver/dock7 PASS. Staged discovery blocked by unrelated unbuilt Settings QML types; actual installed runner awaits signedDesktop. Layout fixture repaired installed guard then exposed conditional standalone clipboard target; test-only successor ready for exact root review. Shell three-resolution runtime active.

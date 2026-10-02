@@ -25,11 +25,14 @@ set_tests_properties(qindaqt.portal-remote-legacy-input PROPERTIES TIMEOUT 45 LA
 # until QINDAQT_REMOTE_INPUT_EIS_PLUGIN_DIR names that candidate plugin tree.
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(QINDAQT_LIBEI IMPORTED_TARGET libei-1.0)
+# AGENT-CONTRACT: Both protected capture and remote-input journeys use this
+# ordinary QtGui Wayland peer; its existence does not require the KWin plugin
+# or supervisor fixture. Only the native remote-input journey below does.
+qt_add_executable(qindaqt_portal_remote_input_clipboard_client native/clipboard_client.cpp)
+target_link_libraries(qindaqt_portal_remote_input_clipboard_client PRIVATE Qt6::Gui)
+qindaqt_enable_warnings(qindaqt_portal_remote_input_clipboard_client)
 if(TARGET QindaQt::SessionSupervisorSupport AND QINDAQT_LIBEI_FOUND AND TARGET qindaqt_portal_consent_input)
     set(QINDAQT_REMOTE_INPUT_EIS_PLUGIN_DIR "" CACHE PATH "Candidate eis plugin tree for the private remote-input journey")
-    qt_add_executable(qindaqt_portal_remote_input_clipboard_client native/clipboard_client.cpp)
-    target_link_libraries(qindaqt_portal_remote_input_clipboard_client PRIVATE Qt6::Gui)
-    qindaqt_enable_warnings(qindaqt_portal_remote_input_clipboard_client)
     qt_add_executable(qindaqt_portal_native_remote_input_tests native/tst_native_remote_input.cpp)
     add_dependencies(qindaqt_portal_native_remote_input_tests
         qindaqt_portal_remote_input_clipboard_client qindaqt_portal_consent_input)
