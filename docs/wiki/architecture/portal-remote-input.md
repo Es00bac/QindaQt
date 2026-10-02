@@ -1,14 +1,15 @@
 # Native remote-input portal
 
 `src/services/portal/remote_input` implements the standard
-`org.freedesktop.impl.portal.RemoteDesktop` version 2 and `InputCapture`
-version 1 backends over the selected QindaQt compositor's EIS engine. The resident composes it beside the
+`org.freedesktop.impl.portal.RemoteDesktop` version 2, `InputCapture`
+version 1 and `Clipboard` version 1 backends over the selected QindaQt
+compositor's EIS engine. The resident composes it beside the
 [native foundation](portal-foundation.md) and reuses its PortalRequests,
 selected-session attachment, native-lock monitor and QindaTK consent helper.
 [ADR-0335](../adr/0335-native-remote-input-portal.md) records the boundary.
 
-**Routing is unchanged.** `qindaqt.portal` does not advertise RemoteDesktop,
-InputCapture or Clipboard and the selector keeps them on `kde` with the
+**Routing is unchanged.** The resident exports all three interfaces, but
+`qindaqt.portal` does not advertise RemoteDesktop, InputCapture or Clipboard and the selector keeps them on `kde` with the
 [ADR-0088](../adr/0088-enable-kde-remote-desktop-for-qindaqt.md) drop-in until the
 real frontend/private-compositor gate below passes and the gaps are closed.
 
@@ -32,6 +33,7 @@ Plasma process is a runtime dependency of the new adapter.
 | RemoteSessions (private) | Standard Session objects, Close/Closed, actor/app/PIDFD liveness, 60 s unstarted expiry | RequestRegistry |
 | RemoteDesktopAdaptor | Standard methods, device validation, consent question, phase machine and EIS publication | RequestRegistry, AccessConsent, CompositorEis |
 | InputCaptureAdaptor | Consent before arming, compositor zones, barrier rule, enable/disable/release, targeted Disabled/Activated/Deactivated/ZonesChanged | RequestRegistry, AccessConsent, CompositorEis |
+| ClipboardAdaptor (private) | RequestClipboard/SetSelection/SelectionWrite(Done)/SelectionRead and targeted owner/transfer signals for consented RemoteDesktop sessions | RemoteDesktop sessions, AccessConsent, CompositorEis |
 
 All objects are confined to the constructing Qt thread. The adaptor is
 destroyed before the borrowed ports; destruction closes sessions and
@@ -45,9 +47,9 @@ owner, the caller encoded in the standard handle (same UID, live unique name
 and PIDFD) and the app ID; at most 8 sessions exist. SelectDevices accepts
 `types` (default all) and `persist_mode` 0–2; restore data is never trusted
 and nothing persists, so every Start asks again. Start requires a selected
-session and asks the native consent helper with the requested device list;
-Allow returns `devices` and `clipboard_enabled=false`, Deny/Close cancel and
-close the session.
+session and asks the native consent helper with the requested device list
+(plus the clipboard choice below); Allow returns `devices` and
+`clipboard_enabled`, Deny/Close cancel and close the session.
 
 ConnectToEIS is accepted once per granted session from the frontend. It
 requests a compositor context limited to the granted devices from the
@@ -99,6 +101,12 @@ is unchanged.
   every input capture.
 - `InputCaptureManager.zones()` (portal backend only) returns logical output
   rectangles; `zonesChanged` follows output add/remove/geometry changes.
+- `connectClipboard()`, `disconnectClipboard(i)`, `setSelection(i,as)` and
+  `readSelection(i,s) -> h` (portal backend only, creator-only handles, at
+  most 16) publish an `AbstractDataSource` as the seat selection. Paste FDs and
+  owner changes travel only in targeted `selectionTransfer(i,s,h)` and
+  `selectionChanged(i,as,b)` signals; owner loss and `screenAboutToLock` drop
+  handles and withdraw their selection.
 
 ## Verification
 
@@ -106,7 +114,10 @@ is unchanged.
 a synthetic compositor object: grant/connect/Close with disconnect, denial and
 Request.Close cancellation, foreign and unstarted refusal, invalid devices,
 Notify refusal, native authority loss, frontend owner loss, late transport
-after Close and compositor replacement. `qindaqt.portal-input-capture` uses a
+after Close, compositor replacement, and Clipboard: explicit choice, owner
+change, SetSelection, a real paste FD written through SelectionWrite, one-shot
+serials, SelectionRead bytes, release on Close, declined choice and late
+RequestClipboard refusal, and authority loss closing an unclaimed paste FD. `qindaqt.portal-input-capture` uses a
 synthetic manager/capture pair: grant, zones, barrier acceptance/failure,
 single EIS receiver, enable, targeted activation, release, deactivation and
 Close removal; denial; zone change disarming; native authority loss; and a
@@ -114,33 +125,43 @@ forged activation from another peer. They prove wire and lifetime, not
 physical input.
 
 Candidate evidence (strict `-Werror` dev build, configured `-j24 -l24`): both
-focused rows pass (Qt 9/0 and 7/0, also with `QT_FATAL_WARNINGS=1`, 10/10
-repeats) beside portal-access, portal-service, portal-process-lifecycle and
-both source-boundary rows. The real resident on a zero-activation private bus
-exports both interfaces, and all 29 standard members match the installed
+focused rows pass (Qt 12/0 and 7/0, also with `QT_FATAL_WARNINGS=1`) beside
+portal-access, portal-service, portal-process-lifecycle and both
+source-boundary rows. The real resident on a zero-activation private bus
+exports all three interfaces, and all 37 standard members match the installed
 backend XML wire signatures. The fork EIS edits pass `-fsyntax-only` with the
 configured fork flags; the plugin itself has not been built or run.
 
 Still required before routing changes: the fork plugin build plus a private
 native compositor row where a real frontend session receives an EIS FD,
 injects observable input, and loses it on Close and native lock; staged
-metadata. Remaining source gaps: Clipboard (below), ScreenCast sources on a
-RemoteDesktop session, and a backend EIS sender for Notify*.
+metadata. Remaining source gaps: ScreenCast sources on a RemoteDesktop
+session, a backend EIS sender for Notify*, and persistence/restore tokens.
 
-## Clipboard gap
+## Clipboard
 
-Clipboard is not implemented and `clipboard_enabled` is always false. The
-native [clipboard service](clipboard-service.md) never returns payload bytes
-or publishes an application-backed source, and the protected, non-dumpable
-resident cannot be admitted to `ext-data-control-v1`: restricted Wayland
-globals are resolved through `/proc/<pid>/exe`, the blocker already recorded
-for [capture](../reference/portal-capture.md). The upstream `KSystemClipboard`
-path has the same requirement. The proposed successor keeps authority in the
-compositor: the fork EIS plugin owns a per-backend clipboard handle (portal
-backend only, refused and destroyed on lock) whose `AbstractDataSource`
-forwards each Wayland `requestData` FD to the backend in a *targeted*
-`selectionTransfer` signal, exposes `readSelection(mime) -> h` from the seat
-selection and targeted owner-change signals. The backend then maps
-RequestClipboard/SetSelection/SelectionWrite(Done)/SelectionRead and
-SelectionOwnerChanged/SelectionTransfer onto granted RemoteDesktop sessions,
-adding a clipboard choice to the Start consent.
+The standard `Clipboard` version 1 adjunct is a private adaptor owned by
+RemoteDesktopAdaptor on the same host, sharing its sessions; the clipboard
+method/session rules are adapted from upstream `clipboard.{h,cpp}` (David
+Redondo's LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+notice kept). `KSystemClipboard`/`QMimeData` copies are replaced by a
+compositor-owned clipboard handle, because the protected resident cannot be
+admitted to `ext-data-control-v1` (restricted globals resolve through
+`/proc/<pid>/exe`, as recorded for [capture](../reference/portal-capture.md))
+and the native [clipboard service](clipboard-service.md) exposes no payloads.
+
+RequestClipboard is accepted only before Start from the session's frontend.
+Start then adds a separate clipboard choice, off by default, to the native
+consent; only an explicit `true` opens a compositor handle, and
+`clipboard_enabled` is published after that handle exists. SetSelection makes
+the session's MIME list (at most 64, each 1–255 characters) the seat
+selection. A Wayland paste reaches the backend as the requester's own write
+FD; the backend keeps at most 16 unanswered FDs per session, emits
+SelectionTransfer with a new serial, and SelectionWrite hands that one-shot FD
+to the writer, so no clipboard bytes pass through the resident.
+SelectionWriteDone or retirement closes an unclaimed FD (the requester reads
+EOF). SelectionRead returns a pipe the compositor fills from the current seat
+selection, rechecked against the live grant at publication.
+SelectionOwnerChanged carries `mime_types` and `session_is_owner`. Signals are
+targeted to the session's frontend. Session close, actor loss, native lock or
+attachment loss release the handle and withdraw the session's selection.

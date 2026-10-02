@@ -5,10 +5,14 @@
 // SPDX-FileCopyrightText: 2026 QindaQt contributors
 // Session/device/EIS flow adapted from xdg-desktop-portal-kde 6.6.6
 // src/remotedesktop.cpp (9a5cc0e8). KWin process lookup, KNotification, the
-// tray item, fake-input and restore tokens are replaced by native ports.
+// tray item, fake-input and restore tokens are replaced by native ports; the
+// Clipboard adjunct is the private ClipboardAdaptor on the same host.
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
+#include "clipboard_adaptor_p.h"
 #include "remote_sessions_p.h"
+#include <QPointer>
 #include <QSet>
+#include <algorithm>
 #include <optional>
 
 namespace QindaQt::Services::Portal::RemoteInput {
@@ -30,15 +34,25 @@ std::optional<quint32> selectedDevices(const QVariantMap &options) {
         return std::nullopt;
     return types;
 }
-std::optional<AccessQuestion> consentQuestion(const QString &app, const QString &parent, quint32 devices) {
+constexpr auto kClipboardChoice = "clipboard";
+std::optional<AccessQuestion> consentQuestion(const QString &app, const QString &parent, quint32 devices, bool clipboard) {
     QStringList names;
     if (devices & Keyboard) names << QStringLiteral("keyboard");
     if (devices & Pointer) names << QStringLiteral("pointer");
     if (devices & Touchscreen) names << QStringLiteral("touchscreen");
-    return accessQuestion(app, parent, QStringLiteral("Allow remote control?"),
+    auto question = accessQuestion(app, parent, QStringLiteral("Allow remote control?"),
         QStringLiteral("Requested input devices: %1").arg(names.join(QStringLiteral(", "))),
         QStringLiteral("Input will reach every window on this desktop until the session ends, "
                        "the application closes it or the screen locks."), {});
+    // Clipboard sharing is a separate explicit opt-in, off unless chosen.
+    if (question && clipboard)
+        question->choices.append({QLatin1String(kClipboardChoice), QStringLiteral("Also share the clipboard"), {}, QStringLiteral("false")});
+    return question;
+}
+bool clipboardChosen(const ChoiceValues &choices) {
+    return std::any_of(choices.cbegin(), choices.cend(), [](const ChoiceValue &choice) {
+        return choice.id == QLatin1String(kClipboardChoice) && choice.value == QLatin1String("true");
+    });
 }
 }
 class RemoteDesktopAdaptor::Private {
@@ -50,6 +64,7 @@ public:
     RemoteSessions sessions;
     QHash<RequestToken, QString> asking;
     QSet<RequestToken> starting;
+    std::unique_ptr<ClipboardAdaptor> clipboard;
     Private(RequestRegistry &r, AccessConsent &c, CompositorEis &e, QDBusConnection connection)
         : requests(r), consent(c), eis(e), bus(connection), sessions(std::move(connection), r) {}
     RequestToken begin(const QDBusMessage &call, const QString &handle, const QString &path, const QString &app) {
@@ -68,17 +83,28 @@ public:
         call.setDelayedReply(true);
         bus.send(call.createErrorReply(QLatin1String(error), QStringLiteral("Remote input refused")));
     }
-    void consentCompleted(RequestToken token, RequestResponse response) {
+    void consentCompleted(RequestToken token, RequestResponse response, const ChoiceValues &choices, QObject *guardObject) {
         const QString path = asking.take(token);
         if (path.isEmpty()) return;
         auto *entry = sessions.entry(path);
         if (!entry || !sessions.live(path) || !requests.live(token) || !consent.admitted()) response = RequestResponse::Failed;
-        if (entry) entry->pending = 0;
         if (response != RequestResponse::Success) { requests.finish(token, response); return; }
+        if (!entry->clipboardRequested || !clipboardChosen(choices)) { publishStart(token, path, false); return; }
+        // The request stays pending (and retirable) until the compositor
+        // clipboard handle exists, so clipboard_enabled is never claimed early.
+        const QPointer<QObject> guard(guardObject);
+        clipboard->enable(path, [this, guard, token, path](bool enabled) { if (guard) publishStart(token, path, enabled); });
+    }
+    void publishStart(RequestToken token, const QString &path, bool clipboardEnabled) {
+        auto *entry = sessions.entry(path);
+        if (!entry || !sessions.live(path) || !requests.live(token) || !consent.admitted()) {
+            requests.finish(token, RequestResponse::Failed);
+            return;
+        }
+        entry->pending = 0;
         entry->phase = RemotePhase::Started;
-        // Clipboard sharing has no native data path yet; it is never granted.
         requests.finish(token, RequestResponse::Success, {{QStringLiteral("devices"), entry->devices},
-                                                          {QStringLiteral("clipboard_enabled"), false}});
+                                                          {QStringLiteral("clipboard_enabled"), clipboardEnabled}});
     }
     void eisOpened(quint64 ticket, const QDBusUnixFileDescriptor &fd, const QString &compositor, int cookie) {
         const QString path = sessions.sessionForTicket(ticket);
@@ -107,14 +133,18 @@ public:
     void retired(const RemoteSessions::Entry &entry) {
         if (entry.eisTicket) { eis.cancel(entry.eisTicket); refuse(entry.eisCall, kFailed); }
         if (entry.cookie) eis.close(entry.compositor, entry.cookie);
+        clipboard->retired(entry);
     }
 };
 RemoteDesktopAdaptor::RemoteDesktopAdaptor(QObject &host, RequestRegistry &requests, AccessConsent &consent,
                                            CompositorEis &eis, QDBusConnection bus)
     : QDBusAbstractAdaptor(&host), d(std::make_unique<Private>(requests, consent, eis, std::move(bus))) {
     registerAccessTypes();
+    d->clipboard = std::make_unique<ClipboardAdaptor>(host, d->sessions, consent, eis, d->bus);
     connect(&consent, &AccessConsent::completed, this,
-            [this](RequestToken token, RequestResponse response, const ChoiceValues &) { d->consentCompleted(token, response); });
+            [this](RequestToken token, RequestResponse response, const ChoiceValues &choices) {
+                d->consentCompleted(token, response, choices, this);
+            });
     // Native lock, lock uncertainty or selected-session loss ends every session.
     connect(&consent, &AccessConsent::authorityLost, this, [this] { d->sessions.clear(); });
     connect(&eis, &CompositorEis::opened, this,
@@ -166,7 +196,7 @@ quint32 RemoteDesktopAdaptor::Start(const QDBusObjectPath &handle, const QDBusOb
         return 2;
     }
     d->starting.insert(token);
-    const auto question = consentQuestion(app, parent, entry->devices);
+    const auto question = consentQuestion(app, parent, entry->devices, entry->clipboardRequested);
     if (!d->consent.admitted() || entry->phase != RemotePhase::Selected || !question) {
         d->requests.finish(token, RequestResponse::Failed);
         return 2;

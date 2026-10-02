@@ -105,6 +105,8 @@ set(foundation_files
     "remote_input/src/remote_sessions_p.h"
     "remote_input/src/remote_desktop_adaptor.cpp"
     "remote_input/src/input_capture_adaptor.cpp"
+    "remote_input/src/clipboard_adaptor_p.h"
+    "remote_input/src/clipboard_adaptor.cpp"
     "remote_input/include/qindaqt/services/portal/remote_input/compositor_eis.h"
     "remote_input/include/qindaqt/services/portal/remote_input/remote_desktop_adaptor.h"
     "remote_input/include/qindaqt/services/portal/remote_input/input_capture_adaptor.h"
@@ -127,7 +129,7 @@ foreach(source IN LISTS portal_sources)
     foreach(backend_interface IN LISTS backend_interfaces)
         if(NOT backend_interface STREQUAL "org.freedesktop.impl.portal.Settings")
             if(NOT relative IN_LIST foundation_files OR NOT backend_interface MATCHES
-                "^org\\.freedesktop\\.impl\\.portal\\.(Access|Notification|Email|Inhibit|Request|FileChooser|AppChooser|Screenshot|ScreenCast|Session|RemoteDesktop|InputCapture)$")
+                "^org\\.freedesktop\\.impl\\.portal\\.(Access|Notification|Email|Inhibit|Request|FileChooser|AppChooser|Screenshot|ScreenCast|Session|RemoteDesktop|InputCapture|Clipboard)$")
                 message(FATAL_ERROR "Portal imports an out-of-scope standard interface in ${source}: ${backend_interface}")
             endif()
         endif()

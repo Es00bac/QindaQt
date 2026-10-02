@@ -102,6 +102,10 @@ bool RemoteSessions::authenticated(const QDBusMessage &call, const QString &path
     return it != m_entries.cend() && it->app == app && it->frontend == call.service()
         && m_requests.authenticated(call) && live(path);
 }
+bool RemoteSessions::owned(const QDBusMessage &call, const QString &path) const {
+    const auto it = m_entries.constFind(path);
+    return it != m_entries.cend() && it->frontend == call.service() && m_requests.authenticated(call) && live(path);
+}
 bool RemoteSessions::requestMatches(const QString &path, const QString &request) const {
     const auto it = m_entries.constFind(path);
     const auto caller = callerForPath(request, QStringLiteral("request"));

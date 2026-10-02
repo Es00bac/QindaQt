@@ -5,6 +5,7 @@
 portal_library(qindaqt_portal_remote_input PortalRemoteInput)
 target_sources(qindaqt_portal_remote_input PRIVATE src/compositor_eis.cpp src/remote_sessions.cpp
     src/remote_sessions_p.h src/remote_desktop_adaptor.cpp src/input_capture_adaptor.cpp
+    src/clipboard_adaptor_p.h src/clipboard_adaptor.cpp
     PUBLIC FILE_SET HEADERS BASE_DIRS include FILES
     include/qindaqt/services/portal/remote_input/compositor_eis.h
     include/qindaqt/services/portal/remote_input/input_capture_adaptor.h
