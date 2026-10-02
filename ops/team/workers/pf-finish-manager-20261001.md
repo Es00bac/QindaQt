@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: working — finishing safe dependency installation and scoped Plasma retirement; preserving legacy keyrings before native handover
+- Status: working — integrating private screen-sharing dependency replacement and final delivery evidence; preserving credentials before native provider/PAM handover
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-02T23:11:49.192156+00:00 — qinda interim retired-only depclean PASS79.178s removes34/60, laptop PASS16.221s removes4/30;26 required retired packages retained each,1541/1358 non-retired packages all preserved, qinda seven app world roots kept. Both final normal mandatory-signed binary-only pretends PASS select five remaining native upgrades/no source/download. Actual legacy import remains unperformed; current provider/PAM/oldDesktop protected. Integrated independent remaining-parent facts1bf; existing sharing helper alone requires KPipeWire outside oldDesktop. Power owns small private-source bundle, Packager found explicit CMAKE_USE_DIR source repair, one corrected2job qinda build-only replay allowed only after repaired exact review; no laptop build/GPU. Root owns docs/plan/interim evidence, low priority local IO, no icon/game or forced fresh login.
 
 - 2026-10-02T22:45:43.250218+00:00 — Final Desktop signed60.7MB image independently accepted2ba; all14 native application artifacts plus requiredTrashCLI signed/build/source/full-payload PASS, immutable169bbe integrated. qinda9 app updates installedPASS80.405s and exact focused independent9metadata/7flags/15files ACCEPTf9eb; laptop6 app updates installed plusTrashCLI13.311s, all binary-only/no source/GPU. Bothhost standard legacy stores contain nonzero file bytes, no matching resident providers; actual credential import/name/PAM handover remains pending and originals preserved. Native fork/Gabbee remain installed both hosts. Root now performs reviewed app-promotion and exact retired-only interim depclean, protecting all other installed packages including oldDesktop/GNOME; remaining required Plasma will not be forced out. User resource constraint applied: no builds/GPU, serial local package work nice19/idleIO; all worker compiler leases released. No icon/game/fresh-login/physical-power completion claim.
 

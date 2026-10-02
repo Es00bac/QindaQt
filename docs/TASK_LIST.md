@@ -10,16 +10,25 @@ completion. Architectural detail and long-range milestone state remain in the
 Final production source `29f7174a` and native compositor `55d1f273` are frozen.
 The signed compositor and native Gabbee recovery service are installed through
 Portage on both machines; all 710 installed files/links pass checks on the laptop.
-The final desktop package completed compilation on qinda; one install-only
-Keyring metadata filename correction is under review before retained-build
-packaging resumes. Installed compositor/plugin and shell qualification passes
+The final desktop package is built, signed, fully verified and available on both
+hosts after the reviewed Keyring install-only metadata correction. Independent
+complete-image launch passes native Wayland, XWayland, container workflows and
+QindaQt decorations. Nine native application updates are installed on qinda and
+six on the laptop, with the required TrashCLI dependency installed on both.
+Installed compositor/plugin and shell qualification passes
 14 CTest rows, including 40 render cases at representative profiles. Native input, combined
 capture, remembered permissions, lock suppression, clipboard, shortcuts, and
 forward/reverse Alt-Tab have actual passing private-runtime evidence.
 
-Final desktop installation, activation, app-preserving Plasma dependency cleanup
-and fresh-login acceptance remain. Existing sessions and applications have not
-been terminated. Physical power/suspend qualification is not inferred from
+Scoped cleanup has removed 34 retired Plasma packages on qinda and four on the
+laptop while preserving every non-retired installed package and ordinary KDE
+application. Each host still retains 26 required retired packages. The legacy
+sharing helper's private-dependency adaptation, actual credential import, final
+desktop/provider/PAM installation, activation and complete cleanup remain.
+Native provider initialization must follow verified import; existing keyring
+files are preserved but their contents have not been copied. Existing sessions
+and applications have not been terminated. Physical power/suspend and fresh
+login qualification are not inferred from
 virtual tests. The current exact source, proof boundaries and rollback state are
 in [Handoff](HANDOFF.md).
 

@@ -10,11 +10,15 @@ running compositor processes remain alive; this is package delivery, not fresh-l
 adoption of the new compositor.
 
 The exact final desktop `0.1.0_pre20261002-r2` completed its 5,040-action
-production build on qinda. Image installation exposed one incorrect Keyring
-QML metadata filename; the retained build will resume after the isolated
-install-rule correction `8a622b4b7` and downstream package patch are reviewed.
-No final desktop binary has been produced or installed yet. Installed-header
-plugin, shell and profile qualification passes 14 CTest rows, including 40
+production build on qinda. Reviewed install-rule correction `8a622b4b7` and
+its downstream package patch repair the Keyring QML metadata filename without
+changing any of the 3,152 compiled outputs. The signed 60,661,760-byte package
+has SHA256 `b2a82255dbdc02457a5eb4cb1732e584db8f8e6111dac8979572dcd88b642354`;
+full signature/payload and release-image gates pass. Independent complete-image
+discovery passes native Wayland, XWayland, container workflows and QindaQt
+decorations in 5.645 seconds (`2ba2eb5a`). The package is available on both hosts
+but is not installed: actual keyring import must precede the native provider
+handover. Installed-header plugin, shell and profile qualification passes 14 CTest rows, including 40
 render cases and three production-shell resolutions (`0f9a2160`). Native
 protected-portal qualification passes five actual GPU/PipeWire/input/clipboard
 journeys with 15 caller and 15 driver Qt checks, zero failures/skips; the
@@ -24,10 +28,32 @@ keyboard-focus gate passes five Qt checks (`6e683e92`). The virtual scoped-displ
 power gate passes 13 Qt checks (`cdf9948b`); full physical power, suspend and
 fresh-login acceptance remain unclaimed.
 
-Target-local rollback source archives and safe Settings/Audio/unit snapshots
-are preserved on both machines. Remaining delivery work is final signed desktop
-installation, native activation checks, and removal of retired packages after
-reviewed app-preserving dependency changes. See the
+All fourteen matching native application artifacts and the required TrashCLI
+dependency have passing signed build, full-payload and source-binding receipts.
+Nine application updates are installed on qinda and six on the laptop, plus
+TrashCLI on both. The exact qinda subset has independent acceptance for nine
+package metadata/recipe matches, seven native flags and fifteen focused owned
+files (`f9eb8c5c`). Normal mandatory-signed binary-only pretends on both hosts
+select only the five remaining native upgrades, with no source build or download.
+
+App-preserving scoped Portage cleanup removed 34 retired Plasma packages on
+qinda and four on the laptop. Each still has 26 retired packages protected by
+the currently installed desktop and remaining dependencies. All 1,541/1,358
+non-retired installed packages were retained; the seven ordinary KDE applications
+on qinda are explicitly selected before removing its old KDE desktop set.
+The legacy Xwayland video-sharing helper is the only independently identified
+mandatory Plasma dependency. A bounded private-dependency adaptation is in
+progress to preserve that function without another shared Plasma library.
+
+Target-local rollback packages, source archives and safe Settings/Audio/unit/PAM
+snapshots are preserved on both machines. Existing legacy keyring/wallet files
+have nonzero sizes on both hosts; their contents were not read, and neither
+host has a confirmed running legacy provider. Actual credential import and
+application compatibility remain unqualified. Keep the existing provider and
+PAM selection until the [import contract](wiki/architecture/keyring-import.md)
+is satisfied; file preservation alone does not complete migration. Final desktop
+installation, native activation, complete retired-package cleanup and fresh
+physical login remain. See the
 [authorized plan](plans/2026-09-28-plasma-free-qindaqt.md),
 [release gates](wiki/development/releases.md) and
 [install checkpoint](wiki/development/install-checkpoint.md).

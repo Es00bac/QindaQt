@@ -70,6 +70,23 @@ archives only the Settings1 file, Audio1 console/VBAN/macro/preset state, and
 QindaQt user unit drop-ins. It excludes NetworkManager profiles and
 credentials.
 
+## Native keyring handover gate
+
+Package/image acceptance does not authorize an empty native keyring to replace
+existing credentials. Before changing Secret Service ownership or native PAM
+initialization, complete the [one-time import](../architecture/keyring-import.md)
+and verify application compatibility. A directory or backup existing is neither
+an empty-store finding nor evidence that credentials were imported. If a legacy
+provider or ordinary unlock is unavailable, retain the existing provider/PAM
+selection and keep that handover pending.
+
+Independent application dependency updates and scoped removal of unused Plasma
+packages may proceed while that gate waits. Protect every non-retired installed
+package, promote ordinary application roots before removing the old desktop set,
+and let Portage retain all still-required retired packages. Never force their
+removal to bypass the credential or installed-runtime gate. Final package
+installation and a fresh physical login remain separate acceptance evidence.
+
 ## Build and stage
 
 The stage command configures a Release tree, builds the production install
