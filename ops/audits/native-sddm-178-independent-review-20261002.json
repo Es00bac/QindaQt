@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "independent_of": "root",
+  "candidate": "178c7cc2198ad15e04ababc87998717655b147d0",
+  "decision": "SOURCE ACCEPT",
+  "blocking_findings": [],
+  "independent_checks": {
+    "candidate": "178c7cc2198ad15e04ababc87998717655b147d0",
+    "checks": {
+      "stock_normal_pam_unchanged": true,
+      "stock_autologin_pam_unchanged": true,
+      "greeter_native_equals_stock_systemd": true,
+      "sddm.pam_critical_blocks_unchanged": true,
+      "sddm.pam_native_optional_only": true,
+      "sddm.pam_retired_callbacks_absent": true,
+      "sddm.pam_native_session_after_system_login": true,
+      "sddm-autologin.pam_critical_blocks_unchanged": true,
+      "sddm-autologin.pam_native_optional_only": true,
+      "sddm-autologin.pam_retired_callbacks_absent": true,
+      "sddm-autologin.pam_native_session_after_system_login": true,
+      "native_normal_password_use_authtok_retained": true,
+      "default_off_native": true,
+      "native_systemd_allowed": true,
+      "native_elogind_rejected": true,
+      "native_requires_desktop_r2": true,
+      "stock_has_no_native_desktop": true
+    },
+    "metadata": {
+      "EAPI": "8",
+      "IUSE": "+elogind qindaqt systemd test +X",
+      "REQUIRED_USE": "^^ ( elogind systemd ) qindaqt? ( systemd )",
+      "DEPEND": "acct-group/sddm acct-user/sddm >=dev-qt/qtbase-6.7.2:6[dbus,gui,network] >=dev-qt/qtdeclarative-6.7.2:6 sys-libs/pam x11-libs/libXau x11-libs/libxcb:= elogind? ( sys-auth/elogind[pam] sys-power/upower ) systemd? ( sys-apps/systemd:=[pam] )",
+      "RDEPEND": "acct-group/sddm acct-user/sddm >=dev-qt/qtbase-6.7.2:6[dbus,gui,network] >=dev-qt/qtdeclarative-6.7.2:6 sys-libs/pam x11-libs/libXau x11-libs/libxcb:= elogind? ( sys-auth/elogind[pam] sys-power/upower ) systemd? ( sys-apps/systemd:=[pam] ) X? ( x11-base/xorg-server ) !systemd? ( gui-libs/display-manager-init ) qindaqt? ( >=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2 ) virtual/tmpfiles",
+      "BDEPEND": "dev-python/docutils >=dev-build/cmake-3.25.0 >=dev-qt/qttools-6.7.2[linguist] kde-frameworks/extra-cmake-modules:0 virtual/pkgconfig app-alternatives/ninja >=dev-build/cmake-3.28.5 virtual/pkgconfig",
+      "SRC_URI": "https://github.com/sddm/sddm/archive/4fe234bd475ccb2a1e5aa194bec5c3aad08cebe6.tar.gz -> sddm-0.21.0_p20250502-4fe234bd.tar.gz https://dev.gentoo.org/~asturm/distfiles/sddm-0.21.0-pam.tar.xz"
+    },
+    "elapsed_seconds": 0.37302330503007397,
+    "patches_logrotate_unchanged": {
+      "sddm-0.21.0_p20250310-set-XAUTHLOCALHOSTNAME.patch": "dbb74adcb876cfb30b094df3d0b20ad686fb25e49f0cdcb404d2a6caf8a309a8",
+      "sddm-0.21.0_p20250310-Xsession-xinitrc.patch": "739e2cdffaa76c0136e33ef846efb6716fc304a18efc47cb26e513af013b5e09",
+      "sddm.logrotate": "010029262405fc4ee15d959b4c78789c6e81908123f25f1ac3d5cf825f847f86",
+      "sddm-0.20.0-respect-user-flags.patch": "254fb5084b646ac9cc62c57c8ec5da65e9bac2980848b56a0aafe78fd2d89ecb"
+    },
+    "archive": {
+      "bytes": 676,
+      "sha256": "6cb32da5f8298c4f70db5616b14d1359fdc2833bbfe83602e6e46b51b0d917f2",
+      "size_blake2b_sha512_match": true
+    },
+    "recipe_sha256": "cd947e6cb83687b5ae4db8d6bd8734c3e30c9736875b4a248afc196d7a4cd8c8",
+    "source_prepare": "Actual candidate src_prepare executed; unrelated cmake source preparation stubbed, no build/install/PAM authentication performed"
+  },
+  "count": 17,
+  "xml_metadata_valid": true,
+  "shell_syntax_exit": 0,
+  "original_recipe_sha256": "e43759df841f00669383851ca0e633017f92e3e5a69dddf0a6108bca28db901e",
+  "candidate_recipe_sha256": "cd947e6cb83687b5ae4db8d6bd8734c3e30c9736875b4a248afc196d7a4cd8c8",
+  "metadata_xml_sha256": "3427d00f4b79290e3f24b440e95d786e12625bdc06cade947b5bb1d67d746ca1",
+  "evidence": {
+    "path": "build/sddm-178-review/independent-checks.json",
+    "sha256": "70814dcd266b545b8c278a911528b8b9166ce22c8dc827f8237f2e37a5255e7d"
+  },
+  "limits": [
+    "Actual candidate PAM transformation executed against official archive; unrelated cmake source preparation was stubbed and no compiler/install/authentication run.",
+    "Greeter and critical normal/autologin authentication/session policy remain unchanged; only optional keyring callbacks adapted.",
+    "Native systemd session callback ordering retained; no password available for autologin, native prompt fallback remains.",
+    "Source acceptance does not qualify login/PAM session/token ownership or migration; manager installation/new-login gates remain.",
+    "No change to stock profile unless qindaqt USE explicitly enabled; Power f5 profile line needs this exact SDDM recipe integrated."
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "independent_of": "pf_capture_privacy_coverage",
+  "candidate": "f5a45e904e93f246d2e1d684f1d8e73f993db46b",
+  "previous_source_accepted": "419e33021ef3ebd3b2e75fe62a5b7c73718b9e09",
+  "decision": "SOURCE ACCEPT",
+  "blocking_findings": [],
+  "independent_checks": {
+    "exit_code": 0,
+    "elapsed_seconds": 0.48052913998253644,
+    "fresh_metadata_packages": 7,
+    "fresh_metadata_matches": true,
+    "original_recipe_sha256": "3ee9339480d997443a1ab5a742c7025f624c3054881588e784a8de22119d716d",
+    "candidate_recipe_sha256": "3c4b552e5b50a40f622879b039174f3b3b463db5db8ec3cca4fda6f4b7ff5cbe",
+    "archive": {
+      "bytes": 620687,
+      "sha256": "c2970f16d6afb66ecddfca767d743936c86239bff936eed7fd7597a678414b63",
+      "size_blake2b_sha512_match": true
+    },
+    "profile_sddm_requires_root_candidate": "178c7cc2198ad15e04ababc87998717655b147d0",
+    "test_script_sha256": "131650d4f5efed65ceba598425e9ffd4aa0d32df4a10251508aba917097422b2"
+  },
+  "actual_laptop_original_sha256": "3ee9339480d997443a1ab5a742c7025f624c3054881588e784a8de22119d716d",
+  "semantics": [
+    "Only GTK provider substitution in matching laptop Pinentry1.3.3-r1; exact original laptop recipe verified directly, SELinux/GCR/libsecret/Qt/patch choices retained.",
+    "Two unchanged original DIST rows added for official1.3.3; SIZE+BLAKE2B+SHA512 verified.",
+    "Checker covers both desktop1.3.2 and laptop1.3.3; exact snapshot10tests pass.",
+    "One native profile qindaqt SDDM flag enables independently accepted178 recipe, requires coordinated integration."
+  ],
+  "evidence": {
+    "kauth-6.27.0.tar.xz": {
+      "sha256": "741934765f0c9f1c535598203fbad3f1b97231cc683a218a7f39fab948c13eab",
+      "bytes": 2273648
+    },
+    "kirigami-addons-1.12.1.tar.xz": {
+      "sha256": "c543a493ce5875f405fb1c9ff6d531060ed082cc6d710e56d46ac42d164207bb",
+      "bytes": 2815592
+    },
+    "ten-tests.log": {
+      "sha256": "92dd3c9c5432a3b7407e0ecfe025315d50463953164814f9d31df1abf26a750f",
+      "bytes": 1549
+    },
+    "metadata.json": {
+      "sha256": "fbba3c9e91804c113ec8cb24002bea23f219a5afe66e836d97c6a0ca6acb8de0",
+      "bytes": 10916
+    },
+    "status.json": {
+      "sha256": "8fdf261ebf40d958c806c7e437256f375943e185b4cffc333bdae4448213842c",
+      "bytes": 661
+    },
+    "kdeconnect-kde-26.04.3.tar.xz": {
+      "sha256": "505b58b52630a662a8f6a2c50c58eda1de66779762c31d5ea5247b48bba52561",
+      "bytes": 691476
+    }
+  },
+  "limits": [
+    "No build/install/PAM/GUI/credential claim.",
+    "Ordinary runtime provider cycles and coldKAuth6.27 caveat from419/851 remain truthful.",
+    "Signature rows preserved, verify-sig not separately qualified.",
+    "Profile change requires root178 SDDM recipe; current stockSDDM does not recognize newflag."
+  ]
+}
