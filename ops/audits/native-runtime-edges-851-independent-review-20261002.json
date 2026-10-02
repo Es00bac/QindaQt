@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "author": "pf_capture_privacy_coverage",
+  "observed_at": "2026-10-02T21:08:23+00:00",
+  "reviewed_commit": "851e2c0f6ae434128db517946b5f391101d3b674",
+  "verdict": "SOURCE ACCEPT",
+  "blocking_findings": [],
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "db8d4dd1c2db8f18eeb5e8db7d5f8424ccd010c91311ad14e369de1aa9c06d46"
+    },
+    {
+      "path": "dev-libs/kirigami-addons/Manifest",
+      "sha256": "67c8e83da8fde7d7fca545bf9e0beaec0ccc01ce4f66ea08f68e80a4ce729072"
+    },
+    {
+      "path": "dev-libs/kirigami-addons/QINDAQT-PROVENANCE.md",
+      "sha256": "9e91a41f43a90aaaa5bfc5c2e907fb070d31089b5f0cee77bff88faeb10decc2"
+    },
+    {
+      "path": "dev-libs/kirigami-addons/kirigami-addons-1.12.1-r1.ebuild",
+      "sha256": "b255d435dfa870d85dd36150d427dcb98390d327a879feee334ae75d1a715c1b"
+    },
+    {
+      "path": "dev-libs/kirigami-addons/metadata.xml",
+      "sha256": "0e3474b5e35be6e9756b6a1aaed32d0531c0990e2f9c0df961d849fa790a2561"
+    },
+    {
+      "path": "kde-frameworks/kauth/Manifest",
+      "sha256": "9a732d7935883f520ae6dcf15c75f2545ea6118e4e11b6e1a439c8b6b03e2c41"
+    },
+    {
+      "path": "kde-frameworks/kauth/QINDAQT-PROVENANCE.md",
+      "sha256": "48ab9c7ffd7adfc08872e9115973a7d9aba7505117dd84fad06b3576f47f94b6"
+    },
+    {
+      "path": "kde-frameworks/kauth/kauth-6.27.0-r1.ebuild",
+      "sha256": "c96f9ebc6c36a08625769a3fd4838758caa9786f44081c657051943ed672d3a8"
+    },
+    {
+      "path": "kde-frameworks/kauth/metadata.xml",
+      "sha256": "77ee1ab93ae0abe8515be0b1f533f7dc8f64bc5ecb708f2476a7361a9f55998a"
+    },
+    {
+      "path": "kde-misc/kdeconnect/Manifest",
+      "sha256": "f6d9512e007336ba122b853e074d219eac87bb6b2778523b0fc6a1b9d168dd82"
+    },
+    {
+      "path": "kde-misc/kdeconnect/QINDAQT-PROVENANCE.md",
+      "sha256": "0e7bbabe442e576752e70d51fe1820eebcfe5b827aac2dacc220f27bd39d62e2"
+    },
+    {
+      "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-openssl4.patch",
+      "sha256": "a340ba21b7021c3a642869bc90cd56b8a78664f14f514a4e1e3fd54315ba6923"
+    },
+    {
+      "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-solid-6.26-freeze.patch",
+      "sha256": "208c642da2585aafef0a7b2727b84f1d687eb49c08eb837569c16d000b516cd7"
+    },
+    {
+      "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-with_x11.patch",
+      "sha256": "63485bc2ad8840513cef2fa4cbc781c4da28ef0b78ca920c922b5ffd16c22405"
+    },
+    {
+      "path": "kde-misc/kdeconnect/kdeconnect-26.04.3-r4.ebuild",
+      "sha256": "9dec9446f3fede26505b2d77ac05a31d75836ff13737a80dcb53322d991c1ea9"
+    },
+    {
+      "path": "kde-misc/kdeconnect/metadata.xml",
+      "sha256": "50942ddd8e597d017d829999542d8b3e779c53b306d8542d6f3af16eebb96ca0"
+    },
+    {
+      "path": "profiles/qindaqt/systemd/package.use",
+      "sha256": "b56dcfcfbab3fab44111b25a3119d2de999a2d3285ef9d0a13feed938063a7a1"
+    },
+    {
+      "path": "tests/native_runtime_edges.py",
+      "sha256": "fbe4575e3aaa3a1dc2af4e132c4ece7f187866c5d0b3d9a59b4bae2a2306f2fc"
+    }
+  ],
+  "independent_checks": {
+    "original_recipe_patch_bytes": [
+      {
+        "path": "kde-frameworks/kauth/kauth-6.27.0-r1.ebuild",
+        "original_sha256": "4569989eeb91e209c50f38330388c3497ca29d97d25a354e9bc827a93ea92ed9",
+        "candidate_sha256": "c96f9ebc6c36a08625769a3fd4838758caa9786f44081c657051943ed672d3a8"
+      },
+      {
+        "path": "dev-libs/kirigami-addons/kirigami-addons-1.12.1-r1.ebuild",
+        "original_sha256": "d7d6c889d7a23285c5be8724acf4e2fc352b3b40bcee2d01437e5a78c3f3db31",
+        "candidate_sha256": "b255d435dfa870d85dd36150d427dcb98390d327a879feee334ae75d1a715c1b"
+      },
+      {
+        "path": "kde-misc/kdeconnect/kdeconnect-26.04.3-r4.ebuild",
+        "original_sha256": "defd9fef4d2dff702bc82dbc4555ff6db79a1773d081946d82be578c95225606",
+        "candidate_sha256": "9dec9446f3fede26505b2d77ac05a31d75836ff13737a80dcb53322d991c1ea9"
+      },
+      {
+        "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-openssl4.patch",
+        "original_sha256": "a340ba21b7021c3a642869bc90cd56b8a78664f14f514a4e1e3fd54315ba6923",
+        "candidate_sha256": "a340ba21b7021c3a642869bc90cd56b8a78664f14f514a4e1e3fd54315ba6923"
+      },
+      {
+        "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-solid-6.26-freeze.patch",
+        "original_sha256": "208c642da2585aafef0a7b2727b84f1d687eb49c08eb837569c16d000b516cd7",
+        "candidate_sha256": "208c642da2585aafef0a7b2727b84f1d687eb49c08eb837569c16d000b516cd7"
+      },
+      {
+        "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-with_x11.patch",
+        "original_sha256": "63485bc2ad8840513cef2fa4cbc781c4da28ef0b78ca920c922b5ffd16c22405",
+        "candidate_sha256": "63485bc2ad8840513cef2fa4cbc781c4da28ef0b78ca920c922b5ffd16c22405"
+      }
+    ],
+    "six_tests": {
+      "command": [
+        "python3",
+        "/home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-native-runtime-edges-20261002/tests/native_runtime_edges.py",
+        "--evidence",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-release-contract-review-20261002/build/power-overlay-review"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.44128885498503223,
+      "originals_candidate_bytes_verified": [
+        {
+          "path": "kde-frameworks/kauth/kauth-6.27.0-r1.ebuild",
+          "original_sha256": "4569989eeb91e209c50f38330388c3497ca29d97d25a354e9bc827a93ea92ed9",
+          "candidate_sha256": "c96f9ebc6c36a08625769a3fd4838758caa9786f44081c657051943ed672d3a8"
+        },
+        {
+          "path": "dev-libs/kirigami-addons/kirigami-addons-1.12.1-r1.ebuild",
+          "original_sha256": "d7d6c889d7a23285c5be8724acf4e2fc352b3b40bcee2d01437e5a78c3f3db31",
+          "candidate_sha256": "b255d435dfa870d85dd36150d427dcb98390d327a879feee334ae75d1a715c1b"
+        },
+        {
+          "path": "kde-misc/kdeconnect/kdeconnect-26.04.3-r4.ebuild",
+          "original_sha256": "defd9fef4d2dff702bc82dbc4555ff6db79a1773d081946d82be578c95225606",
+          "candidate_sha256": "9dec9446f3fede26505b2d77ac05a31d75836ff13737a80dcb53322d991c1ea9"
+        },
+        {
+          "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-openssl4.patch",
+          "original_sha256": "a340ba21b7021c3a642869bc90cd56b8a78664f14f514a4e1e3fd54315ba6923",
+          "candidate_sha256": "a340ba21b7021c3a642869bc90cd56b8a78664f14f514a4e1e3fd54315ba6923"
+        },
+        {
+          "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-solid-6.26-freeze.patch",
+          "original_sha256": "208c642da2585aafef0a7b2727b84f1d687eb49c08eb837569c16d000b516cd7",
+          "candidate_sha256": "208c642da2585aafef0a7b2727b84f1d687eb49c08eb837569c16d000b516cd7"
+        },
+        {
+          "path": "kde-misc/kdeconnect/files/kdeconnect-26.04.3-with_x11.patch",
+          "original_sha256": "63485bc2ad8840513cef2fa4cbc781c4da28ef0b78ca920c922b5ffd16c22405",
+          "candidate_sha256": "63485bc2ad8840513cef2fa4cbc781c4da28ef0b78ca920c922b5ffd16c22405"
+        }
+      ]
+    },
+    "test_methods": 6,
+    "failed": 0,
+    "reported_test_seconds": 0.28,
+    "fresh_Portage_aux_get": {
+      "packages": 3,
+      "fields": [
+        "RDEPEND",
+        "DEPEND",
+        "PDEPEND",
+        "IUSE",
+        "SRC_URI"
+      ],
+      "matches_candidate_metadata": true,
+      "receipt": {
+        "path": "build/power-overlay-review/independent-metadata.json",
+        "sha256": "626f99b27fe7b61be98447ab03c84f585c781c5c3cb0b6f45467bcb0fa6bead5"
+      }
+    },
+    "fresh_native_profile_use": {
+      "packages": 7,
+      "matches_author_evidence": true,
+      "receipt": {
+        "path": "build/power-overlay-review/independent-profile-use.json",
+        "sha256": "c75da903e42f2098032a3ee5a58c4caf6c40310e56a8ceca19c018f4f677c961"
+      }
+    },
+    "archives": [
+      {
+        "name": "kauth-6.27.0.tar.xz",
+        "url": "https://download.kde.org/stable/frameworks/6.27/kauth-6.27.0.tar.xz",
+        "bytes": 2273648,
+        "sha256": "741934765f0c9f1c535598203fbad3f1b97231cc683a218a7f39fab948c13eab",
+        "manifest_matches_original": false,
+        "manifest_line": "DIST kauth-6.27.0.tar.xz 2273648 BLAKE2B 7d6818a7cecee90209b11dcdcfbc5907b50620fb4c8bce5a91e6036cbabb0deef1d109054d696109a35b2bfd7add6eacfa8f21f0fe83ea0bdaadb90ea8934d8f SHA512 990416f0bc3709d4957530799266d57d0bea3dab4f30250deecc1fb92fc825fe8261a24eba4d8258b05f5a0ca244f7e63f5a0532c5bc873c37ee59aee407d986",
+        "independently_verified_sha256": "741934765f0c9f1c535598203fbad3f1b97231cc683a218a7f39fab948c13eab"
+      },
+      {
+        "name": "kirigami-addons-1.12.1.tar.xz",
+        "url": "https://download.kde.org/stable/kirigami-addons/kirigami-addons-1.12.1.tar.xz",
+        "bytes": 2815592,
+        "sha256": "c543a493ce5875f405fb1c9ff6d531060ed082cc6d710e56d46ac42d164207bb",
+        "manifest_matches_original": true,
+        "manifest_line": "DIST kirigami-addons-1.12.1.tar.xz 2815592 BLAKE2B 4635e756e7c463b0d7c091db2714a23cf0a005666abf05063be96a0221b4147ec3d701f1b1366014769821fea6f55f9e84ed4aa899b222adccd5b2870a10e267 SHA512 365021b896c8a6ad7bfc1e98ff554040bdc50c109e25b362e8e4dc9219b721cf68092d0cef5b64884c9cee6367d65377621cccd0a9fdd8a79a515c739b136c2d",
+        "independently_verified_sha256": "c543a493ce5875f405fb1c9ff6d531060ed082cc6d710e56d46ac42d164207bb"
+      },
+      {
+        "name": "kdeconnect-kde-26.04.3.tar.xz",
+        "url": "https://download.kde.org/stable/release-service/26.04.3/src/kdeconnect-kde-26.04.3.tar.xz",
+        "bytes": 691476,
+        "sha256": "505b58b52630a662a8f6a2c50c58eda1de66779762c31d5ea5247b48bba52561",
+        "manifest_matches_original": true,
+        "manifest_line": "DIST kdeconnect-kde-26.04.3.tar.xz 691476 BLAKE2B 1aa1ff86a4250b8ebda4d155e75b5ee2c3caf9b899cf29f301bb895843b759f8f0bb9fdc8742ad4a2cab9701e6919f2b07311dabac6af2f8bb00db2585c431f4 SHA512 f8d575310e48b2daf6bd354a4731618e27c602903e4e7f1b4e9c07c28e7e6c701b3ff4bdc61fc6c7061f790f5996592cf89fe6c527c699fb4c24a800513fc42c",
+        "independently_verified_sha256": "505b58b52630a662a8f6a2c50c58eda1de66779762c31d5ea5247b48bba52561"
+      }
+    ],
+    "review_evidence": [
+      {
+        "path": "build/power-overlay-review/six-tests.log",
+        "sha256": "40873cc6f9d37053cb6711073428ecf25249aefb6d6fe4d40272e49eab23fc55"
+      },
+      {
+        "path": "build/power-overlay-review/status.json",
+        "sha256": "9f29b63ceff0060ca77ad04024430db6f4e057363e63b0205a80a380feb57600"
+      },
+      {
+        "path": "build/power-overlay-review/kauth-6.27.0-r1.ebuild.diff",
+        "sha256": "a43ae5867b4a25ac99311414550a6396cc751459933613560bc3657c272021e8"
+      },
+      {
+        "path": "build/power-overlay-review/kdeconnect-26.04.3-r4.ebuild.diff",
+        "sha256": "1b60484333cbb576cd7e97fa6f58b69949a18b0d9ea9847eaea9e0f6b269fc81"
+      },
+      {
+        "path": "build/power-overlay-review/kirigami-addons-1.12.1-r1.ebuild.diff",
+        "sha256": "cd610b57c11f6592c34d8a67624f6164d9b21f5e8df432f546cc9033a4d2d886"
+      }
+    ]
+  },
+  "findings": [
+    "KAuth removes only policykit-gated KDE session-agent PDEPEND; policykit/PolkitQt discovery, exact KF dependencies, source/tests/configure remain.",
+    "Kirigami removes only unused libplasma atom; existing modules/framework/QML/multimedia dependencies remain.",
+    "KDEConnect default-on plasmoid preserves stock behavior; native-profile OFF removes only package-only CMake plasmoid subtree and corresponding libplasma atom. Real app/daemon/indicator/SMS/CLI/core/plugins preserved.",
+    "Four native-profile USE lines opt out only sloom globalmenu, xdg-utils plasma, lxqt-config monitor and KDEConnect plasmoid; installed application dependencies/versions remain.",
+    "Original3Gentoo patches and recipe/metadata copyright/license/upstream attribution retained; archives/manifests/provenance bound.",
+    "Fresh Portage metadata and effective nativeprofile USE match provided source evidence; no authorization backend downgrade."
+  ],
+  "limits": [
+    "Source-only acceptance; no compile/install/application-runtime/nativePolkit registration smoke approval.",
+    "KAuth6.27 strict coreaddons/windowsystem6.27 deps absent from current Gentoo source tree: pkgcheck cold-profile resolver fails. Existing hosts already have matching6.27; no widened constraints. Fresh-host reproducibility remains separate blocker until exact dependency sources/packages provided.",
+    "Inherited nonblocking pkgcheck missingremote-id/emptyIUSE/potentialstable warnings retained.",
+    "KAuth archive Manifest newly measured from official source; original Gentoo DIST unavailable, not claimed preserved old checksum.",
+    "Six tests isolate new CMake plasmoid decision; unchanged upstream patches/ecm fullprep not executed in these tests.",
+    "Initial reviewer freshmetadata extraction omitted customrepository env and got PortageKeyError; setting exact recorded PORTAGE_REPOSITORIES/configroot in independent extraction resolves, candidate source unchanged.",
+    "Later Claude wrapper/native-provider extension is a new candidate needing separate review; thisacceptance exact851 only."
+  ]
+}
