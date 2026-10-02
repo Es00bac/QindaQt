@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — exact419 native provider source handed off; different review and build grant pending
+- Status: available — exactf5 matching two-host provider source handed off; review/build grant pending
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -95,3 +95,5 @@
 - 2026-10-02T21:18:26Z — Root authorized Claude qindaqt conditional and generic pinentry/SecretService virtual adaptation. Wrapper/vendor/control/support unchanged;10 focused checks PASS0/.320s,7 requested package build-dependency checks all installed. Preserved failed broad/deep newuse selector; targeted no-global-newuse graph underway. No compile/install/credential action.
 
 - 2026-10-02T21:23:29Z — Exact419e330 source candidate pushed:10checksPASS0/.348s,3recipeBash/XMLPASS,actual selectedPortage graphPASS12.259s/nativeDesktop+trash/no retired descendants. Runtime SCC accepted distinctly frombuild-order; noacyclic/runtimeclaim.7qinda builddep rows allinstalled. LaptopPinentry1.3.3 correction reported, noappdowngrade/build/install/credentials/sessionaction. ReviewerInputclaimactive; ownboardavailable/nocompilerlease.
+
+- 2026-10-02T21:26:38Z — Exactf5a45e9 successor pushed afterapprovedlaptopmatching1.3.3-r1/sourcechecksumproof; SDDMnativeprofileflag only forroot178.10checksPASS0/.315s/bothversions; firstmetadataERROR preserved/fixedcommentplacement. Actualqinda13CPV/39builddep rowsparsed/nomissing. Minimalqinda13/laptop10targets excludeabsentapps/nodowngrade; shared14inclSDDMseparategate. Ownboardavailable, nocompile/install/config/credentialaction; Input exactreviewpending.
