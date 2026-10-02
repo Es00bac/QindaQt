@@ -60,6 +60,7 @@ public:
         if (!active || !attachment.live() || !attachment.sameBus(bus) ||
             settings.state() != Services::SettingsClient::ClientState::Ready || !settings.snapshot() ||
             settings.snapshot()->owner != settings.currentOwner() || !power.hasSnapshot() ||
+            !power.snapshot().capabilities.testFlag(Power::Capability::Supplies) ||
             (power.state() != Power::PowerClientState::Ready && power.state() != Power::PowerClientState::Degraded)) return std::nullopt;
         const auto source = selectPowerSourceProfile(power.snapshot());
         if (!source) return std::nullopt;
