@@ -1,12 +1,12 @@
-# Native source profile policy implementer
+# Native power policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: working — inspect and design bounded native critical-battery countdown/action boundary
+- Status: available — critical countdown candidate verified; exact independent review requested
 - Base: a50afb656c4857048fcacc9703cbeede1eac71dc
 - Branch: worker/pf-critical-battery-sol-20261001
 - Worktree: .cache/pf-critical-battery-sol-20261001
 - Ownership: new cohesive critical-battery policy, focused tests, primary power docs and new coordinated ADR; own board/messages. Cross-module assembly/dependency/public changes require manager coordination.
-- Compiler/private runtime: no lease; graphics/reviewer queues own resources
+- Compiler/private runtime: both released; no live test/build process owned
 
 
 ## Updates
@@ -41,3 +41,5 @@
 - 2026-10-02T00:16:39Z — Manager approved ADR0331/public Hibernate extension/private SessionActions dependency and notified root compiler ownership. Cohesive countdown + confined actionable notification producer + exact protected Hibernate extension authored; synchronous admission withdrawal fences delayed Can callbacks, positive expiry bounds unknown Notify IDs. Detailed episode/uncertainty/closure design posted before crossmodule edits. Source checkpoint only; focused executable fixtures still in progress, no gate/lease claim.
 
 - 2026-10-02T00:42:02Z — Actual resident critical fixture now authored with real Settings1/notification host and token-authenticated public presentation cancellation; injected protected Sleep1/power-off and separate bounded wire-fault actors.23 behavior rows cover configured actions, fences, late callbacks, uncertainty/no replay, finite unknown-ID expiry and strict typed bounds. New public Hibernate client contract row added. Source-only, compilation/runtime still pending; requested focused qinda leases after push, no laptop heavy work.
+
+- 2026-10-02T01:00:30Z — Exact241ff fresh qinda strict Debug configure and six-target build PASS45.52s/47.03s/182 Ninja actions with accepted source690 prefix; compiler PID493136 absent after release, minimum14.25GB. First actual resident suspend countdown3/0/0 PASS5.58s; frozen full9/9 CTests101/0/0 Qt PASS118.99s including23 critical behaviors25/0/0 and unchanged Power65/0/0 plus SessionActions11/0/0. Both resources released; first3/full95 observed PIDs and first1/full51 roots absent, eight cache/executable hashes unchanged, runtime min13.07GB. Qinda strict docs486 pages/static PASS before final docs-only verification update. Available for independent review repairs or bounded public power-contract help; no installed cutover, hardware action, wholePF2 completion or new path claim.

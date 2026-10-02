@@ -134,8 +134,9 @@ regression, unsupported/provider loss,
 hold limit admission changes, known rejection, acquisition/release timeout
 no-replay, balanced deferral and actual targeted manual ProfileReleased. The daemon
 has no host include or activation directory. These are private fixtures, not
-installed or physical power qualification. Idle scopes stay zero; PF2 lid and
-critical countdown, full idle policy, and PowerDevil retirement remain separate.
+installed or physical power qualification. Idle scopes stay zero; PF2 lid,
+full idle policy and PowerDevil retirement remain separate. Critical countdown
+has its own optional composition below.
 
 ## Native critical-battery countdown
 
@@ -169,5 +170,8 @@ none/default/legacy admission, warning/AC/Settings/provider/action-owner fences,
 late capability and notification replies, revision regression, finite unknown-ID
 expiry, uncertain no-replay, and strict 5–300-second typed bounds. Its wire fault
 rows are separate from the real resident notification host/user presenter rows.
-Private runtime verification remains the acceptance gate for this source slice;
-no installed/hardware qualification or whole PF2 completion is implied.
+The focused private gate passes all 23 behavior rows (25 Qt checks including
+fixture lifecycle), alongside the unchanged Power and additive SessionActions
+gates: nine CTests and 101 Qt checks, with zero failures or skips. The tested
+resident remains dormant by default; installed/hardware qualification, lid/full
+idle behavior and PowerDevil retirement remain separate PF2 boundaries.
