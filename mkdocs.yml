@@ -513,4 +513,4 @@ nav:
       - "0318: Native portal foundation": adr/0318-native-portal-foundation.md
       - "0322: Native portal choosers": adr/0322-native-portal-choosers.md
       - "0324: Native portal capture": adr/0324-native-portal-capture-boundaries.md
-      - "0336: Native monitor batches and cursor modes": wiki/adr/0336-native-monitor-batches-and-cursor-modes.md
+      - "0336: Native monitor batches and cursor modes": adr/0336-native-monitor-batches-and-cursor-modes.md
