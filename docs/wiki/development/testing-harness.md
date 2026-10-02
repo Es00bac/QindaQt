@@ -4615,3 +4615,18 @@ publication is the negative control. Exact63e33ecd passes7/7 Qt startup rows and
 checks; the eager negative fails at premature public name presence. These focused
 gates do not resolve historical intermittent native response2 by inference and
 do not replace the original native pixel/frame/privacy matrix.
+
+### PipeWire decoder target retirement
+
+`qindaqt.portal-decoder-target` runs its own private PipeWire/WirePlumber policy
+graph, actual default metadata and two SPA video source nodes. Available explicit
+targets must deliver mapped frames and link to their exact source. The destructive
+row removes the resolved offered node immediately before actual connection; the
+unrelated default remains present, and the corrected consumer must fail with zero
+frames. Its linker hook exists only in this separate test target. The old ca299
+CPP/header can be compiled unchanged against that same hook for a meaningful
+negative control, with actual fallback link/node/frame evidence required rather
+than treating any failing test as proof. `run_decoder_graph.py` preserves private
+logs, hashes, process exits and cleanup under decoder-graph-evidence. Native
+frontend remote permission restrictions and original GPU pixel/privacy gates are
+separate and unchanged.

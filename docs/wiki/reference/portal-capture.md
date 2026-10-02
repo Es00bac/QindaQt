@@ -345,3 +345,21 @@ the monitored success does not resolve that recurring prerequisite. Full matrix
 and independent review remain held, and no routing or milestone is advanced.
 All earlier blank PNG, two-frame and startup-order failures remain retained.
 No installed routing or full PF19 completion is claimed.
+
+### Decoder target retirement and no fallback
+
+The test-owned PipeWire decoder resolves the exact frontend-offered node ID to
+its authentic current object.serial after correlated remote registry sync. It
+sets `node.dont-fallback=true` as well as the explicit target and DONT_RECONNECT:
+that stream flag alone permits an initial default-target choice if the selected
+node disappears before linking. Registry removal still clears the retained
+serial, and no fallback/default node becomes a substitute capture result.
+
+The separate `qindaqt.portal-decoder-target` transport gate uses an actual private
+PipeWire/WirePlumber graph with two installed SPA video test sources. A test-only
+linker wrapper retires the exact offered source after registry resolution and
+before real pw_stream_connect while the distinct configured default stays live.
+The same fixture can link a byte-identical ca299 decoder as the negative control;
+no decoder API or production capture authorization seam is added. This graph
+fixture does not qualify native compositor pixels or broaden portal remote node
+permissions. Original native pixel/frame/privacy assertions remain required.
