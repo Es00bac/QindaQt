@@ -1,6 +1,6 @@
 # Native shortcuts adaptation worker
 
-- Status: working — hand off qualified shortcut consumers and independently review the manager capture candidate
+- Status: working — adapt existing tests for native Shortcuts compositor and consent runtime
 - Identity: qinda_icon_brand_audit
 - Base: desktop7358b792874f06eb13e00dcd0780c1ee8a453e7a; fork68c4d74f903b7e8990dd5fd5d509ec8154eac1d1
 - Ownership: native shortcut registry/runtime, compatibility endpoint/input hooks, Shortcuts1 boundary, Settings adapter, GlobalShortcuts portal/helper, focused tests/docs; tiny shared registrations coordinated with manager
@@ -20,3 +20,5 @@
 - 2026-10-02T17:48:31+00:00 — Strict consumer/module/helper build EXIT0; three focused CTests PASS in0.29s against actual core922211. Bridge proves separate authenticated frontend, consent cancellation and frontend-loss binding revocation. Final candidate/docs receipt preparation; root runtime selection and displayed/compositor gates remain held.
 
 - 2026-10-02T17:50:24+00:00 — Final desktopfc4e0d45dc7c14cf0723efa15e1f259467436a21 preserved in qinda hub. Exact committed source matches all nine temporary compiler-transfer files. Strict MkDocs EXIT0 (9.89s), links/navigation EXIT0 (491 documents). Native capture independent exact-candidate source review claimed; waiting manager native receipt, no extra compile/GPU.
+
+- 2026-10-02T17:58:50+00:00 — Independently accepted exact captureef362e9d25ec33c6c6090f9fdebc63c875efa49f/fork496a7e7e222c88139b4b3fbd7ee41e97427f0c3f after source and actual retained receipt review:18 Qt rows/10 behavior rows, four AMD render-node groups, no cleanup/core findings. Own report/hash-bound JSON authored. Claimed manager-approved native Shortcuts runtime fixture adaptation; no shared build edits/lease.
