@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import runpy
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -14,6 +15,49 @@ CONTRACT = runpy.run_path(
 )
 ContractError = CONTRACT["ContractError"]
 verify_runtime_output = CONTRACT["verify_runtime_output"]
+verify_desktop_ebuild = CONTRACT["verify_desktop_ebuild"]
+
+
+class NativePackageTests(unittest.TestCase):
+    # A complete native package fixture, independent of the checker constants.
+    recipe = '''QINDAQT_COMMIT="0123456789012345678901234567890123456789"
+=gui-wm/qindaqt-kwin-6.6.6_p1-r3:=
+=kde-plasma/layer-shell-qt-6.6.6*:6=
+=kde-plasma/kwayland-6.6.6*:6=
+>=kde-frameworks/kconfig-6.0:6=
+>=kde-frameworks/kidletime-6.0:6=
+>=kde-frameworks/kio-6.0:6=
+>=kde-frameworks/kservice-6.0:6=
+kde-misc/kio-fuse net-wireless/bluez sys-apps/xdg-desktop-portal
+sys-power/upower sys-auth/polkit dev-libs/libei:= !gui-apps/qindaqt-apps
+|| ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon )
+-DQINDAQT_BUILD_KWIN_PLUGIN=ON -DQINDAQT_BUILD_SHELL=ON
+-DQINDAQT_BUILD_PRODUCTION_SHELL=ON -DQINDAQT_NATIVE_POWER_EXCLUSIVE=ON
+-DBUILD_TESTING=OFF cmake_src_install
+'''
+
+    def check(self, recipe: str) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "desktop.ebuild"
+            path.write_text(recipe)
+            verify_desktop_ebuild(path, "6.6.6.1", "6.6.6")
+
+    def test_accepts_native_release_with_or_without_package_revision(self) -> None:
+        self.check(self.recipe)
+        self.check(self.recipe.replace("_p1-r3:=", "_p1:="))
+
+    def test_rejects_retired_runtime_added_to_native_package(self) -> None:
+        for atom in ("kwin", "kscreenlocker", "powerdevil", "polkit-kde-agent",
+                     "plasma-activities", "xdg-desktop-portal-kde"):
+            with self.subTest(atom=atom), self.assertRaises(ContractError):
+                self.check(self.recipe + f"kde-plasma/{atom}\n")
+
+    def test_rejects_wrong_fork_or_missing_native_power(self) -> None:
+        for recipe in (self.recipe.replace("_p1-r3:=", "_p2-r3:="),
+                       self.recipe.replace("_p1-r3:=", "_p1-r3"),
+                       self.recipe.replace("-DQINDAQT_NATIVE_POWER_EXCLUSIVE=ON", "")):
+            with self.subTest(recipe=recipe), self.assertRaises(ContractError):
+                self.check(recipe)
 
 
 class RuntimeVersionOutputTests(unittest.TestCase):

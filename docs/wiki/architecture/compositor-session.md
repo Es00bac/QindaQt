@@ -20,7 +20,7 @@ state and the upstream release it descends from:
 | Field | Value |
 | --- | --- |
 | Fork | `qindaqt-kwin` `6.6.6.1`, package `gui-wm/qindaqt-kwin-6.6.6_p1`, hub `qinda:~/git/qindaqt-kwin.git` |
-| Fork commit | `68c4d74f903b7e8990dd5fd5d509ec8154eac1d1` (tree `9165a8817dfe190bfed59b20e42acc6291d82a27`) |
+| Fork commit | `55d1f2738723316fae4686468757aef66ce7590b` (tree `c03152f3c6dd86e45f34478740c36470a5e23ebd`) |
 | Upstream release/ref | KWin `6.6.6`, `refs/tags/v6.6.6` |
 | Upstream tag object | `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff` |
 | Upstream commit | `9bf2235fad10de9048c634e376bf12e56b3023e6` |
@@ -74,8 +74,8 @@ container-wm names the fork only through `QindaQt::CompositorNames`
 | Window switcher | `share/qindaqt-kwin/tabbox/qindaqt`, structure `QindaQtKWin/WindowSwitcher`, QML `org.qindaqt.kwin`, the fork's default layout |
 | Config | `$XDG_CONFIG_HOME/qindaqt/kwinrc`, `kwinrulesrc`, `kwinoutputconfig.json`, `kwininputrc`, `kwinxkbrc`; state `$XDG_STATE_HOME/qindaqt/kwinstaterc` |
 | D-Bus | `org.qindaqt.KWin` at `/org/qindaqt/KWin` (`.VirtualDesktopManager`, `.InputDevice*`, `.NightLight`, …) |
-| Carve-outs until PF21 | ScreenShot2 (`org.kde.KWin.ScreenShot2`), EIS, TabletModeManager, VirtualKeyboard and Scripting (`/Scripting`, for Gabbee) keep their KDE names; the fork also owns `org.kde.KWin` |
-| Privileged clients | `X-QindaQt-KWin-DBus-Restricted-Interfaces`, `X-QindaQt-KWin-Wayland-Interfaces` (`X-KDE-*` also honoured until PF21) |
+| Native privileged identities | ScreenShot2, EIS, TabletModeManager and VirtualKeyboard use only `org.qindaqt.KWin*` interfaces and `/org/qindaqt/KWin` paths; the KDE service alias and legacy Scripting exports are removed ([ADR-0340](../adr/0340-use-native-privileged-compositor-identities.md)) |
+| Privileged clients | `X-QindaQt-KWin-DBus-Restricted-Interfaces`, `X-QindaQt-KWin-Wayland-Interfaces`; KDE keys do not grant access |
 
 The fork's compiled-in defaults are QindaQt's: the `org.qindaqt` decoration,
 the `qindaqt` switcher, electric-border maximize and tiling off, CommandAll3

@@ -33,7 +33,7 @@ after each. `compositor/upstream/kwin.json` pins it:
 |---|---|
 | Fork version | 6.6.6.1 |
 | Initial fork commit (September 28) | `0dd2fdb802c6dfdecb4771942b05788a8aa386b5` (tree `97ade09fdc536f6293b74d2114aaf04a699e9351`) |
-| Current development fork commit | `68c4d74f903b7e8990dd5fd5d509ec8154eac1d1` (tree `9165a8817dfe190bfed59b20e42acc6291d82a27`); source qualification, installed release gates remain |
+| Current development fork commit | `55d1f2738723316fae4686468757aef66ce7590b` (tree `c03152f3c6dd86e45f34478740c36470a5e23ebd`); source qualification, installed release gates remain |
 | Upstream release | KWin 6.6.6, tag object `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff`, commit `9bf2235fad10de9048c634e376bf12e56b3023e6`, tree `88f96f8cde49c51552d82f60fd461b6e8b950685` |
 
 **The contract QindaQt consumes.** container-wm names the fork only through
