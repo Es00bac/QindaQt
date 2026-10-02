@@ -93,6 +93,10 @@ cancellation, native lock, compositor/session-binding loss) stops the
 session's streams and disconnects its EIS context; a producer that stops or
 dies closes the RemoteDesktop session. The composition constructs
 RemoteDesktop before ScreenCast so the borrowed seam outlives its user.
+Because of the frontend's independent choice, the ScreenCast and
+RemoteDesktop rows in `qindaqt-portals.conf` must move to `qindaqt` together;
+a split route sends a RemoteDesktop session's SelectSources to a backend that
+does not know it.
 
 ## InputCapture
 
