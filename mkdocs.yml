@@ -518,5 +518,5 @@ nav:
       - "0322: Native portal choosers": adr/0322-native-portal-choosers.md
       - "0324: Native portal capture": adr/0324-native-portal-capture-boundaries.md
       - "0337: Native independent portal families": adr/0337-native-independent-portal-families.md
-
       - "0335: Native remote input portal": adr/0335-native-remote-input-portal.md
+      - "0336: Native monitor batches and cursor modes": adr/0336-native-monitor-batches-and-cursor-modes.md
