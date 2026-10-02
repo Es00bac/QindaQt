@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "outcome": "readonly legacy provider availability and non-secret counts",
+  "source_commit": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "normative_source": {
+    "path": "docs/wiki/architecture/keyring-import.md",
+    "sha256": "035a1195bf4e07917a876574636f7ba73535278858321c0f1b7d768e825962ac"
+  },
+  "observed_at": "2026-10-02T22:35:11.509326+00:00",
+  "hosts": [
+    {
+      "host": "qinda",
+      "observed_at": "2026-10-02T22:33:24.137841+00:00",
+      "providers": [
+        {
+          "family": "Secret Service",
+          "availability": "absent",
+          "collection_count": null,
+          "item_count": null,
+          "unlocked_nonempty": null
+        },
+        {
+          "family": "KWallet6",
+          "availability": "absent",
+          "collection_count": null,
+          "item_count": null,
+          "unlocked_nonempty": null
+        },
+        {
+          "family": "KWallet5",
+          "availability": "absent",
+          "collection_count": null,
+          "item_count": null,
+          "unlocked_nonempty": null
+        }
+      ],
+      "native_default_catalog": {
+        "exists": false,
+        "size_bytes": null
+      },
+      "limitation": "No running provider owns requested names; retained disk data not inspected."
+    },
+    {
+      "host": "qinda-top",
+      "observed_at": "2026-10-02T22:33:24.001097+00:00",
+      "providers": [
+        {
+          "family": "Secret Service",
+          "availability": "unqueryable",
+          "collection_count": null,
+          "item_count": null,
+          "unlocked_nonempty": null
+        },
+        {
+          "family": "KWallet6",
+          "availability": "unqueryable",
+          "collection_count": null,
+          "item_count": null,
+          "unlocked_nonempty": null
+        },
+        {
+          "family": "KWallet5",
+          "availability": "unqueryable",
+          "collection_count": null,
+          "item_count": null,
+          "unlocked_nonempty": null
+        }
+      ],
+      "native_default_catalog": {
+        "exists": false,
+        "size_bytes": null
+      },
+      "limitation": "Existing user bus socket refuses connection; provider ownership/lock/counts not observable."
+    }
+  ],
+  "diagnostic_script_sha256": "1665242cf0ac29df57366433316c522ff12fcbfca387c2e304806e87076d72d5",
+  "private_evidence": [
+    {
+      "host": "qinda",
+      "sha256": "2de572bf013dcea6d1d2f35fdd76016f7a0a2eb1239e75c76909267a65d22e4a",
+      "mode": "0600",
+      "contents": "private bus ownership/error and default catalog filesystem metadata only"
+    },
+    {
+      "host": "qinda-top",
+      "sha256": "777a40eb4571badd5be5a1f0095a6e7726e06d0d0aefc999240ecd12cc38c878",
+      "mode": "0600",
+      "contents": "private bus ownership/error and default catalog filesystem metadata only"
+    }
+  ],
+  "commands": {
+    "transport": "explicit existing user bus; busctl --auto-start=no --allow-interactive-authorization=no --timeout=3",
+    "methods_executed": [
+      "org.freedesktop.DBus.GetNameOwner only"
+    ],
+    "catalog": "stat/existence only at default GenericDataLocation/qindaqt/keyring/catalog.json; no content read"
+  },
+  "gates": {
+    "metadata_probes_exit": 0,
+    "qinda_name_owner_queries": "all three no-such-name",
+    "laptop_name_owner_queries": "connection-refused",
+    "native_default_catalogs_present": 0,
+    "secret_values_read": 0,
+    "unlock_or_open_calls": 0,
+    "provider_autostarts": 0,
+    "import_runs": 0,
+    "host_mutations": 0
+  },
+  "safe_existing_disposition": "Retain original legacy data; no actual import is established. Preserve documented import-before-provider-switch ordering. Current absent/unreachable providers, unavailable native physical session and no-user-password/no-prompts scope cannot acquire or seal actual user data. Native fresh-login/provider handoff is not qualified by these metadata checks.",
+  "caveats": [
+    "Unknown counts are not zero or evidence of empty legacy disk stores.",
+    "Default catalog absence does not inspect alternate user-configured storage roots.",
+    "Initial diagnostic misclassified generic owner-query errors as absent; final receipt distinguishes no-such-name from unreachable bus. No initial erroneous availability verdict was accepted.",
+    "No installed Desktop/native login/keyring import claim."
+  ]
+}
