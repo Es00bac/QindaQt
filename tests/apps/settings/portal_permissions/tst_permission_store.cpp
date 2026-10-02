@@ -31,12 +31,12 @@ public:
       for (auto it = entries.cbegin(); it != entries.cend(); ++it)
         if (it.key().startsWith(prefix)) ids.append(it.key().mid(prefix.size()));
       if (oversized) for (int i = 0; i < 513; ++i) ids.append(QString::number(i));
-      const auto reply = message.createReply({ids});
+      const auto reply = message.createReply(QVariantList{QVariant::fromValue(ids)});
       if (delay) QTimer::singleShot(120, this, [connection, reply] { connection.send(reply); });
       else connection.send(reply);
     } else if (message.member() == QStringLiteral("Lookup")) {
       const auto key = args.at(0).toString() + QLatin1Char('/') + args.at(1).toString();
-      if (malformed) connection.send(message.createReply({QStringLiteral("wrong signature")}));
+      if (malformed) connection.send(message.createReply(QVariantList{QStringLiteral("wrong signature")}));
       else if (entries.contains(key)) connection.send(message.createReply({
           QVariant::fromValue(entries.value(key)), QVariant::fromValue(QDBusVariant(QStringLiteral("opaque")))}));
       else connection.send(message.createErrorReply(QStringLiteral("org.freedesktop.portal.Error.NotFound"), QStringLiteral("gone")));
