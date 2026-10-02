@@ -41,8 +41,11 @@ groups = [
     ["combinedNativeLockRetiresFramesAndInput"],
     ["explicitRememberRestoresProtectedSelection"],
 ]
-# A bounded diagnostic selects unchanged Qt assertions. Only all eight cases
-# qualify the selected renderer; a selected case never means full coverage.
+# A bounded diagnostic selects the existing fixture's exact assertions.
+# Input cases reuse this real broker/core setup with the input fixture artifact;
+# they are not part of the capture fixture's all-case matrix.
+input_cases = {"remoteDesktopCaptureAndClipboardJourney", "nativeLockEndsRemoteDesktop"}
+# A selected case never means full capture or input coverage.
 options = {}
 for index in range(13, len(sys.argv), 2):
     key, value = sys.argv[index:index + 2]
@@ -53,7 +56,7 @@ renderer = options.get("--renderer", "llvmpipe")
 if renderer not in ("llvmpipe", "render-node"):
     sys.exit("unknown native capture renderer")
 if "--case" in options:
-    if options["--case"] not in {case for group in groups for case in group}:
+    if options["--case"] not in ({case for group in groups for case in group} | input_cases):
         sys.exit("unknown native capture diagnostic case")
     groups = [[options["--case"]]]
 if renderer == "render-node":
@@ -106,14 +109,16 @@ for group in groups:
             QINDAQT_PORTAL_TEST_AUDIT=str(root/"consent.audit"), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
             PIPEWIRE_REMOTE="pipewire-capture", PIPEWIRE_RUNTIME_DIR=str(runtime))
         env["QINDAQT_CAPTURE_TEST_RENDERER"] = renderer
+        if any(case in input_cases for case in group):
+            env["QINDAQT_NATIVE_INPUT_PROTECTED_BROKER"] = "1"
         if renderer == "llvmpipe":
             env.update(MESA_LOADER_DRIVER_OVERRIDE="swrast", GALLIUM_DRIVER="llvmpipe")
         else:
             env["LIBGL_ALWAYS_SOFTWARE"] = "0"
         portals = root / "portals"
         portals.mkdir()
-        # Only this task-owned overlay selects the capture-only service. The
-        # production metadata/selector remains KDE until all actual gates pass.
+        # This private overlay selects the same final protected five-family
+        # composition; it neither installs routes nor grants native admission.
         (portals / "qindaqt-access.portal").write_text("[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Access;\nUseIn=qindaqt;\n")
         (portals / "qindaqt-capture.portal").write_text("[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt.capture\nInterfaces=org.freedesktop.impl.portal.Screenshot;org.freedesktop.impl.portal.ScreenCast;org.freedesktop.impl.portal.RemoteDesktop;org.freedesktop.impl.portal.InputCapture;org.freedesktop.impl.portal.Clipboard;\nUseIn=qindaqt;\n")
         (portals / "qindaqt-portals.conf").write_text("[preferred]\ndefault=none\norg.freedesktop.impl.portal.Access=qindaqt-access\norg.freedesktop.impl.portal.Screenshot=qindaqt-capture\norg.freedesktop.impl.portal.ScreenCast=qindaqt-capture\norg.freedesktop.impl.portal.RemoteDesktop=qindaqt-capture\norg.freedesktop.impl.portal.InputCapture=qindaqt-capture\norg.freedesktop.impl.portal.Clipboard=qindaqt-capture\n")
@@ -258,7 +263,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             # requests are archived under runtime by the caller's reset().
             for snapshot in runtime.glob("qindaqt-capture-observed.png"):
                 shutil.copyfile(snapshot, evidence / snapshot.name)
-            for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]),
+            for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]), pathlib.Path(env["QINDAQT_PORTAL_TEST_AUDIT"]),
                           runtime / "qindaqt-capture-history.audit", runtime / "native-renderer.audit",
                           runtime / "producer-frame.audit", runtime / "producer-stderr.audit",
                           runtime / "producer-lifecycle.audit"):

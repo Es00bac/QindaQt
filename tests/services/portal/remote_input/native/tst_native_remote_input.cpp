@@ -5,6 +5,7 @@
 // libei only; no host bus, input device, display or clipboard is touched.
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/services/portal/appearance_source.h>
+#include <qindaqt/services/portal/session_binding.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <qindaqt/services/session_lock_state/native_lock_state_monitor.h>
 #include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
@@ -82,9 +83,15 @@ private Q_SLOTS:
         // AGENT-GUARD: wait for the real ordinary session caller's public
         // attachment reply. Starting an asynchronous supervisor retry is not
         // evidence that consent has an admitted display/lock authority yet.
-        auto attach = QDBusMessage::createMethodCall(QStringLiteral("org.qindaqt.Portal1"),
-            QStringLiteral("/org/qindaqt/Portal1"), QStringLiteral("org.qindaqt.Portal1"), QStringLiteral("AttachSessionWithDisplay"));
-        attach << QStringLiteral("qindaqt-7");
+        // Final mode uses the same real protected broker as capture tests;
+        // resident setup above supplies Access only, never EIS admission.
+        if (protectedBroker) QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered(
+            QStringLiteral("org.freedesktop.impl.portal.desktop.qindaqt.capture")).value(), 10000);
+        auto attach = QDBusMessage::createMethodCall(
+            protectedBroker ? QLatin1String(kNativeCapturePortalService) : QLatin1String(kNativePortalService),
+            protectedBroker ? QLatin1String(kNativeCapturePortalPath) : QLatin1String(kNativePortalPath),
+            QStringLiteral("org.qindaqt.Portal1"), QStringLiteral("AttachSessionWithDisplay"));
+        attach << display;
         auto pendingAttach = sessionCaller->asyncCall(attach, 2000);
         QTRY_VERIFY_WITH_TIMEOUT(pendingAttach.isFinished(), 3000);
         const QDBusReply<bool> attached(pendingAttach.reply());
@@ -92,7 +99,7 @@ private Q_SLOTS:
         QVERIFY2(attached.value(), "Actual compositor/session attachment was denied");
         QindaQt::Platform::Compositor::CompositorAttachment attachment(*sessionCaller,
             qEnvironmentVariable("XDG_RUNTIME_DIR"), [&](const QString &owner) { return owner == sessionCaller->baseService(); });
-        QVERIFY(attachment.attach(sessionCaller->baseService(), QStringLiteral("qindaqt-7")));
+        QVERIFY(attachment.attach(sessionCaller->baseService(), display));
         QindaQt::Services::SessionLockState::QtNativeLockTransport lockTransport(*sessionCaller);
         QindaQt::Services::SessionLockState::NativeLockStateMonitor lockMonitor(lockTransport,
             [&](const QString &owner, quint64 pid) {
@@ -142,7 +149,7 @@ private Q_SLOTS:
                  QVariantMap{{QStringLiteral("handle_token"), QStringLiteral("ic1_zones")}}}, "ic1_zones");
         QCOMPARE(zones.first, 0U);
         const uint zoneSet = zones.second.value(QStringLiteral("zone_set")).toUInt();
-        QDBusArgument position; position.beginStructure(); position << 0 << 0 << 0 << 759; position.endStructure();
+        QDBusArgument position; position.beginStructure(); position << 0 << 0 << 0 << (protectedBroker ? 819 : 759); position.endStructure();
         const QList<QVariantMap> barriers{{{QStringLiteral("barrier_id"), 1U}, {QStringLiteral("position"), QVariant::fromValue(position)}}};
         const auto set = response("org.freedesktop.portal.InputCapture", "SetPointerBarriers", {QVariant::fromValue(QDBusObjectPath(ic)),
                  QVariantMap{{QStringLiteral("handle_token"), QStringLiteral("ic1_barriers")}}, QVariant::fromValue(barriers), zoneSet}, "ic1_barriers");
@@ -311,6 +318,8 @@ private:
         QFile file(qEnvironmentVariable("QINDAQT_PORTAL_TEST_AUDIT"));
         return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray{};
     }
+    const bool protectedBroker = qEnvironmentVariableIsSet("QINDAQT_NATIVE_INPUT_PROTECTED_BROKER");
+    const QString display = protectedBroker ? QStringLiteral("qindaqt-8") : QStringLiteral("qindaqt-7");
     QDBusConnection bus = QDBusConnection::sessionBus();
     std::unique_ptr<QDBusConnection> backend;
     EmptyAppearance appearance;
