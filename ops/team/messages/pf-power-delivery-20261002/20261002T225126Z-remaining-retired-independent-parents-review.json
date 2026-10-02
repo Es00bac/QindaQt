@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-10-02T22:49:54.577766+00:00",
+  "summary_path": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/root-interim-retirement-summary.json",
+  "summary_sha256": "f509d51775bae249845d0d9c13ba263162345c23100fe6247ec61804eac10b8d",
+  "remaining_retired": [
+    "kde-plasma/aurorae-6.6.6",
+    "kde-plasma/breeze-6.6.6",
+    "kde-plasma/kactivitymanagerd-6.6.6",
+    "kde-plasma/kde-cli-tools-common-6.6.6",
+    "kde-plasma/kdecoration-6.6.6",
+    "kde-plasma/kdesu-gui-6.6.6",
+    "kde-plasma/kglobalacceld-6.6.6-r1",
+    "kde-plasma/knighttime-6.6.6",
+    "kde-plasma/kpipewire-6.6.6.1",
+    "kde-plasma/kscreenlocker-6.6.6",
+    "kde-plasma/kwin-6.6.6-r1",
+    "kde-plasma/kwin-x11-6.6.6",
+    "kde-plasma/libkscreen-6.6.6-r1",
+    "kde-plasma/libksysguard-6.6.6",
+    "kde-plasma/libplasma-6.6.6",
+    "kde-plasma/milou-6.6.6",
+    "kde-plasma/plasma-activities-6.6.6",
+    "kde-plasma/plasma-activities-stats-6.6.6",
+    "kde-plasma/plasma-integration-6.6.6",
+    "kde-plasma/plasma-login-sessions-6.6.6",
+    "kde-plasma/plasma-workspace-6.6.6",
+    "kde-plasma/polkit-kde-agent-6.6.6",
+    "kde-plasma/powerdevil-6.6.6-r1",
+    "kde-plasma/qqc2-breeze-style-6.6.6",
+    "kde-plasma/spectacle-6.6.6",
+    "kde-plasma/xdg-desktop-portal-kde-6.6.6"
+  ],
+  "installed_cpv_count": 1567,
+  "non_retired_cpv_count": 1541,
+  "metadata_bytes_read": 459473,
+  "metadata_snapshot_sha256": "7d8f22c09f6748a59293dae8b2fbf4a264f8468e0f38b1f7ab4a1c8b4a883688",
+  "parse_errors": [],
+  "independent_direct_parents": [
+    {
+      "parent_cpv": "app-misc/claude-desktop-bin-1.49585.0",
+      "repository": "sloom-private",
+      "USE": "abi_x86_64 amd64 cowork elibc_glibc kernel_linux",
+      "IUSE": "+cowork",
+      "field": "RDEPEND",
+      "exact_dependency_row": "app-accessibility/at-spi2-core:2 app-crypt/libsecret app-misc/ca-certificates dev-libs/expat dev-libs/glib:2 dev-libs/libayatana-appindicator dev-libs/nspr dev-libs/nss media-libs/alsa-lib media-libs/mesa[gbm(+)] net-print/cups sys-apps/dbus sys-apps/util-linux sys-apps/xdg-desktop-portal sys-libs/glibc x11-libs/cairo x11-libs/gdk-pixbuf:2 x11-libs/gtk+:3[X] x11-libs/libdrm x11-libs/libnotify x11-libs/libX11 x11-libs/libXcomposite x11-libs/libXdamage x11-libs/libXext x11-libs/libXfixes x11-libs/libXrandr x11-libs/libXtst x11-libs/libxcb x11-libs/libxkbcommon x11-libs/pango x11-misc/xdg-utils || ( kde-plasma/xdg-desktop-portal-kde sys-apps/xdg-desktop-portal-gtk sys-apps/xdg-desktop-portal-gnome ) || ( kde-plasma/kde-cli-tools app-misc/trash-cli gnome-base/gvfs ) || ( gnome-base/gnome-keyring kde-frameworks/kwallet ) app-emulation/qemu[qemu_softmmu_targets_x86_64] app-emulation/virtiofsd || ( sys-firmware/edk2-bin sys-firmware/edk2 ) >=sys-libs/glibc-2.43-r2",
+      "atom": "kde-plasma/xdg-desktop-portal-kde",
+      "matching_retired_cpvs": [
+        "kde-plasma/xdg-desktop-portal-kde-6.6.6"
+      ],
+      "classification": "OR alternative; actual selected branch not inferred",
+      "or_contexts": [
+        {
+          "operator": "||",
+          "structure": [
+            "kde-plasma/xdg-desktop-portal-kde",
+            "sys-apps/xdg-desktop-portal-gtk",
+            "sys-apps/xdg-desktop-portal-gnome"
+          ],
+          "installed_alternative_matches": [
+            {
+              "atom": "kde-plasma/xdg-desktop-portal-kde",
+              "installed_matches": [
+                "kde-plasma/xdg-desktop-portal-kde-6.6.6"
+              ]
+            },
+            {
+              "atom": "sys-apps/xdg-desktop-portal-gtk",
+              "installed_matches": [
+                "sys-apps/xdg-desktop-portal-gtk-1.15.3"
+              ]
+            },
+            {
+              "atom": "sys-apps/xdg-desktop-portal-gnome",
+              "installed_matches": []
+            }
+          ]
+        }
+      ],
+      "installed_recipe_path": "/var/db/pkg/app-misc/claude-desktop-bin-1.49585.0/claude-desktop-bin-1.49585.0.ebuild",
+      "installed_recipe_sha256": "4dc5d6181331d3cb03118d4278800d7d5b6a0830fae1508805cc0e4dda1266f9",
+      "minimal_existing_resolution": "Installed stock recipe has only cowork USE and no native provider conditional. GTK1.15.3 already satisfies the portal OR, but this pass does not identify Portage selected branch. Independently reviewed qindaqt Claude-r1 native provider revision can remove legacy OR dependency after actual native Desktop-r2/provider transition; not installed in this snapshot."
+    },
+    {
+      "parent_cpv": "gui-apps/xwaylandvideobridge-0.5.0",
+      "repository": "gentoo",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "debug",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=dev-qt/qtbase-6.8.1:6[dbus,gui,widgets,X] >=dev-qt/qtdeclarative-6.8.1:6 >=kde-frameworks/kcoreaddons-6.9.0:6 >=kde-frameworks/kcrash-6.9.0:6 >=kde-frameworks/ki18n-6.9.0:6 >=kde-frameworks/kstatusnotifieritem-6.9.0:6 >=kde-frameworks/kwindowsystem-6.9.0:6[X] kde-plasma/kpipewire:6 media-libs/freetype x11-libs/libxcb:0/1.12= x11-libs/libXfixes x11-libs/xcb-util || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+      "atom": "kde-plasma/kpipewire:6",
+      "matching_retired_cpvs": [
+        "kde-plasma/kpipewire-6.6.6.1"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": [],
+      "installed_recipe_path": "/var/db/pkg/gui-apps/xwaylandvideobridge-0.5.0/xwaylandvideobridge-0.5.0.ebuild",
+      "installed_recipe_sha256": "6bd128e2a3a29ba128d4480e66af03d8e40b389f4a739542446ac0eac8f9e3dc",
+      "minimal_existing_resolution": "No installed USE controls kpipewire: IUSE debug only; installed recipe unconditionally puts kpipewire in DEPEND and inherits it into RDEPEND. Preserving this app requires retaining its library or an independently reviewed compatible replacement; no package-use-only removal route exists."
+    }
+  ],
+  "old_desktop_only_rows": [
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "=kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts]",
+      "matching_retired_cpvs": [
+        "kde-plasma/kwin-6.6.6-r1"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    },
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "=kde-plasma/kdecoration-6.6.6*:6/6=",
+      "matching_retired_cpvs": [
+        "kde-plasma/kdecoration-6.6.6"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    },
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "=kde-plasma/kscreenlocker-6.6.6*:6/6=",
+      "matching_retired_cpvs": [
+        "kde-plasma/kscreenlocker-6.6.6"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    },
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "=kde-plasma/polkit-kde-agent-6.6.6*:6/6=",
+      "matching_retired_cpvs": [
+        "kde-plasma/polkit-kde-agent-6.6.6"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    },
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "=kde-plasma/plasma-activities-6.6.6*:6/7=",
+      "matching_retired_cpvs": [
+        "kde-plasma/plasma-activities-6.6.6"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    },
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "~kde-plasma/powerdevil-6.6.6",
+      "matching_retired_cpvs": [
+        "kde-plasma/powerdevil-6.6.6-r1"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    },
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "~kde-plasma/knighttime-6.6.6",
+      "matching_retired_cpvs": [
+        "kde-plasma/knighttime-6.6.6"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    },
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "=kde-plasma/spectacle-6.6.6*:6/6=",
+      "matching_retired_cpvs": [
+        "kde-plasma/spectacle-6.6.6"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    },
+    {
+      "parent_cpv": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+      "repository": "qindaqt",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "",
+      "field": "RDEPEND",
+      "exact_dependency_row": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+      "atom": "=kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6=",
+      "matching_retired_cpvs": [
+        "kde-plasma/xdg-desktop-portal-kde-6.6.6"
+      ],
+      "classification": "mandatory active direct dependency",
+      "or_contexts": []
+    }
+  ],
+  "remaining_with_no_independent_direct_parent": [
+    "kde-plasma/aurorae-6.6.6",
+    "kde-plasma/breeze-6.6.6",
+    "kde-plasma/kactivitymanagerd-6.6.6",
+    "kde-plasma/kde-cli-tools-common-6.6.6",
+    "kde-plasma/kdecoration-6.6.6",
+    "kde-plasma/kdesu-gui-6.6.6",
+    "kde-plasma/kglobalacceld-6.6.6-r1",
+    "kde-plasma/knighttime-6.6.6",
+    "kde-plasma/kscreenlocker-6.6.6",
+    "kde-plasma/kwin-6.6.6-r1",
+    "kde-plasma/kwin-x11-6.6.6",
+    "kde-plasma/libkscreen-6.6.6-r1",
+    "kde-plasma/libksysguard-6.6.6",
+    "kde-plasma/libplasma-6.6.6",
+    "kde-plasma/milou-6.6.6",
+    "kde-plasma/plasma-activities-6.6.6",
+    "kde-plasma/plasma-activities-stats-6.6.6",
+    "kde-plasma/plasma-integration-6.6.6",
+    "kde-plasma/plasma-login-sessions-6.6.6",
+    "kde-plasma/plasma-workspace-6.6.6",
+    "kde-plasma/polkit-kde-agent-6.6.6",
+    "kde-plasma/powerdevil-6.6.6-r1",
+    "kde-plasma/qqc2-breeze-style-6.6.6",
+    "kde-plasma/spectacle-6.6.6"
+  ],
+  "elapsed_seconds": 1.6190945570001531,
+  "scope": "Installed actual USE-expanded direct RDEPEND/PDEPEND only; OR alternatives explicitly not solver-selected. No removal recommendation from missing parent alone; no transitive solver, payload, build or host changes.",
+  "read_commands": "ssh qinda nice -n 19 ionice -c 3 python3 -; one complete USE/IUSE/repository/RDEPEND/PDEPEND pass over exactly1567 installed CPVs, skip26 retired parents; portage.dep.use_reduce and vartree.match only for matching retired atoms and bounded OR siblings; two small installed recipes inspected. No solver or payload scan.",
+  "exit": 0,
+  "claim": "Independent mandatory blocker is xwaylandvideobridge\u2192kpipewire; Claude KDE portal is OR alternative with installed GTK satisfier, selected branch unresolved. Old Desktop9rows kept separate."
+}

@@ -1,0 +1,50 @@
+{
+  "parents": [],
+  "final_recipe_path": "/home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-native-runtime-edges-20261002/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20261002-r2.ebuild",
+  "final_recipe_sha256": "636e17c8da28ec3aa2a6a9b2ad70794d356ee022a64f055ada418f3398bde3b9",
+  "final_desktop_source": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "overlay_source": "3e05c3fc89d6dd100f8a7ccfa362fa6a7577b3cc",
+  "installed_autostart": {
+    "path": "/etc/xdg/autostart/org.kde.xwaylandvideobridge.desktop",
+    "sha256": "24b6b605b88c4d449962fbdf6ab9a860417dd6a931c67c635a5efbbf6ff75928",
+    "nonlocalized_keys": [
+      "StartupNotify=false",
+      "X-KDE-autostart-phase=2",
+      "X-GNOME-Autostart-enabled=true",
+      "NoDisplay=true",
+      "Type=Application",
+      "Name=Xwayland Video Bridge",
+      "GenericName=Share screens and windows to XWayland applications",
+      "Icon=xwaylandvideobridge",
+      "Exec=xwaylandvideobridge",
+      "Categories=Qt;KDE;Utility;X-KDE-Utilities-Desktop;"
+    ]
+  },
+  "named_source_docs_search": {
+    "command": [
+      "git",
+      "-C",
+      "/home/cabewse/git/container-wm.git",
+      "grep",
+      "-n",
+      "-i",
+      "-e",
+      "xwaylandvideobridge",
+      "-e",
+      "videobridge",
+      "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+      "--",
+      "src",
+      "docs"
+    ],
+    "exit": 1,
+    "matches": 0
+  },
+  "source_document_facts": {
+    "docs/plans/2026-09-28-plasma-free-qindaqt.md:366": "Screenshot and ScreenCast grow over existing fork screencast/PipeWire",
+    "docs/wiki/architecture/session-autostart.md": "Generic XDG startup eligibility; supersession documented for native polkit and keyring only. No named bridge exclusion found."
+  },
+  "proposal": "Manager may explicitly include =gui-apps/xwaylandvideobridge-0.5.0 as retired optional desktop capture helper, keeping every other ordinary app protected, then use ordinary scoped depclean. No library exemption or force-unmerge.",
+  "caveat": "Native Screenshot/ScreenCast portals replace supported portal flows, not proven legacy X11 non-portal video-bridge compatibility. No current package requires helper, but deliberate helper retirement needs manager approval and rollback; no removal executed.",
+  "timestamp": "2026-10-02T22:54:31+00:00"
+}
