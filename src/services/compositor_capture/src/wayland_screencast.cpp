@@ -4,6 +4,8 @@
 #include "xdg-output-client.h"
 #include <QSocketNotifier>
 #include <QTimer>
+#include <QSet>
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <unistd.h>
@@ -13,17 +15,19 @@ namespace QindaQt::CompositorCapture {
 class WaylandScreenCast::Private {
 public:
     struct Output { Private *self; uint32_t global; wl_output *proxy; zxdg_output_v1 *logical = nullptr; MonitorSource source; QSize pixels; int scale = 1; bool complete = false, logicalSize = false; };
+    struct Stream { Private *self; Output *output; zkde_screencast_stream_unstable_v1 *proxy = nullptr; bool created = false; };
     WaylandScreenCast &q;
     std::function<bool()> admission, pixelsAllowed;
     wl_display *display = nullptr; wl_registry *registry = nullptr; wl_callback *sync = nullptr;
-    zkde_screencast_unstable_v1 *manager = nullptr; zkde_screencast_stream_unstable_v1 *stream = nullptr;
+    zkde_screencast_unstable_v1 *manager = nullptr;
     zxdg_output_manager_v1 *logicalManager = nullptr;
     std::unique_ptr<QSocketNotifier> reading, writing;
     std::vector<std::unique_ptr<Output>> outputs;
+    std::vector<std::unique_ptr<Stream>> streams;
+    QSet<quint32> nodes;
     QTimer deadline, lineage;
-    Output *selected = nullptr;
     uint32_t managerGlobal = 0, logicalGlobal = 0;
-    bool ready = false, invalid = false, dispatching = false, started = false, created = false;
+    bool ready = false, invalid = false, dispatching = false, started = false;
     explicit Private(WaylandScreenCast &object, std::function<bool()> admitted, std::function<bool()> pixels) : q(object), admission(std::move(admitted)), pixelsAllowed(std::move(pixels)) {
         deadline.setSingleShot(true); deadline.setInterval(4000);
         QObject::connect(&deadline, &QTimer::timeout, &q, [this] { close(); });
@@ -34,8 +38,8 @@ public:
     bool live() const { return !invalid && admission && admission(); }
     void teardown() {
         reading.reset(); writing.reset();
-        if (stream) zkde_screencast_stream_unstable_v1_close(stream);
-        stream = nullptr;
+        for (auto &stream : streams) if (stream->proxy) zkde_screencast_stream_unstable_v1_close(stream->proxy);
+        streams.clear(); nodes.clear();
         if (sync) wl_callback_destroy(sync);
         sync = nullptr;
         if (manager) zkde_screencast_unstable_v1_destroy(manager);
@@ -43,7 +47,7 @@ public:
         for (auto &output : outputs) { if (output->logical) zxdg_output_v1_destroy(output->logical); wl_output_release(output->proxy); }
         if (logicalManager) zxdg_output_manager_v1_destroy(logicalManager);
         logicalManager = nullptr;
-        outputs.clear(); selected = nullptr;
+        outputs.clear();
         if (registry) wl_registry_destroy(registry);
         registry = nullptr;
         if (display) { wl_display_flush(display); wl_display_disconnect(display); }
@@ -145,23 +149,40 @@ QList<MonitorSource> WaylandScreenCast::sources() const {
     if (d->ready && d->live()) for (const auto &o : d->outputs) result.append(o->source);
     return result;
 }
-bool WaylandScreenCast::start(const QString &id) {
+bool WaylandScreenCast::start(const QString &id, quint32 cursorMode) { return start(QStringList{id}, cursorMode); }
+bool WaylandScreenCast::start(const QStringList &ids, quint32 cursorMode) {
     if (!d->ready || !d->live() || !d->pixelsAllowed || !d->pixelsAllowed() || d->started) return false;
-    for (const auto &o : d->outputs) if (o->source.id == id) d->selected = o.get();
-    if (!d->selected) return false;
+    if (ids.isEmpty() || ids.size() > 16 || !QSet<quint32>{1, 2, 4}.contains(cursorMode)) return false;
+    QSet<QString> selectedIds;
+    std::vector<Private::Output *> selected;
+    for (const auto &id : ids) {
+        if (selectedIds.contains(id)) return false;
+        selectedIds.insert(id);
+        const auto found = std::find_if(d->outputs.begin(), d->outputs.end(), [&id](const auto &output) { return output->source.id == id; });
+        if (found == d->outputs.end()) return false;
+        selected.push_back(found->get());
+    }
     d->started = true;
-    d->stream = zkde_screencast_unstable_v1_stream_output(d->manager, d->selected->proxy, ZKDE_SCREENCAST_UNSTABLE_V1_POINTER_HIDDEN);
     static const zkde_screencast_stream_unstable_v1_listener events{
-        [](void *data, zkde_screencast_stream_unstable_v1 *) { static_cast<Private *>(data)->close(); },
+        [](void *data, zkde_screencast_stream_unstable_v1 *) { static_cast<Private::Stream *>(data)->self->close(); },
         [](void *data, zkde_screencast_stream_unstable_v1 *, uint32_t node) {
-            auto &s = *static_cast<Private *>(data);
-            if (!s.live() || !s.pixelsAllowed || !s.pixelsAllowed() || s.created || !node || !s.selected) { s.close(); return; }
-            s.created = true; s.deadline.stop(); const auto source = s.selected->source;
+            auto &stream = *static_cast<Private::Stream *>(data); auto &s = *stream.self;
+            if (!s.live() || !s.pixelsAllowed || !s.pixelsAllowed() || stream.created || !node || s.nodes.contains(node)) { s.close(); return; }
+            stream.created = true; s.nodes.insert(node);
+            if (std::all_of(s.streams.begin(), s.streams.end(), [](const auto &member) { return member->created; })) s.deadline.stop();
+            const auto source = stream.output->source;
             QTimer::singleShot(0, &s.q, [&s, node, source] { if (s.live() && s.pixelsAllowed && s.pixelsAllowed()) Q_EMIT s.q.streamCreated(node, source); else s.close(); });
         },
-        [](void *data, zkde_screencast_stream_unstable_v1 *, const char *) { static_cast<Private *>(data)->close(); },
+        [](void *data, zkde_screencast_stream_unstable_v1 *, const char *) { static_cast<Private::Stream *>(data)->self->close(); },
         [](void *, zkde_screencast_stream_unstable_v1 *, uint32_t, uint32_t) {}};
-    zkde_screencast_stream_unstable_v1_add_listener(d->stream, &events, d.get()); d->deadline.start(); d->flush(); return true;
+    for (auto *output : selected) {
+        auto stream = std::make_unique<Private::Stream>(); stream->self = d.get(); stream->output = output;
+        stream->proxy = zkde_screencast_unstable_v1_stream_output(d->manager, output->proxy, cursorMode);
+        if (!stream->proxy) { d->close(); return false; }
+        zkde_screencast_stream_unstable_v1_add_listener(stream->proxy, &events, stream.get());
+        d->streams.push_back(std::move(stream));
+    }
+    d->deadline.start(); d->flush(); return true;
 }
 void WaylandScreenCast::stop() { d->close(); }
 }
