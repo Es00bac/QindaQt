@@ -250,12 +250,17 @@ private Q_SLOTS:
         copy.start(QStringLiteral(QINDAQT_CLIPBOARD_CLIENT), {QStringLiteral("copy"), QStringLiteral("local payload")}); QVERIFY(copy.waitForStarted());
         QByteArray copyOutput;
         QTRY_VERIFY_WITH_TIMEOUT((copyOutput += copy.readAllStandardOutput(), copyOutput.contains("COPIED")), 10000);
-        QTRY_VERIFY_WITH_TIMEOUT([&] {
+        const bool localSelectionObserved = QTest::qWaitFor([&] {
             for (const auto &owner : events.named(QStringLiteral("SelectionOwnerChanged")))
-                if (options(owner, 1).value(QStringLiteral("mime_types")).toStringList().contains(QStringLiteral("text/plain;charset=utf-8"))
+                if (qdbus_cast<QStringList>(options(owner, 1).value(QStringLiteral("mime_types"))).contains(QStringLiteral("text/plain;charset=utf-8"))
                     && !options(owner, 1).value(QStringLiteral("session_is_owner")).toBool()) return true;
             return false;
-        }(), 10000);
+        }, 10000);
+        if (!localSelectionObserved) {
+            for (const auto &owner : events.named(QStringLiteral("SelectionOwnerChanged")))
+                qInfo() << "Actual public clipboard owner signal" << owner.arguments() << options(owner, 1);
+        }
+        QVERIFY2(localSelectionObserved, "No public local-owner MIME selection observed; see exact signal diagnostics");
         const QDBusReply<QDBusUnixFileDescriptor> reader = call("org.freedesktop.portal.Clipboard", "SelectionRead",
             {QVariant::fromValue(QDBusObjectPath(rd)), QStringLiteral("text/plain;charset=utf-8")});
         QVERIFY2(reader.isValid(), qPrintable(reader.error().message()));
