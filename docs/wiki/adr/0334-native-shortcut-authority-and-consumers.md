@@ -36,6 +36,8 @@ GlobalShortcuts owns bounded standard Session/Request lifetimes and transient na
 
 Focused private-bus contracts must prove actual KF6 registration/invocation/signatures, unique-owner lifetime, foreign transient refusal, failed-save rollback, native values winning legacy import, repeat/release/modifier-only/multi-key behavior and admission. Consumer tests must prove real native replies, conflict refusal, command-file lifecycle and portal cancellation/owner loss. Compositor build and nested live shortcuts/layout/lock/inhibitor scenarios qualify the selected runtime before daemon/supervisor/recipe retirement. Candidate source and compiler activity add no release acceptance.
 
+The focused candidate fixture compiles the actual native client, Settings adapter, portal policy/session/adaptor/process and separate helper with strict warnings. Its three private-bus CTests pass: native Settings wire and command lifecycle; bounded portal selection policy; and an actual fork authority cross-repository bridge covering multi-key/conflict behavior, Create/Bind/Activate/Deactivate/List/Close, cancelled consent and frontend-loss revocation. This is service-contract evidence; the displayed helper, full composition and nested compositor selection remain separate gates.
+
 ## References
 
 - [Input Settings](../apps/input-settings.md)
