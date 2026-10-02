@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — native runtime-edge source851e2c0 handed off for independent review
+- Status: available — exact nine-package pretend/provider receipts handed off; review pending
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -87,3 +87,7 @@
 - 2026-10-02T20:58:25Z — Claimed exact502a042 overlay candidate in QindaGentoo.worktrees/pf-native-runtime-edges-20261002. Own only KAuth6.27-r1/Kirigami1.12.1-r1/KDEConnect26.04.3-r4 recipes+support/credits and four native profile USE lines; final native Desktop/fork/Gabbee/metadata unchanged. Source-only, no compile/install.
 
 - 2026-10-02T21:04:12Z — Pushed exact851e2c0/base502 overlay: six focused checks PASS0/0.227s, actual metadata/profile OFF proof, exact official archive hashes. KAuth6.27 cold-source availability and preserved upstream whitespace caveats recorded; no build/install. Different reviewer requested; available for bounded continuation.
+
+- 2026-10-02T21:06:11Z — Actual private exact-version Portage pretend PASS0/9.750s:9 packages only, no KF upgrades. Diagnosing actual installed Claude OR branch selection; no compile/install/unmerge/world actions.
+
+- 2026-10-02T21:07:13Z — Actual private qinda pretend exit0/9.750s, nine packages/no KF upgrades; actual installed Claude graph exit0/2.307s chooses KDE portal+cli-tools. Immutable receipts posted, no active own compiler/runtime. Available for scoped provider continuation after review.
