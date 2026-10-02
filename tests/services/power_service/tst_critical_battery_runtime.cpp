@@ -66,7 +66,7 @@ void CriticalBatteryRuntimeTests::configuredActions() {
     row.source(true, 5); QTest::qWait(150);
     QCOMPARE(row.action->actions.size(), 1);
     QCOMPARE(row.notifications(), 0);
-    QCOMPARE(row.power->snapshot().supportedIdleInhibitorScopes.toInt(), 0);
+    QCOMPARE(row.power->supportedIdleInhibitorScopes(), IdleInhibitorScopes{});
 }
 void CriticalBatteryRuntimeTests::cancelSuppressesSameEpisode() {
     CriticalRuntime row; QVERIFY(row.start()); CONFIGURE(row, QStringLiteral("suspend"));
