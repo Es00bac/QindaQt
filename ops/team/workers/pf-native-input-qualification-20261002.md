@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — native-input exact receipt handed off; ready for coordinated NativeShortcuts gate
+- Status: working — prepare final native identity and genuine combined capture/restore qualification source
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
@@ -32,3 +32,5 @@
 - 2026-10-02T19:29:00+00:00 — Genuine native input gate PASS exact test2b36c431e5/productione2f/core56a; exit0/6.383063s, fixture4QtPASS0FAIL0SKIP2605ms, driver3QtPASS0FAIL0SKIP5541ms. Actual EIS Ctrl+C supplies local copy serial; both payload directions/barriers/release/Close/native lock verified. Own strict compile/link PASS; mkdocs strict/492-doc validator PASS. Hash-bound report preserved; previous failures separate. Compiler/private runtime released to manager for coherent native-name+Power composition; next compatible NativeShortcuts actual fixture source6cf, compilation/runtime pending.
 
 - 2026-10-02T19:31:00+00:00 — Handoff904c8a0d6 exact receipt sent for independent review; own trees clean, compiler/private runtime released. Read Platform queue and peer Power resource handoff. Available for already approved actual NativeShortcuts test6cf after manager coherent PF21/Power source composition and slot routing; no live process or new completion claimed while waiting.
+
+- 2026-10-02T19:35:00+00:00 — Claimed manager final qualification scope, source/harness only against final desktop2944/corebeb9; root owns warm core source/compiler and no own GPU/compiler lease. Old input PASS receipts immutable. Found actual combined route boundary: resident RemoteDesktop borrows legacy ProcessCapture, protected broker only owns Screenshot/ScreenCast and does not know resident RemoteDesktop session; routed exact source blocker to manager/Claude instead of fake port/admission. Explicit remember/restore is standalone ScreenCast, combined sessions deliberately nonpersistent. Preparing native interface/legacy absence and actual remembered selection rows; shortcuts source6cf remains next.
