@@ -181,11 +181,15 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("voice"));
 
-  // The appended keyring route is last; the next step wraps to the first.
+  // Portal permissions appends after keyring; wrapping preserves all earlier indices.
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("passwords-keys"));
   QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
+  QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("passwords-keys"));
   QVERIFY(controller.selectPrevious());
@@ -331,6 +335,8 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QCOMPARE(controller.activeRouteId(), QStringLiteral("voice"));
   QVERIFY(controller.selectIndex(21));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("passwords-keys"));
+  QVERIFY(controller.selectIndex(22));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
 
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
