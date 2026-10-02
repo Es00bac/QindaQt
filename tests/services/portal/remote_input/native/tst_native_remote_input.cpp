@@ -249,6 +249,11 @@ private Q_SLOTS:
         const auto copyCleanup = qScopeGuard([&] { if (copy.state() != QProcess::NotRunning) { copy.kill(); copy.waitForFinished(3000); } });
         copy.start(QStringLiteral(QINDAQT_CLIPBOARD_CLIENT), {QStringLiteral("copy"), QStringLiteral("local payload")}); QVERIFY(copy.waitForStarted());
         QByteArray copyOutput;
+        QTRY_VERIFY_WITH_TIMEOUT((copyOutput += copy.readAllStandardOutput(), copyOutput.contains("READY")), 10000);
+        sender.emulate(keyboard, [&] { ei_device_keyboard_key(keyboard, KEY_LEFTCTRL, true); });
+        sender.emulate(keyboard, [&] { ei_device_keyboard_key(keyboard, KEY_C, true); });
+        sender.emulate(keyboard, [&] { ei_device_keyboard_key(keyboard, KEY_C, false); });
+        sender.emulate(keyboard, [&] { ei_device_keyboard_key(keyboard, KEY_LEFTCTRL, false); });
         QTRY_VERIFY_WITH_TIMEOUT((copyOutput += copy.readAllStandardOutput(), copyOutput.contains("COPIED")), 10000);
         const bool localSelectionObserved = QTest::qWaitFor([&] {
             for (const auto &owner : events.named(QStringLiteral("SelectionOwnerChanged")))

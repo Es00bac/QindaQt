@@ -4758,3 +4758,8 @@ private compositor; fixture setup checks the frontend and clipboard peer. A
 qualification receipt must also bind the coherent candidate driver, EIS plugin,
 core library and resolved runtime dependencies. Missing artifacts are setup
 failures, not evidence of backend denial or native behavior acceptance.
+
+The ordinary clipboard peer copies on an actual Ctrl+C key delivered by the
+consented libei sender. A focus-only timer has no newer input serial and cannot
+prove replacement of a remote selection. The fixture waits for client readiness,
+then requires both the public local-owner signal and exact SelectionRead payload.
