@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "source_commit": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "outcome": "bounded standard legacy store directory metadata and exact resident process presence",
+  "observed_at": "2026-10-02T22:42:18.314242+00:00",
+  "hosts": [
+    {
+      "schema_version": 1,
+      "host": "qinda",
+      "observed_at": "2026-10-02T22:41:16.636349+00:00",
+      "entry_cap": 128,
+      "recursion": false,
+      "directories": [
+        {
+          "standard_location": "keyrings",
+          "exists": true,
+          "regular_file_count": 6,
+          "regular_file_bytes": 45151,
+          "symlink_present": false,
+          "unexpected_entries": 0,
+          "count_complete": true,
+          "inspected_entries": 6
+        },
+        {
+          "standard_location": "kwalletd",
+          "exists": true,
+          "regular_file_count": 3,
+          "regular_file_bytes": 3804,
+          "symlink_present": false,
+          "unexpected_entries": 0,
+          "count_complete": true,
+          "inspected_entries": 3
+        },
+        {
+          "standard_location": "older_kwallet",
+          "exists": false,
+          "regular_file_count": 0,
+          "regular_file_bytes": 0,
+          "symlink_present": false,
+          "unexpected_entries": 0,
+          "count_complete": true
+        }
+      ],
+      "directory_regular_file_count": 9,
+      "directory_regular_file_bytes": 48955,
+      "symlink_present": false,
+      "process_checks": [
+        {
+          "family": "GNOME keyring",
+          "exact_name_and_executable_matches": 0,
+          "unexpected_executable_matches": 0,
+          "unavailable_or_raced": 0
+        },
+        {
+          "family": "KWallet6",
+          "exact_name_and_executable_matches": 0,
+          "unexpected_executable_matches": 0,
+          "unavailable_or_raced": 0
+        },
+        {
+          "family": "KWallet5",
+          "exact_name_and_executable_matches": 0,
+          "unexpected_executable_matches": 0,
+          "unavailable_or_raced": 0
+        },
+        {
+          "family": "older KWallet",
+          "exact_name_and_executable_matches": 0,
+          "unexpected_executable_matches": 0,
+          "unavailable_or_raced": 0
+        }
+      ],
+      "policy": {
+        "file_content_reads": 0,
+        "secret_reads": 0,
+        "bus_retries": 0,
+        "autostarts": 0,
+        "unlocks": 0,
+        "imports": 0,
+        "host_mutations": 0,
+        "priority": "nice19, idleIO",
+        "process_metadata": "current UID exact comm and matching exe only; no argv/environ/memory"
+      }
+    },
+    {
+      "schema_version": 1,
+      "host": "qinda-top",
+      "observed_at": "2026-10-02T22:41:11.668353+00:00",
+      "entry_cap": 128,
+      "recursion": false,
+      "directories": [
+        {
+          "standard_location": "keyrings",
+          "exists": true,
+          "regular_file_count": 2,
+          "regular_file_bytes": 3461,
+          "symlink_present": false,
+          "unexpected_entries": 0,
+          "count_complete": true,
+          "inspected_entries": 2
+        },
+        {
+          "standard_location": "kwalletd",
+          "exists": true,
+          "regular_file_count": 3,
+          "regular_file_bytes": 2062,
+          "symlink_present": false,
+          "unexpected_entries": 0,
+          "count_complete": true,
+          "inspected_entries": 3
+        },
+        {
+          "standard_location": "older_kwallet",
+          "exists": false,
+          "regular_file_count": 0,
+          "regular_file_bytes": 0,
+          "symlink_present": false,
+          "unexpected_entries": 0,
+          "count_complete": true
+        }
+      ],
+      "directory_regular_file_count": 5,
+      "directory_regular_file_bytes": 5523,
+      "symlink_present": false,
+      "process_checks": [
+        {
+          "family": "GNOME keyring",
+          "exact_name_and_executable_matches": 0,
+          "unexpected_executable_matches": 0,
+          "unavailable_or_raced": 0
+        },
+        {
+          "family": "KWallet6",
+          "exact_name_and_executable_matches": 0,
+          "unexpected_executable_matches": 0,
+          "unavailable_or_raced": 0
+        },
+        {
+          "family": "KWallet5",
+          "exact_name_and_executable_matches": 0,
+          "unexpected_executable_matches": 0,
+          "unavailable_or_raced": 0
+        },
+        {
+          "family": "older KWallet",
+          "exact_name_and_executable_matches": 0,
+          "unexpected_executable_matches": 0,
+          "unavailable_or_raced": 0
+        }
+      ],
+      "policy": {
+        "file_content_reads": 0,
+        "secret_reads": 0,
+        "bus_retries": 0,
+        "autostarts": 0,
+        "unlocks": 0,
+        "imports": 0,
+        "host_mutations": 0,
+        "priority": "nice19, idleIO",
+        "process_metadata": "current UID exact comm and matching exe only; no argv/environ/memory"
+      }
+    }
+  ],
+  "private_evidence": [
+    {
+      "host": "qinda",
+      "sha256": "1ef6f4f3a0dea14b6c5633d89eabe264603f8c92a6b3836d6266a3e65b89832c",
+      "mode": "0600"
+    },
+    {
+      "host": "qinda-top",
+      "sha256": "f65f46fad5d4748b31baa3fb592f3ce5fbbd065a12c8f6698ead0ae286dcf4e7",
+      "mode": "0600"
+    }
+  ],
+  "probe_sha256": "73ddb23b0c8dac91157285cc4d7766cd37c64d3aebfea168e1dd4299e3ca06fe",
+  "verification": {
+    "both_probes_exit": 0,
+    "entry_cap_reached": false,
+    "unexpected_entries": 0,
+    "process_name_and_executable_matches": 0,
+    "no_live_probe_remaining": true
+  },
+  "disposition": "Both hosts retain nonzero regular-file bytes in standard legacy stores. Metadata cannot establish item/secret contents or import completeness. No current matching resident GNOME/KWallet process observed. Preserve original files and documented actual sealed import before native provider handoff; no empty-store or migration-complete claim.",
+  "next_action": "Manager controls any subsequent native login/name transition/install; this probe authorizes none. Await installed Desktop discovery grant."
+}
