@@ -25,8 +25,9 @@ void IdleSuspendStage::stop() { m_started = false; cancel(); m_timeout = 0; m_id
 void IdleSuspendStage::refreshPreferences() { apply(); }
 void IdleSuspendStage::cancel() {
     ++m_serial; m_querying = false;
-    const auto token = m_token; m_token = 0;
+    const auto token = m_token;
     if (token) m_sleep.cancel(token);
+    if (m_token == token) m_token = 0;
 }
 bool IdleSuspendStage::suppressed() const {
     return !m_power.hasIdleInhibitorState() ||
