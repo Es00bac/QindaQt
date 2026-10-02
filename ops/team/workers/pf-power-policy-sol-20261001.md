@@ -1,8 +1,8 @@
 # Native power policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: working — source-only dormant native lid FD ownership and close-edge policy
-- Base: f951bffcb499d1a0b191ebc4a599ea61b18c8f43 (critical prerequisite under independent review)
+- Status: available — native lid source checkpoint ready; bounded executable gates requested
+- Base: f951bffcb499d1a0b191ebc4a599ea61b18c8f43 (critical prerequisite independently accepted)
 - Branch: worker/pf-native-lid-policy-sol-20261002
 - Worktree: .cache/pf-native-lid-policy-sol-20261002
 - Ownership: new cohesive LidPolicy/LidHandlingAuthority/logind FD adapter, focused resident fixtures, primary power docs and ADR0332; own board/messages. Additive assembly changes await collision coordination; frozen critical/profile/Hibernate code is not owned.
@@ -47,3 +47,5 @@
 - 2026-10-02T01:17:24Z — Manager assigned one source-only native lid outcome at exactf951 prerequisite (not accepted). Fetched hub, preserved shared untracked files and created NEW isolated worktree/branch. Current public Power lid/dock facts lack selected active-session identity; posted concrete public Session1 daemon UID/PID→authenticated login1 session Active/User boundary for approval and main/CMake collision notice before crossmodule assembly. Own new core/FD seam, fixtures/docs/ADR0332; no compiler/private lease, host mutation or frozen critical/profile/Hibernate edit.
 
 - 2026-10-02T01:41:50Z — Manager approved public-standard session UID/PID→root login1 active-session FD lookup, additive assembly and distinct noninstalled constructor-UID fixture target; normal installed resident fixes UID0. Core/adapter and34 authored private behavior rows now source-ready, uncompiled. Corrected initial lid-baseline interpretation from direct owning-source audit: valid SessionFacts already grant Lid capability, so confirmed initial open/lidPresentfalse arms and the first actual close proves presence; no prior close/reopen required. Unsupported/unavailable actions retain no FD. Boundary and production/test shape PASS after comment/fixture decomposition fixes; inherited518-line activation-test warning retained. ADR0332/primary docs state executable gates pending. Critical prerequisite independently ACCEPT reported by different reviewer; its source remains unchanged. Source push then qinda light docs/static next, no compiler/private lease.
+
+- 2026-10-02T01:48:00Z — Exact7f5 source checkpoint pushed to qinda and isolated remote WT. Qinda strict MkDocs7.44s/487-page docs+navigation plus boundary, production/test shape, diff and frozen critical/profile/Hibernate comparison all exit0.34 behavior rows/expected36 Qt totals remain UNCOMPILED/UNRUN. Posted exact seven-target/dependency compiler request and private first genuine-close gate followed only on pass by new/unchanged gates; no resources claimed. Source-only assigned stopping point reached, available for bounded gates or critical review repair; no runtime qualification/new implementation claim.
