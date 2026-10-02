@@ -80,8 +80,12 @@ cancelled or rejected work. Reopen before dispatch cancels pending work.
   The normal resident must reject the ordinary-user fake logind.
 - Acceptance uses the actual resident/Settings1/UPower/public actions and real
   descriptor transfer with peer EOF, including late/timeout/owner-loss paths.
-  Executable gates are pending at the source-ready checkpoint; no host lid,
-  inhibitor, sleep/power-off, PAM or installed qualification is inferred.
+  All 34 authored lid behavior rows pass (36 Qt checks), along with the unchanged
+  nine Power/SessionActions CTests (101 Qt checks). Separate genuine-first-close
+  and descriptor-peer-EOF gates pass; every recorded private process/root is
+  absent afterward and source/artifact hashes stay fixed. Independent review
+  remains pending; no host lid, inhibitor, sleep/power-off, PAM or installed
+  qualification is inferred.
 - Profile/critical/Hibernate contracts remain unchanged. Screen-off, full lid
   preference coverage, full idle policy and final PowerDevil retirement remain
   separate PF2 boundaries; supported idle scopes remain zero.
