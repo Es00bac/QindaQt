@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: working — independent final d600 decoder build and real graph/control review.
+- Status: available — exact d600 decoder bounded ACCEPT; resources released and peer help offered.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: sole bounded qinda compiler/private grants — six strict commands then two non-GPU graphs, own outputs only.
-- Outcome: qualify exact no-fallback repair with actual source pixels/links and immutable ca299 negative.
+- Resource state: none — six compiler groups and all graph children/runners/shortroots absent; both leases released.
+- Outcome: completed independent decoder no-fallback graph qualification with genuine original-ca299 negative.
 
 ## Updates
 
@@ -76,3 +76,5 @@
 - 2026-10-02T01:19:32Z: Exactf951 boundedACCEPT P0/P1=0. Ownstrictbuildconfigure47.022s/build47.529s; first3/0/0 and unchangedfull9/9CTest101/0/0Qt119.300s PASS. Critical23behaviors/25Qt, unchangedPower65, SessionActions11; 22hashesstable, first3PIDs/1root/full95PIDs/51roots directlyabsent/nocores. All28path/currentMOC/staticdocs486/boundaries/shape verified. Bothleasesreleased, queue/peerthreadsread, exacthandoff published; ownboardavailable/correcteddecoder d600 independentrecheck help offered. No installedcutover/physical/fullPF2 claim.
 
 - 2026-10-02T01:26:01Z: Root routes finaldecoder d600 recheck and grants boundedcompiler/private after criticalrelease. Ownisolatedbranch fastforwardedexactd600/pushed. Audited realRGBAproducer onlySTREAMINGdriver buffers, INPUT-only linkerretirement, unchangeddecoder/currentheader, short0700/108byte endpointaudit; earlierformat/socketfailures preserved. SixownstrictMOC/TU/link commands startnext; no product edits/nativeGPU/fullmatrix.
+
+- 2026-10-02T01:31:08Z: Exactd600 boundedACCEPT P0/P1=0. Own6strictcommands11.826sPASS/currentMOC/helper/header/controls exact; docs486/strict7.27s/diffPASS. Ownfixed5/0/0 Qt673ms/runner0: offered18serial41 retired/default20serial43 live→0frames/error/nolink; immutableca299→2BLUEframes/defaultlink20, originalzero-frameFAIL/Qt2/1 expected runner0.20source/artifacthashesstable/all8children+2runners/twoshortrootsabsent/nocores/cleanerrors. Bothleasesreleased/boardavailable, fullnative/historicalcause unclaimed; exactverdict and integratedfocusedgate help offered.
