@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — nine-app installed subset reviewed and handed off; idle, no resource lease
+- Status: available — remaining retired independent-parent metadata handed off; idle, no resource lease
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -113,3 +113,7 @@
 - 2026-10-02T22:41:05+00:00 — Claim bounded installed nine-app VDB/USE/runtime metadata, pre-world comparison and focused native boundary ownership/hash review. No builds, GPkg/payload sweep, host or GUI action; source3e05 unchanged.
 
 - 2026-10-02T22:44:25+00:00 — Scoped installed subset ACCEPT:9 VDB native metadata/recipe/repo matches,7 native flags,15 owned boundary hashes/modes match,zero retired Plasma direct atoms; KIO KDED permitted. Pre-mutation world SHA unchanged captured and sent root. Only2.825MB file reads atnice19/idleIO; no build/GPkg scan/host change. Immutable review 20261002T224425Z-installed-nine-app-native-subset-review, available awaiting bounded grant.
+
+- 2026-10-02T22:48:40+00:00 — Claim single bounded installed RDEPEND/PDEPEND pass for remaining26 retired CPVs. Distinguish independent mandatory parents, OR alternatives and old Desktop; no builds/payload scans/host changes.
+
+- 2026-10-02T22:51:26+00:00 — Single nice19/idleIO pass0/1.619s/1567installed/1541nonretired/26retired/459473metadata bytes/zero parse errors: one mandatory independent edge xwaylandvideobridge→kpipewire (no USE switch), Claude KDE portal OR has installed GTK alternative, selected branch not inferred. Old Desktop9 direct rows separated;24 no independent direct parent not removal approval. Immutable 20261002T225126Z-remaining-retired-independent-parents-review, idle awaiting bounded grant.
