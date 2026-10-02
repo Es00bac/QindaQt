@@ -1,0 +1,185 @@
+{
+  "candidate": "a6964310dbfb3a11df06532a32059f4ab9e92ac2",
+  "timestamp": "2026-10-02T20:13:58Z",
+  "first_attempt": {
+    "source": "a6964310dbfb3a11df06532a32059f4ab9e92ac2",
+    "exit": 1,
+    "elapsed_seconds": 0.614308763993904,
+    "pid": 1702211,
+    "starttick": "42672912",
+    "minimum_mem_available_kib": 15756456,
+    "stop_reason": null,
+    "observed_members": [
+      {
+        "pid": 1702211,
+        "ppid": 1702192,
+        "pgid": 1702211,
+        "starttick": "42672912",
+        "state": "S"
+      },
+      {
+        "pid": 1702213,
+        "ppid": 1702211,
+        "pgid": 1702213,
+        "starttick": "42672917",
+        "state": "S"
+      },
+      {
+        "pid": 1702214,
+        "ppid": 1702213,
+        "pgid": 1702213,
+        "starttick": "42672917",
+        "state": "S"
+      },
+      {
+        "pid": 1702215,
+        "ppid": 1702213,
+        "pgid": 1702213,
+        "starttick": "42672919",
+        "state": "R"
+      }
+    ],
+    "same_starttick_survivors": [],
+    "input_hashes_unchanged": 20,
+    "runtime_log_sha256": "7e1356d4f74f854422dcca0cb8b3b5ec5ec83c4257951fbd5a52223777448785",
+    "core_files": []
+  },
+  "setup_corrected_replay": {
+    "source": "a6964310dbfb3a11df06532a32059f4ab9e92ac2",
+    "exit": 134,
+    "elapsed_seconds": 1.8979048730107024,
+    "pid": 1706701,
+    "starttick": "42680574",
+    "minimum_mem_available_kib": 16159540,
+    "stop_reason": null,
+    "observed_members": [
+      {
+        "pid": 1706701,
+        "ppid": 1706695,
+        "pgid": 1706701,
+        "starttick": "42680574",
+        "state": "Z"
+      },
+      {
+        "pid": 1706705,
+        "ppid": 1706701,
+        "pgid": 1706705,
+        "starttick": "42680579",
+        "state": "S"
+      },
+      {
+        "pid": 1706706,
+        "ppid": 1706705,
+        "pgid": 1706705,
+        "starttick": "42680580",
+        "state": "S"
+      },
+      {
+        "pid": 1706707,
+        "ppid": 1706705,
+        "pgid": 1706705,
+        "starttick": "42680580",
+        "state": "S"
+      }
+    ],
+    "same_starttick_survivors": [],
+    "input_hashes_unchanged": 20,
+    "runtime_log_sha256": "f45d6c9efeb6cd39539e0927ad88583169f41b4e52accbe2894b6d86b4c49598",
+    "core_files": []
+  },
+  "commands": [
+    {
+      "source": "a6964310dbfb3a11df06532a32059f4ab9e92ac2",
+      "argv": [
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/tools/run-native-lock",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeDisplayPower",
+        "--library-path",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin",
+        "--",
+        "-nocrashhandler"
+      ],
+      "runtime_scope": "private software/virtual Workspace; no physical DPMS/sleep or GPU-renderer claim",
+      "environment": {
+        "HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/ambient-home",
+        "XDG_CONFIG_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/ambient-config",
+        "XDG_DATA_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/ambient-data",
+        "XDG_CACHE_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/ambient-cache",
+        "XDG_STATE_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/ambient-state",
+        "XDG_RUNTIME_DIR": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/ambient-runtime",
+        "TMPDIR": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/tmp",
+        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/nonexistent",
+        "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/nonexistent"
+      },
+      "core_limit": [
+        0,
+        0
+      ],
+      "timeout_seconds": 110
+    },
+    {
+      "source": "a6964310dbfb3a11df06532a32059f4ab9e92ac2",
+      "argv": [
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/tools/run-native-lock",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeDisplayPower",
+        "--library-path",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin",
+        "--",
+        "-nocrashhandler"
+      ],
+      "runtime_scope": "private software/virtual Workspace; no physical DPMS/sleep or GPU-renderer claim",
+      "environment": {
+        "HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/ambient-home",
+        "XDG_CONFIG_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/ambient-config",
+        "XDG_DATA_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/ambient-data",
+        "XDG_CACHE_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/ambient-cache",
+        "XDG_STATE_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/ambient-state",
+        "XDG_RUNTIME_DIR": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/ambient-runtime",
+        "TMPDIR": "/tmp/pf-dpms-0jqgukly",
+        "DBUS_SESSION_BUS_ADDRESS": "unix:path=/nonexistent",
+        "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/nonexistent"
+      },
+      "core_limit": [
+        0,
+        0
+      ],
+      "timeout_seconds": 110
+    }
+  ],
+  "frozen_inputs": {
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/tools/run-native-lock": "5b55959816395dccac02df74597bf52730cc6be5ecf428b8c1becc726b08d836",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeDisplayPower": "c69232986388441c9a3e85699ec0ce1f75699a3a4be142ad3d244c44ae16ad9b",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin.so": "8be07a5337d194b6606715edab49f9518d44080ed17d21ba21d84c684858adec",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/CMakeCache.txt": "b110049cb9ee8763de74cfd381db13746e5331c6d793ecdcaa53b0345b606ff0",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/display-power/displaypowerauthority.cpp": "265c786eba985a0851bd003c128c07a058a083fbf5d5f13411a9af7aa52e693e",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/display-power/blankleases.cpp": "a37032ac50e8126399b2b12a5edddbc0308328e63dbbecdfa0e709d5af8a4d48",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/display-power/tests/native_display_power_test.cpp": "ee59c536fe6728a53b58891dad34aa02d688ba93bb800e9e5a138c3d7834f017",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/src/workspace.cpp": "8b293f1d482368aa921186212952060449aa1a7ae79bbfd16397e4a10b841b62",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/autotests/integration/CMakeLists.txt": "e4233a9fefb73a7196e83c47b7b0fd78adeff7d022c1749f1e4b2a44f68981bb",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/autotests/integration/kwin_wayland_test.cpp": "0fffd3e654aac26f687f9b5f2910943ae37a6b063bc7daa23ee337cefdb2abb3",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/src/backends/virtual/virtual_output.cpp": "7ccb04dd2103e878eb47b92c41c0174a295925d4fd648e6cc0ac1120a18a01b1",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/screencast.so": "eef9cc2be892d6c4ffcc30c6801531158aed39fe7273deb0bac9201a52a6ba67",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/screenshot.so": "3440c2801bfbcd5372510adbaa9bd13890cfef5badd1c685cbb158bfbf2f411e",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/eis.so": "702690d6c6d03b0a014745b59157a8c91bac9a601be9ebf80c342845d36165bf",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorations.so.0.6.6.6.1": "18fb88c4f5d23c578fa6b05b2d4f31b9a7b7f7496353bb9e7ed78d799ad9a01f",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorations.so.0": "18fb88c4f5d23c578fa6b05b2d4f31b9a7b7f7496353bb9e7ed78d799ad9a01f",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorationsprivate.so.0.6.6.6.1": "4b21757923f1ca12a8738aabebecd186ec23b4980900e21b8dd0d51768207450",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorations.so": "18fb88c4f5d23c578fa6b05b2d4f31b9a7b7f7496353bb9e7ed78d799ad9a01f",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorationsprivate.so.0": "4b21757923f1ca12a8738aabebecd186ec23b4980900e21b8dd0d51768207450",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorationsprivate.so": "4b21757923f1ca12a8738aabebecd186ec23b4980900e21b8dd0d51768207450"
+  },
+  "archive_files": {
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/status.json": "d16cfe0ccb150b0ea741b5b44e9c6ddbc09b386f747854cf8860a3fbc5be48e7",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/command.json": "17149b192c23a6d464672e6cee4c43e0765f7baf5704c3a562a5724c5505ae2b",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/input-before.json": "76e3e4b92fade5f5503fa866dead8f9a2969200b5a7e36e5fc8b0abb5c1d9495",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/input-after.json": "76e3e4b92fade5f5503fa866dead8f9a2969200b5a7e36e5fc8b0abb5c1d9495",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696/runtime.log": "7e1356d4f74f854422dcca0cb8b3b5ec5ec83c4257951fbd5a52223777448785",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/status.json": "bb82cf672e28e24a72d115fa223d11c461fe8a80cd8145bd5a449620a4cb8cc3",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/command.json": "07e0f9a3cf4d78813d93216f6a2fb350a2d40808e0c6a9d0b25cc11e95bd6e69",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/input-before.json": "a217e5e188dd2ec7d2c4d86570607d0f4eb3dcdd172c0b074bfc41c4f5228404",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/input-after.json": "a217e5e188dd2ec7d2c4d86570607d0f4eb3dcdd172c0b074bfc41c4f5228404",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-a696-short-tmp/runtime.log": "f45d6c9efeb6cd39539e0927ad88583169f41b4e52accbe2894b6d86b4c49598"
+  },
+  "scope": "real native core/Workspace/D-Bus private software virtual outputs only; no physical DPMS/GPU-renderer/fullPower acceptance",
+  "behavior_rows_executed": 0,
+  "private_lease": "released"
+}

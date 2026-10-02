@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — resumed DPMS source diagnosis complete; exact shortcut include repair accepted; awaiting coherent root artifacts/private runtime lease
+- Status: available — exact a696 DPMS replay stopped at fixture backend double-install assertion; private lease released, awaiting narrow fixture repair coordination
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -55,3 +55,5 @@
 - 2026-10-02T20:05:26Z — Resume/read-only finding: root698 actualbuild failed only NativeShortcuts missing sessionlockcontroller.h; ownDPMSobject compiled438/450, no DPMSsourcefix needed. New unchanged isolated698 runtimeWT/branch preservesold10c/2b09refs. Exact5a21df52de1311ab061c5ed26665ea1a552868a8 PRIVATEinclude parity independentlySOURCEACCEPT/diffcheck0; root owns sharedrebuild. Approved exactsoftware/virtual Workspace authority gate, no compositor-mode changes/GPU/physicalclaim. Expected11behaviorrows/13Qt remain unrun; availablewaiting coherentartifact/privatelease. Native startup818/869actual4Qt pass remainsseparate.
 
 - 2026-10-02T20:08:25Z — Independent source ACCEPTa6964310dbfb3a11df06532a32059f4ab9e92ac2 solelegacy Q_IMPORT_PLUGIN guard aligns existing nativeShortcuts find/link/frameworkguard;diffcheck0/no input/auth/DPMSchange. Root preserveslinkfailure/rebuilds seven targets; availablewaiting coherentartifact/privatelease. No owncompiler/runtime/source edit.
+
+- 2026-10-02T20:13:58Z — Actual bounded DPMS checkpoint: original long-TMPDIR setup failure preserved (1QtPASS/1FAIL/0SKIP exit1/0.614s); approved short0700-TMPDIR unchanged replay reaches core then aborts at initTestCase !m_outputBackend (0QtPASS/1FAIL/0SKIP exit134/1.898s). Existing framework constructor installs VirtualBackend before fixture calls one-shot setter. No11behaviorrows executed;20frozeninputs unchanged, all4observed same-starttick processes gone/core0. PRIVATE lease released immediately. No production policy conclusion/repair/retry; request minimal test-framework construction injection and own explicit test main.
