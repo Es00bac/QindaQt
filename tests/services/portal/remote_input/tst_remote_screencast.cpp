@@ -175,7 +175,8 @@ private:
         auto start = remote(QStringLiteral("Start"), {bus.request(4), bus.sessionHandle(), app, QString{}, QVariantMap{}});
         if (!QTest::qWaitFor([&] { return consent->asks == asked + 1; })) return start;
         Q_EMIT consent->completed(consent->token, RequestResponse::Success, ChoiceValues{});
-        QTest::qWaitFor([&] { return producer->opens == opened + 1; });
+        if (!QTest::qWaitFor([&] { return producer->opens == opened + 1; }))
+            QTest::qFail("Capture producer did not open after consent", __FILE__, __LINE__);
         return start;
     }
     static QVariantMap streams(const QList<quint32> &nodes) {
