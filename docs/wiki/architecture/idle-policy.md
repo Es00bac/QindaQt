@@ -107,3 +107,25 @@ Startup/rearm/loss cannot manufacture that event. The candidate's complete stage
 assembly, native-exclusive activation, focused tests and actual native output
 gate remain pending at this checkpoint. See
 [ADR-0338](../adr/0338-own-scoped-display-power-and-shared-idle-composition.md).
+
+### Native exclusive power assembly candidate
+
+ADR-0338 now assembles current Settings1 source-specific dim/display-off/idle-suspend
+consumers in the owning Session1 supervisor. A shared all-three-scope declaration
+is sent through Power1 only after confirmed settings, source and scoped compositor
+availability; consumers still use the authenticated current-owner inhibitor receipt.
+Dim follows the upstream [PowerDevil DimDisplay 30% policy](https://invent.kde.org/plasma/powerdevil/-/blob/master/daemon/actions/bundled/dimdisplay.cpp),
+retains its license attribution and restores only unchanged owned panel values after
+actual readback. External brightness and DPMS off states remain owned externally.
+Idle suspend uses existing Protected/logind coordinator and exact own-request cancellation;
+late Can replies, source loss and uncertain actions never manufacture a new idle episode.
+Lid screen-off has a persistent current-Power1-epoch cause and releases only that cause
+on reopen, source/dock/preference/admission loss; continuous closed state cannot replay.
+
+`QINDAQT_NATIVE_POWER_EXCLUSIVE` defaults OFF. Reviewed package cutover ON configures
+Power1 activation with profile/critical/lid/idle native-exclusive flags, and the supervisor
+default `--native-power=exclusive`, which suppresses only its owned PowerDevil child.
+Bare Power1 execution still defaults every policy OFF; supervisor supports explicit
+`--native-power=off|exclusive`. This source candidate has not enabled installed host
+settings or qualified actual native Workspace DPMS yet. Focused behavioral gates follow
+in the exact candidate handoff; component wire/ledger passes alone are not full acceptance.

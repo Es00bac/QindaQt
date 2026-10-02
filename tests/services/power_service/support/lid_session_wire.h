@@ -2,6 +2,8 @@
 #pragma once
 #include <QDBusConnection>
 #include <QDBusMessage>
+#include <QDBusConnectionInterface>
+#include <QDBusReply>
 #include <QDBusVirtualObject>
 #include <optional>
 namespace QindaQt::Tests {
@@ -11,21 +13,43 @@ public:
     explicit LidSessionWire(QDBusConnection bus) : m_bus(std::move(bus)) {}
     ~LidSessionWire() override { stop(); }
     bool start() {
-        for (const auto &name : {QStringLiteral("org.qindaqt.Session1"), QStringLiteral("org.qindaqt.Sleep1"), QStringLiteral("org.freedesktop.ScreenSaver")})
+        for (const auto &name : {QStringLiteral("org.qindaqt.Session1"), QStringLiteral("org.qindaqt.Sleep1"), QStringLiteral("org.qindaqt.ScreenPower1"), QStringLiteral("org.freedesktop.ScreenSaver")})
             if (!m_bus.registerService(name)) return false;
-        for (const auto &path : {QStringLiteral("/org/qindaqt/Session1"), QStringLiteral("/org/qindaqt/Sleep1"), QStringLiteral("/ScreenSaver")})
+        for (const auto &path : {QStringLiteral("/org/qindaqt/Session1"), QStringLiteral("/org/qindaqt/Sleep1"), QStringLiteral("/org/qindaqt/ScreenPower1"), QStringLiteral("/ScreenSaver")})
             if (!m_bus.registerVirtualObject(path, this)) return false;
         return true;
     }
     void stop() {
-        for (const auto &name : {QStringLiteral("org.qindaqt.Session1"), QStringLiteral("org.qindaqt.Sleep1"), QStringLiteral("org.freedesktop.ScreenSaver")}) m_bus.unregisterService(name);
-        for (const auto &path : {QStringLiteral("/org/qindaqt/Session1"), QStringLiteral("/org/qindaqt/Sleep1"), QStringLiteral("/ScreenSaver")}) m_bus.unregisterObject(path);
+        for (const auto &name : {QStringLiteral("org.qindaqt.Session1"), QStringLiteral("org.qindaqt.Sleep1"), QStringLiteral("org.qindaqt.ScreenPower1"), QStringLiteral("org.freedesktop.ScreenSaver")}) m_bus.unregisterService(name);
+        for (const auto &path : {QStringLiteral("/org/qindaqt/Session1"), QStringLiteral("/org/qindaqt/Sleep1"), QStringLiteral("/org/qindaqt/ScreenPower1"), QStringLiteral("/ScreenSaver")}) m_bus.unregisterObject(path);
     }
     void replyCan() { if (delayedCan) { m_bus.send(delayedCan->createReply(true)); delayedCan.reset(); } }
     void replyAction() { if (delayedAction) { m_bus.send(delayedAction->createReply(true)); delayedAction.reset(); } }
     QString introspect(const QString &) const override { return QStringLiteral("<node/>"); }
     bool handleMessage(const QDBusMessage &message, const QDBusConnection &) override {
         const auto name = message.member();
+        if (message.interface() == QStringLiteral("org.qindaqt.ScreenPower1")) {
+            if (name == QStringLiteral("CanScreenOff")) { m_bus.send(message.createReply(true)); return true; }
+            if (name == QStringLiteral("ScreenOff")) {
+                const auto owner = m_bus.interface()->serviceOwner(QStringLiteral("org.qindaqt.Power1"));
+                const bool valid = owner.isValid() && message.service() == owner.value() &&
+                    message.signature() == QStringLiteral("ts") && message.arguments().first().toULongLong() != 0;
+                if (valid) {
+                    actions.append(name); screenCaller = message.service();
+                    screenEpoch = message.arguments().first().toULongLong();
+                    screenId = message.arguments().last().toString();
+                }
+                if (holdAction && valid) delayedAction = message;
+                else m_bus.send(message.createReply(valid));
+                return true;
+            }
+            if (name == QStringLiteral("ReleaseScreenOff")) {
+                const bool valid = message.service() == screenCaller && !screenId.isEmpty() &&
+                    message.arguments().first().toString() == screenId;
+                if (valid) { releasedScreenIds.append(screenId); screenId.clear(); }
+                m_bus.send(message.createReply(valid)); return true;
+            }
+        }
         if (message.interface() == QStringLiteral("org.qindaqt.Sleep1")) {
             if (name == QStringLiteral("CanSuspend") || name == QStringLiteral("CanHibernate")) {
                 ++canCalls;
@@ -50,7 +74,9 @@ public:
         }
         return false;
     }
-    QStringList actions;
+    QStringList actions, releasedScreenIds;
+    QString screenCaller, screenId;
+    quint64 screenEpoch = 0;
     int canCalls = 0;
     bool holdCan = false, holdAction = false, uncertain = false;
     std::optional<QDBusMessage> delayedCan, delayedAction;

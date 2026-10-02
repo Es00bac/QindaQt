@@ -31,6 +31,7 @@ bool NativeSleepComposition::start() {
   d->coordinator.start();
   return true;
 }
+Session::NativeSleep::SleepCoordinator &NativeSleepComposition::coordinator() { return d->coordinator; }
 void NativeSleepComposition::stop() {
   d->coordinator.stop();
   d->service.stop();

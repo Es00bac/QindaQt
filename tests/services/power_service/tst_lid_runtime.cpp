@@ -14,6 +14,8 @@ using namespace QindaQt::Power;
 class LidRuntimeTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void screenOffUsesCurrentPowerEpochAndReleasesOnReopen();
+    void screenOffSourceChangeAndLateReplyDoNotReplay();
     void firstGenuineClose_data(); void firstGenuineClose();
     void sourceAndDockSelection_data(); void sourceAndDockSelection();
     void defaultOffAndProductionUid();
@@ -30,6 +32,32 @@ private Q_SLOTS:
     void spoofedSessionInvalidationCannotRevoke();
     void shutdownClosesEveryOwnedDuplicate();
 };
+void LidRuntimeTests::screenOffUsesCurrentPowerEpochAndReleasesOnReopen() {
+    LidRuntime row; PREPARE(row);
+    CONFIGURE(row, QStringLiteral("ac"), QStringLiteral("action"), QStringLiteral("screen-off")); OWNED(row);
+    row.logind->lid(true); QTRY_COMPARE(row.actions(), QStringList{QStringLiteral("ScreenOff")});
+    QCOMPARE(row.session->screenEpoch, row.power->snapshot().epoch);
+    QCOMPARE(row.session->screenCaller, row.power->owner());
+    QVERIFY(!row.session->screenId.isEmpty()); const auto id = row.session->screenId;
+    row.logind->lid(true); QTRY_VERIFY(row.power->snapshot().source.lidClosed);
+    QCOMPARE(row.actions().size(), 1); QCOMPARE(row.logind->directSleepCalls, 0);
+    row.logind->lid(false); QTRY_COMPARE(row.session->releasedScreenIds, QStringList{id});
+    row.logind->lid(true); QTRY_COMPARE(row.actions().size(), 2);
+    QVERIFY(row.session->screenId != id);
+}
+void LidRuntimeTests::screenOffSourceChangeAndLateReplyDoNotReplay() {
+    LidRuntime row; PREPARE(row);
+    CONFIGURE(row, QStringLiteral("ac"), QStringLiteral("action"), QStringLiteral("screen-off")); OWNED(row);
+    row.session->holdAction = true;
+    row.logind->lid(true); QTRY_COMPARE(row.actions().size(), 1);
+    const auto id = row.session->screenId;
+    row.source(true); QTRY_VERIFY(row.power->snapshot().source.onBattery);
+    QTRY_COMPARE(row.session->releasedScreenIds, QStringList{id});
+    row.session->replyAction();
+    row.logind->lid(true); QTRY_VERIFY(row.power->snapshot().source.lidClosed);
+    QCOMPARE(row.actions().size(), 1);
+    QCOMPARE(row.logind->directSleepCalls, 0);
+}
 void LidRuntimeTests::firstGenuineClose_data() {
     QTest::addColumn<QString>("choice"); QTest::addColumn<QString>("method");
     QTest::newRow("suspend") << QStringLiteral("suspend") << QStringLiteral("Suspend");
