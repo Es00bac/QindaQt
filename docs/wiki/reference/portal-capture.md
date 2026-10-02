@@ -5,7 +5,13 @@ independently accepted at `d6002623` and integrated on the recovery branch.
 Its independent eleven focused tests pass 87 Qt checks; the manager's coherent
 exact-fork existing native matrix passes seven behaviors / thirteen Qt checks
 with actual pixels and decoded frames. The installed selector continues to
-route both families to KDE while additional privacy and package gates remain. This first slice does not complete PF19: useful window/multiple/cursor
+route both families to KDE while additional privacy and package gates remain.
+On combined integration `92f6888ad`, the strict 29-target affected consumer/plugin
+build and 22 private CTests pass 200 Qt checks, including the eleven focused
+capture/Screenshot tests, seven startup checks, five real decoder graph checks
+and the existing power/action regressions. No row fails or skips; these focused
+gates do not add a native GPU matrix or qualify the new privacy fixtures.
+This first slice does not complete PF19: useful window/multiple/cursor
 capabilities and shared revocable restore permissions remain a successor before
 program closure. See [ADR-0324](../adr/0324-native-portal-capture-boundaries.md),
 [portal foundation](../architecture/portal-foundation.md),
@@ -136,8 +142,9 @@ private PipeWire frames; cancellation, Close, caller/dependency/parent loss and
 native lock/uncertainty must withdraw results/streams. Staged helper permission
 entries, metadata/selection/poison gates, existing accepted portal/Screenshot
 regressions, strict docs and source shape must pass before routing changes. No
-successful capture-runtime qualification or installed full-portal completion is
-asserted by this page.
+full native capability qualification or installed full-portal completion is
+asserted by this page. The bounded current pixel/frame qualification is recorded
+above and below; predecessor failures remain historical evidence.
 
 ## Protected authority source successor
 

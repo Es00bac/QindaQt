@@ -68,8 +68,12 @@ The broader consumer foundation has independent exact ACCEPT `85b0b285`, with
 87 own focused Qt checks, and is integrated with its preserved decoder/startup
 reviews. The exact fork development pin `cb0877f4` is independently accepted in
 `61123c4b` and integrated; authoritative fork hub and clean checkout match
-`68c4d74f`. Affected combined consumer and package/privacy gates remain; installed
-routing and full PF19 remain open.
+`68c4d74f`. On exact combined integration `92f6888ad`, the manager's strict
+29-target consumer/plugin/affected build passes, followed by 22 private CTests
+and 200 Qt checks with zero failures or skips. This repeats the accepted
+capture/Screenshot, startup/decoder and power/action regressions together.
+Dynamic package/plugin and additional privacy gates remain; installed routing
+and full PF19 remain open.
 
 ## September 30 — Graphical removable media
 
