@@ -1,0 +1,3 @@
+# Native input qualification claim
+
+Manager explicitly transfers stopped Claude continuation. Own desktopWT pf-native-input-qualification-20261002 at e2f base; own forkWT same task at coherent5f. Preserved six unfinished test/consent/CMake files byte-for-byte, hash manifest under ops/team/audits/native-input-transfer-20261002.json; original Claude source/messages untouched. d3fe19a48 committed and pushed. Fork Claude1a has no uncommitted changes. Resource grant -j4 -l12, configure native shortcuts ON once and focus required targets; no ALL/laptop/host input. Bounded stopping candidate or exact blockers within45min. Existing Native Shortcuts test source checkpoint5903120a31 is separately preserved and unqualified.
