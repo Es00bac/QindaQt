@@ -73,12 +73,13 @@ artwork. Original editable sources and licensing notices remain preserved.
 
 The independently reviewed QindaGentoo recipe `07ab05d` packages the complete
 source as `x11-themes/qinda-breeze-handdrawn-1.0.0_p20261001`, with only hicolor
-as a runtime dependency. It is installed and retained through Portage on qinda.
-The installed checks verify all 7,172 icon hashes, 7,213 Portage files, twelve
-source-exact native Qt pixmaps, production theme discovery and the signed
-binary. The saved icon preference is unchanged. Laptop delivery uses the same
-signed binary when its `~/.cache/laptop-test.lock` disappears; builds and GPU
-tests run on qinda while the laptop is reserved for game testing.
+as a runtime dependency. It is installed and retained through Portage on both
+hosts from the identical signed build-ID-1 binary. Each host verifies all 7,172
+icon hashes, 7,213 Portage files, twelve source-exact native Qt pixmaps,
+production theme discovery and forced binary signature checks. Saved icon
+preferences are unchanged. The laptop used the binary after its test lock
+disappeared; all source builds and GPU tests run on qinda while the laptop GPU
+is reserved for game testing.
 
 ### Live working gallery
 

@@ -17,10 +17,11 @@ The separate `QindaQt-Handdrawn` family is complete at QindaIconArt `6cdcfecc`:
 7,172 exact category/name paths, 3,261 distinct hand-rendered raster drawings,
 transparent PNG output, complete provenance and actual-size visual inspection.
 Independent review accepts the exact QindaGentoo package recipe `07ab05d`.
-Portage installs and retains version `1.0.0_p20261001` on qinda; all 7,213 package
-files, icon bytes, signed binary, twelve native Qt samples and production theme
-discovery pass. The saved preference is unchanged. The laptop installation
-waits for its test lock to disappear and will use the same signed binary.
+Portage installs and retains version `1.0.0_p20261001` on both hosts from the
+same signed build-ID-1 binary. Each host passes all 7,213 package-file checks,
+exact icon bytes, forced signature verification, twelve native Qt samples and
+production theme discovery. Saved preferences are unchanged; no laptop source
+build or GPU test was required.
 See [Icon themes](wiki/shell/icon-theme.md).
 
 The requested live working gallery is delivered on the recovery branch from
@@ -44,9 +45,13 @@ produce real Screenshot pixels and continuous decoded frames in the first
 seven-case native group. Native lock exposes a synchronous scene-view lifetime
 defect in accepted fork `447eed96`. Narrow lifetime candidate `68c4d74f` keeps
 immediate capture revocation and defers source destruction; its monitored lock
-test passes three Qt checks and compositor survival. Independent review is in
-progress. A recurring unmonitored initial capture refusal remains under
-diagnosis, and the full matrix, production stage and installed routing remain open.
+test passes three Qt checks and compositor survival. Independent exact review
+accepts the lifetime repair after its own first unmonitored lock replay. The
+manager's complete 1,418-action production fork build, 455-path collision-free
+stage and identity check pass with test authorization off. A startup readiness
+ordering gap is being repaired without claiming the historical refusal cause.
+Independent review rejects decoder `ca29910d` for missing default-fallback
+suppression; that repair, full matrix and installed routing remain open.
 
 ## September 30 — Graphical removable media
 

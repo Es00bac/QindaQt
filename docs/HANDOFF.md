@@ -4,13 +4,14 @@ Complete hand-rendered artwork is frozen at QindaIconArt `6cdcfecc`: 7,172 named
 icons and 3,261 distinct drawings, with no missing entries and preserved raster
 generation/crop/review provenance. Exact QindaGentoo recipe `07ab05d` is
 independently accepted and integrated in its authoritative hub. Actual Portage
-installation on qinda passes all 7,213 file checks, exact icon bytes, forced
+installation on both hosts passes all 7,213 file checks per host, exact icon bytes, forced
 binary signature verification, twelve native Qt samples and production theme
 discovery. Version `1.0.0_p20261001`, build ID 1, has binary SHA256
 `fd9bee16c877ac65f0cce15175b3f123c4163d8b4e5bbe9219e74969a6a0684a`.
-The saved icon preference remains unchanged. Laptop installation waits for its
-test lock; all builds and GPU tests use qinda while Claude tests the game on
-the laptop.
+Saved icon preferences remain unchanged. The laptop used this same signed
+binary after its test lock disappeared; its install exited zero in 41.013
+seconds without a source build or GPU test. Builds and GPU tests use qinda
+while Claude tests the game on the laptop.
 The supplied painted theme and live working gallery are already delivered.
 
 Native supported source-profile policy `ce84b0a5` and independent exact review
@@ -44,9 +45,14 @@ defect: immediate stream source destruction invalidates a snapshotted view.
 Narrow fork candidate `68c4d74f` (production code `42604a8f`) preserves immediate
 closed/privacy fences and defers source destruction until the event loop.
 Its unchanged monitored lock test passes three Qt cases and compositor survival;
-different-worker exact review is in progress. Recurring unmonitored initial
-capture refusal remains unresolved, so the full matrix is held. Prior failures
-are retained. Production staging and installed routing remain separate gates.
+independent exact review accepts it after an own first unmonitored lock replay.
+Manager complete production build passes 1,418 actions in 393.132 seconds,
+test authorization off, followed by a 455-path collision-free stage and identity
+check. A public startup readiness ordering gap is being repaired; historical
+initial refusals remain unexplained. Independent consumer review rejects
+`ca29910d` for permitting default-node fallback when the offered target retires.
+The decoder repair and full matrix are held for exact recheck. Prior failures
+are retained; no installed routing or full capture completion is claimed.
 
 The read-only local icon gallery candidate `d93a6c99`, independently accepted
 by `8f348f61`, is integrated on this recovery branch. It lists current working
