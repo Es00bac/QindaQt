@@ -11,3 +11,5 @@ target_sources(qindaqt_portal_remote_input PRIVATE src/compositor_eis.cpp src/re
     include/qindaqt/services/portal/remote_input/input_capture_adaptor.h
     include/qindaqt/services/portal/remote_input/remote_desktop_adaptor.h)
 target_link_libraries(qindaqt_portal_remote_input PUBLIC QindaQt::PortalAccessPolicy Qt6::DBus)
+
+target_link_libraries(qindaqt_portal_remote_input PRIVATE QindaQt::CompositorNames)

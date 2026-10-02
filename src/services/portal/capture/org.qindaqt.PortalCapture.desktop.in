@@ -3,4 +3,4 @@ Type=Application
 Name=QindaQt Portal Capture
 Exec=@KDE_INSTALL_FULL_LIBEXECDIR@/qindaqt-portal-capture
 NoDisplay=true
-X-QindaQt-KWin-DBus-Restricted-Interfaces=org.kde.KWin.ScreenShot2;
+X-QindaQt-KWin-DBus-Restricted-Interfaces=org.qindaqt.KWin.ScreenShot2;

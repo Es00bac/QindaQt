@@ -364,3 +364,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0334: Adapt the live shortcut authority and its native consumers](0334-native-shortcut-authority-and-consumers.md) — Proposed candidate
 
 - [ADR-0335: Native remote input through the compositor EIS engine](0335-native-remote-input-portal.md)
+
+- [ADR-0340: Use native privileged compositor identities](0340-use-native-privileged-compositor-identities.md)

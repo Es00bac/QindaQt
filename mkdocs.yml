@@ -511,6 +511,7 @@ nav:
 
       - "ADR-0302: Native Passwords & Keys client and prompt policy": adr/0302-native-passwords-keys-client-and-policy.md
       - "ADR-0339: Frontend PermissionStore Settings revocation": adr/0339-use-frontend-permission-store-for-settings-revocation.md
+      - "0340: Native privileged compositor identities": wiki/adr/0340-use-native-privileged-compositor-identities.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md
       - "ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor": adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md
