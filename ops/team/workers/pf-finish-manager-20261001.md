@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: available — game preview stopped; QindaQt desktop work remains scoped and incomplete
+- Status: working — delivering icons and coordinating bounded native power, shortcuts and remote-input adaptations
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-02T16:39:16+00:00 — User prioritizes fastest complete delivery today. Exact base7358 preserved; icon source2efd and package12b5 pass source/image gates. Root independently reviews recipes and integrates delivery; routine icon installation delegated. Power worker owns authenticated idle consumers and display-power integration; shortcut worker adapts existing registry/experimental endpoint; one Claude Opus5.5 Max requested for native remote-input/EIS adaptation, actual runtime verification pending. No game work, laptop heavy work or feature completion claim.
 
 - 2026-10-02T04:12:32Z — User corrected scope to the QindaQt desktop environment; Claude owns the game. Earlier game screenshot-gallery work was a mistaken interpretation and is canceled. Our isolated game preview browser and loopback forward were terminated; our preview server was already gone. No game source or level design was changed. Historical game-gallery live claims above are superseded; do not resume that work. Both complete icon themes and the desktop icon gallery remain in scope. No compiler or private/native lease is held. Accepted lid sources and independent 137-case review are integrated, but manager combined 137-case replay and current strict wiki gate remain pending. Ordinary property capture, protected-helper identity and ScreenOff contract work remain bounded desktop tasks with their failures and source-only proposals preserved. Full Plasma removal remains incomplete; no milestone or feature-ledger credit is added.
 
