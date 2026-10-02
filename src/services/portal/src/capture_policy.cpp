@@ -6,6 +6,7 @@
 #include <QJsonArray>
 #include <QUrl>
 #include <QRegularExpression>
+#include <QSet>
 #include <cmath>
 namespace QindaQt::Services::Portal {
 namespace {
@@ -29,7 +30,7 @@ bool validScreenCastSelection(const QVariantMap &options) {
     for (const auto &key : options.keys()) if (key != "types" && key != "multiple" && key != "cursor_mode") return false;
     return typed(options, "types", QMetaType::UInt) && typed(options, "multiple", QMetaType::Bool)
         && typed(options, "cursor_mode", QMetaType::UInt) && options.value("types", 1U).toUInt() == 1
-        && !options.value("multiple", false).toBool() && options.value("cursor_mode", 1U).toUInt() == 1;
+        && QSet<quint32>{1, 2, 4}.contains(options.value("cursor_mode", 1U).toUInt());
 }
 QString captureCaller(const QString &path) {
     static const QRegularExpression pattern("^/org/freedesktop/portal/desktop/request/([0-9]+_[0-9]+)/[A-Za-z0-9_]+$");
@@ -51,17 +52,25 @@ bool validCapturePublication(CaptureKind kind, const QVariantMap &results) {
         return true;
     }
     const auto value = results.value("streams"); if (value.metaType() != QMetaType::fromType<CaptureStreams>()) return false;
-    const auto streams = value.value<CaptureStreams>(); if (streams.size() != 1 || !streams[0].node || streams[0].properties.size() != 2) return false;
-    for (const auto &key : {QStringLiteral("position"), QStringLiteral("size")}) if (streams[0].properties.value(key).metaType() != QMetaType::fromType<CaptureCoordinate>()) return false;
-    const auto size = streams[0].properties.value("size").value<CaptureCoordinate>();
-    return size.first > 0 && size.first <= 16384 && size.second > 0 && size.second <= 16384;
+    const auto streams = value.value<CaptureStreams>(); if (streams.isEmpty() || streams.size() > 16) return false;
+    QSet<quint32> nodes;
+    for (const auto &stream : streams) {
+        if (!stream.node || nodes.contains(stream.node) || stream.properties.size() != 2) return false;
+        nodes.insert(stream.node);
+        for (const auto &key : {QStringLiteral("position"), QStringLiteral("size")}) if (stream.properties.value(key).metaType() != QMetaType::fromType<CaptureCoordinate>()) return false;
+        const auto size = stream.properties.value("size").value<CaptureCoordinate>();
+        if (size.first <= 0 || size.first > 16384 || size.second <= 0 || size.second > 16384) return false;
+    }
+    return true;
 }
 QJsonObject captureFrame(const CaptureRequest &r, const QString &directory, const QString &owner) {
-    return {{"kind", static_cast<int>(r.kind)}, {"app", r.app}, {"parent", r.parent}, {"session", r.session},
+    QJsonObject frame{{"kind", static_cast<int>(r.kind)}, {"app", r.app}, {"parent", r.parent}, {"session", r.session},
         {"interactive", r.interactive}, {"modal", r.modal}, {"directory", directory}, {"owner", owner}};
+    if (r.kind == CaptureKind::Stream) { frame.insert("multiple", r.multiple); frame.insert("cursor_mode", static_cast<int>(r.cursorMode)); }
+    return frame;
 }
 std::optional<CaptureRequest> captureRequestFromFrame(const QJsonObject &frame) {
-    if (frame.size() != 8 || !integer(frame.value("kind"), 0, 2) || !frame.value("app").isString()
+    if ((frame.size() != 8 && frame.size() != 10) || !integer(frame.value("kind"), 0, 2) || !frame.value("app").isString()
         || !frame.value("parent").isString() || !frame.value("session").isString()
         || !frame.value("interactive").isBool() || !frame.value("modal").isBool()
         || !frame.value("directory").isString() || !frame.value("owner").isString()) return {};
@@ -69,6 +78,11 @@ std::optional<CaptureRequest> captureRequestFromFrame(const QJsonObject &frame) 
     if (!request || !QDir::isAbsolutePath(frame.value("directory").toString()) || !frame.value("owner").toString().startsWith(':')) return {};
     auto result = *request; result.kind = static_cast<CaptureKind>(frame.value("kind").toInt());
     result.session = frame.value("session").toString(); result.interactive = frame.value("interactive").toBool(); result.modal = frame.value("modal").toBool();
+    if (frame.size() == 10) {
+        if (result.kind != CaptureKind::Stream || !frame.value("multiple").isBool() || !integer(frame.value("cursor_mode"), 1, 4)
+            || !QSet<int>{1, 2, 4}.contains(frame.value("cursor_mode").toInt())) return {};
+        result.multiple = frame.value("multiple").toBool(); result.cursorMode = static_cast<quint32>(frame.value("cursor_mode").toInt());
+    }
     if (result.kind == CaptureKind::Stream && result.session.isEmpty()) return {};
     return result;
 }
@@ -84,6 +98,20 @@ std::optional<QVariantMap> captureResults(CaptureKind kind, const QJsonObject &o
         if (object.size() != 1 || array.size() != 3) return {};
         for (const auto &v : array) if (!v.isDouble() || !std::isfinite(v.toDouble()) || v.toDouble() < 0 || v.toDouble() > 1) return {};
         return QVariantMap{{"color", QVariant::fromValue(CaptureColor{array[0].toDouble(), array[1].toDouble(), array[2].toDouble()})}};
+    }
+    // AGENT-CONTRACT: a batch is published atomically after every consented
+    // source starts; any malformed member rejects the entire helper result.
+    if (object.size() == 1 && object.value("streams").isArray()) {
+        const auto batch = object.value("streams").toArray(); if (batch.isEmpty() || batch.size() > 16) return {};
+        CaptureStreams streams;
+        for (const auto &member : batch) {
+            if (!member.isObject() || member.toObject().size() != 6 || !member.toObject().contains("node")) return {};
+            const auto parsed = captureResults(kind, member.toObject(), directory);
+            if (!parsed) return {};
+            streams.append(parsed->value("streams").value<CaptureStreams>());
+        }
+        QVariantMap result{{"streams", QVariant::fromValue(streams)}};
+        return validCapturePublication(kind, result) ? std::optional<QVariantMap>{result} : std::nullopt;
     }
     if (object.size() != 6 || !integer(object.value("node"), 1, 2147483647)
         || !integer(object.value("x"), -100000, 100000) || !integer(object.value("y"), -100000, 100000)

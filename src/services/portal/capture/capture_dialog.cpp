@@ -12,15 +12,16 @@ namespace QindaQt::Services::Portal {
 CaptureDialog::CaptureDialog(CaptureRequest request, QString directory, NativeCaptureAdmission &admission,
     CompositorCapture::KWinCapturePort &capture, CompositorCapture::WaylandScreenCast &stream)
     : m_request(std::move(request)), m_directory(std::move(directory)), m_admission(admission), m_capture(capture), m_stream(stream) {
-    setWindowTitle(m_request.kind == CaptureKind::Stream ? tr("Share a screen") : tr("Screen capture permission"));
+    setWindowTitle(m_request.kind == CaptureKind::Stream ? tr("Share screens") : tr("Screen capture permission"));
     setObjectName("nativeCaptureDialog"); setModal(m_request.modal); resize(580, 360);
     m_layout = new QVBoxLayout(this); auto *question = new QLabel(this); question->setTextFormat(Qt::PlainText); question->setWordWrap(true);
     const QString app = m_request.app.isEmpty() ? tr("An application") : m_request.app;
-    question->setText(m_request.kind == CaptureKind::Stream ? tr("%1 wants to share a screen. Choose a screen and allow sharing. You can stop sharing at any time.").arg(app)
+    question->setText(m_request.kind == CaptureKind::Stream ? (m_request.multiple ? tr("%1 wants to share screens. Choose one or more screens and allow sharing. You can stop sharing at any time.") : tr("%1 wants to share a screen. Choose a screen and allow sharing. You can stop sharing at any time.")).arg(app)
         : m_request.kind == CaptureKind::Color ? tr("%1 wants to pick a color from your screen. Allow a capture, then choose a pixel.").arg(app) : tr("%1 wants a screenshot of your screens.").arg(app));
     m_layout->addWidget(question); m_sources = new QListWidget(this); m_sources->setObjectName("captureSources");
     m_sources->setAccessibleName(tr("Screens available to share")); m_sources->setVisible(m_request.kind == CaptureKind::Stream); m_layout->addWidget(m_sources);
-    m_allow = new QPushButton(m_request.kind == CaptureKind::Stream ? tr("Share selected screen") : tr("Allow capture"), this); m_allow->setObjectName("captureAllow"); m_allow->setEnabled(false);
+    m_sources->setSelectionMode(m_request.multiple ? QAbstractItemView::ExtendedSelection : QAbstractItemView::SingleSelection);
+    m_allow = new QPushButton(m_request.kind == CaptureKind::Stream ? tr("Share selected screens") : tr("Allow capture"), this); m_allow->setObjectName("captureAllow"); m_allow->setEnabled(false);
     m_cancel = new QPushButton(tr("Cancel"), this); m_cancel->setObjectName("captureCancel"); m_layout->addWidget(m_allow); m_layout->addWidget(m_cancel);
     connect(m_allow, &QPushButton::clicked, this, &CaptureDialog::begin); connect(m_cancel, &QPushButton::clicked, this, [this] { finish(RequestResponse::Cancelled); });
     connect(&m_admission, &NativeCaptureAdmission::ready, this, &CaptureDialog::refresh); connect(&m_admission, &NativeCaptureAdmission::lost, this, &CaptureDialog::fail);
@@ -30,8 +31,12 @@ CaptureDialog::CaptureDialog(CaptureRequest request, QString directory, NativeCa
     connect(m_sources, &QListWidget::itemSelectionChanged, this, &CaptureDialog::refresh);
     connect(&m_stream, &CompositorCapture::WaylandScreenCast::streamCreated, this, [this](quint32 node, const CompositorCapture::MonitorSource &source) {
         if (!m_parent || !m_admission.admitted() || m_finished || m_sent) { fail(); return; }
+        if (!m_selectedSources.removeOne(source.id) || m_nodes.contains(node)) { fail(); return; }
+        m_nodes.insert(node);
+        m_streamResults.append(QJsonObject{{"node", static_cast<double>(node)}, {"name", source.name}, {"x", source.position.x()}, {"y", source.position.y()}, {"width", source.size.width()}, {"height", source.size.height()}});
+        if (!m_selectedSources.isEmpty()) return;
         m_sent = true; m_allow->hide(); m_sources->setEnabled(false); m_cancel->setText(tr("Stop sharing"));
-        Q_EMIT result(RequestResponse::Success, {{"node", static_cast<double>(node)}, {"name", source.name}, {"x", source.position.x()}, {"y", source.position.y()}, {"width", source.size.width()}, {"height", source.size.height()}});
+        Q_EMIT result(RequestResponse::Success, m_streamResults.size() == 1 ? m_streamResults.first().toObject() : QJsonObject{{"streams", m_streamResults}});
     });
     connect(&m_stream, &CompositorCapture::WaylandScreenCast::closed, this, [this] { if (m_request.kind == CaptureKind::Stream) fail(); });
     connect(&m_capture, &CompositorCapture::CapturePort::finished, this, &CaptureDialog::image);
@@ -39,16 +44,24 @@ CaptureDialog::CaptureDialog(CaptureRequest request, QString directory, NativeCa
     QTimer::singleShot(4000, this, [this] { if (!m_parent || !m_admission.admitted()) fail(); });
 }
 void CaptureDialog::parentReady() { m_parent = true; refresh(); }
-void CaptureDialog::refresh() { m_allow->setEnabled(m_parent && m_admission.admitted() && !m_busy && (m_request.kind != CaptureKind::Stream || m_sources->currentItem())); }
+void CaptureDialog::refresh() { m_allow->setEnabled(m_parent && m_admission.admitted() && !m_busy && (m_request.kind != CaptureKind::Stream || !m_sources->selectedItems().isEmpty())); }
 void CaptureDialog::begin() {
     if (!m_parent || !m_admission.admitted() || m_busy || m_finished) { fail(); return; }
+    if (m_request.kind == CaptureKind::Stream) {
+        for (const auto *item : m_sources->selectedItems()) m_selectedSources.append(item->data(Qt::UserRole).toString());
+        if (m_selectedSources.isEmpty() || (!m_request.multiple && m_selectedSources.size() != 1)) { fail(); return; }
+        // AGENT-GUARD: freeze the exact user selection before granting capture;
+        // UI events during the authority round-trip cannot enlarge that grant.
+        m_sources->setEnabled(false);
+    }
     m_busy = true; refresh(); Q_EMIT consented();
 }
 void CaptureDialog::captureReady() {
     if (!m_busy || !m_parent || !m_admission.admitted() || m_finished || m_granted) { fail(); return; }
     m_granted = true;
     if (m_request.kind == CaptureKind::Stream) {
-        const auto *selected = m_sources->currentItem(); if (!selected || !m_stream.start(selected->data(Qt::UserRole).toString())) fail(); return;
+        if (!m_stream.start(m_selectedSources, m_request.cursorMode)) fail();
+        return;
     }
     hide(); QTimer::singleShot(100, this, [this] {
         if (!m_parent || !m_admission.admitted() || m_finished) { fail(); return; }

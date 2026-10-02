@@ -11,7 +11,7 @@ enum class CaptureSessionPhase { Created, Selected, Starting, Streaming };
 class CaptureSessions final : public QObject {
     Q_OBJECT
 public:
-    struct Entry { QString frontend, caller, app; int pidfd = -1; CaptureSessionPhase phase = CaptureSessionPhase::Created; RequestToken pending = 0; QDBusVirtualObject *object = nullptr; };
+    struct Entry { QString frontend, caller, app; int pidfd = -1; CaptureSessionPhase phase = CaptureSessionPhase::Created; RequestToken pending = 0; QDBusVirtualObject *object = nullptr; bool multiple = false; quint32 cursorMode = 1; };
     CaptureSessions(QDBusConnection, RequestRegistry &, QObject *parent = nullptr);
     ~CaptureSessions() override;
     bool create(const QDBusMessage &, const QString &requestPath, const QString &sessionPath, const QString &app);
