@@ -38,7 +38,9 @@ DisplayPowerFacade::~DisplayPowerFacade() {
     if (!m_lidId.isEmpty()) releaseScreenOff(m_lidCaller, m_lidId);
 }
 void DisplayPowerFacade::refreshPreferences() {
-    if (!available()) { requestOn(); if (!m_lidId.isEmpty()) releaseScreenOff(m_lidCaller, m_lidId); }
+    const auto preference = m_preferences ? m_preferences() : std::nullopt;
+    const bool changed = preference != m_lastPreference; m_lastPreference = preference;
+    if (!available() || changed) { requestOn(); if (!m_lidId.isEmpty()) releaseScreenOff(m_lidCaller, m_lidId); }
     Q_EMIT availabilityChanged(available());
 }
 bool DisplayPowerFacade::available() const { return m_display.available() && m_preferences && m_preferences().has_value(); }
