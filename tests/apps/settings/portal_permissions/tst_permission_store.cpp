@@ -20,6 +20,8 @@ public:
   QStringList deleted;
   bool refuse = false;
   bool delay = false;
+  bool oversized = false;
+  bool malformed = false;
   QString introspect(const QString &) const override { return {}; }
   bool handleMessage(const QDBusMessage &message, const QDBusConnection &connection) override {
     const auto args = message.arguments();
@@ -28,12 +30,14 @@ public:
       const QString prefix = args.first().toString() + QLatin1Char('/');
       for (auto it = entries.cbegin(); it != entries.cend(); ++it)
         if (it.key().startsWith(prefix)) ids.append(it.key().mid(prefix.size()));
+      if (oversized) for (int i = 0; i < 513; ++i) ids.append(QString::number(i));
       const auto reply = message.createReply({ids});
       if (delay) QTimer::singleShot(120, this, [connection, reply] { connection.send(reply); });
       else connection.send(reply);
     } else if (message.member() == QStringLiteral("Lookup")) {
       const auto key = args.at(0).toString() + QLatin1Char('/') + args.at(1).toString();
-      if (entries.contains(key)) connection.send(message.createReply({
+      if (malformed) connection.send(message.createReply({QStringLiteral("wrong signature")}));
+      else if (entries.contains(key)) connection.send(message.createReply({
           QVariant::fromValue(entries.value(key)), QVariant::fromValue(QDBusVariant(QStringLiteral("opaque")))}));
       else connection.send(message.createErrorReply(QStringLiteral("org.freedesktop.portal.Error.NotFound"), QStringLiteral("gone")));
     } else if (message.member() == QStringLiteral("Delete")) {
@@ -82,6 +86,20 @@ private Q_SLOTS:
       store.entries[key].insert(QStringLiteral("other-app"), {QStringLiteral("yes")});
       QVERIFY(model.revoke(key)); QTRY_VERIFY_WITH_TIMEOUT(!model.busy(), 1500);
       QVERIFY(store.deleted.isEmpty()); QVERIFY(!model.available());
+    }
+    bus.unregisterService(service); bus.unregisterObject(path);
+  }
+  void boundedListAndMalformedReplyRefuse() {
+    auto bus = QDBusConnection::sessionBus(); Store store;
+    store.oversized = true;
+    store.entries[QStringLiteral("screencast/") + first] = {{QStringLiteral("org.example.One"), {QStringLiteral("yes")}}};
+    QVERIFY(bus.registerVirtualObject(path, &store)); QVERIFY(bus.registerService(service));
+    {
+      PortalPermissionsModel model(bus); QTRY_VERIFY_WITH_TIMEOUT(!model.busy() && !model.errorText().isEmpty(), 1500);
+      QVERIFY(!model.available()); QVERIFY(model.rows().isEmpty()); QVERIFY(store.deleted.isEmpty());
+      store.oversized = false; store.malformed = true; model.refresh();
+      QTRY_VERIFY_WITH_TIMEOUT(!model.busy(), 1500);
+      QVERIFY(!model.available()); QVERIFY(model.rows().isEmpty()); QVERIFY(store.deleted.isEmpty());
     }
     bus.unregisterService(service); bus.unregisterObject(path);
   }

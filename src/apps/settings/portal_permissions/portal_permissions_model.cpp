@@ -141,6 +141,10 @@ void PortalPermissionsModel::loadNext() {
         && reply.errorName() != QStringLiteral("org.freedesktop.portal.Error.NotFound")) {
       fail(tr("Could not read remembered portal permissions.")); return;
     }
+    if (reply.type() == QDBusMessage::ReplyMessage
+        && (reply.arguments().size() != 2 || reply.signature() != QStringLiteral("a{sas}v"))) {
+      fail(tr("The portal permission store returned an invalid reply.")); return;
+    }
     if (valid) m_entries.append({entry.table, entry.id, app});
     loadNext();
   });
