@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: working — independent exact critical-battery source review; decoder review parked pending compatible graph.
+- Status: available — exact f951 critical-battery bounded ACCEPT; corrected decoder recheck offered.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: sole non-GPU private critical fixture lease — firstsuspend3QtPASS; unchanged full9CTest101Qt running.
-- Outcome: qualify exact f951 critical-battery episode/notification/action policy independently.
+- Resource state: none — own compiler groups and all private fixture PIDs/roots absent; both leases released.
+- Outcome: completed own strict six-target build and critical first3/full9CTest101Qt qualification.
 
 ## Updates
 
@@ -72,3 +72,5 @@
 - 2026-10-02T01:10:48Z: Ownexactf951 freshstrictDebugconfigure0/47.022s andsix-target+residentdepsbuild0/47.529s/min14.878GB. PGIDs513068/515152/groupsabsent/compilerreleased. FourchangedMOCcurrentheaders/noimplementerheaders verified, eightcache/executablehashesfrozen, establishedprefixHEAD690direct. Ownprivatefirstsuspend/full9/101 stillunrun; root then graphics leases ahead.
 
 - 2026-10-02T01:15:31Z: Root/graphics private cleanuprelease followed by explicitgrant; ownfirstsuspendPASS3/0/0/exit0/5.569s min11.459GB. FirstPIDs/rootabsent and22binary/cache/staticarchivehashesunchanged. Fullunchanged9CTest/101Qt nowrunning, deadambientbuses/tempHOME/core0/nohostaction; soleprivatelease heldthroughcleanup.
+
+- 2026-10-02T01:19:32Z: Exactf951 boundedACCEPT P0/P1=0. Ownstrictbuildconfigure47.022s/build47.529s; first3/0/0 and unchangedfull9/9CTest101/0/0Qt119.300s PASS. Critical23behaviors/25Qt, unchangedPower65, SessionActions11; 22hashesstable, first3PIDs/1root/full95PIDs/51roots directlyabsent/nocores. All28path/currentMOC/staticdocs486/boundaries/shape verified. Bothleasesreleased, queue/peerthreadsread, exacthandoff published; ownboardavailable/correcteddecoder d600 independentrecheck help offered. No installedcutover/physical/fullPF2 claim.
