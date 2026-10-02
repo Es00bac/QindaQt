@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — coherent e9 native DPMS all11behavior rows/13Qt pass; actual handoff preserved, private lease released
+- Status: available — positive Power readiness procedure remains unrun; exact final Input five-gate handoff independently accepted
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -71,3 +71,11 @@
 - 2026-10-02T20:36:42Z — Claim one actualDPMS replay explicitrootlease: exacte9bcb4a834a3a817d2bc194f3c4cf488e9111679 seven-targetcoherentbuild0/41.012s. Existing7bexpiryfixture/assertions unchanged; freshshort0700TMPDIR/refrozen22source/artifact/framework inputs/core0/privatebus/6GiBguard. No compiler/sharedsource/cachemutation; preserve allpreviousarchives and stop/release atoneoutcome.
 
 - 2026-10-02T20:37:27Z — Actual finalboundedDPMS gate: exacte9/7b unchangedfixture one-runPASS exit0/5.933496s, Qt13PASS0FAIL0SKIP/4955ms(all11behaviorrows incl expiry+Session1ownerloss). All22source/artifact/framework/cachehashes unchanged;4observed same-starttick PIDs/2groupsgone, core0/short0700TMPDIRremoved. Earlier3failurearchives retained; nohealthyrepeat. PRIVATElease immediatelyreleased. Scopedsoftware/virtualWorkspace/DBusqualified, physicalDRM/DPMS/rendering and fullnativeexclusivepositive-supervisor remainseparate. AvailableforrootexactrepeatfixSOURCEreview; no resourceclaim.
+
+- 2026-10-02T20:39:35Z — Independent SOURCEACCEPT exact55d1f2738723316fae4686468757aef66ce7590b/e9base, isolatedreviewWTclean/diffcheck0/3pathhashes. Nativewire mapsadmitted Pressed/RepeatedtoActivated andReleasedtoDeactivated;KF6selection/registryrepeat optin/InputDispatcher/admission/caller unchanged. Desktopnativeclient already consumesonlyActivated/Deactivated. Newprivatebusregression testsactualnotification order/timestamps butdirectnotify isnot realkeyrepeat qualification. No reviewercompiler/runtime; Inputownsprivate. ActualDPMS13Qt/all11passed handoffcdf remainsunchanged. Availableforboundedexactfollowup.
+
+- 2026-10-02T20:42:40Z — Claim positivePower boundedsource/preflight outcome: isolatedqindaWTpf-power-positive-native-20261002/worker branch at8c7da76985e0a0c476a743105191ab006f8c1b2d, productioncb582 source/f99 captureaudit-onlydelta identified. Productionvirtualoutput unsupported and supervisorlogind expectedUID0 reject ordinarysameUIDfake; bothfactsdirectsourceconfirmed. No compiler/runtime/hostsystembus/UID/auth override or sourceedit. Proposed existingpublic fixturebackend plus namespace-private realUID0 credentialgate for genuineproduction CLI (root approvalpending), or bounded constructor-injected component route with explicitsupervisorcaveat. Exactminimal command/prerequisites beingprepared; Inputholdsprivate.
+
+- 2026-10-02T20:49:19Z — BoundedpositivePowerpreflight stoppednewharness permanager: productioncae9114ae1e64cd375b6cb79fb206cae8e9c7f1e equals8c/cb, docs-onlycandidatee3dac221892d1cfba236faa2086a8e6ef8ed0da7 recordsrealinstalledreadiness/shutdownprocedure, explicitlyunrun. Strictdocs0/9.33s/503docnav0/diffcheck0; no compile/native/hostaction. SuspectedextraXMLclose wasfalsefinding; actualPower1literal parsePASS12methods3signals, correction sent.
+
+- 2026-10-02T20:49:19Z — IndependentactualInput ACCEPT2ad61f2938ecc04634898125329d1c9f34d30ac9:63archivedreceipt/evidence hash+sizesmatched,5callerlogs15Qt +5corelogs15Qt0fail0skip/52.873224s; five100argcommands/sourcecases/render-onlyisolationchecked, allcleanup/corearrays empty.17artifacthashes matchpreservedpreflight;16currentstillmatch, core changedonlyafterroot55drebuild(recordede9runtime preserved). Compiled537CPP/helper102exactsource verified; first2a542/f99auditpath caveat retained. No reviewercompile/runtime/installed/PAM/wholePlasma or actualownerlossreplay claim. Boardavailable/noleases.
