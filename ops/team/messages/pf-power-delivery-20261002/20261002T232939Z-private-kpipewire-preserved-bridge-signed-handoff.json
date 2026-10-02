@@ -1,0 +1,588 @@
+{
+  "first_setup_7b81": {
+    "cpv": "gui-apps/xwaylandvideobridge-0.5.0-r1",
+    "exit": 1,
+    "seconds": 3.1863462619999154,
+    "leader": {
+      "pid": 75934,
+      "ppid": 75929,
+      "pgid": 75934,
+      "starttick": 233494
+    },
+    "minimum_MemAvailable_bytes": 29000204288,
+    "aborted": null,
+    "survivors": [],
+    "source_same": true,
+    "vdb_world_same": true,
+    "build_log_sha256": "d287aeba847ba5fdfafa3756c4318ab937d2d8731b43e5b2f72c71171622d13e",
+    "observed_process_count": 2,
+    "status_path": "/home/cabewse/.cache/pf-xwayland-private-pipewire-20261002/build-first-setup-failure/01-gui-apps_xwaylandvideobridge-0.5.0-r1/build-status.json",
+    "command": {
+      "cpv": "gui-apps/xwaylandvideobridge-0.5.0-r1",
+      "argv": [
+        "sudo",
+        "-n",
+        "env",
+        "PORTAGE_CONFIGROOT=/tmp/pf-xwayland-private-config-mnqsinuz",
+        "PORTAGE_DEPCACHEDIR=/tmp/pf-xwayland-private-config-mnqsinuz/depcache",
+        "PORTAGE_REPOSITORIES=[DEFAULT]\nauto-sync = yes\nmain-repo = gentoo\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nvolatile = true\n\n[gentoo]\nauto-sync = yes\nlocation = /var/db/repos/gentoo\nmasters = \npriority = -1000\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-package = sec-keys/openpgp-keys-gentoo-release\nsync-openpgp-key-path = /usr/share/openpgp-keys/gentoo-release.asc\nsync-openpgp-key-refresh = true\nsync-openpgp-key-refresh-retry-count = 40\nsync-openpgp-key-refresh-retry-delay-exp-base = 2\nsync-openpgp-key-refresh-retry-delay-max = 60\nsync-openpgp-key-refresh-retry-delay-mult = 4\nsync-openpgp-key-refresh-retry-overall-timeout = 1200\nsync-openpgp-keyserver = hkps://keys.gentoo.org\nsync-rcu = false\nsync-type = rsync\nsync-uri = rsync://rsync.gentoo.org/gentoo-portage\nusepkg-exclude = \nusepkg-include = \nvolatile = false\nsync-rsync-extra-opts = \nsync-rsync-verify-metamanifest = yes\nsync-rsync-verify-jobs = 1\nsync-rsync-verify-max-age = 3\n\n[guru]\nauto-sync = yes\nlocation = /var/db/repos/guru\nmasters = gentoo\npriority = 20\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-depth = 1\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://anongit.gentoo.org/git/repo/proj/guru.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[qindaqt]\nauto-sync = yes\nlocation = /home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-xwayland-private-pipewire-20261002\nmasters = gentoo\npriority = 100\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = file:///home/cabewse/git/QindaGentoo.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[sloom-private]\nauto-sync = no\nlocation = /var/db/repos/sloom-private\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[steam-overlay]\nauto-sync = yes\nlocation = /var/db/repos/steam-overlay\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://github.com/anyc/steam-overlay.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n",
+        "MAKEOPTS=-j2 -l16",
+        "NINJAOPTS=-j2 -l16",
+        "ACCEPT_KEYWORDS=amd64 ~amd64",
+        "emerge",
+        "--ignore-default-opts",
+        "--buildpkgonly",
+        "--nodeps",
+        "--oneshot",
+        "--verbose",
+        "--jobs=1",
+        "--load-average=16",
+        "--usepkg=n",
+        "--getbinpkg=n",
+        "--quiet-build=n",
+        "--nospinner",
+        "--autounmask=n",
+        "--autounmask-write=n",
+        "=gui-apps/xwaylandvideobridge-0.5.0-r1"
+      ],
+      "source": "7b81e7e2fd089be1fdc73d9f9a1333eec8db92c3",
+      "environment_sha256": {
+        "PORTAGE_CONFIGROOT": "d52fdcb22f04a46511c9c6de8c283fe35b2f4429ffd3af423a1aa70c4b029238",
+        "PORTAGE_DEPCACHEDIR": "0e133c39eb875cc7c3679b0ff6af409a827477887a72f2eb35348071df4da56b",
+        "PORTAGE_REPOSITORIES": "013bf5106ea57bef5fc81f3456eb99fd13aa12ca172e301eab4a396b45a9c07a",
+        "MAKEOPTS": "1c4bace563fb65bc59165a3c6dbd84968ff0ce53e7690c0c51bc88433486742f",
+        "NINJAOPTS": "1c4bace563fb65bc59165a3c6dbd84968ff0ce53e7690c0c51bc88433486742f",
+        "ACCEPT_KEYWORDS": "3a2892697daf3bf5982fe41375331d2916f6dad80978b85623b1e4aabafd3673"
+      }
+    },
+    "status_sha256": "3269a4913880b373c17a379917e1095364f80b6bbcaef094a828550d9617ba20"
+  },
+  "first_compile_ccf9595": {
+    "cpv": "gui-apps/xwaylandvideobridge-0.5.0-r1",
+    "exit": 1,
+    "seconds": 93.24278935099983,
+    "leader": {
+      "pid": 84739,
+      "ppid": 84735,
+      "pgid": 84739,
+      "starttick": 254160
+    },
+    "minimum_MemAvailable_bytes": 28486885376,
+    "aborted": null,
+    "survivors": [],
+    "source_same": true,
+    "vdb_world_same": true,
+    "build_log_sha256": "7304023b6f1ca52b3ca7165c95ff2b7ad07e90ef50489517a224bf11e0a3a3e2",
+    "observed_process_count": 235,
+    "status_path": "/home/cabewse/.cache/pf-xwayland-private-pipewire-20261002/build-first-compile-failure-ccf9595/01-gui-apps_xwaylandvideobridge-0.5.0-r1/build-status.json",
+    "command": {
+      "cpv": "gui-apps/xwaylandvideobridge-0.5.0-r1",
+      "argv": [
+        "sudo",
+        "-n",
+        "env",
+        "PORTAGE_CONFIGROOT=/tmp/pf-xwayland-private-config-mnqsinuz",
+        "PORTAGE_DEPCACHEDIR=/tmp/pf-xwayland-private-config-mnqsinuz/depcache",
+        "PORTAGE_REPOSITORIES=[DEFAULT]\nauto-sync = yes\nmain-repo = gentoo\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nvolatile = true\n\n[gentoo]\nauto-sync = yes\nlocation = /var/db/repos/gentoo\nmasters = \npriority = -1000\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-package = sec-keys/openpgp-keys-gentoo-release\nsync-openpgp-key-path = /usr/share/openpgp-keys/gentoo-release.asc\nsync-openpgp-key-refresh = true\nsync-openpgp-key-refresh-retry-count = 40\nsync-openpgp-key-refresh-retry-delay-exp-base = 2\nsync-openpgp-key-refresh-retry-delay-max = 60\nsync-openpgp-key-refresh-retry-delay-mult = 4\nsync-openpgp-key-refresh-retry-overall-timeout = 1200\nsync-openpgp-keyserver = hkps://keys.gentoo.org\nsync-rcu = false\nsync-type = rsync\nsync-uri = rsync://rsync.gentoo.org/gentoo-portage\nusepkg-exclude = \nusepkg-include = \nvolatile = false\nsync-rsync-extra-opts = \nsync-rsync-verify-metamanifest = yes\nsync-rsync-verify-jobs = 1\nsync-rsync-verify-max-age = 3\n\n[guru]\nauto-sync = yes\nlocation = /var/db/repos/guru\nmasters = gentoo\npriority = 20\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-depth = 1\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://anongit.gentoo.org/git/repo/proj/guru.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[qindaqt]\nauto-sync = yes\nlocation = /home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-xwayland-private-pipewire-20261002\nmasters = gentoo\npriority = 100\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = file:///home/cabewse/git/QindaGentoo.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[sloom-private]\nauto-sync = no\nlocation = /var/db/repos/sloom-private\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[steam-overlay]\nauto-sync = yes\nlocation = /var/db/repos/steam-overlay\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://github.com/anyc/steam-overlay.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n",
+        "MAKEOPTS=-j2 -l16",
+        "NINJAOPTS=-j2 -l16",
+        "ACCEPT_KEYWORDS=amd64 ~amd64",
+        "emerge",
+        "--ignore-default-opts",
+        "--buildpkgonly",
+        "--nodeps",
+        "--oneshot",
+        "--verbose",
+        "--jobs=1",
+        "--load-average=16",
+        "--usepkg=n",
+        "--getbinpkg=n",
+        "--quiet-build=n",
+        "--nospinner",
+        "--autounmask=n",
+        "--autounmask-write=n",
+        "=gui-apps/xwaylandvideobridge-0.5.0-r1"
+      ],
+      "source": "ccf95955362788493a419459ec04a221ef98e80b",
+      "environment_sha256": {
+        "PORTAGE_CONFIGROOT": "d52fdcb22f04a46511c9c6de8c283fe35b2f4429ffd3af423a1aa70c4b029238",
+        "PORTAGE_DEPCACHEDIR": "0e133c39eb875cc7c3679b0ff6af409a827477887a72f2eb35348071df4da56b",
+        "PORTAGE_REPOSITORIES": "013bf5106ea57bef5fc81f3456eb99fd13aa12ca172e301eab4a396b45a9c07a",
+        "MAKEOPTS": "1c4bace563fb65bc59165a3c6dbd84968ff0ce53e7690c0c51bc88433486742f",
+        "NINJAOPTS": "1c4bace563fb65bc59165a3c6dbd84968ff0ce53e7690c0c51bc88433486742f",
+        "ACCEPT_KEYWORDS": "3a2892697daf3bf5982fe41375331d2916f6dad80978b85623b1e4aabafd3673"
+      }
+    },
+    "status_sha256": "1f040d15382cd2ce5a5b6e67b7b84c58f94b5793aac5ffc2510ad1a2f33e9482"
+  },
+  "accepted_f476": {
+    "cpv": "gui-apps/xwaylandvideobridge-0.5.0-r1",
+    "exit": 0,
+    "seconds": 34.923067761999846,
+    "leader": {
+      "pid": 90253,
+      "ppid": 90242,
+      "pgid": 90253,
+      "starttick": 280494
+    },
+    "minimum_MemAvailable_bytes": 28934139904,
+    "aborted": null,
+    "survivors": [],
+    "source_same": true,
+    "vdb_world_same": true,
+    "build_log_sha256": "1b5d029725acf0351904cc80885f6fd21d929a7bdbc697c01c15b99d802dea16",
+    "verification_exit": 0,
+    "observed_process_count": 97,
+    "status_path": "/home/cabewse/.cache/pf-xwayland-private-pipewire-20261002/build/01-gui-apps_xwaylandvideobridge-0.5.0-r1/build-status.json",
+    "command": {
+      "cpv": "gui-apps/xwaylandvideobridge-0.5.0-r1",
+      "argv": [
+        "sudo",
+        "-n",
+        "env",
+        "PORTAGE_CONFIGROOT=/tmp/pf-xwayland-private-config-mnqsinuz",
+        "PORTAGE_DEPCACHEDIR=/tmp/pf-xwayland-private-config-mnqsinuz/depcache",
+        "PORTAGE_REPOSITORIES=[DEFAULT]\nauto-sync = yes\nmain-repo = gentoo\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nvolatile = true\n\n[gentoo]\nauto-sync = yes\nlocation = /var/db/repos/gentoo\nmasters = \npriority = -1000\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-package = sec-keys/openpgp-keys-gentoo-release\nsync-openpgp-key-path = /usr/share/openpgp-keys/gentoo-release.asc\nsync-openpgp-key-refresh = true\nsync-openpgp-key-refresh-retry-count = 40\nsync-openpgp-key-refresh-retry-delay-exp-base = 2\nsync-openpgp-key-refresh-retry-delay-max = 60\nsync-openpgp-key-refresh-retry-delay-mult = 4\nsync-openpgp-key-refresh-retry-overall-timeout = 1200\nsync-openpgp-keyserver = hkps://keys.gentoo.org\nsync-rcu = false\nsync-type = rsync\nsync-uri = rsync://rsync.gentoo.org/gentoo-portage\nusepkg-exclude = \nusepkg-include = \nvolatile = false\nsync-rsync-extra-opts = \nsync-rsync-verify-metamanifest = yes\nsync-rsync-verify-jobs = 1\nsync-rsync-verify-max-age = 3\n\n[guru]\nauto-sync = yes\nlocation = /var/db/repos/guru\nmasters = gentoo\npriority = 20\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-depth = 1\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://anongit.gentoo.org/git/repo/proj/guru.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[qindaqt]\nauto-sync = yes\nlocation = /home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-xwayland-private-pipewire-20261002\nmasters = gentoo\npriority = 100\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = file:///home/cabewse/git/QindaGentoo.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[sloom-private]\nauto-sync = no\nlocation = /var/db/repos/sloom-private\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[steam-overlay]\nauto-sync = yes\nlocation = /var/db/repos/steam-overlay\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://github.com/anyc/steam-overlay.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n",
+        "MAKEOPTS=-j2 -l16",
+        "NINJAOPTS=-j2 -l16",
+        "ACCEPT_KEYWORDS=amd64 ~amd64",
+        "emerge",
+        "--ignore-default-opts",
+        "--buildpkgonly",
+        "--nodeps",
+        "--oneshot",
+        "--verbose",
+        "--jobs=1",
+        "--load-average=16",
+        "--usepkg=n",
+        "--getbinpkg=n",
+        "--quiet-build=n",
+        "--nospinner",
+        "--autounmask=n",
+        "--autounmask-write=n",
+        "=gui-apps/xwaylandvideobridge-0.5.0-r1"
+      ],
+      "source": "f47676f0694787b03e2ef781940d52d28210f21c",
+      "environment_sha256": {
+        "PORTAGE_CONFIGROOT": "d52fdcb22f04a46511c9c6de8c283fe35b2f4429ffd3af423a1aa70c4b029238",
+        "PORTAGE_DEPCACHEDIR": "0e133c39eb875cc7c3679b0ff6af409a827477887a72f2eb35348071df4da56b",
+        "PORTAGE_REPOSITORIES": "013bf5106ea57bef5fc81f3456eb99fd13aa12ca172e301eab4a396b45a9c07a",
+        "MAKEOPTS": "1c4bace563fb65bc59165a3c6dbd84968ff0ce53e7690c0c51bc88433486742f",
+        "NINJAOPTS": "1c4bace563fb65bc59165a3c6dbd84968ff0ce53e7690c0c51bc88433486742f",
+        "ACCEPT_KEYWORDS": "3a2892697daf3bf5982fe41375331d2916f6dad80978b85623b1e4aabafd3673"
+      }
+    },
+    "status_sha256": "5244fe606833414be4357aea3693c6fee56cef5dc0dc5a09437d2fbfe63075f4"
+  },
+  "normal-preflight.json": {
+    "argv": [
+      "sudo",
+      "-n",
+      "env",
+      "PORTAGE_CONFIGROOT=/tmp/pf-xwayland-private-config-mnqsinuz",
+      "PORTAGE_DEPCACHEDIR=/tmp/pf-xwayland-private-config-mnqsinuz/depcache",
+      "PORTAGE_REPOSITORIES=[DEFAULT]\nauto-sync = yes\nmain-repo = gentoo\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nvolatile = true\n\n[gentoo]\nauto-sync = yes\nlocation = /var/db/repos/gentoo\nmasters = \npriority = -1000\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-package = sec-keys/openpgp-keys-gentoo-release\nsync-openpgp-key-path = /usr/share/openpgp-keys/gentoo-release.asc\nsync-openpgp-key-refresh = true\nsync-openpgp-key-refresh-retry-count = 40\nsync-openpgp-key-refresh-retry-delay-exp-base = 2\nsync-openpgp-key-refresh-retry-delay-max = 60\nsync-openpgp-key-refresh-retry-delay-mult = 4\nsync-openpgp-key-refresh-retry-overall-timeout = 1200\nsync-openpgp-keyserver = hkps://keys.gentoo.org\nsync-rcu = false\nsync-type = rsync\nsync-uri = rsync://rsync.gentoo.org/gentoo-portage\nusepkg-exclude = \nusepkg-include = \nvolatile = false\nsync-rsync-extra-opts = \nsync-rsync-verify-metamanifest = yes\nsync-rsync-verify-jobs = 1\nsync-rsync-verify-max-age = 3\n\n[guru]\nauto-sync = yes\nlocation = /var/db/repos/guru\nmasters = gentoo\npriority = 20\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-depth = 1\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://anongit.gentoo.org/git/repo/proj/guru.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[qindaqt]\nauto-sync = yes\nlocation = /home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-xwayland-private-pipewire-20261002\nmasters = gentoo\npriority = 100\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = file:///home/cabewse/git/QindaGentoo.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[sloom-private]\nauto-sync = no\nlocation = /var/db/repos/sloom-private\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[steam-overlay]\nauto-sync = yes\nlocation = /var/db/repos/steam-overlay\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://github.com/anyc/steam-overlay.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n",
+      "MAKEOPTS=-j2 -l16",
+      "NINJAOPTS=-j2 -l16",
+      "ACCEPT_KEYWORDS=amd64 ~amd64",
+      "emerge",
+      "--ignore-default-opts",
+      "--pretend",
+      "--verbose",
+      "--oneshot",
+      "--buildpkgonly",
+      "--usepkg=n",
+      "--getbinpkg=n",
+      "--autounmask=n",
+      "--autounmask-write=n",
+      "=gui-apps/xwaylandvideobridge-0.5.0-r1::qindaqt"
+    ],
+    "exit": 0,
+    "seconds": 16.25321523599996,
+    "log_sha256": "3561ef379e51f56544039afa9b2400f458729f5381afd0c00db9477fda737834"
+  },
+  "normal-preflight.json_sha256": "8204f9e9ef680845f57c49f09ec18c7734caed5da5d359f2805a4d0f187c9e7a",
+  "installed-build-dependencies.json": [
+    {
+      "field": "DEPEND",
+      "exact_row": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,widgets,X,opengl] >=dev-qt/qtdeclarative-6.10.1:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kstatusnotifieritem-6.22.0:6 >=kde-frameworks/kwindowsystem-6.22.0:6[X] media-libs/freetype x11-libs/libxcb:= x11-libs/libXfixes x11-libs/xcb-util media-libs/libepoxy media-libs/libglvnd media-libs/libva:= media-libs/mesa[opengl] >=media-video/ffmpeg-6.1:= >=media-video/pipewire-0.3:= x11-libs/libdrm dev-qt/qtbase:6",
+      "missing": []
+    },
+    {
+      "field": "BDEPEND",
+      "exact_row": "virtual/pkgconfig app-alternatives/ninja >=dev-build/cmake-3.28.5 dev-libs/libpcre2:* >=kde-frameworks/extra-cmake-modules-6.22.0:*",
+      "missing": []
+    },
+    {
+      "field": "IDEPEND",
+      "exact_row": "dev-util/desktop-file-utils x11-misc/shared-mime-info",
+      "missing": []
+    }
+  ],
+  "installed-build-dependencies.json_sha256": "05a461dac90f8c33de3738ee59904c1d244075fd61bb20eb4cc64b2bbb905620",
+  "corrected-config-preflight.json": {
+    "argv": [
+      "sudo",
+      "-n",
+      "-u",
+      "portage",
+      "env",
+      "PORTAGE_CONFIGROOT=/tmp/pf-xwayland-private-config-mnqsinuz",
+      "PORTAGE_DEPCACHEDIR=/tmp/pf-xwayland-private-config-mnqsinuz/depcache",
+      "PORTAGE_REPOSITORIES=[DEFAULT]\nauto-sync = yes\nmain-repo = gentoo\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nvolatile = true\n\n[gentoo]\nauto-sync = yes\nlocation = /var/db/repos/gentoo\nmasters = \npriority = -1000\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-package = sec-keys/openpgp-keys-gentoo-release\nsync-openpgp-key-path = /usr/share/openpgp-keys/gentoo-release.asc\nsync-openpgp-key-refresh = true\nsync-openpgp-key-refresh-retry-count = 40\nsync-openpgp-key-refresh-retry-delay-exp-base = 2\nsync-openpgp-key-refresh-retry-delay-max = 60\nsync-openpgp-key-refresh-retry-delay-mult = 4\nsync-openpgp-key-refresh-retry-overall-timeout = 1200\nsync-openpgp-keyserver = hkps://keys.gentoo.org\nsync-rcu = false\nsync-type = rsync\nsync-uri = rsync://rsync.gentoo.org/gentoo-portage\nusepkg-exclude = \nusepkg-include = \nvolatile = false\nsync-rsync-extra-opts = \nsync-rsync-verify-metamanifest = yes\nsync-rsync-verify-jobs = 1\nsync-rsync-verify-max-age = 3\n\n[guru]\nauto-sync = yes\nlocation = /var/db/repos/guru\nmasters = gentoo\npriority = 20\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-depth = 1\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://anongit.gentoo.org/git/repo/proj/guru.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[qindaqt]\nauto-sync = yes\nlocation = /home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-xwayland-private-pipewire-20261002\nmasters = gentoo\npriority = 100\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = file:///home/cabewse/git/QindaGentoo.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[sloom-private]\nauto-sync = no\nlocation = /var/db/repos/sloom-private\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[steam-overlay]\nauto-sync = yes\nlocation = /var/db/repos/steam-overlay\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://github.com/anyc/steam-overlay.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n",
+      "MAKEOPTS=-j2 -l16",
+      "NINJAOPTS=-j2 -l16",
+      "ACCEPT_KEYWORDS=amd64 ~amd64",
+      "python3",
+      "-c",
+      "from pathlib import Path; import portage,os; p=Path(os.environ['PORTAGE_CONFIGROOT'])/'etc/portage'; print((p/'make.conf').read_text()[:0]); print((p/'make.profile').resolve()); t=portage.create_trees(config_root=os.environ['PORTAGE_CONFIGROOT']); print(t['/']['porttree'].dbapi.aux_get('gui-apps/xwaylandvideobridge-0.5.0-r1',['IUSE']))"
+    ],
+    "exit": 0,
+    "stdout": "\n/home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-xwayland-private-pipewire-20261002/profiles/qindaqt/systemd\n['debug']\n",
+    "stderr": "",
+    "public_root_mode": "0o755"
+  },
+  "corrected-config-preflight.json_sha256": "ee91a3709d05583da23575f66b00a7513cc23bc9205553ea2ce0da1b359df404",
+  "private-image-check.json": {
+    "exit": 0,
+    "source": "f47676f0694787b03e2ef781940d52d28210f21c",
+    "gpkg": "/var/cache/binpkgs/gui-apps/xwaylandvideobridge/xwaylandvideobridge-0.5.0-r1-1.gpkg.tar",
+    "gpkg_sha256": "d0071b06946da99368ec4b7f94aeced6efe4a8cd11fcee080a05c06242d28ab0",
+    "elf_count": 7,
+    "elf": [
+      {
+        "path": "usr/bin/xwaylandvideobridge",
+        "needed": [
+          "libKF6Crash.so.6",
+          "libKF6StatusNotifierItem.so.6",
+          "libQt6Widgets.so.6",
+          "libxcb.so.1",
+          "libxcb-record.so.0",
+          "libKF6WindowSystem.so.6",
+          "libXWaylandVideoBridgePipeWire.so.6",
+          "libKF6I18n.so.6",
+          "libKF6CoreAddons.so.6",
+          "libQt6Quick.so.6",
+          "libQt6Gui.so.6",
+          "libQt6DBus.so.6",
+          "libQt6Core.so.6",
+          "libstdc++.so.6",
+          "libc.so.6"
+        ],
+        "soname": [],
+        "rpath": [
+          "/usr/lib64/xwaylandvideobridge/lib"
+        ]
+      },
+      {
+        "path": "usr/lib64/xwaylandvideobridge/lib/libXWaylandVideoBridgePipeWire.so.6.6.6",
+        "needed": [
+          "libQt6Quick.so.6",
+          "libQt6OpenGL.so.6",
+          "libKF6I18n.so.6",
+          "libepoxy.so.0",
+          "libdrm.so.2",
+          "libQt6Qml.so.6",
+          "libQt6Gui.so.6",
+          "libQt6Core.so.6",
+          "libpipewire-0.3.so.0",
+          "libgbm.so.1",
+          "libva-drm.so.2",
+          "libva.so.2",
+          "libstdc++.so.6",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "soname": [
+          "libXWaylandVideoBridgePipeWire.so.6"
+        ],
+        "rpath": [
+          "/usr/lib64/xwaylandvideobridge/lib"
+        ]
+      },
+      {
+        "path": "usr/lib64/xwaylandvideobridge/lib/libXWaylandVideoBridgePipeWireDmaBuf.so.6.6.6",
+        "needed": [
+          "libXWaylandVideoBridgePipeWire.so.6",
+          "libepoxy.so.0",
+          "libdrm.so.2",
+          "libgbm.so.1",
+          "libQt6Gui.so.6",
+          "libQt6Core.so.6",
+          "libstdc++.so.6",
+          "libc.so.6"
+        ],
+        "soname": [
+          "libXWaylandVideoBridgePipeWireDmaBuf.so.6"
+        ],
+        "rpath": [
+          "/usr/lib64/xwaylandvideobridge/lib"
+        ]
+      },
+      {
+        "path": "usr/lib64/xwaylandvideobridge/lib/libXWaylandVideoBridgePipeWireRecord.so.6.6.6",
+        "needed": [
+          "libXWaylandVideoBridgePipeWireDmaBuf.so.6",
+          "libXWaylandVideoBridgePipeWire.so.6",
+          "libKF6CoreAddons.so.6",
+          "libQt6Qml.so.6",
+          "libQt6Gui.so.6",
+          "libQt6Core.so.6",
+          "libavcodec.so.62",
+          "libavutil.so.60",
+          "libavformat.so.62",
+          "libavfilter.so.11",
+          "libstdc++.so.6",
+          "libm.so.6",
+          "libgcc_s.so.1",
+          "libc.so.6"
+        ],
+        "soname": [
+          "libXWaylandVideoBridgePipeWireRecord.so.6"
+        ],
+        "rpath": [
+          "/usr/lib64/xwaylandvideobridge/lib"
+        ]
+      },
+      {
+        "path": "usr/lib64/xwaylandvideobridge/qml/org/kde/pipewire/libKPipeWireplugin.so",
+        "needed": [
+          "libXWaylandVideoBridgePipeWire.so.6",
+          "libQt6Qml.so.6",
+          "libQt6Core.so.6",
+          "libstdc++.so.6",
+          "libc.so.6"
+        ],
+        "soname": [],
+        "rpath": [
+          "/usr/lib64/xwaylandvideobridge/lib"
+        ]
+      },
+      {
+        "path": "usr/lib64/xwaylandvideobridge/qml/org/kde/pipewire/monitor/libKPipeWireMonitorDeclarative.so",
+        "needed": [
+          "libXWaylandVideoBridgePipeWire.so.6",
+          "libpipewire-0.3.so.0",
+          "libQt6Qml.so.6",
+          "libQt6Core.so.6",
+          "libstdc++.so.6",
+          "libc.so.6"
+        ],
+        "soname": [],
+        "rpath": [
+          "/usr/lib64/xwaylandvideobridge/lib"
+        ]
+      },
+      {
+        "path": "usr/lib64/xwaylandvideobridge/qml/org/kde/pipewire/record/libKPipeWireRecordplugin.so",
+        "needed": [
+          "libXWaylandVideoBridgePipeWireRecord.so.6",
+          "libQt6Qml.so.6",
+          "libQt6Core.so.6",
+          "libstdc++.so.6",
+          "libc.so.6"
+        ],
+        "soname": [],
+        "rpath": [
+          "/usr/lib64/xwaylandvideobridge/lib"
+        ]
+      }
+    ],
+    "private_qml_modules": {
+      "org.kde.pipewire": {
+        "path": "usr/lib64/xwaylandvideobridge/qml/org/kde/pipewire/qmldir",
+        "sha256": "950598c666d456569974d336af73a1d6af6634a178a51d42c5909dab13c1d768"
+      },
+      "org.kde.pipewire.record": {
+        "path": "usr/lib64/xwaylandvideobridge/qml/org/kde/pipewire/record/qmldir",
+        "sha256": "442b51cc9e9a49fd25024ffb71890676854cdae58dbd17c9622ad51c238c18e8"
+      },
+      "org.kde.pipewire.monitor": {
+        "path": "usr/lib64/xwaylandvideobridge/qml/org/kde/pipewire/monitor/qmldir",
+        "sha256": "804b77283fd497b766f53875e7740b0724fb25a0754fe760d6c9676906fc29b9"
+      }
+    },
+    "preserved_public_entries": [
+      {
+        "path": "usr/share/applications/org.kde.xwaylandvideobridge.desktop",
+        "original_sha256": "24b6b605b88c4d449962fbdf6ab9a860417dd6a931c67c635a5efbbf6ff75928"
+      },
+      {
+        "path": "etc/xdg/autostart/org.kde.xwaylandvideobridge.desktop",
+        "original_sha256": "24b6b605b88c4d449962fbdf6ab9a860417dd6a931c67c635a5efbbf6ff75928"
+      }
+    ],
+    "preserved_upstream_license_files": [
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/xwaylandvideobridge/LICENSES/BSD-3-Clause.txt",
+        "upstream_sha256": "42639b2e5507163d35069be166e37a784f48a5f17e3577c16eb48fab215247cd"
+      },
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/xwaylandvideobridge/LICENSES/CC0-1.0.txt",
+        "upstream_sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499"
+      },
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/xwaylandvideobridge/LICENSES/LGPL-2.0-or-later.txt",
+        "upstream_sha256": "e2eb0591a1bd9f9d49bb8c0dbbdae232b6ee9e1b2f5584617b0f2d6072464afe"
+      },
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/xwaylandvideobridge/LICENSES/LicenseRef-KDE-Accepted-GPL.txt",
+        "upstream_sha256": "ef839531eb65b0168f9aed14047c84be13e9ea38801a73bc18abe24dc93e6ac9"
+      },
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/kpipewire/LICENSES/BSD-3-Clause.txt",
+        "upstream_sha256": "5a93d5831e1297ab10fe643e1a631e83be392896da14ee2951285a79012df69d"
+      },
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/kpipewire/LICENSES/CC0-1.0.txt",
+        "upstream_sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499"
+      },
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/kpipewire/LICENSES/LGPL-2.1-only.txt",
+        "upstream_sha256": "fa6f36630bb1e0c571d34b2bbdf188d08495c9dbf58f28cac112f303fc1f58fb"
+      },
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/kpipewire/LICENSES/LGPL-3.0-only.txt",
+        "upstream_sha256": "996af0513df21f7496288951c41428a03c174e9e4a9d63665c57d670f845ccb1"
+      },
+      {
+        "path": "usr/share/doc/xwaylandvideobridge-0.5.0-r1/kpipewire/LICENSES/LicenseRef-KDE-Accepted-LGPL.txt",
+        "upstream_sha256": "d9f25707d20e804f15005be46527366b0604bd739754d144a83d3983d94a9a6a"
+      }
+    ],
+    "no_global_kpipewire_exports": true,
+    "no_stock_kpipewire_runtime_atoms_or_elf_needs": true,
+    "scope": "Signed image/static ELF/private imports and exact original launchers/licenses only; no GUI/capture/hardware runtime."
+  },
+  "private-image-check.json_sha256": "bd9749366878489cba1d742d5172acc043706be7cc5f7a099294afb05994c525",
+  "host-normal-binary-only-preflight.json": {
+    "argv": [
+      "sudo",
+      "-n",
+      "env",
+      "FEATURES=assume-digests binpkg-docompress binpkg-dostrip binpkg-logs binpkg-multi-instance binpkg-request-signature binpkg-signing buildpkg-live ccache compress-index config-protect-if-modified distlocks ebuild-locks fixlafiles getbinpkg ipc-sandbox merge-sync merge-wait multilib-strict network-sandbox news parallel-fetch pid-sandbox pkgdir-index-trusted preserve-libs protect-owned qa-unresolved-soname-deps sandbox strict unknown-features-warn unmerge-logs unmerge-orphans userfetch userpriv usersandbox usersync xattr binpkg-request-signature",
+      "emerge",
+      "--ignore-default-opts",
+      "--pretend",
+      "--verbose",
+      "--usepkgonly",
+      "--getbinpkg=n",
+      "--binpkg-respect-use=y",
+      "--oneshot",
+      "--dynamic-deps=n",
+      "--with-bdeps=n",
+      "--autounmask=n",
+      "--autounmask-write=n",
+      "=gui-apps/xwaylandvideobridge-0.5.0-r1::qindaqt"
+    ],
+    "exit": 1,
+    "seconds": 1.0140687180000896,
+    "log_sha256": "c906d399870454e73e8924f4048429592feddcce070725789cc91c8261865e0f",
+    "scope": "Actual normal host config/repository/profile, no private source/config env, pretend only."
+  },
+  "host-normal-binary-only-preflight.json_sha256": "622bf3562bc84a12c0494f3ef7f899b4937feca050f83a3897e2e9c42aebe032",
+  "private-image-check-first-setup-failure.json": {
+    "timestamp": "2026-10-02T23:21:33.864023+00:00",
+    "exit": 1,
+    "cause": "QA helper expected plain/gz notices; actual standard Portage compression is bz2. Image ELF/import/public-entry assertions reached and passed before this helper path assumption. No source/image change; exact notice byte assertions retained with supported bz2 decompression."
+  },
+  "private-image-check-first-setup-failure.json_sha256": "3cfef485f13f5ccbeb947fca77feb3ad0e8d88f8e29b4fc6f46735fa9a18ec20",
+  "artifact": {
+    "packed_ebuild_sha256": "d1ea804fba726e99309e5b2dbf4a6cff46c0b1c70fe8b0b563b7394b07aaa691",
+    "source_archives": {
+      "xwaylandvideobridge-0.5.0.tar.xz": {
+        "bytes": 37536,
+        "checksums": {
+          "SHA256": "f07ec942b17c2134b78af33b7aad9fae8d045c91aacae4b297c33106d2561379",
+          "BLAKE2B": "1dd8a5ae610f6def415fa3a452e76e348d3fa084ac8a61706b4088f7ec77cd9622e22fb752ffef83d9371b03d52c99673884af04e7c593a5d89153d1b78baa26",
+          "SHA512": "d3659715a48620d5c7b676665d7016ef93accbda930cb67bdcbbc3c797001ea7030990f09c5c6a87abd14f21836c786aaf19e537d68ae1fd8502c29a00926a8f"
+        },
+        "matches_source_manifest": true
+      },
+      "kpipewire-6.6.6.1.tar.xz": {
+        "bytes": 153848,
+        "checksums": {
+          "SHA256": "c357ffb467301b650ee77ff670da33a97a4e203557d2f8790e40449a2173ecd8",
+          "BLAKE2B": "37797ff8985bc58ee88bfc2a93ba791abc043332ebc11c33180a46cd434a402b72aef5519276be4acece9b9cc41c8b816f3bbce20a41f231f011892903f47173",
+          "SHA512": "8601405c0ea4ade01a74f43496c93d272e9a6b9d05310e5b8c10f15f8a82c34483e68075378b2d8d1e81968511d1fdaeb89a4efc6e2275079341ed3c55b17b1c"
+        },
+        "matches_source_manifest": true
+      }
+    },
+    "cpv": "gui-apps/xwaylandvideobridge-0.5.0-r1",
+    "gpkg": "/var/cache/binpkgs/gui-apps/xwaylandvideobridge/xwaylandvideobridge-0.5.0-r1-1.gpkg.tar",
+    "bytes": 358400,
+    "sha256": "d0071b06946da99368ec4b7f94aeced6efe4a8cd11fcee080a05c06242d28ab0",
+    "signature_required": true,
+    "verified_metadata_and_full_image": true,
+    "signature_exist": true,
+    "signature_members": [
+      "xwaylandvideobridge-0.5.0-r1-1/metadata.tar.zst.sig",
+      "xwaylandvideobridge-0.5.0-r1-1/image.tar.zst.sig"
+    ],
+    "metadata": {
+      "CATEGORY": "gui-apps",
+      "PF": "xwaylandvideobridge-0.5.0-r1",
+      "BUILD_ID": "1",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "IUSE": "debug",
+      "CHOST": "x86_64-pc-linux-gnu",
+      "CFLAGS": "-march=znver2 -O2 -pipe",
+      "CXXFLAGS": "-march=znver2 -O2 -pipe",
+      "DEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,widgets,X,opengl] >=dev-qt/qtdeclarative-6.10.1:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kstatusnotifieritem-6.22.0:6 >=kde-frameworks/kwindowsystem-6.22.0:6[X] media-libs/freetype x11-libs/libxcb:0/1.12= x11-libs/libXfixes x11-libs/xcb-util media-libs/libepoxy media-libs/libglvnd media-libs/libva:0/2= media-libs/mesa[opengl] >=media-video/ffmpeg-6.1:0/60.62.62= >=media-video/pipewire-0.3:0/0.4= x11-libs/libdrm dev-qt/qtbase:6",
+      "BDEPEND": "virtual/pkgconfig app-alternatives/ninja >=dev-build/cmake-3.28.5 dev-libs/libpcre2:* >=kde-frameworks/extra-cmake-modules-6.22.0:*",
+      "IDEPEND": "dev-util/desktop-file-utils x11-misc/shared-mime-info",
+      "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,widgets,X,opengl] >=dev-qt/qtdeclarative-6.10.1:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kstatusnotifieritem-6.22.0:6 >=kde-frameworks/kwindowsystem-6.22.0:6[X] media-libs/freetype x11-libs/libxcb:0/1.12= x11-libs/libXfixes x11-libs/xcb-util media-libs/libepoxy media-libs/libglvnd media-libs/libva:0/2= media-libs/mesa[opengl] >=media-video/ffmpeg-6.1:0/60.62.62= >=media-video/pipewire-0.3:0/0.4= x11-libs/libdrm >=kde-frameworks/kirigami-6.22.0:6 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+      "PDEPEND": "",
+      "SRC_URI": ""
+    },
+    "target_native_use_match": true,
+    "payload_paths": 290,
+    "payload_regular_files": 106,
+    "payload_inventory_sha256": "69258cf9eba79c6a3a1365a3a6f84495bd794a213d731659b646128e983888e3"
+  },
+  "artifact_receipt_sha256": "85c321bd914a3eb5841d22e942a2330944f8278800eb51c566434e301d03e836",
+  "source_commit": "f47676f0694787b03e2ef781940d52d28210f21c",
+  "base_commit": "9590192971572b6b51b127b939a36c40148ab5e9",
+  "tracked_source_diff_exit": 0,
+  "owned_sources": {
+    "gui-apps/xwaylandvideobridge/xwaylandvideobridge-0.5.0-r1.ebuild": {
+      "sha256": "d1ea804fba726e99309e5b2dbf4a6cff46c0b1c70fe8b0b563b7394b07aaa691",
+      "matches_exact_git_object": true
+    },
+    "gui-apps/xwaylandvideobridge/README.md": {
+      "sha256": "406d8d74b14c03c157a5f16cb843c6fec8188261f9878d286ba71e20a65fcc4a",
+      "matches_exact_git_object": true
+    },
+    "gui-apps/xwaylandvideobridge/Manifest": {
+      "sha256": "568ef903e37534a5d01575176130f543c7d47c334b0e90defea625804c1a24d5",
+      "matches_exact_git_object": true
+    },
+    "gui-apps/xwaylandvideobridge/files/xwaylandvideobridge-0.5.0-private-kpipewire.patch": {
+      "sha256": "83ad6f38f042354f8428fb9f6e4339b8c9ae90cf601660e18bed30fa010ade3e",
+      "matches_exact_git_object": true
+    }
+  },
+  "timestamp": "2026-10-02T23:26:00.343795+00:00",
+  "remaining_caveat": "Source, signed-image and static-private-link acceptance complete; actual sharing/GUI/DRM runtime unrun. Manager independently reports host preparation/install success; worker has no further host/compiler/runtime grant.",
+  "independent_source_and_image_review_commit": "d3829c379b7aef716c662e53103c512a17a11c3e",
+  "manager_overlay_integration": "43bcc05648686c3d119a5a7428bff22cb3cda30a",
+  "manager_followup_report": {
+    "provenance": "Parent /root collaboration report; worker did not rerun or inspect host install receipts under final no-extra-action instruction.",
+    "keyword_preparation": "Root prepared exact keyword both hosts after first masked worker pretend; no worker host config change.",
+    "normal_binary_only_pretend": {
+      "qinda_exit": 0,
+      "qinda_seconds": 3.289,
+      "laptop_exit": 0,
+      "laptop_seconds": 1.547,
+      "plan": "one signed binary, zero download"
+    },
+    "actual_install": {
+      "qinda_exit": 0,
+      "qinda_seconds": 10.531,
+      "laptop_exit": 0,
+      "laptop_seconds": 6.412
+    },
+    "focused_postinstall": "Both PASS106files+6symlinks/907195B/0mismatch, qindaqt/BUILD_ID1/zeroPlasmaRDEPEND. Initial manager verification helper treated absent optional PDEPEND as missing-file error; corrected empty optional-field read, no product/install defect."
+  }
+}
