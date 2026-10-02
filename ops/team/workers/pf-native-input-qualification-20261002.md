@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: available — unchanged upstream native55d Alt-Tab forward/reverse/focus PASS; all leases released, installed plugin/popup QA pending
+- Status: working — granted final installed55d/plugin29f QA reconfigure/focusedbuild, then serialized existing gates
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: no compiler/native/GPU lease held; exact55d Alt-Tab gate released after PASS and cleanup
+- Resource: granted2compilerjobs/load24/6GiBguard plus sole private native lease; root signeddesktop8job build concurrent
 
 ## Updates
 
@@ -76,3 +76,7 @@
 - 2026-10-02T20:56:16+00:00 — Manager grants exact55d testTabBox only, sourceclean and4actiondryrun. Actual focusedbuild launched2jobs/load20 with6GiB guard, initialMem13.3GiB. Frozen core/decorations/EIS/capturedriver SHA snapshots taken. Next unchanged3method private run-native-lock proof with corelimit0/shortTMPDIR/nohostbus/input/DRM; no visiblepopup claim. Existing forkPortage4job build independentlyactive, resources monitored.
 
 - 2026-10-02T20:58:04+00:00 — Actual unchanged native55d testTabBox forward/reverse/KeyboardFocus PASS0/3.0178s,5Qt0fail0skip2280ms; focused4actionbuildPASS9.394s/minMem12.70GiB/no guardstop. Core/decorations/EIS/capturedriver SHA unchanged; ownedPGIDsurvivors/corefiles/helpertemproots empty. Initialmissingprivate/tmp setup EXIT127 beforeQt preserved; standardtmpfs addition followed by singleactualgate. Exact hash-boundaudit prepared, leases released. ShowTabBoxfalse and retaineddecoration/font/cursor/PW/X11 warnings exclude popup/installedplugin/physical claims; awaiting next rootartifactgrant.
+
+- 2026-10-02T21:04:33+00:00 — Root signedforkr3/Gabbee installed, actualqinda version6.6.6.1/nativeheaders macroON observed. Manager WT cleanexact29f, configure authorizedbuild/dev against/usr replacing old68 importedpackage/headers/program caches; testingON and focusedtargets only. Subsequent3static+2plugin/stageddiscovery and profile/resolution/dock/visiblepopup whereexistingharness permits. Poweroverlay851 independent source review coordinated during waits. No physical/laptop/install source claim.
+
+- 2026-10-02T21:08:23+00:00 — Parallel read-onlyPoweroverlay851 SOURCEACCEPT: originalrecipe/3patch/archive/provenancebytes verified; independent6testsPASS/0.280s, freshPortage3packages×5fields andnativeUSE7packages exact. Only unconditionalPlasma edges/profileintegrations removed, apps/PolkitQt retained. ColdKAuth6.27 source-dependency gap remainsexplicit; no app/runtime/installapproval, laterClaudeextensionneedsnewreview. FinalinstalledABI QA configurePASS58.236s, focused13targets live~133/255 withMem~11.6GiB; nativeleaseheld, no launchyet.
