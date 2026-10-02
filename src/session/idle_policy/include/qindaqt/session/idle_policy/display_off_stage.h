@@ -14,7 +14,7 @@ namespace QindaQt::Session::IdlePolicy {
 struct DisplayOffPreferences final {
     bool enabled = false;
     int timeoutSeconds = 0;
-    QString lineage;
+    QString lineage = {};
     friend bool operator==(const DisplayOffPreferences &, const DisplayOffPreferences &) = default;
 };
 
