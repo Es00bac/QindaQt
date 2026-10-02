@@ -70,7 +70,7 @@ struct Ei {
         events();
         ei_device_frame(device, ei_now(context));
     }
-    bool disconnected() { pump(); return seen.contains(EI_EVENT_DISCONNECT) || seen.contains(EI_EVENT_DEVICE_REMOVED); }
+    bool disconnected() { pump(); return seen.contains(EI_EVENT_DISCONNECT); }
     ei *context;
     bool ok = false;
     QList<ei_event_type> seen;
@@ -203,10 +203,18 @@ private Q_SLOTS:
         sender.emulate(keyboard, [&] { ei_device_keyboard_key(keyboard, KEY_Q, false); });
         QTRY_VERIFY_WITH_TIMEOUT(receiver.pump() && receiver.keys.contains(KEY_Q), 5000);
         const uint activation = options(events.named(QStringLiteral("Activated")).constLast(), 1).value(QStringLiteral("activation_id")).toUInt();
+        receiver.seen.removeAll(EI_EVENT_DEVICE_STOP_EMULATING);
         QCOMPARE(call("org.freedesktop.portal.InputCapture", "Release", {QVariant::fromValue(QDBusObjectPath(ic)),
                  QVariantMap{{QStringLiteral("activation_id"), activation}, {QStringLiteral("cursor_position"), QVariant::fromValue(QPointF(500, 380))}}}).type(),
                  QDBusMessage::ReplyMessage);
-        QTRY_VERIFY_WITH_TIMEOUT(!events.named(QStringLiteral("Deactivated")).isEmpty(), 5000);
+        // XDG explicit Release suppresses Deactivated; transport cessation is
+        // the real assertion (installed InputCapture XML Release contract).
+        QTRY_VERIFY_WITH_TIMEOUT(receiver.pump() && receiver.seen.contains(EI_EVENT_DEVICE_STOP_EMULATING), 5000);
+        sender.emulate(keyboard, [&] { ei_device_keyboard_key(keyboard, KEY_W, true); });
+        sender.emulate(keyboard, [&] { ei_device_keyboard_key(keyboard, KEY_W, false); });
+        QTest::qWait(100);
+        receiver.pump();
+        QVERIFY(!receiver.keys.contains(KEY_W));
 
         // Remote selection pasted by an ordinary Wayland client.
         QCOMPARE(call("org.freedesktop.portal.Clipboard", "SetSelection", {QVariant::fromValue(QDBusObjectPath(rd)),
