@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: working — prepare final native identity and genuine combined capture/restore qualification source
+- Status: waiting — final source checkpoint handed off; manager coherent artifact and compiler/runtime lease pending
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
@@ -42,3 +42,5 @@
 - 2026-10-02T19:57:00Z — Repaired two committed test-source newline quoting defects caught before C++ compilation; adding manager-requested authority-conditional protected portal metadata install. Final C++/native gates remain pending; no compiler or runtime claim.
 
 - 2026-10-02T19:52:59+00:00 — Rerouted preserved actual input fixture through an explicit protected-broker mode and the existing genuine capture runner; same frontend/EIS/clipboard/barrier assertions retained, final display dimensions selected. No sentinel or privilege widening. Earlier 19:53/19:57 update labels were manually estimated ahead of observed UTC; this timestamp is from qinda clock. Source gates pending compiler lease.
+
+- 2026-10-02T19:54:54+00:00 — Final source checkpoint e364561a5697fbd85d7c9c8b72c1fa068b0e2ab2 preserved; own tree clean. Source diff/Python/mkdocs strict/502-document validator EXIT0. Waiting on manager-owned coherent artifacts and exact bounded lease; historical e2f libraries will not be used to claim final production. Next compatible NativeShortcuts6cf source preserved and pending final compositor runtime.
