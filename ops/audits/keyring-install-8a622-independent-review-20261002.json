@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "independent_of": "root",
+  "candidate": "8a622b4b76d25d509ca50e8ca7fbf62d62753a4e",
+  "base": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "decision": "SOURCE ACCEPT",
+  "blocking_findings": [],
+  "changed_paths": [
+    "docs/wiki/apps/keyring-settings.md",
+    "src/apps/settings/keyring/CMakeLists.txt"
+  ],
+  "source_checks": {
+    "only_exact_install_basename_substitution": true,
+    "runtime_cpp_targets_interfaces_generation_changed": false,
+    "git_diff_check_exit": 0
+  },
+  "source_sha256": {
+    "base_cmake": "9f6fb5e9d8a69c73ff841179454693ec4925303946517f99342f1cd39427e7ef",
+    "candidate_cmake": "c20e2b9600465edc6e68cd9d4f747564105494f2af685b49c2bfbf43c76e193b"
+  },
+  "actual_retained_production_build": {
+    "path": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-portage-tmp/portage/gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2/work/QindaQt-29f7174a62175475f6ba54fa7627dc2fd4c8a21f_build",
+    "qmldir": {
+      "path": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-portage-tmp/portage/gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2/work/QindaQt-29f7174a62175475f6ba54fa7627dc2fd4c8a21f_build/qml/QindaQt/SettingsApp/Keyring/qmldir",
+      "sha256": "ee79ab51a39847eafb89e68e1d19a583470ff181c5e9df6a3d3190e1180697f1",
+      "bytes": 316,
+      "typeinfo": "qindaqt_settings_keyring_qml.qmltypes"
+    },
+    "generated_metadata": {
+      "path": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-portage-tmp/portage/gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2/work/QindaQt-29f7174a62175475f6ba54fa7627dc2fd4c8a21f_build/qml/QindaQt/SettingsApp/Keyring/qindaqt_settings_keyring_qml.qmltypes",
+      "sha256": "d11016fb6ea49eeb79e38d2f5edd7519112e0cb243192a7153da157001233afc",
+      "bytes": 864,
+      "generation": "qmltyperegistrar",
+      "export": "QindaQt.SettingsApp.Keyring/KeyringRouteComposition 1.0"
+    },
+    "generated_old_install_script": {
+      "path": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-portage-tmp/portage/gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2/work/QindaQt-29f7174a62175475f6ba54fa7627dc2fd4c8a21f_build/src/apps/settings/keyring/cmake_install.cmake",
+      "sha256": "85061eb0394cdd0fca6868e79503cee77804591e3b3858f6db2316d57d14a1de",
+      "references_absent_old_basename": true
+    },
+    "author_retained_missing_metadata_scan": {
+      "path": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-missing-qmltypes-install.json",
+      "sha256": "d535d9549f3a7341325d9ecc80fb865e0199b813c278aa4d4f19de1e63780c08",
+      "checked": 103,
+      "missing_count": 1,
+      "independently_rerun": false
+    }
+  },
+  "evidence_root": "build/keyring-install-8a622-review",
+  "evidence": {
+    "exact-source.diff": {
+      "sha256": "5bfa1becb2e421eb9a7053173544b1ba2196c7bbffc3ff5fd8fcb20fad022f01",
+      "bytes": 1774
+    },
+    "actual-retained-build.json": {
+      "sha256": "5676d033d2143ab7b404103e40979b36674a623db2cb3b660f8c717f6f30204f",
+      "bytes": 7026
+    }
+  },
+  "limits": [
+    "Source review only; actual retained29f production output inspected with read-only privilege, no configure/compiler/runtime/install mutation.",
+    "Corrects install rule to existing generated tooling metadata; package image installation must still succeed.",
+    "Frozen29f archive downstream overlay patch and warm Portage continuation require separate exact overlay review.",
+    "No runtime/application/PAM/credential or installed-release acceptance from this verdict."
+  ]
+}
