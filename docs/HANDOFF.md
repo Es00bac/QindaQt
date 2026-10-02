@@ -18,9 +18,14 @@ Native supported source-profile policy `ce84b0a5` and independent exact review
 `5fc7910be` are integrated at `ac689f42`. Manager integrated build and five CTests
 pass 65 Qt cases, and the 485-document validator plus strict MkDocs pass.
 Automatic balanced base policy is deferred; production defaults off until
-explicit native-exclusive cutover. The next bounded PF2 worker outcome is the
-cancellable critical-battery countdown and configured action. Whole PF2 and
-installed PowerDevil retirement remain open.
+explicit native-exclusive cutover. Critical-battery source `f951bffc` and exact
+independent ACCEPT `bcb8cac6` are integrated at `594a981a`. The manager's affected
+six-target configure/build pass in 42.010/24.007 seconds. Its integrated nine
+private CTests pass 101 Qt checks in 119.792 seconds with zero failures/skips,
+89 observed descendants gone, stable artifact hashes and no scoped cores.
+Default-off behavior, public configured actions and cancellation fences remain;
+whole PF2, lid/shared idle policy and installed/hardware PowerDevil retirement
+remain open.
 
 Native configured sleep candidate `50fb9c11` and exact independent ACCEPT
 `1d397416` are preserved on the recovery integration branch at `8b471794`.
@@ -54,12 +59,21 @@ control. It waits for the current NativeLock owner's receipt and initial reply
 before publishing the broker name and channel readiness; this does not establish
 the cause of historical initial refusals. The unchanged native matrix driver
 requires capture test-authorization APIs, absent from the production build.
-A separate coherent, noninstallable authorization-enabled test build is in
-progress; the production image and stage remain authorization-disabled.
-Independent consumer review rejects
-`ca29910d` for permitting default-node fallback when the offered target retires.
-The decoder repair and full matrix are held for exact recheck. Prior failures
-are retained; no installed routing or full capture completion is claimed.
+A separate coherent, noninstallable exact-fork authorization-enabled test build
+passes 1,228 actions in 301.101 seconds; the production image/stage remain
+authorization-disabled. The manager's unchanged existing native matrix passes
+all seven behaviors / thirteen Qt checks in 16.002 seconds on the actual AMD
+renderer, with all 50 observed descendants gone and artifact hashes stable.
+Four focused fork CTests pass 28 Qt checks in 5.748 seconds, all 23 observed
+descendants gone. The first focused attempt ran no Qt row because its CTest log
+directory was readonly; only the owned writable Testing mount was corrected.
+Independent decoder review accepts exact `d6002623` in `3278ce24` after its own
+five-check fixed actual graph and byte-identical `ca29910d` causal negative:
+the retired offered target falls back to unrelated blue frames in the original
+decoder and fails the preserved assertion. The original rejection remains.
+This qualifies the decoder amendment; separate review of the broader consumer
+foundation is pending before integration. Prior failures are retained; installed
+routing, additional privacy coverage and full PF19 remain open.
 
 The read-only local icon gallery candidate `d93a6c99`, independently accepted
 by `8f348f61`, is integrated on this recovery branch. It lists current working
