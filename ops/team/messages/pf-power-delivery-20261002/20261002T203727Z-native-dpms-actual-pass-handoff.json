@@ -1,0 +1,160 @@
+{
+  "timestamp": "2026-10-02T20:37:27Z",
+  "runtime_source": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+  "fixture_candidate": "7b6f5ee365f7a6906cc3da00420a93c473b5baa0",
+  "status": {
+    "source": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+    "exit": 0,
+    "elapsed_seconds": 5.93349617999047,
+    "pid": 1774301,
+    "starttick": "42830075",
+    "minimum_mem_available_kib": 15910336,
+    "stop_reason": null,
+    "observed_members": [
+      {
+        "pid": 1774301,
+        "ppid": 1774285,
+        "pgid": 1774301,
+        "starttick": "42830075",
+        "state": "S"
+      },
+      {
+        "pid": 1774304,
+        "ppid": 1774302,
+        "pgid": 1774302,
+        "starttick": "42830080",
+        "state": "R"
+      },
+      {
+        "pid": 1774302,
+        "ppid": 1774301,
+        "pgid": 1774302,
+        "starttick": "42830080",
+        "state": "Z"
+      },
+      {
+        "pid": 1774303,
+        "ppid": 1774302,
+        "pgid": 1774302,
+        "starttick": "42830080",
+        "state": "S"
+      }
+    ],
+    "same_starttick_survivors": [],
+    "input_hashes_unchanged": 22,
+    "runtime_log_sha256": "58418814061fd12cdf25fba98024a2638523b07733ac7d63caf10089cc505e4f",
+    "core_files": []
+  },
+  "command": {
+    "source": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+    "argv": [
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/tools/run-native-lock",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeDisplayPower",
+      "--library-path",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin",
+      "--",
+      "-nocrashhandler"
+    ],
+    "runtime_scope": "private software/virtual Workspace; no physical DPMS/sleep or GPU-renderer claim",
+    "environment": {
+      "HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-e9-expiry/ambient-home",
+      "XDG_CONFIG_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-e9-expiry/ambient-config",
+      "XDG_DATA_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-e9-expiry/ambient-data",
+      "XDG_CACHE_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-e9-expiry/ambient-cache",
+      "XDG_STATE_HOME": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-e9-expiry/ambient-state",
+      "XDG_RUNTIME_DIR": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-native-display-power-runtime-20261002/build/native-dpms-e9-expiry/ambient-runtime",
+      "TMPDIR": "/tmp/pf-dpms-pa96y8m9",
+      "DBUS_SESSION_BUS_ADDRESS": "unix:path=/nonexistent",
+      "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=/nonexistent"
+    },
+    "core_limit": [
+      0,
+      0
+    ],
+    "timeout_seconds": 110
+  },
+  "qt": {
+    "passed": 13,
+    "failed": 0,
+    "skipped": 0,
+    "milliseconds": 4955
+  },
+  "actual_pass_rows": [
+    "initTestCase()",
+    "ordinaryCallerAndCurrentInventory()",
+    "incompleteInventory(stock-virtual-unsupported)",
+    "incompleteInventory(mixed-supported-unsupported)",
+    "incompleteInventory(unexplained-mixed-off)",
+    "incompleteInventory(all-off-without-provenance)",
+    "incompleteInventory(missing-nonplaceholder-inventory)",
+    "legacyWriterAndTopologyLoss()",
+    "ownedBlankReleaseAndExternalOff()",
+    "preexistingOffIsPreserved()",
+    "wakeConsumesOwnedEpisode()",
+    "expiryAndAuthorityLoss()",
+    "cleanupTestCase()"
+  ],
+  "frozen_inputs": {
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/tools/run-native-lock": "5b55959816395dccac02df74597bf52730cc6be5ecf428b8c1becc726b08d836",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeDisplayPower": "6eb5a6dbc03152a23d3257f45b0345acc559c1fffe396474feb7fb141c386d73",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin.so": "ac7feed8999f4ad63a5697d3fdeeac132f5d619fab1b987b98af0a0f4f797ecf",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/CMakeCache.txt": "b110049cb9ee8763de74cfd381db13746e5331c6d793ecdcaa53b0345b606ff0",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/display-power/displaypowerauthority.cpp": "265c786eba985a0851bd003c128c07a058a083fbf5d5f13411a9af7aa52e693e",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/display-power/blankleases.cpp": "a37032ac50e8126399b2b12a5edddbc0308328e63dbbecdfa0e709d5af8a4d48",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/display-power/tests/native_display_power_test.cpp": "f1b21812ecc462e8d2a31be4fc58e94628bf23ca87e392af95b782f15548a7ab",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/src/workspace.cpp": "8b293f1d482368aa921186212952060449aa1a7ae79bbfd16397e4a10b841b62",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/autotests/integration/CMakeLists.txt": "e4233a9fefb73a7196e83c47b7b0fd78adeff7d022c1749f1e4b2a44f68981bb",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/autotests/integration/kwin_wayland_test.cpp": "0e5ac9d7673f28a9535c271488d4fb5fe4159b50b5d2b7c4acfcb309bd117f34",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/src/backends/virtual/virtual_output.cpp": "7ccb04dd2103e878eb47b92c41c0174a295925d4fd648e6cc0ac1120a18a01b1",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/autotests/integration/kwin_wayland_test.h": "1bba741f091927c0ec8132b446f20d450c2c8b324d96a3b8bab9772fc826957c",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/lib/libKWinIntegrationTestFramework.a": "e3365747f63228fef80fef74c82d9c103da5b474875a996590493714ac67a7fa",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/screencast.so": "eef9cc2be892d6c4ffcc30c6801531158aed39fe7273deb0bac9201a52a6ba67",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/screenshot.so": "3440c2801bfbcd5372510adbaa9bd13890cfef5badd1c685cbb158bfbf2f411e",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/eis.so": "702690d6c6d03b0a014745b59157a8c91bac9a601be9ebf80c342845d36165bf",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorations.so.0.6.6.6.1": "18fb88c4f5d23c578fa6b05b2d4f31b9a7b7f7496353bb9e7ed78d799ad9a01f",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorations.so.0": "18fb88c4f5d23c578fa6b05b2d4f31b9a7b7f7496353bb9e7ed78d799ad9a01f",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorationsprivate.so.0.6.6.6.1": "4b21757923f1ca12a8738aabebecd186ec23b4980900e21b8dd0d51768207450",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorations.so": "18fb88c4f5d23c578fa6b05b2d4f31b9a7b7f7496353bb9e7ed78d799ad9a01f",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorationsprivate.so.0": "4b21757923f1ca12a8738aabebecd186ec23b4980900e21b8dd0d51768207450",
+    "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorationsprivate.so": "4b21757923f1ca12a8738aabebecd186ec23b4980900e21b8dd0d51768207450"
+  },
+  "evidence_hashes": {
+    "status.json": "3d83c9802840472680d2e6d5288622bc5e32fa4ffb9ab552fe927bdce984d647",
+    "command.json": "9d3528106f4103533bf992b79ad4f3181499301a18fa3fe459a244db31f37fe3",
+    "input-before.json": "e48b9654a675d03444cfb1a3fe95086137869c83fc0cca35748ddc79fd4739a1",
+    "input-after.json": "e48b9654a675d03444cfb1a3fe95086137869c83fc0cca35748ddc79fd4739a1",
+    "runtime.log": "58418814061fd12cdf25fba98024a2638523b07733ac7d63caf10089cc505e4f"
+  },
+  "root_build_receipt": {
+    "source": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+    "command": [
+      "ninja",
+      "-C",
+      "build/native-tests",
+      "-j4",
+      "-l24",
+      "qindaqt-kwin",
+      "eis",
+      "screenshot",
+      "screencast",
+      "testNativeDisplayPower",
+      "testNativeCaptureAuthority",
+      "testNativeShortcuts"
+    ],
+    "exit": 0,
+    "elapsed": 41.01222349598538,
+    "min_available_kib": 12956308,
+    "memory_stop": false
+  },
+  "root_build_receipt_sha256": "d1031dac03c48ce73d7f5e523511d1e73ba22b88bf37f9d048909dbe22e95dcb",
+  "own_fork_status": "",
+  "short_tmpdir_removed": true,
+  "lease": "released",
+  "caveats": [
+    "Real native Workspace/DisplayPower D-Bus routing over task-private software virtual outputs only; stockVirtualOutput unsupported row remains failclosed.",
+    "No physical DRM/DPMS/GPU-renderer/hostsession mutation or full Power acceptance.",
+    "Nativeexclusive supervisor missing-prerequisite/off-compatible CLI gate passed separately; supported positive complete supervisor composition still a separate gate.",
+    "Missing private decoration/cursor and disconnected private PipeWire warnings are present; actual DPMS row assertions still passed.",
+    "All earlier long-TMPDIR/double-backend/350ms failure archives preserved; no healthy repeat."
+  ]
+}

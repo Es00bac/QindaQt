@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — minimal expiry fixture7b6f pushed; waiting root reviewed build and Input private lease release before one replay
+- Status: available — coherent e9 native DPMS all11behavior rows/13Qt pass; actual handoff preserved, private lease released
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -67,3 +67,7 @@
 - 2026-10-02T20:20:33Z — Authorized source-onlyrepair7b6f5ee365f7a6906cc3da00420a93c473b5baa0 pushed:fixturedeadline350to1500 only +READMEexisting1000msfloor. Exactbytecomparison accepts one substitution; expiryreceipt/QTRY2500/ownerloss/allotherassertions unchanged;diffcheck0. Previous195actual12QtPASS1FAIL0SKIP/22hashreceipts preserved. Rootreview/warmtinytargetbuild and Inputlease release pending; no private/compilerclaim or productionedit. Available for rootforthcomingShortcutssource independentreview.
 
 - 2026-10-02T20:27:24Z — Independent SOURCEACCEPT exactrootShortcut2d2b685af6359120e373f16d0c99fca1ee179cc7, isolatedreviewWTclean/diffcheck0/7pathhashes. CanonicalmodifiersF24 reconstruction exactspellingguard, sharednative/store conversion/legacyaliasfallback, unchangedownership/limits/persistence; testsuseunreservedCtrlF12 preservingVTfilter/lock/inhibitor/repeatassertions. No reviewercompile/runtime. DPMS7b6 remainsawaitingreviewedrebuild/nativelease; no resourceclaim.
+
+- 2026-10-02T20:36:42Z — Claim one actualDPMS replay explicitrootlease: exacte9bcb4a834a3a817d2bc194f3c4cf488e9111679 seven-targetcoherentbuild0/41.012s. Existing7bexpiryfixture/assertions unchanged; freshshort0700TMPDIR/refrozen22source/artifact/framework inputs/core0/privatebus/6GiBguard. No compiler/sharedsource/cachemutation; preserve allpreviousarchives and stop/release atoneoutcome.
+
+- 2026-10-02T20:37:27Z — Actual finalboundedDPMS gate: exacte9/7b unchangedfixture one-runPASS exit0/5.933496s, Qt13PASS0FAIL0SKIP/4955ms(all11behaviorrows incl expiry+Session1ownerloss). All22source/artifact/framework/cachehashes unchanged;4observed same-starttick PIDs/2groupsgone, core0/short0700TMPDIRremoved. Earlier3failurearchives retained; nohealthyrepeat. PRIVATElease immediatelyreleased. Scopedsoftware/virtualWorkspace/DBusqualified, physicalDRM/DPMS/rendering and fullnativeexclusivepositive-supervisor remainseparate. AvailableforrootexactrepeatfixSOURCEreview; no resourceclaim.
