@@ -1,0 +1,2088 @@
+{
+  "schema_version": 1,
+  "observed_utc": "2026-10-02T20:57:35Z",
+  "policy_overlay_source": "39321582993a8a1cb3295c92d39517065358a441",
+  "published_overlay_source": "502a04237ed9e36832f1f578a2f3716d5959c367",
+  "hosts": {
+    "qinda": {
+      "schema_version": 1,
+      "host": "qinda",
+      "observed_utc": "2026-10-02T20:53:15Z",
+      "scope": "active USE-reduced installed metadata edges; OR alternatives may overlap, not solved future depclean",
+      "profile_link": "../../var/db/repos/qindaqt/profiles/qindaqt/systemd",
+      "profile_resolved": "/var/db/repos/qindaqt/profiles/qindaqt/systemd",
+      "profile_files": [
+        {
+          "path": "/etc/portage/make.profile/parent",
+          "sha256": "295a62953648bfa1249d1a9a22eb0505e744085bbd3d2674a6f112213bab7807",
+          "text": "gentoo:default/linux/amd64/23.0/desktop/plasma/systemd\n"
+        },
+        {
+          "path": "/etc/portage/make.profile/packages",
+          "sha256": "8a95085a9627de251a3c4f44f8ee6f2a097824f7cb8278ad9eacb51b28d9f66c",
+          "text": "# @profile set: what a QindaQt desktop machine gets by default.\napp-office/obsidian\ngui-wm/qindaqt-desktop\ngui-apps/qindaoffice\ngui-apps/qqterm\ngui-apps/qindaqt-system-monitor\ngui-apps/qindaqt-removable-media\napp-accessibility/gabbee\nx11-misc/dotool\nx11-themes/qinda-seven\nwww-client/qindafox-bin\ndev-util/opencode-bin\nx11-misc/sddm\nsys-boot/qinda-boot\nnet-misc/networkmanager\nmedia-video/pipewire\nmedia-video/wireplumber\nkde-plasma/xdg-desktop-portal-kde\nkde-plasma/polkit-kde-agent\nsys-power/power-profiles-daemon\nmedia-fonts/noto\nmedia-fonts/noto-emoji\nmedia-fonts/dejavu\napp-shells/zsh\nkde-plasma/sloom-globalmenu\nkde-plasma/sloom-panelmenu\nmedia-gfx/sloom-studio-bin\n"
+        }
+      ],
+      "world": {
+        "path": "/var/lib/portage/world",
+        "sha256": "95afc314c780265e0a7293a2d8a97ca4ce4b461d7f9ff8037de7d8dfbe23e388",
+        "text": "acct-group/flatpak\nacct-user/flatpak\napp-editors/mousepad\napp-editors/nano\napp-emulation/wine-proton\napp-emulation/winetricks\napp-misc/ai-tools-desktop\napp-misc/claude-desktop-bin\napp-misc/mc\napp-misc/openrgb\napp-misc/venusprolinux\napp-office/libreoffice\napp-office/libreoffice-bin\napp-office/obsidian\napp-portage/gemato\napp-portage/getuto\napp-shells/fzf\napp-shells/zsh\napp-shells/zsh-syntax-highlighting\napp-text/tree\ndev-libs/libisoburn\ndev-libs/qindatk\ndev-qt/qtwebsockets\ndev-util/ccache\ndev-util/claude-code\ndev-util/codex-bin\ndev-util/opencode-bin\ndev-util/pkgcheck\ngames-util/gamemode\ngames-util/lutris\ngames-util/mangohud\ngames-util/steam-launcher\ngnome-extra/nm-applet\ngui-apps/qindaqt-system-monitor\ngui-apps/qqterm\ngui-wm/gamescope\ngui-wm/qindaqt-desktop\nkde-apps/kdialog\nkde-frameworks/kcalendarcore\nkde-misc/kdeconnect\nkde-plasma/sloom-globalmenu\nkde-plasma/sloom-panelmenu\nmail-client/thunderbird-bin\nmedia-gfx/blender\nmedia-gfx/sloom-studio-bin\nmedia-sound/audacious\nmedia-sound/cava\nmedia-video/obs-studio\nmedia-video/qqmpv\nmedia-video/v4l2loopback\nnet-libs/nodejs\nnet-misc/networkmanager\nnet-vpn/tailscale\nnet-wireless/wpa_supplicant\nsci-ml/qinda-llm-server\nsci-ml/qinda-llm-server::qindaqt\nsys-apps/usbutils\nsys-block/gparted\nsys-fs/mtools\nsys-fs/ntfs3g\nsys-fs/squashfs-tools\nsys-process/btop\nsys-process/cronie\nwww-client/qindafox-bin\nx11-themes/qinda-breeze-handdrawn\nx11-themes/qinda-breeze-painted\n"
+      },
+      "world_sets": {
+        "path": "/var/lib/portage/world_sets",
+        "sha256": "896816f229108284938b8cfa292c968a6e47576bcaa99d9d2312bb5f3e20eeab",
+        "text": "@ai-tools\n@boot-essentials\n@codecs\n@extras\n@kde-desktop\n@lxqt-desktop\n"
+      },
+      "set_files": [
+        {
+          "path": "/etc/portage/sets/ai-tools",
+          "sha256": "313f884d64b97efc61305de85f6723ca96035fc695d9d069e2a02d07efde437e",
+          "text": "app-misc/chatgpt-desktop\ndev-util/claude-code\ndev-util/codex-bin\ndev-util/kimi-code-bin\ndev-util/zcode\napp-misc/ai-tools-desktop\napp-misc/claude-desktop-bin\n"
+        },
+        {
+          "path": "/etc/portage/sets/boot-essentials",
+          "sha256": "1b03b6fa8dff4a406a4bb9eb6a7ee7285133957ae6249b7318fd4d0f133fc23a",
+          "text": "# Bootable-system critical path.\n# gentoo-kernel-bin = Gentoo's prebuilt kernel. No config archaeology, and it\n# arrives as a binary package. You are writing a desktop, not a kernel.\nsys-kernel/gentoo-kernel-bin\nsys-kernel/linux-firmware\nsys-kernel/installkernel\nsys-kernel/dracut\nsys-apps/systemd\napp-admin/sudo\nnet-misc/networkmanager\nnet-wireless/iwd\napp-portage/gentoolkit\napp-portage/eix\n"
+        },
+        {
+          "path": "/etc/portage/sets/codecs",
+          "sha256": "cdf780278a9b1dc263d14fc6833a878b3f50bd4be6d5a51af99eea2a954dc43b",
+          "text": "# FFmpeg stack (mpv / VLC / Firefox / Qt Multimedia)\nmedia-video/ffmpeg\ndev-qt/qtmultimedia\n\n# GStreamer stack (GTK apps, gst pipelines). ugly = patent-encumbered,\n# bad = less-mature, libav = the FFmpeg bridge. All four needed for\n# \"everything just plays\".\nmedia-libs/gst-plugins-base\nmedia-libs/gst-plugins-good\nmedia-libs/gst-plugins-bad\nmedia-libs/gst-plugins-ugly\nmedia-plugins/gst-plugins-libav\n\n# Hardware video acceleration + the tool to verify it (vainfo)\nmedia-libs/libva\nmedia-video/libva-utils\n\n# Players\nmedia-video/mpv\nmedia-video/vlc\n"
+        },
+        {
+          "path": "/etc/portage/sets/extras",
+          "sha256": "69d3abdcfc84ab9ad7206c9802c586f2cb206957cfd44817745440eb1c9d4926",
+          "text": "# =====================================================================\n#  \"Just works\" extras. Unblocked by ACCEPT_LICENSE=\"*\".\n# =====================================================================\n\n# Binary Firefox \u2014 source firefox is a 1.5-3 hour build on this box for\n# zero practical gain. This is the pragmatic choice.\nwww-client/firefox-bin\n\n# Microsoft core fonts (EULA-gated, now accepted) + metric-compatible\n# Liberation set. Without these, a lot of the web and many documents\n# render with wrong metrics.\nmedia-fonts/corefonts\nmedia-fonts/liberation-fonts\n\n# Everyday archive handling\napp-arch/7zip\napp-arch/unzip\n\n# Flatpak \u2014 the sane route for proprietary desktop apps (Discord, Spotify,\n# Slack) without fighting ebuilds for them.\nsys-apps/flatpak\n\n# GPU verification tools: vulkaninfo / glxinfo, for confirming RADV and\n# radeonsi actually came up after first boot.\ndev-util/vulkan-tools\nx11-apps/mesa-progs\ndev-util/ccache\n"
+        },
+        {
+          "path": "/etc/portage/sets/kde-desktop",
+          "sha256": "42032122b79b4d8ac7f12e4e109c1fc06d3b710777785d5339ee387e9ed0b137",
+          "text": "kde-plasma/plasma-meta\nkde-apps/dolphin\nkde-apps/konsole\nkde-apps/kate\nkde-apps/ark\nkde-apps/gwenview\nkde-plasma/spectacle\nkde-apps/okular\nkde-apps/kcalc\n\n"
+        },
+        {
+          "path": "/etc/portage/sets/lxqt-desktop",
+          "sha256": "f2f5e8bd11b8ff7e15b790dd6db70972d783ad3932f840807abb498bfb75402b",
+          "text": "# =====================================================================\n#  LXQt desktop \u2014 Qt6, genuinely lightweight, almost no KDE stack.\n#  Only KDE thing pulled in: breeze-icons (SVG icon theme, no code).\n# =====================================================================\nlxqt-base/lxqt-meta\n\n# Window managers. LXQt's own +window-manager USE would drag in KWin AND\n# kde-plasma/systemsettings, so it is disabled and we pick our own.\n# openbox = X11 session (stable, LXQt's traditional WM)\n# labwc   = Wayland session (wlroots, openbox-like)\nx11-wm/openbox\ngui-wm/labwc\n\n# X11 server + amdgpu DDX for the openbox session; XWayland for the rest\nx11-base/xorg-server\nx11-base/xorg-drivers\nx11-base/xwayland\n\n# Audio\nmedia-video/pipewire\nmedia-video/wireplumber\n\n# Fonts\nmedia-fonts/noto\nmedia-fonts/noto-emoji\nmedia-fonts/dejavu\n\n# Dev tooling\ndev-build/cmake\ndev-build/ninja\ndev-vcs/git\napp-editors/neovim\n"
+        }
+      ],
+      "forbidden_cpvs": [
+        "kde-plasma/aurorae-6.6.6",
+        "kde-plasma/bluedevil-6.6.6",
+        "kde-plasma/breeze-6.6.6",
+        "kde-plasma/breeze-gtk-6.6.6",
+        "kde-plasma/drkonqi-6.6.6",
+        "kde-plasma/kactivitymanagerd-6.6.6",
+        "kde-plasma/kde-cli-tools-6.6.6",
+        "kde-plasma/kde-cli-tools-common-6.6.6",
+        "kde-plasma/kde-gtk-config-6.6.6",
+        "kde-plasma/kdecoration-6.6.6",
+        "kde-plasma/kdeplasma-addons-6.6.6",
+        "kde-plasma/kdesu-gui-6.6.6",
+        "kde-plasma/keditfiletype-6.6.6",
+        "kde-plasma/kgamma-6.6.6",
+        "kde-plasma/kglobalacceld-6.6.6-r1",
+        "kde-plasma/kinfocenter-6.6.6",
+        "kde-plasma/kmenuedit-6.6.6",
+        "kde-plasma/knighttime-6.6.6",
+        "kde-plasma/kpipewire-6.6.6.1",
+        "kde-plasma/kscreen-6.6.6",
+        "kde-plasma/kscreenlocker-6.6.6",
+        "kde-plasma/ksshaskpass-6.6.6",
+        "kde-plasma/ksystemstats-6.6.6",
+        "kde-plasma/kwallet-pam-6.6.6",
+        "kde-plasma/kwin-6.6.6-r1",
+        "kde-plasma/kwin-x11-6.6.6",
+        "kde-plasma/kwrited-6.6.6",
+        "kde-plasma/libkscreen-6.6.6-r1",
+        "kde-plasma/libksysguard-6.6.6",
+        "kde-plasma/libplasma-6.6.6",
+        "kde-plasma/milou-6.6.6",
+        "kde-plasma/ocean-sound-theme-6.6.6",
+        "kde-plasma/plasma-activities-6.6.6",
+        "kde-plasma/plasma-activities-stats-6.6.6",
+        "kde-plasma/plasma-browser-integration-6.6.6",
+        "kde-plasma/plasma-desktop-6.6.6",
+        "kde-plasma/plasma-disks-6.6.6",
+        "kde-plasma/plasma-firewall-6.6.6",
+        "kde-plasma/plasma-integration-6.6.6",
+        "kde-plasma/plasma-login-sessions-6.6.6",
+        "kde-plasma/plasma-meta-6.6.6",
+        "kde-plasma/plasma-mimeapps-list-3",
+        "kde-plasma/plasma-nm-6.6.6",
+        "kde-plasma/plasma-pa-6.6.6",
+        "kde-plasma/plasma-systemmonitor-6.6.6",
+        "kde-plasma/plasma-vault-6.6.6",
+        "kde-plasma/plasma-welcome-6.6.6",
+        "kde-plasma/plasma-workspace-6.6.6",
+        "kde-plasma/plasma-workspace-wallpapers-6.6.6",
+        "kde-plasma/plasma5support-6.6.6",
+        "kde-plasma/polkit-kde-agent-6.6.6",
+        "kde-plasma/powerdevil-6.6.6-r1",
+        "kde-plasma/print-manager-6.6.6",
+        "kde-plasma/qqc2-breeze-style-6.6.6",
+        "kde-plasma/sddm-kcm-6.6.6",
+        "kde-plasma/sloom-globalmenu-1.0.0",
+        "kde-plasma/sloom-panelmenu-1.0.0",
+        "kde-plasma/spectacle-6.6.6",
+        "kde-plasma/systemsettings-6.6.6",
+        "kde-plasma/xdg-desktop-portal-kde-6.6.6"
+      ],
+      "allowed_installed": [
+        "kde-plasma/kwayland-6.6.6",
+        "kde-plasma/layer-shell-qt-6.6.6"
+      ],
+      "explicit_world_roots": {
+        "kde-plasma/aurorae-6.6.6": [],
+        "kde-plasma/bluedevil-6.6.6": [],
+        "kde-plasma/breeze-6.6.6": [],
+        "kde-plasma/breeze-gtk-6.6.6": [],
+        "kde-plasma/drkonqi-6.6.6": [],
+        "kde-plasma/kactivitymanagerd-6.6.6": [],
+        "kde-plasma/kde-cli-tools-6.6.6": [],
+        "kde-plasma/kde-cli-tools-common-6.6.6": [],
+        "kde-plasma/kde-gtk-config-6.6.6": [],
+        "kde-plasma/kdecoration-6.6.6": [],
+        "kde-plasma/kdeplasma-addons-6.6.6": [],
+        "kde-plasma/kdesu-gui-6.6.6": [],
+        "kde-plasma/keditfiletype-6.6.6": [],
+        "kde-plasma/kgamma-6.6.6": [],
+        "kde-plasma/kglobalacceld-6.6.6-r1": [],
+        "kde-plasma/kinfocenter-6.6.6": [],
+        "kde-plasma/kmenuedit-6.6.6": [],
+        "kde-plasma/knighttime-6.6.6": [],
+        "kde-plasma/kpipewire-6.6.6.1": [],
+        "kde-plasma/kscreen-6.6.6": [],
+        "kde-plasma/kscreenlocker-6.6.6": [],
+        "kde-plasma/ksshaskpass-6.6.6": [],
+        "kde-plasma/ksystemstats-6.6.6": [],
+        "kde-plasma/kwallet-pam-6.6.6": [],
+        "kde-plasma/kwin-6.6.6-r1": [],
+        "kde-plasma/kwin-x11-6.6.6": [],
+        "kde-plasma/kwrited-6.6.6": [],
+        "kde-plasma/libkscreen-6.6.6-r1": [],
+        "kde-plasma/libksysguard-6.6.6": [],
+        "kde-plasma/libplasma-6.6.6": [],
+        "kde-plasma/milou-6.6.6": [],
+        "kde-plasma/ocean-sound-theme-6.6.6": [],
+        "kde-plasma/plasma-activities-6.6.6": [],
+        "kde-plasma/plasma-activities-stats-6.6.6": [],
+        "kde-plasma/plasma-browser-integration-6.6.6": [],
+        "kde-plasma/plasma-desktop-6.6.6": [],
+        "kde-plasma/plasma-disks-6.6.6": [],
+        "kde-plasma/plasma-firewall-6.6.6": [],
+        "kde-plasma/plasma-integration-6.6.6": [],
+        "kde-plasma/plasma-login-sessions-6.6.6": [],
+        "kde-plasma/plasma-meta-6.6.6": [],
+        "kde-plasma/plasma-mimeapps-list-3": [],
+        "kde-plasma/plasma-nm-6.6.6": [],
+        "kde-plasma/plasma-pa-6.6.6": [],
+        "kde-plasma/plasma-systemmonitor-6.6.6": [],
+        "kde-plasma/plasma-vault-6.6.6": [],
+        "kde-plasma/plasma-welcome-6.6.6": [],
+        "kde-plasma/plasma-workspace-6.6.6": [],
+        "kde-plasma/plasma-workspace-wallpapers-6.6.6": [],
+        "kde-plasma/plasma5support-6.6.6": [],
+        "kde-plasma/polkit-kde-agent-6.6.6": [],
+        "kde-plasma/powerdevil-6.6.6-r1": [],
+        "kde-plasma/print-manager-6.6.6": [],
+        "kde-plasma/qqc2-breeze-style-6.6.6": [],
+        "kde-plasma/sddm-kcm-6.6.6": [],
+        "kde-plasma/sloom-globalmenu-1.0.0": [
+          "kde-plasma/sloom-globalmenu"
+        ],
+        "kde-plasma/sloom-panelmenu-1.0.0": [
+          "kde-plasma/sloom-panelmenu"
+        ],
+        "kde-plasma/spectacle-6.6.6": [],
+        "kde-plasma/systemsettings-6.6.6": [],
+        "kde-plasma/xdg-desktop-portal-kde-6.6.6": []
+      },
+      "installed_active_reverse_edges": {
+        "kde-plasma/aurorae-6.6.6": [
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/aurorae-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/aurorae-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/aurorae-6.6.6:6"
+          }
+        ],
+        "kde-plasma/bluedevil-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/bluedevil-6.6.6:6"
+          }
+        ],
+        "kde-plasma/breeze-6.6.6": [
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/breeze-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/breeze-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/breeze-6.6.6:6"
+          }
+        ],
+        "kde-plasma/breeze-gtk-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/breeze-gtk-6.6.6:6"
+          }
+        ],
+        "kde-plasma/drkonqi-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/drkonqi-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kactivitymanagerd-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kactivitymanagerd-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kactivitymanagerd-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kde-cli-tools-6.6.6": [
+          {
+            "consumer": "app-misc/claude-desktop-bin-1.49585.0",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kde-cli-tools"
+          },
+          {
+            "consumer": "app-office/libreoffice-25.2.7.2-r1",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kde-cli-tools:*"
+          },
+          {
+            "consumer": "app-office/libreoffice-bin-25.8.4-r1",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kde-cli-tools"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-cli-tools-6.6.6:6"
+          },
+          {
+            "consumer": "x11-misc/xdg-utils-1.2.1-r11",
+            "kind": "PDEPEND",
+            "atom": "kde-plasma/kde-cli-tools:*"
+          }
+        ],
+        "kde-plasma/kde-cli-tools-common-6.6.6": [
+          {
+            "consumer": "kde-plasma/kde-cli-tools-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-cli-tools-common-6.6.6"
+          },
+          {
+            "consumer": "kde-plasma/kdesu-gui-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-cli-tools-common-6.6.6"
+          },
+          {
+            "consumer": "kde-plasma/keditfiletype-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-cli-tools-common-6.6.6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-cli-tools-common-6.6.6"
+          }
+        ],
+        "kde-plasma/kde-gtk-config-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-gtk-config-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kdecoration-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/kdecoration-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-plasma/aurorae-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/breeze-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kde-gtk-config-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kdeplasma-addons-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdeplasma-addons-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kdesu-gui-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdesu-gui-6.6.6[X]"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdesu-gui-6.6.6:*"
+          }
+        ],
+        "kde-plasma/keditfiletype-6.6.6": [
+          {
+            "consumer": "kde-frameworks/kio-6.27.0",
+            "kind": "PDEPEND",
+            "atom": "kde-plasma/keditfiletype"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/keditfiletype-6.6.6"
+          }
+        ],
+        "kde-plasma/kgamma-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kgamma-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kglobalacceld-6.6.6-r1": [
+          {
+            "consumer": "kde-plasma/kscreen-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kglobalacceld-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kglobalacceld-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kglobalacceld-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kglobalacceld-6.6.6:6[X(-)]"
+          }
+        ],
+        "kde-plasma/kinfocenter-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-disks-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kinfocenter:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kinfocenter-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kmenuedit-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kmenuedit-6.6.6:6"
+          }
+        ],
+        "kde-plasma/knighttime-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "~kde-plasma/knighttime-6.6.6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/knighttime-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/knighttime-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/knighttime-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/knighttime-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kpipewire-6.6.6.1": [
+          {
+            "consumer": "gui-apps/xwaylandvideobridge-0.5.0",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kpipewire:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kpipewire-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kpipewire-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/spectacle-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kpipewire-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kscreen-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kscreen-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kscreenlocker-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/kscreenlocker-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kscreenlocker-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kscreenlocker-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kscreenlocker-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kscreenlocker-6.6.6:6"
+          }
+        ],
+        "kde-plasma/ksshaskpass-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/ksshaskpass-6.6.6:6"
+          }
+        ],
+        "kde-plasma/ksystemstats-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/ksystemstats-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-systemmonitor-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/ksystemstats-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kwallet-pam-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kwallet-pam-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kwin-6.6.6-r1": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts]"
+          },
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kwin-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/kwin-6.6*:6[X(+)]"
+          },
+          {
+            "consumer": "kde-plasma/plasma-login-sessions-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kwin:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kwin-6.6.6:6[lock]"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kwin-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kwin-x11-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-login-sessions-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kwin-x11:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kwin-x11-6.6.6:6[lock]"
+          }
+        ],
+        "kde-plasma/kwrited-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kwrited-6.6.6:6"
+          }
+        ],
+        "kde-plasma/libkscreen-6.6.6-r1": [
+          {
+            "consumer": "kde-plasma/kscreen-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libkscreen-6.6.6:6/8="
+          },
+          {
+            "consumer": "kde-plasma/kscreenlocker-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libkscreen-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libkscreen-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libkscreen-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/powerdevil-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libkscreen-6.6.6:6"
+          },
+          {
+            "consumer": "lxqt-base/lxqt-config-2.4.0",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/libkscreen:6/8="
+          }
+        ],
+        "kde-plasma/libksysguard-6.6.6": [
+          {
+            "consumer": "kde-plasma/ksystemstats-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libksysguard-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libksysguard-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libksysguard-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-systemmonitor-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libksysguard-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-vault-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libksysguard-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libksysguard-6.6.6:6"
+          }
+        ],
+        "kde-plasma/libplasma-6.6.6": [
+          {
+            "consumer": "dev-libs/kirigami-addons-1.12.1",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/libplasma:6/7="
+          },
+          {
+            "consumer": "kde-misc/kdeconnect-26.04.3-r3",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/libplasma:6"
+          },
+          {
+            "consumer": "kde-plasma/bluedevil-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kdeplasma-addons-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kscreen-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kscreenlocker-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/milou-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-nm-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-pa-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-vault-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-welcome-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/polkit-kde-agent-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/powerdevil-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/print-manager-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/sloom-globalmenu-1.0.0",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.0:6"
+          },
+          {
+            "consumer": "kde-plasma/sloom-panelmenu-1.0.0",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.0:6"
+          }
+        ],
+        "kde-plasma/milou-6.6.6": [
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/milou-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/milou-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/milou-6.6.6:6"
+          }
+        ],
+        "kde-plasma/ocean-sound-theme-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/ocean-sound-theme-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-activities-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/plasma-activities-6.6.6*:6/7="
+          },
+          {
+            "consumer": "kde-apps/gwenview-26.04.3",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/plasma-activities:6/7="
+          },
+          {
+            "consumer": "kde-apps/kio-extras-26.04.3",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/plasma-activities:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/libplasma-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/plasma-activities-6.6.6*:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-activities-stats-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/plasma-activities:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-browser-integration-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-vault-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma5support-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/powerdevil-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/systemsettings-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          }
+        ],
+        "kde-plasma/plasma-activities-stats-6.6.6": [
+          {
+            "consumer": "kde-apps/kio-extras-26.04.3",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/plasma-activities-stats:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-stats-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-stats-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-stats-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-browser-integration-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-browser-integration-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-desktop-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-desktop-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-disks-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-disks-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-firewall-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-firewall-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-integration-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-integration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-integration-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-login-sessions-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-login-sessions-6.6.6:6[X]"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "PDEPEND",
+            "atom": ">=kde-plasma/plasma-login-sessions-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-meta-6.6.6": [],
+        "kde-plasma/plasma-mimeapps-list-3": [
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-mimeapps-list-3"
+          }
+        ],
+        "kde-plasma/plasma-nm-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-nm-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-pa-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-pa-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-systemmonitor-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-systemmonitor-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-vault-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-vault-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-welcome-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-welcome-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-workspace-6.6.6": [
+          {
+            "consumer": "kde-plasma/kscreenlocker-6.6.6",
+            "kind": "PDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-browser-integration-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6[screencast,X(-)]"
+          },
+          {
+            "consumer": "kde-plasma/plasma-login-sessions-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6[X]"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6[X]"
+          },
+          {
+            "consumer": "kde-plasma/powerdevil-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/sloom-globalmenu-1.0.0",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/sloom-globalmenu-1.0.0",
+            "kind": "RDEPEND",
+            "atom": "<kde-plasma/plasma-workspace-6.7"
+          }
+        ],
+        "kde-plasma/plasma-workspace-wallpapers-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-wallpapers-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma5support-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-desktop-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma5support-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma5support-6.6.6:6"
+          }
+        ],
+        "kde-plasma/polkit-kde-agent-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/polkit-kde-agent-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-frameworks/kauth-6.27.0",
+            "kind": "PDEPEND",
+            "atom": "kde-plasma/polkit-kde-agent:*"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/polkit-kde-agent-6.6.6:*"
+          }
+        ],
+        "kde-plasma/powerdevil-6.6.6-r1": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "~kde-plasma/powerdevil-6.6.6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/powerdevil-6.6.6:6"
+          }
+        ],
+        "kde-plasma/print-manager-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/print-manager-6.6.6:6"
+          }
+        ],
+        "kde-plasma/qqc2-breeze-style-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-integration-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/qqc2-breeze-style-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/qqc2-breeze-style-6.6.6:6"
+          }
+        ],
+        "kde-plasma/sddm-kcm-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/sddm-kcm-6.6.6:6"
+          }
+        ],
+        "kde-plasma/sloom-globalmenu-1.0.0": [
+          {
+            "consumer": "media-gfx/sloom-studio-bin-0.9.16",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/sloom-globalmenu"
+          }
+        ],
+        "kde-plasma/sloom-panelmenu-1.0.0": [],
+        "kde-plasma/spectacle-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/spectacle-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/spectacle-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "<kde-plasma/spectacle-15"
+          }
+        ],
+        "kde-plasma/systemsettings-6.6.6": [
+          {
+            "consumer": "kde-plasma/kinfocenter-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/systemsettings-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/systemsettings-6.6.6:6"
+          }
+        ],
+        "kde-plasma/xdg-desktop-portal-kde-6.6.6": [
+          {
+            "consumer": "app-misc/claude-desktop-bin-1.49585.0",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/xdg-desktop-portal-kde"
+          },
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-plasma/plasma-integration-6.6.6",
+            "kind": "PDEPEND",
+            "atom": ">=kde-plasma/xdg-desktop-portal-kde-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-meta-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/xdg-desktop-portal-kde-6.6.6:6"
+          }
+        ]
+      },
+      "rollback_binary_candidates": [
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/sloom-panelmenu/sloom-panelmenu-1.0.0-2.gpkg.tar",
+          "bytes": 20480
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/sloom-panelmenu/sloom-panelmenu-1.0.0-1.gpkg.tar",
+          "bytes": 0
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/sloom-globalmenu/sloom-globalmenu-1.0.0-1.gpkg.tar",
+          "bytes": 0
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/sloom-globalmenu/sloom-globalmenu-1.0.0-2.gpkg.tar",
+          "bytes": 174080
+        },
+        {
+          "path": "/var/cache/binpkgs/app-accessibility/gabbee/gabbee-0.1.0_p20260926-1.gpkg.tar",
+          "bytes": 931840
+        },
+        {
+          "path": "/var/cache/binpkgs/app-accessibility/gabbee/gabbee-0.1.0_p20260921-r9-1.gpkg.tar",
+          "bytes": 880640
+        },
+        {
+          "path": "/var/cache/binpkgs/app-accessibility/gabbee/gabbee-0.1.0_p20260927-1.gpkg.tar",
+          "bytes": 931840
+        }
+      ],
+      "overlay_head": "8f23e1e90490ab02f49e88d5c99994bbf1f0082b",
+      "elapsed_seconds": 1.042291943973396,
+      "selected_vdb": {
+        "app-accessibility/gabbee-0.1.0_p20260927": {
+          "USE": "abi_x86_64 amd64 elibc_glibc ibus kernel_linux python_single_target_python3_14 qindaqt sound whisper",
+          "RDEPEND": "dev-lang/python:3.14 dev-python/pyqt6[dbus,gui,network,widgets,python_targets_python3_14(-)] dev-python/python-dotenv[python_targets_python3_14(-)] dev-python/requests[python_targets_python3_14(-)] dev-python/websockets[python_targets_python3_14(-)] dev-python/secretstorage[python_targets_python3_14(-)] dev-python/dbus-python[python_targets_python3_14(-)] dev-python/pygobject[python_targets_python3_14(-)] app-accessibility/at-spi2-core[introspection] media-video/pipewire[extra] gui-apps/wl-clipboard app-i18n/ibus[introspection] net-misc/openssh sys-apps/systemd media-libs/libcanberra dev-python/faster-whisper[python_single_target_python3_14(-)] app-accessibility/faster-whisper-models dev-lang/python:3.14",
+          "PDEPEND": "",
+          "SLOT": "0",
+          "repository": "qindaqt"
+        },
+        "gui-wm/qindaqt-desktop-0.1.0_pre20260927-r7": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+          "RDEPEND": ">=x11-themes/qinda-icons-1.0.0_p20260927 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r1:6/6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": ">=media-video/qqmpv-0.1.0_p20260919 >=gui-apps/qqterm-0.1.0_p20260920",
+          "SLOT": "0",
+          "repository": "qindaqt"
+        },
+        "kde-apps/kdialog-26.04.3": {
+          "USE": "X abi_x86_64 amd64 elibc_glibc kernel_linux",
+          "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,widgets] >=kde-frameworks/kconfig-6.22.0:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kdbusaddons-6.22.0:6 >=kde-frameworks/kguiaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kiconthemes-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/knotifications-6.22.0:6 >=kde-frameworks/ktextwidgets-6.22.0:6 >=kde-frameworks/kwidgetsaddons-6.22.0:6 >=kde-frameworks/kwindowsystem-6.22.0:6 x11-libs/libX11 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 !kde-apps/kdialog:5 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "SLOT": "6",
+          "repository": "gentoo"
+        },
+        "kde-frameworks/kio-6.27.0": {
+          "USE": "X abi_x86_64 acl amd64 elibc_glibc kernel_linux kwallet wayland",
+          "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,network,ssl,widgets,X] >=dev-qt/qtdeclarative-6.10.1:6 =kde-frameworks/kbookmarks-6.27*:6 =kde-frameworks/kcodecs-6.27*:6 =kde-frameworks/kcolorscheme-6.27*:6 =kde-frameworks/kcompletion-6.27*:6 =kde-frameworks/kconfig-6.27*:6 =kde-frameworks/kcoreaddons-6.27*:6 =kde-frameworks/kcrash-6.27*:6 =kde-frameworks/kdbusaddons-6.27*:6 =kde-frameworks/kguiaddons-6.27*:6 =kde-frameworks/ki18n-6.27*:6 =kde-frameworks/kiconthemes-6.27*:6 =kde-frameworks/kitemviews-6.27*:6 =kde-frameworks/kjobwidgets-6.27*:6 =kde-frameworks/knotifications-6.27*:6 =kde-frameworks/kservice-6.27*:6 =kde-frameworks/ktextwidgets-6.27*:6 =kde-frameworks/kwidgetsaddons-6.27*:6 =kde-frameworks/kwindowsystem-6.27*:6[wayland,X] =kde-frameworks/solid-6.27*:6 sys-apps/util-linux sys-apps/attr virtual/acl =kde-frameworks/kwallet-6.27*:6 >=dev-qt/qtbase-6.10.1:6/6.11.1=[gui] >=dev-qt/qtbase-6.10.1:6[libproxy] sys-power/switcheroo-control >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": ">=kde-frameworks/kded-6.27:6 kde-plasma/keditfiletype",
+          "SLOT": "6/6.27",
+          "repository": "gentoo"
+        },
+        "kde-misc/kdeconnect-26.04.3-r3": {
+          "USE": "X abi_x86_64 amd64 elibc_glibc kernel_linux pulseaudio",
+          "RDEPEND": "dev-libs/libei dev-libs/openssl:0/3= >=dev-libs/wayland-1.15.0 >=dev-qt/qtbase-6.10.1:6/6.11.1=[dbus,gui,network,wayland,widgets,X] >=dev-qt/qtdeclarative-6.10.1:6[widgets] >=dev-qt/qtmultimedia-6.10.1:6 >=kde-frameworks/kcolorscheme-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6[qml] >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/kdbusaddons-6.22.0:6 >=kde-frameworks/kguiaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kiconthemes-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kirigami-6.22.0:6 >=kde-frameworks/kitemmodels-6.22.0:6 >=kde-frameworks/knotifications-6.22.0:6 >=kde-frameworks/kpeople-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kstatusnotifieritem-6.22.0:6 >=kde-frameworks/kwidgetsaddons-6.22.0:6 >=kde-frameworks/kwindowsystem-6.22.0:6 >=kde-frameworks/qqc2-desktop-style-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 sys-apps/dbus >=media-libs/pulseaudio-qt-1.4:0/5= x11-libs/libfakekey x11-libs/libX11 x11-libs/libXtst x11-libs/libxkbcommon dev-libs/kirigami-addons:6 >=dev-qt/qt5compat-6.10.1:6[qml] >=dev-qt/qtmultimedia-6.10.1:6[qml] >=dev-qt/qttools-6.10.1:6[qdbus] >=kde-frameworks/kdeclarative-6.22.0:6 >=kde-frameworks/kdnssd-6.22.0:6 kde-plasma/libplasma:6 net-fs/sshfs || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 !kde-misc/kdeconnect:5 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "SLOT": "6",
+          "repository": "gentoo"
+        },
+        "media-gfx/sloom-studio-bin-0.9.16": {
+          "USE": "abi_x86_64 amd64 elibc_glibc globalmenu kernel_linux",
+          "RDEPEND": "!media-gfx/sloom-studio app-accessibility/at-spi2-core dev-libs/expat dev-libs/nss media-libs/alsa-lib media-libs/mesa sys-apps/dbus x11-libs/cairo x11-libs/gtk+:3 x11-libs/libdrm x11-libs/libxkbcommon x11-libs/libXcomposite x11-libs/libXdamage x11-libs/libXrandr x11-libs/pango kde-plasma/sloom-globalmenu >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "SLOT": "0",
+          "repository": "sloom"
+        }
+      },
+      "outside_consumer_vdb": {
+        "app-misc/claude-desktop-bin-1.49585.0": {
+          "USE": "abi_x86_64 amd64 cowork elibc_glibc kernel_linux",
+          "IUSE": "+cowork",
+          "RDEPEND": "app-accessibility/at-spi2-core:2 app-crypt/libsecret app-misc/ca-certificates dev-libs/expat dev-libs/glib:2 dev-libs/libayatana-appindicator dev-libs/nspr dev-libs/nss media-libs/alsa-lib media-libs/mesa[gbm(+)] net-print/cups sys-apps/dbus sys-apps/util-linux sys-apps/xdg-desktop-portal sys-libs/glibc x11-libs/cairo x11-libs/gdk-pixbuf:2 x11-libs/gtk+:3[X] x11-libs/libdrm x11-libs/libnotify x11-libs/libX11 x11-libs/libXcomposite x11-libs/libXdamage x11-libs/libXext x11-libs/libXfixes x11-libs/libXrandr x11-libs/libXtst x11-libs/libxcb x11-libs/libxkbcommon x11-libs/pango x11-misc/xdg-utils || ( kde-plasma/xdg-desktop-portal-kde sys-apps/xdg-desktop-portal-gtk sys-apps/xdg-desktop-portal-gnome ) || ( kde-plasma/kde-cli-tools app-misc/trash-cli gnome-base/gvfs ) || ( gnome-base/gnome-keyring kde-frameworks/kwallet ) app-emulation/qemu[qemu_softmmu_targets_x86_64] app-emulation/virtiofsd || ( sys-firmware/edk2-bin sys-firmware/edk2 ) >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "repository": "sloom-private"
+        },
+        "app-office/libreoffice-25.2.7.2-r1": {
+          "USE": "abi_x86_64 amd64 bluetooth branding cups dbus elibc_glibc gtk3 kernel_linux mariadb python_single_target_python3_14 qt6 vulkan",
+          "IUSE": "accessibility base bluetooth +branding coinmp +cups custom-cflags +dbus debug eds googledrive gstreamer +gtk3 gtk4 kde ldap +mariadb odk pdfimport postgres qt6 test valgrind vulkan libreoffice_extensions_nlpsolver libreoffice_extensions_scripting-beanshell libreoffice_extensions_scripting-javascript libreoffice_extensions_wiki-publisher java python_single_target_python3_12 python_single_target_python3_13 python_single_target_python3_14",
+          "RDEPEND": "dev-lang/python:3.14[threads(+),xml(+)] app-arch/unzip app-arch/zip app-crypt/argon2:0/1= dev-cpp/gpgmepp:0/7= app-text/hunspell:0/1.7= >=app-text/libabw-0.1.0 >=app-text/libebook-0.1 app-text/libepubgen >=app-text/libetonyek-0.1 app-text/libexttextcat:0/0= app-text/liblangtag >=app-text/libmspub-0.1.0 >=app-text/libmwaw-0.3.21 >=app-text/libnumbertext-1.0.6 >=app-text/libodfgen-0.1.0 app-text/libqxp app-text/libstaroffice app-text/libwpd:0.10[tools] app-text/libwpg:0.3 >=app-text/libwps-0.4 app-text/mythes >=dev-cpp/clucene-2.3.3.4-r2 >=dev-cpp/libcmis-0.6.2:0/0.6= dev-db/unixODBC dev-lang/perl dev-libs/boost:0/1.90.0=[nls] dev-libs/expat dev-libs/hyphen dev-libs/icu:0/78= dev-libs/libassuan:0/3.0= dev-libs/libgpg-error >=dev-libs/liborcus-0.18.0:0/0.18 dev-libs/librevenge dev-libs/libxml2:2/16= dev-libs/libxslt dev-libs/nspr dev-libs/nss >=dev-libs/redland-1.0.16 dev-libs/zxcvbn-c >=dev-libs/xmlsec-1.2.35:0/1.3.11=[nss] >=games-engines/box2d-2.4.1:0 media-gfx/fontforge media-gfx/graphite2 media-libs/fontconfig >=media-libs/freetype-2.11.0-r1:2 >=media-libs/harfbuzz-5.1.0:0/6.0.0=[graphite,icu] media-libs/lcms:2 >=media-libs/libcdr-0.1.0 >=media-libs/libepoxy-1.3.1[X] >=media-libs/libfreehand-0.1.0 media-libs/libjpeg-turbo:0/0.2= media-libs/libpagemaker >=media-libs/libpng-1.4:0/16= >=media-libs/libvisio-0.1.0 media-libs/libwebp:0/7= media-libs/libzmf media-libs/openjpeg:2/7= media-libs/tiff:0/6= >=media-libs/zxing-cpp-2.3.0:0/3= net-misc/curl sci-mathematics/lpsolve:0/55= virtual/zlib:0/1= virtual/opengl x11-libs/cairo[X] x11-libs/libXinerama x11-libs/libXrandr x11-libs/libXrender dev-libs/glib:2 net-wireless/bluez net-print/cups sys-apps/dbus app-accessibility/at-spi2-core:2 dev-libs/glib:2 gnome-base/dconf media-libs/mesa[egl(+)] x11-libs/gtk+:3[wayland,X] x11-libs/pango dev-db/mariadb-connector-c:0/3= dev-qt/qtbase:6[gui,opengl,widgets] dev-qt/qtmultimedia:6 acct-group/libreoffice acct-user/libreoffice !<app-office/libreoffice-bin-24.8.4-r2 !app-office/libreoffice-bin-debug media-fonts/liberation-fonts || ( x11-misc/xdg-utils kde-plasma/kde-cli-tools:* ) >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "=app-office/libreoffice-l10n-25.2*",
+          "repository": "gentoo"
+        },
+        "app-office/libreoffice-bin-25.8.4-r1": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux l10n_en",
+          "IUSE": "java offlinehelp python l10n_am l10n_ar l10n_ast l10n_bg l10n_bn-IN l10n_bn l10n_bo l10n_bs l10n_ca-valencia l10n_ca l10n_cs l10n_da l10n_de l10n_dz l10n_el l10n_en-GB l10n_en l10n_en-ZA l10n_eo l10n_es l10n_et l10n_eu l10n_fi l10n_fr l10n_gl l10n_gu l10n_he l10n_hi l10n_hr l10n_hu l10n_id l10n_is l10n_it l10n_ja l10n_ka l10n_km l10n_ko l10n_lo l10n_lt l10n_lv l10n_mk l10n_nb l10n_ne l10n_nl l10n_nn l10n_om l10n_pl l10n_pt-BR l10n_pt l10n_ro l10n_ru l10n_si l10n_sid l10n_sk l10n_sl l10n_sq l10n_sv l10n_ta l10n_tg l10n_tr l10n_ug l10n_uk l10n_vi l10n_zh-CN l10n_zh-TW l10n_af l10n_as l10n_be l10n_br l10n_brx l10n_ckb l10n_cy l10n_dgo l10n_dsb l10n_fa l10n_fur l10n_fy l10n_ga l10n_gd l10n_gug l10n_hsb l10n_kab l10n_kk l10n_kmr-Latn l10n_kn l10n_kok l10n_ks l10n_lb l10n_mai l10n_ml l10n_mn l10n_mni l10n_mr l10n_my l10n_nr l10n_nso l10n_oc l10n_or l10n_pa l10n_rw l10n_sa l10n_sat l10n_sd l10n_sr-Latn l10n_sr l10n_ss l10n_st l10n_sw-TZ l10n_szl l10n_te l10n_th l10n_tn l10n_ts l10n_tt l10n_uz l10n_ve l10n_vec l10n_xh l10n_zu",
+          "RDEPEND": "acct-group/libreoffice acct-user/libreoffice app-accessibility/at-spi2-core:2 app-arch/unzip app-arch/zip app-crypt/mit-krb5 dev-libs/glib:2 >=dev-libs/gobject-introspection-1.82.0-r2 || ( <dev-libs/libxml2-2.14 dev-libs/libxml2-compat:2 ) dev-libs/libxslt dev-libs/nspr dev-libs/nss gnome-base/dconf media-fonts/liberation-fonts media-libs/fontconfig media-libs/freetype media-libs/gstreamer:1.0 media-libs/mesa[egl(+)] media-plugins/gst-plugins-meta:1.0 net-dns/avahi net-print/cups sys-apps/dbus sys-devel/gcc:* sys-fs/e2fsprogs sys-libs/glibc virtual/zlib:0/1= virtual/libcrypt virtual/opengl x11-libs/cairo[X] x11-libs/gdk-pixbuf:2 x11-libs/gtk+:3[X] x11-libs/libICE x11-libs/libSM x11-libs/libX11 x11-libs/libXext x11-libs/libXinerama x11-libs/libXrandr x11-libs/libXrender x11-libs/pango || ( x11-misc/xdg-utils kde-plasma/kde-cli-tools ) >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "repository": "gentoo"
+        },
+        "x11-misc/xdg-utils-1.2.1-r11": {
+          "USE": "X abi_x86_64 amd64 dbus elibc_glibc kernel_linux plasma",
+          "IUSE": "dbus doc gnome perl plasma X",
+          "RDEPEND": "dev-util/desktop-file-utils x11-misc/shared-mime-info sys-apps/dbus virtual/pkgconfig x11-apps/xprop x11-apps/xset",
+          "PDEPEND": "dev-qt/qtbase:6 kde-frameworks/kservice:6 kde-plasma/kde-cli-tools:*",
+          "repository": "gentoo"
+        },
+        "dev-libs/kirigami-addons-1.12.1": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+          "IUSE": "debug test",
+          "RDEPEND": ">=dev-qt/qtbase-6.8.1:6[gui] >=dev-qt/qtdeclarative-6.8.1:6 >=kde-frameworks/kcolorscheme-6.16.0:6 >=kde-frameworks/kconfig-6.16.0:6 >=kde-frameworks/kcoreaddons-6.16.0:6 >=kde-frameworks/kcrash-6.16.0:6 >=kde-frameworks/kglobalaccel-6.16.0:6 >=kde-frameworks/kguiaddons-6.16.0:6 >=kde-frameworks/ki18n-6.16.0:6 >=kde-frameworks/kiconthemes-6.16.0:6 >=kde-frameworks/kirigami-6.16.0:6 >=dev-qt/qtmultimedia-6.8.1:6[qml] >=kde-frameworks/qqc2-desktop-style-6.16.0:6 kde-plasma/libplasma:6/7= || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.42-r7",
+          "PDEPEND": "",
+          "repository": "gentoo"
+        },
+        "kde-frameworks/kauth-6.27.0": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux policykit",
+          "IUSE": "+policykit debug test",
+          "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[gui] =kde-frameworks/kcoreaddons-6.27*:6 >=dev-qt/qtbase-6.10.1:6[dbus] =kde-frameworks/kwindowsystem-6.27*:6[wayland] >=sys-auth/polkit-qt-0.175.0[qt6(+)] >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "kde-plasma/polkit-kde-agent:*",
+          "repository": "gentoo"
+        },
+        "kde-apps/kio-extras-26.04.3": {
+          "USE": "X abi_x86_64 activities amd64 elibc_glibc kernel_linux libproxy man sftp",
+          "IUSE": "activities ios +man mtp nfs +libproxy openexr samba +sftp taglib X debug +handbook test",
+          "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,network,widgets,xml] >=dev-qt/qtsvg-6.10.1:6 kde-apps/libkexiv2:6 >=kde-frameworks/karchive-6.22.0:6 >=kde-frameworks/kcmutils-6.22.0:6 >=kde-frameworks/kcodecs-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kdbusaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kparts-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kxmlgui-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 >=kde-frameworks/syntax-highlighting-6.22.0:6 >=dev-qt/qtbase-6.10.1:6[sql] kde-plasma/plasma-activities:6/7= kde-plasma/plasma-activities-stats:6 >=kde-frameworks/knotifications-6.22.0:6 net-libs/libproxy dev-libs/qcoro >=net-libs/libssh-0.9.8:0/4=[sftp] x11-libs/libX11 x11-libs/libXcursor !kde-apps/kio-extras:5[-kf6compat(-)] !kde-apps/kio-extras-kf5:5 !<kde-frameworks/kio-5.116.0-r2:5 !kde-frameworks/kio-trash-desktop-file:5 >=kde-frameworks/kded-6.22.0:6 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "repository": "gentoo"
+        },
+        "kde-apps/gwenview-26.04.3": {
+          "USE": "X abi_x86_64 activities amd64 annotate elibc_glibc kernel_linux mpris semantic-desktop",
+          "IUSE": "activities +annotate fits +mpris raw semantic-desktop share X debug +handbook test",
+          "RDEPEND": "dev-libs/wayland >=dev-qt/qtbase-6.10.1:6/6.11.1=[gui,opengl,wayland,widgets] >=dev-qt/qtmultimedia-6.10.1:6 >=dev-qt/qtsvg-6.10.1:6 >=kde-frameworks/kcompletion-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6 >=kde-frameworks/kconfigwidgets-6.22.0:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/kguiaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kiconthemes-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kitemmodels-6.22.0:6 >=kde-frameworks/kitemviews-6.22.0:6 >=kde-frameworks/kjobwidgets-6.22.0:6 >=kde-frameworks/knotifications-6.22.0:6 >=kde-frameworks/kparts-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kwidgetsaddons-6.22.0:6 >=kde-frameworks/kxmlgui-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 media-gfx/exiv2:0/0.28= media-libs/lcms:2 media-libs/libjpeg-turbo:0/0.2= media-libs/libpng:0/16= media-libs/tiff:0/6= kde-plasma/plasma-activities:6/7= >=media-libs/kcolorpicker-0.3.1 >=media-libs/kimageannotator-0.7.1 >=dev-qt/qtbase-6.10.1:6[dbus] >=kde-frameworks/baloo-6.22.0:6 >=kde-frameworks/kfilemetadata-6.22.0:6 >=dev-qt/qtbase-6.10.1:6/6.11.1=[X] x11-libs/libX11 >=dev-qt/qtimageformats-6.10.1:6 >=kde-apps/thumbnailers-26.04.3:6 >=kde-frameworks/kimageformats-6.22.0:6 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 !kde-apps/gwenview:5 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "repository": "gentoo"
+        },
+        "lxqt-base/lxqt-config-2.4.0": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux monitor touchpad",
+          "IUSE": "+monitor +touchpad",
+          "RDEPEND": ">=dev-libs/libqtxdg-4.4.0 >=dev-qt/qtbase-6.6:6[gui,widgets,xml] >=dev-qt/qtsvg-6.6:6 =lxqt-base/liblxqt-2.4*:0/2.4= =lxqt-base/lxqt-menu-data-2.4* virtual/zlib:0/1= x11-apps/setxkbmap x11-libs/libxcb:0/1.12= x11-libs/libX11 x11-libs/libXcursor x11-libs/libXfixes kde-plasma/libkscreen:6/8= virtual/libudev:0/1= x11-drivers/xf86-input-libinput x11-libs/libXi >=sys-libs/glibc-2.42-r7",
+          "PDEPEND": "",
+          "repository": "gentoo"
+        },
+        "gui-apps/xwaylandvideobridge-0.5.0": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+          "IUSE": "debug",
+          "RDEPEND": ">=dev-qt/qtbase-6.8.1:6[dbus,gui,widgets,X] >=dev-qt/qtdeclarative-6.8.1:6 >=kde-frameworks/kcoreaddons-6.9.0:6 >=kde-frameworks/kcrash-6.9.0:6 >=kde-frameworks/ki18n-6.9.0:6 >=kde-frameworks/kstatusnotifieritem-6.9.0:6 >=kde-frameworks/kwindowsystem-6.9.0:6[X] kde-plasma/kpipewire:6 media-libs/freetype x11-libs/libxcb:0/1.12= x11-libs/libXfixes x11-libs/xcb-util || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "repository": "gentoo"
+        }
+      },
+      "full_snapshot_sha256": "9db3cc1a097c29f3d9841d630e5f89f688ebf0ee583e87b661374400b8245a30",
+      "installed_inventory_sha256": "a7cd0449a307b3f4af2357ef322797d357b05a1f0df7561140a2336513bad7e0"
+    },
+    "qinda-top": {
+      "schema_version": 1,
+      "host": "qinda-top",
+      "observed_utc": "2026-10-02T20:53:15Z",
+      "scope": "active USE-reduced installed metadata edges; OR alternatives may overlap, not solved future depclean",
+      "profile_link": "../../var/db/repos/qindaqt/profiles/qindaqt/systemd",
+      "profile_resolved": "/var/db/repos/qindaqt/profiles/qindaqt/systemd",
+      "profile_files": [
+        {
+          "path": "/etc/portage/make.profile/parent",
+          "sha256": "295a62953648bfa1249d1a9a22eb0505e744085bbd3d2674a6f112213bab7807",
+          "text": "gentoo:default/linux/amd64/23.0/desktop/plasma/systemd\n"
+        },
+        {
+          "path": "/etc/portage/make.profile/packages",
+          "sha256": "8a95085a9627de251a3c4f44f8ee6f2a097824f7cb8278ad9eacb51b28d9f66c",
+          "text": "# @profile set: what a QindaQt desktop machine gets by default.\napp-office/obsidian\ngui-wm/qindaqt-desktop\ngui-apps/qindaoffice\ngui-apps/qqterm\ngui-apps/qindaqt-system-monitor\ngui-apps/qindaqt-removable-media\napp-accessibility/gabbee\nx11-misc/dotool\nx11-themes/qinda-seven\nwww-client/qindafox-bin\ndev-util/opencode-bin\nx11-misc/sddm\nsys-boot/qinda-boot\nnet-misc/networkmanager\nmedia-video/pipewire\nmedia-video/wireplumber\nkde-plasma/xdg-desktop-portal-kde\nkde-plasma/polkit-kde-agent\nsys-power/power-profiles-daemon\nmedia-fonts/noto\nmedia-fonts/noto-emoji\nmedia-fonts/dejavu\napp-shells/zsh\nkde-plasma/sloom-globalmenu\nkde-plasma/sloom-panelmenu\nmedia-gfx/sloom-studio-bin\n"
+        }
+      ],
+      "world": {
+        "path": "/var/lib/portage/world",
+        "sha256": "26809a36c8e736f7dd80ea5ee6ea43f3100f1cdcb73be828e6c4d7f1eada9abf",
+        "text": "app-admin/sudo\napp-arch/innoextract\napp-containers/waydroid\napp-editors/nano\napp-emulation/wine-proton\napp-emulation/winetricks\napp-misc/ai-tools-desktop\napp-misc/chatgpt-desktop\napp-misc/claude-desktop-bin\napp-misc/mc\napp-misc/venusprolinux::qindaqt\napp-portage/cpuid2cpuflags\napp-portage/qindaportage\napp-shells/fzf\napp-shells/zsh\napp-shells/zsh-syntax-highlighting\napp-text/tree\ndev-embedded/qdl\ndev-java/gradle-bin\ndev-libs/qindatk\ndev-python/docopt\ndev-python/hidapi\ndev-python/pyqt6\ndev-python/pyserial\ndev-python/pyusb\ndev-qt/qtscxml\ndev-qt/qtserialport\ndev-qt/qtwebsockets\ndev-util/android-sdk-cmdline-tools\ndev-util/android-tools\ndev-util/claude-code\ndev-util/codex-bin\ndev-util/vulkan-tools\ndev-util/xxd\ndev-util/zcode\ndev-vcs/git\ngames-util/gamemode\ngames-util/lutris\ngames-util/steam-launcher\ngui-apps/qindallamawatch::qindaqt\ngui-apps/qqterm::qindaqt\ngui-wm/qindaqt-desktop\ngui-wm/qindaqt-desktop::qindaqt\nkde-plasma/sloom-globalmenu\nkde-plasma/sloom-panelmenu\nmedia-gfx/qindahane-bin\nmedia-gfx/sloom-studio-bin\nmedia-sound/alsa-utils\nmedia-sound/cava\nmedia-video/mpv\nmedia-video/qqmpv\nmedia-video/vlc\nnet-analyzer/tcpdump\nnet-dns/avahi\nnet-fs/sshfs\nnet-misc/megatools\nnet-misc/openssh\nnet-vpn/tailscale\nnet-wireless/bluez\nnet-wireless/rtl-sdr\nnet-wireless/sdrangel\nsci-ml/laya\nsci-ml/qinda-notes-llm\nsys-apps/pciutils\nsys-apps/smartmontools\nsys-apps/usbutils\nsys-auth/nss-mdns\nsys-block/gparted\nsys-boot/efibootmgr\nsys-fs/ntfs3g\nsys-libs/libunwind\nsys-process/btop\nx11-apps/mesa-progs\nx11-misc/circuit-reef::qindaqt\nx11-misc/dotool\nx11-misc/qinda-patrol::qindaqt\nx11-misc/xdg-user-dirs\nx11-terms/xterm\nx11-themes/qinda-breeze-handdrawn\nx11-themes/qinda-breeze-painted\n"
+      },
+      "world_sets": {
+        "path": "/var/lib/portage/world_sets",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      },
+      "set_files": [],
+      "forbidden_cpvs": [
+        "kde-plasma/aurorae-6.6.6",
+        "kde-plasma/breeze-6.6.6",
+        "kde-plasma/kactivitymanagerd-6.6.6",
+        "kde-plasma/kde-cli-tools-6.6.6",
+        "kde-plasma/kde-cli-tools-common-6.6.6",
+        "kde-plasma/kdecoration-6.6.6",
+        "kde-plasma/kdesu-gui-6.6.6",
+        "kde-plasma/keditfiletype-6.6.6",
+        "kde-plasma/kglobalacceld-6.6.6-r1",
+        "kde-plasma/knighttime-6.6.6",
+        "kde-plasma/kpipewire-6.6.6.1",
+        "kde-plasma/kscreenlocker-6.6.6",
+        "kde-plasma/kwin-6.6.6-r2",
+        "kde-plasma/kwin-x11-6.6.6",
+        "kde-plasma/libkscreen-6.6.6-r1",
+        "kde-plasma/libksysguard-6.6.6",
+        "kde-plasma/libplasma-6.6.6",
+        "kde-plasma/milou-6.6.6",
+        "kde-plasma/plasma-activities-6.6.6",
+        "kde-plasma/plasma-activities-stats-6.6.6",
+        "kde-plasma/plasma-integration-6.6.6",
+        "kde-plasma/plasma-login-sessions-6.6.6",
+        "kde-plasma/plasma-workspace-6.6.6",
+        "kde-plasma/polkit-kde-agent-6.6.6",
+        "kde-plasma/powerdevil-6.6.6-r1",
+        "kde-plasma/qqc2-breeze-style-6.6.6",
+        "kde-plasma/sloom-globalmenu-1.0.0",
+        "kde-plasma/sloom-panelmenu-1.0.0",
+        "kde-plasma/spectacle-6.6.6",
+        "kde-plasma/xdg-desktop-portal-kde-6.6.6"
+      ],
+      "allowed_installed": [
+        "kde-plasma/kwayland-6.6.6",
+        "kde-plasma/layer-shell-qt-6.6.6"
+      ],
+      "explicit_world_roots": {
+        "kde-plasma/aurorae-6.6.6": [],
+        "kde-plasma/breeze-6.6.6": [],
+        "kde-plasma/kactivitymanagerd-6.6.6": [],
+        "kde-plasma/kde-cli-tools-6.6.6": [],
+        "kde-plasma/kde-cli-tools-common-6.6.6": [],
+        "kde-plasma/kdecoration-6.6.6": [],
+        "kde-plasma/kdesu-gui-6.6.6": [],
+        "kde-plasma/keditfiletype-6.6.6": [],
+        "kde-plasma/kglobalacceld-6.6.6-r1": [],
+        "kde-plasma/knighttime-6.6.6": [],
+        "kde-plasma/kpipewire-6.6.6.1": [],
+        "kde-plasma/kscreenlocker-6.6.6": [],
+        "kde-plasma/kwin-6.6.6-r2": [],
+        "kde-plasma/kwin-x11-6.6.6": [],
+        "kde-plasma/libkscreen-6.6.6-r1": [],
+        "kde-plasma/libksysguard-6.6.6": [],
+        "kde-plasma/libplasma-6.6.6": [],
+        "kde-plasma/milou-6.6.6": [],
+        "kde-plasma/plasma-activities-6.6.6": [],
+        "kde-plasma/plasma-activities-stats-6.6.6": [],
+        "kde-plasma/plasma-integration-6.6.6": [],
+        "kde-plasma/plasma-login-sessions-6.6.6": [],
+        "kde-plasma/plasma-workspace-6.6.6": [],
+        "kde-plasma/polkit-kde-agent-6.6.6": [],
+        "kde-plasma/powerdevil-6.6.6-r1": [],
+        "kde-plasma/qqc2-breeze-style-6.6.6": [],
+        "kde-plasma/sloom-globalmenu-1.0.0": [
+          "kde-plasma/sloom-globalmenu"
+        ],
+        "kde-plasma/sloom-panelmenu-1.0.0": [
+          "kde-plasma/sloom-panelmenu"
+        ],
+        "kde-plasma/spectacle-6.6.6": [],
+        "kde-plasma/xdg-desktop-portal-kde-6.6.6": []
+      },
+      "installed_active_reverse_edges": {
+        "kde-plasma/aurorae-6.6.6": [
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/aurorae-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/aurorae-6.6.6:6"
+          }
+        ],
+        "kde-plasma/breeze-6.6.6": [
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/breeze-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/breeze-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/breeze-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kactivitymanagerd-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kactivitymanagerd-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kde-cli-tools-6.6.6": [
+          {
+            "consumer": "app-misc/claude-desktop-bin-1.49585.0",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kde-cli-tools"
+          },
+          {
+            "consumer": "app-office/libreoffice-25.2.7.2-r1",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kde-cli-tools:*"
+          },
+          {
+            "consumer": "x11-misc/xdg-utils-1.2.1-r11",
+            "kind": "PDEPEND",
+            "atom": "kde-plasma/kde-cli-tools:*"
+          }
+        ],
+        "kde-plasma/kde-cli-tools-common-6.6.6": [
+          {
+            "consumer": "kde-plasma/kde-cli-tools-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-cli-tools-common-6.6.6"
+          },
+          {
+            "consumer": "kde-plasma/kdesu-gui-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-cli-tools-common-6.6.6"
+          },
+          {
+            "consumer": "kde-plasma/keditfiletype-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kde-cli-tools-common-6.6.6"
+          }
+        ],
+        "kde-plasma/kdecoration-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/kdecoration-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-plasma/aurorae-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/breeze-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdecoration-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kdesu-gui-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kdesu-gui-6.6.6:*"
+          }
+        ],
+        "kde-plasma/keditfiletype-6.6.6": [
+          {
+            "consumer": "kde-frameworks/kio-6.27.0",
+            "kind": "PDEPEND",
+            "atom": "kde-plasma/keditfiletype"
+          }
+        ],
+        "kde-plasma/kglobalacceld-6.6.6-r1": [
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kglobalacceld-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kglobalacceld-6.6.6:6"
+          }
+        ],
+        "kde-plasma/knighttime-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "~kde-plasma/knighttime-6.6.6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/knighttime-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/knighttime-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/knighttime-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kpipewire-6.6.6.1": [
+          {
+            "consumer": "kde-plasma/spectacle-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kpipewire-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kscreenlocker-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/kscreenlocker-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kscreenlocker-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kscreenlocker-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kscreenlocker-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kwin-6.6.6-r2": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/kwin-6.6.6-r2:6=[lock,shortcuts]"
+          },
+          {
+            "consumer": "kde-plasma/plasma-login-sessions-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kwin:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/kwin-6.6.6:6"
+          }
+        ],
+        "kde-plasma/kwin-x11-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-login-sessions-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/kwin-x11:6"
+          }
+        ],
+        "kde-plasma/libkscreen-6.6.6-r1": [
+          {
+            "consumer": "kde-plasma/kscreenlocker-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libkscreen-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libkscreen-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/powerdevil-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libkscreen-6.6.6:6"
+          }
+        ],
+        "kde-plasma/libksysguard-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libksysguard-6.6.6:6"
+          }
+        ],
+        "kde-plasma/libplasma-6.6.6": [
+          {
+            "consumer": "dev-libs/kirigami-addons-1.12.1",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/libplasma:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kscreenlocker-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/milou-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/polkit-kde-agent-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/powerdevil-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/sloom-globalmenu-1.0.0",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.0:6"
+          },
+          {
+            "consumer": "kde-plasma/sloom-panelmenu-1.0.0",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/libplasma-6.0:6"
+          }
+        ],
+        "kde-plasma/milou-6.6.6": [
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/milou-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/milou-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-activities-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/plasma-activities-6.6.6*:6/7="
+          },
+          {
+            "consumer": "kde-apps/kio-extras-26.04.3",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/plasma-activities:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kwin-6.6.6-r2",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/kwin-x11-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/libplasma-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/plasma-activities-6.6.6*:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-activities-stats-6.6.6",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/plasma-activities:6/7="
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          },
+          {
+            "consumer": "kde-plasma/powerdevil-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-6.6.6:6/7="
+          }
+        ],
+        "kde-plasma/plasma-activities-stats-6.6.6": [
+          {
+            "consumer": "kde-apps/kio-extras-26.04.3",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/plasma-activities-stats:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-activities-stats-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-integration-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-integration-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-login-sessions-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-workspace-6.6.6",
+            "kind": "PDEPEND",
+            "atom": ">=kde-plasma/plasma-login-sessions-6.6.6:6"
+          }
+        ],
+        "kde-plasma/plasma-workspace-6.6.6": [
+          {
+            "consumer": "kde-plasma/kscreenlocker-6.6.6",
+            "kind": "PDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/plasma-login-sessions-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6[X]"
+          },
+          {
+            "consumer": "kde-plasma/powerdevil-6.6.6-r1",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/sloom-globalmenu-1.0.0",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/plasma-workspace-6.6:6"
+          },
+          {
+            "consumer": "kde-plasma/sloom-globalmenu-1.0.0",
+            "kind": "RDEPEND",
+            "atom": "<kde-plasma/plasma-workspace-6.7"
+          }
+        ],
+        "kde-plasma/polkit-kde-agent-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/polkit-kde-agent-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-frameworks/kauth-6.27.0",
+            "kind": "PDEPEND",
+            "atom": "kde-plasma/polkit-kde-agent:*"
+          }
+        ],
+        "kde-plasma/powerdevil-6.6.6-r1": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "~kde-plasma/powerdevil-6.6.6"
+          }
+        ],
+        "kde-plasma/qqc2-breeze-style-6.6.6": [
+          {
+            "consumer": "kde-plasma/plasma-integration-6.6.6",
+            "kind": "RDEPEND",
+            "atom": ">=kde-plasma/qqc2-breeze-style-6.6.6:6"
+          }
+        ],
+        "kde-plasma/sloom-globalmenu-1.0.0": [
+          {
+            "consumer": "media-gfx/sloom-studio-bin-0.9.16",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/sloom-globalmenu"
+          }
+        ],
+        "kde-plasma/sloom-panelmenu-1.0.0": [],
+        "kde-plasma/spectacle-6.6.6": [
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/spectacle-6.6.6*:6/6="
+          }
+        ],
+        "kde-plasma/xdg-desktop-portal-kde-6.6.6": [
+          {
+            "consumer": "app-misc/claude-desktop-bin-1.49585.0",
+            "kind": "RDEPEND",
+            "atom": "kde-plasma/xdg-desktop-portal-kde"
+          },
+          {
+            "consumer": "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3",
+            "kind": "RDEPEND",
+            "atom": "=kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6="
+          },
+          {
+            "consumer": "kde-plasma/plasma-integration-6.6.6",
+            "kind": "PDEPEND",
+            "atom": ">=kde-plasma/xdg-desktop-portal-kde-6.6.6:6"
+          }
+        ]
+      },
+      "rollback_binary_candidates": [
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/kwin/kwin-6.6.6-1.gpkg.tar",
+          "bytes": 6922240
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/plasma-workspace/plasma-workspace-6.6.6-1.gpkg.tar",
+          "bytes": 19548160
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/sloom-panelmenu/sloom-panelmenu-1.0.0-1.gpkg.tar",
+          "bytes": 20480
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/kde-cli-tools-common/kde-cli-tools-common-6.6.6-1.gpkg.tar",
+          "bytes": 491520
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/spectacle/spectacle-6.6.6-1.gpkg.tar",
+          "bytes": 1085440
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/kwin-x11/kwin-x11-6.6.6-1.gpkg.tar",
+          "bytes": 6092800
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/sloom-globalmenu/sloom-globalmenu-1.0.0-1.gpkg.tar",
+          "bytes": 174080
+        },
+        {
+          "path": "/var/cache/binpkgs/kde-plasma/powerdevil/powerdevil-6.6.6-r1-1.gpkg.tar",
+          "bytes": 1044480
+        },
+        {
+          "path": "/var/cache/binpkgs/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20260923-r2-1.gpkg.tar",
+          "bytes": 38676480
+        },
+        {
+          "path": "/var/cache/binpkgs/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20260919-r6-1.gpkg.tar",
+          "bytes": 0
+        },
+        {
+          "path": "/var/cache/binpkgs/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20260919-r6-1.gpkg.tarr0_wkd6w.86798",
+          "bytes": 36782080
+        },
+        {
+          "path": "/var/cache/binpkgs/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20260923-r4-1.gpkg.tar",
+          "bytes": 39321600
+        },
+        {
+          "path": "/var/cache/binpkgs/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20260916-r2-1.gpkg.tar",
+          "bytes": 33351680
+        },
+        {
+          "path": "/var/cache/binpkgs/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20260923-r3-1.gpkg.tar",
+          "bytes": 39198720
+        }
+      ],
+      "overlay_head": "8f23e1e90490ab02f49e88d5c99994bbf1f0082b",
+      "elapsed_seconds": 0.8976173439878039,
+      "selected_vdb": {
+        "app-accessibility/gabbee-0.1.0_p20260927": {
+          "USE": "abi_x86_64 amd64 elibc_glibc ibus kernel_linux python_single_target_python3_14 qindaqt sound whisper",
+          "RDEPEND": "dev-lang/python:3.14 dev-python/pyqt6[dbus,gui,network,widgets,python_targets_python3_14(-)] dev-python/python-dotenv[python_targets_python3_14(-)] dev-python/requests[python_targets_python3_14(-)] dev-python/websockets[python_targets_python3_14(-)] dev-python/secretstorage[python_targets_python3_14(-)] dev-python/dbus-python[python_targets_python3_14(-)] dev-python/pygobject[python_targets_python3_14(-)] app-accessibility/at-spi2-core[introspection] media-video/pipewire[extra] gui-apps/wl-clipboard app-i18n/ibus[introspection] net-misc/openssh sys-apps/systemd media-libs/libcanberra dev-python/faster-whisper[python_single_target_python3_14(-)] app-accessibility/faster-whisper-models dev-lang/python:3.14",
+          "PDEPEND": "",
+          "SLOT": "0",
+          "repository": "qindaqt"
+        },
+        "gui-wm/qindaqt-desktop-0.1.0_pre20260928-r3": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+          "RDEPEND": ">=x11-themes/qinda-icons-1.0.0_p20260928-r2 >=app-accessibility/gabbee-0.1.0_p20260927[qindaqt] >=media-plugins/swh-plugins-0.4.17 >=media-libs/noise-suppression-for-voice-1.10 >=media-libs/libsndfile-1.2 !gui-apps/qindaqt-apps >=dev-qt/qtbase-6.11:6/6.11.1=[concurrent,dbus,gui,network,sql,wayland,widgets] >=dev-qt/qtdeclarative-6.11:6/6.11.1=[widgets] >=dev-qt/qtsvg-6.11:6/6.11.1= >=dev-qt/qtimageformats-6.11:6/6.11.1= >=dev-qt/qtwebsockets-6.11:6/6.11.1= >=dev-qt/qtwebengine-6.11:6/6.11.1=[qml] >=dev-libs/qindatk-0.1.0-r12 >=app-text/poppler-26.05:0/160=[qt6] >=kde-frameworks/kcalendarcore-6.0:6/6.27= =kde-plasma/kwin-6.6.6-r2:6=[lock,shortcuts] =kde-plasma/kdecoration-6.6.6*:6/6= =kde-plasma/kscreenlocker-6.6.6*:6/6= =kde-plasma/layer-shell-qt-6.6.6*:6/6= =kde-plasma/kwayland-6.6.6*:6/6= =kde-plasma/polkit-kde-agent-6.6.6*:6/6= =kde-plasma/plasma-activities-6.6.6*:6/7= ~kde-plasma/powerdevil-6.6.6 ~kde-plasma/knighttime-6.6.6 =kde-plasma/spectacle-6.6.6*:6/6= =kde-plasma/xdg-desktop-portal-kde-6.6.6*:6/6= >=kde-frameworks/kconfig-6.0:6/6.27= >=kde-frameworks/kcoreaddons-6.0:6/6.27= >=kde-frameworks/kglobalaccel-6.0:6/6.27= >=kde-frameworks/kidletime-6.0:6/6.27= >=kde-frameworks/kio-6.0:6/6.27= >=kde-frameworks/karchive-6.0:6/6.27= >=kde-frameworks/kservice-6.0:6/6.27= >=kde-frameworks/syntax-highlighting-6.0:6/6.27= kde-misc/kio-fuse =x11-libs/qtermwidget-2.4*:0/2.4.0= x11-libs/libxcb >=media-video/wireplumber-0.5 >=net-misc/networkmanager-1.44 app-crypt/gcr:4 gnome-base/gnome-keyring media-libs/fontconfig net-wireless/bluez sys-apps/dbus sys-apps/systemd sys-apps/xdg-desktop-portal || ( sys-apps/tuned[ppd] sys-power/power-profiles-daemon ) sys-power/upower x11-base/xwayland x11-misc/xdg-utils x11-misc/xkeyboard-config >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": ">=media-video/qqmpv-0.1.0_p20260919 >=gui-apps/qqterm-0.1.0_p20260920",
+          "SLOT": "0",
+          "repository": "qindaqt"
+        },
+        "kde-frameworks/kio-6.27.0": {
+          "USE": "X abi_x86_64 acl amd64 elibc_glibc kernel_linux kwallet wayland",
+          "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,network,ssl,widgets,X] >=dev-qt/qtdeclarative-6.10.1:6 =kde-frameworks/kbookmarks-6.27*:6 =kde-frameworks/kcodecs-6.27*:6 =kde-frameworks/kcolorscheme-6.27*:6 =kde-frameworks/kcompletion-6.27*:6 =kde-frameworks/kconfig-6.27*:6 =kde-frameworks/kcoreaddons-6.27*:6 =kde-frameworks/kcrash-6.27*:6 =kde-frameworks/kdbusaddons-6.27*:6 =kde-frameworks/kguiaddons-6.27*:6 =kde-frameworks/ki18n-6.27*:6 =kde-frameworks/kiconthemes-6.27*:6 =kde-frameworks/kitemviews-6.27*:6 =kde-frameworks/kjobwidgets-6.27*:6 =kde-frameworks/knotifications-6.27*:6 =kde-frameworks/kservice-6.27*:6 =kde-frameworks/ktextwidgets-6.27*:6 =kde-frameworks/kwidgetsaddons-6.27*:6 =kde-frameworks/kwindowsystem-6.27*:6[wayland,X] =kde-frameworks/solid-6.27*:6 sys-apps/util-linux sys-apps/attr virtual/acl =kde-frameworks/kwallet-6.27*:6 >=dev-qt/qtbase-6.10.1:6/6.11.1=[gui] >=dev-qt/qtbase-6.10.1:6[libproxy] sys-power/switcheroo-control >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": ">=kde-frameworks/kded-6.27:6 kde-plasma/keditfiletype",
+          "SLOT": "6/6.27",
+          "repository": "gentoo"
+        },
+        "media-gfx/sloom-studio-bin-0.9.16": {
+          "USE": "abi_x86_64 amd64 elibc_glibc globalmenu kernel_linux",
+          "RDEPEND": "!media-gfx/sloom-studio app-accessibility/at-spi2-core dev-libs/expat dev-libs/nss media-libs/alsa-lib media-libs/mesa sys-apps/dbus x11-libs/cairo x11-libs/gtk+:3 x11-libs/libdrm x11-libs/libxkbcommon x11-libs/libXcomposite x11-libs/libXdamage x11-libs/libXrandr x11-libs/pango kde-plasma/sloom-globalmenu >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "SLOT": "0",
+          "repository": "sloom"
+        }
+      },
+      "outside_consumer_vdb": {
+        "app-misc/claude-desktop-bin-1.49585.0": {
+          "USE": "abi_x86_64 amd64 cowork elibc_glibc kernel_linux",
+          "IUSE": "+cowork",
+          "RDEPEND": "app-accessibility/at-spi2-core:2 app-crypt/libsecret app-misc/ca-certificates dev-libs/expat dev-libs/glib:2 dev-libs/libayatana-appindicator dev-libs/nspr dev-libs/nss media-libs/alsa-lib media-libs/mesa[gbm(+)] net-print/cups sys-apps/dbus sys-apps/util-linux sys-apps/xdg-desktop-portal sys-libs/glibc x11-libs/cairo x11-libs/gdk-pixbuf:2 x11-libs/gtk+:3[X] x11-libs/libdrm x11-libs/libnotify x11-libs/libX11 x11-libs/libXcomposite x11-libs/libXdamage x11-libs/libXext x11-libs/libXfixes x11-libs/libXrandr x11-libs/libXtst x11-libs/libxcb x11-libs/libxkbcommon x11-libs/pango x11-misc/xdg-utils || ( kde-plasma/xdg-desktop-portal-kde sys-apps/xdg-desktop-portal-gtk sys-apps/xdg-desktop-portal-gnome ) || ( kde-plasma/kde-cli-tools app-misc/trash-cli gnome-base/gvfs ) || ( gnome-base/gnome-keyring kde-frameworks/kwallet ) app-emulation/qemu[qemu_softmmu_targets_x86_64] app-emulation/virtiofsd || ( sys-firmware/edk2-bin sys-firmware/edk2 ) >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "repository": "sloom-private"
+        },
+        "app-office/libreoffice-25.2.7.2-r1": {
+          "USE": "abi_x86_64 amd64 bluetooth branding cups dbus elibc_glibc gtk3 kernel_linux mariadb python_single_target_python3_14 qt6 vulkan",
+          "IUSE": "accessibility base bluetooth +branding coinmp +cups custom-cflags +dbus debug eds googledrive gstreamer +gtk3 gtk4 kde ldap +mariadb odk pdfimport postgres qt6 test valgrind vulkan libreoffice_extensions_nlpsolver libreoffice_extensions_scripting-beanshell libreoffice_extensions_scripting-javascript libreoffice_extensions_wiki-publisher java python_single_target_python3_12 python_single_target_python3_13 python_single_target_python3_14",
+          "RDEPEND": "dev-lang/python:3.14[threads(+),xml(+)] app-arch/unzip app-arch/zip app-crypt/argon2:0/1= dev-cpp/gpgmepp:0/7= app-text/hunspell:0/1.7= >=app-text/libabw-0.1.0 >=app-text/libebook-0.1 app-text/libepubgen >=app-text/libetonyek-0.1 app-text/libexttextcat:0/0= app-text/liblangtag >=app-text/libmspub-0.1.0 >=app-text/libmwaw-0.3.21 >=app-text/libnumbertext-1.0.6 >=app-text/libodfgen-0.1.0 app-text/libqxp app-text/libstaroffice app-text/libwpd:0.10[tools] app-text/libwpg:0.3 >=app-text/libwps-0.4 app-text/mythes >=dev-cpp/clucene-2.3.3.4-r2 >=dev-cpp/libcmis-0.6.2:0/0.6= dev-db/unixODBC dev-lang/perl dev-libs/boost:0/1.90.0=[nls] dev-libs/expat dev-libs/hyphen dev-libs/icu:0/78= dev-libs/libassuan:0/3.0= dev-libs/libgpg-error >=dev-libs/liborcus-0.18.0:0/0.18 dev-libs/librevenge dev-libs/libxml2:2/16= dev-libs/libxslt dev-libs/nspr dev-libs/nss >=dev-libs/redland-1.0.16 dev-libs/zxcvbn-c >=dev-libs/xmlsec-1.2.35:0/1.3.11=[nss] >=games-engines/box2d-2.4.1:0 media-gfx/fontforge media-gfx/graphite2 media-libs/fontconfig >=media-libs/freetype-2.11.0-r1:2 >=media-libs/harfbuzz-5.1.0:0/6.0.0=[graphite,icu] media-libs/lcms:2 >=media-libs/libcdr-0.1.0 >=media-libs/libepoxy-1.3.1[X] >=media-libs/libfreehand-0.1.0 media-libs/libjpeg-turbo:0/0.2= media-libs/libpagemaker >=media-libs/libpng-1.4:0/16= >=media-libs/libvisio-0.1.0 media-libs/libwebp:0/7= media-libs/libzmf media-libs/openjpeg:2/7= media-libs/tiff:0/6= >=media-libs/zxing-cpp-2.3.0:0/3= net-misc/curl sci-mathematics/lpsolve:0/55= virtual/zlib:0/1= virtual/opengl x11-libs/cairo[X] x11-libs/libXinerama x11-libs/libXrandr x11-libs/libXrender dev-libs/glib:2 net-wireless/bluez net-print/cups sys-apps/dbus app-accessibility/at-spi2-core:2 dev-libs/glib:2 gnome-base/dconf media-libs/mesa[egl(+)] x11-libs/gtk+:3[wayland,X] x11-libs/pango dev-db/mariadb-connector-c:0/3= dev-qt/qtbase:6[gui,opengl,widgets] dev-qt/qtmultimedia:6 acct-group/libreoffice acct-user/libreoffice !<app-office/libreoffice-bin-24.8.4-r2 !app-office/libreoffice-bin-debug media-fonts/liberation-fonts || ( x11-misc/xdg-utils kde-plasma/kde-cli-tools:* ) >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "=app-office/libreoffice-l10n-25.2*",
+          "repository": "gentoo"
+        },
+        "x11-misc/xdg-utils-1.2.1-r11": {
+          "USE": "X abi_x86_64 amd64 dbus elibc_glibc kernel_linux plasma",
+          "IUSE": "dbus doc gnome perl plasma X",
+          "RDEPEND": "dev-util/desktop-file-utils x11-misc/shared-mime-info sys-apps/dbus virtual/pkgconfig x11-apps/xprop x11-apps/xset",
+          "PDEPEND": "dev-qt/qtbase:6 kde-frameworks/kservice:6 kde-plasma/kde-cli-tools:*",
+          "repository": "gentoo"
+        },
+        "dev-libs/kirigami-addons-1.12.1": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+          "IUSE": "debug test",
+          "RDEPEND": ">=dev-qt/qtbase-6.8.1:6[gui] >=dev-qt/qtdeclarative-6.8.1:6 >=kde-frameworks/kcolorscheme-6.16.0:6 >=kde-frameworks/kconfig-6.16.0:6 >=kde-frameworks/kcoreaddons-6.16.0:6 >=kde-frameworks/kcrash-6.16.0:6 >=kde-frameworks/kglobalaccel-6.16.0:6 >=kde-frameworks/kguiaddons-6.16.0:6 >=kde-frameworks/ki18n-6.16.0:6 >=kde-frameworks/kiconthemes-6.16.0:6 >=kde-frameworks/kirigami-6.16.0:6 >=dev-qt/qtmultimedia-6.8.1:6[qml] >=kde-frameworks/qqc2-desktop-style-6.16.0:6 kde-plasma/libplasma:6/7= || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.42-r7",
+          "PDEPEND": "",
+          "repository": "gentoo"
+        },
+        "kde-frameworks/kauth-6.27.0": {
+          "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux policykit",
+          "IUSE": "+policykit debug test",
+          "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[gui] =kde-frameworks/kcoreaddons-6.27*:6 >=dev-qt/qtbase-6.10.1:6[dbus] =kde-frameworks/kwindowsystem-6.27*:6[wayland] >=sys-auth/polkit-qt-0.175.0[qt6(+)] >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "kde-plasma/polkit-kde-agent:*",
+          "repository": "gentoo"
+        },
+        "kde-apps/kio-extras-26.04.3": {
+          "USE": "X abi_x86_64 activities amd64 elibc_glibc kernel_linux libproxy man sftp",
+          "IUSE": "activities ios +man mtp nfs +libproxy openexr samba +sftp taglib X debug +handbook test",
+          "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,network,widgets,xml] >=dev-qt/qtsvg-6.10.1:6 kde-apps/libkexiv2:6 >=kde-frameworks/karchive-6.22.0:6 >=kde-frameworks/kcmutils-6.22.0:6 >=kde-frameworks/kcodecs-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kdbusaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kparts-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kxmlgui-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 >=kde-frameworks/syntax-highlighting-6.22.0:6 >=dev-qt/qtbase-6.10.1:6[sql] kde-plasma/plasma-activities:6/7= kde-plasma/plasma-activities-stats:6 >=kde-frameworks/knotifications-6.22.0:6 net-libs/libproxy dev-libs/qcoro >=net-libs/libssh-0.9.8:0/4=[sftp] x11-libs/libX11 x11-libs/libXcursor !kde-apps/kio-extras:5[-kf6compat(-)] !kde-apps/kio-extras-kf5:5 !<kde-frameworks/kio-5.116.0-r2:5 !kde-frameworks/kio-trash-desktop-file:5 >=kde-frameworks/kded-6.22.0:6 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+          "PDEPEND": "",
+          "repository": "gentoo"
+        }
+      },
+      "full_snapshot_sha256": "e55b6fb6a1f668a95f5199b8311736aa67f86b258249c53110e1a27f5ae2f174",
+      "installed_inventory_sha256": "8beb4fb4b288ca4aeeda26d1e89b9b10c5caabdf4346da0f91609241f9bb8e45"
+    }
+  },
+  "source_probe": {
+    "url": "https://codeload.github.com/KDE/kirigami-addons/tar.gz/refs/tags/v1.12.1",
+    "bytes": 3251461,
+    "sha256": "b24de84a9ea1ec88f4d4184395d4e6ace5eb27db987f161b92b23c318fd43504",
+    "source_files_inspected": 223,
+    "plasma_token_hits": [
+      {
+        "path": "kirigami-addons-1.12.1/src/app/kirigamiappdefaults.cpp",
+        "line": 45,
+        "text": "    // Needed when not running with the Plasma QPlatformTheme to ensure colours get initialised"
+      },
+      {
+        "path": "kirigami-addons-1.12.1/src/formcard/AboutKDEPage.qml",
+        "line": 68,
+        "text": "            text: i18nd(\"kirigami-addons6\", \"KDE is a world-wide community of software engineers, artists, writers, translators and creators who are committed to Free Software development. KDE produces the Plasma desktop environment, hundreds of applications, and the many software libraries that support them.\\n\\n\\"
+      },
+      {
+        "path": "kirigami-addons-1.12.1/src/formcard/AboutPage.qml",
+        "line": 66,
+        "text": "          \"copyrightStatement\" : \"\u00a9 2010-2018 Plasma Development Team\","
+      },
+      {
+        "path": "kirigami-addons-1.12.1/src/sounds/SoundsPicker.qml",
+        "line": 38,
+        "text": "       \\default \"plasma-mobile\""
+      },
+      {
+        "path": "kirigami-addons-1.12.1/src/sounds/soundspickermodel.cpp",
+        "line": 17,
+        "text": "    QString theme = QStringLiteral(\"plasma-mobile\");"
+      },
+      {
+        "path": "kirigami-addons-1.12.1/src/treeview/treeviewplugin.cpp",
+        "line": 41,
+        "text": "    //org.kde.desktop.plasma is a couple of files that fall back to desktop by purpose"
+      },
+      {
+        "path": "kirigami-addons-1.12.1/tests/FormTestApp.qml",
+        "line": 105,
+        "text": "               \"copyrightStatement\" : \"\u00a9 2010-2018 Plasma Development Team\","
+      },
+      {
+        "path": "kirigami-addons-1.12.1/tests/FormTestApp.qml",
+        "line": 423,
+        "text": "                    description: \"KDE Plasma (Mobile)\""
+      }
+    ],
+    "cmake_files": [
+      "kirigami-addons-1.12.1/CMakeLists.txt",
+      "kirigami-addons-1.12.1/autotests/CMakeLists.txt",
+      "kirigami-addons-1.12.1/examples/CMakeLists.txt",
+      "kirigami-addons-1.12.1/examples/FormCardTutorial/CMakeLists.txt",
+      "kirigami-addons-1.12.1/examples/TableViewTutorial/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/app/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/components/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/dateandtime/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/dateandtime/android/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/delegates/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/formcard/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/settings/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/settings/private/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/sounds/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/statefulapplication/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/statefulapplication/labs/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/statefulapplication/private/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/tableview/CMakeLists.txt",
+      "kirigami-addons-1.12.1/src/treeview/CMakeLists.txt",
+      "kirigami-addons-1.12.1/templates/CMakeLists.txt",
+      "kirigami-addons-1.12.1/templates/kirigamiaddons6/CMakeLists.txt",
+      "kirigami-addons-1.12.1/templates/kirigamiaddons6/src/CMakeLists.txt",
+      "kirigami-addons-1.12.1/templates/kirigamiaddons6/src/settings/CMakeLists.txt",
+      "kirigami-addons-1.12.1/templates/librarymanager6/CMakeLists.txt",
+      "kirigami-addons-1.12.1/templates/librarymanager6/src/CMakeLists.txt",
+      "kirigami-addons-1.12.1/templates/librarymanager6/src/settings/CMakeLists.txt"
+    ]
+  },
+  "evidence_hashes": {
+    "kirigami-source-check.json": "4027ca3d595078739ce4df865075cc9f8ff0c6a340b60a2aa6ff9bf4bc2423fd",
+    "kirigami-src-CMakeLists.txt": "e492c4358a617d1dfad9c4c5777b9c0883f541a6e361e65d5b171ffead67340d",
+    "snapshot.py": "276b0a3b2bc808bce73efb094d57afb3777bf304938843b70e93a13e22c06b41",
+    "qinda-top.json": "e55b6fb6a1f668a95f5199b8311736aa67f86b258249c53110e1a27f5ae2f174",
+    "qinda-top-extra.json": "0dab7b7429c876e313cab811d35c53f0b817aab34bac8a845132b86d59661fde",
+    "kdeconnect-CMakeLists.txt": "a0d1953152e30c252eec797666d6938272105ac3830be1488593ac5edc229b04",
+    "kdeconnect-plasmoid-CMakeLists.txt": "f0e35dc1bcdd7cb514ca586a3fabb32f077bbbf5b104b23ca44d576f308a7c93",
+    "kirigami-CMakeLists.txt": "a50cd1deee9f12e80ad24ae058fcbce7b345380f4e06ff518b3228851d3b3fc3",
+    "qinda.json": "9db3cc1a097c29f3d9841d630e5f89f688ebf0ee583e87b661374400b8245a30",
+    "qinda-extra.json": "c47513f61f4966b696abeb7dabaf2e7db673bc12af1e67edfd92a1caf4bef003",
+    "kirigami-addons-v1.12.1-upstream.tar.gz": "b24de84a9ea1ec88f4d4184395d4e6ace5eb27db987f161b92b23c318fd43504"
+  },
+  "mutations": "Only own ignored QA evidence and ops records; no host package/world/profile/config/session mutations."
+}
