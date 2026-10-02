@@ -4796,9 +4796,13 @@ Before either launch, preflight the coherent frontend, protected broker,
 capture/input consent helpers, ordinary clipboard peer, fixture, compositor
 driver, EIS plugin and resolved core dependencies together.
 
-The private capture runner exports the compositor's actual PID before exec of
-the exact selected driver, so the compositor-launched protected broker and its
-ordinary consent test child inherit it. Updating only the caller environment
-after compositor startup cannot reach those children. The shell exec preserves
-the tracked PID; public native owner/PID and Wayland peer assertions remain real
-and unchanged.
+The protected broker's production environment sanitizer intentionally removes
+all test variables. The noninstalled consent input helper therefore verifies
+the real Wayland SO_PEERCRED PID against the current unique native compositor
+owner's PID on its private bus, retaining an explicit environment PID as an
+additional check when supplied. Sanitized children write deterministic audit
+evidence under XDG_RUNTIME_DIR; the capture runner preserves it. The helper
+clicks only real visible offered checkbox choices and the actual Grant button;
+a no-choice lock question still requires that button. No sanitizer, production
+consent, privilege or peer assertion is weakened. The native driver launches
+directly; the failed pre-exec environment experiment is preserved separately.
