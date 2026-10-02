@@ -4,7 +4,7 @@
 - Status: working — independent exact critical-battery source review; decoder review parked pending compatible graph.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none; manager compiler owns coherent fork build; no private lease claimed.
+- Resource state: sole qinda compiler claimed — configurePID513068/core0, six strict targets; private replay waits grant.
 - Outcome: qualify exact f951 critical-battery episode/notification/action policy independently.
 
 ## Updates
@@ -66,3 +66,5 @@
 - 2026-10-02T01:02:16Z: Decoder sourceaudit noP0/P1found so far: authentic sameofferedserial/correlated2sec sync retained, literal nofallback matches installedWP stop path, linkerhook onlyprivategraph. Short0700 runtime/108byte check audited in f174 runner, firstpreQt setupfailure retained. Own99f strictdocs486/MkDocs7.66sPASS; preparedonly sixstrictbuildcommands with byteidenticalca299 controls. No compiler/private lease; finalgraphqualifiedhandoff pending.
 
 - 2026-10-02T01:04:10Z: Parked decoder review pending compatible real testproducer; direct shortgraph2pass3fail/exit3/PW-6/runner1 retained, nofallback behavior unqualified, no ACCEPT/REJECT. Root authorizes graphics producer repair. Claimed distinct critical-battery exactf951 source-first review; no resources held.
+
+- 2026-10-02T01:08:28Z: Exactf951 all28paths/sourceaudit noP0/P1found; ownstrictdocs486/7staticgatesPASS. Direct241ff frozenfirst3/full9CTest101 logs/manifests inspected; source/testdeltaempty. Root grants ownfresh six-target strictDebug+resident; configurePID513068/core0 nowrunning, bounded-j8/l24/memoryguard. Private remainsroot then graphics; no testexecution.
