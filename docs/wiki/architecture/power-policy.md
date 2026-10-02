@@ -134,5 +134,44 @@ regression, unsupported/provider loss,
 hold limit admission changes, known rejection, acquisition/release timeout
 no-replay, balanced deferral and actual targeted manual ProfileReleased. The daemon
 has no host include or activation directory. These are private fixtures, not
-installed or physical power qualification. Idle scopes stay zero; PF2 lid and
-critical countdown, full idle policy, and PowerDevil retirement remain separate.
+installed or physical power qualification. Idle scopes stay zero; PF2 lid,
+full idle policy and PowerDevil retirement remain separate. Critical countdown
+has its own optional composition below.
+
+## Native critical-battery countdown
+
+[ADR-0331](../adr/0331-fence-native-critical-battery-countdowns.md) composes
+a distinct policy from confirmed public Power1/Settings1 facts. A separate
+`--critical-policy=native-exclusive` option defaults off and shares the canonical
+PowerDevil absence guard. Only authenticated on-battery/present supply facts
+with WarningLevel Action admit the configured none/suspend/hibernate/power-off
+action and 5–300-second countdown. None sends no notification or action.
+
+The deadline uses a monotonic clock and starts only after a confirmed
+actionable notification. Updates replace the same owned notification. User
+cancellation/dismissal suppresses the entire critical episode. A started
+attempt is also withdrawn on unconfirmed/changed preferences or any source,
+provider, Settings, legacy or action-authority loss, without restarting on
+repeated facts. Authenticated AC or a known warning below Action resets the
+episode; Unknown cannot. Pending capability work is synchronously revoked
+before dispatch, and uncertain action quarantines the policy runtime.
+
+Confirmed notification closure and current policy lineage precede the public
+SessionActions request. Suspend/Hibernate go through authenticated protected
+Sleep1; power-off retains SessionActions' reviewed noninteractive admission.
+The notification adapter checks exact owner, ID and a nonce action key and
+serializes close behind pending updates. A late confirmed ID is cleaned up on
+its original owner. A lost initial reply has no safe cleanup ID, so it never
+authorizes action/replay; every publication requests finite positive remaining
+plus 3-second expiry. A foreign nonconforming host cannot guarantee that bound.
+`qindaqt.power-critical-battery-runtime` is the actual resident acceptance
+fixture: minimum-duration actions, same-ID updates, public user cancellation,
+none/default/legacy admission, warning/AC/Settings/provider/action-owner fences,
+late capability and notification replies, revision regression, finite unknown-ID
+expiry, uncertain no-replay, and strict 5–300-second typed bounds. Its wire fault
+rows are separate from the real resident notification host/user presenter rows.
+The focused private gate passes all 23 behavior rows (25 Qt checks including
+fixture lifecycle), alongside the unchanged Power and additive SessionActions
+gates: nine CTests and 101 Qt checks, with zero failures or skips. The tested
+resident remains dormant by default; installed/hardware qualification, lid/full
+idle behavior and PowerDevil retirement remain separate PF2 boundaries.

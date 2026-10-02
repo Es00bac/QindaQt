@@ -23,6 +23,14 @@ inline QString serviceOwner(const QDBusConnection &connection, const char *servi
     return reply.isValid() ? reply.value() : QString{};
 }
 
+inline bool isSleepAction(SessionAction action) {
+    return action == SessionAction::Suspend || action == SessionAction::Hibernate;
+}
+inline QString sleepMethod(SessionAction action) {
+    return action == SessionAction::Hibernate ? QStringLiteral("Hibernate")
+                                             : QStringLiteral("Suspend");
+}
+
 constexpr auto SleepService = "org.qindaqt.Sleep1";
 constexpr auto SleepPath = "/org/qindaqt/Sleep1";
 constexpr auto SleepInterface = "org.qindaqt.Sleep1";
