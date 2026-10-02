@@ -73,8 +73,14 @@ PowerServiceStartStatus ResidentPowerService::start()
     return PowerServiceStartStatus::Started;
 }
 
+void ResidentPowerService::setNativeIdleAdmission(const bool admitted)
+{
+    m_serviceObject->setNativeIdleAdmission(admitted);
+}
+
 void ResidentPowerService::stop()
 {
+    setNativeIdleAdmission(false);
     if (m_coordinator != nullptr) {
         m_coordinator->stop();
     }

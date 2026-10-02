@@ -358,3 +358,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0331: Fence native critical-battery countdowns and public actions](0331-fence-native-critical-battery-countdowns.md)
 
 - [ADR-0332: Own native lid handling before authenticated edge dispatch](0332-own-native-lid-handling-before-edge-dispatch.md)
+
+- [ADR-0333: Authenticate complete shared idle-consumer registration](0333-authenticate-shared-idle-consumer-registration.md)
