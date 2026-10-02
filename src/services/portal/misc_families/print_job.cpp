@@ -17,7 +17,8 @@ protected:
     qint64 readData(char *data, qint64 max) override {
         if (m_offset >= 536870912) return 0;
         const auto n = pread(m_fd, data, static_cast<size_t>(qMin(max, 536870912 - m_offset)), m_offset);
-        if (n >= 0) m_offset += n; return n;
+        if (n >= 0) m_offset += n;
+        return n;
     }
     qint64 writeData(const char *, qint64) override { return -1; }
 private: int m_fd; qint64 m_offset = 0;
@@ -44,7 +45,8 @@ bool runPrintCommand(const QString &command, const QStringList &arguments, QIODe
     return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
 }
 bool submitPrint(QPrinter &printer, int fd, const PrintRunner &runner) {
-    if (fd < 0) return false; DescriptorInput input(fd);
+    if (fd < 0) return false;
+    DescriptorInput input(fd);
     if (!printer.outputFileName().isEmpty()) {
         QSaveFile output(printer.outputFileName()); if (!output.open(QIODevice::WriteOnly) || !transfer(input, output)) return false;
         return output.commit();
