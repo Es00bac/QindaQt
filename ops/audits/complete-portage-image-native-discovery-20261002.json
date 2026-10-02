@@ -1,0 +1,414 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "decision": "PASS actual complete signed Portage image relocated native discovery",
+  "production_source": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "install_only_patch_source": "8a622b4b76d25d509ca50e8ca7fbf62d62753a4e",
+  "overlay": "93cdb18e054b3b72fe879fb2251d5a953321a72c",
+  "installed_fork": "55d1f2738723316fae4686468757aef66ce7590b",
+  "source_helper_binding": "4e021dc9a5807cca9577f24f2e99b921a92aae8e",
+  "signed_artifact_sha256": "b2a82255dbdc02457a5eb4cb1732e584db8f8e6111dac8979572dcd88b642354",
+  "signed_artifact_bytes": 60661760,
+  "image_file_link_inventory_entries": 2288,
+  "image_prefix": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr",
+  "runtime_status": {
+    "exit_code": 0,
+    "elapsed_seconds": 5.645487384987064
+  },
+  "actual_runs": 1,
+  "failed_runs": 0,
+  "skips": 0,
+  "probe_result": {
+    "compositorControlMode": "development-test",
+    "compositorDevelopmentInput": {
+      "available": true,
+      "deviceId": "qindaqt-development-input",
+      "enabled": true,
+      "eventTypes": [
+        "pointer-absolute",
+        "pointer-relative",
+        "key",
+        "button",
+        "touch-down",
+        "touch-motion",
+        "touch-up",
+        "pointer-axis"
+      ],
+      "maxAxisDeltaMagnitude": 1000,
+      "maxEvents": 64,
+      "maxLogicalCoordinateMagnitude": 1000000,
+      "maxRelativeDeltaMagnitude": 10000,
+      "schemaVersion": 1
+    },
+    "compositorDevelopmentOutput": {
+      "available": true,
+      "enabled": true,
+      "maxNameUtf8Bytes": 128,
+      "maxOwnedVirtualOutputs": 8,
+      "maxTotalOutputs": 32,
+      "maximumLogicalDimension": 16384,
+      "maximumScale": 3,
+      "minimumHeight": 200,
+      "minimumScale": 1,
+      "minimumWidth": 320
+    },
+    "compositorEvidence": {
+      "activateThirdRevision": "3",
+      "activePageIsolation": true,
+      "addPageRevision": "2",
+      "addedOutputGeneration": "2",
+      "automaticSingletonUnwrap": true,
+      "containerId": "container-90a81ed3-a5bb-46d7-9275-69ed43e72fba",
+      "decorationClasses": [
+        "QindaQt::Decoration::QindaDecoration",
+        "QindaQt::Decoration::QindaDecoration",
+        "QindaQt::Decoration::QindaDecoration"
+      ],
+      "detachThirdRevision": "5",
+      "inactivePageTargetAnchoredAndMinimized": true,
+      "initialOutputGeneration": "1",
+      "inputObserverActive": true,
+      "invalidDockRollback": true,
+      "originalPageId": "page-90a81ed3-a5bb-46d7-9275-69ed43e72fba",
+      "outputsChangedCount": 2,
+      "ownedDockRollback": true,
+      "pageWindowId": "45b53bff-ca79-40ac-aa94-39f4e202ff00",
+      "primaryWindowId": "b7a90bbb-5f66-4844-85aa-45133287be05",
+      "reactivateOriginalRevision": "4",
+      "released": true,
+      "releasedContainerId": "container-d75d019c-2864-4299-a2a8-6ee16d041a1d",
+      "removedOutputGeneration": "3",
+      "restoredThirdGeometry": true,
+      "secondaryWindowId": "c9a4c1bc-d246-4bc2-ae65-5f2a1e4c9706",
+      "serverDecoratedWindowCount": 3,
+      "sharedVisibilityGeneration": true,
+      "singletonUnwrapRevision": "6",
+      "splitRevision": "1",
+      "stableOuterFrame": true,
+      "thirdPageId": "probe-page-third",
+      "virtualOutputHotplug": true
+    },
+    "compositorFailure": "",
+    "compositorHybrid": {
+      "anchoredChromeSceneItemCount": 0,
+      "chromeOverlayCount": 0,
+      "containerCount": 0,
+      "iconifiedWindowCount": 0,
+      "iconifiedWindows": [],
+      "inputFilterInstalled": true,
+      "lastGroupStackingFailure": "",
+      "minimizedGatherPagers": [],
+      "publishedGroupStackingCount": 0,
+      "quarantinedContainerCount": 0,
+      "ready": true,
+      "shadedContainerCount": 0,
+      "shadedStripFrames": [],
+      "shortcutRegistered": true,
+      "topologyRevision": "3",
+      "visibleAnchoredChromeSceneItemCount": 0,
+      "visibleChromeOverlayCount": 0,
+      "visibleIconChipCount": 0
+    },
+    "compositorInputConsumesEvents": false,
+    "compositorInputDevices": [
+      {
+        "busType": 0,
+        "capabilities": [
+          "keyboard",
+          "pointer"
+        ],
+        "enabled": true,
+        "id": "input-00000001",
+        "name": "QindaQt Development Input",
+        "productId": 0,
+        "vendorId": 0
+      }
+    ],
+    "compositorInputObserverActive": true,
+    "compositorKWinAbi": "6.6.6.1",
+    "compositorMutationsEnabled": true,
+    "compositorOutputGeneration": "1",
+    "compositorOutputs": [
+      {
+        "enabled": true,
+        "geometry": {
+          "height": 1080,
+          "width": 1920,
+          "x": 0,
+          "y": 0
+        },
+        "internal": false,
+        "manufacturer": "",
+        "modeSize": {
+          "height": 1080,
+          "width": 1920
+        },
+        "model": "",
+        "modes": [
+          {
+            "height": 1080,
+            "preferred": true,
+            "refreshRateMilliHz": 60000,
+            "width": 1920
+          }
+        ],
+        "name": "Virtual-0",
+        "physicalSizeMm": {
+          "height": 0,
+          "width": 0
+        },
+        "priority": 0,
+        "refreshRateMilliHz": 60000,
+        "replicationSource": "",
+        "scale": 1,
+        "transform": "normal",
+        "uuid": "f077b549-2120-4e2c-80ce-0af328f0012a"
+      }
+    ],
+    "compositorService": true,
+    "compositorWorkflow": true,
+    "firstRunDecorationLibrary": "org.qindaqt",
+    "installedDecoration": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/plugins/qindaqt-kwin/decorations/org.qindaqt.so",
+    "installedLauncher": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/bin/qindaqt-wm",
+    "installedPlugin": "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so",
+    "outputs": [
+      {
+        "bufferScale": 1,
+        "height": 1080,
+        "name": "Virtual-0",
+        "width": 1920
+      }
+    ],
+    "platform": "wayland",
+    "waylandDisplay": "qindaqt-0",
+    "windowExposed": true,
+    "xwaylandDisplay": ":0",
+    "xwaylandReachable": true
+  },
+  "artifact_bindings": {
+    "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/bin/qindaqt-wm": {
+      "sha256": "d7d7fae41b530c5c0f3ce518ac1867dea2194b8abd51cbc376f8b0b639a035dd",
+      "bytes": 96464
+    },
+    "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so": {
+      "sha256": "03cd2d30b85ce9d5a110fbb843b6074bf8cab3aeb9132b2507768fffdaf25c95",
+      "bytes": 5158664
+    },
+    "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/plugins/qindaqt-kwin/decorations/org.qindaqt.so": {
+      "sha256": "54e57295ccbb047af5041149f163de39d8e52707e6569243c3330f03e62f429b",
+      "bytes": 244552
+    },
+    "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/qml/QindaQt/SettingsApp/Keyring/qmldir": {
+      "sha256": "ee79ab51a39847eafb89e68e1d19a583470ff181c5e9df6a3d3190e1180697f1",
+      "bytes": 316
+    },
+    "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/qml/QindaQt/SettingsApp/Keyring/qindaqt_settings_keyring_qml.qmltypes": {
+      "sha256": "d11016fb6ea49eeb79e38d2f5edd7519112e0cb243192a7153da157001233afc",
+      "bytes": 864
+    },
+    "/usr/bin/qindaqt-kwin": {
+      "sha256": "e6b9809fcadc40707c6eabf8f25153bdcf58aefe603c1188be830566de7dd54c",
+      "bytes": 1483328
+    },
+    "/usr/lib64/libqindaqt-kwin.so": {
+      "sha256": "3a7ebc46ee99da0d8b2eef27b9962f35a6f7defb1a5dcdd6d919cf3c8a6fa31d",
+      "bytes": 11425416
+    },
+    "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-session-probe": {
+      "sha256": "e94477aee46cfa0525ce98b48e2e99a6d881f9c43309144fed26f36c59be27b2",
+      "bytes": 8473688
+    }
+  },
+  "input_receipts_helpers_scenario": {
+    "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-signed-image-receipt.json": {
+      "sha256": "22ef9ed7bd68c2172a20cacbec9864640699b7cceb6d0dfe7fa341978a69fff0",
+      "bytes": 860
+    },
+    "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image-inventory.json": {
+      "sha256": "72128180835bd030e73a3c562aa2bc775753484a558ce872995382b81332e9cc",
+      "bytes": 427563
+    },
+    "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/tests/session/test_installed_plugin_discovery.py": {
+      "sha256": "31d702302a910eb26f521dc03caab71adedb83bda9cdd51fa5d6b1934a8edcc6",
+      "bytes": 7263
+    },
+    "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/tests/session/test_nested_session.py": {
+      "sha256": "1d89c4a42c41638035d44dfb0264dfdd4a4d540eb579f0a6d2fffc398c8a14cf",
+      "bytes": 13260
+    },
+    "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/tests/session/nested_session_scenario.py": {
+      "sha256": "73ffaec4b139b5fb134214854d632c5bfc02cf182d9b10b8f4dce03a52c31323",
+      "bytes": 13381
+    },
+    "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/tests/scenarios/single-1080p.json": {
+      "sha256": "f0864f7ab4ae6aafcc214bb321ec610b7b6340c6d80834d79d067a71c7741878",
+      "bytes": 463
+    }
+  },
+  "exact_command_and_call_trace": {
+    "argv": [
+      "/usr/bin/bwrap",
+      "--unshare-user",
+      "--unshare-pid",
+      "--unshare-net",
+      "--unshare-ipc",
+      "--unshare-uts",
+      "--die-with-parent",
+      "--new-session",
+      "--cap-drop",
+      "ALL",
+      "--hostname",
+      "pf-image-discovery",
+      "--ro-bind",
+      "/usr",
+      "/usr",
+      "--symlink",
+      "usr/lib",
+      "/lib",
+      "--symlink",
+      "usr/lib64",
+      "/lib64",
+      "--symlink",
+      "usr/bin",
+      "/bin",
+      "--ro-bind",
+      "/etc/ld.so.cache",
+      "/etc/ld.so.cache",
+      "--ro-bind",
+      "/etc/passwd",
+      "/etc/passwd",
+      "--ro-bind",
+      "/etc/group",
+      "/etc/group",
+      "--ro-bind",
+      "/etc/nsswitch.conf",
+      "/etc/nsswitch.conf",
+      "--ro-bind",
+      "/etc/fonts",
+      "/etc/fonts",
+      "--ro-bind",
+      "/etc/X11",
+      "/etc/X11",
+      "--ro-bind",
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-release-contract-review-20261002/build/complete-portage-image-qa/image-runtime/machine-id",
+      "/etc/machine-id",
+      "--proc",
+      "/proc",
+      "--dev",
+      "/dev",
+      "--ro-bind",
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001",
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001",
+      "--ro-bind",
+      "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr",
+      "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr",
+      "--bind",
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-release-contract-review-20261002/build/complete-portage-image-qa/image-runtime",
+      "/task",
+      "--bind",
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-release-contract-review-20261002/build/complete-portage-image-qa/image-runtime/tmp",
+      "/t",
+      "--tmpfs",
+      "/tmp",
+      "--perms",
+      "1777",
+      "--dir",
+      "/tmp/.X11-unix",
+      "--clearenv",
+      "--setenv",
+      "PATH",
+      "/usr/bin:/bin",
+      "--setenv",
+      "HOME",
+      "/task/home",
+      "--setenv",
+      "TMPDIR",
+      "/t",
+      "--setenv",
+      "XDG_RUNTIME_DIR",
+      "/task/xdg",
+      "--setenv",
+      "DBUS_SESSION_BUS_ADDRESS",
+      "unix:path=/task/xdg/no-session",
+      "--setenv",
+      "DBUS_SYSTEM_BUS_ADDRESS",
+      "unix:path=/task/xdg/no-system",
+      "--setenv",
+      "PYTHONDONTWRITEBYTECODE",
+      "1",
+      "--setenv",
+      "LANG",
+      "C.UTF-8",
+      "--setenv",
+      "LC_ALL",
+      "C.UTF-8",
+      "/usr/bin/python3",
+      "-c",
+      "import sys,json,argparse; from pathlib import Path\nsys.path.insert(0,'/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/tests/session')\nfrom test_installed_plugin_discovery import installed_artifact_path,run_installed_session\nprefix=Path(sys.argv[1]).resolve()\nlauncher=installed_artifact_path(prefix,Path('bin/qindaqt-wm'),'launcher')\nplugin=installed_artifact_path(prefix,Path('lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so'),'compositor plugin')\ndecoration=installed_artifact_path(prefix,Path('lib64/qt6/plugins/qindaqt-kwin/decorations/org.qindaqt.so'),'decoration plugin')\na=argparse.Namespace(scenario=Path('/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/tests/scenarios/single-1080p.json'),dbus_runner='/usr/bin/dbus-run-session',probe=Path('/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-session-probe'))\nresult=run_installed_session(a,launcher)\nresult.update(installedLauncher=str(launcher),installedPlugin=str(plugin),installedDecoration=str(decoration))\nprint(json.dumps(result,sort_keys=True))\n",
+      "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr"
+    ],
+    "core_limit": 0,
+    "devices": "private dev only,noDRM/input/audio",
+    "helper_call_trace": [
+      "installed_artifact_path launcher/plugin/decoration",
+      "run_installed_session -> actual dbus-run-session -> image launcher -> installed native core -> real mapped probe",
+      "validate_probe_result exact unchanged real outputs/input/workflow/Wayland/XWayland assertions"
+    ],
+    "no_stage_install": true,
+    "no_plugin_root_override": true
+  },
+  "cleanup": {
+    "artifacts_unchanged": {
+      "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/bin/qindaqt-wm": true,
+      "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so": true,
+      "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/plugins/qindaqt-kwin/decorations/org.qindaqt.so": true,
+      "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/qml/QindaQt/SettingsApp/Keyring/qmldir": true,
+      "/home/cabewse/work_SPaC3/.qa/pf-desktop-portage-final-20261002/desktop-r2-verified-image/usr/lib64/qt6/qml/QindaQt/SettingsApp/Keyring/qindaqt_settings_keyring_qml.qmltypes": true,
+      "/usr/bin/qindaqt-kwin": true,
+      "/usr/lib64/libqindaqt-kwin.so": true,
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-session-probe": true
+    },
+    "owned_pgid_survivors": [],
+    "helper_temp_remaining": [],
+    "core_files": []
+  },
+  "evidence_root": "build/complete-portage-image-qa",
+  "evidence_files": {
+    "image-artifact-preflight.json": {
+      "sha256": "14daa865d74ad05f42746891afef02eb39d589288d2aec274ed2ef6320043d25",
+      "bytes": 37214
+    },
+    "command-plan.json": {
+      "sha256": "21cf574cef21f674f58e7f655d8ac75efcf56b31b2adcd19433982583d6aef14",
+      "bytes": 3822
+    },
+    "image-command.json": {
+      "sha256": "2c3f6b9b21c1392be18a9bd8c353df6333724af115fa3bca3b15bc2a7a3233d5",
+      "bytes": 4149
+    },
+    "image-status.json": {
+      "sha256": "55b7c7b4578aea428cfcb012ea0ce11c069f499c974f5494d4e36bca1659ae69",
+      "bytes": 61
+    },
+    "image-cleanup.json": {
+      "sha256": "17af07749a1bb96a339d3b3872bccb9c42113d0663cee936f4afcad5365c136f",
+      "bytes": 1131
+    },
+    "image-runtime.log": {
+      "sha256": "afa90c2feded534b2c296754cc87ea759dbbc080d3c32ec955f89379f659ddec",
+      "bytes": 4174
+    },
+    "image-pgid.json": {
+      "sha256": "8105aa51a3f70c249c06d147ddcd7d8484f240144f38d8b99feec1d27c6fe155",
+      "bytes": 34
+    }
+  },
+  "limits": [
+    "Diagnostic image decompressed from verified signed GPkg, not host Desktop installed.",
+    "Existing unchanged installed-discovery helper imported directly; no complete developerbuild cmake install or source/harness edit.",
+    "Private unprivileged namespace with QPainter/software/noDRM/input/audio/hostbuses; no physical/GPU/login/user-session claim.",
+    "Production29f native development-test scenario is existing actual core/public workflow; no capture/input grants or fake authority.",
+    "Actual /usr Desktop launcher discovery remains next after root signed install and new explicit private lease.",
+    "Visible WindowSwitcher popup/intelligent dock hide-reveal/credential transfer/PAM login/full release not qualified by this gate."
+  ]
+}
