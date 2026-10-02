@@ -22,8 +22,9 @@ public:
         QString privateRuntimeDirectory, QString consentExecutable,
         QString uriRelayExecutable, QStringList applicationDataRoots,
         QString chooserExecutable);
-    // Additive capture helper; older constructors explicitly leave capture
-    // unavailable and never resolve an ambient executable/display.
+    // Retained source/link-compatible constructors. captureExecutable is
+    // ignored: capture/input exports belong only to the protected broker
+    // (ADR-0341); this ordinary composition never launches a capture helper.
     PortalFoundationComposition(QObject &backendHost, QDBusConnection,
         QString privateRuntimeDirectory, QString consentExecutable,
         QString uriRelayExecutable, QStringList applicationDataRoots,

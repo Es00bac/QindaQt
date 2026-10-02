@@ -375,3 +375,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0340: Use native privileged compositor identities](0340-use-native-privileged-compositor-identities.md)
 
 - [ADR-0341: Unify protected capture and input sessions](0341-unify-protected-capture-and-input-sessions.md) — coordinated source candidate; genuine combined/restore gates pending
+- [ADR-0342: Route native portals to their owning process](0342-route-native-portals-to-their-owning-process.md)
