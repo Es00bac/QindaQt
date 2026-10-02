@@ -360,3 +360,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0332: Own native lid handling before authenticated edge dispatch](0332-own-native-lid-handling-before-edge-dispatch.md)
 
 - [ADR-0333: Authenticate complete shared idle-consumer registration](0333-authenticate-shared-idle-consumer-registration.md)
+
+- [ADR-0334: Adapt the live shortcut authority and its native consumers](0334-native-shortcut-authority-and-consumers.md) — Proposed candidate
