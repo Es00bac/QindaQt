@@ -1,0 +1,810 @@
+{
+  "schema_version": 1,
+  "product_commit": "818b1a3242ffecba7b558ce5ff26a07c51193db4",
+  "production_reviewed_commit": "385edc853691d77e24d7e97b6e120abfeaf5e0b0",
+  "desktop_base": "71b458d5fa1a1e466aacaa90a0a06fbcf0867437",
+  "fork_fixture_source": "10c634f06d6a179b3a27b1265683a9f0df419d44",
+  "fork_constant_repair": "2b09fd27025328c345fcc37be9cb14db2f8f618c",
+  "first_gate": [
+    {
+      "label": "configure",
+      "argv": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "build/dev"
+      ],
+      "pid": 1656380,
+      "starttick": "42549788",
+      "exit": 0,
+      "elapsed_seconds": 49.305721280979924,
+      "minimum_mem_available_kib": 16211592,
+      "stop_reason": null,
+      "leader_gone": true,
+      "group_survivors": [],
+      "observed_members": [
+        {
+          "pid": 1656380,
+          "starttick": "42549788",
+          "state": "R"
+        },
+        {
+          "pid": 1656491,
+          "starttick": "42550086",
+          "state": "R"
+        },
+        {
+          "pid": 1656659,
+          "starttick": "42550503",
+          "state": "R"
+        },
+        {
+          "pid": 1656737,
+          "starttick": "42550708",
+          "state": "R"
+        },
+        {
+          "pid": 1656909,
+          "starttick": "42551122",
+          "state": "R"
+        },
+        {
+          "pid": 1657358,
+          "starttick": "42551937",
+          "state": "R"
+        },
+        {
+          "pid": 1657398,
+          "starttick": "42552045",
+          "state": "R"
+        },
+        {
+          "pid": 1657431,
+          "starttick": "42552140",
+          "state": "R"
+        },
+        {
+          "pid": 1657465,
+          "starttick": "42552249",
+          "state": "R"
+        },
+        {
+          "pid": 1657492,
+          "starttick": "42552345",
+          "state": "R"
+        },
+        {
+          "pid": 1657517,
+          "starttick": "42552452",
+          "state": "R"
+        },
+        {
+          "pid": 1657583,
+          "starttick": "42552656",
+          "state": "R"
+        },
+        {
+          "pid": 1657611,
+          "starttick": "42552763",
+          "state": "R"
+        }
+      ],
+      "log_sha256": "bd176d6e928a50e0538e22da16c70a25571f492a43ba1700bd8339efef09e518"
+    },
+    {
+      "label": "build",
+      "argv": [
+        "cmake",
+        "--build",
+        "build/dev",
+        "--target",
+        "qindaqt_native_power_startup_tests",
+        "--",
+        "-j2",
+        "-l24"
+      ],
+      "pid": 1658159,
+      "starttick": "42554719",
+      "exit": 0,
+      "elapsed_seconds": 41.15155380201759,
+      "minimum_mem_available_kib": 15636344,
+      "stop_reason": null,
+      "leader_gone": true,
+      "group_survivors": [],
+      "observed_members": [
+        {
+          "pid": 1658159,
+          "starttick": "42554719",
+          "state": "S"
+        },
+        {
+          "pid": 1658160,
+          "starttick": "42554720",
+          "state": "S"
+        },
+        {
+          "pid": 1658185,
+          "starttick": "42554773",
+          "state": "S"
+        },
+        {
+          "pid": 1658263,
+          "starttick": "42555110",
+          "state": "S"
+        },
+        {
+          "pid": 1658471,
+          "starttick": "42555464",
+          "state": "S"
+        },
+        {
+          "pid": 1658482,
+          "starttick": "42555467",
+          "state": "S"
+        },
+        {
+          "pid": 1658490,
+          "starttick": "42555468",
+          "state": "S"
+        },
+        {
+          "pid": 1658491,
+          "starttick": "42555469",
+          "state": "S"
+        },
+        {
+          "pid": 1658497,
+          "starttick": "42555498",
+          "state": "S"
+        },
+        {
+          "pid": 1658498,
+          "starttick": "42555498",
+          "state": "R"
+        },
+        {
+          "pid": 1658499,
+          "starttick": "42555500",
+          "state": "S"
+        },
+        {
+          "pid": 1658500,
+          "starttick": "42555500",
+          "state": "R"
+        },
+        {
+          "pid": 1658600,
+          "starttick": "42555758",
+          "state": "S"
+        },
+        {
+          "pid": 1658610,
+          "starttick": "42555762",
+          "state": "S"
+        },
+        {
+          "pid": 1658612,
+          "starttick": "42555763",
+          "state": "S"
+        },
+        {
+          "pid": 1658622,
+          "starttick": "42555789",
+          "state": "S"
+        },
+        {
+          "pid": 1658623,
+          "starttick": "42555789",
+          "state": "R"
+        },
+        {
+          "pid": 1658624,
+          "starttick": "42555794",
+          "state": "S"
+        },
+        {
+          "pid": 1658625,
+          "starttick": "42555794",
+          "state": "R"
+        },
+        {
+          "pid": 1658754,
+          "starttick": "42556052",
+          "state": "S"
+        },
+        {
+          "pid": 1658764,
+          "starttick": "42556056",
+          "state": "S"
+        },
+        {
+          "pid": 1658788,
+          "starttick": "42556086",
+          "state": "S"
+        },
+        {
+          "pid": 1658789,
+          "starttick": "42556086",
+          "state": "R"
+        },
+        {
+          "pid": 1658899,
+          "starttick": "42556150",
+          "state": "S"
+        },
+        {
+          "pid": 1658901,
+          "starttick": "42556151",
+          "state": "S"
+        },
+        {
+          "pid": 1658902,
+          "starttick": "42556151",
+          "state": "S"
+        },
+        {
+          "pid": 1658903,
+          "starttick": "42556151",
+          "state": "R"
+        },
+        {
+          "pid": 1658930,
+          "starttick": "42556183",
+          "state": "S"
+        },
+        {
+          "pid": 1658931,
+          "starttick": "42556183",
+          "state": "R"
+        },
+        {
+          "pid": 1658972,
+          "starttick": "42556357",
+          "state": "S"
+        },
+        {
+          "pid": 1658974,
+          "starttick": "42556358",
+          "state": "S"
+        },
+        {
+          "pid": 1658975,
+          "starttick": "42556359",
+          "state": "S"
+        },
+        {
+          "pid": 1658976,
+          "starttick": "42556359",
+          "state": "R"
+        },
+        {
+          "pid": 1658994,
+          "starttick": "42556389",
+          "state": "S"
+        },
+        {
+          "pid": 1658995,
+          "starttick": "42556389",
+          "state": "R"
+        },
+        {
+          "pid": 1659020,
+          "starttick": "42556469",
+          "state": "S"
+        },
+        {
+          "pid": 1659022,
+          "starttick": "42556470",
+          "state": "S"
+        },
+        {
+          "pid": 1659043,
+          "starttick": "42556502",
+          "state": "S"
+        },
+        {
+          "pid": 1659044,
+          "starttick": "42556502",
+          "state": "R"
+        },
+        {
+          "pid": 1659145,
+          "starttick": "42556664",
+          "state": "S"
+        },
+        {
+          "pid": 1659147,
+          "starttick": "42556665",
+          "state": "S"
+        },
+        {
+          "pid": 1659148,
+          "starttick": "42556665",
+          "state": "S"
+        },
+        {
+          "pid": 1659149,
+          "starttick": "42556665",
+          "state": "R"
+        },
+        {
+          "pid": 1659165,
+          "starttick": "42556698",
+          "state": "S"
+        },
+        {
+          "pid": 1659166,
+          "starttick": "42556698",
+          "state": "R"
+        },
+        {
+          "pid": 1659228,
+          "starttick": "42556977",
+          "state": "R"
+        },
+        {
+          "pid": 1659276,
+          "starttick": "42557012",
+          "state": "S"
+        },
+        {
+          "pid": 1659279,
+          "starttick": "42557014",
+          "state": "S"
+        },
+        {
+          "pid": 1659280,
+          "starttick": "42557014",
+          "state": "S"
+        },
+        {
+          "pid": 1659295,
+          "starttick": "42557049",
+          "state": "S"
+        },
+        {
+          "pid": 1659296,
+          "starttick": "42557049",
+          "state": "R"
+        },
+        {
+          "pid": 1659297,
+          "starttick": "42557051",
+          "state": "S"
+        },
+        {
+          "pid": 1659298,
+          "starttick": "42557051",
+          "state": "R"
+        },
+        {
+          "pid": 1659365,
+          "starttick": "42557314",
+          "state": "S"
+        },
+        {
+          "pid": 1659370,
+          "starttick": "42557350",
+          "state": "S"
+        },
+        {
+          "pid": 1659371,
+          "starttick": "42557350",
+          "state": "R"
+        },
+        {
+          "pid": 1659375,
+          "starttick": "42557386",
+          "state": "R"
+        },
+        {
+          "pid": 1659450,
+          "starttick": "42557694",
+          "state": "R"
+        },
+        {
+          "pid": 1659494,
+          "starttick": "42557739",
+          "state": "S"
+        },
+        {
+          "pid": 1659496,
+          "starttick": "42557740",
+          "state": "S"
+        },
+        {
+          "pid": 1659507,
+          "starttick": "42557778",
+          "state": "S"
+        },
+        {
+          "pid": 1659508,
+          "starttick": "42557778",
+          "state": "R"
+        },
+        {
+          "pid": 1659584,
+          "starttick": "42558069",
+          "state": "S"
+        },
+        {
+          "pid": 1659585,
+          "starttick": "42558069",
+          "state": "S"
+        },
+        {
+          "pid": 1659586,
+          "starttick": "42558069",
+          "state": "S"
+        },
+        {
+          "pid": 1659587,
+          "starttick": "42558069",
+          "state": "R"
+        },
+        {
+          "pid": 1659643,
+          "starttick": "42558210",
+          "state": "S"
+        },
+        {
+          "pid": 1659647,
+          "starttick": "42558211",
+          "state": "S"
+        },
+        {
+          "pid": 1659649,
+          "starttick": "42558211",
+          "state": "S"
+        },
+        {
+          "pid": 1659651,
+          "starttick": "42558211",
+          "state": "R"
+        },
+        {
+          "pid": 1659673,
+          "starttick": "42558260",
+          "state": "S"
+        },
+        {
+          "pid": 1659674,
+          "starttick": "42558260",
+          "state": "R"
+        },
+        {
+          "pid": 1659775,
+          "starttick": "42558727",
+          "state": "S"
+        },
+        {
+          "pid": 1659776,
+          "starttick": "42558727",
+          "state": "S"
+        },
+        {
+          "pid": 1659778,
+          "starttick": "42558727",
+          "state": "S"
+        },
+        {
+          "pid": 1659779,
+          "starttick": "42558728",
+          "state": "R"
+        }
+      ],
+      "log_sha256": "94e9f34c6391f60d283bf6f52a7ab9c658b1693db4f0387d4c7657b4dd736980"
+    },
+    {
+      "label": "test",
+      "argv": [
+        "ctest",
+        "--test-dir",
+        "build/dev",
+        "--output-on-failure",
+        "-R",
+        "^qindaqt.native-power-startup$"
+      ],
+      "pid": 1659800,
+      "starttick": "42558834",
+      "exit": 8,
+      "elapsed_seconds": 1.052121467946563,
+      "minimum_mem_available_kib": 16115584,
+      "stop_reason": null,
+      "leader_gone": true,
+      "group_survivors": [],
+      "observed_members": [
+        {
+          "pid": 1659800,
+          "starttick": "42558834",
+          "state": "R"
+        }
+      ],
+      "log_sha256": "87f92aa0856d3a74d9df0ab034b766eb8a186cc11a10f35a2f5571874b95577e"
+    }
+  ],
+  "repaired_gate": [
+    {
+      "label": "configure",
+      "argv": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "build/dev"
+      ],
+      "pid": 1663373,
+      "starttick": "42572602",
+      "exit": 0,
+      "elapsed_seconds": 45.20745211298345,
+      "minimum_mem_available_kib": 16179828,
+      "stop_reason": null,
+      "leader_gone": true,
+      "group_survivors": [],
+      "observed_members": [
+        {
+          "pid": 1663373,
+          "starttick": "42572602",
+          "state": "R"
+        },
+        {
+          "pid": 1663622,
+          "starttick": "42573210",
+          "state": "R"
+        },
+        {
+          "pid": 1663689,
+          "starttick": "42573417",
+          "state": "R"
+        },
+        {
+          "pid": 1663712,
+          "starttick": "42573517",
+          "state": "R"
+        },
+        {
+          "pid": 1663815,
+          "starttick": "42573731",
+          "state": "R"
+        },
+        {
+          "pid": 1664157,
+          "starttick": "42574245",
+          "state": "R"
+        },
+        {
+          "pid": 1664303,
+          "starttick": "42574450",
+          "state": "R"
+        },
+        {
+          "pid": 1664435,
+          "starttick": "42574754",
+          "state": "R"
+        },
+        {
+          "pid": 1664509,
+          "starttick": "42574956",
+          "state": "R"
+        },
+        {
+          "pid": 1664535,
+          "starttick": "42575063",
+          "state": "R"
+        },
+        {
+          "pid": 1664578,
+          "starttick": "42575160",
+          "state": "R"
+        },
+        {
+          "pid": 1664615,
+          "starttick": "42575267",
+          "state": "R"
+        },
+        {
+          "pid": 1664668,
+          "starttick": "42575470",
+          "state": "R"
+        }
+      ],
+      "log_sha256": "09091858283f1bde2db4d423c876fd65aa62a83d211b5f432aab4ecdb392ce1f"
+    },
+    {
+      "label": "build",
+      "argv": [
+        "cmake",
+        "--build",
+        "build/dev",
+        "--target",
+        "qindaqt_native_power_startup_tests",
+        "--",
+        "-j2",
+        "-l24"
+      ],
+      "pid": 1665192,
+      "starttick": "42577123",
+      "exit": 0,
+      "elapsed_seconds": 14.41057752299821,
+      "minimum_mem_available_kib": 15967916,
+      "stop_reason": null,
+      "leader_gone": true,
+      "group_survivors": [],
+      "observed_members": [
+        {
+          "pid": 1665192,
+          "starttick": "42577123",
+          "state": "S"
+        },
+        {
+          "pid": 1665193,
+          "starttick": "42577124",
+          "state": "S"
+        },
+        {
+          "pid": 1665218,
+          "starttick": "42577176",
+          "state": "S"
+        },
+        {
+          "pid": 1665306,
+          "starttick": "42577512",
+          "state": "S"
+        },
+        {
+          "pid": 1665864,
+          "starttick": "42578007",
+          "state": "S"
+        },
+        {
+          "pid": 1665866,
+          "starttick": "42578008",
+          "state": "S"
+        },
+        {
+          "pid": 1665867,
+          "starttick": "42578010",
+          "state": "S"
+        },
+        {
+          "pid": 1665868,
+          "starttick": "42578011",
+          "state": "R"
+        },
+        {
+          "pid": 1665875,
+          "starttick": "42578061",
+          "state": "S"
+        },
+        {
+          "pid": 1665876,
+          "starttick": "42578062",
+          "state": "R"
+        }
+      ],
+      "log_sha256": "6967e610069b6a77555f78c869b2c676db8944a5a8a413ae87fcbad6bb33dbb3"
+    },
+    {
+      "label": "test",
+      "argv": [
+        "ctest",
+        "--test-dir",
+        "build/dev",
+        "--output-on-failure",
+        "-R",
+        "^qindaqt.native-power-startup$"
+      ],
+      "pid": 1666006,
+      "starttick": "42578564",
+      "exit": 0,
+      "elapsed_seconds": 1.0517819129745476,
+      "minimum_mem_available_kib": 16454700,
+      "stop_reason": null,
+      "leader_gone": true,
+      "group_survivors": [],
+      "observed_members": [
+        {
+          "pid": 1666006,
+          "starttick": "42578564",
+          "state": "R"
+        }
+      ],
+      "log_sha256": "db560d0b4aa09fd8c7dd50a59b1400bb33aa8f0a1c59afed90236c4e5a953f2c"
+    }
+  ],
+  "proof": {
+    "qt_pass": 4,
+    "qt_fail": 0,
+    "qt_skip": 0,
+    "observed_same_starttick_members": 24,
+    "survivors": [],
+    "probe_pid": 1666028,
+    "probe_starttick": "42578571",
+    "probe_same_starttick_gone": true,
+    "core_files": [],
+    "artifact_sha256": {
+      "build/dev/src/session_supervisor/qindaqt-session": "62fc1fd8f94492f32dbcdfd16b173c8a79191d321799d27156e5067daffd465e",
+      "build/dev/tests/session_supervisor/qindaqt_native_power_startup_tests": "6a2ccd35e8a7184a6b51f06caebd1b2afd8afaa821c10663967061801ef494a0",
+      "build/dev/tests/session_supervisor/qindaqt_session_power_start_probe": "475a73aeff74716125c8acbb925bf42f19384ebd023f59d424e62bedb26cb391",
+      "build/dev/tests/session_supervisor/qindaqt_session_token_child_helper": "53e6751e9e987c1365cd10c7b1c6559bb4849dfecb1e71719f528f7a9377e9a4",
+      "build/dev/src/session_supervisor/libqindaqt_session_supervisor_support.a": "2abc00b29c8145590b09acff5b6ce77362f8993dce3eeb2f48af606414f336fe"
+    },
+    "LastTest_log_sha256": "a52eccfb91e370c7542ed15324f609b51ef2944a4b48488cce265ef851858a0d"
+  },
+  "docs": [
+    {
+      "argv": [
+        "mkdocs",
+        "build",
+        "--strict",
+        "--site-dir",
+        "build/docs-native-power-startup"
+      ],
+      "pid": 1667200,
+      "starttick": "42583411",
+      "exit": 0,
+      "elapsed_seconds": 8.07537322799908,
+      "log_sha256": "40347ed871086fa891bd48a6d5a3ac42f73750706dea95461d21da4c7d43fd3a",
+      "leader_gone": true
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/validate-docs"
+      ],
+      "pid": 1667366,
+      "starttick": "42584219",
+      "exit": 0,
+      "elapsed_seconds": 0.4644091490190476,
+      "log_sha256": "0a1251b4c073ad60fa78f4aa541eb26f8b50214954026bde1b2c7afc6a37e2a7",
+      "leader_gone": true
+    }
+  ],
+  "tests": {
+    "ctest_pass": 1,
+    "ctest_fail": 0,
+    "ctest_seconds": 0.26,
+    "qt_pass": 4,
+    "qt_fail": 0,
+    "qt_skip": 0,
+    "qt_milliseconds": 218
+  },
+  "evidence_hashes": {
+    "build/evidence/native-power-startup-385/CMakeCache.after.txt": "f9f7693301708df0cd11ca44b246860116967942f00cd9721411c0b10bc751ff",
+    "build/evidence/native-power-startup-385/CMakeCache.before.txt": "8b8e4572743e663d1731beafed0aa4e8380652de5284a0f661ca1c449e033a0a",
+    "build/evidence/native-power-startup-385/build-active.json": "f4d08db179a26a5223233722506d258ce07da1b0b88dec1450b8bce8713153e1",
+    "build/evidence/native-power-startup-385/build.log": "94e9f34c6391f60d283bf6f52a7ab9c658b1693db4f0387d4c7657b4dd736980",
+    "build/evidence/native-power-startup-385/cleanup-and-source-proof.json": "9a48185160267d9364b557d33593fbf1cc6fc0d027975da20674f631f154dc18",
+    "build/evidence/native-power-startup-385/configure-active.json": "63ee6627f6de9a3ce539c8fb490341e730ce90e6d417e351e84e99b3398c2c66",
+    "build/evidence/native-power-startup-385/configure.log": "bd176d6e928a50e0538e22da16c70a25571f492a43ba1700bd8339efef09e518",
+    "build/evidence/native-power-startup-385/receipts.json": "2f63c453c57ddd7130e592a1b57509601c4659793b4b942cb317d8d91178e234",
+    "build/evidence/native-power-startup-385/source-after.json": "65f9fdbb883f05ff8304fe6aa7a888e9aca6f1817e89d825d86e9873ff1e1181",
+    "build/evidence/native-power-startup-385/source-before.json": "65f9fdbb883f05ff8304fe6aa7a888e9aca6f1817e89d825d86e9873ff1e1181",
+    "build/evidence/native-power-startup-385/test-active.json": "62ec4995e9c14bc7208328fc0c03db9be8bd5a50f4bbe5b7ebb5c61f840a50da",
+    "build/evidence/native-power-startup-385/test.log": "87f92aa0856d3a74d9df0ab034b766eb8a186cc11a10f35a2f5571874b95577e",
+    "build/evidence/native-power-startup-repair-818/CMakeCache.after.txt": "f9f7693301708df0cd11ca44b246860116967942f00cd9721411c0b10bc751ff",
+    "build/evidence/native-power-startup-repair-818/CMakeCache.before.txt": "f9f7693301708df0cd11ca44b246860116967942f00cd9721411c0b10bc751ff",
+    "build/evidence/native-power-startup-repair-818/LastTest.log": "a52eccfb91e370c7542ed15324f609b51ef2944a4b48488cce265ef851858a0d",
+    "build/evidence/native-power-startup-repair-818/build-active.json": "906d0791226611cc7d48f8b60f0a7c1d3a20a9f5ae1a1222f5b882a964705a1e",
+    "build/evidence/native-power-startup-repair-818/build.log": "6967e610069b6a77555f78c869b2c676db8944a5a8a413ae87fcbad6bb33dbb3",
+    "build/evidence/native-power-startup-repair-818/configure-active.json": "279691a32afdfe8abd862ae0c5b83eba092e3ede1b7929cfbcc955297ee39563",
+    "build/evidence/native-power-startup-repair-818/configure.log": "09091858283f1bde2db4d423c876fd65aa62a83d211b5f432aab4ecdb392ce1f",
+    "build/evidence/native-power-startup-repair-818/docs-receipts.json": "f0c732d7f43d29727e78b355162000c53e1e596cf44acace31934e818c555169",
+    "build/evidence/native-power-startup-repair-818/links.log": "0a1251b4c073ad60fa78f4aa541eb26f8b50214954026bde1b2c7afc6a37e2a7",
+    "build/evidence/native-power-startup-repair-818/mkdocs.log": "40347ed871086fa891bd48a6d5a3ac42f73750706dea95461d21da4c7d43fd3a",
+    "build/evidence/native-power-startup-repair-818/proof.json": "671768f3fa68b42d32b0930ac6901e408129f96fe423d175e4b5cdc5393e2d33",
+    "build/evidence/native-power-startup-repair-818/receipts.json": "5ada3509b37498c467633d7709cb4eadc1b240bdee0d0ebefa11f0246d01a078",
+    "build/evidence/native-power-startup-repair-818/source-after.json": "6a9dc558d3d8acbbe1b3df9aeb00fb12abc351eb27e6352c5a5e12a3ee15b6a4",
+    "build/evidence/native-power-startup-repair-818/source-before.json": "6a9dc558d3d8acbbe1b3df9aeb00fb12abc351eb27e6352c5a5e12a3ee15b6a4",
+    "build/evidence/native-power-startup-repair-818/test-active.json": "5bfa133ab6bf96e69c4cda4a21c505effad36c3d3de9e60c95a88ab11316253a",
+    "build/evidence/native-power-startup-repair-818/test.log": "db560d0b4aa09fd8c7dd50a59b1400bb33aa8f0a1c59afed90236c4e5a953f2c"
+  },
+  "scope_limits": [
+    "CLI proves missing-compositor exclusive rejection, ordinary Logout denial, actual compatible owned-child startup and supervised-shell logout cleanup only",
+    "NativePower complete supported/async6s readiness positive composition is not exercised",
+    "Fork real DisplayPower13Qt authored expectations remain source-only; root owns shared core compile/runtime",
+    "No physical display/sleep, host buses/session mutation, installed cutover or wholePF2 claim",
+    "First385 failed fixture and private installed Settings activation warning retained; repaired bus has no activation directories"
+  ]
+}

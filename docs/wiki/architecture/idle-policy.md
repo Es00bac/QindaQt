@@ -91,3 +91,18 @@ policy tests cover same-mode/preexisting external Off, wake, expiry and capacity
 These are component/private-protocol evidence. Full actual renderer/output/shared
 inhibitor/lid-source-dock integration and package activation remain manager gates;
 no physical host sleep or display mutation is an implementation verification step.
+
+Exclusive startup now waits at most6seconds for authenticated display admission,
+accepted full consumer registration, current source/settings/inhibition and native
+lock/logind readiness. An unavailable prerequisite stops owned children and exits2;
+it cannot retain a session with PowerDevil suppressed and native consumers absent.
+The `off` mode preserves its compatible owned PowerDevil lifetime. New actual CLI
+regression rows and the real nested DisplayPower fixture are source-ready; their
+compiled/runtime evidence is a separate gate, not implied by this change.
+
+The startup CLI regression runs on a private bus with no activation directories,
+so installed Settings or other services cannot enter the fixture. The ordinary
+parent caller is explicitly refused Logout; the existing actual supervised shell
+helper performs authenticated cleanup. Probe PID/starttick and absence after
+shutdown are retained in the actual test log. The first unisolated fixture failure
+remains preserved separately and is not acceptance evidence.

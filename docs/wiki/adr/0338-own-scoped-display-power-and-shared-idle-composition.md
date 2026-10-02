@@ -65,3 +65,16 @@ admission replies. Compositor policy tests cover external same-mode/preexisting
 Off, independent causes, physical wake, expiry and bounded rejection. Actual
 renderer/output integration, shared inhibition and lid/source/dock rows remain
 required. This source checkpoint is not completed native power retirement.
+
+## Exclusive startup prerequisite fence
+
+Exclusive startup does not treat asynchronous transport start returns as readiness.
+Before retaining the session it awaits current DisplayPower inventory/admission,
+confirmed Settings/source facts, native lock preferences/observation when configured,
+selected logind delay authority and accepted complete consumer registration with
+current Power1 inhibition truth. The bound is6seconds, covering the existing
+three2second display-inventory, admission and registration phases. No timeout
+restart or legacy fallback occurs. Failure withdraws only owned declarations and
+causes, stops owned session children, and exits2. Nonexclusive lock degradation
+remains compatible. The nested virtual output fixture proves routing only, not
+physical DRM; actual coherent runtime and package gates remain required.

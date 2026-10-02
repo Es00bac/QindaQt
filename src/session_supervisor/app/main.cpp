@@ -194,6 +194,13 @@ int main(int argc, char *argv[])
     if (!nativeLock.start(&error, nativePowerExclusive)) {
         QTextStream(stderr) << QCoreApplication::applicationName()
                             << ": native lock runtime unavailable: " << error << '\n';
+        if (nativePowerExclusive) {
+            // Native-exclusive packages have no legacy power fallback. Never
+            // retain a running session after rejecting the required assembly.
+            nativeLock.stop();
+            supervisor.stop();
+            return 2;
+        }
     }
     QObject::connect(&application, &QCoreApplication::aboutToQuit,
                      &application, [&nativeLock] { nativeLock.stop(); });
