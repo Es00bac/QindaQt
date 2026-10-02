@@ -11,6 +11,7 @@
 #include <qindaqt/services/portal/process_capture.h>
 #include <qindaqt/services/portal/screenshot_adaptor.h>
 #include <qindaqt/services/portal/screencast_adaptor.h>
+#include <qindaqt/services/portal/remote_input/input_capture_adaptor.h>
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
 #include <qindaqt/application_catalog/application_directory_scan.h>
@@ -39,6 +40,7 @@ public:
     std::unique_ptr<ScreenshotAdaptor> screenshot;
     std::unique_ptr<ScreenCastAdaptor> screencast;
     std::unique_ptr<RemoteInput::RemoteDesktopAdaptor> remoteDesktop;
+    std::unique_ptr<RemoteInput::InputCaptureAdaptor> inputCapture;
     Private(QObject &host, QDBusConnection bus, QString runtime, QString helper,
         QString relay, const QStringList &roots,
         QindaQt::ApplicationCatalog::DirectoryScan scan, QString chooserHelper, QString captureHelper)
@@ -62,7 +64,8 @@ public:
           }, bus)),
           screenshot(std::make_unique<ScreenshotAdaptor>(host, requests, capture)),
           screencast(std::make_unique<ScreenCastAdaptor>(host, requests, capture, bus)),
-          remoteDesktop(std::make_unique<RemoteInput::RemoteDesktopAdaptor>(host, requests, consent, eis, bus)) {
+          remoteDesktop(std::make_unique<RemoteInput::RemoteDesktopAdaptor>(host, requests, consent, eis, bus)),
+          inputCapture(std::make_unique<RemoteInput::InputCaptureAdaptor>(host, requests, consent, eis, bus)) {
         QObject::connect(&consent, &AccessConsent::authorityLost, &requests, [this] {
             requests.retireAll(); idle.revoke();
         });

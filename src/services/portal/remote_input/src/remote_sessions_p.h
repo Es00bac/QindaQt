@@ -4,6 +4,9 @@
 #include <QDBusServiceWatcher>
 #include <QDBusVirtualObject>
 #include <QHash>
+#include <functional>
+#include <QPoint>
+#include <QRect>
 
 class QSocketNotifier;
 namespace QindaQt::Services::Portal::RemoteInput {
@@ -29,6 +32,13 @@ public:
         int cookie = 0;
         QDBusVirtualObject *object = nullptr;
         QSocketNotifier *exit = nullptr;
+        // InputCapture only: compositor capture object, enable state and the
+        // zone generation its barriers were validated against.
+        QString capture;
+        int captureState = 0; // 0 disabled, 1 enabled, 2 activated
+        QList<QRect> zones;
+        quint32 zoneSet = 0;
+        QList<QPair<QPoint, QPoint>> barriers;
     };
     RemoteSessions(QDBusConnection, RequestRegistry &, QObject *parent = nullptr);
     ~RemoteSessions() override;
@@ -37,6 +47,8 @@ public:
     bool requestMatches(const QString &session, const QString &request) const;
     bool live(const QString &session) const;
     Entry *entry(const QString &session); // revalidate admission before use
+    const Entry *find(const QString &session) const;
+    QStringList paths() const;
     QString sessionForTicket(quint64 ticket) const;
     void close(const QString &session, bool notify = true);
     void clear();
@@ -49,5 +61,14 @@ private:
     RequestRegistry &m_requests;
     QDBusServiceWatcher m_watcher;
     QHash<QString, Entry> m_entries;
+};
+// Never-exported receiver for compositor InputCapture signals; the owning
+// adaptor checks sender, path and session before acting on any message.
+class CompositorSignals final : public QObject {
+    Q_OBJECT
+public:
+    std::function<void(const QDBusMessage &)> handler;
+public Q_SLOTS:
+    void received(const QDBusMessage &message) { if (handler) handler(message); }
 };
 } // namespace QindaQt::Services::Portal::RemoteInput

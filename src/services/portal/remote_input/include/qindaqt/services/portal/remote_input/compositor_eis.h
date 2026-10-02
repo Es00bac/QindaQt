@@ -32,6 +32,14 @@ public:
     void cancel(quint64 ticket);
     // Idempotent; a replaced compositor already destroyed the old context.
     void close(const QString &compositor, int cookie);
+    // InputCapture manager/object call on the selected owner. Returns false
+    // without one; otherwise `done` runs once with the reply or error message
+    // and the owner it was sent to, unless this object is destroyed first.
+    using Done = std::function<void(const QDBusMessage &reply, const QString &owner)>;
+    bool call(const QString &path, const QString &interface, const QString &member,
+              const QVariantList &arguments, Done done);
+    QString compositor() const { return currentOwner(); }
+    QDBusConnection connection() const { return m_bus; }
 Q_SIGNALS:
     void opened(quint64 ticket, const QDBusUnixFileDescriptor &fd,
                 const QString &compositor, int cookie);
