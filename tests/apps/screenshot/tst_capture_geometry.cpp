@@ -110,11 +110,11 @@ void CaptureGeometryTest::refusesEveryMalformedShape()
 
 void CaptureGeometryTest::kwinErrorsBecomeSentencesAndCancellationIsNotAnError()
 {
-    QVERIFY(isKWinCancellation(QStringLiteral("org.kde.KWin.ScreenShot2.Error.Cancelled")));
-    QVERIFY(!isKWinCancellation(QStringLiteral("org.kde.KWin.ScreenShot2.Error.NoAuthorized")));
-    const QString denied = describeKWinError(QStringLiteral("org.kde.KWin.ScreenShot2.Error.NoAuthorized"), {});
+    QVERIFY(isKWinCancellation(QStringLiteral("org.qindaqt.KWin.ScreenShot2.Error.Cancelled")));
+    QVERIFY(!isKWinCancellation(QStringLiteral("org.qindaqt.KWin.ScreenShot2.Error.NoAuthorized")));
+    const QString denied = describeKWinError(QStringLiteral("org.qindaqt.KWin.ScreenShot2.Error.NoAuthorized"), {});
     QVERIFY(denied.contains(QStringLiteral("desktop entry")));
-    QVERIFY(!describeKWinError(QStringLiteral("org.kde.KWin.ScreenShot2.Error.NoActiveWindow"), {}).isEmpty());
+    QVERIFY(!describeKWinError(QStringLiteral("org.qindaqt.KWin.ScreenShot2.Error.NoActiveWindow"), {}).isEmpty());
     QVERIFY(describeKWinError(QStringLiteral("x.y.Unknown"), QStringLiteral("boom")).contains(QStringLiteral("boom")));
 }
 

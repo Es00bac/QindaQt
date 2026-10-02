@@ -19,7 +19,7 @@
 namespace QindaQt::Shell {
 namespace {
 
-// ScreenShot2 keeps its KDE names until PF21 (CompositorNames carve-out).
+// ScreenShot2 uses the native names shared with the fork at PF21 (ADR-0340).
 constexpr QLatin1StringView ScreenshotService = CompositorNames::screenshotService;
 constexpr QLatin1StringView ScreenshotPath = CompositorNames::screenshotPath;
 constexpr QLatin1StringView ScreenshotInterface = CompositorNames::screenshotInterface;

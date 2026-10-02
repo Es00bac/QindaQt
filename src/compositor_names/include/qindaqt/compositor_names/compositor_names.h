@@ -50,16 +50,23 @@ inline constexpr QLatin1StringView nightLightInterface{"org.qindaqt.KWin.NightLi
 inline constexpr QLatin1StringView nativeLockPath{"/org/qindaqt/KWin/NativeLock"};
 inline constexpr QLatin1StringView nativeLockInterface{"org.qindaqt.KWin.NativeLock1"};
 
-// AGENT-NOTE: carve-outs until PF21 of the Plasma-free plan. The fork keeps
-// ScreenShot2 under its KDE names because the KDE portal and Spectacle call
-// it; QindaQt's callers move together with the rename in PF21. (Scripting at
-// /Scripting stays too, for Gabbee; container-wm itself does not call it.)
-inline constexpr QLatin1StringView screenshotService{"org.kde.KWin.ScreenShot2"};
-inline constexpr QLatin1StringView screenshotPath{"/org/kde/KWin/ScreenShot2"};
-inline constexpr QLatin1StringView screenshotInterface{"org.kde.KWin.ScreenShot2"};
+// AGENT-CONTRACT: these privileged interfaces move with the fork and every
+// native caller at PF21 (ADR-0340); no stock KDE alias grants access.
+inline constexpr QLatin1StringView screenshotService{"org.qindaqt.KWin.ScreenShot2"};
+inline constexpr QLatin1StringView screenshotPath{"/org/qindaqt/KWin/ScreenShot2"};
+inline constexpr QLatin1StringView screenshotInterface{"org.qindaqt.KWin.ScreenShot2"};
+inline constexpr QLatin1StringView screenshotCancelled{"org.qindaqt.KWin.ScreenShot2.Error.Cancelled"};
+inline constexpr QLatin1StringView screenshotDenied{"org.qindaqt.KWin.ScreenShot2.Error.NoAuthorized"};
+inline constexpr QLatin1StringView screenshotNoActiveWindow{"org.qindaqt.KWin.ScreenShot2.Error.NoActiveWindow"};
+inline constexpr QLatin1StringView screenshotInvalidWindow{"org.qindaqt.KWin.ScreenShot2.Error.InvalidWindow"};
+inline constexpr QLatin1StringView screenshotInvalidScreen{"org.qindaqt.KWin.ScreenShot2.Error.InvalidScreen"};
+inline constexpr QLatin1StringView eisRemoteDesktopPath{"/org/qindaqt/KWin/EIS/RemoteDesktop"};
+inline constexpr QLatin1StringView eisRemoteDesktopInterface{"org.qindaqt.KWin.EIS.RemoteDesktop"};
+inline constexpr QLatin1StringView eisInputCapturePath{"/org/qindaqt/KWin/EIS/InputCapture"};
+inline constexpr QLatin1StringView eisInputCaptureManagerInterface{"org.qindaqt.KWin.EIS.InputCaptureManager"};
+inline constexpr QLatin1StringView eisInputCaptureInterface{"org.qindaqt.KWin.EIS.InputCapture"};
 
-// Privileged-client keys in a desktop file (the fork also honours the
-// X-KDE-* keys until PF21).
+// Only these desktop-file keys authorize privileged clients in the fork.
 inline constexpr QLatin1StringView waylandInterfacesKey{"X-QindaQt-KWin-Wayland-Interfaces"};
 inline constexpr QLatin1StringView dbusRestrictedInterfacesKey{"X-QindaQt-KWin-DBus-Restricted-Interfaces"};
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Private-bus RemoteDesktop backend lifetime. A synthetic compositor object
-// stands in for the fork's org.kde.KWin.EIS.RemoteDesktop; actual EIS input
+// stands in for the fork's org.qindaqt.KWin.EIS.RemoteDesktop; actual EIS input
 // through the private native compositor is a separate manager gate.
 #include "remote_input_fixture.h"
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
@@ -13,7 +13,7 @@ using namespace QindaQt::Services::Portal;
 using namespace QindaQt::Services::Portal::RemoteInput;
 class Compositor final : public QObject, protected QDBusContext {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.EIS.RemoteDesktop")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.EIS.RemoteDesktop")
 public:
     ~Compositor() override { for (const int fd : std::as_const(peers)) ::close(fd); }
     QDBusUnixFileDescriptor transport(int &cookie) {
@@ -64,7 +64,7 @@ private Q_SLOTS:
     void init() {
         QVERIFY(bus.start());
         compositor = std::make_unique<Compositor>();
-        QVERIFY(bus.compositor->registerObject(QStringLiteral("/org/kde/KWin/EIS/RemoteDesktop"), compositor.get(),
+        QVERIFY(bus.compositor->registerObject(QStringLiteral("/org/qindaqt/KWin/EIS/RemoteDesktop"), compositor.get(),
                                                QDBusConnection::ExportAllSlots));
         selectedCompositor = bus.compositor->baseService();
         host = std::make_unique<QObject>(); registry = std::make_unique<RequestRegistry>(*bus.service);
@@ -278,8 +278,8 @@ private:
         return bus.client->call(call, QDBus::BlockWithGui);
     }
     void compositorSignal(const QString &member, const QVariantList &arguments) {
-        auto signal = QDBusMessage::createTargetedSignal(bus.service->baseService(), QStringLiteral("/org/kde/KWin/EIS/RemoteDesktop"),
-                                                         QStringLiteral("org.kde.KWin.EIS.RemoteDesktop"), member);
+        auto signal = QDBusMessage::createTargetedSignal(bus.service->baseService(), QStringLiteral("/org/qindaqt/KWin/EIS/RemoteDesktop"),
+                                                         QStringLiteral("org.qindaqt.KWin.EIS.RemoteDesktop"), member);
         signal.setArguments(arguments);
         QVERIFY(bus.compositor->send(signal));
     }

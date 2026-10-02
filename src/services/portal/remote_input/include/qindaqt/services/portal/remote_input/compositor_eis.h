@@ -8,7 +8,7 @@
 
 namespace QindaQt::Services::Portal::RemoteInput {
 // Standard portal device bits. They equal the capability bits of the fork's
-// org.kde.KWin.EIS.RemoteDesktop.connectToEIS, so no translation table exists.
+// org.qindaqt.KWin.EIS.RemoteDesktop.connectToEIS, so no translation table exists.
 enum DeviceType : quint32 { Keyboard = 1, Pointer = 2, Touchscreen = 4 };
 inline constexpr quint32 kAllDeviceTypes = Keyboard | Pointer | Touchscreen;
 

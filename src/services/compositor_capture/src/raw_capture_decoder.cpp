@@ -2,6 +2,7 @@
 #include <qindaqt/services/compositor_capture/raw_capture_decoder.h>
 
 #include <QCoreApplication>
+#include <qindaqt/compositor_names/compositor_names.h>
 
 namespace QindaQt::CompositorCapture {
 namespace {
@@ -86,19 +87,19 @@ DecodedCapture decodeRawCapture(const QVariantMap &metadata, const QByteArray &b
 
 bool isKWinCancellation(const QString &errorName)
 {
-    return errorName == QLatin1String("org.kde.KWin.ScreenShot2.Error.Cancelled");
+    return errorName == CompositorNames::screenshotCancelled;
 }
 
 QString describeKWinError(const QString &errorName, const QString &message)
 {
-    if (errorName == QLatin1String("org.kde.KWin.ScreenShot2.Error.NoAuthorized"))
+    if (errorName == CompositorNames::screenshotDenied)
         return tr("KWin did not allow this screenshot. QindaQt Screenshot must be installed so "
                   "KWin can find its desktop entry.");
-    if (errorName == QLatin1String("org.kde.KWin.ScreenShot2.Error.NoActiveWindow"))
+    if (errorName == CompositorNames::screenshotNoActiveWindow)
         return tr("There is no active window to capture.");
-    if (errorName == QLatin1String("org.kde.KWin.ScreenShot2.Error.InvalidWindow"))
+    if (errorName == CompositorNames::screenshotInvalidWindow)
         return tr("That window closed before it could be captured.");
-    if (errorName == QLatin1String("org.kde.KWin.ScreenShot2.Error.InvalidScreen"))
+    if (errorName == CompositorNames::screenshotInvalidScreen)
         return tr("That screen is no longer connected.");
     if (errorName == QLatin1String("org.freedesktop.DBus.Error.ServiceUnknown"))
         return tr("The screenshot service is not running. Screenshots need the QindaQt desktop "
