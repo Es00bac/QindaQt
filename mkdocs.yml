@@ -59,6 +59,7 @@ nav:
       - Settings model: architecture/settings-service.md
       - XDG Settings portal appearance backend: architecture/portal-service.md
       - Native portal foundation: architecture/portal-foundation.md
+      - Native remote-input portal: architecture/portal-remote-input.md
       - Display service: architecture/display-service.md
       - Display client: architecture/display-client.md
       - Display compositor writer: architecture/display-writer.md
@@ -517,3 +518,5 @@ nav:
       - "0322: Native portal choosers": adr/0322-native-portal-choosers.md
       - "0324: Native portal capture": adr/0324-native-portal-capture-boundaries.md
       - "0337: Native independent portal families": adr/0337-native-independent-portal-families.md
+
+      - "0335: Native remote input portal": adr/0335-native-remote-input-portal.md
