@@ -86,14 +86,18 @@ the relocated plugin without `--plugin-root`. The `session.installed-plugin-stag
 fixture separately checks absolute/relative path containment without a compositor. Also run the focused tests for every changed module and the repository
 documentation gates.
 
-The native CI lane uses Gentoo's generic `desktop/systemd` profile and the
+The historical native CI lane uses Gentoo's generic `desktop/systemd` profile and the
 official KWin 6.6.6 binary with `shortcuts` enabled and `lock` disabled. That
 lane qualifies the binary plugin ABI, configured source build, staged install,
 and two private nested boots. Keeping lock-screen runtime integration out of
 this build lane avoids pulling Plasma Workspace and Plasma login sessions into
-a desktop that installs its own session entry. It does not reduce the package
-contract: the full-desktop ebuild still requires release-matched KScreenLocker,
-KWin `lock,shortcuts`, portals, hardware providers, and session utilities.
+a desktop that installs its own session entry. That stock-KWin lane does not
+qualify the Plasma-free delivery. Its package uses the exact `gui-wm/qindaqt-kwin`
+fork with native lock and shortcuts, the QindaQt portal providers, native power
+service and generic desktop profile. Production builds keep both private
+compositor authorization options disabled. Qualify its plugin and installed
+launcher against this fork; require the final dependency closure to contain
+no retired Plasma runtime packages.
 Hosted CI explicitly disables Viewer in its current reduced build matrix.
 [QindaTK source](https://github.com/Es00bac/QindaTK) is publicly available;
 publishing it does not expand that CI coverage. Full desktop releases require
