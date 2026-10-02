@@ -1,0 +1,11 @@
+# Optional XWayland video helper retirement facts
+
+- Actual installed RDEPEND/PDEPEND parent search found zero references to gui-apps/xwaylandvideobridge. Old Desktop is not a parent; it is therefore not the sole parent either. Installed helper gui-apps/xwaylandvideobridge-0.5.0::gentoo independently requires kde-plasma/kpipewire:6 and has only debug USE; no package-use switch removes that edge.
+- Accepted overlay3e05 r2 recipe pins exact desktop29f7174a62175475f6ba54fa7627dc2fd4c8a21f, omits this helper and all required retired Plasma runtime dependencies. This is existing absence, not a newly proven recipe deletion; XWayland itself stays a legitimate runtime dependency.
+- Exact final29f search across source and docs finds zero named bridge references. Native plan line366 describes Screenshot/ScreenCast over fork/PipeWire. That supports native portal flows; it does not establish replacement of every legacy X11 non-portal application's video bridge.
+- Helper package owns /etc/xdg/autostart/org.kde.xwaylandvideobridge.desktop and its application entry. Exec=xwaylandvideobridge, X-GNOME-Autostart-enabled=true, no OnlyShowIn/NotShowIn restriction. Existing session-autostart documentation only gives named native supersession for polkit/keyring; no bridge exclusion found. No current process/launch claim is made.
+- Small proposed manager-only action: explicitly add exact =gui-apps/xwaylandvideobridge-0.5.0 to retired optional desktop helpers, preserve all other ordinary applications, then ordinary scoped depclean with signed rollback. Do not permit KPipeWire as a shared-library carveout or force its removal. Old Desktop/provider retention continues until approved transition.
+- Material caveat: this intentionally retires legacy X11 non-portal bridge functionality. Existing native portal evidence must not be represented as qualification of that separate flow. Actual unmerge/world changes remain root-owned; none executed here.
+- Bounded nice19/idleIO installed metadata, two small recipe/autostart reads and exact Git source/doc checks only; no builds, payload scan, GUI or host actions. Worker now available/idle, no resource lease.
+
+Exact source/recipe/autostart hashes and commands: `ops/team/messages/pf-power-delivery-20261002/20261002T225431Z-xwayland-video-helper-retirement-facts.json`.
