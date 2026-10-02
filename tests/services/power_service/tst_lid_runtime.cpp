@@ -135,7 +135,7 @@ void LidRuntimeTests::legacyArrivalAndReturnDoNotReplay() {
 }
 void LidRuntimeTests::admissionFailures_data() {
     QTest::addColumn<QString>("fault");
-    for (const char *name : {"inactive", "wrong-user", "wrong-pid", "malformed-active", "denied-fd", "screen-off"}) QTest::newRow(name) << QString::fromLatin1(name);
+    for (const char *name : {"inactive", "wrong-user", "wrong-pid", "malformed-active", "denied-fd", "screen-off-unavailable"}) QTest::newRow(name) << QString::fromLatin1(name);
 }
 void LidRuntimeTests::admissionFailures() {
     QFETCH(QString, fault);
@@ -145,8 +145,13 @@ void LidRuntimeTests::admissionFailures() {
     else if (fault == QStringLiteral("wrong-pid")) row.logind->pidAccepted = false;
     else if (fault == QStringLiteral("malformed-active")) row.logind->malformedActive = true;
     else if (fault == QStringLiteral("denied-fd")) row.logind->denyInhibit = true;
+    else if (fault == QStringLiteral("screen-off-unavailable")) {
+        // AGENT-GUARD: ScreenOff is supported only through the current facade.
+        // Keep this negative row unavailable while positive rows exercise it.
+        QVERIFY(row.sessionBus.unregisterService(QStringLiteral("org.qindaqt.ScreenPower1")));
+    }
     QVERIFY(row.start());
-    CONFIGURE(row, QStringLiteral("ac"), QStringLiteral("action"), fault == QStringLiteral("screen-off") ? QStringLiteral("screen-off") : QStringLiteral("suspend"));
+    CONFIGURE(row, QStringLiteral("ac"), QStringLiteral("action"), fault == QStringLiteral("screen-off-unavailable") ? QStringLiteral("screen-off") : QStringLiteral("suspend"));
     row.logind->lid(true); QTest::qWait(350); QVERIFY(row.actions().isEmpty());
     QVERIFY(!row.logind->hasLiveOwned());
 }
