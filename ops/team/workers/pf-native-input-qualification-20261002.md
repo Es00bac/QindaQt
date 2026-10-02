@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — exact386 final-delivery source review ACCEPT; no resource lease
+- Status: available — installed bridge startup setup blocker handed off; no resource lease
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -122,3 +122,7 @@
 - 2026-10-02T23:12:42.083464+00:00 — Claimed ≤5-minute exactfca final-delivery docs/audit review in independent worktree; verify signed image/app/provider receipts,34+4 retirement/26retained and realimport-before-provider/PAM guards. No new queries/build/GPU/install/providers/credentials; own board/new reply only.
 
 - 2026-10-02T23:19:09.016598+00:00 — Finalexact386/fcae documentarycheckpoint ACCEPT: originalhost summaries34+4/26each/protected1541+1358 exactlymatch; signed14/app/provider/import guards truthful, noinstalledDesktop/freshlogin claim. FinalpreciseoptionalKWalletPAM caveat accepted; actual publicAPIimport remainspending. Receipt/set assertions0; no builds/runtime/install/providers/credentials/hostqueries. Own review/board preserved; stop.
+
+- 2026-10-02T23:34:05.167020+00:00 — Claimed exact4e0 installedhelper runtime outcome; existingharness route inspection only plus one isolated offscreen startup authorized. Ownboard/newmessages only; nice19/idleIO/no compiler/install/hostrouting/userbus/provider/credentials/GPU. Startup not capture acceptance; stop after immutable receipt/nextaction.
+
+- 2026-10-02T23:37:01.031092+00:00 — One isolated installedhelper --help EXIT127/0.00655s beforeappentry; publiclinkercache omitted, notproductiondefect established. Fourartifacts unchanged/ownedPGIDgone/core0/noGPUbus; firstfailurepreserved. Existingnativecapture/installeddiscovery has no helperlegacyX11consumer/frame case. Rootnotified smallestloadercache replay requiresgrant; actualsharing remainsunqualified. Ownreceipt/board committed, stopidle/noautomaticnextclaim.
