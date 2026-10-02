@@ -51,20 +51,37 @@ public:
     };
     AuthorityCapture &q; RequestRegistry &requests; QDBusConnection bus; QString runtime;
     CaptureAuthority::Channel channel; NativeCaptureAdmission admission;
-    QHash<RequestToken, std::shared_ptr<Job>> jobs; quint64 next = 0; QTimer lifetime;
+    QHash<RequestToken, std::shared_ptr<Job>> jobs; quint64 next = 0; QTimer lifetime, startup; bool channelStarted = false;
     Private(AuthorityCapture &port, RequestRegistry &registry, QDBusConnection connection, QString root, int fd)
         : q(port), requests(registry), bus(connection), runtime(std::move(root)),
           channel(fd, CaptureAuthority::Role::Broker, connection), admission(connection, nativeOwner(connection), fd) {
+        QObject::connect(&admission, &NativeCaptureAdmission::initializedChanged, &q, &AuthorityCapture::initializedChanged);
         QObject::connect(&admission, &NativeCaptureAdmission::lost, &q, [this] { q.revoke(); Q_EMIT q.authorityLost(); });
+        // The existing channel handshake budget starts at broker construction,
+        // including native initialization; delaying Channel::start must not
+        // leave an unresponsive receipt endpoint alive indefinitely.
+        startup.setSingleShot(true);
+        QObject::connect(&startup, &QTimer::timeout, &q, [this] {
+            channel.stop(); q.revoke(); Q_EMIT q.authorityLost();
+        });
+        startup.start(5000);
         lifetime.setInterval(50);
         QObject::connect(&lifetime, &QTimer::timeout, &q, [this] {
+            // AGENT-GUARD: native initialization precedes channel identity setup;
+            // reconciling an unstarted channel would terminally reject its unset PID.
+            if (!channelStarted) {
+                if (!admission.lineageLive()) { channel.stop(); Q_EMIT q.authorityLost(); }
+                return;
+            }
             channel.reconcile();
             if (!q.admitted()) { q.revoke(); return; }
             const auto tokens = jobs.keys(); for (const auto token : tokens) if (const auto job = jobs.value(token); job && !live(*job)) { fail(token); retire(token); }
         }); lifetime.start();
     }
-    void start() {
-        channel.start([this](CaptureAuthority::ReceivedPacket &&packet) { receive(std::move(packet)); }, [this] { q.revoke(); Q_EMIT q.authorityLost(); });
+    bool start() {
+        if (channelStarted || !admission.initialized()) return false;
+        channelStarted = true;
+        return channel.start([this](CaptureAuthority::ReceivedPacket &&packet) { receive(std::move(packet)); }, [this] { q.revoke(); Q_EMIT q.authorityLost(); });
     }
     bool live(const Job &job) const {
         if (!q.admitted() || !pidAlive(job.callerPidfd) || job.frontend != requests.frontendOwner() || !bus.interface()) return false;
@@ -88,7 +105,7 @@ public:
     }
     void receive(CaptureAuthority::ReceivedPacket packet) {
         using Message = CaptureAuthority::Wire::Message;
-        if (packet.packet.message == Message::Hello) return;
+        if (packet.packet.message == Message::Hello) { startup.stop(); return; }
         const auto token = tokenFor(packet.packet.job); const auto job = jobs.value(token);
         if (!job) {
             // A cancelled Start may race JobStarted. Its FDs close with packet;
@@ -154,9 +171,11 @@ public:
     }
 };
 AuthorityCapture::AuthorityCapture(RequestRegistry &requests, QDBusConnection bus, QString runtime, int fd, QObject *parent)
-    : CaptureUI(parent), d(std::make_unique<Private>(*this, requests, std::move(bus), std::move(runtime), fd)) { d->start(); }
+    : CaptureUI(parent), d(std::make_unique<Private>(*this, requests, std::move(bus), std::move(runtime), fd)) {}
 AuthorityCapture::~AuthorityCapture() { revoke(); d->channel.stop(); }
 bool AuthorityCapture::available() const { return d->channel.available(); }
+bool AuthorityCapture::initialized() const { return d->channel.available() && d->admission.initialized(); }
+bool AuthorityCapture::start() { return d->start(); }
 bool AuthorityCapture::admitted() const { return d->channel.live() && d->admission.admitted(); }
 void AuthorityCapture::request(RequestToken token, const CaptureRequest &request) {
     if (!token || !admitted() || !d->requests.live(token) || d->jobs.size() >= CaptureAuthority::Wire::MaxJobs || d->jobs.contains(token) || d->next == std::numeric_limits<quint64>::max()) { d->fail(token); return; }

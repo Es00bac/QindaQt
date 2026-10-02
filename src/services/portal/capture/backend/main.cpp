@@ -22,13 +22,32 @@ int main(int argc, char **argv) {
     const auto runtime = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
     struct stat directory{}; const auto path = runtime.toUtf8();
     if (runtime.isEmpty() || lstat(path.constData(), &directory) || !S_ISDIR(directory.st_mode)
-        || directory.st_uid != geteuid() || (directory.st_mode & 0077) || !bus.isConnected()
-        || !bus.registerService("org.freedesktop.impl.portal.desktop.qindaqt.capture")) return 2;
+        || directory.st_uid != geteuid() || (directory.st_mode & 0077) || !bus.isConnected()) return 2;
     RequestRegistry requests(bus);
     AuthorityCapture capture(requests, bus, runtime, CaptureAuthority::Wire::ControlFd);
     if (!capture.available()) return 2;
     QObject host; ScreenshotAdaptor screenshot(host, requests, capture); ScreenCastAdaptor screencast(host, requests, capture, bus);
-    if (!bus.registerObject("/org/freedesktop/portal/desktop", &host, QDBusConnection::ExportAdaptors)) return 2;
+    bool published = false, startupFailed = false;
+    const auto publish = [&] {
+        if (published || !capture.initialized()) return;
+        // AGENT-CONTRACT: publish only after this broker consumed both native
+        // receipt and reply. Name registration must precede QCC1 Ready because
+        // the compositor authenticates its current owner (ADR0324 / WIRE.md).
+        if (!bus.registerObject("/org/freedesktop/portal/desktop", &host, QDBusConnection::ExportAdaptors)
+            || !capture.initialized()
+            || !bus.registerService("org.freedesktop.impl.portal.desktop.qindaqt.capture")
+            || !capture.start()) {
+            bus.unregisterService("org.freedesktop.impl.portal.desktop.qindaqt.capture");
+            bus.unregisterObject("/org/freedesktop/portal/desktop");
+            startupFailed = true;
+            app.exit(2);
+            return;
+        }
+        published = true;
+    };
+    QObject::connect(&capture, &AuthorityCapture::initializedChanged, &app,
+                     [&](bool initialized) { if (initialized) publish(); });
     QObject::connect(&capture, &CaptureUI::authorityLost, &app, [&] { requests.retireAll(); app.quit(); });
-    return app.exec();
+    publish();
+    return startupFailed ? 2 : app.exec();
 }

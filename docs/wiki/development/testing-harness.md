@@ -4600,3 +4600,17 @@ the monitored success does not resolve that recurring prerequisite. Full matrix
 and independent review remain held, and no routing or milestone is advanced.
 All earlier blank PNG, two-frame and startup-order failures remain retained.
 No installed routing or full PF19 completion is claimed.
+
+### Capture backend startup ordering
+
+The focused `qindaqt.portal-capture-startup` gate launches the real protected
+backend against a private native-lock receipt endpoint and retained seqpacket
+peer. It withholds receipt/reply independently and checks actual backend name
+absence and lack of QCC1 Ready, then releases both and checks the real unique
+sender/PID and StartJob admission. Initial Locked/Locking becomes available while
+denying StartJob. Owner replacement fences late old-owner completion. The fixture
+uses actual message and Peer.Ping boundaries, never elapsed time as readiness,
+and needs no GPU or privileged native authorization hook. Exact ca299 eager
+publication is the negative control. These source rows require their own executed
+qualification and do not resolve historical intermittent native response2 by
+inference.

@@ -38,6 +38,19 @@ qindaqt_enable_warnings(qindaqt_portal_capture_authority_channel_tests)
 add_test(NAME qindaqt.portal-capture-authority-channel COMMAND qindaqt_portal_capture_authority_channel_tests)
 set_tests_properties(qindaqt.portal-capture-authority-channel PROPERTIES TIMEOUT 45 RUN_SERIAL TRUE LABELS "portal;capture;private-bus;wire;hostile")
 
+# Public startup ordering uses a real protected child and actual private native
+# receipt endpoint; no compositor GPU, helper GUI or production test hook.
+qt_add_executable(qindaqt_portal_capture_startup_tests tst_broker_startup.cpp)
+target_include_directories(qindaqt_portal_capture_startup_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/services/portal/capture")
+target_compile_definitions(qindaqt_portal_capture_startup_tests PRIVATE
+    QINDAQT_CAPTURE_TEST_DBUS="${QINDAQT_PORTAL_DBUS_DAEMON_EXECUTABLE}"
+    QINDAQT_CAPTURE_STARTUP_BACKEND="$<TARGET_FILE:qindaqt-portal-capture-backend>")
+target_link_libraries(qindaqt_portal_capture_startup_tests PRIVATE qindaqt_portal_capture_authority Qt6::Test QindaQt::CompositorNames)
+add_dependencies(qindaqt_portal_capture_startup_tests qindaqt-portal-capture-backend)
+qindaqt_enable_warnings(qindaqt_portal_capture_startup_tests)
+add_test(NAME qindaqt.portal-capture-startup COMMAND qindaqt_portal_capture_startup_tests)
+set_tests_properties(qindaqt.portal-capture-startup PROPERTIES TIMEOUT 45 RUN_SERIAL TRUE LABELS "portal;capture;private-bus;wire;hostile")
+
 # AGENT-CONTRACT: private input drives the same native GUI and compositor ports;
 # it never bypasses admission or fabricates capture pixels/PipeWire node results.
 set(capture_dir "${PROJECT_SOURCE_DIR}/src/services/portal/capture")
