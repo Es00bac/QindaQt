@@ -134,9 +134,15 @@ bool NativeLockComposition::start(QString *error, bool nativePowerExclusive) {
 
   if (nativePowerExclusive) {
     d->nativePower = std::make_unique<NativePowerComposition>(
-        d->bus, *d->attachment, *d->power, *d->runtime, d->sleep->coordinator());
-    if (!d->nativePower->start())
-      qWarning() << "native power composition unavailable; automatic power actions remain disarmed";
+        d->bus, *d->attachment, *d->power, *d->runtime, d->sleep->coordinator(),
+        [this] {
+          const auto values = d->preferences->preferences();
+          return values && (!values->automaticLock || d->runtime->available());
+        });
+    if (!d->nativePower->start()) {
+      stop();
+      return fail(QStringLiteral("exclusive native power prerequisites/receipts unavailable"));
+    }
   }
   d->active = true;
   if (error) error->clear();

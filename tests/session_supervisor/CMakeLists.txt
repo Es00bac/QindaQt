@@ -264,3 +264,22 @@ add_test(NAME qindaqt.session-portal-lifetime COMMAND "${CMAKE_COMMAND}" -E env
     dbus-run-session -- $<TARGET_FILE:qindaqt_portal_session_lifetime_tests>)
 set_tests_properties(qindaqt.session-portal-lifetime PROPERTIES TIMEOUT 20 RUN_SERIAL TRUE
     ENVIRONMENT "QT_FATAL_WARNINGS=1" LABELS "session;portal;private-bus")
+
+# ADR-0338: actual CLI exclusive failure and nonexclusive child compatibility.
+qt_add_executable(qindaqt_session_power_start_probe session_power_start_probe.cpp)
+target_link_libraries(qindaqt_session_power_start_probe PRIVATE Qt6::Core)
+qindaqt_enable_warnings(qindaqt_session_power_start_probe)
+qt_add_executable(qindaqt_native_power_startup_tests tst_native_power_startup.cpp)
+target_link_libraries(qindaqt_native_power_startup_tests PRIVATE Qt6::Test Qt6::DBus)
+target_compile_definitions(qindaqt_native_power_startup_tests PRIVATE
+    QINDAQT_SESSION_EXECUTABLE="$<TARGET_FILE:qindaqt-session>"
+    QINDAQT_SESSION_TOKEN_CHILD_HELPER="$<TARGET_FILE:qindaqt_session_token_child_helper>"
+    QINDAQT_SESSION_POWER_START_PROBE="$<TARGET_FILE:qindaqt_session_power_start_probe>")
+add_dependencies(qindaqt_native_power_startup_tests qindaqt-session
+    qindaqt_session_token_child_helper qindaqt_session_power_start_probe)
+qindaqt_enable_warnings(qindaqt_native_power_startup_tests)
+add_test(NAME qindaqt.native-power-startup
+    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_native_power_startup_tests>)
+set_tests_properties(qindaqt.native-power-startup PROPERTIES TIMEOUT 30
+    ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    LABELS "session;power;startup;private-bus")
