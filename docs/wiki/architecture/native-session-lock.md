@@ -355,5 +355,7 @@ same Sleep1 protection gate to Hibernate, HybridSleep and SuspendThenHibernate,
 with matching caller-admitted Can methods. Suspend keeps its existing signature.
 All modes repeat the exact logind capability after current Locked/Protected
 receipt and dispatch noninteractively; capability hints never replace protection.
-Explicit cancellation fences the exact mode/request serial. Lid, critical-battery
-and idle policy are separate prerequisites, with no PF2 completion claim.
+Explicit cancellation fences the exact mode/request serial.
+[Critical battery policy](power-policy.md#native-critical-battery-countdown)
+uses the public SessionActions protected Suspend/Hibernate route (ADR-0331).
+Lid and idle policy remain separate prerequisites, with no PF2 completion claim.

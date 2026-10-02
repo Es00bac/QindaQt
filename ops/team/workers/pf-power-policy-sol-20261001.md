@@ -1,12 +1,13 @@
-# Native source profile policy implementer
+# Native power policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: available — repaired inventory-order candidate passes qinda gates; awaiting exact independent rereview or compatible help
-- Base: 4011a663
-- Branch: worker/pf-power-policy-runtime-20261001
-- Worktree: .cache/pf-power-policy-runtime-20261001
-- Ownership: narrow power policy/service collaborators, existing-hold composition, focused power tests and primary power documentation; own record/messages
-- Compiler/private runtime: both released; no resource claim
+- Status: available — critical countdown candidate verified; exact independent review requested
+- Base: a50afb656c4857048fcacc9703cbeede1eac71dc
+- Branch: worker/pf-critical-battery-sol-20261001
+- Worktree: .cache/pf-critical-battery-sol-20261001
+- Ownership: new cohesive critical-battery policy, focused tests, primary power docs and new coordinated ADR; own board/messages. Cross-module assembly/dependency/public changes require manager coordination.
+- Compiler/private runtime: both released; no live test/build process owned
+
 
 ## Updates
 
@@ -34,3 +35,11 @@
 - 2026-10-01T23:00:06Z — Independent reviewer rejects exact0c with actual resident refusal count2 after reversing identical external holds (expected1). Repair scope is canonical membership-only admission key plus mandatory known-refusal regression and precise power wiki/ADR consequence. Public Settings/epoch/manual/uncertainty/defaultOFF and zero scopes remain; source first, no compiler/private resource claim while graphics owns them. Qinda MkDocs availability now supplied by manager Portage install.
 
 - 2026-10-01T23:06:10Z — Exactce84 repair built two targets/deps exit0/13.820s/9 Ninja actions; compilerPID400006 released. Mandatory refusal regression3/0/0 Qt766ms; full original5/5 CTests,65/0/0 Qt14.32s. Qinda Portage MkDocs1.6.1 strict PASS7.59s,485-page checker and static gates exit0. Six executable/archive hashes unchanged;42 logged private PIDs+2 runners/28 roots directly absent. Both resources released, same reviewer notified for exactce84 rereview. Platform queue and independent REJECT thread read; no new path claim, available for exact review repair/public Power1 contract help.
+
+- 2026-10-01T23:52:32Z — New manager-assigned outcome uses NEW exact a50 isolated worktree/branch after fetch; shared untracked work preserved. Accepted profile slice remains unchanged. Inspecting public warning/Settings/notifications/Sleep1/session actions before concrete process/cancellation design and crossmodule coordination. Laptop heavy lock present; no local heavy work, no speech or host actions.
+
+- 2026-10-02T00:16:39Z — Manager approved ADR0331/public Hibernate extension/private SessionActions dependency and notified root compiler ownership. Cohesive countdown + confined actionable notification producer + exact protected Hibernate extension authored; synchronous admission withdrawal fences delayed Can callbacks, positive expiry bounds unknown Notify IDs. Detailed episode/uncertainty/closure design posted before crossmodule edits. Source checkpoint only; focused executable fixtures still in progress, no gate/lease claim.
+
+- 2026-10-02T00:42:02Z — Actual resident critical fixture now authored with real Settings1/notification host and token-authenticated public presentation cancellation; injected protected Sleep1/power-off and separate bounded wire-fault actors.23 behavior rows cover configured actions, fences, late callbacks, uncertainty/no replay, finite unknown-ID expiry and strict typed bounds. New public Hibernate client contract row added. Source-only, compilation/runtime still pending; requested focused qinda leases after push, no laptop heavy work.
+
+- 2026-10-02T01:00:30Z — Exact241ff fresh qinda strict Debug configure and six-target build PASS45.52s/47.03s/182 Ninja actions with accepted source690 prefix; compiler PID493136 absent after release, minimum14.25GB. First actual resident suspend countdown3/0/0 PASS5.58s; frozen full9/9 CTests101/0/0 Qt PASS118.99s including23 critical behaviors25/0/0 and unchanged Power65/0/0 plus SessionActions11/0/0. Both resources released; first3/full95 observed PIDs and first1/full51 roots absent, eight cache/executable hashes unchanged, runtime min13.07GB. Qinda strict docs486 pages/static PASS before final docs-only verification update. Available for independent review repairs or bounded public power-contract help; no installed cutover, hardware action, wholePF2 completion or new path claim.

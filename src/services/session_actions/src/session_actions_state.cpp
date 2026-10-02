@@ -16,6 +16,7 @@ bool SessionActionsClient::canLogout() const noexcept { return m_availability.lo
 bool SessionActionsClient::canSuspend() const noexcept { return m_availability.suspend; }
 bool SessionActionsClient::canReboot() const noexcept { return m_availability.reboot; }
 bool SessionActionsClient::canPowerOff() const noexcept { return m_availability.powerOff; }
+bool SessionActionsClient::canHibernate() const noexcept { return m_availability.hibernate; }
 bool SessionActionsClient::pending() const noexcept { return m_pending.has_value(); }
 QString SessionActionsClient::feedback() const { return m_feedback; }
 
@@ -24,6 +25,7 @@ bool SessionActionsClient::requestLogout() { return requestAction(SessionAction:
 bool SessionActionsClient::requestSuspend() { return requestAction(SessionAction::Suspend); }
 bool SessionActionsClient::requestReboot() { return requestAction(SessionAction::Reboot); }
 bool SessionActionsClient::requestPowerOff() { return requestAction(SessionAction::PowerOff); }
+bool SessionActionsClient::requestHibernate() { return requestAction(SessionAction::Hibernate); }
 
 void SessionActionsClient::clearFeedback()
 {
@@ -48,6 +50,7 @@ bool SessionActionsClient::cachedAvailable(SessionAction action) const noexcept
     case SessionAction::Suspend: return m_availability.suspend;
     case SessionAction::Reboot: return m_availability.reboot;
     case SessionAction::PowerOff: return m_availability.powerOff;
+    case SessionAction::Hibernate: return m_availability.hibernate;
     }
     return false;
 }

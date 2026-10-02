@@ -6,6 +6,9 @@
 #include <qindaqt/services/power_service/source_profile_policy.h>
 #include <qindaqt/services/power_service/adapters/native_profile_authority.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
+#include <qindaqt/services/power_service/critical_battery_policy.h>
+#include <qindaqt/services/power_service/adapters/critical_notification_adapter.h>
+#include <qindaqt/services/session_actions/session_actions_client.h>
 
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
@@ -31,6 +34,9 @@ int main(int argc, char **argv)
     parser.setApplicationDescription(
         QStringLiteral("QindaQt resident Power1 service"));
     parser.addOptions({
+        {QStringLiteral("critical-policy"),
+         QStringLiteral("Critical battery countdown: off or native-exclusive (explicit cutover)."),
+         QStringLiteral("mode"), QStringLiteral("off")},
         {QStringLiteral("profile-policy"),
          QStringLiteral("Automatic source profiles: off or native-exclusive (explicit cutover)."),
          QStringLiteral("mode"), QStringLiteral("off")},
@@ -58,6 +64,11 @@ int main(int argc, char **argv)
     if (profilePolicy != QStringLiteral("off")
         && profilePolicy != QStringLiteral("native-exclusive")) {
         qCritical("Power1 rejected unknown profile policy mode");
+        return 1;
+    }
+    const QString criticalPolicy = parser.value(QStringLiteral("critical-policy"));
+    if (criticalPolicy != QStringLiteral("off") && criticalPolicy != QStringLiteral("native-exclusive")) {
+        qCritical("Power1 rejected unknown critical policy mode");
         return 1;
     }
     const QString backlightRoot = parser.value(QStringLiteral("backlight-root"));
@@ -111,16 +122,32 @@ int main(int argc, char **argv)
     std::unique_ptr<SettingsClient> settings;
     std::unique_ptr<SourceProfilePolicy> sourcePolicy;
     std::unique_ptr<Upstream::NativeProfileAuthority> authority;
-    if (profilePolicy == QStringLiteral("native-exclusive")) {
+    std::unique_ptr<QindaQt::Services::SessionActions::SessionActionsClient> actions;
+    std::unique_ptr<Upstream::CriticalNotificationAdapter> criticalNotification;
+    std::unique_ptr<CriticalBatteryPolicy> criticalBattery;
+    const bool profilesEnabled = profilePolicy == QStringLiteral("native-exclusive");
+    const bool criticalEnabled = criticalPolicy == QStringLiteral("native-exclusive");
+    if (profilesEnabled || criticalEnabled) {
         settingsTransport = std::make_unique<QtSettingsTransport>(sessionConnection);
-        settings = std::make_unique<SettingsClient>(*settingsTransport,
-                                                    SourceProfilePolicy::settingsKeys());
-        sourcePolicy = std::make_unique<SourceProfilePolicy>(*service.coordinator(), *settings);
+        QStringList keys;
+        if (profilesEnabled) keys.append(SourceProfilePolicy::settingsKeys());
+        if (criticalEnabled) keys.append(CriticalBatteryPolicy::settingsKeys());
+        settings = std::make_unique<SettingsClient>(*settingsTransport, keys);
+        if (profilesEnabled) sourcePolicy = std::make_unique<SourceProfilePolicy>(*service.coordinator(), *settings);
+        if (criticalEnabled) {
+            actions = std::make_unique<QindaQt::Services::SessionActions::SessionActionsClient>(sessionConnection, upstreamConnection);
+            criticalNotification = std::make_unique<Upstream::CriticalNotificationAdapter>(sessionConnection);
+            criticalBattery = std::make_unique<CriticalBatteryPolicy>(*service.coordinator(), *settings, *criticalNotification, *actions);
+            actions->start();
+        }
         authority = std::make_unique<Upstream::NativeProfileAuthority>(sessionConnection, true);
-        QObject::connect(authority.get(), &Upstream::NativeProfileAuthority::admissionChanged,
+        if (sourcePolicy) QObject::connect(authority.get(), &Upstream::NativeProfileAuthority::admissionChanged,
                          sourcePolicy.get(), &SourceProfilePolicy::setNativeAuthority);
+        if (criticalBattery) QObject::connect(authority.get(), &Upstream::NativeProfileAuthority::admissionChanged,
+                         criticalBattery.get(), &CriticalBatteryPolicy::setNativeAuthority);
         authority->start();
-        sourcePolicy->setNativeAuthority(authority->admitted());
+        if (sourcePolicy) sourcePolicy->setNativeAuthority(authority->admitted());
+        if (criticalBattery) criticalBattery->setNativeAuthority(authority->admitted());
         if (!settings->start()) {
             qCritical("Power1 source profile Settings1 observation failed");
         }

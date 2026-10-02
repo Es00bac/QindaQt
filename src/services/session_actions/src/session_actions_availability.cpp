@@ -35,7 +35,7 @@ void SessionActionsClient::refreshAvailability()
     query->outstanding = (screenSaverOwner.isEmpty() ? 0 : 1)
         + (sessionOwner.isEmpty() ? 0 : 1)
         + (logindOwner.isEmpty() ? 0 : 2)
-        + (sleepOwner.isEmpty() ? 0 : 1);
+        + (sleepOwner.isEmpty() ? 0 : 2);
     if (query->outstanding == 0) {
         publishAvailability(query->availability);
         return;
@@ -91,18 +91,21 @@ void SessionActionsClient::refreshAvailability()
                 });
     }
 
-    if (!sleepOwner.isEmpty()) {
+    for (const auto mode : {SessionAction::Suspend, SessionAction::Hibernate}) {
+        if (sleepOwner.isEmpty()) break;
         auto call = QDBusMessage::createMethodCall(sleepOwner, QString::fromLatin1(SleepPath),
-            QString::fromLatin1(SleepInterface), QStringLiteral("CanSuspend"));
+            QString::fromLatin1(SleepInterface), QStringLiteral("Can") + sleepMethod(mode));
         auto *watcher = new QDBusPendingCallWatcher(m_sessionBus.asyncCall(call, 750), this);
         connect(watcher, &QDBusPendingCallWatcher::finished, this,
-            [this, watcher, query, sleepOwner] {
+            [this, watcher, query, sleepOwner, mode] {
                 const QDBusPendingReply<bool> reply = *watcher;
                 watcher->deleteLater();
                 if (query->serial != m_refreshSerial || !m_running) return;
-                query->availability.suspend = !reply.isError() && reply.value() &&
+                const bool admitted = !reply.isError() && reply.value() &&
                     currentOwner(SessionAction::Suspend) == sleepOwner &&
                     query->sleepEpoch == m_sleepEpoch;
+                if (mode == SessionAction::Suspend) query->availability.suspend = admitted;
+                else query->availability.hibernate = admitted;
                 completeRefresh(query);
             });
     }
@@ -131,6 +134,7 @@ void SessionActionsClient::refreshAvailability()
                     case SessionAction::Suspend: query->availability.suspend = admitted; break;
                     case SessionAction::Reboot: query->availability.reboot = admitted; break;
                     case SessionAction::PowerOff: query->availability.powerOff = admitted; break;
+                    case SessionAction::Hibernate:
                     case SessionAction::Lock:
                     case SessionAction::Logout: break;
                     }

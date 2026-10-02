@@ -22,7 +22,8 @@ using namespace Detail;
 QString canMethod(SessionAction action)
 {
     switch (action) {
-    case SessionAction::Suspend: break;
+    case SessionAction::Suspend:
+    case SessionAction::Hibernate: break;
     case SessionAction::Reboot: return QStringLiteral("CanReboot");
     case SessionAction::PowerOff: return QStringLiteral("CanPowerOff");
     case SessionAction::Lock:
@@ -36,7 +37,8 @@ QString actionMethod(SessionAction action)
     switch (action) {
     case SessionAction::Lock: return QStringLiteral("Lock");
     case SessionAction::Logout: return QStringLiteral("Logout");
-    case SessionAction::Suspend: break;
+    case SessionAction::Suspend:
+    case SessionAction::Hibernate: break;
     case SessionAction::Reboot: return QStringLiteral("Reboot");
     case SessionAction::PowerOff: return QStringLiteral("PowerOff");
     }
@@ -49,6 +51,7 @@ QString unavailableText(SessionAction action)
     case SessionAction::Lock: return SessionActionsClient::tr("Screen locking is unavailable.");
     case SessionAction::Logout: return SessionActionsClient::tr("Logging out is unavailable.");
     case SessionAction::Suspend: return SessionActionsClient::tr("Suspend is unavailable.");
+    case SessionAction::Hibernate: return SessionActionsClient::tr("Hibernate is unavailable.");
     case SessionAction::Reboot: return SessionActionsClient::tr("Restart is unavailable.");
     case SessionAction::PowerOff: return SessionActionsClient::tr("Shut down is unavailable.");
     }
@@ -173,7 +176,7 @@ QString SessionActionsClient::currentOwner(SessionAction action) const
     if (action == SessionAction::Lock) {
         return serviceOwner(m_sessionBus, ScreenSaverService);
     }
-    if (action == SessionAction::Suspend) {
+    if (isSleepAction(action)) {
         const auto owner = serviceOwner(m_sessionBus, SleepService);
         return owner == serviceOwner(m_sessionBus, SessionService) ? owner : QString{};
     }
@@ -188,7 +191,7 @@ quint64 SessionActionsClient::authorityEpoch(SessionAction action) const noexcep
     if (action == SessionAction::Lock) {
         return m_screenSaverEpoch;
     }
-    if (action == SessionAction::Suspend) return m_sleepEpoch;
+    if (isSleepAction(action)) return m_sleepEpoch;
     if (action == SessionAction::Logout) {
         return m_sessionEpoch;
     }
@@ -205,7 +208,7 @@ void SessionActionsClient::advanceAuthorityEpoch(SessionAction action)
 {
     if (action == SessionAction::Lock) {
         ++m_screenSaverEpoch;
-    } else if (action == SessionAction::Suspend) {
+    } else if (isSleepAction(action)) {
         ++m_sleepEpoch;
     } else if (action == SessionAction::Logout) {
         ++m_sessionEpoch;
@@ -239,12 +242,12 @@ bool SessionActionsClient::requestAction(SessionAction action)
     }
     m_pending = PendingAction{m_nextRequestId, action, owner,
                               authorityEpoch(action), false};
-    m_actionDeadline.start(action == SessionAction::Suspend ? ActionTimeoutMilliseconds : 5000);
+    m_actionDeadline.start(isSleepAction(action) ? ActionTimeoutMilliseconds : 5000);
     publishFeedback({});
     Q_EMIT pendingChanged();
     if (action == SessionAction::Lock) {
         authorizeLock();
-    } else if (action == SessionAction::Suspend) {
+    } else if (isSleepAction(action)) {
         authorizeSuspend();
     } else if (action == SessionAction::Logout) {
         authorizeLogout();
@@ -351,11 +354,11 @@ void SessionActionsClient::dispatchMutation()
         call = QDBusMessage::createMethodCall(
             request.owner, QString::fromLatin1(ScreenSaverPath),
             QString::fromLatin1(ScreenSaverInterface), actionMethod(request.action));
-    } else if (request.action == SessionAction::Suspend) {
+    } else if (isSleepAction(request.action)) {
         connection = &m_sessionBus;
         call = QDBusMessage::createMethodCall(
             request.owner, QString::fromLatin1(SleepPath),
-            QString::fromLatin1(SleepInterface), QStringLiteral("Suspend"));
+            QString::fromLatin1(SleepInterface), sleepMethod(request.action));
     } else if (request.action == SessionAction::Logout) {
         connection = &m_sessionBus;
         call = QDBusMessage::createMethodCall(
@@ -369,7 +372,7 @@ void SessionActionsClient::dispatchMutation()
         call.setArguments({false});
     }
     m_pending->mutationDispatched = true;
-    auto *watcher = new QDBusPendingCallWatcher(connection->asyncCall(call, request.action == SessionAction::Suspend
+    auto *watcher = new QDBusPendingCallWatcher(connection->asyncCall(call, isSleepAction(request.action)
         ? ActionTimeoutMilliseconds + 4000 : 10000), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [this, watcher, request] {
@@ -383,13 +386,13 @@ void SessionActionsClient::dispatchMutation()
                 if (!authorityMatches(request)) {
                     completePending(ActionStatus::Uncertain,
                                     QStringLiteral("authority-replaced"));
-                } else if (request.action == SessionAction::Suspend &&
+                } else if (isSleepAction(request.action) &&
                            reply.type() == QDBusMessage::ReplyMessage &&
                            reply.signature() == QStringLiteral("b")) {
                     completePending(reply.arguments().first().toBool()
                                         ? ActionStatus::Succeeded : ActionStatus::Rejected,
                                     QStringLiteral("native-sleep-result"));
-                } else if (request.action != SessionAction::Suspend &&
+                } else if (!isSleepAction(request.action) &&
                            reply.type() == QDBusMessage::ReplyMessage) {
                     completePending(ActionStatus::Succeeded,
                                     QStringLiteral("applied"));
