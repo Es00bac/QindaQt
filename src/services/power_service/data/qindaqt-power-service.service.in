@@ -6,7 +6,7 @@ After=graphical-session.target
 [Service]
 Type=dbus
 BusName=org.qindaqt.Power1
-ExecStart=@KDE_INSTALL_FULL_BINDIR@/qindaqt-power-service --upstream=production
+ExecStart=@KDE_INSTALL_FULL_BINDIR@/qindaqt-power-service --upstream=production @QINDAQT_POWER_POLICY_ARGUMENTS@
 Restart=on-failure
 RestartSec=1s
 # AGENT-NOTE: systemd's Type=dbus default TimeoutStartSec is 90s. On a

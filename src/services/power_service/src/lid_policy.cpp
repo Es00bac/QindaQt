@@ -32,6 +32,14 @@ LidPolicy::LidPolicy(PowerServiceCoordinator &power,
                 m_handling.setEnabled(false);
             }
         });
+    connect(&actions, &Services::SessionActions::SessionActionsClient::screenOffFinished, this,
+        [this](Services::SessionActions::ActionStatus status) {
+            if (!m_pending) return;
+            m_pending = false;
+            if (status == Services::SessionActions::ActionStatus::Uncertain) {
+                m_quarantined = true; m_armed = false; m_handling.setEnabled(false);
+            }
+        });
 }
 LidPolicy::~LidPolicy() { m_native = false; m_armed = false; m_handling.setEnabled(false); m_actions.stop(); }
 void LidPolicy::setNativeAuthority(bool admitted) {
@@ -77,7 +85,8 @@ bool LidPolicy::actionAvailable(const QString &action) const {
     if (action == QStringLiteral("hibernate")) return m_actions.canHibernate();
     if (action == QStringLiteral("lock")) return m_actions.canLock();
     if (action == QStringLiteral("power-off")) return m_actions.canPowerOff();
-    return false; // screen-off awaits its owning Display public action boundary.
+    if (action == QStringLiteral("screen-off")) return m_actions.canScreenOff();
+    return false;
 }
 void LidPolicy::observe() {
     QString action;
@@ -85,10 +94,14 @@ void LidPolicy::observe() {
     const auto current = lineage();
     if (current.isEmpty() || current != m_lineage || !actionAvailable(action)) {
         m_armed = false;
+        m_actions.releaseScreenOff();
         // Synchronous revocation, before a queued Can reply can dispatch.
         if (m_pending) m_actions.stop();
     }
-    if (m_pending && !m_power.snapshot().source.lidClosed) m_actions.stop();
+    if (!m_power.snapshot().source.lidClosed) {
+        m_actions.releaseScreenOff();
+        if (m_pending) m_actions.stop();
+    }
     if (m_scheduled) return;
     m_scheduled = true;
     QTimer::singleShot(0, this, [this] { m_scheduled = false; reconcile(); });
@@ -115,7 +128,9 @@ void LidPolicy::dispatch(const QString &action) {
     m_pending = true;
     const bool accepted = action == QStringLiteral("suspend") ? m_actions.requestSuspend()
         : action == QStringLiteral("hibernate") ? m_actions.requestHibernate()
-        : action == QStringLiteral("lock") ? m_actions.requestLock() : m_actions.requestPowerOff();
+        : action == QStringLiteral("lock") ? m_actions.requestLock()
+        : action == QStringLiteral("screen-off") ? m_actions.requestScreenOff(m_power.snapshot().epoch)
+        : m_actions.requestPowerOff();
     if (!accepted) m_pending = false;
 }
 }

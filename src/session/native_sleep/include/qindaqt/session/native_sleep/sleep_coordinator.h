@@ -21,6 +21,10 @@ public:
   bool canSuspend() const;
   void queryCapability(SleepMode mode, std::function<void(bool)> completion);
   bool requestSleep(SleepMode mode);
+  // A caller may retire only the exact outstanding request it submitted.
+  // Tokens are same-thread sequence receipts, not transferable sleep authority.
+  quint64 requestToken() const { return m_manual ? m_serial : 0; }
+  bool cancelRequest(quint64 token);
   bool requestSuspend() { return requestSleep(SleepMode::Suspend); }
 Q_SIGNALS:
   void availabilityChanged();

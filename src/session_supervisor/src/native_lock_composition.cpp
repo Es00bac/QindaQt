@@ -1,5 +1,6 @@
 #include "native_lock_composition.h"
 #include "native_sleep_composition.h"
+#include "native_power_composition.h"
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <qindaqt/platform/idle_observation/idle_observation.h>
@@ -14,7 +15,6 @@
 #include <qindaqt/services/settings_client/settings_client.h>
 #include <qindaqt/session/native_lock_runtime/native_lock_runtime.h>
 #include <qindaqt/session/idle_policy/display_off_stage.h>
-#include <qindaqt/session/idle_policy/attached_display_power_port.h>
 #include <qindaqt/session/idle_policy/source_preferences.h>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
@@ -36,11 +36,7 @@ public:
   QString sessionOwner;
   std::unique_ptr<CompositorAttachment> attachment;
   std::unique_ptr<Platform::Idle::WaylandIdleObservation> idle;
-  std::unique_ptr<Platform::Idle::WaylandIdleObservation> displayIdle;
-  std::unique_ptr<Session::IdlePolicy::AttachedDisplayPowerPort> dpms;
-  std::unique_ptr<Services::SettingsClient::QtSettingsTransport> displaySettingsTransport;
-  std::unique_ptr<Services::SettingsClient::SettingsClient> displaySettings;
-  std::unique_ptr<Session::IdlePolicy::DisplayOffStage> displayStage;
+  std::unique_ptr<NativePowerComposition> nativePower;
   std::unique_ptr<QtNativeLockTransport> lockTransport;
   std::unique_ptr<NativeLockStateMonitor> monitor;
   std::unique_ptr<Services::NativeLock::QtNativeLockRequest> request;
@@ -58,7 +54,7 @@ public:
 NativeLockComposition::NativeLockComposition() : d(std::make_unique<Private>()) {}
 NativeLockComposition::~NativeLockComposition() { stop(); }
 
-bool NativeLockComposition::start(QString *error) {
+bool NativeLockComposition::start(QString *error, bool nativePowerExclusive) {
   if (d->active) return true;
   const auto fail = [error](const QString &reason) {
     if (error) *error = reason;
@@ -136,59 +132,12 @@ bool NativeLockComposition::start(QString *error) {
   if (!d->sleep->start())
     return fail(QStringLiteral("native sleep handoff registration failed"));
 
-  // Display power uses its own Settings1 scope and compositor observer so
-  // source-specific timeout changes cannot overwrite the automatic-lock timer.
-  d->displaySettingsTransport =
-      std::make_unique<Services::SettingsClient::QtSettingsTransport>(d->bus);
-  d->displaySettings = std::make_unique<Services::SettingsClient::SettingsClient>(
-      *d->displaySettingsTransport,
-      Session::IdlePolicy::perSourceDisplayOffSettingsKeys());
-  static_cast<void>(d->displaySettings->start(&transportError));
-  d->displayIdle = std::make_unique<Platform::Idle::WaylandIdleObservation>(
-      [this] { return d->attachment ? d->attachment->openConnection() : -1; },
-      [this] { return d->attachment && d->attachment->live(); });
-  d->dpms = Session::IdlePolicy::makeAttachedDisplayPowerPort();
-  if (!d->attachment->sameBus(d->bus))
-    return fail(QStringLiteral("DPMS attachment is not on the admitted session bus"));
-  QString dpmsError;
-  if (!d->dpms->start(
-          [this] { return d->attachment ? d->attachment->openConnection() : -1; },
-          [this] { return d->attachment && d->attachment->live(); }, &dpmsError))
-    qWarning().noquote() << QStringLiteral("native idle display-off unavailable:")
-                         << dpmsError;
-  d->displayStage = std::make_unique<Session::IdlePolicy::DisplayOffStage>(
-      *d->displayIdle, *d->dpms, *d->power, [this]()
-          -> std::optional<Session::IdlePolicy::DisplayOffPreferences> {
-        if (!d->displaySettings ||
-            d->displaySettings->state() != Services::SettingsClient::ClientState::Ready ||
-            !d->displaySettings->snapshot() ||
-            d->displaySettings->snapshot()->owner != d->displaySettings->currentOwner() ||
-            !d->power || !d->power->hasSnapshot() ||
-            (d->power->state() != Power::PowerClientState::Ready &&
-             d->power->state() != Power::PowerClientState::Degraded))
-          return std::nullopt;
-        const auto profile = Session::IdlePolicy::selectPowerSourceProfile(
-            d->power->snapshot());
-        if (!profile) return std::nullopt;
-        return Session::IdlePolicy::displayOffPreferencesFor(
-            *d->displaySettings->snapshot(), d->displaySettings->currentOwner(), *profile);
-      });
-  QObject::connect(d->displaySettings.get(),
-                   &Services::SettingsClient::SettingsClient::snapshotChanged,
-                   d->displayStage.get(),
-                   &Session::IdlePolicy::DisplayOffStage::refreshPreferences);
-  QObject::connect(d->displaySettings.get(),
-                   &Services::SettingsClient::SettingsClient::ownerChanged,
-                   d->displayStage.get(),
-                   &Session::IdlePolicy::DisplayOffStage::refreshPreferences);
-  QObject::connect(d->displaySettings.get(),
-                   &Services::SettingsClient::SettingsClient::stateChanged,
-                   d->displayStage.get(),
-                   &Session::IdlePolicy::DisplayOffStage::refreshPreferences);
-  QObject::connect(d->attachment.get(), &CompositorAttachment::revoked,
-                   d->displayStage.get(),
-                   &Session::IdlePolicy::DisplayOffStage::attachmentRevoked);
-  d->displayStage->start();
+  if (nativePowerExclusive) {
+    d->nativePower = std::make_unique<NativePowerComposition>(
+        d->bus, *d->attachment, *d->power, *d->runtime, d->sleep->coordinator());
+    if (!d->nativePower->start())
+      qWarning() << "native power composition unavailable; automatic power actions remain disarmed";
+  }
   d->active = true;
   if (error) error->clear();
   return true;
@@ -196,18 +145,10 @@ bool NativeLockComposition::start(QString *error) {
 
 void NativeLockComposition::stop() {
   if (!d) return;
+  if (d->nativePower) d->nativePower->stop();
+  d->nativePower.reset();
   if (d->sleep) d->sleep->stop();
   d->sleep.reset();
-  if (d->displayStage) d->displayStage->stop();
-  d->displayStage.reset();
-  // AGENT-GUARD: logout must flush the retained peer restore before destroying
-  // DPMS proxies; stage.stop() alone only queues On (ADR-0319).
-  if (d->dpms) d->dpms->restoreAndStop();
-  d->dpms.reset();
-  d->displayIdle.reset();
-  if (d->displaySettings) d->displaySettings->stop();
-  d->displaySettings.reset();
-  d->displaySettingsTransport.reset();
   if (d->runtime) d->runtime->stop();
   d->runtime.reset();
   if (d->service) d->service->stop();

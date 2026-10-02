@@ -22,6 +22,7 @@ public:
     void requestOff() override;
     void requestOn() override;
     void restoreAndStop() override;
+    void refreshPreferences();
     bool canScreenOff() const;
     bool callerAllowed(const QString &actualCaller) const;
     bool screenOffEpisodeHeld() const { return !m_lidId.isEmpty(); }

@@ -37,6 +37,10 @@ DisplayPowerFacade::~DisplayPowerFacade() {
     requestOn();
     if (!m_lidId.isEmpty()) releaseScreenOff(m_lidCaller, m_lidId);
 }
+void DisplayPowerFacade::refreshPreferences() {
+    if (!available()) { requestOn(); if (!m_lidId.isEmpty()) releaseScreenOff(m_lidCaller, m_lidId); }
+    Q_EMIT availabilityChanged(available());
+}
 bool DisplayPowerFacade::available() const { return m_display.available() && m_preferences && m_preferences().has_value(); }
 bool DisplayPowerFacade::canScreenOff() const { return available() && m_power.hasSnapshot() && !m_power.owner().isEmpty(); }
 bool DisplayPowerFacade::callerAllowed(const QString &actualCaller) const { return canScreenOff() && actualCaller == m_power.owner(); }
