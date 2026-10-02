@@ -22,7 +22,7 @@ std::optional<QJsonObject> launcherFrame(const QString &, const QString &,
     const QString &, const QDBusVariant &, const QVariantMap &);
 std::optional<QVariantMap> launcherResults(const QJsonObject &, const QJsonObject &);
 bool noninteractiveLauncherAllowed(const QString &);
-struct AccountInformation { QString id, name, image; };
+struct AccountInformation { QString id, name, image, defaultImage; };
 AccountInformation localAccountInformation();
 }
 Q_DECLARE_METATYPE(QindaQt::Services::Portal::UsbDevices)

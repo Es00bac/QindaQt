@@ -15,7 +15,7 @@ AccountAdaptor::AccountAdaptor(QObject &host, RequestRegistry &requests, MiscUi 
             if (response == RequestResponse::Success) {
                 results.insert("id", output.value("id").toBool() ? it->id : QString{});
                 results.insert("name", output.value("name").toBool() ? it->name : QString{});
-                results.insert("image", output.value("image").toBool() ? it->image : QStringLiteral("file://"));
+                results.insert("image", output.value("image").toBool() ? it->image : it->defaultImage);
             }
         }
         m_requests.finish(token, response, response == RequestResponse::Success ? results : QVariantMap{});
@@ -32,7 +32,7 @@ quint32 AccountAdaptor::GetUserInformation(const QDBusObjectPath &handle, const 
     const auto reason = options.value("reason");
     if (!frame || !m_ui.admitted() || (reason.isValid() && (reason.metaType() != QMetaType::fromType<QString>() || !boundedText(reason.toString())))) { m_requests.finish(token, RequestResponse::Failed); return 2; }
     const auto info = m_provider();
-    if (info.id.isEmpty() || !boundedText(info.id, 256) || !boundedText(info.name, 1024) || !boundedText(info.image, 4096)) { m_requests.finish(token, RequestResponse::Failed); return 2; }
+    if (info.id.isEmpty() || !boundedText(info.id, 256) || !boundedText(info.name, 1024) || !boundedText(info.image, 4096) || info.image.isEmpty() || info.defaultImage.isEmpty() || !boundedText(info.defaultImage, 4096)) { m_requests.finish(token, RequestResponse::Failed); return 2; }
     frame->insert("reason", reason.toString()); frame->insert("id", info.id); frame->insert("name", info.name); frame->insert("image", info.image);
     m_pending.insert(token, info); m_ui.present(token, *frame); return 2;
 }
