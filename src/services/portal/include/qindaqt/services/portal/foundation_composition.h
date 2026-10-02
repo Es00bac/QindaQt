@@ -28,6 +28,12 @@ public:
         QString privateRuntimeDirectory, QString consentExecutable,
         QString uriRelayExecutable, QStringList applicationDataRoots,
         QString chooserExecutable, QString captureExecutable);
+    // Explicit native GlobalShortcuts editor helper. Older constructors leave
+    // it unavailable; there is no ambient executable/display fallback.
+    PortalFoundationComposition(QObject &backendHost, QDBusConnection,
+        QString privateRuntimeDirectory, QString consentExecutable,
+        QString uriRelayExecutable, QStringList applicationDataRoots,
+        QString chooserExecutable, QString captureExecutable, QString shortcutExecutable);
     ~PortalFoundationComposition();
     bool start();
     void stop();

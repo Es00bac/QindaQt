@@ -212,3 +212,13 @@ The fail-closed fallback routing policy is recorded in
 The secret-bearing resident disables cores/dumpability before requests. Its activation lifetime fixture retains PIDFDs for private-daemon observed owners, so exit/restart verification and cleanup cannot target a recycled PID and do not require readable `/proc/PID/exe`. No production dumpability exception is introduced for tests.
 
 The [native capture candidate](../reference/portal-capture.md) composes separate Screenshot/ScreenCast policy, request/session lifetime and native helper ports. Metadata keeps both families on KDE pending actual frontend/private PipeWire/privacy qualification; the initial monitor-only slice does not close PF19 capability/restore delivery. The shared public pixel transport is owned by [CompositorCapture](compositor-capture.md), with no Screenshot app-private includes.
+
+## GlobalShortcuts migration candidate
+
+A separate native GlobalShortcuts v1 adaptor/helper candidate now owns
+CreateSession, BindShortcuts, ListShortcuts and activation/deactivation. It
+adapts existing session admission and uses the compositor's native Shortcuts1
+service; metadata routing is held pending tests and real compositor
+qualification. Its transient bindings disappear on actual lifetime loss. See
+[ADR-0334](../adr/0334-native-shortcut-authority-and-consumers.md) and
+[portal foundation](portal-foundation.md).

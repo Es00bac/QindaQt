@@ -63,12 +63,12 @@ set_tests_properties(
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
 
-# Shortcut authority port over a private bus with a fake kglobalaccel.
+# Native shortcut authority port over a private bus; compatibility codecs retained.
 qindaqt_input_test(
     qindaqt_settings_input_shortcut_port_test
     SOURCES
         tst_shortcut_port.cpp
-        support/fake_kglobalaccel.h
+        support/fake_native_shortcuts.h
         support/private_bus.h
 )
 add_test(NAME qindaqt.settings-input-shortcut-port
