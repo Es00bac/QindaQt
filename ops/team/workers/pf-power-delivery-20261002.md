@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — remaining retired independent-parent metadata handed off; idle, no resource lease
+- Status: available — optional XWayland helper retirement facts handed off; idle, no resource lease
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -117,3 +117,7 @@
 - 2026-10-02T22:48:40+00:00 — Claim single bounded installed RDEPEND/PDEPEND pass for remaining26 retired CPVs. Distinguish independent mandatory parents, OR alternatives and old Desktop; no builds/payload scans/host changes.
 
 - 2026-10-02T22:51:26+00:00 — Single nice19/idleIO pass0/1.619s/1567installed/1541nonretired/26retired/459473metadata bytes/zero parse errors: one mandatory independent edge xwaylandvideobridge→kpipewire (no USE switch), Claude KDE portal OR has installed GTK alternative, selected branch not inferred. Old Desktop9 direct rows separated;24 no independent direct parent not removal approval. Immutable 20261002T225126Z-remaining-retired-independent-parents-review, idle awaiting bounded grant.
+
+- 2026-10-02T22:52:16+00:00 — Root follow-up limits helper retirement fact check to actual installed parents, finalr2 dependency absence and accepted29f native plan/autostart sources. No new library allowance/adaptation or host action.
+
+- 2026-10-02T22:54:31+00:00 — Bounded helper check: zero installed package parents (old Desktop not a parent), accepted29f/r2 omitshelper, no named source/wiki/autostart exclusion; optionalhelper still owns genericautostart. Proposed explicitmanager-only helper retirement keepsordinaryapps, librarynoexemption; legacyX11nonportalfeature caveat retained. Immutable 20261002T225431Z-xwayland-video-helper-retirement-facts, available/idle.
