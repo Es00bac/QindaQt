@@ -179,3 +179,50 @@ Exact source `f951bffc` was independently accepted in `bcb8cac6`; the manager
 merged both at `594a981a`, rebuilt the six affected targets, and repeated that
 unchanged private gate with all 101 checks passing. These results do not admit
 automatic policy into the installed session.
+
+## Native lid ownership and close edges
+
+[ADR-0332](../adr/0332-own-native-lid-handling-before-edge-dispatch.md) adds an
+optional lid policy verified through the actual resident on private buses.
+`--lid-policy=native-exclusive` defaults off. Canonical PowerDevil absence alone
+does not authorize dispatch: a confined authority must own the current logind
+handle-lid-switch block FD for the active selected supervisor session. Public
+bus-daemon UID/PID authenticates current Session1; production login1 must have
+UID0 and GetSessionByPID must yield a typed matching User and Active=true.
+No environment session ID, policy-side platform identity or private Sleep import
+supplies admission.
+
+Confirmed per-source action/dockedAction preferences select none, suspend,
+hibernate, lock or power-off through a dedicated public SessionActions client.
+Screen-off remains deferred until the Display owner provides its public action;
+unsupported or unavailable actions do not retain the lid FD. None deliberately
+owns lid handling and dispatches no action, preserving external inhibitors.
+
+A current public Lid capability and open fact establish the baseline after
+all admission is ready. This capability precedes lidPresent proof in the existing
+Power assembly; the subsequent actual closed event must prove lidPresent.
+Startup/current closed facts, readiness/settings changes and repeated facts
+cannot synthesize an edge. Power epoch, preference or FD generation changes
+retire the baseline; reopening cancels pending dispatch. Late FD replies close
+only their own descriptors. Acquisition/action uncertainty never auto-replays.
+This low-level FD is separate from the Power1 idle-scope registry, which remains
+zero.
+
+The `qindaqt.power-lid-runtime` fixture launches the same actual resident
+assembly through a distinct noninstalled private-UID target and tests the normal
+production resident's UID0 gate separately. Real Settings1/UPower facts, public
+protected action wires and pipe peer EOF cover first close, repeated facts,
+source/docked choice, none, default/legacy, wrong credentials/session facts,
+owner/session/Settings/source loss, late/timeout FD cleanup, pending Can/reopen,
+uncertain no-replay, spoofed invalidation and process shutdown. The exact tested
+code passes all 34 lid behavior rows (36 Qt checks) and the unchanged nine Power
+and SessionActions CTests (101 Qt checks): ten CTests and 137 Qt checks total,
+with zero failures or skips. Separate first-close and shutdown gates also pass;
+the latter explicitly proves owned descriptor peer EOF and an unchanged external
+peer. Source/artifact hashes stay fixed and every recorded private process and
+temporary root is absent afterward. Independent exact review `ef21c651` accepts `6ca86388` after a fresh strict
+seven-target build, first-close and shutdown EOF checks, and ten private CTests
+with 137 Qt passes and zero failures or skips. Shutdown EOF proves process-exit
+cleanup, while the live owner-loss rows cover cleanup with the resident alive.
+Manager integrated gates and physical/installed qualification remain next; this
+does not claim the full lid matrix or PF2 completion.

@@ -8,6 +8,8 @@ add_library(QindaQt::PowerService ALIAS qindaqt_power_service)
 target_sources(
     qindaqt_power_service
     PRIVATE
+        src/lid_policy.cpp
+        src/adapters/logind_lid_authority.cpp
         src/critical_battery_policy.cpp
         src/adapters/critical_notification_adapter.cpp
         src/source_profile_policy.cpp
@@ -41,6 +43,9 @@ target_sources(
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
+            include/qindaqt/services/power_service/lid_policy.h
+            include/qindaqt/services/power_service/lid_handling_authority.h
+            include/qindaqt/services/power_service/adapters/logind_lid_authority.h
             include/qindaqt/services/power_service/critical_battery_policy.h
             include/qindaqt/services/power_service/critical_notification.h
             include/qindaqt/services/power_service/adapters/critical_notification_adapter.h
