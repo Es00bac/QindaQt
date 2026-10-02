@@ -16,6 +16,10 @@ std::optional<QJsonObject> miscFrame(const QString &kind, const QString &app,
     return QJsonObject{{"type", kind}, {"app", app}, {"parent", parent}, {"title", title}, {"modal", question->modal}};
 }
 void registerMiscTypes() {
+    // Qt registers list containers separately from their element structures.
+    // Register both tuple/pair elements before exposing the exact USB arrays.
+    qDBusRegisterMetaType<std::tuple<QString, QVariantMap, QVariantMap>>();
+    qDBusRegisterMetaType<std::pair<QString, QVariantMap>>();
     qDBusRegisterMetaType<UsbDevices>(); qDBusRegisterMetaType<UsbSelections>();
     qDBusRegisterMetaType<LauncherIcon>();
 }
