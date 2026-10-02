@@ -48,8 +48,15 @@ Its unchanged monitored lock test passes three Qt cases and compositor survival;
 independent exact review accepts it after an own first unmonitored lock replay.
 Manager complete production build passes 1,418 actions in 393.132 seconds,
 test authorization off, followed by a 455-path collision-free stage and identity
-check. A public startup readiness ordering gap is being repaired; historical
-initial refusals remain unexplained. Independent consumer review rejects
+check. Startup amendment `24fa776c` is independently accepted after seven actual
+startup checks, thirteen unchanged channel checks, and an eager-start negative
+control. It waits for the current NativeLock owner's receipt and initial reply
+before publishing the broker name and channel readiness; this does not establish
+the cause of historical initial refusals. The unchanged native matrix driver
+requires capture test-authorization APIs, absent from the production build.
+A separate coherent, noninstallable authorization-enabled test build is in
+progress; the production image and stage remain authorization-disabled.
+Independent consumer review rejects
 `ca29910d` for permitting default-node fallback when the offered target retires.
 The decoder repair and full matrix are held for exact recheck. Prior failures
 are retained; no installed routing or full capture completion is claimed.
