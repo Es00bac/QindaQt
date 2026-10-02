@@ -4568,7 +4568,8 @@ create streams from QPainter composition. The direct fork argv omits its opt-in 
 isolate native Locked and actual compositor-owner-loss retirement without any unlock/PAM seam. The test controller remains GUI-free; a separate admitted ordinary Qt child supplies changing pixels, so compositor loss cannot kill the controller before it verifies withdrawal. The returned remote
 FD is consumed directly; policy mocks and node integers alone do not prove frames.
 The five focused capture and six adjacent Screenshot rows pass on candidate7bc9e6a5
-(11 CTests,87 Qt passes, zero failures/skips); actual native groups remain pending.
+(11 CTests,87 Qt passes, zero failures/skips); native groups were pending at that
+historical checkpoint.
 The protected driver is selected separately with its exact built bin/plugin prefix,
 required by `QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX`; ordinary qualified tools supply
 PATH only. Fixture desktop entries grant no restricted permission. The runner
@@ -4717,3 +4718,32 @@ than treating any failing test as proof. `run_decoder_graph.py` preserves privat
 logs, hashes, process exits and cleanup under decoder-graph-evidence. Native
 frontend remote permission restrictions and original GPU pixel/privacy gates are
 separate and unchanged.
+
+### Integrated bounded capture qualification
+
+Exact consumer `d6002623` has independent foundation ACCEPT `85b0b285`: own
+eleven portal/Screenshot extraction tests pass 87 Qt checks, with exact source,
+MOC, artifact and production-prefix identities. Separate startup ACCEPT
+`361445370` and decoder ACCEPT `3278ce24` preserve their genuine negatives.
+The manager integrates these sources and reviews before running affected
+combined consumer and dynamic package gates; installed routing stays KDE.
+
+The manager built the complete exact `68c4d74f` production fork with capture and
+lock test authorization off: 1,418 actions, 455 collision-free stage paths and
+identity check pass. Its separate standard noninstallable native test build has
+capture authorization on and lock test authorization off, with 1,228 actions.
+The unchanged existing native matrix passes all seven behaviors / thirteen Qt
+checks on AMD `1002:731f`, overall 16.002 seconds, 50 observed descendants gone,
+stable artifact hashes and zero scoped cores. Four focused fork CTests pass
+28 Qt checks in 5.748 seconds. An earlier CTest attempt ran no Qt row because
+Testing/Temporary was readonly; only its owned writable Testing bind changed.
+These are separate coherent production/test images, never a mixed core/plugin
+or authorization-enabled installed image.
+
+The source hub and clean fork checkout now match accepted `68c4d74f`; reviewed
+consumer development pin `cb0877f4` selects tree
+`9165a8817dfe190bfed59b20e42acc6291d82a27`. Final release serial, Portage atoms,
+consumer rebuild and installed delivery remain coupled by the upgrade procedure.
+The helper-PID/cohort and ordinary property-exclusion fixtures are separate
+unqualified source checkpoints; no content result follows from their existence.
+Window/multiple/cursor/restore permissions and full PF19 remain future gates.

@@ -1,8 +1,11 @@
-# Native portal capture candidate contracts
+# Native portal capture contracts
 
-Screenshot and ScreenCast are source candidates. The selector continues to route
-both to KDE until actual native frontend, consent, pixels, PipeWire and privacy
-gates pass. This first slice does not complete PF19: useful window/multiple/cursor
+The bounded Screenshot/PickColor and monitor ScreenCast source slice is
+independently accepted at `d6002623` and integrated on the recovery branch.
+Its independent eleven focused tests pass 87 Qt checks; the manager's coherent
+exact-fork existing native matrix passes seven behaviors / thirteen Qt checks
+with actual pixels and decoded frames. The installed selector continues to
+route both families to KDE while additional privacy and package gates remain. This first slice does not complete PF19: useful window/multiple/cursor
 capabilities and shared revocable restore permissions remain a successor before
 program closure. See [ADR-0324](../adr/0324-native-portal-capture-boundaries.md),
 [portal foundation](../architecture/portal-foundation.md),
@@ -247,8 +250,9 @@ Staging requires the separate broker/helper and exact selected public fixed path
 only when the qualified authority target exists. Otherwise capture artifacts are
 absent and unavailable; no capture family may advertise or activate. Existing
 positive/poison package and support-target guards remain unchanged. Metadata still
-routes both families to KDE. Focused candidate unit/source gates pass; actual native/staged gates remain pending, and
-prior exact denial evidence above stays preserved.
+routes both families to KDE. Current focused and existing native matrix gates
+pass; dynamic package delivery and helper-cohort/property privacy coverage remain
+separate. Prior exact denial evidence above stays preserved.
 
 The non-installable runner accepts `--renderer llvmpipe|render-node`, with
 `llvmpipe` as the unchanged default. Explicit `render-node` mode verifies the
