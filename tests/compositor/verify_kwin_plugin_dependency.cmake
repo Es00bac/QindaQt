@@ -4,7 +4,9 @@ foreach(required_variable IN ITEMS
         QINDAQT_SOURCE_DIR
         QINDAQT_TEST_BINARY_ROOT
         QINDAQT_TEST_GENERATOR
-        QINDAQT_TEST_AUDIO_LIVE_RUNTIME)
+        QINDAQT_TEST_AUDIO_LIVE_RUNTIME
+        QINDAQT_TEST_INSTALL_PREFIX
+        QINDAQT_TEST_LIBEXECDIR)
     if(NOT DEFINED ${required_variable})
         message(FATAL_ERROR "${required_variable} is required")
     endif()
@@ -18,6 +20,10 @@ function(configure_without_kwin suffix plugin_enabled testing_enabled expect_suc
         -S "${QINDAQT_SOURCE_DIR}"
         -B "${binary_dir}"
         -G "${QINDAQT_TEST_GENERATOR}"
+        # AGENT-GUARD: Inherit the parent install layout so the installed fork
+        # authority path check remains real while only plugin discovery varies.
+        "-DCMAKE_INSTALL_PREFIX=${QINDAQT_TEST_INSTALL_PREFIX}"
+        "-DKDE_INSTALL_LIBEXECDIR=${QINDAQT_TEST_LIBEXECDIR}"
         -DBUILD_TESTING=${testing_enabled}
         -DQINDAQT_BUILD_SHELL=OFF
         -DQINDAQT_BUILD_KWIN_PLUGIN=${plugin_enabled}
