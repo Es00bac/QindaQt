@@ -5,6 +5,7 @@
 #include "remote_input_fixture.h"
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
 #include <QDBusContext>
+#include <QDBusReply>
 #include <sys/socket.h>
 #include <unistd.h>
 using namespace QindaQt::Services::Portal;
