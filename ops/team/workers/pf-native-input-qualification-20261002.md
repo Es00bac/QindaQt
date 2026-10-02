@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: blocked — exact native source ready; compiler/runtime await explicit manager desktop-recovery release
+- Status: working — run approved exact native remote-input gate on qinda after recovery release
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
@@ -20,3 +20,5 @@
 - 2026-10-02T18:41:19+00:00 — Source-only successor6cfbaa82e4 preserves existing590 nativeShortcuts fixture asd976 and uses real separate bus caller/async dispatch, no source fake admission. Failed core gate receipt hashes committed; source trio294/7b82/970 awaits shared integration after recovery release. Both own WTs clean after preservation; compiler/runtime remain stopped.
 
 - 2026-10-02T18:47:09+00:00 — Completed manager-routed five-minute source/read-only Alt-Tab investigation: fresh compositor alive but new bus lacks KWin/globalaccel ownership; no verified safe in-process shortcut recovery hook found. No live-session mutation performed. Temporary mouse window activation is bounded fallback; relogin requirement remains an inference. Import970 independently accepted. Native gate can resume exact preserved source promptly after explicit release; no compiler/runtime process live.
+
+- 2026-10-02T18:48:32+00:00 — Manager explicitly released qinda gates after laptop-only bus failure recovery; laptop compositor/windows untouched. Approved294/metadata7b82/import970 composed into shared runtime exact56a29e58668faca73fe7d8de46b2f2238fc158f9 and pushed worker/pf-native-input-runtime branch. Same eis/testNativeCaptureAuthority incremental targets running -j4 -l48 with6GiB memory guard. Runtime has not started yet.

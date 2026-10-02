@@ -8,7 +8,6 @@
 #include <qindaqt/services/portal/foundation_composition.h>
 #include <qindaqt/services/portal/resident_portal_service.h>
 #include <qindaqt/services/secret_portal/secret_portal_adaptor.h>
-#include "src/session_supervisor/src/portal_session_lifetime.h"
 #include <QDBusArgument>
 #include <QDBusConnectionInterface>
 #include <QDBusMetaType>
@@ -111,7 +110,20 @@ private Q_SLOTS:
         composition = std::make_unique<PortalFoundationComposition>(resident->backendHost(), *backend,
             qEnvironmentVariable("XDG_RUNTIME_DIR"), qEnvironmentVariable("QINDAQT_PORTAL_TEST_HELPER"), QString{}, QStringList{data});
         QCOMPARE(resident->start(), PortalServiceStartStatus::Started); QVERIFY(composition->start());
-        sessionLifetime.start(QStringLiteral("/bin/true"), QStringLiteral("qindaqt-7"));
+        sessionCaller = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(
+            qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), QStringLiteral("native-remote-input-session")));
+        QVERIFY(sessionCaller->isConnected());
+        // AGENT-GUARD: wait for the real ordinary session caller's public
+        // attachment reply. Starting an asynchronous supervisor retry is not
+        // evidence that consent has an admitted display/lock authority yet.
+        auto attach = QDBusMessage::createMethodCall(QStringLiteral("org.qindaqt.Portal1"),
+            QStringLiteral("/org/qindaqt/Portal1"), QStringLiteral("org.qindaqt.Portal1"), QStringLiteral("AttachSessionWithDisplay"));
+        attach << QStringLiteral("qindaqt-7");
+        auto pendingAttach = sessionCaller->asyncCall(attach, 2000);
+        QTRY_VERIFY_WITH_TIMEOUT(pendingAttach.isFinished(), 3000);
+        const QDBusReply<bool> attached(pendingAttach.reply());
+        QVERIFY2(attached.isValid(), qPrintable(attached.error().message()));
+        QVERIFY2(attached.value(), "Actual compositor/session attachment was denied");
         frontend.start(QStringLiteral(QINDAQT_FRONTEND_EXECUTABLE), {QStringLiteral("--verbose")}); QVERIFY(frontend.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered(QStringLiteral("org.freedesktop.portal.Desktop")).value(), 10000);
         QVERIFY(bus.connect(QStringLiteral("org.freedesktop.portal.Desktop"), {}, QStringLiteral("org.freedesktop.portal.Request"),
@@ -247,7 +259,7 @@ private Q_SLOTS:
     }
     void cleanupTestCase() {
         frontend.terminate(); if (!frontend.waitForFinished(3000)) { frontend.kill(); frontend.waitForFinished(3000); }
-        sessionLifetime.stop(); composition.reset(); secret.reset(); broker.reset(); resident.reset();
+        sessionCaller.reset(); QDBusConnection::disconnectFromBus(QStringLiteral("native-remote-input-session")); composition.reset(); secret.reset(); broker.reset(); resident.reset();
         backend.reset(); QDBusConnection::disconnectFromBus(QStringLiteral("native-remote-input-backend"));
     }
 private:
@@ -299,7 +311,7 @@ private:
     std::unique_ptr<QindaQt::Services::SecretPortal::QtKeyringPortalBroker> broker;
     std::unique_ptr<QindaQt::Services::SecretPortal::SecretPortalAdaptor> secret;
     std::unique_ptr<PortalFoundationComposition> composition;
-    QindaQt::SessionSupervisor::PortalSessionLifetime sessionLifetime;
+    std::unique_ptr<QDBusConnection> sessionCaller;
     QProcess frontend;
     Collector events;
 };
