@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: working — execute five bounded final protected-owner native AMD cases under serialized manager lease
+- Status: waiting — sanitized consent test helper compiled; exact source review/final core serialized lease pending
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: manager grants sole five-case private native/AMD render-only lease on coherent195417; core/artifacts frozen, no C++ build
+- Resource: helper2-job compiler released; native lease paused by manager for final core refresh/Shortcuts/DPMS. No runtime active.
 
 ## Updates
 
@@ -56,3 +56,7 @@
 - 2026-10-02T20:20:57+00:00 — Power released; manager explicitly grants sequential five-case native/AMD lease. Fresh17-artifact preflightPASS195417, prior a696 receipt preserved. Reusing exact render-only bwrap/private DBus/PipeWire/capture runner, current helpers and actual broker, no private-native-input sentinel. Prepared immutable per-case command/status/log/evidence directories; start actual combined Close case now.
 
 - 2026-10-02T20:23:43+00:00 — First actual AMD combined case EXIT1/5.849s, fixture2QtPASS1FAIL0SKIP1276ms; real coreReady/AMD renderer/frontend/native first-caller/source selection pass, StartResponse2 before mapped audit. Exact test-only cause: broker spawned before caller adds compositor PID env, consent helper exits3 against missing expectedPID. Small runner exec-preserved actualPID export repair coordinated with manager; no helper/compiler/core/production change. First immutable receipt/empty cleanup/core arrays retained; one bounded replay next.
+
+- 2026-10-02T20:28:57+00:00 — Approved PID-export replay EXIT1/4.7105s with sameStartResponse2; second immutable history retained. Additional exact boundary: production CaptureLaunchPolicy removes ALL test env variables, so shell export cannot reach protected child. Manager authorizes only test helper actual native uniqueowner/PID fallback, deterministic runtime audit and real offered-choice/Grant driving; production sanitizer unchanged. Removed ineffective shell wrapper. Exact source review requested before focused helper compile/one changed-helper replay.
+
+- 2026-10-02T20:32:32+00:00 — Exact102 helper target PASS0/70.017s with -j2/-l24, minMem8.244GB/no guard stop; new SHAeb21ceb0, broker/capture helper unchanged. Python/diff/mkdocs strict7.87s/503-document validatorPASS. Both core195 native first/replay failure hashes preserved in new audit; runtime NOT qualified. Compiler released; waiting manager source ACCEPT/final refreshed artifacts and serialized grant before one changed-helper replay.
