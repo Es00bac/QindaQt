@@ -32,7 +32,7 @@ A separate `--critical-policy=native-exclusive` opt-in defaults off. It reuses
 the subscribe-before-query canonical PowerDevil-name guard; no packaged or
 supervisor cutover occurs. Only confirmed Supplies/on-battery/present-battery
 and WarningLevel Action admit an attempt. Critical/Low/Unknown do not. Ready,
-current-owner Settings values admit none/suspend/hibernate/power-off and5–300
+current-owner Settings values admit none/suspend/hibernate/power-off and 5–300
 seconds; unconfirmed refresh cannot authorize pending work.
 
 One monotonic countdown starts after a confirmed actionable notification. Each
