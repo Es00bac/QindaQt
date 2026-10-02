@@ -5,6 +5,9 @@
 // libei only; no host bus, input device, display or clipboard is touched.
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/services/portal/appearance_source.h>
+#include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
+#include <qindaqt/services/session_lock_state/native_lock_state_monitor.h>
+#include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
 #include <qindaqt/services/portal/foundation_composition.h>
 #include <qindaqt/services/portal/resident_portal_service.h>
 #include <qindaqt/services/secret_portal/secret_portal_adaptor.h>
@@ -124,6 +127,19 @@ private Q_SLOTS:
         const QDBusReply<bool> attached(pendingAttach.reply());
         QVERIFY2(attached.isValid(), qPrintable(attached.error().message()));
         QVERIFY2(attached.value(), "Actual compositor/session attachment was denied");
+        QindaQt::Platform::Compositor::CompositorAttachment attachment(*sessionCaller,
+            qEnvironmentVariable("XDG_RUNTIME_DIR"), [&](const QString &owner) { return owner == sessionCaller->baseService(); });
+        QVERIFY(attachment.attach(sessionCaller->baseService(), QStringLiteral("qindaqt-7")));
+        QindaQt::Services::SessionLockState::QtNativeLockTransport lockTransport(*sessionCaller);
+        QindaQt::Services::SessionLockState::NativeLockStateMonitor lockMonitor(lockTransport,
+            [&](const QString &owner, quint64 pid) {
+                const auto identity = attachment.identity();
+                return identity && identity->compositorOwner == owner && identity->compositorPid == pid;
+            });
+        QSignalSpy privacyFailures(&lockTransport, &QindaQt::Services::SessionLockState::NativeLockTransport::failed);
+        QVERIFY(lockMonitor.start());
+        QVERIFY2(QTest::qWaitFor([&] { return lockMonitor.contentMayBeShown(); }, 5000),
+            privacyFailures.isEmpty() ? "Real native privacy did not admit attached compositor" : qPrintable(privacyFailures.last().last().toString()));
         frontend.start(QStringLiteral(QINDAQT_FRONTEND_EXECUTABLE), {QStringLiteral("--verbose")}); QVERIFY(frontend.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered(QStringLiteral("org.freedesktop.portal.Desktop")).value(), 10000);
         QVERIFY(bus.connect(QStringLiteral("org.freedesktop.portal.Desktop"), {}, QStringLiteral("org.freedesktop.portal.Request"),
