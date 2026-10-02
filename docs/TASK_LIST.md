@@ -42,7 +42,16 @@ The manager's affected six-target strict build and nine private CTests pass
 101 Qt checks, with no failures or skips. Confirmed notifications, cancellation,
 current settings and action authority fence the configured public action.
 The resident stays dormant by default; whole PF2, installed/hardware delivery,
-lid policy and shared idle-inhibitor consumption remain open.
+the full lid matrix and shared idle-inhibitor consumption remain open.
+
+Bounded native lid source `6ca86388` is independently accepted in `ef21c651`
+after a fresh strict seven-target build, first-close/owned-descriptor cleanup
+checks and ten private CTests with 137 Qt passes and no failures or skips.
+It is integrated at `38076ae1`, with the manager's combined seven-target strict
+build passing against the accepted production fork prefix. The default-off
+policy owns current authenticated lid handling before dispatching a supported
+public action. Manager private replay remains next; ScreenOff, the complete
+source/dock matrix and installed/physical qualification remain deferred.
 
 Capture fixture identity and authentic PipeWire object-serial selection repairs
 produce real Screenshot pixels and continuous decoded frames in the first

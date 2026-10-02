@@ -24,8 +24,21 @@ six-target configure/build pass in 42.010/24.007 seconds. Its integrated nine
 private CTests pass 101 Qt checks in 119.792 seconds with zero failures/skips,
 89 observed descendants gone, stable artifact hashes and no scoped cores.
 Default-off behavior, public configured actions and cancellation fences remain;
-whole PF2, lid/shared idle policy and installed/hardware PowerDevil retirement
+whole PF2, the full lid/shared idle policy and installed/hardware PowerDevil retirement
 remain open.
+
+Exact bounded lid candidate `6ca86388` has independent ACCEPT `ef21c651` after
+the reviewer's own strict seven-target build, first genuine close, owned duplicate
+descriptor EOF and ten private CTests with 137 Qt passes and zero failures/skips.
+The reviewer restores its temporary ignored CTest wrapper and verifies source,
+thirteen outputs and all owned process groups/temporary roots unchanged or gone.
+The shutdown EOF row proves cleanup after process exit; separate owner-loss rows
+cover cleanup with the resident alive. Product and review are integrated at
+`38076ae1`/`37b6b098`. The manager's exact combined seven-target configure/build
+passes in 42.307/18.784 seconds, with both owned groups gone and production fork
+prefix hashes unchanged. Manager private replay remains next. Native exclusivity
+defaults off, ScreenOff stays deferred, and full PF2/lid/installed/hardware
+qualification is not claimed.
 
 Native configured sleep candidate `50fb9c11` and exact independent ACCEPT
 `1d397416` are preserved on the recovery integration branch at `8b471794`.
