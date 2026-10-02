@@ -14,7 +14,7 @@ bool augmentCaptureTestFrame(QJsonObject &frame) {
     if (!input.open(QIODevice::ReadOnly) || input.size() > 1024) return false;
     QJsonParseError error; const auto object = QJsonDocument::fromJson(input.readAll(), &error).object();
     const auto action = object.value("action").toString();
-    if (error.error != QJsonParseError::NoError || object.size() != 1 || (action != "allow" && action != "cancel" && action != "hold")) return false;
+    if (error.error != QJsonParseError::NoError || object.size() != 1 || (action != "allow" && action != "allow-remember" && action != "allow-restore" && action != "cancel" && action != "hold")) return false;
     frame.insert("test_action", action); frame.insert("test_audit", QDir(runtime).filePath("qindaqt-capture.audit")); return true;
 }
 }

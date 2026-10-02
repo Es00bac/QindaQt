@@ -88,6 +88,7 @@ target_link_libraries(qindaqt_portal_capture_pixels PRIVATE Qt6::Widgets Qt6::Gu
 qindaqt_enable_warnings(qindaqt_portal_capture_pixels)
 
 find_package(PkgConfig REQUIRED)
+pkg_check_modules(CAPTURE_TEST_LIBEI REQUIRED IMPORTED_TARGET libei-1.0)
 pkg_check_modules(CAPTURE_TEST_PIPEWIRE REQUIRED IMPORTED_TARGET libpipewire-0.3)
 # The decoder graph gate uses real private PipeWire policy and task-owned video streams;
 # its deterministic retirement hook is linked only into this non-native fixture.
@@ -101,11 +102,12 @@ set_tests_properties(qindaqt.portal-decoder-target PROPERTIES TIMEOUT 60 RUN_SER
 
 qt_add_executable(qindaqt_portal_native_capture_tests tst_native_capture.cpp pipewire_frames.cpp pipewire_frames.h)
 target_link_libraries(qindaqt_portal_native_capture_tests PRIVATE QindaQt::PortalCapturePolicy
-    QindaQt::CompositorAttachment QindaQt::CompositorNames QindaQt::PortalComposition Qt6::Widgets Qt6::Test PkgConfig::CAPTURE_TEST_PIPEWIRE)
+    QindaQt::CompositorAttachment QindaQt::CompositorNames QindaQt::PortalComposition Qt6::Widgets Qt6::Test PkgConfig::CAPTURE_TEST_PIPEWIRE PkgConfig::CAPTURE_TEST_LIBEI)
 target_compile_definitions(qindaqt_portal_native_capture_tests PRIVATE
-    QINDAQT_FRONTEND_EXECUTABLE="${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}")
+    QINDAQT_FRONTEND_EXECUTABLE="${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}"
+    QINDAQT_CLIPBOARD_CLIENT="$<TARGET_FILE:qindaqt_portal_remote_input_clipboard_client>")
 qindaqt_enable_warnings(qindaqt_portal_native_capture_tests)
-add_dependencies(qindaqt_portal_native_capture_tests qindaqt_portal_capture_input
+add_dependencies(qindaqt_portal_native_capture_tests qindaqt_portal_remote_input_clipboard_client qindaqt_portal_capture_input
     qindaqt-portal-capture qindaqt_portal_capture_test_backend qindaqt-portal-consent qindaqt-uri-relay qindaqt_portal_foreign_exporter qindaqt_portal_capture_pixels)
 set(QINDAQT_PRIVATE_CAPTURE_COMPOSITOR "" CACHE FILEPATH "Non-installable fork testNativeCaptureAuthority executable")
 set(QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX "" CACHE PATH "Matching local fork bin plugin prefix for the private capture driver")

@@ -7,6 +7,7 @@
 #include <QStandardPaths>
 #include <QListWidget>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QTimer>
 #include <QWindow>
 #include <QtGui/qguiapplication_platform.h>
@@ -73,9 +74,26 @@ void input() {
         if (auto *picker = window->findChild<QWidget *>("colorPicker"); picker && picker->isVisible()) { picker->setFocus(); QTest::keyClick(picker, Qt::Key_Return); return; }
         if (allowed) return;
         if (auto *list = window->findChild<QListWidget *>("captureSources"); list && list->isVisible() && list->count() > 0) {
-            QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, list->visualItemRect(list->item(0)).center());
-            if (multipleSelection) for (int index = 1; index < list->count(); ++index)
-                QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::ControlModifier, list->visualItemRect(list->item(index)).center());
+            if (action == "allow-restore") {
+                if (list->selectedItems().isEmpty()) return;
+            } else {
+                QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, list->visualItemRect(list->item(0)).center());
+                if (multipleSelection) for (int index = 1; index < list->count(); ++index)
+                    QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::ControlModifier, list->visualItemRect(list->item(index)).center());
+            }
+            if (action == "allow-remember") {
+                auto *remember = window->findChild<QCheckBox *>("captureRemember");
+                if (!remember || !remember->isVisible()) return;
+                if (!remember->isChecked()) QTest::mouseClick(remember, Qt::LeftButton);
+                if (!remember->isChecked()) return;
+            }
+            if (action == "allow-remember" || action == "allow-restore") {
+                QFile record(testAudit); if (record.open(QIODevice::WriteOnly | QIODevice::Append)) {
+                    record.write(action == "allow-remember" ? "remember=true\n" : "restored=true\n");
+                    for (const auto *item : list->selectedItems()) record.write("selected source=" + item->text().toUtf8() + 
+);
+                }
+            }
         }
         auto *button = window->findChild<QPushButton *>("captureAllow");
         if (button && button->isEnabled()) { allowed = true; QTest::mouseClick(button, Qt::LeftButton); }
@@ -89,7 +107,7 @@ namespace QindaQt::Services::Portal {
 bool captureTestFrame(QJsonObject &frame, qint64 compositorPid) {
     testAction = frame.take("test_action").toString(); testAudit = frame.take("test_audit").toString();
     expectedPeer = compositorPid; multipleSelection = frame.value("multiple").toBool();
-    return expectedPeer > 0 && (testAction == "allow" || testAction == "cancel" || testAction == "hold")
+    return expectedPeer > 0 && (testAction == "allow" || testAction == "allow-remember" || testAction == "allow-restore" || testAction == "cancel" || testAction == "hold")
         && testAudit == QDir(QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)).filePath("qindaqt-capture.audit");
 }
 }

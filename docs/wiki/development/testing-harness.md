@@ -4763,3 +4763,19 @@ The ordinary clipboard peer copies on an actual Ctrl+C key delivered by the
 consented libei sender. A focus-only timer has no newer input serial and cannot
 prove replacement of a remote selection. The fixture waits for client readiness,
 then requires both the public local-owner signal and exact SelectionRead payload.
+
+### Unified protected input/capture candidate gates
+
+ADR0341 adds actual frontend combined RemoteDesktop screen/device/clipboard
+rows to the existing private capture runner. They use the real protected
+broker/native capability, mapped input consent and monitor choice, real EIS,
+returned PipeWire FD/decoded frames and ordinary clipboard peer; Close and native
+lock must remove both producer nodes and input transports. The native-input
+no-broker sentinel is unsuitable for these rows.
+
+The explicit remember/restore row launches installed xdg-permission-store only
+on its private bus/config/data, clicks the production remember checkbox and
+round-trips the real frontend token. Restore must preselect the same stable
+output without test selection changes, still require actual Share input, and
+deliver actual protected frames. No PermissionStore grant is fabricated. New
+rows are source candidates until exact coherent artifacts compile and run.
