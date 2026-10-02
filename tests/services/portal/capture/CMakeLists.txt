@@ -86,6 +86,16 @@ qindaqt_enable_warnings(qindaqt_portal_capture_pixels)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CAPTURE_TEST_PIPEWIRE REQUIRED IMPORTED_TARGET libpipewire-0.3)
+# The decoder graph gate uses real private PipeWire policy and SPA video nodes;
+# its deterministic retirement hook is linked only into this non-native fixture.
+qt_add_executable(qindaqt_portal_decoder_target_tests tst_decoder_target.cpp pipewire_frames.cpp pipewire_frames.h)
+target_link_libraries(qindaqt_portal_decoder_target_tests PRIVATE Qt6::Gui Qt6::Test PkgConfig::CAPTURE_TEST_PIPEWIRE)
+target_link_options(qindaqt_portal_decoder_target_tests PRIVATE "LINKER:--wrap=pw_stream_connect")
+qindaqt_enable_warnings(qindaqt_portal_decoder_target_tests)
+add_test(NAME qindaqt.portal-decoder-target COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/run_decoder_graph.py" "$<TARGET_FILE:qindaqt_portal_decoder_target_tests>")
+set_tests_properties(qindaqt.portal-decoder-target PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE LABELS "portal;capture;private-pipewire;hostile")
+
 qt_add_executable(qindaqt_portal_native_capture_tests tst_native_capture.cpp pipewire_frames.cpp pipewire_frames.h)
 target_link_libraries(qindaqt_portal_native_capture_tests PRIVATE QindaQt::PortalCapturePolicy
     QindaQt::CompositorAttachment QindaQt::CompositorNames QindaQt::PortalComposition Qt6::Widgets Qt6::Test PkgConfig::CAPTURE_TEST_PIPEWIRE)
