@@ -311,6 +311,24 @@ Exact candidate `46150c5d16747c7b507820b9fb4c3d4dab927fc2` includes the pure gro
 
 Manager combined integration gates are pending while qualified lock/dependency sources are assembled; no installed or full-program completion is claimed. Correlated app launching and the shared interactive chooser remain open.
 
+## October 2 — QindaQt debranded icon delivery complete
+
+Both families are installed on qinda and qinda-top through Portage as
+`1.0.0_p20261002`, using accepted QindaIconArt source `2efd8795` and
+independently accepted overlay recipes `12b5e862` integrated at `8f23e1e`.
+Each family preserves all 7,172 original names and adds 138 native aliases:
+7,310 PNGs and 3,291 distinct drawings. The 72 branded original groups and
+30 new native application subjects now represent QindaQt; legacy lookup names
+remain compatibility aliases and original legal credits are retained.
+Both hosts verify identical signed binaries, full installed payload ownership
+and hashes, production catalog discovery and twelve native Qt samples per style.
+Saved theme choice and world remain unchanged. The existing browser gallery is
+open on the installed hand-rendered pack and reports 7,310/7,310 icons and
+3,291 drawings, with its automatic refresh retained. Exact delivery receipt is
+QindaGentoo `9b0421b7`. This completes the requested icon delivery; full
+Plasma-free desktop service integration remains open.
+See [Icon themes](wiki/shell/icon-theme.md).
+
 ## 2026-09-30 — Passwords & Keys presentation source integration
 
 Exact integration candidate `297d6fbfc45a751a0d3464f80d3cfc4d86040bab` incorporates UI `07d1d182` with current public native privacy state. Reveal/Copy affordances require `secretsAllowed`, and the route owns a dedicated bus, model, gateway and sensitive clipboard; authority loss, secret invalidation and teardown clear copying state. Revealed text remains non-selectable and copying explicit.
