@@ -356,10 +356,20 @@ node disappears before linking. Registry removal still clears the retained
 serial, and no fallback/default node becomes a substitute capture result.
 
 The separate `qindaqt.portal-decoder-target` transport gate uses an actual private
-PipeWire/WirePlumber graph with two installed SPA video test sources. A test-only
+PipeWire/WirePlumber graph with two task-only real RGBA `pw_stream` sources,
+with red offered pixels and blue default pixels. A test-only
 linker wrapper retires the exact offered source after registry resolution and
 before real pw_stream_connect while the distinct configured default stays live.
 The same fixture can link a byte-identical ca299 decoder as the negative control;
 no decoder API or production capture authorization seam is added. This graph
 fixture does not qualify native compositor pixels or broaden portal remote node
 permissions. Original native pixel/frame/privacy assertions remain required.
+
+The bounded actual graph gate passes all five Qt results: both explicit source
+rows deliver more than three frames with their exact links/colors; retiring
+offered node19/serial41 leaves default21/serial43 available but yields zero frames
+and `defined target not found`. The byte-identical ca299 negative instead decodes
+two blue frames from unrelated default20 after offered18/serial18 retires, failing
+the unchanged zero-frame assertion. Both private daemons survive until ordered
+cleanup, with no survivors or cores. The earlier incompatible direct SPA-source
+format/daemon-exit failure remains retained; it is not fallback evidence.

@@ -1,6 +1,6 @@
 # PF capture scene diagnosis
 
-- Status: working — prevent private decoder target fallback and prove retired-target graph race
+- Status: available — decoder no-fallback candidate qualified; awaiting independent review and offering bounded repair help
 - Base: consumer c03b0b708464c3b7a154089f0cc5f71437c01905; fork 447eed969a8692754d29f62f46cd177181ccbdae
 - Branch: worker/pf-capture-scene-astra-20261001 in isolated qinda worktrees
 - Ownership: authorized consumer capture_pixels.cpp, run_native_capture.py, tst_native_capture.cpp, pipewire_frames.{cpp,h}; two affected wiki paragraphs; own board/messages; diagnostic fork driver only
@@ -57,3 +57,5 @@
 - 2026-10-02T01:05:16+00:00 — Authorized source-only actual pw_stream producer replaces incompatible SPA source, isolated in private_graph_source.h. Real RGBA red/blue sources preserve exact actual link/default/retirement evidence and add color checks; decoder/native assertions unchanged. Installed PipeWire stream.h authentic STREAMING/driver state controls 33ms producer clock, no readiness delay. Source checkpoint requests one graph TU/two links after root compiler release; no leases held.
 
 - 2026-10-02T01:09:32+00:00 — Exact78778954 compatible graph TU/two links plus unchanged-native-fixture relink all4/4PASS, PGIDs512295/512476/512494/512504 ended, min17,230,800kB; compiler released. Fixed graph30bc4b75/oldcontrolba59c13c, fixed native59bfb33a frozen with commands/input hashes. Docs486/strictMkDocs/diffPASS; startup production24fa unchanged. Parent owns private native-lock row; own graph gate prepared, no runtime until grant.
+
+- 2026-10-02T01:15:01+00:00 — Actual compatible private graph fixed5/5QtPASS670ms, retired19serial41/default21serial43 yields0frames/defined target not found. Byte-identicalca299 control2PASS/1expectedFAIL257ms actually decodes2BLUEframes linked to unrelateddefault20 after18serial18retires. Both runner0, PGIDs521566/521582/all8children ended, no survivors/cores/cleanup errors, runtimesremoved, inputhashesstable. Compiler/private RELEASED; exact review requested, no GPU/fullmatrix claim. Available for same-reviewer blocking repair or bounded native evidence help.
