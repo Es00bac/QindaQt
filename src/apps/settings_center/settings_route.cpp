@@ -44,6 +44,7 @@ bool isValidRouteComponent(SettingsRouteComponent component) noexcept {
   case SettingsRouteComponent::LoginScreen:
   case SettingsRouteComponent::Voice:
   case SettingsRouteComponent::Keyring:
+  case SettingsRouteComponent::PortalPermissions:
     return true;
   }
   return false;
@@ -95,6 +96,8 @@ QString settingsRouteComponentKey(SettingsRouteComponent component) {
     return QStringLiteral("voice");
   case SettingsRouteComponent::Keyring:
     return QStringLiteral("keyring");
+  case SettingsRouteComponent::PortalPermissions:
+    return QStringLiteral("portal-permissions");
   }
   return {};
 }
