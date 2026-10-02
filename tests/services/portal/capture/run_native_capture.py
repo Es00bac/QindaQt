@@ -106,7 +106,7 @@ for group in groups:
             QT_QUICK_BACKEND="software", KWIN_COMPOSE="O2", LIBGL_ALWAYS_SOFTWARE="1", QT_STYLE_OVERRIDE="Fusion", QT_FATAL_WARNINGS="1",
             QINDAQT_CAPTURE_TEST_HELPER=str(helper), QINDAQT_PORTAL_TEST_HELPER=str(consent), QINDAQT_PORTAL_TEST_RELAY=str(relay),
             QINDAQT_CAPTURE_TEST_AUDIT=str(runtime / "qindaqt-capture.audit"), QINDAQT_CAPTURE_TEST_PIXELS=str(pixels), QINDAQT_PORTAL_FOREIGN_EXPORTER=str(exporter), QINDAQT_PORTAL_TEST_MODE="grant-choices",
-            QINDAQT_PORTAL_TEST_AUDIT=str(root/"consent.audit"), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
+            QINDAQT_PORTAL_TEST_AUDIT=str(runtime / "qindaqt-consent.audit"), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
             PIPEWIRE_REMOTE="pipewire-capture", PIPEWIRE_RUNTIME_DIR=str(runtime))
         env["QINDAQT_CAPTURE_TEST_RENDERER"] = renderer
         if any(case in input_cases for case in group):
