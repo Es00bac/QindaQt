@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: available — complete Portage image discovery command prepared; awaiting image success and private lease
+- Status: available — complete signed Portage image native discovery passed; ready for host/usr after final install
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: compiler and private native/GPU lease released; no active child; signedDesktop install remains manager-owned
+- Resource: private lease released after empty teardown; no compiler/GPU/host mutation
 
 ## Updates
 
@@ -102,3 +102,7 @@
 - 2026-10-02T21:44:47.408296+00:00 — Overlay93c SOURCEACCEPT: only2line PATCHES recipeaddition; patchbody byte-identical8a diff; actualfrozen29f archive CMake patched byte-identical8a. Manifest+archive digests unchanged; Bashsyntax0. No Portagephase/compiler/runtime/install. Parent phase/image/package gates remain; ready for actual/usr discovery after grant.
 
 - 2026-10-02T21:48:55.528166+00:00 — Prepared existing installed_artifact_path + run_installed_session invocation for complete Portage image/usr; CLI has no preinstalled option and always stages full sourcebuild, so direct existinghelpers preserve all actual assertions without newharness. Helper bytes match29f and manager4e021; production launchdefs relative bin/lib64qtplugin prove relocation route. No runtime launched; needs readable completeimage and explicit manager lease, then actual/usr after finalinstall.
+
+- 2026-10-02T21:53:52.606680+00:00 — Packager complete signed image ready,2288inventory entries, GPkg SHAb2a82255. Claimed conditional private grant; actual image artifacts/helper/probe/installed55d core preflight bound, one unchanged run_installed_session gate beginning. No developerstage/install or source edits.
+
+- 2026-10-02T21:56:08.687001+00:00 — Actual complete signed Portage image relocated discovery first-run PASS0/5.645s. Real Wayland+XWayland/ABI6.6.6.1/public outputs-input/workflow-hotplug/three QindaDecoration frames, default paths/nooverride.8artifact hashes unchanged; PGID/temp/core empty. Report binds signedGPkg b2a82255/2288entries and exact helper/argv. Released private lease; image is diagnostic only, actualhost/usr awaits rootinstall/newgrant.
