@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "independent_of": "qinda_icon_debrand_packaging",
+  "candidate": "93cdb18e054b3b72fe879fb2251d5a953321a72c",
+  "parent": "7eb668c334252d00a03d31392f89d3cd9a35d61f",
+  "source_candidate": "8a622b4b76d25d509ca50e8ca7fbf62d62753a4e",
+  "frozen_source": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "decision": "SOURCE ACCEPT",
+  "blocking_findings": [],
+  "checks": {
+    "recipe_exact_two_line_addition_only": true,
+    "source_pin_SRC_URI_dependencies_other_than_PATCHES_unchanged": true,
+    "patch_body_byte_matches_accepted_source_diff": true,
+    "patch_apply_actual_frozen_archive_source_exit": 0,
+    "patched_cmake_byte_matches_accepted_source": true,
+    "manifest_byte_unchanged": true,
+    "actual_archive_size_blake2b_sha512_match": true,
+    "shell_syntax_exit": 0
+  },
+  "hashes": {
+    "patch_sha256": "464a89f5521a0db0dce0a1612053dca740020ac509076628fc20e3c6bc153ac1",
+    "recipe_sha256": "fca63b2a37af6aa2e4e6a4d9d02e22ac5e4a06c5eb1d947f74011e1e94566ebf",
+    "manifest_sha256": "09ee3b540409a9cb79e6ebdb238459f96660adcbd484c02ccd080a531d06f5ec",
+    "archive_sha256": "db840111c4116360611b6b0d231ea11ef4748cc6576ed645d472cc0733d0b533",
+    "archive_bytes": 41389472,
+    "archive_original_cmake_sha256": "9f6fb5e9d8a69c73ff841179454693ec4925303946517f99342f1cd39427e7ef",
+    "patched_cmake_sha256": "c20e2b9600465edc6e68cd9d4f747564105494f2af685b49c2bfbf43c76e193b"
+  },
+  "evidence_root": "build/keyring-overlay-93-review",
+  "limits": [
+    "No new Portage phase/build/configure/install/runtime performed.",
+    "Actual immutable archive inspected and patch applied only to own ignored single-file extraction.",
+    "Retained compiled29f bytes/generated metadata unchanged; source8a review639f6f5 binds actual build.",
+    "Supported retained Portage continuation and image/binary sign/install remain manager gates."
+  ]
+}
