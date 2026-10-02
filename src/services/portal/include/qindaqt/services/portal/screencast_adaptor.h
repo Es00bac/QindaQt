@@ -7,8 +7,9 @@
 namespace QindaQt::Services::Portal {
 // Same-thread registry/UI/bus outlive adaptor and its owned standard Sessions.
 // Monitor sources, explicit single/multiple selection and all cursor modes.
-// persist_mode/restore_data are validated but never persisted: Start returns no
-// restore_data, so the frontend stores no token. Window/virtual sources are absent.
+// persist_mode offers a "remember" choice; Start returns (suv) restore_data with
+// stable output names only when the user ticked it. Restoring preselects those
+// outputs and still asks. Window/virtual sources are absent.
 class ScreenCastAdaptor final : public QDBusAbstractAdaptor {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.impl.portal.ScreenCast")

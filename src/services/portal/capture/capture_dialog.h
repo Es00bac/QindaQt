@@ -5,6 +5,7 @@
 #include <qindaqt/services/compositor_capture/kwin_capture_port.h>
 #include <qindaqt/services/compositor_capture/wayland_screencast.h>
 #include "native_capture_admission.h"
+#include <QCheckBox>
 #include <QDialog>
 #include <QListWidget>
 #include <QPushButton>
@@ -33,7 +34,7 @@ private:
     CaptureRequest m_request; QString m_directory;
     NativeCaptureAdmission &m_admission; CompositorCapture::KWinCapturePort &m_capture;
     CompositorCapture::WaylandScreenCast &m_stream;
-    QVBoxLayout *m_layout; QListWidget *m_sources; QPushButton *m_allow, *m_cancel;
+    QVBoxLayout *m_layout; QListWidget *m_sources; QPushButton *m_allow, *m_cancel; QCheckBox *m_remember = nullptr;
     QStringList m_selectedSources; QSet<quint32> m_nodes; QJsonArray m_streamResults;
     bool m_parent = false, m_busy = false, m_sent = false, m_finished = false, m_granted = false;
 };

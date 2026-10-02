@@ -161,7 +161,9 @@ public:
         // A refused or failed share retires the request, which closes the whole
         // session through begin(): input is never granted without its streams.
         if (response != RequestResponse::Success) { requests.finish(token, response); return; }
-        complete(token, *entry, results);
+        QVariantMap streams = results;
+        streams.remove(QStringLiteral("outputs")); // RemoteDesktop sessions never persist.
+        complete(token, *entry, streams);
     }
     void eisOpened(quint64 ticket, const QDBusUnixFileDescriptor &fd, const QString &compositor, int cookie) {
         const QString path = sessions.sessionForTicket(ticket);

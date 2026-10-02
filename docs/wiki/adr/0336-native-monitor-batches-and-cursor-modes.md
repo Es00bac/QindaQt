@@ -16,7 +16,14 @@ in the batch; protocol listener storage is released after dispatch.
 The portal freezes the user's exact source selection before the consent grant.
 It returns distinct real PipeWire nodes only after every selected producer is ready.
 Standard session/owner/lock loss retires the entire batch. Single-selection sessions
-cannot publish multiple nodes. Window/virtual/restore capabilities remain separate.
+cannot publish multiple nodes. Window/virtual capabilities remain separate.
+
+Restore follows the standard frontend-owned persistence: a nonzero
+`persist_mode` offers an explicit, default-off "remember" choice; only a ticked
+choice returns `(suv)` restore data of stable output names, which the frontend
+stores in its PermissionStore `screencast` table for Settings to list and
+revoke. Restoration preselects those outputs and still requires the user's
+current Share; RemoteDesktop sessions never persist.
 
 Stream helper frames add typed multiple/cursor_mode fields; legacy eight-field
 frames retain single/Hidden semantics. Screenshot/color frames stay unchanged.

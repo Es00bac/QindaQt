@@ -55,9 +55,16 @@ the batch only after every producer node is ready. Failure of one stream closes
 the whole batch. SelectSources explicitly rejects window/virtual source types
 and invalid or combined cursor-mode values. It accepts the standard
 `persist_mode` (0–2) and `(suv)` `restore_data` that the frontend forwards
-(OBS always sends `persist_mode`), validates them and persists nothing: Start
-never returns `restore_data`, so the frontend keeps persistence at none and
-issues no token. SelectSources for a RemoteDesktop session goes to that
+(OBS always sends `persist_mode`). A nonzero `persist_mode` adds an explicit
+"Remember these screens" choice, off by default, to the share dialog. Only
+when the user ticks it does Start return `persist_mode` and `restore_data`
+`("QindaQt", 1, {"outputs": as})` holding the shared outputs' stable
+`wl_output` names (at most sixteen, unique, 1–256 characters). The frontend
+turns that into a token and owns the row in the existing PermissionStore
+`screencast` table, which Settings lists and revokes; QindaQt adds no store.
+Restored data only preselects those outputs: the dialog still opens and the
+user must press Share. Foreign-vendor, other-version or malformed restore data
+is ignored rather than trusted. SelectSources for a RemoteDesktop session goes to that
 session's owner ([remote input](../architecture/portal-remote-input.md)).
 No unsupported version4/5 token or mapping claims are made. Native source selection lists actual compositor monitors, with
 no default selection; a user must select offered screens and press Share.
