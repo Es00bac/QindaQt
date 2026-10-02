@@ -175,3 +175,7 @@ fixture lifecycle), alongside the unchanged Power and additive SessionActions
 gates: nine CTests and 101 Qt checks, with zero failures or skips. The tested
 resident remains dormant by default; installed/hardware qualification, lid/full
 idle behavior and PowerDevil retirement remain separate PF2 boundaries.
+Exact source `f951bffc` was independently accepted in `bcb8cac6`; the manager
+merged both at `594a981a`, rebuilt the six affected targets, and repeated that
+unchanged private gate with all 101 checks passing. These results do not admit
+automatic policy into the installed session.

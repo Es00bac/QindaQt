@@ -36,8 +36,12 @@ integrated at `ac689f42`. The manager's actual integrated build and five CTests
 pass all 65 Qt cases, with strict documentation checks. Power-saver and
 performance holds preserve external holds and manual cancellation; automatic
 balanced policy remains deferred. Production defaults to off until explicit
-native-exclusive cutover. The next bounded PF2 outcome is a cancellable critical
-battery countdown and authenticated configured-action dispatch; whole PF2,
+native-exclusive cutover. Critical-battery countdown/action source `f951bffc`
+and independent exact ACCEPT `bcb8cac6` are integrated at `594a981a`.
+The manager's affected six-target strict build and nine private CTests pass
+101 Qt checks, with no failures or skips. Confirmed notifications, cancellation,
+current settings and action authority fence the configured public action.
+The resident stays dormant by default; whole PF2, installed/hardware delivery,
 lid policy and shared idle-inhibitor consumption remain open.
 
 Capture fixture identity and authentic PipeWire object-serial selection repairs
@@ -53,8 +57,15 @@ stage and identity check pass with test authorization off. Startup amendment
 checks and an eager-start negative control, without claiming the historical
 refusal cause. A separate coherent noninstallable native test build is required
 because the unchanged driver uses test-authorization APIs absent from production.
-Independent review rejects decoder `ca29910d` for missing default-fallback
-suppression; that repair, full matrix and installed routing remain open.
+That exact-fork build passes 1,228 actions. The manager's unchanged existing
+native matrix then passes all seven behaviors / thirteen Qt checks on the AMD
+renderer, and four focused fork CTests pass 28 Qt checks. All observed child
+processes are gone and artifact hashes stay unchanged. Decoder repair `d6002623`
+has independent ACCEPT `3278ce24`: the fixed actual graph passes five Qt checks,
+while byte-identical `ca29910d` genuinely consumes unrelated blue default frames
+and fails the original assertion. Its earlier rejection remains preserved.
+The broader consumer foundation is still under separate independent review
+before integration; installed routing and full PF19 remain open.
 
 ## September 30 — Graphical removable media
 
