@@ -1,0 +1,8 @@
+# Decoder pending verification; critical-battery independent review claim
+
+- Time: 2026-10-02T01:04:10Z
+- Decoder parked: no exact behavior ACCEPT/REJECT. Direct short graph evidence is actual Qt2pass/3fail/0skip fixtureexit3, runnerexit1, privatePipeWireexit-6. Explicit offered positive failed `no more input formats` at tst_decoder_target.cpp147; actual63/34-byte paths valid, allcleanup recorded/runtimeabsent. Installed SPA source RGB/UYVY cannot exercise unchanged four-channel decoder. This is a fixture capability prerequisite, not evidence of repaired fallback behavior.
+- Help/next decoder gate: graphics authorized to add task-owned real compatible pw_stream producer only in separate dedicated private graph. Keep immutable ca299 decoder control and native formats/privacy assertions unchanged. Await final qualified descendant for bounded independent compile+positive/negative replay; prior source/docs gates and setup failures preserved.
+- New outcome: independent exact critical-battery f951bffcb499d1a0b191ebc4a599ea61b18c8f43, product/test claimed byte-identical tested241ff. Audit Settings/current source/exclusive admission, single episode/countdown/cancel/dismiss/owner+nonce+ID fences, expiry/unknown Notify retirement, no uncertain-action replay, additive Hibernate public SessionActions boundary.
+- Scope: own exact isolated qinda review tree/branch, source-first; own worker/messages and ignored review artifacts only, no implementation edits.
+- Resources: none. Request narrowly bounded six-target build/private replay after audit; manager compiler held elsewhere. No host sleep/PAM/real credentials/session configuration.

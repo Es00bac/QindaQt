@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: available — exact24fa bounded startup amendment ACCEPT; corrected decoder review help offered.
+- Status: available — exact f951 critical-battery bounded ACCEPT; corrected decoder recheck offered.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none; own16 compilerPGIDs and all private fixture PIDs/roots absent; leases released.
-- Outcome: completed startup20Qt+genuineeagernegative qualification; ca299 decoderP1 remains separate pending repair.
+- Resource state: none — own compiler groups and all private fixture PIDs/roots absent; both leases released.
+- Outcome: completed own strict six-target build and critical first3/full9CTest101Qt qualification.
 
 ## Updates
 
@@ -60,3 +60,17 @@
 - 2026-10-02T00:44:51Z: Own16/16MOC/TU/link exits0 with exact24fa/currentchangedheaders and frozen dependency archives; all compilerPGIDs absent, compiler RELEASED. Fouroutputs frozen. Currentheaderdepfiles+generatedMOC identities directly verified, no oldchangedheader enters. Rootpostbuild nonGPUprivate claim now7startup/13channel/eagernegative; originalfailures preserved.
 
 - 2026-10-02T00:51:47Z: Exact24fa boundedACCEPTP0/P1=0 startupamendment. Own16/16build32.280s/min16.34GB/currentnormalizedheaders/fourMOC; startup7/0+channel13/0 and originaleager expected1/2pass1fail firstnamepresent verified. WrapperlongTMPDIRsetup0/2 failure preserved; onlyshortownedtemp correction, exactartifacts unchanged.27hashesstable/allPIDs+rootsabsent/nocores. Docs486/strict/scopeddiffPASS. Leasesreleased/resourcesnone/available, correcteddecoder review help offered; historicalResponse2/fullnative notclaimed.
+
+- 2026-10-02T00:56:44Z: Claimed corrected decoder99f24 source-first audit in own isolated qinda review tree. Literal no-fallback property and linker-only actual retirement seam inspected; no resource claimed. Graphics first graph setup path-length failure preserved; final short-runtime descendant pending, no behavior verdict from setup. Prior startup24fa ACCEPT/ca299 REJECT preserved.
+
+- 2026-10-02T01:02:16Z: Decoder sourceaudit noP0/P1found so far: authentic sameofferedserial/correlated2sec sync retained, literal nofallback matches installedWP stop path, linkerhook onlyprivategraph. Short0700 runtime/108byte check audited in f174 runner, firstpreQt setupfailure retained. Own99f strictdocs486/MkDocs7.66sPASS; preparedonly sixstrictbuildcommands with byteidenticalca299 controls. No compiler/private lease; finalgraphqualifiedhandoff pending.
+
+- 2026-10-02T01:04:10Z: Parked decoder review pending compatible real testproducer; direct shortgraph2pass3fail/exit3/PW-6/runner1 retained, nofallback behavior unqualified, no ACCEPT/REJECT. Root authorizes graphics producer repair. Claimed distinct critical-battery exactf951 source-first review; no resources held.
+
+- 2026-10-02T01:08:28Z: Exactf951 all28paths/sourceaudit noP0/P1found; ownstrictdocs486/7staticgatesPASS. Direct241ff frozenfirst3/full9CTest101 logs/manifests inspected; source/testdeltaempty. Root grants ownfresh six-target strictDebug+resident; configurePID513068/core0 nowrunning, bounded-j8/l24/memoryguard. Private remainsroot then graphics; no testexecution.
+
+- 2026-10-02T01:10:48Z: Ownexactf951 freshstrictDebugconfigure0/47.022s andsix-target+residentdepsbuild0/47.529s/min14.878GB. PGIDs513068/515152/groupsabsent/compilerreleased. FourchangedMOCcurrentheaders/noimplementerheaders verified, eightcache/executablehashesfrozen, establishedprefixHEAD690direct. Ownprivatefirstsuspend/full9/101 stillunrun; root then graphics leases ahead.
+
+- 2026-10-02T01:15:31Z: Root/graphics private cleanuprelease followed by explicitgrant; ownfirstsuspendPASS3/0/0/exit0/5.569s min11.459GB. FirstPIDs/rootabsent and22binary/cache/staticarchivehashesunchanged. Fullunchanged9CTest/101Qt nowrunning, deadambientbuses/tempHOME/core0/nohostaction; soleprivatelease heldthroughcleanup.
+
+- 2026-10-02T01:19:32Z: Exactf951 boundedACCEPT P0/P1=0. Ownstrictbuildconfigure47.022s/build47.529s; first3/0/0 and unchangedfull9/9CTest101/0/0Qt119.300s PASS. Critical23behaviors/25Qt, unchangedPower65, SessionActions11; 22hashesstable, first3PIDs/1root/full95PIDs/51roots directlyabsent/nocores. All28path/currentMOC/staticdocs486/boundaries/shape verified. Bothleasesreleased, queue/peerthreadsread, exacthandoff published; ownboardavailable/correcteddecoder d600 independentrecheck help offered. No installedcutover/physical/fullPF2 claim.
