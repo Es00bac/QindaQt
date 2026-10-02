@@ -61,11 +61,21 @@ disconnected and never delivered.
 Session Close, frontend or caller loss, request cancellation, native lock or
 lock uncertainty and selected-session/compositor loss close the session,
 emit `Closed` when the backend initiated it, cancel visible consent and send
-`disconnect(cookie)`. Notify* methods fail with
-`org.freedesktop.DBus.Error.NotSupported`: the backend has no second,
-non-EIS injection path. The real frontend forwards Notify* without returning
-backend errors, so legacy Notify clients keep the KDE route until a backend
-EIS sender exists.
+`disconnect(cookie)`.
+
+The frontend forwards the deprecated Notify* methods without awaiting replies
+(`remote-desktop.c`), so refusing them silently dropped legacy input. The
+first admitted Notify* on a started session (frontend owner, live caller,
+granted device, native authority) opens that session's own compositor EIS
+context and drives it with a module-private libei sender
+(`legacy_input_p.h`); upstream KDE uses KWin fake-input instead. Events wait
+in a bounded, ordered queue until a device with the needed capability
+resumes. Absolute pointer and touch coordinates map through the published
+stream rectangles. Once that context exists ConnectToEIS is refused, and the
+session's close, lock or compositor disconnect ends it like any other EIS
+context. NotifyKeyboardKeysym stays `NotSupported`: EIS offers no keysym
+injection and the backend does no keymap reverse lookup. libei is the same
+`dev-libs/libei` the compositor fork already requires.
 
 ## Screen sharing in RemoteDesktop sessions
 
@@ -159,6 +169,12 @@ cursor mode), atomic `streams`/`devices`/`clipboard_enabled` publication,
 stream stop and EIS disconnect on Close, cancelled and over-full shares
 closing the session, owner/app/once/persistence fencing of the selection, and
 producer close, capture authority loss and caller loss ending the session.
+`qindaqt.portal-remote-legacy-input` puts a real libeis server behind the
+synthetic compositor object: Notify* sent before any device exists arrive in
+order (motion, button, key, discrete scroll) over one lazily opened context;
+ConnectToEIS is then refused; Close and native lock disconnect the context;
+unstarted, foreign, ungranted-device, keysym, malformed and stream-less
+absolute calls are refused.
 They prove wire and lifetime, not physical input or real PipeWire nodes.
 
 Candidate evidence (strict `-Werror` dev build, configured `-j24 -l24`): both
@@ -173,8 +189,8 @@ Still required before routing changes: the fork plugin build plus a private
 native compositor row where a real frontend session receives an EIS FD,
 injects observable input, and loses it on Close and native lock; staged
 metadata, and a real frontend RemoteDesktop+ScreenCast session receiving
-producer nodes. Remaining source gaps: a backend EIS sender for Notify* and
-RemoteDesktop persistence/restore tokens.
+producer nodes and a legacy Notify* client injecting observable input.
+Remaining source gap: RemoteDesktop persistence/restore tokens.
 
 ## Clipboard
 

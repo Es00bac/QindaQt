@@ -19,9 +19,10 @@ namespace QindaQt::Services::Portal::RemoteInput {
 // borrowed registry, consent and EIS port must outlive this same-thread
 // adaptor; destruction closes its sessions and disconnects their EIS contexts.
 // Input reaches the compositor only through ConnectToEIS after explicit native
-// consent. Notify* calls fail with org.freedesktop.DBus.Error.NotSupported:
-// this backend owns no second, non-EIS injection path. The frontend sends them
-// without awaiting a reply, so legacy callers see no error and get no input.
+// consent. Deprecated Notify* calls (sent by the frontend without awaiting a
+// reply) are emulated by a libei sender on the session's own EIS context,
+// opened on first use; there is no second, non-EIS injection path. Keysyms
+// stay org.freedesktop.DBus.Error.NotSupported (no keymap reverse lookup).
 // With a capture port, screenCastSources() accepts the ScreenCast selection for
 // these sessions and Start publishes the producer's streams after its consent.
 class RemoteDesktopAdaptor final : public QDBusAbstractAdaptor {

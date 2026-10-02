@@ -25,8 +25,9 @@ hook, so barriers are validated in the coordinates the compositor enforces.
 Input flows only through compositor EIS transports on the attachment-proven
 owner after explicit native consent. Upstream notices stay on the adapted
 files (RemoteDesktop LGPL-2.0-or-later; InputCapture LGPL-2.1-only OR
-LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL). Legacy Notify* calls fail explicitly instead of adding a second
-injection path.
+LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL). Legacy Notify* calls are
+emulated by a libei sender on the session's own EIS context rather than a
+second injection path (the frontend never relays their errors).
 
 The fork EIS plugin admits only the current portal backend owner (the KDE name
 transitionally), restricts cookie/capture control to the creator, refuses work
@@ -47,7 +48,9 @@ Clipboard consent is a separate opt-in choice in the Start dialog.
   capture producer through a ScreenCast-owned source seam, matching the
   frontend's independent backend choice; streams are published only with
   their own monitor consent and stop with the session.
-- The frontend sends Notify* without awaiting replies, so the explicit
-  refusal is not visible to legacy callers; they need a backend EIS sender
-  or stay on the KDE route.
+- The frontend sends Notify* without awaiting replies, so a refusal was
+  invisible to legacy callers. The resident now links libei
+  (`dev-libs/libei`, already required by the compositor fork) as a new direct
+  dependency; the desktop package must declare it. Keysym injection remains
+  unsupported.
 - See [Native remote-input portal](../architecture/portal-remote-input.md).

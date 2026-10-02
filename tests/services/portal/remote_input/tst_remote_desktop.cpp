@@ -137,7 +137,8 @@ private Q_SLOTS:
         auto notify = QDBusMessage::createMethodCall(QStringLiteral("org.test.Portal"), QStringLiteral("/org/freedesktop/portal/desktop"),
             QStringLiteral("org.freedesktop.impl.portal.RemoteDesktop"), QStringLiteral("NotifyPointerMotion"));
         notify.setArguments({bus.sessionHandle(), QVariantMap{}, 1.0, 1.0});
-        QCOMPARE(bus.client->call(notify, QDBus::BlockWithGui).errorName(), QStringLiteral("org.freedesktop.DBus.Error.NotSupported"));
+        // Unstarted sessions refuse legacy input before any EIS context opens.
+        QCOMPARE(bus.client->call(notify, QDBus::BlockWithGui).errorName(), QStringLiteral("org.freedesktop.portal.Error.NotAllowed"));
         QVERIFY(compositor->capabilities.isEmpty());
         QCOMPARE(property(QStringLiteral("AvailableDeviceTypes")), 7U);
         QCOMPARE(property(QStringLiteral("version")), 2U);
