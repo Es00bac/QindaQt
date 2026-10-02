@@ -1,12 +1,12 @@
 # Native power policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: available — critical countdown candidate verified; exact independent review requested
-- Base: a50afb656c4857048fcacc9703cbeede1eac71dc
-- Branch: worker/pf-critical-battery-sol-20261001
-- Worktree: .cache/pf-critical-battery-sol-20261001
-- Ownership: new cohesive critical-battery policy, focused tests, primary power docs and new coordinated ADR; own board/messages. Cross-module assembly/dependency/public changes require manager coordination.
-- Compiler/private runtime: both released; no live test/build process owned
+- Status: available — exact capture fork development-pin review ACCEPT handed off
+- Base: 605d9d3a28496c5cb944826520e4b591912dc091; review exact cb0877f46682ea21fbafa14e9b56738ed066e267
+- Branch: review/pf-capture-fork-pin-sol-20261002
+- Worktree: .cache/pf-capture-fork-pin-review-sol-20261002
+- Ownership: read-only exact four-path fork-pin candidate review; only own stable board/timestamped messages may change. Own lid6ca remains pending a different reviewer; no Power or pin implementation edits.
+- Compiler/private runtime: no lease; qinda light source/remote/archive/docs/static checks only
 
 
 ## Updates
@@ -43,3 +43,7 @@
 - 2026-10-02T00:42:02Z — Actual resident critical fixture now authored with real Settings1/notification host and token-authenticated public presentation cancellation; injected protected Sleep1/power-off and separate bounded wire-fault actors.23 behavior rows cover configured actions, fences, late callbacks, uncertainty/no replay, finite unknown-ID expiry and strict typed bounds. New public Hibernate client contract row added. Source-only, compilation/runtime still pending; requested focused qinda leases after push, no laptop heavy work.
 
 - 2026-10-02T01:00:30Z — Exact241ff fresh qinda strict Debug configure and six-target build PASS45.52s/47.03s/182 Ninja actions with accepted source690 prefix; compiler PID493136 absent after release, minimum14.25GB. First actual resident suspend countdown3/0/0 PASS5.58s; frozen full9/9 CTests101/0/0 Qt PASS118.99s including23 critical behaviors25/0/0 and unchanged Power65/0/0 plus SessionActions11/0/0. Both resources released; first3/full95 observed PIDs and first1/full51 roots absent, eight cache/executable hashes unchanged, runtime min13.07GB. Qinda strict docs486 pages/static PASS before final docs-only verification update. Available for independent review repairs or bounded public power-contract help; no installed cutover, hardware action, wholePF2 completion or new path claim.
+
+- 2026-10-02T02:18:55Z — Fetched authoritative hub, preserved shared unrelated untracked files and created NEW isolated reviewer WT/branch at exactcb087. Candidate scope is four paths; pin JSON changes only fork commit/tree while current compositor page labels development qualification and ADR0291 preserves initial history. Reading exact candidate upgrade/release rules before qinda light identity/source/archive/docs gates. No Power implementation edits/compiler/private/laptop-heavy/installed actions; exact development-vs-release verdict still pending.
+
+- 2026-10-02T02:24:30Z — Independent exactcb087 verdictACCEPT P0=0/P1=0. Own qinda11 light source/remote/archive/release-static/docs/diff commands all exit0; archive3378 files/13,800,141bytes/SHA4a2b5b78...6793; strictMkDocs7.375s/486-page links PASS. Direct hub/main and clean checkout commit68c/tree916 match;690 and upstream ancestry valid; JSON only two members differ, ABI/version/IID/EXACT/package/upstream unchanged and ADRinitialhistory preserved. Read production cache both authorizationOFF, separate native cache captureON/lockOFF +source install-fatal guard; actual retained root logs1418actions/455stage/identity/native13/fork28 corroborate provenance only, not own replay/install. All11 own tool PIDs absent, candidate hashes/source cleanunchanged, no compiler/private/laptopheavy/installed action. Pushed immutable exact verdict; own board available and bounded exact-review/help offer follows.
