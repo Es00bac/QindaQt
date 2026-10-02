@@ -37,12 +37,29 @@ private Q_SLOTS:
         pending = call("Screenshot", "PickColor", {object(path), "org.test.Caller", QString{}, QVariantMap{}}); QTRY_COMPARE(ui->opens, 3);
         Q_EMIT ui->completed(ui->token, RequestResponse::Success, {{"color", QVariant::fromValue(CaptureColor{.2, .3, .4})}}); QTRY_VERIFY(pending->isFinished()); QCOMPARE(response(*pending), 0U);
     }
-    void sessionActualCallerHandleFenceAndUnsupportedSelection() {
+    void acceptedBatchSelectionReachesTheOwnedHelper() {
+        create();
+        auto selection = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"multiple", true}, {"cursor_mode", 4U}}});
+        QTRY_VERIFY(selection->isFinished()); QCOMPARE(response(*selection), 0U);
+        auto pending = sharing(); QTRY_COMPARE(ui->opens, 1);
+        QVERIFY(ui->current.multiple); QCOMPARE(ui->current.cursorMode, 4U);
+        const QVariantMap properties{{"position", QVariant::fromValue(CaptureCoordinate{0, 0})}, {"size", QVariant::fromValue(CaptureCoordinate{800, 600})}};
+        Q_EMIT ui->completed(ui->token, RequestResponse::Success, {{"streams", QVariant::fromValue(CaptureStreams{{41, properties}, {42, properties}})}});
+        QTRY_VERIFY(pending->isFinished()); QCOMPARE(response(*pending), 0U);
+    }
+    void singleSelectionCannotPublishExtraProducerNodes() {
+        create(); select(); auto pending = sharing(); QTRY_COMPARE(ui->opens, 1);
+        const QVariantMap properties{{"position", QVariant::fromValue(CaptureCoordinate{0, 0})}, {"size", QVariant::fromValue(CaptureCoordinate{800, 600})}};
+        Q_EMIT ui->completed(ui->token, RequestResponse::Success, {{"streams", QVariant::fromValue(CaptureStreams{{41, properties}, {42, properties}})}});
+        QTRY_VERIFY(pending->isFinished()); QCOMPARE(response(*pending), 2U);
+        QTRY_VERIFY(ui->stopped.contains(session));
+    }
+    void sessionActualCallerHandleFenceAndInvalidSelection() {
         create();
         auto wrong = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Other", QVariantMap{}}); QTRY_VERIFY(wrong->isFinished()); QCOMPARE(response(*wrong), 2U); QVERIFY(ui->stopped.isEmpty());
         const QString otherPath = "/org/freedesktop/portal/desktop/request/" + stranger->baseService().mid(1).replace('.', '_') + "/test";
         wrong = call("ScreenCast", "SelectSources", {object(otherPath), object(session), "org.test.Caller", QVariantMap{}}); QTRY_VERIFY(wrong->isFinished()); QCOMPARE(response(*wrong), 2U); QVERIFY(ui->stopped.isEmpty());
-        auto selection = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"multiple", true}}}); QTRY_VERIFY(selection->isFinished()); QCOMPARE(response(*selection), 2U); QTRY_VERIFY(ui->stopped.contains(session));
+        auto selection = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"multiple", 1U}}}); QTRY_VERIFY(selection->isFinished()); QCOMPARE(response(*selection), 2U); QTRY_VERIFY(ui->stopped.contains(session));
         auto gone = call("ScreenCast", "Start", {object(path), object(session), "org.test.Caller", QString{}, QVariantMap{}}); QTRY_VERIFY(gone->isFinished()); QCOMPARE(response(*gone), 2U); QCOMPARE(ui->opens, 0);
     }
     void actualStreamShapeCloseLateAndAuthorityLoss() {
