@@ -36,7 +36,8 @@ private Q_SLOTS:
         environment.insert(QStringLiteral("QINDAQT_TEST_POWER_START_MARKER"), marker);
         environment.remove(QStringLiteral("DISPLAY"));
         environment.remove(QStringLiteral("WAYLAND_DISPLAY"));
-        environment.remove(QStringLiteral("QINDAQT_TEST_SESSION1_LOGOUT"));
+        if (exclusive) environment.remove(QStringLiteral("QINDAQT_TEST_SESSION1_LOGOUT"));
+        else environment.insert(QStringLiteral("QINDAQT_TEST_SESSION1_LOGOUT"), QStringLiteral("1"));
         QProcess process;
         process.setProcessEnvironment(environment);
         const auto cleanup = qScopeGuard([&] {
@@ -67,12 +68,24 @@ private Q_SLOTS:
             QFile file(marker); QVERIFY(file.open(QIODevice::ReadOnly));
             const auto child = file.readAll().toLongLong(); QVERIFY(child > 1);
             QCOMPARE(::kill(static_cast<pid_t>(child), 0), 0);
+            QFile stat(QStringLiteral("/proc/%1/stat").arg(child));
+            QVERIFY(stat.open(QIODevice::ReadOnly));
+            const auto fields = stat.readAll();
+            const auto starttick = fields.mid(fields.lastIndexOf(')') + 2).split(' ').at(19);
+            qInfo().noquote() << "owned-power-probe" << child << "starttick" << starttick;
+            QTRY_VERIFY_WITH_TIMEOUT(QDBusConnection::sessionBus().interface()
+                ->isServiceRegistered(QStringLiteral("org.qindaqt.Session1")).value(), 1000);
             auto request = QDBusMessage::createMethodCall("org.qindaqt.Session1", "/org/qindaqt/Session1",
                                                         "org.qindaqt.Session1", "Logout");
             auto reply = QDBusConnection::sessionBus().asyncCall(request, 2000);
             QTRY_VERIFY_WITH_TIMEOUT(reply.isFinished(), 3000);
-            QCOMPARE(reply.reply().type(), QDBusMessage::ReplyMessage);
+            QCOMPARE(reply.reply().type(), QDBusMessage::ErrorMessage);
+            QCOMPARE(reply.reply().errorName(), QStringLiteral("org.qindaqt.Session1.Error.Unauthorized"));
+            // The existing token helper is the actual supervised shell PID.
+            // Only it may call CanLogout/Logout; parent refusal is asserted above.
             QTRY_COMPARE_WITH_TIMEOUT(process.state(), QProcess::NotRunning, 5000);
+            QCOMPARE(process.exitStatus(), QProcess::NormalExit);
+            QCOMPARE(process.exitCode(), 0);
             QCOMPARE(::kill(static_cast<pid_t>(child), 0), -1); QCOMPARE(errno, ESRCH);
         }
     }

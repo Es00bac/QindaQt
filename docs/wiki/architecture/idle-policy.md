@@ -99,3 +99,10 @@ it cannot retain a session with PowerDevil suppressed and native consumers absen
 The `off` mode preserves its compatible owned PowerDevil lifetime. New actual CLI
 regression rows and the real nested DisplayPower fixture are source-ready; their
 compiled/runtime evidence is a separate gate, not implied by this change.
+
+The startup CLI regression runs on a private bus with no activation directories,
+so installed Settings or other services cannot enter the fixture. The ordinary
+parent caller is explicitly refused Logout; the existing actual supervised shell
+helper performs authenticated cleanup. Probe PID/starttick and absence after
+shutdown are retained in the actual test log. The first unisolated fixture failure
+remains preserved separately and is not acceptance evidence.
