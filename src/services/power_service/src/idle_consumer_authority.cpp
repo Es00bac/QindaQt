@@ -11,7 +11,8 @@ const QString legacyName = QStringLiteral("org.kde.Solid.PowerManagement");
 }
 IdleConsumerAuthority::IdleConsumerAuthority(QDBusConnection connection, QObject *parent)
     : QObject(parent), m_connection(std::move(connection)),
-      m_watcher(QStringList{sessionName, legacyName}, m_connection, QDBusServiceWatcher::WatchForOwnerChange) {
+      m_watcher(sessionName, m_connection, QDBusServiceWatcher::WatchForOwnerChange) {
+    m_watcher.addWatchedService(legacyName);
     connect(&m_watcher, &QDBusServiceWatcher::serviceOwnerChanged,
             this, [this] { refresh(); });
     // Subscribe before resolution; queued owner-change payloads are not truth.
