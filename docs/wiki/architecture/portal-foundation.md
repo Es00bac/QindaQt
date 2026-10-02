@@ -8,6 +8,8 @@ Power consumes no complete idle scopes. Installed session and sandbox delivery
 remain manager gates; no selector change claims physical qualification.
 
 [ADR-0318](../adr/0318-native-portal-foundation.md) records this process boundary.
+The unrouted [remote-input candidate](portal-remote-input.md) reuses these
+request, session, consent and lock components for RemoteDesktop.
 The [native chooser components](../reference/portal-choosers.md) adds independent
 wire policy, adaptors and ordinary native-dialog helper under
 [ADR-0322](../adr/0322-native-portal-choosers.md). Their actual private frontend/

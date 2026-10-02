@@ -358,3 +358,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0331: Fence native critical-battery countdowns and public actions](0331-fence-native-critical-battery-countdowns.md)
 
 - [ADR-0332: Own native lid handling before authenticated edge dispatch](0332-own-native-lid-handling-before-edge-dispatch.md)
+- [ADR-0335: Native remote input through the compositor EIS engine](0335-native-remote-input-portal.md)
