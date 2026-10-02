@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: available — ordinary production driver preparation complete; AUTH-OFF build incompatibility reported.
+- Status: working — independent exact24fa capture backend startup ordering review.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none; no compiler/moc/link/native or namespace work performed.
-- Outcome: prepared exact source/argv/ELF audit bundle; unchanged driver cannot target productionOFF core; repair review help available.
+- Resource state: none; source/evidence/docs audit; compiler/private await explicit grant.
+- Outcome: review bounded initialized-owner receipt-before-publication startup barrier; decoderca299 REJECT separate.
 
 ## Updates
 
@@ -52,3 +52,5 @@
 - 2026-10-02T00:34:00Z: Root narrows helper to ordinary static build preparation. Exact68c productionOFF cache/CMake/headers and original447 compiler/link argv inspected; direct nm proves two required test-only APIs absentnewcore/presentoldcore. Own executable read-only audit now expectedexit2 after retained harnesssetupfailure; sourceequal/hash preserved, no compiler/runtime. Recording constraint and commands in ignored qinda own directory; no authentication redesign.
 
 - 2026-10-02T00:35:27Z: Source-only helper complete: executable audit expectedexit2 confirms exact68c productionOFF lacks two unchanged-driver APIs/framework; sourceequal447/hash+originalargv retained. No valid compile/moc/link recipe meets incompatible boundary, root notified. No compiler/runtime/mount/authchanges. Concretebundle/handoff pushed; resourcesnone/available; repaireddecoder and startupreview help remains.
+
+- 2026-10-02T00:39:24Z: Claimed exact24fa startup review (code63e33/production7b79) in isolated qinda review/pf-capture-startup-sol-20261002. Read qualified handoff, preserved source histories; five assembly/admission/AuthorityCapture paths, focused test/CMake+docs only. No product edits/compiler/private claims. Prior68c ACCEPT/ca299 REJECT/buildconstraint remain preserved.
