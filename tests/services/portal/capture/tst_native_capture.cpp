@@ -66,8 +66,13 @@ private Q_SLOTS:
         QVERIFY(accessBackend->registerService("org.freedesktop.impl.portal.desktop.qindaqt"));
         QVERIFY(accessBackend->registerObject("/org/freedesktop/portal/desktop", &accessHost, QDBusConnection::ExportAdaptors));
         QVERIFY(foundation->start()); QTRY_VERIFY(bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).isValid());
-        QVERIFY(bus.registerService("org.freedesktop.portal.Documents")); if (!qEnvironmentVariableIsSet("QINDAQT_CAPTURE_REAL_PERMISSION_STORE")) QVERIFY(bus.registerService("org.freedesktop.impl.portal.PermissionStore"));
-        else QTRY_VERIFY(bus.interface()->isServiceRegistered("org.freedesktop.impl.portal.PermissionStore").value()); QVERIFY(bus.registerService("org.qindaqt.Power1"));
+        QVERIFY(bus.registerService("org.freedesktop.portal.Documents"));
+        if (!qEnvironmentVariableIsSet("QINDAQT_CAPTURE_REAL_PERMISSION_STORE")) {
+            QVERIFY(bus.registerService("org.freedesktop.impl.portal.PermissionStore"));
+        } else {
+            QTRY_VERIFY(bus.interface()->isServiceRegistered("org.freedesktop.impl.portal.PermissionStore").value());
+        }
+        QVERIFY(bus.registerService("org.qindaqt.Power1"));
         selected = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), "capture-supervisor"));
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").isValid(), 10000);
         const auto brokerOwner = bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").value();
