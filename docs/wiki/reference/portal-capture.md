@@ -11,9 +11,10 @@ build and 22 private CTests pass 200 Qt checks, including the eleven focused
 capture/Screenshot tests, seven startup checks, five real decoder graph checks
 and the existing power/action regressions. No row fails or skips; these focused
 gates do not add a native GPU matrix or qualify the new privacy fixtures.
-This first slice does not complete PF19: useful window/multiple/cursor
-capabilities and shared revocable restore permissions remain a successor before
-program closure. See [ADR-0324](../adr/0324-native-portal-capture-boundaries.md),
+The successor source adds explicit multiple-monitor selection and all three
+standard cursor modes using the existing producer. Its focused/native acceptance
+remains pending; window/virtual sources and shared revocable restore permissions
+remain open before PF19 closure. See [ADR-0324](../adr/0324-native-portal-capture-boundaries.md),
 [portal foundation](../architecture/portal-foundation.md),
 [portal service](../architecture/portal-service.md) and the public
 [compositor capture boundary](../architecture/compositor-capture.md).
@@ -42,16 +43,20 @@ canonical fully encoded local `uri=s`, using QUrl::fromLocalFile serialization
 and exact literal-path round-trip. Legal path sub-delimiters such as `$` can
 remain literal; spaces, percent signs and backticks are encoded. This is URI
 serialization, with no shell parsing or expansion. PickColor has `color=(ddd)`, finite RGB in
-[0,1]. Start has `streams=a(ua{sv})` containing exactly one actual node with
+[0,1]. Start has `streams=a(ua{sv})` containing one to sixteen distinct actual nodes with
 `position=(ii)` and `size=(ii)`. The real frontend implements OpenPipeWireRemote
 and restricts the returned connection to the node set; the backend neither
 exports that method nor invents a PipeWire FD.
 
-ScreenCast capabilities are monitor1 and Hidden cursor1. SelectSources explicitly
-rejects window/virtual source types, multiple=true, unsupported cursor modes,
+ScreenCast source capabilities are monitor1 and Hidden1/Embedded2/Metadata4
+cursor modes. Multiple selections are explicit and bounded to sixteen monitors;
+the helper freezes the selected IDs before permission is granted and publishes
+the batch only after every producer node is ready. Failure of one stream closes
+the whole batch. SelectSources explicitly rejects window/virtual source types,
+invalid or combined cursor-mode values,
 restore tokens and persistence options. No unsupported version4/5 token or mapping
 claims are made. Native source selection lists actual compositor monitors, with
-no default selection; a user must select an offered screen and press Share.
+no default selection; a user must select offered screens and press Share.
 Screenshot requires Allow; PickColor then requires a real pixel selection. A
 mapped Stop sharing action remains while a stream runs. Standard frontend
 PermissionStore hints never substitute for native consent/authority.

@@ -6,7 +6,8 @@
 #include <memory>
 namespace QindaQt::Services::Portal {
 // Same-thread registry/UI/bus outlive adaptor and its owned standard Sessions.
-// Explicit first slice: monitor-only, single source, Hidden cursor; no restore.
+// Monitor sources, explicit single/multiple selection and all cursor modes;
+// restore/window/virtual-source persistence remains a separate capability.
 class ScreenCastAdaptor final : public QDBusAbstractAdaptor {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.impl.portal.ScreenCast")
@@ -18,7 +19,7 @@ public:
     ~ScreenCastAdaptor() override;
     uint version() const { return 2; }
     uint availableSources() const { return 1; }
-    uint availableCursors() const { return 1; }
+    uint availableCursors() const { return 7; }
 public Q_SLOTS:
     quint32 CreateSession(const QDBusObjectPath &, const QDBusObjectPath &, const QString &, const QVariantMap &, const QDBusMessage &, QVariantMap &);
     quint32 SelectSources(const QDBusObjectPath &, const QDBusObjectPath &, const QString &, const QVariantMap &, const QDBusMessage &, QVariantMap &);

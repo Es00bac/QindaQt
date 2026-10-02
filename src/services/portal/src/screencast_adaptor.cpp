@@ -14,7 +14,8 @@ public:
             const auto path = pending.take(token); if (path.isEmpty()) return;
             auto *entry = sessions.entry(path);
             if (!entry || !sessions.live(path) || !requests.live(token) || !ui.admitted()
-                || (response == RequestResponse::Success && !validCapturePublication(CaptureKind::Stream, results))) response = RequestResponse::Failed;
+                || (response == RequestResponse::Success && (!validCapturePublication(CaptureKind::Stream, results)
+                    || (!entry->multiple && results.value("streams").value<CaptureStreams>().size() != 1)))) response = RequestResponse::Failed;
             if (entry) { entry->pending = 0; if (response == RequestResponse::Success) entry->phase = CaptureSessionPhase::Streaming; }
             requests.finish(token, response, results);
             if (response != RequestResponse::Success) sessions.close(path);
@@ -45,6 +46,7 @@ quint32 ScreenCastAdaptor::SelectSources(const QDBusObjectPath &handle, const QD
     if (!entry || !d->sessions.authenticated(call, session.path(), app) || !d->sessions.requestMatches(session.path(), handle.path())) { d->requests.finish(token, RequestResponse::Failed); return 2; }
     d->owned.insert(token);
     if (!d->ui.admitted() || entry->phase != CaptureSessionPhase::Created || !validScreenCastSelection(options)) { d->requests.finish(token, RequestResponse::Failed); return 2; }
+    entry->multiple = options.value("multiple", false).toBool(); entry->cursorMode = options.value("cursor_mode", 1U).toUInt();
     entry->phase = CaptureSessionPhase::Selected; d->requests.finish(token, RequestResponse::Success); return 2;
 }
 quint32 ScreenCastAdaptor::Start(const QDBusObjectPath &handle, const QDBusObjectPath &session, const QString &app, const QString &parent, const QVariantMap &options, const QDBusMessage &call, QVariantMap &results) {
@@ -53,7 +55,9 @@ quint32 ScreenCastAdaptor::Start(const QDBusObjectPath &handle, const QDBusObjec
     if (!entry || !d->sessions.authenticated(call, session.path(), app) || !d->sessions.requestMatches(session.path(), handle.path())) { d->requests.finish(token, RequestResponse::Failed); return 2; }
     d->owned.insert(token);
     if (!d->ui.admitted() || entry->phase != CaptureSessionPhase::Selected || !options.isEmpty() || !request) { d->requests.finish(token, RequestResponse::Failed); return 2; }
-    request->kind = CaptureKind::Stream; request->session = session.path(); request->caller = entry->caller; entry->phase = CaptureSessionPhase::Starting; entry->pending = token;
+    request->kind = CaptureKind::Stream; request->session = session.path(); request->caller = entry->caller;
+    request->multiple = entry->multiple; request->cursorMode = entry->cursorMode;
+    entry->phase = CaptureSessionPhase::Starting; entry->pending = token;
     d->pending.insert(token, session.path()); d->ui.request(token, *request); return 2;
 }
 }

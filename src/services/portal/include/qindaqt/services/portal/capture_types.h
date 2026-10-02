@@ -7,7 +7,7 @@
 #include <optional>
 namespace QindaQt::Services::Portal {
 enum class CaptureKind { Screenshot, Color, Stream };
-struct CaptureRequest { CaptureKind kind = CaptureKind::Screenshot; QString app, parent, session, caller; bool interactive = false, modal = true; };
+struct CaptureRequest { CaptureKind kind = CaptureKind::Screenshot; QString app, parent, session, caller; bool interactive = false, modal = true; bool multiple = false; quint32 cursorMode = 1; };
 struct CaptureColor { double red = 0, green = 0, blue = 0; };
 struct CaptureCoordinate { qint32 first = 0, second = 0; };
 struct CaptureStream { quint32 node = 0; QVariantMap properties; };
