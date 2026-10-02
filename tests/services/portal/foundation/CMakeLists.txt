@@ -14,7 +14,7 @@ set_source_files_properties("${consent_dir}/Main.qml" PROPERTIES QT_RESOURCE_ALI
 qt_add_qml_module(qindaqt_portal_consent_input URI QindaQt.PortalConsent VERSION 1.0
     RESOURCE_PREFIX /qt/qml OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/consent-qml"
     QML_FILES "${consent_dir}/Main.qml")
-target_link_libraries(qindaqt_portal_consent_input PRIVATE QindaQt::PortalFoundation QindaQt::ForeignParent
+target_link_libraries(qindaqt_portal_consent_input PRIVATE QindaQt::PortalFoundation QindaQt::ForeignParent QindaQt::CompositorNames
     QindaTK::qindatk Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test Wayland::Client)
 qindaqt_enable_warnings(qindaqt_portal_consent_input)
 qt_add_executable(qindaqt_portal_native_consent_tests tst_native_consent.cpp)

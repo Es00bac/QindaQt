@@ -198,12 +198,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             producer.pop("QT_FATAL_WARNINGS", None)
             if "explicitTwoMonitorBatchClosesEveryProducer" in group:
                 producer["QINDAQT_PRIVATE_CAPTURE_TWO_OUTPUTS"] = "1"
-            # AGENT-GUARD: the protected broker starts inside this compositor,
-            # before the caller can update env. Export its actual exec-preserved
-            # PID first so the consent test child retains the same peer check.
-            native_driver = ["/bin/sh", "-c", 'QINDAQT_PORTAL_TEST_COMPOSITOR_PID=$$ exec "$@"',
-                             "qindaqt-native-core", str(compositor), "serveNativeCapture", "-nocrashhandler"]
-            comp = subprocess.Popen(native_driver, env=producer, stdin=subprocess.PIPE, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
+            comp = subprocess.Popen([str(compositor), "serveNativeCapture", "-nocrashhandler"], env=producer, stdin=subprocess.PIPE, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
             children.append(comp)
             env["QINDAQT_PORTAL_TEST_COMPOSITOR_PID"] = str(comp.pid)
             env["WAYLAND_DISPLAY"] = "qindaqt-8"
@@ -269,7 +264,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             for snapshot in runtime.glob("qindaqt-capture-observed.png"):
                 shutil.copyfile(snapshot, evidence / snapshot.name)
             for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]), pathlib.Path(env["QINDAQT_PORTAL_TEST_AUDIT"]),
-                          runtime / "qindaqt-capture-history.audit", runtime / "native-renderer.audit",
+                          runtime / "qindaqt-capture-history.audit", runtime / "qindaqt-consent.audit", runtime / "native-renderer.audit",
                           runtime / "producer-frame.audit", runtime / "producer-stderr.audit",
                           runtime / "producer-lifecycle.audit"):
                 if audit.is_file():
