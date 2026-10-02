@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "sourceDesktop": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "sourceInstallPatch": "8a622b4b76d25d509ca50e8ca7fbf62d62753a4e",
+  "overlayIntegrated": "94ae0d115a4c34b48330c37e3d1903db2279ef6e",
+  "desktopBinarySHA256": "b2a82255dbdc02457a5eb4cb1732e584db8f8e6111dac8979572dcd88b642354",
+  "sourceFork": "55d1f2738723316fae4686468757aef66ce7590b",
+  "binaryInstallOptions": [
+    "--ignore-default-opts",
+    "--usepkgonly",
+    "--getbinpkg=n",
+    "--binpkg-respect-use=y",
+    "--oneshot",
+    "--newuse",
+    "--with-bdeps=n",
+    "--dynamic-deps=n",
+    "--autounmask=n",
+    "--autounmask-write=n",
+    "--backtrack=0",
+    "--ask=n"
+  ],
+  "binaryInstallFeatures": "Retain current FEATURES plus binpkg-request-signature; never disable release signature verification",
+  "hosts": {
+    "qinda": {
+      "exactBinaryTargets": [
+        "=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2",
+        "=kde-frameworks/kauth-6.27.0-r1",
+        "=dev-libs/kirigami-addons-1.12.1-r1",
+        "=kde-misc/kdeconnect-26.04.3-r4",
+        "=kde-frameworks/kio-6.27.0-r1",
+        "=x11-misc/xdg-utils-1.2.1-r11",
+        "=media-gfx/sloom-studio-bin-0.9.16",
+        "=lxqt-base/lxqt-config-2.4.0",
+        "=kde-apps/kio-extras-26.04.3",
+        "=kde-apps/gwenview-26.04.3",
+        "=app-misc/claude-desktop-bin-1.49585.0-r1",
+        "=app-crypt/pinentry-1.3.2-r2",
+        "=virtual/secret-service-0-r3",
+        "=x11-misc/sddm-0.21.0_p20250502-r2"
+      ],
+      "worldAtomsToDeselect": [
+        "kde-plasma/sloom-globalmenu",
+        "kde-plasma/sloom-panelmenu"
+      ],
+      "worldSetsToDeselect": [
+        "@kde-desktop"
+      ],
+      "retiredKdePlasma": "Exact installed kde-plasma CPVs except kwayland and layer-shell-qt, scoped Portage depclean only",
+      "keepApplications": "Promote installed non-Plasma app atoms from former kde-desktop set to world before removing that set; preserve all other installed apps and user data"
+    },
+    "qinda-top": {
+      "exactBinaryTargets": [
+        "=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2",
+        "=kde-frameworks/kauth-6.27.0-r1",
+        "=dev-libs/kirigami-addons-1.12.1-r1",
+        "=kde-frameworks/kio-6.27.0-r1",
+        "=x11-misc/xdg-utils-1.2.1-r11",
+        "=media-gfx/sloom-studio-bin-0.9.16",
+        "=kde-apps/kio-extras-26.04.3",
+        "=app-misc/claude-desktop-bin-1.49585.0-r1",
+        "=app-crypt/pinentry-1.3.3-r1",
+        "=virtual/secret-service-0-r3",
+        "=x11-misc/sddm-0.21.0_p20250502-r2"
+      ],
+      "worldAtomsToDeselect": [
+        "kde-plasma/sloom-globalmenu",
+        "kde-plasma/sloom-panelmenu"
+      ],
+      "worldSetsToDeselect": [],
+      "retiredKdePlasma": "Exact installed kde-plasma CPVs except kwayland and layer-shell-qt, scoped Portage depclean only",
+      "keepApplications": "Promote installed non-Plasma app atoms from former kde-desktop set to world before removing that set; preserve all other installed apps and user data"
+    }
+  },
+  "providerTransition": {
+    "unmergeOnly": "gnome-base/gnome-keyring",
+    "reason": "Existing package owns the same org.freedesktop.secrets.service file",
+    "beforeUnmerge": [
+      "Desktop and required Claude/virtual/Pinentry/SDDM signed replacement artifacts ready and source accepted",
+      "Normal exact-target binary-only host pretend passes",
+      "Target-local old Desktop, GNOME and SDDM rollback packages and settings/PAM/world backups captured"
+    ],
+    "afterUnmerge": "Immediately install reviewed native signed package set through Portage; do not force-kill existing processes",
+    "legacyData": "Retain ~/.local/share/keyrings and existing KWallet data; no credential input, secret reads or unattended migration"
+  },
+  "retirementOrdering": [
+    "Complete source/signed-image gates",
+    "Install accepted dependency replacements, preserving qinda VDB until its build-only union finishes",
+    "Review protected SDDM configuration and preserve custom authentication blocks",
+    "Verify native installed files and actual private /usr launcher discovery",
+    "Preserve installed KDE applications from kde-desktop set; remove only old desktop set and Sloom selected roots",
+    "Run exact scoped retired-package depclean; no broad world depclean, no global package masks",
+    "Verify actual installed native runtime closure and zero retired installed packages on both hosts"
+  ],
+  "sessionBoundary": "Preserve applications and current compositor processes. Fresh physical login is operator activation; no forced logout, suspend or credential prompt."
+}
