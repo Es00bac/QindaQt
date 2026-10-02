@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — optional XWayland helper retirement facts handed off; idle, no resource lease
+- Status: available — preserved-sharing private dependency signed artifact handed off; idle, no resource lease
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -121,3 +121,9 @@
 - 2026-10-02T22:52:16+00:00 — Root follow-up limits helper retirement fact check to actual installed parents, finalr2 dependency absence and accepted29f native plan/autostart sources. No new library allowance/adaptation or host action.
 
 - 2026-10-02T22:54:31+00:00 — Bounded helper check: zero installed package parents (old Desktop not a parent), accepted29f/r2 omitshelper, no named source/wiki/autostart exclusion; optionalhelper still owns genericautostart. Proposed explicitmanager-only helper retirement keepsordinaryapps, librarynoexemption; legacyX11nonportalfeature caveat retained. Immutable 20261002T225431Z-xwayland-video-helper-retirement-facts, available/idle.
+
+- 2026-10-02T23:09:59+00:00 — Claim parentapproved privateKPipeWire bundling: newoverlayWT/branchpf-xwayland-private-pipewire exactbase9590192/source7b81. Feasibilitysmall:CMake/packageglue/privateSONAME/module/catalogpaths only, upstreamcapturelogic unchanged. Normalresolver0 selects1bridge upgrade/noaddeddeps;3DEPEND/BDEPEND/IDEPEND rows allinstalled. Granted one2job/load16/core0/6GiB signedBUILDONLY, noinstall/runtime.
+
+- 2026-10-02T23:17:56+00:00 — ccf sourceACCEPT privateKPipeWire/stage PASS but Qt6.11bootstrap QStringBuilder→QByteArrayView compile failed1/93.243s; firstlog7304023 preserved/ownedgone/worldVDBsame/min28.49GB. Rootapproved tinyrepairf476, independentPackagerSOURCEACCEPT; one ordinaryPortagecached replay starts, nocapturelogic change/runtime/install.
+
+- 2026-10-02T23:29:39+00:00 — Exactf476 privatebridge source + signedGPkgd007 independentlyACCEPTd382/integrated43bcc; BUILDONLY0/34.923s/290payload/signsource0/7ELFs3SONAME3QML9licence2launcherchecks0/97observedgone/min28.93GB. Firstsetup3.186s+compile93.243s failures retained. Workerhostpretendkeywordmask1 thenrootreported bothhostnormalpretend/install/focusedpostcheckPASS; no workerinstall/runtime. Immutable 20261002T232939Z-private-kpipewire-preserved-bridge-signed-handoff, compiler/privateleasesreleased, available/idle; bounded finalreceipt-review help only uponnewgrant.
