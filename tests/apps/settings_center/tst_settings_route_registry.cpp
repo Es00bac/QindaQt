@@ -221,7 +221,7 @@ void SettingsRouteRegistryTest::testBuiltInRoutesIntegrity() {
   // was silently one short of the twenty routes that actually register.
   // Whenever a route is appended, this number and the index assertions in
   // tst_settings_navigation_controller.cpp move together.
-  QCOMPARE(registry.count(), 22);
+  QCOMPARE(registry.count(), 23);
 
   QVERIFY(registry.hasRoute(QStringLiteral("notifications")));
   QVERIFY(registry.hasRoute(QStringLiteral("appearance")));
@@ -272,7 +272,7 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   SettingsRouteRegistry registry = SettingsRouteRegistry::createDefault();
   // Each lane appends its route last, in merge order, so no existing index,
   // shortcut or traversal position moves (ADR-0128).
-  QCOMPARE(registry.count(), 22);
+  QCOMPARE(registry.count(), 23);
   QCOMPARE(registry.indexOf(QStringLiteral("streaming")), 12);
   QCOMPARE(registry.indexOf(QStringLiteral("datetime")), 13);
   QCOMPARE(registry.indexOf(QStringLiteral("windows")), 14);
@@ -283,6 +283,7 @@ void SettingsRouteRegistryTest::testAppendedRouteIndices() {
   QCOMPARE(registry.indexOf(QStringLiteral("login-screen")), 19);
   QCOMPARE(registry.indexOf(QStringLiteral("voice")), 20);
   QCOMPARE(registry.indexOf(QStringLiteral("passwords-keys")), 21);
+  QCOMPARE(registry.indexOf(QStringLiteral("portal-permissions")), 22);
 
   const auto notif = registry.route(QStringLiteral("notifications"));
   QVERIFY(notif.has_value());

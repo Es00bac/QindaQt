@@ -243,6 +243,7 @@ T.ApplicationWindow {
             loginScreenComponent: addedRouteComponents.loginScreen
             voiceComponent: addedRouteComponents.voice
             keyringComponent: addedRouteComponents.keyring
+            portalPermissionsComponent: addedRouteComponents.portalPermissions
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
@@ -305,6 +306,7 @@ T.ApplicationWindow {
             loginScreenComponent: addedRouteComponents.loginScreen
             voiceComponent: addedRouteComponents.voice
             keyringComponent: addedRouteComponents.keyring
+            portalPermissionsComponent: addedRouteComponents.portalPermissions
             unavailableComponent: unavailableRouteComponent
             onApplicationCloseResolved: root.applicationClosePending = false
         }
