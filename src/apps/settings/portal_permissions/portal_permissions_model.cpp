@@ -63,7 +63,27 @@ void PortalPermissionsModel::refresh() {
     if (generation != m_generation) return;
     if (reply.type() != QDBusMessage::ReplyMessage || reply.arguments().size() != 1
         || !reply.arguments().first().toString().startsWith(QLatin1Char(':'))) {
-      fail(tr("Portal permissions are unavailable.")); return;
+      if (reply.errorName() != QStringLiteral("org.freedesktop.DBus.Error.NameHasNoOwner")) {
+        fail(tr("Portal permissions are unavailable.")); return;
+      }
+      // The existing store is D-Bus activatable even when the frontend has
+      // not used it yet. Request only its standard activation, never create
+      // a second database or service owned by Settings.
+      auto start = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
+          QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"),
+          QStringLiteral("StartServiceByName"));
+      start << service << quint32(0);
+      auto *activation = new QDBusPendingCallWatcher(m_bus.asyncCall(start, 2000), this);
+      connect(activation, &QDBusPendingCallWatcher::finished, this,
+              [this, generation](QDBusPendingCallWatcher *activated) {
+        const auto result = activated->reply(); activated->deleteLater();
+        if (generation != m_generation) return;
+        if (result.type() != QDBusMessage::ReplyMessage) {
+          fail(tr("Portal permissions are unavailable.")); return;
+        }
+        m_busy = false; refresh();
+      });
+      return;
     }
     m_owner = reply.arguments().first().toString(); loadTable(0);
   });
