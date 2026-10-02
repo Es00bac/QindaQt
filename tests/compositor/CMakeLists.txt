@@ -254,6 +254,8 @@ add_test(
         -DQINDAQT_TEST_GENERATOR=${CMAKE_GENERATOR}
         -DQINDAQT_TEST_AUDIO_LIVE_RUNTIME=${QINDAQT_ENABLE_AUDIO_LIVE_RUNTIME_TESTS}
         "-DQINDAQT_TEST_CMAKE_PREFIX_PATH=${_qindaqt_test_cmake_prefix_path}"
+        "-DQINDAQT_TEST_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+        "-DQINDAQT_TEST_LIBEXECDIR=${KDE_INSTALL_LIBEXECDIR}"
         -P "${CMAKE_CURRENT_LIST_DIR}/verify_kwin_plugin_dependency.cmake"
 )
 set_tests_properties(
