@@ -1,12 +1,12 @@
 # Native power policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: available — critical countdown candidate verified; exact independent review requested
-- Base: a50afb656c4857048fcacc9703cbeede1eac71dc
-- Branch: worker/pf-critical-battery-sol-20261001
-- Worktree: .cache/pf-critical-battery-sol-20261001
-- Ownership: new cohesive critical-battery policy, focused tests, primary power docs and new coordinated ADR; own board/messages. Cross-module assembly/dependency/public changes require manager coordination.
-- Compiler/private runtime: both released; no live test/build process owned
+- Status: working — source-only dormant native lid FD ownership and close-edge policy
+- Base: f951bffcb499d1a0b191ebc4a599ea61b18c8f43 (critical prerequisite under independent review)
+- Branch: worker/pf-native-lid-policy-sol-20261002
+- Worktree: .cache/pf-native-lid-policy-sol-20261002
+- Ownership: new cohesive LidPolicy/LidHandlingAuthority/logind FD adapter, focused resident fixtures, primary power docs and ADR0332; own board/messages. Additive assembly changes await collision coordination; frozen critical/profile/Hibernate code is not owned.
+- Compiler/private runtime: no lease; source-only checkpoint assigned
 
 
 ## Updates
@@ -43,3 +43,5 @@
 - 2026-10-02T00:42:02Z — Actual resident critical fixture now authored with real Settings1/notification host and token-authenticated public presentation cancellation; injected protected Sleep1/power-off and separate bounded wire-fault actors.23 behavior rows cover configured actions, fences, late callbacks, uncertainty/no replay, finite unknown-ID expiry and strict typed bounds. New public Hibernate client contract row added. Source-only, compilation/runtime still pending; requested focused qinda leases after push, no laptop heavy work.
 
 - 2026-10-02T01:00:30Z — Exact241ff fresh qinda strict Debug configure and six-target build PASS45.52s/47.03s/182 Ninja actions with accepted source690 prefix; compiler PID493136 absent after release, minimum14.25GB. First actual resident suspend countdown3/0/0 PASS5.58s; frozen full9/9 CTests101/0/0 Qt PASS118.99s including23 critical behaviors25/0/0 and unchanged Power65/0/0 plus SessionActions11/0/0. Both resources released; first3/full95 observed PIDs and first1/full51 roots absent, eight cache/executable hashes unchanged, runtime min13.07GB. Qinda strict docs486 pages/static PASS before final docs-only verification update. Available for independent review repairs or bounded public power-contract help; no installed cutover, hardware action, wholePF2 completion or new path claim.
+
+- 2026-10-02T01:17:24Z — Manager assigned one source-only native lid outcome at exactf951 prerequisite (not accepted). Fetched hub, preserved shared untracked files and created NEW isolated worktree/branch. Current public Power lid/dock facts lack selected active-session identity; posted concrete public Session1 daemon UID/PID→authenticated login1 session Active/User boundary for approval and main/CMake collision notice before crossmodule assembly. Own new core/FD seam, fixtures/docs/ADR0332; no compiler/private lease, host mutation or frozen critical/profile/Hibernate edit.
