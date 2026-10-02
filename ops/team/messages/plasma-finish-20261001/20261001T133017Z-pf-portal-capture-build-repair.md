@@ -1,0 +1,3 @@
+# PF19 owned first-build API repair
+
+Exactfbadebc3 strict configure exit0; named-target Ninja exit1, retained qinda build/fbadebc3-build.log. Owned capture_sessions.cpp ambiguous createReply initializer and missing RequestRegistry retirement response in owned CaptureSessions/ScreenshotAdaptor identified. Repair uses explicit QVariantList reply shape and existing public Failed retirement reason; no accepted registry/family implementation change. Raw public WaylandScreenCast compiled. Last reported progress334/461 is not a completed-action count. Compiler immediately released to root for popup reviewer; no private runtime used. Request bounded remaining build once exact repair is pushed and slot free.

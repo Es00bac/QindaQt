@@ -1,0 +1,11 @@
+# Actual scene content passes; decoder target mismatch after churn
+
+2026-10-01T22:49:28+00:00. Exact executable sourcebf82b66b2bf498ea724e5537564b0020d34107e5, original fork447 driverSHA2565f06d13d4749cc1ace859080ef8ce1b6b28f0a4f65750b82331470dbbc2a1086, repaired native callerSHA256b2fb9673d26385260b7bfce48b3017eafb69dbe641da709f6e49f755381ba142. Original c03 dependencies and original a421 pixel binary are preserved and hashed.
+
+Commands build/run_order_screenshot.py, build/run_order_pipewire.py each exit0 (2.666s/3.323s), Qt3/3 each, no skips. Screenshot proves original fixture colors/PickColor/cancel; actual PNG1100x820 all902000 pixelsRGBA20,200,70,255. PipeWire proves original >3decoded frames, changed checksums, fixture colors, node retirement/cessation and cancellation. Producer stderr empty; lifecycle retained. Build/native-order-* retains original commands,manifest,ldd,rawPNG/logs/cleanup. The prior a421 startup-order failure is retained separately: stable identity triggered immediate Qt registration before frontend, causing ServiceUnknown/code6; bf82 starts the real frontend first.
+
+Unchanged build/run_order_matrix.py exits1/53.145s, first groupQt6pass/1fail: Screenshot, requestClose/requester loss, foreign-parent grant/loss and frontend/broker loss pass; later PipeWire fails0decoded/2nodes/target not found following previous stream retirement. Runner stops before its fresh lock and compositor-loss groups. No assertions are relaxed or cases removed.
+
+Bounded source finding: tests/services/portal/capture/pipewire_frames.cpp passes returned node ID as PW_KEY_TARGET_OBJECT. Installed /usr/include/pipewire-0.3/pipewire/stream.h lines73-76,548-556 and keys.h384 require object.serial or node.name. Installed /usr/share/wireplumber/scripts/linking/find-defined-target.lua45-47 interprets target.object as object.serial, unlike legacy node.target. Fresh IDs can coincide; churn exposes divergence. Proposed narrow repair resolves the actual offered node ID through its actual remote registry and uses its authentic object.serial, retaining all original assertions. Ownership/resource routing requested; no production fork change indicated.
+
+All three runs have survivors=[],cores=[],cleanup_errors=[]. Owned runtimePGIDs370305/370458/370733 finished; compiler/private leases released. No installation/routing/fullPF19 claim.

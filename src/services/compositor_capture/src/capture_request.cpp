@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "capture_request.h"
+#include <qindaqt/services/compositor_capture/capture_request.h>
 
-namespace QindaQt::Screenshot {
+namespace QindaQt::CompositorCapture {
 namespace {
 
 // KWin's CaptureInteractive kinds (screenshotdbusinterface2.cpp).
@@ -83,4 +83,4 @@ KWinCaptureCall kwinCallFor(const CaptureOptions &options)
     return call;
 }
 
-} // namespace QindaQt::Screenshot
+} // namespace QindaQt::CompositorCapture

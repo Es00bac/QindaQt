@@ -1,0 +1,7 @@
+# Narrow native-lock fault observation claim
+
+Manager assigned a new bounded outcome after consumer fixture handoff: exact immutable447 in-process crash stack and synchronous capture-revocation/lock diagnosis. Own isolated fork test driver only; production ownership remains held until causal proof. No ptrace/core/dumpability changes, sleeps, fake frames or weakened gates.
+
+Pushed diagnostic source072e36b66471167165d57e429a8cea7f6401550e changes only qindaqt/capture-authority/tests/native_capture_authority_test.cpp; compared with447 the delta is35lines. Superseded scene logging is removed. A warmed own-process unwinder records a fault-only SIGSEGV stack, exits139, and startup retains /proc/self/maps for address provenance. No recovery or resume.
+
+Build plan: own fork build/build_fault_driver.py extracts exact447 one-TU/link argv, redirects object/dependency artifacts into own build/fault-diagnostic, uses exact447 framework/libs/plugins and leaves owner build untouched. One TU, core0,120s ceiling, memory below3GiB for30s terminates owned process group. Compiler grant requested; private slot held by power reviewer. Once granted, one unchanged ca299 native-lock case with the diagnostic driver; retain all admission/pixel/frame/privacy/renderer/compositor-survival guards. Stop after concrete stack and causal boundary, then route any production repair through explicit ownership and different-worker review.

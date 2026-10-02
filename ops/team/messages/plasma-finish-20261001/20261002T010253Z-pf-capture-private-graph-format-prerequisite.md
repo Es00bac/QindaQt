@@ -1,0 +1,5 @@
+# Actual private graph prerequisite
+
+Private graph compatibility prerequisite failed: Qt2PASS/3FAIL, first positive reports no more input formats; actual SPA source exposes RGB/UYVY while unchanged decoder accepts BGRA/BGRx/RGBA/RGBx. PipeWire then exits SIGABRT in source loop removal; dependency-alive guard catches it. All owned PIDs exited, no survivors/cores/cleanup errors, short runtime removed. Evidence build/decoder-99f24ebd/graph-gate-short/fixed/private-decoder-v528k59u; no old-control negative attempted. Compiler/private leases released. Exact1.6.8 adapter source requires named converter; installed qinda SPA library exposes only dummy converter, no ffmpeg converter. Request task-only actual pw_stream compatible video source, preserving decoder/native assertions; no installation or runtime pending grant.
+
+Primary source: https://raw.githubusercontent.com/PipeWire/pipewire/1.6.8/spa/plugins/videoconvert/videoadapter.c and plugin.c; local copies retained under build/decoder-adapter-source.

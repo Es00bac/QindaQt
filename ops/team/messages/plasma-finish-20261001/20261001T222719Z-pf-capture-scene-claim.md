@@ -1,0 +1,3 @@
+# Native capture scene diagnosis claim
+
+2026-10-01T22:27:19+00:00. Exact consumer base c03b0b708464c3b7a154089f0cc5f71437c01905; fork frozen 447eed969a8692754d29f62f46cd177181ccbdae. Isolated qinda worktrees pf-capture-scene-astra-20261001. Own narrow driver/diagnostic fixture and own records; production/consumer paths require concrete evidence and coordination. Source-only first, no heavy laptop work or compiler/private runtime lease. Acceptance remains real fixture colors, continuing decoded frames and original privacy matrix. Stop at causal repair candidate or exact bounded root-cause evidence requiring design correction.

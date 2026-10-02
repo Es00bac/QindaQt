@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=QindaQt Portal Backend
+Exec=@KDE_INSTALL_FULL_LIBEXECDIR@/xdg-desktop-portal-qindaqt
+NoDisplay=true
+X-QindaQt-KWin-Wayland-Interfaces=zkde_screencast_unstable_v1;
