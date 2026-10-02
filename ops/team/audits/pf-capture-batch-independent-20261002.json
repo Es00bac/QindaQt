@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "author": "root",
+  "outcome": "ACCEPT bounded monitor-batch and cursor-mode candidate",
+  "desktop": "ef362e9d25ec33c6c6090f9fdebc63c875efa49f",
+  "fork": "496a7e7e222c88139b4b3fbd7ee41e97427f0c3f",
+  "production_source_checkpoint": "cc3f6de8a29b9e72fd08bfa9f1f1c4976f8486cc",
+  "blocking_findings": [],
+  "observed": {
+    "exit": 0,
+    "seconds": 25.792380935046822,
+    "renderer": "AMD Radeon RX5700XT render-node",
+    "groups": 4,
+    "test_methods": 8,
+    "behavior_data_rows": 10,
+    "qt_passed_including_setup_cleanup": 18,
+    "failed": 0,
+    "skipped": 0,
+    "cleanup_errors": [],
+    "scoped_core_files": []
+  },
+  "receipts": {
+    "status.json": "c166e2ed57f6975f2d3b0aa0b73ff73901d009fdef7fe71c579f333661a11093",
+    "runtime.log": "b20cdf4a03a873c4373d4f5dff1fd1c802e7b195b13958b91938cc9598e51ee8",
+    "command.json": "8de2d4ab473cfd5287cfabd8785050105740fbd476d83f6255b1db13ab25b145"
+  },
+  "group_audits": {
+    "qindaqt-native-capture-fjy5ie4x/audit.json": "e39730ab262a3e9f9f06436e605215c3ef63320b48beef0d0ff0f0dff5066107",
+    "qindaqt-native-capture-2halvsjs/audit.json": "959259cd30c9d58608e60134b24264fef76090cd997bc3ace64f2100fdfa31e5",
+    "qindaqt-native-capture-esznof5m/audit.json": "007f33885063ac3dde7eb4b0ceab4bd9c8bd10a5d57b2343ce67f9b50503bb14",
+    "qindaqt-native-capture-05eyo16r/audit.json": "b6717769b0dfbf07c367ef103b9b8af0d5a67bc0bbf58e695b454a9b0ef3de5c"
+  },
+  "coverage_limitations": [
+    "Independent review read authored source and actual manager-run receipts; no duplicated compiler/GPU run.",
+    "Focused three CTests passed on cc3 production source, unchanged in ef362; final repaired native driver is ef362.",
+    "Monitor sources only; window/virtual/restore capabilities remain separate.",
+    "Render-node AMD private fixture acceptance does not approve final recipes, live desktop deployment or full Plasma removal."
+  ]
+}
