@@ -39,6 +39,7 @@ DisplayPowerFacade::~DisplayPowerFacade() {
 }
 bool DisplayPowerFacade::available() const { return m_display.available() && m_preferences && m_preferences().has_value(); }
 bool DisplayPowerFacade::canScreenOff() const { return available() && m_power.hasSnapshot() && !m_power.owner().isEmpty(); }
+bool DisplayPowerFacade::callerAllowed(const QString &actualCaller) const { return canScreenOff() && actualCaller == m_power.owner(); }
 bool DisplayPowerFacade::submit(const QString &cause) {
     const auto preference = m_preferences ? m_preferences() : std::nullopt;
     if (!available() || !preference) return false;
