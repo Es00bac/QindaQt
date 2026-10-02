@@ -9,8 +9,13 @@ checks, and performed no source build or GPU test. Existing applications and
 running compositor processes remain alive; this is package delivery, not fresh-login
 adoption of the new compositor.
 
-The exact final desktop `0.1.0_pre20261002-r2` is building on qinda.
-Installed-header plugin, shell and profile checks are in progress. Native
+The exact final desktop `0.1.0_pre20261002-r2` completed its 5,040-action
+production build on qinda. Image installation exposed one incorrect Keyring
+QML metadata filename; the retained build will resume after the isolated
+install-rule correction `8a622b4b7` and downstream package patch are reviewed.
+No final desktop binary has been produced or installed yet. Installed-header
+plugin, shell and profile qualification passes 14 CTest rows, including 40
+render cases and three production-shell resolutions (`0f9a2160`). Native
 protected-portal qualification passes five actual GPU/PipeWire/input/clipboard
 journeys with 15 caller and 15 driver Qt checks, zero failures/skips; the
 independent receipt review is `419b6781`. Final native shortcut qualification
