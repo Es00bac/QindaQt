@@ -362,3 +362,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0333: Authenticate complete shared idle-consumer registration](0333-authenticate-shared-idle-consumer-registration.md)
 
 - [ADR-0334: Adapt the live shortcut authority and its native consumers](0334-native-shortcut-authority-and-consumers.md) — Proposed candidate
+
+- [ADR-0335: Native remote input through the compositor EIS engine](0335-native-remote-input-portal.md)

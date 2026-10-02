@@ -60,6 +60,8 @@ add_subdirectory(shortcuts)
 
 add_subdirectory(misc_families)
 
+add_subdirectory(remote_input)
+
 qt_add_executable(xdg-desktop-portal-qindaqt app/main.cpp)
 target_link_libraries(
     xdg-desktop-portal-qindaqt
