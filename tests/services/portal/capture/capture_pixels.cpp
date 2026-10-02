@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <QWidget>
 #include <QWindow>
+#include <QScreen>
 #include <QtGui/qpa/qplatformnativeinterface.h>
 #include <QtGui/qguiapplication_platform.h>
 #include <wayland-client.h>
@@ -26,7 +27,13 @@ int main(int argc, char **argv) {
     // entry. Qt registers with the host portal when its frontend appears; an
     // empty identity produces a fatal warning after initial frame readiness.
     QGuiApplication::setDesktopFileName(QStringLiteral("org.test.CapturePixels"));
-    Pixels pixels; pixels.showFullScreen();
+    Pixels pixels;
+    // Bind the animated fixture to logical origin, independent of registry
+    // ordering when the native driver advertises a second output.
+    pixels.winId();
+    for (auto *screen : QGuiApplication::screens())
+        if (screen->geometry().topLeft() == QPoint(0, 0)) pixels.windowHandle()->setScreen(screen);
+    pixels.showFullScreen();
     // Callback data survives Qt display teardown after a bounded early exit.
     static std::atomic_bool frameCompleted = false;
     QTimer mapped; mapped.setInterval(20); QObject::connect(&mapped, &QTimer::timeout, &app, [&] {
