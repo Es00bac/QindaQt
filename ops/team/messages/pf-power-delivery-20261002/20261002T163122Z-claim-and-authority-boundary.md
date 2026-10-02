@@ -1,0 +1,7 @@
+# Native power completion claim and authority boundary
+
+Exact desktop base7358b792874f06eb13e00dcd0780c1ee8a453e7a, isolated .cache/pf-power-delivery-20261002, branchworker/pf-power-delivery-20261002. qinda fork main directly resolves68c4d74f903b7e8990dd5fd5d509ec8154eac1d1. Shared checkout's unrelated untracked work preserved. No source implementation/test completion yet.
+
+Power1 registry default consumedScopes{} has no production caller; acquisitions Unsupported. NativeLock consumes AutomaticLock receipt; DisplayOffStage consumes DisplayOff receipt; idle-suspend/dim composition missing. LidPolicy lacks screen-off dispatch/availability and persistent cause cancellation. Current ordinary DPMS adapter requests Off/On on all eligible outputs and final restore all-On; it cannot distinguish an external same-mode Off during own Off. Source proposale705 already names this gap. Strong own-only restoration is retained, requiring compositor-owned scoped blank provenance rather than guessed ownership or weakened tests.
+
+Manager coordination requested: new fork display-power authority/public module and minimal DPMS request/output/DBus/CMake hooks, separate consumer session/display_power boundary plus supervisor composition. No shortcuts/capture edits. Existing PowerDevil logic may be adapted with license retained where compatible. Production defaults remain off until safe exclusive cutover; lock-before-sleep and Protected receipt remain mandatory. All builds/CPU tests qinda; no private GPU/session lease or hardware mutation/install/game.
