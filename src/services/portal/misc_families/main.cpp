@@ -7,6 +7,7 @@
 #include <optional>
 #include <QJsonDocument>
 #include <QPrintDialog>
+#include <QDialogButtonBox>
 #include <QPushButton>
 #include <QSocketNotifier>
 #include <QTimer>
@@ -54,11 +55,18 @@ int main(int argc, char **argv) {
         if (frame->value("configuration").isObject()) loadPrintConfiguration(&printer, frame->value("configuration").toObject());
         else loadPrintSettings(&printer, frame->value("settings").toObject().toVariantMap(), frame->value("page-setup").toObject().toVariantMap());
         printer.setDocName(frame->value("title").toString());
+        if (kind == "print" && frame->value("configuration").isObject()) {
+            // A valid preparation token bypasses the chooser without allowing
+            // QPrintDialog::done to rewrite the previously consented settings.
+            dialog = std::make_unique<QDialog>(); dialog->setWindowTitle(QStringLiteral("Printing"));
+        } else {
         auto print = std::make_unique<QPrintDialog>(&printer); print->setWindowTitle(frame->value("title").toString());
         print->setWindowModality(frame->value("modal").toBool(true) ? Qt::ApplicationModal : Qt::NonModal); print->setEnabled(false);
         const auto label = frame->value("accept_label").toString();
-        if (!label.isEmpty()) for (auto *button : print->findChildren<QPushButton *>()) if (button->text().contains("Print")) button->setText(label);
+        if (!label.isEmpty()) for (auto *buttons : print->findChildren<QDialogButtonBox *>())
+            for (auto *button : buttons->buttons()) if (buttons->buttonRole(button) == QDialogButtonBox::AcceptRole) button->setText(label);
         dialog = std::move(print);
+        }
     } else dialog = std::make_unique<MiscDialog>(*frame);
     auto fail = [&] { failed = true; dialog->done(QDialog::Rejected); };
     QObject::connect(dialog.get(), &QDialog::finished, &app, [&](int code) {
