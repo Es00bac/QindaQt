@@ -22,6 +22,13 @@ DisplayOffStage::DisplayOffStage(Platform::Idle::IdleObservation &idle,
 {
     connect(&m_idle, &Platform::Idle::IdleObservation::changed,
             this, &DisplayOffStage::idleChanged);
+    connect(&m_idle, &Platform::Idle::IdleObservation::activity, this, [this] {
+        if (m_cycleConsumed && !m_offRequested) m_display.requestOn();
+        m_cycleConsumed = false;
+    });
+    connect(&m_display, &DisplayPowerPort::requestFinished, this, [this](bool admitted) {
+        if (!admitted) m_offRequested = false;
+    });
     connect(&m_display, &DisplayPowerPort::availabilityChanged,
             this, [this](bool) { apply(); });
     connect(&m_display, &DisplayPowerPort::powerChanged,
@@ -116,6 +123,10 @@ void DisplayOffStage::idleChanged()
     }
     if (m_timeoutMilliseconds <= 0 || !m_display.available() || suppressed()) return;
     if (m_offRequested) return;
+    // Loss, preference churn and a physical wake cannot replay this episode.
+    // Only a real resumed event, not a new notification's initial state, rearms.
+    if (m_cycleConsumed) return;
+    m_cycleConsumed = true;
     m_offRequested = true;
     m_display.requestOff();
 }
