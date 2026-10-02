@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — positive Power readiness procedure remains unrun; exact final Input five-gate handoff independently accepted
+- Status: available — two-host Portage cutover plan handed off; awaiting scoped packaging task
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -79,3 +79,7 @@
 - 2026-10-02T20:49:19Z — BoundedpositivePowerpreflight stoppednewharness permanager: productioncae9114ae1e64cd375b6cb79fb206cae8e9c7f1e equals8c/cb, docs-onlycandidatee3dac221892d1cfba236faa2086a8e6ef8ed0da7 recordsrealinstalledreadiness/shutdownprocedure, explicitlyunrun. Strictdocs0/9.33s/503docnav0/diffcheck0; no compile/native/hostaction. SuspectedextraXMLclose wasfalsefinding; actualPower1literal parsePASS12methods3signals, correction sent.
 
 - 2026-10-02T20:49:19Z — IndependentactualInput ACCEPT2ad61f2938ecc04634898125329d1c9f34d30ac9:63archivedreceipt/evidence hash+sizesmatched,5callerlogs15Qt +5corelogs15Qt0fail0skip/52.873224s; five100argcommands/sourcecases/render-onlyisolationchecked, allcleanup/corearrays empty.17artifacthashes matchpreservedpreflight;16currentstillmatch, core changedonlyafterroot55drebuild(recordede9runtime preserved). Compiled537CPP/helper102exactsource verified; first2a542/f99auditpath caveat retained. No reviewercompile/runtime/installed/PAM/wholePlasma or actualownerlossreplay claim. Boardavailable/noleases.
+
+- 2026-10-02T20:52:26Z — Claimed read-only installed Plasma/world/profile inspection at overlay39321582993a8a1cb3295c92d39517065358a441. No install, configuration, unmerge, resolution or session mutation.
+
+- 2026-10-02T20:57:35Z — Verified read-only qinda60/laptop30 forbidden inventories, explicit roots/profile/USE/reverse-edge facts and exact tagged Kirigami223-file source proof. Handed off staged manager-only plan; no host mutations or zero-installed-Plasma claim.
