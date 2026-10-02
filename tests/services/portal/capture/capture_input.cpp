@@ -90,8 +90,7 @@ void input() {
             if (action == "allow-remember" || action == "allow-restore") {
                 QFile record(testAudit); if (record.open(QIODevice::WriteOnly | QIODevice::Append)) {
                     record.write(action == "allow-remember" ? "remember=true\n" : "restored=true\n");
-                    for (const auto *item : list->selectedItems()) record.write("selected source=" + item->text().toUtf8() + 
-);
+                    for (const auto *item : list->selectedItems()) record.write("selected source=" + item->text().toUtf8() + '\n');
                 }
             }
         }

@@ -5,6 +5,9 @@
 find_path(QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR
     NAMES qindaqt-kwin/capture-authority/protocol.h)
 if(QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR)
+    install(FILES ../data/qindaqt.capture.portal
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/xdg-desktop-portal/portals"
+        COMPONENT QindaQtPortalP0)
     set(authority_paths "${QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR}/qindaqt-kwin/capture-authority/launchpaths.h")
     if(NOT EXISTS "${authority_paths}")
         message(FATAL_ERROR "Selected fork authority header lacks frozen configured launchpaths.h")

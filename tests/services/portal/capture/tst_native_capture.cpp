@@ -206,8 +206,7 @@ private Q_SLOTS:
         QTRY_COMPARE(responses.count, 1); QCOMPARE(responses.response, 0U);
         reset("allow-restore"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(restored)), QString{}, QVariantMap{}}); success(true);
         QVERIFY(audit().contains("restored=true"));
-        const auto selectedName = [](const QByteArray &bytes) { for (const auto &line : bytes.split(
-)) if (line.startsWith("selected source=")) return line; return QByteArray{}; };
+        const auto selectedName = [](const QByteArray &bytes) { for (const auto &line : bytes.split('\n')) if (line.startsWith("selected source=")) return line; return QByteArray{}; };
         QVERIFY(!selectedName(firstAudit).isEmpty()); QCOMPARE(selectedName(audit()), selectedName(firstAudit));
         const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1);
         QDBusPendingCallWatcher opened(bus.asyncCall(method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(restored)), QVariantMap{}}))); QTRY_VERIFY(opened.isFinished());
