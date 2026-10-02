@@ -43,4 +43,11 @@ Clipboard consent is a separate opt-in choice in the Start dialog.
   clipboard gates pass; then the KDE admission and ADR-0088 drop-in are
   removed in the same change.
 - Persistence/restore tokens are not offered; every Start asks.
+- Screen sharing in a RemoteDesktop session reuses the protected ScreenCast
+  capture producer through a ScreenCast-owned source seam, matching the
+  frontend's independent backend choice; streams are published only with
+  their own monitor consent and stop with the session.
+- The frontend sends Notify* without awaiting replies, so the explicit
+  refusal is not visible to legacy callers; they need a backend EIS sender
+  or stay on the KDE route.
 - See [Native remote-input portal](../architecture/portal-remote-input.md).
