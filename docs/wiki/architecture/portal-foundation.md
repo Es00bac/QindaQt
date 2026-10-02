@@ -216,3 +216,7 @@ ShortcutsClient boundary, never Settings implementation. The explicit helper
 constructor leaves old callers unavailable and retains display/lock admission.
 Metadata remains held pending executable and live acceptance. See
 [ADR-0334](../adr/0334-native-shortcut-authority-and-consumers.md).
+
+## Independent families
+
+The additive [Print, Account, DynamicLauncher and USB adapters](../reference/portal-misc-families.md) reuse these public boundaries with an explicit ordinary helper executable. Their method implementation is independent of capture and remote input; routing changes remain subject to their focused executable gates and exact candidate review.

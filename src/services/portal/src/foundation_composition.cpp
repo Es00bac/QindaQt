@@ -11,6 +11,11 @@
 #include <qindaqt/services/portal/process_capture.h>
 #include <qindaqt/services/portal/screenshot_adaptor.h>
 #include <qindaqt/services/portal/screencast_adaptor.h>
+#include "../misc_families/process_misc.h"
+#include "../misc_families/account_adaptor.h"
+#include "../misc_families/usb_adaptor.h"
+#include "../misc_families/launcher_adaptor.h"
+#include "../misc_families/print_adaptor.h"
 #include "../shortcuts/global_shortcuts_adaptor.h"
 #include "../shortcuts/shortcut_ui.h"
 #include <qindaqt/services/shortcuts_client/transport.h>
@@ -26,6 +31,7 @@ public:
     ProcessCapture capture;
     ProcessShortcuts shortcutUi;
     QindaQt::Services::Shortcuts::QtShortcutTransport shortcutNative;
+    ProcessMisc misc;
     QtNativeNotifications notifications;
     QindaQt::Power::QtPowerTransport power;
     PowerIdleInhibition idle;
@@ -42,13 +48,18 @@ public:
     std::unique_ptr<ScreenshotAdaptor> screenshot;
     std::unique_ptr<ScreenCastAdaptor> screencast;
     std::unique_ptr<GlobalShortcutsAdaptor> shortcuts;
+    std::unique_ptr<AccountAdaptor> account;
+    std::unique_ptr<UsbAdaptor> usb;
+    std::unique_ptr<LauncherAdaptor> launcher;
+    std::unique_ptr<PrintAdaptor> print;
     Private(QObject &host, QDBusConnection bus, QString runtime, QString helper,
         QString relay, const QStringList &roots,
-        QindaQt::ApplicationCatalog::DirectoryScan scan, QString chooserHelper, QString captureHelper, QString shortcutHelper)
+        QindaQt::ApplicationCatalog::DirectoryScan scan, QString chooserHelper, QString captureHelper, QString shortcutHelper, QString miscHelper)
         : session(bus, runtime), requests(bus), consent(session, bus, std::move(helper)),
           chooser(session, consent, std::move(chooserHelper)),
           capture(session, consent, requests, bus, std::move(captureHelper), std::move(runtime)),
           shortcutUi(session, consent, std::move(shortcutHelper)), shortcutNative(bus),
+          misc(session, consent, std::move(miscHelper)),
           notifications(bus), power(bus), idle(power, [this] { return consent.admitted(); }),
           store(QindaQt::Apps::SettingsDefaultApps::createSessionDefaultApplicationsStore(roots, scan)),
           uri(*store, std::move(scan), std::move(relay),
@@ -65,7 +76,11 @@ public:
           }, bus)),
           screenshot(std::make_unique<ScreenshotAdaptor>(host, requests, capture)),
           screencast(std::make_unique<ScreenCastAdaptor>(host, requests, capture, bus)),
-          shortcuts(std::make_unique<GlobalShortcutsAdaptor>(host, requests, shortcutUi, shortcutNative, bus)) {
+          shortcuts(std::make_unique<GlobalShortcutsAdaptor>(host, requests, shortcutUi, shortcutNative, bus)),
+          account(std::make_unique<AccountAdaptor>(host, requests, misc)),
+          usb(std::make_unique<UsbAdaptor>(host, requests, misc)),
+          launcher(std::make_unique<LauncherAdaptor>(host, requests, misc)),
+          print(std::make_unique<PrintAdaptor>(host, requests, misc)) {
         QObject::connect(&consent, &AccessConsent::authorityLost, &requests, [this] {
             requests.retireAll(); idle.revoke();
         });
@@ -84,9 +99,13 @@ PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusCon
     : PortalFoundationComposition(host, std::move(bus), std::move(runtime), std::move(consent), std::move(relay), std::move(roots), std::move(chooser), std::move(capture), QString{}) {}
 PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusConnection bus,
     QString runtime, QString consent, QString relay, QStringList roots, QString chooser, QString capture, QString shortcuts)
+    : PortalFoundationComposition(host, std::move(bus), std::move(runtime), std::move(consent),
+        std::move(relay), std::move(roots), std::move(chooser), std::move(capture), std::move(shortcuts), QString{}) {}
+PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusConnection bus,
+    QString runtime, QString consent, QString relay, QStringList roots, QString chooser, QString capture, QString shortcuts, QString misc)
     : d(std::make_unique<Private>(host, bus, std::move(runtime), std::move(consent), std::move(relay), roots,
         QindaQt::ApplicationCatalog::scanApplicationDirectories(roots,
-            QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay), std::move(chooser), std::move(capture), std::move(shortcuts))) {}
+            QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay), std::move(chooser), std::move(capture), std::move(shortcuts), std::move(misc))) {}
 PortalFoundationComposition::~PortalFoundationComposition() { stop(); }
 bool PortalFoundationComposition::start() { return d->session.start(); }
 void PortalFoundationComposition::stop() { d->capture.revoke(); d->requests.retireAll(); d->idle.revoke(); d->session.stop(); }

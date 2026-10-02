@@ -58,6 +58,8 @@ add_subdirectory(choosers)
 add_subdirectory(capture)
 add_subdirectory(shortcuts)
 
+add_subdirectory(misc_families)
+
 qt_add_executable(xdg-desktop-portal-qindaqt app/main.cpp)
 target_link_libraries(
     xdg-desktop-portal-qindaqt
