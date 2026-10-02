@@ -1,12 +1,12 @@
 # Native power policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: available — native lid source checkpoint ready; bounded executable gates requested
+- Status: working — granted exact native lid qinda compiler gate; private runtime unclaimed
 - Base: f951bffcb499d1a0b191ebc4a599ea61b18c8f43 (critical prerequisite independently accepted)
 - Branch: worker/pf-native-lid-policy-sol-20261002
 - Worktree: .cache/pf-native-lid-policy-sol-20261002
 - Ownership: new cohesive LidPolicy/LidHandlingAuthority/logind FD adapter, focused resident fixtures, primary power docs and ADR0332; own board/messages. Additive assembly changes await collision coordination; frozen critical/profile/Hibernate code is not owned.
-- Compiler/private runtime: no lease; source-only checkpoint assigned
+- Compiler/private runtime: sole qinda compiler granted for exact7f5 seven targets; no private runtime lease
 
 
 ## Updates
@@ -51,3 +51,5 @@
 - 2026-10-02T01:48:00Z — Exact7f5 source checkpoint pushed to qinda and isolated remote WT. Qinda strict MkDocs7.44s/487-page docs+navigation plus boundary, production/test shape, diff and frozen critical/profile/Hibernate comparison all exit0.34 behavior rows/expected36 Qt totals remain UNCOMPILED/UNRUN. Posted exact seven-target/dependency compiler request and private first genuine-close gate followed only on pass by new/unchanged gates; no resources claimed. Source-only assigned stopping point reached, available for bounded gates or critical review repair; no runtime qualification/new implementation claim.
 
 - 2026-10-02T01:53:49Z — Read current Platform queue and direct critical ACCEPT bcb8 after source handoff. Posted concrete help offer: requested bounded executable gates first, or source-only public Display screen-off/capability/lifetime audit to resolve deferred lid action boundary. No new implementation path or compiler/private/graphics claim; status remains available.
+
+- 2026-10-02T01:57:43Z — Manager granted sole qinda compiler exact7f5 seven targets/dependencies with accepted690 prefix, -j8/-l24/core0 and3GiB30sec owned-group guard. Actual remote source HEAD7f5 is clean, prefix owner remains690. Preparing fresh own build with source/cache/artifact/starttick/memory evidence; no private lease, laptop build/GPU or installation. Exact model identifier is not independently exposed by runtime tools; no unsupported provider/model claim.
