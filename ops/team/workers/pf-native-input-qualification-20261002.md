@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — installed native plugin/shell QA commands prepared; awaiting exact final artifacts and explicit runtime grant
+- Status: available — genuine upstream native55d Alt-Tab target/cases prepared; awaiting explicit build/runtime grant
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -70,3 +70,5 @@
 - 2026-10-02T20:48:25+00:00 — Independent e568 source review ACCEPT/no blocking findings; six Python tests PASS6/6, repository/source-pin/current native desktop-r1-r3dependency recipe PASS. Actualrecipe SHA matches6c168e8 blob; fork55d treec031 exact. Source text contract retains build/runtime/install gates; transitiveclosure/installedplugin gate separate, future-r2 sourcepin required. Review-only receipt/board/thread committed; no compiler/native lease held, available next manager installed-plugin QA assignment.
 
 - 2026-10-02T20:51:03+00:00 — Completed manager-routed existing installed-plugin/shell QA preparation against observedcae manager WT. Criticalcachefacts: BUILD_TESTINGOFF, PLUGINON/old68 headerprefix/binary; stale CTest catalog is not current target availability. Prepared3staticABI/2nested discovery, seven profile/resolution/package/dock rows, offscreen11profile capturematrix and3production-surface commands. No realAltTab functional row found; package tests are not switching evidence. Existing discovery stages DESTDIR rather than actualPortageinstalledfiles. Own ignoredplan ready; no builds/install/runtime/source edits, no lease held; waiting exact55d/29f artifacts/grant.
+
+- 2026-10-02T20:54:07+00:00 — Manager-routed source-only upstream AltTab preparation complete. Exactnative55d targettestTabBox/CTestkwin-testTabBox reuses actualcore/framework; smallest forward+reverse with three mappedWaylandwindows and exactactivewindow/grab/release assertions, recommended existingKeyboardFocus. Warmnativecache55d has requiredTABBOX/GLOBALSHORTCUTS/NATIVE_SHORTCUTSON. FixtureShowTabBoxfalse deliberately excludes visiblepopup; actualQindaQt package/layout/import requirement documented separately. Own ignoredsourcehash/commandplan ready; no source changes/build/nativeGPU/hostinput, no lease held.
