@@ -10,3 +10,4 @@
 ## Updates
 
 - 2026-10-02T16:44:00Z: Claimed. Read AGENTS, portal foundation/service/capture docs, fork EIS plugin and upstream xdg-desktop-portal-kde 6.6.6 (9a5cc0e8) remotedesktop/inputcapture/clipboard. Mapping upstream session flow onto PortalRequests/PortalSession/consent; no build until the compiler lease is granted.
+- 2026-10-02T16:58:00Z: Preserved unbuilt RemoteDesktop slice: desktop dfb2a18a, fork b579064e (syntax-checked, mkdocs strict/docs validator pass). Requested build slot; implementing InputCapture adapter next.
