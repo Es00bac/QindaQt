@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — read-only keyring availability handoff complete; installedDesktop discovery awaits root grant
+- Status: available — final legacy metadata handoff complete; waiting manager installedDesktop discovery grant
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -114,3 +114,7 @@
 - 2026-10-02T22:29:49.477912+00:00 — Claimed bounded already-owned legacy Secret Service/KWallet metadata-only availability/count probe; native catalog existence/size only. No autostart/unlock/prompts/secret reads/import/host mutation; actual installed discovery awaits root grant.
 
 - 2026-10-02T22:35:11.509326+00:00 — Metadata probes exited0, no live query/runtime/compiler. Qinda bus has no Secret Service/KWallet owners; laptop bus connection refused, counts unavailable. Both default native catalogs absent; disk data untouched/unknown, no actual import/name-handoff approval. Sanitized exact29f normative receipt ready; reduced-resource request honored, no further laptop work.
+
+- 2026-10-02T22:40:28.234669+00:00 — Claimed final metadata-only three standard legacy directory aggregate count/bytes/symlink probe capped128 entries; exact currentUID GNOME/KWallet executable/name match only. Nice19/idleIO, no contents/argv/environ/bus retry/import/host mutation or broad scan. Stop after compact receipt.
+
+- 2026-10-02T22:42:18.314242+00:00 — Final nice19/idleIO probes exited0; laptop standardstores5regularfiles/5523B, qinda9/48955B. No symlinks/unexpected entries/cap reached, older standard walletdir absent; exact currentUID GNOME/KWallet residentname+exe matches0 both. No filenames/content/headers/credentials/argv/environ/bus retry/autostart/import/host mutation. Nonzero retained file bytes do not establish secret counts or actual import. Probes stopped, compact receipt preserved; no further scan.
