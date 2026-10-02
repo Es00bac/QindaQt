@@ -1,0 +1,14 @@
+{
+  "author": "Claude continuation",
+  "source_head": "df761d243",
+  "base": "e2f4c01e0ae2e720237b2f12c24219f005f66757",
+  "files": {
+    "tests/services/portal/foundation/consent_input.cpp": "c78c9ff1d6b5803f4f8281936656420e4dd78fba235a8a612e979af729f42201",
+    "tests/services/portal/remote_input/CMakeLists.txt": "3cd9bd013e80f31e0ee38879016fec383a888741b71ce12e78fca84a7c0a04a8",
+    "tests/services/portal/remote_input/native/run_native_remote_input.py": "caf8b3b061f6c8a3413edfcd9f855055bdfada8ebe7acf728d3ef1118e269717",
+    "tests/services/portal/remote_input/native/tst_native_remote_input.cpp": "6cdbf1551bdcae468b7a077446e966535248bb6bafb3f0fe1d38a38f9e765969",
+    "tests/services/portal/remote_input/native/clipboard_client.cpp": "4f1bc2065ba72ffdc3c58092b2f817e0202d32e2c7c97679c2e08ed30bc4dc68",
+    "tests/services/portal/remote_input/native/build_eis_plugin.py": "4c694c6e29baecab91ca1d44dba4f57b0969a5db98f1287da54e158fff210b5a"
+  },
+  "source_untouched": true
+}
