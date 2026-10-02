@@ -1,0 +1,570 @@
+{
+  "timestamp": "2026-10-02T22:41:38.834247+00:00",
+  "world_sha256": "95afc314c780265e0a7293a2d8a97ca4ce4b461d7f9ff8037de7d8dfbe23e388",
+  "world_before_sha256": "95afc314c780265e0a7293a2d8a97ca4ce4b461d7f9ff8037de7d8dfbe23e388",
+  "world_unchanged": true,
+  "targets": [
+    {
+      "cpv": "kde-frameworks/kauth-6.27.0-r1",
+      "vdb": {
+        "repository": "qindaqt",
+        "BUILD_ID": "1",
+        "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux policykit",
+        "IUSE": "+policykit debug test",
+        "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[gui] =kde-frameworks/kcoreaddons-6.27*:6 >=dev-qt/qtbase-6.10.1:6[dbus] =kde-frameworks/kwindowsystem-6.27*:6[wayland] >=sys-auth/polkit-qt-0.175.0[qt6(+)] >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+        "PDEPEND": ""
+      },
+      "ebuild_sha256": "c96f9ebc6c36a08625769a3fd4838758caa9786f44081c657051943ed672d3a8",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "qindaqt",
+      "repository_match": true
+    },
+    {
+      "cpv": "kde-frameworks/kio-6.27.0-r1",
+      "vdb": {
+        "repository": "qindaqt",
+        "BUILD_ID": "1",
+        "USE": "X abi_x86_64 acl amd64 elibc_glibc kernel_linux kwallet wayland",
+        "IUSE": "acl +kwallet wayland X debug designer +handbook test",
+        "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,network,ssl,widgets,X] >=dev-qt/qtdeclarative-6.10.1:6 =kde-frameworks/kbookmarks-6.27*:6 =kde-frameworks/kcodecs-6.27*:6 =kde-frameworks/kcolorscheme-6.27*:6 =kde-frameworks/kcompletion-6.27*:6 =kde-frameworks/kconfig-6.27*:6 =kde-frameworks/kcoreaddons-6.27*:6 =kde-frameworks/kcrash-6.27*:6 =kde-frameworks/kdbusaddons-6.27*:6 =kde-frameworks/kguiaddons-6.27*:6 =kde-frameworks/ki18n-6.27*:6 =kde-frameworks/kiconthemes-6.27*:6 =kde-frameworks/kitemviews-6.27*:6 =kde-frameworks/kjobwidgets-6.27*:6 =kde-frameworks/knotifications-6.27*:6 =kde-frameworks/kservice-6.27*:6 =kde-frameworks/ktextwidgets-6.27*:6 =kde-frameworks/kwidgetsaddons-6.27*:6 =kde-frameworks/kwindowsystem-6.27*:6[wayland,X] =kde-frameworks/solid-6.27*:6 sys-apps/util-linux sys-apps/attr virtual/acl =kde-frameworks/kwallet-6.27*:6 >=dev-qt/qtbase-6.10.1:6/6.11.1=[gui] >=dev-qt/qtbase-6.10.1:6[libproxy] sys-power/switcheroo-control >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+        "PDEPEND": ">=kde-frameworks/kded-6.27:6"
+      },
+      "ebuild_sha256": "5dbc5d9177d224afde536b87d16b1d625d7e3dfb38270d3cde0f4f816c8a06b5",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "qindaqt",
+      "repository_match": true
+    },
+    {
+      "cpv": "dev-libs/kirigami-addons-1.12.1-r1",
+      "vdb": {
+        "repository": "qindaqt",
+        "BUILD_ID": "1",
+        "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+        "IUSE": "debug test",
+        "RDEPEND": ">=dev-qt/qtbase-6.8.1:6[gui] >=dev-qt/qtdeclarative-6.8.1:6 >=kde-frameworks/kcolorscheme-6.16.0:6 >=kde-frameworks/kconfig-6.16.0:6 >=kde-frameworks/kcoreaddons-6.16.0:6 >=kde-frameworks/kcrash-6.16.0:6 >=kde-frameworks/kglobalaccel-6.16.0:6 >=kde-frameworks/kguiaddons-6.16.0:6 >=kde-frameworks/ki18n-6.16.0:6 >=kde-frameworks/kiconthemes-6.16.0:6 >=kde-frameworks/kirigami-6.16.0:6 >=dev-qt/qtmultimedia-6.8.1:6[qml] >=kde-frameworks/qqc2-desktop-style-6.16.0:6 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+        "PDEPEND": ""
+      },
+      "ebuild_sha256": "b255d435dfa870d85dd36150d427dcb98390d327a879feee334ae75d1a715c1b",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "qindaqt",
+      "repository_match": true
+    },
+    {
+      "cpv": "kde-misc/kdeconnect-26.04.3-r4",
+      "vdb": {
+        "repository": "qindaqt",
+        "BUILD_ID": "1",
+        "USE": "X abi_x86_64 amd64 elibc_glibc kernel_linux pulseaudio",
+        "IUSE": "bluetooth +plasmoid pulseaudio telephony X debug test selinux",
+        "RDEPEND": "dev-libs/libei dev-libs/openssl:0/3= >=dev-libs/wayland-1.15.0 >=dev-qt/qtbase-6.10.1:6/6.11.1=[dbus,gui,network,wayland,widgets,X] >=dev-qt/qtdeclarative-6.10.1:6[widgets] >=dev-qt/qtmultimedia-6.10.1:6 >=kde-frameworks/kcolorscheme-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6[qml] >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/kdbusaddons-6.22.0:6 >=kde-frameworks/kguiaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kiconthemes-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kirigami-6.22.0:6 >=kde-frameworks/kitemmodels-6.22.0:6 >=kde-frameworks/knotifications-6.22.0:6 >=kde-frameworks/kpeople-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kstatusnotifieritem-6.22.0:6 >=kde-frameworks/kwidgetsaddons-6.22.0:6 >=kde-frameworks/kwindowsystem-6.22.0:6 >=kde-frameworks/qqc2-desktop-style-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 sys-apps/dbus >=media-libs/pulseaudio-qt-1.4:0/5= x11-libs/libfakekey x11-libs/libX11 x11-libs/libXtst x11-libs/libxkbcommon dev-libs/kirigami-addons:6 >=dev-qt/qt5compat-6.10.1:6[qml] >=dev-qt/qtmultimedia-6.10.1:6[qml] >=dev-qt/qttools-6.10.1:6[qdbus] >=kde-frameworks/kdeclarative-6.22.0:6 >=kde-frameworks/kdnssd-6.22.0:6 net-fs/sshfs || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 !kde-misc/kdeconnect:5 >=sys-libs/glibc-2.43-r2",
+        "PDEPEND": ""
+      },
+      "ebuild_sha256": "9dec9446f3fede26505b2d77ac05a31d75836ff13737a80dcb53322d991c1ea9",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "qindaqt",
+      "repository_match": true
+    },
+    {
+      "cpv": "x11-misc/xdg-utils-1.2.1-r11",
+      "vdb": {
+        "repository": "gentoo",
+        "BUILD_ID": "1",
+        "USE": "X abi_x86_64 amd64 dbus elibc_glibc kernel_linux",
+        "IUSE": "dbus doc gnome perl plasma X",
+        "RDEPEND": "dev-util/desktop-file-utils x11-misc/shared-mime-info sys-apps/dbus x11-apps/xprop x11-apps/xset",
+        "PDEPEND": ""
+      },
+      "ebuild_sha256": "630e00e13b4667def5a3168b7dbd83d321a1d43e9430828963c3d45bf306b34a",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "gentoo",
+      "repository_match": true
+    },
+    {
+      "cpv": "media-gfx/sloom-studio-bin-0.9.16",
+      "vdb": {
+        "repository": "qindaqt",
+        "BUILD_ID": "2",
+        "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+        "IUSE": "+globalmenu",
+        "RDEPEND": "!media-gfx/sloom-studio app-accessibility/at-spi2-core dev-libs/expat dev-libs/nss media-libs/alsa-lib media-libs/mesa sys-apps/dbus x11-libs/cairo x11-libs/gtk+:3 x11-libs/libdrm x11-libs/libxkbcommon x11-libs/libXcomposite x11-libs/libXdamage x11-libs/libXrandr x11-libs/pango >=sys-libs/glibc-2.43-r2",
+        "PDEPEND": ""
+      },
+      "ebuild_sha256": "e05980e20cb953ba076706a0d914ea03737c29473e93ea3d95f2b643b5f09ab7",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "qindaqt",
+      "repository_match": true
+    },
+    {
+      "cpv": "lxqt-base/lxqt-config-2.4.0",
+      "vdb": {
+        "repository": "gentoo",
+        "BUILD_ID": "1",
+        "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux touchpad",
+        "IUSE": "+monitor +touchpad",
+        "RDEPEND": ">=dev-libs/libqtxdg-4.4.0 >=dev-qt/qtbase-6.6:6[gui,widgets,xml] >=dev-qt/qtsvg-6.6:6 =lxqt-base/liblxqt-2.4*:0/2.4= =lxqt-base/lxqt-menu-data-2.4* virtual/zlib:0/1= x11-apps/setxkbmap x11-libs/libxcb:0/1.12= x11-libs/libX11 x11-libs/libXcursor x11-libs/libXfixes virtual/libudev:0/1= x11-drivers/xf86-input-libinput x11-libs/libXi >=sys-libs/glibc-2.43-r2",
+        "PDEPEND": ""
+      },
+      "ebuild_sha256": "2d50a385259d0360b84e641f48c5ca1ffce144d6b9f61bc1f8b29fd973d0ba69",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "gentoo",
+      "repository_match": true
+    },
+    {
+      "cpv": "kde-apps/kio-extras-26.04.3",
+      "vdb": {
+        "repository": "gentoo",
+        "BUILD_ID": "2",
+        "USE": "X abi_x86_64 amd64 elibc_glibc kernel_linux libproxy man sftp",
+        "IUSE": "activities ios +man mtp nfs +libproxy openexr samba +sftp taglib X debug +handbook test",
+        "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[dbus,gui,network,widgets,xml] >=dev-qt/qtsvg-6.10.1:6 kde-apps/libkexiv2:6 >=kde-frameworks/karchive-6.22.0:6 >=kde-frameworks/kcmutils-6.22.0:6 >=kde-frameworks/kcodecs-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kdbusaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kparts-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kxmlgui-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 >=kde-frameworks/syntax-highlighting-6.22.0:6 >=kde-frameworks/knotifications-6.22.0:6 net-libs/libproxy dev-libs/qcoro >=net-libs/libssh-0.9.8:0/4=[sftp] x11-libs/libX11 x11-libs/libXcursor !kde-apps/kio-extras:5[-kf6compat(-)] !kde-apps/kio-extras-kf5:5 !<kde-frameworks/kio-5.116.0-r2:5 !kde-frameworks/kio-trash-desktop-file:5 >=kde-frameworks/kded-6.22.0:6 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 >=sys-libs/glibc-2.43-r2",
+        "PDEPEND": ""
+      },
+      "ebuild_sha256": "a08fd12998f02b7d2aef4e86f6ae4fc78d24b2ddd059a670f47859732041d7d8",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "gentoo",
+      "repository_match": true
+    },
+    {
+      "cpv": "kde-apps/gwenview-26.04.3",
+      "vdb": {
+        "repository": "gentoo",
+        "BUILD_ID": "1",
+        "USE": "X abi_x86_64 amd64 annotate elibc_glibc kernel_linux mpris",
+        "IUSE": "activities +annotate fits +mpris raw semantic-desktop share X debug +handbook test",
+        "RDEPEND": "dev-libs/wayland >=dev-qt/qtbase-6.10.1:6/6.11.1=[gui,opengl,wayland,widgets] >=dev-qt/qtmultimedia-6.10.1:6 >=dev-qt/qtsvg-6.10.1:6 >=kde-frameworks/kcompletion-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6 >=kde-frameworks/kconfigwidgets-6.22.0:6 >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/kguiaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kiconthemes-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kitemmodels-6.22.0:6 >=kde-frameworks/kitemviews-6.22.0:6 >=kde-frameworks/kjobwidgets-6.22.0:6 >=kde-frameworks/knotifications-6.22.0:6 >=kde-frameworks/kparts-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kwidgetsaddons-6.22.0:6 >=kde-frameworks/kxmlgui-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 media-gfx/exiv2:0/0.28= media-libs/lcms:2 media-libs/libjpeg-turbo:0/0.2= media-libs/libpng:0/16= media-libs/tiff:0/6= >=media-libs/kcolorpicker-0.3.1 >=media-libs/kimageannotator-0.7.1 >=dev-qt/qtbase-6.10.1:6[dbus] >=dev-qt/qtbase-6.10.1:6/6.11.1=[X] x11-libs/libX11 >=dev-qt/qtimageformats-6.10.1:6 >=kde-apps/thumbnailers-26.04.3:6 >=kde-frameworks/kimageformats-6.22.0:6 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 !kde-apps/gwenview:5 >=sys-libs/glibc-2.43-r2",
+        "PDEPEND": ""
+      },
+      "ebuild_sha256": "667c102716c5fdaac9c6659202afb0d34551a351ba4d5b93b6096e44acfe6c28",
+      "matches_ready_artifact_metadata": {
+        "BUILD_ID": true,
+        "USE": true,
+        "IUSE": true,
+        "RDEPEND": true,
+        "PDEPEND": true,
+        "ebuild_sha256": true
+      },
+      "retired_plasma_atoms": [],
+      "expected_repository": "gentoo",
+      "repository_match": true
+    }
+  ],
+  "native_flags": {
+    "kauth_policykit": true,
+    "kdeconnect_plasmoid_off": true,
+    "xdg_plasma_off": true,
+    "sloom_globalmenu_off": true,
+    "lxqt_monitor_off": true,
+    "kioextras_activities_off": true,
+    "gwenview_activities_off": true
+  },
+  "focused_boundaries": [
+    {
+      "cpv": "kde-frameworks/kauth-6.27.0-r1",
+      "path": "/usr/lib64/libKF6AuthCore.so.6.27.0",
+      "expected": {
+        "bytes": 101928,
+        "mode": 493,
+        "sha256": "d5d6b2863c7dfac9f536e7ab44b06d403d21109256de735291ea27f7978187bd",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 101928,
+        "sha256": "d5d6b2863c7dfac9f536e7ab44b06d403d21109256de735291ea27f7978187bd"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/lib64/libKF6AuthCore.so.6.27.0 00c3fc8945c6d6e2e515a83544a1aded 1790977286"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "kde-frameworks/kauth-6.27.0-r1",
+      "path": "/usr/lib64/qt6/plugins/kf6/kauth/backend/kauth_backend_plugin.so",
+      "expected": {
+        "bytes": 63736,
+        "mode": 493,
+        "sha256": "712d0f159ab6956a3c6442859c918101d6230d52206206a064460a3c3339bd55",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 63736,
+        "sha256": "712d0f159ab6956a3c6442859c918101d6230d52206206a064460a3c3339bd55"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/lib64/qt6/plugins/kf6/kauth/backend/kauth_backend_plugin.so 4a0a24fac2bf4a04d67deebb4b51eef8 1790977286"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "kde-frameworks/kio-6.27.0-r1",
+      "path": "/usr/lib64/libKF6KIOCore.so.6.27.0",
+      "expected": {
+        "bytes": 1832816,
+        "mode": 493,
+        "sha256": "0db24a6f76485633889c8052475642d0ce4e76613f5da54acf7b0a0861580d7d",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 1832816,
+        "sha256": "0db24a6f76485633889c8052475642d0ce4e76613f5da54acf7b0a0861580d7d"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/lib64/libKF6KIOCore.so.6.27.0 72f1b070a13c013cbd60b06b4d13701a 1790978095"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "kde-frameworks/kio-6.27.0-r1",
+      "path": "/usr/lib64/qt6/plugins/kf6/kio/kio_trash.so",
+      "expected": {
+        "bytes": 178936,
+        "mode": 493,
+        "sha256": "d18a75eaad84f57d29baf73823e548f039c83635dec93f44f747a1704920ddb0",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 178936,
+        "sha256": "d18a75eaad84f57d29baf73823e548f039c83635dec93f44f747a1704920ddb0"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/lib64/qt6/plugins/kf6/kio/kio_trash.so 6b55756ed5eb5799a86abf288420f7ce 1790978095"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "dev-libs/kirigami-addons-1.12.1-r1",
+      "path": "/usr/lib64/libKirigamiAddonsComponents.so.1.12.1",
+      "expected": {
+        "bytes": 26584,
+        "mode": 493,
+        "sha256": "8034232106bfd47c686a0c523fa870f95299b81a2741c617f63f64198af07fdc",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 26584,
+        "sha256": "8034232106bfd47c686a0c523fa870f95299b81a2741c617f63f64198af07fdc"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/lib64/libKirigamiAddonsComponents.so.1.12.1 c5188370d5379e7257c8c4242723a18c 1790978421"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "dev-libs/kirigami-addons-1.12.1-r1",
+      "path": "/usr/lib64/qt6/qml/org/kde/kirigamiaddons/settings/libsettingsplugin.so",
+      "expected": {
+        "bytes": 121464,
+        "mode": 493,
+        "sha256": "346c4e5dcd528908c931dd320f1391d584648ecfa767680d9b9319c422d7e87b",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 121464,
+        "sha256": "346c4e5dcd528908c931dd320f1391d584648ecfa767680d9b9319c422d7e87b"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/lib64/qt6/qml/org/kde/kirigamiaddons/settings/libsettingsplugin.so a815aa2da9b41966197af1552f2528f2 1790978421"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "kde-misc/kdeconnect-26.04.3-r4",
+      "path": "/etc/xdg/autostart/org.kde.kdeconnect.daemon.desktop",
+      "expected": {
+        "bytes": 1555,
+        "mode": 420,
+        "sha256": "edd4b2cb4c69047c8cc801e3b4a66a2853f8cb76f6c8ee1a999143d29705b2ae",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 420,
+        "type": "file",
+        "bytes": 1555,
+        "sha256": "edd4b2cb4c69047c8cc801e3b4a66a2853f8cb76f6c8ee1a999143d29705b2ae"
+      },
+      "owned_vdb_content_rows": [
+        "obj /etc/xdg/autostart/org.kde.kdeconnect.daemon.desktop 3a6c01f6eccdb91ce77b4aa27edb12c9 1790978436"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "kde-misc/kdeconnect-26.04.3-r4",
+      "path": "/usr/share/applications/org.kde.kdeconnect.nonplasma.desktop",
+      "expected": {
+        "bytes": 5490,
+        "mode": 420,
+        "sha256": "55dacaa5c591c51dea441437e08046ae1251d232c0f1161dca353e09ca203046",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 420,
+        "type": "file",
+        "bytes": 5490,
+        "sha256": "55dacaa5c591c51dea441437e08046ae1251d232c0f1161dca353e09ca203046"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/share/applications/org.kde.kdeconnect.nonplasma.desktop 271ca4b726ba81025cd78e0a415632c4 1782530849"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "x11-misc/xdg-utils-1.2.1-r11",
+      "path": "/usr/bin/xdg-open",
+      "expected": {
+        "bytes": 33567,
+        "mode": 493,
+        "sha256": "b41522e7a78eec9886248bb12ba533728e7715d8da91af68ebafa4d989a30d8a",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 33567,
+        "sha256": "b41522e7a78eec9886248bb12ba533728e7715d8da91af68ebafa4d989a30d8a"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/bin/xdg-open edc77eb2da0bbc2d4db20a00396b1668 1790978799"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "media-gfx/sloom-studio-bin-0.9.16",
+      "path": "/usr/bin/sloom-studio",
+      "expected": {
+        "mode": 511,
+        "target": "../../opt/sloom-studio/sloom-studio",
+        "type": "symlink"
+      },
+      "actual": {
+        "mode": 511,
+        "type": "symlink",
+        "target": "../../opt/sloom-studio/sloom-studio"
+      },
+      "owned_vdb_content_rows": [
+        "sym /usr/bin/sloom-studio -> ../../opt/sloom-studio/sloom-studio 1790980333"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "media-gfx/sloom-studio-bin-0.9.16",
+      "path": "/usr/share/applications/sloom-studio.desktop",
+      "expected": {
+        "bytes": 448,
+        "mode": 420,
+        "sha256": "e0db6a8ac10e8346f3d9b124807e8e0e373d0ee2bb848ffc096cdccb26be0de8",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 420,
+        "type": "file",
+        "bytes": 448,
+        "sha256": "e0db6a8ac10e8346f3d9b124807e8e0e373d0ee2bb848ffc096cdccb26be0de8"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/share/applications/sloom-studio.desktop 60b2a2ac152e17dad1d4ecef4cc7e3dc 1790978814"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "lxqt-base/lxqt-config-2.4.0",
+      "path": "/usr/lib64/lxqt-config/liblxqt-config-cursor.so",
+      "expected": {
+        "bytes": 274008,
+        "mode": 493,
+        "sha256": "6a10288b721555c7c2106a5f9ad19c22db1873c85c45dd744944466ab56d82df",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 274008,
+        "sha256": "6a10288b721555c7c2106a5f9ad19c22db1873c85c45dd744944466ab56d82df"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/lib64/lxqt-config/liblxqt-config-cursor.so 31abade13d0c66ee4b06ed7cd86dcaf0 1790978877"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "lxqt-base/lxqt-config-2.4.0",
+      "path": "/usr/share/applications/lxqt-config.desktop",
+      "expected": {
+        "bytes": 6447,
+        "mode": 420,
+        "sha256": "c7bb83d8c77e62c3cdb27174498c5dd230fd3ed0e351a0b8474e7080d8f37e7d",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 420,
+        "type": "file",
+        "bytes": 6447,
+        "sha256": "c7bb83d8c77e62c3cdb27174498c5dd230fd3ed0e351a0b8474e7080d8f37e7d"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/share/applications/lxqt-config.desktop 937a82923abdcfa06d8d80df23a75d98 1790978847"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "kde-apps/kio-extras-26.04.3",
+      "path": "/usr/lib64/qt6/plugins/kf6/kio/sftp.so",
+      "expected": {
+        "bytes": 170328,
+        "mode": 493,
+        "sha256": "ca80555a5e7cc3ee5e4b917a20d50a53a9829b6644929a24d748a7d48243b93c",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 493,
+        "type": "file",
+        "bytes": 170328,
+        "sha256": "ca80555a5e7cc3ee5e4b917a20d50a53a9829b6644929a24d748a7d48243b93c"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/lib64/qt6/plugins/kf6/kio/sftp.so 810dbe17417c91e312c2c8493d94a619 1790978898"
+      ],
+      "match": true
+    },
+    {
+      "cpv": "kde-apps/gwenview-26.04.3",
+      "path": "/usr/share/applications/org.kde.gwenview.desktop",
+      "expected": {
+        "bytes": 7619,
+        "mode": 420,
+        "sha256": "aa23d8f1f530b3ff1fbae5a48b23aa56e9be48331d9db63c5d85e38bceb45c32",
+        "type": "file"
+      },
+      "actual": {
+        "mode": 420,
+        "type": "file",
+        "bytes": 7619,
+        "sha256": "aa23d8f1f530b3ff1fbae5a48b23aa56e9be48331d9db63c5d85e38bceb45c32"
+      },
+      "owned_vdb_content_rows": [
+        "obj /usr/share/applications/org.kde.gwenview.desktop e117e496002b308ae9879f68f51d81a6 1790978909"
+      ],
+      "match": true
+    }
+  ],
+  "focused_regular_bytes_read": 2824926,
+  "source_commit": "3e05c3fc89d6dd100f8a7ccfa362fa6a7577b3cc",
+  "ready_manifest_sha256": "53ad5513596f8ac97950bc258ab641632007d3256b0be4971635c51675b1c71d",
+  "kio_permitted_framework_pdepend": ">=kde-frameworks/kded-6.27:6",
+  "source_worktree_head": "3e05c3fc89d6dd100f8a7ccfa362fa6a7577b3cc",
+  "elapsed_seconds": 0.031365314000026956,
+  "boundary_timestamp": "2026-10-02T22:43:10.149344+00:00",
+  "scope": "Nine exact installed direct runtime metadata and 15 focused owned files; not recursive closure, all-VDB integrity, complete payload, GUI/native runtime or session acceptance.",
+  "accept": true,
+  "manager_install_receipt": {
+    "install_result": {
+      "exitCode": 0,
+      "elapsedSeconds": 80.4051747310441
+    },
+    "install_command": {
+      "script": "import subprocess\nfrom pathlib import Path\nfeatures=subprocess.check_output([\"portageq\",\"envvar\",\"FEATURES\"],text=True).strip()+\" binpkg-request-signature\"\na=[\"sudo\",\"-n\",\"env\",\"FEATURES=\"+features,\"emerge\",\"--ignore-default-opts\",\"--usepkgonly\",\"--getbinpkg=n\",\"--binpkg-respect-use=y\",\"--oneshot\",\"--newuse\",\"--with-bdeps=n\",\"--dynamic-deps=n\",\"--autounmask=n\",\"--autounmask-write=n\",\"--backtrack=0\",\"--ask=n\"]+['=kde-frameworks/kauth-6.27.0-r1', '=kde-frameworks/kio-6.27.0-r1', '=dev-libs/kirigami-addons-1.12.1-r1', '=kde-misc/kdeconnect-26.04.3-r4', '=x11-misc/xdg-utils-1.2.1-r11', '=media-gfx/sloom-studio-bin-0.9.16', '=lxqt-base/lxqt-config-2.4.0', '=kde-apps/kio-extras-26.04.3', '=kde-apps/gwenview-26.04.3']\nraise SystemExit(subprocess.call(a))\n"
+    },
+    "manager_files": {
+      "/home/cabewse/work_space/container-wm/.cache/plasma-finish/build/install-final-20261002/qinda-native-app-subset-install-result.json": {
+        "sha256": "e39b7211b147d8096bf3620d832844b32568e1c57cb4e1ad7dbe2a60762d5d24",
+        "bytes": 58
+      },
+      "/home/cabewse/work_space/container-wm/.cache/plasma-finish/build/install-final-20261002/qinda-native-app-subset-install-command.json": {
+        "sha256": "d3c747b23082edd1358d67ab7ee2d0af849cd7e8d5b097df1b545de0b5e62cdd",
+        "bytes": 824
+      },
+      "/home/cabewse/work_space/container-wm/.cache/plasma-finish/build/install-final-20261002/qinda-native-app-subset-install.log": {
+        "sha256": "136e3f324a3cf43be6b4eee1001cbbac1554b939745c76c059cbee291444e913",
+        "bytes": 6169
+      }
+    },
+    "observed_binary_completion_rows": [
+      ">>> Completed (1 of 9) x11-misc/xdg-utils-1.2.1-r11::gentoo",
+      ">>> Completed (2 of 9) media-gfx/sloom-studio-bin-0.9.16::qindaqt",
+      ">>> Completed (3 of 9) kde-frameworks/kauth-6.27.0-r1::qindaqt",
+      ">>> Completed (4 of 9) lxqt-base/lxqt-config-2.4.0::gentoo",
+      ">>> Completed (5 of 9) dev-libs/kirigami-addons-1.12.1-r1::qindaqt",
+      ">>> Completed (6 of 9) kde-frameworks/kio-6.27.0-r1::qindaqt",
+      ">>> Completed (7 of 9) kde-misc/kdeconnect-26.04.3-r4::qindaqt",
+      ">>> Completed (8 of 9) kde-apps/kio-extras-26.04.3::gentoo",
+      ">>> Completed (9 of 9) kde-apps/gwenview-26.04.3::gentoo"
+    ]
+  },
+  "source_tracked_diff_exit": 0,
+  "review_command_scope": "ssh qinda nice -n 19 ionice -c 3 python3 -; read 9 exact VDB metadata/ebuild/CONTENTS records, previous small artifact/inventory JSONs, original world snapshot, then 15 named installed files only. Exit0 for all read-only commands.",
+  "review_status": "ACCEPT scoped installed direct dependency/native boundary subset"
+}
