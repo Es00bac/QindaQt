@@ -4611,6 +4611,7 @@ sender/PID and StartJob admission. Initial Locked/Locking becomes available whil
 denying StartJob. Owner replacement fences late old-owner completion. The fixture
 uses actual message and Peer.Ping boundaries, never elapsed time as readiness,
 and needs no GPU or privileged native authorization hook. Exact ca299 eager
-publication is the negative control. These source rows require their own executed
-qualification and do not resolve historical intermittent native response2 by
-inference.
+publication is the negative control. Exact63e33ecd passes7/7 Qt startup rows and13/13 existing authority-channel
+checks; the eager negative fails at premature public name presence. These focused
+gates do not resolve historical intermittent native response2 by inference and
+do not replace the original native pixel/frame/privacy matrix.

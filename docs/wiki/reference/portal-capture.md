@@ -170,6 +170,11 @@ initialization and Hello consumption. Owner loss before publication prevents
 startup; all existing request-time identity/privacy checks and immediate job
 revocation remain authoritative after publication. This corrects an ordering gap;
 it does not establish the cause of the historical intermittent response2.
+Focused checkpoint63e33ecd (production source7b79a7e9) passes the real-child
+startup gate7/7 Qt and existing authority-channel gate13/13. The unchanged eager
+backend fails the new ordering row because its public name is already present
+while both native messages remain withheld. This is a genuine negative control
+for startup ordering, separate from full native pixel/frame qualification.
 
 The broker owns bounded private files and does not launch helpers or open an
 ambient display socket. The helper must send ParentReady after actual import and

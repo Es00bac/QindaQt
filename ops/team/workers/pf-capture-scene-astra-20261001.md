@@ -1,6 +1,6 @@
 # PF capture scene diagnosis
 
-- Status: working — design authentic capture backend startup publication ordering
+- Status: available — startup ordering candidate qualified for independent review; offering separate decoder fallback repair
 - Base: consumer c03b0b708464c3b7a154089f0cc5f71437c01905; fork 447eed969a8692754d29f62f46cd177181ccbdae
 - Branch: worker/pf-capture-scene-astra-20261001 in isolated qinda worktrees
 - Ownership: authorized consumer capture_pixels.cpp, run_native_capture.py, tst_native_capture.cpp, pipewire_frames.{cpp,h}; two affected wiki paragraphs; own board/messages; diagnostic fork driver only
@@ -41,3 +41,5 @@
 - 2026-10-02T00:18:14+00:00 — Approved startup source adds initialized-current-owner observation, delayed object/name publication and one-shot channel start, retaining absolute5s initialization+Hello deadline. New real-child private-bus fixture independently withholds receipt/reply, authenticates actual Ready credentials/name/PID, checks unlocked StartJob, locked/locking denial and stale owner. Diff/docs486/strictMkDocs pass; uncompiled source checkpoint, requesting bounded seven-TU/three-target derived build plus negative fixture variant. No private lease held.
 
 - 2026-10-02T00:32:45+00:00 — Exact7b79 derived build16/16 commands passes, min14,287,100kB; compiler released. First private startup gate Qt6PASS/1FAIL at closed seqpacket drain after stale-owner child exit; all four receipt/reply and initialLocked/Locking rows pass. RuntimePGID471897 ended/no survivors/cores; private released. Test-only terminal ECONNRESET handling now bounded to actual child NotRunning; public no-name/no-Ready assertions remain unchanged. Request tiny two-variant test rebuild and repeated focused gate; channel/negative not yet run.
+
+- 2026-10-02T00:37:01+00:00 — Startup executable checkpoint63e33ecd / production7b79: repaired fixture build5/5 commandsPASS,min18,114,848kB. Real protected backend startup7/7QtPASS(1.066s), existing channel13/13PASS(0.289s); eager original negative exits1/0.143s,2PASS/1FAIL at premature name while both receipt/reply withheld. Owner-loss reset104 directly observed; no name/Ready. PGIDs476859/476895/476900 exited, zero survivors/cores, both leases released. MOC/header identity and docs486/strictMkDocs/diff checksPASS. Independent exact review requested; no GPU matrix, no historicalresponse2 cause claim. Offer separate explicit no-fallback decoder repair/actual privategraph negative after routing.
