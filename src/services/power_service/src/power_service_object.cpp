@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "power_service_object_p.h"
+#include "idle_consumer_authority_p.h"
 
 #include <qindaqt/services/power_protocol/power_limits.h>
 
@@ -18,6 +19,9 @@ PowerServiceObject::PowerServiceObject(PowerServiceCoordinator *coordinator,
     , m_connection(connection)
 {
     Q_ASSERT(m_coordinator != nullptr);
+    m_idleConsumerAuthority = new IdleConsumerAuthority(m_connection, this);
+    connect(m_idleConsumerAuthority, &IdleConsumerAuthority::revoked,
+            this, &PowerServiceObject::clearIdleConsumers);
     m_ownerWatcher = new QDBusServiceWatcher(
         QString{}, m_connection, QDBusServiceWatcher::WatchForUnregistration,
         this);
@@ -56,6 +60,7 @@ quint32 PowerServiceObject::GetIdleInhibitorCapabilities() const
 {
     const Snapshot current = m_coordinator->snapshot();
     synchronizeIdleInhibitorEpoch(current.epoch);
+    m_idleConsumerAuthority->refresh();
     return static_cast<quint32>(m_idleInhibitors.consumedScopes().toInt());
 }
 
@@ -63,6 +68,7 @@ quint32 PowerServiceObject::GetActiveIdleInhibitorScopes() const
 {
     const Snapshot current = m_coordinator->snapshot();
     synchronizeIdleInhibitorEpoch(current.epoch);
+    m_idleConsumerAuthority->refresh();
     return activeIdleInhibitorScopes();
 }
 
@@ -82,6 +88,7 @@ void PowerServiceObject::RequestIdleInhibitorStateWithReceipt(
     const QDBusMessage call = message();
     const Snapshot current = m_coordinator->snapshot();
     synchronizeIdleInhibitorEpoch(current.epoch);
+    m_idleConsumerAuthority->refresh();
     const auto supported =
         static_cast<quint32>(m_idleInhibitors.consumedScopes().toInt());
     const auto active = activeIdleInhibitorScopes();
@@ -101,6 +108,7 @@ QindaQt::Power::Handle PowerServiceObject::AcquireIdleInhibitor(
     }
     const QDBusMessage call = message();
     synchronizeIdleInhibitorEpoch(m_coordinator->snapshot().epoch);
+    m_idleConsumerAuthority->refresh();
     const auto result = m_idleInhibitors.acquire(
         call.service(), application, reason, IdleInhibitorScopes::fromInt(scopes));
     if (result.status != IdleInhibitorAcquireStatus::Accepted) {
@@ -157,6 +165,7 @@ void PowerServiceObject::synchronizeIdleInhibitorEpoch(
         m_ownerWatcher->removeWatchedService(owner);
     }
     m_watchedOwners.clear();
+    m_idleInhibitors.setConsumedScopes({});
     m_idleInhibitors.setEpoch(epoch);
     m_idleInhibitorEpoch = epoch;
 }

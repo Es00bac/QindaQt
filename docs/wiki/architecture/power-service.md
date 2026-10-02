@@ -46,18 +46,27 @@ selects production; the wire contract is unchanged.
 | Keyboard backlight | UPower keyboard-backlight interface | `Power1` collaborator |
 | External-monitor brightness | KWin brightness control, through Display1 `SetOutputBrightness` ([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)) | Display D7; unavailable wherever KWin advertises no capability; presented per output by the [Power Settings route](../apps/power-settings.md) through the public Display client; DDC/CI policy remains PB-6 |
 
-`Power1` version 1 reports the privacy-bounded logind inhibitor summary
-but acquires no caller-scoped QindaQt idle leases. The private
-`IdleInhibitorRegistry` is currently only a compiled service-core foundation:
-it enforces service-epoch and unique-owner cookies, bounded capacity, atomic
-scope admission and owner cleanup in unit tests. It now backs additive resident D-Bus queries and acquire/release methods;
-these methods still report zero consumed scopes and reject every acquisition.
-It is not connected to idle stages, so the ScreenSaver facade remains
-Unsupported. Its public state query uses an actual-owner, nonce-correlated
-targeted receipt because QtDBus method replies do not expose an authenticated
-actual sender; the legacy getters remain compatible but are not policy authority
-([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)). This boundary must
-stay explicit until the shared idle policy consumes every requested scope.
+`Power1` version 1 reports the privacy-bounded logind inhibitor summary and
+owns the bounded idle lease registry. Additive `RegisterIdleConsumers(tu) -> b`
+lets only the actual current Session1 unique owner, authenticated to this UID,
+declare all three shared consumers in the current Power1 epoch. It accepts
+only the complete automatic-lock/display-off/idle-suspend mask or withdrawal;
+partial/malformed/stale/foreign registrations reject without changing state.
+The composition-only native-exclusive gate defaults off, and confirmed legacy
+PowerDevil presence forbids registration. Supervisor replacement, Power1 epoch
+change, legacy arrival or native-admission withdrawal clear capabilities and
+leases. The public `IdleConsumerRegistrar` fences method callbacks and withdraws
+only its original addressed owner/epoch on cancel. A method-reported acceptance
+is not policy authority: consumers still use the actual-owner nonce-correlated
+inhibitor receipt ([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)).
+
+The installed service keeps `--idle-policy=off`; native-exclusive registration
+is an explicit cutover prerequisite, not automatic retirement of PowerDevil.
+The complete supervisor lock/display/suspend composition and scoped display
+ownership are not yet wired by this admission slice. Consequently production
+still advertises zero scopes and the ScreenSaver facade remains Unsupported.
+No placeholder stage or caller-provided success can replace a real consumer.
+See [ADR-0333](../adr/0333-authenticate-shared-idle-consumer-registration.md).
 
 Lock-before-sleep belongs to the authenticated native lock runtime and the
 supervisor NativeSleep coordinator (ADR-0321). The later key-action policy must
