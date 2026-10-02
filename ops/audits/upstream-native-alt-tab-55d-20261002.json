@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "author": "qinda_icon_brand_audit",
+  "observed_at": "2026-10-02T20:58:04+00:00",
+  "result": "PASS",
+  "fork_source_commit": "55d1f2738723316fae4686468757aef66ce7590b",
+  "upstream_test_source": "autotests/integration/tabbox_test.cpp",
+  "upstream_test_unchanged": true,
+  "target": "testTabBox",
+  "cases": [
+    "testMoveForward",
+    "testMoveBackward",
+    "testKeyboardFocus"
+  ],
+  "binary": {
+    "path": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testTabBox",
+    "sha256": "b337806da917c0cfe3f11ca0c48678c72e943798572b25ff990957a87d5612e5"
+  },
+  "existing_runner": {
+    "path": "qindaqt/tools/run-native-lock",
+    "sha256": "5b55959816395dccac02df74597bf52730cc6be5ecf428b8c1becc726b08d836"
+  },
+  "build": {
+    "command": [
+      "cmake",
+      "--build",
+      "build/native-tests",
+      "--target",
+      "testTabBox",
+      "--",
+      "-j2",
+      "-l20"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 9.394011724041775,
+    "minimum_available_bytes": 13631971328,
+    "memory_guard_stopped": false,
+    "actions": 4
+  },
+  "runtime": {
+    "argv": [
+      "/usr/bin/bwrap",
+      "--unshare-user",
+      "--unshare-pid",
+      "--unshare-net",
+      "--unshare-ipc",
+      "--unshare-uts",
+      "--die-with-parent",
+      "--new-session",
+      "--cap-drop",
+      "ALL",
+      "--hostname",
+      "pf-alt-tab",
+      "--ro-bind",
+      "/usr",
+      "/usr",
+      "--symlink",
+      "usr/lib",
+      "/lib",
+      "--symlink",
+      "usr/lib64",
+      "/lib64",
+      "--symlink",
+      "usr/bin",
+      "/bin",
+      "--ro-bind",
+      "/etc/ld.so.cache",
+      "/etc/ld.so.cache",
+      "--ro-bind",
+      "/etc/passwd",
+      "/etc/passwd",
+      "--ro-bind",
+      "/etc/group",
+      "/etc/group",
+      "--ro-bind",
+      "/etc/nsswitch.conf",
+      "/etc/nsswitch.conf",
+      "--proc",
+      "/proc",
+      "--dev",
+      "/dev",
+      "--ro-bind",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+      "--bind",
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-release-contract-review-20261002/build/installed-native-qa-preparation/alt-tab/runtime-final",
+      "/task",
+      "--bind",
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-release-contract-review-20261002/build/installed-native-qa-preparation/alt-tab/runtime-final/tmp",
+      "/t",
+      "--tmpfs",
+      "/tmp",
+      "--clearenv",
+      "--setenv",
+      "PATH",
+      "/usr/bin:/bin",
+      "--setenv",
+      "HOME",
+      "/task/home",
+      "--setenv",
+      "TMPDIR",
+      "/t",
+      "--setenv",
+      "XDG_RUNTIME_DIR",
+      "/task/xdg",
+      "--setenv",
+      "DBUS_SESSION_BUS_ADDRESS",
+      "unix:path=/task/xdg/no-session",
+      "--setenv",
+      "DBUS_SYSTEM_BUS_ADDRESS",
+      "unix:path=/task/xdg/no-system",
+      "/usr/bin/python3",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/qindaqt/tools/run-native-lock",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testTabBox",
+      "--",
+      "testMoveForward",
+      "testMoveBackward",
+      "testKeyboardFocus",
+      "-nocrashhandler"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 3.017816569947172,
+    "qt": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "blacklisted": 0,
+      "elapsed_ms": 2280,
+      "behavior_methods": 3,
+      "includes_setup_cleanup": true
+    },
+    "private_user_pid_net_ipc_uts_namespaces": true,
+    "host_buses_exposed": false,
+    "host_drm_input_audio_exposed": false,
+    "core_limit": 0,
+    "short_private_tmpdir": "/t",
+    "renderer": "existing virtual WAYLANDTEST_MAIN useDrm=false; runner forces software O2"
+  },
+  "cleanup": {
+    "frozen_artifacts_unchanged": true,
+    "after_runtime": {
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin.so": "7d4c5a9d061ed015475541763b3cc7fa2bd3075831f3b891c9067a04cb4f105c",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorations.so": "18fb88c4f5d23c578fa6b05b2d4f31b9a7b7f7496353bb9e7ed78d799ad9a01f",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin-decorationsprivate.so": "4b21757923f1ca12a8738aabebecd186ec23b4980900e21b8dd0d51768207450",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority": "4157b22fa3e5b3fadb587b67ee6a98c5f739a788284ac8990a7dd78be927a0eb",
+      "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/eis.so": "702690d6c6d03b0a014745b59157a8c91bac9a601be9ebf80c342845d36165bf"
+    },
+    "owned_runtime_pgid": 1821589,
+    "surviving_owned_pgid_pids": [],
+    "scoped_core_files": [],
+    "private_helper_temp_roots_remaining": []
+  },
+  "source_bindings": [
+    {
+      "path": "autotests/integration/tabbox_test.cpp",
+      "sha256": "ee57bbcb1b0c0975c31aa60c2ff6a61095dff0f39d5bc6b519f522bb465b0313"
+    },
+    {
+      "path": "autotests/integration/CMakeLists.txt",
+      "sha256": "e4233a9fefb73a7196e83c47b7b0fd78adeff7d022c1749f1e4b2a44f68981bb"
+    },
+    {
+      "path": "autotests/integration/kwin_wayland_test.h",
+      "sha256": "1bba741f091927c0ec8132b446f20d450c2c8b324d96a3b8bab9772fc826957c"
+    },
+    {
+      "path": "autotests/integration/kwin_wayland_test.cpp",
+      "sha256": "0e5ac9d7673f28a9535c271488d4fb5fe4159b50b5d2b7c4acfcb309bd117f34"
+    },
+    {
+      "path": "src/tabbox/tabboxconfig.h",
+      "sha256": "53dbb9f5e8fb733301e62a0040f70679dacf57afeebfc63f854e1385bfb80db0"
+    },
+    {
+      "path": "src/tabbox/tabboxhandler.cpp",
+      "sha256": "6d5e8d1bff181f3e83685d40239050e7b00547c51d25297420e307e252793029"
+    },
+    {
+      "path": "src/tabbox/tabbox.cpp",
+      "sha256": "3f828e375fbe1fca0127269d27db0e5a87ff0bea670cca89b8cea1fedc45e9d9"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "build/installed-native-qa-preparation/alt-tab/build-command.json",
+      "sha256": "bf4f494512f094945cb675bb934e1364fd1505fd564dd92354cbd81155d221ca"
+    },
+    {
+      "path": "build/installed-native-qa-preparation/alt-tab/build-status.json",
+      "sha256": "b613b3235729e2276723c3ae58c15664a6b193deb5c03c763432ddc7d97db794"
+    },
+    {
+      "path": "build/installed-native-qa-preparation/alt-tab/build.log",
+      "sha256": "710ea7927d9fc2277b20caed200a1b59066b582445fd20be5d90ae6ec07e48c9"
+    },
+    {
+      "path": "build/installed-native-qa-preparation/alt-tab/runtime-command.json",
+      "sha256": "51d5b64edce64d1530649456d2dec9eed28212eb68179385302ddd779608f70b"
+    },
+    {
+      "path": "build/installed-native-qa-preparation/alt-tab/runtime-status.json",
+      "sha256": "ff545bfae25b162baa17a94c3ea933e1aa8406e9c832577843a8bb6c15c7e755"
+    },
+    {
+      "path": "build/installed-native-qa-preparation/alt-tab/runtime.log",
+      "sha256": "59641c0fd9426dfac6a191aaf9af2e58be9524591d84240159730470465bb5a5"
+    },
+    {
+      "path": "build/installed-native-qa-preparation/alt-tab/ldd.log",
+      "sha256": "3dc049a7d6f9403836b72ad6368ceb824c8cf912b4718d19cd30caed00dbcdef"
+    },
+    {
+      "path": "build/installed-native-qa-preparation/alt-tab/cleanup.json",
+      "sha256": "5afd5a6b96b9cfe63eac5407964edf84f959b6c314a6e5662289c998af8ef79c"
+    }
+  ],
+  "first_setup_failure": {
+    "status": {
+      "exit_code": 127,
+      "elapsed_seconds": 0.11395901499781758
+    },
+    "cause": "Private dbus-daemon binds /tmp; initial wrapper exposed onlyshortTMPDIR /t. Before anyQt/compositor test execution, exit127. Add standard private --tmpfs /tmp to ignored argv only; oneactual3-case gate thenPASS.",
+    "preserved": [
+      {
+        "path": "build/installed-native-qa-preparation/alt-tab/first-setup-failure/runtime-command.json",
+        "sha256": "b03b9ca7fe8a0b558c9849374a7edb5fd6f94264811d9858f3e4a133b1b11d50"
+      },
+      {
+        "path": "build/installed-native-qa-preparation/alt-tab/first-setup-failure/runtime-pgid.json",
+        "sha256": "528ffcbc1d6cb82dc4eb8c1a1426e4de167541b6c73dff68790aaaedadcdee4b"
+      },
+      {
+        "path": "build/installed-native-qa-preparation/alt-tab/first-setup-failure/runtime-status.json",
+        "sha256": "1305202f87b54f5e83f4e8338df883d1f94dc105f0df7975a4140d04f50f5616"
+      },
+      {
+        "path": "build/installed-native-qa-preparation/alt-tab/first-setup-failure/runtime.log",
+        "sha256": "26dd0c906bf73dad7f75e6a4db320986b6c9a1279a71e810e19f4b9d758ef2fc"
+      }
+    ]
+  },
+  "qualified_assertions": [
+    "Three real mapped Waylandwindows cycle via upstream core internalvirtual keyboard event path, actual AltTab->c2 and AltShiftTab->c1 afterAlt release.",
+    "Tabbox grabs input, stays grabbed on Shift release, closes exactly once and drops grab on Alt release.",
+    "Actual Wayland keyboardfocus withdraws while grabbed and restores afterdismissal."
+  ],
+  "limits": [
+    "ShowTabBox=false: no visibleQindaQt popup/UI/layout/package qualification.",
+    "This is native55d virtual testcore/corecode, not finalinstalledphysical desktop/input orPortageplugin boot.",
+    "Retained warnings: missingorg.qindaqt decoration, fontconfig/cursor, initialkeymapfallback, noPipeWire context and privateX11 socket. No decoration/font/cursor/PipeWire/XWayland claim.",
+    "No production/source/assertion change, no newtestharness; existingrun-native-lock reused in private namespace.",
+    "Initialsetup failure excluded from behavior totals and preserved, no unchangedbehavior retries."
+  ],
+  "lease": "Compiler/private runtime released immediately after single actualPASS andcleanup; no resourcesheld"
+}
