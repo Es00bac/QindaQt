@@ -1,12 +1,12 @@
 # Native power policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: working — granted exact native lid qinda compiler gate; private runtime unclaimed
+- Status: working — exact native lid private gates after first-close and peer-EOF pass
 - Base: f951bffcb499d1a0b191ebc4a599ea61b18c8f43 (critical prerequisite independently accepted)
 - Branch: worker/pf-native-lid-policy-sol-20261002
 - Worktree: .cache/pf-native-lid-policy-sol-20261002
-- Ownership: new cohesive LidPolicy/LidHandlingAuthority/logind FD adapter, focused resident fixtures, primary power docs and ADR0332; own board/messages. Additive assembly changes await collision coordination; frozen critical/profile/Hibernate code is not owned.
-- Compiler/private runtime: sole qinda compiler granted for exact7f5 seven targets; no private runtime lease
+- Ownership: new cohesive LidPolicy/LidHandlingAuthority/logind FD adapter, focused resident fixtures, primary power docs and ADR0332; own board/messages. Additive assembly changes approved through explicit collision coordination; frozen critical/profile/Hibernate code is not owned.
+- Compiler/private runtime: compiler released after exact cb1 seven-target PASS; sole private lease running granted first/full gates
 
 
 ## Updates
@@ -55,3 +55,5 @@
 - 2026-10-02T01:57:43Z — Manager granted sole qinda compiler exact7f5 seven targets/dependencies with accepted690 prefix, -j8/-l24/core0 and3GiB30sec owned-group guard. Actual remote source HEAD7f5 is clean, prefix owner remains690. Preparing fresh own build with source/cache/artifact/starttick/memory evidence; no private lease, laptop build/GPU or installation. Exact model identifier is not independently exposed by runtime tools; no unsupported provider/model claim.
 
 - 2026-10-02T02:03:30Z — Exact7f5 fresh configure PASS44.677s; build FAIL47.374s/191 of194 Ninja actions solely in new lid fixture macro. CONFIGURE value parameter replaced QVariantMap.value member and unparenthesized conditional kind changed expression precedence. Renamed parameter and parenthesized input expressions without changing assertions/behavior; frozen production implementations unchanged. Both phase PGIDs absent; min12.10GB/core0/source hashes stable. Retained first-failure logs; pushing narrow fixture repair before granted bounded rebuild. No private runtime lease.
+
+- 2026-10-02T02:08:44Z — Exactcb1 fixture-only repair seven-target build PASS38.975s configure/8.854s incremental build; all55 recorded compiler PID lifetimes absent,13 cache/executable/MOC hashes stable/core0/no cores/min15.75GB. Qinda strict MkDocs7.357s/487-page links/static/frozen checks allPASS. Manager granted sole private lease: genuine suspend first3/0/0 Qt1088ms and additional shutdown peer-EOF3/0/0 Qt413ms PASS with exact admission/public action/external pipe assertions. Each3-PID/1-root audit absent and source/artifacts unchanged. Granted full34+old9 gates currently running; no broad runtime qualification before actual exit.
