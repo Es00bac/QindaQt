@@ -1,0 +1,11 @@
+# Native DisplayPower actual eleven-behavior handoff
+
+PASS exact coherent fork `e9bcb4a834a3a817d2bc194f3c4cf488e9111679`, accepted fixture candidate `7b6f5ee365f7a6906cc3da00420a93c473b5baa0`. Root coherent seven-target build PASS0/41.012223s. One actual existing run-native-lock invocation with private fresh short0700 TMPDIR, dead ambient buses, corelimit0 and own PID/starttick cleanup. Exact source/artifact22hashes, command/env, build receipt and actual row list in adjacent JSON.
+
+Exit0/5.933496s; Qt13PASS/0FAIL/0SKIP,4955ms: all eleven behavior rows genuinely executed and pass. Ordinary callers cannot admit/acquire, current actual inventory/epoch is targeted, unsupported/mixed/missing/off inventory rejects admission, legacywriter/topologyloss withdraws, owned Off release restores only owned causes, same-modeexternal/preexisting Off remains Off, injected actual keyboardwake retires own episode, finite expiry and actual Session1-ownerloss restore only owned state. No mocked ledger/authority/output transition or authorization override.
+
+Leader1774301/starttick42830075, runner1774302/starttick42830080 and observed descendants1774303/1774304(starttick42830080) all gone; no same-starttick survivors/corefiles; all22frozen hashes unchanged; shortTMPDIRremoved. PRIVATElease released immediately. Prior long-TMPDIR, duplicatebackend and invalid350ms actual failure archives remain unchanged; nohealthyrepeat. LogSHA `58418814061fd12cdf25fba98024a2638523b07733ac7d63caf10089cc505e4f`.
+
+Scope is real native core/Workspace/DisplayPower1 bus routing with private software/virtual outputs, including explicit unchanged stock-virtual unsupported rejection. It is not physical DRM/DPMS, a GPU-rendering result, installed delivery, or fullPower completion. Private missing decoration/cursor/disconnected PipeWire warnings are archived. Separate accepted desktop818 CLI proves missing-prerequisite exclusivefailclosed and defaultoff-compatible cleanup; actual supported complete supervisor composition remains a later gate.
+
+Requested next action: different-worker actual receipt/source review and manager integration/replay as appropriate. Worker available for exact bounded remaining Shortcuts repeat SOURCE review; no compiler/runtime held.
