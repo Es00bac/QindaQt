@@ -25,6 +25,16 @@ the exact `QINDAQT_ALLOW_HOST_UINPUT` acknowledgement shown below. Use only a
 dedicated virtual seat or disposable machine. Ordinary local and CI test runs
 must leave the option off.
 
+## Standalone dependency contracts
+
+The compositor child-configure checks forward the parent CMake prefix path and
+set `KDE_INSTALL_LIBEXECDIR=libexec`, matching the protected capture helper
+installation contract. They keep the production helper identity guard enabled.
+The standalone remote-input fixture declares its Qt Gui clipboard peer
+outside the session-supervisor support condition; native RemoteDesktop tests
+remain conditional on that support. These configure checks validate dependency
+composition separately from runtime authorization.
+
 ## First-party material verification
 
 The `qindaqt.apps-native-material-matrix` row renders the real File Manager,

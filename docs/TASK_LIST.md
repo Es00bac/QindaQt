@@ -10,8 +10,10 @@ completion. Architectural detail and long-range milestone state remain in the
 Final production source `29f7174a` and native compositor `55d1f273` are frozen.
 The signed compositor and native Gabbee recovery service are installed through
 Portage on both machines; all 710 installed files/links pass checks on the laptop.
-The final desktop package is compiling on qinda while another worker verifies
-its installed compositor/plugin and shell boundaries. Native input, combined
+The final desktop package completed compilation on qinda; one install-only
+Keyring metadata filename correction is under review before retained-build
+packaging resumes. Installed compositor/plugin and shell qualification passes
+14 CTest rows, including 40 render cases at representative profiles. Native input, combined
 capture, remembered permissions, lock suppression, clipboard, shortcuts, and
 forward/reverse Alt-Tab have actual passing private-runtime evidence.
 
