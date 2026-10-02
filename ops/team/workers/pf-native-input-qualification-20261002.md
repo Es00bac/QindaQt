@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: available — five final e9 actual native portal gates PASS; leases released, exact independent review handoff
+- Status: available — exact e568 release-contract independent ACCEPT; six tests/native recipe PASS, awaiting installed plugin QA scope
 - Identity: qinda_icon_brand_audit
-- Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
-- Branch: worker/pf-native-input-final-qualified-20261002
+- Base: e568acc86de52322bf6c76c10d90c04a5f69be46
+- Branch: worker/pf-release-contract-review-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: no compiler/private GPU lease held; frozen e9 lease released after five actual gates
+- Resource: read-only/lightweight Python tests only; no compiler/private native lease
 
 ## Updates
 
@@ -65,4 +65,6 @@
 
 - 2026-10-02T20:40:07+00:00 — Final e9 changed-helper combined PASS0/7.0309s/3Qt0fail0skip3069ms; real Remember/Restore PASS0/22.1665s/3Qt0fail0skip2764ms, actualPermissionStore/frontend/uncheckednegative/checkbox/stablepreselection/frames. All cleanup/core arrays empty. Manager accepts one runner env audit-path alignment to runtime file before old input fixture reads it; no helper/core/assertion/compiler changes. Continuing remaining actual input/lock cases under frozen e9 lease.
 
-- 2026-10-02T20:44:49+00:00 — Five actual final native gates PASS: caller15Qt/core15Qt including setup/cleanup, 0fail/0skip, all cleanup/core arrays empty; exact f99/e9/eb21 bound. Combined Close, real PermissionStore remember/restore, RD+IC barriers/release/both Clipboard directions, combined native lock and input lock verified. Firsttwo sourcea542 before accepted Python audit-path alignment; production/helper/C++ bytes unchanged. Leases released immediately, available for read-only native route/archive QA; no installed/fullrelease claim.
+- 2026-10-02T20:47:23+00:00 — Claimed independent source review e568 in isolated qinda pf-release-contract-review-20261002. Actual fork55d resolves exactc031 tree. Reviewing native exact-rN/subslot dependency, retired runtime rejection, preserved ABI/plugin/shell/source/install gates; six lightweight parser tests plus actual final recipe next. No source edits/build/runtime.
+
+- 2026-10-02T20:48:25+00:00 — Independent e568 source review ACCEPT/no blocking findings; six Python tests PASS6/6, repository/source-pin/current native desktop-r1-r3dependency recipe PASS. Actualrecipe SHA matches6c168e8 blob; fork55d treec031 exact. Source text contract retains build/runtime/install gates; transitiveclosure/installedplugin gate separate, future-r2 sourcepin required. Review-only receipt/board/thread committed; no compiler/native lease held, available next manager installed-plugin QA assignment.

@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "independent_of": "root",
+  "reviewed_commit": "e568acc86de52322bf6c76c10d90c04a5f69be46",
+  "observed_at": "2026-10-02T20:48:25+00:00",
+  "verdict": "ACCEPT",
+  "blocking_findings": [],
+  "review_scope": "Exact five-file release checker/pin/docs change; lightweight parser/current native recipe source review",
+  "candidate_files": [
+    {
+      "path": "compositor/upstream/kwin.json",
+      "sha256": "74f9022369249e20b9fbabf8f16d207c2616a20341bfe2e7a370c36cdd68ad9f"
+    },
+    {
+      "path": "docs/wiki/adr/0291-run-on-qindaqt-kwin.md",
+      "sha256": "feeb58706b0ca3a2e2d02934a2629f83cd6a6350e3b499521afa49b3d1527f8f"
+    },
+    {
+      "path": "docs/wiki/architecture/compositor-session.md",
+      "sha256": "d2d11fa7aefdf0efac2ab25de434ff68c3d888901726bd5921e8de17079a3bfa"
+    },
+    {
+      "path": "tools/check-release-contract",
+      "sha256": "5a7aca12244f0363f2787824648c026ace5f0653e389372571d2238cd60700ac"
+    },
+    {
+      "path": "tools/test-check-release-contract",
+      "sha256": "f3db91b1af1054be9a1ab640aa7d5155fbd3ee510dd3ab02397762fce66b2852"
+    }
+  ],
+  "recipe_binding": {
+    "overlay_commit": "6c168e8b666ba3258240151925ae53edfbd05d92",
+    "desktop": {
+      "path": "gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20261002-r1.ebuild",
+      "sha256": "fbac1ad5d0cebc3b61414205e89e9d3a70db8a584a324869ef447b5499f87b2d",
+      "immutable_source": "cae9114ae1e64cd375b6cb79fb206cae8e9c7f1e",
+      "working_file_matches_committed_blob": true
+    },
+    "fork": {
+      "path": "gui-wm/qindaqt-kwin/qindaqt-kwin-6.6.6_p1-r3.ebuild",
+      "sha256": "fcdcc27bba47d921082dcdee718107ecda9c9963499a21b0780569459904cb1d",
+      "immutable_source": "55d1f2738723316fae4686468757aef66ce7590b"
+    },
+    "fork_tree": "c03152f3c6dd86e45f34478740c36470a5e23ebd"
+  },
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "tools/test-check-release-contract",
+        "-v"
+      ],
+      "exit_code": 0,
+      "unittest_methods": 6,
+      "failed": 0,
+      "reported_test_seconds": 0.003,
+      "log": {
+        "path": "build/release-contract-review/six-tests.log",
+        "sha256": "a1c01c4236aef9681dff74770621942b4509442309ec61d402a0d39138e84f61"
+      }
+    },
+    {
+      "command": [
+        "python3",
+        "tools/check-release-contract"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "python3",
+        "compositor/tools/verify-kwin-source"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "python3",
+        "tools/check-release-contract",
+        "--desktop-ebuild",
+        "/home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-gabbee-portage-20261002/gui-wm/qindaqt-desktop/qindaqt-desktop-0.1.0_pre20261002-r1.ebuild"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "git",
+        "--git-dir=/home/cabewse/git/qindaqt-kwin.git",
+        "rev-parse",
+        "55d1f2738723316fae4686468757aef66ce7590b^{tree}"
+      ],
+      "exit_code": 0,
+      "stdout": "c03152f3c6dd86e45f34478740c36470a5e23ebd"
+    }
+  ],
+  "source_findings": [
+    "Exact reviewed fork55d/treec031 appears in current manifest/ADR/compositor page; actual object resolves correct tree.",
+    "Fork dependency accepts exact release/serial with absent or positive Gentoo-rN and requires := rebuild operator; actual desktop recipe pins-r3:=.",
+    "Twelve direct retired Plasma runtime names rejected while explicit KWayland/layer-shell and bounded KDE Frameworks remain allowed.",
+    "Native-exclusive Power CMake option plus libei/polkit retained by actual native recipe and required by checker.",
+    "Existing runtime exact stdout version, CMake ABI version, built plugin/launcher, installed native namespace/shell/application/plugin gates unchanged; immutable-source and complete cmake_src_install checks retained."
+  ],
+  "limits": [
+    "Acceptance covers source/parser correction, not final package/installed/native plugin delivery.",
+    "Checker is a conservative source-text contract rather than Portage grammar/transitive resolver; independent closure28 remains mandatory.",
+    "Six methods exercise key poisons, not all twelve forbidden names individually; source loop applies same predicate to each.",
+    "Actual desktop-r1 still pinscae; forthcoming-r2 must bind integrated release-checker successor and exact archive/Manifest.",
+    "No compiler, install or native runtime executed; no shared source/artifact mutation."
+  ]
+}
