@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "legacy_input_p.h"
 #include <QSocketNotifier>
+#include <QPointer>
 #include <libei.h>
 #include <unistd.h>
 
@@ -23,8 +24,11 @@ bool LegacyInput::attach(int fd) {
     if (ei_setup_backend_fd(m_ei, fd) != 0) { ei_unref(m_ei); m_ei = nullptr; return false; }
     m_notifier = new QSocketNotifier(ei_get_fd(m_ei), QSocketNotifier::Read, this);
     connect(m_notifier, &QSocketNotifier::activated, this, &LegacyInput::dispatch);
+    // AGENT-GUARD: initial dispatch can synchronously emit lost, retire the
+    // session and delete this sender. Never read members after that deletion.
+    const QPointer<LegacyInput> alive(this);
     dispatch();
-    return m_ei != nullptr;
+    return alive && alive->m_ei != nullptr;
 }
 void LegacyInput::dispatch() {
     if (!m_ei) return;

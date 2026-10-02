@@ -4,13 +4,27 @@
 // observes the exact events the compositor engine would receive; physical
 // input through the native compositor remains a separate native gate.
 #include "remote_input_fixture.h"
+#include "../../../../src/services/portal/remote_input/src/legacy_input_p.h"
+#include <QPointer>
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
 #include <QDBusContext>
 #include <QSocketNotifier>
 #include <libeis.h>
+#include <libei.h>
 #include <unistd.h>
 using namespace QindaQt::Services::Portal;
 using namespace QindaQt::Services::Portal::RemoteInput;
+namespace {
+eis *closingPeerOnAttach = nullptr;
+}
+extern "C" int __real_ei_setup_backend_fd(ei *, int);
+extern "C" int __wrap_ei_setup_backend_fd(ei *context, int fd) {
+    const int result = __real_ei_setup_backend_fd(context, fd);
+    // Exercise the exact startup window: real setup writes its handshake,
+    // then the real peer closes before attach's initial dispatch reads EOF.
+    if (auto *peer = std::exchange(closingPeerOnAttach, nullptr)) eis_unref(peer);
+    return result;
+}
 class EisServer final : public QObject, protected QDBusContext {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.EIS.RemoteDesktop")
@@ -109,6 +123,28 @@ private Q_SLOTS:
         QVERIFY(bus.service->registerService(QStringLiteral("org.test.Portal")));
     }
     void cleanup() { host.reset(); eis.reset(); registry.reset(); consent.reset(); server.reset(); bus.stop(); }
+    void startupDisconnectRetiresSenderBeforeAttachReturns() {
+        // A real libeis backend supplies the client FD, then closes before the
+        // sender's first dispatch. Match the production direct lost->retire
+        // connection: retirement destroys the sender inside attach().
+        auto *closingServer = eis_new(nullptr);
+        QVERIFY(closingServer);
+        QCOMPARE(eis_setup_backend_fd(closingServer), 0);
+        const int fd = eis_backend_fd_add_client(closingServer);
+        QVERIFY(fd >= 0);
+        closingPeerOnAttach = closingServer;
+        auto sender = std::make_unique<LegacyInput>();
+        const QPointer<LegacyInput> alive(sender.get());
+        bool retired = false;
+        QObject::connect(sender.get(), &LegacyInput::lost, this, [&] {
+            retired = true;
+            sender.reset();
+        });
+        const bool attached = sender->attach(fd); // attach takes ownership
+        QVERIFY(retired);
+        QVERIFY(alive.isNull());
+        QVERIFY(!attached);
+    }
     void notifyReachesTheCompositorInOrderAndEndsWithTheSession() {
         QVERIFY(started(Keyboard | Pointer));
         // Sent before any EIS device exists: they wait, in order, for it.

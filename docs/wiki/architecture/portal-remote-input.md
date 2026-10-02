@@ -173,6 +173,8 @@ producer close, capture authority loss and caller loss ending the session.
 synthetic compositor object: Notify* sent before any device exists arrive in
 order (motion, button, key, discrete scroll) over one lazily opened context;
 ConnectToEIS is then refused; Close and native lock disconnect the context;
+a real libeis peer closing before initial dispatch retires the sender during
+attach without a stale member read;
 unstarted, foreign, ungranted-device, keysym, malformed and stream-less
 absolute calls are refused.
 They prove wire and lifetime, not physical input or real PipeWire nodes.

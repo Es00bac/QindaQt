@@ -229,7 +229,11 @@ public:
         return QPointF(rect.x() + x, rect.y() + y);
     }
     void retired(const QString &path, const RemoteSessions::Entry &entry) {
-        if (entry.eisTicket) { eis.cancel(entry.eisTicket); refuse(entry.eisCall, kFailed); }
+        if (entry.eisTicket) {
+            eis.cancel(entry.eisTicket);
+            // Legacy Notify has no delayed method reply; retirement only cancels its context.
+            if (!entry.legacy) refuse(entry.eisCall, kFailed);
+        }
         if (entry.cookie) eis.close(entry.compositor, entry.cookie);
         delete entry.legacy;
         clipboard->retired(entry);
