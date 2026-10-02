@@ -1,0 +1,7 @@
+# Genuine upstream Alt-Tab gate ready
+
+Exact fork55d1f2738723316fae4686468757aef66ce7590b, unchanged autotests/integration/tabbox_test.cpp target testTabBox; CTest kwin-testTabBox. Minimum methods testMoveForward and testMoveBackward; recommend existing testKeyboardFocus as third. Actual mapped three Wayland windows, virtual internal evdev Alt/Tab/Shift, real grab/release and c2/c1 activewindow assertions. Focus method checks real Wayland focuswithdraw/restore. No assertion change/newharness/sourceedit.
+
+Warm build/native-tests currently55d and BUILD_TESTING/TABBOX/GLOBALSHORTCUTS/NATIVE_SHORTCUTS ON; target depends existing KWinIntegrationTestFramework/core/staticplatformplugins, no builtin-effects set. After root build grant compile only testTabBox; after exactartifact/private runtime grant execute existing binary with methods above and -nocrashhandler through private dbus-run-session in scopedHOME/XDG sandbox. No GPU/physicalDRM needed by virtual WAYLANDTEST_MAIN(useDrmfalse), no host input.
+
+Fixture explicitly ShowTabBoxfalse: cycle succeeds independently of QML and cannot prove visibleQindaQt popup. Separate package/UI prerequisite is installed share/qindaqt-kwin/tabbox/qindaqt (metadata/main.qml), KPackage QindaQtKWin/WindowSwitcher and importorg.qindaqt.kwin3.0; production defaultLayoutNameqindaqt. Root installedplugin/shell QA remains distinct. Own ignored build/installed-native-qa-preparation/upstream-alt-tab-plan.json contains sourcehashes/exactcommands. READY ONLY, no tests/build/runtime yet; no skip accepted when run. Await grant.
