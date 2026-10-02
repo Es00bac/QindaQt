@@ -31,6 +31,16 @@ void input() {
         audit.write(QByteArray::number(getpid()) + " ordinary-wayland exact-peer mapped " + mode.toUtf8() + "\n"); audit.close();
         if (mode == QStringLiteral("hold")) return;
         if (mode == QStringLiteral("deny")) button = window->findChild<QQuickItem *>(QStringLiteral("portalDenyButton"));
+        // grant-choices: click every visible unchecked boolean choice first,
+        // through the same production QML toggle handler a user would use.
+        if (mode == QStringLiteral("grant-choices")) {
+            for (auto *item : window->contentItem()->findChildren<QQuickItem *>()) {
+                if (!QByteArray(item->metaObject()->className()).contains("CheckBox") || !item->isVisible()
+                    || item->property("checked").toBool()) continue;
+                QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier,
+                    item->mapToScene(QPointF(item->width() / 2, item->height() / 2)).toPoint());
+            }
+        }
         if (!button || !button->isVisible()) { QCoreApplication::exit(4); return; }
         QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier,
             button->mapToScene(QPointF(button->width() / 2, button->height() / 2)).toPoint());
