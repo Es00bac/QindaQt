@@ -495,3 +495,15 @@ live in [Native power policy](power-policy.md#native-source-profile-runtime)
 and [ADR-0330](../adr/0330-gate-native-source-profile-holds.md). Power1 v1 wire
 and the supported idle scope mask are unchanged. This bounded PF2 slice does
 not retire PowerDevil or implement lid/critical-battery actions.
+
+## Exclusive critical-battery policy
+
+The optional resident critical countdown consumes the public Settings client,
+validated warning/source facts, one confined standard notification adapter and
+a dedicated public SessionActions client. Its episode/cancellation/uncertainty
+and dormant-cutover contract is in [Native critical policy](power-policy.md#native-critical-battery-countdown)
+and [ADR-0331](../adr/0331-fence-native-critical-battery-countdowns.md).
+SessionActions appends protected Hibernate using current-owner CanHibernate
+and Sleep1/Session1 owner equality; PowerOff retains its reviewed separate
+noninteractive route. Source-profile policy and Power1 wire/scopes are unchanged.
+Lid/full idle policy and final PowerDevil retirement remain separate.

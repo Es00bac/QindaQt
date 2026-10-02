@@ -13,7 +13,7 @@ void SessionActionsClient::sleepAvailabilityChanged(const QDBusMessage &message)
 void SessionActionsClient::authorizeSuspend() {
     const PendingAction request = *m_pending;
     auto call = QDBusMessage::createMethodCall(request.owner, QString::fromLatin1(SleepPath),
-        QString::fromLatin1(SleepInterface), QStringLiteral("CanSuspend"));
+        QString::fromLatin1(SleepInterface), QStringLiteral("Can") + sleepMethod(request.action));
     auto *watcher = new QDBusPendingCallWatcher(m_sessionBus.asyncCall(call, 750), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher, request] {
         const QDBusPendingReply<bool> reply = *watcher;
