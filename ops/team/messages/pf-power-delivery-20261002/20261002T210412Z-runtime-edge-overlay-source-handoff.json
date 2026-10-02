@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-10-02T21:04:12Z",
+  "candidate": "851e2c0f6ae434128db517946b5f391101d3b674",
+  "base": "502a04237ed9e36832f1f578a2f3716d5959c367",
+  "branch": "worker/pf-native-runtime-edges-20261002",
+  "paths": [
+    "README.md",
+    "dev-libs/kirigami-addons/Manifest",
+    "dev-libs/kirigami-addons/QINDAQT-PROVENANCE.md",
+    "dev-libs/kirigami-addons/kirigami-addons-1.12.1-r1.ebuild",
+    "dev-libs/kirigami-addons/metadata.xml",
+    "kde-frameworks/kauth/Manifest",
+    "kde-frameworks/kauth/QINDAQT-PROVENANCE.md",
+    "kde-frameworks/kauth/kauth-6.27.0-r1.ebuild",
+    "kde-frameworks/kauth/metadata.xml",
+    "kde-misc/kdeconnect/Manifest",
+    "kde-misc/kdeconnect/QINDAQT-PROVENANCE.md",
+    "kde-misc/kdeconnect/files/kdeconnect-26.04.3-openssl4.patch",
+    "kde-misc/kdeconnect/files/kdeconnect-26.04.3-solid-6.26-freeze.patch",
+    "kde-misc/kdeconnect/files/kdeconnect-26.04.3-with_x11.patch",
+    "kde-misc/kdeconnect/kdeconnect-26.04.3-r4.ebuild",
+    "kde-misc/kdeconnect/metadata.xml",
+    "profiles/qindaqt/systemd/package.use",
+    "tests/native_runtime_edges.py"
+  ],
+  "source_provenance": {
+    "kde-frameworks/kauth/kauth-6.27.0-r1.ebuild": {
+      "original_path": "/var/db/pkg/kde-frameworks/kauth-6.27.0/kauth-6.27.0.ebuild",
+      "original_sha256": "4569989eeb91e209c50f38330388c3497ca29d97d25a354e9bc827a93ea92ed9",
+      "recipe_sha256": "c96f9ebc6c36a08625769a3fd4838758caa9786f44081c657051943ed672d3a8"
+    },
+    "dev-libs/kirigami-addons/kirigami-addons-1.12.1-r1.ebuild": {
+      "original_path": "/var/db/repos/gentoo/dev-libs/kirigami-addons/kirigami-addons-1.12.1.ebuild",
+      "original_sha256": "d7d6c889d7a23285c5be8724acf4e2fc352b3b40bcee2d01437e5a78c3f3db31",
+      "recipe_sha256": "b255d435dfa870d85dd36150d427dcb98390d327a879feee334ae75d1a715c1b"
+    },
+    "kde-misc/kdeconnect/kdeconnect-26.04.3-r4.ebuild": {
+      "original_path": "/var/db/repos/gentoo/kde-misc/kdeconnect/kdeconnect-26.04.3-r3.ebuild",
+      "original_sha256": "defd9fef4d2dff702bc82dbc4555ff6db79a1773d081946d82be578c95225606",
+      "recipe_sha256": "9dec9446f3fede26505b2d77ac05a31d75836ff13737a80dcb53322d991c1ea9"
+    },
+    "kde-misc/kdeconnect/files/kdeconnect-26.04.3-openssl4.patch": {
+      "original_path": "/var/db/repos/gentoo/kde-misc/kdeconnect/files/kdeconnect-26.04.3-openssl4.patch",
+      "original_sha256": "a340ba21b7021c3a642869bc90cd56b8a78664f14f514a4e1e3fd54315ba6923",
+      "copied_sha256": "a340ba21b7021c3a642869bc90cd56b8a78664f14f514a4e1e3fd54315ba6923"
+    },
+    "kde-misc/kdeconnect/files/kdeconnect-26.04.3-solid-6.26-freeze.patch": {
+      "original_path": "/var/db/repos/gentoo/kde-misc/kdeconnect/files/kdeconnect-26.04.3-solid-6.26-freeze.patch",
+      "original_sha256": "208c642da2585aafef0a7b2727b84f1d687eb49c08eb837569c16d000b516cd7",
+      "copied_sha256": "208c642da2585aafef0a7b2727b84f1d687eb49c08eb837569c16d000b516cd7"
+    },
+    "kde-misc/kdeconnect/files/kdeconnect-26.04.3-with_x11.patch": {
+      "original_path": "/var/db/repos/gentoo/kde-misc/kdeconnect/files/kdeconnect-26.04.3-with_x11.patch",
+      "original_sha256": "63485bc2ad8840513cef2fa4cbc781c4da28ef0b78ca920c922b5ffd16c22405",
+      "copied_sha256": "63485bc2ad8840513cef2fa4cbc781c4da28ef0b78ca920c922b5ffd16c22405"
+    },
+    "kde-misc/kdeconnect/metadata.xml": {
+      "original_sha256": "9bd51fa96234944f234a7247420373111f7e4375833a22879683e178bb9e30f5",
+      "candidate_sha256": "50942ddd8e597d017d829999542d8b3e779c53b306d8542d6f3af16eebb96ca0"
+    }
+  },
+  "archive_receipt": [
+    {
+      "name": "kauth-6.27.0.tar.xz",
+      "url": "https://download.kde.org/stable/frameworks/6.27/kauth-6.27.0.tar.xz",
+      "bytes": 2273648,
+      "sha256": "741934765f0c9f1c535598203fbad3f1b97231cc683a218a7f39fab948c13eab",
+      "manifest_matches_original": false,
+      "manifest_line": "DIST kauth-6.27.0.tar.xz 2273648 BLAKE2B 7d6818a7cecee90209b11dcdcfbc5907b50620fb4c8bce5a91e6036cbabb0deef1d109054d696109a35b2bfd7add6eacfa8f21f0fe83ea0bdaadb90ea8934d8f SHA512 990416f0bc3709d4957530799266d57d0bea3dab4f30250deecc1fb92fc825fe8261a24eba4d8258b05f5a0ca244f7e63f5a0532c5bc873c37ee59aee407d986"
+    },
+    {
+      "name": "kirigami-addons-1.12.1.tar.xz",
+      "url": "https://download.kde.org/stable/kirigami-addons/kirigami-addons-1.12.1.tar.xz",
+      "bytes": 2815592,
+      "sha256": "c543a493ce5875f405fb1c9ff6d531060ed082cc6d710e56d46ac42d164207bb",
+      "manifest_matches_original": true,
+      "manifest_line": "DIST kirigami-addons-1.12.1.tar.xz 2815592 BLAKE2B 4635e756e7c463b0d7c091db2714a23cf0a005666abf05063be96a0221b4147ec3d701f1b1366014769821fea6f55f9e84ed4aa899b222adccd5b2870a10e267 SHA512 365021b896c8a6ad7bfc1e98ff554040bdc50c109e25b362e8e4dc9219b721cf68092d0cef5b64884c9cee6367d65377621cccd0a9fdd8a79a515c739b136c2d"
+    },
+    {
+      "name": "kdeconnect-kde-26.04.3.tar.xz",
+      "url": "https://download.kde.org/stable/release-service/26.04.3/src/kdeconnect-kde-26.04.3.tar.xz",
+      "bytes": 691476,
+      "sha256": "505b58b52630a662a8f6a2c50c58eda1de66779762c31d5ea5247b48bba52561",
+      "manifest_matches_original": true,
+      "manifest_line": "DIST kdeconnect-kde-26.04.3.tar.xz 691476 BLAKE2B 1aa1ff86a4250b8ebda4d155e75b5ee2c3caf9b899cf29f301bb895843b759f8f0bb9fdc8742ad4a2cab9701e6919f2b07311dabac6af2f8bb00db2585c431f4 SHA512 f8d575310e48b2daf6bd354a4731618e27c602903e4e7f1b4e9c07c28e7e6c701b3ff4bdc61fc6c7061f790f5996592cf89fe6c527c699fb4c24a800513fc42c"
+    }
+  ],
+  "actual_metadata": {
+    "kde-frameworks/kauth-6.27.0-r1": {
+      "EAPI": "8",
+      "IUSE": "+policykit debug test",
+      "RDEPEND": ">=dev-qt/qtbase-6.10.1:6[gui] =kde-frameworks/kcoreaddons-6.27*:6 policykit? ( >=dev-qt/qtbase-6.10.1:6[dbus] =kde-frameworks/kwindowsystem-6.27*:6[wayland] >=sys-auth/polkit-qt-0.175.0[qt6(+)] ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6",
+      "DEPEND": ">=dev-qt/qtbase-6.10.1:6[gui] =kde-frameworks/kcoreaddons-6.27*:6 policykit? ( >=dev-qt/qtbase-6.10.1:6[dbus] =kde-frameworks/kwindowsystem-6.27*:6[wayland] >=sys-auth/polkit-qt-0.175.0[qt6(+)] ) test? ( >=dev-qt/qtbase-6.10.1:6[dbus] ) dev-qt/qtbase:6",
+      "PDEPEND": "",
+      "SRC_URI": "mirror://kde/stable/frameworks/6.27/kauth-6.27.0.tar.xz",
+      "KEYWORDS": "amd64 arm64 ~loong ppc64 ~riscv ~x86",
+      "effective_USE": "abi_x86_64 amd64 elibc_glibc kernel_linux policykit"
+    },
+    "dev-libs/kirigami-addons-1.12.1-r1": {
+      "EAPI": "8",
+      "IUSE": "debug test",
+      "RDEPEND": ">=dev-qt/qtbase-6.8.1:6[gui] >=dev-qt/qtdeclarative-6.8.1:6 >=kde-frameworks/kcolorscheme-6.16.0:6 >=kde-frameworks/kconfig-6.16.0:6 >=kde-frameworks/kcoreaddons-6.16.0:6 >=kde-frameworks/kcrash-6.16.0:6 >=kde-frameworks/kglobalaccel-6.16.0:6 >=kde-frameworks/kguiaddons-6.16.0:6 >=kde-frameworks/ki18n-6.16.0:6 >=kde-frameworks/kiconthemes-6.16.0:6 >=kde-frameworks/kirigami-6.16.0:6 >=dev-qt/qtmultimedia-6.8.1:6[qml] >=kde-frameworks/qqc2-desktop-style-6.16.0:6 || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6",
+      "DEPEND": ">=dev-qt/qtbase-6.8.1:6[gui] >=dev-qt/qtdeclarative-6.8.1:6 >=kde-frameworks/kcolorscheme-6.16.0:6 >=kde-frameworks/kconfig-6.16.0:6 >=kde-frameworks/kcoreaddons-6.16.0:6 >=kde-frameworks/kcrash-6.16.0:6 >=kde-frameworks/kglobalaccel-6.16.0:6 >=kde-frameworks/kguiaddons-6.16.0:6 >=kde-frameworks/ki18n-6.16.0:6 >=kde-frameworks/kiconthemes-6.16.0:6 >=kde-frameworks/kirigami-6.16.0:6 test? ( >=dev-qt/qtmultimedia-6.8.1:6[qml] x11-themes/sound-theme-freedesktop ) dev-qt/qtbase:6",
+      "PDEPEND": "",
+      "SRC_URI": "mirror://kde/stable/kirigami-addons/kirigami-addons-1.12.1.tar.xz",
+      "KEYWORDS": "amd64 arm64 ~loong ~ppc64 ~riscv ~x86",
+      "effective_USE": "abi_x86_64 amd64 elibc_glibc kernel_linux"
+    },
+    "kde-misc/kdeconnect-26.04.3-r4": {
+      "EAPI": "8",
+      "IUSE": "bluetooth +plasmoid pulseaudio telephony X debug test selinux",
+      "RDEPEND": "dev-libs/libei dev-libs/openssl:= >=dev-libs/wayland-1.15.0 >=dev-qt/qtbase-6.10.1:6=[dbus,gui,network,wayland,widgets,X?] >=dev-qt/qtdeclarative-6.10.1:6[widgets] >=dev-qt/qtmultimedia-6.10.1:6 >=kde-frameworks/kcolorscheme-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6[qml] >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/kdbusaddons-6.22.0:6 >=kde-frameworks/kguiaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kiconthemes-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kirigami-6.22.0:6 >=kde-frameworks/kitemmodels-6.22.0:6 >=kde-frameworks/knotifications-6.22.0:6 >=kde-frameworks/kpeople-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kstatusnotifieritem-6.22.0:6 >=kde-frameworks/kwidgetsaddons-6.22.0:6 >=kde-frameworks/kwindowsystem-6.22.0:6 >=kde-frameworks/qqc2-desktop-style-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 sys-apps/dbus bluetooth? ( >=dev-qt/qtconnectivity-6.10.1:6[bluetooth] ) pulseaudio? ( >=media-libs/pulseaudio-qt-1.4:= ) telephony? ( >=kde-frameworks/modemmanager-qt-6.22.0:6 ) X? ( x11-libs/libfakekey x11-libs/libX11 x11-libs/libXtst x11-libs/libxkbcommon ) dev-libs/kirigami-addons:6 >=dev-qt/qt5compat-6.10.1:6[qml] >=dev-qt/qtmultimedia-6.10.1:6[qml] >=dev-qt/qttools-6.10.1:6[qdbus] >=kde-frameworks/kdeclarative-6.22.0:6 >=kde-frameworks/kdnssd-6.22.0:6 plasmoid? ( kde-plasma/libplasma:6 ) net-fs/sshfs || ( kde-frameworks/breeze-icons:* kde-frameworks/oxygen-icons:* ) >=kde-frameworks/kf-env-6 dev-qt/qtbase:6 selinux? ( sec-policy/selinux-kdeconnect ) !kde-misc/kdeconnect:5",
+      "DEPEND": "dev-libs/libei dev-libs/openssl:= >=dev-libs/wayland-1.15.0 >=dev-qt/qtbase-6.10.1:6=[dbus,gui,network,wayland,widgets,X?] >=dev-qt/qtdeclarative-6.10.1:6[widgets] >=dev-qt/qtmultimedia-6.10.1:6 >=kde-frameworks/kcolorscheme-6.22.0:6 >=kde-frameworks/kconfig-6.22.0:6[qml] >=kde-frameworks/kcoreaddons-6.22.0:6 >=kde-frameworks/kcrash-6.22.0:6 >=kde-frameworks/kdbusaddons-6.22.0:6 >=kde-frameworks/kguiaddons-6.22.0:6 >=kde-frameworks/ki18n-6.22.0:6 >=kde-frameworks/kiconthemes-6.22.0:6 >=kde-frameworks/kio-6.22.0:6 >=kde-frameworks/kirigami-6.22.0:6 >=kde-frameworks/kitemmodels-6.22.0:6 >=kde-frameworks/knotifications-6.22.0:6 >=kde-frameworks/kpeople-6.22.0:6 >=kde-frameworks/kservice-6.22.0:6 >=kde-frameworks/kstatusnotifieritem-6.22.0:6 >=kde-frameworks/kwidgetsaddons-6.22.0:6 >=kde-frameworks/kwindowsystem-6.22.0:6 >=kde-frameworks/qqc2-desktop-style-6.22.0:6 >=kde-frameworks/solid-6.22.0:6 sys-apps/dbus bluetooth? ( >=dev-qt/qtconnectivity-6.10.1:6[bluetooth] ) pulseaudio? ( >=media-libs/pulseaudio-qt-1.4:= ) telephony? ( >=kde-frameworks/modemmanager-qt-6.22.0:6 ) X? ( x11-libs/libfakekey x11-libs/libX11 x11-libs/libXtst x11-libs/libxkbcommon ) dev-libs/wayland-protocols dev-qt/qtbase:6",
+      "PDEPEND": "",
+      "SRC_URI": "mirror://kde/stable/release-service/26.04.3/src/kdeconnect-kde-26.04.3.tar.xz",
+      "KEYWORDS": "amd64 arm64 ~ppc64 ~x86",
+      "effective_USE": "X abi_x86_64 amd64 elibc_glibc kernel_linux pulseaudio"
+    }
+  },
+  "actual_profile_use": {
+    "media-gfx/sloom-studio-bin-0.9.16": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+    "x11-misc/xdg-utils-1.2.1-r11": "X abi_x86_64 amd64 dbus elibc_glibc kernel_linux",
+    "lxqt-base/lxqt-config-2.4.0": "abi_x86_64 amd64 elibc_glibc kernel_linux touchpad",
+    "kde-apps/kio-extras-26.04.3": "X abi_x86_64 amd64 elibc_glibc kernel_linux libproxy man sftp"
+  },
+  "actual_release_source_probe": {
+    "archive_sha256": "c543a493ce5875f405fb1c9ff6d531060ed082cc6d710e56d46ac42d164207bb",
+    "files_inspected": 223,
+    "plasma_token_hits": [
+      {
+        "file": "kirigami-addons-1.12.1/src/app/kirigamiappdefaults.cpp",
+        "line": 45,
+        "text": "    // Needed when not running with the Plasma QPlatformTheme to ensure colours get initialised"
+      },
+      {
+        "file": "kirigami-addons-1.12.1/src/formcard/AboutKDEPage.qml",
+        "line": 68,
+        "text": "            text: i18nd(\"kirigami-addons6\", \"KDE is a world-wide community of software engineers, artists, writers, translators and creators who are committed to Free Software development. KDE produces the Plasma desktop environment, hundreds of applications, and the many software libraries that support them.\\n\\n\\"
+      },
+      {
+        "file": "kirigami-addons-1.12.1/src/formcard/AboutPage.qml",
+        "line": 66,
+        "text": "          \"copyrightStatement\" : \"\u00a9 2010-2018 Plasma Development Team\","
+      },
+      {
+        "file": "kirigami-addons-1.12.1/src/sounds/SoundsPicker.qml",
+        "line": 38,
+        "text": "       \\default \"plasma-mobile\""
+      },
+      {
+        "file": "kirigami-addons-1.12.1/src/sounds/soundspickermodel.cpp",
+        "line": 17,
+        "text": "    QString theme = QStringLiteral(\"plasma-mobile\");"
+      },
+      {
+        "file": "kirigami-addons-1.12.1/src/treeview/treeviewplugin.cpp",
+        "line": 41,
+        "text": "    //org.kde.desktop.plasma is a couple of files that fall back to desktop by purpose"
+      },
+      {
+        "file": "kirigami-addons-1.12.1/tests/FormTestApp.qml",
+        "line": 105,
+        "text": "               \"copyrightStatement\" : \"\u00a9 2010-2018 Plasma Development Team\","
+      },
+      {
+        "file": "kirigami-addons-1.12.1/tests/FormTestApp.qml",
+        "line": 423,
+        "text": "                    description: \"KDE Plasma (Mobile)\""
+      }
+    ]
+  },
+  "frozen_inputs_equal": {
+    "gui-wm/qindaqt-desktop": true,
+    "gui-wm/qindaqt-kwin": true,
+    "app-accessibility/gabbee": true,
+    "metadata/qinda-delivery": true,
+    "profiles/qindaqt/systemd/parent": true,
+    "profiles/qindaqt/systemd/packages": true,
+    "kde-frameworks/kio": true
+  },
+  "checks": [
+    {
+      "command": "python3 tests/native_runtime_edges.py --evidence /home/cabewse/.cache/pf-native-runtime-edges-20261002",
+      "exit": 0,
+      "tests": 6,
+      "failures": 0,
+      "skips": 0,
+      "seconds": 0.227
+    },
+    {
+      "command": "bash -n individually for each of three new recipes",
+      "exit": 0,
+      "count": 3
+    },
+    {
+      "command": "Private PORTAGE_CONFIGROOT/PORTAGE_REPOSITORIES/DEPCACHEDIR actual portage.portdbapi metadata extraction and effective USE assertions",
+      "exit": 0,
+      "count": 3
+    },
+    {
+      "command": "pkgcheck scan --repo <WT> kde-frameworks/kauth dev-libs/kirigami-addons kde-misc/kdeconnect",
+      "exit": 0,
+      "findings_preserved": true
+    },
+    {
+      "command": "git diff --cached --check (all authored files; exclude three unchanged upstream patch files)",
+      "exit": 0
+    },
+    {
+      "command": "git diff --cached --check (complete including copied unchanged upstream patch files)",
+      "exit": 2,
+      "scope": "Only preserved upstream patch whitespace; not reformatted"
+    }
+  ],
+  "evidence_hashes": {
+    "profile-effective-use.json": "2c51f628d9bafa8655b84c3144cf3937ab0c503f989f4f10003f162edb10af55",
+    "kauth-6.27.0.tar.xz": "741934765f0c9f1c535598203fbad3f1b97231cc683a218a7f39fab948c13eab",
+    "source-provenance.json": "1e9b1a18d3232bf5223efdbbc6e3463c4eb1136e831019e838fa1d52b405b195",
+    "kirigami-addons-1.12.1.tar.xz": "c543a493ce5875f405fb1c9ff6d531060ed082cc6d710e56d46ac42d164207bb",
+    "archive-receipt.json": "0d484b3b70162b95042bbc2a013eea6d5ce4ec7dd7373c46a52a43ba71c114a8",
+    "release-source-probe.json": "6d4cdb2354732b9ab3285f08cc8f222ac392d0e3b2f15c01d3cc587db9230339",
+    "pkgcheck.log": "38b59cb1a738e9d3dc9fe2dbd824a6a813b89518c55e95feda7cc9bc398321b9",
+    "metadata.json": "54f3409f00289f1913ffeb55f2f2418b3911ee4e99bb144941a1050b47db3d09",
+    "kdeconnect-kde-26.04.3.tar.xz": "505b58b52630a662a8f6a2c50c58eda1de66779762c31d5ea5247b48bba52561",
+    "tests.log": "acb175fd997ca99b231ceca5eda2f81ac088799982beff1911e2925307d5a0c2",
+    "repositories.conf": "fb000b3499be37dc466cfec2b8f024b3541a80831b4189c6a39ed2c443e0f7fb"
+  },
+  "no_compile_install": true
+}

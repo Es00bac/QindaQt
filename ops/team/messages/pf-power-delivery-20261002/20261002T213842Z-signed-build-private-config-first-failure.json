@@ -1,0 +1,54 @@
+{
+  "cpv": "kde-frameworks/kauth-6.27.0-r1",
+  "exit": 1,
+  "seconds": 3.23029396799393,
+  "leader": {
+    "pid": 1932579,
+    "ppid": 1932573,
+    "pgid": 1932579,
+    "starttick": 43176922
+  },
+  "observed_processes": [
+    {
+      "pid": 1932579,
+      "ppid": 1932573,
+      "pgid": 1932579,
+      "starttick": 43176922
+    },
+    {
+      "pid": 1932581,
+      "ppid": 1932579,
+      "pgid": 1932579,
+      "starttick": 43176922
+    }
+  ],
+  "minimum_MemAvailable_bytes": 15221559296,
+  "aborted": null,
+  "survivors": [],
+  "source_same": true,
+  "vdb_world_same": true,
+  "build_log_sha256": "9e4ca672ffa477510aac2fae225d60d51bbacd40a215a097cee518eeed7cc01a",
+  "evidence": {
+    "signed-build/01-kde-frameworks_kauth-6.27.0-r1/build.log": {
+      "bytes": 3799,
+      "sha256": "9e4ca672ffa477510aac2fae225d60d51bbacd40a215a097cee518eeed7cc01a"
+    },
+    "signed-build/01-kde-frameworks_kauth-6.27.0-r1/command.json": {
+      "bytes": 3836,
+      "sha256": "304dc174d67520f70d7f3068713edfb3abd56455f09a5244c682c3b1408c5742"
+    },
+    "laptop-target-use.json": {
+      "bytes": 3350,
+      "sha256": "fdda5fcdfc9ffc0f517722b127f148663a02c70629cca550b39c0e9fe72ce4e3"
+    },
+    "laptop-qinda-use-parity.json": {
+      "bytes": 1842,
+      "sha256": "db320ec80c6ef4d4f4ba6090665935139acee2f209ec31f43a2afaa5f5343ed6"
+    },
+    "sddm-installed-build-dependency-check.json": {
+      "bytes": 338,
+      "sha256": "dee3d912fb6f13e5db76c25dc6ee115cb98762076d9ff0b338cc2c6f49f21d19"
+    }
+  },
+  "boundary": "Portage userpriv cannot traverse task cache config path; before compilation; setup-only, no source/readiness finding"
+}

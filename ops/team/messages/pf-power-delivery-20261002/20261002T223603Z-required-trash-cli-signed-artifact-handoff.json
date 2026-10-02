@@ -1,0 +1,440 @@
+{
+  "timestamp": "2026-10-02T22:36:03Z",
+  "scope": "Existing receipts only; no new source/GPkg rehash after user resource reduction. BUILDONLY/no install/trash operation/application/PAM/session actions.",
+  "cpv": "app-misc/trash-cli-0.24.5.26",
+  "source_preflight": {
+    "EAPI": "8",
+    "IUSE": "test python_targets_python3_12 python_targets_python3_13 python_targets_python3_14",
+    "DEPEND": "python_targets_python3_12? ( dev-lang/python:3.12 ) python_targets_python3_13? ( dev-lang/python:3.13 ) python_targets_python3_14? ( dev-lang/python:3.14 )",
+    "BDEPEND": "test? ( dev-python/flexmock[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] dev-python/mock[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] dev-python/parameterized[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] ) test? ( dev-python/psutil[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] dev-python/six[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] >=dev-python/pytest-7.4.4[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] ) python_targets_python3_12? ( dev-lang/python:3.12 ) python_targets_python3_13? ( dev-lang/python:3.13 ) python_targets_python3_14? ( dev-lang/python:3.14 ) >=dev-python/gpep517-16[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] dev-python/setuptools[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?]",
+    "IDEPEND": "",
+    "RDEPEND": "dev-python/psutil[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] dev-python/six[python_targets_python3_12(-)?,python_targets_python3_13(-)?,python_targets_python3_14(-)?] python_targets_python3_12? ( dev-lang/python:3.12 ) python_targets_python3_13? ( dev-lang/python:3.13 ) python_targets_python3_14? ( dev-lang/python:3.14 )",
+    "SRC_URI": "https://github.com/andreafrancia/trash-cli/archive/0.24.5.26.tar.gz -> trash-cli-0.24.5.26.gh.tar.gz",
+    "LICENSE": "GPL-2",
+    "KEYWORDS": "amd64 x86",
+    "effective_USE": [
+      "abi_x86_64",
+      "amd64",
+      "elibc_glibc",
+      "kernel_linux",
+      "python_targets_python3_14"
+    ],
+    "installed": false,
+    "build_dependencies": {
+      "DEPEND": {
+        "parsed": true,
+        "missing_installed_atoms": []
+      },
+      "BDEPEND": {
+        "parsed": true,
+        "missing_installed_atoms": []
+      },
+      "IDEPEND": {
+        "parsed": true,
+        "missing_installed_atoms": []
+      }
+    },
+    "ebuild_path": "/var/db/repos/gentoo/app-misc/trash-cli/trash-cli-0.24.5.26.ebuild",
+    "ebuild_sha256": "01759b31af738636df3efc4c046ee23fe5a8d0c53d8910b03e1986f28e16b4ca",
+    "source_manifest_sha256": "6a9dcddd2da929f5df69656983a5f890b81e01c21c5eab22f6c53bca545f09e2",
+    "fetch_map": {
+      "trash-cli-0.24.5.26.gh.tar.gz": [
+        "https://github.com/andreafrancia/trash-cli/archive/0.24.5.26.tar.gz"
+      ]
+    }
+  },
+  "normal_targeted_resolver": {
+    "argv": [
+      "sudo",
+      "-n",
+      "env",
+      "PORTAGE_CONFIGROOT=/tmp/pf-native-edges-config-fs9cq9ct",
+      "PORTAGE_DEPCACHEDIR=/tmp/pf-native-edges-config-fs9cq9ct/depcache",
+      "PORTAGE_REPOSITORIES=[DEFAULT]\nauto-sync = yes\nmain-repo = gentoo\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nvolatile = true\n\n[gentoo]\nauto-sync = yes\nlocation = /var/db/repos/gentoo\nmasters = \npriority = -1000\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-package = sec-keys/openpgp-keys-gentoo-release\nsync-openpgp-key-path = /usr/share/openpgp-keys/gentoo-release.asc\nsync-openpgp-key-refresh = true\nsync-openpgp-key-refresh-retry-count = 40\nsync-openpgp-key-refresh-retry-delay-exp-base = 2\nsync-openpgp-key-refresh-retry-delay-max = 60\nsync-openpgp-key-refresh-retry-delay-mult = 4\nsync-openpgp-key-refresh-retry-overall-timeout = 1200\nsync-openpgp-keyserver = hkps://keys.gentoo.org\nsync-rcu = false\nsync-type = rsync\nsync-uri = rsync://rsync.gentoo.org/gentoo-portage\nusepkg-exclude = \nusepkg-include = \nvolatile = false\nsync-rsync-extra-opts = \nsync-rsync-verify-metamanifest = yes\nsync-rsync-verify-jobs = 1\nsync-rsync-verify-max-age = 3\n\n[guru]\nauto-sync = yes\nlocation = /var/db/repos/guru\nmasters = gentoo\npriority = 20\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-depth = 1\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://anongit.gentoo.org/git/repo/proj/guru.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[qindaqt]\nauto-sync = yes\nlocation = /home/cabewse/work_SPaC3/QindaGentoo.worktrees/pf-native-runtime-edges-20261002\nmasters = gentoo\npriority = 100\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = file:///home/cabewse/git/QindaGentoo.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[sloom-private]\nauto-sync = no\nlocation = /var/db/repos/sloom-private\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n\n[steam-overlay]\nauto-sync = yes\nlocation = /var/db/repos/steam-overlay\nmasters = gentoo\npriority = 50\nstrict-misc-digests = true\nsync-allow-hardlinks = true\nsync-hooks-only-on-change = false\nsync-openpgp-key-refresh = true\nsync-rcu = false\nsync-type = git\nsync-uri = https://github.com/anyc/steam-overlay.git\nusepkg-exclude = \nusepkg-include = \nvolatile = false\n",
+      "MAKEOPTS=-j2 -l24",
+      "NINJAOPTS=-j2 -l24",
+      "emerge",
+      "--ignore-default-opts",
+      "--pretend",
+      "--buildpkgonly",
+      "--oneshot",
+      "--verbose",
+      "--usepkg=n",
+      "--getbinpkg=n",
+      "--with-bdeps=n",
+      "--autounmask=n",
+      "--autounmask-write=n",
+      "=app-misc/trash-cli-0.24.5.26"
+    ],
+    "exit": 0,
+    "seconds": 53.32618611498037,
+    "log_sha256": "15aefa73193aa869657368f91404ad4571cbfacd681235f0eae36aa9aec944e1"
+  },
+  "actual_build": {
+    "cpv": "app-misc/trash-cli-0.24.5.26",
+    "exit": 0,
+    "seconds": 12.600948429026175,
+    "leader": {
+      "pid": 2094358,
+      "ppid": 2094350,
+      "pgid": 2094358,
+      "starttick": 43508786
+    },
+    "observed_processes": [
+      {
+        "pid": 2094358,
+        "ppid": 2094350,
+        "pgid": 2094358,
+        "starttick": 43508786
+      },
+      {
+        "pid": 2094360,
+        "ppid": 2094358,
+        "pgid": 2094358,
+        "starttick": 43508787
+      },
+      {
+        "pid": 2094437,
+        "ppid": 2094360,
+        "pgid": 2094358,
+        "starttick": 43508954
+      },
+      {
+        "pid": 2094439,
+        "ppid": 2094437,
+        "pgid": 2094358,
+        "starttick": 43508955
+      },
+      {
+        "pid": 2094443,
+        "ppid": 2094437,
+        "pgid": 2094358,
+        "starttick": 43508974
+      },
+      {
+        "pid": 2094475,
+        "ppid": 2094360,
+        "pgid": 2094358,
+        "starttick": 43509062
+      },
+      {
+        "pid": 2094476,
+        "ppid": 2094475,
+        "pgid": 2094476,
+        "starttick": 43509062
+      },
+      {
+        "pid": 2094480,
+        "ppid": 2094476,
+        "pgid": 2094476,
+        "starttick": 43509066
+      },
+      {
+        "pid": 2094619,
+        "ppid": 2094480,
+        "pgid": 2094476,
+        "starttick": 43509092
+      },
+      {
+        "pid": 2094689,
+        "ppid": 2094360,
+        "pgid": 2094358,
+        "starttick": 43509165
+      },
+      {
+        "pid": 2094690,
+        "ppid": 2094689,
+        "pgid": 2094690,
+        "starttick": 43509165
+      },
+      {
+        "pid": 2094693,
+        "ppid": 2094690,
+        "pgid": 2094690,
+        "starttick": 43509169
+      },
+      {
+        "pid": 2094694,
+        "ppid": 2094693,
+        "pgid": 2094690,
+        "starttick": 43509169
+      },
+      {
+        "pid": 2094705,
+        "ppid": 2094694,
+        "pgid": 2094690,
+        "starttick": 43509172
+      },
+      {
+        "pid": 2094737,
+        "ppid": 2094705,
+        "pgid": 2094690,
+        "starttick": 43509190
+      },
+      {
+        "pid": 2094738,
+        "ppid": 2094737,
+        "pgid": 2094690,
+        "starttick": 43509190
+      },
+      {
+        "pid": 2094813,
+        "ppid": 2094360,
+        "pgid": 2094358,
+        "starttick": 43509281
+      },
+      {
+        "pid": 2094817,
+        "ppid": 2094813,
+        "pgid": 2094817,
+        "starttick": 43509282
+      },
+      {
+        "pid": 2094824,
+        "ppid": 2094817,
+        "pgid": 2094817,
+        "starttick": 43509285
+      },
+      {
+        "pid": 2094825,
+        "ppid": 2094824,
+        "pgid": 2094817,
+        "starttick": 43509286
+      },
+      {
+        "pid": 2094837,
+        "ppid": 2094825,
+        "pgid": 2094817,
+        "starttick": 43509288
+      },
+      {
+        "pid": 2094854,
+        "ppid": 2094837,
+        "pgid": 2094817,
+        "starttick": 43509294
+      },
+      {
+        "pid": 2094856,
+        "ppid": 2094360,
+        "pgid": 2094358,
+        "starttick": 43509310
+      },
+      {
+        "pid": 2094857,
+        "ppid": 2094856,
+        "pgid": 2094857,
+        "starttick": 43509310
+      },
+      {
+        "pid": 2094860,
+        "ppid": 2094857,
+        "pgid": 2094857,
+        "starttick": 43509314
+      },
+      {
+        "pid": 2094861,
+        "ppid": 2094860,
+        "pgid": 2094857,
+        "starttick": 43509314
+      },
+      {
+        "pid": 2094876,
+        "ppid": 2094861,
+        "pgid": 2094857,
+        "starttick": 43509317
+      },
+      {
+        "pid": 2094892,
+        "ppid": 2094876,
+        "pgid": 2094857,
+        "starttick": 43509320
+      },
+      {
+        "pid": 2094978,
+        "ppid": 2094876,
+        "pgid": 2094857,
+        "starttick": 43509341
+      },
+      {
+        "pid": 2094979,
+        "ppid": 2094978,
+        "pgid": 2094857,
+        "starttick": 43509341
+      },
+      {
+        "pid": 2095141,
+        "ppid": 2094360,
+        "pgid": 2094358,
+        "starttick": 43509577
+      },
+      {
+        "pid": 2095142,
+        "ppid": 2095141,
+        "pgid": 2095142,
+        "starttick": 43509577
+      },
+      {
+        "pid": 2095145,
+        "ppid": 2095142,
+        "pgid": 2095142,
+        "starttick": 43509581
+      },
+      {
+        "pid": 2095146,
+        "ppid": 2095145,
+        "pgid": 2095142,
+        "starttick": 43509581
+      },
+      {
+        "pid": 2095157,
+        "ppid": 2095146,
+        "pgid": 2095142,
+        "starttick": 43509584
+      },
+      {
+        "pid": 2095175,
+        "ppid": 2095157,
+        "pgid": 2095142,
+        "starttick": 43509588
+      },
+      {
+        "pid": 2095491,
+        "ppid": 2094360,
+        "pgid": 2094358,
+        "starttick": 43509717
+      },
+      {
+        "pid": 2095495,
+        "ppid": 2095491,
+        "pgid": 2094358,
+        "starttick": 43509717
+      },
+      {
+        "pid": 2095671,
+        "ppid": 2095495,
+        "pgid": 2094358,
+        "starttick": 43509814
+      },
+      {
+        "pid": 2095679,
+        "ppid": 2095671,
+        "pgid": 2094358,
+        "starttick": 43509816
+      },
+      {
+        "pid": 2095681,
+        "ppid": 2095679,
+        "pgid": 2094358,
+        "starttick": 43509816
+      },
+      {
+        "pid": 2095799,
+        "ppid": 2094360,
+        "pgid": 2094358,
+        "starttick": 43509883
+      },
+      {
+        "pid": 2095800,
+        "ppid": 2095799,
+        "pgid": 2095800,
+        "starttick": 43509883
+      },
+      {
+        "pid": 2095803,
+        "ppid": 2095800,
+        "pgid": 2095800,
+        "starttick": 43509887
+      },
+      {
+        "pid": 2095804,
+        "ppid": 2095803,
+        "pgid": 2095800,
+        "starttick": 43509887
+      },
+      {
+        "pid": 2095817,
+        "ppid": 2095804,
+        "pgid": 2095800,
+        "starttick": 43509890
+      }
+    ],
+    "minimum_MemAvailable_bytes": 18036133888,
+    "aborted": null,
+    "survivors": [],
+    "source_same": true,
+    "vdb_world_same": true,
+    "build_log_sha256": "c2bcb6d9d6d17734a15c4c0d7023dc00bfa7dc95fc401deb4f2a58e055089e4f",
+    "verification_exit": 0
+  },
+  "artifact": {
+    "packed_ebuild_sha256": "01759b31af738636df3efc4c046ee23fe5a8d0c53d8910b03e1986f28e16b4ca",
+    "source_archives": {
+      "trash-cli-0.24.5.26.gh.tar.gz": {
+        "bytes": 135348,
+        "checksums": {
+          "SHA256": "1d7dec1ad8f0264ceb1b0211d25fffee99c9409cd2e1d36dcc82ac5540f39ce5",
+          "BLAKE2B": "91a75f466893b4c7c5f0126de4e0d2c3d3e43b4422304335267a2cb6b8ee9827db0d7963e831347fd86ddfa02407ecc6690d9a49ce0ddb4cb4bdea518e477948",
+          "SHA512": "3bf5e60cd786a17e10708e79191bcfb7a16493f3a3c7d2f16326ec86a7733541174dbde234da9891b95c56350fa7bbd6a1db143ea6e54d8a6267198973f5e0f7"
+        },
+        "matches_source_manifest": true
+      }
+    },
+    "cpv": "app-misc/trash-cli-0.24.5.26",
+    "gpkg": "/var/cache/binpkgs/app-misc/trash-cli/trash-cli-0.24.5.26-1.gpkg.tar",
+    "bytes": 215040,
+    "sha256": "59b27aa8ffac7819a9b4c610c49ed83c25469f57433c63e9cb607b7dfd8683e9",
+    "signature_required": true,
+    "verified_metadata_and_full_image": true,
+    "signature_exist": true,
+    "signature_members": [
+      "trash-cli-0.24.5.26-1/metadata.tar.zst.sig",
+      "trash-cli-0.24.5.26-1/image.tar.zst.sig"
+    ],
+    "metadata": {
+      "CATEGORY": "app-misc",
+      "PF": "trash-cli-0.24.5.26",
+      "BUILD_ID": "1",
+      "USE": "abi_x86_64 amd64 elibc_glibc kernel_linux python_targets_python3_14",
+      "IUSE": "test python_targets_python3_12 python_targets_python3_13 python_targets_python3_14",
+      "CHOST": "x86_64-pc-linux-gnu",
+      "CFLAGS": "-march=znver2 -O2 -pipe",
+      "CXXFLAGS": "-march=znver2 -O2 -pipe",
+      "DEPEND": "dev-lang/python:3.14",
+      "BDEPEND": "dev-lang/python:3.14 >=dev-python/gpep517-16[python_targets_python3_14(-)] dev-python/setuptools[python_targets_python3_14(-)]",
+      "IDEPEND": "",
+      "RDEPEND": "dev-python/psutil[python_targets_python3_14(-)] dev-python/six[python_targets_python3_14(-)] dev-lang/python:3.14",
+      "PDEPEND": "",
+      "SRC_URI": ""
+    },
+    "target_native_use_match": true,
+    "payload_paths": 676,
+    "payload_regular_files": 629,
+    "payload_inventory_sha256": "281f07838fb746caa17135cfef3f4a182ff8799a9706bba22024ebf426fe9dfb"
+  },
+  "laptop_target_use": {
+    "cpv": "app-misc/trash-cli-0.24.5.26",
+    "USE": [
+      "abi_x86_64",
+      "amd64",
+      "elibc_glibc",
+      "kernel_linux",
+      "python_targets_python3_14"
+    ],
+    "IUSE": [
+      "test",
+      "python_targets_python3_12",
+      "python_targets_python3_13",
+      "python_targets_python3_14"
+    ],
+    "ebuild_sha256": "01759b31af738636df3efc4c046ee23fe5a8d0c53d8910b03e1986f28e16b4ca",
+    "method": "light actual laptop candidate profile+host metadata, no resolver/build/install"
+  },
+  "laptop_IUSE_parity": true,
+  "compiler_lease": "released",
+  "next": "idle until bounded grant; offer review of exact binary-only install receipt",
+  "caveats": [
+    "Build/payload/signature/source lineage qualified, not functional trash operation or application/SecretService runtime smoke.",
+    "Recorded target VDB/world snapshots unchanged during own build; parent installation thereafter is separate.",
+    "Core0 from exact ignored driver startup; observed descendants are sampled, no exhaustive subsecond-process claim."
+  ]
+}

@@ -1,0 +1,657 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-10-02T22:12:29.279292+00:00",
+  "source_commit": "3e05c3fc89d6dd100f8a7ccfa362fa6a7577b3cc",
+  "targets": [
+    {
+      "cpv": "kde-frameworks/kauth-6.27.0-r1",
+      "gpkg": "/var/cache/binpkgs/kde-frameworks/kauth/kauth-6.27.0-r1-1.gpkg.tar",
+      "bytes": 153600,
+      "sha256": "09b3e02ec37ad390bdb21e524c2bf43fe12bfbe9c40303ecc01cef580cf43c01",
+      "build_exit": 0,
+      "build_seconds": 51.740475985978264,
+      "verification_exit": 0,
+      "payload_paths": 56,
+      "payload_inventory_sha256": "b29eaf658c29ad63329e49b12dacd9243fc4a774194ef96e517828990316bd19",
+      "native_USE": "abi_x86_64 amd64 elibc_glibc kernel_linux policykit",
+      "packed_ebuild_sha256": "c96f9ebc6c36a08625769a3fd4838758caa9786f44081c657051943ed672d3a8",
+      "source_archives": {
+        "kauth-6.27.0.tar.xz": {
+          "bytes": 2273648,
+          "checksums": {
+            "SHA256": "741934765f0c9f1c535598203fbad3f1b97231cc683a218a7f39fab948c13eab",
+            "BLAKE2B": "7d6818a7cecee90209b11dcdcfbc5907b50620fb4c8bce5a91e6036cbabb0deef1d109054d696109a35b2bfd7add6eacfa8f21f0fe83ea0bdaadb90ea8934d8f",
+            "SHA512": "990416f0bc3709d4957530799266d57d0bea3dab4f30250deecc1fb92fc825fe8261a24eba4d8258b05f5a0ca244f7e63f5a0532c5bc873c37ee59aee407d986"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/01-kde-frameworks_kauth-6.27.0-r1",
+      "leader": {
+        "pid": 1944339,
+        "ppid": 1944338,
+        "pgid": 1944339,
+        "starttick": 43213553
+      },
+      "observed_process_count": 132,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "6fca9d9654e1721768e100c16c00f678b702f99ea14337aef246ca2c39e5bc3b",
+      "build_log_sha256": "92b5b34d812fb9231eb22064afa1b5ce4a9e38d0820715d42db4b734bcd9e32e",
+      "verify_log_sha256": "9be1678dcef0e685f95e4a5a0542ce8bd64f37a13b5630d531322b7a475c28df"
+    },
+    {
+      "cpv": "kde-frameworks/kio-6.27.0-r1",
+      "gpkg": "/var/cache/binpkgs/kde-frameworks/kio/kio-6.27.0-r1-1.gpkg.tar",
+      "bytes": 2652160,
+      "sha256": "561290e9833be7da48627810f632f1e3e9936e6b33174144001ac21f94d9a512",
+      "build_exit": 0,
+      "build_seconds": 644.9495741520077,
+      "verification_exit": 0,
+      "payload_paths": 480,
+      "payload_inventory_sha256": "a38d57dbc7a259560ac4a28594df373f92df45fa10485258bfe6898f63d6430f",
+      "native_USE": "X abi_x86_64 acl amd64 elibc_glibc kernel_linux kwallet wayland",
+      "packed_ebuild_sha256": "5dbc5d9177d224afde536b87d16b1d625d7e3dfb38270d3cde0f4f816c8a06b5",
+      "source_archives": {
+        "kio-6.27.0.tar.xz": {
+          "bytes": 3526288,
+          "checksums": {
+            "SHA256": "fc201b02c277a35ce81414b1de7e6f851e46b0b5d43beb784936a4a6dc6167d0",
+            "BLAKE2B": "17078510bddb889ac88b6573e8ac895d42f455c941588a1603009dccd6b17529f414ad12030d93cad472082a89a591d2d003f6003c19b2abd971929696ae77f1",
+            "SHA512": "d9aa0085d593b05ab4d90d864941215802ad955a1d3c410b0e4c9765a27dff945d6f182e3c602b129c446e52f2db90a1039bf90a2b29bc6dd5ba814b837c90f1"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/02-kde-frameworks_kio-6.27.0-r1",
+      "leader": {
+        "pid": 1951724,
+        "ppid": 1951720,
+        "pgid": 1951724,
+        "starttick": 43235220
+      },
+      "observed_process_count": 1413,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "3f8574fb33d7666b48d537c5a03be54b2850bd382e09102cad5a0053af731827",
+      "build_log_sha256": "0c32027ccae5a5cafadfc675a40fec9002fd7acbe27e7ad6ec1ecbc046e13962",
+      "verify_log_sha256": "47222fbd7a597d137a06e2b8a7bf5704e6384d9b281c8e228ebfa99aa162f15f"
+    },
+    {
+      "cpv": "dev-libs/kirigami-addons-1.12.1-r1",
+      "gpkg": "/var/cache/binpkgs/dev-libs/kirigami-addons/kirigami-addons-1.12.1-r1-1.gpkg.tar",
+      "bytes": 2754560,
+      "sha256": "ecf1a59968a3c827995d21621f7746e5e2137d1c8f649201e8f5d5f74ee52eee",
+      "build_exit": 0,
+      "build_seconds": 324.4790664149914,
+      "verification_exit": 0,
+      "payload_paths": 359,
+      "payload_inventory_sha256": "9778f67f1e3d3a9d748c0d46aaf58bb00a877666b8efd908b6b0fe0a9dee5531",
+      "native_USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "packed_ebuild_sha256": "b255d435dfa870d85dd36150d427dcb98390d327a879feee334ae75d1a715c1b",
+      "source_archives": {
+        "kirigami-addons-1.12.1.tar.xz": {
+          "bytes": 2815592,
+          "checksums": {
+            "SHA256": "c543a493ce5875f405fb1c9ff6d531060ed082cc6d710e56d46ac42d164207bb",
+            "BLAKE2B": "4635e756e7c463b0d7c091db2714a23cf0a005666abf05063be96a0221b4147ec3d701f1b1366014769821fea6f55f9e84ed4aa899b222adccd5b2870a10e267",
+            "SHA512": "365021b896c8a6ad7bfc1e98ff554040bdc50c109e25b362e8e4dc9219b721cf68092d0cef5b64884c9cee6367d65377621cccd0a9fdd8a79a515c739b136c2d"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/03-dev-libs_kirigami-addons-1.12.1-r1",
+      "leader": {
+        "pid": 1979738,
+        "ppid": 1951720,
+        "pgid": 1979738,
+        "starttick": 43299795
+      },
+      "observed_process_count": 1045,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "1292ab9c2af447a61149eb0980b10d85f5bc8f86b4608e1c0f143374bc9a7161",
+      "build_log_sha256": "2b05fefb0937bc423296d06c466f3325d892c31b6ef9f35615984f19cba3f8a9",
+      "verify_log_sha256": "d4f7c8bc687e56d5c8c1f844642411346b0489678112329ff9dfe6342157e2a5"
+    },
+    {
+      "cpv": "kde-misc/kdeconnect-26.04.3-r4",
+      "gpkg": "/var/cache/binpkgs/kde-misc/kdeconnect/kdeconnect-26.04.3-r4-1.gpkg.tar",
+      "bytes": 1740800,
+      "sha256": "71e2d8c6db221009ac8846531307d1b972c58715b70f4c7ab567222c22f7952d",
+      "build_exit": 0,
+      "build_seconds": 222.8267655770178,
+      "verification_exit": 0,
+      "payload_paths": 167,
+      "payload_inventory_sha256": "7b006e4723b45a0764139dd81465c8120d575cdefac5f95049f080b0b28defbc",
+      "native_USE": "X abi_x86_64 amd64 elibc_glibc kernel_linux pulseaudio",
+      "packed_ebuild_sha256": "9dec9446f3fede26505b2d77ac05a31d75836ff13737a80dcb53322d991c1ea9",
+      "source_archives": {
+        "kdeconnect-kde-26.04.3.tar.xz": {
+          "bytes": 691476,
+          "checksums": {
+            "SHA256": "505b58b52630a662a8f6a2c50c58eda1de66779762c31d5ea5247b48bba52561",
+            "BLAKE2B": "1aa1ff86a4250b8ebda4d155e75b5ee2c3caf9b899cf29f301bb895843b759f8f0bb9fdc8742ad4a2cab9701e6919f2b07311dabac6af2f8bb00db2585c431f4",
+            "SHA512": "f8d575310e48b2daf6bd354a4731618e27c602903e4e7f1b4e9c07c28e7e6c701b3ff4bdc61fc6c7061f790f5996592cf89fe6c527c699fb4c24a800513fc42c"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/04-kde-misc_kdeconnect-26.04.3-r4",
+      "leader": {
+        "pid": 1995883,
+        "ppid": 1951720,
+        "pgid": 1995883,
+        "starttick": 43332307
+      },
+      "observed_process_count": 1474,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "2c865113d38cae47c48b181576aa173086bf39697000898fb3eca0819054c785",
+      "build_log_sha256": "6332ca0020e84b7cddbd25a0a1e8ae0409b747b294e0c2cc26a66e4ef51fb3ce",
+      "verify_log_sha256": "942a0c20429831e118ff81b73c9c82aae3298f095bbb9191c3e038b86d615349"
+    },
+    {
+      "cpv": "app-misc/claude-desktop-bin-1.49585.0-r1",
+      "gpkg": "/var/cache/binpkgs/app-misc/claude-desktop-bin/claude-desktop-bin-1.49585.0-r1-1.gpkg.tar",
+      "bytes": 218644480,
+      "sha256": "575a8e5951cdf420f7382f2d2f677fc5c93de4e6ef3a6eb23f9e0a008063ede9",
+      "build_exit": 0,
+      "build_seconds": 20.74909465998644,
+      "verification_exit": 0,
+      "payload_paths": 3276,
+      "payload_inventory_sha256": "05b26567dacb55af25a0f766f26516c10f93eeafd2d56d21e5c315b0938feeb9",
+      "native_USE": "abi_x86_64 amd64 cowork elibc_glibc kernel_linux qindaqt",
+      "packed_ebuild_sha256": "f6be2e2bd94885bf4ab055d140e750db04a52cc685ce92b056aa8f68e2df8bcd",
+      "source_archives": {
+        "claude-desktop-bin-1.49585.0_amd64.deb": {
+          "bytes": 170566964,
+          "checksums": {
+            "SHA256": "e0b4ce6313943a69e9bd61749a293bfca241b4dfb37f88df6411b4b69ec67a40",
+            "BLAKE2B": "92f094c9093eb93e95c5ceb0482e516d8eb637eeac774912f6d8c0edba0c8ee9f1a6b2fd133f45e1f8940ef4d15be6557205bad47a224ced4b2f5024332c9b14",
+            "SHA512": "15f3863e549622cd69e427c54eb4f373670724f6ea2ba6af16686e6e8d5fa2ce3fcd26f665598f480e1fab1fbc893fb3181f0c3e4e04a47a4e1eaf5ccc64ffc8"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/05-app-misc_claude-desktop-bin-1.49585.0-r1",
+      "leader": {
+        "pid": 2009773,
+        "ppid": 1951720,
+        "pgid": 2009773,
+        "starttick": 43354632
+      },
+      "observed_process_count": 31,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "7216c6dfe9f90e1b40f481ea28e2058651b6bd489e57a06fef958cfda9063c41",
+      "build_log_sha256": "380feec8e2c3ea4321eff4427fa5fef287d531e94e6a780d253a460881325cae",
+      "verify_log_sha256": "fa1ced0417ec5d320f7fdc3dd70c8bfcf10bee21e44a73efa560afc42d9fd9b7"
+    },
+    {
+      "cpv": "app-crypt/pinentry-1.3.2-r2",
+      "gpkg": "/var/cache/binpkgs/app-crypt/pinentry/pinentry-1.3.2-r2-1.gpkg.tar",
+      "bytes": 225280,
+      "sha256": "547a40d2bc81ef1ae12a59240f933d058e5d811018a3be4c4d1a73eb2655342f",
+      "build_exit": 0,
+      "build_seconds": 37.50363355997251,
+      "verification_exit": 0,
+      "payload_paths": 22,
+      "payload_inventory_sha256": "94b07bb128b4b1b8324c4cc881b35f89a81be735fd68f3464320df33463fd491",
+      "native_USE": "X abi_x86_64 amd64 elibc_glibc gtk kernel_linux ncurses qt6 wayland",
+      "packed_ebuild_sha256": "71f8de00d7df06e53adc65f1f2c0bc3bd5049349d98e6886b1f41babb15a8727",
+      "source_archives": {
+        "pinentry-1.3.2.tar.bz2": {
+          "bytes": 612858,
+          "checksums": {
+            "SHA256": "8e986ed88561b4da6e9efe0c54fa4ca8923035c99264df0b0464497c5fb94e9e",
+            "BLAKE2B": "985bcf0b4f85d4e5001bfd714ddd064e05ba6d5bd6e1d3b6f1044f27ca148921d22148b301c91cce4fa7f2f7e7f3b743a9bc1383cb9d8e1d0583a595109a699e",
+            "SHA512": "3b4d50a42d412d649a7830f7378aa966342c2bc0157d03b0ad79cf0aed29d6698d48c734e23b1dccada5f6ef81d0c09d3ead6cd703eadfc8082987e6bea0aafc"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/06-app-crypt_pinentry-1.3.2-r2",
+      "leader": {
+        "pid": 2011761,
+        "ppid": 1951720,
+        "pgid": 2011761,
+        "starttick": 43357066
+      },
+      "observed_process_count": 139,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "ba3416ec4b7cd15eb848a192dbb11a90ce1f0be21dcd5f7add9051a1c5705154",
+      "build_log_sha256": "279316fa3af4aa4e589fd9ddb689508452fa6505c2d6b89edba8349b28a2a0d5",
+      "verify_log_sha256": "a9ded3222a541559c8086228f636a669d8c7813522923d97051e7d34bb590910"
+    },
+    {
+      "cpv": "app-crypt/pinentry-1.3.3-r1",
+      "gpkg": "/var/cache/binpkgs/app-crypt/pinentry/pinentry-1.3.3-r1-1.gpkg.tar",
+      "bytes": 225280,
+      "sha256": "a535e72286951c7505277785cdd4f71d2da2acfe205df9812f79dddfb493c4ee",
+      "build_exit": 0,
+      "build_seconds": 29.034820094995666,
+      "verification_exit": 0,
+      "payload_paths": 22,
+      "payload_inventory_sha256": "3f41fc546f40f47e8044d36fa11905bfc3e72ceac35d7e9a786f8c011ce5c24a",
+      "native_USE": "X abi_x86_64 amd64 elibc_glibc gtk kernel_linux ncurses qt6 wayland",
+      "packed_ebuild_sha256": "3c4b552e5b50a40f622879b039174f3b3b463db5db8ec3cca4fda6f4b7ff5cbe",
+      "source_archives": {
+        "pinentry-1.3.3.tar.bz2": {
+          "bytes": 620687,
+          "checksums": {
+            "SHA256": "c2970f16d6afb66ecddfca767d743936c86239bff936eed7fd7597a678414b63",
+            "BLAKE2B": "d907056dfdc2830d41983601ce73df8650c7329bf12d22b5462c2f81921fa3aa8695ae4c420aba8bdef257a34ab502d8c22bb730fb5d713cf59c317f767bee35",
+            "SHA512": "3562d6a83af01ab9c12fb3e4710e3233078296c1275a69c6ac5ebe7461e95404d6504c4fde82f501f861b3ae960b7d13052bcb359a62dfc078ade29e08b86735"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/07-app-crypt_pinentry-1.3.3-r1",
+      "leader": {
+        "pid": 2024696,
+        "ppid": 1951720,
+        "pgid": 2024696,
+        "starttick": 43360866
+      },
+      "observed_process_count": 90,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "17af7d6b15f783ae1d1068ad554712dbce09886fd651e95cfdd18a620f19a1af",
+      "build_log_sha256": "c6f0a8cd1f0780cbf5445436de09051b7e5ea24f7dea44cb1226d633c646fb3a",
+      "verify_log_sha256": "7c46ce0ffcc6c0c50e60673f038459b5ba986e23db209dc8a46d03e3b2724a71"
+    },
+    {
+      "cpv": "virtual/secret-service-0-r3",
+      "gpkg": "/var/cache/binpkgs/virtual/secret-service/secret-service-0-r3-1.gpkg.tar",
+      "bytes": 20480,
+      "sha256": "1962cb610b14f050482a311f47c409580266771ff707cbd518c3b2d2e6f004b7",
+      "build_exit": 0,
+      "build_seconds": 5.211094675003551,
+      "verification_exit": 0,
+      "payload_paths": 0,
+      "payload_inventory_sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "native_USE": "abi_x86_64 amd64 elibc_glibc kernel_linux qindaqt",
+      "packed_ebuild_sha256": "b755441e97fc702d8b3d5cb151b9e8477d9a201dedad19ef5354d69bbfe69de4",
+      "source_archives": {},
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/08-virtual_secret-service-0-r3",
+      "leader": {
+        "pid": 2038041,
+        "ppid": 1951720,
+        "pgid": 2038041,
+        "starttick": 43363807
+      },
+      "observed_process_count": 13,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "8690a9e81e2f9df4b47704af670db4e641ccb93fc8d260124029a838147b3a7c",
+      "build_log_sha256": "9f557109601a6fb5da59043e46945a88c9b59eae707dc9e7c9946d793c10d472",
+      "verify_log_sha256": "6b7e4454d0c3ae89e923948f3f9f995f1e03492246bef8d4f9be1bced5204436"
+    },
+    {
+      "cpv": "x11-misc/sddm-0.21.0_p20250502-r2",
+      "gpkg": "/var/cache/binpkgs/x11-misc/sddm/sddm-0.21.0_p20250502-r2-1.gpkg.tar",
+      "bytes": 3840000,
+      "sha256": "9302ab4069dba5809d570055220d67c291936d1837f9cbf270a473c3e1abbda4",
+      "build_exit": 0,
+      "build_seconds": 48.278026113985106,
+      "verification_exit": 0,
+      "payload_paths": 240,
+      "payload_inventory_sha256": "cb08bf3a96ceda0cfb23fb46a011495179908d8e5d3382197b424073dce9fa1d",
+      "native_USE": "X abi_x86_64 amd64 elibc_glibc kernel_linux qindaqt systemd",
+      "packed_ebuild_sha256": "cd947e6cb83687b5ae4db8d6bd8734c3e30c9736875b4a248afc196d7a4cd8c8",
+      "source_archives": {
+        "sddm-0.21.0_p20250502-4fe234bd.tar.gz": {
+          "bytes": 3558357,
+          "checksums": {
+            "SHA256": "5f1e825dcfab0caabbebc33707ce18a9e2d5a76d6287fb96a9bf47136f117ad5",
+            "BLAKE2B": "6b013f0edfa1093f37663dcda6c8fe050b951f53a80771c44bcb39f4595e1a6194ceb18167716018b6ef7dee8bb4a486ba4158062ddd7eaa90ed09db98235be0",
+            "SHA512": "434e081ba06e38b8a4368d90dcf166c5ed955fe142ab377d56232777dde7fcd972f46d99131270e71676160bb179f4245dbed9621dfb40a5dac7bbbd18e510f9"
+          },
+          "matches_source_manifest": true
+        },
+        "sddm-0.21.0-pam.tar.xz": {
+          "bytes": 676,
+          "checksums": {
+            "SHA256": "6cb32da5f8298c4f70db5616b14d1359fdc2833bbfe83602e6e46b51b0d917f2",
+            "BLAKE2B": "06a79f74a5833eca9877df4be8639311382d13061b21aa3627e6c4b07725878ded62221fca943440bacc143f6be2a23b2e0a2124012ff2c9fac82e1eded11144",
+            "SHA512": "6d91eef2434346f7707122454522cf19f104994ac95d562417f6060a92b4e6c9792bebcccabac8290479200b4ba02fc4d92c6098c435c7ceda796d619d8913c2"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/09-x11-misc_sddm-0.21.0_p20250502-r2",
+      "leader": {
+        "pid": 2038947,
+        "ppid": 1951720,
+        "pgid": 2038947,
+        "starttick": 43364366
+      },
+      "observed_process_count": 381,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "e7a951fe94bb4aec3440914618f23aec477a90f2035f640f08c06255c10fb66c",
+      "build_log_sha256": "52d6aa31752017d23a8c25b58d6beb204c6217deaae91fcde78af0036742d1fd",
+      "verify_log_sha256": "f54f75b4d4a5ecae216dfd09f0b6a78f2034eb12b8046ffee9d20946d2ac912b"
+    },
+    {
+      "cpv": "x11-misc/xdg-utils-1.2.1-r11",
+      "gpkg": "/var/cache/binpkgs/x11-misc/xdg-utils/xdg-utils-1.2.1-r11-1.gpkg.tar",
+      "bytes": 112640,
+      "sha256": "f4d45cc2d6b845d1d76b87e6a5b2be64dc5641f86f528a691675adcaca39b367",
+      "build_exit": 0,
+      "build_seconds": 9.375212815008126,
+      "verification_exit": 0,
+      "payload_paths": 32,
+      "payload_inventory_sha256": "8b3db7a79d751c4ba3a8b454ed024a8ae255279e4c73f40d7544f090d8421d17",
+      "native_USE": "X abi_x86_64 amd64 dbus elibc_glibc kernel_linux",
+      "packed_ebuild_sha256": "630e00e13b4667def5a3168b7dbd83d321a1d43e9430828963c3d45bf306b34a",
+      "source_archives": {
+        "xdg-utils-v1.2.1.tar.bz2": {
+          "bytes": 293386,
+          "checksums": {
+            "SHA256": "93d510dccf328378f012fe195b4574c2fac1cd65a74d0852d6eaa72e5a2065a7",
+            "BLAKE2B": "9d6ce4be8c27ad5b8d0ae55ad0d8b4457b59cb1bd260884ca5bfd2cb8ed7ed68a2f5a8db6d660ceabab59cbb9880fd4f1a26cb71a8f759ec40c2f9f95bbc8a05",
+            "SHA512": "d5436449fec2f4db952239ee910bfda203955c8df8cb92379f182dc36f9c82b6ceb092ccbebfd02ed00eb7ef5f6895ef745baca67906ae7490e425db27b1dbfc"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/10-x11-misc_xdg-utils-1.2.1-r11",
+      "leader": {
+        "pid": 2042198,
+        "ppid": 1951720,
+        "pgid": 2042198,
+        "starttick": 43369241
+      },
+      "observed_process_count": 42,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "f81d0d581cff6255f13c03c7202e8288ddde88728ccd563357ac2a5378b9eac6",
+      "build_log_sha256": "3e07b23d681f86523a246289dfc1b21293e439c2638beecc181221b33fdd07e4",
+      "verify_log_sha256": "db30e9a729e95e148949866d165515c4bedbd25f4738633af5840b52a60e22df"
+    },
+    {
+      "cpv": "media-gfx/sloom-studio-bin-0.9.16",
+      "gpkg": "/var/cache/binpkgs/media-gfx/sloom-studio-bin/sloom-studio-bin-0.9.16-2.gpkg.tar",
+      "bytes": 410931200,
+      "sha256": "b047ca8f4455eb59e0fe3341ef7616fd03c020fe46e2caf27611935f0fa1b463",
+      "build_exit": 0,
+      "build_seconds": 19.696888109960128,
+      "verification_exit": 0,
+      "payload_paths": 3348,
+      "payload_inventory_sha256": "96cc870c3d0a5929d0db100c383461690f5a02da38e715f90ee580d3a9da9196",
+      "native_USE": "abi_x86_64 amd64 elibc_glibc kernel_linux",
+      "packed_ebuild_sha256": "e05980e20cb953ba076706a0d914ea03737c29473e93ea3d95f2b643b5f09ab7",
+      "source_archives": {
+        "sloom-studio-0.9.16-linux-x64.tar.zst": {
+          "bytes": 411678233,
+          "checksums": {
+            "SHA256": "bddc2c461a921f409f9af07f9e6501c5ec077bd4f0ae97c4456adb665d92c490",
+            "BLAKE2B": "2c86e53b7dfac27eb8ae402791d08f790e9e4a22035493ebaa9c44ed3127d138bb471b12b953f98f53d5b43b7c95ad3cadf585f3166ba6ac8dd9267b8b42df39",
+            "SHA512": "2c46abe19eff91aaf330745c34a5df06a01e2f0f49edfa7b20999f897561b0a101cef6ef8b7b21fee0d2764f1325fd8ad81ed672e95074e388124d4480e54da5"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/11-media-gfx_sloom-studio-bin-0.9.16",
+      "leader": {
+        "pid": 2044631,
+        "ppid": 1951720,
+        "pgid": 2044631,
+        "starttick": 43370217
+      },
+      "observed_process_count": 36,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "8295811da3c60f80aaf14a19bf6e5d6f25854241f82bc4c75e2f0920e523d609",
+      "build_log_sha256": "362df10eeb9593dda428d001697ed7cf48fcafd38d05f82400655be71ecd2029",
+      "verify_log_sha256": "c80862880dbc2c9000fb9999be594d28e0ea3e701119952bb8bc66b07832d78c"
+    },
+    {
+      "cpv": "lxqt-base/lxqt-config-2.4.0",
+      "gpkg": "/var/cache/binpkgs/lxqt-base/lxqt-config/lxqt-config-2.4.0-1.gpkg.tar",
+      "bytes": 655360,
+      "sha256": "6099a2df050326e8c4fb413f4e23851c69b627a2f5868345e7084da61d447e84",
+      "build_exit": 0,
+      "build_seconds": 50.373706011043396,
+      "verification_exit": 0,
+      "payload_paths": 388,
+      "payload_inventory_sha256": "113fb08997f5e65a85040b0d05f29c109e525dc0f636eb1d0894ba01b87cf4b3",
+      "native_USE": "abi_x86_64 amd64 elibc_glibc kernel_linux touchpad",
+      "packed_ebuild_sha256": "2d50a385259d0360b84e641f48c5ca1ffce144d6b9f61bc1f8b29fd973d0ba69",
+      "source_archives": {
+        "lxqt-config-2.4.0.tar.xz": {
+          "bytes": 416440,
+          "checksums": {
+            "SHA256": "8943a0d61993e068fa71aac85eb1eb93ac32064928ee1c8c1ff9666b45e1610e",
+            "BLAKE2B": "c2b2b072866eabce99e1e21e570d4f32a5352d8785d42e525d599cd7fb2641870ed18ff6796ea408a4d3089b5225fd7a4cc096da618b042d2ef817014f4fa502",
+            "SHA512": "ba4c653c74fa87bc5fb957e454388399ee1a7d1f21b22f9fe0b62112f1d81254fec9d66070304737001412b56e7388a0a4b3615ddba6bcdecc74e9e59560d25c"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/12-lxqt-base_lxqt-config-2.4.0",
+      "leader": {
+        "pid": 2045971,
+        "ppid": 1951720,
+        "pgid": 2045971,
+        "starttick": 43372767
+      },
+      "observed_process_count": 368,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "d587889ab863ff5504413654dc9e0452a73435d16a59b61957238f5f2b326b78",
+      "build_log_sha256": "6873d67064385c1a561b660adeb85340ced0ee2c2b67bb87bc1f2dd0a3e9fc1d",
+      "verify_log_sha256": "cdfb4bad423650ff64ac7346e6d632514522a2290dffede17c571305a832837c"
+    },
+    {
+      "cpv": "kde-apps/kio-extras-26.04.3",
+      "gpkg": "/var/cache/binpkgs/kde-apps/kio-extras/kio-extras-26.04.3-2.gpkg.tar",
+      "bytes": 563200,
+      "sha256": "742803f7f0caa06d9af71449c9d31b32f89a4c8915da75db27a2298bb6e52b6e",
+      "build_exit": 0,
+      "build_seconds": 19.775586506992113,
+      "verification_exit": 0,
+      "payload_paths": 69,
+      "payload_inventory_sha256": "43aca9d415002dcf472ed07a7ce7b65012cfa3bbcc6cec22fc522b0d42f1bc90",
+      "native_USE": "X abi_x86_64 amd64 elibc_glibc kernel_linux libproxy man sftp",
+      "packed_ebuild_sha256": "a08fd12998f02b7d2aef4e86f6ae4fc78d24b2ddd059a670f47859732041d7d8",
+      "source_archives": {
+        "kio-extras-26.04.3.tar.xz": {
+          "bytes": 5599952,
+          "checksums": {
+            "SHA256": "8448075fdedd1e5ae43b865337f5ac3ca39037726dd0deaa061797fa84d31d63",
+            "BLAKE2B": "18f1d43debe642e6c6f3697a4474205314b24087d8dc9f55aa7c4e199d91aba02401c03894b9424114a2ab760b24cfadd9c7dedde8b1b70944e46555759a212c",
+            "SHA512": "71036243d9fbdaf133e4d65f0de2c71e538e5abaf3f2bfd83093a6cc15779b60860ec39be2317d086fd558a51eaaf58f99fce628224cb6289f0d17b30bb0d91e"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/13-kde-apps_kio-extras-26.04.3",
+      "leader": {
+        "pid": 2049437,
+        "ppid": 1951720,
+        "pgid": 2049437,
+        "starttick": 43377851
+      },
+      "observed_process_count": 172,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "d588d40df2f52366e559149f75ee08a2212ea2bc9c21f958960513915adea490",
+      "build_log_sha256": "afef66085bde3b6473e6b4517e2b419eae0acfa4d600d92fa0639833f7dcbd38",
+      "verify_log_sha256": "3fbb2ba66cc44dfe4113030afd388717c119ba39d605da4970c1779f6168ca69"
+    },
+    {
+      "cpv": "kde-apps/gwenview-26.04.3",
+      "gpkg": "/var/cache/binpkgs/kde-apps/gwenview/gwenview-26.04.3-1.gpkg.tar",
+      "bytes": 1075200,
+      "sha256": "5676337bc949a2ea75ad3c1d1a588be5f4f59d09c889f16f31452c8fb41e0c25",
+      "build_exit": 0,
+      "build_seconds": 74.33098557498306,
+      "verification_exit": 0,
+      "payload_paths": 69,
+      "payload_inventory_sha256": "6a5b8482123ce7aeae180bcef14f520e26498e7b15d04cba5582639cb18a586b",
+      "native_USE": "X abi_x86_64 amd64 annotate elibc_glibc kernel_linux mpris",
+      "packed_ebuild_sha256": "667c102716c5fdaac9c6659202afb0d34551a351ba4d5b93b6096e44acfe6c28",
+      "source_archives": {
+        "gwenview-26.04.3.tar.xz": {
+          "bytes": 6549860,
+          "checksums": {
+            "SHA256": "dabd48e172cf78f4b42de7423de56ed474d241abb080b4d2b632c5d4d4e8dbaf",
+            "BLAKE2B": "439b7c4ec1fb4a1dc9ae5b18538e90cb674c5526ddd35bf43838191c9b5640e1d048cea4500327b0655bcb8179404b457d9f8f2fb0eab5abb832db5845a6485c",
+            "SHA512": "c4ed4a52bd52de2402ac6fe1f570902338eb452bd5fd506e9d624810985e6463c55ec3e62c8b516bbf00859ec39d62909f8756d5a7ab22404714eca8f2a6eb96"
+          },
+          "matches_source_manifest": true
+        }
+      },
+      "evidence_directory": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build-corrected/14-kde-apps_gwenview-26.04.3",
+      "leader": {
+        "pid": 2052880,
+        "ppid": 1951720,
+        "pgid": 2052880,
+        "starttick": 43379870
+      },
+      "observed_process_count": 678,
+      "source_same": true,
+      "vdb_world_snapshot_same": true,
+      "artifact_receipt_sha256": "12a4bbae6dad3d5f6f3ea031751469ca03a6ab2ce160756c7158390c2acc59d7",
+      "build_log_sha256": "08e54673bcc572e8e5164a323f8498a90573b0c83b6358b0c776a5c42b6683eb",
+      "verify_log_sha256": "e461c8acd5eab302e5ce6636423b27bb4f2a58ddc41de591a28d818c0e7f7f3e"
+    }
+  ],
+  "counts": {
+    "builds": 14,
+    "build_pass": 14,
+    "verification_pass": 14,
+    "payload_paths": 8528,
+    "observed_distinct_pid_starttick_pairs": 6014,
+    "survivors": 0
+  },
+  "minimum_MemAvailable_bytes": 9482805248,
+  "total_package_build_seconds": 1558.3249302519253,
+  "source_tracked_diff_exit": 0,
+  "world_unchanged": true,
+  "first_setup_failure_retained": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build/01-kde-frameworks_kauth-6.27.0-r1",
+  "task_config_resource_update": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/signed-build/resource-update-8jobs.json",
+  "laptop_use_parity": {
+    "kde-frameworks/kauth-6.27.0-r1": {
+      "laptop_enabled": [
+        "policykit"
+      ],
+      "qinda_enabled": [
+        "policykit"
+      ],
+      "match": true
+    },
+    "kde-frameworks/kio-6.27.0-r1": {
+      "laptop_enabled": [
+        "X",
+        "acl",
+        "kwallet",
+        "wayland"
+      ],
+      "qinda_enabled": [
+        "X",
+        "acl",
+        "kwallet",
+        "wayland"
+      ],
+      "match": true
+    },
+    "dev-libs/kirigami-addons-1.12.1-r1": {
+      "laptop_enabled": [],
+      "qinda_enabled": [],
+      "match": true
+    },
+    "app-misc/claude-desktop-bin-1.49585.0-r1": {
+      "laptop_enabled": [
+        "cowork",
+        "qindaqt"
+      ],
+      "qinda_enabled": [
+        "cowork",
+        "qindaqt"
+      ],
+      "match": true
+    },
+    "app-crypt/pinentry-1.3.3-r1": {
+      "laptop_enabled": [
+        "X",
+        "gtk",
+        "ncurses",
+        "qt6",
+        "wayland"
+      ],
+      "qinda_enabled": [
+        "X",
+        "gtk",
+        "ncurses",
+        "qt6",
+        "wayland"
+      ],
+      "match": true
+    },
+    "virtual/secret-service-0-r3": {
+      "laptop_enabled": [
+        "qindaqt"
+      ],
+      "qinda_enabled": [
+        "qindaqt"
+      ],
+      "match": true
+    },
+    "x11-misc/sddm-0.21.0_p20250502-r2": {
+      "laptop_enabled": [
+        "X",
+        "qindaqt",
+        "systemd"
+      ],
+      "qinda_enabled": [
+        "X",
+        "qindaqt",
+        "systemd"
+      ],
+      "match": true
+    },
+    "x11-misc/xdg-utils-1.2.1-r11": {
+      "laptop_enabled": [
+        "X",
+        "dbus"
+      ],
+      "qinda_enabled": [
+        "X",
+        "dbus"
+      ],
+      "match": true
+    },
+    "media-gfx/sloom-studio-bin-0.9.16": {
+      "laptop_enabled": [],
+      "qinda_enabled": [],
+      "match": true
+    },
+    "kde-apps/kio-extras-26.04.3": {
+      "laptop_enabled": [
+        "X",
+        "libproxy",
+        "man",
+        "sftp"
+      ],
+      "qinda_enabled": [
+        "X",
+        "libproxy",
+        "man",
+        "sftp"
+      ],
+      "match": true
+    }
+  },
+  "caveats": [
+    "BUILDONLY/no install, application GUI/native Secret Service/PAM/login readiness unrun.",
+    "VDB assertions cover recorded target-metadata snapshots, not a fabricated full-VDB preimage.",
+    "Observed process receipt samples are not claimed exhaustive for subsecond descendants.",
+    "Initial cache config permission failure and corrected artifact visibility boundary preserved; no successful package rebuilt.",
+    "First KAuth/KIO no-core-file checks do not claim retroactive corelimit0; own driver/current descendants set0 before future packages."
+  ]
+}

@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — positive Power readiness procedure remains unrun; exact final Input five-gate handoff independently accepted
+- Status: available — fourteen plus required TrashCLI signed artifacts handed off; idle, no resource lease
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -79,3 +79,33 @@
 - 2026-10-02T20:49:19Z — BoundedpositivePowerpreflight stoppednewharness permanager: productioncae9114ae1e64cd375b6cb79fb206cae8e9c7f1e equals8c/cb, docs-onlycandidatee3dac221892d1cfba236faa2086a8e6ef8ed0da7 recordsrealinstalledreadiness/shutdownprocedure, explicitlyunrun. Strictdocs0/9.33s/503docnav0/diffcheck0; no compile/native/hostaction. SuspectedextraXMLclose wasfalsefinding; actualPower1literal parsePASS12methods3signals, correction sent.
 
 - 2026-10-02T20:49:19Z — IndependentactualInput ACCEPT2ad61f2938ecc04634898125329d1c9f34d30ac9:63archivedreceipt/evidence hash+sizesmatched,5callerlogs15Qt +5corelogs15Qt0fail0skip/52.873224s; five100argcommands/sourcecases/render-onlyisolationchecked, allcleanup/corearrays empty.17artifacthashes matchpreservedpreflight;16currentstillmatch, core changedonlyafterroot55drebuild(recordede9runtime preserved). Compiled537CPP/helper102exactsource verified; first2a542/f99auditpath caveat retained. No reviewercompile/runtime/installed/PAM/wholePlasma or actualownerlossreplay claim. Boardavailable/noleases.
+
+- 2026-10-02T20:52:26Z — Claimed read-only installed Plasma/world/profile inspection at overlay39321582993a8a1cb3295c92d39517065358a441. No install, configuration, unmerge, resolution or session mutation.
+
+- 2026-10-02T20:57:35Z — Verified read-only qinda60/laptop30 forbidden inventories, explicit roots/profile/USE/reverse-edge facts and exact tagged Kirigami223-file source proof. Handed off staged manager-only plan; no host mutations or zero-installed-Plasma claim.
+
+- 2026-10-02T20:58:25Z — Claimed exact502a042 overlay candidate in QindaGentoo.worktrees/pf-native-runtime-edges-20261002. Own only KAuth6.27-r1/Kirigami1.12.1-r1/KDEConnect26.04.3-r4 recipes+support/credits and four native profile USE lines; final native Desktop/fork/Gabbee/metadata unchanged. Source-only, no compile/install.
+
+- 2026-10-02T21:04:12Z — Pushed exact851e2c0/base502 overlay: six focused checks PASS0/0.227s, actual metadata/profile OFF proof, exact official archive hashes. KAuth6.27 cold-source availability and preserved upstream whitespace caveats recorded; no build/install. Different reviewer requested; available for bounded continuation.
+
+- 2026-10-02T21:06:11Z — Actual private exact-version Portage pretend PASS0/9.750s:9 packages only, no KF upgrades. Diagnosing actual installed Claude OR branch selection; no compile/install/unmerge/world actions.
+
+- 2026-10-02T21:07:13Z — Actual private qinda pretend exit0/9.750s, nine packages/no KF upgrades; actual installed Claude graph exit0/2.307s chooses KDE portal+cli-tools. Immutable receipts posted, no active own compiler/runtime. Available for scoped provider continuation after review.
+
+- 2026-10-02T21:18:26Z — Root authorized Claude qindaqt conditional and generic pinentry/SecretService virtual adaptation. Wrapper/vendor/control/support unchanged;10 focused checks PASS0/.320s,7 requested package build-dependency checks all installed. Preserved failed broad/deep newuse selector; targeted no-global-newuse graph underway. No compile/install/credential action.
+
+- 2026-10-02T21:23:29Z — Exact419e330 source candidate pushed:10checksPASS0/.348s,3recipeBash/XMLPASS,actual selectedPortage graphPASS12.259s/nativeDesktop+trash/no retired descendants. Runtime SCC accepted distinctly frombuild-order; noacyclic/runtimeclaim.7qinda builddep rows allinstalled. LaptopPinentry1.3.3 correction reported, noappdowngrade/build/install/credentials/sessionaction. ReviewerInputclaimactive; ownboardavailable/nocompilerlease.
+
+- 2026-10-02T21:26:38Z — Exactf5a45e9 successor pushed afterapprovedlaptopmatching1.3.3-r1/sourcechecksumproof; SDDMnativeprofileflag only forroot178.10checksPASS0/.315s/bothversions; firstmetadataERROR preserved/fixedcommentplacement. Actualqinda13CPV/39builddep rowsparsed/nomissing. Minimalqinda13/laptop10targets excludeabsentapps/nodowngrade; shared14inclSDDMseparategate. Ownboardavailable, nocompile/install/config/credentialaction; Input exactreviewpending.
+
+- 2026-10-02T21:33:26Z — Claim rootgrant signedBUILDONLY union14 atauthoritative integratedoverlay3e05c3fc89d6dd100f8a7ccfa362fa6a7577b3cc, privateWT FF/ownmd5-cacheonlyuntracked. IndependentInputed789 accepts f5+SDDM178. ActualSDDM3builddep rowsparsed/nomissing, prior13CPV39rows likewise. Freeze source/profile/world/env/targetUSE beforesequential2compilerjobs/load24/6GiBguard; noinstall/hostconfig/sessioncredentials.
+
+- 2026-10-02T21:38:42Z — ActualfirstKAuthBUILDONLY exit1/3.230s beforecompile: userprivcannottraverse0700cacheconfig; no production/sourcefinding. Own1932579/starttick43176922+2observedtotalgone/core0; source/VDB/worldsame/minMem15.22GB. Laptopactual10/10IUSEparityverified, noheavywork. No retry/compilerlive; requesttask-onlyconfigsetupcorrection, firstfailurearchived.
+
+- 2026-10-02T21:39:33Z — Rootapprovedprocess-onlypublicCONFIGROOT innew/tmp; portage actualconfig/profile readpreflightPASS0, nohomeACL/hostconfigchange. Freeze correctedpublicsymlinks/profile/env, retainfirstfailure0700. Resume same14 exactsource/USE/commands under2jobs/load24/6GiBownPGIDguard; nocompiler/packageinstall/hostauthchange.
+
+- 2026-10-02T21:52:53Z — ActualcorrectedKAuth-r1BUILDONLY PASS0/51.740s, signedGPkg09b3e02e/fullmetadata+imageverification0/56paths/nativeUSE+packedebuildc96+officialsource7419 proven. Artifactunprivileged0750discovery corrected viaPortagerootreadonlylisting, no rebuild. KIO2job unchangedcompile [243/342]/elapsed518.5s/minGiB8.83; granted8 subsequentstage resources only inowned/tmp/bashrc724d99e, hostsource/profile/USEunchanged. Rootpublicoverlay/keywordprep and laptoponlyinstalls explicitlycoordinated; no qindaVDB/worldmutation.
+
+- 2026-10-02T22:13:51Z — Fourteenexact signedBUILDONLY artifacts complete14build0/14fullsignature+payload+sourceverification0/8528paths/1558.325s/min8.832GiB;6014observedPIDstartticksallgone/world+trackedsourceunchanged. LeaseRELEASED; fullreadyJSONsentrootsha53ad5513. No install/runtime/credentials. Claimnewexplicitrootgrant exactGentooTrashCLI0.24.5.26 requirednativeClaude dependency; onlyactualBDEP/source+tiny2jobs/load24/6GiBsignedBUILDONLY, nootherdeps/harness.
+
+- 2026-10-02T22:36:03Z — ExactTrashCLI0.24.5.26 signedBUILDONLY PASS0/12.601s;normalresolverPASS0/53.345s/only1newpkg;fullsignature+image+packedrecipe/sourceverification0/676paths,GPkg59b27aa8/laptopPython3.14IUSEparitytrue. Own2094358/starttick43508786 observedchildrengone;leaseRELEASED. Earlier14handoff9269unchanged. Userrequestslessresources: existingtinyreceiptsatnice19/idleIOonly,nosource/GPkgrehash/newbuild/hostinstall/credential/sessionaction. Availableboundedreceipt-reviewoffer,otherwiseidle.
