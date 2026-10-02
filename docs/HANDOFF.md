@@ -1,4 +1,34 @@
-# Plasma-free recovery boundary — 2026-10-01
+# Plasma-free release boundary — 2026-10-02
+
+Production desktop source is frozen at `29f7174a62175475f6ba54fa7627dc2fd4c8a21f`,
+with native compositor source `55d1f2738723316fae4686468757aef66ce7590b`
+(ABI `6.6.6.1`). The exact signed compositor `6.6.6_p1-r3` and Gabbee
+`0.1.0_p20261002` are installed through Portage on both hosts. Laptop installation
+used signed binaries, passed all 456 compositor and 254 Gabbee installed-file
+checks, and performed no source build or GPU test. Existing applications and
+running compositor processes remain alive; this is package delivery, not fresh-login
+adoption of the new compositor.
+
+The exact final desktop `0.1.0_pre20261002-r2` is building on qinda.
+Installed-header plugin, shell and profile checks are in progress. Native
+protected-portal qualification passes five actual GPU/PipeWire/input/clipboard
+journeys with 15 caller and 15 driver Qt checks, zero failures/skips; the
+independent receipt review is `419b6781`. Final native shortcut qualification
+passes eight Qt checks, and the unchanged upstream forward/reverse Alt-Tab and
+keyboard-focus gate passes five Qt checks (`6e683e92`). The virtual scoped-display
+power gate passes 13 Qt checks (`cdf9948b`); full physical power, suspend and
+fresh-login acceptance remain unclaimed.
+
+Target-local rollback source archives and safe Settings/Audio/unit snapshots
+are preserved on both machines. Remaining delivery work is final signed desktop
+installation, native activation checks, and removal of retired packages after
+reviewed app-preserving dependency changes. See the
+[authorized plan](plans/2026-09-28-plasma-free-qindaqt.md),
+[release gates](wiki/development/releases.md) and
+[install checkpoint](wiki/development/install-checkpoint.md).
+Both icon families are already delivered; no icon or game work remains assigned.
+
+## Previous October 1 recovery evidence
 
 Complete hand-rendered artwork is frozen at QindaIconArt `6cdcfecc`: 7,172 named
 icons and 3,261 distinct drawings, with no missing entries and preserved raster

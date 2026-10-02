@@ -5,6 +5,22 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## October 2 — Native desktop release delivery in progress
+
+Final production source `29f7174a` and native compositor `55d1f273` are frozen.
+The signed compositor and native Gabbee recovery service are installed through
+Portage on both machines; all 710 installed files/links pass checks on the laptop.
+The final desktop package is compiling on qinda while another worker verifies
+its installed compositor/plugin and shell boundaries. Native input, combined
+capture, remembered permissions, lock suppression, clipboard, shortcuts, and
+forward/reverse Alt-Tab have actual passing private-runtime evidence.
+
+Final desktop installation, activation, app-preserving Plasma dependency cleanup
+and fresh-login acceptance remain. Existing sessions and applications have not
+been terminated. Physical power/suspend qualification is not inferred from
+virtual tests. The current exact source, proof boundaries and rollback state are
+in [Handoff](HANDOFF.md).
+
 ## October 2 — QindaQt debranded icon delivery complete
 
 Both families are installed on qinda and qinda-top through Portage as

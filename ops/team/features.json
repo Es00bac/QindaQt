@@ -251,7 +251,7 @@
             {
               "kind": "commit",
               "reference": "ce63d1bb7fea0b20a9a5cee47802643af1a19e19",
-              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File \u2192 New action succeed."
+              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File → New action succeed."
             },
             {
               "kind": "commit",
@@ -391,7 +391,7 @@
             {
               "kind": "commit",
               "reference": "f3abd4ab",
-              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by R\u00f3zsa P\u00e9ter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
+              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by Rózsa Péter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
             },
             {
               "kind": "commit",
@@ -730,7 +730,7 @@
           "title": "Power status/actions and coherent brightness",
           "weight": 13,
           "state": "EXECUTABLE",
-          "summary": "PB-0 values/aggregation, the resident PB-1 Power1 service/client boundary, and PB-2 production upstream adapters: UPower (line-power Online, PowerSupply, battery IsPresent semantics), logind actions re-authorized at dispatch time with generation-fenced exactly-once completion across restart, power-profiles, and an injected-root backlight adapter, selected by the composition root in production with an explicit deterministic mode and proven against fake services on private buses.",
+          "summary": "The resident Power1 service and production UPower/logind/profiles/backlight adapters are integrated with the native supervisor-owned shared idle/lid/critical policy. Authenticated scoped compositor DPMS preserves external Off and retires finite owned causes on wake, topology and owner loss; native-exclusive startup requires complete readiness.",
           "evidence": [
             {
               "kind": "commit",
@@ -751,9 +751,14 @@
               "kind": "commit",
               "reference": "6cef8b582aeb33522829d6ae838269f31aad7611",
               "summary": "PB-2 (ADR-0060) is integrated after Ida Holz (OpenAI Codex, different worker) rejected f93effe at 0/2/1/1 and 92d9dec at 0/1/0/0 and accepted the second repair at 0/0/0/0 with 26/26 power rows in Debug and Release."
+            },
+            {
+              "kind": "commit",
+              "reference": "cdf9948b53bec3482399951b9b9192c4e294868e",
+              "summary": "Independent immutable review accepts actual native virtual DPMS13Qt/11behavior/zero failure or skip,22stable artifact hashes and bounded cleanup; no physical output claim."
             }
           ],
-          "caveat": "PB-2 is qualified only against fake UPower/logind/profiles services and a temporary sysfs tree: physical batteries, backlights, suspend/resume, hotplug, Settings UI, and hardware qualification remain; its shell consumer is recorded under QQ-004.13."
+          "caveat": "Private model/adapter/runtime and native virtual DPMS qualification is integrated; actual physical dim/DPMS, battery/lid, privileged logind startup and suspend/resume remain unclaimed. Final signed desktop host activation and fresh-login adoption are still open."
         },
         {
           "id": "QQ-005.04",
@@ -900,7 +905,7 @@
           "title": "Portal interoperability and desktop policy export",
           "weight": 12,
           "state": "EXECUTABLE",
-          "summary": "The standard Settings v1 appearance backend executes through the standard desktop-portal endpoint, and Portal P1 proves with the real xdg-desktop-portal 1.20.4 on a private bus that the QindaQt backend is selected only under XDG_CURRENT_DESKTOP=qindaqt, that the frontend's Settings values and SettingChanged follow the QindaQt projection, that Qt's xdgdesktopportal platform theme reacts to it, and that every non-Settings family is routed through an explicit fail-closed fallback table.",
+          "summary": "The standard frontend routes thirteen ordinary families to the QindaQt resident and five sharing/input families to the protected native broker through ADR-0342. Native chooser, Screenshot/ScreenCast, combined RemoteDesktop, InputCapture, clipboard, PermissionStore remember/restore and shortcut source/runtime gates are integrated. The backend selection table has no KDE fallback.",
           "evidence": [
             {
               "kind": "commit",
@@ -936,9 +941,19 @@
               "kind": "test",
               "reference": "docs/HANDOFF.md",
               "summary": "Real KDE GlobalShortcuts backend registers both Gabbee ids; native private F1 activation reaches push-to-talk pressed/released callbacks exactly once (4/4 phases)."
+            },
+            {
+              "kind": "commit",
+              "reference": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+              "summary": "Exact frozen native release source includes the independently reviewed ordinary/protected provider routing and final native consent helper."
+            },
+            {
+              "kind": "test",
+              "reference": "ops/audits/native-input-final-actual-five-gates-20261002.json",
+              "summary": "Five actual native GPU/PipeWire/clipboard/consent/lock journeys pass15caller+15driver Qt checks, zero failure/skip, with scoped cleanup. Independent exact receipt review419b6781 is integrated."
             }
           ],
-          "caveat": "Standalone/group Terminal insertion through the real Gabbee sink and approved RemoteDesktop portal is qualified privately. Push-to-talk F1 and command F11 each have exactly-once native press/release evidence against the real KDE backend. User-specific F23/F24 activation and physical microphone transcription are not claimed.",
+          "caveat": "Actual private native GPU/PipeWire input/capture/clipboard and consent journeys are qualified. Final signed desktop installation, host activation and fresh-login adoption remain open; the historical KDE-backed Gabbee receipts do not qualify current physical microphone transcription.",
           "stoppingPoint": {
             "evidence": [
               {
@@ -951,7 +966,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "The bounded Audio1 stack, Display D0-D6 stack, resident Power/Brightness PB-1 service/client boundary and production shell consumer, and resident Network N1 service with confined NetworkManager transport are integrated. Clipboard C0 adds the volatile bounded, lock-private history model; Bluetooth B0 adds an executable least-authority service/client boundary; Display Color C0 adds an executable pure ICC/capability/assignment model; and Portal P0 exports confirmed QindaQt appearance through the standard Settings backend.",
+        "summary": "Native desktop platform source and focused private-runtime proofs are integrated, including ordinary/protected portals and native idle/display-power composition. Final native compositor and recovery packages are installed on both hosts; final desktop build, activation, fresh-login adoption and app-preserving retired-package cleanup remain open.",
         "evidence": [
           {
             "kind": "commit",
@@ -1047,10 +1062,15 @@
             "kind": "commit",
             "reference": "d881529861e5cd05b63f20375bb8b112f6788918",
             "summary": "Resident keyring/privacy client source checkpoint: manager targeted build and 22/22 focused CTests pass. Observed native Unlocked gates reveal/copy independently of collection-lock preference; unknown/lock/owner/page/late-reply retirement and true ordinary Wayland idle are covered. Shared public extraction, fully rendered native UI and installed adoption remain open; no milestone state/weight change."
+          },
+          {
+            "kind": "commit",
+            "reference": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+            "summary": "Frozen native release source includes ordinary/protected native portals, native shared power composition and service consumers. Package installation/adoption/depclean gates are still in progress."
           }
         ]
       },
-      "caveat": "Display1 nested convergence and physical/resource qualification; production Power upstream adapters/policy/Settings/hardware; production BlueZ transport and Bluetooth UI/hardware; Network external secret-agent integration, persistence, UI, radio and hardware qualification; live clipboard capture/service/UI; live color/font providers and compositor application; host portal selection, toolkit reaction and every non-Settings portal family; physical hardware; and Audio hardware qualification remain. The Display Settings route is integrated under QQ-006.05; Clipboard C0 remains a pure WIRED boundary."
+      "caveat": "The current native source and private-runtime receipts supersede historical Settings-only portal and PowerDevil-backed checkpoints. Final installed desktop adoption and physical battery/lid/suspend, display/radio/audio hardware matrices remain open; those limits do not erase the integrated source/runtime evidence."
     },
     {
       "id": "QQ-006",
@@ -1273,7 +1293,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1313,7 +1333,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1413,7 +1433,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1607,7 +1627,7 @@
           {
             "kind": "commit",
             "reference": "98f29fe2",
-            "summary": "Records installed r1 source8486e058, actual installed two-session workspace restoration, real daily controls and privilege prompt, and Settings1 10\u219211\u2192default10 producing PowerDevil600\u2192660\u2192600 through production code. Native CI boots and tag remain pending."
+            "summary": "Records installed r1 source8486e058, actual installed two-session workspace restoration, real daily controls and privilege prompt, and Settings1 10→11→default10 producing PowerDevil600→660→600 through production code. Native CI boots and tag remain pending."
           },
           {
             "kind": "test",

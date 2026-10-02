@@ -1,4 +1,4 @@
-# XDG Settings portal appearance backend
+# XDG desktop portal backends
 
 QindaQt provides a production, read-only XDG desktop-portal backend for its
 appearance policy. Sandboxed applications and toolkits continue to call the
@@ -27,7 +27,7 @@ layers:
 | Appearance adapter | Standard Settings marshalling, filtering and change signals | Persistence or Secret policy |
 | Resident composition | Service ownership, activation, bus-loss shutdown, separately borrowed Secret adaptor | Secret storage, app identity or prompt policy |
 
-The appearance module does **not** implement a chooser, OpenURI, notifications, inhibit, screencast, remote desktop, secret storage or a consent dialog. The resident additionally composes the separate [native Secret module](secret-portal.md) and source-candidate [native portal foundation](portal-foundation.md); its `.portal` advertises Settings, Secret, Access, Notification, Email, FileChooser and AppChooser. The module owns
+The appearance module does **not** implement a chooser, OpenURI, notifications, inhibit, screencast, remote desktop, secret storage or a consent dialog. The resident additionally composes the separate [native Secret module](secret-portal.md) and [native portal foundation](portal-foundation.md); its ordinary `.portal` declares thirteen families, with five sharing/input families owned by the separate protected broker as described below. The module owns
 QindaQt's frontend selection file and keeps an explicit routing decision for
 every portal family ([ADR-0133](../adr/0133-route-every-portal-family.md)),
 but it does not replace, embed, or supervise `xdg-desktop-portal`; a routing
@@ -204,11 +204,11 @@ The fail-closed fallback routing policy is recorded in
 
 The secret-bearing resident disables cores/dumpability before requests. Its activation lifetime fixture retains PIDFDs for private-daemon observed owners, so exit/restart verification and cleanup cannot target a recycled PID and do not require readable `/proc/PID/exe`. No production dumpability exception is introduced for tests.
 
-The [native capture candidate](../reference/portal-capture.md) composes separate Screenshot/ScreenCast policy, request/session lifetime and native helper ports. Metadata keeps both families on KDE pending actual frontend/private PipeWire/privacy qualification; the initial monitor-only slice does not close PF19 capability/restore delivery. The shared public pixel transport is owned by [CompositorCapture](compositor-capture.md), with no Screenshot app-private includes.
+The [native capture module](../reference/portal-capture.md) composes separate Screenshot/ScreenCast policy, request/session lifetime and native helper ports. The current selector routes Screenshot, ScreenCast, RemoteDesktop, InputCapture and Clipboard to the protected native broker. Five actual native GPU/PipeWire/consent/input/clipboard journeys pass with zero failures or skips in the frozen release source; the historical monitor-only slice below is not the current routing boundary. Final installed activation and physical fresh-login adoption remain release gates. The shared public pixel transport is owned by [CompositorCapture](compositor-capture.md), with no Screenshot app-private includes.
 
 ## GlobalShortcuts migration candidate
 
-A separate native GlobalShortcuts v1 adaptor/helper candidate now owns
+A separate native GlobalShortcuts v1 adaptor/helper owns
 CreateSession, BindShortcuts, ListShortcuts and activation/deactivation. It
 adapts existing session admission and uses the compositor's native Shortcuts1
 service; metadata routing is held pending tests and real compositor
