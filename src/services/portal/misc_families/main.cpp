@@ -11,6 +11,7 @@
 #include <QSocketNotifier>
 #include <QTimer>
 #include <poll.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
@@ -42,6 +43,8 @@ int main(int argc, char **argv) {
     rlimit cores{0, 0}; if (setrlimit(RLIMIT_CORE, &cores) != 0 || prctl(PR_SET_DUMPABLE, 0) != 0) return 2;
     signal(SIGPIPE, SIG_IGN); if (qEnvironmentVariable("WAYLAND_SOCKET").isEmpty()) return 2;
     const auto frame = initialFrame(); if (!frame) return 2;
+    const int suppliedPrintFd = frame->value("print_fd").toInt(-1);
+    if (suppliedPrintFd >= 0 && fcntl(suppliedPrintFd, F_SETFD, FD_CLOEXEC) < 0) return 2;
     QApplication app(argc, argv); using namespace QindaQt::Services::Portal;
     const auto kind = frame->value("type").toString();
     std::unique_ptr<QDialog> dialog; QPrinter printer; bool ready = false; bool failed = false;

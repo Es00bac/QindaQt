@@ -25,6 +25,8 @@ bool validPrintConfiguration(const QJsonObject &output) {
         || !output.value("printer").isString() || !output.value("output").isString() || !output.value("cups").isArray()) return false;
     if (!validPrintMaps(output.value("settings").toObject().toVariantMap(), output.value("page-setup").toObject().toVariantMap())) return false;
     if (!boundedText(output.value("printer").toString(), 1024) || !boundedText(output.value("output").toString(), 4096)) return false;
+    const auto destination = output.value("output").toString();
+    if (!destination.isEmpty() && !destination.startsWith(QLatin1Char('/'))) return false;
     const auto cups = output.value("cups").toArray(); if (cups.size() > 128 || cups.size() % 2) return false;
     for (const auto &value : cups) if (!value.isString() || !boundedText(value.toString(), 1024)) return false;
     return !output.value("printer").toString().isEmpty() || output.value("output").toString().startsWith(QLatin1Char('/'));

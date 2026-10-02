@@ -12,3 +12,9 @@ add_test(NAME qindaqt.portal-misc-policy COMMAND qindaqt_portal_misc_policy_test
 add_test(NAME qindaqt.portal-misc-requests COMMAND qindaqt_portal_misc_request_tests)
 add_test(NAME qindaqt.portal-print-conversion COMMAND qindaqt_portal_print_conversion_tests)
 set_tests_properties(qindaqt.portal-misc-policy qindaqt.portal-misc-requests qindaqt.portal-print-conversion PROPERTIES TIMEOUT 60 LABELS "portal;misc;private-bus" ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=")
+
+qt_add_executable(qindaqt_portal_misc_dialog_tests tst_misc_dialog.cpp "${PROJECT_SOURCE_DIR}/src/services/portal/misc_families/misc_dialog.cpp" "${PROJECT_SOURCE_DIR}/src/services/portal/misc_families/misc_dialog.h")
+target_link_libraries(qindaqt_portal_misc_dialog_tests PRIVATE QindaQt::PortalMisc Qt6::Widgets Qt6::Test)
+qindaqt_enable_warnings(qindaqt_portal_misc_dialog_tests)
+add_test(NAME qindaqt.portal-misc-dialog COMMAND qindaqt_portal_misc_dialog_tests)
+set_tests_properties(qindaqt.portal-misc-dialog PROPERTIES TIMEOUT 30 LABELS "portal;misc;widgets" ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=")

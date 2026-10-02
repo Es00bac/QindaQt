@@ -35,7 +35,9 @@ bool runPrintCommand(const QString &command, const QStringList &arguments, QIODe
     QProcess process;
     // Close/owner loss kills the ordinary helper. Its spool child must not
     // survive that retirement; already accepted physical jobs cannot be recalled.
-    process.setChildProcessModifier([] { if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0) _exit(2); });
+    const pid_t parent = getpid();
+    process.setUnixProcessParameters({QProcess::UnixProcessFlag::CloseFileDescriptors, 3});
+    process.setChildProcessModifier([parent] { if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0 || getppid() != parent) _exit(2); });
     process.start(command, arguments); if (!process.waitForStarted(5000)) return false;
     const bool copied = transfer(input, process); process.closeWriteChannel();
     if (!copied || !process.waitForFinished(45000)) { process.kill(); process.waitForFinished(1000); return false; }
