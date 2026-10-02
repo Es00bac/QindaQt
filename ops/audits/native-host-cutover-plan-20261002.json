@@ -46,7 +46,16 @@
         "@kde-desktop"
       ],
       "retiredKdePlasma": "Exact installed kde-plasma CPVs except kwayland and layer-shell-qt, scoped Portage depclean only",
-      "keepApplications": "Promote installed non-Plasma app atoms from former kde-desktop set to world before removing that set; preserve all other installed apps and user data"
+      "keepApplications": "Preserve and promote the seven installed non-Plasma kde-apps members of the former KDE desktop set; preserve other non-retired applications and user data.",
+      "keepSelectedAppAtoms": [
+        "kde-apps/dolphin",
+        "kde-apps/konsole",
+        "kde-apps/kate",
+        "kde-apps/ark",
+        "kde-apps/gwenview",
+        "kde-apps/okular",
+        "kde-apps/kcalc"
+      ]
     },
     "qinda-top": {
       "exactBinaryTargets": [
@@ -87,9 +96,15 @@
     "Install accepted dependency replacements, preserving qinda VDB until its build-only union finishes",
     "Review protected SDDM configuration and preserve custom authentication blocks",
     "Verify native installed files and actual private /usr launcher discovery",
-    "Preserve installed KDE applications from kde-desktop set; remove only old desktop set and Sloom selected roots",
+    "Preserve the seven installed non-Plasma KDE applications from kde-desktop set; remove only old desktop set and Sloom selected roots. Spectacle is the separately authorized PF16 replacement.",
     "Run exact scoped retired-package depclean; no broad world depclean, no global package masks",
     "Verify actual installed native runtime closure and zero retired installed packages on both hosts"
   ],
-  "sessionBoundary": "Preserve applications and current compositor processes. Fresh physical login is operator activation; no forced logout, suspend or credential prompt."
+  "sessionBoundary": "Preserve applications and current compositor processes. Fresh physical login is operator activation; no forced logout, suspend or credential prompt.",
+  "explicitReplacement": {
+    "retire": "kde-plasma/spectacle",
+    "replacement": "qindaqt-screenshot and native Print key",
+    "authorization": "docs/plans/2026-09-28-plasma-free-qindaqt.md section3.5 and PF16 explicitly drop Spectacle; owner decisions2 and5 retain no Plasma fallback and only two shared Plasma-category libraries",
+    "scope": "Both hosts; this planned replacement is included in retired-only depclean, not in ordinary application keepers"
+  }
 }
