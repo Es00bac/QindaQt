@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: working — integrating desktop services and preparing the Plasma-free package cutover
+- Status: working — finishing safe dependency installation and scoped Plasma retirement; preserving legacy keyrings before native handover
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-02T22:45:43.250218+00:00 — Final Desktop signed60.7MB image independently accepted2ba; all14 native application artifacts plus requiredTrashCLI signed/build/source/full-payload PASS, immutable169bbe integrated. qinda9 app updates installedPASS80.405s and exact focused independent9metadata/7flags/15files ACCEPTf9eb; laptop6 app updates installed plusTrashCLI13.311s, all binary-only/no source/GPU. Bothhost standard legacy stores contain nonzero file bytes, no matching resident providers; actual credential import/name/PAM handover remains pending and originals preserved. Native fork/Gabbee remain installed both hosts. Root now performs reviewed app-promotion and exact retired-only interim depclean, protecting all other installed packages including oldDesktop/GNOME; remaining required Plasma will not be forced out. User resource constraint applied: no builds/GPU, serial local package work nice19/idleIO; all worker compiler leases released. No icon/game/fresh-login/physical-power completion claim.
 
 - 2026-10-02T22:12:56.699429+00:00 — Final signedDesktop-r2 GPkg b2a82255/60,661,760bytes PASS fullsignature/payload, release/13+5portal26requiredfiles/switcher/policyimage gates; unchanged3152compiledoutputs and only accepted8a installline among5396sources. Exact source/patch reviews639f/1c85 integrated; independent completeimage discovery2ba PASS first5.645s/nativeWayland+XWayland/workflow/QindaDecoration,8stablehashes/clean teardown. Native14-CPV app union actualsigned builds complete/no own compiler; manifest pending. LaptopKAuth installPASS11.895s/29fileslinks and KIOPASS106.856s, no sourcebuild/GPU/world change. Normalqinda14targetsourcepreparePASS19.70s exposes requiredtinyTrashCLI binary missing; bounded signedbuild granted. Exactapp-preservingcutover9df source/operations reviewed d2cf; seven ordinaryKDEapps retained, SpectacleexplicitPF16replacement. BothhostPAM6files stock/VDBsame/criticalblocks preserved, laptopcustomSDDM config protected. GNOMEaliastransition/finalDesktop+appinstalls/scopedretireddepclean/nativeusrcheck remain; no icon/game/forcedlogout or physical qualification claim.
 
