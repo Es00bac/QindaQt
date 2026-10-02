@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — source and partial receipts preserved; awaiting manager desktop recovery and bounded compiler release
+- Status: working — finishing actual strict warm-cache native power assembly and seven focused gates after recovery release
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -27,3 +27,5 @@
 - 2026-10-02T18:37:22Z — Material transition: root user reports desktop crash/voice stopped and requests own compiler SIGSTOP only. Own bounded420s gate had already ended before command; actual1461464/starttick42046545 exit-15/420.247s, timeout resource boundary, min11,994,636KiB; no compiler/watchdog found to pause, no restart. Source36c5 adds one Supplies readiness guard (not compiled yet). Four required behavior tests36QtPASS/0fail0skip remain actual evidence; full supervisor and remaining7-test gate pending explicit recovery release. No GPU/host power work.
 
 - 2026-10-02T18:38:45Z — Available waiting: no own compiler/watchdog/group survivors. Required final warm incremental runner prepared source-only (-j2 -l48, same targets plus seventh-test prerequisites,360s active bound,6GiB guard, pause time excluded if manager SIGSTOPs); no execution until recovery release. No new product source after36c5 readiness guard.
+
+- 2026-10-02T18:48:24Z — Claim/resume: root identifies laptop user D-Bus restart as recovery cause and releases qinda buildhost. Exact36c5 source plus3364 records; same warm OFF-prefix cache, -j2 -l48/6GiB own-PGID guard/core0, pause accounting, no arbitrary clock kill while progress continues. Only listed supervisor/power and seven focused gates; stop at actual compile/test handoff or concrete source blocker. No laptop heavy/GPU/host power.
