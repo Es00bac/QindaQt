@@ -540,3 +540,9 @@ contracts live in [Native shared idle policy](idle-policy.md) and
 The package option defaults OFF; an ON cutover configures all four native policy
 flags and retires only the supervisor-owned PowerDevil child. Focused strict and
 private-protocol gates do not constitute installed/native physical acceptance.
+
+Exclusive supervisor activation is additionally fenced by authenticated startup
+readiness, as specified in [ADR-0338](../adr/0338-own-scoped-display-power-and-shared-idle-composition.md).
+Asynchronous transport construction alone does not retire compatible power logic:
+missing prerequisites reject the session with owned cleanup and exit2. Installed
+cutover/physical behavior still require manager qualification.
