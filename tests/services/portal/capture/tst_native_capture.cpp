@@ -171,6 +171,7 @@ private Q_SLOTS:
         PipeWireFrames frames(dup(fd.value().fileDescriptor()), animated->node);
         QVERIFY(frames.valid()); QTRY_VERIFY2_WITH_TIMEOUT(frames.count() > 3, qPrintable(frames.error()), 15000);
         QVERIFY(containsFixturePixels(frames.image()));
+        QTRY_VERIFY_WITH_TIMEOUT(frames.nodes().contains(streams[0].node), 15000);
         QTRY_VERIFY_WITH_TIMEOUT(frames.nodes().contains(streams[1].node), 15000);
         const auto pid = helperPid(); close(session, "Session"); QTRY_VERIFY(kill(pid, 0) < 0);
         QTRY_VERIFY(!frames.nodes().contains(streams[0].node)); QTRY_VERIFY(!frames.nodes().contains(streams[1].node));
