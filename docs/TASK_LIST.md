@@ -48,8 +48,11 @@ immediate capture revocation and defers source destruction; its monitored lock
 test passes three Qt checks and compositor survival. Independent exact review
 accepts the lifetime repair after its own first unmonitored lock replay. The
 manager's complete 1,418-action production fork build, 455-path collision-free
-stage and identity check pass with test authorization off. A startup readiness
-ordering gap is being repaired without claiming the historical refusal cause.
+stage and identity check pass with test authorization off. Startup amendment
+`24fa776c` is independently accepted after seven startup checks, thirteen channel
+checks and an eager-start negative control, without claiming the historical
+refusal cause. A separate coherent noninstallable native test build is required
+because the unchanged driver uses test-authorization APIs absent from production.
 Independent review rejects decoder `ca29910d` for missing default-fallback
 suppression; that repair, full matrix and installed routing remain open.
 
