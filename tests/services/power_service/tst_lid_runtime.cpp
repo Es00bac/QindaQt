@@ -5,10 +5,10 @@ using namespace QindaQt::Tests;
 using namespace QindaQt::Power;
 #define PREPARE(row) QVERIFY(row.prepare()); QVERIFY(row.start()); \
     QTRY_VERIFY(row.power->snapshot().capabilities.testFlag(Capability::Lid))
-#define CONFIGURE(row, source, kind, value) \
-    const auto key = QStringLiteral("power.lid.") + source + QLatin1Char('.') + kind; \
-    QTRY_VERIFY(row.settings->canSetUserValue(key)); QVERIFY(row.preference(key, value)); \
-    QTRY_COMPARE(row.settings->snapshot()->values.value(key).toString(), value); \
+#define CONFIGURE(row, sourceName, kindName, configuredValue) \
+    const auto key = QStringLiteral("power.lid.") + (sourceName) + QLatin1Char('.') + (kindName); \
+    QTRY_VERIFY(row.settings->canSetUserValue(key)); QVERIFY(row.preference(key, configuredValue)); \
+    QTRY_COMPARE(row.settings->snapshot()->values.value(key).toString(), configuredValue); \
     QTRY_VERIFY(row.settings->canSetUserValue(key)); QTest::qWait(150)
 #define OWNED(row) do { QTRY_VERIFY(row.logind->hasLiveOwned()); QTest::qWait(150); } while (false)
 class LidRuntimeTests final : public QObject {
