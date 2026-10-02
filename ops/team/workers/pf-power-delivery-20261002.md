@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — coherent e9 native DPMS all11behavior rows/13Qt pass; actual handoff preserved, private lease released
+- Status: working — read-only positive native-exclusive Power startup gate preflight at exact8c; mapping authentic private credentials/output prerequisites
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -73,3 +73,5 @@
 - 2026-10-02T20:37:27Z — Actual finalboundedDPMS gate: exacte9/7b unchangedfixture one-runPASS exit0/5.933496s, Qt13PASS0FAIL0SKIP/4955ms(all11behaviorrows incl expiry+Session1ownerloss). All22source/artifact/framework/cachehashes unchanged;4observed same-starttick PIDs/2groupsgone, core0/short0700TMPDIRremoved. Earlier3failurearchives retained; nohealthyrepeat. PRIVATElease immediatelyreleased. Scopedsoftware/virtualWorkspace/DBusqualified, physicalDRM/DPMS/rendering and fullnativeexclusivepositive-supervisor remainseparate. AvailableforrootexactrepeatfixSOURCEreview; no resourceclaim.
 
 - 2026-10-02T20:39:35Z — Independent SOURCEACCEPT exact55d1f2738723316fae4686468757aef66ce7590b/e9base, isolatedreviewWTclean/diffcheck0/3pathhashes. Nativewire mapsadmitted Pressed/RepeatedtoActivated andReleasedtoDeactivated;KF6selection/registryrepeat optin/InputDispatcher/admission/caller unchanged. Desktopnativeclient already consumesonlyActivated/Deactivated. Newprivatebusregression testsactualnotification order/timestamps butdirectnotify isnot realkeyrepeat qualification. No reviewercompiler/runtime; Inputownsprivate. ActualDPMS13Qt/all11passed handoffcdf remainsunchanged. Availableforboundedexactfollowup.
+
+- 2026-10-02T20:42:40Z — Claim positivePower boundedsource/preflight outcome: isolatedqindaWTpf-power-positive-native-20261002/worker branch at8c7da76985e0a0c476a743105191ab006f8c1b2d, productioncb582 source/f99 captureaudit-onlydelta identified. Productionvirtualoutput unsupported and supervisorlogind expectedUID0 reject ordinarysameUIDfake; bothfactsdirectsourceconfirmed. No compiler/runtime/hostsystembus/UID/auth override or sourceedit. Proposed existingpublic fixturebackend plus namespace-private realUID0 credentialgate for genuineproduction CLI (root approvalpending), or bounded constructor-injected component route with explicitsupervisorcaveat. Exactminimal command/prerequisites beingprepared; Inputholdsprivate.
