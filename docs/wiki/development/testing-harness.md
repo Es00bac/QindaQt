@@ -4795,3 +4795,10 @@ Historical resident-owner receipts do not qualify these final-owner cases.
 Before either launch, preflight the coherent frontend, protected broker,
 capture/input consent helpers, ordinary clipboard peer, fixture, compositor
 driver, EIS plugin and resolved core dependencies together.
+
+The private capture runner exports the compositor's actual PID before exec of
+the exact selected driver, so the compositor-launched protected broker and its
+ordinary consent test child inherit it. Updating only the caller environment
+after compositor startup cannot reach those children. The shell exec preserves
+the tracked PID; public native owner/PID and Wayland peer assertions remain real
+and unchanged.
