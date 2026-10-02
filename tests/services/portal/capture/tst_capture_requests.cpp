@@ -54,19 +54,34 @@ private Q_SLOTS:
         QTRY_VERIFY(pending->isFinished()); QCOMPARE(response(*pending), 2U);
         QTRY_VERIFY(ui->stopped.contains(session));
     }
-    void persistenceOptionsAreValidatedButNotPersisted() {
+    void persistenceIsOfferedAndRestoredOnlyWithConsent() {
         create();
         auto malformed = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"restore_data", "fake"}}});
         QTRY_VERIFY(malformed->isFinished()); QCOMPARE(response(*malformed), 2U);
         create();
-        QDBusArgument restore; restore.beginStructure(); restore << QStringLiteral("QindaQt") << 1U << QDBusVariant(QVariantMap{}); restore.endStructure();
-        auto selection = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"persist_mode", 2U}, {"restore_data", QVariant::fromValue(restore)}}});
+        auto selection = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"persist_mode", 2U}, {"restore_data", restoreArgument("QindaQt", {"DP-1"})}}});
         QTRY_VERIFY(selection->isFinished()); QCOMPARE(response(*selection), 0U);
         auto pending = sharing(); QTRY_COMPARE(ui->opens, 1);
-        const auto results = captureResults(CaptureKind::Stream, {{"node", 31}, {"x", 0}, {"y", 0}, {"width", 800}, {"height", 600}, {"name", "Monitor"}}, {}); QVERIFY(results);
+        // Restore only preselects stable names; the helper still asks and offers "remember".
+        QVERIFY(ui->current.persist); QCOMPARE(ui->current.restore, QStringList{"DP-1"});
+        auto results = captureResults(CaptureKind::Stream, {{"node", 31}, {"x", 0}, {"y", 0}, {"width", 800}, {"height", 600}, {"name", "DP-1"}, {"persist", true}}, {}); QVERIFY(results);
+        QCOMPARE(results->value("outputs").toStringList(), QStringList{"DP-1"});
         Q_EMIT ui->completed(ui->token, RequestResponse::Success, *results);
-        QTRY_VERIFY(pending->isFinished()); const QDBusPendingReply<quint32, QVariantMap> reply = *pending;
-        // No restore_data means the frontend keeps persist_mode NONE and stores no token.
+        QTRY_VERIFY(pending->isFinished()); QDBusPendingReply<quint32, QVariantMap> reply = *pending;
+        QCOMPARE(reply.argumentAt<0>(), 0U); QCOMPARE(reply.argumentAt<1>().value("persist_mode").toUInt(), 2U); QVERIFY(!reply.argumentAt<1>().contains("outputs"));
+        const auto data = qdbus_cast<CaptureRestoreData>(reply.argumentAt<1>().value("restore_data").value<QDBusArgument>());
+        QCOMPARE(data.vendor, QStringLiteral("QindaQt")); QCOMPARE(data.version, 1U);
+        QCOMPARE(qdbus_cast<QVariantMap>(data.payload.variant().value<QDBusArgument>()).value("outputs").toStringList(), QStringList{"DP-1"});
+        // Without the user's remember choice nothing is returned, so no token exists;
+        // foreign restore data is ignored rather than trusted.
+        auto close = QDBusMessage::createMethodCall("org.test.Capture", session, "org.freedesktop.impl.portal.Session", "Close"); QDBusPendingCallWatcher closed(frontend->asyncCall(close)); QTRY_VERIFY(closed.isFinished());
+        create();
+        selection = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"persist_mode", 1U}, {"restore_data", restoreArgument("KDE", {"DP-1"})}}});
+        QTRY_VERIFY(selection->isFinished()); QCOMPARE(response(*selection), 0U);
+        pending = sharing(); QTRY_COMPARE(ui->opens, 2); QVERIFY(ui->current.persist); QVERIFY(ui->current.restore.isEmpty());
+        results = captureResults(CaptureKind::Stream, {{"node", 32}, {"x", 0}, {"y", 0}, {"width", 800}, {"height", 600}, {"name", "DP-1"}, {"persist", false}}, {}); QVERIFY(results); QVERIFY(!results->contains("outputs"));
+        Q_EMIT ui->completed(ui->token, RequestResponse::Success, *results);
+        QTRY_VERIFY(pending->isFinished()); reply = *pending;
         QCOMPARE(reply.argumentAt<0>(), 0U); QVERIFY(!reply.argumentAt<1>().contains("restore_data")); QVERIFY(!reply.argumentAt<1>().contains("persist_mode"));
     }
     void sessionActualCallerHandleFenceAndInvalidSelection() {
@@ -98,6 +113,10 @@ private:
         auto message = QDBusMessage::createMethodCall("org.test.Capture", "/org/freedesktop/portal/desktop", "org.freedesktop.impl.portal."+QString::fromLatin1(family), QString::fromLatin1(method)); message.setArguments(args); return std::make_unique<QDBusPendingCallWatcher>(connection.asyncCall(message));
     }
     std::unique_ptr<QDBusPendingCallWatcher> call(const char *family, const char *method, QVariantList args) { return call(family, method, args, *frontend); }
+    static QVariant restoreArgument(const QString &vendor, const QStringList &outputs) {
+        QDBusArgument argument; argument.beginStructure(); argument << vendor << 1U << QDBusVariant(QVariantMap{{"outputs", outputs}}); argument.endStructure();
+        return QVariant::fromValue(argument);
+    }
     std::unique_ptr<QDBusPendingCallWatcher> closeRequest() { auto message = QDBusMessage::createMethodCall("org.test.Capture", path, "org.freedesktop.impl.portal.Request", "Close"); return std::make_unique<QDBusPendingCallWatcher>(frontend->asyncCall(message)); }
     void create() { auto reply = call("ScreenCast", "CreateSession", {object(path), object(session), "org.test.Caller", QVariantMap{}}); QTRY_VERIFY(reply->isFinished()); QCOMPARE(response(*reply), 0U); }
     void select() { auto reply = call("ScreenCast", "SelectSources", {object(path), object(session), "org.test.Caller", QVariantMap{{"types", 1U}, {"cursor_mode", 1U}}}); QTRY_VERIFY(reply->isFinished()); QCOMPARE(response(*reply), 0U); }

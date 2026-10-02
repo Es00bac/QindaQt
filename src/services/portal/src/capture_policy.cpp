@@ -33,7 +33,7 @@ bool validScreenCastSelection(const QVariantMap &options) {
     // AGENT-NOTE: the frontend forwards persist_mode and swaps restore_token for
     // its stored (suv) restore_data (xdg-desktop-portal 1.20 screen-cast.c).
     // Callers such as OBS always send persist_mode, so refusing it broke them.
-    // Nothing is persisted: Start never returns restore_data.
+    // Restore data is only a preselection; the user still chooses and allows.
     if (options.contains("restore_data")) {
         const auto value = options.value("restore_data");
         if (value.metaType() != QMetaType::fromType<QDBusArgument>()) return false;
@@ -45,12 +45,49 @@ bool validScreenCastSelection(const QVariantMap &options) {
         && options.value("types", 1U).toUInt() == 1 && options.value("persist_mode", 0U).toUInt() <= 2
         && QSet<quint32>{1, 2, 4}.contains(options.value("cursor_mode", 1U).toUInt());
 }
+namespace {
+constexpr auto kRestoreVendor = "QindaQt";
+constexpr quint32 kRestoreVersion = 1;
+bool validOutputs(const QStringList &names) {
+    if (names.isEmpty() || names.size() > 16 || QSet<QString>(names.cbegin(), names.cend()).size() != names.size()) return false;
+    for (const auto &name : names) if (name.isEmpty() || !validText(name, 256)) return false;
+    return true;
+}
+}
+QStringList restoreOutputs(const QVariant &value) {
+    if (value.metaType() != QMetaType::fromType<QDBusArgument>()) return {};
+    const auto argument = value.value<QDBusArgument>();
+    if (argument.currentSignature() != QLatin1String("(suv)")) return {};
+    const auto data = qdbus_cast<CaptureRestoreData>(argument);
+    if (data.vendor != QLatin1String(kRestoreVendor) || data.version != kRestoreVersion) return {};
+    auto payload = data.payload.variant();
+    if (payload.metaType() == QMetaType::fromType<QDBusArgument>()) {
+        const auto inner = payload.value<QDBusArgument>();
+        if (inner.currentSignature() != QLatin1String("a{sv}")) return {};
+        payload = QVariant::fromValue(qdbus_cast<QVariantMap>(inner));
+    }
+    const auto map = payload.toMap();
+    const auto outputs = map.value("outputs");
+    if (map.size() != 1 || outputs.metaType() != QMetaType::fromType<QStringList>() || !validOutputs(outputs.toStringList())) return {};
+    return outputs.toStringList();
+}
+QVariant restoreDataFor(const QStringList &outputs) {
+    return validOutputs(outputs) ? QVariant::fromValue(CaptureRestoreData{QLatin1String(kRestoreVendor), kRestoreVersion,
+        QDBusVariant(QVariantMap{{"outputs", outputs}})}) : QVariant{};
+}
 QString captureCaller(const QString &path) {
     static const QRegularExpression pattern("^/org/freedesktop/portal/desktop/request/([0-9]+_[0-9]+)/[A-Za-z0-9_]+$");
     const auto match = pattern.match(path);
     return path.size() <= 512 && match.hasMatch() ? ':' + match.captured(1).replace('_', '.') : QString{};
 }
 bool validCapturePublication(CaptureKind kind, const QVariantMap &results) {
+    if (kind == CaptureKind::Stream && results.size() == 2 && results.contains("outputs")) {
+        const auto outputs = results.value("outputs");
+        QVariantMap streamsOnly = results; streamsOnly.remove("outputs");
+        return outputs.metaType() == QMetaType::fromType<QStringList>() && validOutputs(outputs.toStringList())
+            && validCapturePublication(kind, streamsOnly)
+            && outputs.toStringList().size() == streamsOnly.value("streams").value<CaptureStreams>().size();
+    }
     if (results.size() != 1) return false;
     if (kind == CaptureKind::Screenshot) {
         const auto value = results.value("uri"); const auto text = value.toString(); const QUrl uri(text, QUrl::StrictMode);
@@ -64,6 +101,8 @@ bool validCapturePublication(CaptureKind kind, const QVariantMap &results) {
         for (const double channel : {color.red, color.green, color.blue}) if (!std::isfinite(channel) || channel < 0 || channel > 1) return false;
         return true;
     }
+    // results.size() was checked as 1 above for every kind; a stream result may
+    // add "outputs": the stable names the user agreed to remember.
     const auto value = results.value("streams"); if (value.metaType() != QMetaType::fromType<CaptureStreams>()) return false;
     const auto streams = value.value<CaptureStreams>(); if (streams.isEmpty() || streams.size() > 16) return false;
     QSet<quint32> nodes;
@@ -80,10 +119,11 @@ QJsonObject captureFrame(const CaptureRequest &r, const QString &directory, cons
     QJsonObject frame{{"kind", static_cast<int>(r.kind)}, {"app", r.app}, {"parent", r.parent}, {"session", r.session},
         {"interactive", r.interactive}, {"modal", r.modal}, {"directory", directory}, {"owner", owner}};
     if (r.kind == CaptureKind::Stream) { frame.insert("multiple", r.multiple); frame.insert("cursor_mode", static_cast<int>(r.cursorMode)); }
+    if (r.kind == CaptureKind::Stream && (r.persist || !r.restore.isEmpty())) { frame.insert("persist", r.persist); frame.insert("restore", QJsonArray::fromStringList(r.restore)); }
     return frame;
 }
 std::optional<CaptureRequest> captureRequestFromFrame(const QJsonObject &frame) {
-    if ((frame.size() != 8 && frame.size() != 10) || !integer(frame.value("kind"), 0, 2) || !frame.value("app").isString()
+    if ((frame.size() != 8 && frame.size() != 10 && frame.size() != 12) || !integer(frame.value("kind"), 0, 2) || !frame.value("app").isString()
         || !frame.value("parent").isString() || !frame.value("session").isString()
         || !frame.value("interactive").isBool() || !frame.value("modal").isBool()
         || !frame.value("directory").isString() || !frame.value("owner").isString()) return {};
@@ -91,7 +131,14 @@ std::optional<CaptureRequest> captureRequestFromFrame(const QJsonObject &frame) 
     if (!request || !QDir::isAbsolutePath(frame.value("directory").toString()) || !frame.value("owner").toString().startsWith(':')) return {};
     auto result = *request; result.kind = static_cast<CaptureKind>(frame.value("kind").toInt());
     result.session = frame.value("session").toString(); result.interactive = frame.value("interactive").toBool(); result.modal = frame.value("modal").toBool();
-    if (frame.size() == 10) {
+    if (frame.size() == 12) {
+        if (result.kind != CaptureKind::Stream || !frame.value("persist").isBool() || !frame.value("restore").isArray()) return {};
+        QStringList restore;
+        for (const auto &name : frame.value("restore").toArray()) { if (!name.isString()) return {}; restore << name.toString(); }
+        if (!restore.isEmpty() && !validOutputs(restore)) return {};
+        result.persist = frame.value("persist").toBool(); result.restore = restore;
+    }
+    if (frame.size() >= 10) {
         if (result.kind != CaptureKind::Stream || !frame.value("multiple").isBool() || !integer(frame.value("cursor_mode"), 1, 4)
             || !QSet<int>{1, 2, 4}.contains(frame.value("cursor_mode").toInt())) return {};
         result.multiple = frame.value("multiple").toBool(); result.cursorMode = static_cast<quint32>(frame.value("cursor_mode").toInt());
@@ -111,6 +158,21 @@ std::optional<QVariantMap> captureResults(CaptureKind kind, const QJsonObject &o
         if (object.size() != 1 || array.size() != 3) return {};
         for (const auto &v : array) if (!v.isDouble() || !std::isfinite(v.toDouble()) || v.toDouble() < 0 || v.toDouble() > 1) return {};
         return QVariantMap{{"color", QVariant::fromValue(CaptureColor{array[0].toDouble(), array[1].toDouble(), array[2].toDouble()})}};
+    }
+    // AGENT-CONTRACT: the helper adds "persist": true only after the user ticked
+    // the remember choice; the resident then reports the streams' stable names.
+    if (kind == CaptureKind::Stream && object.contains("persist")) {
+        auto body = object; const auto persist = body.take("persist");
+        if (!persist.isBool() || body.contains("persist")) return {};
+        auto parsed = captureResults(kind, body, directory);
+        if (!parsed || !persist.toBool()) return parsed;
+        QStringList names;
+        if (body.contains("streams")) for (const auto &member : body.value("streams").toArray()) names << member.toObject().value("name").toString();
+        else names << body.value("name").toString();
+        // Unnamed or duplicate outputs cannot be restored: share, but forget.
+        if (!validOutputs(names)) return parsed;
+        parsed->insert("outputs", names);
+        return validCapturePublication(kind, *parsed) ? parsed : std::nullopt;
     }
     // AGENT-CONTRACT: a batch is published atomically after every consented
     // source starts; any malformed member rejects the entire helper result.

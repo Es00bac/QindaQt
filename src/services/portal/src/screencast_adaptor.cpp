@@ -17,7 +17,17 @@ public:
                 || (response == RequestResponse::Success && (!validCapturePublication(CaptureKind::Stream, results)
                     || (!entry->multiple && results.value("streams").value<CaptureStreams>().size() != 1)))) response = RequestResponse::Failed;
             if (entry) { entry->pending = 0; if (response == RequestResponse::Success) entry->phase = CaptureSessionPhase::Streaming; }
-            requests.finish(token, response, results);
+            // AGENT-CONTRACT: restore_data is published only when the app asked
+            // to persist and the user ticked "remember" (the producer reports
+            // the stable output names); the frontend owns the token and the
+            // PermissionStore screencast row that Settings lists and revokes.
+            QVariantMap published = results;
+            const auto outputs = published.take("outputs").toStringList();
+            if (response == RequestResponse::Success && entry && entry->persistMode && !outputs.isEmpty()) {
+                published.insert("persist_mode", entry->persistMode);
+                published.insert("restore_data", restoreDataFor(outputs));
+            }
+            requests.finish(token, response, response == RequestResponse::Success ? published : QVariantMap{});
             if (response != RequestResponse::Success) sessions.close(path);
         });
     }
@@ -58,6 +68,7 @@ quint32 ScreenCastAdaptor::SelectSources(const QDBusObjectPath &handle, const QD
     d->owned.insert(token);
     if (!d->ui.admitted() || entry->phase != CaptureSessionPhase::Created || !validScreenCastSelection(options)) { d->requests.finish(token, RequestResponse::Failed); return 2; }
     entry->multiple = options.value("multiple", false).toBool(); entry->cursorMode = options.value("cursor_mode", 1U).toUInt();
+    entry->persistMode = options.value("persist_mode", 0U).toUInt(); entry->restore = restoreOutputs(options.value("restore_data"));
     entry->phase = CaptureSessionPhase::Selected; d->requests.finish(token, RequestResponse::Success); return 2;
 }
 quint32 ScreenCastAdaptor::Start(const QDBusObjectPath &handle, const QDBusObjectPath &session, const QString &app, const QString &parent, const QVariantMap &options, const QDBusMessage &call, QVariantMap &results) {
@@ -68,6 +79,7 @@ quint32 ScreenCastAdaptor::Start(const QDBusObjectPath &handle, const QDBusObjec
     if (!d->ui.admitted() || entry->phase != CaptureSessionPhase::Selected || !options.isEmpty() || !request) { d->requests.finish(token, RequestResponse::Failed); return 2; }
     request->kind = CaptureKind::Stream; request->session = session.path(); request->caller = entry->caller;
     request->multiple = entry->multiple; request->cursorMode = entry->cursorMode;
+    request->persist = entry->persistMode != 0; request->restore = entry->restore;
     entry->phase = CaptureSessionPhase::Starting; entry->pending = token;
     d->pending.insert(token, session.path()); d->ui.request(token, *request); return 2;
 }
