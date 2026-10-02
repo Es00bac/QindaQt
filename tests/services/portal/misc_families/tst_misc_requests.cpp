@@ -22,7 +22,7 @@ private Q_SLOTS:
     void init() {
         fixture = std::make_unique<PortalPrivateBus>(); QVERIFY(fixture->start()); backend = fixture->connect(); frontend = fixture->connect(); stranger = fixture->connect();
         QVERIFY(frontend->registerService("org.freedesktop.portal.Desktop")); registry = std::make_unique<RequestRegistry>(*backend); ui = std::make_unique<Ui>(); host = std::make_unique<QObject>();
-        new AccountAdaptor(*host, *registry, *ui, [] { return AccountInformation{"fixture-id", "Fixture Person", "file:///fixture/avatar.png"}; });
+        new AccountAdaptor(*host, *registry, *ui, [] { return AccountInformation{"fixture-id", "Fixture Person", "file:///fixture/avatar.png", "file:///fixture/generic-avatar.png"}; });
         new UsbAdaptor(*host, *registry, *ui); new LauncherAdaptor(*host, *registry, *ui); new PrintAdaptor(*host, *registry, *ui);
         QVERIFY(backend->registerObject("/org/freedesktop/portal/desktop", host.get(), QDBusConnection::ExportAdaptors)); QVERIFY(backend->registerService("org.test.Misc"));
     }
@@ -31,7 +31,7 @@ private Q_SLOTS:
         auto pending = account(); QTRY_COMPARE(ui->opens, 1);
         QCOMPARE(ui->frame.value("id").toString(), QStringLiteral("fixture-id"));
         Q_EMIT ui->completed(ui->token, RequestResponse::Success, QJsonObject{{"id", true}, {"name", false}, {"image", false}});
-        QTRY_VERIFY(pending->isFinished()); QDBusPendingReply<quint32, QVariantMap> reply = *pending; QVERIFY(!reply.isError()); QCOMPARE(reply.argumentAt<0>(), 0U); QCOMPARE(reply.argumentAt<1>().value("id").toString(), QStringLiteral("fixture-id")); QVERIFY(reply.argumentAt<1>().value("name").toString().isEmpty());
+        QTRY_VERIFY(pending->isFinished()); QDBusPendingReply<quint32, QVariantMap> reply = *pending; QVERIFY(!reply.isError()); QCOMPARE(reply.argumentAt<0>(), 0U); QCOMPARE(reply.argumentAt<1>().value("id").toString(), QStringLiteral("fixture-id")); QVERIFY(reply.argumentAt<1>().value("name").toString().isEmpty()); QCOMPARE(reply.argumentAt<1>().value("image").toString(), QStringLiteral("file:///fixture/generic-avatar.png"));
     }
     void usbExactWireSubsetAndForgedOutput() {
         auto pending = usb(); QTRY_COMPARE(ui->opens, 1); Q_EMIT ui->completed(ui->token, RequestResponse::Success, QJsonObject{{"devices", QJsonArray{"one"}}});

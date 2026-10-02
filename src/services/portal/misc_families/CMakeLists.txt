@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-find_package(Qt6 6.11 REQUIRED COMPONENTS Widgets PrintSupport)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Widgets PrintSupport PrintSupportPrivate)
 qt_add_library(qindaqt_portal_misc STATIC
     misc_policy.cpp usb_policy.cpp launcher_policy.cpp account_policy.cpp print_policy.cpp
     process_misc.cpp account_adaptor.cpp usb_adaptor.cpp launcher_adaptor.cpp print_adaptor.cpp)
