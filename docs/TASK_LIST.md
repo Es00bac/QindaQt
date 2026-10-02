@@ -23,8 +23,10 @@ forward/reverse Alt-Tab have actual passing private-runtime evidence.
 Scoped cleanup has removed 34 retired Plasma packages on qinda and four on the
 laptop while preserving every non-retired installed package and ordinary KDE
 application. Each host still retains 26 required retired packages. The legacy
-sharing helper's private-dependency adaptation, actual credential import, final
-desktop/provider/PAM installation, activation and complete cleanup remain.
+sharing helper's private-library package is independently accepted and installed
+on both hosts; its installed files pass verification without a Plasma runtime
+dependency. Actual credential import, final desktop/provider/PAM installation,
+activation, complete cleanup and live sharing acceptance remain.
 Native provider initialization must follow verified import; existing keyring
 files are preserved but their contents have not been copied. Existing sessions
 and applications have not been terminated. Physical power/suspend and fresh

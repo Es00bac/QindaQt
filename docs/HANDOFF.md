@@ -46,8 +46,14 @@ availability at a future login is not preserved or qualified. Existing SDDM
 authentication blocks and the GNOME provider/PAM selection are retained. Manual
 legacy-provider unlock through its public API remains part of the import gate.
 The legacy Xwayland video-sharing helper is the only independently identified
-mandatory Plasma dependency. A bounded private-dependency adaptation is in
-progress to preserve that function without another shared Plasma library.
+mandatory Plasma dependency. Its reviewed private-library adaptation `f47676f`
+is now installed through mandatory-signed binary-only Portage on both hosts.
+Independent signed-image acceptance `d3829c3` verifies seven ELF files, three
+private SONAMEs, three private QML modules, forty-four private locale catalogs,
+no development exports and no Plasma runtime dependency. All 106 installed
+files and six symlinks match on each host. Original capture logic, launcher,
+autostart and license text are preserved; post-install live sharing remains a
+separate native-session acceptance gate.
 
 Target-local rollback packages, source archives and safe Settings/Audio/unit/PAM
 snapshots are preserved on both machines. Existing legacy keyring/wallet files
