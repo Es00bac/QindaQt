@@ -116,7 +116,23 @@ physical input.
 Still required before routing changes: the fork plugin build plus a private
 native compositor row where a real frontend session receives an EIS FD,
 injects observable input, and loses it on Close and native lock; staged
-metadata. Remaining source gaps: Clipboard
-(`RequestClipboard`/selection transfer over the native clipboard service),
-ScreenCast sources on a RemoteDesktop session, and a backend EIS sender for
-Notify*.
+metadata. Remaining source gaps: Clipboard (below), ScreenCast sources on a
+RemoteDesktop session, and a backend EIS sender for Notify*.
+
+## Clipboard gap
+
+Clipboard is not implemented and `clipboard_enabled` is always false. The
+native [clipboard service](clipboard-service.md) never returns payload bytes
+or publishes an application-backed source, and the protected, non-dumpable
+resident cannot be admitted to `ext-data-control-v1`: restricted Wayland
+globals are resolved through `/proc/<pid>/exe`, the blocker already recorded
+for [capture](../reference/portal-capture.md). The upstream `KSystemClipboard`
+path has the same requirement. The proposed successor keeps authority in the
+compositor: the fork EIS plugin owns a per-backend clipboard handle (portal
+backend only, refused and destroyed on lock) whose `AbstractDataSource`
+forwards each Wayland `requestData` FD to the backend in a *targeted*
+`selectionTransfer` signal, exposes `readSelection(mime) -> h` from the seat
+selection and targeted owner-change signals. The backend then maps
+RequestClipboard/SetSelection/SelectionWrite(Done)/SelectionRead and
+SelectionOwnerChanged/SelectionTransfer onto granted RemoteDesktop sessions,
+adding a clipboard choice to the Start consent.
