@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — Gabbee native endpoint candidate44c857 passed focused gates; power0e5db remains frozen for review
+- Status: available — independent PF21 source review rejected exact first candidates; awaiting root repairs and offering exact recheck
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -37,3 +37,5 @@
 - 2026-10-02T19:06:00Z — Claim separate small source outcome: Gabbee exact fetched hub/main eadb8995ac8ffab99e35526e960118d1c11de232, isolated qinda gabbee.worktrees/gabbee-native-kwin-20261002 / worker/gabbee-native-kwin-20261002. Read README/HANDOFF/CODEX_HANDOFF; no AGENTS.md in repo. Own only desktop.py endpoint selection, focused bridge tests and relevant docs. Registered native endpoint preferred, one consistent endpoint per bridge, independent stock fallback preserved; actual subprocess-argv/call cleanup fixtures run with dead ambient buses/offscreen and no host action. System Python lacks pytest; using already existing Gabbee interpreter, no installation. Power0e5db candidate remains unchanged pending manager review.
 
 - 2026-10-02T19:06:23Z — Verify/handoff: Gabbee44c857fe0cb4371e7288113c06b1adf0c2079593 pushed qinda hub worker/gabbee-native-kwin-20261002 at exacteadb899 base. Four owned paths only: desktop.py, new endpoint tests,README,HANDOFF. Actual33pytestPASS/0fail0skip0/0.75s (24 new endpoint/failure rows +9 existing desktop tests); py_compile and gitdiffcheck0. Real chosen subprocess argv asserted for native/stock, pinned across registry changes, no fallback on failed native calls, unload/callback/temp-file cleanup. No actual qdbus/host input/audio action; no installs/build/GPU. First system-Python invocation exit1 missing pytest preserved as environment gap; already-existing interpreter ran tests. Different-worker exact review required; available for bounded findings. Power source0e5db unchanged.
+
+- 2026-10-02T19:16:01Z — Independent source-review handoff: isolated qinda desktop732e21a5a/forka653b961aa unchanged/clean,21+28 sourcehashes recorded. REJECT: duplicate TabletModeManager/root DBus path, protected-helper trailing-semicolon exact-equality mismatch, actual docs nav failure, stale public privilege instructions. Root already accepted first path/nav findings; additional metadata/docs sent. Renamecheck0/23.64s all27rules0; docsstrict1/12.86s,linkvalidator1/0.75s firstlogs preserved. No C++/native/shared-source/installed action. Gabbee44c857 and Power0e5db preserved; available for exact repaired-source recheck.
