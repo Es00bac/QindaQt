@@ -47,7 +47,7 @@ PipeWireFrames::PipeWireFrames(int fd, quint32 node) : m_targetNode(node) {
     qInfo().noquote() << QStringLiteral("actual PipeWire target node=%1 serial=%2").arg(node).arg(serial);
     // AGENT-GUARD: DONT_RECONNECT alone permits initial policy fallback if the
     // resolved target retires before linking. Never decode an unrelated default.
-    m_stream = pw_stream_new(m_core, "private portal frame proof", pw_properties_new(PW_KEY_MEDIA_TYPE, "Video", PW_KEY_MEDIA_CATEGORY, "Capture", PW_KEY_MEDIA_ROLE, "Screen", PW_KEY_TARGET_OBJECT, m_targetSerial.constData(), PW_KEY_NODE_DONT_FALLBACK, "true", nullptr));
+    m_stream = pw_stream_new(m_core, "private portal frame proof", pw_properties_new(PW_KEY_MEDIA_TYPE, "Video", PW_KEY_MEDIA_CATEGORY, "Capture", PW_KEY_MEDIA_ROLE, "Screen", PW_KEY_TARGET_OBJECT, m_targetSerial.constData(), "node.dont-fallback", "true", nullptr));
     if (!m_stream) { m_error = "consumer stream creation failed"; return; }
     static const pw_stream_events streamEvents = [] { pw_stream_events v{}; v.version = PW_VERSION_STREAM_EVENTS;
         v.state_changed = [](void *p, pw_stream_state, pw_stream_state state, const char *error) { if (state == PW_STREAM_STATE_ERROR) static_cast<PipeWireFrames *>(p)->m_error = QString::fromUtf8(error); };
