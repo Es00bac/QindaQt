@@ -163,8 +163,14 @@ private Q_SLOTS:
         auto remote = method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}});
         QDBusPendingCallWatcher opened(bus.asyncCall(remote)); QTRY_VERIFY(opened.isFinished());
         const QDBusPendingReply<QDBusUnixFileDescriptor> fd = opened; QVERIFY2(!fd.isError(), qPrintable(fd.error().message())); QVERIFY(fd.value().isValid());
-        PipeWireFrames frames(dup(fd.value().fileDescriptor()), streams[0].node);
-        QVERIFY(frames.valid()); QTRY_VERIFY_WITH_TIMEOUT(frames.count() > 3, 15000);
+        // Producer callbacks may complete in either order. The animated
+        // fixture is on the primary output; the other screen is static.
+        auto animated = streams.cbegin();
+        while (animated != streams.cend() && animated->properties.value("position").value<CaptureCoordinate>().first != 0) ++animated;
+        QVERIFY(animated != streams.cend());
+        PipeWireFrames frames(dup(fd.value().fileDescriptor()), animated->node);
+        QVERIFY(frames.valid()); QTRY_VERIFY2_WITH_TIMEOUT(frames.count() > 3, qPrintable(frames.error()), 15000);
+        QVERIFY(containsFixturePixels(frames.image()));
         QTRY_VERIFY_WITH_TIMEOUT(frames.nodes().contains(streams[1].node), 15000);
         const auto pid = helperPid(); close(session, "Session"); QTRY_VERIFY(kill(pid, 0) < 0);
         QTRY_VERIFY(!frames.nodes().contains(streams[0].node)); QTRY_VERIFY(!frames.nodes().contains(streams[1].node));
