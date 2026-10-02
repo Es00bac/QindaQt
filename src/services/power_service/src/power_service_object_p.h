@@ -15,6 +15,8 @@
 
 namespace QindaQt::Power {
 
+class IdleConsumerAuthority;
+
 class PowerServiceObject final : public QObject, protected QDBusContext
 {
     Q_OBJECT
@@ -47,6 +49,8 @@ class PowerServiceObject final : public QObject, protected QDBusContext
         "type=\"(ts)\" direction=\"in\"/><arg name=\"value\" type=\"u\" "
         "direction=\"in\"/><arg name=\"result\" type=\"(uuttttss)\" "
         "direction=\"out\"/></method>"
+        "<method name=\"RegisterIdleConsumers\"><arg name=\"expectedEpoch\" type=\"t\" direction=\"in\"/>"
+        "<arg name=\"scopes\" type=\"u\" direction=\"in\"/><arg name=\"registered\" type=\"b\" direction=\"out\"/></method>"
         "<method name=\"GetIdleInhibitorCapabilities\"><arg name=\"scopes\" type=\"u\" "
         "direction=\"out\"/></method>"
         "<method name=\"GetActiveIdleInhibitorScopes\"><arg name=\"scopes\" type=\"u\" "
@@ -73,6 +77,8 @@ public:
                                 const QDBusConnection &connection,
                                 QObject *parent = nullptr);
 
+    void setNativeIdleAdmission(bool admitted);
+
 public Q_SLOTS:
     Q_SCRIPTABLE QindaQt::Power::Snapshot GetSnapshot() const;
     Q_SCRIPTABLE void SetProfile(const QString &profileId);
@@ -84,6 +90,7 @@ public Q_SLOTS:
                                             quint32 value);
     Q_SCRIPTABLE void SetInternalBrightness(const QindaQt::Power::Handle &device,
                                             quint32 value);
+    Q_SCRIPTABLE bool RegisterIdleConsumers(quint64 expectedEpoch, quint32 scopes);
     Q_SCRIPTABLE quint32 GetIdleInhibitorCapabilities() const;
     Q_SCRIPTABLE quint32 GetActiveIdleInhibitorScopes() const;
     Q_SCRIPTABLE void RequestIdleInhibitorStateWithReceipt(const QString &nonce);
@@ -100,6 +107,7 @@ Q_SIGNALS:
                                                  quint32 activeScopes);
 
 private:
+    void clearIdleConsumers();
     void beginOperation(const PowerServiceRequest &request);
     void finishOperation(quint64 operationId, const OperationResult &result);
     [[nodiscard]] quint32 activeIdleInhibitorScopes() const;
@@ -109,6 +117,7 @@ private:
     QDBusConnection m_connection;
     QHash<quint64, QDBusMessage> m_pendingReplies;
     mutable IdleInhibitorRegistry m_idleInhibitors;
+    IdleConsumerAuthority *m_idleConsumerAuthority = nullptr;
     QDBusServiceWatcher *m_ownerWatcher = nullptr;
     mutable QSet<QString> m_watchedOwners;
     mutable quint64 m_idleInhibitorEpoch = 0;

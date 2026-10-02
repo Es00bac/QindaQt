@@ -19,6 +19,9 @@ target_sources(
         src/power_service_coordinator.cpp
         src/power_service_object.cpp
         src/power_service_object_p.h
+        src/idle_consumer_authority.cpp
+        src/idle_consumer_authority_p.h
+        src/power_idle_consumer_registration.cpp
         src/idle_inhibitor_registry.cpp
         src/idle_inhibitor_registry_p.h
         src/power_service_operations.cpp
