@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: working — granted final installed55d/plugin29f QA reconfigure/focusedbuild, then serialized existing gates
+- Status: working — root178 SDDM and Powerf5 bounded source reviews; installedDesktop discovery awaits manager
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: granted2compilerjobs/load24/6GiBguard plus sole private native lease; root signeddesktop8job build concurrent
+- Resource: compiler and private native/GPU lease released; no active child; signedDesktop install remains manager-owned
 
 ## Updates
 
@@ -80,3 +80,13 @@
 - 2026-10-02T21:04:33+00:00 — Root signedforkr3/Gabbee installed, actualqinda version6.6.6.1/nativeheaders macroON observed. Manager WT cleanexact29f, configure authorizedbuild/dev against/usr replacing old68 importedpackage/headers/program caches; testingON and focusedtargets only. Subsequent3static+2plugin/stageddiscovery and profile/resolution/dock/visiblepopup whereexistingharness permits. Poweroverlay851 independent source review coordinated during waits. No physical/laptop/install source claim.
 
 - 2026-10-02T21:08:23+00:00 — Parallel read-onlyPoweroverlay851 SOURCEACCEPT: originalrecipe/3patch/archive/provenancebytes verified; independent6testsPASS/0.280s, freshPortage3packages×5fields andnativeUSE7packages exact. Only unconditionalPlasma edges/profileintegrations removed, apps/PolkitQt retained. ColdKAuth6.27 source-dependency gap remainsexplicit; no app/runtime/installapproval, laterClaudeextensionneedsnewreview. FinalinstalledABI QA configurePASS58.236s, focused13targets live~133/255 withMem~11.6GiB; nativeleaseheld, no launchyet.
+
+- 2026-10-02T21:14:12.698538+00:00 — Installed55d ABI two PASS; dependency fixture blocked by child empty libexec. Preserved first failure, requested narrow fixture fix. Focused13-target build PASS; beginning unchanged private plugin runtime gate, sole native lease retained.
+
+- 2026-10-02T21:18:29.704558+00:00 — Private nested plugin PASS5.582s; profile/package/resolver/dock7 PASS. Staged discovery blocked by unrelated unbuilt Settings QML types; actual installed runner awaits signedDesktop. Layout fixture repaired installed guard then exposed conditional standalone clipboard target; test-only successor ready for exact root review. Shell three-resolution runtime active.
+
+- 2026-10-02T21:20:10.834343+00:00 — Actual installed55d/plugin29f private compositor PASS; three production-shell resolutions PASS; focused profile/package/resolver/dock7 PASS; offscreen capture40data/42Qt PASS.14unique CTests pass. Artifact hashes11 unchanged, owned PGID survivors/core files empty. Preserved five first failures. Released native lease; actual signedDesktop discovery and reviewed16a dependency replay remain pending, no whole-release/visible-popup/intelligent-hide claim.
+
+- 2026-10-02T21:20:54.165347+00:00 — Root exact16a source ACCEPT; running one repaired standalone configure gate with actual installed/usr+libexec and own candidate tree. Own production files byte-equivalent29f; only three test CMake/script edits differ. No build/runtime lease consumed.
+
+- 2026-10-02T21:26:16.618446+00:00 — Corrected184/16a standalonedependency fourconfiguration gate PASS0/97.616s, original29f failure retained. Power419 exactsnapshot SOURCEACCEPT:10testsPASS, sixfreshCPV metadata and preserved recipe/wrapper/archive/patch provenance verified; authornewPinentry1.3.3 excluded. Claimed root178 SDDM optionalPAM source review and boundedPowerf5 successor; compiler/native lease remains released.

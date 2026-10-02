@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "status": "bounded QA verified; actual Portage Desktop discovery and corrected standalone dependency fixture pending",
+  "production_source": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "installed_fork": "55d1f2738723316fae4686468757aef66ce7590b",
+  "test_only_candidates": [
+    "184e2554138f9f3a749d5338d9bb64d1ae9270f2",
+    "16a7bb890ca1e3c15a7cd72c23fe1b3ba02aaec0"
+  ],
+  "public_installed_capture_headers": {
+    "/usr/include/qindaqt-kwin/capture-authority/protocol.h": {
+      "sha256": "0d8f963605e92e88f9dd90ef2fef36c4eff8ed8da1132bba95afd28d69fd26bc",
+      "bytes": 2136
+    },
+    "/usr/include/qindaqt-kwin/capture-authority/launchpaths.h": {
+      "sha256": "91fb9bf26e046b527b9b7b61819c6c3e18933c2dcc2c5a4db24951ec82376bf2",
+      "bytes": 633
+    }
+  },
+  "artifact_preflight": {
+    "source_commit": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+    "installed_fork": "55d1f2738723316fae4686468757aef66ce7590b",
+    "artifacts": {
+      "/usr/bin/qindaqt-kwin": {
+        "path": "/usr/bin/qindaqt-kwin",
+        "sha256": "e6b9809fcadc40707c6eabf8f25153bdcf58aefe603c1188be830566de7dd54c",
+        "bytes": 1483328,
+        "ldd": "\tlinux-vdso.so.1 (0x00007f79b6902000)\n\tlibsystemd.so.0 => /usr/lib64/libsystemd.so.0 (0x00007f79b6400000)\n\tlibxcb-randr.so.0 => /usr/lib64/libxcb-randr.so.0 (0x00007f79b674f000)\n\tlibxcb-composite.so.0 => /usr/lib64/libxcb-composite.so.0 (0x00007f79b674a000)\n\tlibxcb-xfixes.so.0 => /usr/lib64/libxcb-xfixes.so.0 (0x00007f79b6740000)\n\tlibxcb.so.1 => /usr/lib64/libxcb.so.1 (0x00007f79b6714000)\n\tlibKF6Svg.so.6 => /usr/lib64/libKF6Svg.so.6 (0x00007f79b66c2000)\n\tlibcanberra.so.0 => /usr/lib64/libcanberra.so.0 (0x00007f79b66ad000)\n\tlibqaccessibilityclient-qt6.so.0 => /usr/lib64/libqaccessibilityclient-qt6.so.0 (0x00007f79b6662000)\n\tlibqindaqt-kwin.so.0 => /usr/lib64/libqindaqt-kwin.so.0 (0x00007f79b5800000)\n\tlibKF6Crash.so.6 => /usr/lib64/libKF6Crash.so.6 (0x00007f79b6652000)\n\tlibKF6WindowSystem.so.6 => /usr/lib64/libKF6WindowSystem.so.6 (0x00007f79b63a0000)\n\tlibepoxy.so.0 => /usr/lib64/libepoxy.so.0 (0x00007f79b56dc000)\n\tlibKF6Notifications.so.6 => /usr/lib64/libKF6Notifications.so.6 (0x00007f79b6607000)\n\tlibqindaqt-kwin-decorations.so.0 => /usr/lib64/libqindaqt-kwin-decorations.so.0 (0x00007f79b6367000)\n\tlibKF6GlobalAccel.so.6 => /usr/lib64/libKF6GlobalAccel.so.6 (0x00007f79b632e000)\n\tlibQt6Widgets.so.6 => /usr/lib64/libQt6Widgets.so.6 (0x00007f79b4e00000)\n\tlibKF6ConfigGui.so.6 => /usr/lib64/libKF6ConfigGui.so.6 (0x00007f79b62f2000)\n\tlibKF6I18n.so.6 => /usr/lib64/libKF6I18n.so.6 (0x00007f79b5653000)\n\tlibKF6ConfigCore.so.6 => /usr/lib64/libKF6ConfigCore.so.6 (0x00007f79b4d76000)\n\tlibKF6CoreAddons.so.6 => /usr/lib64/libKF6CoreAddons.so.6 (0x00007f79b4c6d000)\n\tlibKF6IdleTime.so.6 => /usr/lib64/libKF6IdleTime.so.6 (0x00007f79b5641000)\n\tlibQt6Gui.so.6 => /usr/lib64/libQt6Gui.so.6 (0x00007f79b4200000)\n\tlibQt6DBus.so.6 => /usr/lib64/libQt6DBus.so.6 (0x00007f79b4b97000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007f79b3a00000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007f79b3600000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007f79b40eb000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007f79b3414000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f79b6904000)\n\tlibXau.so.6 => /usr/lib64/libXau.so.6 (0x00007f79b62e8000)\n\tlibXdmcp.so.6 => /usr/lib64/libXdmcp.so.6 (0x00007f79b5639000)\n\tlibQt6Svg.so.6 => /usr/lib64/libQt6Svg.so.6 (0x00007f79b4aed000)\n\tlibKF6Archive.so.6 => /usr/lib64/libKF6Archive.so.6 (0x00007f79b409f000)\n\tlibKF6ColorScheme.so.6 => /usr/lib64/libKF6ColorScheme.so.6 (0x00007f79b561d000)\n\tlibKF6GuiAddons.so.6 => /usr/lib64/libKF6GuiAddons.so.6 (0x00007f79b3990000)\n\tlibvorbisfile.so.3 => //usr/lib64/libvorbisfile.so.3 (0x00007f79b5612000)\n\tlibltdl.so.7 => //usr/lib64/libltdl.so.7 (0x00007f79b5604000)\n\tlibwayland-server.so.0 => /usr/lib64/libwayland-server.so.0 (0x00007f79b4086000)\n\tlibdrm.so.2 => /usr/lib64/libdrm.so.2 (0x00007f79b406e000)\n\tlibKF6ConfigQml.so.6 => /usr/lib64/libKF6ConfigQml.so.6 (0x00007f79b4ae0000)\n\tlibKF6I18nQml.so.6 => /usr/lib64/libKF6I18nQml.so.6 (0x00007f79b395c000)\n\tlibKF6Package.so.6 => /usr/lib64/libKF6Package.so.6 (0x00007f79b3929000)\n\tlibqindaqt-kwin-decorationsprivate.so.0 => /usr/lib64/libqindaqt-kwin-decorationsprivate.so.0 (0x00007f79b4066000)\n\tlibudev.so.1 => /usr/lib64/libudev.so.1 (0x00007f79b3297000)\n\tlibxkbcommon.so.0 => /usr/lib64/libxkbcommon.so.0 (0x00007f79b38c8000)\n\tliblcms2.so.2 => /usr/lib64/liblcms2.so.2 (0x00007f79b3229000)\n\tlibxcb-icccm.so.4 => /usr/lib64/libxcb-icccm.so.4 (0x00007f79b4ad9000)\n\tlibxcb-keysyms.so.1 => /usr/lib64/libxcb-keysyms.so.1 (0x00007f79b4061000)\n\tlibxcb-render.so.0 => /usr/lib64/libxcb-render.so.0 (0x00007f79b4051000)\n\tlibxcb-res.so.0 => /usr/lib64/libxcb-res.so.0 (0x00007f79b404b000)\n\tlibxcb-shape.so.0 => /usr/lib64/libxcb-shape.so.0 (0x00007f79b38c2000)\n\tlibxcb-shm.so.0 => /usr/lib64/libxcb-shm.so.0 (0x00007f79b38bd000)\n\tlibxcb-sync.so.1 => /usr/lib64/libxcb-sync.so.1 (0x00007f79b38b4000)\n\tlibgbm.so.1 => /usr/lib64/libgbm.so.1 (0x00007f79b38ad000)\n\tlibinput.so.10 => /usr/lib64/libinput.so.10 (0x00007f79b31bc000)\n\tlibKWaylandClient.so.6 => /usr/lib64/libKWaylandClient.so.6 (0x00007f79b30db000)\n\tlibwayland-client.so.0 => /usr/lib64/libwayland-client.so.0 (0x00007f79b3898000)\n\tlibxcb-dri3.so.0 => /usr/lib64/libxcb-dri3.so.0 (0x00007f79b3891000)\n\tlibxcb-present.so.0 => /usr/lib64/libxcb-present.so.0 (0x00007f79b388c000)\n\tlibxcb-xinput.so.0 => /usr/lib64/libxcb-xinput.so.0 (0x00007f79b30b5000)\n\tlibQt6Quick.so.6 => /usr/lib64/libQt6Quick.so.6 (0x00007f79b2800000)\n\tlibQt6OpenGL.so.6 => /usr/lib64/libQt6OpenGL.so.6 (0x00007f79b3005000)\n\tlibQt6Qml.so.6 => /usr/lib64/libQt6Qml.so.6 (0x00007f79b2000000)\n\tlibdisplay-info.so.3 => /usr/lib64/libdisplay-info.so.3 (0x00007f79b27c4000)\n\tlibKF6KIOGui.so.6 => /usr/lib64/libKF6KIOGui.so.6 (0x00007f79b272c000)\n\tlibKF6KIOCore.so.6 => /usr/lib64/libKF6KIOCore.so.6 (0x00007f79b1e3f000)\n\tlibKF6Service.so.6 => /usr/lib64/libKF6Service.so.6 (0x00007f79b26aa000)\n\tlibxcvt.so.0 => /usr/lib64/libxcvt.so.0 (0x00007f79b3883000)\n\tlibX11.so.6 => /usr/lib64/libX11.so.6 (0x00007f79b1cf1000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007f79b267d000)\n\tlibXfixes.so.3 => /usr/lib64/libXfixes.so.3 (0x00007f79b2ffd000)\n\tlibmount.so.1 => /usr/lib64/libmount.so.1 (0x00007f79b1c6f000)\n\tlibEGL.so.1 => /usr/lib64/libEGL.so.1 (0x00007f79b1c58000)\n\tlibfontconfig.so.1 => /usr/lib64/libfontconfig.so.1 (0x00007f79b1c06000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007f79b1aab000)\n\tlibGLX.so.0 => /usr/lib64/libGLX.so.0 (0x00007f79b1a77000)\n\tlibOpenGL.so.0 => /usr/lib64/libOpenGL.so.0 (0x00007f79b1a4c000)\n\tlibpng16.so.16 => /usr/lib64/libpng16.so.16 (0x00007f79b1a0f000)\n\tlibharfbuzz.so.0 => /usr/lib64/libharfbuzz.so.0 (0x00007f79b18ad000)\n\tlibmd4c.so.0 => /usr/lib64/libmd4c.so.0 (0x00007f79b189c000)\n\tlibfreetype.so.6 => /usr/lib64/libfreetype.so.6 (0x00007f79b17c0000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007f79b17a5000)\n\tlibdbus-1.so.3 => /usr/lib64/libdbus-1.so.3 (0x00007f79b1754000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007f79b1400000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007f79b1000000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007f79b133f000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007f79b173d000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007f79b1335000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007f79b1292000)\n\tlibbz2.so.1 => /usr/lib64/libbz2.so.1 (0x00007f79b127c000)\n\tliblzma.so.5 => /usr/lib64/liblzma.so.5 (0x00007f79b124a000)\n\tlibcrypto.so.3 => /usr/lib64/libcrypto.so.3 (0x00007f79b0a00000)\n\tlibQt6WaylandClient.so.6 => /usr/lib64/libQt6WaylandClient.so.6 (0x00007f79b08d0000)\n\tlibvorbis.so.0 => /usr/lib64/libvorbis.so.0 (0x00007f79b1219000)\n\tlibogg.so.0 => /usr/lib64/libogg.so.0 (0x00007f79b120f000)\n\tlibffi.so.8 => /usr/lib64/libffi.so.8 (0x00007f79b0ff0000)\n\tlibexpat.so.1 => /usr/lib64/libexpat.so.1 (0x00007f79b0fc1000)\n\tlibmtdev.so.1 => /usr/lib64/libmtdev.so.1 (0x00007f79b0fba000)\n\tlibevdev.so.2 => /usr/lib64/libevdev.so.2 (0x00007f79b0fa4000)\n\tlibQt6QmlMeta.so.6 => /usr/lib64/libQt6QmlMeta.so.6 (0x00007f79b0f78000)\n\tlibQt6QmlModels.so.6 => /usr/lib64/libQt6QmlModels.so.6 (0x00007f79b079e000)\n\tlibQt6Network.so.6 => /usr/lib64/libQt6Network.so.6 (0x00007f79b0400000)\n\tlibKF6Solid.so.6 => /usr/lib64/libKF6Solid.so.6 (0x00007f79b0673000)\n\tlibacl.so.1 => /usr/lib64/libacl.so.1 (0x00007f79b0f6b000)\n\tlibQt6Xml.so.6 => /usr/lib64/libQt6Xml.so.6 (0x00007f79b0648000)\n\tlibblkid.so.1 => /usr/lib64/libblkid.so.1 (0x00007f79b039b000)\n\tlibGLdispatch.so.0 => /usr/lib64/libGLdispatch.so.0 (0x00007f79b02e2000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007f79b0231000)\n\tlibgraphite2.so.3 => /usr/lib64/libgraphite2.so.3 (0x00007f79b0621000)\n\tlibbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x00007f79b0f5c000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007f79ae200000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007f79b01d8000)\n\tlibwayland-cursor.so.0 => /usr/lib64/libwayland-cursor.so.0 (0x00007f79b0f52000)\n\tlibmvec.so.1 => /usr/lib64/libmvec.so.1 (0x00007f79ae106000)\n\tlibQt6QmlWorkerScript.so.6 => /usr/lib64/libQt6QmlWorkerScript.so.6 (0x00007f79b060a000)\n\tlibproxy.so.1 => /usr/lib64/libproxy.so.1 (0x00007f79b120a000)\n\tlibbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00007f79b01b5000)\n\tlibpxbackend-1.0.so => /usr/lib64/libproxy/libpxbackend-1.0.so (0x00007f79b01a9000)\n\tlibgobject-2.0.so.0 => /usr/lib64/libgobject-2.0.so.0 (0x00007f79ae0a0000)\n\tlibgio-2.0.so.0 => /usr/lib64/libgio-2.0.so.0 (0x00007f79adea3000)\n\tlibgmodule-2.0.so.0 => /usr/lib64/libgmodule-2.0.so.0 (0x00007f79b0f4b000)\n"
+      },
+      "/usr/include/qindaqt-kwin/config-kwin.h": {
+        "path": "/usr/include/qindaqt-kwin/config-kwin.h",
+        "sha256": "1a8186707a1f9b1651fc23dcd094ab1701e2d832dc7c6cedd5562e3757a54234",
+        "bytes": 1404
+      },
+      "/usr/lib64/cmake/QindaQtKWin/QindaQtKWinConfigVersion.cmake": {
+        "path": "/usr/lib64/cmake/QindaQtKWin/QindaQtKWinConfigVersion.cmake",
+        "sha256": "e024a0ecd7e0b34a8191ab5395c65dd8eb4a99fc759e6d7ce83082314a729bac",
+        "bytes": 3255
+      },
+      "/usr/lib64/libqindaqt-kwin.so": {
+        "path": "/usr/lib64/libqindaqt-kwin.so",
+        "sha256": "3a7ebc46ee99da0d8b2eef27b9962f35a6f7defb1a5dcdd6d919cf3c8a6fa31d",
+        "bytes": 11425416,
+        "ldd": "\tlinux-vdso.so.1 (0x00007f8b343e4000)\n\tlibwayland-server.so.0 => /usr/lib64/libwayland-server.so.0 (0x00007f8b34395000)\n\tlibepoxy.so.0 => /usr/lib64/libepoxy.so.0 (0x00007f8b336dc000)\n\tlibdrm.so.2 => /usr/lib64/libdrm.so.2 (0x00007f8b3437d000)\n\tlibQt6Svg.so.6 => /usr/lib64/libQt6Svg.so.6 (0x00007f8b33632000)\n\tlibKF6ColorScheme.so.6 => /usr/lib64/libKF6ColorScheme.so.6 (0x00007f8b34363000)\n\tlibKF6ConfigQml.so.6 => /usr/lib64/libKF6ConfigQml.so.6 (0x00007f8b34354000)\n\tlibKF6GlobalAccel.so.6 => /usr/lib64/libKF6GlobalAccel.so.6 (0x00007f8b3431b000)\n\tlibKF6I18nQml.so.6 => /usr/lib64/libKF6I18nQml.so.6 (0x00007f8b335fe000)\n\tlibKF6Package.so.6 => /usr/lib64/libKF6Package.so.6 (0x00007f8b342e8000)\n\tlibqindaqt-kwin-decorations.so.0 => /usr/lib64/libqindaqt-kwin-decorations.so.0 (0x00007f8b335c5000)\n\tlibqindaqt-kwin-decorationsprivate.so.0 => /usr/lib64/libqindaqt-kwin-decorationsprivate.so.0 (0x00007f8b335bd000)\n\tlibudev.so.1 => /usr/lib64/libudev.so.1 (0x00007f8b33440000)\n\tlibxkbcommon.so.0 => /usr/lib64/libxkbcommon.so.0 (0x00007f8b333dd000)\n\tliblcms2.so.2 => /usr/lib64/liblcms2.so.2 (0x00007f8b3336f000)\n\tlibxcb-composite.so.0 => /usr/lib64/libxcb-composite.so.0 (0x00007f8b3336a000)\n\tlibxcb-icccm.so.4 => /usr/lib64/libxcb-icccm.so.4 (0x00007f8b33363000)\n\tlibxcb-keysyms.so.1 => /usr/lib64/libxcb-keysyms.so.1 (0x00007f8b3335e000)\n\tlibxcb-randr.so.0 => /usr/lib64/libxcb-randr.so.0 (0x00007f8b3334c000)\n\tlibxcb-render.so.0 => /usr/lib64/libxcb-render.so.0 (0x00007f8b3333a000)\n\tlibxcb-res.so.0 => /usr/lib64/libxcb-res.so.0 (0x00007f8b33334000)\n\tlibxcb-shape.so.0 => /usr/lib64/libxcb-shape.so.0 (0x00007f8b3332e000)\n\tlibxcb-shm.so.0 => /usr/lib64/libxcb-shm.so.0 (0x00007f8b33329000)\n\tlibxcb-sync.so.1 => /usr/lib64/libxcb-sync.so.1 (0x00007f8b33320000)\n\tlibxcb.so.1 => /usr/lib64/libxcb.so.1 (0x00007f8b332f4000)\n\tlibxcb-xfixes.so.0 => /usr/lib64/libxcb-xfixes.so.0 (0x00007f8b332e8000)\n\tlibKF6Notifications.so.6 => /usr/lib64/libKF6Notifications.so.6 (0x00007f8b3329f000)\n\tlibgbm.so.1 => /usr/lib64/libgbm.so.1 (0x00007f8b33298000)\n\tlibinput.so.10 => /usr/lib64/libinput.so.10 (0x00007f8b3322b000)\n\tlibKWaylandClient.so.6 => /usr/lib64/libKWaylandClient.so.6 (0x00007f8b3314a000)\n\tlibwayland-client.so.0 => /usr/lib64/libwayland-client.so.0 (0x00007f8b33137000)\n\tlibxcb-dri3.so.0 => /usr/lib64/libxcb-dri3.so.0 (0x00007f8b3312e000)\n\tlibxcb-present.so.0 => /usr/lib64/libxcb-present.so.0 (0x00007f8b33129000)\n\tlibxcb-xinput.so.0 => /usr/lib64/libxcb-xinput.so.0 (0x00007f8b33103000)\n\tlibQt6Quick.so.6 => /usr/lib64/libQt6Quick.so.6 (0x00007f8b32800000)\n\tlibQt6OpenGL.so.6 => /usr/lib64/libQt6OpenGL.so.6 (0x00007f8b33053000)\n\tlibKF6ConfigGui.so.6 => /usr/lib64/libKF6ConfigGui.so.6 (0x00007f8b33017000)\n\tlibQt6Widgets.so.6 => /usr/lib64/libQt6Widgets.so.6 (0x00007f8b32000000)\n\tlibQt6Qml.so.6 => /usr/lib64/libQt6Qml.so.6 (0x00007f8b31800000)\n\tlibdisplay-info.so.3 => /usr/lib64/libdisplay-info.so.3 (0x00007f8b31fc4000)\n\tlibKF6KIOGui.so.6 => /usr/lib64/libKF6KIOGui.so.6 (0x00007f8b31f2c000)\n\tlibKF6WindowSystem.so.6 => /usr/lib64/libKF6WindowSystem.so.6 (0x00007f8b31ecc000)\n\tlibKF6KIOCore.so.6 => /usr/lib64/libKF6KIOCore.so.6 (0x00007f8b3163f000)\n\tlibKF6Crash.so.6 => /usr/lib64/libKF6Crash.so.6 (0x00007f8b33003000)\n\tlibKF6I18n.so.6 => /usr/lib64/libKF6I18n.so.6 (0x00007f8b315b6000)\n\tlibKF6Service.so.6 => /usr/lib64/libKF6Service.so.6 (0x00007f8b31534000)\n\tlibKF6CoreAddons.so.6 => /usr/lib64/libKF6CoreAddons.so.6 (0x00007f8b3142b000)\n\tlibKF6ConfigCore.so.6 => /usr/lib64/libKF6ConfigCore.so.6 (0x00007f8b313a1000)\n\tlibxcvt.so.0 => /usr/lib64/libxcvt.so.0 (0x00007f8b32ffe000)\n\tlibQt6Gui.so.6 => /usr/lib64/libQt6Gui.so.6 (0x00007f8b30a00000)\n\tlibQt6DBus.so.6 => /usr/lib64/libQt6DBus.so.6 (0x00007f8b3092a000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007f8b30200000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007f8b2fe00000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007f8b300eb000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007f8b2fc14000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f8b343e6000)\n\tlibffi.so.8 => /usr/lib64/libffi.so.8 (0x00007f8b31eba000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007f8b31e9f000)\n\tlibKF6GuiAddons.so.6 => /usr/lib64/libKF6GuiAddons.so.6 (0x00007f8b31331000)\n\tlibKF6Archive.so.6 => /usr/lib64/libKF6Archive.so.6 (0x00007f8b312e5000)\n\tlibXau.so.6 => /usr/lib64/libXau.so.6 (0x00007f8b31e97000)\n\tlibXdmcp.so.6 => /usr/lib64/libXdmcp.so.6 (0x00007f8b31e8f000)\n\tlibcanberra.so.0 => /usr/lib64/libcanberra.so.0 (0x00007f8b31e7c000)\n\tlibexpat.so.1 => /usr/lib64/libexpat.so.1 (0x00007f8b308fb000)\n\tlibmtdev.so.1 => /usr/lib64/libmtdev.so.1 (0x00007f8b31e75000)\n\tlibevdev.so.2 => /usr/lib64/libevdev.so.2 (0x00007f8b308e5000)\n\tlibQt6WaylandClient.so.6 => /usr/lib64/libQt6WaylandClient.so.6 (0x00007f8b2fae4000)\n\tlibQt6QmlMeta.so.6 => /usr/lib64/libQt6QmlMeta.so.6 (0x00007f8b308b9000)\n\tlibQt6QmlModels.so.6 => /usr/lib64/libQt6QmlModels.so.6 (0x00007f8b2f9b2000)\n\tlibQt6Network.so.6 => /usr/lib64/libQt6Network.so.6 (0x00007f8b2f600000)\n\tlibOpenGL.so.0 => /usr/lib64/libOpenGL.so.0 (0x00007f8b3088e000)\n\tlibKF6Solid.so.6 => /usr/lib64/libKF6Solid.so.6 (0x00007f8b2f887000)\n\tlibX11.so.6 => /usr/lib64/libX11.so.6 (0x00007f8b2f4b2000)\n\tlibXfixes.so.3 => /usr/lib64/libXfixes.so.3 (0x00007f8b312dd000)\n\tlibacl.so.1 => /usr/lib64/libacl.so.1 (0x00007f8b30881000)\n\tlibmount.so.1 => /usr/lib64/libmount.so.1 (0x00007f8b2f805000)\n\tlibQt6Xml.so.6 => /usr/lib64/libQt6Xml.so.6 (0x00007f8b30856000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007f8b300be000)\n\tlibEGL.so.1 => /usr/lib64/libEGL.so.1 (0x00007f8b300a7000)\n\tlibfontconfig.so.1 => /usr/lib64/libfontconfig.so.1 (0x00007f8b2f460000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007f8b2f305000)\n\tlibGLX.so.0 => /usr/lib64/libGLX.so.0 (0x00007f8b2f2d1000)\n\tlibpng16.so.16 => /usr/lib64/libpng16.so.16 (0x00007f8b2f294000)\n\tlibharfbuzz.so.0 => /usr/lib64/libharfbuzz.so.0 (0x00007f8b2f132000)\n\tlibmd4c.so.0 => /usr/lib64/libmd4c.so.0 (0x00007f8b30096000)\n\tlibfreetype.so.6 => /usr/lib64/libfreetype.so.6 (0x00007f8b2f056000)\n\tlibdbus-1.so.3 => /usr/lib64/libdbus-1.so.3 (0x00007f8b2f005000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007f8b2ec00000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007f8b2e800000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007f8b2ef44000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007f8b2ebe9000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007f8b3084c000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007f8b2eb46000)\n\tlibbz2.so.1 => /usr/lib64/libbz2.so.1 (0x00007f8b2eb30000)\n\tliblzma.so.5 => /usr/lib64/liblzma.so.5 (0x00007f8b2eafe000)\n\tlibcrypto.so.3 => /usr/lib64/libcrypto.so.3 (0x00007f8b2e200000)\n\tlibvorbisfile.so.3 => //usr/lib64/libvorbisfile.so.3 (0x00007f8b30089000)\n\tlibltdl.so.7 => //usr/lib64/libltdl.so.7 (0x00007f8b2ef38000)\n\tlibwayland-cursor.so.0 => /usr/lib64/libwayland-cursor.so.0 (0x00007f8b2eaf4000)\n\tlibQt6QmlWorkerScript.so.6 => /usr/lib64/libQt6QmlWorkerScript.so.6 (0x00007f8b2eadd000)\n\tlibproxy.so.1 => /usr/lib64/libproxy.so.1 (0x00007f8b30084000)\n\tlibGLdispatch.so.0 => /usr/lib64/libGLdispatch.so.0 (0x00007f8b2ea22000)\n\tlibblkid.so.1 => /usr/lib64/libblkid.so.1 (0x00007f8b2e79b000)\n\tlibsystemd.so.0 => /usr/lib64/libsystemd.so.0 (0x00007f8b2de00000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007f8b2e14f000)\n\tlibgraphite2.so.3 => /usr/lib64/libgraphite2.so.3 (0x00007f8b2e774000)\n\tlibbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x00007f8b2ea11000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007f8b2be00000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007f8b2e0f6000)\n\tlibvorbis.so.0 => /usr/lib64/libvorbis.so.0 (0x00007f8b2e0c5000)\n\tlibogg.so.0 => /usr/lib64/libogg.so.0 (0x00007f8b2e76a000)\n\tlibpxbackend-1.0.so => /usr/lib64/libproxy/libpxbackend-1.0.so (0x00007f8b2e75e000)\n\tlibgobject-2.0.so.0 => /usr/lib64/libgobject-2.0.so.0 (0x00007f8b2e05f000)\n\tlibbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00007f8b2e03c000)\n\tlibmvec.so.1 => /usr/lib64/libmvec.so.1 (0x00007f8b2bd06000)\n\tlibgio-2.0.so.0 => /usr/lib64/libgio-2.0.so.0 (0x00007f8b2bb09000)\n\tlibgmodule-2.0.so.0 => /usr/lib64/libgmodule-2.0.so.0 (0x00007f8b2e757000)\n"
+      },
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so",
+        "sha256": "c8270465adb0fd7bc74a92753212bea8001685f0e0eab826b729bf4ee71d4d90",
+        "bytes": 129216632,
+        "ldd": "\tlinux-vdso.so.1 (0x00007fb1ee788000)\n\tlibqindaqt-kwin.so.0 => /usr/lib64/libqindaqt-kwin.so.0 (0x00007fb1eca00000)\n\tlibKF6GlobalAccel.so.6 => /usr/lib64/libKF6GlobalAccel.so.6 (0x00007fb1ee719000)\n\tlibwayland-client.so.0 => /usr/lib64/libwayland-client.so.0 (0x00007fb1ee706000)\n\tlibwayland-server.so.0 => /usr/lib64/libwayland-server.so.0 (0x00007fb1ee6ed000)\n\tlibKF6KIOGui.so.6 => /usr/lib64/libKF6KIOGui.so.6 (0x00007fb1ee653000)\n\tlibKF6KIOCore.so.6 => /usr/lib64/libKF6KIOCore.so.6 (0x00007fb1ec83f000)\n\tlibKF6Service.so.6 => /usr/lib64/libKF6Service.so.6 (0x00007fb1ee5d1000)\n\tlibKF6CoreAddons.so.6 => /usr/lib64/libKF6CoreAddons.so.6 (0x00007fb1ed4f7000)\n\tlibKF6ConfigCore.so.6 => /usr/lib64/libKF6ConfigCore.so.6 (0x00007fb1ec7b5000)\n\tlibqindaqt-kwin-decorations.so.0 => /usr/lib64/libqindaqt-kwin-decorations.so.0 (0x00007fb1ee598000)\n\tlibQt6Widgets.so.6 => /usr/lib64/libQt6Widgets.so.6 (0x00007fb1ebe00000)\n\tlibKF6WindowSystem.so.6 => /usr/lib64/libKF6WindowSystem.so.6 (0x00007fb1ec755000)\n\tlibX11.so.6 => /usr/lib64/libX11.so.6 (0x00007fb1ec607000)\n\tlibepoxy.so.0 => /usr/lib64/libepoxy.so.0 (0x00007fb1ebcdc000)\n\tlibdrm.so.2 => /usr/lib64/libdrm.so.2 (0x00007fb1ebcc4000)\n\tlibQt6Quick.so.6 => /usr/lib64/libQt6Quick.so.6 (0x00007fb1eb400000)\n\tlibQt6OpenGL.so.6 => /usr/lib64/libQt6OpenGL.so.6 (0x00007fb1ebc14000)\n\tlibQt6Qml.so.6 => /usr/lib64/libQt6Qml.so.6 (0x00007fb1eac00000)\n\tlibQt6Network.so.6 => /usr/lib64/libQt6Network.so.6 (0x00007fb1ea800000)\n\tlibQt6Gui.so.6 => /usr/lib64/libQt6Gui.so.6 (0x00007fb1e9e00000)\n\tlibQt6DBus.so.6 => /usr/lib64/libQt6DBus.so.6 (0x00007fb1eb32a000)\n\tlibGLX.so.0 => /usr/lib64/libGLX.so.0 (0x00007fb1eb2f6000)\n\tlibOpenGL.so.0 => /usr/lib64/libOpenGL.so.0 (0x00007fb1eb2cb000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007fb1e9600000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007fb1e9200000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007fb1eaaeb000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007fb1eb29e000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007fb1e9014000)\n\tlibQt6Svg.so.6 => /usr/lib64/libQt6Svg.so.6 (0x00007fb1eaa41000)\n\tlibKF6ColorScheme.so.6 => /usr/lib64/libKF6ColorScheme.so.6 (0x00007fb1eb284000)\n\tlibKF6ConfigQml.so.6 => /usr/lib64/libKF6ConfigQml.so.6 (0x00007fb1ed4ea000)\n\tlibKF6I18nQml.so.6 => /usr/lib64/libKF6I18nQml.so.6 (0x00007fb1eaa0d000)\n\tlibKF6Package.so.6 => /usr/lib64/libKF6Package.so.6 (0x00007fb1ea7cd000)\n\tlibqindaqt-kwin-decorationsprivate.so.0 => /usr/lib64/libqindaqt-kwin-decorationsprivate.so.0 (0x00007fb1ec5ff000)\n\tlibudev.so.1 => /usr/lib64/libudev.so.1 (0x00007fb1e9c83000)\n\tlibxkbcommon.so.0 => /usr/lib64/libxkbcommon.so.0 (0x00007fb1ea76c000)\n\tliblcms2.so.2 => /usr/lib64/liblcms2.so.2 (0x00007fb1ea6fe000)\n\tlibxcb-composite.so.0 => /usr/lib64/libxcb-composite.so.0 (0x00007fb1ebc0f000)\n\tlibxcb-icccm.so.4 => /usr/lib64/libxcb-icccm.so.4 (0x00007fb1ebc08000)\n\tlibxcb-keysyms.so.1 => /usr/lib64/libxcb-keysyms.so.1 (0x00007fb1ebc03000)\n\tlibxcb-randr.so.0 => /usr/lib64/libxcb-randr.so.0 (0x00007fb1eb272000)\n\tlibxcb-render.so.0 => /usr/lib64/libxcb-render.so.0 (0x00007fb1ea6ee000)\n\tlibxcb-res.so.0 => /usr/lib64/libxcb-res.so.0 (0x00007fb1eaa07000)\n\tlibxcb-shape.so.0 => /usr/lib64/libxcb-shape.so.0 (0x00007fb1ea6e8000)\n\tlibxcb-shm.so.0 => /usr/lib64/libxcb-shm.so.0 (0x00007fb1ebbfc000)\n\tlibxcb-sync.so.1 => /usr/lib64/libxcb-sync.so.1 (0x00007fb1ea6df000)\n\tlibxcb.so.1 => /usr/lib64/libxcb.so.1 (0x00007fb1e9c57000)\n\tlibxcb-xfixes.so.0 => /usr/lib64/libxcb-xfixes.so.0 (0x00007fb1e9c4d000)\n\tlibKF6Notifications.so.6 => /usr/lib64/libKF6Notifications.so.6 (0x00007fb1e95b7000)\n\tlibgbm.so.1 => /usr/lib64/libgbm.so.1 (0x00007fb1e95b0000)\n\tlibinput.so.10 => /usr/lib64/libinput.so.10 (0x00007fb1e9543000)\n\tlibKWaylandClient.so.6 => /usr/lib64/libKWaylandClient.so.6 (0x00007fb1e8f33000)\n\tlibxcb-dri3.so.0 => /usr/lib64/libxcb-dri3.so.0 (0x00007fb1e953c000)\n\tlibxcb-present.so.0 => /usr/lib64/libxcb-present.so.0 (0x00007fb1ea6da000)\n\tlibxcb-xinput.so.0 => /usr/lib64/libxcb-xinput.so.0 (0x00007fb1e9516000)\n\tlibKF6ConfigGui.so.6 => /usr/lib64/libKF6ConfigGui.so.6 (0x00007fb1e94da000)\n\tlibdisplay-info.so.3 => /usr/lib64/libdisplay-info.so.3 (0x00007fb1e949e000)\n\tlibKF6Crash.so.6 => /usr/lib64/libKF6Crash.so.6 (0x00007fb1e948e000)\n\tlibKF6I18n.so.6 => /usr/lib64/libKF6I18n.so.6 (0x00007fb1e8eaa000)\n\tlibxcvt.so.0 => /usr/lib64/libxcvt.so.0 (0x00007fb1e9489000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fb1ee78a000)\n\tlibffi.so.8 => /usr/lib64/libffi.so.8 (0x00007fb1e8e9a000)\n\tlibKF6Solid.so.6 => /usr/lib64/libKF6Solid.so.6 (0x00007fb1e8d6f000)\n\tlibacl.so.1 => /usr/lib64/libacl.so.1 (0x00007fb1e8d62000)\n\tlibmount.so.1 => /usr/lib64/libmount.so.1 (0x00007fb1e8ce0000)\n\tlibQt6Xml.so.6 => /usr/lib64/libQt6Xml.so.6 (0x00007fb1e8cb5000)\n\tlibXfixes.so.3 => /usr/lib64/libXfixes.so.3 (0x00007fb1e8cad000)\n\tlibQt6QmlMeta.so.6 => /usr/lib64/libQt6QmlMeta.so.6 (0x00007fb1e8c81000)\n\tlibQt6QmlModels.so.6 => /usr/lib64/libQt6QmlModels.so.6 (0x00007fb1e8b4f000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007fb1e8a8e000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007fb1e8a73000)\n\tlibproxy.so.1 => /usr/lib64/libproxy.so.1 (0x00007fb1e8a6e000)\n\tlibcrypto.so.3 => /usr/lib64/libcrypto.so.3 (0x00007fb1e8400000)\n\tlibEGL.so.1 => /usr/lib64/libEGL.so.1 (0x00007fb1e8a57000)\n\tlibfontconfig.so.1 => /usr/lib64/libfontconfig.so.1 (0x00007fb1e8a05000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007fb1e82a5000)\n\tlibpng16.so.16 => /usr/lib64/libpng16.so.16 (0x00007fb1e89c8000)\n\tlibharfbuzz.so.0 => /usr/lib64/libharfbuzz.so.0 (0x00007fb1e8143000)\n\tlibmd4c.so.0 => /usr/lib64/libmd4c.so.0 (0x00007fb1e89b7000)\n\tlibfreetype.so.6 => /usr/lib64/libfreetype.so.6 (0x00007fb1e8067000)\n\tlibdbus-1.so.3 => /usr/lib64/libdbus-1.so.3 (0x00007fb1e8966000)\n\tlibGLdispatch.so.0 => /usr/lib64/libGLdispatch.so.0 (0x00007fb1e7fae000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007fb1e7c00000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007fb1e7800000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007fb1e894f000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007fb1e7fa4000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007fb1e7b5d000)\n\tlibKF6GuiAddons.so.6 => /usr/lib64/libKF6GuiAddons.so.6 (0x00007fb1e7aed000)\n\tlibKF6Archive.so.6 => /usr/lib64/libKF6Archive.so.6 (0x00007fb1e7f58000)\n\tlibXau.so.6 => /usr/lib64/libXau.so.6 (0x00007fb1e7f52000)\n\tlibXdmcp.so.6 => /usr/lib64/libXdmcp.so.6 (0x00007fb1e7f4a000)\n\tlibcanberra.so.0 => /usr/lib64/libcanberra.so.0 (0x00007fb1e7f37000)\n\tlibexpat.so.1 => /usr/lib64/libexpat.so.1 (0x00007fb1e7abe000)\n\tlibmtdev.so.1 => /usr/lib64/libmtdev.so.1 (0x00007fb1e7ab7000)\n\tlibevdev.so.2 => /usr/lib64/libevdev.so.2 (0x00007fb1e7a9f000)\n\tlibQt6WaylandClient.so.6 => /usr/lib64/libQt6WaylandClient.so.6 (0x00007fb1e76d0000)\n\tlibblkid.so.1 => /usr/lib64/libblkid.so.1 (0x00007fb1e7a3a000)\n\tlibsystemd.so.0 => /usr/lib64/libsystemd.so.0 (0x00007fb1e7400000)\n\tlibQt6QmlWorkerScript.so.6 => /usr/lib64/libQt6QmlWorkerScript.so.6 (0x00007fb1e7a23000)\n\tlibpxbackend-1.0.so => /usr/lib64/libproxy/libpxbackend-1.0.so (0x00007fb1e7a15000)\n\tlibgobject-2.0.so.0 => /usr/lib64/libgobject-2.0.so.0 (0x00007fb1e766a000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007fb1e734f000)\n\tlibgraphite2.so.3 => /usr/lib64/libgraphite2.so.3 (0x00007fb1e7643000)\n\tlibbz2.so.1 => /usr/lib64/libbz2.so.1 (0x00007fb1e762d000)\n\tlibbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x00007fb1e761e000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007fb1e5200000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007fb1e72f6000)\n\tliblzma.so.5 => /usr/lib64/liblzma.so.5 (0x00007fb1e72c4000)\n\tlibvorbisfile.so.3 => //usr/lib64/libvorbisfile.so.3 (0x00007fb1e7613000)\n\tlibltdl.so.7 => //usr/lib64/libltdl.so.7 (0x00007fb1e7607000)\n\tlibwayland-cursor.so.0 => /usr/lib64/libwayland-cursor.so.0 (0x00007fb1e72ba000)\n\tlibgio-2.0.so.0 => /usr/lib64/libgio-2.0.so.0 (0x00007fb1e5003000)\n\tlibbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00007fb1e7297000)\n\tlibvorbis.so.0 => /usr/lib64/libvorbis.so.0 (0x00007fb1e7266000)\n\tlibogg.so.0 => /usr/lib64/libogg.so.0 (0x00007fb1e725c000)\n\tlibgmodule-2.0.so.0 => /usr/lib64/libgmodule-2.0.so.0 (0x00007fb1e7255000)\n\tlibmvec.so.1 => /usr/lib64/libmvec.so.1 (0x00007fb1e4f09000)\n"
+      },
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/plugins/qindaqt-kwin/decorations/org.qindaqt.so": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/plugins/qindaqt-kwin/decorations/org.qindaqt.so",
+        "sha256": "06ac8358650b00561d95c09a0509a174337443744e3f8df3b2b5d67b0d304f30",
+        "bytes": 7750856,
+        "ldd": "\tlinux-vdso.so.1 (0x00007fbc07398000)\n\tlibKF6CoreAddons.so.6 => /usr/lib64/libKF6CoreAddons.so.6 (0x00007fbc071b3000)\n\tlibqindaqt-kwin-decorations.so.0 => /usr/lib64/libqindaqt-kwin-decorations.so.0 (0x00007fbc0717a000)\n\tlibQt6Widgets.so.6 => /usr/lib64/libQt6Widgets.so.6 (0x00007fbc06800000)\n\tlibQt6Gui.so.6 => /usr/lib64/libQt6Gui.so.6 (0x00007fbc05e00000)\n\tlibGLX.so.0 => /usr/lib64/libGLX.so.0 (0x00007fbc07144000)\n\tlibOpenGL.so.0 => /usr/lib64/libOpenGL.so.0 (0x00007fbc07119000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007fbc05600000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007fbc05200000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007fbc07004000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007fbc067d3000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007fbc05014000)\n\tlibQt6DBus.so.6 => /usr/lib64/libQt6DBus.so.6 (0x00007fbc066fd000)\n\tlibudev.so.1 => /usr/lib64/libudev.so.1 (0x00007fbc05c83000)\n\tlibmount.so.1 => /usr/lib64/libmount.so.1 (0x00007fbc0557e000)\n\tlibqindaqt-kwin-decorationsprivate.so.0 => /usr/lib64/libqindaqt-kwin-decorationsprivate.so.0 (0x00007fbc066f5000)\n\tlibKF6I18n.so.6 => /usr/lib64/libKF6I18n.so.6 (0x00007fbc054f5000)\n\tlibEGL.so.1 => /usr/lib64/libEGL.so.1 (0x00007fbc066de000)\n\tlibfontconfig.so.1 => /usr/lib64/libfontconfig.so.1 (0x00007fbc054a3000)\n\tlibX11.so.6 => /usr/lib64/libX11.so.6 (0x00007fbc04ec6000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007fbc04d6b000)\n\tlibxkbcommon.so.0 => /usr/lib64/libxkbcommon.so.0 (0x00007fbc04d0a000)\n\tlibpng16.so.16 => /usr/lib64/libpng16.so.16 (0x00007fbc04ccd000)\n\tlibharfbuzz.so.0 => /usr/lib64/libharfbuzz.so.0 (0x00007fbc04b6b000)\n\tlibmd4c.so.0 => /usr/lib64/libmd4c.so.0 (0x00007fbc05c72000)\n\tlibfreetype.so.6 => /usr/lib64/libfreetype.so.6 (0x00007fbc04a8f000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007fbc05c57000)\n\tlibGLdispatch.so.0 => /usr/lib64/libGLdispatch.so.0 (0x00007fbc049d6000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007fbc04600000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007fbc04200000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007fbc0453f000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007fbc0548c000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007fbc05c4d000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007fbc0449c000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fbc0739a000)\n\tlibdbus-1.so.3 => /usr/lib64/libdbus-1.so.3 (0x00007fbc04985000)\n\tlibblkid.so.1 => /usr/lib64/libblkid.so.1 (0x00007fbc04437000)\n\tlibsystemd.so.0 => /usr/lib64/libsystemd.so.0 (0x00007fbc03e00000)\n\tlibexpat.so.1 => /usr/lib64/libexpat.so.1 (0x00007fbc04956000)\n\tlibxcb.so.1 => /usr/lib64/libxcb.so.1 (0x00007fbc0440b000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007fbc0414f000)\n\tlibgraphite2.so.3 => /usr/lib64/libgraphite2.so.3 (0x00007fbc04128000)\n\tlibbz2.so.1 => /usr/lib64/libbz2.so.1 (0x00007fbc04940000)\n\tlibbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x00007fbc04119000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007fbc01e00000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007fbc040c0000)\n\tlibXau.so.6 => /usr/lib64/libXau.so.6 (0x00007fbc0493a000)\n\tlibXdmcp.so.6 => /usr/lib64/libXdmcp.so.6 (0x00007fbc040b8000)\n\tlibbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00007fbc04095000)\n"
+      },
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/session/qindaqt-wm": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/session/qindaqt-wm",
+        "sha256": "9a77e6e7f08d686e3a5a6f333dd0548dc9fdc9d6563546d558c0383da88d6487",
+        "bytes": 2757952,
+        "ldd": "\tlinux-vdso.so.1 (0x00007f295213c000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007f2951a00000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007f2951600000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007f29518eb000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007f29520b2000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007f2951414000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007f2951000000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007f2950c00000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007f2951353000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007f2950ea5000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007f2952095000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007f295207c000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007f2952072000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007f2950b5d000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f295213e000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007f294ea00000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007f2950aac000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007f2951892000)\n"
+      },
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/qindaqt-shell": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/qindaqt-shell",
+        "sha256": "6633b9d6554e9751bd0cadebff3862c8e6d35f677d5202d34fdb1529f48f091d",
+        "bytes": 295049224,
+        "ldd": "\tlinux-vdso.so.1 (0x00007f86e4d7e000)\n\tlibqindaqt_global_menu_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/global_menu/applet/libqindaqt_global_menu_qml.so (0x00007f86e4c46000)\n\tlibqindaqt_shell_launcher_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/desktop_controls/libqindaqt_shell_launcher_qml.so (0x00007f86e4b99000)\n\tlibqindaqt_start_menu_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/start_menu/libqindaqt_start_menu_qml.so (0x00007f86e36d7000)\n\tlibKF6GlobalAccel.so.6 => /usr/lib64/libKF6GlobalAccel.so.6 (0x00007f86e3670000)\n\tlibLayerShellQtInterface.so.6 => /usr/lib64/libLayerShellQtInterface.so.6 (0x00007f86e3657000)\n\tlibxkbcommon.so.0 => /usr/lib64/libxkbcommon.so.0 (0x00007f86e35f6000)\n\tlibQt6WaylandClient.so.6 => /usr/lib64/libQt6WaylandClient.so.6 (0x00007f86e34c6000)\n\tlibwayland-client.so.0 => /usr/lib64/libwayland-client.so.0 (0x00007f86e34b3000)\n\tlibwayland-cursor.so.0 => /usr/lib64/libwayland-cursor.so.0 (0x00007f86e34a9000)\n\tlibQt6Widgets.so.6 => /usr/lib64/libQt6Widgets.so.6 (0x00007f86e2c00000)\n\tlibQt6WebSockets.so.6 => /usr/lib64/libQt6WebSockets.so.6 (0x00007f86e3470000)\n\tlibqindaqt_controls_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/controls/libqindaqt_controls_qml.so (0x00007f86e2800000)\n\tlibqindaqt_tokens_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/design_tokens/libqindaqt_tokens_qml.so (0x00007f86e341c000)\n\tlibQt6QuickControls2.so.6 => /usr/lib64/libQt6QuickControls2.so.6 (0x00007f86e3402000)\n\tlibQt6Quick.so.6 => /usr/lib64/libQt6Quick.so.6 (0x00007f86e2000000)\n\tlibQt6OpenGL.so.6 => /usr/lib64/libQt6OpenGL.so.6 (0x00007f86e2b50000)\n\tlibQt6Qml.so.6 => /usr/lib64/libQt6Qml.so.6 (0x00007f86e1800000)\n\tlibQt6Network.so.6 => /usr/lib64/libQt6Network.so.6 (0x00007f86e1400000)\n\tlibQt6Svg.so.6 => /usr/lib64/libQt6Svg.so.6 (0x00007f86e1f56000)\n\tlibQt6Gui.so.6 => /usr/lib64/libQt6Gui.so.6 (0x00007f86e0a00000)\n\tlibQt6DBus.so.6 => /usr/lib64/libQt6DBus.so.6 (0x00007f86e1e80000)\n\tlibGLX.so.0 => /usr/lib64/libGLX.so.0 (0x00007f86e2b1c000)\n\tlibOpenGL.so.0 => /usr/lib64/libOpenGL.so.0 (0x00007f86e2af1000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007f86e0200000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007f86dfe00000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007f86e16eb000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007f86e16be000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007f86dfc14000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f86e4d80000)\n\tlibffi.so.8 => /usr/lib64/libffi.so.8 (0x00007f86e2ae1000)\n\tlibQt6QuickTemplates2.so.6 => /usr/lib64/libQt6QuickTemplates2.so.6 (0x00007f86df800000)\n\tlibQt6QmlMeta.so.6 => /usr/lib64/libQt6QmlMeta.so.6 (0x00007f86e1692000)\n\tlibQt6QmlModels.so.6 => /usr/lib64/libQt6QmlModels.so.6 (0x00007f86e08ce000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007f86e133f000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007f86e1677000)\n\tlibproxy.so.1 => /usr/lib64/libproxy.so.1 (0x00007f86e2ad8000)\n\tlibcrypto.so.3 => /usr/lib64/libcrypto.so.3 (0x00007f86df200000)\n\tlibEGL.so.1 => /usr/lib64/libEGL.so.1 (0x00007f86e1660000)\n\tlibfontconfig.so.1 => /usr/lib64/libfontconfig.so.1 (0x00007f86e160e000)\n\tlibX11.so.6 => /usr/lib64/libX11.so.6 (0x00007f86e00b2000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007f86df0a5000)\n\tlibpng16.so.16 => /usr/lib64/libpng16.so.16 (0x00007f86e1302000)\n\tlibharfbuzz.so.0 => /usr/lib64/libharfbuzz.so.0 (0x00007f86def43000)\n\tlibmd4c.so.0 => /usr/lib64/libmd4c.so.0 (0x00007f86e1e6f000)\n\tlibfreetype.so.6 => /usr/lib64/libfreetype.so.6 (0x00007f86dfb38000)\n\tlibdbus-1.so.3 => /usr/lib64/libdbus-1.so.3 (0x00007f86e087d000)\n\tlibGLdispatch.so.0 => /usr/lib64/libGLdispatch.so.0 (0x00007f86dee8a000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007f86dea00000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007f86de600000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007f86e12eb000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007f86e12e1000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007f86df75d000)\n\tlibQt6QmlWorkerScript.so.6 => /usr/lib64/libQt6QmlWorkerScript.so.6 (0x00007f86e0866000)\n\tlibpxbackend-1.0.so => /usr/lib64/libproxy/libpxbackend-1.0.so (0x00007f86e085a000)\n\tlibgobject-2.0.so.0 => /usr/lib64/libgobject-2.0.so.0 (0x00007f86dee24000)\n\tlibexpat.so.1 => /usr/lib64/libexpat.so.1 (0x00007f86e0083000)\n\tlibxcb.so.1 => /usr/lib64/libxcb.so.1 (0x00007f86dfb0c000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007f86ded73000)\n\tlibgraphite2.so.3 => /usr/lib64/libgraphite2.so.3 (0x00007f86dfae5000)\n\tlibbz2.so.1 => /usr/lib64/libbz2.so.1 (0x00007f86ded5d000)\n\tlibbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x00007f86e084b000)\n\tlibsystemd.so.0 => /usr/lib64/libsystemd.so.0 (0x00007f86de200000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007f86dc200000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007f86de9a7000)\n\tlibgio-2.0.so.0 => /usr/lib64/libgio-2.0.so.0 (0x00007f86dc003000)\n\tlibXau.so.6 => /usr/lib64/libXau.so.6 (0x00007f86e1608000)\n\tlibXdmcp.so.6 => /usr/lib64/libXdmcp.so.6 (0x00007f86e12d9000)\n\tlibbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00007f86ded3a000)\n\tlibgmodule-2.0.so.0 => /usr/lib64/libgmodule-2.0.so.0 (0x00007f86dfade000)\n\tlibmount.so.1 => /usr/lib64/libmount.so.1 (0x00007f86de925000)\n\tlibblkid.so.1 => /usr/lib64/libblkid.so.1 (0x00007f86de8c0000)\n"
+      },
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/qindaqt-shell-preview": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/qindaqt-shell-preview",
+        "sha256": "848e6351df5f3c04dc06411555704f891bc64604aad1ee5b056bdf6bd319d75a",
+        "bytes": 94988512,
+        "ldd": "\tlinux-vdso.so.1 (0x00007f8814715000)\n\tlibqindaqt_shell_launcher_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/desktop_controls/libqindaqt_shell_launcher_qml.so (0x00007f8813f53000)\n\tlibqindaqt_start_menu_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/start_menu/libqindaqt_start_menu_qml.so (0x00007f8813e2a000)\n\tlibqindaqt_global_menu_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/global_menu/applet/libqindaqt_global_menu_qml.so (0x00007f8813cfa000)\n\tlibQt6WebSockets.so.6 => /usr/lib64/libQt6WebSockets.so.6 (0x00007f8813cc1000)\n\tlibqindaqt_controls_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/controls/libqindaqt_controls_qml.so (0x00007f8813800000)\n\tlibqindaqt_tokens_qml.so => /home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/design_tokens/libqindaqt_tokens_qml.so (0x00007f8813c6d000)\n\tlibQt6QuickControls2.so.6 => /usr/lib64/libQt6QuickControls2.so.6 (0x00007f8813c53000)\n\tlibQt6Quick.so.6 => /usr/lib64/libQt6Quick.so.6 (0x00007f8813000000)\n\tlibQt6OpenGL.so.6 => /usr/lib64/libQt6OpenGL.so.6 (0x00007f8813ba3000)\n\tlibQt6Qml.so.6 => /usr/lib64/libQt6Qml.so.6 (0x00007f8812800000)\n\tlibQt6Network.so.6 => /usr/lib64/libQt6Network.so.6 (0x00007f8812400000)\n\tlibQt6Svg.so.6 => /usr/lib64/libQt6Svg.so.6 (0x00007f8813af9000)\n\tlibQt6Gui.so.6 => /usr/lib64/libQt6Gui.so.6 (0x00007f8811a00000)\n\tlibQt6DBus.so.6 => /usr/lib64/libQt6DBus.so.6 (0x00007f8812f2a000)\n\tlibGLX.so.0 => /usr/lib64/libGLX.so.0 (0x00007f8812ef6000)\n\tlibOpenGL.so.0 => /usr/lib64/libOpenGL.so.0 (0x00007f8813ace000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007f8811200000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007f8810e00000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007f88126eb000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007f8812ec9000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007f8810c14000)\n\tlibQt6QuickTemplates2.so.6 => /usr/lib64/libQt6QuickTemplates2.so.6 (0x00007f8810800000)\n\tlibQt6QmlMeta.so.6 => /usr/lib64/libQt6QmlMeta.so.6 (0x00007f8812e9d000)\n\tlibQt6QmlModels.so.6 => /usr/lib64/libQt6QmlModels.so.6 (0x00007f88118ce000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f8814717000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007f881262a000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007f8812e82000)\n\tlibproxy.so.1 => /usr/lib64/libproxy.so.1 (0x00007f8812e7d000)\n\tlibcrypto.so.3 => /usr/lib64/libcrypto.so.3 (0x00007f8810200000)\n\tlibEGL.so.1 => /usr/lib64/libEGL.so.1 (0x00007f8812613000)\n\tlibfontconfig.so.1 => /usr/lib64/libfontconfig.so.1 (0x00007f88123ae000)\n\tlibX11.so.6 => /usr/lib64/libX11.so.6 (0x00007f88110b2000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007f88100a5000)\n\tlibxkbcommon.so.0 => /usr/lib64/libxkbcommon.so.0 (0x00007f881234d000)\n\tlibpng16.so.16 => /usr/lib64/libpng16.so.16 (0x00007f8812310000)\n\tlibharfbuzz.so.0 => /usr/lib64/libharfbuzz.so.0 (0x00007f880ff43000)\n\tlibmd4c.so.0 => /usr/lib64/libmd4c.so.0 (0x00007f88122ff000)\n\tlibfreetype.so.6 => /usr/lib64/libfreetype.so.6 (0x00007f8810b38000)\n\tlibdbus-1.so.3 => /usr/lib64/libdbus-1.so.3 (0x00007f881187d000)\n\tlibGLdispatch.so.0 => /usr/lib64/libGLdispatch.so.0 (0x00007f880fe8a000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007f880fa00000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007f880f600000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007f88122e8000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007f8812e73000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007f881075d000)\n\tlibQt6QmlWorkerScript.so.6 => /usr/lib64/libQt6QmlWorkerScript.so.6 (0x00007f8811866000)\n\tlibpxbackend-1.0.so => /usr/lib64/libproxy/libpxbackend-1.0.so (0x00007f8812607000)\n\tlibgobject-2.0.so.0 => /usr/lib64/libgobject-2.0.so.0 (0x00007f880fe24000)\n\tlibexpat.so.1 => /usr/lib64/libexpat.so.1 (0x00007f8811083000)\n\tlibxcb.so.1 => /usr/lib64/libxcb.so.1 (0x00007f8810b0c000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007f880fd73000)\n\tlibgraphite2.so.3 => /usr/lib64/libgraphite2.so.3 (0x00007f8810ae5000)\n\tlibbz2.so.1 => /usr/lib64/libbz2.so.1 (0x00007f8811850000)\n\tlibbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x00007f88122d9000)\n\tlibsystemd.so.0 => /usr/lib64/libsystemd.so.0 (0x00007f880f200000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007f880d200000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007f880f9a7000)\n\tlibgio-2.0.so.0 => /usr/lib64/libgio-2.0.so.0 (0x00007f880d003000)\n\tlibffi.so.8 => /usr/lib64/libffi.so.8 (0x00007f881074d000)\n\tlibXau.so.6 => /usr/lib64/libXau.so.6 (0x00007f8810adf000)\n\tlibXdmcp.so.6 => /usr/lib64/libXdmcp.so.6 (0x00007f8810ad7000)\n\tlibbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00007f880fd50000)\n\tlibgmodule-2.0.so.0 => /usr/lib64/libgmodule-2.0.so.0 (0x00007f880fd49000)\n\tlibmount.so.1 => /usr/lib64/libmount.so.1 (0x00007f880f925000)\n\tlibblkid.so.1 => /usr/lib64/libblkid.so.1 (0x00007f880f8c0000)\n"
+      },
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-session-probe": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-session-probe",
+        "sha256": "e94477aee46cfa0525ce98b48e2e99a6d881f9c43309144fed26f36c59be27b2",
+        "bytes": 8473688,
+        "ldd": "\tlinux-vdso.so.1 (0x00007fa955081000)\n\tlibQt6Gui.so.6 => /usr/lib64/libQt6Gui.so.6 (0x00007fa954600000)\n\tlibQt6DBus.so.6 => /usr/lib64/libQt6DBus.so.6 (0x00007fa95452a000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007fa953e00000)\n\tlibGLX.so.0 => /usr/lib64/libGLX.so.0 (0x00007fa954f6e000)\n\tlibOpenGL.so.0 => /usr/lib64/libOpenGL.so.0 (0x00007fa954f41000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007fa953a00000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007fa953ceb000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007fa954f14000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007fa953814000)\n\tlibEGL.so.1 => /usr/lib64/libEGL.so.1 (0x00007fa954efd000)\n\tlibfontconfig.so.1 => /usr/lib64/libfontconfig.so.1 (0x00007fa9544d8000)\n\tlibX11.so.6 => /usr/lib64/libX11.so.6 (0x00007fa9536c6000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007fa95356b000)\n\tlibxkbcommon.so.0 => /usr/lib64/libxkbcommon.so.0 (0x00007fa954477000)\n\tlibpng16.so.16 => /usr/lib64/libpng16.so.16 (0x00007fa953cae000)\n\tlibharfbuzz.so.0 => /usr/lib64/libharfbuzz.so.0 (0x00007fa953409000)\n\tlibmd4c.so.0 => /usr/lib64/libmd4c.so.0 (0x00007fa954ee8000)\n\tlibfreetype.so.6 => /usr/lib64/libfreetype.so.6 (0x00007fa95332d000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007fa95445c000)\n\tlibdbus-1.so.3 => /usr/lib64/libdbus-1.so.3 (0x00007fa9532dc000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007fa952e00000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007fa952a00000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007fa95321b000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007fa953c97000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007fa954edc000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007fa953178000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fa955083000)\n\tlibGLdispatch.so.0 => /usr/lib64/libGLdispatch.so.0 (0x00007fa952d47000)\n\tlibexpat.so.1 => /usr/lib64/libexpat.so.1 (0x00007fa953149000)\n\tlibxcb.so.1 => /usr/lib64/libxcb.so.1 (0x00007fa952d1b000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007fa952c6a000)\n\tlibgraphite2.so.3 => /usr/lib64/libgraphite2.so.3 (0x00007fa952c43000)\n\tlibbz2.so.1 => /usr/lib64/libbz2.so.1 (0x00007fa952c2d000)\n\tlibbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x00007fa95444b000)\n\tlibsystemd.so.0 => /usr/lib64/libsystemd.so.0 (0x00007fa952600000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007fa950600000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007fa9529a7000)\n\tlibXau.so.6 => /usr/lib64/libXau.so.6 (0x00007fa953c91000)\n\tlibXdmcp.so.6 => /usr/lib64/libXdmcp.so.6 (0x00007fa953c87000)\n\tlibbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00007fa952c0a000)\n"
+      },
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-shell-surface-session-probe": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-shell-surface-session-probe",
+        "sha256": "28a0059cbf2823f470112e0ef2571f2855cd653112525ce42c708b004dfaef5a",
+        "bytes": 2535632,
+        "ldd": "\tlinux-vdso.so.1 (0x00007f2e78399000)\n\tlibQt6Gui.so.6 => /usr/lib64/libQt6Gui.so.6 (0x00007f2e77a00000)\n\tlibGLX.so.0 => /usr/lib64/libGLX.so.0 (0x00007f2e782fb000)\n\tlibOpenGL.so.0 => /usr/lib64/libOpenGL.so.0 (0x00007f2e779d5000)\n\tlibQt6Core.so.6 => /usr/lib64/libQt6Core.so.6 (0x00007f2e77200000)\n\tlibstdc++.so.6 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libstdc++.so.6 (0x00007f2e76e00000)\n\tlibm.so.6 => /usr/lib64/libm.so.6 (0x00007f2e778c0000)\n\tlibgcc_s.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgcc_s.so.1 (0x00007f2e77893000)\n\tlibc.so.6 => /usr/lib64/libc.so.6 (0x00007f2e76c14000)\n\tlibEGL.so.1 => /usr/lib64/libEGL.so.1 (0x00007f2e782e2000)\n\tlibfontconfig.so.1 => /usr/lib64/libfontconfig.so.1 (0x00007f2e771ae000)\n\tlibX11.so.6 => /usr/lib64/libX11.so.6 (0x00007f2e76ac6000)\n\tlibglib-2.0.so.0 => /usr/lib64/libglib-2.0.so.0 (0x00007f2e7696b000)\n\tlibQt6DBus.so.6 => /usr/lib64/libQt6DBus.so.6 (0x00007f2e770d8000)\n\tlibxkbcommon.so.0 => /usr/lib64/libxkbcommon.so.0 (0x00007f2e7690a000)\n\tlibpng16.so.16 => /usr/lib64/libpng16.so.16 (0x00007f2e77856000)\n\tlibharfbuzz.so.0 => /usr/lib64/libharfbuzz.so.0 (0x00007f2e767a8000)\n\tlibmd4c.so.0 => /usr/lib64/libmd4c.so.0 (0x00007f2e770c7000)\n\tlibfreetype.so.6 => /usr/lib64/libfreetype.so.6 (0x00007f2e766cc000)\n\tlibz.so.1 => /usr/lib64/libz.so.1 (0x00007f2e770ac000)\n\tlibGLdispatch.so.0 => /usr/lib64/libGLdispatch.so.0 (0x00007f2e76613000)\n\tlibicui18n.so.78 => /usr/lib64/libicui18n.so.78 (0x00007f2e76200000)\n\tlibicuuc.so.78 => /usr/lib64/libicuuc.so.78 (0x00007f2e75e00000)\n\tlibzstd.so.1 => /usr/lib64/libzstd.so.1 (0x00007f2e76552000)\n\tlibdouble-conversion.so.3 => /usr/lib64/libdouble-conversion.so.3 (0x00007f2e77095000)\n\tlibb2.so.1 => /usr/lib64/libb2.so.1 (0x00007f2e7784c000)\n\tlibpcre2-16.so.0 => /usr/lib64/libpcre2-16.so.0 (0x00007f2e7615d000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f2e7839b000)\n\tlibexpat.so.1 => /usr/lib64/libexpat.so.1 (0x00007f2e7612e000)\n\tlibxcb.so.1 => /usr/lib64/libxcb.so.1 (0x00007f2e76102000)\n\tlibpcre2-8.so.0 => /usr/lib64/libpcre2-8.so.0 (0x00007f2e76051000)\n\tlibdbus-1.so.3 => /usr/lib64/libdbus-1.so.3 (0x00007f2e75daf000)\n\tlibgraphite2.so.3 => /usr/lib64/libgraphite2.so.3 (0x00007f2e7602a000)\n\tlibbz2.so.1 => /usr/lib64/libbz2.so.1 (0x00007f2e7653c000)\n\tlibbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x00007f2e77084000)\n\tlibicudata.so.78 => /usr/lib64/libicudata.so.78 (0x00007f2e73e00000)\n\tlibgomp.so.1 => /usr/lib/gcc/x86_64-pc-linux-gnu/15/libgomp.so.1 (0x00007f2e73da7000)\n\tlibXau.so.6 => /usr/lib64/libXau.so.6 (0x00007f2e76024000)\n\tlibXdmcp.so.6 => /usr/lib64/libXdmcp.so.6 (0x00007f2e7601c000)\n\tlibsystemd.so.0 => /usr/lib64/libsystemd.so.0 (0x00007f2e73a00000)\n\tlibbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00007f2e73d84000)\n"
+      }
+    },
+    "errors": []
+  },
+  "cleanup": {
+    "artifact_sha256_unchanged": {
+      "/usr/bin/qindaqt-kwin": true,
+      "/usr/include/qindaqt-kwin/config-kwin.h": true,
+      "/usr/lib64/cmake/QindaQtKWin/QindaQtKWinConfigVersion.cmake": true,
+      "/usr/lib64/libqindaqt-kwin.so": true,
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/plugins/qindaqt-kwin/plugins/qindaqt_compositor.so": true,
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/plugins/qindaqt-kwin/decorations/org.qindaqt.so": true,
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/session/qindaqt-wm": true,
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/qindaqt-shell": true,
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/src/shell/qindaqt-shell-preview": true,
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-session-probe": true,
+      "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-manager-power-integration-20261001/build/dev/tests/session/qindaqt-shell-surface-session-probe": true
+    },
+    "owned_process_groups_survivors": [],
+    "core_files": []
+  },
+  "gates": {
+    "configure": {
+      "exit_code": 0,
+      "elapsed_seconds": 58.23609006899642
+    },
+    "focused13targets_build": {
+      "exit_code": 0,
+      "elapsed_seconds": 301.1271670049755,
+      "minimum_available_bytes": 11310542848,
+      "memory_guard_stopped": false
+    },
+    "original_static": {
+      "status": {
+        "exit_code": 8,
+        "elapsed_seconds": 14.368439790036064
+      },
+      "passed": 2,
+      "failed": 1,
+      "failure": "fresh child empty libexec violates installed fixed authority path"
+    },
+    "private_plugin": {
+      "status": {
+        "exit_code": 0,
+        "elapsed_seconds": 5.582459534052759
+      },
+      "ctest_pass": 1,
+      "setup_failure_preserved": "plugin.log missing private machine-id"
+    },
+    "profile_package_resolver_dock": {
+      "ctest_pass": 7,
+      "first_five_status": {
+        "exit_code": 8,
+        "elapsed_seconds": 1.4723648919607513
+      },
+      "two_dock_utf8_corrected_status": {
+        "exit_code": 0,
+        "elapsed_seconds": 2.847566812997684
+      },
+      "fatal_warning_policy_unchanged": true
+    },
+    "production_shell_surface": {
+      "status": {
+        "exit_code": 0,
+        "elapsed_seconds": 34.64383011299651
+      },
+      "ctest_pass": 3,
+      "resolutions": [
+        "1920x1080",
+        "1920x1200",
+        "2560x1440"
+      ]
+    },
+    "offscreen_capture": {
+      "status": {
+        "exit_code": 0,
+        "elapsed_seconds": 25.43118183698971
+      },
+      "ctest_pass": 1,
+      "qt_pass": 42,
+      "qt_failed": 0,
+      "qt_skipped": 0,
+      "data_rows": 40,
+      "profiles": 11
+    },
+    "staged_discovery": {
+      "status": {
+        "exit_code": 8,
+        "elapsed_seconds": 5.436809078033548
+      },
+      "unavailable": "complete tree DESTDIR blocked by unbuilt unrelated Keyring.qmltypes; no broad rebuild requested"
+    },
+    "dependency_layout_replay": {
+      "status": {
+        "exit_code": 1,
+        "elapsed_seconds": 97.3620303759817
+      },
+      "failure": "pluginOFF+testingON exposes missing ordinary QtGui clipboard test target; successor16a pending root review"
+    }
+  },
+  "passed_unique_ctests": 14,
+  "evidence_root": "build/installed-native-qa-final",
+  "evidence_files": {
+    "artifact-preflight.json": {
+      "sha256": "4368393f476dfe0c11cd7dbfb10716a3317b4f6a0f150d13a056dea723f118a6",
+      "bytes": 51582
+    },
+    "build-command.json": {
+      "sha256": "472f8bd5db769d03082487aef33d9499bc2f4a84d022a68e92860459803f9500",
+      "bytes": 729
+    },
+    "build-dryrun.log": {
+      "sha256": "b32d304f37f0496bff4beb854c689c95799251df38482fbd973a92515e0cf01b",
+      "bytes": 105
+    },
+    "build-pgid.json": {
+      "sha256": "6ba325b47050ee28153b364581ad5900a9337f1d7fa78375536bee5efa1519ca",
+      "bytes": 34
+    },
+    "build-status.json": {
+      "sha256": "ed129368689eb4f322b9819ab6e91afab6b754fca69f63e7f9653e40ee03c30d",
+      "bytes": 136
+    },
+    "build.log": {
+      "sha256": "0e1fc65f66fff00ce2d917216e8b2e0ab024167ce2ab53b18377c6ec0ceffe35",
+      "bytes": 29387
+    },
+    "configure-command.json": {
+      "sha256": "2aa5371369f6f0479fa6e58c229794f3427c4df6b7a33b3235cff8054217f560",
+      "bytes": 844
+    },
+    "configure-status.json": {
+      "sha256": "a30d19411a02ad453575485f63b8441cc5f23e5abfad148391eb46206c1e46e7",
+      "bytes": 61
+    },
+    "configure.log": {
+      "sha256": "0a2d9ca29975f2d1ac423a1e01e57e9f892988d1148d9243880a56af66715197",
+      "bytes": 911678
+    },
+    "dependency-corrected-command.json": {
+      "sha256": "4883727c2a1c389502ff913c52030d32b82e4ca53210ab39509ed1cc6697cce2",
+      "bytes": 875
+    },
+    "dependency-corrected-status.json": {
+      "sha256": "af720c19fa02adf2414cd6718dc82e6b26225a5bfbf998ef629929b73e5c49d9",
+      "bytes": 60
+    },
+    "dependency-corrected.log": {
+      "sha256": "31434a2ecc903ba81bf63fe8ec1c4804c455cbaab12c8d08cda32c7a642943b3",
+      "bytes": 599083
+    },
+    "discovery-command.json": {
+      "sha256": "6561363a8f386e14b882ea8b228233104752d9982cda97871e8b63ce5f475337",
+      "bytes": 2903
+    },
+    "discovery-pgid.json": {
+      "sha256": "0f3b6fc57046bc7ef4009cb8b842302556848227496cfe467668fd1f8130f403",
+      "bytes": 34
+    },
+    "discovery-status.json": {
+      "sha256": "e55fe350b935fffedb3789c41061594b58b1522ce5f7b659fc1ff0c09a54f33a",
+      "bytes": 61
+    },
+    "discovery.log": {
+      "sha256": "1cf76bdc5eca98e3163a3145049f9bb00580d677f3e16314bb22b53793840394",
+      "bytes": 165495
+    },
+    "dock-utf8-command.json": {
+      "sha256": "103369786acef82406cb5c03922563106f379de5c75b9f689781d878939bbcca",
+      "bytes": 3073
+    },
+    "dock-utf8-status.json": {
+      "sha256": "445da196fc52a30e777832300f7bda7914be53f649ddb7d5d95a9c44c6218d5b",
+      "bytes": 61
+    },
+    "dock-utf8.log": {
+      "sha256": "cf03ec806db8808b3bc133705e081aa7f61f1dba5f5475b39fc1004e1a249422",
+      "bytes": 744
+    },
+    "interim-cleanup.json": {
+      "sha256": "c8e8f88ad6e6ea814fcdbc5e19e1fa3121706fd16063a752ca3f2e4b24ac804a",
+      "bytes": 1331
+    },
+    "plugin-command.json": {
+      "sha256": "b26dd2097782a8ac0dcb55f4f3f6add896264a28e36c9a76b03933a1c8365970",
+      "bytes": 2506
+    },
+    "plugin-machine-id-command.json": {
+      "sha256": "c853ac88bbad702a064cf14c64687b23245b8bcbdca96d12327c9300dc23db56",
+      "bytes": 2811
+    },
+    "plugin-machine-id-pgid.json": {
+      "sha256": "306ed085b735cb1dca94529007e56fd064dddfca9df14ab8d158bf37d5e86024",
+      "bytes": 34
+    },
+    "plugin-machine-id-status.json": {
+      "sha256": "c1f8581b2c0636593692739ab32bce564e864c3438390fa14b06096cf7d121eb",
+      "bytes": 61
+    },
+    "plugin-machine-id.log": {
+      "sha256": "9c192f823b10ef826ec8448ce8aa3d74c3ee1b52d53045829326e8c0cdd6bf26",
+      "bytes": 411
+    },
+    "plugin-pgid.json": {
+      "sha256": "e273cd1c3936749a9fa2dadf56735b18ad554b24b5fdc156cef03d829a244730",
+      "bytes": 34
+    },
+    "plugin-status.json": {
+      "sha256": "5727c0eabf7f5fa23f96f37258277155c2c027ebe80f9fed60ea31001bda0929",
+      "bytes": 62
+    },
+    "plugin.log": {
+      "sha256": "c844d07cd8e6768a592359cc2438cc4936e215af8c06a0ab4fd91fed200341e3",
+      "bytes": 1887
+    },
+    "profile-dock-command.json": {
+      "sha256": "444bd0440050b3f40494519a294eab3fc8910f6d152a5e92f8374c0332c70e7a",
+      "bytes": 3096
+    },
+    "profile-dock-status.json": {
+      "sha256": "15ca74e25f4980fe8ed7697967b466822e9d2ea11b0085fe63473e1e0ad3a45c",
+      "bytes": 62
+    },
+    "profile-dock.log": {
+      "sha256": "2aa15dcbd9124987ae932ed6f8bbc9107e3aabbd40a71c8a7198e551eab6b518",
+      "bytes": 2439
+    },
+    "shell-capture-command.json": {
+      "sha256": "d8dec67db52dc4b3034228961d7ccfec393d508cdd652b7eac4c027b55801a75",
+      "bytes": 3127
+    },
+    "shell-capture-lasttest.log": {
+      "sha256": "5f3484aadf7832952bc2529c8d5de5a4fee0a9c864dcbc0649303ebe89e6f5d1",
+      "bytes": 4392
+    },
+    "shell-capture-status.json": {
+      "sha256": "1e5cf8aae5dbae6a609ebd697bb60d38a3b47ca632526b743cc40e1dfe614036",
+      "bytes": 61
+    },
+    "shell-capture.log": {
+      "sha256": "0a8f22989ba36cf6ee2b1a584dfcc2abd6567bc9f7447c0fe8d1e559be3ef2e5",
+      "bytes": 307
+    },
+    "shell-surface-command.json": {
+      "sha256": "a759453604f6ca4284a6a65c5d6a588de9196661ed4cfd0ae2d56f9dd411da49",
+      "bytes": 2904
+    },
+    "shell-surface-status.json": {
+      "sha256": "7db49bfb56938ca400eb3e4ca157ac7a6de30dc805618138af0d154bef35ef27",
+      "bytes": 61
+    },
+    "shell-surface.log": {
+      "sha256": "3f9f5551d4964a04570da3508d455e63405f5881604c5a1b1e754cf83e887335",
+      "bytes": 777
+    },
+    "static-command.json": {
+      "sha256": "c3f32ed4741e7879e049d7127cef65a9beaddddbf0ab528781c88461e6a5101d",
+      "bytes": 350
+    },
+    "static-status.json": {
+      "sha256": "46acf33734ebab5ad1041f935d6bf427180f15803f9e40a77812ba0774bb69d9",
+      "bytes": 62
+    },
+    "static.log": {
+      "sha256": "b29e7cd0bb839819e5fd9e820b74b53a00cebaa784e283482a78fc89887e7109",
+      "bytes": 8306
+    }
+  },
+  "limits": [
+    "Existing private plugin/surface uses QPainter/software; no AMD/physical session claim.",
+    "Never-hidden shell fixture proves publication/placement, not intelligent dock hide/reveal.",
+    "Switcher package checks and upstream ShowTabBox=false AltTab receipt do not prove visible main popup.",
+    "Actual Portage Desktop package launcher discovery pending install; failed whole-tree staged setup retained.",
+    "No production source or package mutation; test-only fixes preserve authority path checks.",
+    "Native/compiler leases released; no laptop/host devices/buses touched."
+  ]
+}

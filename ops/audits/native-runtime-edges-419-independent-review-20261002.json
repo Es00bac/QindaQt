@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "independent_of": "pf_capture_privacy_coverage",
+  "candidate": "419e33021ef3ebd3b2e75fe62a5b7c73718b9e09",
+  "previous_source_accepted": "851e2c0f6ae434128db517946b5f391101d3b674",
+  "decision": "SOURCE ACCEPT",
+  "blocking_findings": [],
+  "verified": {
+    "exit_code": 0,
+    "elapsed_seconds": 0.43144738604314625,
+    "originals": [
+      {
+        "original_path": "/var/db/pkg/app-misc/claude-desktop-bin-1.49585.0/claude-desktop-bin-1.49585.0.ebuild",
+        "original_sha256": "4dc5d6181331d3cb03118d4278800d7d5b6a0830fae1508805cc0e4dda1266f9",
+        "candidate_path": "app-misc/claude-desktop-bin/claude-desktop-bin-1.49585.0-r1.ebuild",
+        "candidate_sha256": "f6be2e2bd94885bf4ab055d140e750db04a52cc685ce92b056aa8f68e2df8bcd"
+      },
+      {
+        "original_path": "/var/db/pkg/app-crypt/pinentry-1.3.2-r1/pinentry-1.3.2-r1.ebuild",
+        "original_sha256": "f17f2cedec7a556e8b4d4d084ea3faa39ece4b3318978443f0aedc3220254536",
+        "candidate_path": "app-crypt/pinentry/pinentry-1.3.2-r2.ebuild",
+        "candidate_sha256": "71f8de00d7df06e53adc65f1f2c0bc3bd5049349d98e6886b1f41babb15a8727"
+      },
+      {
+        "original_path": "/var/db/pkg/virtual/secret-service-0-r1/secret-service-0-r1.ebuild",
+        "original_sha256": "1003b129f23194b402f976afd954a4c4ef696fbdfac09edc23e47b8293cdc7df",
+        "candidate_path": "virtual/secret-service/secret-service-0-r3.ebuild",
+        "candidate_sha256": "b755441e97fc702d8b3d5cb151b9e8477d9a201dedad19ef5354d69bbfe69de4"
+      }
+    ],
+    "fresh_metadata_packages": 6,
+    "fresh_metadata_matches_author": true,
+    "preserved_launcher_sha256": "ece753e323e2b08f74ee381e684c77e392be16fee30a9d71e8c4d8a753af5f89",
+    "initial_setup_failure": "reviewer guessed /opt launcher path; VDB CONTENTS and recipe prove /usr/bin/claude-desktop, actual bytes match"
+  },
+  "exact_snapshot_test": {
+    "exit_code": 0,
+    "elapsed_seconds": 0.4543941940064542,
+    "test_script_sha256": "f087108a5cf55154deee19c494e4eff463697be67bec02cc72a33f19944cd27f",
+    "snapshot_commit": "419e33021ef3ebd3b2e75fe62a5b7c73718b9e09"
+  },
+  "provenance": {
+    "app-misc/claude-desktop-bin": {
+      "manifest_sha256": "6f0573699a724a2fb49081a0fed464e247e69be181f57fb4e86704b068de9543",
+      "original_dist_rows_identical": true,
+      "archive_available": true,
+      "archive": {
+        "path": "/var/cache/distfiles/claude-desktop-bin-1.49585.0_amd64.deb",
+        "sha256": "e0b4ce6313943a69e9bd61749a293bfca241b4dfb37f88df6411b4b69ec67a40",
+        "bytes": 170566964,
+        "manifest_digests_match": true
+      }
+    },
+    "app-crypt/pinentry": {
+      "manifest_sha256": "95c2a2ec639bfbad3b961fd44512ba71b5e1c2b27df70b34c560331d27713791",
+      "original_dist_rows_identical": true,
+      "archive_available": true,
+      "archive": {
+        "path": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/pinentry-1.3.2.tar.bz2",
+        "sha256": "8e986ed88561b4da6e9efe0c54fa4ca8923035c99264df0b0464497c5fb94e9e",
+        "bytes": 612858,
+        "manifest_digests_match": true
+      }
+    },
+    "author_uncommitted_successor_excluded": true
+  },
+  "semantics": [
+    "Claude defaultOFFqindaqt nativebranch uses Desktop-r2 plus supportedtrash-cli; preserveslibsecret/vendor/wrapper/stockoriginalORs.",
+    "Pinentry-r2 changes only GTK hardcodedGNOMEdaemon to genericsecretvirtual; GCR/libsecretcache/configure/patches unchanged.",
+    "Secretvirtual-r3 stockbranch byte-derived installedr1 originalproviders, defaultOFFnativebranch requiresDesktop-r2; currentGentoor2 extraChipass was not installedr1 base.",
+    "Nativeprofile enables only Claude+Secretvirtual qindaqt flags beyond accepted851."
+  ],
+  "author_resolver_receipt": {
+    "path": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/claude-native-secret-selected-graph.json",
+    "sha256": "d6adc0a1921a63ac5197c1837b94ad67631f6e1bca252c9ebaed2066d8f0721b",
+    "success": true,
+    "retired_runtime_nodes": [
+      "kde-plasma/kwayland-6.6.6",
+      "kde-plasma/layer-shell-qt-6.6.6"
+    ],
+    "runtime_cycles_recorded": 535,
+    "independently_rerun": false
+  },
+  "evidence": {
+    "independent-provenance.json": {
+      "sha256": "786084c4f0ac6e04778b2afaa7a0a63b792253a61f9210da7e448bad7f06cad6",
+      "bytes": 959
+    },
+    "kauth-6.27.0.tar.xz": {
+      "sha256": "741934765f0c9f1c535598203fbad3f1b97231cc683a218a7f39fab948c13eab",
+      "bytes": 2273648
+    },
+    "exact419-status.json": {
+      "sha256": "e3dacf637dffcb1ac20dc70284d87a8837395b01888ecf3f36eb83426d16a5c8",
+      "bytes": 219
+    },
+    "kirigami-addons-1.12.1.tar.xz": {
+      "sha256": "c543a493ce5875f405fb1c9ff6d531060ed082cc6d710e56d46ac42d164207bb",
+      "bytes": 2815592
+    },
+    "pinentry-1.3.2-r2.ebuild.diff": {
+      "sha256": "cccc207a5c5f9767d44999959ce08b18193affe20ea5a58067b41ed5c0d59626",
+      "bytes": 334
+    },
+    "ten-tests.log": {
+      "sha256": "b7f06d24ecb931feb90fc9be33b9d5de81ff1307428711ead8a52bdf633cae0d",
+      "bytes": 1549
+    },
+    "secret-service-0-r3.ebuild.diff": {
+      "sha256": "ac9a0c3e0b09f2554469d4da880c08746b928abc729a3407b87abcfc276b7b35",
+      "bytes": 657
+    },
+    "exact419-ten-tests.log": {
+      "sha256": "99db917db950597fbbff742e9fe9384d268e03a3dcdd56ae8b2520aa36a0dc94",
+      "bytes": 1549
+    },
+    "metadata.json": {
+      "sha256": "ab57d9b1eff6f7b990ab63eafeb3e605a74f5ef28a88c11f62b7d629d0ca4806",
+      "bytes": 9192
+    },
+    "status.json": {
+      "sha256": "0ab63fe484679cd8e5cc3dd88779fe53a7c3971edaade233e2fa0ebefca271dd",
+      "bytes": 1532
+    },
+    "kdeconnect-kde-26.04.3.tar.xz": {
+      "sha256": "505b58b52630a662a8f6a2c50c58eda1de66779762c31d5ea5247b48bba52561",
+      "bytes": 691476
+    },
+    "claude-desktop-bin-1.49585.0-r1.ebuild.diff": {
+      "sha256": "dce1e0ea4ba2bde21d6d90922c92c293fdba47a9e6ffa146b6f5edec2c302597",
+      "bytes": 1281
+    }
+  },
+  "limits": [
+    "AuthoruncommittedPinentry1.3.3 successor excluded from exact419 snapshot and acceptance.",
+    "No build/install/nativeapp prompt/SecretService registration/credentialmigration acceptance.",
+    "Runtimeprovider cycles are recorded; not inferred build-order defect or acyclicgraph.",
+    "ColdKAuth6.27 availability caveat from851 remains."
+  ]
+}
