@@ -11,6 +11,7 @@
 #include <qindaqt/services/portal/process_capture.h>
 #include <qindaqt/services/portal/screenshot_adaptor.h>
 #include <qindaqt/services/portal/screencast_adaptor.h>
+#include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
 #include <qindaqt/application_catalog/application_directory_scan.h>
 namespace QindaQt::Services::Portal {
@@ -26,6 +27,7 @@ public:
     PowerIdleInhibition idle;
     std::unique_ptr<QindaQt::Apps::SettingsDefaultApps::DefaultApplicationsStore> store;
     QindaQt::Services::ApplicationUri::DefaultApplicationUriOpener uri;
+    RemoteInput::CompositorEis eis;
     // AGENT-GUARD: Adaptors are destroyed before every borrowed port/store.
     // Their QObject host parent is independent ownership, removed on deletion.
     std::unique_ptr<AccessAdaptor> access;
@@ -36,6 +38,7 @@ public:
     std::unique_ptr<AppChooserAdaptor> appChooser;
     std::unique_ptr<ScreenshotAdaptor> screenshot;
     std::unique_ptr<ScreenCastAdaptor> screencast;
+    std::unique_ptr<RemoteInput::RemoteDesktopAdaptor> remoteDesktop;
     Private(QObject &host, QDBusConnection bus, QString runtime, QString helper,
         QString relay, const QStringList &roots,
         QindaQt::ApplicationCatalog::DirectoryScan scan, QString chooserHelper, QString captureHelper)
@@ -47,6 +50,7 @@ public:
           uri(*store, std::move(scan), std::move(relay),
               [this](quint64 token) { return requests.live(token) && consent.admitted(); },
               [this] { return session.openDisplay(); }),
+          eis(bus, [this] { return session.compositorOwner(); }),
           access(std::make_unique<AccessAdaptor>(host, requests, consent)),
           notification(std::make_unique<NotificationAdaptor>(host, requests, notifications, bus)),
           inhibit(std::make_unique<InhibitAdaptor>(host, requests, idle, bus)),
@@ -57,7 +61,8 @@ public:
                   QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay);
           }, bus)),
           screenshot(std::make_unique<ScreenshotAdaptor>(host, requests, capture)),
-          screencast(std::make_unique<ScreenCastAdaptor>(host, requests, capture, bus)) {
+          screencast(std::make_unique<ScreenCastAdaptor>(host, requests, capture, bus)),
+          remoteDesktop(std::make_unique<RemoteInput::RemoteDesktopAdaptor>(host, requests, consent, eis, bus)) {
         QObject::connect(&consent, &AccessConsent::authorityLost, &requests, [this] {
             requests.retireAll(); idle.revoke();
         });
