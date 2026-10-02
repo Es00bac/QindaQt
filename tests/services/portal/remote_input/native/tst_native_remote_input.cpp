@@ -5,6 +5,7 @@
 // libei only; no host bus, input device, display or clipboard is touched.
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/services/portal/appearance_source.h>
+#include <qindaqt/services/portal/session_binding.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <qindaqt/services/session_lock_state/native_lock_state_monitor.h>
 #include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
@@ -21,7 +22,7 @@
 #include <QScopeGuard>
 #include <QUuid>
 #include <QtTest>
-#include <libei.h>
+#include "ei_peer.h"
 #include <linux/input-event-codes.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -36,49 +37,6 @@ public:
     QString diagnostic() const override { return {}; }
 private:
     std::optional<AppearanceTruth> empty;
-};
-// libei peer driven from QTRY expressions; never touches host devices.
-struct Ei {
-    Ei(bool sender, int fd) : context(sender ? ei_new_sender(nullptr) : ei_new_receiver(nullptr)) {
-        ei_configure_name(context, "qindaqt-native-remote-input");
-        ok = ei_setup_backend_fd(context, fd) == 0;
-    }
-    ~Ei() {
-        for (auto *device : std::as_const(devices)) ei_device_unref(device);
-        ei_unref(context);
-    }
-    bool pump() {
-        ei_dispatch(context);
-        while (auto *event = ei_get_event(context)) {
-            const auto type = ei_event_get_type(event);
-            seen << type;
-            if (type == EI_EVENT_SEAT_ADDED)
-                ei_seat_bind_capabilities(ei_event_get_seat(event), EI_DEVICE_CAP_POINTER, EI_DEVICE_CAP_POINTER_ABSOLUTE,
-                                          EI_DEVICE_CAP_KEYBOARD, EI_DEVICE_CAP_BUTTON, EI_DEVICE_CAP_SCROLL, nullptr);
-            else if (type == EI_EVENT_DEVICE_ADDED) devices << ei_device_ref(ei_event_get_device(event));
-            else if (type == EI_EVENT_DEVICE_RESUMED) resumed << ei_event_get_device(event);
-            else if (type == EI_EVENT_KEYBOARD_KEY && ei_event_keyboard_get_key_is_press(event)) keys << ei_event_keyboard_get_key(event);
-            ei_event_unref(event);
-        }
-        return true;
-    }
-    ei_device *device(ei_device_capability capability) const {
-        for (auto *candidate : devices)
-            if (resumed.contains(candidate) && ei_device_has_capability(candidate, capability)) return candidate;
-        return nullptr;
-    }
-    void emulate(ei_device *device, const std::function<void()> &events) {
-        if (!started.contains(device)) { ei_device_start_emulating(device, ++sequence); started << device; }
-        events();
-        ei_device_frame(device, ei_now(context));
-    }
-    bool disconnected() { pump(); return seen.contains(EI_EVENT_DISCONNECT); }
-    ei *context;
-    bool ok = false;
-    QList<ei_event_type> seen;
-    QList<ei_device *> devices, resumed, started;
-    QList<uint32_t> keys;
-    uint32_t sequence = 0;
 };
 class Collector final : public QObject {
     Q_OBJECT
@@ -125,9 +83,15 @@ private Q_SLOTS:
         // AGENT-GUARD: wait for the real ordinary session caller's public
         // attachment reply. Starting an asynchronous supervisor retry is not
         // evidence that consent has an admitted display/lock authority yet.
-        auto attach = QDBusMessage::createMethodCall(QStringLiteral("org.qindaqt.Portal1"),
-            QStringLiteral("/org/qindaqt/Portal1"), QStringLiteral("org.qindaqt.Portal1"), QStringLiteral("AttachSessionWithDisplay"));
-        attach << QStringLiteral("qindaqt-7");
+        // Final mode uses the same real protected broker as capture tests;
+        // resident setup above supplies Access only, never EIS admission.
+        if (protectedBroker) QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered(
+            QStringLiteral("org.freedesktop.impl.portal.desktop.qindaqt.capture")).value(), 10000);
+        auto attach = QDBusMessage::createMethodCall(
+            protectedBroker ? QLatin1String(kNativeCapturePortalService) : QLatin1String(kNativePortalService),
+            protectedBroker ? QLatin1String(kNativeCapturePortalPath) : QLatin1String(kNativePortalPath),
+            QStringLiteral("org.qindaqt.Portal1"), QStringLiteral("AttachSessionWithDisplay"));
+        attach << display;
         auto pendingAttach = sessionCaller->asyncCall(attach, 2000);
         QTRY_VERIFY_WITH_TIMEOUT(pendingAttach.isFinished(), 3000);
         const QDBusReply<bool> attached(pendingAttach.reply());
@@ -135,7 +99,7 @@ private Q_SLOTS:
         QVERIFY2(attached.value(), "Actual compositor/session attachment was denied");
         QindaQt::Platform::Compositor::CompositorAttachment attachment(*sessionCaller,
             qEnvironmentVariable("XDG_RUNTIME_DIR"), [&](const QString &owner) { return owner == sessionCaller->baseService(); });
-        QVERIFY(attachment.attach(sessionCaller->baseService(), QStringLiteral("qindaqt-7")));
+        QVERIFY(attachment.attach(sessionCaller->baseService(), display));
         QindaQt::Services::SessionLockState::QtNativeLockTransport lockTransport(*sessionCaller);
         QindaQt::Services::SessionLockState::NativeLockStateMonitor lockMonitor(lockTransport,
             [&](const QString &owner, quint64 pid) {
@@ -185,7 +149,7 @@ private Q_SLOTS:
                  QVariantMap{{QStringLiteral("handle_token"), QStringLiteral("ic1_zones")}}}, "ic1_zones");
         QCOMPARE(zones.first, 0U);
         const uint zoneSet = zones.second.value(QStringLiteral("zone_set")).toUInt();
-        QDBusArgument position; position.beginStructure(); position << 0 << 0 << 0 << 759; position.endStructure();
+        QDBusArgument position; position.beginStructure(); position << 0 << 0 << 0 << (protectedBroker ? 819 : 759); position.endStructure();
         const QList<QVariantMap> barriers{{{QStringLiteral("barrier_id"), 1U}, {QStringLiteral("position"), QVariant::fromValue(position)}}};
         const auto set = response("org.freedesktop.portal.InputCapture", "SetPointerBarriers", {QVariant::fromValue(QDBusObjectPath(ic)),
                  QVariantMap{{QStringLiteral("handle_token"), QStringLiteral("ic1_barriers")}}, QVariant::fromValue(barriers), zoneSet}, "ic1_barriers");
@@ -354,6 +318,8 @@ private:
         QFile file(qEnvironmentVariable("QINDAQT_PORTAL_TEST_AUDIT"));
         return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray{};
     }
+    const bool protectedBroker = qEnvironmentVariableIsSet("QINDAQT_NATIVE_INPUT_PROTECTED_BROKER");
+    const QString display = protectedBroker ? QStringLiteral("qindaqt-8") : QStringLiteral("qindaqt-7");
     QDBusConnection bus = QDBusConnection::sessionBus();
     std::unique_ptr<QDBusConnection> backend;
     EmptyAppearance appearance;

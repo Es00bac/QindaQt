@@ -22,6 +22,10 @@ fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selecti
 plugin_prefix = pathlib.Path(sys.argv[12]).resolve()
 if plugin_prefix != compositor.resolve().parent or not (plugin_prefix / "qindaqt-kwin/plugins").is_dir():
     sys.exit("private native driver requires its matching built plugin prefix")
+for artifact in (fixture, helper, compositor, consent, relay, exporter, pixels, metadata, selection, broker, qualified_support_program):
+    if not artifact.is_file(): sys.exit("required native artifact unavailable: " + str(artifact))
+    if artifact not in (metadata, selection) and not os.access(artifact, os.X_OK):
+        sys.exit("required native executable unavailable: " + str(artifact))
 if not compositor.is_file():
     print("qualified private compositor unavailable")
     sys.exit(77)
@@ -33,9 +37,15 @@ groups = [
     ["nativeLockStopsActualStreamPendingCaptureAndRetainedFile"],
     ["compositorLossWithdrawsStreamsFilesAndPendingPublication"],
     ["explicitTwoMonitorBatchClosesEveryProducer"],
+    ["combinedRemoteDesktopSharesFramesClipboardAndCloses"],
+    ["combinedNativeLockRetiresFramesAndInput"],
+    ["explicitRememberRestoresProtectedSelection"],
 ]
-# A bounded diagnostic selects unchanged Qt assertions. Only all eight cases
-# qualify the selected renderer; a selected case never means full coverage.
+# A bounded diagnostic selects the existing fixture's exact assertions.
+# Input cases reuse this real broker/core setup with the input fixture artifact;
+# they are not part of the capture fixture's all-case matrix.
+input_cases = {"remoteDesktopCaptureAndClipboardJourney", "nativeLockEndsRemoteDesktop"}
+# A selected case never means full capture or input coverage.
 options = {}
 for index in range(13, len(sys.argv), 2):
     key, value = sys.argv[index:index + 2]
@@ -46,7 +56,7 @@ renderer = options.get("--renderer", "llvmpipe")
 if renderer not in ("llvmpipe", "render-node"):
     sys.exit("unknown native capture renderer")
 if "--case" in options:
-    if options["--case"] not in {case for group in groups for case in group}:
+    if options["--case"] not in ({case for group in groups for case in group} | input_cases):
         sys.exit("unknown native capture diagnostic case")
     groups = [[options["--case"]]]
 if renderer == "render-node":
@@ -95,20 +105,23 @@ for group in groups:
             DBUS_SYSTEM_BUS_ADDRESS="unix:path=" + str(root / "no-system-bus"), QT_QPA_PLATFORM="wayland",
             QT_QUICK_BACKEND="software", KWIN_COMPOSE="O2", LIBGL_ALWAYS_SOFTWARE="1", QT_STYLE_OVERRIDE="Fusion", QT_FATAL_WARNINGS="1",
             QINDAQT_CAPTURE_TEST_HELPER=str(helper), QINDAQT_PORTAL_TEST_HELPER=str(consent), QINDAQT_PORTAL_TEST_RELAY=str(relay),
-            QINDAQT_CAPTURE_TEST_AUDIT=str(runtime / "qindaqt-capture.audit"), QINDAQT_CAPTURE_TEST_PIXELS=str(pixels), QINDAQT_PORTAL_FOREIGN_EXPORTER=str(exporter), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
+            QINDAQT_CAPTURE_TEST_AUDIT=str(runtime / "qindaqt-capture.audit"), QINDAQT_CAPTURE_TEST_PIXELS=str(pixels), QINDAQT_PORTAL_FOREIGN_EXPORTER=str(exporter), QINDAQT_PORTAL_TEST_MODE="grant-choices",
+            QINDAQT_PORTAL_TEST_AUDIT=str(root/"consent.audit"), XDG_DATA_DIRS=str(root / "empty-data"), XDG_CONFIG_DIRS=str(root / "empty-config"),
             PIPEWIRE_REMOTE="pipewire-capture", PIPEWIRE_RUNTIME_DIR=str(runtime))
         env["QINDAQT_CAPTURE_TEST_RENDERER"] = renderer
+        if any(case in input_cases for case in group):
+            env["QINDAQT_NATIVE_INPUT_PROTECTED_BROKER"] = "1"
         if renderer == "llvmpipe":
             env.update(MESA_LOADER_DRIVER_OVERRIDE="swrast", GALLIUM_DRIVER="llvmpipe")
         else:
             env["LIBGL_ALWAYS_SOFTWARE"] = "0"
         portals = root / "portals"
         portals.mkdir()
-        # Only this task-owned overlay selects the capture-only service. The
-        # production metadata/selector remains KDE until all actual gates pass.
+        # This private overlay selects the same final protected five-family
+        # composition; it neither installs routes nor grants native admission.
         (portals / "qindaqt-access.portal").write_text("[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Access;\nUseIn=qindaqt;\n")
-        (portals / "qindaqt-capture.portal").write_text("[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt.capture\nInterfaces=org.freedesktop.impl.portal.Screenshot;org.freedesktop.impl.portal.ScreenCast;\nUseIn=qindaqt;\n")
-        (portals / "qindaqt-portals.conf").write_text("[preferred]\ndefault=none\norg.freedesktop.impl.portal.Access=qindaqt-access\norg.freedesktop.impl.portal.Screenshot=qindaqt-capture\norg.freedesktop.impl.portal.ScreenCast=qindaqt-capture\n")
+        (portals / "qindaqt-capture.portal").write_text("[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt.capture\nInterfaces=org.freedesktop.impl.portal.Screenshot;org.freedesktop.impl.portal.ScreenCast;org.freedesktop.impl.portal.RemoteDesktop;org.freedesktop.impl.portal.InputCapture;org.freedesktop.impl.portal.Clipboard;\nUseIn=qindaqt;\n")
+        (portals / "qindaqt-portals.conf").write_text("[preferred]\ndefault=none\norg.freedesktop.impl.portal.Access=qindaqt-access\norg.freedesktop.impl.portal.Screenshot=qindaqt-capture\norg.freedesktop.impl.portal.ScreenCast=qindaqt-capture\norg.freedesktop.impl.portal.RemoteDesktop=qindaqt-capture\norg.freedesktop.impl.portal.InputCapture=qindaqt-capture\norg.freedesktop.impl.portal.Clipboard=qindaqt-capture\n")
         (portals / "portals.conf").write_text("[preferred]\ndefault=none\n")
         env.update(XDG_CURRENT_DESKTOP="qindaqt", XDG_DESKTOP_PORTAL_DIR=str(portals))
         applications = root / "data/applications"
@@ -157,6 +170,11 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             if not select.select([bus.stdout], [], [], 5)[0]:
                 raise RuntimeError("private broker unavailable")
             env["DBUS_SESSION_BUS_ADDRESS"] = bus.stdout.readline().decode().strip()
+            if "explicitRememberRestoresProtectedSelection" in group:
+                store = pathlib.Path("/usr/libexec/xdg-permission-store")
+                if not store.is_file() or not os.access(store, os.X_OK): raise RuntimeError("actual private PermissionStore executable unavailable")
+                env["QINDAQT_CAPTURE_REAL_PERMISSION_STORE"] = "1"
+                children.append(subprocess.Popen([str(store)], env=env, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
             cache = subprocess.Popen(["kbuildsycoca6", "--noincremental"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
             children.append(cache)
             if cache.wait(timeout=30):
@@ -245,7 +263,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             # requests are archived under runtime by the caller's reset().
             for snapshot in runtime.glob("qindaqt-capture-observed.png"):
                 shutil.copyfile(snapshot, evidence / snapshot.name)
-            for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]),
+            for audit in (pathlib.Path(env["QINDAQT_CAPTURE_TEST_AUDIT"]), pathlib.Path(env["QINDAQT_PORTAL_TEST_AUDIT"]),
                           runtime / "qindaqt-capture-history.audit", runtime / "native-renderer.audit",
                           runtime / "producer-frame.audit", runtime / "producer-stderr.audit",
                           runtime / "producer-lifecycle.audit"):
