@@ -52,10 +52,14 @@ ScreenCast source capabilities are monitor1 and Hidden1/Embedded2/Metadata4
 cursor modes. Multiple selections are explicit and bounded to sixteen monitors;
 the helper freezes the selected IDs before permission is granted and publishes
 the batch only after every producer node is ready. Failure of one stream closes
-the whole batch. SelectSources explicitly rejects window/virtual source types,
-invalid or combined cursor-mode values,
-restore tokens and persistence options. No unsupported version4/5 token or mapping
-claims are made. Native source selection lists actual compositor monitors, with
+the whole batch. SelectSources explicitly rejects window/virtual source types
+and invalid or combined cursor-mode values. It accepts the standard
+`persist_mode` (0–2) and `(suv)` `restore_data` that the frontend forwards
+(OBS always sends `persist_mode`), validates them and persists nothing: Start
+never returns `restore_data`, so the frontend keeps persistence at none and
+issues no token. SelectSources for a RemoteDesktop session goes to that
+session's owner ([remote input](../architecture/portal-remote-input.md)).
+No unsupported version4/5 token or mapping claims are made. Native source selection lists actual compositor monitors, with
 no default selection; a user must select offered screens and press Share.
 Screenshot requires Allow; PickColor then requires a real pixel selection. A
 mapped Stop sharing action remains while a stream runs. Standard frontend
