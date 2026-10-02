@@ -42,5 +42,6 @@ private:
     QString m_idleCause, m_lidCause, m_lidCaller, m_lidId, m_guarding;
     quint64 m_lidEpoch = 0, m_guardSerial = 0;
     bool m_lidDelivered = false;
+    std::optional<bool> m_lastPreference;
 };
 }
