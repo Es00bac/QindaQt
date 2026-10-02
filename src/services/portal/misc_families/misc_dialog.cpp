@@ -11,6 +11,8 @@
 #include <QJsonArray>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QUrl>
+#include <QScrollArea>
 MiscDialog::MiscDialog(QJsonObject frame) : m_frame(std::move(frame)) {
     setWindowTitle(m_frame.value("title").toString()); setObjectName(QStringLiteral("portalMiscWindow"));
     setWindowModality(m_frame.value("modal").toBool(true) ? Qt::ApplicationModal : Qt::NonModal);
@@ -22,16 +24,29 @@ MiscDialog::MiscDialog(QJsonObject frame) : m_frame(std::move(frame)) {
     if (kind == "account") {
         addText(m_frame.value("reason").toString());
         for (const auto *key : {"id", "name", "image"}) {
-            auto *box = new QCheckBox(QString::fromLatin1(key) + QStringLiteral(": ") + m_frame.value(key).toString());
+            const QString label = QByteArray(key) == "id" ? tr("User name: %1").arg(m_frame.value(key).toString())
+                : QByteArray(key) == "name" ? tr("Full name: %1").arg(m_frame.value(key).toString()) : tr("Share profile picture");
+            auto *box = new QCheckBox(label);
+            if (QByteArray(key) == "image") {
+                QImageReader avatar(QUrl(m_frame.value(key).toString()).toLocalFile()); avatar.setAllocationLimit(64);
+                const auto size = avatar.size();
+                if (size.isValid() && size.width() <= 4096 && size.height() <= 4096) {
+                    const auto image = avatar.read();
+                    if (!image.isNull()) { auto *preview = new QLabel; preview->setPixmap(QPixmap::fromImage(image).scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation)); layout->addWidget(preview); }
+                }
+            }
             box->setObjectName(QString::fromLatin1(key)); box->setChecked(true); boxes.append(box); layout->addWidget(box);
         }
     } else if (kind == "usb") {
         addText(tr("Select the devices this application may acquire."));
+        auto *scroll = new QScrollArea; auto *list = new QWidget; auto *deviceLayout = new QVBoxLayout(list);
+        scroll->setWidgetResizable(true); scroll->setWidget(list); layout->addWidget(scroll);
         for (const auto &value : m_frame.value("devices").toArray()) {
             const auto device = value.toObject();
             auto *box = new QCheckBox(device.value("label").toString() + (device.value("writable").toBool() ? tr(" (read and write)") : tr(" (read only)")));
-            box->setObjectName(device.value("id").toString()); box->setChecked(true); boxes.append(box); layout->addWidget(box);
+            box->setObjectName(device.value("id").toString()); box->setChecked(true); boxes.append(box); deviceLayout->addWidget(box);
         }
+        scroll->setMinimumHeight(120); scroll->setMaximumHeight(420);
     } else if (kind == "launcher") {
         QByteArray bytes = QByteArray::fromBase64(m_frame.value("icon").toString().toLatin1());
         QBuffer buffer(&bytes); buffer.open(QIODevice::ReadOnly); QImageReader reader(&buffer); reader.setAllocationLimit(64);

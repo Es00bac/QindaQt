@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QDBusMetaType>
 #include <QSet>
+#include <QRegularExpression>
 namespace QindaQt::Services::Portal {
 std::optional<QJsonArray> usbDevicesFrame(const UsbDevices &devices) {
     if (devices.isEmpty() || devices.size() > 64) return {};
@@ -20,8 +21,18 @@ std::optional<QJsonArray> usbDevicesFrame(const UsbDevices &devices) {
             properties = qdbus_cast<QVariantMap>(argument);
         } else if (value.metaType() == QMetaType::fromType<QVariantMap>()) properties = value.toMap();
         else if (value.isValid()) return {};
-        QString label = properties.value("ID_MODEL_FROM_DATABASE", properties.value("ID_MODEL", id)).toString();
-        if (!boundedText(label, 1024)) return {};
+        auto identity = [&properties](const char *database, const char *encoded, const char *numeric) {
+            QString text = properties.value(database, properties.value(encoded, properties.value(numeric))).toString();
+            if (!boundedText(text, 1024)) return QString{};
+            const QRegularExpression hex(QStringLiteral(R"(\\x([\da-fA-F]{2}))"));
+            auto matches = hex.globalMatch(text); QList<QRegularExpressionMatch> found;
+            while (matches.hasNext()) found.append(matches.next());
+            for (auto match = found.crbegin(); match != found.crend(); ++match) text.replace(match->capturedStart(), match->capturedLength(), QChar(match->captured(1).toUShort(nullptr, 16)));
+            return boundedText(text, 1024) ? text : QString{};
+        };
+        const QString model = identity("ID_MODEL_FROM_DATABASE", "ID_MODEL_ENC", "ID_MODEL_ID");
+        const QString vendor = identity("ID_VENDOR_FROM_DATABASE", "ID_VENDOR_ENC", "ID_VENDOR_ID");
+        const QString label = (vendor + QLatin1Char(' ') + model).trimmed() + QStringLiteral(" [%1]").arg(id);
         result.append(QJsonObject{{"id", id}, {"label", label}, {"writable", options.value("writable", false).toBool()}});
     }
     return result;
