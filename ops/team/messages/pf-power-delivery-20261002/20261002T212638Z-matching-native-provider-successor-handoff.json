@@ -1,0 +1,438 @@
+{
+  "timestamp": "2026-10-02T21:26:38Z",
+  "candidate": "f5a45e904e93f246d2e1d684f1d8e73f993db46b",
+  "base": "419e33021ef3ebd3b2e75fe62a5b7c73718b9e09",
+  "pinentry_source": {
+    "original_sha256": "3ee9339480d997443a1ab5a742c7025f624c3054881588e784a8de22119d716d",
+    "candidate_sha256": "3c4b552e5b50a40f622879b039174f3b3b463db5db8ec3cca4fda6f4b7ff5cbe",
+    "archive": {
+      "url": "https://gnupg.org/ftp/gcrypt/pinentry/pinentry-1.3.3.tar.bz2",
+      "bytes": 620687,
+      "sha256": "c2970f16d6afb66ecddfca767d743936c86239bff936eed7fd7597a678414b63",
+      "original_dist_both_checksums_match": true
+    },
+    "syntax_exit": 0
+  },
+  "qinda_build_dependency_gate": {
+    "candidate": "f5a45e904e93f246d2e1d684f1d8e73f993db46b",
+    "timestamp": "2026-10-02T21:25:57.884005+00:00",
+    "method": "actual Portage dep_check for DEPEND/BDEPEND/IDEPEND versus qinda installed VDB at task-private candidate profile; no install/compile",
+    "packages": {
+      "kde-frameworks/kauth-6.27.0-r1": {
+        "qinda_USE": [
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "kernel_linux",
+          "policykit"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "dev-libs/kirigami-addons-1.12.1-r1": {
+        "qinda_USE": [
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "kernel_linux"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "kde-misc/kdeconnect-26.04.3-r4": {
+        "qinda_USE": [
+          "X",
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "kernel_linux",
+          "pulseaudio"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "kde-frameworks/kio-6.27.0-r1": {
+        "qinda_USE": [
+          "X",
+          "abi_x86_64",
+          "acl",
+          "amd64",
+          "elibc_glibc",
+          "kernel_linux",
+          "kwallet",
+          "wayland"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "x11-misc/xdg-utils-1.2.1-r11": {
+        "qinda_USE": [
+          "X",
+          "abi_x86_64",
+          "amd64",
+          "dbus",
+          "elibc_glibc",
+          "kernel_linux"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "media-gfx/sloom-studio-bin-0.9.16": {
+        "qinda_USE": [
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "kernel_linux"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "lxqt-base/lxqt-config-2.4.0": {
+        "qinda_USE": [
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "kernel_linux",
+          "touchpad"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "kde-apps/kio-extras-26.04.3": {
+        "qinda_USE": [
+          "X",
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "kernel_linux",
+          "libproxy",
+          "man",
+          "sftp"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "kde-apps/gwenview-26.04.3": {
+        "qinda_USE": [
+          "X",
+          "abi_x86_64",
+          "amd64",
+          "annotate",
+          "elibc_glibc",
+          "kernel_linux",
+          "mpris"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "app-misc/claude-desktop-bin-1.49585.0-r1": {
+        "qinda_USE": [
+          "abi_x86_64",
+          "amd64",
+          "cowork",
+          "elibc_glibc",
+          "kernel_linux",
+          "qindaqt"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "app-crypt/pinentry-1.3.2-r2": {
+        "qinda_USE": [
+          "X",
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "gtk",
+          "kernel_linux",
+          "ncurses",
+          "qt6",
+          "wayland"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "app-crypt/pinentry-1.3.3-r1": {
+        "qinda_USE": [
+          "X",
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "gtk",
+          "kernel_linux",
+          "ncurses",
+          "qt6",
+          "wayland"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      },
+      "virtual/secret-service-0-r3": {
+        "qinda_USE": [
+          "abi_x86_64",
+          "amd64",
+          "elibc_glibc",
+          "kernel_linux",
+          "qindaqt"
+        ],
+        "checks": {
+          "DEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "BDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          },
+          "IDEPEND": {
+            "parsed": true,
+            "missing_installed_atoms": []
+          }
+        }
+      }
+    }
+  },
+  "host_targets": {
+    "qinda": [
+      "kde-frameworks/kauth-6.27.0-r1",
+      "dev-libs/kirigami-addons-1.12.1-r1",
+      "kde-misc/kdeconnect-26.04.3-r4",
+      "kde-frameworks/kio-6.27.0-r1",
+      "x11-misc/xdg-utils-1.2.1-r11",
+      "media-gfx/sloom-studio-bin-0.9.16",
+      "lxqt-base/lxqt-config-2.4.0",
+      "kde-apps/kio-extras-26.04.3",
+      "kde-apps/gwenview-26.04.3",
+      "app-misc/claude-desktop-bin-1.49585.0-r1",
+      "app-crypt/pinentry-1.3.2-r2",
+      "virtual/secret-service-0-r3",
+      "x11-misc/sddm-0.21.0_p20250502-r2"
+    ],
+    "qinda-top": [
+      "kde-frameworks/kauth-6.27.0-r1",
+      "dev-libs/kirigami-addons-1.12.1-r1",
+      "kde-frameworks/kio-6.27.0-r1",
+      "x11-misc/xdg-utils-1.2.1-r11",
+      "media-gfx/sloom-studio-bin-0.9.16",
+      "kde-apps/kio-extras-26.04.3",
+      "app-misc/claude-desktop-bin-1.49585.0-r1",
+      "app-crypt/pinentry-1.3.3-r1",
+      "virtual/secret-service-0-r3",
+      "x11-misc/sddm-0.21.0_p20250502-r2"
+    ]
+  },
+  "commands": {
+    "standalone_build_only_after_review_grant": [
+      "emerge",
+      "--ignore-default-opts",
+      "--buildpkgonly",
+      "--nodeps",
+      "--oneshot",
+      "--verbose",
+      "--autounmask=n",
+      "--autounmask-write=n",
+      "=EXACT_CPV"
+    ],
+    "host_pretend_after_integrated_profile_and_recipe_review": [
+      "emerge",
+      "--ignore-default-opts",
+      "--pretend",
+      "--verbose",
+      "--oneshot",
+      "--newuse",
+      "--with-bdeps=n",
+      "--dynamic-deps=n",
+      "--autounmask=n",
+      "--autounmask-write=n",
+      "EXACT_HOST_TARGETS"
+    ]
+  },
+  "source_checks": {
+    "tests": 10,
+    "both_pinentry_subcases": true,
+    "exit": 0,
+    "reported_seconds": 0.315,
+    "syntax": 0,
+    "diffcheck": 0
+  },
+  "evidence": {
+    "pinentry-laptop-source-receipt.json": {
+      "bytes": 447,
+      "sha256": "2a1312191cb2de995770cedd0ab5ed6278dd044c94a9bf1d6400d59239e3a811"
+    },
+    "pinentry-laptop-build-dependency-check.json": {
+      "bytes": 440,
+      "sha256": "58a0cab61d4d6487ae67da22f7607e1d831764026fd2d695ecf3bfdbc69b5be1"
+    },
+    "all-matching-build-dependency-check.json": {
+      "bytes": 7017,
+      "sha256": "b582c059423008f058abe00964f6b68c453ace95b7129ff3fdd0a6ef29e8b1fb"
+    },
+    "tests-secret-provider-laptop.log": {
+      "bytes": 3637,
+      "sha256": "5af1d139f501de54bfdd6056cbe707251b7cd091eb0ef00faf8edd76eaa2906a"
+    },
+    "tests-secret-provider-laptop-corrected.log": {
+      "bytes": 1549,
+      "sha256": "6c148dfd6489f3ac14917609450bea0c9c134c0379a162456f200e82dfcb69e1"
+    },
+    "metadata.json": {
+      "bytes": 10916,
+      "sha256": "fbba3c9e91804c113ec8cb24002bea23f219a5afe66e836d97c6a0ca6acb8de0"
+    }
+  },
+  "caveats": [
+    "No build/install/host profile/world mutation.",
+    "SDDM-r2 is root-owned separate178c7cc2198ad15e04ababc87998717655b147d0; own successor only adds profile flag; its review/builddeps separate.",
+    "13 distinct package build dependencies checked against qinda installed VDB with zero missing; combined twohost union14 incl root SDDM remains pending its gate.",
+    "Pinentry slot0 versions must be built in separate independent commands; do not install qinda oldversion on laptop.",
+    "Actual nine-target pretend formerlyPASS; expanded host plans presented commands not actual expanded solver receipts.",
+    "Ordinary runtime graph cycles are accepted by targeted actual Portage resolver, no no-cycle assertion.",
+    "Preserved first laptop test ERROR for invalid comment token inside RDEPEND, fixed source comment placement; no test weakening.",
+    "Binary file ownership transition and actual native provider registration remain root gates; live credentials/processes untouched."
+  ]
+}
