@@ -187,6 +187,7 @@ nav:
       - Voice: apps/voice.md
       - Settings Voice route: apps/voice-settings.md
       - Passwords & Keys Settings route: apps/keyring-settings.md
+      - Portal permissions: apps/portal-permissions-settings.md
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
       - QindaLutris: apps/qindalutris.md
@@ -509,6 +510,7 @@ nav:
       - "ADR-0300: Authenticate native PAM token delivery through the system owner": adr/0300-trusted-native-keyring-pam.md
 
       - "ADR-0302: Native Passwords & Keys client and prompt policy": adr/0302-native-passwords-keys-client-and-policy.md
+      - "ADR-0339: Frontend PermissionStore Settings revocation": adr/0339-use-frontend-permission-store-for-settings-revocation.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md
       - "ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor": adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md
