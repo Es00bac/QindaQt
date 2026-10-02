@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: working — installed55d/plugin29f private plugin and shell QA; two narrowly reviewed test graph repairs
+- Status: available — bounded installed55d/plugin29f QA receipt preserved; awaiting exact fixture review and signedDesktop discovery
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: granted2compilerjobs/load24/6GiBguard plus sole private native lease; root signeddesktop8job build concurrent
+- Resource: compiler and private native/GPU lease released; no active child; signedDesktop install remains manager-owned
 
 ## Updates
 
@@ -84,3 +84,5 @@
 - 2026-10-02T21:14:12.698538+00:00 — Installed55d ABI two PASS; dependency fixture blocked by child empty libexec. Preserved first failure, requested narrow fixture fix. Focused13-target build PASS; beginning unchanged private plugin runtime gate, sole native lease retained.
 
 - 2026-10-02T21:18:29.704558+00:00 — Private nested plugin PASS5.582s; profile/package/resolver/dock7 PASS. Staged discovery blocked by unrelated unbuilt Settings QML types; actual installed runner awaits signedDesktop. Layout fixture repaired installed guard then exposed conditional standalone clipboard target; test-only successor ready for exact root review. Shell three-resolution runtime active.
+
+- 2026-10-02T21:20:10.834343+00:00 — Actual installed55d/plugin29f private compositor PASS; three production-shell resolutions PASS; focused profile/package/resolver/dock7 PASS; offscreen capture40data/42Qt PASS.14unique CTests pass. Artifact hashes11 unchanged, owned PGID survivors/core files empty. Preserved five first failures. Released native lease; actual signedDesktop discovery and reviewed16a dependency replay remain pending, no whole-release/visible-popup/intelligent-hide claim.
