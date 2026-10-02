@@ -4,7 +4,7 @@
 compositor and plugins, real frontend. A staged coherent prefix is also accepted. No host
 bus, input, display, clipboard or activation directory is used.
 Args: fixture consent_helper staged_compositor candidate_eis_plugin_dir"""
-import os, pathlib, resource, select, subprocess, sys, tempfile, time
+import os, pathlib, resource, select, signal, subprocess, sys, tempfile, time
 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 fixture, helper, compositor, candidate = map(pathlib.Path, sys.argv[1:5])
 if not compositor.is_file() or not (candidate / "qindaqt-kwin/plugins/eis.so").is_file():
@@ -40,8 +40,8 @@ with tempfile.TemporaryDirectory(prefix="qindaqt-native-remote-input-") as tmp:
     plugins = root/"plugins"
     # AGENT-GUARD: source-build program/plugins/libraries must share one fork
     # candidate. Never mix the installed compositor ABI with a new EIS plugin.
-    plugin_source = stage/"bin" if compositor.parent.name == "program" else stage/"lib64/qt6/plugins"
-    libraries = [stage/"bin", stage/"lib"] if compositor.parent.name == "program" else [stage/"lib64"]
+    plugin_source = stage/"bin" if compositor.parent.name in ("program", "bin") else stage/"lib64/qt6/plugins"
+    libraries = [stage/"bin", stage/"lib"] if compositor.parent.name in ("program", "bin") else [stage/"lib64"]
     for source in plugin_source.rglob("*"):
         target = plugins/source.relative_to(plugin_source)
         if source.is_dir(): target.mkdir(parents=True, exist_ok=True)
@@ -50,7 +50,7 @@ with tempfile.TemporaryDirectory(prefix="qindaqt-native-remote-input-") as tmp:
     (plugins/"qindaqt-kwin/plugins/eis.so").symlink_to(candidate/"qindaqt-kwin/plugins/eis.so")
     env["LD_LIBRARY_PATH"] = os.pathsep.join(map(str, libraries))
     def spawn(args, **kw):
-        p = subprocess.Popen(list(map(str, args)), env=env, **kw); children.append(p); return p
+        p = subprocess.Popen(list(map(str, args)), env=env, start_new_session=True, **kw); children.append(p); return p
     try:
         config = root/"bus.conf"
         config.write_text("<busconfig><type>session</type><listen>unix:path="+str(root/"bus")+"</listen><auth>EXTERNAL</auth><policy context='default'><allow own='*'/><allow send_destination='*'/><allow receive_sender='*'/></policy></busconfig>")
@@ -59,21 +59,39 @@ with tempfile.TemporaryDirectory(prefix="qindaqt-native-remote-input-") as tmp:
         env["DBUS_SESSION_BUS_ADDRESS"] = bus.stdout.readline().decode().strip()
         log = (root/"compositor.log").open("wb")
         producer = dict(env); producer.pop("QT_FATAL_WARNINGS", None); producer["QT_PLUGIN_PATH"] = str(plugins)
-        comp = subprocess.Popen([str(compositor), "--virtual", "--width", "1000", "--height", "760", "--socket", "qindaqt-7"], env=producer, stdout=log, stderr=subprocess.STDOUT); children.append(comp)
+        native_driver = compositor.name == "testNativeCaptureAuthority"
+        if native_driver:
+            producer.update(QINDAQT_PRIVATE_NATIVE_INPUT="1", QT_QPA_PLATFORM="offscreen", LIBGL_ALWAYS_SOFTWARE="1")
+            command = [str(compositor), "serveNativeCapture"]
+        else:
+            command = [str(compositor), "--virtual", "--width", "1000", "--height", "760", "--socket", "qindaqt-7"]
+        comp = subprocess.Popen(command, env=producer, stdin=subprocess.PIPE if native_driver else subprocess.DEVNULL,
+                                stdout=log, stderr=subprocess.STDOUT, start_new_session=True); children.append(comp)
         env["QINDAQT_PORTAL_TEST_COMPOSITOR_PID"] = str(comp.pid)
         env["WAYLAND_DISPLAY"] = "qindaqt-7"
         deadline = time.monotonic()+15
-        while not (runtime/"qindaqt-7").exists() and comp.poll() is None and time.monotonic() < deadline: time.sleep(.05)
-        if not (runtime/"qindaqt-7").exists(): raise RuntimeError("private compositor unavailable")
-        time.sleep(1)
-        result = subprocess.run([str(fixture), *sys.argv[5:]], env=env, timeout=150)
-        if result.returncode == 0: assert comp.poll() is None, "production compositor exited"
-        code = result.returncode
+        def ready():
+            return (runtime/"qindaqt-7").exists() and (not native_driver or "NATIVE_INPUT_READY" in (root/"compositor.log").read_text())
+        while not ready() and comp.poll() is None and time.monotonic() < deadline: time.sleep(.05)
+        if not ready(): raise RuntimeError("private compositor unavailable")
+        test = spawn([fixture, *sys.argv[5:]])
+        code = test.wait(timeout=150)
+        if code == 0: assert comp.poll() is None, "production compositor exited"
+        if native_driver:
+            comp.stdin.close()
+            driver_code = comp.wait(timeout=10)
+            if code == 0: assert driver_code == 0, "native compositor driver failed"
     finally:
         for child in reversed(children):
-            if child.poll() is None: child.terminate()
+            # Private process groups include frontend activations and client
+            # children even when their parent has already exited on failure.
+            try: os.killpg(child.pid, signal.SIGTERM)
+            except ProcessLookupError: pass
             try: child.wait(timeout=5)
-            except subprocess.TimeoutExpired: child.kill(); child.wait(timeout=5)
+            except subprocess.TimeoutExpired: pass
+            try: os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError: pass
+            child.wait(timeout=5)
         evidence = pathlib.Path(os.environ.get("QINDAQT_REMOTE_INPUT_EVIDENCE", ""))
         if evidence.name:
             evidence.mkdir(parents=True, exist_ok=True)

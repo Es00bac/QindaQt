@@ -1,0 +1,13 @@
+{
+  "exit_code": 0,
+  "elapsed_seconds": 8.975709551014006,
+  "own_cpp_sha256": "cf9c5ce809f95a0e0459883427d65f888eb4d8382edb59eb1a924f6099ab933d",
+  "reference_production": "e2f4c01e0ae2e720237b2f12c24219f005f66757",
+  "commands_sha256": "5632e18a72978a4490b40422f6a73ace42371cdb97a45e54ad85b171da1bf7e1",
+  "build_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "fixture_sha256": "ff22b37f34fa7d40006447ef02e1e02a8e1da0151e2c9ea0349c6ac2782aaf45",
+  "native_object_sha256": "4e2f27c655d8aa7ace46cf756f87da96cf0ea4a9c31f3cdbe1cfeb0de3e46c00",
+  "moc_sha256": "d8dc022ddce38f66e857ef88f415eff01cda62b2d33412aba7646cfb0a52d197",
+  "runtime": "NOT RUN; manager recovery hold",
+  "scope": "Fresh own moc and native test object/link against unchanged e2f production static archives compiled in preserved Claude reference build. This is a focused qualification harness receipt, not an independent whole production rebuild."
+}
