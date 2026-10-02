@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "../native_sleep/sleep_test_support.h"
 #include "../../services/power_client/support/fake_power_transport.h"
+#include <qindaqt/services/power_client/power_client.h>
 #include <qindaqt/session/display_power/display_power_facade.h>
 #include <qindaqt/session/display_power/scoped_display_power.h>
 #include <qindaqt/session/display_power/screen_power_service.h>
