@@ -54,9 +54,9 @@ bool ShortcutSessions::create(const QDBusMessage &call, const QString &requestPa
     }, this);
     if (!m_bus.registerVirtualObject(path, object, QDBusConnection::SingleNode)) { delete object; ::close(pidfd); return false; }
     m_entries.insert(path, {call.service(), *caller, app, pidfd, ShortcutSessionPhase::Created, 0, object});
-    // Only pre-start inactivity expires. A live share is ended by explicit stop
-    // or actual actor/dependency lifetime, never by arbitrary wall-clock success.
-    QTimer::singleShot(60000, this, [this, path] { const auto e = m_entries.constFind(path); if (e != m_entries.cend() && (e->phase == ShortcutSessionPhase::Created || e->phase == ShortcutSessionPhase::Created)) close(path); });
+    // Only pre-bind inactivity expires. Bound shortcuts end on explicit Close
+    // or actual actor/authority lifetime, never an arbitrary success deadline.
+    QTimer::singleShot(60000, this, [this, path] { const auto e = m_entries.constFind(path); if (e != m_entries.cend() && e->phase == ShortcutSessionPhase::Created) close(path); });
     return live(path);
 }
 bool ShortcutSessions::live(const QString &path) const {
