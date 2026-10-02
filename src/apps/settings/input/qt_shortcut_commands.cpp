@@ -77,11 +77,10 @@ bool QtShortcutPort::addCommandShortcut(const QString &name,
         }
         return false;
     }
-    // AGENT-CONTRACT: kglobalaccel finds a desktop-file component under its
-    // data directory and runs Exec when the `_launch` action triggers; the
-    // CommandShortcut key marks it as a custom command the way the desktop's
-    // own shortcut settings do. Launching was proven in a private KWin
-    // (ADR-0134).
+    // AGENT-CONTRACT: the native authority retains the legacy kglobalaccel
+    // desktop-file directory and command marker, then invokes `_launch` through
+    // the adapted KService/KIO boundary. Keep Exec interpretation in that
+    // authority; Settings only creates the descriptor (ADR-0334).
     const QByteArray contents =
         QStringLiteral("[Desktop Entry]\nType=Application\nName=%1\nExec=%2\n"
                        "NoDisplay=true\nX-KDE-GlobalAccel-CommandShortcut=true\n")

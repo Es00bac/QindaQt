@@ -13,7 +13,7 @@ public:
     QVariantMap rows;
     QStringList calls;
     bool refuse = false, malformed = false;
-    bool publish(const QDBusConnection &bus) { return bus.registerService("org.qindaqt.Shortcuts1") && bus.registerVirtualObject("/org/qindaqt/Shortcuts1", this); }
+    bool publish(QDBusConnection bus) { return bus.registerService("org.qindaqt.Shortcuts1") && bus.registerVirtualObject("/org/qindaqt/Shortcuts1", this); }
     void add(const QString &component, const QString &action, const QStringList &keys, const QStringList &defaults = {}) {
         rows.insert(component + QChar(0x1f) + action, QVariantMap{{"component", component}, {"action", action}, {"componentLabel", "QindaQt Shell"}, {"description", "Show launcher"}, {"keys", keys}, {"defaults", defaults}, {"active", true}, {"repeat", false}});
     }
