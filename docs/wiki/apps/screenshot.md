@@ -78,11 +78,12 @@ arguments, 3 cancelled.
 
 | Part | Responsibility |
 | --- | --- |
-| `capture/` | Pure policy: KWin request builder, command line, raw payload validation, region geometry, save-without-overwrite |
-| `platform/` | KWin ScreenShot2 port, notifications, ext-data-control clipboard publishing, file-manager and Settings hand-offs |
+| `capture/` | App command-line and save-without-overwrite policy; compatibility wrappers for public request/decoder/geometry |
+| `platform/` | Compatibility wrapper for public restricted capture port; app notifications, ext-data-control clipboard publishing, file-manager and Settings hand-offs |
 | `record/` | `RecordController` state machine and the OBS connection gate |
 | `ui/` | Capture flow, result actions, and the image store QML reads |
 | `app/` | The composition root and process residency |
+| `src/services/compositor_capture` | [Public shared capture request/decoder/geometry/transport](../architecture/compositor-capture.md), also consumed by the portal candidate |
 | `src/services/screenshot_preferences` | Settings1 preferences and file naming, shared with Settings |
 
 KWin authorizes the tool by its installed desktop entry, so a build-tree

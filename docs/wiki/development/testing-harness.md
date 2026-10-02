@@ -4554,3 +4554,166 @@ task-owned ignored evidence, then only the exact task-generated originals were
 removed under explicit manager authorization. The corrected 8/8 run had no
 crashes or additional matching core files. Keep this failure history with the
 handoff; do not claim that the entire qualification created no host artifacts.
+
+### Native capture source qualification boundary
+
+The PF19 [capture candidate](../reference/portal-capture.md) adds focused
+wire/actor rows and `qindaqt.portal-native-capture`. Its source fixture uses the
+real1.20.4 frontend, ordinary Qt dialogs and test-only actual pointer/keyboard
+input over unchanged helper sources. Private policy-only WirePlumber excludes
+hardware monitors; private PipeWire has no device nodes. Custom D-Bus has no
+host activation directories and the system bus address is explicitly nonexistent.
+EGL compositor rendering is required because the qualified fork cannot
+create streams from QPainter composition. The direct fork argv omits its opt-in Xwayland and every session/app/input-method argument; launcher-only flags are not invented. Private process groups plus postexit audits cover broker/producer/controller descendants. Three fresh private compositor groups
+isolate native Locked and actual compositor-owner-loss retirement without any unlock/PAM seam. The test controller remains GUI-free; a separate admitted ordinary Qt child supplies changing pixels, so compositor loss cannot kill the controller before it verifies withdrawal. The returned remote
+FD is consumed directly; policy mocks and node integers alone do not prove frames.
+The five focused capture and six adjacent Screenshot rows pass on candidate7bc9e6a5
+(11 CTests,87 Qt passes, zero failures/skips); actual native groups remain pending.
+The protected driver is selected separately with its exact built bin/plugin prefix,
+required by `QINDAQT_PRIVATE_CAPTURE_PLUGIN_PREFIX`; ordinary qualified tools supply
+PATH only. Fixture desktop entries grant no restricted permission. The runner
+retains raw authority/history/log and cleanup/core evidence beside the caller in
+ignored build output. The real1.20.4 frontend requires an Access implementation before exporting
+Screenshot. The private fixture selects the existing real foundation composition
+for Access, and separately selects the protected broker for Screenshot/ScreenCast.
+It introspects both actual frontend interfaces before the first request. Interactive
+Screenshot still uses its actual protected native consent; no synthetic Access
+reply supplies authorization. Current and historical helper audits are retained
+from their exact runtime paths, along with the actual returned synthetic PNG
+before helper retirement. Screenshot fd5 must expose only the two output globals;
+ScreenCast additionally requires its screencast global.
+Actual native execution requires task-only bwrap isolation,
+new proc/private dev with only renderD128 (AMD1002:731f), read-only sysfs, no card/input/snd
+nodes, and harmless namespace preflight. Software selection requires
+LIBGL_ALWAYS_SOFTWARE=1, MESA_LOADER_DRIVER_OVERRIDE=swrast, GALLIUM_DRIVER=llvmpipe;
+no inherited legacy plugin prefix or LD_LIBRARY_PATH substitutes the selected fork.
+Metadata retains KDE Screenshot/ScreenCast routing until actual family gates pass.
+Full window/multiple/cursor/revocable-restore delivery remains a PF19 successor.
+
+The non-installable runner accepts `--renderer llvmpipe|render-node`, with
+`llvmpipe` as the unchanged default. Explicit `render-node` mode verifies the
+sole AMD1002:731f renderD128 character device, read-only sysfs and absent card/input/
+sound nodes, clears swrast/llvmpipe overrides, and sets LIBGL_ALWAYS_SOFTWARE=0.
+The caller authenticates the private compositor PID and queries its public
+`supportInformation`; actual OpenGL vendor/renderer lines are retained. Software
+requires reported llvmpipe; render-node requires AMD/Radeon/radeonsi and rejects
+llvmpipe. Both modes keep every real pixel/frame/privacy assertion.
+
+The retained exact447 software probes on scope-correct consumer97c63 return an
+actual1100x820 fully transparent black Screenshot PNG and a real ScreenCast node/
+remote FD that fails the required decoded-frame count. Earlier assertions did
+not print the count; they do not establish zero frames. VirtualEglLayer allocates through EglSwapchain and the
+GBM allocator, whose software allocation requires DRM_IOCTL_MODE_CREATE_DUMB;
+render-only isolation denies that operation and the actual layer fails repeatedly.
+These failures establish rendering limits, and do not qualify screenshots or
+streams. Hardware render-node allocation uses GBM dma-bufs; explicit native
+qualification remains separate, without a primary-card/host-display fallback.
+
+The changing Qt widget producer now reports readiness only after an actual
+public `wl_surface.frame` completion on its own painted/committed Qt surface.
+The fixture follows the existing foreign-exporter native-surface access pattern;
+it fabricates no Wayland buffer, image, or callback. The retained producer-frame
+audit distinguishes local exposure/paint from compositor frame completion.
+A missing callback fails the bounded initialization before Screenshot/ScreenCast.
+
+Exact consumer3a8e48a1 with fork447 and matching driver/plugin/library images
+passes actual AMD/radeonsi renderer provenance and producer callback readiness.
+The retained producer audit records a real Qt paint and `wl_surface.frame`
+completion before the request. Screenshot still returns Response0/local1100x820
+PNG whose902000 pixels are entirely RGBA(0,0,0,0); the unchanged fixture-color
+assertion fails. A separate ScreenCast diagnostic obtains the actual node and
+frontend remote FD, then fails the unchanged requirement for more than3 decoded
+frames: the diagnostic reports2 decoded frames,3 visible nodes and an empty
+consumer error string. Neither probe has cleanup errors, owned survivors or
+task-local core files. The completed callback proves frame callback readiness,
+not presentation or useful captured scene content. The remaining bounded blocker
+is actual captured scene pixels and continuing changed frames; cancellation,
+PickColor, Close and the remaining native privacy matrix remain unqualified.
+All earlier failure logs/commands/hashes and this actual PNG remain preserved
+in ignored qinda evidence directories. An incorrect diagnostic case spelling
+was rejected before any compositor launch and is retained separately.
+
+
+Subsequent driver-only scene observations on exact447 show the synthetic pixel
+window initially eligible, visible and backed by a real1100x820 buffer, then
+closed before the capture helper maps. An unchanged-producer stderr probe
+identifies Qt host-portal registration failing with an empty desktop app ID;
+`QT_FATAL_WARNINGS=1` therefore terminates the producer after its first completed
+frame. The fixture now supplies `org.test.CapturePixels` as its QApplication
+desktop identity and a matching real task-only desktop entry. The real frontend
+starts before that identified Qt producer because registration is immediate; an
+earlier repair attempt retained a fatal ServiceUnknown failure from the opposite
+startup order. It retains fatal
+warnings, producer stderr/lifecycle evidence, and liveness checks alongside the
+unchanged actual pixel, continuing-frame and privacy assertions. This bounded
+fixture repair on consumerbf82b66b with immutable fork447 passes the original
+Screenshot/pixel/PickColor/cancel and PipeWire/changed-frame/Session.Close/cancel
+cases independently (3/3 Qt each, no skips). The actual Screenshot is1100x820,
+with902000 opaque fixture-green pixels; producer stderr is empty. The unchanged
+full matrix first group passes Screenshot, Close/requester loss, foreign-parent
+loss and frontend/broker loss, but the later stream decoder fails after prior
+stream retirement (0frames,2nodes, target not found; group6pass/1fail). The
+remaining fresh lock/compositor-loss groups were not reached. The decoder puts
+a returned node ID into PipeWire target.object, whose documented value is an
+object serial or node name. The decoder fixture now resolves only the offered
+node ID through the actual returned remote registry, waits for its bounded real
+sync barrier, and connects by its authentic object serial using PW_ID_ANY. It
+records each ID-to-serial pair and fails closed on missing/retired targets; there
+is no default-node fallback. The repaired executable ca29910d passes the first
+five-case compositor group (7/7 Qt results), including real returned node25 to
+serial27 after retirement and continuous changed colored frames. The fresh
+second compositor fails its initial Screenshot before any lock request, with
+response2 and no helper audit; its lock assertions and the third compositor-loss
+group remain unqualified. Source review identifies a separate asynchronous
+native-state admission handshake beyond the fixture readiness checks; whether
+that timing causes this denial remains to be traced. No admission guard is
+relaxed and no delay or retry is substituted for a public readiness condition.
+One unchanged fresh-lock probe with an observational private-bus monitor passes
+its initial Screenshot and all three Qt results, but the runner correctly fails
+because the compositor exits with SIGSEGV during RequestLockWithReceipt. The
+trace shows the broker received the authentic unlocked state receipt before
+Screenshot, then no lock-state or admission receipt before compositor loss.
+Thus this probe does not reproduce the earlier initial denial, and does not
+qualify native-lock retirement: compositor survival remains an explicit gate.
+The separately owned fork repair68c4d74f (executable42604a8f) defers source QObject
+destruction until synchronous scene-view snapshots finish, while revocation and
+frame gating remain immediate. Its original447 driver plus repaired plugin
+passes one unchanged monitored native-lock row (Qt3/3, runner0), including real
+locked/protected transitions, stream/file retirement and compositor survival.
+The same unmonitored row had failed initial Screenshot admission before lock;
+the monitored success does not resolve that recurring prerequisite. Full matrix
+and independent review remain held, and no routing or milestone is advanced.
+All earlier blank PNG, two-frame and startup-order failures remain retained.
+No installed routing or full PF19 completion is claimed.
+
+### Capture backend startup ordering
+
+The focused `qindaqt.portal-capture-startup` gate launches the real protected
+backend against a private native-lock receipt endpoint and retained seqpacket
+peer. It withholds receipt/reply independently and checks actual backend name
+absence and lack of QCC1 Ready, then releases both and checks the real unique
+sender/PID and StartJob admission. Initial Locked/Locking becomes available while
+denying StartJob. Owner replacement fences late old-owner completion. The fixture
+uses actual message and Peer.Ping boundaries, never elapsed time as readiness,
+and needs no GPU or privileged native authorization hook. Exact ca299 eager
+publication is the negative control. Exact63e33ecd passes7/7 Qt startup rows and13/13 existing authority-channel
+checks; the eager negative fails at premature public name presence. These focused
+gates do not resolve historical intermittent native response2 by inference and
+do not replace the original native pixel/frame/privacy matrix.
+
+### PipeWire decoder target retirement
+
+`qindaqt.portal-decoder-target` runs its own private PipeWire/WirePlumber policy
+graph, actual default metadata and two task-only real `pw_stream` RGBA sources.
+Their frame clocks drive actual graph processing; red offered and blue default
+pixels distinguish the sources. Available explicit targets must deliver mapped
+frames with the expected color and link to their exact source. The destructive
+row removes the resolved offered node immediately before actual connection; the
+unrelated default remains present, and the corrected consumer must fail with zero
+frames. Its linker hook exists only in this separate test target. The old ca299
+CPP/header can be compiled unchanged against that same hook for a meaningful
+negative control, with actual fallback link/node/frame evidence required rather
+than treating any failing test as proof. `run_decoder_graph.py` preserves private
+logs, hashes, process exits and cleanup under decoder-graph-evidence. Native
+frontend remote permission restrictions and original GPU pixel/privacy gates are
+separate and unchanged.

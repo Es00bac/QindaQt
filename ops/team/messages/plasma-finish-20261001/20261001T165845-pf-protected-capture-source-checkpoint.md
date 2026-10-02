@@ -1,0 +1,7 @@
+# Protected capture consumer source checkpoint
+
+Joint wire freeze exact91e1c202 confirmed by root before dependent edits. Same employee/new isolated lane from0c156360; predecessor evidence untouched. Source draft adds pure bounded codec/private authenticated channel and capture-only broker main/port, with installed-header discovery and explicit absent-header unavailable state. No fork-private includes, child launch or ambient display fallback. Broker owns bounded jobs/pipes/private results and public Request/Session policy; general backend/routing unchanged. Public KWinCaptureCall adds default legacy10s pipe grace, monotonic original total; protected helper chooses frozen30s/zero-grace. This is source-only, uncompiled/unexecuted and helper/fixtures remain in progress.
+
+Private ownership uses src/services/portal/capture/authority/** and backend/**; additive capture CMake/new capture-only desktop. Public capture request/port timing is source compatible and documented. Fork owner agreed compile-gated non-installable test-program paths while retaining PR0/Yama/kernel-credential/DBus joins; opaque pipes allow test-only per-job actual-input control augmentation, absent from production. No authority/environment bypass or fake pixels/node seam.
+
+Next: adapt native helper fd3/4–7, actual parent/consent/CaptureReady and one-shot retention; focused hostile framing/control/lifetime tests and separate native fixtures. Compiler/private slots remain unheld until immutable checkpoint/grant. Metadata remains KDE and full PF19 remains open.

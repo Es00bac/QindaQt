@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "raw_capture_decoder.h"
+#include <qindaqt/services/compositor_capture/raw_capture_decoder.h>
 
 #include <QCoreApplication>
 
-namespace QindaQt::Screenshot {
+namespace QindaQt::CompositorCapture {
 namespace {
 
 QString tr(const char *text)
@@ -110,4 +110,4 @@ QString describeKWinError(const QString &errorName, const QString &message)
                              : tr("The screenshot failed: %1").arg(message);
 }
 
-} // namespace QindaQt::Screenshot
+} // namespace QindaQt::CompositorCapture

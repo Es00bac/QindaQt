@@ -230,6 +230,10 @@ if(TARGET QindaQt::SessionSupervisorSupport)
             "-DQINDAQT_INSTALL_SYSTEMDUSERUNITDIR=${KDE_INSTALL_SYSTEMDUSERUNITDIR}"
             "-DQINDAQT_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}"
             "-DQINDAQT_KDE_PORTAL_DBUS_SERVICE=${QINDAQT_KDE_PORTAL_DBUS_SERVICE}"
+            "-DQINDAQT_PROTECTED_CAPTURE_AVAILABLE=$<TARGET_EXISTS:qindaqt-portal-capture-backend>"
+            "-DQINDAQT_CAPTURE_AUTHORITY_PATHS=${QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR}/qindaqt-kwin/capture-authority/launchpaths.h"
+            "-DQINDAQT_EXPECTED_CAPTURE_LIBEXEC=${KDE_INSTALL_FULL_LIBEXECDIR}"
+            "-DQINDAQT_EXPECTED_CAPTURE_DATA=${KDE_INSTALL_FULL_DATADIR}"
             "-DQINDAQT_EXPECTED_PORTAL_EXECUTABLE=${KDE_INSTALL_FULL_LIBEXECDIR}/xdg-desktop-portal-qindaqt"
             "-DQINDAQT_EXPECTED_SETTINGS_EXECUTABLE=$<TARGET_FILE:qindaqt-settings-service>"
             "-DQINDAQT_EXPECTED_SCHEMA_DIR=${PROJECT_SOURCE_DIR}/data/settings"
@@ -311,3 +315,5 @@ endif()
 
 add_subdirectory(foundation)
 add_subdirectory(choosers)
+
+add_subdirectory(capture)

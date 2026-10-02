@@ -10,14 +10,14 @@ find_package(QindaTK CONFIG REQUIRED)
 # without the QML scene or a real compositor.
 qt_add_library(qindaqt_screenshot_support STATIC
     capture/capture_file_policy.cpp capture/capture_file_policy.h
-    capture/capture_request.cpp capture/capture_request.h
+    capture/capture_request.h
     capture/command_line.cpp capture/command_line.h
-    capture/raw_capture_decoder.cpp capture/raw_capture_decoder.h
-    capture/region_geometry.cpp capture/region_geometry.h
+    capture/raw_capture_decoder.h
+    capture/region_geometry.h
     platform/capture_port.h
     platform/clipboard_publisher.cpp platform/clipboard_publisher.h
     platform/desktop_actions.cpp platform/desktop_actions.h
-    platform/kwin_capture_port.cpp platform/kwin_capture_port.h
+    platform/kwin_capture_port.h
     platform/result_notifier.cpp platform/result_notifier.h
     record/record_connection.cpp record/record_connection.h
     record/record_controller.cpp record/record_controller.h
@@ -32,7 +32,7 @@ target_include_directories(qindaqt_screenshot_support PUBLIC
 # (ADR-0201); the clipboard goes through the clipboard service's own
 # data-control adapter (ADR-0289).
 target_link_libraries(qindaqt_screenshot_support PUBLIC
-    QindaQt::ScreenshotPreferences QindaQt::StreamingPreferences QindaQt::ObsClient
+    QindaQt::CompositorCapture QindaQt::ScreenshotPreferences QindaQt::StreamingPreferences QindaQt::ObsClient
     QindaQt::ShellObsApplet QindaQt::ClipboardWaylandAdapter
     Qt6::Core Qt6::Gui Qt6::DBus Qt6::Quick)
 target_compile_features(qindaqt_screenshot_support PUBLIC cxx_std_20)

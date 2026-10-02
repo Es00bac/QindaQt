@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "kwin_capture_port.h"
+#include <qindaqt/services/compositor_capture/kwin_capture_port.h>
 
 #include <QCoreApplication>
+#include <qindaqt/compositor_names/compositor_names.h>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
@@ -12,18 +13,16 @@
 
 #include <cerrno>
 #include <fcntl.h>
+#include <limits>
 #include <unistd.h>
 
-namespace QindaQt::Screenshot {
+namespace QindaQt::CompositorCapture {
 namespace {
 
-constexpr auto ScreenshotService = "org.kde.KWin.ScreenShot2";
-constexpr auto ScreenshotPath = "/org/kde/KWin/ScreenShot2";
-constexpr auto ScreenshotInterface = "org.kde.KWin.ScreenShot2";
-constexpr auto KWinService = "org.kde.KWin";
-// The pipe may still be draining after the reply; allow for a large
-// multi-output capture on a busy machine.
-constexpr int PipeGraceMilliseconds = 10000;
+const auto ScreenshotService = QindaQt::CompositorNames::screenshotService;
+const auto ScreenshotPath = QindaQt::CompositorNames::screenshotPath;
+const auto ScreenshotInterface = QindaQt::CompositorNames::screenshotInterface;
+const auto KWinService = QindaQt::CompositorNames::service;
 
 DecodedCapture failure(const QString &error)
 {
@@ -32,12 +31,12 @@ DecodedCapture failure(const QString &error)
     return result;
 }
 
-QString ownerOf(const QDBusConnection &bus, const char *service)
+QString ownerOf(const QDBusConnection &bus, QLatin1StringView service)
 {
     auto *interface = bus.interface();
     if (!interface)
         return {};
-    const QDBusReply<QString> owner = interface->serviceOwner(QString::fromLatin1(service));
+    const QDBusReply<QString> owner = interface->serviceOwner(QString(service));
     return owner.isValid() ? owner.value() : QString();
 }
 
@@ -59,7 +58,8 @@ KWinCapturePort::~KWinCapturePort()
 
 bool KWinCapturePort::capture(const KWinCaptureCall &call)
 {
-    if (m_active)
+    if (m_active || call.timeoutMilliseconds <= 0 || call.pipeGraceMilliseconds < 0
+        || call.timeoutMilliseconds > std::numeric_limits<int>::max() - call.pipeGraceMilliseconds)
         return false;
     reset();
     m_active = true;
@@ -97,12 +97,16 @@ bool KWinCapturePort::capture(const KWinCaptureCall &call)
     m_readFd = descriptors[0];
 
     QDBusMessage message = QDBusMessage::createMethodCall(
-        QString::fromLatin1(ScreenshotService), QString::fromLatin1(ScreenshotPath),
-        QString::fromLatin1(ScreenshotInterface), call.method);
+        QString(ScreenshotService), QString(ScreenshotPath),
+        QString(ScreenshotInterface), call.method);
     QVariantList arguments = call.leadingArguments;
     arguments.append(call.options);
     arguments.append(QVariant::fromValue(QDBusUnixFileDescriptor(descriptors[1])));
     message.setArguments(arguments);
+    // AGENT-GUARD: a protected writer can reply after the whole pipe drains.
+    // Start the original outer clock at send, never after reply/EOF; elapsed
+    // checks also deny completion before queued timer delivery.
+    m_deadline = QDeadlineTimer(call.timeoutMilliseconds + call.pipeGraceMilliseconds, Qt::PreciseTimer);
     const QDBusPendingCall pending = m_bus.asyncCall(message, call.timeoutMilliseconds);
     // AGENT-GUARD: drop every local copy of the write end once sent. A copy
     // kept alive in the message or argument list prevents pipe EOF, and a
@@ -123,7 +127,7 @@ bool KWinCapturePort::capture(const KWinCaptureCall &call)
         else
             receivedReply(serial, reply.value(), {}, {});
     });
-    m_timeout.start(call.timeoutMilliseconds + PipeGraceMilliseconds);
+    m_timeout.start(static_cast<int>(m_deadline.remainingTime()));
     return true;
 }
 
@@ -136,6 +140,7 @@ void KWinCapturePort::cancel()
 void KWinCapturePort::reset()
 {
     m_timeout.stop();
+    m_deadline = QDeadlineTimer(QDeadlineTimer::Forever);
     closePipe();
     m_metadata.clear();
     m_bytes.clear();
@@ -151,6 +156,7 @@ void KWinCapturePort::drainPipe()
         return;
     char chunk[65536];
     while (true) {
+        if (m_deadline.hasExpired()) { finish(failure(tr("KWin did not finish the screenshot in time."))); return; }
         const ssize_t count = ::read(m_readFd, chunk, sizeof(chunk));
         if (count > 0) {
             if (m_bytes.size() > kMaxRawCaptureBytes - count) {
@@ -180,6 +186,7 @@ void KWinCapturePort::receivedReply(quint64 serial, const QVariantMap &metadata,
 {
     if (!m_active || serial != m_serial)
         return;
+    if (m_deadline.hasExpired()) { finish(failure(tr("KWin did not finish the screenshot in time."))); return; }
     if (!errorName.isEmpty()) {
         DecodedCapture result;
         result.cancelled = isKWinCancellation(errorName);
@@ -197,11 +204,15 @@ void KWinCapturePort::finishIfReady()
 {
     if (!m_active || !m_replyReceived || !m_pipeEnded)
         return;
-    if (ownerOf(m_bus, ScreenshotService) != m_kwinOwner) {
+    // AGENT-GUARD: Name replacement can precede queued watchers while the old process
+    // still owns the compatibility screenshot name. Both must remain joined.
+    if (ownerOf(m_bus, ScreenshotService) != m_kwinOwner || ownerOf(m_bus, KWinService) != m_kwinOwner) {
         finish(failure(tr("KWin restarted during the screenshot.")));
         return;
     }
-    finish(decodeRawCapture(m_metadata, m_bytes));
+    auto decoded = decodeRawCapture(m_metadata, m_bytes);
+    if (m_deadline.hasExpired()) finish(failure(tr("KWin did not finish the screenshot in time.")));
+    else finish(std::move(decoded));
 }
 
 void KWinCapturePort::finish(DecodedCapture result)
@@ -226,4 +237,4 @@ void KWinCapturePort::closePipe()
     }
 }
 
-} // namespace QindaQt::Screenshot
+} // namespace QindaQt::CompositorCapture

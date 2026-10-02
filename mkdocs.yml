@@ -116,6 +116,8 @@ nav:
       - Settings1 protocol 1: reference/settings1-v1.md
       - Settings portal backend version 1: reference/portal-settings-backend-v1.md
       - Native portal choosers: reference/portal-choosers.md
+      - Native portal capture: reference/portal-capture.md
+      - Public compositor capture: architecture/compositor-capture.md
       - Display1 version 1: reference/display1-v1.md
       - Audio1 version 2: reference/audio1-v2.md
       - Audio1 schema 12: reference/audio1-v12.md
@@ -509,3 +511,4 @@ nav:
       - "ADR-0315: Session-owned removable media through UDisks": adr/0315-session-owned-removable-media-through-udisks.md
       - "0318: Native portal foundation": adr/0318-native-portal-foundation.md
       - "0322: Native portal choosers": adr/0322-native-portal-choosers.md
+      - "0324: Native portal capture": adr/0324-native-portal-capture-boundaries.md
