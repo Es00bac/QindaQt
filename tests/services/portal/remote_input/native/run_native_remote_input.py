@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Private remote-input journey: private bus, staged production compositor
-with the candidate eis plugin shadowing the stock one, real frontend. No host
+"""Private remote-input journey: private bus, coherent source-built production
+compositor and plugins, real frontend. A staged coherent prefix is also accepted. No host
 bus, input, display, clipboard or activation directory is used.
 Args: fixture consent_helper staged_compositor candidate_eis_plugin_dir"""
-import os, pathlib, select, subprocess, sys, tempfile, time
+import os, pathlib, resource, select, subprocess, sys, tempfile, time
+resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 fixture, helper, compositor, candidate = map(pathlib.Path, sys.argv[1:5])
 if not compositor.is_file() or not (candidate / "qindaqt-kwin/plugins/eis.so").is_file():
     print("private production compositor or candidate eis plugin unavailable"); sys.exit(77)
@@ -14,7 +15,10 @@ with tempfile.TemporaryDirectory(prefix="qindaqt-native-remote-input-") as tmp:
     root = pathlib.Path(tmp); runtime = root / "runtime"; runtime.mkdir(mode=0o700)
     env = dict(os.environ)
     for key in ("WAYLAND_SOCKET", "WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS",
-                "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_PLUGIN_PATH", "LD_PRELOAD", "LIBEI_SOCKET"):
+                "QT_WAYLAND_SHELL_INTEGRATION", "QT_QPA_PLATFORM", "QT_QPA_PLATFORMTHEME", "QT_PLUGIN_PATH",
+                "QT_QPA_PLATFORM_PLUGIN_PATH", "QML_IMPORT_PATH", "QML2_IMPORT_PATH", "LD_PRELOAD",
+                "LD_LIBRARY_PATH", "LIBEI_SOCKET", "PIPEWIRE_REMOTE", "PIPEWIRE_RUNTIME_DIR",
+                "KWIN_SCREENSHOT_NO_PERMISSION_CHECKS", "KWIN_WAYLAND_NO_PERMISSION_CHECKS"):
         env.pop(key, None)
     env.update(HOME=str(root), XDG_RUNTIME_DIR=str(runtime), XDG_CONFIG_HOME=str(root/"config"),
         XDG_DATA_HOME=str(root/"data"), XDG_CACHE_HOME=str(root/"cache"), XDG_STATE_HOME=str(root/"state"),
@@ -34,14 +38,17 @@ with tempfile.TemporaryDirectory(prefix="qindaqt-native-remote-input-") as tmp:
         XDG_DATA_DIRS=str(root/"empty-data"), XDG_CONFIG_DIRS=str(root/"empty-config"))
     stage = compositor.parent.parent
     plugins = root/"plugins"
-    # Private plugin tree: every staged plugin by symlink, candidate eis.so instead of the stock one.
-    for source in (stage/"lib64/qt6/plugins").rglob("*"):
-        target = plugins/source.relative_to(stage/"lib64/qt6/plugins")
+    # AGENT-GUARD: source-build program/plugins/libraries must share one fork
+    # candidate. Never mix the installed compositor ABI with a new EIS plugin.
+    plugin_source = stage/"bin" if compositor.parent.name == "program" else stage/"lib64/qt6/plugins"
+    libraries = [stage/"bin", stage/"lib"] if compositor.parent.name == "program" else [stage/"lib64"]
+    for source in plugin_source.rglob("*"):
+        target = plugins/source.relative_to(plugin_source)
         if source.is_dir(): target.mkdir(parents=True, exist_ok=True)
         elif source.name != "eis.so" or "qindaqt-kwin" not in source.parts:
             target.parent.mkdir(parents=True, exist_ok=True); target.symlink_to(source)
     (plugins/"qindaqt-kwin/plugins/eis.so").symlink_to(candidate/"qindaqt-kwin/plugins/eis.so")
-    env["LD_LIBRARY_PATH"] = str(stage/"lib64")
+    env["LD_LIBRARY_PATH"] = os.pathsep.join(map(str, libraries))
     def spawn(args, **kw):
         p = subprocess.Popen(list(map(str, args)), env=env, **kw); children.append(p); return p
     try:
@@ -52,8 +59,7 @@ with tempfile.TemporaryDirectory(prefix="qindaqt-native-remote-input-") as tmp:
         env["DBUS_SESSION_BUS_ADDRESS"] = bus.stdout.readline().decode().strip()
         log = (root/"compositor.log").open("wb")
         producer = dict(env); producer.pop("QT_FATAL_WARNINGS", None); producer["QT_PLUGIN_PATH"] = str(plugins)
-        comp = subprocess.Popen([str(compositor), "--virtual", "--width", "1000", "--height", "760", "--socket", "qindaqt-7",
-                                 "--no-global-shortcuts"], env=producer, stdout=log, stderr=subprocess.STDOUT); children.append(comp)
+        comp = subprocess.Popen([str(compositor), "--virtual", "--width", "1000", "--height", "760", "--socket", "qindaqt-7"], env=producer, stdout=log, stderr=subprocess.STDOUT); children.append(comp)
         env["QINDAQT_PORTAL_TEST_COMPOSITOR_PID"] = str(comp.pid)
         env["WAYLAND_DISPLAY"] = "qindaqt-7"
         deadline = time.monotonic()+15
