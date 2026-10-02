@@ -4,7 +4,7 @@
 - Status: working — independent exact24fa capture backend startup ordering review.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: sole qinda compiler claimed for exact24fa16commands; post-build nonGPUprivate granted, not yet claimed.
+- Resource state: compiler released after own16/16PASS; sole granted nonGPUprivate claimed for exact7startup+13channel+eagernegative.
 - Outcome: review bounded initialized-owner receipt-before-publication startup barrier; decoderca299 REJECT separate.
 
 ## Updates
@@ -56,3 +56,5 @@
 - 2026-10-02T00:39:24Z: Claimed exact24fa startup review (code63e33/production7b79) in isolated qinda review/pf-capture-startup-sol-20261002. Read qualified handoff, preserved source histories; five assembly/admission/AuthorityCapture paths, focused test/CMake+docs only. No product edits/compiler/private claims. Prior68c ACCEPT/ca299 REJECT/buildconstraint remain preserved.
 
 - 2026-10-02T00:42:29Z: Sourceaudit noP0/P1found; direct retained startup7/0/channel13/0/eagernegative2/1+earlierECONNRESETfailure inspected. OwnstrictMkDocs/link486/scopedsource-docdiffPASS. Root grants solecompiler16commands with exactsource/currentheaders/MOC+unchangedarchives; build starts now. Private replay contingent on ownPASS/cleanup; no GPU.
+
+- 2026-10-02T00:44:51Z: Own16/16MOC/TU/link exits0 with exact24fa/currentchangedheaders and frozen dependency archives; all compilerPGIDs absent, compiler RELEASED. Fouroutputs frozen. Currentheaderdepfiles+generatedMOC identities directly verified, no oldchangedheader enters. Rootpostbuild nonGPUprivate claim now7startup/13channel/eagernegative; originalfailures preserved.
