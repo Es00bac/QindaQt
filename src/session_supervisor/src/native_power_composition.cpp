@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "native_power_composition.h"
+#include <QEventLoop>
+#include <QTimer>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
 #include <qindaqt/platform/idle_observation/idle_observation.h>
 #include <qindaqt/services/power_client/idle_consumer_registrar.h>
@@ -72,18 +74,34 @@ public:
         if (dim) dim->refreshPreferences();
         if (display) display->refreshPreferences();
         if (suspend) suspend->refreshPreferences();
-        const bool ready = preferences().has_value() && scoped && scoped->available();
+        const bool ready = lockReady && lockReady() && sleepReady() &&
+            preferences().has_value() && scoped && scoped->available();
         const auto owner = ready ? power.owner() : QString{};
         const auto epoch = ready ? power.snapshot().epoch : 0;
         if (owner == declaredOwner && epoch == declaredEpoch) return;
-        registrar.cancel(); declaredOwner = owner; declaredEpoch = epoch;
+        registrar.cancel(); accepted = false; declaration = 0;
+        declaredOwner = owner; declaredEpoch = epoch;
         if (!owner.isEmpty() && epoch != 0) {
             // All consumers above are genuinely constructed, sharing this exact
             // ordinary attachment/Power1 source. Admission is not lease truth.
-            static_cast<void>(registrar.declareConsumers(Power::IdleInhibitorScope::AutomaticLock |
-                Power::IdleInhibitorScope::DisplayOff | Power::IdleInhibitorScope::IdleSuspend));
+            declaration = registrar.declareConsumers(Power::IdleInhibitorScope::AutomaticLock |
+                Power::IdleInhibitorScope::DisplayOff | Power::IdleInhibitorScope::IdleSuspend);
         }
     }
+    bool sleepReady() const {
+        // An accepted own sleep temporarily clears canSuspend; preserve its
+        // declaration until completion/authority loss clears the exact token.
+        return sleepPort.available() || sleep.requestToken() != 0;
+    }
+    bool ready() const {
+        return active && lockReady && lockReady() && preferences().has_value() &&
+            scoped && scoped->available() && sleepReady() && accepted &&
+            power.hasIdleInhibitorState() && declaredOwner == power.owner() &&
+            power.hasSnapshot() && declaredEpoch == power.snapshot().epoch;
+    }
+    std::function<bool()> lockReady;
+    quint64 declaration = 0;
+    bool accepted = false;
     QDBusConnection bus;
     Platform::Compositor::CompositorAttachment &attachment;
     Power::PowerClient &power;
@@ -106,11 +124,14 @@ public:
 };
 NativePowerComposition::NativePowerComposition(QDBusConnection bus,
     Platform::Compositor::CompositorAttachment &attachment, Power::PowerClient &power,
-    Session::NativeLockRuntime::Runtime &lock, Session::NativeSleep::SleepCoordinator &sleep)
-    : d(std::make_unique<Private>(std::move(bus), attachment, power, lock, sleep)) {}
+    Session::NativeLockRuntime::Runtime &lock, Session::NativeSleep::SleepCoordinator &sleep,
+    std::function<bool()> lockReady)
+    : d(std::make_unique<Private>(std::move(bus), attachment, power, lock, sleep)) {
+    d->lockReady = std::move(lockReady);
+}
 NativePowerComposition::~NativePowerComposition() { stop(); }
 bool NativePowerComposition::start() {
-    if (d->active) return true;
+    if (d->active) return d->ready();
     const auto identity = d->attachment.identity();
     if (!identity || !d->attachment.sameBus(d->bus) || !d->attachment.live()) return false;
     d->active = true;
@@ -133,13 +154,33 @@ bool NativePowerComposition::start() {
     QObject::connect(&d->power, &Power::PowerClient::snapshotChanged, d.get(), [this] { d->reconcile(); });
     QObject::connect(&d->power, &Power::PowerClient::stateChanged, d.get(), [this] { d->reconcile(); });
     QObject::connect(d->scoped.get(), &Session::DisplayPower::ScopedDisplayPower::availabilityChanged, d.get(), [this] { d->reconcile(); });
+    QObject::connect(&d->runtime, &Session::NativeLockRuntime::Runtime::stateChanged, d.get(), [this] { d->reconcile(); });
+    QObject::connect(&d->sleepPort, &IdleSleepPort::availabilityChanged, d.get(), [this] { d->reconcile(); });
     QObject::connect(&d->attachment, &Platform::Compositor::CompositorAttachment::revoked, d.get(), [this] { stop(); });
+    QObject::connect(&d->registrar, &Power::IdleConsumerRegistrar::requestFinished, d.get(),
+        [this](quint64 request, bool transport, bool reported) {
+            if (request == d->declaration) d->accepted = transport && reported;
+        });
     if (!d->service->start() || !d->settings.start() || !d->scoped->start()) { stop(); return false; }
-    d->dim->start(); d->display->start(); d->suspend->start(); d->reconcile(); return true;
+    d->dim->start(); d->display->start(); d->suspend->start(); d->reconcile();
+    // AGENT-GUARD: start() on these transports only queues wire work. Exclusive
+    // cutover must observe current receipts, never treat construction as ready.
+    QEventLoop wait;
+    QTimer deadline, readiness;
+    deadline.setSingleShot(true); deadline.setInterval(6000);
+    readiness.setInterval(25);
+    QObject::connect(&deadline, &QTimer::timeout, &wait, &QEventLoop::quit);
+    QObject::connect(&readiness, &QTimer::timeout, &wait, [this, &wait] {
+        if (!d->active || d->ready()) wait.quit();
+    });
+    if (!d->ready()) { deadline.start(); readiness.start(); wait.exec(); }
+    if (!d->ready()) { stop(); return false; }
+    return true;
 }
 void NativePowerComposition::stop() {
     if (!d->active) return;
-    d->active = false; d->registrar.cancel();
+    d->active = false; d->registrar.cancel(); d->declaration = 0; d->accepted = false;
+    QObject::disconnect(&d->registrar, nullptr, d.get(), nullptr);
     d->declaredOwner.clear(); d->declaredEpoch = 0;
     if (d->suspend) d->suspend->stop();
     if (d->display) d->display->stop();
@@ -149,6 +190,8 @@ void NativePowerComposition::stop() {
     d->settings.stop();
     QObject::disconnect(&d->settings, nullptr, d.get(), nullptr);
     QObject::disconnect(&d->power, nullptr, d.get(), nullptr);
+    QObject::disconnect(&d->runtime, nullptr, d.get(), nullptr);
+    QObject::disconnect(&d->sleepPort, nullptr, d.get(), nullptr);
     QObject::disconnect(&d->attachment, nullptr, d.get(), nullptr);
     d->suspend.reset(); d->display.reset();
     // Dim's outstanding restore is retained until destruction below; no new

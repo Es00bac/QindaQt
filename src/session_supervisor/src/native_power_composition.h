@@ -2,6 +2,7 @@
 #pragma once
 #include <QDBusConnection>
 #include <memory>
+#include <functional>
 namespace QindaQt::Platform::Compositor { class CompositorAttachment; }
 namespace QindaQt::Power { class PowerClient; }
 namespace QindaQt::Session::NativeLockRuntime { class Runtime; }
@@ -13,8 +14,11 @@ class NativePowerComposition final {
 public:
     NativePowerComposition(QDBusConnection bus, Platform::Compositor::CompositorAttachment &attachment,
         Power::PowerClient &power, Session::NativeLockRuntime::Runtime &lock,
-        Session::NativeSleep::SleepCoordinator &sleep);
+        Session::NativeSleep::SleepCoordinator &sleep, std::function<bool()> lockReady);
     ~NativePowerComposition();
+    // Runs the Qt event loop for at most6s (three existing2s wire phases).
+    // Success requires actual current inventory/admission and consumer replies,
+    // confirmed source/settings/inhibition, lock readiness and sleep authority.
     bool start();
     void stop();
 private:
