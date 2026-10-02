@@ -4750,8 +4750,10 @@ Window/multiple/cursor/restore permissions and full PF19 remain future gates.
 
 ### Native remote-input artifact preflight
 
-The noninstalled native remote-input fixture embeds the actual resident portal
-composition; it does not launch a separate resident executable. Its CMake target
+The historical noninstalled native remote-input fixture embeds the resident
+portal composition; it does not launch a separate resident executable. Its
+explicit final protected-broker mode retains that composition for Access while
+input, capture and Clipboard select the actual protected broker (ADR0341). Its CMake target
 depends on both the native consent helper and ordinary Wayland clipboard peer.
 The runner checks fixture/helper presence and executability before starting a
 private compositor; fixture setup checks the frontend and clipboard peer. A
@@ -4779,3 +4781,17 @@ round-trips the real frontend token. Restore must preselect the same stable
 output without test selection changes, still require actual Share input, and
 deliver actual protected frames. No PermissionStore grant is fabricated. New
 rows are source candidates until exact coherent artifacts compile and run.
+
+The final input gate reuses this same capture runner with the existing native
+input fixture as its first artifact and exactly one selected input case:
+--case remoteDesktopCaptureAndClipboardJourney or
+--case nativeLockEndsRemoteDesktop. The runner sets only the test fixture's
+protected-broker mode, selects the actual PortalCapture1 endpoint and qindaqt-8
+display, and preserves the default capture matrix. The first input case must
+reexercise real barrier activation, KEY_Q delivery, Release transport stop,
+absence of post-release KEY_W, both ordinary clipboard payload directions and
+Close. The second requires real native lock revocation and new EIS denial.
+Historical resident-owner receipts do not qualify these final-owner cases.
+Before either launch, preflight the coherent frontend, protected broker,
+capture/input consent helpers, ordinary clipboard peer, fixture, compositor
+driver, EIS plugin and resolved core dependencies together.

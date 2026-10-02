@@ -5,7 +5,7 @@
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: manager-granted single qinda compiler/runtime slot, -j4 -l48 with6GiB guard; no ALL/laptop/host input
+- Resource: source-only preparation; manager owns coherent core compiler/private runtime. Await exact final artifact lease; no ALL/laptop/host input.
 
 ## Updates
 
@@ -40,3 +40,5 @@
 - 2026-10-02T19:53:00+00:00 — Source midpoint30df pushed for independent review. Added source-only genuine capture-runner rows: combined frames/EIS/clipboard actual ordinary paste, Close and native lock retirement; real PermissionStore plus production remember checkbox/token/preselected stable output and actual restored frames. Separate capture first-caller negative and watch-only endpoint lifecycle tests included. Required artifact preflight/source Python syntax passes; capture fixture389 nonblank lines, no monolithic production file added. No C++ compile/runtime claim or lease.
 
 - 2026-10-02T19:57:00Z — Repaired two committed test-source newline quoting defects caught before C++ compilation; adding manager-requested authority-conditional protected portal metadata install. Final C++/native gates remain pending; no compiler or runtime claim.
+
+- 2026-10-02T19:52:59+00:00 — Rerouted preserved actual input fixture through an explicit protected-broker mode and the existing genuine capture runner; same frontend/EIS/clipboard/barrier assertions retained, final display dimensions selected. No sentinel or privilege widening. Earlier 19:53/19:57 update labels were manually estimated ahead of observed UTC; this timestamp is from qinda clock. Source gates pending compiler lease.
