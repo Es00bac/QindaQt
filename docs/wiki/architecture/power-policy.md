@@ -178,8 +178,8 @@ idle behavior and PowerDevil retirement remain separate PF2 boundaries.
 
 ## Native lid ownership and close edges
 
-[ADR-0332](../adr/0332-own-native-lid-handling-before-edge-dispatch.md) adds a
-source-ready optional lid policy, with executable gates still pending.
+[ADR-0332](../adr/0332-own-native-lid-handling-before-edge-dispatch.md) adds an
+optional lid policy verified through the actual resident on private buses.
 `--lid-policy=native-exclusive` defaults off. Canonical PowerDevil absence alone
 does not authorize dispatch: a confined authority must own the current logind
 handle-lid-switch block FD for the active selected supervisor session. Public
@@ -204,12 +204,18 @@ only their own descriptors. Acquisition/action uncertainty never auto-replays.
 This low-level FD is separate from the Power1 idle-scope registry, which remains
 zero.
 
-The authored `qindaqt.power-lid-runtime` fixture launches the same actual resident
+The `qindaqt.power-lid-runtime` fixture launches the same actual resident
 assembly through a distinct noninstalled private-UID target and tests the normal
 production resident's UID0 gate separately. Real Settings1/UPower facts, public
 protected action wires and pipe peer EOF cover first close, repeated facts,
 source/docked choice, none, default/legacy, wrong credentials/session facts,
 owner/session/Settings/source loss, late/timeout FD cleanup, pending Can/reopen,
-uncertain no-replay, spoofed invalidation and process shutdown. Compiler/private
-acceptance, independent review and physical/installed qualification remain
-pending; this does not claim the full lid matrix or PF2 completion.
+uncertain no-replay, spoofed invalidation and process shutdown. The exact tested
+code passes all 34 lid behavior rows (36 Qt checks) and the unchanged nine Power
+and SessionActions CTests (101 Qt checks): ten CTests and 137 Qt checks total,
+with zero failures or skips. Separate first-close and shutdown gates also pass;
+the latter explicitly proves owned descriptor peer EOF and an unchanged external
+peer. Source/artifact hashes stay fixed and every recorded private process and
+temporary root is absent afterward. Independent review and physical/installed
+qualification remain pending; this does not claim the full lid matrix or PF2
+completion.

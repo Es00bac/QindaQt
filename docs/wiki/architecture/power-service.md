@@ -510,12 +510,12 @@ Lid/full idle policy and final PowerDevil retirement remain separate.
 
 ## Optional native lid handling
 
-The source-ready default-off lid composition borrows the public Settings and
+The default-off lid composition borrows the public Settings and
 SessionActions clients and current public Power facts. Its separate authority
 owns only the selected active session's authenticated logind handle-lid-switch
 FD before arming any close edge; no new Power1 wire or idle scope is exposed.
 The exact public process/credential boundary, noninstalled private resident
-test convention and pending executable acceptance are in
+test convention and focused private executable evidence are in
 [Native lid policy](power-policy.md#native-lid-ownership-and-close-edges) and
 [ADR-0332](../adr/0332-own-native-lid-handling-before-edge-dispatch.md).
 Screen-off/full lid matrix, installed cutover and physical qualification remain
