@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — exact818 startup CLI gate passed; awaiting coherent real DisplayPower and complete native power qualification, leases released
+- Status: available — resumed DPMS source diagnosis complete; exact shortcut include repair accepted; awaiting coherent root artifacts/private runtime lease
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -51,3 +51,5 @@
 - 2026-10-02T19:50:21Z — Claim/compiler material transition: root actual coherent core failed127s only ambiguous Session constant; granted three-token local rename. Fork2b09fd27025328c345fcc37be9cb14db2f8f618c pushed, exact3line production constant repair only/no auth change. Root retains shared core/fixture compile. Own granted desktop385 warm configure/build qindaqt_native_power_startup_tests (support/session/helper dependencies only), -j2/-l24/6GiB own-PGID guard/core0, then actual private CLI two-row gate. Original PowerWT clean detached385 preserves reviewbranch/sourcebranch, old strict68 OFF prefix and Debug/pluginOFF/PowerExclusiveOFF cache. Active configurePID1656380/starttick42549788; no GPU/host session/power action. Exact resident count13ordinary+5protected=18; plan16 omits extraSettings/Secret.
 
 - 2026-10-02T19:57:30Z — Verify/handoff: exact818 source strict configure0/45.207s, tiny targetbuild0/14.411s andONE repaired CLI1CTest/4QtPASS/0fail0skip0/0.26s (Qt218ms). Ordinary Logout correctlyUnauthorized, genuine supervised shell logout, owned probe1666028/starttick42578571 gone;24 observed same-starttick members/3PGIDs and2doc leaders gone/core0/source13hashesunchanged. Strictdocs0/8.075s +501docs/nav0/0.464s. First385 configure/buildpass and actual3QtPASS1FAIL/defaultprivatebusSettingsactivation warning archived, nohealthyrepeat. Root reviewed385 production source;818 fixture delta awaits exact review. Fork2b09 constantrepair pushed/real10c runtime stillrootpending. Compiler/privateCPU-bus leasesreleased; no physical/host/GPU/wholePower claim.
+
+- 2026-10-02T20:05:26Z — Resume/read-only finding: root698 actualbuild failed only NativeShortcuts missing sessionlockcontroller.h; ownDPMSobject compiled438/450, no DPMSsourcefix needed. New unchanged isolated698 runtimeWT/branch preservesold10c/2b09refs. Exact5a21df52de1311ab061c5ed26665ea1a552868a8 PRIVATEinclude parity independentlySOURCEACCEPT/diffcheck0; root owns sharedrebuild. Approved exactsoftware/virtual Workspace authority gate, no compositor-mode changes/GPU/physicalclaim. Expected11behaviorrows/13Qt remain unrun; availablewaiting coherentartifact/privatelease. Native startup818/869actual4Qt pass remainsseparate.
