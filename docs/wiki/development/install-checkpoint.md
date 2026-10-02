@@ -50,17 +50,19 @@ only the machine that ran the command. In particular, a manifest produced on
 artifacts from the host that produced them; do not transfer or run qinda's
 scripts on qinda-top.
 
-The manager-controlled deployment package must be built by Portage on
-`qinda-top` from the exact integrated source archive, then use a fresh
-preflight and target-local rollback inputs there before any package install.
-This worker runs the containment stage on `qinda` as a packaging diagnostic;
-its stage output is not transferable release proof. The source archive and
-recorded source hash can move between hosts, but staged binaries,
-host-specific manifest paths, and capture/rollback scripts must be rebuilt or
-regenerated on `qinda-top`. Each generated rollback script checks its bound
-execution host before mutation. A rollback recipe produced on `qinda` must
-never restore `qinda-top`. This worker only builds and stages on `qinda` and
-does not install or restart a live package or service on either host.
+Build the manager-controlled deployment package through Portage on `qinda`
+from the exact integrated source archive. Portage may install that signed
+binary package on `qinda-top`, using its normal signature, dependency and USE
+compatibility checks, as specified by [ADR-0219](../adr/0219-share-completed-work-through-qinda.md).
+Run a fresh preflight and capture target-local rollback inputs before each
+host's install. This keeps heavy compilation on the desktop while the laptop
+is reserved for the operator's other GPU work.
+The containment stage remains a packaging diagnostic; its unsigned staged
+binaries are not deployable packages. Source archives and signed Portage
+packages may move between hosts, while host-specific manifests and
+capture/rollback scripts must be regenerated on their target. Each generated
+rollback script checks its bound execution host before mutation. A rollback
+recipe produced on `qinda` must never restore `qinda-top`.
 
 Saved-state output contains path, kind, mode, size or entry count, and SHA-256
 for files. It does not copy or print file contents. The future capture script
