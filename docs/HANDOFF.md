@@ -75,9 +75,15 @@ The broader consumer foundation is independently accepted in `85b0b285` after
 87 own focused Qt checks and merged with startup/decoder review records at
 `b4404273`. Independently accepted development pin `cb0877f4`/`61123c4b` selects
 the exact accepted fork tree; its authoritative hub and clean checkout match
-`68c4d74f`. This is source qualification; affected merged consumer and package
-gates remain next. Prior failures are retained; installed routing, additional
-privacy coverage and full PF19 remain open.
+`68c4d74f`. On exact integration `92f6888ad`, the manager's strict configure and
+29-target affected consumer/plugin build pass in 42.053/193.489 seconds against
+the production authorization-disabled fork prefix. The integrated 22 private
+CTests pass 200 Qt checks in 128.620 seconds with zero failures/skips,
+119 observed descendants gone, stable input hashes and no scoped cores.
+This combines the focused capture/Screenshot, startup/actual decoder graph and
+power/action gates; it does not add another native GPU matrix. Dynamic package
+and plugin gates remain next. Prior failures are retained; installed routing,
+additional privacy coverage and full PF19 remain open.
 
 The read-only local icon gallery candidate `d93a6c99`, independently accepted
 by `8f348f61`, is integrated on this recovery branch. It lists current working
