@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: working — finishing actual strict warm-cache native power assembly and seven focused gates after recovery release
+- Status: working — repairing the exact private unavailable-ScreenOff negative fixture after actual seven-test gate
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -29,3 +29,5 @@
 - 2026-10-02T18:38:45Z — Available waiting: no own compiler/watchdog/group survivors. Required final warm incremental runner prepared source-only (-j2 -l48, same targets plus seventh-test prerequisites,360s active bound,6GiB guard, pause time excluded if manager SIGSTOPs); no execution until recovery release. No new product source after36c5 readiness guard.
 
 - 2026-10-02T18:48:24Z — Claim/resume: root identifies laptop user D-Bus restart as recovery cause and releases qinda buildhost. Exact36c5 source plus3364 records; same warm OFF-prefix cache, -j2 -l48/6GiB own-PGID guard/core0, pause accounting, no arbitrary clock kill while progress continues. Only listed supervisor/power and seven focused gates; stop at actual compile/test handoff or concrete source blocker. No laptop heavy/GPU/host power.
+
+- 2026-10-02T18:55:37Z — Verify/material finding: actual strict assembled nine-target build PASS0/100.904s at12242/product36c5, own PGID1521532/starttick42180387 gone (88 observed members/no survivors). Seven-test actual exit8/40.412s: six pass; Lid37QtPASS/1FAIL/0SKIP because old unsupported-ScreenOff negative row now has the newly supported private facade. First failure preserved. Minimal fixture correction explicitly withdraws only private ScreenPower1 before start; both negative assertions and all positive ScreenOff rows remain. No production change. Strict docsPASS9.60s,492document/link/navPASS0.60s; requesting tiny one-TU compiler slot before seven-test replay.
