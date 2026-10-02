@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — bounded installed55d/plugin29f QA receipt preserved; awaiting exact fixture review and signedDesktop discovery
+- Status: working — root178 SDDM and Powerf5 bounded source reviews; installedDesktop discovery awaits manager
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -86,3 +86,7 @@
 - 2026-10-02T21:18:29.704558+00:00 — Private nested plugin PASS5.582s; profile/package/resolver/dock7 PASS. Staged discovery blocked by unrelated unbuilt Settings QML types; actual installed runner awaits signedDesktop. Layout fixture repaired installed guard then exposed conditional standalone clipboard target; test-only successor ready for exact root review. Shell three-resolution runtime active.
 
 - 2026-10-02T21:20:10.834343+00:00 — Actual installed55d/plugin29f private compositor PASS; three production-shell resolutions PASS; focused profile/package/resolver/dock7 PASS; offscreen capture40data/42Qt PASS.14unique CTests pass. Artifact hashes11 unchanged, owned PGID survivors/core files empty. Preserved five first failures. Released native lease; actual signedDesktop discovery and reviewed16a dependency replay remain pending, no whole-release/visible-popup/intelligent-hide claim.
+
+- 2026-10-02T21:20:54.165347+00:00 — Root exact16a source ACCEPT; running one repaired standalone configure gate with actual installed/usr+libexec and own candidate tree. Own production files byte-equivalent29f; only three test CMake/script edits differ. No build/runtime lease consumed.
+
+- 2026-10-02T21:26:16.618446+00:00 — Corrected184/16a standalonedependency fourconfiguration gate PASS0/97.616s, original29f failure retained. Power419 exactsnapshot SOURCEACCEPT:10testsPASS, sixfreshCPV metadata and preserved recipe/wrapper/archive/patch provenance verified; authornewPinentry1.3.3 excluded. Claimed root178 SDDM optionalPAM source review and boundedPowerf5 successor; compiler/native lease remains released.
