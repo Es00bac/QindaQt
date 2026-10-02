@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: available — exactca299 consumer REJECT P1 no-default-fallback; same-reviewer repair recheck offered.
+- Status: working — source-only preparation of unchanged QtTest build boundary against production68c.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none; source/docs/policy-hook review complete; no compiler/private lease claimed.
-- Outcome: completed bounded consumer review; exact68c ACCEPT unchanged; no-fallback repair recheck and startup review help offered.
+- Resource state: none; read-only source/argv/ELF audit, no compiler/runtime or authorization changes.
+- Outcome: prepare concrete production QtTest build evidence; AUTH-OFF library lacks unchanged-driver test APIs.
 
 ## Updates
 
@@ -48,3 +48,5 @@
 - 2026-10-02T00:01:13Z: Claimed exactca299 consumer fixture review against accepteda0c0cae7 incl c03 recovery. Fetched hubs, isolated exact qinda consumer branch/tree created/pushed; unrelated shared untracked files preserved. Six testpaths+two primary docs only; no product edits/compiler/private claims. Own prior68c unmonitored replay honestly reusable for one unchanged ca299 lock row only.
 
 - 2026-10-02T00:07:19Z: Exactca299 REJECTP0=0/P1=1. Source-only primary+unchanged installed WP hook execution proves missingtarget can fallthroughdefault without dont-fallback; control stops. Actualnative race notclaimed. StrictMkDocs/link486/scoped8pathdiffPASS; retained7/7firstgroup+fullrunner1/negativeblank/appID/targetlogs verified; own68c unchanged ca299 lock directPASS reused onlyone row. Precise repair sent sameimplementer/root; resourcesnone/available/recheckhelp offered.
+
+- 2026-10-02T00:34:00Z: Root narrows helper to ordinary static build preparation. Exact68c productionOFF cache/CMake/headers and original447 compiler/link argv inspected; direct nm proves two required test-only APIs absentnewcore/presentoldcore. Own executable read-only audit now expectedexit2 after retained harnesssetupfailure; sourceequal/hash preserved, no compiler/runtime. Recording constraint and commands in ignored qinda own directory; no authentication redesign.
