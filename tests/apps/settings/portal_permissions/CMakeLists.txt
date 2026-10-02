@@ -11,6 +11,7 @@ qt_add_executable(qindaqt_portal_permissions_page_test tst_permissions_page.cpp)
 target_compile_definitions(qindaqt_portal_permissions_page_test PRIVATE
     QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}" QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml")
 target_link_libraries(qindaqt_portal_permissions_page_test PRIVATE
+    qindaqt_settings_portal_permissions_qml qindaqt_settings_portal_permissions_qmlplugin
     qindaqt_settings_appearance QindaQt::TokensQml qindaqt_themes Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 add_dependencies(qindaqt_portal_permissions_page_test qindaqt_settings_portal_permissions_qmlplugin
     qindaqt_tokens_qmlplugin qindaqt_controls_qmlplugin)
