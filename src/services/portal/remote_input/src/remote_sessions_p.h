@@ -2,6 +2,7 @@
 #pragma once
 #include <qindaqt/services/portal/request_registry.h>
 #include <QDBusServiceWatcher>
+#include <QDBusUnixFileDescriptor>
 #include <QDBusVirtualObject>
 #include <QHash>
 #include <functional>
@@ -39,11 +40,19 @@ public:
         QList<QRect> zones;
         quint32 zoneSet = 0;
         QList<QPair<QPoint, QPoint>> barriers;
+        // RemoteDesktop clipboard: requested before Start, compositor handle
+        // after explicit consent, and paste FDs awaiting SelectionWrite.
+        bool clipboardRequested = false;
+        int clipboard = 0;
+        QHash<uint, QDBusUnixFileDescriptor> transfers;
+        uint nextSerial = 0;
     };
     RemoteSessions(QDBusConnection, RequestRegistry &, QObject *parent = nullptr);
     ~RemoteSessions() override;
     bool create(const QDBusMessage &, const QString &request, const QString &session, const QString &app);
     bool authenticated(const QDBusMessage &, const QString &session, const QString &app) const;
+    // Clipboard methods carry no app ID: frontend owner and liveness only.
+    bool owned(const QDBusMessage &, const QString &session) const;
     bool requestMatches(const QString &session, const QString &request) const;
     bool live(const QString &session) const;
     Entry *entry(const QString &session); // revalidate admission before use

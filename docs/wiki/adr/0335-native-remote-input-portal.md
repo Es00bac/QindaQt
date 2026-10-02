@@ -30,13 +30,17 @@ injection path.
 
 The fork EIS plugin admits only the current portal backend owner (the KDE name
 transitionally), restricts cookie/capture control to the creator, refuses work
-while locked and destroys contexts on lock.
+while locked and destroys contexts on lock. The RemoteDesktop Clipboard adjunct
+uses a compositor-owned clipboard handle in that plugin: an `AbstractDataSource`
+publishes the session's MIME types and forwards Wayland paste FDs in targeted
+signals, because the protected resident cannot obtain `ext-data-control-v1`.
+Clipboard consent is a separate opt-in choice in the Start dialog.
 
 ## Consequences
 
 - No new process, dependency or persistence; consent reuses the QindaTK helper.
-- Routing stays on KDE until a real frontend/private-compositor EIS gate,
-  InputCapture and Clipboard exist; then the KDE admission and ADR-0088 drop-in
-  are removed in the same change.
+- Routing stays on KDE until the real frontend/private-compositor EIS and
+  clipboard gates pass; then the KDE admission and ADR-0088 drop-in are
+  removed in the same change.
 - Persistence/restore tokens are not offered; every Start asks.
 - See [Native remote-input portal](../architecture/portal-remote-input.md).

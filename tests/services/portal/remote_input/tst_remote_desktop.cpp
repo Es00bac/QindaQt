@@ -6,6 +6,7 @@
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
 #include <QDBusContext>
 #include <QDBusReply>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <unistd.h>
 using namespace QindaQt::Services::Portal;
@@ -22,12 +23,25 @@ public:
         const QDBusUnixFileDescriptor fd(pair[1]); ::close(pair[1]);
         return fd;
     }
-    QList<int> capabilities, disconnected, peers;
+    QList<int> capabilities, disconnected, peers, clipboardsOpened, clipboardsClosed;
+    QList<QStringList> selections;
     QStringList callers;
+    QString readMime;
     QDBusMessage held;
     bool delay = false;
     int next = 0;
 public Q_SLOTS:
+    int connectClipboard() { const int handle = int(clipboardsOpened.size()) + 1; clipboardsOpened << handle; return handle; }
+    void disconnectClipboard(int handle) { clipboardsClosed << handle; }
+    void setSelection(int, const QStringList &mimeTypes) { selections << mimeTypes; }
+    QDBusUnixFileDescriptor readSelection(int, const QString &mimeType) {
+        readMime = mimeType;
+        int pipe[2];
+        if (pipe2(pipe, O_CLOEXEC) != 0 || ::write(pipe[1], "world", 5) != 5) return {};
+        ::close(pipe[1]);
+        const QDBusUnixFileDescriptor fd(pipe[0]); ::close(pipe[0]);
+        return fd;
+    }
     QDBusUnixFileDescriptor connectToEIS(int types, int &cookie) {
         capabilities << types; callers << message().service();
         if (delay) { setDelayedReply(true); held = message(); return {}; }
@@ -39,8 +53,10 @@ class ClosedSpy final : public QObject {
     Q_OBJECT
 public:
     int count = 0;
+    QList<QDBusMessage> clipboard;
 public Q_SLOTS:
     void closed() { ++count; }
+    void received(const QDBusMessage &message) { clipboard << message; }
 };
 class RemoteDesktopTest final : public QObject {
     Q_OBJECT
@@ -60,6 +76,9 @@ private Q_SLOTS:
         spy = std::make_unique<ClosedSpy>();
         QVERIFY(bus.client->connect(QString{}, bus.session, QStringLiteral("org.freedesktop.impl.portal.Session"),
                                     QStringLiteral("Closed"), spy.get(), SLOT(closed())));
+        for (const auto *member : {"SelectionOwnerChanged", "SelectionTransfer"})
+            QVERIFY(bus.client->connect(QString{}, QStringLiteral("/org/freedesktop/portal/desktop"),
+                QStringLiteral("org.freedesktop.impl.portal.Clipboard"), QLatin1String(member), spy.get(), SLOT(received(QDBusMessage))));
     }
     void cleanup() {
         host.reset(); eis.reset(); registry.reset(); consent.reset(); compositor.reset(); spy.reset();
@@ -148,6 +167,77 @@ private Q_SLOTS:
         QVERIFY(bus.compositor->send(compositor->held.createReply({QVariant::fromValue(fd), cookie})));
         QTRY_COMPARE(compositor->disconnected, QList<int>{cookie});
     }
+    void clipboardGrantedTransfersAndReads() {
+        QVERIFY(clipboardStarted(QStringLiteral("true")));
+        QCOMPARE(consent->question.choices.size(), 1);
+        QCOMPARE(consent->question.choices.front().id, QStringLiteral("clipboard"));
+        QCOMPARE(consent->question.choices.front().initial, QStringLiteral("false"));
+        QCOMPARE(bus.results.value(QStringLiteral("clipboard_enabled")).toBool(), true);
+        QCOMPARE(compositor->clipboardsOpened, QList<int>{1});
+        compositorSignal(QStringLiteral("selectionChanged"), {1, QStringList{QStringLiteral("text/plain")}, false});
+        QTRY_COMPARE(spy->clipboard.size(), 1);
+        QCOMPARE(spy->clipboard.front().member(), QStringLiteral("SelectionOwnerChanged"));
+        const auto owner = qdbus_cast<QVariantMap>(spy->clipboard.front().arguments().at(1));
+        QCOMPARE(owner.value(QStringLiteral("mime_types")).toStringList(), QStringList{QStringLiteral("text/plain")});
+        QCOMPARE(owner.value(QStringLiteral("session_is_owner")).toBool(), false);
+        QCOMPARE(clipboard(QStringLiteral("SetSelection"), {bus.sessionHandle(),
+            QVariantMap{{QStringLiteral("mime_types"), QStringList{QStringLiteral("text/plain")}}}}).type(), QDBusMessage::ReplyMessage);
+        QCOMPARE(compositor->selections, QList<QStringList>{QStringList{QStringLiteral("text/plain")}});
+        int paste[2];
+        QCOMPARE(pipe2(paste, O_CLOEXEC), 0);
+        compositorSignal(QStringLiteral("selectionTransfer"), {1, QStringLiteral("text/plain"),
+                                                              QVariant::fromValue(QDBusUnixFileDescriptor(paste[1]))});
+        ::close(paste[1]);
+        QTRY_COMPARE(spy->clipboard.size(), 2);
+        QCOMPARE(spy->clipboard.at(1).member(), QStringLiteral("SelectionTransfer"));
+        QCOMPARE(spy->clipboard.at(1).arguments().at(2).toUInt(), 1U);
+        {
+            const QDBusReply<QDBusUnixFileDescriptor> writer = clipboard(QStringLiteral("SelectionWrite"), {bus.sessionHandle(), 1U});
+            QVERIFY(writer.isValid());
+            QCOMPARE(::write(writer.value().fileDescriptor(), "hello", 5), ssize_t(5));
+        }
+        char pasted[8] = {};
+        QCOMPARE(::read(paste[0], pasted, sizeof pasted), ssize_t(5));
+        QCOMPARE(QByteArray(pasted), QByteArray("hello"));
+        ::close(paste[0]);
+        QCOMPARE(clipboard(QStringLiteral("SelectionWrite"), {bus.sessionHandle(), 1U}).type(), QDBusMessage::ErrorMessage);
+        QCOMPARE(clipboard(QStringLiteral("SelectionWriteDone"), {bus.sessionHandle(), 1U, true}).type(), QDBusMessage::ReplyMessage);
+        const QDBusReply<QDBusUnixFileDescriptor> reader = clipboard(QStringLiteral("SelectionRead"), {bus.sessionHandle(), QStringLiteral("text/plain")});
+        QVERIFY(reader.isValid());
+        char copied[8] = {};
+        QCOMPARE(::read(reader.value().fileDescriptor(), copied, sizeof copied), ssize_t(5));
+        QCOMPARE(QByteArray(copied), QByteArray("world"));
+        QCOMPARE(compositor->readMime, QStringLiteral("text/plain"));
+        QCOMPARE(bus.sessionCall(*bus.client, QStringLiteral("Close")).type(), QDBusMessage::ReplyMessage);
+        QTRY_COMPARE(compositor->clipboardsClosed, QList<int>{1});
+    }
+    void clipboardNeedsExplicitChoice() {
+        QVERIFY(clipboardStarted(QStringLiteral("false")));
+        QCOMPARE(bus.results.value(QStringLiteral("clipboard_enabled")).toBool(), false);
+        QVERIFY(compositor->clipboardsOpened.isEmpty());
+        QCOMPARE(clipboard(QStringLiteral("SetSelection"), {bus.sessionHandle(),
+            QVariantMap{{QStringLiteral("mime_types"), QStringList{QStringLiteral("text/plain")}}}}).type(), QDBusMessage::ErrorMessage);
+        QCOMPARE(clipboard(QStringLiteral("SelectionRead"), {bus.sessionHandle(), QStringLiteral("text/plain")}).type(),
+                 QDBusMessage::ErrorMessage);
+        // RequestClipboard after Start cannot add clipboard to a granted session.
+        QCOMPARE(clipboard(QStringLiteral("RequestClipboard"), {bus.sessionHandle(), QVariantMap{}}).type(), QDBusMessage::ErrorMessage);
+        QVERIFY(compositor->selections.isEmpty());
+    }
+    void clipboardEndsWithNativeAuthority() {
+        QVERIFY(clipboardStarted(QStringLiteral("true")));
+        consent->allowed = false; Q_EMIT consent->authorityLost();
+        QTRY_COMPARE(compositor->clipboardsClosed, QList<int>{1});
+        int paste[2];
+        QCOMPARE(pipe2(paste, O_CLOEXEC), 0);
+        compositorSignal(QStringLiteral("selectionTransfer"), {1, QStringLiteral("text/plain"),
+                                                              QVariant::fromValue(QDBusUnixFileDescriptor(paste[1]))});
+        ::close(paste[1]);
+        QTest::qWait(200);
+        QVERIFY(spy->clipboard.isEmpty()); // A retired handle forwards nothing.
+        char byte = 0;
+        QCOMPARE(::read(paste[0], &byte, 1), ssize_t(0)); // Requester sees EOF.
+        ::close(paste[0]);
+    }
     void replacedCompositorGetsNoTransport() {
         QVERIFY(started(Keyboard));
         selectedCompositor.clear();
@@ -169,6 +259,28 @@ private:
         if (!QTest::qWaitFor([this] { return consent->asks == 1; })) return false;
         Q_EMIT consent->completed(consent->token, RequestResponse::Success, ChoiceValues{});
         return bus.response(start) == 0U;
+    }
+    bool clipboardStarted(const QString &choice) {
+        if (!selected(Keyboard)) return false;
+        if (clipboard(QStringLiteral("RequestClipboard"), {bus.sessionHandle(), QVariantMap{}}).type() != QDBusMessage::ReplyMessage)
+            return false;
+        auto start = remote(QStringLiteral("Start"), {bus.request(3), bus.sessionHandle(), app, QString{}, QVariantMap{}});
+        if (!QTest::qWaitFor([this] { return consent->asks == 1; })) return false;
+        Q_EMIT consent->completed(consent->token, RequestResponse::Success,
+                                  ChoiceValues{{QStringLiteral("clipboard"), choice}});
+        return bus.response(start) == 0U;
+    }
+    QDBusMessage clipboard(const QString &member, const QVariantList &arguments) {
+        auto call = QDBusMessage::createMethodCall(QStringLiteral("org.test.Portal"), QStringLiteral("/org/freedesktop/portal/desktop"),
+                                                   QStringLiteral("org.freedesktop.impl.portal.Clipboard"), member);
+        call.setArguments(arguments);
+        return bus.client->call(call, QDBus::BlockWithGui);
+    }
+    void compositorSignal(const QString &member, const QVariantList &arguments) {
+        auto signal = QDBusMessage::createTargetedSignal(bus.service->baseService(), QStringLiteral("/org/kde/KWin/EIS/RemoteDesktop"),
+                                                         QStringLiteral("org.kde.KWin.EIS.RemoteDesktop"), member);
+        signal.setArguments(arguments);
+        QVERIFY(bus.compositor->send(signal));
     }
     QDBusPendingCall asyncConnect() {
         return remote(QStringLiteral("ConnectToEIS"), {bus.sessionHandle(), app, QVariantMap{}});
