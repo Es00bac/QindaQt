@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: available — exact e568 release-contract independent ACCEPT; six tests/native recipe PASS, awaiting installed plugin QA scope
+- Status: available — unchanged upstream native55d Alt-Tab forward/reverse/focus PASS; all leases released, installed plugin/popup QA pending
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: read-only/lightweight Python tests only; no compiler/private native lease
+- Resource: no compiler/native/GPU lease held; exact55d Alt-Tab gate released after PASS and cleanup
 
 ## Updates
 
@@ -68,3 +68,11 @@
 - 2026-10-02T20:47:23+00:00 — Claimed independent source review e568 in isolated qinda pf-release-contract-review-20261002. Actual fork55d resolves exactc031 tree. Reviewing native exact-rN/subslot dependency, retired runtime rejection, preserved ABI/plugin/shell/source/install gates; six lightweight parser tests plus actual final recipe next. No source edits/build/runtime.
 
 - 2026-10-02T20:48:25+00:00 — Independent e568 source review ACCEPT/no blocking findings; six Python tests PASS6/6, repository/source-pin/current native desktop-r1-r3dependency recipe PASS. Actualrecipe SHA matches6c168e8 blob; fork55d treec031 exact. Source text contract retains build/runtime/install gates; transitiveclosure/installedplugin gate separate, future-r2 sourcepin required. Review-only receipt/board/thread committed; no compiler/native lease held, available next manager installed-plugin QA assignment.
+
+- 2026-10-02T20:51:03+00:00 — Completed manager-routed existing installed-plugin/shell QA preparation against observedcae manager WT. Criticalcachefacts: BUILD_TESTINGOFF, PLUGINON/old68 headerprefix/binary; stale CTest catalog is not current target availability. Prepared3staticABI/2nested discovery, seven profile/resolution/package/dock rows, offscreen11profile capturematrix and3production-surface commands. No realAltTab functional row found; package tests are not switching evidence. Existing discovery stages DESTDIR rather than actualPortageinstalledfiles. Own ignoredplan ready; no builds/install/runtime/source edits, no lease held; waiting exact55d/29f artifacts/grant.
+
+- 2026-10-02T20:54:07+00:00 — Manager-routed source-only upstream AltTab preparation complete. Exactnative55d targettestTabBox/CTestkwin-testTabBox reuses actualcore/framework; smallest forward+reverse with three mappedWaylandwindows and exactactivewindow/grab/release assertions, recommended existingKeyboardFocus. Warmnativecache55d has requiredTABBOX/GLOBALSHORTCUTS/NATIVE_SHORTCUTSON. FixtureShowTabBoxfalse deliberately excludes visiblepopup; actualQindaQt package/layout/import requirement documented separately. Own ignoredsourcehash/commandplan ready; no source changes/build/nativeGPU/hostinput, no lease held.
+
+- 2026-10-02T20:56:16+00:00 — Manager grants exact55d testTabBox only, sourceclean and4actiondryrun. Actual focusedbuild launched2jobs/load20 with6GiB guard, initialMem13.3GiB. Frozen core/decorations/EIS/capturedriver SHA snapshots taken. Next unchanged3method private run-native-lock proof with corelimit0/shortTMPDIR/nohostbus/input/DRM; no visiblepopup claim. Existing forkPortage4job build independentlyactive, resources monitored.
+
+- 2026-10-02T20:58:04+00:00 — Actual unchanged native55d testTabBox forward/reverse/KeyboardFocus PASS0/3.0178s,5Qt0fail0skip2280ms; focused4actionbuildPASS9.394s/minMem12.70GiB/no guardstop. Core/decorations/EIS/capturedriver SHA unchanged; ownedPGIDsurvivors/corefiles/helpertemproots empty. Initialmissingprivate/tmp setup EXIT127 beforeQt preserved; standardtmpfs addition followed by singleactualgate. Exact hash-boundaudit prepared, leases released. ShowTabBoxfalse and retaineddecoration/font/cursor/PW/X11 warnings exclude popup/installedplugin/physical claims; awaiting next rootartifactgrant.
