@@ -41,6 +41,10 @@ qinda and four on the laptop. Each still has 26 retired packages protected by
 the currently installed desktop and remaining dependencies. All 1,541/1,358
 non-retired installed packages were retained; the seven ordinary KDE applications
 on qinda are explicitly selected before removing its old KDE desktop set.
+The qinda cleanup includes the optional KWallet PAM auto-unlock module; its
+availability at a future login is not preserved or qualified. Existing SDDM
+authentication blocks and the GNOME provider/PAM selection are retained. Manual
+legacy-provider unlock through its public API remains part of the import gate.
 The legacy Xwayland video-sharing helper is the only independently identified
 mandatory Plasma dependency. A bounded private-dependency adaptation is in
 progress to preserve that function without another shared Plasma library.
