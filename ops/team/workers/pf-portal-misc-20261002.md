@@ -1,11 +1,11 @@
 # Native miscellaneous portal delivery
 
-- Status: waiting — transferred B1/B2 repaired and focused gates passed at exact22bc04f7c; root independent review/retest pending
-- Base: `b34cf53652f693c42d053310148184942e0c5c4a`
-- Branch: `worker/pf-claude-remote-completion-20261002`
-- Worktree: `/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-completion-20261002`
-- Ownership: exactly transferred B1/B2 lifetime/wait repairs and focused test/docs, own board/thread; root independently reviews
-- Resources: warm qinda build nine named targets at -j2/-l48,6GiB memory stop and six focused CTests; no laptop compiler/GPU/install/host changes
+- Status: waiting — exact repaired routing d2dac079 conditional source ACCEPT; final overlay freeze pins pending
+- Base: `d2dac07938ad9f0721a7bcba23189c83fb96d7a6`
+- Branch: `worker/pf-routing-review-repair-20261002`
+- Worktree: `/home/cabewse/.cache/pf-routing-review-repair-20261002`
+- Ownership: own independent source review only; root integration/qualification
+- Resources: no compiler/native/host operations; final overlay archives await exact pins
 
 ## Updates
 
@@ -18,3 +18,5 @@
 - 2026-10-02T19:14:49+00:00 — Manager transferred exactly B1/B2 implementation after original Claude provider limit; ownership coordinated. Role changed from reviewer to implementer; root independently reviews/retests. Same author WT/branch atb34cf5365; source scope is lifetime guard, real libeis startup-disconnect regression and meaningful producer wait assertion only. Warm nine-target build -j2/-l48 with6GiB memory stop; six focused CTests after successful build. No feature/persistence/namespace/icon changes.
 
 - 2026-10-02T19:20:38Z — Exact repaired product22bc04f7cc45fea221f3348b1bd986f6ddca029f. Nine named targets warm build exit0 at-j2/-l48; six CTests pass6.535s with fatal Qt warnings,48 Qt passes/0fail/0skip, including real libeis startup-disconnect. First attempted peer timing failure and empty-message warning retained; closure after actual setup and pending-legacy no-reply guard repaired narrowly. Docs497/strictMkDocs exit0. Compiler released. Worker is implementer; root must independently review/retest, no self-approval or installed/native claim.
+
+- 2026-10-02T20:06:03.540181+00:00 — Exact d2 staged availability repair ACCEPT; all reported unconditional metadata paths now use existing target gate, absent case rejects metadata. Direct exact e364 top7–10 confirms conditional metadata install; prior excerpt-based absence claim was incorrect and immutable erratum posted. Actual13 resident/5 protected source routing accepted paired; no native/runtime/stage execution or release claim.
