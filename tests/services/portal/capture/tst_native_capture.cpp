@@ -133,8 +133,15 @@ private Q_SLOTS:
         reset("hold"); screenshot("Screenshot", parent); mapped(); const auto pendingPid = helperPid(); exporter.kill(); QVERIFY(exporter.waitForFinished());
         QTRY_VERIFY(kill(streamPid, 0) < 0); QTRY_VERIFY(kill(pendingPid, 0) < 0); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 2U);
     }
+    void actualPipeWireNodeFramesSessionCloseAndCancel_data() {
+        QTest::addColumn<quint32>("cursorMode");
+        QTest::newRow("hidden") << quint32(1);
+        QTest::newRow("embedded") << quint32(2);
+        QTest::newRow("metadata") << quint32(4);
+    }
     void actualPipeWireNodeFramesSessionCloseAndCancel() {
-        QString session; createSession(session); QVERIFY(!session.isEmpty()); select(session); reset("allow");
+        QFETCH(quint32, cursorMode);
+        QString session; createSession(session); QVERIFY(!session.isEmpty()); select(session, cursorMode); reset("allow");
         request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
         const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1); QVERIFY(streams.first().node > 0);
         auto remote = method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}});
@@ -240,7 +247,7 @@ private:
     QString request(const char *family, const char *member, const QVariantList &args) { return request(family, member, args, bus); }
     QString screenshot(const char *member, const QString &parent = {}) { return request("Screenshot", member, {parent, QVariantMap{{"interactive", true}}}); }
     void createSession(QString &session) { reset("allow"); request("ScreenCast", "CreateSession", {QVariantMap{{"session_handle_token", "s" + QUuid::createUuid().toString(QUuid::Id128)}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); const auto handle = responses.results.value("session_handle"); QCOMPARE(handle.metaType(), QMetaType::fromType<QString>()); session = handle.toString(); }
-    void select(const QString &session) { reset("allow"); request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"cursor_mode", 1U}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); }
+    void select(const QString &session, quint32 cursorMode = 1) { reset("allow"); request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"cursor_mode", cursorMode}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); }
     void close(const QString &path, const char *family) { auto call = QDBusMessage::createMethodCall("org.freedesktop.portal.Desktop", path, "org.freedesktop.portal."+QString::fromLatin1(family), "Close"); QDBusPendingCallWatcher closing(bus.asyncCall(call)); QTRY_VERIFY(closing.isFinished()); }
     void reset(const char *action) {
         responses.count = 0; responses.response = 99; responses.results.clear();
