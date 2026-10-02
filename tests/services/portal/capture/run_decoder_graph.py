@@ -9,6 +9,7 @@ import re
 import resource
 import select
 import signal
+import shutil
 import subprocess
 import tempfile
 import time
@@ -21,7 +22,10 @@ def main():
     parser.add_argument("--evidence-root", type=pathlib.Path, default=pathlib.Path.cwd() / "decoder-graph-evidence")
     args = parser.parse_args()
     args.evidence_root.mkdir(parents=True, exist_ok=True)
-    root = pathlib.Path(tempfile.mkdtemp(prefix="private-decoder-", dir=args.evidence_root))
+    archive = pathlib.Path(tempfile.mkdtemp(prefix="private-decoder-", dir=args.evidence_root))
+    # AF_UNIX paths are bounded independently of artifact/worktree depth.
+    # Keep only this owned runtime short; preserve its complete regular evidence.
+    root = pathlib.Path(tempfile.mkdtemp(prefix="qindaqt-decoder-"))
     os.umask(0o077)
     for name in ("runtime", "home", "config", "data", "cache"):
         (root / name).mkdir(mode=0o700)
@@ -65,7 +69,10 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
         children.append(bus)
         if not select.select([bus.stdout], [], [], 5)[0]:
             raise RuntimeError("private bus address unavailable")
-        env["DBUS_SESSION_BUS_ADDRESS"] = bus.stdout.readline().decode().strip()
+        address = bus.stdout.readline().decode().strip()
+        if not address.startswith("unix:") or bus.poll() is not None:
+            raise RuntimeError("private bus did not publish its actual address")
+        env["DBUS_SESSION_BUS_ADDRESS"] = address
         for name, command in (("pipewire", ["pipewire", "-c", str(config)]), ("wireplumber", ["wireplumber", "-p", "policy"])):
             log = (root / (name + ".log")).open("wb"); logs.append(log)
             process = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
@@ -110,8 +117,14 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             log.close()
         result.update(exit=code, children=[{"pid": child.pid, "returncode": child.returncode} for child in children], cleanup_errors=cleanup,
                       scoped_cores=[str(path) for path in root.rglob("core*") if path.is_file()])
+        result["runtime_root"] = str(root)
         (root / "audit.json").write_text(json.dumps(result, indent=2))
-        print("DECODER_GRAPH_AUDIT " + json.dumps({"evidence": str(root), **result}))
+        shutil.copytree(root, archive, dirs_exist_ok=True, symlinks=True,
+                        ignore=lambda directory, names: [name for name in names if (pathlib.Path(directory) / name).is_socket()])
+        shutil.rmtree(root)
+        result["runtime_removed"] = not root.exists()
+        (archive / "audit.json").write_text(json.dumps(result, indent=2))
+        print("DECODER_GRAPH_AUDIT " + json.dumps({"evidence": str(archive), **result}))
         if cleanup or result["scoped_cores"]:
             code = 1
     return code
