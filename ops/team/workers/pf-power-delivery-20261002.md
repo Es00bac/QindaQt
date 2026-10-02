@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — exact nine-package pretend/provider receipts handed off; review pending
+- Status: available — exact419 native provider source handed off; different review and build grant pending
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -91,3 +91,7 @@
 - 2026-10-02T21:06:11Z — Actual private exact-version Portage pretend PASS0/9.750s:9 packages only, no KF upgrades. Diagnosing actual installed Claude OR branch selection; no compile/install/unmerge/world actions.
 
 - 2026-10-02T21:07:13Z — Actual private qinda pretend exit0/9.750s, nine packages/no KF upgrades; actual installed Claude graph exit0/2.307s chooses KDE portal+cli-tools. Immutable receipts posted, no active own compiler/runtime. Available for scoped provider continuation after review.
+
+- 2026-10-02T21:18:26Z — Root authorized Claude qindaqt conditional and generic pinentry/SecretService virtual adaptation. Wrapper/vendor/control/support unchanged;10 focused checks PASS0/.320s,7 requested package build-dependency checks all installed. Preserved failed broad/deep newuse selector; targeted no-global-newuse graph underway. No compile/install/credential action.
+
+- 2026-10-02T21:23:29Z — Exact419e330 source candidate pushed:10checksPASS0/.348s,3recipeBash/XMLPASS,actual selectedPortage graphPASS12.259s/nativeDesktop+trash/no retired descendants. Runtime SCC accepted distinctly frombuild-order; noacyclic/runtimeclaim.7qinda builddep rows allinstalled. LaptopPinentry1.3.3 correction reported, noappdowngrade/build/install/credentials/sessionaction. ReviewerInputclaimactive; ownboardavailable/nocompilerlease.
