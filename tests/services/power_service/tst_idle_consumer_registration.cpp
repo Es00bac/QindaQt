@@ -5,6 +5,7 @@
 #include <qindaqt/services/power_client/idle_consumer_registrar.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
 #include <qindaqt/services/power_protocol/power_limits.h>
+#include <qindaqt/services/power_protocol/power_dbus.h>
 #include <QDBusPendingReply>
 #include <QtTest>
 using namespace QindaQt::Power;
