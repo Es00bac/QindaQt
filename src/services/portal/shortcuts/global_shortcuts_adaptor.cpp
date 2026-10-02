@@ -45,7 +45,7 @@ public:
             if (response == RequestResponse::Success && !selected) response = RequestResponse::Failed;
             if (response == RequestResponse::Success && !apply(request.path, *selected)) response = RequestResponse::Failed;
             entry = sessions.entry(request.path);
-            if (entry) { entry->pending = 0; if (response == RequestResponse::Success) entry->phase = ShortcutSessionPhase::Streaming; }
+            if (entry) { entry->pending = 0; if (response == RequestResponse::Success) entry->phase = ShortcutSessionPhase::Bound; }
             requests.finish(token, response, response == RequestResponse::Success ? publication(*selected) : QVariantMap{});
             if (response == RequestResponse::Success) Q_EMIT adaptor.ShortcutsChanged(QDBusObjectPath(request.path), shortcutDescriptions(*selected));
         });

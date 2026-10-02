@@ -6,7 +6,7 @@
 #include <QDBusVirtualObject>
 #include <memory>
 namespace QindaQt::Services::Portal {
-enum class ShortcutSessionPhase { Created, Streaming };
+enum class ShortcutSessionPhase { Created, Bound };
 // Portal-private Session wire/lifetime, adapted for shortcut ownership, never presentation policy.
 class ShortcutSessions final : public QObject {
     Q_OBJECT
