@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — exact assembled power candidate passed required seven gates; awaiting independent review and offering scoped diagnostic help
+- Status: working — qualifying Gabbee native KWin scripting endpoint preference in separate qinda worktree; power candidate frozen
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -33,3 +33,5 @@
 - 2026-10-02T18:55:37Z — Verify/material finding: actual strict assembled nine-target build PASS0/100.904s at12242/product36c5, own PGID1521532/starttick42180387 gone (88 observed members/no survivors). Seven-test actual exit8/40.412s: six pass; Lid37QtPASS/1FAIL/0SKIP because old unsupported-ScreenOff negative row now has the newly supported private facade. First failure preserved. Minimal fixture correction explicitly withdraws only private ScreenPower1 before start; both negative assertions and all positive ScreenOff rows remain. No production change. Strict docsPASS9.60s,492document/link/navPASS0.60s; requesting tiny one-TU compiler slot before seven-test replay.
 
 - 2026-10-02T19:00:18Z — Handoff: exactd1b228be96ab7cd5a5e3c549ec3d44113056c045 assembled strict nine-target build0/100.904s; fixture-only negative unavailable-ScreenOff repair build0/19.649s;7CTest/104Qt/0fail0skip0/40.368s. Docsstrict0/9.60s +492doc/nav0/0.60s. All3 groups/166 observed same-starttick members and83 logged private PIDs gone; no owned cores.73 product paths source/hash-bound; only negative fixture differs from reviewed36c5. Fork26cf production Workspace/native gate remains manager-coordinated pending; defaultoff cutover preserved. Available for exact review repairs/source-only native expectations; no compiler/runtime claimed.
+
+- 2026-10-02T19:06:00Z — Claim separate small source outcome: Gabbee exact fetched hub/main eadb8995ac8ffab99e35526e960118d1c11de232, isolated qinda gabbee.worktrees/gabbee-native-kwin-20261002 / worker/gabbee-native-kwin-20261002. Read README/HANDOFF/CODEX_HANDOFF; no AGENTS.md in repo. Own only desktop.py endpoint selection, focused bridge tests and relevant docs. Registered native endpoint preferred, one consistent endpoint per bridge, independent stock fallback preserved; actual subprocess-argv/call cleanup fixtures run with dead ambient buses/offscreen and no host action. System Python lacks pytest; using already existing Gabbee interpreter, no installation. Power0e5db candidate remains unchanged pending manager review.
