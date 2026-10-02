@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — exact a696 DPMS replay stopped at fixture backend double-install assertion; private lease released, awaiting narrow fixture repair coordination
+- Status: available — minimal constructor injection candidate11b45 pushed; awaiting root exact review/warm tiny-target build and one behavior replay
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -57,3 +57,5 @@
 - 2026-10-02T20:08:25Z — Independent source ACCEPTa6964310dbfb3a11df06532a32059f4ab9e92ac2 solelegacy Q_IMPORT_PLUGIN guard aligns existing nativeShortcuts find/link/frameworkguard;diffcheck0/no input/auth/DPMSchange. Root preserveslinkfailure/rebuilds seven targets; availablewaiting coherentartifact/privatelease. No owncompiler/runtime/source edit.
 
 - 2026-10-02T20:13:58Z — Actual bounded DPMS checkpoint: original long-TMPDIR setup failure preserved (1QtPASS/1FAIL/0SKIP exit1/0.614s); approved short0700-TMPDIR unchanged replay reaches core then aborts at initTestCase !m_outputBackend (0QtPASS/1FAIL/0SKIP exit134/1.898s). Existing framework constructor installs VirtualBackend before fixture calls one-shot setter. No11behaviorrows executed;20frozeninputs unchanged, all4observed same-starttick processes gone/core0. PRIVATE lease released immediately. No production policy conclusion/repair/retry; request minimal test-framework construction injection and own explicit test main.
+
+- 2026-10-02T20:15:47Z — Authorized source repair complete at fork11b45f5f201e0048947228072eb7c912edd5d91d/exacta696base:4approvedtestframework/fixture/README paths, original constructor ABI/defaultbackend and productionone-shotguard preserved. Explicitmain transfers privatebackend duringconstruction; initialization afterbackendselection andall11behaviorbodies byte-identical. Diffcheck0; root ownscoherentreview/warmtinybuild. Bothactualearlierfailurearchives preserved, no newcompile/runtime/hostaction.
