@@ -20,6 +20,8 @@ if(TARGET QindaQt::SessionSupervisorSupport AND QINDAQT_LIBEI_FOUND AND TARGET q
     target_link_libraries(qindaqt_portal_remote_input_clipboard_client PRIVATE Qt6::Gui)
     qindaqt_enable_warnings(qindaqt_portal_remote_input_clipboard_client)
     qt_add_executable(qindaqt_portal_native_remote_input_tests native/tst_native_remote_input.cpp)
+    add_dependencies(qindaqt_portal_native_remote_input_tests
+        qindaqt_portal_remote_input_clipboard_client qindaqt_portal_consent_input)
     target_include_directories(qindaqt_portal_native_remote_input_tests PRIVATE "${PROJECT_SOURCE_DIR}")
     target_link_libraries(qindaqt_portal_native_remote_input_tests PRIVATE QindaQt::PortalService QindaQt::PortalComposition
         QindaQt::SecretPortal QindaQt::SessionSupervisorSupport QindaQt::CompositorNames PkgConfig::QINDAQT_LIBEI Qt6::Test)

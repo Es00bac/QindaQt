@@ -1,0 +1,3 @@
+# Native qualification artifact completeness
+
+Exact cde6e37 fixture/core56a/productione2f run exited1: Qt3PASS1FAIL0SKIP2288ms. Real barrier capture, KEY_Q, explicit Release transport stop and no KEY_W pass; actual lock disconnect passes. Clipboard peer QProcess could not start because its executable had never been built in original preserved incomplete Claude cache. This is harness setup incompleteness, not production denial. Required artifact preflight and CMake dependencies prevent silent recurrence. Only bounded cached clipboard peer target is being completed. All runtime evidence remains ignored and preserved.

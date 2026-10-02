@@ -5,7 +5,7 @@
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
 - Ownership: copied Claude native tests/consent input/CMake; tests only for native portal/EIS; Claude owns remote production/combined sharing; existing shortcut fixture adaptation; tiny shared build/driver changes coordinated manager
-- Resource: manager-granted single qinda compiler/runtime slot, -j4 -l12; no ALL/laptop/host input
+- Resource: manager-granted single qinda compiler/runtime slot, -j4 -l48 with6GiB guard; no ALL/laptop/host input
 
 ## Updates
 
@@ -24,3 +24,5 @@
 - 2026-10-02T18:48:32+00:00 — Manager explicitly released qinda gates after laptop-only bus failure recovery; laptop compositor/windows untouched. Approved294/metadata7b82/import970 composed into shared runtime exact56a29e58668faca73fe7d8de46b2f2238fc158f9 and pushed worker/pf-native-input-runtime branch. Same eis/testNativeCaptureAuthority incremental targets running -j4 -l48 with6GiB memory guard. Runtime has not started yet.
 
 - 2026-10-02T19:06:15+00:00 — Coherent core repair56a incremental10actions passed42.006s. First3 native attempts had missing helper executable (harness setup, not production denial); preserved all logs, added artifact preflight and finished cached helper link. Actual complete-artifact run d94a: native3PASS1FAIL0skip1169ms; driver3PASS0fail0skip3689ms; real attachment/privacy, mapped consent, keyboardEIS and lock teardown pass. Clipboard opt-in false; own visible-choice helper now strictcompile/link PASS, next changed-helper attempt pending. NativeLock receipt is nonce/owner-bound, not cryptographically signed; earlier commit-body shorthand was imprecise.
+
+- 2026-10-02T19:16:30+00:00 — Corrected typed object-path response and explicit Release signal expectation against installed XDG contract. Actual capture activation/KEY_Q, EI stop after Release, and no post-release KEY_W pass; actual lock disconnect passes. New failure is absent ordinary clipboard peer executable from preserved incomplete Claude build, not clipboard production evidence. Completing only required cached target and adding explicit fixture artifact preflight plus target dependencies; all previous logs retained. Full journey not qualified yet.

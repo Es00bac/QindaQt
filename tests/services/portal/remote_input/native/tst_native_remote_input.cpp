@@ -17,6 +17,7 @@
 #include <QDBusPendingReply>
 #include <QDBusUnixFileDescriptor>
 #include <QProcess>
+#include <QFileInfo>
 #include <QUuid>
 #include <QtTest>
 #include <libei.h>
@@ -98,6 +99,10 @@ class NativeRemoteInputTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void initTestCase() {
+        const QFileInfo frontendPeer(QStringLiteral(QINDAQT_FRONTEND_EXECUTABLE));
+        QVERIFY2(frontendPeer.isFile() && frontendPeer.isExecutable(), "Required public portal frontend executable is unavailable");
+        const QFileInfo clipboardPeer(QStringLiteral(QINDAQT_CLIPBOARD_CLIENT));
+        QVERIFY2(clipboardPeer.isFile() && clipboardPeer.isExecutable(), "Required ordinary clipboard peer executable is unavailable");
         qDBusRegisterMetaType<QList<QVariantMap>>();
         QVERIFY(bus.isConnected());
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.portal.Documents")));
