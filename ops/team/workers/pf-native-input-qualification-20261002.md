@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: working — preserve source/receipts while manager holds all compiler/runtime for desktop recovery
+- Status: blocked — exact native source ready; compiler/runtime await explicit manager desktop-recovery release
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
@@ -18,3 +18,5 @@
 - 2026-10-02T18:38:00+00:00 — Manager pause honored immediately: no runtime launched, both compiler processes ended. Own consumer fresh moc/native object/link strict build EXIT0; actual native EIS journey has not run. Shared source remains5f164 unchanged. Source-only candidate/receipt closure proceeding; explicit recovery release required before any new compiler/runtime.
 
 - 2026-10-02T18:41:19+00:00 — Source-only successor6cfbaa82e4 preserves existing590 nativeShortcuts fixture asd976 and uses real separate bus caller/async dispatch, no source fake admission. Failed core gate receipt hashes committed; source trio294/7b82/970 awaits shared integration after recovery release. Both own WTs clean after preservation; compiler/runtime remain stopped.
+
+- 2026-10-02T18:47:09+00:00 — Completed manager-routed five-minute source/read-only Alt-Tab investigation: fresh compositor alive but new bus lacks KWin/globalaccel ownership; no verified safe in-process shortcut recovery hook found. No live-session mutation performed. Temporary mouse window activation is bounded fallback; relogin requirement remains an inference. Import970 independently accepted. Native gate can resume exact preserved source promptly after explicit release; no compiler/runtime process live.
