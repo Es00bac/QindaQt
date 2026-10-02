@@ -317,3 +317,5 @@ add_subdirectory(foundation)
 add_subdirectory(choosers)
 
 add_subdirectory(capture)
+
+add_subdirectory(shortcuts)

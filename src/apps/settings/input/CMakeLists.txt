@@ -20,6 +20,7 @@ target_sources(
         qt_keyboard_config_port.cpp
         qt_keyboard_layout_port.cpp
         qt_shortcut_port.cpp
+        qt_shortcut_commands.cpp
         shortcuts_model.cpp
         tablet_device_selection.cpp
         tablet_devices_model.cpp
@@ -51,7 +52,7 @@ target_sources(
 )
 target_link_libraries(
     qindaqt_settings_input
-    PUBLIC KF6::ConfigCore QindaQt::TabletDevices QindaQt::SettingsClient QindaQt::CompositorNames Qt6::Core Qt6::DBus Qt6::Gui Qt6::Concurrent
+    PUBLIC QindaQt::ShortcutsClient KF6::ConfigCore QindaQt::TabletDevices QindaQt::SettingsClient QindaQt::CompositorNames Qt6::Core Qt6::DBus Qt6::Gui Qt6::Concurrent
 )
 target_compile_features(qindaqt_settings_input PUBLIC cxx_std_20)
 set_target_properties(
