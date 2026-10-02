@@ -1,0 +1,5 @@
+# Independent release contract ACCEPT
+
+Exact candidate e568acc86de52322bf6c76c10d90c04a5f69be46 independently accepted; no blocking findings. Six focused Python unittest methods PASS6/6, exit0/0.003s reported; repository/source-pin/current actual native desktop recipe check exit0. Recipe exact6c168e8 blobfbac1ad5d0cebc3b61414205e89e9d3a70db8a584a324869ef447b5499f87b2d binds fork-r3:= and native-exclusivePower/libei/polkit; actualfork55d treec031 matches manifest/currentdocs. Existing plugin/shell/runtime/ABI/source/install checks retained.
+
+Own ops/audits/release-contract-e568-independent-review-20261002.json binds changed files, recipe/fork blobs, commands/results and caveats. Conservative source text check does not replace Portage transitive closure28/installed nativeplugin qualification. Actualdesktop-r1 stillcae; future-r2 must bind accepted integrated successor/archive/Manifest. No builds/runtime/source edits. Requested next action manager integrate exacte568 and route next installed-plugin QA lease/artifacts. Available, no resources held.
