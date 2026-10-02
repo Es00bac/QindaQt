@@ -208,6 +208,8 @@ bool registerRoutingFakes(QDBusConnection &bus, FakePortalRoot &root,
     if (!bus.registerObject(QString::fromLatin1(kPortalObjectPath), &root,
                             QDBusConnection::ExportAdaptors)
         || !bus.registerService(QStringLiteral(
+                                    "org.freedesktop.impl.portal.desktop.qindaqt.capture"))
+        || !bus.registerService(QStringLiteral(
                                     "org.freedesktop.impl.portal.desktop.kde"))
         || !bus.registerService(QStringLiteral(
                                     "org.freedesktop.impl.portal.desktop.gnome-keyring"))
@@ -364,7 +366,7 @@ bool runRouting(QString *error)
     if (!waitUntil([&] { return screenshot->calls() == 1; }, 5'000)) {
         return failWithCallReply(
             frontend, pending,
-            QStringLiteral("Screenshot did not reach the routed kde backend"), error);
+            QStringLiteral("Screenshot did not reach the routed protected native backend"), error);
     }
 
     pending = callFrontend(bus, "org.freedesktop.portal.ScreenCast", "CreateSession",
@@ -372,7 +374,7 @@ bool runRouting(QString *error)
     if (!waitUntil([&] { return screencast->calls() == 1; }, 5'000)) {
         return failWithCallReply(
             frontend, pending,
-            QStringLiteral("ScreenCast did not reach the routed kde backend"), error);
+            QStringLiteral("ScreenCast did not reach the routed protected native backend"), error);
     }
 
     pending = callFrontend(bus, "org.freedesktop.portal.RemoteDesktop", "CreateSession",
@@ -380,7 +382,7 @@ bool runRouting(QString *error)
     if (!waitUntil([&] { return remote->calls() == 1; }, 5'000)) {
         return failWithCallReply(
             frontend, pending,
-            QStringLiteral("RemoteDesktop did not reach the routed kde backend"), error);
+            QStringLiteral("RemoteDesktop did not reach the routed protected native backend"), error);
     }
 
     pending = callFrontend(bus, "org.freedesktop.portal.InputCapture", "CreateSession",
@@ -388,7 +390,7 @@ bool runRouting(QString *error)
     if (!waitUntil([&] { return input->calls() == 1; }, 5'000)) {
         return failWithCallReply(
             frontend, pending,
-            QStringLiteral("InputCapture did not reach the routed kde backend"), error);
+            QStringLiteral("InputCapture did not reach the routed protected native backend"), error);
     }
 
     QVariantList retrieveArguments;

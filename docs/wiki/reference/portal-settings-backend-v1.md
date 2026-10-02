@@ -21,86 +21,28 @@ desktop backend.
 
 ## Frontend routing for the QindaQt desktop
 
-`qindaqt-portals.conf` is an exact allowlist. `default=none` closes every
-family absent from this table; listing a fallback is routing policy, not a
-claim that the fallback package is installed or that QindaQt implements that
-family.
+`qindaqt-portals.conf` explicitly selects native providers with `default=none`.
+A missing native provider fails closed; no family retries KDE, GTK or LXQt.
+The exact source and staged declarations are checked with mutation controls.
+[ADR-0342](../adr/0342-route-native-portals-to-their-owning-process.md)
+supersedes the historical fallback table.
 
-| Frontend family / backend interface | Ordered selection | QindaQt authority |
+| Families | Selection | Owning process |
 | --- | --- | --- |
-| Settings / `org.freedesktop.impl.portal.Settings` | `qindaqt` | This version-1 backend |
-| Access | `qindaqt` | [Native foundation](../architecture/portal-foundation.md) |
-| AppChooser | `qindaqt` | [Native chooser version 1](portal-choosers.md) |
-| FileChooser | `qindaqt` | [Native chooser version 4](portal-choosers.md) |
-| Email | `qindaqt` | [Native foundation](../architecture/portal-foundation.md) |
-| Inhibit | `kde;gtk;lxqt` | None |
-| Notification | `qindaqt` | [Native foundation](../architecture/portal-foundation.md) |
-| Print | `kde;gtk;lxqt` | None |
-| Screenshot | `kde;gtk;lxqt` | None |
-| ScreenCast | `kde;gtk;lxqt` | None |
-| RemoteDesktop | `kde;gtk;lxqt` | None |
-| GlobalShortcuts | `kde` | None |
-| Secret | `qindaqt` | Separate [native Secret module](../architecture/secret-portal.md) |
-| InputCapture | `kde` | None |
-| Clipboard | `kde` | None |
-| Usb | `kde` | None |
-| Account | `kde` | None |
-| DynamicLauncher | `kde` | None |
-| Wallpaper | `none` | Deliberately unavailable |
-| Background | `none` | Deliberately unavailable |
-| OpenURI | Frontend-owned; no backend selector | None |
+| Settings, Secret, Access, Notification, Email, FileChooser, AppChooser, Inhibit, Print, GlobalShortcuts, Usb, Account, DynamicLauncher | `qindaqt` | Ordinary resident native backend, thirteen interfaces |
+| Screenshot, ScreenCast, RemoteDesktop, InputCapture, Clipboard | `qindaqt.capture` | Compositor-launched protected sharing/input broker, five interfaces |
+| Wallpaper, Background | `none` | Deliberately unavailable |
+| OpenURI and other frontend-owned methods | No backend selector | Standard frontend |
 | Any unlisted family | `default=none` | Deliberately unavailable |
 
-The frontend filters the ordered names by the staged providers that advertise
-the requested implementation interface. The first available match wins.
-QindaQt's `.portal` advertises Settings, Secret, Access, Notification, Email,
-FileChooser and AppChooser. Every other family retains its explicit fallback or
-closed route. An unavailable native chooser fails closed without fallback.
-
-Every family routed to `kde` depends on the KDE backend running under the
-compatibility identity QindaQt's systemd drop-in supplies
-([ADR-0088](../adr/0088-enable-kde-remote-desktop-for-qindaqt.md)). That backend
-registers ScreenCast, Screenshot, RemoteDesktop, InputCapture and
-GlobalShortcuts **only** with `XDG_CURRENT_DESKTOP=KDE`: measured on the same
-binary and compositor, the KDE identity yields 19 impl interfaces and the
-QindaQt identity 11, with none of the capture ones. The drop-in therefore also
-overrides the unit to `Type=exec`
-([ADR-0170](../adr/0170-survive-a-private-session-bus-for-dbus-units.md)),
-because on a session running the private bus QindaQt bootstraps itself the
-systemd user manager cannot observe a `Type=dbus` unit taking its name, kills
-the working backend at `TimeoutStartSec`, and D-Bus activation respawns it
-without the drop-in - leaving screen capture unavailable desktop-wide. The
-`qindaqt.portal-kde-compat` row asserts both halves.
-
-GlobalShortcuts lists only `kde` rather than the uniform `kde;gtk;lxqt` order
-used for the other reviewed families: the installed `xdg-desktop-portal-gtk`
-and `xdg-desktop-portal-lxqt` backends do not advertise
-`org.freedesktop.impl.portal.GlobalShortcuts` in their `.portal` metadata, so
-listing them would document an unsupported fallback rather than an inert one.
-The boundary test compares the exact selector string, so a future edit that
-widens this entry back to `kde;gtk;lxqt` fails closed until the listed
-backends are re-verified. See
-[ADR-0086](../adr/0086-route-globalshortcuts-only-to-a-verified-backend.md).
-
-Secret lists only `qindaqt`, the separate native Secret backend. The installed
-KWallet and GNOME declarations do not receive a fallback. Native per-application
-identity, record persistence and opaque legacy compatibility belong to
-[ADR-0310](../adr/0310-native-per-application-secret-portal.md) and
-[ADR-0312](../adr/0312-preserve-exact-legacy-portal-secrets.md). The routing checker
-rejects a dropped or rerouted Secret row under the closed default.
-
-InputCapture, Clipboard, and Usb list only `kde` because it is the only
-installed provider whose `.portal` metadata advertises those interfaces.
-Account and DynamicLauncher also list only `kde` even though the installed
-`gtk.portal` advertises them: the KDE backend is the primary provider in a
-KWin session, and keeping one reviewed consent surface beats documenting a
-second inert fallback. Wallpaper is closed like Background: the KDE backend
-would change Plasma's wallpaper, which QindaQt does not use, and wallpaper
-surfaces are owned by the shell
-([ADR-0078](../adr/0078-own-wallpaper-surfaces-in-the-shell.md)). The
-frontend exports a family's interface only when the selector resolves an
-implementation for it, so `none` rows keep Wallpaper and Background
-unexported entirely; the private routing proof asserts both stay unexported.
+The five sharing/input rows move together so ScreenCast.SelectSources can find
+its RemoteDesktop session and one owner retires its streams, devices and
+clipboard. The ordinary resident exports none of those five interfaces.
+`qindaqt.capture.portal` is installed only with the protected broker; it has no
+D-Bus activation descriptor. The existing fixed compositor launch and inherited
+capability remain its sole source of capture authority. The package installs no
+KDE backend identity drop-in. Source selection does not claim installation or
+physical qualification; coherent native and Portage gates remain required.
 
 ## Methods and signal
 

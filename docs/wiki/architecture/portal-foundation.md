@@ -1,14 +1,17 @@
 # Native portal foundation
 
-The resident composes independent standard Access, Notification, Email and
-Inhibit backends alongside the unchanged [appearance backend](portal-service.md)
-and separate [Secret backend](secret-portal.md). The source package declaration and selector route Settings, Secret, Access,
-Notification, Email, FileChooser and AppChooser to QindaQt. Inhibit retains KDE fallback because native
-Power consumes no complete idle scopes. Installed session and sandbox delivery
-remain manager gates; no selector change claims physical qualification.
+The ordinary resident composes thirteen native standard interfaces: Settings,
+Secret, Access, Notification, Email, FileChooser, AppChooser, Inhibit, Print,
+GlobalShortcuts, Usb, Account and DynamicLauncher. Capture and remote input live
+in a separately compositor-launched protected broker; the ordinary composition
+exports none of their five interfaces or an ordinary ProcessCapture. The native
+selector and current owning processes are fixed by
+[ADR-0342](../adr/0342-route-native-portals-to-their-owning-process.md).
+Inhibit consumes native Power1's authenticated idle scopes; unavailable scopes
+fail closed. Installed session and sandbox delivery remain manager gates.
 
 [ADR-0318](../adr/0318-native-portal-foundation.md) records this process boundary.
-The unrouted [remote-input candidate](portal-remote-input.md) reuses these
+The protected [remote-input composition](portal-remote-input.md) reuses these
 request, session, consent and lock components for RemoteDesktop, InputCapture and Clipboard.
 The [native chooser components](../reference/portal-choosers.md) adds independent
 wire policy, adaptors and ordinary native-dialog helper under
