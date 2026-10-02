@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — minimal constructor injection candidate11b45 pushed; awaiting root exact review/warm tiny-target build and one behavior replay
+- Status: available — coherent195 actual DPMS10behavior rows pass; expiry row requests invalid350ms lifetime; private lease released
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -59,3 +59,7 @@
 - 2026-10-02T20:13:58Z — Actual bounded DPMS checkpoint: original long-TMPDIR setup failure preserved (1QtPASS/1FAIL/0SKIP exit1/0.614s); approved short0700-TMPDIR unchanged replay reaches core then aborts at initTestCase !m_outputBackend (0QtPASS/1FAIL/0SKIP exit134/1.898s). Existing framework constructor installs VirtualBackend before fixture calls one-shot setter. No11behaviorrows executed;20frozeninputs unchanged, all4observed same-starttick processes gone/core0. PRIVATE lease released immediately. No production policy conclusion/repair/retry; request minimal test-framework construction injection and own explicit test main.
 
 - 2026-10-02T20:15:47Z — Authorized source repair complete at fork11b45f5f201e0048947228072eb7c912edd5d91d/exacta696base:4approvedtestframework/fixture/README paths, original constructor ABI/defaultbackend and productionone-shotguard preserved. Explicitmain transfers privatebackend duringconstruction; initialization afterbackendselection andall11behaviorbodies byte-identical. Diffcheck0; root ownscoherentreview/warmtinybuild. Bothactualearlierfailurearchives preserved, no newcompile/runtime/hostaction.
+
+- 2026-10-02T20:18:57Z — Claim actual one-run lease: root independently accepts11b/integrates195417e8f4f0e95158f470132e85362aa247c1d3, coherent3targetbuild0/24.390s. One unchanged11rowgate starts with new short0700TMPDIR/core0/privatebus/6GiBguard; source/artifact/framework inventory refrozen. Prior2actualfailurearchives preserved, no productsource/sharedcache edits. Release private promptly at first actual outcome.
+
+- 2026-10-02T20:19:50Z — Actual coherent195 ONErun exit1/4.162051s, Qt12PASS/1FAIL/0SKIP/3191ms:10behaviorrows pass, expiryAndAuthorityLoss fails beforeexpiry becausefixturedeadline350ms violates unchangedledger1000msminimum. No productionpolicyfailure inferred; ownerloss portion unexecuted. All22frozeninputs unchanged;1725285/starttick42723658 +3observeddescendants gone/core0. Privatelease released immediatelytoInputqueue. Propose one-linefixture1500msdeadline preserving2500msactualexpiry/ownerlossassertions; awaiting root scope/review/tinyrebuild/replay.
