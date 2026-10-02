@@ -11,6 +11,17 @@ file(GLOB_RECURSE portal_sources LIST_DIRECTORIES false
 # files below are the ADR0318 process/platform composition boundary, not an
 # exemption for unknown future files or arbitrary standard interfaces.
 set(foundation_files
+    # ADR-0334: native shortcuts session adapter and ordinary consent helper.
+    "shortcuts/CMakeLists.txt"
+    "shortcuts/global_shortcuts_adaptor.h"
+    "shortcuts/global_shortcuts_adaptor.cpp"
+    "shortcuts/shortcut_sessions.cpp"
+    "shortcuts/shortcut_sessions_p.h"
+    "shortcuts/shortcut_wire.h"
+    "shortcuts/shortcut_wire.cpp"
+    "shortcuts/shortcut_ui.h"
+    "shortcuts/process_shortcuts.cpp"
+    "shortcuts/helper_main.cpp"
     "misc_families/CMakeLists.txt"
     "misc_families/account_adaptor.cpp"
     "misc_families/account_adaptor.h"
@@ -214,6 +225,9 @@ if(DEFINED STAGE_ROOT)
     file(GLOB_RECURSE installed_portal_headers LIST_DIRECTORIES false
          "${STAGE_ROOT}/qindaqt/services/portal/*.h")
     set(expected_headers
+        "compositor_eis.h"
+        "input_capture_adaptor.h"
+        "remote_desktop_adaptor.h"
         "misc_ui.h"
         "misc_policy.h"
         "print_policy.h"
