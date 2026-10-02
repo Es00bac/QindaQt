@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "status": "PASS bounded standalone dependency contract after exact root source ACCEPT",
+  "fixture_candidates": [
+    "184e2554138f9f3a749d5338d9bb64d1ae9270f2",
+    "16a7bb890ca1e3c15a7cd72c23fe1b3ba02aaec0"
+  ],
+  "execution_head": "0f9a21604564dea4eecfeaef8897be1b82f475b8",
+  "production_equivalent": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
+  "production_diff_only": [
+    "tests/compositor/CMakeLists.txt",
+    "tests/compositor/verify_kwin_plugin_dependency.cmake",
+    "tests/services/portal/remote_input/CMakeLists.txt"
+  ],
+  "result": {
+    "exit_code": 0,
+    "elapsed_seconds": 97.61644224100746
+  },
+  "configurations_passed": [
+    "requiredON rejects missingfork",
+    "explicitOFF configures",
+    "explicitOFF+testingON configures",
+    "standalonebridge withfork/decoration disabled configures"
+  ],
+  "layout": {
+    "prefix": "/usr",
+    "libexec": "libexec",
+    "authority_header": "/usr/include/qindaqt-kwin/capture-authority/launchpaths.h",
+    "authority_sha256": "91fb9bf26e046b527b9b7b61819c6c3e18933c2dcc2c5a4db24951ec82376bf2"
+  },
+  "files": {
+    "dependency-peer-corrected-command.json": {
+      "sha256": "43d0e25f09de5c9d653d21a7bafd5fdb3f1c58a2453f887e8ab8562cc74b1197",
+      "bytes": 939
+    },
+    "dependency-peer-corrected-status.json": {
+      "sha256": "74503d8874962528f41a529fd21cd9d0d5ee64462a5c92cd8a8d6839bb8362a8",
+      "bytes": 61
+    },
+    "dependency-peer-corrected.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "static.log": {
+      "sha256": "b29e7cd0bb839819e5fd9e820b74b53a00cebaa784e283482a78fc89887e7109",
+      "bytes": 8306
+    },
+    "dependency-corrected.log": {
+      "sha256": "31434a2ecc903ba81bf63fe8ec1c4804c455cbaab12c8d08cda32c7a642943b3",
+      "bytes": 599083
+    }
+  },
+  "limits": [
+    "Original registered29f CTest failure is preserved and not relabeled.",
+    "No production/installed binary or package change; test-only postfreeze correction.",
+    "No new compiler/runtime or authority bypass."
+  ]
+}
