@@ -77,7 +77,7 @@ with tempfile.TemporaryDirectory(prefix="qindaqt-native-remote-input-") as tmp:
             return (runtime/"qindaqt-7").exists() and (not native_driver or "NATIVE_INPUT_READY" in (root/"compositor.log").read_text())
         while not ready() and comp.poll() is None and time.monotonic() < deadline: time.sleep(.05)
         if not ready(): raise RuntimeError("private compositor unavailable")
-        test = spawn([fixture, *sys.argv[5:]])
+        test = spawn([fixture, "-nocrashhandler", *sys.argv[5:]])
         code = test.wait(timeout=150)
         if code == 0: assert comp.poll() is None, "production compositor exited"
         if native_driver:

@@ -18,6 +18,7 @@
 #include <QDBusUnixFileDescriptor>
 #include <QProcess>
 #include <QFileInfo>
+#include <QScopeGuard>
 #include <QUuid>
 #include <QtTest>
 #include <libei.h>
@@ -226,6 +227,7 @@ private Q_SLOTS:
                  QVariantMap{{QStringLiteral("mime_types"), QStringList{QStringLiteral("text/plain;charset=utf-8"), QStringLiteral("text/plain")}}}}).type(),
                  QDBusMessage::ReplyMessage);
         QProcess paste; paste.setProcessEnvironment(clientEnvironment());
+        const auto pasteCleanup = qScopeGuard([&] { if (paste.state() != QProcess::NotRunning) { paste.kill(); paste.waitForFinished(3000); } });
         paste.start(QStringLiteral(QINDAQT_CLIPBOARD_CLIENT), {QStringLiteral("paste")}); QVERIFY(paste.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(!events.named(QStringLiteral("SelectionTransfer")).isEmpty(), 10000);
         const auto transfer = events.named(QStringLiteral("SelectionTransfer")).constFirst();
@@ -244,8 +246,10 @@ private Q_SLOTS:
 
         // Local selection read by the remote session.
         QProcess copy; copy.setProcessEnvironment(clientEnvironment());
+        const auto copyCleanup = qScopeGuard([&] { if (copy.state() != QProcess::NotRunning) { copy.kill(); copy.waitForFinished(3000); } });
         copy.start(QStringLiteral(QINDAQT_CLIPBOARD_CLIENT), {QStringLiteral("copy"), QStringLiteral("local payload")}); QVERIFY(copy.waitForStarted());
-        QTRY_VERIFY_WITH_TIMEOUT(copy.readAllStandardOutput().contains("COPIED"), 10000);
+        QByteArray copyOutput;
+        QTRY_VERIFY_WITH_TIMEOUT((copyOutput += copy.readAllStandardOutput(), copyOutput.contains("COPIED")), 10000);
         QTRY_VERIFY_WITH_TIMEOUT([&] {
             for (const auto &owner : events.named(QStringLiteral("SelectionOwnerChanged")))
                 if (options(owner, 1).value(QStringLiteral("mime_types")).toStringList().contains(QStringLiteral("text/plain;charset=utf-8"))
