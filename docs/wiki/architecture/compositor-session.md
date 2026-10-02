@@ -20,7 +20,7 @@ state and the upstream release it descends from:
 | Field | Value |
 | --- | --- |
 | Fork | `qindaqt-kwin` `6.6.6.1`, package `gui-wm/qindaqt-kwin-6.6.6_p1`, hub `qinda:~/git/qindaqt-kwin.git` |
-| Fork commit | `0dd2fdb802c6dfdecb4771942b05788a8aa386b5` (tree `97ade09fdc536f6293b74d2114aaf04a699e9351`) |
+| Fork commit | `68c4d74f903b7e8990dd5fd5d509ec8154eac1d1` (tree `9165a8817dfe190bfed59b20e42acc6291d82a27`) |
 | Upstream release/ref | KWin `6.6.6`, `refs/tags/v6.6.6` |
 | Upstream tag object | `43cb730ca363b995dfd5f0ceb537e4c37a7bb5ff` |
 | Upstream commit | `9bf2235fad10de9048c634e376bf12e56b3023e6` |
@@ -32,6 +32,14 @@ state and the upstream release it descends from:
 This is a binary plugin ABI, not a compatibility range. QindaQt must rebuild
 and rerun the compositor matrix for every fork release. The manifest records
 KWin's Qt minimum as 6.10.0 while QindaQt's baseline is Qt 6.11.
+
+The October 1 development pin includes independently accepted capture-only
+authority and deferred scene-source lifetime. Its production build keeps both
+test-authorization options off; the separately built native test image is
+noninstallable. The source hub and clean working checkout match this pin.
+This qualification input does not deliver a new installed fork release; serial,
+package, consumer rebuild and complete release gates stay coupled by the
+[upgrade procedure](../development/kwin-upgrades.md).
 
 The supported ABI is not a CMake option. Configuration removes the former
 cache entry, rejects a conflicting value, verifies the fixed ABI against the
