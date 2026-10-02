@@ -4,7 +4,7 @@
 - **Date:** 2026-09-11
 - **Owners:** Portal platform services
 - **Supersedes:** None
-- **Superseded by:** None
+- **Superseded by:** [ADR-0342](0342-route-native-portals-to-their-owning-process.md) for the provider table; closed-default policy remains
 
 ## Context
 

@@ -143,6 +143,9 @@ set(foundation_files
     "remote_input/src/compositor_eis.cpp"
     "remote_input/src/remote_sessions.cpp"
     "remote_input/src/remote_sessions_p.h"
+    # ADR-0335 legacy Notify adapter confines the real libei sender here.
+    "remote_input/src/legacy_input.cpp"
+    "remote_input/src/legacy_input_p.h"
     "remote_input/src/remote_desktop_adaptor.cpp"
     "remote_input/src/input_capture_adaptor.cpp"
     "remote_input/src/clipboard_adaptor_p.h"
@@ -199,10 +202,10 @@ if(NOT EXISTS "${portal_file}")
 endif()
 file(READ "${portal_file}" portal_content)
 set(expected_portal_content
-    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Secret;org.freedesktop.impl.portal.Access;org.freedesktop.impl.portal.Notification;org.freedesktop.impl.portal.Email;org.freedesktop.impl.portal.FileChooser;org.freedesktop.impl.portal.AppChooser\nUseIn=QindaQt\n")
+    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt\nInterfaces=org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Secret;org.freedesktop.impl.portal.Access;org.freedesktop.impl.portal.Notification;org.freedesktop.impl.portal.Email;org.freedesktop.impl.portal.FileChooser;org.freedesktop.impl.portal.AppChooser;org.freedesktop.impl.portal.Inhibit;org.freedesktop.impl.portal.Print;org.freedesktop.impl.portal.GlobalShortcuts;org.freedesktop.impl.portal.Usb;org.freedesktop.impl.portal.Account;org.freedesktop.impl.portal.DynamicLauncher\nUseIn=QindaQt\n")
 if(NOT portal_content STREQUAL expected_portal_content)
     message(FATAL_ERROR
-        "Portal .portal differs from exact Settings and Secret interfaces")
+        "Portal .portal differs from exact native resident interfaces")
 endif()
 
 if(DEFINED PORTAL_SELECTION_FILE)
@@ -215,10 +218,25 @@ if(NOT EXISTS "${selection_file}")
 endif()
 file(READ "${selection_file}" selection_content)
 set(expected_selection_content
-    "[preferred]\ndefault=none\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Access=qindaqt\norg.freedesktop.impl.portal.AppChooser=qindaqt\norg.freedesktop.impl.portal.FileChooser=qindaqt\norg.freedesktop.impl.portal.Email=qindaqt\norg.freedesktop.impl.portal.Inhibit=kde;gtk;lxqt\norg.freedesktop.impl.portal.Notification=qindaqt\norg.freedesktop.impl.portal.Print=kde;gtk;lxqt\norg.freedesktop.impl.portal.Screenshot=kde;gtk;lxqt\norg.freedesktop.impl.portal.ScreenCast=kde;gtk;lxqt\norg.freedesktop.impl.portal.RemoteDesktop=kde;gtk;lxqt\norg.freedesktop.impl.portal.GlobalShortcuts=kde\norg.freedesktop.impl.portal.Secret=qindaqt\norg.freedesktop.impl.portal.InputCapture=kde\norg.freedesktop.impl.portal.Clipboard=kde\norg.freedesktop.impl.portal.Usb=kde\norg.freedesktop.impl.portal.Account=kde\norg.freedesktop.impl.portal.DynamicLauncher=kde\norg.freedesktop.impl.portal.Wallpaper=none\norg.freedesktop.impl.portal.Background=none\n")
+    "[preferred]\ndefault=none\norg.freedesktop.impl.portal.Settings=qindaqt\norg.freedesktop.impl.portal.Access=qindaqt\norg.freedesktop.impl.portal.AppChooser=qindaqt\norg.freedesktop.impl.portal.FileChooser=qindaqt\norg.freedesktop.impl.portal.Email=qindaqt\norg.freedesktop.impl.portal.Inhibit=qindaqt\norg.freedesktop.impl.portal.Notification=qindaqt\norg.freedesktop.impl.portal.Print=qindaqt\norg.freedesktop.impl.portal.Screenshot=qindaqt.capture\norg.freedesktop.impl.portal.ScreenCast=qindaqt.capture\norg.freedesktop.impl.portal.RemoteDesktop=qindaqt.capture\norg.freedesktop.impl.portal.GlobalShortcuts=qindaqt\norg.freedesktop.impl.portal.Secret=qindaqt\norg.freedesktop.impl.portal.InputCapture=qindaqt.capture\norg.freedesktop.impl.portal.Clipboard=qindaqt.capture\norg.freedesktop.impl.portal.Usb=qindaqt\norg.freedesktop.impl.portal.Account=qindaqt\norg.freedesktop.impl.portal.DynamicLauncher=qindaqt\norg.freedesktop.impl.portal.Wallpaper=none\norg.freedesktop.impl.portal.Background=none\n")
 if(NOT selection_content STREQUAL expected_selection_content)
     message(FATAL_ERROR
-        "Portal selector differs from exact Settings/fallback routing policy")
+        "Portal selector differs from exact native routing policy")
+endif()
+
+if(DEFINED PORTAL_CAPTURE_METADATA_FILE)
+    set(capture_portal_file "${PORTAL_CAPTURE_METADATA_FILE}")
+else()
+    set(capture_portal_file "${PORTAL_ROOT}/data/qindaqt.capture.portal")
+endif()
+if(NOT EXISTS "${capture_portal_file}")
+    message(FATAL_ERROR "Native capture metadata is missing: ${capture_portal_file}")
+endif()
+file(READ "${capture_portal_file}" capture_portal_content)
+set(expected_capture_portal_content
+    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt.capture\nInterfaces=org.freedesktop.impl.portal.Screenshot;org.freedesktop.impl.portal.ScreenCast;org.freedesktop.impl.portal.RemoteDesktop;org.freedesktop.impl.portal.InputCapture;org.freedesktop.impl.portal.Clipboard\nUseIn=QindaQt\n")
+if(NOT capture_portal_content STREQUAL expected_capture_portal_content)
+    message(FATAL_ERROR "Portal .portal differs from exact protected capture/input interfaces")
 endif()
 
 if(DEFINED STAGE_ROOT)
