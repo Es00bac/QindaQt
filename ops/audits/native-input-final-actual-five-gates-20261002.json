@@ -1,0 +1,1154 @@
+{
+  "schema_version": 1,
+  "author": "qinda_icon_brand_audit",
+  "observed_at": "2026-10-02T20:44:49+00:00",
+  "scope": "Five bounded actual native protected portal gates; candidate qualification",
+  "result": "PASS",
+  "source_commit": "f99bc0b994b7a4013b6d660961c2446a48f7291f",
+  "assembled_production_base": "cb58205992bdf35bddc7bb30780482f5695f623d",
+  "compiled_cpp_source_commit": "537d03a8757432e0f1b00fa6e289431d9c95e38a",
+  "accepted_consent_helper_source_commit": "10292288b92b8dd41161d6c14587addd488652c8",
+  "core_source_commit": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+  "artifact_preflight": {
+    "receipt": {
+      "path": "build/final-native-20261002/complete-preflight-core-e9.json",
+      "sha256": "97fc94a6b26cfa9e7a9371884e2a715cfbaf579a206443d16c3a058e008a05cc",
+      "bytes": 85825
+    },
+    "count": 17,
+    "errors": [],
+    "artifacts": {
+      "frontend": {
+        "path": "/usr/libexec/xdg-desktop-portal",
+        "sha256": "9b593c25454d96dfaedc4d7106e4265b01560ffb261889d61621612ea4e350c5",
+        "is_file": true,
+        "executable": true
+      },
+      "production_broker": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/portal/capture/qindaqt-portal-capture-backend",
+        "sha256": "a8bec6a8808e6317443f5554b1e37683669b945e4e801ea114c6d29f05d4f762",
+        "is_file": true,
+        "executable": true
+      },
+      "test_broker": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_test_backend",
+        "sha256": "50b87129ef1604205f48359f1e8c300c6b94b316ec49d0116e85c269d2f9a779",
+        "is_file": true,
+        "executable": true
+      },
+      "production_capture_helper": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/portal/capture/qindaqt-portal-capture",
+        "sha256": "3ab785450aee0475917292855b7390256437c38bf0a8733af126d78202ab68e8",
+        "is_file": true,
+        "executable": true
+      },
+      "capture_input_helper": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_input",
+        "sha256": "c391f40a3d59ebb18a4bb93ff3fe8ddccb13715260631dc20dd7907900fd522b",
+        "is_file": true,
+        "executable": true
+      },
+      "production_consent_helper": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/portal/consent/qindaqt-portal-consent",
+        "sha256": "65935bdb53139509f6f39c0b789083d34dfd7abaebdeaeea07e6a4cb83dfda10",
+        "is_file": true,
+        "executable": true
+      },
+      "consent_input_helper": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_consent_input",
+        "sha256": "eb21ceb0bdf953c01fe27d5b4c8171985a57ddf60ff9fc616b88aaeaefa4df6d",
+        "is_file": true,
+        "executable": true
+      },
+      "clipboard_peer": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/remote_input/qindaqt_portal_remote_input_clipboard_client",
+        "sha256": "6ede635a3eeb734dcc9330c4ea1589a920570656e536c08e14aa640022385867",
+        "is_file": true,
+        "executable": true
+      },
+      "capture_fixture": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_native_capture_tests",
+        "sha256": "4a35b4b7b7e9d7c7793f855ceaab072c3173213131310237f9026ed526e38a60",
+        "is_file": true,
+        "executable": true
+      },
+      "input_fixture": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/remote_input/qindaqt_portal_native_remote_input_tests",
+        "sha256": "e57f6f2b80b9e29589f7284ef6aa79e20c9367f472e2d7042f7332dcd3f015df",
+        "is_file": true,
+        "executable": true
+      },
+      "pixels": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_pixels",
+        "sha256": "0831797f09f145cd0a3bd9fbdf49324ca31ac54f2911ee3c70e47839cf1bf298",
+        "is_file": true,
+        "executable": true
+      },
+      "relay": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/application_uri/qindaqt-uri-relay",
+        "sha256": "8534b5cf5f111424b7d8a0f00e4a9ac5de933789e002307b6d4d957b9ad4ed72",
+        "is_file": true,
+        "executable": true
+      },
+      "foreign_exporter": {
+        "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_foreign_exporter",
+        "sha256": "71ebdd34eaeb9cc1875a895d9c84d08297ca5922d713eb4adbfc427798c61a4c",
+        "is_file": true,
+        "executable": true
+      },
+      "permission_store": {
+        "path": "/usr/libexec/xdg-permission-store",
+        "sha256": "f25c5a4c9dcb6a3d072ae383586a4e975ba2890a90d03bb5c4ee50c36f7099b9",
+        "is_file": true,
+        "executable": true
+      },
+      "driver": {
+        "path": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "sha256": "4157b22fa3e5b3fadb587b67ee6a98c5f739a788284ac8990a7dd78be927a0eb",
+        "is_file": true,
+        "executable": true
+      },
+      "core": {
+        "path": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin.so",
+        "sha256": "ac7feed8999f4ad63a5697d3fdeeac132f5d619fab1b987b98af0a0f4f797ecf",
+        "is_file": true,
+        "executable": true
+      },
+      "eis": {
+        "path": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/eis.so",
+        "sha256": "702690d6c6d03b0a014745b59157a8c91bac9a601be9ebf80c342845d36165bf",
+        "is_file": true,
+        "executable": true
+      }
+    }
+  },
+  "isolation": {
+    "machine": "qinda",
+    "renderer": "AMD5700XT renderD128 only; runtime supportInformation independently asserted by three capture rows; same frozen real driver/config for two input rows",
+    "unshared": [
+      "user",
+      "pid",
+      "net",
+      "ipc",
+      "uts"
+    ],
+    "host_session_input_audio_exposed": false,
+    "actual_protected_broker": true,
+    "private_native_input_sentinel": false,
+    "native_owner": "org.freedesktop.impl.portal.desktop.qindaqt.capture",
+    "native_compositor": "org.qindaqt.KWin",
+    "consent": "Actual offered visible checkboxes/Grant with native owner PID plus real Wayland SO_PEERCRED; sanitizer unchanged",
+    "permission_store": "Real /usr/libexec/xdg-permission-store on private bus/data"
+  },
+  "cases": [
+    {
+      "case": "combinedRemoteDesktopSharesFramesClipboardAndCloses",
+      "attempt": "sanitized-helper-final-e9",
+      "source_commit": "a542213c60aee5345e5057420e587481e520077b",
+      "core_source_commit": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+      "status": {
+        "exit_code": 0,
+        "elapsed_seconds": 7.030766937008593
+      },
+      "caller_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 3069
+      },
+      "core_driver_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 6189
+      },
+      "covered_assertions": "Protected ordinary combined RemoteDesktop/ScreenCast: monitor choice, actual decoded PipeWire frames, EIS keyboard/pointer, explicit Clipboard opt-in and ordinary paste; Close retires EI/producer/node/frames.",
+      "command": [
+        "/usr/bin/bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--unshare-ipc",
+        "--unshare-uts",
+        "--die-with-parent",
+        "--new-session",
+        "--cap-drop",
+        "ALL",
+        "--hostname",
+        "pf-final-native",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib64",
+        "/lib64",
+        "--symlink",
+        "usr/bin",
+        "/bin",
+        "--ro-bind",
+        "/etc/ld.so.cache",
+        "/etc/ld.so.cache",
+        "--ro-bind",
+        "/etc/passwd",
+        "/etc/passwd",
+        "--ro-bind",
+        "/etc/group",
+        "/etc/group",
+        "--ro-bind",
+        "/etc/nsswitch.conf",
+        "/etc/nsswitch.conf",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        "/tmp",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "--ro-bind",
+        "/sys",
+        "/sys",
+        "--dev-bind",
+        "/dev/dri/renderD128",
+        "/dev/dri/renderD128",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9",
+        "/task",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/native-capture-evidence",
+        "--clearenv",
+        "--setenv",
+        "PATH",
+        "/usr/bin:/bin",
+        "--setenv",
+        "HOME",
+        "/task/home",
+        "--setenv",
+        "TMPDIR",
+        "/task/tmp",
+        "--setenv",
+        "XDG_RUNTIME_DIR",
+        "/task/runtime",
+        "--setenv",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-session-bus",
+        "--setenv",
+        "DBUS_SYSTEM_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-system-bus",
+        "--setenv",
+        "LIBGL_ALWAYS_SOFTWARE",
+        "0",
+        "/usr/bin/python3",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/tests/services/portal/capture/run_native_capture.py",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_native_capture_tests",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_input",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_consent_input",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/application_uri/qindaqt-uri-relay",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_foreign_exporter",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_pixels",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt.portal",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt-portals.conf",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_test_backend",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin",
+        "--case",
+        "combinedRemoteDesktopSharesFramesClipboardAndCloses",
+        "--renderer",
+        "render-node"
+      ],
+      "receipt_files": [
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/command.json",
+          "sha256": "2ca360a36fc38d2e5faa99195201abd8ae3be87423fb06fdbff424024f02efc3",
+          "bytes": 4584
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/status.json",
+          "sha256": "29ddca90a4995b836879179ba8dd1f3dc67380c3df6d7f566e29df0e70736874",
+          "bytes": 61
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/runtime.log",
+          "sha256": "fbc2fd6ba13dc32fcbd8f7eaa098469a816422d5cb25b585a9504fd72385e2f5",
+          "bytes": 1297
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/pgid.json",
+          "sha256": "371d90edde94e2578d02825ea8a2703b2de06d2ca0a6d62f91a2342c3a5c1532",
+          "bytes": 34
+        }
+      ],
+      "evidence_files": [
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/audit.json",
+          "sha256": "e4a761b5efa7b4b7b3d2eb826a767ebd84900f0e4a7944e600337ec0bb483df2",
+          "bytes": 479
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/compositor.log",
+          "sha256": "17f39321b99d822c405cfaf767c2db6731a9c3dea322b72dec9b643b31fd6dc9",
+          "bytes": 2661
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/native-renderer.audit",
+          "sha256": "98bf118a5adac7c72327f0cc487dc133078066af0ece7c572cb553f04ba86ca4",
+          "bytes": 131
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/pipewire.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/producer-frame.audit",
+          "sha256": "4f1867b5f8e662651bcc1261f4e88255228e41c046a782e8d93a343812c6274e",
+          "bytes": 80
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/producer-lifecycle.audit",
+          "sha256": "3211ef85e367943f5e27ede6a2aa4f3b5cf4ef22ad9b6929bbe0d76648a45a7a",
+          "bytes": 40
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/producer-stderr.audit",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/qindaqt-capture.audit",
+          "sha256": "23b5b106db800d47227844a9072b89a06d7fa0228f9e4cd340a17fc3fa4fc4d7",
+          "bytes": 3025
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/qindaqt-consent.audit",
+          "sha256": "fe5d13746d983803a0f2fae6b801756109bdb32117d04448785c920fb0e821ba",
+          "bytes": 100
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/sanitized-helper-final-e9/evidence/qindaqt-native-capture-37jum0g7/wireplumber.log",
+          "sha256": "07836eb604b383de427ee7844980c4a2a8a73c0f5c41d007af1fd51fe11812e1",
+          "bytes": 1440
+        }
+      ],
+      "renderer_support_info_observed": true,
+      "cleanup_errors": [],
+      "scoped_core_files": []
+    },
+    {
+      "case": "explicitRememberRestoresProtectedSelection",
+      "attempt": "final-e9",
+      "source_commit": "a542213c60aee5345e5057420e587481e520077b",
+      "core_source_commit": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+      "status": {
+        "exit_code": 0,
+        "elapsed_seconds": 22.166384976997506
+      },
+      "caller_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 2764
+      },
+      "core_driver_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 16907
+      },
+      "covered_assertions": "Real frontend/private PermissionStore: persist_mode2 unchecked returns no token; actual Remember checkbox produces token; Close/restore preselect same stable monitor, still actual Share, decoded frames and stream retirement.",
+      "command": [
+        "/usr/bin/bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--unshare-ipc",
+        "--unshare-uts",
+        "--die-with-parent",
+        "--new-session",
+        "--cap-drop",
+        "ALL",
+        "--hostname",
+        "pf-final-native",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib64",
+        "/lib64",
+        "--symlink",
+        "usr/bin",
+        "/bin",
+        "--ro-bind",
+        "/etc/ld.so.cache",
+        "/etc/ld.so.cache",
+        "--ro-bind",
+        "/etc/passwd",
+        "/etc/passwd",
+        "--ro-bind",
+        "/etc/group",
+        "/etc/group",
+        "--ro-bind",
+        "/etc/nsswitch.conf",
+        "/etc/nsswitch.conf",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        "/tmp",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "--ro-bind",
+        "/sys",
+        "/sys",
+        "--dev-bind",
+        "/dev/dri/renderD128",
+        "/dev/dri/renderD128",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9",
+        "/task",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/native-capture-evidence",
+        "--clearenv",
+        "--setenv",
+        "PATH",
+        "/usr/bin:/bin",
+        "--setenv",
+        "HOME",
+        "/task/home",
+        "--setenv",
+        "TMPDIR",
+        "/task/tmp",
+        "--setenv",
+        "XDG_RUNTIME_DIR",
+        "/task/runtime",
+        "--setenv",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-session-bus",
+        "--setenv",
+        "DBUS_SYSTEM_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-system-bus",
+        "--setenv",
+        "LIBGL_ALWAYS_SOFTWARE",
+        "0",
+        "/usr/bin/python3",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/tests/services/portal/capture/run_native_capture.py",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_native_capture_tests",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_input",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_consent_input",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/application_uri/qindaqt-uri-relay",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_foreign_exporter",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_pixels",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt.portal",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt-portals.conf",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_test_backend",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin",
+        "--case",
+        "explicitRememberRestoresProtectedSelection",
+        "--renderer",
+        "render-node"
+      ],
+      "receipt_files": [
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/command.json",
+          "sha256": "ce098089b6a5082eb8ffd6427fff0fdfad5d2204f26f1b45db76b456ee259561",
+          "bytes": 4497
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/status.json",
+          "sha256": "f7fcccc81bd3588f05f3d22580852325c1fc3581a3394a7aba27e645bff67eac",
+          "bytes": 62
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/runtime.log",
+          "sha256": "02ca1e4e4cd0e4afb04422e638594d27538da934c22abbd5ef66fec73517fede",
+          "bytes": 1231
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/pgid.json",
+          "sha256": "7eca3ea6fc26d3be86623b79bf1ec54c75e5a5016f22ee52ea25ecea1067eb31",
+          "bytes": 34
+        }
+      ],
+      "evidence_files": [
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/audit.json",
+          "sha256": "c9555792a751431493b93fb70aec82f840136dd03e94ffaf03cf64d1f8acb197",
+          "bytes": 470
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/compositor.log",
+          "sha256": "5fbf73740e18136dc7aae8296c461f542df7d7fa6705e6074f58a7c7b3949b82",
+          "bytes": 2662
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/native-renderer.audit",
+          "sha256": "98bf118a5adac7c72327f0cc487dc133078066af0ece7c572cb553f04ba86ca4",
+          "bytes": 131
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/pipewire.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/producer-frame.audit",
+          "sha256": "0ef4cdd17697bdde7dba9b8c8f5adf62fb38890182944a35386624778e2a50c0",
+          "bytes": 80
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/producer-lifecycle.audit",
+          "sha256": "15bbcdd15cc280ba3069c1250c1b61489b2fc68f3a8dcc5237f3cf0f3ea04d3c",
+          "bytes": 40
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/producer-stderr.audit",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/qindaqt-capture-history.audit",
+          "sha256": "7c07ec5d69288e8ffb69d4fe73f4d2308bfad85e89ddd665cc8398e21b8d75d8",
+          "bytes": 6090
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/qindaqt-capture.audit",
+          "sha256": "56a3626903cf031f18598b8e1f3641fc917645e98baa5bb804587fa7797dcf9f",
+          "bytes": 3065
+        },
+        {
+          "path": "build/final-native-20261002/runtime/explicitRememberRestoresProtectedSelection/final-e9/evidence/qindaqt-native-capture-dvd5c0w5/wireplumber.log",
+          "sha256": "93f6b548066cbc40435864a3629255b8ba9d5a622b3f2117c196f5590d162a38",
+          "bytes": 1440
+        }
+      ],
+      "renderer_support_info_observed": true,
+      "cleanup_errors": [],
+      "scoped_core_files": []
+    },
+    {
+      "case": "remoteDesktopCaptureAndClipboardJourney",
+      "attempt": "final-e9",
+      "source_commit": "f99bc0b994b7a4013b6d660961c2446a48f7291f",
+      "core_source_commit": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+      "status": {
+        "exit_code": 0,
+        "elapsed_seconds": 5.436606307979673
+      },
+      "caller_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 2410
+      },
+      "core_driver_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 4530
+      },
+      "covered_assertions": "Actual protected RD plus IC: keyboard/relative/absolute EI, barrier activation/KEY_Q/Release/EI stop/no postrelease KEY_W, remote Clipboard paste and ordinary EIS Ctrl+C copy in opposite direction, Close disconnects both.",
+      "command": [
+        "/usr/bin/bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--unshare-ipc",
+        "--unshare-uts",
+        "--die-with-parent",
+        "--new-session",
+        "--cap-drop",
+        "ALL",
+        "--hostname",
+        "pf-final-native",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib64",
+        "/lib64",
+        "--symlink",
+        "usr/bin",
+        "/bin",
+        "--ro-bind",
+        "/etc/ld.so.cache",
+        "/etc/ld.so.cache",
+        "--ro-bind",
+        "/etc/passwd",
+        "/etc/passwd",
+        "--ro-bind",
+        "/etc/group",
+        "/etc/group",
+        "--ro-bind",
+        "/etc/nsswitch.conf",
+        "/etc/nsswitch.conf",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        "/tmp",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "--ro-bind",
+        "/sys",
+        "/sys",
+        "--dev-bind",
+        "/dev/dri/renderD128",
+        "/dev/dri/renderD128",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9",
+        "/task",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/evidence",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/remote_input/native-capture-evidence",
+        "--clearenv",
+        "--setenv",
+        "PATH",
+        "/usr/bin:/bin",
+        "--setenv",
+        "HOME",
+        "/task/home",
+        "--setenv",
+        "TMPDIR",
+        "/task/tmp",
+        "--setenv",
+        "XDG_RUNTIME_DIR",
+        "/task/runtime",
+        "--setenv",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-session-bus",
+        "--setenv",
+        "DBUS_SYSTEM_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-system-bus",
+        "--setenv",
+        "LIBGL_ALWAYS_SOFTWARE",
+        "0",
+        "/usr/bin/python3",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/tests/services/portal/capture/run_native_capture.py",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/remote_input/qindaqt_portal_native_remote_input_tests",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_input",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_consent_input",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/application_uri/qindaqt-uri-relay",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_foreign_exporter",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_pixels",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt.portal",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt-portals.conf",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_test_backend",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin",
+        "--case",
+        "remoteDesktopCaptureAndClipboardJourney",
+        "--renderer",
+        "render-node"
+      ],
+      "receipt_files": [
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/command.json",
+          "sha256": "f6b88f6f56e8bd236c338a48a9cdb5e93aaa803c2f57a4e6ed2b2d2357b30355",
+          "bytes": 4500
+        },
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/status.json",
+          "sha256": "18ae437848fe160b6797d8d268ef1c24c8e42320cf487b3eb30f6098dc7c08ff",
+          "bytes": 61
+        },
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/runtime.log",
+          "sha256": "ddfbb471d13bd8e180e865c6397ebcb4edc98ed57f2fe09f1553ca238ea4f0d7",
+          "bytes": 1050
+        },
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/pgid.json",
+          "sha256": "6de84da18abdfd394aac05c9960ec5e089a37c238bae1f813723719233e7d04e",
+          "bytes": 34
+        }
+      ],
+      "evidence_files": [
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/evidence/qindaqt-native-capture-h2kc6b3d/audit.json",
+          "sha256": "2c59fc2365d0efd23cc6da487829eed78f751c6482bdf5e7c710f9879d6bc0a8",
+          "bytes": 472
+        },
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/evidence/qindaqt-native-capture-h2kc6b3d/compositor.log",
+          "sha256": "79879469b9155e2534cd9d33ff9d8477bacc8962fd6fda15ad3b1a99d95cd0b1",
+          "bytes": 2661
+        },
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/evidence/qindaqt-native-capture-h2kc6b3d/pipewire.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/evidence/qindaqt-native-capture-h2kc6b3d/qindaqt-consent.audit",
+          "sha256": "0a55f99103ec9a4be5e9747f838f1d47b5444cb8666b72ea4be647c24f32244d",
+          "bytes": 200
+        },
+        {
+          "path": "build/final-native-20261002/runtime/remoteDesktopCaptureAndClipboardJourney/final-e9/evidence/qindaqt-native-capture-h2kc6b3d/wireplumber.log",
+          "sha256": "a1e7c30debe42084d23e04f11928389005bee688fad5e6f62af7c6089d6c6ccd",
+          "bytes": 1440
+        }
+      ],
+      "renderer_support_info_observed": false,
+      "cleanup_errors": [],
+      "scoped_core_files": []
+    },
+    {
+      "case": "combinedNativeLockRetiresFramesAndInput",
+      "attempt": "final-e9",
+      "source_commit": "f99bc0b994b7a4013b6d660961c2446a48f7291f",
+      "core_source_commit": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+      "status": {
+        "exit_code": 0,
+        "elapsed_seconds": 11.275929832016118
+      },
+      "caller_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 3226
+      },
+      "core_driver_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 5870
+      },
+      "covered_assertions": "Combined frontend monitor capture/input: actual native lock terminates EI, producer/helper/node and frames together.",
+      "command": [
+        "/usr/bin/bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--unshare-ipc",
+        "--unshare-uts",
+        "--die-with-parent",
+        "--new-session",
+        "--cap-drop",
+        "ALL",
+        "--hostname",
+        "pf-final-native",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib64",
+        "/lib64",
+        "--symlink",
+        "usr/bin",
+        "/bin",
+        "--ro-bind",
+        "/etc/ld.so.cache",
+        "/etc/ld.so.cache",
+        "--ro-bind",
+        "/etc/passwd",
+        "/etc/passwd",
+        "--ro-bind",
+        "/etc/group",
+        "/etc/group",
+        "--ro-bind",
+        "/etc/nsswitch.conf",
+        "/etc/nsswitch.conf",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        "/tmp",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "--ro-bind",
+        "/sys",
+        "/sys",
+        "--dev-bind",
+        "/dev/dri/renderD128",
+        "/dev/dri/renderD128",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9",
+        "/task",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/native-capture-evidence",
+        "--clearenv",
+        "--setenv",
+        "PATH",
+        "/usr/bin:/bin",
+        "--setenv",
+        "HOME",
+        "/task/home",
+        "--setenv",
+        "TMPDIR",
+        "/task/tmp",
+        "--setenv",
+        "XDG_RUNTIME_DIR",
+        "/task/runtime",
+        "--setenv",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-session-bus",
+        "--setenv",
+        "DBUS_SYSTEM_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-system-bus",
+        "--setenv",
+        "LIBGL_ALWAYS_SOFTWARE",
+        "0",
+        "/usr/bin/python3",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/tests/services/portal/capture/run_native_capture.py",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_native_capture_tests",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_input",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_consent_input",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/application_uri/qindaqt-uri-relay",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_foreign_exporter",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_pixels",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt.portal",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt-portals.conf",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_test_backend",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin",
+        "--case",
+        "combinedNativeLockRetiresFramesAndInput",
+        "--renderer",
+        "render-node"
+      ],
+      "receipt_files": [
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/command.json",
+          "sha256": "e4bba221920a3fc83e7d5789b229458f2d6ed04e39509928b4ac24a3a045bd9f",
+          "bytes": 4485
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/status.json",
+          "sha256": "a2f701871a7b26342c7e915aadaf694382a2eb902e716e0932b08b77539d361e",
+          "bytes": 62
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/runtime.log",
+          "sha256": "7158c18114d5e61f7213002afd917a9e171e46b2cc7a3bff591ab9d610e802ff",
+          "bytes": 1261
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/pgid.json",
+          "sha256": "ab5fab1dc1e5a7d4a2cc4ecc052433f1e6e89dc89d0a1fa16cce08ae1e20b9eb",
+          "bytes": 34
+        }
+      ],
+      "evidence_files": [
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/audit.json",
+          "sha256": "2908788735968a8a5e845d7372ba41fc3875b157394593ed9220d11fcdaae158",
+          "bytes": 467
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/compositor.log",
+          "sha256": "c7ec81277884af85c19807c687af26dead0de1d8035bb9d6c1bba1dde3eb734f",
+          "bytes": 2661
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/native-renderer.audit",
+          "sha256": "98bf118a5adac7c72327f0cc487dc133078066af0ece7c572cb553f04ba86ca4",
+          "bytes": 131
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/pipewire.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/producer-frame.audit",
+          "sha256": "008558227a6059ce32f6e3ac397c08567821c5408b8f858c91463b1f6d6264a2",
+          "bytes": 80
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/producer-lifecycle.audit",
+          "sha256": "86bd71c6e151469a07d5a676780b96613c5c3207c859d863d8c1d7a37b460c62",
+          "bytes": 40
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/producer-stderr.audit",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/qindaqt-capture.audit",
+          "sha256": "f7dd5b602056846d81a0924a322b97ab1fc962bfa99529009e2b9ae93c081fd9",
+          "bytes": 3025
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/qindaqt-consent.audit",
+          "sha256": "f7281ccf3d000acc1bd8160a7ceba84ceef33d990a14b9701b7ebb82f8bbda39",
+          "bytes": 100
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedNativeLockRetiresFramesAndInput/final-e9/evidence/qindaqt-native-capture-d5ng1ab5/wireplumber.log",
+          "sha256": "7ae6e7ad28903865241705e10064dbd98d73e16b89a8caba9298c950f1623ef6",
+          "bytes": 1440
+        }
+      ],
+      "renderer_support_info_observed": true,
+      "cleanup_errors": [],
+      "scoped_core_files": []
+    },
+    {
+      "case": "nativeLockEndsRemoteDesktop",
+      "attempt": "final-e9",
+      "source_commit": "f99bc0b994b7a4013b6d660961c2446a48f7291f",
+      "core_source_commit": "e9bcb4a834a3a817d2bc194f3c4cf488e9111679",
+      "status": {
+        "exit_code": 0,
+        "elapsed_seconds": 6.963536009017844
+      },
+      "caller_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 894
+      },
+      "core_driver_qt": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "blacklisted": 0,
+        "elapsed_ms": 5869
+      },
+      "covered_assertions": "Actual native lock disconnects granted RemoteDesktop EI, emits Closed, revoked session ConnectToEIS returns error.",
+      "command": [
+        "/usr/bin/bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--unshare-ipc",
+        "--unshare-uts",
+        "--die-with-parent",
+        "--new-session",
+        "--cap-drop",
+        "ALL",
+        "--hostname",
+        "pf-final-native",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib64",
+        "/lib64",
+        "--symlink",
+        "usr/bin",
+        "/bin",
+        "--ro-bind",
+        "/etc/ld.so.cache",
+        "/etc/ld.so.cache",
+        "--ro-bind",
+        "/etc/passwd",
+        "/etc/passwd",
+        "--ro-bind",
+        "/etc/group",
+        "/etc/group",
+        "--ro-bind",
+        "/etc/nsswitch.conf",
+        "/etc/nsswitch.conf",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        "/tmp",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002",
+        "--ro-bind",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002",
+        "--ro-bind",
+        "/sys",
+        "/sys",
+        "--dev-bind",
+        "/dev/dri/renderD128",
+        "/dev/dri/renderD128",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9",
+        "/task",
+        "--bind",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/evidence",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/remote_input/native-capture-evidence",
+        "--clearenv",
+        "--setenv",
+        "PATH",
+        "/usr/bin:/bin",
+        "--setenv",
+        "HOME",
+        "/task/home",
+        "--setenv",
+        "TMPDIR",
+        "/task/tmp",
+        "--setenv",
+        "XDG_RUNTIME_DIR",
+        "/task/runtime",
+        "--setenv",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-session-bus",
+        "--setenv",
+        "DBUS_SYSTEM_BUS_ADDRESS",
+        "unix:path=/task/runtime/no-system-bus",
+        "--setenv",
+        "LIBGL_ALWAYS_SOFTWARE",
+        "0",
+        "/usr/bin/python3",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/tests/services/portal/capture/run_native_capture.py",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/remote_input/qindaqt_portal_native_remote_input_tests",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_input",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_consent_input",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/src/services/application_uri/qindaqt-uri-relay",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/foundation/qindaqt_portal_foreign_exporter",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_pixels",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt.portal",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/src/services/portal/data/qindaqt-portals.conf",
+        "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-claude-remote-input-20261002/build/dev/tests/services/portal/capture/qindaqt_portal_capture_test_backend",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+        "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin",
+        "--case",
+        "nativeLockEndsRemoteDesktop",
+        "--renderer",
+        "render-node"
+      ],
+      "receipt_files": [
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/command.json",
+          "sha256": "749b4591fb1b98f78903a918d65429e0083cc567eb4b00afcd1b9c533891d748",
+          "bytes": 4452
+        },
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/status.json",
+          "sha256": "c7a4fb922be446443e6d98c280678d78d7888ea52dd7c90335e17e6f181c1c8f",
+          "bytes": 61
+        },
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/runtime.log",
+          "sha256": "8a1378b6d7decf025caa29e98fd300d6bb7d2cce1855acbeb837fc7004e61fc9",
+          "bytes": 975
+        },
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/pgid.json",
+          "sha256": "eb7a1144d7a4a45efcc6747cb4cbbf91c07b1136ae1f345d5c00421a32d1b885",
+          "bytes": 34
+        }
+      ],
+      "evidence_files": [
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/evidence/qindaqt-native-capture-z7auj598/audit.json",
+          "sha256": "686c06398458b37fa98a6939ba296671592947bbe4437d1289cb767263466797",
+          "bytes": 460
+        },
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/evidence/qindaqt-native-capture-z7auj598/compositor.log",
+          "sha256": "aaea70b60040d38b4d12654e7d2f04468dfc99a0be31016ccc1897a4a556e6b0",
+          "bytes": 2552
+        },
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/evidence/qindaqt-native-capture-z7auj598/pipewire.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/evidence/qindaqt-native-capture-z7auj598/qindaqt-consent.audit",
+          "sha256": "af2e1d3db6a0eebda353bc31c73b10ca5b5b1273832ecf9958d18348897a7830",
+          "bytes": 100
+        },
+        {
+          "path": "build/final-native-20261002/runtime/nativeLockEndsRemoteDesktop/final-e9/evidence/qindaqt-native-capture-z7auj598/wireplumber.log",
+          "sha256": "0a2f64ecf72297a3d029f8e18b229885f303345f879cfe99aa34d13d16f46622",
+          "bytes": 1440
+        }
+      ],
+      "renderer_support_info_observed": false,
+      "cleanup_errors": [],
+      "scoped_core_files": []
+    }
+  ],
+  "totals": {
+    "behavior_methods": 5,
+    "caller_qt": {
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "includes_setup_cleanup": true
+    },
+    "core_driver_qt": {
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "includes_setup_cleanup": true
+    },
+    "elapsed_seconds": 52.873224063019734,
+    "cleanup_errors": [],
+    "scoped_core_files": []
+  },
+  "first_two_source_caveat": "First2 actual cases ran a542213c60aee5345e5057420e587481e520077b; accepted f99 only aligns capture runner audit env to runtime/qindaqt-consent.audit. Production/helper/C++ bytes unchanged; last3 ran f99.",
+  "historical_failure_report": {
+    "path": "ops/audits/native-consent-sanitized-test-repair-20261002.json",
+    "sha256": "fc6c4f7f322a8150f64c48eaaa2c8e62654108b76c8ff7004f0f2c798966e1fe",
+    "bytes": 8612
+  },
+  "previous_focused_build_private_bus_docs_report": {
+    "path": "ops/audits/native-input-final-desktop-preflight-20261002.json",
+    "sha256": "46d05ceb8b9c425e96ecb368856b88e7de7b0bfd74c64b99eb50afe881f4bb2c",
+    "bytes": 61294
+  },
+  "historical_failures_preserved": "Both superseded core195 StartResponse2 histories and first -Werror testcompile failure preserved separately; helper102+e9 changed-source replay passed.",
+  "limits": [
+    "No installed/Portage or complete Plasma release approval.",
+    "NativeShortcuts separately owned/gated by manager.",
+    "Deprecated Notify/combined restore are not added coverage; combined sessions deliberately nonpersistent.",
+    "Caller/owner loss has focused private-bus lifetime evidence, while these actual rows exercise Close/nativeLock.",
+    "Native lock retirement is not PAM/greeter/unlock or recall of consumed buffers.",
+    "Actual granted capture uses authorization-enabled fixed inherited protected broker; no sentinel grant."
+  ],
+  "resource": "Compiler/private native lease released after fifth PASS; no further builds/runtime"
+}
