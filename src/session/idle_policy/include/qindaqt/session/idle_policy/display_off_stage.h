@@ -30,6 +30,8 @@ public:
 Q_SIGNALS:
     void availabilityChanged(bool available);
     void powerChanged(bool off);
+    // Admission failure is separate from actual physical mode feedback.
+    void requestFinished(bool admitted);
 };
 
 // Consumes only the display-off idle stage. The observation and power client
@@ -63,6 +65,7 @@ private:
     int m_timeoutMilliseconds = 0;
     bool m_started = false;
     bool m_offRequested = false;
+    bool m_cycleConsumed = false;
 };
 
 } // namespace QindaQt::Session::IdlePolicy
