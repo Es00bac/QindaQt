@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — exact8a622 source and overlay93c install patch accepted; ready for final installedDesktop discovery
+- Status: available — complete Portage image discovery command prepared; awaiting image success and private lease
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -100,3 +100,5 @@
 - 2026-10-02T21:44:46.257742+00:00 — Claimed overlay93c exact patch/recipe review against accepted8a source and actual immutable29f archive/Manifest, no Portage phase/compiler/runtime.
 
 - 2026-10-02T21:44:47.408296+00:00 — Overlay93c SOURCEACCEPT: only2line PATCHES recipeaddition; patchbody byte-identical8a diff; actualfrozen29f archive CMake patched byte-identical8a. Manifest+archive digests unchanged; Bashsyntax0. No Portagephase/compiler/runtime/install. Parent phase/image/package gates remain; ready for actual/usr discovery after grant.
+
+- 2026-10-02T21:48:55.528166+00:00 — Prepared existing installed_artifact_path + run_installed_session invocation for complete Portage image/usr; CLI has no preinstalled option and always stages full sourcebuild, so direct existinghelpers preserve all actual assertions without newharness. Helper bytes match29f and manager4e021; production launchdefs relative bin/lib64qtplugin prove relocation route. No runtime launched; needs readable completeimage and explicit manager lease, then actual/usr after finalinstall.
