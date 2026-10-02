@@ -279,7 +279,8 @@ add_dependencies(qindaqt_native_power_startup_tests qindaqt-session
     qindaqt_session_token_child_helper qindaqt_session_power_start_probe)
 qindaqt_enable_warnings(qindaqt_native_power_startup_tests)
 add_test(NAME qindaqt.native-power-startup
-    COMMAND dbus-run-session -- $<TARGET_FILE:qindaqt_native_power_startup_tests>)
+    COMMAND dbus-run-session --config-file=${CMAKE_CURRENT_SOURCE_DIR}/native-power-private-bus.conf
+        -- $<TARGET_FILE:qindaqt_native_power_startup_tests>)
 set_tests_properties(qindaqt.native-power-startup PROPERTIES TIMEOUT 30
     ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "session;power;startup;private-bus")
