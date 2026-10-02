@@ -1,0 +1,80 @@
+[
+  {
+    "changed_after_first": [
+      "mkdocs.yml",
+      "src/services/portal/capture/org.qindaqt.PortalCapture.desktop.in"
+    ],
+    "first_review": "732e21a5ae1e57d13b2bb590c67dc20cda7da45a",
+    "source": "9f2f2b21671944a618dc8af9027eedd89f2be4b0",
+    "source_sha256": {
+      "docs/wiki/adr/0291-run-on-qindaqt-kwin.md": "1df795dabd748afdc403c3e699b0d672b651df28884f8bc4b6784b257de56dc9",
+      "docs/wiki/adr/0340-use-native-privileged-compositor-identities.md": "237e7e697032280d6508191341ca2500074c0a2c7d8d0c5a6cca68f09dd6c90a",
+      "docs/wiki/adr/index.md": "af5e8935d846107321508854a58b1df48279c6e8a9e4dfa43f4c35dac86ecb16",
+      "docs/wiki/architecture/compositor-capture.md": "34843bf5570c0da3a706048e55f812a9a25a9251e96c102bb6c0a303b3272c3c",
+      "docs/wiki/architecture/portal-remote-input.md": "b1607c2aa1e1ff3cb7887e5e5e4472a50b8ab556adea40e32b06a604f5501347",
+      "mkdocs.yml": "790daa8c9361df0c87d2039f050e3574a2dbd351ec3af9e698b2c62c2ab89e58",
+      "src/apps/screenshot/org.qindaqt.Screenshot.desktop.in": "07664b3392966928322039cdf1ed923bf1585cbd66cda052aab3901c0291e0d8",
+      "src/compositor_names/include/qindaqt/compositor_names/compositor_names.h": "9b5f95ef7014eb193c8cf88e3368a43b6b86541144522ed70d46b60f31821d26",
+      "src/services/compositor_capture/include/qindaqt/services/compositor_capture/capture_request.h": "71f2badc95ac246b72fd6cfea14a41728825ae781a1b1a8ef2e18591733d128c",
+      "src/services/compositor_capture/include/qindaqt/services/compositor_capture/kwin_capture_port.h": "3e2e432cdbda3d1ef425bd9b98a4b3379b9281e495b44bd60a560d798540131f",
+      "src/services/compositor_capture/src/raw_capture_decoder.cpp": "ce9080c725ff09f7b430b6763ac01477eaf250fe0174fd1fc79215f29a477878",
+      "src/services/portal/capture/org.qindaqt.PortalCapture.desktop.in": "72a134b0f58f784ff46f3ac7c8696f17894b627d633a31f1f2352a92114111d4",
+      "src/services/portal/remote_input/CMakeLists.txt": "e8cdae21dd0d9a0df1802f1b6b5b24a2af27f67e6b47611decfed70fe3b20484",
+      "src/services/portal/remote_input/include/qindaqt/services/portal/remote_input/compositor_eis.h": "4717163e8335b99a7f555cb8905ac3eecd2904c440638602ca80653b95945967",
+      "src/services/portal/remote_input/src/clipboard_adaptor.cpp": "e639246310ba5e293a71e53c6c7f2215e3ed211e2aad82b16e688cd2703def7c",
+      "src/services/portal/remote_input/src/compositor_eis.cpp": "4329a58f2fbad3d429d6cbd58a2a81c6e2b368fb993099e11c80b5c5de6a435e",
+      "src/services/portal/remote_input/src/input_capture_adaptor.cpp": "51b2cb3d798194aaf2cbd000b2d91717576525ce8bdc1c2b55c412eb1de60939",
+      "src/shell/runtime/kwinscreenshotpreviewport.cpp": "56d6a4232a171648a5eab14a09c44394ae737e01cc0495d049e68a5e2fc6fb03",
+      "tests/apps/screenshot/tst_capture_geometry.cpp": "b3f6362483fe3569ba367ec53186348d8ccdc418e24264c7285ea885a38a7f0f",
+      "tests/services/portal/remote_input/tst_input_capture.cpp": "e1346bc6f1b05e4e4f6a312fabb3893040f76b186ad97d8af414361ec24943a5",
+      "tests/services/portal/remote_input/tst_remote_desktop.cpp": "bd77fca21984a05fa6b1ff0d57d57f8b75ce5f7248164dd17ee63fb5c1e2648c"
+    },
+    "status": "",
+    "total_candidate_path_count": 21
+  },
+  {
+    "changed_after_first": [
+      "qindaqt/capture-authority/WIRE.md",
+      "qindaqt/tools/rename-identity",
+      "src/CMakeLists.txt",
+      "src/plugins/screenshot/org.kde.KWin.ScreenShot2.xml",
+      "src/plugins/screenshot/screenshotdbusinterface2.h",
+      "src/tabletmodemanager.cpp"
+    ],
+    "first_review": "a653b961aafe0eaff6073d455dad26d1cfd3d4f3",
+    "source": "df223cd832c6357c36abfc5d5269f703564c87ed",
+    "source_sha256": {
+      "autotests/integration/input_capture_test.cpp": "7f78e31d76f178a4ca14b7a69511622e803a5d89ef36a6fce32e7dd7aa9d4c7c",
+      "autotests/integration/test_virtualkeyboard_dbus.cpp": "7587f6da9c47e5fa99f05df2566bb078a42a3ff382dc70b6c43e87cfec04fac9",
+      "qindaqt/PROTECTED_CAPTURE_AUTHORITY_PROPOSAL.md": "5ca6dc898c69e2e1bbc62bc7d8b6fd980db07def317026ff1ad35daba80ff6e4",
+      "qindaqt/README.md": "ef4aee5726f1aa5a43084f615f4337c539919a4436c86ac169fbe3b6fb108e8e",
+      "qindaqt/capture-authority/WIRE.md": "10d84e2a1728c11f583d3a82af4a90b24a018bcfd570deb7bb6296e676c2aff2",
+      "qindaqt/capture-authority/capturelaunchpolicy.cpp": "6906696af5bf7d43bb30b78f1c2b51c48c296e5bf50c7a934668f9bba141522d",
+      "qindaqt/capture-authority/tests/owner_loss_peer.cpp": "0cf32eab03d01930212e90a330bd6f3cb59b8f3f07cde2f81b5eba97dc786314",
+      "qindaqt/capture-authority/tests/owner_loss_test.cpp": "9eebf540b38bf5a6af69faa46e83b90706062057ef2bda42766bf5f56ee50a84",
+      "qindaqt/session-lock/tests/native_lock_capture_requests_test.cpp": "9cf1349b8ed3f1f1d4f98e2f2768fbbfacedf1cb183dc319d3ca0f67e99c6654",
+      "qindaqt/tools/rename-identity": "6c5744934d8daf3c4e78a942be0111ba1a2ae442b3abe505d953591e8e9841a4",
+      "src/CMakeLists.txt": "e373ef236621f9b16442fec37fec436e436860e17e94307557fd1dc6d49492a6",
+      "src/dbusinterface.cpp": "644d7d7cec2f7f13b4e6597bff8e9b26c8f16f7e1fda4a2f0bc6335f6cc719fa",
+      "src/helpers/wayland_wrapper/kwin_wrapper.cpp": "4a44dea318c74285be837b343739b34cb3048825afbede41e8e5528874354e83",
+      "src/plugins/eis/eisbackend.cpp": "60670a2c56e45377bba0e0d7b265119d0861e00c1a9f151aedbb412f42b4e516",
+      "src/plugins/eis/eisclipboard.cpp": "23b1d7fcfda7ddf303b88108e449ab0af960d7cc52d6ce24e98ea5dbe2a2d5b3",
+      "src/plugins/eis/eisinputcapture.cpp": "f8e27a0ff1987823bcfc1f2f587e6078f9fc4b2252f03e112f4aa9d1c22a9245",
+      "src/plugins/eis/eisinputcapture.h": "19854b90e10e9fc1566bd752a45eca1f5395a7ac2b53f6fa290c6edc5bf1f9a7",
+      "src/plugins/eis/eisinputcapturemanager.cpp": "49cdc11d37e203d51cd8e13a3b026c64d07b1faf59cdc3b14dc21587d640b4a9",
+      "src/plugins/eis/eisportaladmission.cpp": "31615780e5f554a4dc51fb5dd8f23e39c2bebd0f0405638e710a336c9cdce294",
+      "src/plugins/screenshot/org.kde.KWin.ScreenShot2.xml": "66d26c655300f879b62f3ec46efd5448049fa38b665e8c4ddc7db72195799def",
+      "src/plugins/screenshot/screenshotdbusinterface2.cpp": "b69c6e623749c49e24e9a8eb8da767af72b195fa5cd5a40136ea2d251969aec2",
+      "src/plugins/screenshot/screenshotdbusinterface2.h": "e7d329af7c22b690abe30c74dc74905e25f1eff51dbc7fb7347a8d08c5fb14f3",
+      "src/plugins/screenshot/screenshotoperation.cpp": "1cfaca516f8ccd09535bb4952804d37de439754ae02260f7c86d92d94b916145",
+      "src/scripting/scripting.cpp": "b7c67410d584e6a1304c570511e8e57a1a8a3e92015eb55c5ced7dce52e768ac",
+      "src/tabletmodemanager.cpp": "7c604d135c4645994da2855b2927653df3369d78e001842045bc29c6c7a0257c",
+      "src/tabletmodemanager.h": "0a3e73592a301c568ab1fb414305fe556ced169367c13a6c53f2508441becc8c",
+      "src/utils/serviceutils.h": "be2bf3a772fcd38082125d87a81c39a3cca6c3d7c966fc56ceeeea0a612ebdf3",
+      "src/virtualkeyboard_dbus.cpp": "be207d958b22547b4f630b8b9c8d23c6d1952641b17e88d1baf41ecc145ee307",
+      "src/virtualkeyboard_dbus.h": "0f3ee8879d39e760f5cfd3f4c77d30bd9a485bb222c78cac98fdd09ff8d3e81b"
+    },
+    "status": "",
+    "total_candidate_path_count": 29
+  }
+]
