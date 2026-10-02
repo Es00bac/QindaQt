@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: waiting — final17-artifact preflight ready; manager serialized native lease follows Power/Shortcuts gates
+- Status: working — execute five bounded final protected-owner native AMD cases under serialized manager lease
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: focused desktop compiler released; no native lease taken. Root owns coherent core; wait serialized runtime grant.
+- Resource: manager grants sole five-case private native/AMD render-only lease on coherent195417; core/artifacts frozen, no C++ build
 
 ## Updates
 
@@ -52,3 +52,5 @@
 - 2026-10-02T20:12:51+00:00 — Focused14-target compile PASS0/10.003s exact537d after preserved first failure; MemAvailable minimum15.66GB and no guard stop. All14 desktop artifact SHA/ldd preflight PASS; private-bus3/3CTests PASS3.5405s, lifetime5Qt0fail0skip. Compiler released. Added existing QtTest -nocrashhandler to private native runner only; final core artifact/test lease pending. Hash-bound prepared-desktop report preserved; no native/installed claim.
 
 - 2026-10-02T20:14:05+00:00 — Read-only complete17-artifact SHA/ldd preflight PASS; actual core HEADa696 and configured broker/helper paths match accepted new50b871/c391f4 artifacts. Final caller sourcef763 preserves explicit -nocrashhandler only; C++ bytes accepted537d. Compiler/non-GPU tests complete, now waiting for manager serialized native lease after Power/Shortcuts; no runtime launch or installed claim.
+
+- 2026-10-02T20:20:57+00:00 — Power released; manager explicitly grants sequential five-case native/AMD lease. Fresh17-artifact preflightPASS195417, prior a696 receipt preserved. Reusing exact render-only bwrap/private DBus/PipeWire/capture runner, current helpers and actual broker, no private-native-input sentinel. Prepared immutable per-case command/status/log/evidence directories; start actual combined Close case now.
