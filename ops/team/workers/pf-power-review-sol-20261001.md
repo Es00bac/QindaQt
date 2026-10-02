@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: available — exact QindaGentoo07ab05d1 handdrawn package ACCEPT; no resource or implementation claim.
+- Status: available — exactca299 consumer REJECT P1 no-default-fallback; same-reviewer repair recheck offered.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none; data-only checks complete; no compiler/compositor/GPU/system merge.
-- Outcome: completed bounded icon package review; exact power ce84 ACCEPT and original0c REJECT remain preserved.
+- Resource state: none; source/docs/policy-hook review complete; no compiler/private lease claimed.
+- Outcome: completed bounded consumer review; exact68c ACCEPT unchanged; no-fallback repair recheck and startup review help offered.
 
 ## Updates
 
@@ -36,3 +36,15 @@
 - 2026-10-01T23:26:20Z: Exactoverlay07ab ACCEPTP0/P1=0. Ownarchiveall3hashes/sourcepin/sixpaths exact; own3preparePASS7172/3261/0missing0errors; negativepartial expected0/1/1 rejectsinstall. ActualPortageimage7172byte/RGBA128+3261canonical+12fixed128+7191dataonlyfiles+10sourceDocsPASS; exactbuild-infoebuild/RDEP/BDEP verified. Restoredpreview/native12/catalog/pkgcheckPASS; retainedsetupfailure diagnosed. All15checkPIDs/4nativeTempRoots absent, resourcesnone. Rootmerge+Portagesigneddelivery requested; read-onlyinstalledproof help offered.
 
 - 2026-10-01T23:27:09Z: Corrected stale top-level status/outcome wording left by an unmatched record-text replacement; prior timestamped source/build/replay/package updates and exact verdict evidence remain intact. Current true state is AVAILABLE after exact07ab package ACCEPT, resourcesnone, no implementation or new task claim.
+
+- 2026-10-01T23:52:19Z: Claimed distinct exact68c4d74f source-lifetime review in isolated qinda fork worktree. Read fork instructions and exact consumer586c handoff/cause2e; two changed paths only. Compiler/private resources held by graphics, none claimed here. Startup admission/full matrix remain unresolved gates.
+
+- 2026-10-01T23:55:00Z: Source/evidence audit P0/P1=0 so far; immediate closure/source notifications/timer and three record fences retained, manager close observer deleteLater/thread notifier verified. Graphics explicitly releases compiler; own one-TU/link now starts, untouched447 artifacts/MOC dependencies frozen. Private still held by graphics. Retained unmonitored admission failure remains distinct from monitored real lock PASS.
+
+- 2026-10-01T23:56:36Z: Own exact68c compile/link exit0/0 5.410/.603s, min14,089,964kB/core0; PGIDs444356/444387 absent and compiler released. Sourcecopy exactbc0382 SHA, 33linkinputs/fouroutputhashes stable, onlytwochangedpaths/diffcheck0. Graphics private diagnostic releases; root explicit private grant now claimed for unchanged unmonitored row against ownplugin+original447driver/ca299caller.
+
+- 2026-10-01T23:59:31Z: Exact68c ACCEPTP0/P1=0. Own unchanged unmonitored native lock first-only run PASSQt3/0/0 runner0/3.998s, actualAMD/node25/decodedframes/sourcepaint/privacy+compositor survival; 14PIDs/rootabsent/34hashesstable/no monitor/no retry. Owncompile/link0/0+33inputs exact. Full verdict published; compiler/private released, available. Startup intermittent admission/full7case3compositors held; next compatible startup candidate review offered.
+
+- 2026-10-02T00:01:13Z: Claimed exactca299 consumer fixture review against accepteda0c0cae7 incl c03 recovery. Fetched hubs, isolated exact qinda consumer branch/tree created/pushed; unrelated shared untracked files preserved. Six testpaths+two primary docs only; no product edits/compiler/private claims. Own prior68c unmonitored replay honestly reusable for one unchanged ca299 lock row only.
+
+- 2026-10-02T00:07:19Z: Exactca299 REJECTP0=0/P1=1. Source-only primary+unchanged installed WP hook execution proves missingtarget can fallthroughdefault without dont-fallback; control stops. Actualnative race notclaimed. StrictMkDocs/link486/scoped8pathdiffPASS; retained7/7firstgroup+fullrunner1/negativeblank/appID/targetlogs verified; own68c unchanged ca299 lock directPASS reused onlyone row. Precise repair sent sameimplementer/root; resourcesnone/available/recheckhelp offered.
