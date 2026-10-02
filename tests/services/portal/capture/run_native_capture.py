@@ -32,8 +32,9 @@ groups = [
      "validForeignParentGrantAndLossRetireCaptureAndStream", "actualPipeWireNodeFramesSessionCloseAndCancel", "frontendAndBrokerLossWithdrawCaptureAndFiles"],
     ["nativeLockStopsActualStreamPendingCaptureAndRetainedFile"],
     ["compositorLossWithdrawsStreamsFilesAndPendingPublication"],
+    ["explicitTwoMonitorBatchClosesEveryProducer"],
 ]
-# A bounded diagnostic selects unchanged Qt assertions. Only all seven cases
+# A bounded diagnostic selects unchanged Qt assertions. Only all eight cases
 # qualify the selected renderer; a selected case never means full coverage.
 options = {}
 for index in range(13, len(sys.argv), 2):
@@ -177,6 +178,8 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             logs.append(handle)
             producer = dict(env)
             producer.pop("QT_FATAL_WARNINGS", None)
+            if "explicitTwoMonitorBatchClosesEveryProducer" in group:
+                producer["QINDAQT_PRIVATE_CAPTURE_TWO_OUTPUTS"] = "1"
             comp = subprocess.Popen([str(compositor), "serveNativeCapture"], env=producer, stdin=subprocess.PIPE, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
             children.append(comp)
             env["QINDAQT_PORTAL_TEST_COMPOSITOR_PID"] = str(comp.pid)

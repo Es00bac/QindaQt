@@ -151,6 +151,22 @@ private Q_SLOTS:
         const auto pid = helperPid(); close(session, "Session"); QTRY_VERIFY(kill(pid, 0) < 0); QTRY_VERIFY(!frames.nodes().contains(streams.first().node)); QTest::qWait(150); const auto stopped = frames.count(); QTest::qWait(300); QCOMPARE(frames.count(), stopped);
         reset("allow"); QString cancelled; createSession(cancelled); select(cancelled); reset("cancel"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(cancelled)), QString{}, QVariantMap{}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 1U);
     }
+    void explicitTwoMonitorBatchClosesEveryProducer() {
+        QString session; createSession(session); reset("allow");
+        request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"multiple", true}, {"cursor_mode", 2U}}});
+        success(); reset("allow");
+        request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
+        const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 2);
+        QVERIFY(streams[0].node && streams[1].node && streams[0].node != streams[1].node);
+        auto remote = method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}});
+        QDBusPendingCallWatcher opened(bus.asyncCall(remote)); QTRY_VERIFY(opened.isFinished());
+        const QDBusPendingReply<QDBusUnixFileDescriptor> fd = opened; QVERIFY2(!fd.isError(), qPrintable(fd.error().message())); QVERIFY(fd.value().isValid());
+        PipeWireFrames frames(dup(fd.value().fileDescriptor()), streams[0].node);
+        QVERIFY(frames.valid()); QTRY_VERIFY_WITH_TIMEOUT(frames.count() > 3, 15000);
+        QTRY_VERIFY_WITH_TIMEOUT(frames.nodes().contains(streams[1].node), 15000);
+        const auto pid = helperPid(); close(session, "Session"); QTRY_VERIFY(kill(pid, 0) < 0);
+        QTRY_VERIFY(!frames.nodes().contains(streams[0].node)); QTRY_VERIFY(!frames.nodes().contains(streams[1].node));
+    }
     void compositorLossWithdrawsStreamsFilesAndPendingPublication() {
         screenshot("Screenshot"); success(); const auto file = QUrl(responses.results.value("uri").toString()).toLocalFile();
         QString session; createSession(session); select(session); reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
