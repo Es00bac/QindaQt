@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — first build setup failure preserved; task-only config correction pending
+- Status: working — approved setup-corrected fourteen exact signed Portage build-only targets
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -101,3 +101,7 @@
 - 2026-10-02T21:33:26Z — Claim rootgrant signedBUILDONLY union14 atauthoritative integratedoverlay3e05c3fc89d6dd100f8a7ccfa362fa6a7577b3cc, privateWT FF/ownmd5-cacheonlyuntracked. IndependentInputed789 accepts f5+SDDM178. ActualSDDM3builddep rowsparsed/nomissing, prior13CPV39rows likewise. Freeze source/profile/world/env/targetUSE beforesequential2compilerjobs/load24/6GiBguard; noinstall/hostconfig/sessioncredentials.
 
 - 2026-10-02T21:38:42Z — ActualfirstKAuthBUILDONLY exit1/3.230s beforecompile: userprivcannottraverse0700cacheconfig; no production/sourcefinding. Own1932579/starttick43176922+2observedtotalgone/core0; source/VDB/worldsame/minMem15.22GB. Laptopactual10/10IUSEparityverified, noheavywork. No retry/compilerlive; requesttask-onlyconfigsetupcorrection, firstfailurearchived.
+
+- 2026-10-02T21:39:33Z — Rootapprovedprocess-onlypublicCONFIGROOT innew/tmp; portage actualconfig/profile readpreflightPASS0, nohomeACL/hostconfigchange. Freeze correctedpublicsymlinks/profile/env, retainfirstfailure0700. Resume same14 exactsource/USE/commands under2jobs/load24/6GiBownPGIDguard; nocompiler/packageinstall/hostauthchange.
+
+- 2026-10-02T21:52:53Z — ActualcorrectedKAuth-r1BUILDONLY PASS0/51.740s, signedGPkg09b3e02e/fullmetadata+imageverification0/56paths/nativeUSE+packedebuildc96+officialsource7419 proven. Artifactunprivileged0750discovery corrected viaPortagerootreadonlylisting, no rebuild. KIO2job unchangedcompile [243/342]/elapsed518.5s/minGiB8.83; granted8 subsequentstage resources only inowned/tmp/bashrc724d99e, hostsource/profile/USEunchanged. Rootpublicoverlay/keywordprep and laptoponlyinstalls explicitlycoordinated; no qindaVDB/worldmutation.
