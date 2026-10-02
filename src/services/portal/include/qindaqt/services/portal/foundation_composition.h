@@ -28,6 +28,12 @@ public:
         QString privateRuntimeDirectory, QString consentExecutable,
         QString uriRelayExecutable, QStringList applicationDataRoots,
         QString chooserExecutable, QString captureExecutable);
+    // Additive independent families helper; previous constructors retain an
+    // empty unavailable helper and never resolve an ambient executable.
+    PortalFoundationComposition(QObject &backendHost, QDBusConnection,
+        QString privateRuntimeDirectory, QString consentExecutable,
+        QString uriRelayExecutable, QStringList applicationDataRoots,
+        QString chooserExecutable, QString captureExecutable, QString miscExecutable);
     ~PortalFoundationComposition();
     bool start();
     void stop();
