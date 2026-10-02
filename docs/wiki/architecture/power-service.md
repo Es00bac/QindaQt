@@ -60,13 +60,14 @@ only its original addressed owner/epoch on cancel. A method-reported acceptance
 is not policy authority: consumers still use the actual-owner nonce-correlated
 inhibitor receipt ([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)).
 
-The installed service keeps `--idle-policy=off`; native-exclusive registration
-is an explicit cutover prerequisite, not automatic retirement of PowerDevil.
-The complete supervisor lock/display/suspend composition and scoped display
-ownership are not yet wired by this admission slice. Consequently production
-still advertises zero scopes and the ScreenSaver facade remains Unsupported.
-No placeholder stage or caller-provided success can replace a real consumer.
-See [ADR-0333](../adr/0333-authenticate-shared-idle-consumer-registration.md).
+The default configured service keeps native policies off. The explicit coherent
+`QINDAQT_NATIVE_POWER_EXCLUSIVE` package option configures native activation and
+supervisor composition together. NativePowerComposition now assembles real
+lock/dim/display/suspend consumers with scoped display ownership; actual native
+output and installed cutover acceptance remain separate manager gates. No
+placeholder or caller-provided success can replace a real consumer. See
+[Idle policy](idle-policy.md) and
+[ADR-0333](../adr/0333-authenticate-shared-idle-consumer-registration.md).
 
 Lock-before-sleep belongs to the authenticated native lock runtime and the
 supervisor NativeSleep coordinator (ADR-0321). The later key-action policy must
@@ -527,5 +528,15 @@ The exact public process/credential boundary, noninstalled private resident
 test convention and focused private executable evidence are in
 [Native lid policy](power-policy.md#native-lid-ownership-and-close-edges) and
 [ADR-0332](../adr/0332-own-native-lid-handling-before-edge-dispatch.md).
-Screen-off/full lid matrix, installed cutover and physical qualification remain
+Persistent ScreenOff is now wired to ScreenPower1; full native lid/source/dock matrix, installed cutover and physical qualification remain
 separate. Existing profile, critical and protected Hibernate behavior is unchanged.
+
+### Native exclusive power assembly candidate
+
+The supervisor now composes the current-source shared consumers and separate
+ScreenPower1 facade. The ownership, episode, Protected, source and activation
+contracts live in [Native shared idle policy](idle-policy.md) and
+[ADR-0338](../adr/0338-own-scoped-display-power-and-shared-idle-composition.md).
+The package option defaults OFF; an ON cutover configures all four native policy
+flags and retires only the supervisor-owned PowerDevil child. Focused strict and
+private-protocol gates do not constitute installed/native physical acceptance.

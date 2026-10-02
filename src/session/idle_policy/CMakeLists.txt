@@ -8,6 +8,9 @@ target_sources(qindaqt_idle_policy
     PRIVATE
         src/display_off_stage.cpp
         src/source_preferences.cpp
+        src/shared_preferences.cpp
+        src/dim_stage.cpp
+        src/idle_suspend_stage.cpp
         production/kwayland_dpms_controller.cpp
         production/kwayland_dpms_controller.h
     PUBLIC
@@ -16,7 +19,10 @@ target_sources(qindaqt_idle_policy
         FILES
             include/qindaqt/session/idle_policy/display_off_stage.h
             include/qindaqt/session/idle_policy/attached_display_power_port.h
-            include/qindaqt/session/idle_policy/source_preferences.h)
+            include/qindaqt/session/idle_policy/source_preferences.h
+            include/qindaqt/session/idle_policy/shared_preferences.h
+            include/qindaqt/session/idle_policy/dim_stage.h
+            include/qindaqt/session/idle_policy/idle_suspend_stage.h)
 target_include_directories(qindaqt_idle_policy PRIVATE production)
 target_link_libraries(qindaqt_idle_policy
     PUBLIC Qt6::Core QindaQt::IdleObservation QindaQt::PowerClient QindaQt::SettingsClient

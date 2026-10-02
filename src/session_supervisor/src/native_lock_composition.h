@@ -6,7 +6,7 @@ class NativeLockComposition final {
 public:
   NativeLockComposition();
   ~NativeLockComposition();
-  bool start(QString *error = nullptr);
+  bool start(QString *error = nullptr, bool nativePowerExclusive = false);
   void stop();
 private:
   class Private;

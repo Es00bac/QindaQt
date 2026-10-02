@@ -67,6 +67,7 @@ class SessionActionsClient final : public QObject {
     Q_PROPERTY(bool canReboot READ canReboot NOTIFY availabilityChanged)
     Q_PROPERTY(bool canPowerOff READ canPowerOff NOTIFY availabilityChanged)
     Q_PROPERTY(bool canHibernate READ canHibernate NOTIFY availabilityChanged)
+    Q_PROPERTY(bool canScreenOff READ canScreenOff NOTIFY availabilityChanged)
     Q_PROPERTY(bool pending READ pending NOTIFY pendingChanged)
     Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
 
@@ -90,6 +91,7 @@ public:
     [[nodiscard]] bool canReboot() const noexcept;
     [[nodiscard]] bool canPowerOff() const noexcept;
     [[nodiscard]] bool canHibernate() const noexcept;
+    [[nodiscard]] bool canScreenOff() const noexcept { return m_screenOffAvailable; }
     [[nodiscard]] bool pending() const noexcept;
     [[nodiscard]] QString feedback() const;
 
@@ -99,6 +101,10 @@ public:
     Q_INVOKABLE bool requestReboot();
     Q_INVOKABLE bool requestPowerOff();
     Q_INVOKABLE bool requestHibernate();
+    // Persistent Power1-owned lid cause. Cancel on reopen, lineage/source loss
+    // or stop; wake ends this episode and never automatically reacquires it.
+    bool requestScreenOff(quint64 powerEpoch);
+    void releaseScreenOff();
     Q_INVOKABLE void clearFeedback();
 
 Q_SIGNALS:
@@ -106,9 +112,13 @@ Q_SIGNALS:
     void pendingChanged();
     void feedbackChanged();
     void actionFinished(const QindaQt::Services::SessionActions::SessionActionResult &result);
+    void screenOffFinished(QindaQt::Services::SessionActions::ActionStatus status);
+    void screenOffEnded();
 
 private Q_SLOTS:
     void sleepAvailabilityChanged(const QDBusMessage &message);
+    void screenPowerChanged(const QDBusMessage &message);
+    void screenPowerEnded(const QDBusMessage &message);
 
 private:
     struct RefreshQuery;
@@ -137,6 +147,9 @@ private:
     [[nodiscard]] quint64 authorityEpoch(SessionAction action) const noexcept;
     [[nodiscard]] bool authorityMatches(const PendingAction &request) const;
     void advanceAuthorityEpoch(SessionAction action);
+    QString currentScreenPowerOwner() const;
+    void refreshScreenOffAvailability();
+    void finishScreenOff(ActionStatus status);
 
     QDBusConnection m_sessionBus;
     QDBusConnection m_systemBus;
@@ -144,6 +157,11 @@ private:
     QDBusServiceWatcher *m_screenSaverWatcher = nullptr;
     QDBusServiceWatcher *m_logindWatcher = nullptr;
     QDBusServiceWatcher *m_sleepWatcher = nullptr;
+    QDBusServiceWatcher *m_screenPowerWatcher = nullptr;
+    QTimer m_screenDeadline;
+    QString m_screenOwner, m_screenId;
+    quint64 m_screenSerial = 0;
+    bool m_screenPending = false, m_screenOffAvailable = false;
     QTimer m_refreshDebounce;
     QTimer m_refreshDeadline;
     QTimer m_actionDeadline;

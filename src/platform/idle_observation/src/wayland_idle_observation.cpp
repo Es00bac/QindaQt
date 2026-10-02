@@ -133,6 +133,9 @@ public:
       return;
     }
     self.isIdle = value;
+    if (!value) Q_EMIT self.q.activity();
+    if (context.serial != self.notificationGeneration ||
+        source != self.notification || self.invalidated || !self.ready) return;
     Q_EMIT self.q.changed();
   }
   void arm() {

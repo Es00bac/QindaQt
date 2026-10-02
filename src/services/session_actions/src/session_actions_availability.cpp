@@ -21,6 +21,7 @@ void SessionActionsClient::refreshAvailability()
         return;
     }
     const quint64 serial = ++m_refreshSerial;
+    refreshScreenOffAvailability();
     auto query = std::make_shared<RefreshQuery>();
     query->serial = serial;
 

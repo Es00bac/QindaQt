@@ -31,3 +31,9 @@ add_test(NAME qindaqt.kwayland-dpms-controller
 set_tests_properties(qindaqt.kwayland-dpms-controller PROPERTIES
     ENVIRONMENT "QT_FATAL_WARNINGS=1"
     LABELS "session;idle;display-power;wayland;private-fixture")
+
+qt_add_executable(qindaqt_shared_idle_stage_tests tst_shared_idle_stages.cpp)
+target_link_libraries(qindaqt_shared_idle_stage_tests PRIVATE QindaQt::IdlePolicy Qt6::Test)
+qindaqt_enable_warnings(qindaqt_shared_idle_stage_tests)
+add_test(NAME qindaqt.shared-idle-stages COMMAND qindaqt_shared_idle_stage_tests)
+set_tests_properties(qindaqt.shared-idle-stages PROPERTIES LABELS "session;idle;power;model" TIMEOUT 30)

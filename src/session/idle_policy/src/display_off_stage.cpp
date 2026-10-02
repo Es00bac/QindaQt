@@ -22,6 +22,13 @@ DisplayOffStage::DisplayOffStage(Platform::Idle::IdleObservation &idle,
 {
     connect(&m_idle, &Platform::Idle::IdleObservation::changed,
             this, &DisplayOffStage::idleChanged);
+    connect(&m_idle, &Platform::Idle::IdleObservation::activity, this, [this] {
+        if (m_cycleConsumed && !m_offRequested) m_display.requestOn();
+        m_cycleConsumed = false;
+    });
+    connect(&m_display, &DisplayPowerPort::requestFinished, this, [this](bool admitted) {
+        if (!admitted) m_offRequested = false;
+    });
     connect(&m_display, &DisplayPowerPort::availabilityChanged,
             this, [this](bool) { apply(); });
     connect(&m_display, &DisplayPowerPort::powerChanged,
@@ -47,7 +54,6 @@ void DisplayOffStage::refreshPreferences()
 {
     const auto next = m_preferences ? m_preferences() : std::nullopt;
     if (next == m_current) return;
-    m_current = next;
     apply();
 }
 
@@ -87,7 +93,12 @@ bool DisplayOffStage::suppressed() const
 void DisplayOffStage::apply()
 {
     if (!m_started) return;
-    m_current = m_preferences ? m_preferences() : std::nullopt;
+    const auto next = m_preferences ? m_preferences() : std::nullopt;
+    if (next != m_current && m_cycleConsumed) {
+        // Cancel only this episode; a new source/policy is not genuine activity.
+        m_display.requestOn(); m_offRequested = false;
+    }
+    m_current = next;
     const bool configured = m_current && m_current->enabled &&
         m_current->timeoutSeconds > 0 &&
         m_current->timeoutSeconds <= MaximumTimeoutSeconds;
@@ -116,6 +127,10 @@ void DisplayOffStage::idleChanged()
     }
     if (m_timeoutMilliseconds <= 0 || !m_display.available() || suppressed()) return;
     if (m_offRequested) return;
+    // Loss, preference churn and a physical wake cannot replay this episode.
+    // Only a real resumed event, not a new notification's initial state, rearms.
+    if (m_cycleConsumed) return;
+    m_cycleConsumed = true;
     m_offRequested = true;
     m_display.requestOff();
 }
