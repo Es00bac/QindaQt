@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <QGuiApplication>
 #include <QQuickItem>
+#include <QPointer>
 #include <QQuickWindow>
 #include <QFile>
 #include <QTimer>
@@ -45,8 +46,11 @@ void input() {
             int clicked = 0;
             // Repeater delegates follow the visual parent tree; QObject
             // ownership can remain with their QML delegate model.
-            for (auto *item : visualItems(window->contentItem())) {
-                if (!QByteArray(item->metaObject()->className()).contains("CheckBox") || !item->isVisible()
+            QList<QPointer<QQuickItem>> items;
+            for (auto *item : visualItems(window->contentItem())) items.append(item);
+            for (const auto &guard : std::as_const(items)) {
+                auto *item = guard.data();
+                if (!item || !QByteArray(item->metaObject()->className()).contains("CheckBox") || !item->isVisible()
                     || item->property("checked").toBool()) continue;
                 QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier,
                     item->mapToScene(QPointF(item->width() / 2, item->height() / 2)).toPoint());
