@@ -121,29 +121,22 @@ crossing to a new daemon.
 The `QindaQtPortalP0` install component contains the resident executable,
 public policy/source headers and libraries, six built-in QST themes, the
 D-Bus activation descriptor, a hardened user systemd unit, `qindaqt.portal`,
-and `qindaqt-portals.conf`. The selector binds
-`org.freedesktop.impl.portal.Settings`, Access, Notification and Email only to `qindaqt`, explicitly orders
-`kde;gtk;lxqt` for the reviewed multi-provider families, orders
-GlobalShortcuts to `kde` alone because it is the only installed provider whose
-`.portal` metadata advertises that interface, routes Secret to the native Secret module at `qindaqt`, routes InputCapture, Clipboard, Usb,
-Account, and DynamicLauncher to `kde`, closes Wallpaper and Background on
-purpose, and uses `default=none` so an unreviewed family cannot silently
-escape the table. OpenURI is implemented by the frontend itself and therefore
-has no backend selector. The exact table is part of the
-[Settings backend v1 reference](../reference/portal-settings-backend-v1.md),
-the per-family decisions are recorded in
-[ADR-0133](../adr/0133-route-every-portal-family.md), and the file follows
-upstream [portal selection rules](https://flatpak.github.io/xdg-desktop-portal/docs/portals.conf.html).
+and `qindaqt-portals.conf`. The native selector assigns thirteen ordinary
+families to `qindaqt`, and five sharing/input families to `qindaqt.capture`:
+Screenshot, ScreenCast, RemoteDesktop, InputCapture and Clipboard move together.
+Wallpaper and Background remain closed, and `default=none` prevents implicit
+fallback. OpenURI belongs to the standard frontend and has no backend selector.
+The exact table is in the [Settings backend v1 reference](../reference/portal-settings-backend-v1.md).
+[ADR-0342](../adr/0342-route-native-portals-to-their-owning-process.md)
+supersedes the old KDE routing/drop-in choice; source selection still requires
+coherent native, package and installed qualification.
 
-On QindaQt sessions the package also installs a narrow systemd user drop-in for
-`plasma-xdg-desktop-portal-kde.service`. It sets `XDG_CURRENT_DESKTOP=KDE`
-inside that KDE backend process because the installed KDE portal gates its
-RemoteDesktop, InputCapture, and KWin Wayland adaptors on that process-local
-identity. The frontend remains `QindaQt`, so its selector and QindaQt Settings
-backend do not change. The KDE D-Bus activation descriptor delegates to the
-same systemd unit, covering both normal D-Bus activation and explicit unit
-starts. See [ADR-0088](../adr/0088-enable-kde-remote-desktop-for-qindaqt.md)
-for the compatibility boundary and its removal conditions.
+The ordinary resident composition exports none of the five sharing/input
+adaptors and no longer constructs an ordinary ProcessCapture. Its older capture
+constructor parameter remains source/link compatible and is ignored. The
+protected broker publishes `qindaqt.capture.portal` only when the fixed public
+capture contract is available; no standalone activation or ambient capture
+permission is added. The old KDE backend identity drop-in is no longer installed.
 
 The executable and its injected Settings1 source are thread-confined to the
 constructing Qt event loop. Startup registers the object, acquires the exact

@@ -297,6 +297,8 @@ constexpr auto kFakeKdePortal =
     "org.freedesktop.impl.portal.Wallpaper;"
     "org.freedesktop.impl.portal.Background\n"
     "UseIn=QindaQt\n";
+constexpr auto kFakeNativeCapturePortal =
+    "[portal]\nDBusName=org.freedesktop.impl.portal.desktop.qindaqt.capture\nInterfaces=org.freedesktop.impl.portal.Screenshot;org.freedesktop.impl.portal.ScreenCast;org.freedesktop.impl.portal.RemoteDesktop;org.freedesktop.impl.portal.InputCapture;org.freedesktop.impl.portal.Clipboard\nUseIn=QindaQt\n";
 constexpr auto kFakeGnomeKeyringPortal =
     "[portal]\n"
     "DBusName=org.freedesktop.impl.portal.desktop.gnome-keyring\n"
@@ -335,6 +337,8 @@ std::optional<Runtime> stageRoutingRuntime(bool withSecretRow, QString *error)
         || !copyFile(configuredPath("QINDAQT_TEST_PORTAL_METADATA",
                                     QINDAQT_PORTAL_METADATA),
                      QDir(portals).filePath(QStringLiteral("qindaqt.portal")), error)
+        || !writeFile(QDir(portals).filePath(QStringLiteral("qindaqt.capture.portal")),
+                      kFakeNativeCapturePortal, error)
         || !writeFile(QDir(portals).filePath(QStringLiteral("kde.portal")),
                       kFakeKdePortal, error)
         || !writeFile(QDir(portals).filePath(QStringLiteral("gnome-keyring.portal")),
