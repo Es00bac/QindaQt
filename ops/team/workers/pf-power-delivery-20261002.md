@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — independent PF21 source review rejected exact first candidates; awaiting root repairs and offering exact recheck
+- Status: available — repaired PF21 exact source pair independently accepted; offering coherent source diagnostics while manager owns native gates
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -39,3 +39,5 @@
 - 2026-10-02T19:06:23Z — Verify/handoff: Gabbee44c857fe0cb4371e7288113c06b1adf0c2079593 pushed qinda hub worker/gabbee-native-kwin-20261002 at exacteadb899 base. Four owned paths only: desktop.py, new endpoint tests,README,HANDOFF. Actual33pytestPASS/0fail0skip0/0.75s (24 new endpoint/failure rows +9 existing desktop tests); py_compile and gitdiffcheck0. Real chosen subprocess argv asserted for native/stock, pinned across registry changes, no fallback on failed native calls, unload/callback/temp-file cleanup. No actual qdbus/host input/audio action; no installs/build/GPU. First system-Python invocation exit1 missing pytest preserved as environment gap; already-existing interpreter ran tests. Different-worker exact review required; available for bounded findings. Power source0e5db unchanged.
 
 - 2026-10-02T19:16:01Z — Independent source-review handoff: isolated qinda desktop732e21a5a/forka653b961aa unchanged/clean,21+28 sourcehashes recorded. REJECT: duplicate TabletModeManager/root DBus path, protected-helper trailing-semicolon exact-equality mismatch, actual docs nav failure, stale public privilege instructions. Root already accepted first path/nav findings; additional metadata/docs sent. Renamecheck0/23.64s all27rules0; docsstrict1/12.86s,linkvalidator1/0.75s firstlogs preserved. No C++/native/shared-source/installed action. Gabbee44c857 and Power0e5db preserved; available for exact repaired-source recheck.
+
+- 2026-10-02T19:23:11Z — Independent repaired-source ACCEPT: desktop9f2f2b21671944a618dc8af9027eedd89f2be4b0/forkdf223cd832c6357c36abfc5d5269f703564c87ed exact2+6repairdelta,21+29candidatepath/hashinventory. All4 findings closed, firstreject/logs retained. Actualrenamecheck0/16.14s all28rules0,strictdocs0/8.22s,500docs+nav0/0.51s; bothsource/diffclean. Nonmutating normalization/protocol/XML/helper/native-key assertionsPASS. No compiler/native/installed qualification or sharedcache/source mutation. Available for source-only exact integration diagnostics; no leases. Root separately accepted Gabbee33-test replay and Workspace26cf source connection; power/runtime cutover pending.
