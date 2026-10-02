@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: working — recover and finish existing Plasma-free program
+- Status: available — game preview stopped; QindaQt desktop work remains scoped and incomplete
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-02T04:12:32Z — User corrected scope to the QindaQt desktop environment; Claude owns the game. Earlier game screenshot-gallery work was a mistaken interpretation and is canceled. Our isolated game preview browser and loopback forward were terminated; our preview server was already gone. No game source or level design was changed. Historical game-gallery live claims above are superseded; do not resume that work. Both complete icon themes and the desktop icon gallery remain in scope. No compiler or private/native lease is held. Accepted lid sources and independent 137-case review are integrated, but manager combined 137-case replay and current strict wiki gate remain pending. Ordinary property capture, protected-helper identity and ScreenOff contract work remain bounded desktop tasks with their failures and source-only proposals preserved. Full Plasma removal remains incomplete; no milestone or feature-ledger credit is added.
 
 - 2026-10-02T03:51:24Z — Exact lid6ca independentlyACCEPT ef21c651 (own fresh seven-target/firstclose/owneddupEOF/full10CTest137Qt0fail0skip), product merged38076 and reviewer preserved37b6b098. SourcePower/test bytes equal6ca; critical+lid wiki sections both preserved; conflict imports latest owner-authored680 board unchanged/owner notified, no inventedworkerstate. Root integrated37 strict seven-target configure42.307/build18.784PASS/PIDs623579624552gone/min16,912,176kB/productionprefix/sourceunchanged; solecompilerreleased, integrated137private next after helperidentity. Helper6de standardAUTHON2targets+1200depsPASS269.089/config10.002,12ownoutputs/604frozenforkinputs stable/core0/groupcleanup; immutablecompiledhandoffca713/manifest1d537 pushed, soleprivate one actualbyte/PIDgate preparing. Ordinarymenucee64 source-onlyready after actual KService lookup failure/privatecache1115bytes/applications.menu missing; exactmetadata/env/permissions/assertionsunchanged, compiled5d2 images frozen, private queued. ScreenOff ownership refinement source-onlyactiveexact37/fork68; observedlegacyDPMS requestresourceorigin before samevalue earlyreturn, peroutputledger needed, no implementationclaim. GallerycachedpreviewHTML fixes successful-poll recovery text and renumbers unchangedimage cards; originalgamePAGE03b unchanged, preview890a/wrapperfe8/server621476/browser2955389tab1 actual44healthyLIVE acrossfreshpolls. Currentpagepoll3sec supersedes prior5sec description, no game source/laptopbuild/GPU mutation. Fullprogram/installed routes/featureledger unchanged.
 
