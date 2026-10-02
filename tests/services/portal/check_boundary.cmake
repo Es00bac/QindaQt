@@ -11,6 +11,35 @@ file(GLOB_RECURSE portal_sources LIST_DIRECTORIES false
 # files below are the ADR0318 process/platform composition boundary, not an
 # exemption for unknown future files or arbitrary standard interfaces.
 set(foundation_files
+    "misc_families/CMakeLists.txt"
+    "misc_families/account_adaptor.cpp"
+    "misc_families/account_adaptor.h"
+    "misc_families/account_policy.cpp"
+    "misc_families/launcher_adaptor.cpp"
+    "misc_families/launcher_adaptor.h"
+    "misc_families/launcher_policy.cpp"
+    "misc_families/main.cpp"
+    "misc_families/misc_dialog.cpp"
+    "misc_families/misc_dialog.h"
+    "misc_families/misc_policy.cpp"
+    "misc_families/misc_policy.h"
+    "misc_families/misc_ui.h"
+    "misc_families/print_adaptor.cpp"
+    "misc_families/print_adaptor.h"
+    "misc_families/print_arguments.cpp"
+    "misc_families/print_conversion.h"
+    "misc_families/print_job.cpp"
+    "misc_families/print_job.h"
+    "misc_families/print_page_sizes.cpp"
+    "misc_families/print_policy.cpp"
+    "misc_families/print_policy.h"
+    "misc_families/print_settings_load.cpp"
+    "misc_families/print_settings_save.cpp"
+    "misc_families/process_misc.cpp"
+    "misc_families/process_misc.h"
+    "misc_families/usb_adaptor.cpp"
+    "misc_families/usb_adaptor.h"
+    "misc_families/usb_policy.cpp"
     "app/main.cpp"
     "CMakeLists.txt"
     "foundation/CMakeLists.txt"
@@ -117,7 +146,7 @@ foreach(source IN LISTS portal_sources)
     foreach(backend_interface IN LISTS backend_interfaces)
         if(NOT backend_interface STREQUAL "org.freedesktop.impl.portal.Settings")
             if(NOT relative IN_LIST foundation_files OR NOT backend_interface MATCHES
-                "^org\\.freedesktop\\.impl\\.portal\\.(Access|Notification|Email|Inhibit|Request|FileChooser|AppChooser|Screenshot|ScreenCast|Session)$")
+                "^org\\.freedesktop\\.impl\\.portal\\.(Access|Notification|Email|Inhibit|Request|FileChooser|AppChooser|Screenshot|ScreenCast|Session|Print|Account|DynamicLauncher|Usb)$")
                 message(FATAL_ERROR "Portal imports an out-of-scope standard interface in ${source}: ${backend_interface}")
             endif()
         endif()
@@ -173,6 +202,14 @@ if(DEFINED STAGE_ROOT)
     file(GLOB_RECURSE installed_portal_headers LIST_DIRECTORIES false
          "${STAGE_ROOT}/qindaqt/services/portal/*.h")
     set(expected_headers
+        "misc_ui.h"
+        "misc_policy.h"
+        "print_policy.h"
+        "process_misc.h"
+        "account_adaptor.h"
+        "usb_adaptor.h"
+        "launcher_adaptor.h"
+        "print_adaptor.h"
         "access_adaptor.h"
         "access_consent.h"
         "appearance_policy.h"
