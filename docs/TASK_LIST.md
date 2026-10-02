@@ -64,8 +64,12 @@ processes are gone and artifact hashes stay unchanged. Decoder repair `d6002623`
 has independent ACCEPT `3278ce24`: the fixed actual graph passes five Qt checks,
 while byte-identical `ca29910d` genuinely consumes unrelated blue default frames
 and fails the original assertion. Its earlier rejection remains preserved.
-The broader consumer foundation is still under separate independent review
-before integration; installed routing and full PF19 remain open.
+The broader consumer foundation has independent exact ACCEPT `85b0b285`, with
+87 own focused Qt checks, and is integrated with its preserved decoder/startup
+reviews. The exact fork development pin `cb0877f4` is independently accepted in
+`61123c4b` and integrated; authoritative fork hub and clean checkout match
+`68c4d74f`. Affected combined consumer and package/privacy gates remain; installed
+routing and full PF19 remain open.
 
 ## September 30 — Graphical removable media
 

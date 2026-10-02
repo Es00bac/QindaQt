@@ -71,9 +71,13 @@ Independent decoder review accepts exact `d6002623` in `3278ce24` after its own
 five-check fixed actual graph and byte-identical `ca29910d` causal negative:
 the retired offered target falls back to unrelated blue frames in the original
 decoder and fails the preserved assertion. The original rejection remains.
-This qualifies the decoder amendment; separate review of the broader consumer
-foundation is pending before integration. Prior failures are retained; installed
-routing, additional privacy coverage and full PF19 remain open.
+The broader consumer foundation is independently accepted in `85b0b285` after
+87 own focused Qt checks and merged with startup/decoder review records at
+`b4404273`. Independently accepted development pin `cb0877f4`/`61123c4b` selects
+the exact accepted fork tree; its authoritative hub and clean checkout match
+`68c4d74f`. This is source qualification; affected merged consumer and package
+gates remain next. Prior failures are retained; installed routing, additional
+privacy coverage and full PF19 remain open.
 
 The read-only local icon gallery candidate `d93a6c99`, independently accepted
 by `8f348f61`, is integrated on this recovery branch. It lists current working

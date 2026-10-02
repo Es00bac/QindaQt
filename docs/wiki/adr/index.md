@@ -349,7 +349,7 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0322: Keep native portal choosers outside the resident](0322-native-portal-choosers.md)
 
-- [ADR-0324: Separate native portal capture authority, consent and stream lifetime](0324-native-portal-capture-boundaries.md) — proposed; actual qualification pending
+- [ADR-0324: Separate native portal capture authority, consent and stream lifetime](0324-native-portal-capture-boundaries.md) — bounded native source slice accepted; installed/full PF19 delivery remains
 
 - [ADR-0325: Add bounded native sleep modes to Sleep1](0325-additive-native-sleep-modes.md)
 
