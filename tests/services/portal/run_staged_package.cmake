@@ -73,7 +73,7 @@ set(capture_broker "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-port
 set(capture_broker_desktop "${install_prefix}/${QINDAQT_INSTALL_DATADIR}/applications/org.qindaqt.PortalCaptureBackend.desktop")
 set(uri_relay "${install_prefix}/${QINDAQT_INSTALL_LIBEXECDIR}/qindaqt-uri-relay")
 foreach(required_artifact IN ITEMS portal_executable consent_executable chooser_executable uri_relay dbus_descriptor systemd_unit
-        portal_metadata capture_portal_metadata portal_selection)
+        portal_metadata portal_selection)
     if(NOT EXISTS "${${required_artifact}}")
         message(FATAL_ERROR "Staged portal package misses ${required_artifact}: ${${required_artifact}}")
     endif()
@@ -82,7 +82,8 @@ endforeach()
 # Protected capture is optional only when the selected fork public contract is
 # unavailable. Its absent product cannot advertise/activate a capture family.
 if(QINDAQT_PROTECTED_CAPTURE_AVAILABLE)
-    foreach(artifact capture_executable capture_desktop capture_broker capture_broker_desktop)
+    set(capture_metadata_check_args "-DPORTAL_CAPTURE_METADATA_FILE=${capture_portal_metadata}")
+    foreach(artifact capture_executable capture_desktop capture_broker capture_broker_desktop capture_portal_metadata)
         if(NOT EXISTS "${${artifact}}")
             message(FATAL_ERROR "Qualified protected capture package misses ${artifact}")
         endif()
@@ -114,7 +115,8 @@ if(QINDAQT_PROTECTED_CAPTURE_AVAILABLE)
         message(FATAL_ERROR "Capture helper compatibility entry/broker ambient permission contract differs")
     endif()
 else()
-    foreach(artifact capture_executable capture_desktop capture_broker capture_broker_desktop)
+    set(capture_metadata_check_args)
+    foreach(artifact capture_executable capture_desktop capture_broker capture_broker_desktop capture_portal_metadata)
         if(EXISTS "${${artifact}}")
             message(FATAL_ERROR "Unavailable protected capture left an unqualified artifact: ${artifact}")
         endif()
@@ -128,12 +130,15 @@ endif()
 # AGENT-GUARD: These names are integration entry points discovered by external
 # daemons. A duplicate anywhere in the staged component makes package selection
 # order-dependent even if the canonical path itself is correct.
-foreach(singleton IN ITEMS
+set(portal_singletons
         "org.freedesktop.impl.portal.desktop.qindaqt.service"
         "xdg-desktop-portal-qindaqt.service"
         "qindaqt.portal"
-        "qindaqt.capture.portal"
         "qindaqt-portals.conf")
+if(QINDAQT_PROTECTED_CAPTURE_AVAILABLE)
+    list(APPEND portal_singletons "qindaqt.capture.portal")
+endif()
+foreach(singleton IN LISTS portal_singletons)
     file(GLOB_RECURSE matches LIST_DIRECTORIES false
          "${install_prefix}/*/${singleton}" "${install_prefix}/${singleton}")
     list(LENGTH matches match_count)
@@ -150,7 +155,9 @@ file(READ "${dbus_descriptor}" dbus_content)
 file(READ "${systemd_unit}" unit_content)
 file(READ "${portal_metadata}" portal_content)
 file(READ "${portal_selection}" selection_content)
-file(READ "${capture_portal_metadata}" capture_portal_content)
+if(QINDAQT_PROTECTED_CAPTURE_AVAILABLE)
+    file(READ "${capture_portal_metadata}" capture_portal_content)
+endif()
 foreach(content IN ITEMS dbus_content unit_content portal_content capture_portal_content selection_content)
     if("${${content}}" MATCHES "@[A-Za-z0-9_]+@|${QINDAQT_BUILD_DIRECTORY}|${SOURCE_PORTAL_ROOT}")
         message(FATAL_ERROR "Staged portal metadata contains a template or build/source path")
@@ -176,7 +183,7 @@ execute_process(
             "-DPORTAL_ROOT=${SOURCE_PORTAL_ROOT}"
             "-DSTAGE_ROOT=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
             "-DPORTAL_METADATA_FILE=${portal_metadata}"
-            "-DPORTAL_CAPTURE_METADATA_FILE=${capture_portal_metadata}"
+            ${capture_metadata_check_args}
             "-DPORTAL_SELECTION_FILE=${portal_selection}"
             -P "${CHECK_SCRIPT}"
     RESULT_VARIABLE boundary_status
@@ -252,7 +259,7 @@ function(expect_installed_metadata_rejection label expected)
                 "-DPORTAL_ROOT=${SOURCE_PORTAL_ROOT}"
                 "-DSTAGE_ROOT=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
                 "-DPORTAL_METADATA_FILE=${portal_metadata}"
-            "-DPORTAL_CAPTURE_METADATA_FILE=${capture_portal_metadata}"
+                ${capture_metadata_check_args}
                 "-DPORTAL_SELECTION_FILE=${portal_selection}"
                 -P "${CHECK_SCRIPT}"
         RESULT_VARIABLE status
@@ -314,7 +321,7 @@ execute_process(
             "-DPORTAL_ROOT=${SOURCE_PORTAL_ROOT}"
             "-DSTAGE_ROOT=${install_prefix}/${QINDAQT_INSTALL_INCLUDEDIR}"
             "-DPORTAL_METADATA_FILE=${portal_metadata}"
-            "-DPORTAL_CAPTURE_METADATA_FILE=${capture_portal_metadata}"
+            ${capture_metadata_check_args}
             "-DPORTAL_SELECTION_FILE=${portal_selection}"
             -P "${CHECK_SCRIPT}"
     RESULT_VARIABLE poison_status
