@@ -119,7 +119,9 @@
     "laptopProtectedNonRetiredPackages": 1358,
     "protectedNonRetiredPackagesRemoved": 0,
     "normalFinalBinaryOnlyPretendEachHost": "PASS; five upgrades, five binaries, no source build or download",
-    "evidence": "ops/audits/plasma-interim-cleanup-20261002.json"
+    "evidence": "ops/audits/plasma-interim-cleanup-20261002.json",
+    "privateBridgeInstalledBothHosts": true,
+    "privateBridgeEvidence": "ops/audits/private-xwayland-bridge-installed-20261002.json"
   },
   "sessionBoundary": "Preserve applications and current compositor processes. Fresh physical login is operator activation; no forced logout, suspend or credential prompt.",
   "explicitReplacement": {
