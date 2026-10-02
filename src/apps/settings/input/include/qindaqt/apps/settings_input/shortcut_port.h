@@ -20,7 +20,7 @@ inline constexpr char CommandComponentPrefix[] = "qindaqt-custom-";
 // The kglobalaccel action that runs a desktop-file component's Exec line.
 inline constexpr char LaunchActionName[] = "_launch";
 
-// One global shortcut as the shortcut authority (kglobalaccel) reports it.
+// One global shortcut reported by the native Shortcuts1 authority.
 struct ShortcutAction {
     QString componentUnique;  // authority identity, e.g. "qindaqt-shell"
     QString componentFriendly;
@@ -64,22 +64,22 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
 // type system; the adapter and the test fake call it before any call.
 void registerShortcutDBusTypes();
 
-// Port to the global shortcut authority (ADR-0134: kglobalaccel inside KWin).
+// Port to the native global shortcut authority (ADR-0334); compatibility
+// codecs remain public for callers that still use the standard KF6 wire.
 class ShortcutPort {
 public:
     virtual ~ShortcutPort();
 
-    // Every component's actions with their active and default keys, read
-    // through each component object's allShortcutInfos. An unreachable
-    // authority or a reply with an unexpected D-Bus signature fails closed
-    // with an empty list and `error` set. The order is the authority's.
+    // Every component's actions with their assigned and default keys, read
+    // from the native ListBindings snapshot. An unreachable
+    // authority or malformed reply fails closed with an empty list and error.
+    // Rows sort by stable component/action identity.
     [[nodiscard]] virtual QList<ShortcutAction>
     actions(QString *error) const = 0;
 
-    // Replaces the active keys of one existing action (empty clears; Reset
-    // is the same call with the recorded defaults) and reads them back. The
-    // authority silently ignores unknown actions and keeps a key another
-    // action holds; both return false with `error` saying so.
+    // Replaces assigned keys (empty clears; Reset uses recorded defaults).
+    // The native reply explicitly refuses unknown actions or named conflicts;
+    // those failures preserve the previous assignment and report error.
     [[nodiscard]] virtual bool
     setShortcuts(const QString &componentUnique, const QString &actionUnique,
                  const QList<QKeySequence> &keys, QString *error) const = 0;

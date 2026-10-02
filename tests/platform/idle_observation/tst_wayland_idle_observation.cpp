@@ -20,6 +20,7 @@ void IdleTest::actualProtocolEventsDriveIdleAndRearm() {
   Server server;
   WaylandIdleObservation observer([&] { return server.connection(); },
                                   [] { return true; });
+  QSignalSpy activity(&observer, &WaylandIdleObservation::activity);
   observer.setTimeout(50);
   QTRY_VERIFY(observer.available());
   QTRY_COMPARE(server.timeout, 50U);
@@ -30,6 +31,7 @@ void IdleTest::actualProtocolEventsDriveIdleAndRearm() {
   QTRY_VERIFY(observer.idle());
   server.resumed();
   QTRY_VERIFY(!observer.idle());
+  QTRY_COMPARE(activity.size(), 1);
   observer.setTimeout(1000);
   QTRY_COMPARE(server.timeout, 1000U);
   observer.revoke();
@@ -41,6 +43,7 @@ void IdleTest::actualProtocolEventsDriveIdleAndRearm() {
   QVERIFY(!observer.available());
   observer.setTimeout(1440 * 60000 + 1);
   QVERIFY(!observer.available());
+  QCOMPARE(activity.size(), 1); // Rearm/loss/startup are not activity.
 }
 void IdleTest::currentLineageIsRecheckedBeforeDisclosure() {
   Server server;

@@ -133,8 +133,15 @@ private Q_SLOTS:
         reset("hold"); screenshot("Screenshot", parent); mapped(); const auto pendingPid = helperPid(); exporter.kill(); QVERIFY(exporter.waitForFinished());
         QTRY_VERIFY(kill(streamPid, 0) < 0); QTRY_VERIFY(kill(pendingPid, 0) < 0); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 2U);
     }
+    void actualPipeWireNodeFramesSessionCloseAndCancel_data() {
+        QTest::addColumn<quint32>("cursorMode");
+        QTest::newRow("hidden") << quint32(1);
+        QTest::newRow("embedded") << quint32(2);
+        QTest::newRow("metadata") << quint32(4);
+    }
     void actualPipeWireNodeFramesSessionCloseAndCancel() {
-        QString session; createSession(session); QVERIFY(!session.isEmpty()); select(session); reset("allow");
+        QFETCH(quint32, cursorMode);
+        QString session; createSession(session); QVERIFY(!session.isEmpty()); select(session, cursorMode); reset("allow");
         request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
         const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1); QVERIFY(streams.first().node > 0);
         auto remote = method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}});
@@ -143,6 +150,31 @@ private Q_SLOTS:
         QCOMPARE(pixels.state(), QProcess::Running);
         const auto pid = helperPid(); close(session, "Session"); QTRY_VERIFY(kill(pid, 0) < 0); QTRY_VERIFY(!frames.nodes().contains(streams.first().node)); QTest::qWait(150); const auto stopped = frames.count(); QTest::qWait(300); QCOMPARE(frames.count(), stopped);
         reset("allow"); QString cancelled; createSession(cancelled); select(cancelled); reset("cancel"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(cancelled)), QString{}, QVariantMap{}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 15000); QCOMPARE(responses.response, 1U);
+    }
+    void explicitTwoMonitorBatchClosesEveryProducer() {
+        QString session; createSession(session); reset("allow");
+        request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"multiple", true}, {"cursor_mode", 2U}}});
+        // SelectSources validates policy without presenting consent. Only
+        // Start maps the real helper; waiting for it here expires the session.
+        QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); reset("allow");
+        request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
+        const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 2);
+        QVERIFY(streams[0].node && streams[1].node && streams[0].node != streams[1].node);
+        auto remote = method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}});
+        QDBusPendingCallWatcher opened(bus.asyncCall(remote)); QTRY_VERIFY(opened.isFinished());
+        const QDBusPendingReply<QDBusUnixFileDescriptor> fd = opened; QVERIFY2(!fd.isError(), qPrintable(fd.error().message())); QVERIFY(fd.value().isValid());
+        // Producer callbacks may complete in either order. The animated
+        // fixture is on the primary output; the other screen is static.
+        auto animated = streams.cbegin();
+        while (animated != streams.cend() && animated->properties.value("position").value<CaptureCoordinate>().first != 0) ++animated;
+        QVERIFY(animated != streams.cend());
+        PipeWireFrames frames(dup(fd.value().fileDescriptor()), animated->node);
+        QVERIFY(frames.valid()); QTRY_VERIFY2_WITH_TIMEOUT(frames.count() > 3, qPrintable(frames.error()), 15000);
+        QVERIFY(containsFixturePixels(frames.image()));
+        QTRY_VERIFY_WITH_TIMEOUT(frames.nodes().contains(streams[0].node), 15000);
+        QTRY_VERIFY_WITH_TIMEOUT(frames.nodes().contains(streams[1].node), 15000);
+        const auto pid = helperPid(); close(session, "Session"); QTRY_VERIFY(kill(pid, 0) < 0);
+        QTRY_VERIFY(!frames.nodes().contains(streams[0].node)); QTRY_VERIFY(!frames.nodes().contains(streams[1].node));
     }
     void compositorLossWithdrawsStreamsFilesAndPendingPublication() {
         screenshot("Screenshot"); success(); const auto file = QUrl(responses.results.value("uri").toString()).toLocalFile();
@@ -240,7 +272,7 @@ private:
     QString request(const char *family, const char *member, const QVariantList &args) { return request(family, member, args, bus); }
     QString screenshot(const char *member, const QString &parent = {}) { return request("Screenshot", member, {parent, QVariantMap{{"interactive", true}}}); }
     void createSession(QString &session) { reset("allow"); request("ScreenCast", "CreateSession", {QVariantMap{{"session_handle_token", "s" + QUuid::createUuid().toString(QUuid::Id128)}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); const auto handle = responses.results.value("session_handle"); QCOMPARE(handle.metaType(), QMetaType::fromType<QString>()); session = handle.toString(); }
-    void select(const QString &session) { reset("allow"); request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"cursor_mode", 1U}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); }
+    void select(const QString &session, quint32 cursorMode = 1) { reset("allow"); request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"cursor_mode", cursorMode}}}); QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); }
     void close(const QString &path, const char *family) { auto call = QDBusMessage::createMethodCall("org.freedesktop.portal.Desktop", path, "org.freedesktop.portal."+QString::fromLatin1(family), "Close"); QDBusPendingCallWatcher closing(bus.asyncCall(call)); QTRY_VERIFY(closing.isFinished()); }
     void reset(const char *action) {
         responses.count = 0; responses.response = 99; responses.results.clear();

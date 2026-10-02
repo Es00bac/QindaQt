@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node name="/org/qindaqt/ScreenPower1"><interface name="org.qindaqt.ScreenPower1">
+  <method name="CanScreenOff"><arg name="available" type="b" direction="out"/></method>
+  <method name="ScreenOff"><arg name="powerEpoch" type="t" direction="in"/><arg name="requestId" type="s" direction="in"/><arg name="admitted" type="b" direction="out"/></method>
+  <method name="ReleaseScreenOff"><arg name="requestId" type="s" direction="in"/><arg name="released" type="b" direction="out"/></method>
+  <signal name="AvailabilityChanged"/><signal name="ScreenOffEnded"><arg name="requestId" type="s"/></signal>
+</interface></node>

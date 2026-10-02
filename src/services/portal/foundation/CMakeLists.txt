@@ -62,7 +62,7 @@ target_link_libraries(qindaqt_portal_email PUBLIC QindaQt::PortalRequests QindaQ
 portal_library(qindaqt_portal_composition PortalComposition)
 target_sources(qindaqt_portal_composition PRIVATE ../src/foundation_composition.cpp
     PUBLIC FILE_SET HEADERS BASE_DIRS ../include FILES ../include/qindaqt/services/portal/foundation_composition.h)
-target_link_libraries(qindaqt_portal_composition PUBLIC QindaQt::PortalFoundation QindaQt::PortalNotifications QindaQt::PortalEmail QindaQt::PortalChoosers QindaQt::PortalCapture QindaQt::PortalRemoteInput)
+target_link_libraries(qindaqt_portal_composition PUBLIC QindaQt::PortalFoundation QindaQt::PortalNotifications QindaQt::PortalEmail QindaQt::PortalChoosers QindaQt::PortalCapture QindaQt::PortalShortcuts QindaQt::PortalMisc QindaQt::PortalRemoteInput)
 
 portal_library(qindaqt_portal_chooser_policy PortalChooserPolicy)
 target_sources(qindaqt_portal_chooser_policy PRIVATE ../src/chooser_wire.cpp ../src/chooser_frames.cpp

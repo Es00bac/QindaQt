@@ -181,11 +181,15 @@ void SettingsNavigationControllerTest::testSequentialNavigation() {
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("voice"));
 
-  // The appended keyring route is last; the next step wraps to the first.
+  // Portal permissions appends after keyring; wrapping preserves all earlier indices.
   QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("passwords-keys"));
   QVERIFY(controller.selectNext());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
+  QVERIFY(controller.selectNext());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
+  QVERIFY(controller.selectPrevious());
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
   QVERIFY(controller.selectPrevious());
   QCOMPARE(controller.activeRouteId(), QStringLiteral("passwords-keys"));
   QVERIFY(controller.selectPrevious());
@@ -331,16 +335,18 @@ void SettingsNavigationControllerTest::testIndexNavigation() {
   QCOMPARE(controller.activeRouteId(), QStringLiteral("voice"));
   QVERIFY(controller.selectIndex(21));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("passwords-keys"));
+  QVERIFY(controller.selectIndex(22));
+  QCOMPARE(controller.activeRouteId(), QStringLiteral("portal-permissions"));
 
   QVERIFY(controller.selectIndex(0));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 
   // Out of bounds
   QVERIFY(!controller.selectIndex(-1));
-  // Twenty-two routes now; 22 is the first out-of-bounds index. This line was not in a merge conflict
+  // Twenty-three routes now; 23 is the first out-of-bounds index. This line was not in a merge conflict
   // once and went on asserting that a valid index is rejected; keep it moving
   // with the count above.
-  QVERIFY(!controller.selectIndex(22));
+  QVERIFY(!controller.selectIndex(23));
   QCOMPARE(controller.activeRouteId(), QStringLiteral("notifications"));
 }
 
@@ -398,7 +404,7 @@ void SettingsNavigationControllerTest::testRoutesListExposure() {
   SettingsNavigationController controller(registry);
 
   const QVariantList list = controller.routesList();
-  QCOMPARE(list.size(), 22);
+  QCOMPARE(list.size(), 23);
 
   const QVariantMap notifMap = list.at(0).toMap();
   QCOMPARE(notifMap.value(QStringLiteral("id")).toString(),
@@ -610,10 +616,10 @@ void SettingsNavigationControllerTest::testRouteAtPositions() {
   QCOMPARE(itemAt20.value(QStringLiteral("component")).toString(),
            QStringLiteral("voice"));
 
-  // Twenty-two routes, so 22 is the first out-of-bounds position.
-  const QVariantMap last = controller.routeAt(21);
-  QCOMPARE(last.value(QStringLiteral("id")).toString(), QStringLiteral("passwords-keys"));
-  const QVariantMap itemOutOfBounds = controller.routeAt(22);
+  // Twenty-three routes, so 23 is the first out-of-bounds position.
+  const QVariantMap last = controller.routeAt(22);
+  QCOMPARE(last.value(QStringLiteral("id")).toString(), QStringLiteral("portal-permissions"));
+  const QVariantMap itemOutOfBounds = controller.routeAt(23);
   QVERIFY(itemOutOfBounds.isEmpty());
 }
 

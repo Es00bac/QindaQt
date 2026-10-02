@@ -22,6 +22,9 @@ public:
   virtual void revoke() = 0;
 Q_SIGNALS:
   void changed();
+  // Actual current-generation compositor resumed event only. Rearm, startup
+  // and loss may clear idle state but must never manufacture user activity.
+  void activity();
 };
 // Owns each connected ordinary display FD transferred by opener, including
 // failure paths. Captures in borrowed same-thread callbacks must outlive this

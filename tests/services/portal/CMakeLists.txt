@@ -317,4 +317,9 @@ add_subdirectory(foundation)
 add_subdirectory(choosers)
 
 add_subdirectory(capture)
+
+add_subdirectory(shortcuts)
+
+add_subdirectory(misc_families)
+
 add_subdirectory(remote_input)

@@ -12,7 +12,7 @@ StartupNotify=true
 # AGENT-CONTRACT (ADR-0289, ADR-0241): KWin reads this as one exact
 # QStringList value. A trailing semicolon becomes part of the name and
 # silently denies every capture.
-X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
+X-QindaQt-KWin-DBus-Restricted-Interfaces=org.qindaqt.KWin.ScreenShot2
 Actions=Region;FullScreen;ActiveWindow;RecordToggle;
 
 [Desktop Action Region]

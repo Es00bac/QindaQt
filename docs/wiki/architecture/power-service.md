@@ -46,18 +46,28 @@ selects production; the wire contract is unchanged.
 | Keyboard backlight | UPower keyboard-backlight interface | `Power1` collaborator |
 | External-monitor brightness | KWin brightness control, through Display1 `SetOutputBrightness` ([ADR-0150](../adr/0150-admit-immediate-external-output-brightness-through-display1.md)) | Display D7; unavailable wherever KWin advertises no capability; presented per output by the [Power Settings route](../apps/power-settings.md) through the public Display client; DDC/CI policy remains PB-6 |
 
-`Power1` version 1 reports the privacy-bounded logind inhibitor summary
-but acquires no caller-scoped QindaQt idle leases. The private
-`IdleInhibitorRegistry` is currently only a compiled service-core foundation:
-it enforces service-epoch and unique-owner cookies, bounded capacity, atomic
-scope admission and owner cleanup in unit tests. It now backs additive resident D-Bus queries and acquire/release methods;
-these methods still report zero consumed scopes and reject every acquisition.
-It is not connected to idle stages, so the ScreenSaver facade remains
-Unsupported. Its public state query uses an actual-owner, nonce-correlated
-targeted receipt because QtDBus method replies do not expose an authenticated
-actual sender; the legacy getters remain compatible but are not policy authority
-([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)). This boundary must
-stay explicit until the shared idle policy consumes every requested scope.
+`Power1` version 1 reports the privacy-bounded logind inhibitor summary and
+owns the bounded idle lease registry. Additive `RegisterIdleConsumers(tu) -> b`
+lets only the actual current Session1 unique owner, authenticated to this UID,
+declare all three shared consumers in the current Power1 epoch. It accepts
+only the complete automatic-lock/display-off/idle-suspend mask or withdrawal;
+partial/malformed/stale/foreign registrations reject without changing state.
+The composition-only native-exclusive gate defaults off, and confirmed legacy
+PowerDevil presence forbids registration. Supervisor replacement, Power1 epoch
+change, legacy arrival or native-admission withdrawal clear capabilities and
+leases. The public `IdleConsumerRegistrar` fences method callbacks and withdraws
+only its original addressed owner/epoch on cancel. A method-reported acceptance
+is not policy authority: consumers still use the actual-owner nonce-correlated
+inhibitor receipt ([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)).
+
+The default configured service keeps native policies off. The explicit coherent
+`QINDAQT_NATIVE_POWER_EXCLUSIVE` package option configures native activation and
+supervisor composition together. NativePowerComposition now assembles real
+lock/dim/display/suspend consumers with scoped display ownership; actual native
+output and installed cutover acceptance remain separate manager gates. No
+placeholder or caller-provided success can replace a real consumer. See
+[Idle policy](idle-policy.md) and
+[ADR-0333](../adr/0333-authenticate-shared-idle-consumer-registration.md).
 
 Lock-before-sleep belongs to the authenticated native lock runtime and the
 supervisor NativeSleep coordinator (ADR-0321). The later key-action policy must
@@ -518,5 +528,15 @@ The exact public process/credential boundary, noninstalled private resident
 test convention and focused private executable evidence are in
 [Native lid policy](power-policy.md#native-lid-ownership-and-close-edges) and
 [ADR-0332](../adr/0332-own-native-lid-handling-before-edge-dispatch.md).
-Screen-off/full lid matrix, installed cutover and physical qualification remain
+Persistent ScreenOff is now wired to ScreenPower1; full native lid/source/dock matrix, installed cutover and physical qualification remain
 separate. Existing profile, critical and protected Hibernate behavior is unchanged.
+
+### Native exclusive power assembly candidate
+
+The supervisor now composes the current-source shared consumers and separate
+ScreenPower1 facade. The ownership, episode, Protected, source and activation
+contracts live in [Native shared idle policy](idle-policy.md) and
+[ADR-0338](../adr/0338-own-scoped-display-power-and-shared-idle-composition.md).
+The package option defaults OFF; an ON cutover configures all four native policy
+flags and retires only the supervisor-owned PowerDevil child. Focused strict and
+private-protocol gates do not constitute installed/native physical acceptance.

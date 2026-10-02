@@ -2,6 +2,7 @@
 #pragma once
 #include <qindaqt/services/portal/request_registry.h>
 #include <QHash>
+#include <QStringList>
 #include <QTimer>
 #include <QDBusVirtualObject>
 #include <memory>
@@ -11,7 +12,7 @@ enum class CaptureSessionPhase { Created, Selected, Starting, Streaming };
 class CaptureSessions final : public QObject {
     Q_OBJECT
 public:
-    struct Entry { QString frontend, caller, app; int pidfd = -1; CaptureSessionPhase phase = CaptureSessionPhase::Created; RequestToken pending = 0; QDBusVirtualObject *object = nullptr; };
+    struct Entry { QString frontend, caller, app; int pidfd = -1; CaptureSessionPhase phase = CaptureSessionPhase::Created; RequestToken pending = 0; QDBusVirtualObject *object = nullptr; bool multiple = false; quint32 cursorMode = 1; quint32 persistMode = 0; QStringList restore{}; };
     CaptureSessions(QDBusConnection, RequestRegistry &, QObject *parent = nullptr);
     ~CaptureSessions() override;
     bool create(const QDBusMessage &, const QString &requestPath, const QString &sessionPath, const QString &app);

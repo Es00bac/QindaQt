@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
 // SPDX-FileCopyrightText: 2024 David Redondo <kde@david-redondo.de>
 // SPDX-FileCopyrightText: 2026 QindaQt contributors
+#include <qindaqt/compositor_names/compositor_names.h>
 #include "clipboard_adaptor_p.h"
 #include <QPointer>
 #include <algorithm>
@@ -9,8 +10,8 @@
 
 namespace QindaQt::Services::Portal::RemoteInput {
 namespace {
-constexpr auto kPath = "/org/kde/KWin/EIS/RemoteDesktop";
-constexpr auto kInterface = "org.kde.KWin.EIS.RemoteDesktop";
+constexpr auto kPath = CompositorNames::eisRemoteDesktopPath;
+constexpr auto kInterface = CompositorNames::eisRemoteDesktopInterface;
 constexpr auto kPortal = "org.freedesktop.impl.portal.Clipboard";
 constexpr auto kNotAllowed = "org.freedesktop.portal.Error.NotAllowed";
 constexpr auto kFailed = "org.freedesktop.portal.Error.Failed";

@@ -38,7 +38,7 @@ struct CaptureOptions {
 
 inline constexpr int kMaxDelaySeconds = 60;
 
-// One org.kde.KWin.ScreenShot2 method call without its trailing pipe
+// One org.qindaqt.KWin.ScreenShot2 method call without its trailing pipe
 // descriptor, which the capture port appends and owns.
 struct KWinCaptureCall {
     QString method;

@@ -208,3 +208,17 @@ The staged-package row repeats native frontend positive/withdrawal controls usin
 installed metadata and URI relay. Consent input remains the explicit production-source
 test driver, so this does not establish installed physical consent. These private
 fixtures do not contact the host or install a portal.
+
+## Native GlobalShortcuts candidate
+
+The independent PF24 candidate adapts existing authenticated standard Session/
+Request lifetimes for GlobalShortcuts v1, with native transient registrations
+and a separate ordinary-display shortcut editor. It borrows the public
+ShortcutsClient boundary, never Settings implementation. The explicit helper
+constructor leaves old callers unavailable and retains display/lock admission.
+Metadata remains held pending executable and live acceptance. See
+[ADR-0334](../adr/0334-native-shortcut-authority-and-consumers.md).
+
+## Independent families
+
+The additive [Print, Account, DynamicLauncher and USB adapters](../reference/portal-misc-families.md) reuse these public boundaries with an explicit ordinary helper executable. Their method implementation is independent of capture and remote input; routing changes remain subject to their focused executable gates and exact candidate review.

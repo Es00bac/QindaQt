@@ -385,3 +385,13 @@ qindaqt_enable_warnings(qindaqt_lid_runtime_tests)
 add_test(NAME qindaqt.power-lid-runtime COMMAND qindaqt_lid_runtime_tests)
 set_tests_properties(qindaqt.power-lid-runtime PROPERTIES
     LABELS "service;power;dbus;policy" TIMEOUT 60 RUN_SERIAL TRUE)
+
+qt_add_executable(qindaqt_idle_consumer_registration_tests
+    tst_idle_consumer_registration.cpp support/private_bus.h support/fake_power_collaborators.h)
+target_link_libraries(qindaqt_idle_consumer_registration_tests
+    PRIVATE QindaQt::PowerService QindaQt::PowerClient Qt6::Test Qt6::DBus)
+qindaqt_enable_warnings(qindaqt_idle_consumer_registration_tests)
+add_test(NAME qindaqt.power-idle-consumer-registration
+    COMMAND qindaqt_idle_consumer_registration_tests)
+set_tests_properties(qindaqt.power-idle-consumer-registration PROPERTIES
+    TIMEOUT 30 LABELS "power;idle;dbus;private-fixture")

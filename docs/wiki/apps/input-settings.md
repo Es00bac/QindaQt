@@ -274,3 +274,14 @@ org.qindaqt.Shortcuts1.
 | `qindaqt.services-tablet-devices-orientation` | Rotation algebra, KWin's orientation table, area turns, pen display vs desk tablet classification, the rotation KWin applies per mapping, the Display1 join |
 | `qindaqt.services-tablet-devices-placement` | The planner against an independent model of the KWin + libinput pipeline for all 16 turn × rotation pairs: up stays up, areas land as drawn, fixed points, adoption, refusals, pen displays |
 | `qindaqt.session-desktop-controls-tablet-orientation` | The session policy re-planning a desk tablet when its screen turns, honouring a recorded rotation, leaving the workspace and mixed rotations uncompensated, waiting for an unknown rotation, clearing a pen display's stale rotation, retrying a refused write |
+
+## Native shortcut migration candidate
+
+The PF23–PF24 candidate connects this route to `org.qindaqt.Shortcuts1` through
+the public `ShortcutsClient` module. Listing retains assigned/default complete
+sequences, and mutation receives explicit conflict refusal. Existing command
+desktop-file storage and rollback remain; the fork's adapted KService/KIO
+authority supplies `_launch` activation. Compatibility four-chord codecs remain
+for old clients. The compositor option and portal routing stay held until
+focused private-bus and nested live qualification; source is not installed
+release acceptance. See [ADR-0334](../adr/0334-native-shortcut-authority-and-consumers.md).

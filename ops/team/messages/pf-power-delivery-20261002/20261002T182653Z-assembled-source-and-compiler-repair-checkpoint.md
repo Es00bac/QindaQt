@@ -1,0 +1,12 @@
+# Assembled native power source and first compiler facts
+
+- UTC: 2026-10-02T18:26:53Z
+- Frozen product99cfa78e7; Base remains7358b792874f06eb13e00dcd0780c1ee8a453e7a. Own source branch pushed to qinda.
+- NativePowerComposition now wires current-source dim/display-off/idle-suspend, existing automatic lock, scoped compositor authority and actual authenticated ScreenPower1. Lid current Power1 epoch causes release on reopen/source/dock/preference/admission loss, without closed-edge replay.
+- Package CMake option QINDAQT_NATIVE_POWER_EXCLUSIVE OFF by default; ON configures four native Power1 policy flags and supervisor exclusive default/owned PowerDevil-child suppression. No installation, host bus/config/hardware, game or capture mutation.
+- First exact b8ab0d201 compile failure: aggregate lineage needed default member initializer. Build exit2/48.037s, PID1430071 starttick41988054 gone, min12,524,752KiB. Log SHA b40b1311316f6d8bc88e2006fae827122fbcc222e5de88b6fa65eaaa5ea178f1; receipt8306da5be3ae1c97cdc7f09e2700da5c6a2dda0f3e51af7beb63318409757b2f.
+- Second a8e15d1a2 compile failure: new ScreenPower fixture missing public PowerClient include and private broker compile definition. Exit2/155.124s, PID1444217 starttick42009405 gone, min9,072,988KiB. Logfb22a5ee6dab0d3d403b73d0037cd51c020b80a835240481c92fe2627464d636; receipt6c642eca372d477b91897a12f96d27453fd1b76d0ea9bd5f5db7c9a2623ac03d. Both failures are preserved unchanged in ignored qinda evidence; strict warnings/assertions remain enabled.
+- MkDocs strict passed10.78s; docs|links CTest had zero tests and is not accepted coverage. Actual tools/validate-docs passed492documents/navigation0.68s on earlier exact source; final rewritten pages need final replay.
+- Focused component e78 wire gate11QtPASS and fork653 pure ledger7QtPASS remain prior evidence, not assembled/native completion. All nine e78 logged private bus PIDs directly observed gone.
+- Fork26cf50cdfa adds actual backend DPMS completion observation to existing own adapter, no ledger-byte changes. Native input owner retains shared native core; root owns merge/review after release. No new full cache or native test started.
+- Next required gate: assembled strict build + seven focused CTests and exact changed-path/hash/cleanup handoff. Native renderer, installed cutover and concurrent-brightness compare race remain bounded unqualified boundaries. Root explicitly declines extra brightness protocol absent reproduced blocker.

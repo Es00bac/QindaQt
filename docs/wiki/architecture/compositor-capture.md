@@ -30,10 +30,12 @@ they outlive the port. Enumeration requires lineage; creation, node publication
 and an active stream additionally require pixel permission. No ambient display
 name, executable lookup, authorization database or persistence is consulted.
 
-The initial port offers one monitor stream with Hidden cursor. Start accepts only
-an ID in the live offered source set and publishes the actual compositor-created
-PipeWire node. The port never restarts or replays consent. Output removal, protocol
-failure, deadline or authority loss invalidates getters and closes the stream;
+The port accepts one to sixteen distinct IDs in the live offered monitor set
+and one standard Hidden, Embedded or Metadata cursor mode. It validates the
+whole selection before sending any producer request. Each stream publishes its
+actual compositor-created PipeWire node; any member failure closes the whole
+batch. The portal helper waits for every node before publishing the batch. The port never restarts or replays consent. Output removal, protocol
+failure, deadline or authority loss invalidates getters and closes all owned streams;
 teardown is deferred out of protocol listeners to preserve callback lifetime.
 Enumeration and node results are bounded; late creation cannot resurrect a closed
 port. The public port has no portal Session, app permission, GUI or PipeWire remote
@@ -64,3 +66,11 @@ actual mapped native GUI input, private EGL-capable compositor, real frontend an
 private PipeWire node/frame/lifetime/lock gates. Source presence or mock policy
 results do not establish that qualification. Installation, ordinary desktop and
 sandbox delivery remain separate manager gates.
+
+## Native privileged identity
+
+[ADR-0340](../adr/0340-use-native-privileged-compositor-identities.md) coordinates
+ScreenShot2 with the fork and screenshot/helper desktop entries. `CompositorNames`
+provides the service, object, interface and error names. The source cutover must
+ship with the native backend routing and matching compositor; installed
+qualification remains a separate release gate.

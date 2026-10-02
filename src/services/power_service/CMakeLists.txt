@@ -19,6 +19,9 @@ target_sources(
         src/power_service_coordinator.cpp
         src/power_service_object.cpp
         src/power_service_object_p.h
+        src/idle_consumer_authority.cpp
+        src/idle_consumer_authority_p.h
+        src/power_idle_consumer_registration.cpp
         src/idle_inhibitor_registry.cpp
         src/idle_inhibitor_registry_p.h
         src/power_service_operations.cpp
@@ -91,6 +94,14 @@ target_compile_definitions(
 )
 set_target_properties(qindaqt-power-service PROPERTIES CXX_EXTENSIONS OFF)
 qindaqt_enable_warnings(qindaqt-power-service)
+
+# Coherent package cutover knob: development and ordinary builds remain off.
+# Manager packaging must select this together with the reviewed fork adapter.
+option(QINDAQT_NATIVE_POWER_EXCLUSIVE "Compose native power and retire owned PowerDevil" OFF)
+set(QINDAQT_POWER_POLICY_ARGUMENTS "")
+if(QINDAQT_NATIVE_POWER_EXCLUSIVE)
+    set(QINDAQT_POWER_POLICY_ARGUMENTS "--profile-policy=native-exclusive --critical-policy=native-exclusive --lid-policy=native-exclusive --idle-policy=native-exclusive")
+endif()
 
 configure_file(
     data/org.qindaqt.Power1.service.in

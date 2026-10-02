@@ -5,7 +5,7 @@
 - **Owners:** Compositor, Platform integration
 - **Supersedes:** [ADR-0001](0001-use-kwin-as-compositor-base.md)'s small-downstream-patch model (KWin stays the code base) and the stock-KWin half of [ADR-0098](0098-gate-releases-on-the-exact-native-compositor-stack.md)'s exact stack
 - **Amends:** [ADR-0160](0160-select-installed-kwin-window-decorations.md) (only fork-namespace decorations are offered), [ADR-0277](0277-theme-choice-and-corner-tab-input.md) and [ADR-0287](0287-pass-tablet-proximity-through-window-decorations.md) (their patches are fork commits), [ADR-0209](0209-bridge-window-management-settings-into-kwinrc.md) (the bridge writes `qindaqt/kwinrc`)
-- **Superseded by:** None
+- **Amended by:** [ADR-0340](0340-use-native-privileged-compositor-identities.md) coordinates the PF21 privileged identities; its installed qualification remains pending.
 
 ## Context
 

@@ -17,7 +17,7 @@
 namespace {
 bool audited = false, allowed = false;
 QString testAction, testAudit; qint64 expectedPeer = 0;
-bool ordinaryObserved = false;
+bool ordinaryObserved = false, multipleSelection = false;
 void auditOrdinary(wl_display *display) {
     // An extra registry on Qt's actual ordinary connection observes its
     // announcements without replacing Qt listeners or owning its display.
@@ -72,7 +72,11 @@ void input() {
         if (action == "cancel") { if (auto *button = window->findChild<QPushButton *>("captureCancel")) QTest::mouseClick(button, Qt::LeftButton); return; }
         if (auto *picker = window->findChild<QWidget *>("colorPicker"); picker && picker->isVisible()) { picker->setFocus(); QTest::keyClick(picker, Qt::Key_Return); return; }
         if (allowed) return;
-        if (auto *list = window->findChild<QListWidget *>("captureSources"); list && list->isVisible() && list->count() > 0) QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, list->visualItemRect(list->item(0)).center());
+        if (auto *list = window->findChild<QListWidget *>("captureSources"); list && list->isVisible() && list->count() > 0) {
+            QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, list->visualItemRect(list->item(0)).center());
+            if (multipleSelection) for (int index = 1; index < list->count(); ++index)
+                QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::ControlModifier, list->visualItemRect(list->item(index)).center());
+        }
         auto *button = window->findChild<QPushButton *>("captureAllow");
         if (button && button->isEnabled()) { allowed = true; QTest::mouseClick(button, Qt::LeftButton); }
     }
@@ -84,7 +88,7 @@ Q_COREAPP_STARTUP_FUNCTION(install)
 namespace QindaQt::Services::Portal {
 bool captureTestFrame(QJsonObject &frame, qint64 compositorPid) {
     testAction = frame.take("test_action").toString(); testAudit = frame.take("test_audit").toString();
-    expectedPeer = compositorPid;
+    expectedPeer = compositorPid; multipleSelection = frame.value("multiple").toBool();
     return expectedPeer > 0 && (testAction == "allow" || testAction == "cancel" || testAction == "hold")
         && testAudit == QDir(QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)).filePath("qindaqt-capture.audit");
 }

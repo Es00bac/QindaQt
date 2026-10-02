@@ -1,5 +1,24 @@
 # Platform delivery queue
 
+## October 2 current delivery — deadline integration
+
+This section supersedes older resource/active claims below. Program Manager
+integration `4e988a039`; product source base for new adaptations `7358b792`.
+
+| Outcome | Current exact boundary | Next gate | Ownership/resource |
+| --- | --- | --- | --- |
+| Both QindaQt icon families/gallery | Delivered on both hosts, source2efd, recipes12b5 integrated8f23, receipt9b0421b7;7310 icons/3291 drawings each | Complete; maintain saved selection | Worker released to independent portal families |
+| Power/idle/lid ScreenOff | Source adaptation at7358/fork68c, worker pf-power-delivery-20261002 | Incremental strict repair then private-bus candidate; real composed consumers/display ownership next | Power paths, DPMS/public display-power hooks; sole compiler currently |
+| Native shortcuts and consumers | Fork checkpoint3ab21ac957 unqualified; two confirmed ownership/rollback repairs active | Focused Qt/DBus build then live compatibility; Settings/portal consumers | Shortcuts/input only; compiler next after Power |
+| RemoteDesktop/InputCapture/Clipboard | Observed Claude Opus5.5, effort max requested; desktopdfb2a18a/forkb579064e unqualified | Adapt remaining InputCapture/Clipboard then focused build/native EIS | One Claude process, remote_input/EIS only; no build reservation |
+| ScreenCast cursor/multiple | Root source3005380 unqualified | Strict focused build and actual frontend/PipeWire cursor/batch gates, different review | Capture policy/helper/producer only; configure active, compiler queued |
+| Print/Account/DynamicLauncher/Usb | Misc worker claim87b00d6e1; source adaptation active | Method-complete candidate, focused normal/cancel/lifetime gate | misc_families and own helper; no compiler reservation |
+| Final fork/desktop recipes/cutover | Plasma closure not yet qualified; no current final recipe pin | Integrate accepted sources, exact coherent build, resolver and Portage delivery | Program Manager; no host logout or game edits |
+
+Updated 2026-10-02T17:02:54+00:00. GPU/private native
+session remains unclaimed. qinda compiler serializes bounded builds due current
+memory headroom; laptop heavy work is paused whenever its lock exists.
+
 ## October 1 recovery — current Plasma-free boundary
 
 Program Manager owns the isolated `integrate/plasma-finish-20261001` branch.

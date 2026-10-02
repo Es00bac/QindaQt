@@ -78,6 +78,13 @@ bool SleepCoordinator::requestSleep(SleepMode mode) {
   if (!accepted && m_manual) refuseManual();
   return accepted;
 }
+bool SleepCoordinator::cancelRequest(quint64 token) {
+  if (!m_manual || token == 0 || token != m_serial) return false;
+  ++m_serial;
+  m_runtime.cancelSuspend();
+  refuseManual();
+  return true;
+}
 void SleepCoordinator::preparing(bool value) {
   if (!m_started) return;
   m_runtime.prepareForSleep(value);

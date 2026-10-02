@@ -101,7 +101,9 @@ int main(int argc, char **argv)
         helpers.filePath(QStringLiteral("qindaqt-uri-relay")),
         QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation),
         helpers.filePath(QStringLiteral("qindaqt-portal-chooser")),
-        helpers.filePath(QStringLiteral("qindaqt-portal-capture")));
+        helpers.filePath(QStringLiteral("qindaqt-portal-capture")),
+        helpers.filePath(QStringLiteral("qindaqt-portal-shortcuts")),
+        helpers.filePath(QStringLiteral("qindaqt-portal-misc")));
     if (!foundation.start()) {
         std::fprintf(stderr, "xdg-desktop-portal-qindaqt: native composition unavailable\n");
         return 3;

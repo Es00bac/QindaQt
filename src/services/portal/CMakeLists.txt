@@ -56,6 +56,10 @@ add_subdirectory(foundation)
 add_subdirectory(consent)
 add_subdirectory(choosers)
 add_subdirectory(capture)
+add_subdirectory(shortcuts)
+
+add_subdirectory(misc_families)
+
 add_subdirectory(remote_input)
 
 qt_add_executable(xdg-desktop-portal-qindaqt app/main.cpp)
