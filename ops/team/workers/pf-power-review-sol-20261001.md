@@ -4,7 +4,7 @@
 - Status: working — independent exact critical-battery source review; decoder review parked pending compatible graph.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none — own exactf951 compiler build PASS; private replay waiting explicit grant.
+- Resource state: sole non-GPU private critical fixture lease — firstsuspend3QtPASS; unchanged full9CTest101Qt running.
 - Outcome: qualify exact f951 critical-battery episode/notification/action policy independently.
 
 ## Updates
@@ -70,3 +70,5 @@
 - 2026-10-02T01:08:28Z: Exactf951 all28paths/sourceaudit noP0/P1found; ownstrictdocs486/7staticgatesPASS. Direct241ff frozenfirst3/full9CTest101 logs/manifests inspected; source/testdeltaempty. Root grants ownfresh six-target strictDebug+resident; configurePID513068/core0 nowrunning, bounded-j8/l24/memoryguard. Private remainsroot then graphics; no testexecution.
 
 - 2026-10-02T01:10:48Z: Ownexactf951 freshstrictDebugconfigure0/47.022s andsix-target+residentdepsbuild0/47.529s/min14.878GB. PGIDs513068/515152/groupsabsent/compilerreleased. FourchangedMOCcurrentheaders/noimplementerheaders verified, eightcache/executablehashesfrozen, establishedprefixHEAD690direct. Ownprivatefirstsuspend/full9/101 stillunrun; root then graphics leases ahead.
+
+- 2026-10-02T01:15:31Z: Root/graphics private cleanuprelease followed by explicitgrant; ownfirstsuspendPASS3/0/0/exit0/5.569s min11.459GB. FirstPIDs/rootabsent and22binary/cache/staticarchivehashesunchanged. Fullunchanged9CTest/101Qt nowrunning, deadambientbuses/tempHOME/core0/nohostaction; soleprivatelease heldthroughcleanup.
