@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-10-02T21:07:13Z",
+  "candidate": "851e2c0f6ae434128db517946b5f391101d3b674",
+  "matching_revision_pretend": {
+    "argv": [
+      "emerge",
+      "--ignore-default-opts",
+      "--pretend",
+      "--verbose",
+      "--oneshot",
+      "--newuse",
+      "--with-bdeps=n",
+      "--dynamic-deps=n",
+      "--autounmask=n",
+      "--autounmask-write=n",
+      "=kde-frameworks/kauth-6.27.0-r1",
+      "=dev-libs/kirigami-addons-1.12.1-r1",
+      "=kde-misc/kdeconnect-26.04.3-r4",
+      "=kde-frameworks/kio-6.27.0-r1",
+      "=x11-misc/xdg-utils-1.2.1-r11",
+      "=media-gfx/sloom-studio-bin-0.9.16",
+      "=lxqt-base/lxqt-config-2.4.0",
+      "=kde-apps/kio-extras-26.04.3",
+      "=kde-apps/gwenview-26.04.3"
+    ],
+    "exit": 0,
+    "seconds": 9.749801737023517,
+    "candidate": "851e2c0f6ae434128db517946b5f391101d3b674",
+    "environment_keys": {
+      "PORTAGE_CONFIGROOT": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/configroot",
+      "PORTAGE_DEPCACHEDIR": "/home/cabewse/.cache/pf-native-runtime-edges-20261002/depcache"
+    },
+    "repositories_sha256": "fb000b3499be37dc466cfec2b8f024b3541a80831b4189c6a39ed2c443e0f7fb",
+    "log_sha256": "ed9b98e3515c49cea93eb4c7a5e759b647649e0639a74e94dc4b8e9eee996da7"
+  },
+  "actual_claude_selected_graph": {
+    "exact_root": "=app-misc/claude-desktop-bin-1.49585.0",
+    "options": {
+      "--pretend": true,
+      "--deep": true,
+      "--with-bdeps": "n",
+      "--ignore-world": true,
+      "--implicit-system-deps": "n",
+      "--autounmask": "n",
+      "--autounmask-write": "n",
+      "--quiet": true,
+      "--noreplace": true,
+      "--usepkgonly": true,
+      "--dynamic-deps": "n"
+    },
+    "seconds": 2.307427218009252,
+    "selected_actual_direct_runtime_children": [
+      {
+        "cpv": "app-accessibility/at-spi2-core-2.58.8",
+        "installed": true
+      },
+      {
+        "cpv": "app-crypt/libsecret-0.21.7",
+        "installed": true
+      },
+      {
+        "cpv": "app-misc/ca-certificates-20260223.3.112.4-r1",
+        "installed": true
+      },
+      {
+        "cpv": "dev-libs/expat-2.8.4",
+        "installed": true
+      },
+      {
+        "cpv": "dev-libs/glib-2.88.2",
+        "installed": true
+      },
+      {
+        "cpv": "dev-libs/libayatana-appindicator-0.5.94",
+        "installed": true
+      },
+      {
+        "cpv": "dev-libs/nspr-4.39",
+        "installed": true
+      },
+      {
+        "cpv": "dev-libs/nss-3.112.5",
+        "installed": true
+      },
+      {
+        "cpv": "media-libs/alsa-lib-1.2.15.3",
+        "installed": true
+      },
+      {
+        "cpv": "media-libs/mesa-26.1.8",
+        "installed": true
+      },
+      {
+        "cpv": "net-print/cups-2.4.19",
+        "installed": true
+      },
+      {
+        "cpv": "sys-apps/dbus-1.16.2",
+        "installed": true
+      },
+      {
+        "cpv": "sys-apps/util-linux-2.42.2",
+        "installed": true
+      },
+      {
+        "cpv": "sys-apps/xdg-desktop-portal-1.20.4-r1",
+        "installed": true
+      },
+      {
+        "cpv": "sys-libs/glibc-2.43-r2",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/cairo-1.18.4-r1",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/gdk-pixbuf-2.44.7",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/gtk+-3.24.52",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libdrm-2.4.134",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libnotify-0.8.8",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libX11-1.8.13",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libXcomposite-0.4.7",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libXdamage-1.1.7",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libXext-1.3.7",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libXfixes-6.0.2",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libXrandr-1.5.5",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libXtst-1.2.5",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libxcb-1.17.0",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/libxkbcommon-1.13.2",
+        "installed": true
+      },
+      {
+        "cpv": "x11-libs/pango-1.57.1",
+        "installed": true
+      },
+      {
+        "cpv": "x11-misc/xdg-utils-1.2.1-r11",
+        "installed": true
+      },
+      {
+        "cpv": "app-emulation/qemu-10.2.3",
+        "installed": true
+      },
+      {
+        "cpv": "app-emulation/virtiofsd-1.13.2",
+        "installed": true
+      },
+      {
+        "cpv": "dev-util/desktop-file-utils-0.28-r1",
+        "installed": true
+      },
+      {
+        "cpv": "x11-misc/shared-mime-info-2.4-r3",
+        "installed": true
+      },
+      {
+        "cpv": "kde-plasma/xdg-desktop-portal-kde-6.6.6",
+        "installed": true
+      },
+      {
+        "cpv": "kde-plasma/kde-cli-tools-6.6.6",
+        "installed": true
+      },
+      {
+        "cpv": "gnome-base/gnome-keyring-48.0-r1",
+        "installed": true
+      },
+      {
+        "cpv": "sys-firmware/edk2-bin-202408",
+        "installed": true
+      }
+    ],
+    "scope": "actual Portage installed-graph branch selection; not all declared OR atoms and not future depclean"
+  },
+  "provider_receipt_sha256": "f36ef7a00b37245877455d0ce5137a41914503edd607665145daddaaa28437c5",
+  "no_compiler_install_unmerge_or_world_changes": true
+}
