@@ -20,6 +20,8 @@
 #include <libei.h>
 #include <linux/input-event-codes.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <cerrno>
 using namespace QindaQt::Services::Portal;
 namespace {
 class EmptyAppearance final : public AppearanceSource {
@@ -109,7 +111,7 @@ private Q_SLOTS:
         composition = std::make_unique<PortalFoundationComposition>(resident->backendHost(), *backend,
             qEnvironmentVariable("XDG_RUNTIME_DIR"), qEnvironmentVariable("QINDAQT_PORTAL_TEST_HELPER"), QString{}, QStringList{data});
         QCOMPARE(resident->start(), PortalServiceStartStatus::Started); QVERIFY(composition->start());
-        session.start(QStringLiteral("/bin/true"), QStringLiteral("qindaqt-7"));
+        sessionLifetime.start(QStringLiteral("/bin/true"), QStringLiteral("qindaqt-7"));
         frontend.start(QStringLiteral(QINDAQT_FRONTEND_EXECUTABLE), {QStringLiteral("--verbose")}); QVERIFY(frontend.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->isServiceRegistered(QStringLiteral("org.freedesktop.portal.Desktop")).value(), 10000);
         QVERIFY(bus.connect(QStringLiteral("org.freedesktop.portal.Desktop"), {}, QStringLiteral("org.freedesktop.portal.Request"),
@@ -186,11 +188,14 @@ private Q_SLOTS:
         paste.start(QStringLiteral(QINDAQT_CLIPBOARD_CLIENT), {QStringLiteral("paste")}); QVERIFY(paste.waitForStarted());
         QTRY_VERIFY_WITH_TIMEOUT(!events.named(QStringLiteral("SelectionTransfer")).isEmpty(), 10000);
         const auto transfer = events.named(QStringLiteral("SelectionTransfer")).constFirst();
-        const QDBusReply<QDBusUnixFileDescriptor> writer = call("org.freedesktop.portal.Clipboard", "SelectionWrite",
-            {QVariant::fromValue(QDBusObjectPath(rd)), transfer.arguments().value(2).toUInt()});
-        QVERIFY2(writer.isValid(), qPrintable(writer.error().message()));
-        QCOMPARE(::write(writer.value().fileDescriptor(), "remote payload", 14), ssize_t(14));
-        { QDBusUnixFileDescriptor closing = writer.value(); }
+        {
+            // Close the last local descriptor before claiming completion; a
+            // temporary copy alone leaves the reply holding the pipe open.
+            const QDBusReply<QDBusUnixFileDescriptor> writer = call("org.freedesktop.portal.Clipboard", "SelectionWrite",
+                {QVariant::fromValue(QDBusObjectPath(rd)), transfer.arguments().value(2).toUInt()});
+            QVERIFY2(writer.isValid(), qPrintable(writer.error().message()));
+            QCOMPARE(::write(writer.value().fileDescriptor(), "remote payload", 14), ssize_t(14));
+        }
         QCOMPARE(call("org.freedesktop.portal.Clipboard", "SelectionWriteDone", {QVariant::fromValue(QDBusObjectPath(rd)),
                  transfer.arguments().value(2).toUInt(), true}).type(), QDBusMessage::ReplyMessage);
         QTRY_VERIFY_WITH_TIMEOUT(paste.state() == QProcess::NotRunning, 10000);
@@ -209,8 +214,10 @@ private Q_SLOTS:
         const QDBusReply<QDBusUnixFileDescriptor> reader = call("org.freedesktop.portal.Clipboard", "SelectionRead",
             {QVariant::fromValue(QDBusObjectPath(rd)), QStringLiteral("text/plain;charset=utf-8")});
         QVERIFY2(reader.isValid(), qPrintable(reader.error().message()));
+        const int readFd = reader.value().fileDescriptor();
+        QVERIFY(fcntl(readFd, F_SETFL, fcntl(readFd, F_GETFL) | O_NONBLOCK) == 0);
         QByteArray copied; char buffer[64];
-        QTRY_VERIFY_WITH_TIMEOUT([&] { const auto n = ::read(reader.value().fileDescriptor(), buffer, sizeof buffer); if (n > 0) copied.append(buffer, n); return n == 0; }(), 5000);
+        QTRY_VERIFY_WITH_TIMEOUT([&] { const auto n = ::read(readFd, buffer, sizeof buffer); if (n > 0) copied.append(buffer, n); return n == 0; }(), 5000);
         QCOMPARE(copied, QByteArray("local payload"));
         copy.terminate(); copy.waitForFinished(3000);
 
@@ -240,7 +247,7 @@ private Q_SLOTS:
     }
     void cleanupTestCase() {
         frontend.terminate(); if (!frontend.waitForFinished(3000)) { frontend.kill(); frontend.waitForFinished(3000); }
-        session.stop(); composition.reset(); secret.reset(); broker.reset(); resident.reset();
+        sessionLifetime.stop(); composition.reset(); secret.reset(); broker.reset(); resident.reset();
         backend.reset(); QDBusConnection::disconnectFromBus(QStringLiteral("native-remote-input-backend"));
     }
 private:
@@ -292,7 +299,7 @@ private:
     std::unique_ptr<QindaQt::Services::SecretPortal::QtKeyringPortalBroker> broker;
     std::unique_ptr<QindaQt::Services::SecretPortal::SecretPortalAdaptor> secret;
     std::unique_ptr<PortalFoundationComposition> composition;
-    QindaQt::SessionSupervisor::PortalSessionLifetime session;
+    QindaQt::SessionSupervisor::PortalSessionLifetime sessionLifetime;
     QProcess frontend;
     Collector events;
 };
