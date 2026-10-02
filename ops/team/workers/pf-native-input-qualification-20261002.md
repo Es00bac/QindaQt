@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: working — compile focused assembled final portal artifacts and prepare protected-owner native qualification
+- Status: waiting — final17-artifact preflight ready; manager serialized native lease follows Power/Shortcuts gates
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: manager grants own transferred warm build/dev up-to4-jobs/-l24 with 6GiB MemAvailable floor; final native core/test lease pending
+- Resource: focused desktop compiler released; no native lease taken. Root owns coherent core; wait serialized runtime grant.
 
 ## Updates
 
@@ -50,3 +50,5 @@
 - 2026-10-02T20:11:03+00:00 — Focused build first attempt EXIT1 after339/342; only failure is new test PermissionStore else indentation under -Werror. Broker/helper newly linked and exact hashes sent for root fixture rebind. First log/status/command/PGID preserved; minimum MemAvailable14,084,247,552 bytes, guard did not stop. Explicit test-only braces repair; no production change or native runtime claim.
 
 - 2026-10-02T20:12:51+00:00 — Focused14-target compile PASS0/10.003s exact537d after preserved first failure; MemAvailable minimum15.66GB and no guard stop. All14 desktop artifact SHA/ldd preflight PASS; private-bus3/3CTests PASS3.5405s, lifetime5Qt0fail0skip. Compiler released. Added existing QtTest -nocrashhandler to private native runner only; final core artifact/test lease pending. Hash-bound prepared-desktop report preserved; no native/installed claim.
+
+- 2026-10-02T20:14:05+00:00 — Read-only complete17-artifact SHA/ldd preflight PASS; actual core HEADa696 and configured broker/helper paths match accepted new50b871/c391f4 artifacts. Final caller sourcef763 preserves explicit -nocrashhandler only; C++ bytes accepted537d. Compiler/non-GPU tests complete, now waiting for manager serialized native lease after Power/Shortcuts; no runtime launch or installed claim.
