@@ -42,10 +42,15 @@ public:
         QList<QPair<QPoint, QPoint>> barriers;
         // RemoteDesktop clipboard: requested before Start, compositor handle
         // after explicit consent, and paste FDs awaiting SelectionWrite.
-        bool clipboardRequested = false;
+        bool clipboardRequested = false, clipboardEnabled = false;
         int clipboard = 0;
         QHash<uint, QDBusUnixFileDescriptor> transfers;
         uint nextSerial = 0;
+        // ScreenCast adjunct: monitor selection routed by ScreenCastAdaptor and
+        // the Start parent; streams belong to the capture port, keyed by path.
+        bool screenCast = false, multiple = false;
+        quint32 cursorMode = 1;
+        QString parent;
     };
     RemoteSessions(QDBusConnection, RequestRegistry &, QObject *parent = nullptr);
     ~RemoteSessions() override;

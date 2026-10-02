@@ -10,4 +10,6 @@ target_sources(qindaqt_portal_remote_input PRIVATE src/compositor_eis.cpp src/re
     include/qindaqt/services/portal/remote_input/compositor_eis.h
     include/qindaqt/services/portal/remote_input/input_capture_adaptor.h
     include/qindaqt/services/portal/remote_input/remote_desktop_adaptor.h)
-target_link_libraries(qindaqt_portal_remote_input PUBLIC QindaQt::PortalAccessPolicy Qt6::DBus)
+# PortalCapture supplies the CaptureUI port and ScreenCast source seam for
+# combined RemoteDesktop+ScreenCast sessions; capture never depends back on us.
+target_link_libraries(qindaqt_portal_remote_input PUBLIC QindaQt::PortalAccessPolicy QindaQt::PortalCapture Qt6::DBus)

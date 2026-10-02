@@ -6,10 +6,14 @@
 // Session/device/EIS flow adapted from xdg-desktop-portal-kde 6.6.6
 // src/remotedesktop.cpp (9a5cc0e8). KWin process lookup, KNotification, the
 // tray item, fake-input and restore tokens are replaced by native ports; the
-// Clipboard adjunct is the private ClipboardAdaptor on the same host.
+// Clipboard adjunct is the private ClipboardAdaptor on the same host. Combined
+// screen sharing follows upstream's shared ScreenCast/RemoteDesktop session
+// (screencast.cpp SelectSources, remotedesktop.cpp continueStart) over the
+// existing protected capture producer instead of KWin's screencast client.
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
 #include "clipboard_adaptor_p.h"
 #include "remote_sessions_p.h"
+#include <qindaqt/services/portal/capture_types.h>
 #include <QPointer>
 #include <QSet>
 #include <algorithm>
@@ -35,13 +39,15 @@ std::optional<quint32> selectedDevices(const QVariantMap &options) {
     return types;
 }
 constexpr auto kClipboardChoice = "clipboard";
-std::optional<AccessQuestion> consentQuestion(const QString &app, const QString &parent, quint32 devices, bool clipboard) {
+std::optional<AccessQuestion> consentQuestion(const QString &app, const QString &parent, quint32 devices, bool clipboard,
+                                             bool screens) {
     QStringList names;
     if (devices & Keyboard) names << QStringLiteral("keyboard");
     if (devices & Pointer) names << QStringLiteral("pointer");
     if (devices & Touchscreen) names << QStringLiteral("touchscreen");
     auto question = accessQuestion(app, parent, QStringLiteral("Allow remote control?"),
-        QStringLiteral("Requested input devices: %1").arg(names.join(QStringLiteral(", "))),
+        QStringLiteral("Requested input devices: %1").arg(names.join(QStringLiteral(", ")))
+            + (screens ? QStringLiteral(". Screens to share are chosen next.") : QString{}),
         QStringLiteral("Input will reach every window on this desktop until the session ends, "
                        "the application closes it or the screen locks."), {});
     // Clipboard sharing is a separate explicit opt-in, off unless chosen.
@@ -55,22 +61,34 @@ bool clipboardChosen(const ChoiceValues &choices) {
     });
 }
 }
-class RemoteDesktopAdaptor::Private {
+class RemoteDesktopAdaptor::Private final : public ScreenCastSourceDelegate {
 public:
     RequestRegistry &requests;
     AccessConsent &consent;
     CompositorEis &eis;
+    CaptureUI *capture = nullptr;
     QDBusConnection bus;
     RemoteSessions sessions;
-    QHash<RequestToken, QString> asking;
+    QHash<RequestToken, QString> asking, capturing;
     QSet<RequestToken> starting;
     std::unique_ptr<ClipboardAdaptor> clipboard;
-    Private(RequestRegistry &r, AccessConsent &c, CompositorEis &e, QDBusConnection connection)
-        : requests(r), consent(c), eis(e), bus(connection), sessions(std::move(connection), r) {}
+    Private(RequestRegistry &r, AccessConsent &c, CompositorEis &e, CaptureUI *port, QDBusConnection connection)
+        : requests(r), consent(c), eis(e), capture(port), bus(connection), sessions(std::move(connection), r) {}
+    bool ownsSession(const QString &path) const override { return sessions.find(path) != nullptr; }
+    bool selectSources(const QDBusMessage &call, const QString &request, const QString &path, const QString &app,
+                       bool multiple, quint32 cursorMode) override {
+        auto *entry = sessions.entry(path);
+        if (!capture || !entry || entry->screenCast || !sessions.authenticated(call, path, app)
+            || !sessions.requestMatches(path, request) || !consent.admitted() || !capture->admitted()
+            || (entry->phase != RemotePhase::Created && entry->phase != RemotePhase::Selected)) return false;
+        entry->screenCast = true; entry->multiple = multiple; entry->cursorMode = cursorMode;
+        return true;
+    }
     RequestToken begin(const QDBusMessage &call, const QString &handle, const QString &path, const QString &app) {
         const auto slot = std::make_shared<RequestToken>(0);
         const auto token = requests.begin(call, handle, app, [this, slot, path](RequestResponse response) {
             asking.remove(*slot);
+            capturing.remove(*slot);
             if (starting.remove(*slot) && response != RequestResponse::Success) {
                 consent.cancel(*slot);
                 sessions.close(path);
@@ -101,10 +119,40 @@ public:
             requests.finish(token, RequestResponse::Failed);
             return;
         }
-        entry->pending = 0;
-        entry->phase = RemotePhase::Started;
-        requests.finish(token, RequestResponse::Success, {{QStringLiteral("devices"), entry->devices},
-                                                          {QStringLiteral("clipboard_enabled"), clipboardEnabled}});
+        entry->clipboardEnabled = clipboardEnabled;
+        if (entry->screenCast) {
+            // AGENT-GUARD: streams come only from the protected capture producer
+            // after its own monitor choice and consent; Start stays pending (and
+            // retirable) until every selected stream is ready, then publishes once.
+            auto request = screenshotRequest(entry->app, entry->parent, {}, false);
+            if (!capture || !capture->admitted() || !request) { requests.finish(token, RequestResponse::Failed); return; }
+            request->kind = CaptureKind::Stream; request->session = path; request->caller = entry->caller;
+            request->multiple = entry->multiple; request->cursorMode = entry->cursorMode;
+            capturing.insert(token, path);
+            capture->request(token, *request);
+            return;
+        }
+        complete(token, *entry, {});
+    }
+    void complete(RequestToken token, RemoteSessions::Entry &entry, QVariantMap results) {
+        entry.pending = 0;
+        entry.phase = RemotePhase::Started;
+        results.insert(QStringLiteral("devices"), entry.devices);
+        results.insert(QStringLiteral("clipboard_enabled"), entry.clipboardEnabled);
+        requests.finish(token, RequestResponse::Success, results);
+    }
+    void captureCompleted(RequestToken token, RequestResponse response, const QVariantMap &results) {
+        const QString path = capturing.take(token);
+        if (path.isEmpty()) return;
+        auto *entry = sessions.entry(path);
+        if (!entry || !sessions.live(path) || !requests.live(token) || !consent.admitted() || !capture->admitted()
+            || (response == RequestResponse::Success && (!validCapturePublication(CaptureKind::Stream, results)
+                || (!entry->multiple && results.value(QStringLiteral("streams")).value<CaptureStreams>().size() != 1))))
+            response = RequestResponse::Failed;
+        // A refused or failed share retires the request, which closes the whole
+        // session through begin(): input is never granted without its streams.
+        if (response != RequestResponse::Success) { requests.finish(token, response); return; }
+        complete(token, *entry, results);
     }
     void eisOpened(quint64 ticket, const QDBusUnixFileDescriptor &fd, const QString &compositor, int cookie) {
         const QString path = sessions.sessionForTicket(ticket);
@@ -130,16 +178,38 @@ public:
         entry->eisTicket = 0;
         refuse(std::exchange(entry->eisCall, {}), kFailed);
     }
-    void retired(const RemoteSessions::Entry &entry) {
+    void retired(const QString &path, const RemoteSessions::Entry &entry) {
         if (entry.eisTicket) { eis.cancel(entry.eisTicket); refuse(entry.eisCall, kFailed); }
         if (entry.cookie) eis.close(entry.compositor, entry.cookie);
         clipboard->retired(entry);
+        // Closing for any reason (Close, actor/frontend loss, lock, compositor
+        // loss, failed Start) stops the session's pending or live streams.
+        if (capture && entry.screenCast) capture->stop(path);
     }
 };
 RemoteDesktopAdaptor::RemoteDesktopAdaptor(QObject &host, RequestRegistry &requests, AccessConsent &consent,
                                            CompositorEis &eis, QDBusConnection bus)
-    : QDBusAbstractAdaptor(&host), d(std::make_unique<Private>(requests, consent, eis, std::move(bus))) {
+    : RemoteDesktopAdaptor(host, requests, consent, eis, nullptr, std::move(bus)) {}
+RemoteDesktopAdaptor::RemoteDesktopAdaptor(QObject &host, RequestRegistry &requests, AccessConsent &consent,
+                                           CompositorEis &eis, CaptureUI &capture, QDBusConnection bus)
+    : RemoteDesktopAdaptor(host, requests, consent, eis, &capture, std::move(bus)) {}
+RemoteDesktopAdaptor::RemoteDesktopAdaptor(QObject &host, RequestRegistry &requests, AccessConsent &consent,
+                                           CompositorEis &eis, CaptureUI *capture, QDBusConnection bus)
+    : QDBusAbstractAdaptor(&host), d(std::make_unique<Private>(requests, consent, eis, capture, std::move(bus))) {
     registerAccessTypes();
+    if (capture) {
+        registerCaptureWireTypes();
+        connect(capture, &CaptureUI::completed, this,
+                [this](RequestToken token, RequestResponse response, const QVariantMap &results) {
+                    d->captureCompleted(token, response, results);
+                });
+        // Producer stop/failure ends the shared session; compositor or authority
+        // loss ends every session (input included).
+        connect(capture, &CaptureUI::closed, this, [this](const QString &path) {
+            if (d->sessions.find(path)) d->sessions.close(path);
+        });
+        connect(capture, &CaptureUI::authorityLost, this, [this] { d->sessions.clear(); });
+    }
     d->clipboard = std::make_unique<ClipboardAdaptor>(host, d->sessions, consent, eis, d->bus);
     connect(&consent, &AccessConsent::completed, this,
             [this](RequestToken token, RequestResponse response, const ChoiceValues &choices) {
@@ -153,9 +223,10 @@ RemoteDesktopAdaptor::RemoteDesktopAdaptor(QObject &host, RequestRegistry &reque
             });
     connect(&eis, &CompositorEis::failed, this, [this](quint64 ticket) { d->eisFailed(ticket); });
     connect(&d->sessions, &RemoteSessions::retired, this,
-            [this](const QString &, const RemoteSessions::Entry &entry) { d->retired(entry); });
+            [this](const QString &path, const RemoteSessions::Entry &entry) { d->retired(path, entry); });
 }
 RemoteDesktopAdaptor::~RemoteDesktopAdaptor() { d->sessions.clear(); }
+ScreenCastSourceDelegate &RemoteDesktopAdaptor::screenCastSources() { return *d; }
 quint32 RemoteDesktopAdaptor::CreateSession(const QDBusObjectPath &handle, const QDBusObjectPath &session,
     const QString &app, const QVariantMap &, const QDBusMessage &call, QVariantMap &results) {
     results.clear();
@@ -196,13 +267,14 @@ quint32 RemoteDesktopAdaptor::Start(const QDBusObjectPath &handle, const QDBusOb
         return 2;
     }
     d->starting.insert(token);
-    const auto question = consentQuestion(app, parent, entry->devices, entry->clipboardRequested);
+    const auto question = consentQuestion(app, parent, entry->devices, entry->clipboardRequested, entry->screenCast);
     if (!d->consent.admitted() || entry->phase != RemotePhase::Selected || !question) {
         d->requests.finish(token, RequestResponse::Failed);
         return 2;
     }
     entry->phase = RemotePhase::Starting;
     entry->pending = token;
+    entry->parent = parent;
     d->asking.insert(token, session.path());
     d->consent.ask(token, *question);
     return 2;

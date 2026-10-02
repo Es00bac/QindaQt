@@ -23,6 +23,7 @@ public:
     }
     QHash<RequestToken, QString> pending;
     QSet<RequestToken> owned;
+    ScreenCastSourceDelegate *remote = nullptr;
     RequestToken begin(const QDBusMessage &call, const QString &handle, const QString &path, const QString &app) {
         const auto slot = std::make_shared<RequestToken>(0);
         const auto token = requests.begin(call, handle, app, [this, slot, path](RequestResponse response) {
@@ -33,6 +34,8 @@ public:
 };
 ScreenCastAdaptor::ScreenCastAdaptor(QObject &host, RequestRegistry &requests, CaptureUI &ui, QDBusConnection bus)
     : QDBusAbstractAdaptor(&host), d(std::make_unique<Private>(*this, requests, ui, std::move(bus))) { registerCaptureWireTypes(); }
+ScreenCastAdaptor::ScreenCastAdaptor(QObject &host, RequestRegistry &requests, CaptureUI &ui, QDBusConnection bus, ScreenCastSourceDelegate *remote)
+    : ScreenCastAdaptor(host, requests, ui, std::move(bus)) { d->remote = remote; }
 ScreenCastAdaptor::~ScreenCastAdaptor() { d->sessions.clear(); }
 quint32 ScreenCastAdaptor::CreateSession(const QDBusObjectPath &handle, const QDBusObjectPath &session, const QString &app, const QVariantMap &options, const QDBusMessage &call, QVariantMap &results) {
     results.clear(); const auto token = d->begin(call, handle.path(), session.path(), app); if (!token) return 2;
@@ -43,6 +46,14 @@ quint32 ScreenCastAdaptor::CreateSession(const QDBusObjectPath &handle, const QD
 quint32 ScreenCastAdaptor::SelectSources(const QDBusObjectPath &handle, const QDBusObjectPath &session, const QString &app, const QVariantMap &options, const QDBusMessage &call, QVariantMap &results) {
     results.clear(); const auto token = d->begin(call, handle.path(), session.path(), app); if (!token) return 2;
     auto *entry = d->sessions.entry(session.path());
+    if (!entry && d->remote && d->remote->ownsSession(session.path())) {
+        // RemoteDesktop session: the frontend refuses persistence for it, so any
+        // persist/restore option here is malformed. The owner checks the actor.
+        const bool selected = d->ui.admitted() && validScreenCastSelection(options) && !options.contains("restore_data")
+            && options.value("persist_mode", 0U).toUInt() == 0 && d->remote->selectSources(call, handle.path(), session.path(), app,
+                options.value("multiple", false).toBool(), options.value("cursor_mode", 1U).toUInt());
+        d->requests.finish(token, selected ? RequestResponse::Success : RequestResponse::Failed); return 2;
+    }
     if (!entry || !d->sessions.authenticated(call, session.path(), app) || !d->sessions.requestMatches(session.path(), handle.path())) { d->requests.finish(token, RequestResponse::Failed); return 2; }
     d->owned.insert(token);
     if (!d->ui.admitted() || entry->phase != CaptureSessionPhase::Created || !validScreenCastSelection(options)) { d->requests.finish(token, RequestResponse::Failed); return 2; }

@@ -44,6 +44,9 @@ public:
     // AGENT-GUARD: Adaptors are destroyed before every borrowed port/store.
     // Their QObject host parent is independent ownership, removed on deletion.
     std::unique_ptr<AccessAdaptor> access;
+    // AGENT-GUARD: RemoteDesktop precedes ScreenCast so the ScreenCast adaptor,
+    // which borrows its combined-session source seam, is destroyed first.
+    std::unique_ptr<RemoteInput::RemoteDesktopAdaptor> remoteDesktop;
     std::unique_ptr<NotificationAdaptor> notification;
     std::unique_ptr<InhibitAdaptor> inhibit;
     std::unique_ptr<EmailAdaptor> email;
@@ -57,7 +60,6 @@ public:
     std::unique_ptr<LauncherAdaptor> launcher;
     std::unique_ptr<PrintAdaptor> print;
 
-    std::unique_ptr<RemoteInput::RemoteDesktopAdaptor> remoteDesktop;
     std::unique_ptr<RemoteInput::InputCaptureAdaptor> inputCapture;
     Private(QObject &host, QDBusConnection bus, QString runtime, QString helper,
         QString relay, const QStringList &roots,
@@ -74,6 +76,7 @@ public:
               [this] { return session.openDisplay(); }),
           eis(bus, [this] { return session.compositorOwner(); }),
           access(std::make_unique<AccessAdaptor>(host, requests, consent)),
+          remoteDesktop(std::make_unique<RemoteInput::RemoteDesktopAdaptor>(host, requests, consent, eis, capture, bus)),
           notification(std::make_unique<NotificationAdaptor>(host, requests, notifications, bus)),
           inhibit(std::make_unique<InhibitAdaptor>(host, requests, idle, bus)),
           email(std::make_unique<EmailAdaptor>(host, requests, uri, [this] { return consent.admitted(); })),
@@ -83,14 +86,13 @@ public:
                   QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay);
           }, bus)),
           screenshot(std::make_unique<ScreenshotAdaptor>(host, requests, capture)),
-          screencast(std::make_unique<ScreenCastAdaptor>(host, requests, capture, bus)),
+          screencast(std::make_unique<ScreenCastAdaptor>(host, requests, capture, bus, &remoteDesktop->screenCastSources())),
           shortcuts(std::make_unique<GlobalShortcutsAdaptor>(host, requests, shortcutUi, shortcutNative, bus)),
           account(std::make_unique<AccountAdaptor>(host, requests, misc)),
           usb(std::make_unique<UsbAdaptor>(host, requests, misc)),
           launcher(std::make_unique<LauncherAdaptor>(host, requests, misc)),
           print(std::make_unique<PrintAdaptor>(host, requests, misc)),
 
-          remoteDesktop(std::make_unique<RemoteInput::RemoteDesktopAdaptor>(host, requests, consent, eis, bus)),
           inputCapture(std::make_unique<RemoteInput::InputCaptureAdaptor>(host, requests, consent, eis, bus)) {
         QObject::connect(&consent, &AccessConsent::authorityLost, &requests, [this] {
             requests.retireAll(); idle.revoke();

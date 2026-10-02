@@ -6,6 +6,7 @@
 // Adapted from xdg-desktop-portal-kde 6.6.6 src/remotedesktop.h (9a5cc0e8).
 #pragma once
 #include <qindaqt/services/portal/access_consent.h>
+#include <qindaqt/services/portal/capture_ui.h>
 #include <qindaqt/services/portal/remote_input/compositor_eis.h>
 #include <QDBusAbstractAdaptor>
 #include <QDBusObjectPath>
@@ -19,7 +20,10 @@ namespace QindaQt::Services::Portal::RemoteInput {
 // adaptor; destruction closes its sessions and disconnects their EIS contexts.
 // Input reaches the compositor only through ConnectToEIS after explicit native
 // consent. Notify* calls fail with org.freedesktop.DBus.Error.NotSupported:
-// this backend owns no second, non-EIS injection path.
+// this backend owns no second, non-EIS injection path. The frontend sends them
+// without awaiting a reply, so legacy callers see no error and get no input.
+// With a capture port, screenCastSources() accepts the ScreenCast selection for
+// these sessions and Start publishes the producer's streams after its consent.
 class RemoteDesktopAdaptor final : public QDBusAbstractAdaptor {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.impl.portal.RemoteDesktop")
@@ -27,7 +31,11 @@ class RemoteDesktopAdaptor final : public QDBusAbstractAdaptor {
     Q_PROPERTY(uint AvailableDeviceTypes READ availableDeviceTypes CONSTANT)
 public:
     RemoteDesktopAdaptor(QObject &host, RequestRegistry &, AccessConsent &, CompositorEis &, QDBusConnection);
+    // Borrowed capture port (outlives this adaptor) for combined sessions.
+    RemoteDesktopAdaptor(QObject &host, RequestRegistry &, AccessConsent &, CompositorEis &, CaptureUI &, QDBusConnection);
     ~RemoteDesktopAdaptor() override;
+    // Lent to ScreenCastAdaptor; valid for this adaptor's lifetime.
+    ScreenCastSourceDelegate &screenCastSources();
     uint version() const { return 2; }
     uint availableDeviceTypes() const { return kAllDeviceTypes; }
 public Q_SLOTS:
@@ -50,6 +58,7 @@ public Q_SLOTS:
     void NotifyTouchMotion(const QDBusObjectPath &, const QVariantMap &, uint, uint, double, double, const QDBusMessage &);
     void NotifyTouchUp(const QDBusObjectPath &, const QVariantMap &, uint, const QDBusMessage &);
 private:
+    RemoteDesktopAdaptor(QObject &host, RequestRegistry &, AccessConsent &, CompositorEis &, CaptureUI *, QDBusConnection);
     class Private;
     std::unique_ptr<Private> d;
 };

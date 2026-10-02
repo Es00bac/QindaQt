@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <qindaqt/services/portal/capture_types.h>
 #include <qindaqt/services/portal/access_consent.h>
+#include <QDBusArgument>
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -27,9 +28,21 @@ std::optional<CaptureRequest> screenshotRequest(const QString &app, const QStrin
     return CaptureRequest{color ? CaptureKind::Color : CaptureKind::Screenshot, app, parent, {}, {}, options.value("interactive", false).toBool(), options.value("modal", true).toBool()};
 }
 bool validScreenCastSelection(const QVariantMap &options) {
-    for (const auto &key : options.keys()) if (key != "types" && key != "multiple" && key != "cursor_mode") return false;
+    for (const auto &key : options.keys())
+        if (key != "types" && key != "multiple" && key != "cursor_mode" && key != "persist_mode" && key != "restore_data") return false;
+    // AGENT-NOTE: the frontend forwards persist_mode and swaps restore_token for
+    // its stored (suv) restore_data (xdg-desktop-portal 1.20 screen-cast.c).
+    // Callers such as OBS always send persist_mode, so refusing it broke them.
+    // Nothing is persisted: Start never returns restore_data.
+    if (options.contains("restore_data")) {
+        const auto value = options.value("restore_data");
+        if (value.metaType() != QMetaType::fromType<QDBusArgument>()) return false;
+        const auto argument = value.value<QDBusArgument>();
+        if (argument.currentSignature() != QLatin1String("(suv)")) return false;
+    }
     return typed(options, "types", QMetaType::UInt) && typed(options, "multiple", QMetaType::Bool)
-        && typed(options, "cursor_mode", QMetaType::UInt) && options.value("types", 1U).toUInt() == 1
+        && typed(options, "cursor_mode", QMetaType::UInt) && typed(options, "persist_mode", QMetaType::UInt)
+        && options.value("types", 1U).toUInt() == 1 && options.value("persist_mode", 0U).toUInt() <= 2
         && QSet<quint32>{1, 2, 4}.contains(options.value("cursor_mode", 1U).toUInt());
 }
 QString captureCaller(const QString &path) {
