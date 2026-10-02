@@ -1,0 +1,5 @@
+# Final combined and remember/restore PASS; audit-path alignment
+
+Current coherent final e9 + accepted helpereb21 actual combined Close case EXIT0/7.0309s, fixture3QtPASS0FAIL0SKIP3069ms. Real AMD renderer, protected monitor choice/PipeWire decoded frames, EIS/Clipboard ordinary paste and Close producer/transport retirement pass. Actual real PermissionStore/frontend explicit remember/restore EXIT0/22.1665s, fixture3QtPASS0FAIL0SKIP2764ms, including unchecked negative/no token, real remember checkbox, stable preselected restore output/actual Share/frames and node retirement. Cleanup/core arrays empty. Both immutable failed195 histories retained.
+
+Before old input fixture executes, manager accepted one runner env value alignment: QINDAQT_PORTAL_TEST_AUDIT now points to the same deterministic runtime/qindaqt-consent.audit written by the sanitized test helper. No assertions, helper/core/binary or privilege changes; no extra compiler/preflight. Exact source commit is suitable for manager archive; remaining actual input and lock receipts follow separately under retained frozen e9 lease.

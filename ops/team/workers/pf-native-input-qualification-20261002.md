@@ -1,11 +1,11 @@
 # Native input qualification continuation
 
-- Status: waiting — sanitized consent test helper compiled; exact source review/final core serialized lease pending
+- Status: working — final e9/accepted sanitized helper actual combined replay, then four sequential native cases
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
 - Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
-- Resource: helper2-job compiler released; native lease paused by manager for final core refresh/Shortcuts/DPMS. No runtime active.
+- Resource: manager grants sole native/AMD five-case lease on frozen final e9 core; helpereb21 accepted, no C++ build
 
 ## Updates
 
@@ -60,3 +60,7 @@
 - 2026-10-02T20:28:57+00:00 — Approved PID-export replay EXIT1/4.7105s with sameStartResponse2; second immutable history retained. Additional exact boundary: production CaptureLaunchPolicy removes ALL test env variables, so shell export cannot reach protected child. Manager authorizes only test helper actual native uniqueowner/PID fallback, deterministic runtime audit and real offered-choice/Grant driving; production sanitizer unchanged. Removed ineffective shell wrapper. Exact source review requested before focused helper compile/one changed-helper replay.
 
 - 2026-10-02T20:32:32+00:00 — Exact102 helper target PASS0/70.017s with -j2/-l24, minMem8.244GB/no guard stop; new SHAeb21ceb0, broker/capture helper unchanged. Python/diff/mkdocs strict7.87s/503-document validatorPASS. Both core195 native first/replay failure hashes preserved in new audit; runtime NOT qualified. Compiler released; waiting manager source ACCEPT/final refreshed artifacts and serialized grant before one changed-helper replay.
+
+- 2026-10-02T20:37:29+00:00 — Manager source ACCEPT102 and final e9 seven-target build/actualDPMS13Qt0fail0skip; Power released. Sole native lease granted: fresh17 preflight once then ONE changed-helper combined replay; remainingfour only ifPASS. Both superseded195 failed histories immutable. Exact current artifacts/core remain frozen; no production/grant/sanitizer changes or installed claim.
+
+- 2026-10-02T20:40:07+00:00 — Final e9 changed-helper combined PASS0/7.0309s/3Qt0fail0skip3069ms; real Remember/Restore PASS0/22.1665s/3Qt0fail0skip2764ms, actualPermissionStore/frontend/uncheckednegative/checkbox/stablepreselection/frames. All cleanup/core arrays empty. Manager accepts one runner env audit-path alignment to runtime file before old input fixture reads it; no helper/core/assertion/compiler changes. Continuing remaining actual input/lock cases under frozen e9 lease.
