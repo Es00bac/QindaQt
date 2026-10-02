@@ -1,6 +1,6 @@
 # PF capture scene diagnosis
 
-- Status: available — bounded denial probe did not reproduce; offering exact guard follow-up or readiness-contract review
+- Status: working — design authentic capture backend startup publication ordering
 - Base: consumer c03b0b708464c3b7a154089f0cc5f71437c01905; fork 447eed969a8692754d29f62f46cd177181ccbdae
 - Branch: worker/pf-capture-scene-astra-20261001 in isolated qinda worktrees
 - Ownership: authorized consumer capture_pixels.cpp, run_native_capture.py, tst_native_capture.cpp, pipewire_frames.{cpp,h}; two affected wiki paragraphs; own board/messages; diagnostic fork driver only
@@ -35,3 +35,5 @@
 - 2026-10-01T23:51:20+00:00 — Claimed failure-only refusal diagnosis on exact ca299 consumer / 68c4 lifetime fork. Diagnostic broker/adaptor copies only, unchanged evaluated authorization predicates, no pre-denial calls or readiness changes; one runtime row then release.
 
 - 2026-10-01T23:58:49+00:00 — Failure-only copied broker three-TU/link exits0/0/0/0, min16,371,688kB; compiler released to reviewer. Single unmonitored native-lock row exits0/13.663s, Qt3/3 plus driver3/3, node25→serial25, no CAPTURE_DENIAL output. PGIDs443569/443586/443604/443638/444292 ended, zero survivors/cores/cleanup errors; private released. Initial refusal remains unreproduced/unresolved. Source audit finds only internal admission-ready signal, no public broker-consumption receipt; no policy/fixture repair justified yet.
+
+- 2026-10-02T00:03:01+00:00 — Manager assigned source-only startup ordering design. Read ADR0318/0324 and frozen QCC1 WIRE/protocol. Proposed two-phase backend publication from authentic initialized native state, separate from unlocked content permission; preserve name-before-Ready authentication. Negative public test will hold targeted receipt and empty reply independently. No production edit/build/runtime; root owns full production compiler.
