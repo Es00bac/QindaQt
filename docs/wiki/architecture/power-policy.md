@@ -136,3 +136,32 @@ no-replay, balanced deferral and actual targeted manual ProfileReleased. The dae
 has no host include or activation directory. These are private fixtures, not
 installed or physical power qualification. Idle scopes stay zero; PF2 lid and
 critical countdown, full idle policy, and PowerDevil retirement remain separate.
+
+## Native critical-battery countdown
+
+[ADR-0331](../adr/0331-fence-native-critical-battery-countdowns.md) composes
+a distinct policy from confirmed public Power1/Settings1 facts. A separate
+`--critical-policy=native-exclusive` option defaults off and shares the canonical
+PowerDevil absence guard. Only authenticated on-battery/present supply facts
+with WarningLevel Action admit the configured none/suspend/hibernate/power-off
+action and5–300-second countdown. None sends no notification or action.
+
+The deadline uses a monotonic clock and starts only after a confirmed
+actionable notification. Updates replace the same owned notification. User
+cancellation/dismissal suppresses the entire critical episode. A started
+attempt is also withdrawn on unconfirmed/changed preferences or any source,
+provider, Settings, legacy or action-authority loss, without restarting on
+repeated facts. Authenticated AC or a known warning below Action resets the
+episode; Unknown cannot. Pending capability work is synchronously revoked
+before dispatch, and uncertain action quarantines the policy runtime.
+
+Confirmed notification closure and current policy lineage precede the public
+SessionActions request. Suspend/Hibernate go through authenticated protected
+Sleep1; power-off retains SessionActions' reviewed noninteractive admission.
+The notification adapter checks exact owner, ID and a nonce action key and
+serializes close behind pending updates. A late confirmed ID is cleaned up on
+its original owner. A lost initial reply has no safe cleanup ID, so it never
+authorizes action/replay; every publication requests finite positive remaining
+plus3-second expiry. A foreign nonconforming host cannot guarantee that bound.
+Private runtime verification remains the acceptance gate for this source slice;
+no installed/hardware qualification or wholePF2 completion is implied.

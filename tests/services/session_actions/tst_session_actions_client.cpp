@@ -75,8 +75,12 @@ class FakeSleep final : public QObject {
 public:
     bool allowed = true;
     int canCount = 0, suspendCount = 0;
+    bool hibernateAllowed = false;
+    int canHibernateCount = 0, hibernateCount = 0;
 public Q_SLOTS:
     bool CanSuspend() { ++canCount; return allowed; }
+    bool CanHibernate() { ++canHibernateCount; return hibernateAllowed; }
+    bool Hibernate() { ++hibernateCount; return hibernateAllowed; }
     bool Suspend() { ++suspendCount; return allowed; }
 Q_SIGNALS:
     void Changed();
@@ -182,6 +186,7 @@ private Q_SLOTS:
     void ownerLossWithdrawsAvailabilityWithoutPolling();
     void logindAloneCannotOfferSuspend();
     void nativeSleepInvalidationRefreshesAvailability();
+    void hibernateRepeatsProtectedCurrentOwnerAdmission();
 };
 
 void SessionActionsClientTest::canChecksPublishTypedFailClosedTruth()
@@ -353,6 +358,34 @@ void SessionActionsClientTest::nativeSleepInvalidationRefreshesAvailability() {
     QTRY_VERIFY(client.canSuspend());
     services.sleep.allowed = false; Q_EMIT services.sleep.Changed();
     QTRY_VERIFY(!client.canSuspend());
+}
+
+void SessionActionsClientTest::hibernateRepeatsProtectedCurrentOwnerAdmission()
+{
+    // The append-only enum preserves every existing action's public value.
+    static_assert(int(SessionAction::PowerOff) == 4);
+    static_assert(int(SessionAction::Hibernate) == 5);
+    PrivateServices services;
+    services.sleep.hibernateAllowed = true;
+    SessionActionsClient client(services.clientBus, services.clientBus);
+    QSignalSpy finished(&client, &SessionActionsClient::actionFinished);
+    client.start();
+    QTRY_VERIFY(client.canHibernate());
+    QVERIFY(client.requestHibernate());
+    QTRY_COMPARE(finished.size(), 1);
+    QCOMPARE(services.sleep.hibernateCount, 1);
+    QCOMPARE(qvariant_cast<SessionActionResult>(finished.first().first()).action, SessionAction::Hibernate);
+    QCOMPARE(qvariant_cast<SessionActionResult>(finished.first().first()).status, ActionStatus::Succeeded);
+    // A previously admitted hint never skips the fresh CanHibernate query.
+    services.sleep.hibernateAllowed = false;
+    QVERIFY(client.requestHibernate());
+    QTRY_COMPARE(finished.size(), 2);
+    QCOMPARE(services.sleep.hibernateCount, 1);
+    QCOMPARE(qvariant_cast<SessionActionResult>(finished.last().first()).status, ActionStatus::Rejected);
+    services.bus.unregisterService(QStringLiteral("org.qindaqt.Session1"));
+    QTRY_VERIFY(!client.canHibernate());
+    QVERIFY(!client.requestHibernate());
+    QCOMPARE(services.sleep.hibernateCount, 1);
 }
 
 QTEST_GUILESS_MAIN(SessionActionsClientTest)

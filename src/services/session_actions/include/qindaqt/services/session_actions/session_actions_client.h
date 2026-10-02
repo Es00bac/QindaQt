@@ -21,6 +21,7 @@ enum class SessionAction : quint8 {
     Suspend,
     Reboot,
     PowerOff,
+    Hibernate, // Append-only: preserve the existing public enum values.
 };
 
 enum class ActionStatus : quint8 {
@@ -37,6 +38,7 @@ struct SessionActionAvailability final {
     bool suspend = false;
     bool reboot = false;
     bool powerOff = false;
+    bool hibernate = false;
 
     [[nodiscard]] bool operator==(const SessionActionAvailability &) const = default;
 };
@@ -64,6 +66,7 @@ class SessionActionsClient final : public QObject {
     Q_PROPERTY(bool canSuspend READ canSuspend NOTIFY availabilityChanged)
     Q_PROPERTY(bool canReboot READ canReboot NOTIFY availabilityChanged)
     Q_PROPERTY(bool canPowerOff READ canPowerOff NOTIFY availabilityChanged)
+    Q_PROPERTY(bool canHibernate READ canHibernate NOTIFY availabilityChanged)
     Q_PROPERTY(bool pending READ pending NOTIFY pendingChanged)
     Q_PROPERTY(QString feedback READ feedback NOTIFY feedbackChanged)
 
@@ -86,6 +89,7 @@ public:
     [[nodiscard]] bool canSuspend() const noexcept;
     [[nodiscard]] bool canReboot() const noexcept;
     [[nodiscard]] bool canPowerOff() const noexcept;
+    [[nodiscard]] bool canHibernate() const noexcept;
     [[nodiscard]] bool pending() const noexcept;
     [[nodiscard]] QString feedback() const;
 
@@ -94,6 +98,7 @@ public:
     Q_INVOKABLE bool requestSuspend();
     Q_INVOKABLE bool requestReboot();
     Q_INVOKABLE bool requestPowerOff();
+    Q_INVOKABLE bool requestHibernate();
     Q_INVOKABLE void clearFeedback();
 
 Q_SIGNALS:
