@@ -6,6 +6,23 @@ icon runtime described in [Shell iconography](iconography.md). The theme does
 not add a runtime dependency, alter icon-root ordering, or bypass the XDG
 resolver's mandatory `hicolor` fallback.
 
+## Current QindaQt artwork delivery
+
+October 2 release `1.0.0_p20261002` is installed through Portage on both
+hosts for QindaQt Painted and QindaQt Handdrawn, retaining their saved runtime
+identifiers. Both contain 7,310 named transparent PNGs and 3,291 distinct
+raster drawings. All 7,172 original names remain; 138 aliases represent native
+QindaQt applications and desktop functions. Seventy-two original branded groups
+are redrawn in each style and thirty additional native subjects are authored.
+Original lookup names and legal/source credits remain compatibility/provenance.
+The source is pinned at QindaIconArt `2efd8795`; accepted overlay recipes
+`12b5e862` are integrated at `8f23e1e`. Delivery receipt `9b0421b7` records
+same signed binaries on both hosts, full installed payload hashes/ownership,
+production discovery and twelve exact native Qt samples per family/host.
+No saved theme selection or world change occurs. The existing gallery now uses
+the installed hand-rendered family and reports 7,310 icons and 3,291 drawings.
+The earlier counts below describe the preserved October 1 original release.
+
 ## Contract
 
 - The public theme name is `QindaQt`; `index.theme` declares scalable app,
