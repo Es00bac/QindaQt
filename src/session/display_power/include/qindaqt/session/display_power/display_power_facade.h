@@ -23,6 +23,8 @@ public:
     void requestOn() override;
     void restoreAndStop() override;
     bool canScreenOff() const;
+    bool callerAllowed(const QString &actualCaller) const;
+    bool screenOffEpisodeHeld() const { return !m_lidId.isEmpty(); }
     bool requestScreenOff(const QString &actualCaller, quint64 powerEpoch, const QString &id);
     bool releaseScreenOff(const QString &actualCaller, const QString &id);
 Q_SIGNALS:

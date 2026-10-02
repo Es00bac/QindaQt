@@ -89,3 +89,21 @@ not replace the raw DPMS port, wire idle suspend/dimming or claim PowerDevil
 retirement. Own-only blank release still needs the scoped compositor authority
 identified in the ScreenOff source audit. See
 [ADR-0333](../adr/0333-authenticate-shared-idle-consumer-registration.md).
+
+## Scoped display-power delivery candidate
+
+The new DisplayPower module borrows one selected ordinary compositor identity,
+PowerClient and native lock runtime on the supervisor thread. Its scoped client
+uses actual owner/PID/UID and nonce-correlated output inventory, then enables the
+compositor's default-off native admission. Finite idle/lid causes are canceled on
+the original constructing connection. The separate ScreenPower1 service shares
+Session1's actual owner and admits current Power1 caller/epoch only. Protected
+state gates lock-before-off; admission replies are separate from physical mode.
+
+Compositor DisplayPower1 records external Off before the upstream same-mode
+check. Releasing a cause never unblanks a recorded external Off. Physical wake
+consumes owned episodes; only a genuine observer resumed event counts as activity.
+Startup/rearm/loss cannot manufacture that event. The candidate's complete stage
+assembly, native-exclusive activation, focused tests and actual native output
+gate remain pending at this checkpoint. See
+[ADR-0338](../adr/0338-own-scoped-display-power-and-shared-idle-composition.md).

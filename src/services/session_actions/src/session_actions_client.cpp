@@ -73,6 +73,9 @@ SessionActionsClient::SessionActionsClient(QDBusConnection sessionBus,
     m_refreshDeadline.setInterval(RefreshTimeoutMilliseconds);
     m_actionDeadline.setSingleShot(true);
     m_actionDeadline.setInterval(ActionTimeoutMilliseconds);
+    m_screenDeadline.setSingleShot(true);
+    m_screenDeadline.setInterval(ActionTimeoutMilliseconds);
+    connect(&m_screenDeadline, &QTimer::timeout, this, [this] { finishScreenOff(ActionStatus::Uncertain); });
     connect(&m_refreshDebounce, &QTimer::timeout, this,
             &SessionActionsClient::refreshAvailability);
     connect(&m_actionDeadline, &QTimer::timeout, this, [this] {
@@ -112,6 +115,13 @@ void SessionActionsClient::start()
                 });
     };
     if (m_sessionBus.isConnected()) {
+        m_screenPowerWatcher = new QDBusServiceWatcher(QStringLiteral("org.qindaqt.ScreenPower1"),
+            m_sessionBus, QDBusServiceWatcher::WatchForOwnerChange, this);
+        connect(m_screenPowerWatcher, &QDBusServiceWatcher::serviceOwnerChanged, this, [this] { scheduleRefresh(); });
+        m_sessionBus.connect({}, QStringLiteral("/org/qindaqt/ScreenPower1"), QStringLiteral("org.qindaqt.ScreenPower1"),
+            QStringLiteral("AvailabilityChanged"), this, SLOT(screenPowerChanged(QDBusMessage)));
+        m_sessionBus.connect({}, QStringLiteral("/org/qindaqt/ScreenPower1"), QStringLiteral("org.qindaqt.ScreenPower1"),
+            QStringLiteral("ScreenOffEnded"), this, SLOT(screenPowerEnded(QDBusMessage)));
         installWatcher(m_sessionWatcher, SessionService, m_sessionBus,
                        SessionAction::Logout);
         m_sessionBus.connect({}, QString::fromLatin1(SleepPath),
@@ -135,6 +145,8 @@ void SessionActionsClient::stop()
         return;
     }
     m_running = false;
+    releaseScreenOff();
+    if (m_screenOffAvailable) { m_screenOffAvailable = false; Q_EMIT availabilityChanged(); }
     ++m_refreshSerial;
     m_refreshDebounce.stop();
     m_refreshDeadline.stop();
@@ -150,6 +162,12 @@ void SessionActionsClient::stop()
     delete m_screenSaverWatcher;
     delete m_logindWatcher;
     delete m_sleepWatcher;
+    delete m_screenPowerWatcher;
+    m_screenPowerWatcher = nullptr;
+    m_sessionBus.disconnect({}, QStringLiteral("/org/qindaqt/ScreenPower1"), QStringLiteral("org.qindaqt.ScreenPower1"),
+        QStringLiteral("AvailabilityChanged"), this, SLOT(screenPowerChanged(QDBusMessage)));
+    m_sessionBus.disconnect({}, QStringLiteral("/org/qindaqt/ScreenPower1"), QStringLiteral("org.qindaqt.ScreenPower1"),
+        QStringLiteral("ScreenOffEnded"), this, SLOT(screenPowerEnded(QDBusMessage)));
     m_sessionWatcher = nullptr;
     m_screenSaverWatcher = nullptr;
     m_logindWatcher = nullptr;
@@ -224,7 +242,7 @@ bool SessionActionsClient::requestAction(SessionAction action)
         publishFeedback(unavailableText(action));
         return false;
     }
-    if (m_pending) {
+    if (m_pending || m_screenPending) {
         publishFeedback(tr("Another session action is already in progress."));
         return false;
     }

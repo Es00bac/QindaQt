@@ -17,7 +17,7 @@ bool SessionActionsClient::canSuspend() const noexcept { return m_availability.s
 bool SessionActionsClient::canReboot() const noexcept { return m_availability.reboot; }
 bool SessionActionsClient::canPowerOff() const noexcept { return m_availability.powerOff; }
 bool SessionActionsClient::canHibernate() const noexcept { return m_availability.hibernate; }
-bool SessionActionsClient::pending() const noexcept { return m_pending.has_value(); }
+bool SessionActionsClient::pending() const noexcept { return m_pending.has_value() || m_screenPending; }
 QString SessionActionsClient::feedback() const { return m_feedback; }
 
 bool SessionActionsClient::requestLock() { return requestAction(SessionAction::Lock); }
