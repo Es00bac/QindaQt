@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: available — exact24fa bounded startup amendment ACCEPT; corrected decoder review help offered.
+- Status: working — independent corrected decoder source-first review; exact final runner descendant pending.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: none; own16 compilerPGIDs and all private fixture PIDs/roots absent; leases released.
-- Outcome: completed startup20Qt+genuineeagernegative qualification; ca299 decoderP1 remains separate pending repair.
+- Resource state: none; manager compiler and graphics private graph held elsewhere.
+- Outcome: qualify explicit offered-node no-fallback repair and authentic private graph regression independently.
 
 ## Updates
 
@@ -60,3 +60,5 @@
 - 2026-10-02T00:44:51Z: Own16/16MOC/TU/link exits0 with exact24fa/currentchangedheaders and frozen dependency archives; all compilerPGIDs absent, compiler RELEASED. Fouroutputs frozen. Currentheaderdepfiles+generatedMOC identities directly verified, no oldchangedheader enters. Rootpostbuild nonGPUprivate claim now7startup/13channel/eagernegative; originalfailures preserved.
 
 - 2026-10-02T00:51:47Z: Exact24fa boundedACCEPTP0/P1=0 startupamendment. Own16/16build32.280s/min16.34GB/currentnormalizedheaders/fourMOC; startup7/0+channel13/0 and originaleager expected1/2pass1fail firstnamepresent verified. WrapperlongTMPDIRsetup0/2 failure preserved; onlyshortownedtemp correction, exactartifacts unchanged.27hashesstable/allPIDs+rootsabsent/nocores. Docs486/strict/scopeddiffPASS. Leasesreleased/resourcesnone/available, correcteddecoder review help offered; historicalResponse2/fullnative notclaimed.
+
+- 2026-10-02T00:56:44Z: Claimed corrected decoder99f24 source-first audit in own isolated qinda review tree. Literal no-fallback property and linker-only actual retirement seam inspected; no resource claimed. Graphics first graph setup path-length failure preserved; final short-runtime descendant pending, no behavior verdict from setup. Prior startup24fa ACCEPT/ca299 REJECT preserved.
