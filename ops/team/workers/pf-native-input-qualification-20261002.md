@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — root178 and Powerf5 source reviews accepted; ready for signedDesktop actual discovery
+- Status: available — exact8a622 install metadata source accepted; ready for overlay patch review and signedDesktop discovery
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -92,3 +92,7 @@
 - 2026-10-02T21:26:16.618446+00:00 — Corrected184/16a standalonedependency fourconfiguration gate PASS0/97.616s, original29f failure retained. Power419 exactsnapshot SOURCEACCEPT:10testsPASS, sixfreshCPV metadata and preserved recipe/wrapper/archive/patch provenance verified; authornewPinentry1.3.3 excluded. Claimed root178 SDDM optionalPAM source review and boundedPowerf5 successor; compiler/native lease remains released.
 
 - 2026-10-02T21:29:36.412944+00:00 — Root178 SOURCEACCEPT:17 actual archive preparation/metadata assertions PASS0/.373s, original Manifest+four patch/logrotate inputs and critical PAM blocks preserved. Powerf5 SOURCEACCEPT: matching laptop originalPinentry1.3.3 hash verified directly, exactsnapshot10testsPASS/.316s, freshsevenCPV metadata matches, officialarchive digests valid. ProfileSDDMflag bound to accepted178. No compiler/native resource held; actual signedDesktop discovery remains next manager-granted runtime gate, no authentication/install claim.
+
+- 2026-10-02T21:39:57.364409+00:00 — Claimed root8a622 narrow source review: only Keyring installed metadata basename/wiki contract. Inspecting actual retained29f Portage generated qmldir/qmltypes and sole missing install filename; no fresh configure/build/runtime/source edits.
+
+- 2026-10-02T21:41:43.722316+00:00 — Exact8a622 SOURCEACCEPT: retained r2 qmldir SHAee79ab51 names generated qindaqt_settings_keyring_qml.qmltypes; actual864-byte file SHAd11016fb exists, oldbasename absent. Candidate only exactinstallbasename/wiki; no runtime/target/interface/generatedmetadata change. Originalgeneratedinstall failure and103scan bound. No freshconfigure/build/runtime/install; packageimage and exactdownstreampatch reviews remain next.
