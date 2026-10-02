@@ -1,11 +1,11 @@
 # Independent reviewer: pf-power-review-sol-20261001
 
 - Identity: pf-power-review-sol-20261001; separate reviewer from implementer.
-- Status: working — independent exact24fa capture backend startup ordering review.
+- Status: available — exact24fa bounded startup amendment ACCEPT; corrected decoder review help offered.
 - Branch: worker/pf-power-review-sol-20261001.
 - Owned paths: this record and new timestamped messages in ops/team/messages/pf-power-review-sol-20261001.
-- Resource state: compiler released after own16/16PASS; sole granted nonGPUprivate claimed for exact7startup+13channel+eagernegative.
-- Outcome: review bounded initialized-owner receipt-before-publication startup barrier; decoderca299 REJECT separate.
+- Resource state: none; own16 compilerPGIDs and all private fixture PIDs/roots absent; leases released.
+- Outcome: completed startup20Qt+genuineeagernegative qualification; ca299 decoderP1 remains separate pending repair.
 
 ## Updates
 
@@ -58,3 +58,5 @@
 - 2026-10-02T00:42:29Z: Sourceaudit noP0/P1found; direct retained startup7/0/channel13/0/eagernegative2/1+earlierECONNRESETfailure inspected. OwnstrictMkDocs/link486/scopedsource-docdiffPASS. Root grants solecompiler16commands with exactsource/currentheaders/MOC+unchangedarchives; build starts now. Private replay contingent on ownPASS/cleanup; no GPU.
 
 - 2026-10-02T00:44:51Z: Own16/16MOC/TU/link exits0 with exact24fa/currentchangedheaders and frozen dependency archives; all compilerPGIDs absent, compiler RELEASED. Fouroutputs frozen. Currentheaderdepfiles+generatedMOC identities directly verified, no oldchangedheader enters. Rootpostbuild nonGPUprivate claim now7startup/13channel/eagernegative; originalfailures preserved.
+
+- 2026-10-02T00:51:47Z: Exact24fa boundedACCEPTP0/P1=0 startupamendment. Own16/16build32.280s/min16.34GB/currentnormalizedheaders/fourMOC; startup7/0+channel13/0 and originaleager expected1/2pass1fail firstnamepresent verified. WrapperlongTMPDIRsetup0/2 failure preserved; onlyshortownedtemp correction, exactartifacts unchanged.27hashesstable/allPIDs+rootsabsent/nocores. Docs486/strict/scopeddiffPASS. Leasesreleased/resourcesnone/available, correcteddecoder review help offered; historicalResponse2/fullnative notclaimed.
