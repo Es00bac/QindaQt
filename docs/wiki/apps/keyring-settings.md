@@ -47,3 +47,9 @@ controls retire their affordance immediately when native privacy authority is
 unknown or locked, independently of the optional collection-lock preference;
 the backend remains authoritative for every attempted operation. Displayed
 availability uses user-facing key store wording.
+
+The installed QML module includes the generated
+`qindaqt_settings_keyring_qml.qmltypes` file named by its `qmldir`. The install
+rule must use the Qt QML target name so the package installs the metadata that
+Qt actually generates. A successful compilation alone does not verify this
+contract; package image installation must succeed too.
