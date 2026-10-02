@@ -178,8 +178,8 @@ public:
                 const QString capture = reply.type() == QDBusMessage::ReplyMessage && reply.arguments().size() == 1
                     ? qdbus_cast<QDBusObjectPath>(reply.arguments().at(0)).path() : QString{};
                 if (!guard) return;
-                auto *entry = sessions.entry(path);
-                if (!entry || capture.isEmpty() || !requests.live(token) || !sessions.live(path) || !consent.admitted()
+                auto *current = sessions.entry(path);
+                if (!current || capture.isEmpty() || !requests.live(token) || !sessions.live(path) || !consent.admitted()
                     || owner != eis.compositor()) {
                     // A late or orphaned capture object is removed, never armed.
                     if (!capture.isEmpty())
@@ -188,9 +188,9 @@ public:
                     requests.finish(token, RequestResponse::Failed);
                     return;
                 }
-                entry->capture = capture;
-                entry->phase = RemotePhase::Started;
-                entry->pending = 0;
+                current->capture = capture;
+                current->phase = RemotePhase::Started;
+                current->pending = 0;
                 subscribe(owner, capture, true);
                 requests.finish(token, RequestResponse::Success, {{QStringLiteral("capabilities"), capabilities}});
             });
@@ -322,10 +322,10 @@ quint32 InputCaptureAdaptor::Enable(const QDBusObjectPath &session, const QStrin
     if (!d->eis.call(entry->capture, QLatin1String(kCapture), QStringLiteral("enable"), {QVariant::fromValue(entry->barriers)},
             [this, guard, call, path](const QDBusMessage &reply, const QString &owner) {
                 if (!guard) return;
-                auto *entry = d->sessions.entry(path);
-                const bool ok = entry && reply.type() == QDBusMessage::ReplyMessage && owner == d->eis.compositor()
+                auto *current = d->sessions.entry(path);
+                const bool ok = current && reply.type() == QDBusMessage::ReplyMessage && owner == d->eis.compositor()
                     && d->sessions.live(path) && d->consent.admitted();
-                if (ok) entry->captureState = kEnabled;
+                if (ok) current->captureState = kEnabled;
                 d->reply(call, ok);
             }))
         d->reply(call, false);
@@ -379,12 +379,12 @@ QDBusUnixFileDescriptor InputCaptureAdaptor::ConnectToEIS(const QDBusObjectPath 
     if (!d->eis.call(entry->capture, QLatin1String(kCapture), QStringLiteral("connectToEIS"), {},
             [this, guard, call, path](const QDBusMessage &reply, const QString &owner) {
                 if (!guard) return;
-                auto *entry = d->sessions.entry(path);
+                auto *current = d->sessions.entry(path);
                 const auto fd = reply.type() == QDBusMessage::ReplyMessage && reply.arguments().size() == 1
                     ? qdbus_cast<QDBusUnixFileDescriptor>(reply.arguments().at(0)) : QDBusUnixFileDescriptor{};
-                if (!entry || !fd.isValid() || owner != d->eis.compositor() || !d->sessions.live(path) || !d->consent.admitted()
+                if (!current || !fd.isValid() || owner != d->eis.compositor() || !d->sessions.live(path) || !d->consent.admitted()
                     || !d->requests.authenticated(call)) {
-                    if (entry) entry->cookie = 0;
+                    if (current) current->cookie = 0;
                     d->bus.send(call.createErrorReply(QStringLiteral("org.freedesktop.portal.Error.Failed"), QStringLiteral("Input capture refused")));
                     return;
                 }
