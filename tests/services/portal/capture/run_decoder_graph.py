@@ -37,7 +37,7 @@ def main():
            "QT_FATAL_WARNINGS": "1"}
     config = root / "pipewire.conf"
     config.write_text("""context.properties = { core.daemon = true core.name = pipewire-decoder-private support.dbus = false }
-context.spa-libs = { support.* = support/libspa-support videotestsrc = videotestsrc/libspa-videotestsrc }
+context.spa-libs = { support.* = support/libspa-support }
 context.modules = [
  { name = libpipewire-module-protocol-native }
  { name = libpipewire-module-metadata }
@@ -46,7 +46,7 @@ context.modules = [
  { name = libpipewire-module-access }
  { name = libpipewire-module-link-factory }
 ]
-context.objects = [ { factory = spa-node-factory args = { factory.name = support.node.driver node.name = Private-Decoder-Driver priority.driver = 20000 } } ]
+context.objects = []
 """)
     (root / "client.conf").write_bytes(pathlib.Path("/usr/share/pipewire/client.conf").read_bytes())
     wpdir = root / "wireplumber"
