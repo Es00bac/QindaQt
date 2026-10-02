@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: available — coherent195 actual DPMS10behavior rows pass; expiry row requests invalid350ms lifetime; private lease released
+- Status: available — minimal expiry fixture7b6f pushed; waiting root reviewed build and Input private lease release before one replay
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -63,3 +63,5 @@
 - 2026-10-02T20:18:57Z — Claim actual one-run lease: root independently accepts11b/integrates195417e8f4f0e95158f470132e85362aa247c1d3, coherent3targetbuild0/24.390s. One unchanged11rowgate starts with new short0700TMPDIR/core0/privatebus/6GiBguard; source/artifact/framework inventory refrozen. Prior2actualfailurearchives preserved, no productsource/sharedcache edits. Release private promptly at first actual outcome.
 
 - 2026-10-02T20:19:50Z — Actual coherent195 ONErun exit1/4.162051s, Qt12PASS/1FAIL/0SKIP/3191ms:10behaviorrows pass, expiryAndAuthorityLoss fails beforeexpiry becausefixturedeadline350ms violates unchangedledger1000msminimum. No productionpolicyfailure inferred; ownerloss portion unexecuted. All22frozeninputs unchanged;1725285/starttick42723658 +3observeddescendants gone/core0. Privatelease released immediatelytoInputqueue. Propose one-linefixture1500msdeadline preserving2500msactualexpiry/ownerlossassertions; awaiting root scope/review/tinyrebuild/replay.
+
+- 2026-10-02T20:20:33Z — Authorized source-onlyrepair7b6f5ee365f7a6906cc3da00420a93c473b5baa0 pushed:fixturedeadline350to1500 only +READMEexisting1000msfloor. Exactbytecomparison accepts one substitution; expiryreceipt/QTRY2500/ownerloss/allotherassertions unchanged;diffcheck0. Previous195actual12QtPASS1FAIL0SKIP/22hashreceipts preserved. Rootreview/warmtinytargetbuild and Inputlease release pending; no private/compilerclaim or productionedit. Available for rootforthcomingShortcutssource independentreview.
