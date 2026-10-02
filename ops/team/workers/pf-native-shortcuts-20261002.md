@@ -1,6 +1,6 @@
 # Native shortcuts adaptation worker
 
-- Status: working — adapt existing compositor shortcut service logic into the native authority and Settings/GlobalShortcuts consumers
+- Status: working — hand off qualified shortcut consumers and independently review the manager capture candidate
 - Identity: qinda_icon_brand_audit
 - Base: desktop7358b792874f06eb13e00dcd0780c1ee8a453e7a; fork68c4d74f903b7e8990dd5fd5d509ec8154eac1d1
 - Ownership: native shortcut registry/runtime, compatibility endpoint/input hooks, Shortcuts1 boundary, Settings adapter, GlobalShortcuts portal/helper, focused tests/docs; tiny shared registrations coordinated with manager
@@ -18,3 +18,5 @@
 - 2026-10-02T17:43:30+00:00 — Exact core922211ff98d8141358e571d795851e375916a34b incremental build EXIT0 and CTest4/4 PASS (0.61s), 20 QtTest rows/12 behavior rows. Manager accepted source ownership/rollback/cache boundary. Consumerd846d0ad3e10f5a746b145e82cae3ddce3697c79 focused strict compilation running on qinda at granted four-job bound; Settings/portal bridge not yet qualified.
 
 - 2026-10-02T17:48:31+00:00 — Strict consumer/module/helper build EXIT0; three focused CTests PASS in0.29s against actual core922211. Bridge proves separate authenticated frontend, consent cancellation and frontend-loss binding revocation. Final candidate/docs receipt preparation; root runtime selection and displayed/compositor gates remain held.
+
+- 2026-10-02T17:50:24+00:00 — Final desktopfc4e0d45dc7c14cf0723efa15e1f259467436a21 preserved in qinda hub. Exact committed source matches all nine temporary compiler-transfer files. Strict MkDocs EXIT0 (9.89s), links/navigation EXIT0 (491 documents). Native capture independent exact-candidate source review claimed; waiting manager native receipt, no extra compile/GPU.
