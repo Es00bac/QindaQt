@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: working — run approved exact native remote-input gate on qinda after recovery release
+- Status: working — preserve exact native-input PASS receipt and coordinate actual native-shortcut gate
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
@@ -28,3 +28,5 @@
 - 2026-10-02T19:16:30+00:00 — Corrected typed object-path response and explicit Release signal expectation against installed XDG contract. Actual capture activation/KEY_Q, EI stop after Release, and no post-release KEY_W pass; actual lock disconnect passes. New failure is absent ordinary clipboard peer executable from preserved incomplete Claude build, not clipboard production evidence. Completing only required cached target and adding explicit fixture artifact preflight plus target dependencies; all previous logs retained. Full journey not qualified yet.
 
 - 2026-10-02T19:22:00+00:00 — Complete executable/plugin/core preflight and coherent ldd PASS, strict fixture build PASS, mkdocs strict PASS. Actual remote-to-ordinary-Wayland clipboard payload passed; local-copy readiness assertion consumed its own stdout across QTRY evaluations. Repair accumulates stdout and scopes child cleanup. Failure-triggered QtTest automatic crash dumper is disabled in isolated runner; no debugger was explicitly invoked. Driver3/3PASS; full journey remains unqualified until repaired test executes.
+
+- 2026-10-02T19:29:00+00:00 — Genuine native input gate PASS exact test2b36c431e5/productione2f/core56a; exit0/6.383063s, fixture4QtPASS0FAIL0SKIP2605ms, driver3QtPASS0FAIL0SKIP5541ms. Actual EIS Ctrl+C supplies local copy serial; both payload directions/barriers/release/Close/native lock verified. Own strict compile/link PASS; mkdocs strict/492-doc validator PASS. Hash-bound report preserved; previous failures separate. Compiler/private runtime released to manager for coherent native-name+Power composition; next compatible NativeShortcuts actual fixture source6cf, compilation/runtime pending.
