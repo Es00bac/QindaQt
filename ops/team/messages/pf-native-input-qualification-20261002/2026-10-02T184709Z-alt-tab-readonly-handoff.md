@@ -1,0 +1,5 @@
+# Read-only Alt-Tab handoff and native gate readiness
+
+Full bounded report ops/team/audits/live-alt-tab-recovery-20261002.md. Fresh laptop stock compositor814278 survives but new session bus has neither org.kde.KWin nor org.kde.kglobalaccel. Existing task-switcher command requires the absent GlobalAccel component. No verified safe in-process reconnect hook/installed native window-control CLI found. Avoid competing standalone daemon. Mouse dock/Workspace Switcher activation may remain available; actual Alt-Tab likely requires manager-controlled saved-work relogin. No restart/logout/input/injection/build executed.
+
+Native source checkpoints remain preserved: driver294+metadata7b82+accepted import970; separate unbuilt Shortcuts6cf; desktop source/receipts579. Shared source5f unchanged. Both compiler processes ended. No compositor runtime launched in takeover. Board truthfully blocked on explicit recovery release. Concrete next compatible help: resume same exact incremental driver/EIS gate and actual private frontend/consent/input journey immediately when manager releases resources; then nativeShortcuts actual compositor gate.
