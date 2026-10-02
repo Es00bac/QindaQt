@@ -86,20 +86,40 @@
     "beforeUnmerge": [
       "Desktop and required Claude/virtual/Pinentry/SDDM signed replacement artifacts ready and source accepted",
       "Normal exact-target binary-only host pretend passes",
-      "Target-local old Desktop, GNOME and SDDM rollback packages and settings/PAM/world backups captured"
+      "Target-local old Desktop, GNOME and SDDM rollback packages and settings/PAM/world backups captured",
+      "Actual legacy Secret Service and KWallet acquisition and sealed native import complete under docs/wiki/architecture/keyring-import.md; verify application data compatibility before switching the service name or native PAM initialization"
     ],
     "afterUnmerge": "Immediately install reviewed native signed package set through Portage; do not force-kill existing processes",
-    "legacyData": "Retain ~/.local/share/keyrings and existing KWallet data; no credential input, secret reads or unattended migration"
+    "legacyData": "Original stores remain intact. Nonzero legacy files exist on both hosts, no running legacy provider is confirmed, and no actual import has occurred. Retain the installed provider/PAM selection until the actual import contract is satisfied.",
+    "actualState": "pending actual credential import; no provider unmerge or native provider/PAM initialization performed",
+    "evidence": "ops/audits/legacy-keyring-directory-aggregates-20261002.json"
   },
   "retirementOrdering": [
     "Complete source/signed-image gates",
-    "Install accepted dependency replacements, preserving qinda VDB until its build-only union finishes",
+    "Install independent accepted dependency replacements and required TrashCLI through signed binary-only Portage",
     "Review protected SDDM configuration and preserve custom authentication blocks",
-    "Verify native installed files and actual private /usr launcher discovery",
     "Preserve the seven installed non-Plasma KDE applications from kde-desktop set; remove only old desktop set and Sloom selected roots. Spectacle is the separately authorized PF16 replacement.",
-    "Run exact scoped retired-package depclean; no broad world depclean, no global package masks",
+    "Run interim exact retired-only depclean with every non-retired package protected; retain all still-required Plasma packages",
+    "Preserve legacy Xwayland video sharing through its separately reviewed private-library adaptation",
+    "Complete actual credential import and application compatibility before unmerging the old Secret Service provider or native PAM initialization",
+    "Install the five remaining native Desktop/Claude/Pinentry/virtual-secret-service/SDDM upgrades through normal mandatory-signed binary-only Portage",
+    "Verify native installed files and actual private /usr launcher discovery",
+    "Repeat exact scoped retired-package depclean; no broad world depclean, no global package masks",
     "Verify actual installed native runtime closure and zero retired installed packages on both hosts"
   ],
+  "completedInterimDelivery": {
+    "qindaNativeApplicationUpdates": 9,
+    "laptopNativeApplicationUpdates": 6,
+    "trashCliInstalledBothHosts": true,
+    "qindaRetiredRemoved": 34,
+    "laptopRetiredRemoved": 4,
+    "retiredRemainingEachHost": 26,
+    "qindaProtectedNonRetiredPackages": 1541,
+    "laptopProtectedNonRetiredPackages": 1358,
+    "protectedNonRetiredPackagesRemoved": 0,
+    "normalFinalBinaryOnlyPretendEachHost": "PASS; five upgrades, five binaries, no source build or download",
+    "evidence": "ops/audits/plasma-interim-cleanup-20261002.json"
+  },
   "sessionBoundary": "Preserve applications and current compositor processes. Fresh physical login is operator activation; no forced logout, suspend or credential prompt.",
   "explicitReplacement": {
     "retire": "kde-plasma/spectacle",
