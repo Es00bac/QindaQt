@@ -358,4 +358,18 @@ integration retains every accepted decision in numeric order.
 - [ADR-0331: Fence native critical-battery countdowns and public actions](0331-fence-native-critical-battery-countdowns.md)
 
 - [ADR-0332: Own native lid handling before authenticated edge dispatch](0332-own-native-lid-handling-before-edge-dispatch.md)
+
+- [ADR-0333: Authenticate complete shared idle-consumer registration](0333-authenticate-shared-idle-consumer-registration.md)
+
+- [ADR-0334: Adapt the live shortcut authority and its native consumers](0334-native-shortcut-authority-and-consumers.md) — Proposed candidate
+
 - [ADR-0335: Native remote input through the compositor EIS engine](0335-native-remote-input-portal.md)
+
+- [ADR-0336: Own native monitor batches and cursor modes](0336-native-monitor-batches-and-cursor-modes.md)
+
+- [ADR-0337: Adapt the remaining standard portal families](0337-native-independent-portal-families.md)
+
+- [ADR-0338: Own scoped display power and complete shared idle consumers](0338-own-scoped-display-power-and-shared-idle-composition.md)
+
+- [ADR-0339: Manage portal grants through the frontend PermissionStore](0339-use-frontend-permission-store-for-settings-revocation.md)
+- [ADR-0340: Use native privileged compositor identities](0340-use-native-privileged-compositor-identities.md)

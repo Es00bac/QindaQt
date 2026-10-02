@@ -39,6 +39,9 @@ int main(int argc, char **argv)
     parser.setApplicationDescription(
         QStringLiteral("QindaQt resident Power1 service"));
     parser.addOptions({
+        {QStringLiteral("idle-policy"),
+         QStringLiteral("Shared idle consumers: off or native-exclusive (explicit cutover)."),
+         QStringLiteral("mode"), QStringLiteral("off")},
         {QStringLiteral("lid-policy"),
          QStringLiteral("Native lid handling: off or native-exclusive (explicit cutover)."),
          QStringLiteral("mode"), QStringLiteral("off")},
@@ -80,6 +83,11 @@ int main(int argc, char **argv)
         return 1;
     }
     const QString backlightRoot = parser.value(QStringLiteral("backlight-root"));
+    const QString idlePolicy = parser.value(QStringLiteral("idle-policy"));
+    if (idlePolicy != QStringLiteral("off") && idlePolicy != QStringLiteral("native-exclusive")) {
+        qCritical("Power1 rejected unknown idle policy mode");
+        return 1;
+    }
     const QString lidPolicy = parser.value(QStringLiteral("lid-policy"));
     if (lidPolicy != QStringLiteral("off") && lidPolicy != QStringLiteral("native-exclusive")) {
         qCritical("Power1 rejected unknown lid policy mode");
@@ -186,6 +194,15 @@ int main(int argc, char **argv)
         if (!settings->start()) {
             qCritical("Power1 source profile Settings1 observation failed");
         }
+    }
+
+    std::unique_ptr<Upstream::NativeProfileAuthority> idleAdmission;
+    if (idlePolicy == QStringLiteral("native-exclusive")) {
+        idleAdmission = std::make_unique<Upstream::NativeProfileAuthority>(sessionConnection, true);
+        QObject::connect(idleAdmission.get(), &Upstream::NativeProfileAuthority::admissionChanged,
+                         &service, &ResidentPowerService::setNativeIdleAdmission);
+        idleAdmission->start();
+        service.setNativeIdleAdmission(idleAdmission->admitted());
     }
 
     QObject::connect(&application, &QCoreApplication::aboutToQuit, &service,

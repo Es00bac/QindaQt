@@ -118,6 +118,7 @@ nav:
       - Settings portal backend version 1: reference/portal-settings-backend-v1.md
       - Native portal choosers: reference/portal-choosers.md
       - Native portal capture: reference/portal-capture.md
+      - Independent portal families: reference/portal-misc-families.md
       - Public compositor capture: architecture/compositor-capture.md
       - Display1 version 1: reference/display1-v1.md
       - Audio1 version 2: reference/audio1-v2.md
@@ -186,6 +187,7 @@ nav:
       - Voice: apps/voice.md
       - Settings Voice route: apps/voice-settings.md
       - Passwords & Keys Settings route: apps/keyring-settings.md
+      - Portal permissions: apps/portal-permissions-settings.md
       - Terminal (QQ_Term): apps/terminal.md
       - System Monitor: apps/system-monitor.md
       - QindaLutris: apps/qindalutris.md
@@ -480,6 +482,7 @@ nav:
       - ADR-0314 Native lock receipts: adr/0314-native-lock-receipt-authentication.md
       - ADR-0313 Native night-light authority: adr/0313-native-night-light.md
       - ADR-0317 Native shortcut registry: adr/0317-native-global-shortcut-registry.md
+      - ADR-0334 Native shortcut authority and consumers: adr/0334-native-shortcut-authority-and-consumers.md
       - Native notification lock observation: adr/0320-native-notification-lock-observation.md
       - ADR-0305 Ordinary compositor attachment: adr/0305-public-ordinary-compositor-attachment.md
 
@@ -493,6 +496,8 @@ nav:
       - ADR-0330 Exclusive native source profile holds: adr/0330-gate-native-source-profile-holds.md
       - ADR-0331 Native critical battery countdowns: adr/0331-fence-native-critical-battery-countdowns.md
       - ADR-0332 Native lid FD ownership and edges: adr/0332-own-native-lid-handling-before-edge-dispatch.md
+      - "0333 — Shared idle-consumer registration": adr/0333-authenticate-shared-idle-consumer-registration.md
+      - "0338 — Scoped display power and shared idle": adr/0338-own-scoped-display-power-and-shared-idle-composition.md
       - ADR-0307 Ordinary FD idle observation: adr/0307-public-ordinary-fd-idle-observation.md
       - "ADR-0278: Retain dock delegates by presentation identity": adr/0278-retain-dock-delegates-by-presentation-identity.md
       - "ADR-0297: Power preference preservation": adr/0297-preserve-power-preference-precision.md
@@ -506,6 +511,8 @@ nav:
       - "ADR-0300: Authenticate native PAM token delivery through the system owner": adr/0300-trusted-native-keyring-pam.md
 
       - "ADR-0302: Native Passwords & Keys client and prompt policy": adr/0302-native-passwords-keys-client-and-policy.md
+      - "ADR-0339: Frontend PermissionStore Settings revocation": adr/0339-use-frontend-permission-store-for-settings-revocation.md
+      - "0340: Native privileged compositor identities": adr/0340-use-native-privileged-compositor-identities.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md
       - "ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor": adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md
@@ -514,4 +521,6 @@ nav:
       - "0318: Native portal foundation": adr/0318-native-portal-foundation.md
       - "0322: Native portal choosers": adr/0322-native-portal-choosers.md
       - "0324: Native portal capture": adr/0324-native-portal-capture-boundaries.md
+      - "0337: Native independent portal families": adr/0337-native-independent-portal-families.md
       - "0335: Native remote input portal": adr/0335-native-remote-input-portal.md
+      - "0336: Native monitor batches and cursor modes": adr/0336-native-monitor-batches-and-cursor-modes.md

@@ -31,6 +31,7 @@ enum class SettingsRouteComponent {
   LoginScreen,
   Voice,
   Keyring,
+  PortalPermissions,
 };
 
 [[nodiscard]] QString

@@ -246,3 +246,23 @@ Lock, logout, suspend, reboot, and power-off are intentionally not Power1
 methods or capabilities. First-party presentation receives those typed facts
 from the separate session-actions client, whose logout wire is documented in
 [Session1 version 1](session1-v1.md); this does not widen PB-0/PB-1.
+
+## Supervisor idle-consumer registration
+
+`RegisterIdleConsumers(expectedEpoch:t, scopes:u) -> registered:b` is additive.
+Only the current actual `org.qindaqt.Session1` owner on the constructing bus,
+authenticated by the bus daemon to the service UID, may register. The composition
+must explicitly admit native-exclusive policy; legacy PowerDevil ownership
+rejects. The expected epoch must be current and nonzero. Scope7 declares real
+automatic-lock/display-off/idle-suspend consumers; scope0 withdraws. Other masks
+reject atomically. The method cannot enable native admission or authenticate a
+caller-provided PID/name. Consumers are responsible for truthful complete stage
+composition. Installed policy defaults off.
+
+Accepted registration publishes IdleInhibitorsChanged and lets ordinary callers
+acquire their bounded exact-owner/epoch leases. Session1 replacement, Power1
+epoch replacement, legacy arrival, explicit withdrawal and native-admission
+loss clear scopes and leases. No automatic mutation replay occurs. Method bool
+replies are not authenticated scope truth: use RequestIdleInhibitorStateWithReceipt
+and the public PowerClient cache. The registrar's cancel/destructor sends only a
+withdrawal to the original unique owner/epoch; it never registers on replacement.

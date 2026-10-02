@@ -30,6 +30,11 @@
       <arg name="value" type="u" direction="in"/>
       <arg name="result" type="(uuttttss)" direction="out"/>
     </method>
+    <method name="RegisterIdleConsumers">
+      <arg name="expectedEpoch" type="t" direction="in"/>
+      <arg name="scopes" type="u" direction="in"/>
+      <arg name="registered" type="b" direction="out"/>
+    </method>
     <method name="GetIdleInhibitorCapabilities">
       <arg name="scopes" type="u" direction="out"/>
     </method>

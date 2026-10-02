@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <qindaqt/services/portal/remote_input/compositor_eis.h>
 #include <QDBusMessage>
+#include <qindaqt/compositor_names/compositor_names.h>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 
 namespace QindaQt::Services::Portal::RemoteInput {
 namespace {
-constexpr auto kPath = "/org/kde/KWin/EIS/RemoteDesktop";
-constexpr auto kInterface = "org.kde.KWin.EIS.RemoteDesktop";
+constexpr auto kPath = CompositorNames::eisRemoteDesktopPath;
+constexpr auto kInterface = CompositorNames::eisRemoteDesktopInterface;
 QDBusMessage compositorCall(const QString &owner, const QString &member) {
     auto call = QDBusMessage::createMethodCall(owner, QLatin1String(kPath), QLatin1String(kInterface), member);
     call.setAutoStartService(false);

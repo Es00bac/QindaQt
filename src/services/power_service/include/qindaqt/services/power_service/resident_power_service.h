@@ -42,6 +42,9 @@ public:
 
     [[nodiscard]] PowerServiceStartStatus start();
     void stop();
+    // Composition-only gate; off by default. Callers cannot enable it over
+    // D-Bus. Revocation drops consumer capabilities and outstanding leases.
+    void setNativeIdleAdmission(bool admitted);
     [[nodiscard]] bool isRunning() const noexcept;
     [[nodiscard]] PowerServiceCoordinator *coordinator() noexcept;
 

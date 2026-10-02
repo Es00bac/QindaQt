@@ -61,11 +61,52 @@ disconnected and never delivered.
 Session Close, frontend or caller loss, request cancellation, native lock or
 lock uncertainty and selected-session/compositor loss close the session,
 emit `Closed` when the backend initiated it, cancel visible consent and send
-`disconnect(cookie)`. Notify* methods fail with
-`org.freedesktop.DBus.Error.NotSupported`: the backend has no second,
-non-EIS injection path. The real frontend forwards Notify* without returning
-backend errors, so legacy Notify clients keep the KDE route until a backend
-EIS sender exists.
+`disconnect(cookie)`.
+
+The frontend forwards the deprecated Notify* methods without awaiting replies
+(`remote-desktop.c`), so refusing them silently dropped legacy input. The
+first admitted Notify* on a started session (frontend owner, live caller,
+granted device, native authority) opens that session's own compositor EIS
+context and drives it with a module-private libei sender
+(`legacy_input_p.h`); upstream KDE uses KWin fake-input instead. Events wait
+in a bounded, ordered queue until a device with the needed capability
+resumes. Absolute pointer and touch coordinates map through the published
+stream rectangles. Once that context exists ConnectToEIS is refused, and the
+session's close, lock or compositor disconnect ends it like any other EIS
+context. NotifyKeyboardKeysym stays `NotSupported`: EIS offers no keysym
+injection and the backend does no keymap reverse lookup. libei is the same
+`dev-libs/libei` the compositor fork already requires.
+
+## Screen sharing in RemoteDesktop sessions
+
+xdg-desktop-portal 1.20 picks the ScreenCast and RemoteDesktop backends
+independently and sends `ScreenCast.SelectSources` for a RemoteDesktop session
+to the ScreenCast backend with the RemoteDesktop handle (`screen-cast.c`); it
+refuses `persist_mode`/`restore_token` for such sessions itself. Upstream KDE
+shares one session registry between the two portals. QindaQt keeps the two
+module-private registries and joins them through `ScreenCastSourceDelegate`
+(`capture_ui.h`): ScreenCastAdaptor validates the standard options, refuses
+persistence for these sessions, and forwards the monitor selection (multiple,
+cursor mode) to the RemoteDesktop owner, which accepts it once, from the same
+frontend, caller and app, before Start.
+
+Start then asks the input consent (which says screens are chosen next) and,
+after Allow and any clipboard grant, hands the session to the same protected
+capture producer ScreenCast uses (`CaptureUI`, `ProcessCapture`): its own
+monitor choice and consent, its frozen selection and its stream lifetime. The
+Start request stays pending until every selected stream is ready and then
+publishes `streams` with `devices` and `clipboard_enabled` once; a single
+selection cannot publish two nodes. A refused, cancelled or failed share
+fails Start and closes the session, so input is never granted without the
+requested streams. Every retirement (Close, frontend or caller loss, request
+cancellation, native lock, compositor/session-binding loss) stops the
+session's streams and disconnects its EIS context; a producer that stops or
+dies closes the RemoteDesktop session. The composition constructs
+RemoteDesktop before ScreenCast so the borrowed seam outlives its user.
+Because of the frontend's independent choice, the ScreenCast and
+RemoteDesktop rows in `qindaqt-portals.conf` must move to `qindaqt` together;
+a split route sends a RemoteDesktop session's SelectSources to a backend that
+does not know it.
 
 ## InputCapture
 
@@ -121,8 +162,22 @@ RequestClipboard refusal, and authority loss closing an unclaimed paste FD. `qin
 synthetic manager/capture pair: grant, zones, barrier acceptance/failure,
 single EIS receiver, enable, targeted activation, release, deactivation and
 Close removal; denial; zone change disarming; native authority loss; and a
-forged activation from another peer. They prove wire and lifetime, not
-physical input.
+forged activation from another peer. `qindaqt.portal-remote-screencast`
+drives the frontend's combined sequence over both adaptors with a fake capture
+port: consent before producer, frozen request (session, caller, multiple,
+cursor mode), atomic `streams`/`devices`/`clipboard_enabled` publication,
+stream stop and EIS disconnect on Close, cancelled and over-full shares
+closing the session, owner/app/once/persistence fencing of the selection, and
+producer close, capture authority loss and caller loss ending the session.
+`qindaqt.portal-remote-legacy-input` puts a real libeis server behind the
+synthetic compositor object: Notify* sent before any device exists arrive in
+order (motion, button, key, discrete scroll) over one lazily opened context;
+ConnectToEIS is then refused; Close and native lock disconnect the context;
+a real libeis peer closing before initial dispatch retires the sender during
+attach without a stale member read;
+unstarted, foreign, ungranted-device, keysym, malformed and stream-less
+absolute calls are refused.
+They prove wire and lifetime, not physical input or real PipeWire nodes.
 
 Candidate evidence (strict `-Werror` dev build, configured `-j24 -l24`): both
 focused rows pass (Qt 12/0 and 7/0, also with `QT_FATAL_WARNINGS=1`) beside
@@ -135,8 +190,9 @@ configured fork flags; the plugin itself has not been built or run.
 Still required before routing changes: the fork plugin build plus a private
 native compositor row where a real frontend session receives an EIS FD,
 injects observable input, and loses it on Close and native lock; staged
-metadata. Remaining source gaps: ScreenCast sources on a RemoteDesktop
-session, a backend EIS sender for Notify*, and persistence/restore tokens.
+metadata, and a real frontend RemoteDesktop+ScreenCast session receiving
+producer nodes and a legacy Notify* client injecting observable input.
+Remaining source gap: RemoteDesktop persistence/restore tokens.
 
 ## Clipboard
 
@@ -165,3 +221,11 @@ selection, rechecked against the live grant at publication.
 SelectionOwnerChanged carries `mime_types` and `session_is_owner`. Signals are
 targeted to the session's frontend. Session close, actor loss, native lock or
 attachment loss release the handle and withdraw the session's selection.
+
+## Native identity cutover
+
+[ADR-0340](../adr/0340-use-native-privileged-compositor-identities.md) moves EIS
+paths and interfaces with the fork. `CompositorNames` supplies those names to
+RemoteDesktop, Clipboard and InputCapture. Standard frontend portal interfaces
+keep their names. Source preparation does not claim installed routing or native
+qualification.

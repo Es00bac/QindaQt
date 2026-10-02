@@ -8,6 +8,7 @@ import QindaQt.SettingsApp.ScreenSaver
 import QindaQt.SettingsApp.LoginScreen
 import QindaQt.SettingsApp.Voice
 import QindaQt.SettingsApp.Keyring
+import QindaQt.SettingsApp.PortalPermissions
 
 // AGENT-CONTRACT: route page `Component`s that would otherwise be declared in
 // Main.qml. That file is already over its source-shape limit, and every new
@@ -97,6 +98,14 @@ QtObject {
         KeyringPage {
             objectName: "keyringPage"
             keyringSettings: KeyringRouteComposition.model
+            onCloseRequested: root.closeRequested()
+        }
+    }
+
+    readonly property Component portalPermissions: Component {
+        PortalPermissionsPage {
+            objectName: "portalPermissionsPage"
+            permissions: PortalPermissionsRouteComposition.model
             onCloseRequested: root.closeRequested()
         }
     }

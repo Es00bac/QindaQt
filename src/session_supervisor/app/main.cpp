@@ -63,6 +63,9 @@ int main(int argc, char *argv[])
         {QStringLiteral("desktop-controls"),
          QStringLiteral("Optional media-key and screenshot helper."),
          QStringLiteral("path"), QStringLiteral("qindaqt-desktop-controls")},
+        {QStringLiteral("native-power"),
+         QStringLiteral("Native power composition: off or exclusive; exclusive retires the owned PowerDevil child."),
+         QStringLiteral("mode"), QStringLiteral(QINDAQT_NATIVE_POWER_DEFAULT)},
         {QStringLiteral("powerdevil"),
          QStringLiteral("PowerDevil daemon executable."), QStringLiteral("path"),
          QStringLiteral("/usr/libexec/org_kde_powerdevil")},
@@ -103,6 +106,12 @@ int main(int argc, char *argv[])
     });
     parser.process(application);
 
+    const auto nativePowerMode = parser.value(QStringLiteral("native-power"));
+    if (nativePowerMode != QStringLiteral("off") && nativePowerMode != QStringLiteral("exclusive")) {
+        QTextStream(stderr) << "qindaqt-session: invalid native power mode\n";
+        return 2;
+    }
+    const bool nativePowerExclusive = nativePowerMode == QStringLiteral("exclusive");
     QString error;
     const auto compositorProcessId =
         establishDirectParentProcessWitness(&error);
@@ -137,7 +146,7 @@ int main(int argc, char *argv[])
     options.welcomeExecutable = parser.value(QStringLiteral("welcome"));
     if (!parser.isSet(QStringLiteral("no-removable-media")))
         options.removableMediaExecutable = parser.value(QStringLiteral("removable-media"));
-    options.powerDevilExecutable = parser.isSet(QStringLiteral("no-powerdevil"))
+    options.powerDevilExecutable = nativePowerExclusive || parser.isSet(QStringLiteral("no-powerdevil"))
         ? QString{} : parser.value(QStringLiteral("powerdevil"));
     options.globalShortcutDaemonExecutable =
         parser.isSet(QStringLiteral("no-global-shortcut-daemon"))
@@ -182,7 +191,7 @@ int main(int argc, char *argv[])
     // share the supervisor's selected session owner and ordinary compositor
     // attachment. The lock path degrades closed without blocking login.
     NativeLockComposition nativeLock;
-    if (!nativeLock.start(&error)) {
+    if (!nativeLock.start(&error, nativePowerExclusive)) {
         QTextStream(stderr) << QCoreApplication::applicationName()
                             << ": native lock runtime unavailable: " << error << '\n';
     }

@@ -1,6 +1,6 @@
 # Settings completeness inventory
 
-This is the source-backed inventory of the 22 routes registered by
+This is the source-backed inventory of the 23 routes registered by
 `SettingsRouteRegistry::registerBuiltInRoutes()` and
 `registerAppendedRoutes()` on the current qinda source branch. Registration
 and the [active Loader witness](../adr/0250-require-active-loader-witness-for-every-settings-route.md)
@@ -35,7 +35,9 @@ authority outside Settings1.
 | 21 | `voice` | [Desktop voice opt-in, provider preference and panel transcript choice](../apps/voice-settings.md) | Confirmed preference gates QindaQt activation; an independently running provider is not terminated. |
 | 22 | `passwords-keys` | [Native Passwords & Keys](../apps/keyring-settings.md) | Uses the standard Secret Service client; password entry is delegated to its prompt and resident lock policy requires separately confirmed observation. |
 
-The first ten routes keep Ctrl+1 through Ctrl+0 respectively. Routes 11–22
+| 23 | `portal-permissions` | [Remembered ScreenCast and RemoteDesktop grants](../apps/portal-permissions-settings.md) | Existing frontend PermissionStore owns tokens. Revocation does not close active sessions; full executable route gate belongs to the integrated package build. |
+
+The first ten routes keep Ctrl+1 through Ctrl+0 respectively. Routes 11–23
 are reached from the wide sidebar or compact tabs and retain their registry
 order. A route's unavailable diagnostic is a supported construction result,
 not proof that its backing service or device is present on this computer.

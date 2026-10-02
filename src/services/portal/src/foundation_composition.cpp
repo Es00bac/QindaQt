@@ -11,6 +11,15 @@
 #include <qindaqt/services/portal/process_capture.h>
 #include <qindaqt/services/portal/screenshot_adaptor.h>
 #include <qindaqt/services/portal/screencast_adaptor.h>
+#include "../misc_families/process_misc.h"
+#include "../misc_families/account_adaptor.h"
+#include "../misc_families/usb_adaptor.h"
+#include "../misc_families/launcher_adaptor.h"
+#include "../misc_families/print_adaptor.h"
+#include "../shortcuts/global_shortcuts_adaptor.h"
+#include "../shortcuts/shortcut_ui.h"
+#include <qindaqt/services/shortcuts_client/transport.h>
+
 #include <qindaqt/services/portal/remote_input/input_capture_adaptor.h>
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
 #include <qindaqt/services/power_client/qt_power_transport.h>
@@ -23,6 +32,9 @@ public:
     ProcessAccessConsent consent;
     ProcessChooser chooser;
     ProcessCapture capture;
+    ProcessShortcuts shortcutUi;
+    QindaQt::Services::Shortcuts::QtShortcutTransport shortcutNative;
+    ProcessMisc misc;
     QtNativeNotifications notifications;
     QindaQt::Power::QtPowerTransport power;
     PowerIdleInhibition idle;
@@ -32,6 +44,9 @@ public:
     // AGENT-GUARD: Adaptors are destroyed before every borrowed port/store.
     // Their QObject host parent is independent ownership, removed on deletion.
     std::unique_ptr<AccessAdaptor> access;
+    // AGENT-GUARD: RemoteDesktop precedes ScreenCast so the ScreenCast adaptor,
+    // which borrows its combined-session source seam, is destroyed first.
+    std::unique_ptr<RemoteInput::RemoteDesktopAdaptor> remoteDesktop;
     std::unique_ptr<NotificationAdaptor> notification;
     std::unique_ptr<InhibitAdaptor> inhibit;
     std::unique_ptr<EmailAdaptor> email;
@@ -39,14 +54,21 @@ public:
     std::unique_ptr<AppChooserAdaptor> appChooser;
     std::unique_ptr<ScreenshotAdaptor> screenshot;
     std::unique_ptr<ScreenCastAdaptor> screencast;
-    std::unique_ptr<RemoteInput::RemoteDesktopAdaptor> remoteDesktop;
+    std::unique_ptr<GlobalShortcutsAdaptor> shortcuts;
+    std::unique_ptr<AccountAdaptor> account;
+    std::unique_ptr<UsbAdaptor> usb;
+    std::unique_ptr<LauncherAdaptor> launcher;
+    std::unique_ptr<PrintAdaptor> print;
+
     std::unique_ptr<RemoteInput::InputCaptureAdaptor> inputCapture;
     Private(QObject &host, QDBusConnection bus, QString runtime, QString helper,
         QString relay, const QStringList &roots,
-        QindaQt::ApplicationCatalog::DirectoryScan scan, QString chooserHelper, QString captureHelper)
+        QindaQt::ApplicationCatalog::DirectoryScan scan, QString chooserHelper, QString captureHelper, QString shortcutHelper, QString miscHelper)
         : session(bus, runtime), requests(bus), consent(session, bus, std::move(helper)),
           chooser(session, consent, std::move(chooserHelper)),
           capture(session, consent, requests, bus, std::move(captureHelper), std::move(runtime)),
+          shortcutUi(session, consent, std::move(shortcutHelper)), shortcutNative(bus),
+          misc(session, consent, std::move(miscHelper)),
           notifications(bus), power(bus), idle(power, [this] { return consent.admitted(); }),
           store(QindaQt::Apps::SettingsDefaultApps::createSessionDefaultApplicationsStore(roots, scan)),
           uri(*store, std::move(scan), std::move(relay),
@@ -54,6 +76,7 @@ public:
               [this] { return session.openDisplay(); }),
           eis(bus, [this] { return session.compositorOwner(); }),
           access(std::make_unique<AccessAdaptor>(host, requests, consent)),
+          remoteDesktop(std::make_unique<RemoteInput::RemoteDesktopAdaptor>(host, requests, consent, eis, capture, bus)),
           notification(std::make_unique<NotificationAdaptor>(host, requests, notifications, bus)),
           inhibit(std::make_unique<InhibitAdaptor>(host, requests, idle, bus)),
           email(std::make_unique<EmailAdaptor>(host, requests, uri, [this] { return consent.admitted(); })),
@@ -63,8 +86,13 @@ public:
                   QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay);
           }, bus)),
           screenshot(std::make_unique<ScreenshotAdaptor>(host, requests, capture)),
-          screencast(std::make_unique<ScreenCastAdaptor>(host, requests, capture, bus)),
-          remoteDesktop(std::make_unique<RemoteInput::RemoteDesktopAdaptor>(host, requests, consent, eis, bus)),
+          screencast(std::make_unique<ScreenCastAdaptor>(host, requests, capture, bus, &remoteDesktop->screenCastSources())),
+          shortcuts(std::make_unique<GlobalShortcutsAdaptor>(host, requests, shortcutUi, shortcutNative, bus)),
+          account(std::make_unique<AccountAdaptor>(host, requests, misc)),
+          usb(std::make_unique<UsbAdaptor>(host, requests, misc)),
+          launcher(std::make_unique<LauncherAdaptor>(host, requests, misc)),
+          print(std::make_unique<PrintAdaptor>(host, requests, misc)),
+
           inputCapture(std::make_unique<RemoteInput::InputCaptureAdaptor>(host, requests, consent, eis, bus)) {
         QObject::connect(&consent, &AccessConsent::authorityLost, &requests, [this] {
             requests.retireAll(); idle.revoke();
@@ -81,9 +109,16 @@ PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusCon
         std::move(relay), std::move(roots), std::move(chooser), QString{}) {}
 PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusConnection bus,
     QString runtime, QString consent, QString relay, QStringList roots, QString chooser, QString capture)
+    : PortalFoundationComposition(host, std::move(bus), std::move(runtime), std::move(consent), std::move(relay), std::move(roots), std::move(chooser), std::move(capture), QString{}) {}
+PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusConnection bus,
+    QString runtime, QString consent, QString relay, QStringList roots, QString chooser, QString capture, QString shortcuts)
+    : PortalFoundationComposition(host, std::move(bus), std::move(runtime), std::move(consent),
+        std::move(relay), std::move(roots), std::move(chooser), std::move(capture), std::move(shortcuts), QString{}) {}
+PortalFoundationComposition::PortalFoundationComposition(QObject &host, QDBusConnection bus,
+    QString runtime, QString consent, QString relay, QStringList roots, QString chooser, QString capture, QString shortcuts, QString misc)
     : d(std::make_unique<Private>(host, bus, std::move(runtime), std::move(consent), std::move(relay), roots,
         QindaQt::ApplicationCatalog::scanApplicationDirectories(roots,
-            QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay), std::move(chooser), std::move(capture))) {}
+            QindaQt::ApplicationCatalog::ApplicationVisibility::IncludeNoDisplay), std::move(chooser), std::move(capture), std::move(shortcuts), std::move(misc))) {}
 PortalFoundationComposition::~PortalFoundationComposition() { stop(); }
 bool PortalFoundationComposition::start() { return d->session.start(); }
 void PortalFoundationComposition::stop() { d->capture.revoke(); d->requests.retireAll(); d->idle.revoke(); d->session.stop(); }

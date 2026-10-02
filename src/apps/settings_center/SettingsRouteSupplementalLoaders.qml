@@ -14,6 +14,7 @@ Item {
     property alias loginScreenLoader: loginScreenLoader
     property alias voiceLoader: voiceLoader
     property alias keyringLoader: keyringLoader
+    property alias portalPermissionsLoader: portalPermissionsLoader
 
     Loader {
         id: defaultApplicationsLoader
@@ -102,5 +103,16 @@ Item {
                 && host.navigation?.activeRouteComponent === "keyring"
                 && host.keyringComponent !== null
         sourceComponent: host.keyringComponent
+    }
+    Loader {
+        id: portalPermissionsLoader
+        objectName: host.objectNamePrefix + "PortalPermissionsLoader"
+        anchors.fill: parent
+        active: host.presentationActive
+                && !host.customizeDeparturePending
+                && (host.navigation?.activeRouteAvailable ?? false)
+                && host.navigation?.activeRouteComponent === "portal-permissions"
+                && host.portalPermissionsComponent !== null
+        sourceComponent: host.portalPermissionsComponent
     }
 }

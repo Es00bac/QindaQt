@@ -15,9 +15,47 @@ private Q_SLOTS:
         QCOMPARE(QByteArray(QDBusMetaType::typeToSignature(QMetaType::fromType<CaptureCoordinate>())), QByteArray("(ii)"));
         QCOMPARE(QByteArray(QDBusMetaType::typeToSignature(QMetaType::fromType<CaptureStreams>())), QByteArray("a(ua{sv})"));
         QVERIFY(validScreenCastSelection({})); QVERIFY(validScreenCastSelection({{"types", 1U}, {"multiple", false}, {"cursor_mode", 1U}}));
-        for (const auto &options : {QVariantMap{{"types", 2U}}, QVariantMap{{"multiple", true}}, QVariantMap{{"cursor_mode", 2U}}, QVariantMap{{"types", 1}}, QVariantMap{{"persist_mode", 1U}}, QVariantMap{{"restore_data", "fake"}}}) QVERIFY(!validScreenCastSelection(options));
+        QVERIFY(validScreenCastSelection({{"multiple", true}, {"cursor_mode", 2U}}));
+        QVERIFY(validScreenCastSelection({{"multiple", true}, {"cursor_mode", 4U}}));
+        for (const auto &options : {QVariantMap{{"types", 2U}}, QVariantMap{{"multiple", 1}}, QVariantMap{{"cursor_mode", 3U}}, QVariantMap{{"cursor_mode", 0U}}, QVariantMap{{"cursor_mode", 2}}, QVariantMap{{"types", 1}}, QVariantMap{{"persist_mode", 3U}}, QVariantMap{{"persist_mode", 1}}, QVariantMap{{"restore_data", "fake"}}, QVariantMap{{"window", 1U}}}) QVERIFY(!validScreenCastSelection(options));
+        // The frontend always forwards persist_mode for callers such as OBS.
+        QVERIFY(validScreenCastSelection({{"persist_mode", 2U}, {"cursor_mode", 2U}}));
+        // Remember choice and preselection survive the helper frame; bad names do not.
+        CaptureRequest stream{CaptureKind::Stream, "org.test.App", {}, "/s", ":1.2", false, true, true, 2, true, {"DP-1", "HDMI-A-1"}};
+        const auto parsed = captureRequestFromFrame(captureFrame(stream, "/tmp", ":1.3"));
+        QVERIFY(parsed); QVERIFY(parsed->persist); QCOMPARE(parsed->restore, (QStringList{"DP-1", "HDMI-A-1"}));
+        auto frame = captureFrame(stream, "/tmp", ":1.3"); frame.insert("restore", QJsonArray{"DP-1", "DP-1"}); QVERIFY(!captureRequestFromFrame(frame));
+        frame.insert("restore", QJsonArray{1}); QVERIFY(!captureRequestFromFrame(frame));
+        QVERIFY(!captureResults(CaptureKind::Screenshot, {{"uri", "file:///tmp/screenshot.png"}, {"persist", true}}, "/tmp"));
+        QVERIFY(!captureResults(CaptureKind::Stream, {{"node", 3}, {"x", 0}, {"y", 0}, {"width", 8}, {"height", 8}, {"name", "DP-1"}, {"persist", 1}}, {}));
         QCOMPARE(captureCaller("/org/freedesktop/portal/desktop/request/1_28/test"), QString(":1.28"));
         QVERIFY(captureCaller("/org/freedesktop/portal/desktop/request/stranger/test").isEmpty());
+    }
+    void streamOptionsSurviveOwnedHelperTransport() {
+        CaptureRequest request; request.kind = CaptureKind::Stream; request.session = "/session/owned";
+        request.multiple = true; request.cursorMode = 4;
+        const auto frame = captureFrame(request, "/private/capture", ":1.2");
+        const auto decoded = captureRequestFromFrame(frame); QVERIFY(decoded);
+        QVERIFY(decoded->multiple); QCOMPARE(decoded->cursorMode, 4U);
+        auto bad = frame; bad.insert("cursor_mode", 3); QVERIFY(!captureRequestFromFrame(bad));
+        bad = frame; bad.insert("multiple", 1); QVERIFY(!captureRequestFromFrame(bad));
+        bad = frame; bad.insert("kind", 0); QVERIFY(!captureRequestFromFrame(bad));
+        auto legacy = frame; legacy.remove("multiple"); legacy.remove("cursor_mode");
+        const auto old = captureRequestFromFrame(legacy); QVERIFY(old); QVERIFY(!old->multiple); QCOMPARE(old->cursorMode, 1U);
+    }
+    void batchPublicationIsAtomicAndRejectsDuplicateNodes() {
+        QJsonObject first{{"node", 41}, {"x", 0}, {"y", 0}, {"width", 1920}, {"height", 1080}, {"name", "First"}};
+        QJsonObject second = first; second.insert("node", 42); second.insert("x", 1920); second.insert("name", "Second");
+        const auto batch = captureResults(CaptureKind::Stream, {{"streams", QJsonArray{first, second}}}, {});
+        QVERIFY(batch); QVERIFY(validCapturePublication(CaptureKind::Stream, *batch));
+        QCOMPARE(batch->value("streams").value<CaptureStreams>().size(), 2);
+        QVERIFY(!captureResults(CaptureKind::Stream, {{"streams", QJsonArray{first, first}}}, {}));
+        second.insert("width", 0);
+        QVERIFY(!captureResults(CaptureKind::Stream, {{"streams", QJsonArray{first, second}}}, {}));
+        QVERIFY(!captureResults(CaptureKind::Stream, {{"streams", QJsonArray{}}}, {}));
+        QVERIFY(!captureResults(CaptureKind::Stream, {{"streams", QJsonArray{QJsonObject{{"streams", QJsonArray{first}}}}}}, {}));
+        QJsonArray excessive; for (int i = 0; i != 17; ++i) { first.insert("node", i + 1); excessive.append(first); }
+        QVERIFY(!captureResults(CaptureKind::Stream, {{"streams", excessive}}, {}));
     }
     void screenshotBoundsParentAndFrames() {
         auto request = screenshotRequest("org.test.Caller", "wayland:opaque literal", {{"interactive", true}, {"permission_store_checked", true}}, false); QVERIFY(request);

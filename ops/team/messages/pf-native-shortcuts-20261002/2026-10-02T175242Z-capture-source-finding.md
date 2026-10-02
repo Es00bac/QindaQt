@@ -1,0 +1,5 @@
+# Independent capture source finding
+
+Reviewed read-only exact desktopcc3f6de8a29b9e72fd08bfa9f1f1c4976f8486cc and fork496a7e7e222c88139b4b3fbd7ee41e97427f0c3f. Production changes validate complete selected monitor IDs before any producer request, freeze user selection before consent, track each unique node/source, publish only after every selected stream is ready, and retain per-stream listener contexts until deferred teardown. Any failed source/deadline/output/authority loss invalidates and closes the batch. Portal rejects extra node publication for a single-selection session. No source blocker observed in this bounded diff.
+
+Native candidate now2e462b17e contains subsequent test-only fixes waiting for SelectSources response and choosing the animated batch stream by actual native position. Requested final exact native-tested candidate and receipt from manager; no acceptance of old test provenance and no additional compiler/GPU run. Full release, window/virtual/restore capabilities and on-desktop installation are outside this review.

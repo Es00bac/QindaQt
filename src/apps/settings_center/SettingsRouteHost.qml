@@ -40,6 +40,7 @@ Item {
     property Component loginScreenComponent: null
     property Component voiceComponent: null
     property Component keyringComponent: null
+    property Component portalPermissionsComponent: null
     required property Component unavailableComponent
     property bool presentationActive: true
     property string objectNamePrefix: "settingsRoute"
@@ -90,6 +91,7 @@ Item {
             : navigation?.activeRouteComponent === "login-screen" ? supplementalLoaders.loginScreenLoader
             : navigation?.activeRouteComponent === "voice" ? supplementalLoaders.voiceLoader
             : navigation?.activeRouteComponent === "keyring" ? supplementalLoaders.keyringLoader
+            : navigation?.activeRouteComponent === "portal-permissions" ? supplementalLoaders.portalPermissionsLoader
               : unavailableLoader
 
     SettingsRouteConstructionWitness {

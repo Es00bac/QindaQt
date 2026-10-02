@@ -20,7 +20,7 @@ public:
     bool idle() const override { return available() && idleNow; }
     void refresh() override { live = true; Q_EMIT changed(); }
     void revoke() override { live = false; Q_EMIT changed(); }
-    void setIdle(bool value) { idleNow = value; Q_EMIT changed(); }
+    void setIdle(bool value) { idleNow = value; if (!value) Q_EMIT activity(); Q_EMIT changed(); }
     int timeout = 0;
     bool live = true;
     bool idleNow = false;
@@ -42,6 +42,7 @@ class DisplayOffStageTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void usesConfirmedTimeoutAndRestoresOnActivity();
+    void failureAndModeWakeDoNotReplayWithoutActualActivity();
     void displayLeaseAndUnknownOwnerStateSuppressTheStage();
     void disablingPreferenceRestoresAndDisarms();
     void losingConfirmedPreferencesRestoresWithoutFallback();
@@ -51,6 +52,16 @@ private Q_SLOTS:
     void sourcePreferencesRequireCurrentLineageAndBoundedValues();
 };
 
+void DisplayOffStageTests::failureAndModeWakeDoNotReplayWithoutActualActivity() {
+    FakeIdle idle; FakeDisplay display; FakePowerTransport transport; Power::PowerClient power(&transport);
+    DisplayOffStage stage(idle, display, power, [] { return std::optional(DisplayOffPreferences{true, 60}); });
+    stage.start(); idle.setIdle(true); QCOMPARE(display.offRequests, 1);
+    Q_EMIT display.requestFinished(false);
+    Q_EMIT display.powerChanged(false);
+    idle.revoke(); idle.refresh(); idle.setIdle(true); stage.refreshPreferences();
+    QCOMPARE(display.offRequests, 1);
+    idle.setIdle(false); idle.setIdle(true); QCOMPARE(display.offRequests, 2);
+}
 void DisplayOffStageTests::usesConfirmedTimeoutAndRestoresOnActivity()
 {
     FakeIdle idle;
