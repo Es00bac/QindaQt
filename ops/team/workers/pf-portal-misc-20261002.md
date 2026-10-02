@@ -1,11 +1,11 @@
 # Native miscellaneous portal delivery
 
-- Status: waiting — exact30df broker and1321 fork conditional source acceptance handed off; coherent routes/native frontend qualification pending
-- Base: `30df741d07377343a31a3851b9b01e0ba5368fe7`
-- Branch: `worker/pf-unified-broker-review-20261002`
-- Worktree: `/home/cabewse/.cache/pf-unified-broker-review-20261002`
-- Ownership: independent source review and own board/thread only; implementer owns repairs
-- Resources: source-only qinda read; no compiler/native/runtime/host configuration or icon work
+- Status: waiting — exact repaired routing d2dac079 conditional source ACCEPT; final overlay freeze pins pending
+- Base: `d2dac07938ad9f0721a7bcba23189c83fb96d7a6`
+- Branch: `worker/pf-routing-review-repair-20261002`
+- Worktree: `/home/cabewse/.cache/pf-routing-review-repair-20261002`
+- Ownership: own independent source review only; root integration/qualification
+- Resources: no compiler/native/host operations; final overlay archives await exact pins
 
 ## Updates
 
@@ -19,6 +19,4 @@
 
 - 2026-10-02T19:20:38Z — Exact repaired product22bc04f7cc45fea221f3348b1bd986f6ddca029f. Nine named targets warm build exit0 at-j2/-l48; six CTests pass6.535s with fatal Qt warnings,48 Qt passes/0fail/0skip, including real libeis startup-disconnect. First attempted peer timing failure and empty-message warning retained; closure after actual setup and pending-legacy no-reply guard repaired narrowly. Docs497/strictMkDocs exit0. Compiler released. Worker is implementer; root must independently review/retest, no self-approval or installed/native claim.
 
-- 2026-10-02T19:46:39.830037+00:00 — Claimed paired source review at exact30df desktop and1321 fork in isolated qinda worktrees. Existing signed Gabbee build-only receipt preserved overlay10c9d74. Reading caller, frontend, PIDFD, ordinary attachment and protected inherited-capability boundaries; actual integrated qualification remains root-owned.
-
-- 2026-10-02T19:48:25.812726+00:00 — Paired conditional source ACCEPT exact30df/1321: no blocking source defect found in scoped delta. AuthorityCapture/channel/native admission Git blob IDs unchanged; public actor/PIDFD/ordinary FD gates retained; protected adaptor destruction precedes borrowed ports. Both exact diff-checks exit0. No compiler/test/native execution (0 runtime tests). Root must cut actual resident exports to12, protected to5 and run coherent combined/restore/retirement gates; EIS name ownership alone does not authenticate inherited lineage.
+- 2026-10-02T20:06:03.540181+00:00 — Exact d2 staged availability repair ACCEPT; all reported unconditional metadata paths now use existing target gate, absent case rejects metadata. Direct exact e364 top7–10 confirms conditional metadata install; prior excerpt-based absence claim was incorrect and immutable erratum posted. Actual13 resident/5 protected source routing accepted paired; no native/runtime/stage execution or release claim.
