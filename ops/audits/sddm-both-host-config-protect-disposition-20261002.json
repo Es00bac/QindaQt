@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "reviewer": "qinda_icon_brand_audit",
+  "decision": "PASS read-only both-host CONFIG_PROTECT disposition; no manual PAM merge required",
+  "native_recipe": "178c7cc2198ad15e04ababc87998717655b147d0",
+  "accepted_source_review": "ed789475075eeaf93ba5ff97fd82d58bc51cb772",
+  "hosts": [
+    {
+      "host": "qinda",
+      "observed_at": "2026-10-02T22:08:34.713173+00:00",
+      "installed_sddm": "sddm-0.21.0_p20250502-r1",
+      "archive_sha256": "6cb32da5f8298c4f70db5616b14d1359fdc2833bbfe83602e6e46b51b0d917f2",
+      "files": {
+        "/etc/pam.d/sddm": {
+          "sha256": "a1cfa37cb83981c523296f6b896f620dd6975f962ecaa048f8cd0dfe498031b5",
+          "md5": "c932faa5eeed6f50eb85116ff70bba03",
+          "vdb_md5": "c932faa5eeed6f50eb85116ff70bba03",
+          "matches_vdb": true,
+          "bytes": 486,
+          "matches_official_systemd_stock": true,
+          "matches_accepted_native": false,
+          "stock_sha256": "a1cfa37cb83981c523296f6b896f620dd6975f962ecaa048f8cd0dfe498031b5",
+          "native_source_sha256": "86cdc89dd89bdc5398080adf2c466ff29e977888bdb69c8ebfe645d39717a854",
+          "critical_facilities_match_official_stock": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "critical_facilities_preserved_by_planned_merge": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "non_target_bytes_preserved": true,
+          "legacy_target_lines_optional": true,
+          "legacy_gnome_callback_count": 3,
+          "legacy_kwallet_callback_count": 2,
+          "current_native_callback_count": 0,
+          "planned_sha256": "86cdc89dd89bdc5398080adf2c466ff29e977888bdb69c8ebfe645d39717a854",
+          "planned_md5": "b748f5c4519374fc91cff3d8ce3477a9",
+          "planned_matches_accepted_native": true,
+          "disposition": "unmodified-vdb-and-official-stock: ordinary-Portage-replacement-safe"
+        },
+        "/etc/pam.d/sddm-autologin": {
+          "sha256": "1a84cf752782b03b53f66188013bf7e4af4f5e6feb7266bfe58c3faaa20777b4",
+          "md5": "27ca9ede74a1351a61a26efc96e2ca87",
+          "vdb_md5": "27ca9ede74a1351a61a26efc96e2ca87",
+          "matches_vdb": true,
+          "bytes": 529,
+          "matches_official_systemd_stock": true,
+          "matches_accepted_native": false,
+          "stock_sha256": "1a84cf752782b03b53f66188013bf7e4af4f5e6feb7266bfe58c3faaa20777b4",
+          "native_source_sha256": "09c36398c32ba745873f50744d0a26611da35a595e0c072a5125f7ca573a853b",
+          "critical_facilities_match_official_stock": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "critical_facilities_preserved_by_planned_merge": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "non_target_bytes_preserved": true,
+          "legacy_target_lines_optional": true,
+          "legacy_gnome_callback_count": 2,
+          "legacy_kwallet_callback_count": 2,
+          "current_native_callback_count": 0,
+          "planned_sha256": "09c36398c32ba745873f50744d0a26611da35a595e0c072a5125f7ca573a853b",
+          "planned_md5": "3128c0745e72a88dfd6c1ce8d8557ff8",
+          "planned_matches_accepted_native": true,
+          "disposition": "unmodified-vdb-and-official-stock: ordinary-Portage-replacement-safe"
+        },
+        "/etc/pam.d/sddm-greeter": {
+          "sha256": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17",
+          "md5": "b38f836dd1a1ab67a30b2d14477bdbad",
+          "vdb_md5": "b38f836dd1a1ab67a30b2d14477bdbad",
+          "matches_vdb": true,
+          "bytes": 397,
+          "matches_official_systemd_stock": true,
+          "matches_accepted_native": true,
+          "stock_sha256": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17",
+          "native_source_sha256": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17",
+          "critical_facilities_match_official_stock": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "critical_facilities_preserved_by_planned_merge": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "non_target_bytes_preserved": true,
+          "legacy_target_lines_optional": true,
+          "legacy_gnome_callback_count": 0,
+          "legacy_kwallet_callback_count": 0,
+          "current_native_callback_count": 0,
+          "planned_sha256": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17",
+          "planned_md5": "b38f836dd1a1ab67a30b2d14477bdbad",
+          "planned_matches_accepted_native": true,
+          "disposition": "common-stock-and-native: leave byte unchanged"
+        }
+      },
+      "sddm_config": {
+        "path": "/etc/sddm.conf.d/01gentoo.conf",
+        "sha256": "1c0dec050b63c45c64c95242589f632fa7005a6c8331367adb51812b4ad961e5",
+        "md5": "f752b047ba8e4e2380fc594f31c6dc13",
+        "vdb_md5": "f752b047ba8e4e2380fc594f31c6dc13",
+        "matches_vdb": true,
+        "plan": "preserve existing config; native recipe does not change default generation"
+      },
+      "config_protect_env": {
+        "exit_code": 0,
+        "CONFIG_PROTECT": "/etc /usr/lib64/libreoffice/program/sofficerc /usr/share/config",
+        "CONFIG_PROTECT_MASK": "/etc/ca-certificates.conf /etc/dconf /etc/env.d /etc/fonts/fonts.conf /etc/gconf /etc/gentoo-release /etc/revdep-rebuild /etc/sandbox.d"
+      },
+      "read_only": true
+    },
+    {
+      "host": "qinda-top",
+      "observed_at": "2026-10-02T22:08:34.951914+00:00",
+      "installed_sddm": "sddm-0.21.0_p20250502-r1",
+      "archive_sha256": "6cb32da5f8298c4f70db5616b14d1359fdc2833bbfe83602e6e46b51b0d917f2",
+      "files": {
+        "/etc/pam.d/sddm": {
+          "sha256": "a1cfa37cb83981c523296f6b896f620dd6975f962ecaa048f8cd0dfe498031b5",
+          "md5": "c932faa5eeed6f50eb85116ff70bba03",
+          "vdb_md5": "c932faa5eeed6f50eb85116ff70bba03",
+          "matches_vdb": true,
+          "bytes": 486,
+          "matches_official_systemd_stock": true,
+          "matches_accepted_native": false,
+          "stock_sha256": "a1cfa37cb83981c523296f6b896f620dd6975f962ecaa048f8cd0dfe498031b5",
+          "native_source_sha256": "86cdc89dd89bdc5398080adf2c466ff29e977888bdb69c8ebfe645d39717a854",
+          "critical_facilities_match_official_stock": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "critical_facilities_preserved_by_planned_merge": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "non_target_bytes_preserved": true,
+          "legacy_target_lines_optional": true,
+          "legacy_gnome_callback_count": 3,
+          "legacy_kwallet_callback_count": 2,
+          "current_native_callback_count": 0,
+          "planned_sha256": "86cdc89dd89bdc5398080adf2c466ff29e977888bdb69c8ebfe645d39717a854",
+          "planned_md5": "b748f5c4519374fc91cff3d8ce3477a9",
+          "planned_matches_accepted_native": true,
+          "disposition": "unmodified-vdb-and-official-stock: ordinary-Portage-replacement-safe"
+        },
+        "/etc/pam.d/sddm-autologin": {
+          "sha256": "1a84cf752782b03b53f66188013bf7e4af4f5e6feb7266bfe58c3faaa20777b4",
+          "md5": "27ca9ede74a1351a61a26efc96e2ca87",
+          "vdb_md5": "27ca9ede74a1351a61a26efc96e2ca87",
+          "matches_vdb": true,
+          "bytes": 529,
+          "matches_official_systemd_stock": true,
+          "matches_accepted_native": false,
+          "stock_sha256": "1a84cf752782b03b53f66188013bf7e4af4f5e6feb7266bfe58c3faaa20777b4",
+          "native_source_sha256": "09c36398c32ba745873f50744d0a26611da35a595e0c072a5125f7ca573a853b",
+          "critical_facilities_match_official_stock": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "critical_facilities_preserved_by_planned_merge": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "non_target_bytes_preserved": true,
+          "legacy_target_lines_optional": true,
+          "legacy_gnome_callback_count": 2,
+          "legacy_kwallet_callback_count": 2,
+          "current_native_callback_count": 0,
+          "planned_sha256": "09c36398c32ba745873f50744d0a26611da35a595e0c072a5125f7ca573a853b",
+          "planned_md5": "3128c0745e72a88dfd6c1ce8d8557ff8",
+          "planned_matches_accepted_native": true,
+          "disposition": "unmodified-vdb-and-official-stock: ordinary-Portage-replacement-safe"
+        },
+        "/etc/pam.d/sddm-greeter": {
+          "sha256": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17",
+          "md5": "b38f836dd1a1ab67a30b2d14477bdbad",
+          "vdb_md5": "b38f836dd1a1ab67a30b2d14477bdbad",
+          "matches_vdb": true,
+          "bytes": 397,
+          "matches_official_systemd_stock": true,
+          "matches_accepted_native": true,
+          "stock_sha256": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17",
+          "native_source_sha256": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17",
+          "critical_facilities_match_official_stock": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "critical_facilities_preserved_by_planned_merge": {
+            "auth": true,
+            "account": true,
+            "password": true,
+            "session": true
+          },
+          "non_target_bytes_preserved": true,
+          "legacy_target_lines_optional": true,
+          "legacy_gnome_callback_count": 0,
+          "legacy_kwallet_callback_count": 0,
+          "current_native_callback_count": 0,
+          "planned_sha256": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17",
+          "planned_md5": "b38f836dd1a1ab67a30b2d14477bdbad",
+          "planned_matches_accepted_native": true,
+          "disposition": "common-stock-and-native: leave byte unchanged"
+        }
+      },
+      "sddm_config": {
+        "path": "/etc/sddm.conf.d/01gentoo.conf",
+        "sha256": "4f14078facbc330a7125fe50d845097e30837bfc06547e4b535e5f93773d4153",
+        "md5": "4f4f6ea94350b4ce6e041ec0f366e951",
+        "vdb_md5": "f752b047ba8e4e2380fc594f31c6dc13",
+        "matches_vdb": false,
+        "plan": "preserve existing config; native recipe does not change default generation"
+      },
+      "config_protect_env": {
+        "exit_code": 0,
+        "CONFIG_PROTECT": "/etc /usr/lib64/libreoffice/program/sofficerc /usr/share/config",
+        "CONFIG_PROTECT_MASK": "/etc/ca-certificates.conf /etc/dconf /etc/env.d /etc/fonts/fonts.conf /etc/gconf /etc/gentoo-release /etc/sandbox.d"
+      },
+      "read_only": true
+    }
+  ],
+  "exact_safe_plan": {
+    "action": "ordinary Portage replacement of unmodified normal/autologin PAM files; greeter unchanged",
+    "manual_pam_merge_required": false,
+    "required_native_recipe": "178c7cc2198ad15e04ababc87998717655b147d0",
+    "precondition": "these measured files/VDB hashes still match when root installs signed native SDDM-r2",
+    "expected_final_pam_sha256": {
+      "/etc/pam.d/sddm": "86cdc89dd89bdc5398080adf2c466ff29e977888bdb69c8ebfe645d39717a854",
+      "/etc/pam.d/sddm-autologin": "09c36398c32ba745873f50744d0a26611da35a595e0c072a5125f7ca573a853b",
+      "/etc/pam.d/sddm-greeter": "980e4bce55c1614828b35bd207e71d870eaf18ff3364143ba25b3ec03033cf17"
+    },
+    "critical_policy": "all auth/account/password/session non-keyring rows byte-identical; all non-target bytes retained",
+    "laptop_custom_config": {
+      "path": "/etc/sddm.conf.d/01gentoo.conf",
+      "sha256": "4f14078facbc330a7125fe50d845097e30837bfc06547e4b535e5f93773d4153",
+      "action": "retain exact current file; native recipe leaves original default generation unchanged, do not overwrite with stockdefault"
+    },
+    "post_install_check": "root verify final three PAM hashes equal expected native values and laptop custom config hash unchanged; no login/service action needed for this file disposition"
+  },
+  "commands": "same bounded readonly Python hash/comparison on two explicit hosts; portageq envvar CONFIG_PROTECT CONFIG_PROTECT_MASK only",
+  "outputs_policy": "hashes, counts and critical-block facts only; no PAM/config contents or credentials output",
+  "limits": [
+    "Pre-install snapshot, not signed SDDM image installation or live login qualification.",
+    "No PAM authentication or password/privatekey/keyring/secret access; no hostfile/service/world mutation.",
+    "Root backup locations were parent-reported; no claim of independently inspecting their contents.",
+    "Ordinary Portage disposition follows measured VDB+stock matches; actual installation/postinstall hashes remain manager-owned."
+  ]
+}
