@@ -12,8 +12,12 @@
 // existing protected capture producer instead of KWin's screencast client.
 #include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
 #include "clipboard_adaptor_p.h"
+#include "legacy_input_p.h"
 #include "remote_sessions_p.h"
 #include <qindaqt/services/portal/capture_types.h>
+#include <fcntl.h>
+#include <cmath>
+#include <QPointF>
 #include <QPointer>
 #include <QSet>
 #include <algorithm>
@@ -135,6 +139,11 @@ public:
         complete(token, *entry, {});
     }
     void complete(RequestToken token, RemoteSessions::Entry &entry, QVariantMap results) {
+        for (const auto &stream : results.value(QStringLiteral("streams")).value<CaptureStreams>()) {
+            const auto position = stream.properties.value(QStringLiteral("position")).value<CaptureCoordinate>();
+            const auto size = stream.properties.value(QStringLiteral("size")).value<CaptureCoordinate>();
+            entry.streams.insert(stream.node, QRect(position.first, position.second, size.first, size.second));
+        }
         entry.pending = 0;
         entry.phase = RemotePhase::Started;
         results.insert(QStringLiteral("devices"), entry.devices);
@@ -163,24 +172,64 @@ public:
         // AGENT-GUARD: publication rechecks actor, phase and native authority;
         // a retired session's late transport is disconnected, never delivered.
         if (!sessions.live(path) || entry->phase != RemotePhase::Started || !consent.admitted()
-            || !requests.authenticated(call)) {
+            || (!entry->legacy && !requests.authenticated(call))) {
             eis.close(compositor, cookie);
-            refuse(call, kFailed);
+            if (entry->legacy) dropLegacy(*entry);
+            else refuse(call, kFailed);
             return;
         }
         entry->compositor = compositor;
         entry->cookie = cookie;
+        if (entry->legacy) {
+            // libei owns its duplicate; the D-Bus FD wrapper closes the original.
+            if (!entry->legacy->attach(fcntl(fd.fileDescriptor(), F_DUPFD_CLOEXEC, 0))) sessions.close(path);
+            return;
+        }
         bus.send(call.createReply(QVariant::fromValue(fd)));
     }
     void eisFailed(quint64 ticket) {
         auto *entry = sessions.entry(sessions.sessionForTicket(ticket));
         if (!entry) return;
         entry->eisTicket = 0;
+        if (entry->legacy) { dropLegacy(*entry); return; }
         refuse(std::exchange(entry->eisCall, {}), kFailed);
+    }
+    void dropLegacy(RemoteSessions::Entry &entry) {
+        entry.legacyFailed = true;
+        delete std::exchange(entry.legacy, nullptr);
+    }
+    // Admits one Notify* call: frontend owner, live caller, started session,
+    // granted device and native authority. The first admitted call opens the
+    // session's EIS context; later ConnectToEIS calls are then refused.
+    LegacyInput *legacyFor(const QDBusMessage &call, const QString &path, quint32 device, QObject *owner) {
+        auto *entry = sessions.entry(path);
+        if (!entry || !sessions.owned(call, path)) { refuse(call, kDenied); return nullptr; }
+        if (entry->phase != RemotePhase::Started || !(entry->devices & device) || entry->legacyFailed
+            || (!entry->legacy && (entry->eisTicket || entry->cookie)) || !consent.admitted()) {
+            refuse(call, kNotAllowed);
+            return nullptr;
+        }
+        if (!entry->legacy) {
+            const quint64 ticket = eis.open(entry->devices);
+            if (!ticket) { entry->legacyFailed = true; refuse(call, kFailed); return nullptr; }
+            entry->eisTicket = ticket;
+            entry->legacy = new LegacyInput(owner);
+            QObject::connect(entry->legacy, &LegacyInput::lost, owner, [this, path] { sessions.close(path); });
+        }
+        return entry->legacy;
+    }
+    // Stream-relative coordinates map through the published logical rectangle.
+    std::optional<QPointF> streamPoint(const QString &path, quint32 stream, double x, double y) const {
+        const auto *entry = sessions.find(path);
+        const auto rect = entry ? entry->streams.value(stream) : QRect{};
+        if (rect.isEmpty() || !std::isfinite(x) || !std::isfinite(y) || x < 0 || y < 0 || x >= rect.width() || y >= rect.height())
+            return std::nullopt;
+        return QPointF(rect.x() + x, rect.y() + y);
     }
     void retired(const QString &path, const RemoteSessions::Entry &entry) {
         if (entry.eisTicket) { eis.cancel(entry.eisTicket); refuse(entry.eisCall, kFailed); }
         if (entry.cookie) eis.close(entry.compositor, entry.cookie);
+        delete entry.legacy;
         clipboard->retired(entry);
         // Closing for any reason (Close, actor/frontend loss, lock, compositor
         // loss, failed Start) stops the session's pending or live streams.
@@ -294,17 +343,58 @@ QDBusUnixFileDescriptor RemoteDesktopAdaptor::ConnectToEIS(const QDBusObjectPath
     entry->eisCall = call;
     return {};
 }
-// AGENT-NOTE: upstream KDE emulates these through KWin fake-input. QindaQt
-// routes input only through the consented compositor EIS transport, so the
-// legacy calls fail explicitly instead of silently dropping events.
-void RemoteDesktopAdaptor::NotifyPointerMotion(const QDBusObjectPath &, const QVariantMap &, double, double, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
-void RemoteDesktopAdaptor::NotifyPointerMotionAbsolute(const QDBusObjectPath &, const QVariantMap &, uint, double, double, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
-void RemoteDesktopAdaptor::NotifyPointerButton(const QDBusObjectPath &, const QVariantMap &, int, uint, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
-void RemoteDesktopAdaptor::NotifyPointerAxis(const QDBusObjectPath &, const QVariantMap &, double, double, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
-void RemoteDesktopAdaptor::NotifyPointerAxisDiscrete(const QDBusObjectPath &, const QVariantMap &, uint, int, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
-void RemoteDesktopAdaptor::NotifyKeyboardKeycode(const QDBusObjectPath &, const QVariantMap &, int, uint, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
+// AGENT-NOTE: upstream KDE emulates these through KWin fake-input. The
+// frontend forwards them without awaiting a reply, so a refusal silently
+// dropped legacy input; they now drive a libei sender on the session's own
+// consented EIS context (legacy_input_p.h). Keysyms need a keymap reverse
+// lookup that EIS does not offer and stay explicitly unsupported.
+namespace {
+constexpr auto kInvalid = "org.freedesktop.DBus.Error.InvalidArgs";
+}
+void RemoteDesktopAdaptor::NotifyPointerMotion(const QDBusObjectPath &session, const QVariantMap &, double dx, double dy, const QDBusMessage &call) {
+    if (!std::isfinite(dx) || !std::isfinite(dy)) { d->refuse(call, kInvalid); return; }
+    if (auto *input = d->legacyFor(call, session.path(), Pointer, this)) input->motion(dx, dy);
+}
+void RemoteDesktopAdaptor::NotifyPointerMotionAbsolute(const QDBusObjectPath &session, const QVariantMap &, uint stream, double x, double y, const QDBusMessage &call) {
+    auto *input = d->legacyFor(call, session.path(), Pointer, this);
+    if (!input) return;
+    const auto point = d->streamPoint(session.path(), stream, x, y);
+    if (!point) { d->refuse(call, kInvalid); return; }
+    input->absolute(point->x(), point->y());
+}
+void RemoteDesktopAdaptor::NotifyPointerButton(const QDBusObjectPath &session, const QVariantMap &, int button, uint state, const QDBusMessage &call) {
+    if (button < 0 || state > 1) { d->refuse(call, kInvalid); return; }
+    if (auto *input = d->legacyFor(call, session.path(), Pointer, this)) input->button(static_cast<quint32>(button), state == 1);
+}
+void RemoteDesktopAdaptor::NotifyPointerAxis(const QDBusObjectPath &session, const QVariantMap &options, double dx, double dy, const QDBusMessage &call) {
+    const auto finish = options.value(QStringLiteral("finish"), false);
+    if (!std::isfinite(dx) || !std::isfinite(dy) || finish.metaType() != QMetaType::fromType<bool>()) { d->refuse(call, kInvalid); return; }
+    if (auto *input = d->legacyFor(call, session.path(), Pointer, this)) input->axis(dx, dy, finish.toBool());
+}
+void RemoteDesktopAdaptor::NotifyPointerAxisDiscrete(const QDBusObjectPath &session, const QVariantMap &, uint axis, int steps, const QDBusMessage &call) {
+    if (axis > 1 || steps < -1000 || steps > 1000) { d->refuse(call, kInvalid); return; }
+    if (auto *input = d->legacyFor(call, session.path(), Pointer, this)) input->discrete(axis, steps);
+}
+void RemoteDesktopAdaptor::NotifyKeyboardKeycode(const QDBusObjectPath &session, const QVariantMap &, int keycode, uint state, const QDBusMessage &call) {
+    if (keycode < 0 || state > 1) { d->refuse(call, kInvalid); return; }
+    if (auto *input = d->legacyFor(call, session.path(), Keyboard, this)) input->key(static_cast<quint32>(keycode), state == 1);
+}
 void RemoteDesktopAdaptor::NotifyKeyboardKeysym(const QDBusObjectPath &, const QVariantMap &, int, uint, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
-void RemoteDesktopAdaptor::NotifyTouchDown(const QDBusObjectPath &, const QVariantMap &, uint, uint, double, double, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
-void RemoteDesktopAdaptor::NotifyTouchMotion(const QDBusObjectPath &, const QVariantMap &, uint, uint, double, double, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
-void RemoteDesktopAdaptor::NotifyTouchUp(const QDBusObjectPath &, const QVariantMap &, uint, const QDBusMessage &call) { d->refuse(call, kNotSupported); }
+void RemoteDesktopAdaptor::NotifyTouchDown(const QDBusObjectPath &session, const QVariantMap &, uint stream, uint slot, double x, double y, const QDBusMessage &call) {
+    auto *input = d->legacyFor(call, session.path(), Touchscreen, this);
+    if (!input) return;
+    const auto point = d->streamPoint(session.path(), stream, x, y);
+    if (!point) { d->refuse(call, kInvalid); return; }
+    input->touchDown(slot, point->x(), point->y());
+}
+void RemoteDesktopAdaptor::NotifyTouchMotion(const QDBusObjectPath &session, const QVariantMap &, uint stream, uint slot, double x, double y, const QDBusMessage &call) {
+    auto *input = d->legacyFor(call, session.path(), Touchscreen, this);
+    if (!input) return;
+    const auto point = d->streamPoint(session.path(), stream, x, y);
+    if (!point) { d->refuse(call, kInvalid); return; }
+    input->touchMotion(slot, point->x(), point->y());
+}
+void RemoteDesktopAdaptor::NotifyTouchUp(const QDBusObjectPath &session, const QVariantMap &, uint slot, const QDBusMessage &call) {
+    if (auto *input = d->legacyFor(call, session.path(), Touchscreen, this)) input->touchUp(slot);
+}
 } // namespace QindaQt::Services::Portal::RemoteInput

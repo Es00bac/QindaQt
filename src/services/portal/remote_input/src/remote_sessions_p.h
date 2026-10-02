@@ -11,6 +11,7 @@
 
 class QSocketNotifier;
 namespace QindaQt::Services::Portal::RemoteInput {
+class LegacyInput;
 enum class RemotePhase { Created, Selected, Starting, Started };
 // Module-private standard Session objects for RemoteDesktop. Holds wire and
 // actor lifetime only; consent and EIS policy stay in the adaptor.
@@ -51,6 +52,12 @@ public:
         bool screenCast = false, multiple = false;
         quint32 cursorMode = 1;
         QString parent;
+        // Legacy Notify*: adaptor-owned libei sender on this session's EIS
+        // context, a latch so a refused context is not reopened per event, and
+        // published stream rectangles that absolute coordinates map through.
+        LegacyInput *legacy = nullptr;
+        bool legacyFailed = false;
+        QHash<quint32, QRect> streams;
     };
     RemoteSessions(QDBusConnection, RequestRegistry &, QObject *parent = nullptr);
     ~RemoteSessions() override;
