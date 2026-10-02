@@ -165,3 +165,11 @@ selection, rechecked against the live grant at publication.
 SelectionOwnerChanged carries `mime_types` and `session_is_owner`. Signals are
 targeted to the session's frontend. Session close, actor loss, native lock or
 attachment loss release the handle and withdraw the session's selection.
+
+## Native identity cutover
+
+[ADR-0340](../adr/0340-use-native-privileged-compositor-identities.md) moves EIS
+paths and interfaces with the fork. `CompositorNames` supplies those names to
+RemoteDesktop, Clipboard and InputCapture. Standard frontend portal interfaces
+keep their names. Source preparation does not claim installed routing or native
+qualification.
