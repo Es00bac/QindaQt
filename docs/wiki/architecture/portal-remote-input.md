@@ -92,7 +92,7 @@ frontend, caller and app, before Start.
 
 Start then asks the input consent (which says screens are chosen next) and,
 after Allow and any clipboard grant, hands the session to the same protected
-capture producer ScreenCast uses (`CaptureUI`, `ProcessCapture`): its own
+capture producer ScreenCast uses (`CaptureUI`, `AuthorityCapture` in the protected broker): its own
 monitor choice and consent, its frozen selection and its stream lifetime. The
 Start request stays pending until every selected stream is ready and then
 publishes `streams` with `devices` and `clipboard_enabled` once; a single
@@ -104,7 +104,7 @@ session's streams and disconnects its EIS context; a producer that stops or
 dies closes the RemoteDesktop session. The composition constructs
 RemoteDesktop before ScreenCast so the borrowed seam outlives its user.
 Because of the frontend's independent choice, the ScreenCast and
-RemoteDesktop rows in `qindaqt-portals.conf` must move to `qindaqt` together;
+RemoteDesktop rows in `qindaqt-portals.conf` must move to the protected capture backend together;
 a split route sends a RemoteDesktop session's SelectSources to a backend that
 does not know it.
 
@@ -229,3 +229,15 @@ paths and interfaces with the fork. `CompositorNames` supplies those names to
 RemoteDesktop, Clipboard and InputCapture. Standard frontend portal interfaces
 keep their names. Source preparation does not claim installed routing or native
 qualification.
+
+## Protected broker composition candidate
+
+[ADR-0341](../adr/0341-unify-protected-capture-and-input-sessions.md) corrects
+the resident ProcessCapture/protected broker split. The broker now composes the
+existing input adaptors and ScreenCast delegate over its actual AuthorityCapture.
+Separate PortalCapture1 ordinary session attachment reuses Portal1 guards and
+ProcessAccessConsent; its shared interface remains org.qindaqt.Portal1. Supervisor
+watch-only attachment never launches the fixed broker. All five public families
+must select this one backend with its exact native EIS owner. Source acceptance,
+final route/package changes and genuine combined/restore runtime are pending;
+the old e2f/56a input gate does not qualify this changed composition.

@@ -39,6 +39,23 @@ private Q_SLOTS:
         const int calls = replacement.calls; QTest::qWait(150); QCOMPARE(replacement.calls, calls);
         second.unregisterService(QStringLiteral("org.qindaqt.Portal1")); second.unregisterObject(QStringLiteral("/org/qindaqt/Portal1")); QDBusConnection::disconnectFromBus(QStringLiteral("portal-second"));
     }
+    void captureAttachmentIsIndependentAndNeverLaunchesABroker() {
+        auto bus = QDBusConnection::sessionBus(); PortalEndpoint resident, capture;
+        QVERIFY(bus.registerObject(QStringLiteral("/org/qindaqt/Portal1"), &resident, QDBusConnection::ExportScriptableSlots));
+        QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.Portal1")));
+        QVERIFY(bus.registerObject(QStringLiteral("/org/qindaqt/PortalCapture1"), &capture, QDBusConnection::ExportScriptableSlots));
+        QVERIFY(bus.registerService(QStringLiteral("org.qindaqt.PortalCapture1")));
+        PortalSessionLifetime normal; normal.start(QStringLiteral("/bin/true"), QStringLiteral("qindaqt-7"));
+        PortalSessionLifetime protectedSession(true, nullptr); protectedSession.attachCapture(QStringLiteral("qindaqt-7"));
+        QTRY_COMPARE(resident.calls, 1); QTRY_COMPARE(capture.calls, 1);
+        QCOMPARE(capture.display, QStringLiteral("qindaqt-7"));
+        QVERIFY(capture.caller != resident.caller);
+        normal.stop(); QTRY_VERIFY(!bus.interface()->isServiceRegistered(resident.caller).value());
+        QVERIFY(bus.interface()->isServiceRegistered(capture.caller).value());
+        protectedSession.stop(); QTRY_VERIFY(!bus.interface()->isServiceRegistered(capture.caller).value());
+        bus.unregisterService(QStringLiteral("org.qindaqt.PortalCapture1")); bus.unregisterObject(QStringLiteral("/org/qindaqt/PortalCapture1"));
+        bus.unregisterService(QStringLiteral("org.qindaqt.Portal1")); bus.unregisterObject(QStringLiteral("/org/qindaqt/Portal1"));
+    }
     void invalidOrMissingDisplayCannotSelectSession() {
         auto bus = QDBusConnection::sessionBus(); PortalEndpoint endpoint;
         QVERIFY(bus.registerObject(QStringLiteral("/org/qindaqt/Portal1"), &endpoint, QDBusConnection::ExportScriptableSlots));

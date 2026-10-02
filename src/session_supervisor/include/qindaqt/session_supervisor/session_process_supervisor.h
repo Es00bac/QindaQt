@@ -174,6 +174,7 @@ private:
     std::unique_ptr<OptionalSessionChild> m_removableMedia;
     std::unique_ptr<KeyringSessionLifetime> m_keyring;
     std::unique_ptr<PortalSessionLifetime> m_portal;
+    std::unique_ptr<PortalSessionLifetime> m_capturePortal;
     std::unique_ptr<OptionalSessionChild> m_nightLight;
     std::unique_ptr<OptionalSessionChild> m_polkitAgent;
     std::unique_ptr<OptionalSessionChild> m_powerDevil;

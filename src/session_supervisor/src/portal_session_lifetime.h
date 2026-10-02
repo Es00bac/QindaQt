@@ -15,16 +15,22 @@ class PortalSessionLifetime final : public QObject {
     Q_OBJECT
 public:
     explicit PortalSessionLifetime(QObject *parent = nullptr);
+    PortalSessionLifetime(bool captureControl, QObject *parent);
     ~PortalSessionLifetime() override;
     void start(const QString &program, const QString &display);
+    // Watch compositor-owned capture broker; never launch or activate it.
+    void attachCapture(const QString &display);
     void stop() noexcept;
     void resetRestartCount() noexcept { child_.resetRestartCount(); }
 private:
+    void begin(const QString &program, const QString &display);
     void attach();
     OptionalSessionChild child_;
     std::unique_ptr<QDBusConnection> bus_;
     std::unique_ptr<QDBusServiceWatcher> watcher_;
     QTimer retry_;
+    QString service_;
+    QString path_;
     QString connectionName_;
     QString display_;
     QString owner_;

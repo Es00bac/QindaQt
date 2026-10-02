@@ -222,3 +222,9 @@ Metadata remains held pending executable and live acceptance. See
 ## Independent families
 
 The additive [Print, Account, DynamicLauncher and USB adapters](../reference/portal-misc-families.md) reuse these public boundaries with an explicit ordinary helper executable. Their method implementation is independent of capture and remote input; routing changes remain subject to their focused executable gates and exact candidate review.
+
+The coordinated [protected input/capture composition](../adr/0341-unify-protected-capture-and-input-sessions.md)
+adds only native input-family adaptors to the fixed broker. PortalCapture1
+ordinary attachment is independent of resident Portal1 and grants no pixel
+capability; inherited QCC1 and protected capture consent remain mandatory.
+This candidate requires genuine combined/restore runtime before route delivery.
