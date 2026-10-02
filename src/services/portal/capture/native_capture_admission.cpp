@@ -21,6 +21,13 @@ NativeCaptureAdmission::NativeCaptureAdmission(QDBusConnection bus, QString owne
     if (fd >= 0 && getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &peer, &length) == 0 && length == sizeof(peer) && peer.uid == geteuid() && peer.pid > 0) {
         m_pid = static_cast<quint64>(peer.pid); m_pidfd = static_cast<int>(syscall(SYS_pidfd_open, peer.pid, 0));
     }
+    connect(&m_monitor, &SessionLockState::NativeLockStateMonitor::stateChanged, this, [this] {
+        const bool current = initialized();
+        if (current != m_initialized) {
+            m_initialized = current;
+            Q_EMIT initializedChanged(current);
+        }
+    });
     connect(&m_monitor, &SessionLockState::NativeLockStateMonitor::contentMayBeShownChanged, this, [this](bool shown) {
         if (shown && admitted()) { m_once = true; Q_EMIT ready(); }
         else if (m_once) Q_EMIT lost();
@@ -46,6 +53,9 @@ bool NativeCaptureAdmission::identityLive(const QString &owner, quint64 pid) con
     if (current.type() != QDBusMessage::ReplyMessage || current.signature() != "s" || current.arguments().value(0).toString() != m_owner) return false;
     const auto actual = daemon(m_bus, "GetConnectionUnixProcessID", m_owner);
     return actual.type() == QDBusMessage::ReplyMessage && actual.signature() == "u" && actual.arguments().value(0).toULongLong() == m_pid;
+}
+bool NativeCaptureAdmission::initialized() const {
+    return identityLive(m_owner, m_pid) && m_monitor.state() != SessionLockState::LockState::Unknown;
 }
 bool NativeCaptureAdmission::admitted() const { return identityLive(m_owner, m_pid) && m_monitor.contentMayBeShown(); }
 bool NativeCaptureAdmission::lineageLive() const { return identityLive(m_owner, m_pid); }

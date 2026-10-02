@@ -13,15 +13,19 @@ class NativeCaptureAdmission final : public QObject {
 public:
     NativeCaptureAdmission(QDBusConnection bus, QString expectedOwner, int borrowedPeerFd);
     ~NativeCaptureAdmission() override;
+    // Same-thread current-owner initialization is distinct from pixel admission.
+    // Known locked state initializes the observer but never permits content.
+    bool initialized() const;
     bool admitted() const;
     bool lineageLive() const;
 Q_SIGNALS:
+    void initializedChanged(bool initialized);
     void ready();
     void lost();
 private:
     bool identityLive(const QString &owner, quint64 pid) const;
     QDBusConnection m_bus; QString m_owner; quint64 m_pid = 0; int m_pidfd = -1;
-    bool m_once = false;
+    bool m_once = false, m_initialized = false;
     SessionLockState::QtNativeLockTransport m_transport;
     SessionLockState::NativeLockStateMonitor m_monitor;
     QTimer m_lifetime;

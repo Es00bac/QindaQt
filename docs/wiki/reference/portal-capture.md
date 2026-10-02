@@ -160,6 +160,17 @@ passes only broker request-writer/result-reader ends; helper fd4 is ordinary Qt
 Wayland/foreign-parent, fd5 tagged capture, fd6 request-read and fd7 result-write.
 Captured result bytes cannot replace the authenticated channel or native privacy.
 
+The capture-only backend publishes its existing object/name only after its own
+native observer has consumed the authenticated current-owner state receipt and
+empty method reply. Initialized Unlocked, Locking, or Locked state can complete
+startup; only current Unlocked state admits content. The name is registered
+before starting the unchanged QCC1 channel because the compositor authenticates
+that name when consuming Ready. The five-second startup budget includes native
+initialization and Hello consumption. Owner loss before publication prevents
+startup; all existing request-time identity/privacy checks and immediate job
+revocation remain authoritative after publication. This corrects an ordering gap;
+it does not establish the cause of the historical intermittent response2.
+
 The broker owns bounded private files and does not launch helpers or open an
 ambient display socket. The helper must send ParentReady after actual import and
 ConsentGranted after actual Allow/Share, then wait CaptureReady. Screenshot has

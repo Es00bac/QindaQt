@@ -34,6 +34,16 @@ gate consent, operation and publication. Native authority loss withdraws pending
 results, deletes temporary screenshot files and ends streams. Already copied
 image bytes or consumed stream buffers cannot be recalled.
 
+The capture-only backend's public availability follows authenticated native
+initialization. Its own retained-peer/current-owner monitor must consume both
+the targeted nonce state receipt and empty request reply before publishing the
+existing backend name/object and starting its QCC1 channel. Known Locked/Locking
+state initializes the backend but denies content; startup is not pixel authority.
+The broker name still precedes Ready so the compositor can authenticate its
+current owner. No public wire bytes, descriptors, helper consent sequencing or
+request-time privacy rechecks change. Initialization and Hello share the original
+five-second startup bound; owner loss cannot reuse an earlier initialized state.
+
 The real standard frontend owns OpenPipeWireRemote and node-specific permission
 filtering. Backend Start returns only a real created node. No fabricated remote,
 success placeholder, hidden auto-selection or ambient display fallback is allowed.
