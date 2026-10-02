@@ -17,7 +17,17 @@ private Q_SLOTS:
         QVERIFY(validScreenCastSelection({})); QVERIFY(validScreenCastSelection({{"types", 1U}, {"multiple", false}, {"cursor_mode", 1U}}));
         QVERIFY(validScreenCastSelection({{"multiple", true}, {"cursor_mode", 2U}}));
         QVERIFY(validScreenCastSelection({{"multiple", true}, {"cursor_mode", 4U}}));
-        for (const auto &options : {QVariantMap{{"types", 2U}}, QVariantMap{{"multiple", 1}}, QVariantMap{{"cursor_mode", 3U}}, QVariantMap{{"cursor_mode", 0U}}, QVariantMap{{"cursor_mode", 2}}, QVariantMap{{"types", 1}}, QVariantMap{{"persist_mode", 1U}}, QVariantMap{{"restore_data", "fake"}}}) QVERIFY(!validScreenCastSelection(options));
+        for (const auto &options : {QVariantMap{{"types", 2U}}, QVariantMap{{"multiple", 1}}, QVariantMap{{"cursor_mode", 3U}}, QVariantMap{{"cursor_mode", 0U}}, QVariantMap{{"cursor_mode", 2}}, QVariantMap{{"types", 1}}, QVariantMap{{"persist_mode", 3U}}, QVariantMap{{"persist_mode", 1}}, QVariantMap{{"restore_data", "fake"}}, QVariantMap{{"window", 1U}}}) QVERIFY(!validScreenCastSelection(options));
+        // The frontend always forwards persist_mode for callers such as OBS.
+        QVERIFY(validScreenCastSelection({{"persist_mode", 2U}, {"cursor_mode", 2U}}));
+        // Remember choice and preselection survive the helper frame; bad names do not.
+        CaptureRequest stream{CaptureKind::Stream, "org.test.App", {}, "/s", ":1.2", false, true, true, 2, true, {"DP-1", "HDMI-A-1"}};
+        const auto parsed = captureRequestFromFrame(captureFrame(stream, "/tmp", ":1.3"));
+        QVERIFY(parsed); QVERIFY(parsed->persist); QCOMPARE(parsed->restore, (QStringList{"DP-1", "HDMI-A-1"}));
+        auto frame = captureFrame(stream, "/tmp", ":1.3"); frame.insert("restore", QJsonArray{"DP-1", "DP-1"}); QVERIFY(!captureRequestFromFrame(frame));
+        frame.insert("restore", QJsonArray{1}); QVERIFY(!captureRequestFromFrame(frame));
+        QVERIFY(!captureResults(CaptureKind::Screenshot, {{"uri", "file:///tmp/screenshot.png"}, {"persist", true}}, "/tmp"));
+        QVERIFY(!captureResults(CaptureKind::Stream, {{"node", 3}, {"x", 0}, {"y", 0}, {"width", 8}, {"height", 8}, {"name", "DP-1"}, {"persist", 1}}, {}));
         QCOMPARE(captureCaller("/org/freedesktop/portal/desktop/request/1_28/test"), QString(":1.28"));
         QVERIFY(captureCaller("/org/freedesktop/portal/desktop/request/stranger/test").isEmpty());
     }

@@ -6,8 +6,10 @@
 #include <memory>
 namespace QindaQt::Services::Portal {
 // Same-thread registry/UI/bus outlive adaptor and its owned standard Sessions.
-// Monitor sources, explicit single/multiple selection and all cursor modes;
-// restore/window/virtual-source persistence remains a separate capability.
+// Monitor sources, explicit single/multiple selection and all cursor modes.
+// persist_mode offers a "remember" choice; Start returns (suv) restore_data with
+// stable output names only when the user ticked it. Restoring preselects those
+// outputs and still asks. Window/virtual sources are absent.
 class ScreenCastAdaptor final : public QDBusAbstractAdaptor {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.impl.portal.ScreenCast")
@@ -16,6 +18,9 @@ class ScreenCastAdaptor final : public QDBusAbstractAdaptor {
     Q_PROPERTY(uint AvailableCursorModes READ availableCursors CONSTANT)
 public:
     ScreenCastAdaptor(QObject &, RequestRegistry &, CaptureUI &, QDBusConnection);
+    // Combined sessions: SelectSources for a session this adaptor did not create
+    // is forwarded to the borrowed RemoteDesktop owner (may be null).
+    ScreenCastAdaptor(QObject &, RequestRegistry &, CaptureUI &, QDBusConnection, ScreenCastSourceDelegate *remoteSessions);
     ~ScreenCastAdaptor() override;
     uint version() const { return 2; }
     uint availableSources() const { return 1; }
