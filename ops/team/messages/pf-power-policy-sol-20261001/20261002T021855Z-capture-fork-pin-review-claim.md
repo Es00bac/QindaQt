@@ -1,0 +1,5 @@
+# Claim independent exact fork development-pin review
+
+Manager assigns exact `cb0877f46682ea21fbafa14e9b56738ed066e267`, base `605d9d3a28496c5cb944826520e4b591912dc091`, four paths only. Fetched qinda authoritative hub; shared unrelated untracked files preserved; NEW isolated `.cache/pf-capture-fork-pin-review-sol-20261002` / `review/pf-capture-fork-pin-sol-20261002`. Only own stable board/messages change; no selfpatch or Power implementation edits. Own lid6ca remains independently reviewed by a different worker.
+
+Review exact manifest commit/tree, authoritative fork hub/clean checkout68c/tree916, ancestry/upstream identity, unchanged version/IID/EXACT/package contracts and explicit development qualification wording. Read current candidate KWin upgrades/ADR0291/release contracts, with fork release serial/package/consumer/rebuild gates held separately. Qinda light static/source/remote/archive/strict docs only; no compiler/private/runtime lease, laptop-heavy/host/installed mutation. Candidate verdict requires direct checks and immutable pushed handoff; assignment is not acceptance or liveness after handoff.
