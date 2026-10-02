@@ -60,7 +60,8 @@ void CaptureDialog::captureReady() {
     if (!m_busy || !m_parent || !m_admission.admitted() || m_finished || m_granted) { fail(); return; }
     m_granted = true;
     if (m_request.kind == CaptureKind::Stream) {
-        if (!m_stream.start(m_selectedSources, m_request.cursorMode)) fail(); return;
+        if (!m_stream.start(m_selectedSources, m_request.cursorMode)) fail();
+        return;
     }
     hide(); QTimer::singleShot(100, this, [this] {
         if (!m_parent || !m_admission.admitted() || m_finished) { fail(); return; }
