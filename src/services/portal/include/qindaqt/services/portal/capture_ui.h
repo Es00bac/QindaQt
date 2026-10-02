@@ -22,4 +22,19 @@ Q_SIGNALS:
     void closed(const QString &session);
     void authorityLost();
 };
+// AGENT-CONTRACT: xdg-desktop-portal 1.20 selects the ScreenCast and
+// RemoteDesktop backends independently and sends ScreenCast.SelectSources for
+// a RemoteDesktop session to the ScreenCast backend with that session handle
+// (frontend screen-cast.c). The backend owning such a session implements this
+// same-thread port; ScreenCastAdaptor validates the standard options first and
+// forwards only the frozen monitor selection. The owner starts and stops the
+// streams through its CaptureUI and must outlive the ScreenCastAdaptor.
+class ScreenCastSourceDelegate {
+public:
+    virtual ~ScreenCastSourceDelegate() = default;
+    virtual bool ownsSession(const QString &session) const = 0;
+    // False refuses the selection: wrong actor/handle/state or lost authority.
+    virtual bool selectSources(const QDBusMessage &call, const QString &request, const QString &session,
+                               const QString &app, bool multiple, quint32 cursorMode) = 0;
+};
 }

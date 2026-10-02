@@ -22,11 +22,19 @@ CaptureDialog::CaptureDialog(CaptureRequest request, QString directory, NativeCa
     m_sources->setAccessibleName(tr("Screens available to share")); m_sources->setVisible(m_request.kind == CaptureKind::Stream); m_layout->addWidget(m_sources);
     m_sources->setSelectionMode(m_request.multiple ? QAbstractItemView::ExtendedSelection : QAbstractItemView::SingleSelection);
     m_allow = new QPushButton(m_request.kind == CaptureKind::Stream ? tr("Share selected screens") : tr("Allow capture"), this); m_allow->setObjectName("captureAllow"); m_allow->setEnabled(false);
-    m_cancel = new QPushButton(tr("Cancel"), this); m_cancel->setObjectName("captureCancel"); m_layout->addWidget(m_allow); m_layout->addWidget(m_cancel);
+    m_cancel = new QPushButton(tr("Cancel"), this); m_cancel->setObjectName("captureCancel");
+    if (m_request.kind == CaptureKind::Stream && m_request.persist) {
+        // Persistence is a separate explicit choice, off by default.
+        m_remember = new QCheckBox(tr("Remember these screens for %1").arg(app), this); m_remember->setObjectName("captureRemember");
+        m_layout->addWidget(m_remember);
+    }
+    m_layout->addWidget(m_allow); m_layout->addWidget(m_cancel);
     connect(m_allow, &QPushButton::clicked, this, &CaptureDialog::begin); connect(m_cancel, &QPushButton::clicked, this, [this] { finish(RequestResponse::Cancelled); });
     connect(&m_admission, &NativeCaptureAdmission::ready, this, &CaptureDialog::refresh); connect(&m_admission, &NativeCaptureAdmission::lost, this, &CaptureDialog::fail);
     connect(&m_stream, &CompositorCapture::WaylandScreenCast::sourcesReady, this, [this] {
-        m_sources->clear(); for (const auto &source : m_stream.sources()) { auto *item = new QListWidgetItem(source.name, m_sources); item->setData(Qt::UserRole, source.id); } refresh();
+        // Restore data only preselects stable output names; Share is still required.
+        m_sources->clear(); for (const auto &source : m_stream.sources()) { auto *item = new QListWidgetItem(source.name, m_sources); item->setData(Qt::UserRole, source.id);
+            if (m_request.restore.contains(source.name) && (m_request.multiple || m_sources->selectedItems().isEmpty())) item->setSelected(true); } refresh();
     });
     connect(m_sources, &QListWidget::itemSelectionChanged, this, &CaptureDialog::refresh);
     connect(&m_stream, &CompositorCapture::WaylandScreenCast::streamCreated, this, [this](quint32 node, const CompositorCapture::MonitorSource &source) {
@@ -36,7 +44,9 @@ CaptureDialog::CaptureDialog(CaptureRequest request, QString directory, NativeCa
         m_streamResults.append(QJsonObject{{"node", static_cast<double>(node)}, {"name", source.name}, {"x", source.position.x()}, {"y", source.position.y()}, {"width", source.size.width()}, {"height", source.size.height()}});
         if (!m_selectedSources.isEmpty()) return;
         m_sent = true; m_allow->hide(); m_sources->setEnabled(false); m_cancel->setText(tr("Stop sharing"));
-        Q_EMIT result(RequestResponse::Success, m_streamResults.size() == 1 ? m_streamResults.first().toObject() : QJsonObject{{"streams", m_streamResults}});
+        auto shared = m_streamResults.size() == 1 ? m_streamResults.first().toObject() : QJsonObject{{"streams", m_streamResults}};
+        if (m_remember && m_remember->isChecked()) shared.insert("persist", true);
+        Q_EMIT result(RequestResponse::Success, shared);
     });
     connect(&m_stream, &CompositorCapture::WaylandScreenCast::closed, this, [this] { if (m_request.kind == CaptureKind::Stream) fail(); });
     connect(&m_capture, &CompositorCapture::CapturePort::finished, this, &CaptureDialog::image);
@@ -52,7 +62,7 @@ void CaptureDialog::begin() {
         if (m_selectedSources.isEmpty() || (!m_request.multiple && m_selectedSources.size() != 1)) { fail(); return; }
         // AGENT-GUARD: freeze the exact user selection before granting capture;
         // UI events during the authority round-trip cannot enlarge that grant.
-        m_sources->setEnabled(false);
+        m_sources->setEnabled(false); if (m_remember) m_remember->setEnabled(false);
     }
     m_busy = true; refresh(); Q_EMIT consented();
 }

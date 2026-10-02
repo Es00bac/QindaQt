@@ -8,5 +8,7 @@ QDBusArgument &operator<<(QDBusArgument &a, const CaptureCoordinate &v) { a.begi
 const QDBusArgument &operator>>(const QDBusArgument &a, CaptureCoordinate &v) { a.beginStructure(); a >> v.first >> v.second; a.endStructure(); return a; }
 QDBusArgument &operator<<(QDBusArgument &a, const CaptureStream &v) { a.beginStructure(); a << v.node << v.properties; a.endStructure(); return a; }
 const QDBusArgument &operator>>(const QDBusArgument &a, CaptureStream &v) { a.beginStructure(); a >> v.node >> v.properties; a.endStructure(); return a; }
-void registerCaptureWireTypes() { qDBusRegisterMetaType<CaptureColor>(); qDBusRegisterMetaType<CaptureCoordinate>(); qDBusRegisterMetaType<CaptureStream>(); qDBusRegisterMetaType<CaptureStreams>(); }
+QDBusArgument &operator<<(QDBusArgument &a, const CaptureRestoreData &v) { a.beginStructure(); a << v.vendor << v.version << v.payload; a.endStructure(); return a; }
+const QDBusArgument &operator>>(const QDBusArgument &a, CaptureRestoreData &v) { a.beginStructure(); a >> v.vendor >> v.version >> v.payload; a.endStructure(); return a; }
+void registerCaptureWireTypes() { qDBusRegisterMetaType<CaptureColor>(); qDBusRegisterMetaType<CaptureCoordinate>(); qDBusRegisterMetaType<CaptureStream>(); qDBusRegisterMetaType<CaptureStreams>(); qDBusRegisterMetaType<CaptureRestoreData>(); }
 }
