@@ -13,7 +13,7 @@ class QSocketNotifier;
 
 namespace QindaQt::CompositorCapture {
 
-// Captures through KWin's restricted org.kde.KWin.ScreenShot2 interface.
+// Captures through KWin's restricted org.qindaqt.KWin.ScreenShot2 interface.
 //
 // AGENT-CONTRACT (ADR-0289/0324): permission belongs to the compositor's
 // ordinary desktop-entry or authenticated protected-job lease, never this

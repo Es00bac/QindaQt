@@ -13,7 +13,7 @@ using namespace QindaQt::Services::Portal::RemoteInput;
 using Barrier = QPair<QPoint, QPoint>;
 class CaptureObject final : public QObject {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.EIS.InputCapture")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.EIS.InputCapture")
 public:
     ~CaptureObject() override { for (const int fd : std::as_const(peers)) ::close(fd); }
     QList<Barrier> barriers;
@@ -39,7 +39,7 @@ Q_SIGNALS:
 };
 class Manager final : public QObject {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.kde.KWin.EIS.InputCaptureManager")
+    Q_CLASSINFO("D-Bus Interface", "org.qindaqt.KWin.EIS.InputCaptureManager")
 public:
     explicit Manager(QDBusConnection &connection) : bus(connection) {}
     QDBusConnection &bus;
@@ -50,7 +50,7 @@ public:
 public Q_SLOTS:
     QDBusObjectPath addInputCapture(uint capabilities) {
         added << capabilities;
-        const QString path = QStringLiteral("/org/kde/KWin/EIS/InputCapture/%1").arg(captures.size() + 1);
+        const QString path = QStringLiteral("/org/qindaqt/KWin/EIS/InputCapture/%1").arg(captures.size() + 1);
         captures.push_back(std::make_unique<CaptureObject>());
         bus.registerObject(path, captures.back().get(), QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals);
         return QDBusObjectPath(path);
@@ -80,7 +80,7 @@ private Q_SLOTS:
     void init() {
         QVERIFY(bus.start());
         manager = std::make_unique<Manager>(*bus.compositor);
-        QVERIFY(bus.compositor->registerObject(QStringLiteral("/org/kde/KWin/EIS/InputCapture"), manager.get(),
+        QVERIFY(bus.compositor->registerObject(QStringLiteral("/org/qindaqt/KWin/EIS/InputCapture"), manager.get(),
                                                QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals));
         selectedCompositor = bus.compositor->baseService();
         host = std::make_unique<QObject>(); registry = std::make_unique<RequestRegistry>(*bus.service);
@@ -129,7 +129,7 @@ private Q_SLOTS:
         QTRY_COMPARE(spy->messages.size(), 2);
         QCOMPARE(spy->messages.at(1).member(), QStringLiteral("Deactivated"));
         QCOMPARE(bus.sessionCall(*bus.client, QStringLiteral("Close")).type(), QDBusMessage::ReplyMessage);
-        QTRY_COMPARE(manager->removed, QStringList{QStringLiteral("/org/kde/KWin/EIS/InputCapture/1")});
+        QTRY_COMPARE(manager->removed, QStringList{QStringLiteral("/org/qindaqt/KWin/EIS/InputCapture/1")});
     }
     void denialArmsNothing() {
         auto create = createCall(Keyboard | Pointer);
@@ -158,13 +158,13 @@ private Q_SLOTS:
     void nativeAuthorityLossRemovesCapture() {
         QVERIFY(created(Keyboard));
         consent->allowed = false; Q_EMIT consent->authorityLost();
-        QTRY_COMPARE(manager->removed, QStringList{QStringLiteral("/org/kde/KWin/EIS/InputCapture/1")});
+        QTRY_COMPARE(manager->removed, QStringList{QStringLiteral("/org/qindaqt/KWin/EIS/InputCapture/1")});
         QCOMPARE(bus.sessionCall(*bus.client, QStringLiteral("Close")).type(), QDBusMessage::ErrorMessage);
     }
     void forgedCompositorSignalIgnored() {
         QVERIFY(created(Pointer));
-        auto forged = QDBusMessage::createSignal(QStringLiteral("/org/kde/KWin/EIS/InputCapture/1"),
-                                                 QStringLiteral("org.kde.KWin.EIS.InputCapture"), QStringLiteral("activated"));
+        auto forged = QDBusMessage::createSignal(QStringLiteral("/org/qindaqt/KWin/EIS/InputCapture/1"),
+                                                 QStringLiteral("org.qindaqt.KWin.EIS.InputCapture"), QStringLiteral("activated"));
         forged << 9U << QVariant::fromValue(QPointF(1, 1));
         QVERIFY(bus.stranger->send(forged));
         QTest::qWait(200);

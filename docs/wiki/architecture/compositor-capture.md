@@ -66,3 +66,11 @@ actual mapped native GUI input, private EGL-capable compositor, real frontend an
 private PipeWire node/frame/lifetime/lock gates. Source presence or mock policy
 results do not establish that qualification. Installation, ordinary desktop and
 sandbox delivery remain separate manager gates.
+
+## Native privileged identity
+
+[ADR-0340](../adr/0340-use-native-privileged-compositor-identities.md) coordinates
+ScreenShot2 with the fork and screenshot/helper desktop entries. `CompositorNames`
+provides the service, object, interface and error names. The source cutover must
+ship with the native backend routing and matching compositor; installed
+qualification remains a separate release gate.

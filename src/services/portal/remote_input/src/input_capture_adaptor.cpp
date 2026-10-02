@@ -5,6 +5,7 @@
 // src/inputcapturebarrier.cpp (9a5cc0e8). KGlobalAccel, KNotification, the
 // Plasma dialog, qGuiApp screens and blocking KWin calls are replaced by native
 // consent, compositor zones and asynchronous calls on the selected owner.
+#include <qindaqt/compositor_names/compositor_names.h>
 #include <qindaqt/services/portal/remote_input/input_capture_adaptor.h>
 #include "remote_sessions_p.h"
 #include <QDBusArgument>
@@ -28,9 +29,9 @@ Q_DECLARE_METATYPE(Zone)
 
 namespace QindaQt::Services::Portal::RemoteInput {
 namespace {
-constexpr auto kManagerPath = "/org/kde/KWin/EIS/InputCapture";
-constexpr auto kManager = "org.kde.KWin.EIS.InputCaptureManager";
-constexpr auto kCapture = "org.kde.KWin.EIS.InputCapture";
+constexpr auto kManagerPath = CompositorNames::eisInputCapturePath;
+constexpr auto kManager = CompositorNames::eisInputCaptureManagerInterface;
+constexpr auto kCapture = CompositorNames::eisInputCaptureInterface;
 constexpr auto kPortal = "org.freedesktop.impl.portal.InputCapture";
 constexpr int kDisabled = 0, kEnabled = 1, kActivated = 2;
 std::optional<quint32> requestedCapabilities(const QVariantMap &options) {

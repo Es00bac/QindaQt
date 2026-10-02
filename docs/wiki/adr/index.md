@@ -372,3 +372,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0338: Own scoped display power and complete shared idle consumers](0338-own-scoped-display-power-and-shared-idle-composition.md)
 
 - [ADR-0339: Manage portal grants through the frontend PermissionStore](0339-use-frontend-permission-store-for-settings-revocation.md)
+- [ADR-0340: Use native privileged compositor identities](0340-use-native-privileged-compositor-identities.md)

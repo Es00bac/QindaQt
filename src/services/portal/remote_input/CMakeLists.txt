@@ -17,4 +17,4 @@ target_link_libraries(qindaqt_portal_remote_input PUBLIC QindaQt::PortalAccessPo
 # sender side for deprecated Notify* calls over the session's EIS context.
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(QINDAQT_LIBEI REQUIRED IMPORTED_TARGET libei-1.0)
-target_link_libraries(qindaqt_portal_remote_input PRIVATE PkgConfig::QINDAQT_LIBEI)
+target_link_libraries(qindaqt_portal_remote_input PRIVATE PkgConfig::QINDAQT_LIBEI QindaQt::CompositorNames)
