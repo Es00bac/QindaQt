@@ -4747,3 +4747,19 @@ consumer rebuild and installed delivery remain coupled by the upgrade procedure.
 The helper-PID/cohort and ordinary property-exclusion fixtures are separate
 unqualified source checkpoints; no content result follows from their existence.
 Window/multiple/cursor/restore permissions and full PF19 remain future gates.
+
+### Native remote-input artifact preflight
+
+The noninstalled native remote-input fixture embeds the actual resident portal
+composition; it does not launch a separate resident executable. Its CMake target
+depends on both the native consent helper and ordinary Wayland clipboard peer.
+The runner checks fixture/helper presence and executability before starting a
+private compositor; fixture setup checks the frontend and clipboard peer. A
+qualification receipt must also bind the coherent candidate driver, EIS plugin,
+core library and resolved runtime dependencies. Missing artifacts are setup
+failures, not evidence of backend denial or native behavior acceptance.
+
+The ordinary clipboard peer copies on an actual Ctrl+C key delivered by the
+consented libei sender. A focus-only timer has no newer input serial and cannot
+prove replacement of a remote selection. The fixture waits for client readiness,
+then requires both the public local-owner signal and exact SelectionRead payload.

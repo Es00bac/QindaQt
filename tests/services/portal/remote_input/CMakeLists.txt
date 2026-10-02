@@ -19,3 +19,30 @@ target_link_options(qindaqt_portal_remote_legacy_input_tests PRIVATE "LINKER:--w
 qindaqt_enable_warnings(qindaqt_portal_remote_legacy_input_tests)
 add_test(NAME qindaqt.portal-remote-legacy-input COMMAND qindaqt_portal_remote_legacy_input_tests)
 set_tests_properties(qindaqt.portal-remote-legacy-input PROPERTIES TIMEOUT 45 LABELS "portal;private-bus")
+
+# Actual private journey (real frontend, mapped native consent, staged production
+# compositor with a separately built candidate eis plugin). It skips with 77
+# until QINDAQT_REMOTE_INPUT_EIS_PLUGIN_DIR names that candidate plugin tree.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(QINDAQT_LIBEI IMPORTED_TARGET libei-1.0)
+if(TARGET QindaQt::SessionSupervisorSupport AND QINDAQT_LIBEI_FOUND AND TARGET qindaqt_portal_consent_input)
+    set(QINDAQT_REMOTE_INPUT_EIS_PLUGIN_DIR "" CACHE PATH "Candidate eis plugin tree for the private remote-input journey")
+    qt_add_executable(qindaqt_portal_remote_input_clipboard_client native/clipboard_client.cpp)
+    target_link_libraries(qindaqt_portal_remote_input_clipboard_client PRIVATE Qt6::Gui)
+    qindaqt_enable_warnings(qindaqt_portal_remote_input_clipboard_client)
+    qt_add_executable(qindaqt_portal_native_remote_input_tests native/tst_native_remote_input.cpp)
+    add_dependencies(qindaqt_portal_native_remote_input_tests
+        qindaqt_portal_remote_input_clipboard_client qindaqt_portal_consent_input)
+    target_include_directories(qindaqt_portal_native_remote_input_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+    target_link_libraries(qindaqt_portal_native_remote_input_tests PRIVATE QindaQt::PortalService QindaQt::PortalComposition
+        QindaQt::SecretPortal QindaQt::SessionSupervisorSupport QindaQt::CompositorNames PkgConfig::QINDAQT_LIBEI Qt6::Test)
+    target_compile_definitions(qindaqt_portal_native_remote_input_tests PRIVATE
+        QINDAQT_FRONTEND_EXECUTABLE="${QINDAQT_XDG_DESKTOP_PORTAL_EXECUTABLE}"
+        QINDAQT_CLIPBOARD_CLIENT="$<TARGET_FILE:qindaqt_portal_remote_input_clipboard_client>")
+    qindaqt_enable_warnings(qindaqt_portal_native_remote_input_tests)
+    add_test(NAME qindaqt.portal-native-remote-input COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/native/run_native_remote_input.py" "$<TARGET_FILE:qindaqt_portal_native_remote_input_tests>"
+        "$<TARGET_FILE:qindaqt_portal_consent_input>" "${QINDAQT_KWIN_WAYLAND}" "${QINDAQT_REMOTE_INPUT_EIS_PLUGIN_DIR}")
+    set_tests_properties(qindaqt.portal-native-remote-input PROPERTIES TIMEOUT 180 SKIP_RETURN_CODE 77
+        LABELS "portal;private-wayland")
+endif()

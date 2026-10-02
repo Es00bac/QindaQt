@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "author": "qinda_icon_brand_audit",
+  "outcome": "bounded genuine native RemoteDesktop/InputCapture/Clipboard qualification PASS",
+  "test_commit": "2b36c431e5da98cfcb0d14d5da8f38fea97727a7",
+  "production_commit": "e2f4c01e0ae2e720237b2f12c24219f005f66757",
+  "fork_runtime_commit": "56a29e58668faca73fe7d8de46b2f2238fc158f9",
+  "runtime": {
+    "exit_code": 0,
+    "elapsed_seconds": 6.383063,
+    "fixture": {
+      "qt_pass": 4,
+      "qt_fail": 0,
+      "qt_skip": 0,
+      "behavior_methods": 2,
+      "milliseconds": 2605
+    },
+    "actual_core_driver": {
+      "qt_pass": 3,
+      "qt_fail": 0,
+      "qt_skip": 0,
+      "milliseconds": 5541
+    }
+  },
+  "evidence": [
+    {
+      "path": "build/native-remote-runtime-copy-input/command.json",
+      "sha256": "b69b1754431cfd56c8a6cebe38ba8ed649784d8fe47ea2816a3ee9151b2bd686"
+    },
+    {
+      "path": "build/native-remote-runtime-copy-input/status.json",
+      "sha256": "5ce9f8e1651586af1db08d9767a742055a33c6507d399eecf2d10d62f57aab7e"
+    },
+    {
+      "path": "build/native-remote-runtime-copy-input/runtime.log",
+      "sha256": "60878a71dfabaab132a151b603a30ce71f6446325523df49480ca3dca31f0cd7"
+    },
+    {
+      "path": "build/native-remote-runtime-copy-input/preflight.json",
+      "sha256": "0e8e4adb0275f9266aae6cceb5000342f4bd15a3302c8c2cfacbb7c72adc86ab"
+    },
+    {
+      "path": "build/native-remote-runtime-copy-input/evidence/compositor.log",
+      "sha256": "871601baa3aa52ba81c43587741f52da8e111e27f55fe579b70b37000421f4a5"
+    },
+    {
+      "path": "build/native-remote-runtime-copy-input/evidence/consent.audit",
+      "sha256": "82dc0471e6b0b5809133888426c6074bf4615f5453d186d1bf3dbecd4ca3c038"
+    }
+  ],
+  "artifact_bindings": {
+    "frontend": {
+      "path": "/usr/libexec/xdg-desktop-portal",
+      "sha256": "9b593c25454d96dfaedc4d7106e4265b01560ffb261889d61621612ea4e350c5"
+    },
+    "fixture": {
+      "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-native-input-qualification-20261002/build/native-reference-copy-input/qindaqt_portal_native_remote_input_tests",
+      "sha256": "cda303773ae1a1730237791dadfc1cc5b61e0eec0ad64b6d933984c4779da720"
+    },
+    "consent_helper": {
+      "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-native-input-qualification-20261002/build/native-helper-choice/qindaqt_portal_consent_input",
+      "sha256": "d7933bdbf6c12a341323e25792ed20218d308bd346acbdfbdd46f7683c58f0af"
+    },
+    "clipboard_peer": {
+      "path": "/home/cabewse/work_SPaC3/container-wm.worktrees/pf-native-input-qualification-20261002/build/native-reference-copy-input/clipboard-client",
+      "sha256": "f75d8e9330e02917c797fab6d71d86b2a735be03917fdb93956aa0462a24d966"
+    },
+    "driver": {
+      "path": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/testNativeCaptureAuthority",
+      "sha256": "23790869c4640acc51f4d24eb7c351009b4351385543a8889717b4ad4a28c58b"
+    },
+    "eis_plugin": {
+      "path": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/qindaqt-kwin/plugins/eis.so",
+      "sha256": "d75bbe28f205f3dac48d0df91fbbc57a6704538fbfa32b7afc04aa1643d2be93"
+    },
+    "core": {
+      "path": "/home/cabewse/work_SPaC3/qindaqt-kwin.worktrees/pf-capture-batch-fixture-20261002/build/native-tests/bin/libqindaqt-kwin.so",
+      "sha256": "aa115203f403b1f02e9674fe3dff1a1bfaa2be8c8a72f9d5599aea001b498b2d"
+    },
+    "resident": {}
+  },
+  "build_evidence": [
+    {
+      "path": "build/native-reference-copy-input/commands.json",
+      "sha256": "d8c41308e167481d06b2fbbccf876a2a4985e06a32ee3ee1f5a9c43b6345fdf8"
+    },
+    {
+      "path": "build/native-reference-copy-input/status.json",
+      "sha256": "c9e5ceedf9dd822a2b805948f402dad78f89dda5041b00f2aafdd470752dcd5e"
+    },
+    {
+      "path": "build/native-reference-copy-input/build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "documentation": [
+    {
+      "path": "build/native-docs-final-status.json",
+      "sha256": "9f53004d150187f620c88ab1968df614510a22f924cadd3aa1247ddd50a7ce0f"
+    },
+    {
+      "path": "build/native-docs-final.log",
+      "sha256": "441f130cf362c5df098405af92437e18d8643d885c80ab4fff757d3ac2ce8a97"
+    }
+  ],
+  "asserted_behaviors": [
+    "actual public frontend/admitted real attachment and native privacy receipt",
+    "mapped native consent with actual clipboard checkbox input",
+    "actual libei sender keyboard, relative/absolute pointer and receiver",
+    "public InputCapture zones/left-edge barrier activation and actual KEY_Q",
+    "explicit Release actual EI stop and no post-release KEY_W",
+    "exact remote payload pasted by ordinary Qt Wayland client",
+    "ordinary focused client copies on actual EIS Ctrl+C, public local-owner MIME and exact SelectionRead payload",
+    "Close disconnects both actual EIS transports",
+    "native lock disconnects sender, closes session and denies new EIS"
+  ],
+  "scope_limits": [
+    "Old e2f/56a qualified only; native-name cutover/Power Workspace/new Claude combined sharing/Notify/restore not exercised",
+    "No package/full-release/host input/installed desktop acceptance",
+    "Installed frontend InputCapture v1 contract, not v2",
+    "Test-only capture sentinel denies capture jobs, no production admission bypass",
+    "Private actual core is offscreen/software without host DRM/input/bus; visual shell/PipeWire sharing outside scope",
+    "Actual NativeShortcuts fixture source6cf exists, compile/runtime pending",
+    "Reference production static archives byte-e2f reused; fresh own strict fixture/helper/client objects, no ALL rebuild"
+  ],
+  "preserved_attempts": [
+    {
+      "status": {
+        "path": "build/native-remote-runtime/status.json",
+        "sha256": "3a81eecab7155381ef34a328c90b07c164cba55dadab6f82298ca738d700f6a7"
+      },
+      "exit_code": 2,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-attach/status.json",
+        "sha256": "f159e9e742108035f5877ea2ac8d4a944a53735a70f551fba3c056f0f2a01299"
+      },
+      "exit_code": 2,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-complete-helper/status.json",
+        "sha256": "6c5d5b7917ad4483ee0dbe7bde726e9871b1303b7b20c58059ced9bd94cb2279"
+      },
+      "exit_code": 1,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-copy/status.json",
+        "sha256": "d21fe7ea099323d6cd1e25f2cc54514f7011a696bf6df4df249590264ee2a33d"
+      },
+      "exit_code": 1,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-copy-input/status.json",
+        "sha256": "5ce9f8e1651586af1db08d9767a742055a33c6507d399eecf2d10d62f57aab7e"
+      },
+      "exit_code": 0,
+      "accepted": true
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-mime/status.json",
+        "sha256": "623ba14333dfd40fa9ed2b67f051c5aaa0f8a106fd8406210245bb63c1f2b075"
+      },
+      "exit_code": 1,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-preflight/status.json",
+        "sha256": "2ba824089285294fbaab5bfd86ab5213d3061394f10266711335835ce9215e56"
+      },
+      "exit_code": 250,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-privacy/status.json",
+        "sha256": "95c196c6422325bd089a14b62dcb29abe9729aa7a146a1dc7d96228a10fcbe6a"
+      },
+      "exit_code": 2,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-release/status.json",
+        "sha256": "3796339a6d09542fe4da9f702f9bea27d956083a455fc7492d53d96645f10296"
+      },
+      "exit_code": 1,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-verified-choice/status.json",
+        "sha256": "21eb5c890774484b9e0729422248fd340f634feda701190221a111dcb2c35d42"
+      },
+      "exit_code": 1,
+      "accepted": false
+    },
+    {
+      "status": {
+        "path": "build/native-remote-runtime-wire/status.json",
+        "sha256": "91609096f5ac206fb4c830e13445439aa4ea7bbccf0671c96f6ee75c8503dada"
+      },
+      "exit_code": 1,
+      "accepted": false
+    }
+  ]
+}

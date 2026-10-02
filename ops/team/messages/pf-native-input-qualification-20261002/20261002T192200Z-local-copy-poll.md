@@ -1,0 +1,3 @@
+# Actual remote clipboard paste and local polling repair
+
+Exact e523 fixture/e2f production/56a core all-artifact preflight PASS. Actual barrier capture/release and remote payload paste to ordinary Qt Wayland client passed. Local-copy QTRY used consuming readAllStandardOutput directly; persistent accumulated buffer repairs this assertion without bypassing actual client focus/selection. Scoped peer cleanup prevents fatal live-QProcess destruction on failure. Runner disables automatic QtTest crash dumper. Full native acceptance remains pending; receipt build/native-remote-runtime-preflight preserves exit250/28.613707s and actual core driver3PASS0FAIL0SKIP27750ms.
