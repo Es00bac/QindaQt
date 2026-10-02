@@ -1,12 +1,12 @@
 # Native power policy implementer
 
 - Identity: pf-power-policy-sol-20261001
-- Status: available — exact capture fork development-pin review ACCEPT handed off
-- Base: 605d9d3a28496c5cb944826520e4b591912dc091; review exact cb0877f46682ea21fbafa14e9b56738ed066e267
-- Branch: review/pf-capture-fork-pin-sol-20261002
-- Worktree: .cache/pf-capture-fork-pin-review-sol-20261002
-- Ownership: read-only exact four-path fork-pin candidate review; only own stable board/timestamped messages may change. Own lid6ca remains pending a different reviewer; no Power or pin implementation edits.
-- Compiler/private runtime: no lease; qinda light source/remote/archive/docs/static checks only
+- Status: available — ScreenOff source-backed contract proposal handed off; awaiting coordinated ownership/provenance decision
+- Base: 605d9d3a28496c5cb944826520e4b591912dc091 (frozen source audit)
+- Branch: worker/pf-screen-off-contract-audit-sol-20261002
+- Worktree: .cache/pf-screen-off-contract-audit-sol-20261002
+- Ownership: source/doc READ only for Display1/Session1/SessionActions/session DPMS-idle; write only own stable board/new audit messages. No production/docs/schema or frozen lid6ca edits.
+- Compiler/private runtime: none; qinda source/light reads only, no GPU/installed actions
 
 
 ## Updates
@@ -44,6 +44,10 @@
 
 - 2026-10-02T01:00:30Z — Exact241ff fresh qinda strict Debug configure and six-target build PASS45.52s/47.03s/182 Ninja actions with accepted source690 prefix; compiler PID493136 absent after release, minimum14.25GB. First actual resident suspend countdown3/0/0 PASS5.58s; frozen full9/9 CTests101/0/0 Qt PASS118.99s including23 critical behaviors25/0/0 and unchanged Power65/0/0 plus SessionActions11/0/0. Both resources released; first3/full95 observed PIDs and first1/full51 roots absent, eight cache/executable hashes unchanged, runtime min13.07GB. Qinda strict docs486 pages/static PASS before final docs-only verification update. Available for independent review repairs or bounded public power-contract help; no installed cutover, hardware action, wholePF2 completion or new path claim.
 
-- 2026-10-02T02:18:55Z — Fetched authoritative hub, preserved shared unrelated untracked files and created NEW isolated reviewer WT/branch at exactcb087. Candidate scope is four paths; pin JSON changes only fork commit/tree while current compositor page labels development qualification and ADR0291 preserves initial history. Reading exact candidate upgrade/release rules before qinda light identity/source/archive/docs gates. No Power implementation edits/compiler/private/laptop-heavy/installed actions; exact development-vs-release verdict still pending.
+- 2026-10-02T02:29:43Z — Manager assigned source-only ScreenOff public ownership/lifetime proposal at exact605. Fetched hub, preserved unrelated shared untracked files, created NEW laptop/qinda isolated audit WT/branch; qinda source reads only. Tracing public Display1/Session1/SessionActions, existing session-owned retained-On DPMS and ordinary compositorFD authority before proposing smallest path/ADR/acceptance boundary. Own lid6ca frozen pending different review; no compiler/private/GPU/host mutation or exact-model inference.
 
-- 2026-10-02T02:24:30Z — Independent exactcb087 verdictACCEPT P0=0/P1=0. Own qinda11 light source/remote/archive/release-static/docs/diff commands all exit0; archive3378 files/13,800,141bytes/SHA4a2b5b78...6793; strictMkDocs7.375s/486-page links PASS. Direct hub/main and clean checkout commit68c/tree916 match;690 and upstream ancestry valid; JSON only two members differ, ABI/version/IID/EXACT/package/upstream unchanged and ADRinitialhistory preserved. Read production cache both authorizationOFF, separate native cache captureON/lockOFF +source install-fatal guard; actual retained root logs1418actions/455stage/identity/native13/fork28 corroborate provenance only, not own replay/install. All11 own tool PIDs absent, candidate hashes/source cleanunchanged, no compiler/private/laptopheavy/installed action. Pushed immutable exact verdict; own board available and bounded exact-review/help offer follows.
+- 2026-10-02T02:40:10Z — Source material finding: Session1 is logout-only/shellPID-authenticated, Display1 has seven topology/brightness methods and no DPMS API, native retained-On adapter is IdlePolicy::KWaylandDpmsController (no QtDpmsController symbol at605). Existing DisplayPowerPort has void Off/On plus aggregate observation and unconditional all-supported-output finalOn. Shared idle requests can undo independent lid blanks; own/external preservation needs explicit shared blank ownership, and raw DPMS exposes no writer provenance for concurrent identical Off.34 source/wiki/test/schema paths independently hashed against exact Git objects and XML parsed; no production edits/tests/runtime. Concrete versioned supervisor-owned facade/current-attachment-epoch proposal in progress.
+
+- 2026-10-02T02:50:15Z — Source-only ScreenOff proposal complete: SessionActions to separate same-Session1-owner display-power facade/shared idle-lid cause owner, current ordinary attachment epoch and scoped acquire/release/expiry. Raw DPMS cannot prove concurrent external-Off ownership; ADR0319 all-supported finalOn conflicts with own-only release and requires explicit superseding decision/public compositor provenance prerequisite. Final qinda34-file exact Git/SHA recheck +2XML/9methods +diff exit0; no builds/runtime/docs gates or source/schema changes. Frozen lid6ca untouched. Available for exact lid review repair or source-only owning-boundary coordination; no new paths/resources claimed.
+
+- 2026-10-02T02:51:48Z — Exact proposal e705 pushed; current Platform queue and independent lid source checkpoint read. No final lid verdict or routed finding inferred. Concrete help offer posted: refine public compositor blank-lease provenance/expiry/retained-peer acceptance after manager ownership choice, or repair an exact independent lid finding. Board available; no source edit/new path/resource claim.

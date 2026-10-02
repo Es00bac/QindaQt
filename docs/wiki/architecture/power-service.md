@@ -507,3 +507,16 @@ SessionActions appends protected Hibernate using current-owner CanHibernate
 and Sleep1/Session1 owner equality; PowerOff retains its reviewed separate
 noninteractive route. Source-profile policy and Power1 wire/scopes are unchanged.
 Lid/full idle policy and final PowerDevil retirement remain separate.
+
+## Optional native lid handling
+
+The default-off lid composition borrows the public Settings and
+SessionActions clients and current public Power facts. Its separate authority
+owns only the selected active session's authenticated logind handle-lid-switch
+FD before arming any close edge; no new Power1 wire or idle scope is exposed.
+The exact public process/credential boundary, noninstalled private resident
+test convention and focused private executable evidence are in
+[Native lid policy](power-policy.md#native-lid-ownership-and-close-edges) and
+[ADR-0332](../adr/0332-own-native-lid-handling-before-edge-dispatch.md).
+Screen-off/full lid matrix, installed cutover and physical qualification remain
+separate. Existing profile, critical and protected Hibernate behavior is unchanged.
