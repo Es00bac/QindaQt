@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: working — preserving bounded compiler and private-protocol receipts during manager desktop recovery; compiler inactive
+- Status: available — source and partial receipts preserved; awaiting manager desktop recovery and bounded compiler release
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -25,3 +25,5 @@
 - 2026-10-02T18:26:53Z — Verify in progress: assembled source99cfa78e7 strict seven-target CPU gate under root -j2 grant/6GiB memory guard. Actual first failures preserved: b8 lineage aggregate default (2/48.037s), a8 new ScreenPower fixture dependencies (2/155.124s), repaired minimally. Source full dim/display/idle-suspend + persistent lid + coherent default-off package cutover exists. Fork26cf Workspace compile routes through native input owner shared warm cache; no fresh fork/GPU gate. Stop after compile+7focusedCTest handoff; brightness race retained as explicit bounded caveat.
 
 - 2026-10-02T18:37:22Z — Material transition: root user reports desktop crash/voice stopped and requests own compiler SIGSTOP only. Own bounded420s gate had already ended before command; actual1461464/starttick42046545 exit-15/420.247s, timeout resource boundary, min11,994,636KiB; no compiler/watchdog found to pause, no restart. Source36c5 adds one Supplies readiness guard (not compiled yet). Four required behavior tests36QtPASS/0fail0skip remain actual evidence; full supervisor and remaining7-test gate pending explicit recovery release. No GPU/host power work.
+
+- 2026-10-02T18:38:45Z — Available waiting: no own compiler/watchdog/group survivors. Required final warm incremental runner prepared source-only (-j2 -l48, same targets plus seventh-test prerequisites,360s active bound,6GiB guard, pause time excluded if manager SIGSTOPs); no execution until recovery release. No new product source after36c5 readiness guard.
