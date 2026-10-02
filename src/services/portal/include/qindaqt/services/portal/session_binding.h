@@ -7,6 +7,9 @@
 namespace QindaQt::Services::Portal {
 inline constexpr auto kNativePortalService = "org.qindaqt.Portal1";
 inline constexpr auto kNativePortalPath = "/org/qindaqt/Portal1";
+inline constexpr auto kNativeCapturePortalService = "org.qindaqt.PortalCapture1";
+inline constexpr auto kNativeCapturePortalPath = "/org/qindaqt/PortalCapture1";
+enum class PortalBindingTarget { Resident, ProtectedCapture };
 // Native composition control, never sandbox authority. The first same-UID
 // session caller is retained; replacement callers cannot rebind it. Its exact
 // liveness and display peer identity are proved by public attachment, not an
@@ -18,6 +21,10 @@ class PortalSessionBinding final : public QObject, protected QDBusContext {
 public:
     PortalSessionBinding(QDBusConnection bus, QString runtimeDirectory,
                          QObject *parent = nullptr);
+    // Same first-caller/display/FD contract on a distinct broker control name.
+    // This ordinary display attachment grants no capture capability.
+    PortalSessionBinding(QDBusConnection bus, QString runtimeDirectory,
+                         PortalBindingTarget target, QObject *parent = nullptr);
     bool start();
     void stop();
     bool live() const;
@@ -34,6 +41,8 @@ private:
     QDBusConnection m_bus;
     QString m_sessionOwner;
     QindaQt::Platform::Compositor::CompositorAttachment m_attachment;
+    QString m_controlService;
+    QString m_controlPath;
     bool m_started = false;
 };
 } // namespace QindaQt::Services::Portal

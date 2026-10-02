@@ -2,6 +2,9 @@
 #include "../authority/packet.h"
 #include "authority_capture.h"
 #include <qindaqt/services/portal/screenshot_adaptor.h>
+#include <qindaqt/services/portal/process_consent.h>
+#include <qindaqt/services/portal/remote_input/remote_desktop_adaptor.h>
+#include <qindaqt/services/portal/remote_input/input_capture_adaptor.h>
 #include <qindaqt/services/portal/screencast_adaptor.h>
 #include <QCoreApplication>
 #include <QStandardPaths>
@@ -12,8 +15,9 @@
 #include <unistd.h>
 int main(int argc, char **argv) {
     using namespace QindaQt::Services::Portal;
-    // AGENT-GUARD: this fixed capture-only executable is compositor-launched;
-    // it has no general backend/Session1 attachment or standalone activation.
+    // AGENT-GUARD: this fixed capture/input broker is compositor-launched,
+    // never a general resident or standalone activation. Ordinary input consent
+    // uses its own attachment; capture grants still require inherited QCC1.
     // Protected process state precedes Qt, bus and inherited-channel parsing.
     rlimit cores{0, 0};
     if (argc != 1 || setrlimit(RLIMIT_CORE, &cores) || prctl(PR_SET_DUMPABLE, 0) || prctl(PR_GET_DUMPABLE) != 0) return 2;
@@ -26,14 +30,25 @@ int main(int argc, char **argv) {
     RequestRegistry requests(bus);
     AuthorityCapture capture(requests, bus, runtime, CaptureAuthority::Wire::ControlFd);
     if (!capture.available()) return 2;
-    QObject host; ScreenshotAdaptor screenshot(host, requests, capture); ScreenCastAdaptor screencast(host, requests, capture, bus);
+    // ADR0341: one protected producer/session composition joins screens and
+    // input. This additional binding supplies ordinary consent display FDs; it
+    // cannot manufacture capture capabilities or replace native QCC1 receipts.
+    PortalSessionBinding binding(bus, runtime, PortalBindingTarget::ProtectedCapture);
+    ProcessAccessConsent consent(binding, bus, QStringLiteral(QINDAQT_CAPTURE_CONSENT_EXECUTABLE));
+    RemoteInput::CompositorEis eis(bus, [&binding] { return binding.compositorOwner(); });
+    QObject host;
+    RemoteInput::RemoteDesktopAdaptor remote(host, requests, consent, eis, capture, bus);
+    RemoteInput::InputCaptureAdaptor inputCapture(host, requests, consent, eis, bus);
+    ScreenshotAdaptor screenshot(host, requests, capture);
+    ScreenCastAdaptor screencast(host, requests, capture, bus, &remote.screenCastSources());
+    QObject::connect(&consent, &AccessConsent::authorityLost, &capture, [&] { requests.retireAll(); capture.revoke(); app.quit(); });
     bool published = false, startupFailed = false;
     const auto publish = [&] {
         if (published || !capture.initialized()) return;
         // AGENT-CONTRACT: publish only after this broker consumed both native
         // receipt and reply. Name registration must precede QCC1 Ready because
         // the compositor authenticates its current owner (ADR0324 / WIRE.md).
-        if (!bus.registerObject("/org/freedesktop/portal/desktop", &host, QDBusConnection::ExportAdaptors)
+        if (!binding.start() || !bus.registerObject("/org/freedesktop/portal/desktop", &host, QDBusConnection::ExportAdaptors)
             || !capture.initialized()
             || !bus.registerService("org.freedesktop.impl.portal.desktop.qindaqt.capture")
             || !capture.start()) {

@@ -76,7 +76,10 @@ target_link_libraries(qindaqt_portal_capture_test_broker PUBLIC QindaQt::PortalC
     QindaQt::SessionLockState qindaqt_portal_capture_authority PRIVATE QindaQt::CompositorNames)
 qindaqt_enable_warnings(qindaqt_portal_capture_test_broker)
 qt_add_executable(qindaqt_portal_capture_test_backend "${capture_dir}/backend/main.cpp")
-target_link_libraries(qindaqt_portal_capture_test_backend PRIVATE qindaqt_portal_capture_test_broker)
+target_link_libraries(qindaqt_portal_capture_test_backend PRIVATE qindaqt_portal_capture_test_broker QindaQt::PortalAccess QindaQt::PortalRemoteInput)
+target_compile_definitions(qindaqt_portal_capture_test_backend PRIVATE
+    QINDAQT_CAPTURE_CONSENT_EXECUTABLE="$<TARGET_FILE:qindaqt_portal_consent_input>")
+add_dependencies(qindaqt_portal_capture_test_backend qindaqt_portal_consent_input)
 qindaqt_enable_warnings(qindaqt_portal_capture_test_backend)
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS GuiPrivate)

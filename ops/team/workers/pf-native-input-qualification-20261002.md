@@ -4,7 +4,7 @@
 - Identity: qinda_icon_brand_audit
 - Base: desktope2f4c01e0ae2e720237b2f12c24219f005f66757; coherent fork5f164f60012109c3caa93eb2b699db79ae7dbacd
 - Branch: worker/pf-native-input-qualification-20261002
-- Ownership: copied Claude native tests/consent input/CMake; tests only for native portal/EIS; Claude owns remote production/combined sharing; existing shortcut fixture adaptation; tiny shared build/driver changes coordinated manager
+- Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
 - Resource: manager-granted single qinda compiler/runtime slot, -j4 -l48 with6GiB guard; no ALL/laptop/host input
 
 ## Updates
@@ -34,3 +34,5 @@
 - 2026-10-02T19:31:00+00:00 — Handoff904c8a0d6 exact receipt sent for independent review; own trees clean, compiler/private runtime released. Read Platform queue and peer Power resource handoff. Available for already approved actual NativeShortcuts test6cf after manager coherent PF21/Power source composition and slot routing; no live process or new completion claimed while waiting.
 
 - 2026-10-02T19:35:00+00:00 — Claimed manager final qualification scope, source/harness only against final desktop2944/corebeb9; root owns warm core source/compiler and no own GPU/compiler lease. Old input PASS receipts immutable. Found actual combined route boundary: resident RemoteDesktop borrows legacy ProcessCapture, protected broker only owns Screenshot/ScreenCast and does not know resident RemoteDesktop session; routed exact source blocker to manager/Claude instead of fake port/admission. Explicit remember/restore is standalone ScreenCast, combined sessions deliberately nonpersistent. Preparing native interface/legacy absence and actual remembered selection rows; shortcuts source6cf remains next.
+
+- 2026-10-02T19:48:00+00:00 — Manager approved minimum unified protected broker (ADR0341 reserved). Source vertical slice reuses AuthorityCapture, RequestRegistry, ScreenCast delegate, ProcessAccessConsent/native lock and EIS with separate PortalCapture1 ordinary attachment and watch-only supervisor client. Inherited capability/native receipt/fixed launch/nondumpability unchanged; binding/lock loss retires requests/jobs and exits broker. Private transport test checks independent endpoint owners/teardown; real native combined/remember rows next. No compiler/GPU lease or runtime claim. Posting exact source checkpoint for parallel independent review now.
