@@ -1,11 +1,11 @@
 # QindaQt Settings Center
 
 `qindaqt-settings` is the first-party QST-1/Controls navigation shell for
-modular settings routes. Its registry currently contains **22 routes**, in
+modular settings routes. Its registry currently contains **23 routes**, in
 stable order: Notifications, Appearance, Display, Network, Customize, Audio,
 Bluetooth, Power, Clipboard, Color, Accessibility, Input, Streaming,
 Date & time, Windows & workspaces, Default applications, About this computer,
-Startup applications, Screen saver, Login screen, Voice, and Passwords & Keys.
+Startup applications, Screen saver, Login screen, Voice, Passwords & Keys, and Portal permissions.
 The shell owns route identity, selection, responsive presentation, and navigation
 accessibility. Each route owns its domain model, service scope, page state,
 and mutations. Appending a route must preserve existing indices and digit
@@ -27,7 +27,7 @@ Route behavior is documented in the corresponding [Appearance](appearance-settin
 [Startup applications](startup-settings.md),
 [Screen saver](screensaver-settings.md),
 [Login screen](login-screen-settings.md), [Voice](voice-settings.md), and
-[Passwords & Keys](keyring-settings.md) pages.
+[Passwords & Keys](keyring-settings.md) and [Portal permissions](portal-permissions-settings.md) pages.
 Notifications includes Do Not Disturb, Quiet Hours, and per-application
 mute/sound controls; their shell policy is documented under
 [notification presentation](../shell/notification-presentation.md).
@@ -52,8 +52,8 @@ Route IDs are 1–64 lowercase ASCII alphanumeric, hyphen, or underscore
 characters and must begin with an alphanumeric character. Titles, descriptions,
 icons, categories, and unavailability diagnostics have independent bounds.
 An unavailable descriptor must have a nonempty reason; an available descriptor
-must not hide one. The closed component kind maps to one of the 22
-compiled route components, from Notifications through Passwords & Keys. It is not a QML URL, plugin path, or service locator.
+must not hide one. The closed component kind maps to one of the 23
+compiled route components, from Notifications through Portal permissions. It is not a QML URL, plugin path, or service locator.
 
 The public command accepts `--page <id>` for any ID in the default
 registry. `--list-routes` emits those IDs in registry order for package
@@ -264,7 +264,7 @@ The interaction contract is:
   position; Ctrl+8 selects Power in its appended eighth position, and Ctrl+9
   selects Clipboard in its appended ninth position; Ctrl+0 selects Color in
   its appended tenth position; all later routes, from Accessibility (11)
-  through Passwords & Keys (22), have no digit shortcut and are reached from
+  through Portal permissions (22), have no digit shortcut and are reached from
   the sidebar
   or compact tab list;
 - Alt+Left selects the immediately previous route; and

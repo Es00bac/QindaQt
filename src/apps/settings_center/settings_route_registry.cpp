@@ -283,6 +283,7 @@ void SettingsRouteRegistry::registerAppendedRoutes() {
   registerLoginScreenRoute();
   registerVoiceRoute();
   registerKeyringRoute();
+  registerPortalPermissionsRoute();
 }
 
 void SettingsRouteRegistry::registerDateTimeRoute() {
@@ -469,6 +470,21 @@ void SettingsRouteRegistry::registerKeyringRoute() {
       .unavailableReason = QString(),
   };
   const bool registered = registerRoute(route);
+  Q_ASSERT(registered);
+  Q_UNUSED(registered);
+}
+
+void SettingsRouteRegistry::registerPortalPermissionsRoute() {
+  const bool registered = registerRoute({
+      .id = QStringLiteral("portal-permissions"),
+      .component = SettingsRouteComponent::PortalPermissions,
+      .title = QCoreApplication::translate("SettingsCenter", "Portal permissions"),
+      .description = QCoreApplication::translate("SettingsCenter", "Revoke remembered screen sharing and remote desktop grants"),
+      .iconName = QStringLiteral("preferences-system-privacy"),
+      .category = QCoreApplication::translate("SettingsCenter", "Privacy"),
+      .available = true,
+      .unavailableReason = QString(),
+  });
   Q_ASSERT(registered);
   Q_UNUSED(registered);
 }
