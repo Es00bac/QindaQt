@@ -74,3 +74,9 @@ ScreenShot2 with the fork and screenshot/helper desktop entries. `CompositorName
 provides the service, object, interface and error names. The source cutover must
 ship with the native backend routing and matching compositor; installed
 qualification remains a separate release gate.
+
+The coordinated [protected input/capture composition](../adr/0341-unify-protected-capture-and-input-sessions.md)
+adds only native input-family adaptors to the fixed broker. PortalCapture1
+ordinary attachment is independent of resident Portal1 and grants no pixel
+capability; inherited QCC1 and protected capture consent remain mandatory.
+This candidate requires genuine combined/restore runtime before route delivery.

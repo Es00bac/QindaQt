@@ -373,3 +373,5 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0339: Manage portal grants through the frontend PermissionStore](0339-use-frontend-permission-store-for-settings-revocation.md)
 - [ADR-0340: Use native privileged compositor identities](0340-use-native-privileged-compositor-identities.md)
+
+- [ADR-0341: Unify protected capture and input sessions](0341-unify-protected-capture-and-input-sessions.md) — coordinated source candidate; genuine combined/restore gates pending

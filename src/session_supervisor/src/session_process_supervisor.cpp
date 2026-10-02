@@ -71,6 +71,7 @@ SessionProcessSupervisor::SessionProcessSupervisor(SessionProcessOptions options
             QStringLiteral("removable-media"), QStringList{QStringLiteral("--watch")}))
       , m_keyring(std::make_unique<KeyringSessionLifetime>(this))
       , m_portal(std::make_unique<PortalSessionLifetime>(this))
+      , m_capturePortal(std::make_unique<PortalSessionLifetime>(true, this))
       , m_nightLight(std::make_unique<OptionalSessionChild>(
             QStringLiteral("night-light"), QStringList{}))
       , m_polkitAgent(std::make_unique<OptionalSessionChild>(
@@ -248,6 +249,7 @@ void SessionProcessSupervisor::stop() noexcept
     }
     stopChild(m_networkSecretAgent);
     m_desktopControls->stop();
+    m_capturePortal->stop();
     m_portal->stop();
     m_keyring->stop();
     m_nightLight->stop();
@@ -444,6 +446,7 @@ void SessionProcessSupervisor::startOptionalChildren()
     m_polkitAgent->start(m_options.polkitAgentExecutable);
     m_keyring->start(m_options.keyringExecutable);
     m_portal->start(resolveExecutable(m_options.portalExecutable), qEnvironmentVariable("WAYLAND_DISPLAY"));
+    m_capturePortal->attachCapture(qEnvironmentVariable("WAYLAND_DISPLAY"));
     m_nightLight->start(resolveExecutable(m_options.nightLightExecutable));
 
     m_removableMedia->start(resolveExecutable(m_options.removableMediaExecutable));
@@ -527,6 +530,7 @@ void SessionProcessSupervisor::finishSession(ChildRole role, int exitCode,
     stopChild(m_networkSecretAgent);
     m_networkSecretAgentProcessId = 0;
     m_desktopControls->stop();
+    m_capturePortal->stop();
     m_portal->stop();
     m_keyring->stop();
     m_nightLight->stop();

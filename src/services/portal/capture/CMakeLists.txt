@@ -5,6 +5,9 @@
 find_path(QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR
     NAMES qindaqt-kwin/capture-authority/protocol.h)
 if(QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR)
+    install(FILES ../data/qindaqt.capture.portal
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/xdg-desktop-portal/portals"
+        COMPONENT QindaQtPortalP0)
     set(authority_paths "${QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR}/qindaqt-kwin/capture-authority/launchpaths.h")
     if(NOT EXISTS "${authority_paths}")
         message(FATAL_ERROR "Selected fork authority header lacks frozen configured launchpaths.h")
@@ -52,7 +55,9 @@ if(QINDAQT_CAPTURE_AUTHORITY_INCLUDE_DIR)
     qindaqt_enable_warnings(qindaqt_portal_protected_capture)
 
     qt_add_executable(qindaqt-portal-capture-backend backend/main.cpp)
-    target_link_libraries(qindaqt-portal-capture-backend PRIVATE qindaqt_portal_protected_capture)
+    target_link_libraries(qindaqt-portal-capture-backend PRIVATE qindaqt_portal_protected_capture QindaQt::PortalAccess QindaQt::PortalRemoteInput)
+    target_compile_definitions(qindaqt-portal-capture-backend PRIVATE
+        QINDAQT_CAPTURE_CONSENT_EXECUTABLE="${KDE_INSTALL_FULL_LIBEXECDIR}/qindaqt-portal-consent")
     qindaqt_enable_warnings(qindaqt-portal-capture-backend)
     install(TARGETS qindaqt-portal-capture-backend
         RUNTIME DESTINATION "${KDE_INSTALL_LIBEXECDIR}" COMPONENT QindaQtPortalP0)

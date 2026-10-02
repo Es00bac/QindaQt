@@ -11,20 +11,29 @@
 namespace QindaQt::SessionSupervisor {
 namespace { constexpr auto Service = "org.qindaqt.Portal1"; constexpr auto Path = "/org/qindaqt/Portal1"; }
 PortalSessionLifetime::PortalSessionLifetime(QObject *parent)
-    : QObject(parent), child_(QStringLiteral("portal"), {}) {
+    : PortalSessionLifetime(false, parent) {}
+PortalSessionLifetime::PortalSessionLifetime(bool captureControl, QObject *parent)
+    : QObject(parent), child_(QStringLiteral("portal"), {}),
+      service_(captureControl ? QStringLiteral("org.qindaqt.PortalCapture1") : QString::fromLatin1(Service)),
+      path_(captureControl ? QStringLiteral("/org/qindaqt/PortalCapture1") : QString::fromLatin1(Path)) {
     retry_.setInterval(100);
     connect(&retry_, &QTimer::timeout, this, &PortalSessionLifetime::attach);
 }
 PortalSessionLifetime::~PortalSessionLifetime() { stop(); }
 void PortalSessionLifetime::start(const QString &program, const QString &display) {
+    if (program.isEmpty()) return;
+    begin(program, display);
+}
+void PortalSessionLifetime::attachCapture(const QString &display) { begin({}, display); }
+void PortalSessionLifetime::begin(const QString &program, const QString &display) {
     static const QRegularExpression canonical(QStringLiteral("^qindaqt-(0|[1-9][0-9]{0,3})$"));
-    if (bus_ || program.isEmpty() || !canonical.match(display).hasMatch()
+    if (bus_ || !canonical.match(display).hasMatch()
         || display.mid(8).toUInt() > 4095) return;
     connectionName_ = QStringLiteral("qindaqt-portal-session-") + QUuid::createUuid().toString(QUuid::Id128);
     bus_ = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(QDBusConnection::SessionBus, connectionName_));
     if (!bus_->isConnected()) { stop(); return; }
     display_ = display;
-    watcher_ = std::make_unique<QDBusServiceWatcher>(QString::fromLatin1(Service), *bus_, QDBusServiceWatcher::WatchForOwnerChange);
+    watcher_ = std::make_unique<QDBusServiceWatcher>(service_, *bus_, QDBusServiceWatcher::WatchForOwnerChange);
     connect(watcher_.get(), &QDBusServiceWatcher::serviceOwnerChanged, this,
         [this](const QString &, const QString &, const QString &newOwner) {
             // AGENT-GUARD: queued loss/arrival may follow a fresh owner lookup.
@@ -35,18 +44,18 @@ void PortalSessionLifetime::start(const QString &program, const QString &display
             retry_.start();
             if (!newOwner.isEmpty()) attach();
         });
-    child_.start(program);
+    if (!program.isEmpty()) child_.start(program);
     retry_.start(); attach();
 }
 void PortalSessionLifetime::attach() {
     if (!bus_ || pending_) return;
     if (++attempts_ > 30) { retry_.stop(); return; }
-    const QDBusReply<QString> owner = bus_->interface()->serviceOwner(QString::fromLatin1(Service));
+    const QDBusReply<QString> owner = bus_->interface()->serviceOwner(service_);
     if (!owner.isValid() || !owner.value().startsWith(QLatin1Char(':'))) return;
     const QDBusReply<uint> uid = bus_->interface()->serviceUid(owner.value());
     if (!uid.isValid() || uid.value() != static_cast<uint>(geteuid())) { retry_.stop(); return; }
     owner_ = owner.value();
-    auto request = QDBusMessage::createMethodCall(owner_, QString::fromLatin1(Path), QString::fromLatin1(Service), QStringLiteral("AttachSessionWithDisplay"));
+    auto request = QDBusMessage::createMethodCall(owner_, path_, QString::fromLatin1(Service), QStringLiteral("AttachSessionWithDisplay"));
     request.setArguments({display_}); request.setAutoStartService(false);
     pending_ = true;
     const auto generation = generation_;

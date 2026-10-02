@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "pipewire_frames.h"
+#include "../remote_input/native/ei_peer.h"
+#include <qindaqt/services/portal/session_binding.h>
 #include <qindaqt/services/portal/foundation_composition.h>
 #include <qindaqt/services/portal/capture_types.h>
 #include <qindaqt/compositor_names/compositor_names.h>
@@ -15,6 +17,7 @@
 #include <QDBusPendingReply>
 #include <QDBusUnixFileDescriptor>
 #include <QFile>
+#include <QFileInfo>
 #include <QDir>
 #include <QSaveFile>
 #include <QJsonDocument>
@@ -39,6 +42,11 @@ class Responses final : public QObject {
 public: int count = 0; quint32 response = 99; QVariantMap results;
 public Q_SLOTS: void receive(quint32 r, const QVariantMap &v) { ++count; response = r; results = v; }
 };
+class ClipboardTransfers final : public QObject {
+    Q_OBJECT
+public: QList<QDBusMessage> messages;
+public Q_SLOTS: void receive(const QDBusMessage &message) { messages.append(message); }
+};
 class ExportProcess final : public QProcess {
 public: ~ExportProcess() override { if (state() != NotRunning) { kill(); waitForFinished(3000); } }
 };
@@ -46,6 +54,7 @@ class NativeCaptureTest final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
     void initTestCase() {
+        QVERIFY2(QFileInfo(QStringLiteral(QINDAQT_CLIPBOARD_CLIENT)).isExecutable(), "Required ordinary clipboard peer unavailable");
         QCOMPARE(prctl(PR_GET_DUMPABLE), 1); registerCaptureWireTypes(); QVERIFY(bus.isConnected());
         // AGENT-CONTRACT: xdg-desktop-portal 1.20.4 exports Screenshot only
         // when Access is selected. Compose the existing real backend separately;
@@ -57,7 +66,8 @@ private Q_SLOTS:
         QVERIFY(accessBackend->registerService("org.freedesktop.impl.portal.desktop.qindaqt"));
         QVERIFY(accessBackend->registerObject("/org/freedesktop/portal/desktop", &accessHost, QDBusConnection::ExportAdaptors));
         QVERIFY(foundation->start()); QTRY_VERIFY(bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).isValid());
-        QVERIFY(bus.registerService("org.freedesktop.portal.Documents")); QVERIFY(bus.registerService("org.freedesktop.impl.portal.PermissionStore")); QVERIFY(bus.registerService("org.qindaqt.Power1"));
+        QVERIFY(bus.registerService("org.freedesktop.portal.Documents")); if (!qEnvironmentVariableIsSet("QINDAQT_CAPTURE_REAL_PERMISSION_STORE")) QVERIFY(bus.registerService("org.freedesktop.impl.portal.PermissionStore"));
+        else QTRY_VERIFY(bus.interface()->isServiceRegistered("org.freedesktop.impl.portal.PermissionStore").value()); QVERIFY(bus.registerService("org.qindaqt.Power1"));
         selected = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), "capture-supervisor"));
         QTRY_VERIFY_WITH_TIMEOUT(bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").isValid(), 10000);
         const auto brokerOwner = bus.interface()->serviceOwner("org.freedesktop.impl.portal.desktop.qindaqt.capture").value();
@@ -176,6 +186,34 @@ private Q_SLOTS:
         const auto pid = helperPid(); close(session, "Session"); QTRY_VERIFY(kill(pid, 0) < 0);
         QTRY_VERIFY(!frames.nodes().contains(streams[0].node)); QTRY_VERIFY(!frames.nodes().contains(streams[1].node));
     }
+    void combinedRemoteDesktopSharesFramesClipboardAndCloses() { combined(false); }
+    void combinedNativeLockRetiresFramesAndInput() { combined(true); }
+    void explicitRememberRestoresProtectedSelection() {
+        QString transient; createSession(transient); reset("allow");
+        request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(transient)), QVariantMap{{"types", 1U}, {"persist_mode", 2U}}});
+        QTRY_COMPARE(responses.count, 1); QCOMPARE(responses.response, 0U);
+        reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(transient)), QString{}, QVariantMap{}}); success(true);
+        QVERIFY(!responses.results.contains("restore_token")); close(transient, "Session");
+        QString session; createSession(session); reset("allow");
+        request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"persist_mode", 2U}}});
+        QTRY_COMPARE(responses.count, 1); QCOMPARE(responses.response, 0U);
+        reset("allow-remember"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
+        const QString token = responses.results.value("restore_token").toString(); QVERIFY(!token.isEmpty());
+        QVERIFY(audit().contains("remember=true"));
+        const auto firstAudit = audit(); close(session, "Session");
+        QString restored; createSession(restored); reset("allow");
+        request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(restored)), QVariantMap{{"types", 1U}, {"persist_mode", 2U}, {"restore_token", token}}});
+        QTRY_COMPARE(responses.count, 1); QCOMPARE(responses.response, 0U);
+        reset("allow-restore"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(restored)), QString{}, QVariantMap{}}); success(true);
+        QVERIFY(audit().contains("restored=true"));
+        const auto selectedName = [](const QByteArray &bytes) { for (const auto &line : bytes.split('\n')) if (line.startsWith("selected source=")) return line; return QByteArray{}; };
+        QVERIFY(!selectedName(firstAudit).isEmpty()); QCOMPARE(selectedName(audit()), selectedName(firstAudit));
+        const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1);
+        QDBusPendingCallWatcher opened(bus.asyncCall(method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(restored)), QVariantMap{}}))); QTRY_VERIFY(opened.isFinished());
+        const QDBusPendingReply<QDBusUnixFileDescriptor> fd = opened; QVERIFY(!fd.isError());
+        PipeWireFrames frames(dup(fd.value().fileDescriptor()), streams.first().node); QTRY_VERIFY_WITH_TIMEOUT(frames.count() > 3, 15000); QVERIFY(containsFixturePixels(frames.image()));
+        close(restored, "Session"); QTRY_VERIFY(!frames.nodes().contains(streams.first().node));
+    }
     void compositorLossWithdrawsStreamsFilesAndPendingPublication() {
         screenshot("Screenshot"); success(); const auto file = QUrl(responses.results.value("uri").toString()).toLocalFile();
         QString session; createSession(session); select(session); reset("allow"); request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
@@ -218,6 +256,33 @@ private Q_SLOTS:
     }
     void cleanupTestCase() { frontend.terminate(); frontend.waitForFinished(5000); if (pixels.state() != QProcess::NotRunning) { pixels.kill(); pixels.waitForFinished(3000); } foundation.reset(); accessBackend.reset(); QDBusConnection::disconnectFromBus("capture-access-backend"); }
 private:
+    void combined(bool lock) {
+        auto attach = QDBusMessage::createMethodCall(QString::fromLatin1(kNativeCapturePortalService), QString::fromLatin1(kNativeCapturePortalPath), QString::fromLatin1(kNativePortalService), "AttachSessionWithDisplay"); attach << QStringLiteral("qindaqt-8");
+        QDBusPendingCallWatcher attached(selected->asyncCall(attach)); QTRY_VERIFY(attached.isFinished()); const QDBusPendingReply<bool> admitted = attached; QVERIFY(!admitted.isError()); QVERIFY(admitted.value());
+        QDBusPendingCallWatcher foreign(bus.asyncCall(attach)); QTRY_VERIFY(foreign.isFinished()); const QDBusPendingReply<bool> rejected = foreign; QVERIFY(!rejected.isError()); QVERIFY(!rejected.value());
+        reset("allow"); request("RemoteDesktop", "CreateSession", {QVariantMap{{"session_handle_token", "rd" + QUuid::createUuid().toString(QUuid::Id128)}}}); QTRY_COMPARE(responses.count, 1); QCOMPARE(responses.response, 0U);
+        const QString session = responses.results.value("session_handle").toString(); QVERIFY(!session.isEmpty());
+        QDBusPendingCallWatcher clipboard(bus.asyncCall(method("Clipboard", "RequestClipboard", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}}))); QTRY_VERIFY(clipboard.isFinished()); const QDBusPendingReply<> requested = clipboard; QVERIFY(!requested.isError());
+        reset("allow"); request("RemoteDesktop", "SelectDevices", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 3U}}}); QTRY_COMPARE(responses.count, 1); QCOMPARE(responses.response, 0U);
+        reset("allow"); request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}}}); QTRY_COMPARE(responses.count, 1); QCOMPARE(responses.response, 0U);
+        reset("allow"); request("RemoteDesktop", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
+        QCOMPARE(responses.results.value("devices").toUInt(), 3U); QCOMPARE(responses.results.value("clipboard_enabled").toBool(), true); QVERIFY(!responses.results.contains("restore_token"));
+        const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 1); const auto producerPid = helperPid(); QVERIFY(producerPid > 0);
+        QDBusPendingCallWatcher connecting(bus.asyncCall(method("RemoteDesktop", "ConnectToEIS", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}}))); QTRY_VERIFY(connecting.isFinished()); const QDBusPendingReply<QDBusUnixFileDescriptor> inputFd = connecting; QVERIFY(!inputFd.isError());
+        Ei sender(true, dup(inputFd.value().fileDescriptor())); QVERIFY(sender.ok); QTRY_VERIFY_WITH_TIMEOUT(sender.pump() && sender.device(EI_DEVICE_CAP_KEYBOARD) && sender.device(EI_DEVICE_CAP_POINTER), 10000);
+        QDBusPendingCallWatcher opened(bus.asyncCall(method("ScreenCast", "OpenPipeWireRemote", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}}))); QTRY_VERIFY(opened.isFinished()); const QDBusPendingReply<QDBusUnixFileDescriptor> remote = opened; QVERIFY(!remote.isError());
+        PipeWireFrames frames(dup(remote.value().fileDescriptor()), streams.first().node); QTRY_VERIFY_WITH_TIMEOUT(frames.count() > 3, 15000); QVERIFY(containsFixturePixels(frames.image()));
+        ClipboardTransfers transfers; QVERIFY(bus.connect("org.freedesktop.portal.Desktop", {}, "org.freedesktop.portal.Clipboard", "SelectionTransfer", &transfers, SLOT(receive(QDBusMessage))));
+        QDBusPendingCallWatcher selection(bus.asyncCall(method("Clipboard", "SetSelection", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"mime_types", QStringList{"text/plain;charset=utf-8", "text/plain"}}}}))); QTRY_VERIFY(selection.isFinished()); const QDBusPendingReply<> set = selection; QVERIFY(!set.isError());
+        ExportProcess paste; auto environment = QProcessEnvironment::systemEnvironment(); environment.remove("QT_FATAL_WARNINGS"); paste.setProcessEnvironment(environment); paste.start(QStringLiteral(QINDAQT_CLIPBOARD_CLIENT), {QStringLiteral("paste")}); QVERIFY(paste.waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(!transfers.messages.isEmpty(), 10000); const uint serial = transfers.messages.first().arguments().at(2).toUInt();
+        { QDBusPendingCallWatcher writing(bus.asyncCall(method("Clipboard", "SelectionWrite", {QVariant::fromValue(QDBusObjectPath(session)), serial}))); QTRY_VERIFY(writing.isFinished()); const QDBusPendingReply<QDBusUnixFileDescriptor> writer = writing; QVERIFY(!writer.isError()); QCOMPARE(::write(writer.value().fileDescriptor(), "remote payload", 14), ssize_t(14)); }
+        QDBusPendingCallWatcher written(bus.asyncCall(method("Clipboard", "SelectionWriteDone", {QVariant::fromValue(QDBusObjectPath(session)), serial, true}))); QTRY_VERIFY(written.isFinished());
+        QTRY_VERIFY_WITH_TIMEOUT(paste.state() == QProcess::NotRunning, 10000); QCOMPARE(paste.readAllStandardOutput().trimmed(), QByteArray("PASTED remote payload"));
+        if (lock) { auto call = QDBusMessage::createMethodCall(QString(QindaQt::CompositorNames::service), QString(QindaQt::CompositorNames::nativeLockPath), QString(QindaQt::CompositorNames::nativeLockInterface), "RequestLockWithReceipt"); call << QUuid::createUuid().toString(QUuid::Id128); bus.asyncCall(call); } else close(session, "Session");
+        QTRY_VERIFY_WITH_TIMEOUT(sender.disconnected(), 10000); QTRY_VERIFY(kill(producerPid, 0) < 0); QTRY_VERIFY(!frames.nodes().contains(streams.first().node));
+        QTest::qWait(150); const auto stopped = frames.count(); QTest::qWait(300); QCOMPARE(frames.count(), stopped);
+    }
     void verifyRenderer() {
         const auto compositorPid = qEnvironmentVariableIntValue("QINDAQT_PORTAL_TEST_COMPOSITOR_PID");
         QVERIFY(compositorPid > 0);
