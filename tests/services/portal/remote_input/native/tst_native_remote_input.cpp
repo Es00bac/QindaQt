@@ -297,7 +297,14 @@ private:
         extra.insert(QStringLiteral("handle_token"), QString::fromLatin1(token));
         extra.insert(QStringLiteral("session_handle_token"), QString::fromLatin1(token) + QStringLiteral("_session"));
         const auto created = parent ? response(interface, "CreateSession", {QString{}, extra}, token) : response(interface, "CreateSession", {extra}, token);
-        return created.first == 0U ? created.second.value(QStringLiteral("session_handle")).toString() : QString{};
+        if (created.first != 0U) {
+            qInfo() << "CreateSession response" << interface << created.first << created.second;
+            return {};
+        }
+        const auto handle = created.second.value(QStringLiteral("session_handle"));
+        if (handle.metaType() == QMetaType::fromType<QDBusObjectPath>()) return handle.value<QDBusObjectPath>().path();
+        if (handle.metaType() == QMetaType::fromType<QDBusArgument>()) return qdbus_cast<QDBusObjectPath>(handle).path();
+        return handle.toString();
     }
     int eisFd(const char *interface, const QString &session) {
         const QDBusReply<QDBusUnixFileDescriptor> reply = call(interface, "ConnectToEIS", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{}});
