@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "candidate": "5f164f60012109c3caa93eb2b699db79ae7dbacd",
+  "native_shortcuts": true,
+  "targets": [
+    "eis",
+    "testNativeCaptureAuthority"
+  ],
+  "original_options": [
+    "-j4",
+    "-l12"
+  ],
+  "resumed_options": [
+    "-j4",
+    "-l48"
+  ],
+  "status": {
+    "exit_code": 1,
+    "elapsed_seconds": 410.09836238098796,
+    "memory_guard_stopped": false
+  },
+  "receipt_sha256": {
+    "command": "4b21980512b8f017425cc7f33d9d6e0e6f2ec3cbdc64c456b8af6cff79ced588",
+    "runtime": "3afd6c5a2cb2502da0ce5d411f4dd40d87d870e431a9e2b89ca04c34a1373344",
+    "status": "0bffd0388b540a4cd435351499a9198874bc2020751216fc90471895d50610b6",
+    "pre_stop_ninja": "885a98dc0e8c342999c7362af0e52f0a9d040d6263b2ae1e9e1b7e65716d7341"
+  },
+  "failure": "undefined reference to qt_static_plugin_KGlobalAccelImpl from KWinIntegrationTestFramework kwin_wayland_test.cpp; core/EIS compilation and EIS linkage completed, final driver link failed",
+  "repair": "97024c8092031f0ec747472e6b0c7c2baa0bb530",
+  "runtime_cases_executed": 0,
+  "recovery_hold": true
+}
