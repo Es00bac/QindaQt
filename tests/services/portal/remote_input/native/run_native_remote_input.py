@@ -7,6 +7,9 @@ Args: fixture consent_helper staged_compositor candidate_eis_plugin_dir"""
 import os, pathlib, resource, select, signal, subprocess, sys, tempfile, time
 resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 fixture, helper, compositor, candidate = map(pathlib.Path, sys.argv[1:5])
+for required in (fixture, helper):
+    if not required.is_file() or not os.access(required, os.X_OK):
+        sys.exit("Required qualification artifact unavailable: " + str(required))
 if not compositor.is_file() or not (candidate / "qindaqt-kwin/plugins/eis.so").is_file():
     print("private production compositor or candidate eis plugin unavailable"); sys.exit(77)
 os.umask(0o077)
