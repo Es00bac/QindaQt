@@ -198,7 +198,12 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
             producer.pop("QT_FATAL_WARNINGS", None)
             if "explicitTwoMonitorBatchClosesEveryProducer" in group:
                 producer["QINDAQT_PRIVATE_CAPTURE_TWO_OUTPUTS"] = "1"
-            comp = subprocess.Popen([str(compositor), "serveNativeCapture"], env=producer, stdin=subprocess.PIPE, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
+            # AGENT-GUARD: the protected broker starts inside this compositor,
+            # before the caller can update env. Export its actual exec-preserved
+            # PID first so the consent test child retains the same peer check.
+            native_driver = ["/bin/sh", "-c", 'QINDAQT_PORTAL_TEST_COMPOSITOR_PID=$$ exec "$@"',
+                             "qindaqt-native-core", str(compositor), "serveNativeCapture", "-nocrashhandler"]
+            comp = subprocess.Popen(native_driver, env=producer, stdin=subprocess.PIPE, stdout=handle, stderr=subprocess.STDOUT, start_new_session=True)
             children.append(comp)
             env["QINDAQT_PORTAL_TEST_COMPOSITOR_PID"] = str(comp.pid)
             env["WAYLAND_DISPLAY"] = "qindaqt-8"
@@ -210,7 +215,7 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
                 time.sleep(.05)
             if not (runtime / "qindaqt-8").exists() or b"CAPTURE_AUTHORITY_READY qindaqt-8 1100x820\n" not in (root / "compositor.log").read_bytes():
                 raise RuntimeError("protected private EGL compositor/broker Ready unavailable")
-            driver = subprocess.Popen([str(fixture), *group], env=env, start_new_session=True)
+            driver = subprocess.Popen([str(fixture), *group, "-nocrashhandler"], env=env, start_new_session=True)
             children.append(driver)
             driver_code = driver.wait(timeout=180)
             audit_exit(driver)
