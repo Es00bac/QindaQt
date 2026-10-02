@@ -45,6 +45,6 @@ install(TARGETS qindaqt_settings_keyring_qml qindaqt_settings_keyring_qmlplugin
     LIBRARY DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Keyring" COMPONENT SettingsAppearanceRuntime
     ARCHIVE DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Keyring" COMPONENT SettingsAppearanceRuntime)
 install(FILES "${QINDAQT_KEYRING_SETTINGS_QML_OUTPUT_DIRECTORY}/qmldir"
-    "${QINDAQT_KEYRING_SETTINGS_QML_OUTPUT_DIRECTORY}/qindaqt_settings_keyring.qmltypes"
+    "${QINDAQT_KEYRING_SETTINGS_QML_OUTPUT_DIRECTORY}/qindaqt_settings_keyring_qml.qmltypes"
     qml/KeyringPage.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Keyring" COMPONENT SettingsAppearanceRuntime)
