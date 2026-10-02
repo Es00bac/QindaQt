@@ -1,0 +1,5 @@
+# Independent native runtime-edge SOURCE ACCEPT
+
+Exact851e2c0f6ae434128db517946b5f391101d3b674 accepted, no blocking sourcechange. Original/candidate recipe and3patchSHA verified; officialarchive/Manifest/provenance binding verified. Independent6testsPASS0/0.280s; freshPortageaux_get3packages×5fields plus nativeprofileUSE7packages exactlymatch. KAuthPolkitbackend/nativeagentselection retained; Kirigami unusedPlasmaatom removed; KDEConnect defaultONplasmoid and nativeOFF-onlypackage subtree preserve realapps;4profileUSE optouts retainapps.
+
+Full hash-bound receipt ops/audits/native-runtime-edges-851-independent-review-20261002.json. No compile/install/runtimequalification. StrictKAuth6.27 deps need existingmatching6.27 (coldsource missingcurrentGentoo recipes); no widenedconstraints. NativePolkit/appsmoke and finalclosure required. SubsequentClaudenativeproviderextension isnewcandidate requiringreview, not covered. Manager nextaction integrate exact851 source after acceptance, then separatelyauthorize package/runtime gates. FinalpluginQA stillworking under grant, resourcesunchanged.
