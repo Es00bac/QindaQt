@@ -4,6 +4,7 @@
 #include <QtQml/QQmlComponent>
 #include <QtQml/QQmlContext>
 #include <QtQuick/QQuickView>
+#include <QtQuick/QQuickItem>
 #include <QtTest/QTest>
 #include <memory>
 class PageModel final : public QObject {
