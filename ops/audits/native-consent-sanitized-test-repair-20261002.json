@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "author": "qinda_icon_brand_audit",
+  "source_candidate": "10292288b92b8dd41161d6c14587addd488652c8",
+  "production_changed": false,
+  "capturelaunchpolicy_sanitizer_changed": false,
+  "scope": "test-only sanitized consent peer/audit/visible-input correction, final runtime pending",
+  "failed_native_histories": [
+    {
+      "attempt": "first",
+      "source": "dd8fae7c1",
+      "core": "195417e8f4f0e95158f470132e85362aa247c1d3",
+      "status": {
+        "exit_code": 1,
+        "elapsed_seconds": 5.849143813014962
+      },
+      "fixture_qt_pass": 2,
+      "fixture_qt_fail": 1,
+      "fixture_qt_skip": 0,
+      "failure": "RemoteDesktop StartResponse2 before mapped input/capture audit",
+      "evidence": [
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/command.json",
+          "sha256": "dc814d40ac0cdca43b6761e7088e212976f5e1db50f2bd99a2f62cfbb2218593"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/status.json",
+          "sha256": "3cd0c918586eefc76d6b503284fdcbdb24d214767245fa03ac48868b54f3d9e8"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/runtime.log",
+          "sha256": "01380a2b8e76ebc483fe02804b824479d887b6e1e816e7e1c9b055b32a007cf1"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/evidence/qindaqt-native-capture-r1cbbuz7/audit.json",
+          "sha256": "753ae547bbce706ea0f0729fff2b1e7706957cefabd108ea86c5bdf37e2bf9ce"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/evidence/qindaqt-native-capture-r1cbbuz7/compositor.log",
+          "sha256": "44d45111e936aef945e188d2230aee7b55d46c8cecd39a2654bd03b35e059705"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/evidence/qindaqt-native-capture-r1cbbuz7/native-renderer.audit",
+          "sha256": "98bf118a5adac7c72327f0cc487dc133078066af0ece7c572cb553f04ba86ca4"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/evidence/qindaqt-native-capture-r1cbbuz7/pipewire.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/evidence/qindaqt-native-capture-r1cbbuz7/producer-frame.audit",
+          "sha256": "0f253184a54ebfecbd9048403f50e0360e218809ed0fcf055a9280fc76370857"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/evidence/qindaqt-native-capture-r1cbbuz7/producer-lifecycle.audit",
+          "sha256": "3211ef85e367943f5e27ede6a2aa4f3b5cf4ef22ad9b6929bbe0d76648a45a7a"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/evidence/qindaqt-native-capture-r1cbbuz7/producer-stderr.audit",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/first/evidence/qindaqt-native-capture-r1cbbuz7/wireplumber.log",
+          "sha256": "e1d006cbb799d2fe83ab82b29808aa46dfdf933f28db9f9a9901a7da37e104b2"
+        }
+      ]
+    },
+    {
+      "attempt": "pid-export-replay",
+      "source": "795df981972026fd69d189f8b0f3bd288fc1db9a",
+      "core": "195417e8f4f0e95158f470132e85362aa247c1d3",
+      "status": {
+        "exit_code": 1,
+        "elapsed_seconds": 4.7103407889953814
+      },
+      "fixture_qt_pass": 2,
+      "fixture_qt_fail": 1,
+      "fixture_qt_skip": 0,
+      "failure": "RemoteDesktop StartResponse2 before mapped input/capture audit",
+      "evidence": [
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/command.json",
+          "sha256": "1ba29b235fb2b37011cfaeac33685d038bb4949364ed4afbc52166b66a181c45"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/status.json",
+          "sha256": "ba48ccfdf242208bb10b695aae956e3f73d67926f14f59004c5cfae08d94cf77"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/runtime.log",
+          "sha256": "0128c80f207585e7e400307e7e77e1fcec79611517b3b624e572ab0f6fbf1fc5"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/evidence/qindaqt-native-capture-gfjavy19/audit.json",
+          "sha256": "aacd7b4085ac2175d0b3855fc3767c1dba8a5d270f02e149a7324d7fe45ef3d3"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/evidence/qindaqt-native-capture-gfjavy19/compositor.log",
+          "sha256": "0335a54a7175f82b52e7bbf544653a84f938427d02b9b1a73cc11081203c97ca"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/evidence/qindaqt-native-capture-gfjavy19/native-renderer.audit",
+          "sha256": "98bf118a5adac7c72327f0cc487dc133078066af0ece7c572cb553f04ba86ca4"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/evidence/qindaqt-native-capture-gfjavy19/pipewire.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/evidence/qindaqt-native-capture-gfjavy19/producer-frame.audit",
+          "sha256": "0c6fee74291c540a515a5c4ffd73d91afed80ae62f1c2af4b9e5ba0c762c7a37"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/evidence/qindaqt-native-capture-gfjavy19/producer-lifecycle.audit",
+          "sha256": "86bd71c6e151469a07d5a676780b96613c5c3207c859d863d8c1d7a37b460c62"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/evidence/qindaqt-native-capture-gfjavy19/producer-stderr.audit",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "build/final-native-20261002/runtime/combinedRemoteDesktopSharesFramesClipboardAndCloses/pid-export-replay/evidence/qindaqt-native-capture-gfjavy19/wireplumber.log",
+          "sha256": "6def63941ba3b7ef8e4c3baa2b0c064cff4bb36f6b66b5b44ac3ef45d913cacb"
+        }
+      ]
+    }
+  ],
+  "compile": {
+    "exit_code": 0,
+    "elapsed_seconds": 70.01701612398028,
+    "memory_guard_stopped_owned_pgid": false,
+    "minimum_available_bytes": 8243777536
+  },
+  "helper": {
+    "path": "build/dev/tests/services/portal/foundation/qindaqt_portal_consent_input",
+    "sha256": "eb21ceb0bdf953c01fe27d5b4c8171985a57ddf60ff9fc616b88aaeaefa4df6d"
+  },
+  "build_evidence": [
+    {
+      "path": "build/final-native-20261002/helper-repair-build-command.json",
+      "sha256": "05e3370b6236b05319a1ca558ea1f127adb069b26c0e518bddd1787844d7586a"
+    },
+    {
+      "path": "build/final-native-20261002/helper-repair-build-status.json",
+      "sha256": "ccb0b6d7fb9871a7cf874f422c207323006c8e73c72ce4f670386359fb1225dc"
+    },
+    {
+      "path": "build/final-native-20261002/helper-repair-build.log",
+      "sha256": "3d49a90050c41cf80f96b43414b31b9338cc6a9d0fad5728cc6f23e92e922370"
+    },
+    {
+      "path": "build/final-native-20261002/sanitized-helper-docs.log",
+      "sha256": "81711af9c80f7d5b4514db35eb6828040c2c52b4b701fe0e0d8db2f42287826f"
+    }
+  ],
+  "docs": {
+    "mkdocs_exit": 0,
+    "validator_exit": 0,
+    "markdown_documents": 503
+  },
+  "next_gate": "manager exact source review and final refreshed core artifact/serialized native grant before one changed-helper combined replay; other four cases after PASS"
+}
