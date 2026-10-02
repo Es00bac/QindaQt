@@ -144,7 +144,7 @@ a distinct policy from confirmed public Power1/Settings1 facts. A separate
 `--critical-policy=native-exclusive` option defaults off and shares the canonical
 PowerDevil absence guard. Only authenticated on-battery/present supply facts
 with WarningLevel Action admit the configured none/suspend/hibernate/power-off
-action and5–300-second countdown. None sends no notification or action.
+action and 5–300-second countdown. None sends no notification or action.
 
 The deadline uses a monotonic clock and starts only after a confirmed
 actionable notification. Updates replace the same owned notification. User
@@ -162,6 +162,12 @@ The notification adapter checks exact owner, ID and a nonce action key and
 serializes close behind pending updates. A late confirmed ID is cleaned up on
 its original owner. A lost initial reply has no safe cleanup ID, so it never
 authorizes action/replay; every publication requests finite positive remaining
-plus3-second expiry. A foreign nonconforming host cannot guarantee that bound.
+plus 3-second expiry. A foreign nonconforming host cannot guarantee that bound.
+`qindaqt.power-critical-battery-runtime` is the actual resident acceptance
+fixture: minimum-duration actions, same-ID updates, public user cancellation,
+none/default/legacy admission, warning/AC/Settings/provider/action-owner fences,
+late capability and notification replies, revision regression, finite unknown-ID
+expiry, uncertain no-replay, and strict 5–300-second typed bounds. Its wire fault
+rows are separate from the real resident notification host/user presenter rows.
 Private runtime verification remains the acceptance gate for this source slice;
-no installed/hardware qualification or wholePF2 completion is implied.
+no installed/hardware qualification or whole PF2 completion is implied.
