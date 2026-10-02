@@ -1,6 +1,6 @@
 # Native power delivery worker
 
-- Status: working — shared idle/inhibitor and native lid screen-off delivery through owned QindaQt authority.
+- Status: working — composing real shared dim/idle-suspend and persistent lid screen-off after focused display authority gates
 - Base: 7358b792874f06eb13e00dcd0780c1ee8a453e7a
 - Fork base: 68c4d74f903b7e8990dd5fd5d509ec8154eac1d1 (qinda main directly verified).
 - Branch: worker/pf-power-delivery-20261002
@@ -17,3 +17,5 @@
 - 2026-10-02T17:08:39Z — Actual new private-bus registration gate at5791593332cbf8490bd455c92767bcfabb23035d passes6Qt/0fail/0skip (CTest1/1,2.39s). Strict two-target build passes35.49s after preserving two actual owned compilation failures (Qt watcher constructor and fixture codec include). Manager-requested resource transition interrupted own guarded PGID1205552/starttick41554635, exit130; same10 affected targets resumeincrementally -j4/-l12. New isolated fork68c source worktree prepared for scoped blank authority, no fork build/runtime or host action. Native composition/scoped DPMS source work continues during exact first-slice review.
 
 - 2026-10-02T17:36:48Z — Coherent first admission candidate actual12CTest/136Qt/0fail0skip passed33.06s; all78 logged private PIDs gone, receipt454e87ad. Compiler released to shortcut/capture queue. Source continuation active: fork3ad66 scoped own DPMS provenance, minimal same-mode request hook, frontend actual-owner/nonce inventory client and two-cause facade reusing Protected gate. Adding genuine resumed-event distinction because rearm/startup clearing idle is not physical activity; remaining shared consumers/ScreenOff wire/explicit activation and PowerDevil-child retirement are being assembled. No native session or physical hardware test claimed; next focused private-bus/finite-cause compiler request in about30min.
+
+- 2026-10-02T17:58:08Z — Verify: e78ee584a strict component build 0/143.18s; scoped client 11 Qt PASS, 0 fail/skip; fork65316c5efb strict pure ledger 7 Qt PASS, 0 fail/skip. Compiler released; actual Workspace/native renderer remains unqualified.
