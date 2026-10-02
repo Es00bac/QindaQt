@@ -135,6 +135,12 @@ void loadPrintSettings(QPrinter *printer, const QVariantMap &settings, const QVa
     }
 
     QCUPSSupport::setPagesPerSheetLayout(printer, pagesPerSheet, pagesPerSheetLayout);
+    // AGENT-GUARD: Qt 6.11.1's private enum/string table swaps some layouts.
+    // Preserve the standard CUPS spelling requested by the frontend rather
+    // than returning rlbt for rltb. The dialog still owns subsequent edits.
+    const QString requestedLayout = settings.value(QStringLiteral("number-up-layout")).toString();
+    if (QStringList{"lrtb", "lrbt", "rltb", "rlbt", "tblr", "tbrl", "btlr", "btrl"}.contains(requestedLayout))
+        QCUPSSupport::setCupsOption(printer, QStringLiteral("number-up-layout"), requestedLayout);
 
     // Process page setup
     QSizeF paperSize;
