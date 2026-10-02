@@ -81,7 +81,7 @@ std::optional<CaptureRequest> captureRequestFromFrame(const QJsonObject &frame) 
     if (frame.size() == 10) {
         if (result.kind != CaptureKind::Stream || !frame.value("multiple").isBool() || !integer(frame.value("cursor_mode"), 1, 4)
             || !QSet<int>{1, 2, 4}.contains(frame.value("cursor_mode").toInt())) return {};
-        result.multiple = frame.value("multiple").toBool(); result.cursorMode = frame.value("cursor_mode").toInt();
+        result.multiple = frame.value("multiple").toBool(); result.cursorMode = static_cast<quint32>(frame.value("cursor_mode").toInt());
     }
     if (result.kind == CaptureKind::Stream && result.session.isEmpty()) return {};
     return result;
