@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — exact8a622 install metadata source accepted; ready for overlay patch review and signedDesktop discovery
+- Status: available — exact8a622 source and overlay93c install patch accepted; ready for final installedDesktop discovery
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -96,3 +96,7 @@
 - 2026-10-02T21:39:57.364409+00:00 — Claimed root8a622 narrow source review: only Keyring installed metadata basename/wiki contract. Inspecting actual retained29f Portage generated qmldir/qmltypes and sole missing install filename; no fresh configure/build/runtime/source edits.
 
 - 2026-10-02T21:41:43.722316+00:00 — Exact8a622 SOURCEACCEPT: retained r2 qmldir SHAee79ab51 names generated qindaqt_settings_keyring_qml.qmltypes; actual864-byte file SHAd11016fb exists, oldbasename absent. Candidate only exactinstallbasename/wiki; no runtime/target/interface/generatedmetadata change. Originalgeneratedinstall failure and103scan bound. No freshconfigure/build/runtime/install; packageimage and exactdownstreampatch reviews remain next.
+
+- 2026-10-02T21:44:46.257742+00:00 — Claimed overlay93c exact patch/recipe review against accepted8a source and actual immutable29f archive/Manifest, no Portage phase/compiler/runtime.
+
+- 2026-10-02T21:44:47.408296+00:00 — Overlay93c SOURCEACCEPT: only2line PATCHES recipeaddition; patchbody byte-identical8a diff; actualfrozen29f archive CMake patched byte-identical8a. Manifest+archive digests unchanged; Bashsyntax0. No Portagephase/compiler/runtime/install. Parent phase/image/package gates remain; ready for actual/usr discovery after grant.
