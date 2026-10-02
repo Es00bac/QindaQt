@@ -154,7 +154,9 @@ private Q_SLOTS:
     void explicitTwoMonitorBatchClosesEveryProducer() {
         QString session; createSession(session); reset("allow");
         request("ScreenCast", "SelectSources", {QVariant::fromValue(QDBusObjectPath(session)), QVariantMap{{"types", 1U}, {"multiple", true}, {"cursor_mode", 2U}}});
-        success(); reset("allow");
+        // SelectSources validates policy without presenting consent. Only
+        // Start maps the real helper; waiting for it here expires the session.
+        QTRY_COMPARE_WITH_TIMEOUT(responses.count, 1, 10000); QCOMPARE(responses.response, 0U); reset("allow");
         request("ScreenCast", "Start", {QVariant::fromValue(QDBusObjectPath(session)), QString{}, QVariantMap{}}); success(true);
         const auto streams = qdbus_cast<CaptureStreams>(responses.results.value("streams")); QCOMPARE(streams.size(), 2);
         QVERIFY(streams[0].node && streams[1].node && streams[0].node != streams[1].node);
