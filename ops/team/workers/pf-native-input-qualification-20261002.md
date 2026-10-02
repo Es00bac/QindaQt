@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — exact e568 release-contract independent ACCEPT; six tests/native recipe PASS, awaiting installed plugin QA scope
+- Status: available — installed native plugin/shell QA commands prepared; awaiting exact final artifacts and explicit runtime grant
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -68,3 +68,5 @@
 - 2026-10-02T20:47:23+00:00 — Claimed independent source review e568 in isolated qinda pf-release-contract-review-20261002. Actual fork55d resolves exactc031 tree. Reviewing native exact-rN/subslot dependency, retired runtime rejection, preserved ABI/plugin/shell/source/install gates; six lightweight parser tests plus actual final recipe next. No source edits/build/runtime.
 
 - 2026-10-02T20:48:25+00:00 — Independent e568 source review ACCEPT/no blocking findings; six Python tests PASS6/6, repository/source-pin/current native desktop-r1-r3dependency recipe PASS. Actualrecipe SHA matches6c168e8 blob; fork55d treec031 exact. Source text contract retains build/runtime/install gates; transitiveclosure/installedplugin gate separate, future-r2 sourcepin required. Review-only receipt/board/thread committed; no compiler/native lease held, available next manager installed-plugin QA assignment.
+
+- 2026-10-02T20:51:03+00:00 — Completed manager-routed existing installed-plugin/shell QA preparation against observedcae manager WT. Criticalcachefacts: BUILD_TESTINGOFF, PLUGINON/old68 headerprefix/binary; stale CTest catalog is not current target availability. Prepared3staticABI/2nested discovery, seven profile/resolution/package/dock rows, offscreen11profile capturematrix and3production-surface commands. No realAltTab functional row found; package tests are not switching evidence. Existing discovery stages DESTDIR rather than actualPortageinstalledfiles. Own ignoredplan ready; no builds/install/runtime/source edits, no lease held; waiting exact55d/29f artifacts/grant.
