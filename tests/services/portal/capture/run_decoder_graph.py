@@ -62,6 +62,9 @@ context.objects = [ { factory = spa-node-factory args = { factory.name = support
               "wireplumber_config_sha256": hashlib.sha256(wp_source.read_bytes()).hexdigest(), "expected_fallback_negative": args.expect_fallback_negative}
     code = 1
     try:
+        result["socket_path_bytes"] = {str(path): len(os.fsencode(path)) + 1 for path in
+                                       (root / "bus", root / "runtime/pipewire-decoder-private")}
+        assert all(length <= 108 for length in result["socket_path_bytes"].values()), "private Unix socket path exceeds native bound"
         bus_config = root / "bus.conf"
         bus_config.write_text("<busconfig><type>session</type><listen>unix:path=" + str(root / "bus") + "</listen><auth>EXTERNAL</auth><policy context='default'><allow own='*'/><allow send_destination='*'/><allow receive_sender='*'/></policy></busconfig>")
         bus_log = (root / "dbus.log").open("wb"); logs.append(bus_log)
