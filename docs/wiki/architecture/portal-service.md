@@ -214,9 +214,9 @@ The [native capture module](../reference/portal-capture.md) composes separate Sc
 A separate native GlobalShortcuts v1 adaptor/helper owns
 CreateSession, BindShortcuts, ListShortcuts and activation/deactivation. It
 adapts existing session admission and uses the compositor's native Shortcuts1
-service. The frontend forwards standard `handle_token` and
-`session_handle_token` options to CreateSession, and `handle_token` to
-BindShortcuts. The adaptor checks those values against the frontend-created
+service. The frontend forwards `session_handle_token` to CreateSession and
+forwards optional client `handle_token` values to CreateSession and
+BindShortcuts. The adaptor checks supplied tokens against the frontend-created
 request/session paths and rejects unknown options. Rejecting every nonempty
 map prevents real clients such as Gabbee from creating a shortcut session.
 The selected native backend must pass a real frontend request before live
