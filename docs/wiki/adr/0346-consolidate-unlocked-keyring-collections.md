@@ -1,6 +1,6 @@
 # ADR-0346: Consolidate unlocked keyring collections inside the resident
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-03
 - Owners: QindaQt program manager and keyring module
 - Scope: Native Secret Service persistence and collection identity
