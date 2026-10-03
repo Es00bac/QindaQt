@@ -10,6 +10,7 @@ import sys
 import tempfile
 import time
 import unittest
+import xml.etree.ElementTree as ET
 import secretstorage
 from jeepney import DBusAddress, new_method_call, DBusErrorResponse, MessageType
 from secretstorage.util import DBusAddressWrapper
@@ -113,6 +114,21 @@ class SecretServiceTest(unittest.TestCase):
             peer.sendall(frame)
             result = peer.recv(5)
         return result
+
+    def test_standard_introspection_exposes_service_and_collection_contracts(self):
+        root = "/org/freedesktop/secrets"
+        service_xml = self.call("org.freedesktop.DBus.Introspectable",root,"Introspect")[0]
+        service_interfaces = {node.attrib["name"] for node in ET.fromstring(service_xml).findall("interface")}
+        self.assertIn("org.freedesktop.Secret.Service",service_interfaces)
+        self.assertIn("org.qindaqt.Keyring1",service_interfaces)
+        self.assertIn("org.freedesktop.DBus.Properties",service_interfaces)
+
+        collection = self.collection()
+        collection_xml = self.call("org.freedesktop.DBus.Introspectable",
+                                   collection.collection_path,"Introspect")[0]
+        collection_interfaces = {node.attrib["name"] for node in ET.fromstring(collection_xml).findall("interface")}
+        self.assertIn("org.freedesktop.Secret.Collection",collection_interfaces)
+        self.assertNotIn("org.qindaqt.Keyring1",collection_interfaces)
 
     def test_plain_session_and_cross_caller_close_denial(self):
         collection = self.collection()

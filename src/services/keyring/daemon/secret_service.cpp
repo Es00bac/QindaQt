@@ -180,6 +180,14 @@ bool SecretService::handleMessage(const QDBusMessage &m, const QDBusConnection &
         // Every wire disclosure must re-evaluate resident policy first.
         if(lockPolicy_) lockPolicy_->enforce();
         if (!exists(m.path())) { error(m,"org.freedesktop.Secret.Error.NoSuchObject"); return true; }
+        if (m.interface() == "org.freedesktop.DBus.Introspectable"
+            && m.member() == "Introspect" && m.signature().isEmpty()) {
+            // AGENT-CONTRACT: QDBusVirtualObject supplies the interface XML but
+            // still routes the standard wire call here. Clients need the full
+            // node document to discover both Secret Service and Keyring1.
+            reply(m, {QStringLiteral("<node>") + introspect(m.path()) + QStringLiteral("</node>")});
+            return true;
+        }
         if (m.interface() == "org.freedesktop.DBus.Properties") return propertyMethod(m);
         if (m.interface() == "org.freedesktop.Secret.Prompt") return promptMethod(m);
         if (m.interface() == "org.freedesktop.Secret.Session" && m.member() == "Close" && m.signature().isEmpty()) {
