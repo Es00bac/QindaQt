@@ -1,4 +1,7 @@
 <node>
+<interface name="org.freedesktop.DBus.Introspectable">
+<method name="Introspect"><arg type="s" direction="out"/></method>
+</interface>
 <interface name="org.freedesktop.Secret.Service">
 <method name="OpenSession"><arg type="s" direction="in"/><arg type="v" direction="in"/><arg type="v" direction="out"/><arg type="o" direction="out"/></method>
 <method name="CreateCollection"><arg type="a{sv}" direction="in"/><arg type="s" direction="in"/><arg type="o" direction="out"/><arg type="o" direction="out"/></method>

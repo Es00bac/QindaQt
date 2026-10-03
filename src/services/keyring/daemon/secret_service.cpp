@@ -64,7 +64,9 @@ QString SecretService::introspect(const QString &path) const {
         : id.isEmpty() ? QString() : itemForPath(path,id).isEmpty() ? QString(CollectionInterface) : QString(ItemInterface);
     // Generated XML contains each cohesive interface as one text fragment.
     const auto xml = QString::fromUtf8(file.seek(0) ? file.readAll() : QByteArray{});
-    for (const auto &iface : {selected, QString("org.freedesktop.DBus.Properties"), path == Root ? QString(NativeInterface) : QString()}) {
+    for (const auto &iface : {selected, QString("org.freedesktop.DBus.Properties"),
+                              QString("org.freedesktop.DBus.Introspectable"),
+                              path == Root ? QString(NativeInterface) : QString()}) {
         if (iface.isEmpty()) continue;
         const auto begin = xml.indexOf("<interface name=\"" + iface + "\"");
         const auto end = xml.indexOf("</interface>", begin);
