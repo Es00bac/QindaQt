@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — exactd916 EOF operational correction ACCEPT; no runtime lease
+- Status: available — exactoverlay91c SOURCE ACCEPT handed off; no runtime lease
 - Identity: qinda_icon_brand_audit
 - Base: 5917da5c054ccd8ed9fd0be5a2ac9db549a4bb1c
 - Branch: worker/pf-keyring-preinstall-admission-20261002
@@ -156,3 +156,7 @@
 - 2026-10-03T02:24:14.122598+00:00 — Claimed quick exactd916 operational adapter review; unchanged05bb driver independently hashed. Root proven same-FD dup2 CLOEXEC retention caused diagnostic transport loss; earlier e430 execution acceptance missed this case. Explicit set_inheritable3 now repairs it; no production/code/provider/test/runtime changes. Preparing own correction receipt, root genuine GNOME scratch replay next.
 
 - 2026-10-03T02:24:34.496692+00:00 — ACCEPT d916 +unchanged05bb: explicit FD3 inheritable clears same-descriptor CLOEXEC while verified EOF pipe/writer closure/exec/native admission/scratch isolation remain intact. Earlier e430 execution acceptance superseded. Root two-pass GNOME trace indicates post-acquisition transport boundary; no GNOME production defect proven. Own source-only immutable receipt, diffcheck pending commit; stop available.
+
+- 2026-10-03T02:26:33.684932+00:00 — Claimed exactoverlay91c source review via explicitqinda barehub; newr3 recipe +accepted62 six-file patch, immutable29f/8a lineage, Manifest/deps/options/deliveryatom inspected. No builds/install/provider/credentials; actual source checks bash-n0/diffcheck0/exactpatchmatch. Preparing own immutable source verdict.
+
+- 2026-10-03T02:26:52.089167+00:00 — SOURCE ACCEPT91c: exact62 patch byte-equivalent, all6 affected originalblobs identical29f→5917, r3 recipe onlyadds acceptedpatch/comments, r2/Manifestpreviousrows immutable, dependency/options unchanged. Bash-n0/diffcheck0; no compilation/Portage/provider/credential calls. Source-only own receipt preserved; root normal signed packaging plusartifact gate next, stopavailable.
