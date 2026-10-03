@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — early reader/allowlisted monitor verdict handed off; no runtime lease
+- Status: available — exact62ac folder compatibility SOURCE ACCEPT handed off; focused gate pending
 - Identity: qinda_icon_brand_audit
 - Base: 5917da5c054ccd8ed9fd0be5a2ac9db549a4bb1c
 - Branch: worker/pf-keyring-preinstall-admission-20261002
@@ -148,3 +148,7 @@
 - 2026-10-03T02:01:36.391055+00:00 — Root actual source isolation reports GNOME7/0.836s and KWallet1/0.080s, both no catalog/zero encrypted files. Reviewing early wire/async/parser sites and destination-pinned method-only monitor privacy; no actual bus/provider/secret/runtime calls or tests. Own board/new replies only, nice19/idleIO.
 
 - 2026-10-03T02:03:28.822460+00:00 — Source review rejects destination-only monitor because unrelated writes transfer secret request bodies; accepts only exact owner+method-call acquisition allowlist with header-only output/no returns/signals/body. KWallet1 excludes reader constructor errors (mapped7); strict reply signature/list/async signal/entry type/planner remain candidate sites, no defect proven. Ordered non-cleanup RPC trace is next root gate. Only own records/source reads; no actual bus/provider/secret/test/runtime calls. Stop available.
+
+- 2026-10-03T02:14:07.710268+00:00 — Claimed independent exact62acb69b931a091a9ee5161cf65dba570b5a17a4 source review, fetched qinda bare hub branch explicitly; parent exact5917. Six product/test/wiki paths read against real folder-duplicate cause. Collapse call closure/raw bounds/default strictness/verifier and mutation failures reviewed; no compiler/runtime/provider/secret reads, own board/new reply only. Preparing immutable SOURCE ACCEPT; packager focused fixtures pending.
+
+- 2026-10-03T02:14:26.817951+00:00 — Exact62ac SOURCE ACCEPT: only folderList initial/recheck collapse duplicates, all raw strings still count toward1024, every other list strict. Added encrypted completeness/call-count/raw-capacity/other-uniqueness/mutation fixture assertions inspected; unchanged verifier retained. Diffcheck0, no compile/runtime by reviewer; own immutable receipt ready, focused private gate remains packager outcome. Stop available.
