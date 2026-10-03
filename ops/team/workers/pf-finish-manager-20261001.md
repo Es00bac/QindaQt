@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: available — laptop user bus restored; authenticated legacy keyring import and native session admission gate final cutover
+- Status: blocked — authenticated legacy keyring unlock/import and accepted native session are required before final provider/PAM cutover
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-03T00:23:27.647340+00:00 — Third consecutive goal turn revalidates the same real authenticated-import barrier: both same-UID stable Secret Service owners still expose locked nonempty collections, qinda63+4items/laptop9items; both default native catalogs absent, no secret values/passwords/Unlock/import/PAM switch acquired. Prior turn made concrete progress by restoring failed laptop user manager and bus; all independent signed packages and accepted source preserved, no worker/compiler/GPU lease remains. Full desktop cutover is incomplete. Exact blocked audit ops/audits/plasma-finish-blocked-audit-20261002.json records requirement/evidence boundaries; request goal blocked after preserving checkpoint. No partial migration, credential guessing or forced current-app closure.
 
 - 2026-10-03T00:19:37.908118+00:00 — Recovery700c is preserved on qinda hub; source metadata shows both nonempty legacy Secret Service collections locked, no source Unlock or secret-value calls, no destination passwords/import. Root compiler/GPU/Portage resources idle; current admitted native physical session still unavailable and existing applications are not force-closed. Available for exact signed five-package cutover only after the existing real import contract passes; no safe credential substitution or partial-collection migration is offered.
 

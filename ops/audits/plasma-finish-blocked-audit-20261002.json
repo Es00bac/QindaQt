@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "goalStatusRequested": "blocked",
+  "consecutiveGoalTurns": 3,
+  "condition": "Actual legacy credentials remain locked and no authenticated import/native session/destination-password input is available. The accepted import-before-provider/PAM contract prevents final native package/provider switch.",
+  "previousTurnClassification": "progress — restored failed laptop user manager/user bus and established actual legacy collection lock/count metadata",
+  "goalTurns": [
+    {
+      "turn": 1,
+      "sourceCommit": "4e0f40a66698d09a67e6d2ef16370653a23b782d",
+      "evidence": "Signed private sharing helper installed on both hosts; actual credential import and five native upgrades remain unperformed."
+    },
+    {
+      "turn": 2,
+      "sourceCommit": "70028a429557d4630fc0ea97e45f56e1029d270a",
+      "evidence": "Laptop user manager and bus restored. Both legacy Secret Service providers now running with locked nonempty collections; no user-data import."
+    },
+    {
+      "turn": 3,
+      "evidence": "Fresh same-UID stable-owner metadata confirms nonempty locked collections still present on both hosts and default native catalogs absent.",
+      "hosts": [
+        {
+          "host": "qinda",
+          "observedAt": "2026-10-03T00:21:13.055164+00:00",
+          "secretValuesRead": 0,
+          "unlockCalls": 0,
+          "providerStartCalls": 0,
+          "importRuns": 0,
+          "defaultNativeCatalogExists": false,
+          "collections": [
+            {
+              "locked": true,
+              "items": 63
+            },
+            {
+              "locked": true,
+              "items": 4
+            },
+            {
+              "locked": false,
+              "items": 0
+            }
+          ],
+          "ownerStable": true,
+          "nonemptyLockedCollections": 2
+        },
+        {
+          "host": "qinda-top",
+          "observedAt": "2026-10-03T00:21:12.809271+00:00",
+          "secretValuesRead": 0,
+          "unlockCalls": 0,
+          "providerStartCalls": 0,
+          "importRuns": 0,
+          "defaultNativeCatalogExists": false,
+          "collections": [
+            {
+              "locked": false,
+              "items": 0
+            },
+            {
+              "locked": true,
+              "items": 9
+            }
+          ],
+          "ownerStable": true,
+          "nonemptyLockedCollections": 1
+        }
+      ]
+    }
+  ],
+  "scope": "Metadata only; no secret values, passwords, unlock prompts, actual import, provider unmerge, native PAM initialization, forced logout or compositor restart.",
+  "remaining": [
+    "Authenticated complete legacy import and application compatibility",
+    "Five remaining signed native package upgrades on both hosts",
+    "Installed native runtime verification and final retired-only cleanup",
+    "Fresh physical native session, power and live sharing acceptance"
+  ],
+  "completion": "unproven; full desktop cutover is incomplete",
+  "resources": "No root compiler/GPU/Portage work or live worker lease remains."
+}
