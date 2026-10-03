@@ -3,6 +3,10 @@
 **Settings → Input → Controllers** configures Xbox, PlayStation, Nintendo and
 other SDL-mapped game controllers. Family defaults are available before hardware
 is connected; a connected controller gets its own remembered profile.
+The page selects a connected controller initially and labels remembered offline
+profiles as disconnected. Serial-backed identity is shared across USB and
+Bluetooth; changing transport keeps the same preferences. A serial-less device
+keeps its GUID identity. Existing matching legacy profiles are migrated on discovery.
 
 ## Desktop controls
 
@@ -80,6 +84,10 @@ touchpad, gyro, gyroSpeed and a bounded button-to-action/shortcut map. Unknown
 keys, out-of-range numbers, invalid buttons/actions and multi-chord shortcuts
 are rejected without changing any setting. Settings discards replies from an old
 service generation and clears edit authority on owner loss.
+Edits remain busy until a fresh post-reply snapshot arrives. A change signal
+received during a snapshot queues another read, so suppression/reconnect changes
+cannot strand the next edit on an old revision. Interactive controls rebind to
+confirmed settings after a gesture and when controller selection changes.
 
 All runtime, endpoint, SDL handles, delivery and Settings models stay on their
 owning Qt GUI thread. The SDL runtime borrows a sink that outlives it; each held
@@ -87,6 +95,9 @@ token must be released on suppression/disconnect/destruction. Voice1 requests
 use its exact unique bus owner and current revision, with no replay after an
 owner replacement. [ADR-0347](../adr/0347-controller-desktop-integration.md)
 records the dependency and priority decision.
+Qt method-return messages do not supply the service owner through `service()`.
+Controller dictation resolves the activated Voice1 name through the bus and reads
+that unique owner before starting the capture.
 
 ## Focused verification
 
@@ -99,6 +110,8 @@ installed QindaQt KWin SDK. It does not compile the desktop or KWin.
   edits gated by authority, readback, Steam status, owner loss.
 - `qindaqt.controller-runtime`: SDL virtual DualSense buttons, dictation action,
   stick/touchpad/gyro motion, suppression releases, neutral resume, Steam startup.
+- `qindaqt.controller-bus`: private out-of-process provider, change-during-read
+  convergence, mutation completion after readback, and dictation start/release.
 
 Physical controller and USB microphone qualification is recorded separately;
 passing virtual fixtures does not claim that hardware was connected.

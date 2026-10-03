@@ -19,6 +19,22 @@ private:
                 {"family", "playstation"}, {"template", true}, {"config", QindaQt::Controllers::profileJson(QindaQt::Controllers::defaultProfile())}}}}};
     }
 private Q_SLOTS:
+    void connectedProfileIsSelectedAndExplicitDefaultsStaySelected() {
+        FakePort port; ControllersModel model(port);
+        auto data = snapshot();
+        auto rows = data.value("controllers").toArray();
+        auto pad = rows[0].toObject(); pad["id"] = "pad:connected"; pad["template"] = false;
+        pad["connected"] = true; rows.append(pad); data["controllers"] = rows;
+        Q_EMIT port.snapshotReceived(data);
+        QCOMPARE(model.selectedId(), "pad:connected");
+        QVERIFY(model.controllers().last().toMap().value("displayName").toString().contains("connected"));
+        model.select("default:playstation"); Q_EMIT port.snapshotReceived(data);
+        QCOMPARE(model.selectedId(), "default:playstation");
+        model.select("pad:connected"); pad["connected"] = false; rows[1] = pad;
+        pad["id"] = "pad:reconnected"; pad["connected"] = true; rows.append(pad);
+        data["controllers"] = rows; data["revision"] = "8";
+        Q_EMIT port.snapshotReceived(data); QCOMPARE(model.selectedId(), "pad:reconnected");
+    }
     void bindingWaitsForReadback() {
         FakePort port; ControllersModel model(port); Q_EMIT port.snapshotReceived(snapshot());
         QVERIFY(model.available()); QCOMPARE(model.selectedId(), "default:playstation");

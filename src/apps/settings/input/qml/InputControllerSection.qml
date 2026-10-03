@@ -13,8 +13,8 @@ ColumnLayout {
     readonly property var config: selected.config ?? ({})
     readonly property bool editable: controllers.available && !controllers.busy
     readonly property bool playstation: selected.family === "playstation"
-    readonly property bool hasTouchpad: selected.hasTouchpad ?? (selected.template && playstation)
-    readonly property bool hasGyro: selected.hasGyro ?? (selected.template && (playstation || selected.family === "nintendo"))
+    readonly property bool hasTouchpad: Boolean(selected.hasTouchpad ?? (selected.template && playstation))
+    readonly property bool hasGyro: Boolean(selected.hasGyro ?? (selected.template && (playstation || selected.family === "nintendo")))
     readonly property Item firstFocusTarget: controllers.available ? controllerChoice : retryButton
     signal captureActivityChanged(bool active)
     signal audioSettingsRequested()
@@ -50,12 +50,15 @@ ColumnLayout {
             objectName: "controllerChoice"
             width: 320
             model: root.controllers.controllers
-            textRole: "name"
+            textRole: "displayName"
             valueRole: "id"
             currentIndex: Math.max(0, root.controllers.controllers.findIndex(entry => entry.id === root.controllers.selectedId))
             enabled: !root.controllers.busy
             Accessible.name: qsTr("Controller or family defaults")
-            onActivated: index => root.controllers.select(root.controllers.controllers[index].id)
+            onActivated: index => {
+                root.controllers.select(root.controllers.controllers[index].id)
+                currentIndex = Qt.binding(() => Math.max(0, root.controllers.controllers.findIndex(entry => entry.id === root.controllers.selectedId)))
+            }
         }
     }
     Label {
@@ -94,7 +97,10 @@ ColumnLayout {
             textRole: "label"; valueRole: "value"
             currentIndex: root.config.pointerStick === "right" ? 1 : root.config.pointerStick === "off" ? 2 : 0
             enabled: root.editable
-            onActivated: index => root.controllers.setOption("pointerStick", model[index].value)
+            onActivated: index => {
+                root.controllers.setOption("pointerStick", model[index].value)
+                currentIndex = Qt.binding(() => root.config.pointerStick === "right" ? 1 : root.config.pointerStick === "off" ? 2 : 0)
+            }
         }
     }
     FormRow {
@@ -107,8 +113,14 @@ ColumnLayout {
             value: root.config.pointerSpeed ?? 1000
             enabled: root.editable
             accessibleName: qsTr("Controller pointer speed")
-            onMoved: if (!pressed) root.controllers.setOption("pointerSpeed", value)
-            onPressedChanged: if (!pressed && Math.abs(value - (root.config.pointerSpeed ?? 1000)) > 1) root.controllers.setOption("pointerSpeed", value)
+            onMoved: if (!pressed) {
+                root.controllers.setOption("pointerSpeed", value)
+                value = Qt.binding(() => root.config.pointerSpeed ?? 1000)
+            }
+            onPressedChanged: if (!pressed) {
+                if (Math.abs(value - (root.config.pointerSpeed ?? 1000)) > 1) root.controllers.setOption("pointerSpeed", value)
+                value = Qt.binding(() => root.config.pointerSpeed ?? 1000)
+            }
         }
     }
     FormRow {
@@ -122,8 +134,14 @@ ColumnLayout {
             value: root.config.deadzone ?? 0.18
             enabled: root.editable
             accessibleName: qsTr("Controller stick dead zone")
-            onMoved: if (!pressed) root.controllers.setOption("deadzone", value)
-            onPressedChanged: if (!pressed && Math.abs(value - (root.config.deadzone ?? 0.18)) > 0.005) root.controllers.setOption("deadzone", value)
+            onMoved: if (!pressed) {
+                root.controllers.setOption("deadzone", value)
+                value = Qt.binding(() => root.config.deadzone ?? 0.18)
+            }
+            onPressedChanged: if (!pressed) {
+                if (Math.abs(value - (root.config.deadzone ?? 0.18)) > 0.005) root.controllers.setOption("deadzone", value)
+                value = Qt.binding(() => root.config.deadzone ?? 0.18)
+            }
         }
     }
     FormRow {
@@ -166,8 +184,14 @@ ColumnLayout {
             value: root.config.gyroSpeed ?? 650
             enabled: root.editable
             accessibleName: qsTr("Controller gyro sensitivity")
-            onMoved: if (!pressed) root.controllers.setOption("gyroSpeed", value)
-            onPressedChanged: if (!pressed && Math.abs(value - (root.config.gyroSpeed ?? 650)) > 1) root.controllers.setOption("gyroSpeed", value)
+            onMoved: if (!pressed) {
+                root.controllers.setOption("gyroSpeed", value)
+                value = Qt.binding(() => root.config.gyroSpeed ?? 650)
+            }
+            onPressedChanged: if (!pressed) {
+                if (Math.abs(value - (root.config.gyroSpeed ?? 650)) > 1) root.controllers.setOption("gyroSpeed", value)
+                value = Qt.binding(() => root.config.gyroSpeed ?? 650)
+            }
         }
     }
     FormRow {

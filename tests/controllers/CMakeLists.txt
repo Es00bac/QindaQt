@@ -16,6 +16,14 @@ target_link_libraries(qindaqt_controller_settings_test PRIVATE qindaqt_controlle
 add_test(NAME qindaqt.controller-settings COMMAND qindaqt_controller_settings_test)
 set_tests_properties(qindaqt.controller-settings PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
 
+add_executable(qindaqt_controller_bus_test tst_controller_bus.cpp
+    ../../src/controllers/kwin/voice_button.cpp ../../src/controllers/kwin/voice_button.h)
+target_include_directories(qindaqt_controller_bus_test PRIVATE ../../src/controllers/kwin)
+target_link_libraries(qindaqt_controller_bus_test PRIVATE qindaqt_controller_settings_test_support Qt6::Test)
+find_program(QINDAQT_CONTROLLER_DBUS_RUN_SESSION dbus-run-session REQUIRED)
+add_test(NAME qindaqt.controller-bus COMMAND ${QINDAQT_CONTROLLER_DBUS_RUN_SESSION} -- $<TARGET_FILE:qindaqt_controller_bus_test>)
+set_tests_properties(qindaqt.controller-bus PROPERTIES TIMEOUT 15)
+
 if(TARGET qindaqt_controller_runtime)
     add_executable(qindaqt_controller_runtime_test tst_controller_runtime.cpp)
     target_link_libraries(qindaqt_controller_runtime_test PRIVATE qindaqt_controller_runtime Qt6::Test)

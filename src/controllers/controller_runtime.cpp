@@ -103,8 +103,12 @@ public:
             dev.family = family(SDL_GetGamepadType(pad));
             char guid[33]{};
             SDL_GUIDToString(SDL_GetGamepadGUIDForID(ids[i]), guid, sizeof(guid));
-            const QString identity = QString::fromLatin1(guid) + ':' + QString::fromUtf8(SDL_GetGamepadSerial(pad));
-            dev.id = "pad:" + QString::fromLatin1(QCryptographicHash::hash(identity.toUtf8(), QCryptographicHash::Sha256).toHex().left(32));
+            const auto serial = QString::fromUtf8(SDL_GetGamepadSerial(pad));
+            const auto legacyIdentity = QString::fromLatin1(guid) + ':' + serial;
+            // SDL GUID includes the transport. A serial identifies the same
+            // physical pad across USB/Bluetooth; preserve existing preferences.
+            const auto legacyId = "pad:" + QString::fromLatin1(QCryptographicHash::hash(legacyIdentity.toUtf8(), QCryptographicHash::Sha256).toHex().left(32));
+            dev.id = controllerProfileId(QString::fromLatin1(guid), serial, SDL_GetGamepadVendor(pad), SDL_GetGamepadProduct(pad), dev.family);
             // Two identical pads without serials share a profile but never
             // share held tokens: the runtime appends the SDL instance ID.
             dev.description = {{"id", dev.id}, {"name", QString::fromUtf8(SDL_GetGamepadName(pad))},
@@ -121,7 +125,8 @@ public:
             if (SDL_GamepadHasAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER)) buttons.append(QJsonObject{{"id", "lefttrigger"}});
             if (SDL_GamepadHasAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) buttons.append(QJsonObject{{"id", "righttrigger"}});
             dev.description["buttons"] = buttons;
-            dev.profile = store.profile(dev.id, dev.family);
+            dev.profile = store.ids().contains(dev.id) ? store.profile(dev.id, dev.family)
+                : store.profile(legacyId, dev.family);
             if (!store.ids().contains(dev.id) && store.ids().size() < 64) {
                 store.set(dev.id, dev.profile, dev.description);
                 store.save(error);

@@ -14,14 +14,15 @@ QtControllerPort::QtControllerPort(QDBusConnection bus, QObject *parent)
                                         QDBusServiceWatcher::WatchForOwnerChange, this);
     connect(watch, &QDBusServiceWatcher::serviceOwnerChanged, this,
         [this](const QString &, const QString &, const QString &) {
-            ++m_generation; m_refreshing = false; Q_EMIT unavailable(); refresh();
+            ++m_generation; m_refreshing = false; m_refreshAgain = false; m_completion.reset();
+            Q_EMIT unavailable(); refresh();
         });
     m_bus.connect(QLatin1String(Controllers::Service), QLatin1String(Controllers::Object),
                   QLatin1String(Controllers::Interface), "Changed", this, SLOT(changed(qulonglong)));
 }
 void QtControllerPort::changed(qulonglong revision) { Q_UNUSED(revision); refresh(); }
 void QtControllerPort::refresh() {
-    if (m_refreshing) return;
+    if (m_refreshing) { m_refreshAgain = true; return; }
     m_refreshing = true;
     const auto generation = m_generation;
     auto call = QDBusMessage::createMethodCall(QLatin1String(Controllers::Service), QLatin1String(Controllers::Object),
@@ -32,11 +33,19 @@ void QtControllerPort::refresh() {
         w->deleteLater();
         if (generation != m_generation) return;
         m_refreshing = false;
-        if (reply.isError() || reply.value().toUtf8().size() > 256 * 1024) { Q_EMIT unavailable(); return; }
+        if (reply.isError() || reply.value().toUtf8().size() > 256 * 1024) { m_completion.reset(); Q_EMIT unavailable(); return; }
         QJsonParseError error;
         const auto doc = QJsonDocument::fromJson(reply.value().toUtf8(), &error);
-        if (error.error != QJsonParseError::NoError || !doc.isObject()) { Q_EMIT unavailable(); return; }
+        if (error.error != QJsonParseError::NoError || !doc.isObject()) { m_completion.reset(); Q_EMIT unavailable(); return; }
         Q_EMIT snapshotReceived(doc.object());
+        // Keep edits gated until a read dispatched after the mutation reply.
+        // Changed during an older read must trigger another read, not vanish.
+        if (m_refreshAgain) { m_refreshAgain = false; refresh(); return; }
+        if (m_completion) {
+            const auto result = *m_completion;
+            m_completion.reset();
+            Q_EMIT completed(result.first, result.second);
+        }
     });
 }
 void QtControllerPort::apply(const QString &id, const QJsonObject &patch, quint64 revision) {
@@ -56,7 +65,7 @@ void QtControllerPort::mutate(const QString &method, const QVariantList &argumen
         w->deleteLater();
         if (generation != m_generation) return;
         const auto result = reply.isError() ? QJsonObject{} : QJsonDocument::fromJson(reply.value().toUtf8()).object();
-        Q_EMIT completed(result.value("ok").toBool(), result.value("reason").toString("unavailable"));
+        m_completion = qMakePair(result.value("ok").toBool(), result.value("reason").toString("unavailable"));
         refresh();
     });
 }

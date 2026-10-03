@@ -19,13 +19,31 @@ VoiceButton::VoiceButton(QObject *parent) : QObject(parent), m_bus(QDBusConnecti
         });
 }
 void VoiceButton::snapshot(std::function<void(QVariantMap)> done) {
+    const auto owner = m_owner;
     auto call = QDBusMessage::createMethodCall(m_owner.isEmpty() ? "org.qindaqt.Voice1" : m_owner,
                                               "/org/qindaqt/Voice1", "org.qindaqt.Voice1", "GetSnapshot");
     auto *watch = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 3000), this);
-    connect(watch, &QDBusPendingCallWatcher::finished, this, [this, done = std::move(done)](auto *w) {
+    connect(watch, &QDBusPendingCallWatcher::finished, this, [this, owner, done = std::move(done)](auto *w) {
         QDBusPendingReply<QVariantMap> reply = *w;
-        if (!reply.isError() && m_owner.isEmpty()) m_owner = w->reply().service();
-        const auto payload = reply.isError() ? QVariantMap{} : reply.value();
+        if (!reply.isError() && owner.isEmpty()) {
+            // AGENT-GUARD: Qt method returns have an empty service() field.
+            // Resolve the activated provider through the bus, then read its
+            // exact owner before a non-replayable capture request.
+            auto lookup = QDBusMessage::createMethodCall("org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                                        "org.freedesktop.DBus", "GetNameOwner");
+            lookup.setArguments({"org.qindaqt.Voice1"});
+            auto *resolved = new QDBusPendingCallWatcher(m_bus.asyncCall(lookup, 3000), this);
+            connect(resolved, &QDBusPendingCallWatcher::finished, this, [this, done = std::move(done)](auto *r) {
+                QDBusPendingReply<QString> name = *r;
+                r->deleteLater();
+                if (name.isError()) { done({}); return; }
+                m_owner = name.value();
+                snapshot(std::move(done));
+            });
+            w->deleteLater();
+            return;
+        }
+        const auto payload = reply.isError() || owner != m_owner ? QVariantMap{} : reply.value();
         w->deleteLater(); done(payload);
     });
 }

@@ -42,8 +42,8 @@ private:
     void receive(const QJsonObject &snapshot);
     ControllerPort &m_port;
     QJsonArray m_rows;
-    QString m_selected = QStringLiteral("default:xbox"), m_error;
+    QString m_selected, m_error;
     quint64 m_revision = 0;
-    bool m_available = false, m_busy = false, m_steam = false;
+    bool m_available = false, m_busy = false, m_steam = false, m_autoSelect = true;
 };
 } // namespace QindaQt::Apps::SettingsInput
