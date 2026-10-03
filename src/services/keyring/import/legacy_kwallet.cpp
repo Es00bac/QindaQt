@@ -5,8 +5,8 @@ namespace {
 constexpr auto Interface="org.kde.KWallet";
 constexpr auto Application="org.qindaqt.KeyringImport";
 QString path(const Wire &wire) {return wire.binding().service.endsWith('5')?"/modules/kwalletd5":"/modules/kwalletd6";}
-QStringList list(Wire &wire,const QString &method,const Append &append={},qsizetype maximum=1024) {
-    auto reply=wire.call(path(wire),Interface,method,append,"as");auto iter=begin(reply.get());auto result=texts(iter,DBUS_TYPE_STRING,maximum);end(iter);result.sort();return result;
+QStringList list(Wire &wire,const QString &method,const Append &append={},qsizetype maximum=1024,DuplicateText duplicates=DuplicateText::Reject) {
+    auto reply=wire.call(path(wire),Interface,method,append,"as");auto iter=begin(reply.get());auto result=texts(iter,DBUS_TYPE_STRING,maximum,duplicates);end(iter);result.sort();return result;
 }
 void arguments(DBusMessageIter &iter,int handle,const QString &folder,const QString &key) {
     appendInt(iter,handle);appendText(iter,folder);appendText(iter,key);appendText(iter,Application);
@@ -42,7 +42,9 @@ LegacySnapshot readKWallet(Wire &wire) {
         },"i");} catch(...) {}}} close{wire,handle};
         LegacyCollectionSnapshot collection;collection.sourceId=collection.label=wallet;
         const auto folderArgs=[&](auto &iter){appendInt(iter,handle);appendText(iter,Application);};
-        const auto folders=list(wire,"folderList",folderArgs);
+        // AGENT-NOTE: Public folderList can repeat the same folder identity; enumerate
+        // each identity once, retaining the raw bound. See docs/wiki/architecture/keyring-import.md.
+        const auto folders=list(wire,"folderList",folderArgs,1024,DuplicateText::Collapse);
         std::size_t aggregate=4;
         for(const auto &folder:folders) {
             const auto entryArgs=[&](auto &iter){appendInt(iter,handle);appendText(iter,folder);appendText(iter,Application);};
@@ -61,7 +63,7 @@ LegacySnapshot readKWallet(Wire &wire) {
             }
             if(list(wire,"entryList",entryArgs)!=entries) throw Failure{CollectionImportError::Conflict};
         }
-        if(list(wire,"folderList",folderArgs)!=folders) throw Failure{CollectionImportError::Conflict};
+        if(list(wire,"folderList",folderArgs,1024,DuplicateText::Collapse)!=folders) throw Failure{CollectionImportError::Conflict};
         snapshot.collections.push_back(std::move(collection));
     }
     if(list(wire,"wallets",{},64)!=wallets) throw Failure{CollectionImportError::Conflict};

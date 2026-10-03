@@ -85,7 +85,9 @@ class Secret(Properties):
 class Wallet(dbus.service.Object):
     def __init__(self,fixture): self.fixture=fixture;super().__init__(fixture.kw,"/modules/kwalletd6")
     @dbus.service.method(KW,in_signature="",out_signature="as")
-    def wallets(self): self.fixture.calls.append("wallets");return ["kdewallet"]
+    def wallets(self):
+        self.fixture.calls.append("wallets")
+        return ["kdewallet"]*(2 if self.fixture.mode=="kw-duplicate-wallets" else 1)
     @dbus.service.method(KW,in_signature="sxsb",out_signature="i")
     def openAsync(self,wallet,window,application,session):
         f=self.fixture;f.calls.append("openAsync");f.opened+=1;transaction=f.opened;handle=100+transaction
@@ -94,9 +96,15 @@ class Wallet(dbus.service.Object):
     @dbus.service.signal(KW,signature="ii")
     def walletAsyncOpened(self,transaction,handle): pass
     @dbus.service.method(KW,in_signature="is",out_signature="as")
-    def folderList(self,handle,application): self.fixture.calls.append("folderList");return sorted(self.fixture.folders)
+    def folderList(self,handle,application):
+        f=self.fixture;f.calls.append("folderList");folders=sorted(f.folders)
+        if f.mode=="kw-folder-capacity": return [folders[0]]*1025
+        if f.mode=="kw-folder-mutation" and f.calls.count("folderList")>1: return folders[:-1]*2
+        return folders*2 if f.mode in ("kw-duplicate-folders","kw-folder-mutation") else folders
     @dbus.service.method(KW,in_signature="iss",out_signature="as")
-    def entryList(self,handle,folder,application): self.fixture.calls.append("entryList");return sorted(self.fixture.folders[str(folder)])
+    def entryList(self,handle,folder,application):
+        self.fixture.calls.append("entryList");entries=sorted(self.fixture.folders[str(folder)])
+        return entries*2 if self.fixture.mode=="kw-duplicate-entries" else entries
     @dbus.service.method(KW,in_signature="isss",out_signature="i")
     def entryType(self,handle,folder,key,application): self.fixture.calls.append("entryType");return self.fixture.folders[str(folder)][str(key)][0]
     @dbus.service.method(KW,in_signature="isss",out_signature="ay")
