@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "previousGoalTurn": "progress — installed accepted private sharing package on both hosts, verified owned files, preserved signed receipts and docs on qinda",
+  "currentGoalTurn": "progress — restored failed laptop user manager and user bus, observed live current compositor/session, and discovered both running Secret Service providers' locked nonempty collections without reading secret values",
+  "hostRechecks": [
+    {
+      "host": "qinda",
+      "observedAt": "2026-10-02T23:34:35.009889+00:00",
+      "providers": [
+        {
+          "service": "org.freedesktop.secrets",
+          "busMethod": "NameHasOwner",
+          "exit": 0,
+          "availability": "owner present"
+        },
+        {
+          "service": "org.kde.kwalletd6",
+          "busMethod": "NameHasOwner",
+          "exit": 0,
+          "availability": "no owner"
+        },
+        {
+          "service": "org.kde.kwalletd5",
+          "busMethod": "NameHasOwner",
+          "exit": 0,
+          "availability": "no owner"
+        }
+      ],
+      "defaultNativeCatalog": {
+        "exists": false
+      },
+      "secretReads": 0,
+      "unlockCalls": 0,
+      "activations": 0,
+      "mutations": 0
+    },
+    {
+      "host": "qinda-top",
+      "observedAt": "2026-10-02T23:34:34.778220+00:00",
+      "providers": [
+        {
+          "service": "org.freedesktop.secrets",
+          "busMethod": "NameHasOwner",
+          "exit": 1,
+          "availability": "unqueryable",
+          "diagnostic": "Failed to connect to system scope bus via local transport: Connection refused"
+        },
+        {
+          "service": "org.kde.kwalletd6",
+          "busMethod": "NameHasOwner",
+          "exit": 1,
+          "availability": "unqueryable",
+          "diagnostic": "Failed to connect to system scope bus via local transport: Connection refused"
+        },
+        {
+          "service": "org.kde.kwalletd5",
+          "busMethod": "NameHasOwner",
+          "exit": 1,
+          "availability": "unqueryable",
+          "diagnostic": "Failed to connect to system scope bus via local transport: Connection refused"
+        }
+      ],
+      "defaultNativeCatalog": {
+        "exists": false
+      },
+      "secretReads": 0,
+      "unlockCalls": 0,
+      "activations": 0,
+      "mutations": 0
+    }
+  ],
+  "desktopProviderMetadata": {
+    "host": "qinda",
+    "observedAt": "2026-10-02T23:37:31.238679+00:00",
+    "outcome": "running Secret Service metadata only",
+    "secretReads": 0,
+    "unlockCalls": 0,
+    "activations": 0,
+    "mutations": 0,
+    "uniqueOwner": ":1.20",
+    "pid": 40388,
+    "uid": 1000,
+    "processExe": "/usr/bin/gnome-keyring-daemon",
+    "collectionCount": 3,
+    "collections": [
+      {
+        "locked": true,
+        "itemCount": 63
+      },
+      {
+        "locked": true,
+        "itemCount": 4
+      },
+      {
+        "locked": false,
+        "itemCount": 0
+      }
+    ],
+    "ownerStable": true,
+    "metadataComplete": true,
+    "seconds": 0.041
+  },
+  "scope": "Metadata observations only, no source snapshot, secret values, source unlock, destination password, credential import, service switch or native PAM initialization. Laptop runtime repair starts only the previously failed user manager; it does not qualify physical compositor adoption, Alt-Tab, native Session admission or actual credential migration.",
+  "remainingPrerequisite": "Authenticated full legacy import and accepted native session/destination password input. Desktop persistent collections are locked; laptop bus is restored and its persistent collection is locked. No actual import or name/PAM switch is performed.",
+  "laptopUserManagerRecovery": {
+    "host": "qinda-top",
+    "userBusQueries": [
+      {
+        "name": "org.freedesktop.secrets",
+        "exit": 0,
+        "value": "b true",
+        "diagnostic": ""
+      },
+      {
+        "name": "org.kde.kwalletd6",
+        "exit": 0,
+        "value": "b false",
+        "diagnostic": ""
+      },
+      {
+        "name": "org.kde.kwalletd5",
+        "exit": 0,
+        "value": "b false",
+        "diagnostic": ""
+      },
+      {
+        "name": "org.kde.KWin",
+        "exit": 0,
+        "value": "b false",
+        "diagnostic": ""
+      },
+      {
+        "name": "org.qindaqt.Session1",
+        "exit": 0,
+        "value": "b false",
+        "diagnostic": ""
+      }
+    ],
+    "userBusUnitProperties": "ActiveState=active\nSubState=running\nMainPID=3435048\n\nActiveState=active\nSubState=running\n",
+    "unitQueryExit": 0,
+    "defaultNativeCatalogExists": false,
+    "secretReads": 0,
+    "unlockCalls": 0,
+    "explicitProviderStartCalls": 0,
+    "normalUserServiceStartup": "Recovery starts previously failed user manager and its ordinary installed services; no explicit provider startup command."
+  },
+  "laptopProviderMetadata": {
+    "host": "qinda-top",
+    "observedAt": "2026-10-03T00:00:26.384536+00:00",
+    "scope": "Restored bus, stable source metadata only; no secret values, unlock, destination password or import",
+    "secretReads": 0,
+    "unlockCalls": 0,
+    "explicitProviderStartCalls": 0,
+    "uniqueOwner": ":1.2",
+    "pid": 3435051,
+    "uid": 1000,
+    "processExe": "/usr/bin/gnome-keyring-daemon",
+    "collectionCount": 2,
+    "collections": [
+      {
+        "locked": false,
+        "itemCount": 0
+      },
+      {
+        "locked": true,
+        "itemCount": 9
+      }
+    ],
+    "ownerStable": true,
+    "metadataComplete": true,
+    "knownDesktopProcessState": [
+      {
+        "pid": 814278,
+        "comm": "kwin_wayland",
+        "startTick": "11255483",
+        "state": "R"
+      },
+      {
+        "pid": 814357,
+        "comm": "qindaqt-session",
+        "startTick": "11255516",
+        "state": "S"
+      },
+      {
+        "pid": 3285705,
+        "observation": "absent"
+      }
+    ]
+  }
+}

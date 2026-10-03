@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: available — independent signed package delivery complete; actual legacy credential import gates native provider/PAM cutover
+- Status: working — verifying recovered laptop user bus and locked legacy keyring handover evidence; no compiler/GPU work
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-03T00:08:12.015881+00:00 — Previous goal turn progressed: accepted private helper signed install106files/6symlinks verified bothhosts. Current authoritative qinda source nowGNOMEowner40388 stable/UID1000,3collections:locked63+4items/unlocked0; laptop user@1000 failed signal/MainPID0/emptyCG, exact startPASS0.251s recoversmanager+bus; original compositor814278/start11255483 alive and supervisor814357/start11255516 preserved, oldshell3285705 absent. LaptopGNOMEowner3435051 stable/UID1000 haslocked9items/unlocked0; bothnativecatalogsabsent/KWalletnamesunowned. Metadataonly/no secret-values/Unlock/destination-password/import/nativePAM switch. Ownercounts are observations, not full source snapshots. Different runtime reviewer a6 isolatesupstreamforcedXcb/Xdisplayprerequisite, nohelper startup/sharing pass;Xvfbnotinstalled, no newfixture/build proposed. Root owns bounded docs/audit push/gates, no forcedappstop/login/game/icons. Same authenticated real-user import/native-session gate remains.
 
 - 2026-10-02T23:29:18.471879+00:00 — Private bridge exactf476 independently source/image ACCEPTd382, signed358400B/d007 installed normal mandatory-signed binary-only qinda10.531s/laptop6.412s, one binary/zero downloads. Both actual VDB/owned106files+6symlinks/907195B PASS0mismatch, no retired RDEP/PDEPEND; optional absent PDEPEND safely means empty in corrected postinstall verifier, actual installs never failed. Source16f final503-document validation PASS0.496s and strictMkDocs PASS8.077s; clean qinda docs/overlay checkouts synchronized, dirty unrelated desktop checkout preserved. All own compiler/GPU/Portage gates finished, local work remained nice19/idleIO. Actual user-keyring import, five native package upgrades, final retired-only cleanup and fresh physical login/live sharing/power acceptance remain unperformed; existing credentials/apps/providers protected. No full Plasma removal or goal completion claimed. Next prerequisite is actual admitted legacy source providers/ordinary unlock and sealed import, not another build.
 
