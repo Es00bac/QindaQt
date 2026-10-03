@@ -1,5 +1,21 @@
 # Platform delivery queue
 
+## October 3 current boundary — installed retirement complete
+
+This checkpoint supersedes all historical active and compiler claims below.
+The final native signed packages and credential imports/exact retries are
+delivered on both hosts. Final normal scoped cleanup removed26/26 each;
+zero retired Plasma packages remain, with every non-retired package and
+world/world_sets preserved. Native ordinary libsecret passes on the laptop's
+persistent default collection and qinda's volatile session collection.
+Qinda persistent Login unlock and both fresh physical/PAM logins remain pending.
+
+Program Manager owns final checkpoint integration and the deliberate session
+adoption boundary. Packager owns only the small read-only final qinda VDB/PF25
+verification; Input's operational review `a73f7f999` is accepted and released.
+No worker holds a compiler, GPU, capture, icon or game lease. Current physical
+apps remain running. See [Handoff](../../../docs/HANDOFF.md).
+
 ## October 2 current delivery — deadline integration
 
 This section supersedes older resource/active claims below. Program Manager

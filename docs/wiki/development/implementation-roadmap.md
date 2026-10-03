@@ -4,6 +4,13 @@ QindaQt is being built as vertical, testable slices. This page separates code
 that exists from accepted contracts and longer-term product scope; it is
 updated whenever a milestone changes state.
 
+The October 3 deployment checkpoint has the signed native desktop and
+compositor installed on both hosts, actual legacy credentials sealed and
+authenticated by complete exact retries, and all retired Plasma packages
+removed through normal scoped Portage cleanup. Fresh physical login/PAM
+adoption and physical hardware journeys remain open; this does not advance
+their qualification state. See [Handoff](../../HANDOFF.md).
+
 ## Current buildable state
 
 The repository currently builds and tests:

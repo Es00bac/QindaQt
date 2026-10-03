@@ -3,12 +3,16 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: working — verify real native provider handover and complete guarded retired-package removal
+- Status: working — integrate final actual retirement evidence and documentation; preserve current applications for fresh login
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-03T04:14:30+00:00 — Actual final normal scoped retirement PASSboth: laptop26/26 in59.528s, qinda26/26 in64.668s; protected1359/1541 removed0 and world/world_sets unchanged. Qinda ordinary volatile-session libsecret store/read/delete0/0/0/finalempty1 PASS; persistentLoginUnlockVerified false, unanswered normal prompt30.635s. Exact operational mode independentlySOURCEACCEPTa73f, integrated; Input review histories bytepreservede054. Packager independent laptopVDB/PF25/52rollbackretentionPASSd718; final qinda readonlycheck nowowned. Root saves actual checkpoint/docs/sourcehub; no compiler/GPU/icon/game or forced currentappclose. Fresh native physical/PAM session and hardware journeys remain pending.
+
+- 2026-10-03T04:06:00+00:00 — Laptop genuine native provider and ordinary libsecret synthetic store/read/clear pass; guarded normal retired-only depclean removes26/26, preserves1359 non-retired packages and unchanged world/world_sets. Qinda genuine native provider remains active, but ordinary Login unlock times out30.287s; no password or secret output acquired. Root owns bounded prompt diagnosis and desktop cleanup after a passing ordinary probe. Input owns consolidation of its accepted immutable review metadata on manager4c; no compiler/GPU/icon/game lease. Fresh physical login/PAM adoption remains unqualified, current applications preserved; prior15–25minute estimate was too short.
 
 - 2026-10-03T03:46:20+00:00 — Actual imports laptop3/12 and qinda3/67 sealed; full-source authenticated exact retries0added/3unchanged and private catalog/ciphertext equality PASSboth. Normal GNOME unmerge +five mandatory-signed binary upgrades PASSboth, originalprocesses held through transition. Independent647 verifies5709 files/7links each, approved PAM/customconfig and installed PF25zero forbidden. All26 retired packages perhost now preserved as signed artifacts with complete32binary restore graphPASS796. Root actualnativeproviderbridge starting with reviewed4bac/a939 procedure; ordinarylibsecret check/final26depclean/freshphysicaladoption stillpending. No build/GPU/game/icon work or current-appclosure.
 

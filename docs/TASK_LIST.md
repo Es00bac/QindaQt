@@ -5,7 +5,7 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
-## October 3 — Native desktop installed; runtime adoption in progress
+## October 3 — Native desktop installed; Plasma packages removed
 
 Both hosts have the final five native signed packages installed. Actual import
 sealed three collections/twelve items on the laptop and three collections/
@@ -20,10 +20,14 @@ runtime dependencies on either host. Native compositor/Gabbee, first-party
 application deliveries and private capture/input/clipboard/profile/shortcut
 qualification remain complete; no laptop build or GPU test was needed.
 
-The native provider handover and ordinary libsecret client check are in
-progress. Twenty-six retired Plasma packages remain on each host for final
-scoped cleanup, with signed snapshots and complete 32-binary rollback graphs
-preserved. Existing apps and every non-retired package remain protected.
+Native Secret Service ownership is active on both hosts. Ordinary libsecret
+store/read/delete passes for a temporary persistent-default item on the laptop
+and a volatile-session item on qinda; qinda's persistent Login unlock remains
+pending after unanswered normal dialogs. Final scoped depclean removed all
+26 remaining retired Plasma packages on each host. Zero retired packages
+remain, with signed snapshots and complete 32-binary rollback graphs retained.
+All 1,359 other laptop packages and 1,541 qinda packages were preserved, along
+with unchanged world/world_sets and current applications.
 Fresh physical login, native PAM automatic unlock, physical power/suspend and
 live legacy-sharing acceptance remain separate unqualified gates.
 See [Handoff](HANDOFF.md) for exact evidence and remaining work.

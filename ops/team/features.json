@@ -251,7 +251,7 @@
             {
               "kind": "commit",
               "reference": "ce63d1bb7fea0b20a9a5cee47802643af1a19e19",
-              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File → New action succeed."
+              "summary": "Transient menu identity handling preserves interaction; integrated focused checks and private File \u2192 New action succeed."
             },
             {
               "kind": "commit",
@@ -391,7 +391,7 @@
             {
               "kind": "commit",
               "reference": "f3abd4ab",
-              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by Rózsa Péter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
+              "summary": "Tray S2 is integrated: exact accepted product 544d1c30c2d61a5b3e12e7002ba274326dcc736c (Sijue Wu, Moonshot Kimi, degraded-state notification and acknowledgement repair over b10692c), rechecked ACCEPT 0/0/0/0 by R\u00f3zsa P\u00e9ter (OpenAI Codex); manager reconciliations 5157a1e0 (StatusNotifierRuntimeInstall.cmake keeps the shell CMake file under its shape limit) and cbaab4e0 (sorted resolver expectation, closure guard globs the install modules); the merged tree passes 105/105 focused rows in Debug and Release, the static gates, and the broad safe Debug suite 601/601."
             },
             {
               "kind": "commit",
@@ -758,7 +758,7 @@
               "summary": "Independent immutable review accepts actual native virtual DPMS13Qt/11behavior/zero failure or skip,22stable artifact hashes and bounded cleanup; no physical output claim."
             }
           ],
-          "caveat": "Private model/adapter/runtime and native virtual DPMS qualification is integrated; actual physical dim/DPMS, battery/lid, privileged logind startup and suspend/resume remain unclaimed. Final signed desktop host activation and fresh-login adoption are still open."
+          "caveat": "Private model/adapter/runtime and native virtual DPMS qualification is integrated; actual physical dim/DPMS, battery/lid, privileged logind startup and suspend/resume remain unclaimed. Final signed desktop installation is complete; fresh physical host activation and login adoption are still open."
         },
         {
           "id": "QQ-005.04",
@@ -966,7 +966,7 @@
         }
       ],
       "stoppingPoint": {
-        "summary": "Native desktop platform source and focused private-runtime proofs are integrated, including ordinary/protected portals and native idle/display-power composition. Final native compositor and recovery packages are installed on both hosts; final desktop build, activation, fresh-login adoption and app-preserving retired-package cleanup remain open.",
+        "summary": "Native desktop platform source and focused private-runtime proofs are integrated. Final native desktop/compositor packages are installed on both hosts, actual legacy credentials are sealed and authenticated by complete exact retries, and app-preserving cleanup leaves zero retired Plasma packages. Temporary native providers serve ordinary clients; fresh physical/PAM login and qinda persistent Login unlock remain pending.",
         "evidence": [
           {
             "kind": "commit",
@@ -1067,6 +1067,11 @@
             "kind": "commit",
             "reference": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
             "summary": "Frozen native release source includes ordinary/protected native portals, native shared power composition and service consumers. Package installation/adoption/depclean gates are still in progress."
+          },
+          {
+            "kind": "test",
+            "reference": "ops/audits/native-plasma-retirement-checkpoint-20261003.json",
+            "summary": "Actual host final signed installation,79item full-source credential verification, ordinary libsecret synthetic protocol checks and normal exact26package cleanup eachhost passed; every1359/1541non-retired package and world/world_sets preserved. Qinda check is volatile-session only; no freshphysical/PAM or hardware claim."
           }
         ]
       },
@@ -1293,7 +1298,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1333,7 +1338,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1433,7 +1438,7 @@
             {
               "kind": "commit",
               "reference": "44fff730",
-              "summary": "Primary-assistant implementation at the user’s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
+              "summary": "Primary-assistant implementation at the user\u2019s request; no independent worker review claimed. Integrated main passes 66/66 combined app rows; installed binaries match the build. Editor and Terminal pass native Wayland launch, Terminal confirms its PTY, and File Manager passes its installed UI-action probe. See docs/HANDOFF.md for exact evidence and remaining bounds."
             },
             {
               "kind": "commit",
@@ -1627,7 +1632,7 @@
           {
             "kind": "commit",
             "reference": "98f29fe2",
-            "summary": "Records installed r1 source8486e058, actual installed two-session workspace restoration, real daily controls and privilege prompt, and Settings1 10→11→default10 producing PowerDevil600→660→600 through production code. Native CI boots and tag remain pending."
+            "summary": "Records installed r1 source8486e058, actual installed two-session workspace restoration, real daily controls and privilege prompt, and Settings1 10\u219211\u2192default10 producing PowerDevil600\u2192660\u2192600 through production code. Native CI boots and tag remain pending."
           },
           {
             "kind": "test",
