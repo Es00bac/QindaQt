@@ -196,8 +196,8 @@ The signed native package set is installed on both hosts. Ordinary native
 Secret Service checks pass for an owned temporary persistent-default item on
 the laptop and a volatile-session item on qinda, with exact synthetic-byte
 readback and complete removal. Qinda's persistent Login password unlock and
-both hosts' fresh physical/PAM login remain pending. See the current
-[handoff](../../HANDOFF.md) for deployment evidence and activation boundaries.
+both hosts' fresh physical/PAM login remain pending. The current
+`docs/HANDOFF.md` records deployment evidence and activation boundaries.
 
 See [testing harness](../development/testing-harness.md#native-secret-portal-and-synthetic-legacy-import),
 [native daemon](keyring-daemon.md), [storage](keyring-storage.md) and

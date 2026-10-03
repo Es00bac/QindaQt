@@ -9,7 +9,7 @@ compositor installed on both hosts, actual legacy credentials sealed and
 authenticated by complete exact retries, and all retired Plasma packages
 removed through normal scoped Portage cleanup. Fresh physical login/PAM
 adoption and physical hardware journeys remain open; this does not advance
-their qualification state. See [Handoff](../../HANDOFF.md).
+their qualification state. See `docs/HANDOFF.md`.
 
 ## Current buildable state
 
