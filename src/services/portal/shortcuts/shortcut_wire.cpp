@@ -46,8 +46,23 @@ QKeySequence preferred(const QString &trigger) {
       return {};
     pieces[i] = modifiers.value(pieces[i]);
   }
+  // AGENT-CONTRACT: portal clients use XKB XF86 names, while Qt's portable
+  // key-sequence parser uses human media-key names. Without this translation
+  // Gabbee's default dictation key appears in consent as unassigned.
+  const QMap<QString, QString> mediaKeys{
+      {"XF86AudioPrev", "Media Previous"},
+      {"XF86AudioNext", "Media Next"},
+      {"XF86AudioStop", "Media Stop"},
+      {"XF86AudioPlay", "Media Play"},
+      {"XF86AudioPause", "Media Pause"},
+      {"XF86AudioRecord", "Media Record"},
+      {"XF86AudioRaiseVolume", "Volume Up"},
+      {"XF86AudioLowerVolume", "Volume Down"},
+      {"XF86AudioMute", "Volume Mute"}};
   if (pieces.last() == QLatin1String("ISO_Left_Tab"))
     pieces.last() = QStringLiteral("Backtab");
+  else if (mediaKeys.contains(pieces.last()))
+    pieces.last() = mediaKeys.value(pieces.last());
   const QKeySequence key(pieces.join('+'), QKeySequence::PortableText);
   if (key.count() != 1 || key[0].key() == Qt::Key_unknown)
     return {};

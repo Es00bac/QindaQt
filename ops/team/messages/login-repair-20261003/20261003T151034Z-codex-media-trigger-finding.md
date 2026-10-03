@@ -1,0 +1,3 @@
+# Dictation media-key binding follow-on
+
+- 2026-10-03T15:10:34Z — Gabbee sends its configured `Media Previous` shortcut as standard portal `XF86AudioPrev`. Qt `QKeySequence` treats that wire spelling as unknown, so the native shortcut consent helper would show an unassigned action despite a successful session and bind. The repaired portal policy maps the standard XF86Audio names to Qt portable media-key names before consent. The portal backend builds, its policy test passes, and strict docs/link validation passes. Live bind and activation remain pending after the Portage revision. This follows accepted login repair candidate `1bd319fd9` without changing its sealed r4 archive.
