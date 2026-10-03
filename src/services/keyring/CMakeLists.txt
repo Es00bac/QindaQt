@@ -18,7 +18,7 @@ endif()
 find_package(Qt6 REQUIRED COMPONENTS Core DBus)
 # Owning one-time catalog adapter: consumers never read/write the private schema.
 add_library(qindaqt_keyring_import_store STATIC daemon/private_directory.cpp
-    daemon/collection_repository.cpp daemon/collection_import_transaction.cpp
+    daemon/collection_repository.cpp daemon/collection_consolidation.cpp daemon/collection_import_transaction.cpp
     import/collection_import_catalog.cpp)
 add_library(QindaQt::KeyringImportStore ALIAS qindaqt_keyring_import_store)
 target_link_libraries(qindaqt_keyring_import_store PUBLIC QindaQt::KeyringStorage Qt6::Core
@@ -27,7 +27,7 @@ qindaqt_enable_warnings(qindaqt_keyring_import_store)
 
 add_library(qindaqt_keyring_service STATIC
     daemon/session_crypto.cpp daemon/secret_service.cpp daemon/service_methods.cpp
-    daemon/control_server.cpp daemon/item_methods.cpp daemon/properties.cpp daemon/prompts.cpp daemon/process_prompt_provider.cpp daemon/session_display_binding.cpp daemon/native_item_methods.cpp daemon/prompt_password_change.cpp daemon/portal_methods.cpp daemon/metadata_receipts.cpp)
+    daemon/control_server.cpp daemon/item_methods.cpp daemon/properties.cpp daemon/prompts.cpp daemon/process_prompt_provider.cpp daemon/session_display_binding.cpp daemon/native_item_methods.cpp daemon/native_consolidation_methods.cpp daemon/prompt_password_change.cpp daemon/portal_methods.cpp daemon/metadata_receipts.cpp)
 target_link_libraries(qindaqt_keyring_service PUBLIC QindaQt::KeyringStorage QindaQt::KeyringProtocol Qt6::Core Qt6::DBus PRIVATE QindaQt::KeyringImportStore OpenSSL::Crypto QindaQt::CompositorNames QindaQt::SecretPortalPolicy)
 target_include_directories(qindaqt_keyring_service PRIVATE daemon)
 qt_add_resources(qindaqt_keyring_service keyring_api PREFIX "/keyring" BASE data FILES data/api.xml)

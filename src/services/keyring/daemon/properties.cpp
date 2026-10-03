@@ -66,7 +66,7 @@ bool SecretService::propertyMethod(const QDBusMessage &m) {
     error(m,"org.freedesktop.DBus.Error.UnknownMethod"); return true;
 }
 bool SecretService::nativeMethod(const QDBusMessage &m) {
-    if (metadataMethod(m) || portalMethod(m) || nativeItemMethod(m)) return true;
+    if (metadataMethod(m) || portalMethod(m) || nativeItemMethod(m) || consolidationMethod(m)) return true;
     if(m.member()=="RequestPolicyState") {
         const auto nonce=m.arguments().value(0).toString();
         const auto parsed=QUuid::fromString(nonce);

@@ -202,6 +202,47 @@ class SecretServiceTest(unittest.TestCase):
         self.assertFalse(imported.is_locked())
         self.assertEqual(list(imported.get_all_items())[0].get_secret(),b"preserved")
 
+    def test_consolidation_copies_before_retiring_and_survives_restart(self):
+        login = self.collection()
+        login.create_item("existing", {"source":"login"}, b"original")
+        time.sleep(0.6)
+        imported = secretstorage.create_collection(self.connection,"Imported wallet","")
+        imported.create_item("first", {"source":"wallet-one"}, b"first-secret")
+        imported.create_item("second", {"source":"wallet-two"}, b"second-secret")
+        time.sleep(0.6)
+        empty = secretstorage.create_collection(self.connection,"Empty wallet","")
+        self.assertEqual(self.native("ConsolidateCollections","oao",
+                         login.collection_path,[imported.collection_path,empty.collection_path])[0],2)
+        self.assertEqual(set(self.native("ListCollections")[0]),{"login","session"})
+        self.assertEqual({item.get_attributes()["source"]:item.get_secret()
+                          for item in login.get_all_items()},
+                         {"login":b"original","wallet-one":b"first-secret",
+                          "wallet-two":b"second-secret"})
+        self.assertEqual({file.name for file in self.storage.glob("*.qkr")},{"login.qkr"})
+        self.stop()
+        self.start()
+        login = secretstorage.get_default_collection(self.connection)
+        self.assertTrue(login.is_locked())
+        self.assertFalse(login.unlock())
+        self.assertEqual({item.get_attributes()["source"]:item.get_secret()
+                          for item in login.get_all_items()},
+                         {"login":b"original","wallet-one":b"first-secret",
+                          "wallet-two":b"second-secret"})
+
+    def test_consolidation_refuses_locked_source_without_moving_items(self):
+        login = self.collection()
+        time.sleep(0.6)
+        imported = secretstorage.create_collection(self.connection,"Imported wallet","")
+        imported.create_item("source", {"source":"locked"}, b"preserved")
+        imported.lock()
+        with self.assertRaises(DBusErrorResponse):
+            self.native("ConsolidateCollections","oao",
+                        login.collection_path,[imported.collection_path])
+        self.assertEqual(len(list(login.get_all_items())),0)
+        self.assertEqual(len(self.native("ListCollections")[0]),3)
+        self.assertTrue(imported.is_locked())
+        self.assertEqual(len(list(self.storage.glob("*.qkr"))),2)
+
     def test_volatile_collection_has_no_disk_secret_and_lock_retires(self):
         collection = secretstorage.Collection(self.connection,"/org/freedesktop/secrets/collection/session")
         item = collection.create_item("volatile",{"service":"volatile"},b"session-only")

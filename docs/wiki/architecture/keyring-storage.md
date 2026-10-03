@@ -202,3 +202,13 @@ changes before publication without making persistence reentrant.
 
 The complete [one-time reader/CLI](keyring-import.md) consumes this public seam;
 [ADR-0312](../adr/0312-preserve-exact-legacy-portal-secrets.md) records the boundary.
+
+## Resident collection consolidation
+
+The repository's explicit `consolidate` operation borrows unlocked source
+items under the resident's sole-writer lease, copies their secret bytes into
+`SecureBuffer`, and calls `insertBatchAndSave` once for the target. It rejects
+ID conflicts and aliases of source collections. Only a durably saved target
+permits catalog-first source retirement. If interruption leaves identical
+target copies alongside source files, a retry skips those copies and finishes
+retirement. See [ADR-0346](../adr/0346-consolidate-unlocked-keyring-collections.md).

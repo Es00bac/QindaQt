@@ -239,4 +239,16 @@ It must be destroyed before the resident starts or claims the secrets name. No
 resident bulk import method is added. Optional source provenance is metadata,
 never source authentication or unrelated item disclosure authority.
 
+## Explicit collection consolidation
+
+The native `ConsolidateCollections(target, sources)` method moves unlocked,
+unaliased persistent collections into one unlocked persistent target. The
+resident uses its sole-writer lease and protected storage pages: it commits
+one encrypted target batch before retiring any source catalog entry or file.
+Conflicting IDs, locked stores and aliased sources are refused without source
+deletion. Exact target copies left by an interrupted retirement are recognized
+on retry. The method returns the number of source items only after the source
+collections are gone; clients then rediscover item paths by attributes. A
+verified encrypted backup is required before live use. See [ADR-0346](../adr/0346-consolidate-unlocked-keyring-collections.md).
+
 The separate [one-time importer](keyring-import.md) links its own confined libdbus reader and public catalog transaction. It runs before destination resident ownership, preserves source files and never performs a secrets-name switch. No legacy reader or bulk mutation wire is linked into the daemon.

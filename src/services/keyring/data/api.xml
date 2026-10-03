@@ -72,5 +72,6 @@
 <method name="GetPolicyState"><arg type="a{sv}" direction="out"/></method>
 <signal name="PolicyStateChanged"><arg type="a{sv}"/></signal>
 <method name="ListCollections"><arg type="a{sv}" direction="out"/></method>
+<method name="ConsolidateCollections"><arg name="target" type="o" direction="in"/><arg name="sources" type="ao" direction="in"/><arg name="savedItems" type="u" direction="out"/></method>
 </interface>
 </node>
