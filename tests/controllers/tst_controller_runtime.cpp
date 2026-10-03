@@ -100,7 +100,7 @@ private Q_SLOTS:
         const auto result = QJsonDocument::fromJson(runtime.apply(id, "{\"gyro\":true}", revision).toUtf8()).object();
         QVERIFY(result.value("ok").toBool()); runtime.tick();
         const auto gyroCount = sink.moves.size(); const float values[3]{0, 1, 0};
-        QVERIFY(SDL_SetJoystickVirtualSensorData(m_joystick, SDL_SENSOR_GYRO, 1, values, 3));
+        QVERIFY(SDL_SendJoystickVirtualSensorData(m_joystick, SDL_SENSOR_GYRO, 1, values, 3));
         QTest::qWait(20); runtime.tick(); QVERIFY(sink.moves.size() > gyroCount);
     }
 };
