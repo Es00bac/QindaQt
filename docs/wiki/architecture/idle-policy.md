@@ -76,12 +76,15 @@ an idle episode. External privileged sleep is not claimed to be vetoable.
 
 ## Cutover and evidence boundary
 
-`QINDAQT_NATIVE_POWER_EXCLUSIVE` defaults OFF. Reviewed package cutover ON supplies
-Power1's profile/critical/lid/idle native-exclusive activation arguments and the
-supervisor's exclusive default. Explicit `--native-power=off|exclusive` controls
-supervisor assembly; exclusive suppresses only its owned PowerDevil child.
-Bare Power1 policies remain OFF. Source integration does not enable installed
-host settings or qualify actual native Workspace DPMS.
+`QINDAQT_NATIVE_POWER_EXCLUSIVE` defaults OFF in source. The r5 installed
+cutover selected ON but returned the physical laptop login to SDDM when the
+exclusive receipt barrier failed. The r6 profile restores OFF pending the
+physical gate in [ADR-0345](../adr/0345-hold-physical-native-power-cutover-until-receipts-pass.md).
+An ON build supplies Power1's profile/critical/lid/idle native-exclusive
+activation arguments and the supervisor's exclusive default. Explicit
+`--native-power=off|exclusive` controls supervisor assembly; exclusive
+suppresses only its owned PowerDevil child. Power1 remains installed in r6,
+but its bus availability does not qualify full native idle and display policy.
 
 Focused tests separate source validation/idle episodes, brightness readback and
 external-value preservation, delayed sleep capability cancellation, exact owned
