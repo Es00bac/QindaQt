@@ -219,6 +219,9 @@ forwards optional client `handle_token` values to CreateSession and
 BindShortcuts. The adaptor checks supplied tokens against the frontend-created
 request/session paths and rejects unknown options. Rejecting every nonempty
 map prevents real clients such as Gabbee from creating a shortcut session.
+The policy converts standard `XF86Audio*` trigger names to Qt media-key
+sequences before consent, so Gabbee's default `XF86AudioPrev` binds to
+`Media Previous` instead of appearing unassigned.
 The selected native backend must pass a real frontend request before live
 shortcut qualification. Transient bindings disappear on actual lifetime loss. See
 [ADR-0334](../adr/0334-native-shortcut-authority-and-consumers.md) and

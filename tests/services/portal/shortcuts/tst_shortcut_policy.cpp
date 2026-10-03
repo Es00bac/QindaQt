@@ -11,6 +11,17 @@ private Q_SLOTS:
         const auto drafts = shortcutDrafts({{"capture", {{"description", "Capture a window"}, {"preferred_trigger", "CTRL+ALT+s"}}}, {"other", {{"description", "Other"}, {"preferred_trigger", "CAPS+Unsupported_Key"}}}});
         QVERIFY(drafts); QCOMPARE(drafts->size(), 2); QCOMPARE(drafts->first().key, QKeySequence("Ctrl+Alt+S")); QVERIFY(drafts->last().key.isEmpty());
     }
+    void portalMediaKeysBecomeActualQtBindings() {
+        const auto drafts = shortcutDrafts({
+            {"dictation", {{"description", "Toggle dictation"}, {"preferred_trigger", "XF86AudioPrev"}}},
+            {"mute", {{"description", "Mute"}, {"preferred_trigger", "CTRL+XF86AudioMute"}}},
+            {"unknown", {{"description", "Unknown"}, {"preferred_trigger", "XF86NoSuchKey"}}}});
+        QVERIFY(drafts);
+        QCOMPARE(drafts->size(), 3);
+        QCOMPARE(drafts->at(0).key, QKeySequence("Media Previous"));
+        QCOMPARE(drafts->at(1).key, QKeySequence("Ctrl+Volume Mute"));
+        QVERIFY(drafts->at(2).key.isEmpty());
+    }
     void boundsTypesAndDuplicateIDs() {
         QVERIFY(!shortcutDrafts({{"a", {{"description", 42}}}})); QVERIFY(!shortcutDrafts({{"a", {{"description", "Action"}, {"preferred_trigger", true}}}}));
         QVERIFY(!shortcutDrafts({{QString(129, 'a'), {{"description", "Action"}}}}));
