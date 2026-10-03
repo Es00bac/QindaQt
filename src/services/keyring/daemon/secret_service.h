@@ -50,6 +50,7 @@ private:
     protocol::MetadataRows itemMetadata(const QString &collectionPath);
     bool metadataMethod(const QDBusMessage &);
     bool nativeItemMethod(const QDBusMessage &);
+    bool consolidationMethod(const QDBusMessage &);
     bool portalMethod(const QDBusMessage &);
     bool portalCaller(const QString &) const;
     SecureBuffer portalSecret(const QString &app);

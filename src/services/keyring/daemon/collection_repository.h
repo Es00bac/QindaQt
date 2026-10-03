@@ -33,6 +33,10 @@ public:
     bool put(const QString &id, Item item);
     bool erase(const QString &id, const QString &itemId);
     void remove(const QString &id);
+    // Copy first under the resident sole-writer lease, then retire unlocked
+    // source collections. A failed copy leaves every source intact; an
+    // interrupted retirement can be retried without duplicating item IDs.
+    unsigned int consolidate(const QString &targetId, const QStringList &sourceIds);
     QString alias(const QString &name) const;
     void setAlias(const QString &name, const QString &id);
     CollectionImportReceipt importCollections(CollectionImportBatch,CollectionImportPasswords &,const std::function<bool()> &,KdfParameters,const std::function<void()> &);
