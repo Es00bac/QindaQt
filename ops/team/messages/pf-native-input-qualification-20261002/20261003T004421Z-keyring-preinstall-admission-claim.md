@@ -1,0 +1,3 @@
+# Keyring preinstall admission source claim
+
+Fetchedhub currentdc828314bd1ca00093e5d1ab05a8537d21d435ca; ownreusedisolatedWT/newbranch exactrequested5917. Readonlydocs/CLI/existingharness/buildreceipts/runnablefilemetadata. No providers/prompts/secretreads/deployment/sessionchanges/compile/GPU; parent owns actualuserauthorizeddialog/cutover. Stopat existingexecutablecomposition or provenmissingprerequisite.
