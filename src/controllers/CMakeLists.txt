@@ -16,6 +16,7 @@ if(QINDAQT_BUILD_KWIN_PLUGIN)
         kwin/controller_input_device.cpp kwin/controller_input_device.h
         kwin/voice_button.cpp kwin/voice_button.h)
     target_link_libraries(qindaqt_controller_plugin PRIVATE qindaqt_controller_runtime QindaQtKWin::kwin Qt6::DBus Qt6::Widgets)
+    target_compile_features(qindaqt_controller_plugin PRIVATE cxx_std_23)
     set_target_properties(qindaqt_controller_plugin PROPERTIES PREFIX "" OUTPUT_NAME "qindaqt_controllers")
     install(TARGETS qindaqt_controller_plugin LIBRARY DESTINATION "${QT6_INSTALL_PLUGINS}/qindaqt-kwin/plugins" COMPONENT ControllerRuntime)
 endif()
