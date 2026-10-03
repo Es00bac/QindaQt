@@ -48,7 +48,10 @@ MemoryDenyWriteExecute=true
 SystemCallArchitectures=native
 SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
-TasksMax=16
+# PipeWire creates workers for each active graph branch. A 16-task ceiling
+# stalls the service and its clients on a populated desktop; 128 passed the
+# physical Audio1/PipeWire connection check with 32 live tasks.
+TasksMax=128
 UMask=0077
 
 [Install]

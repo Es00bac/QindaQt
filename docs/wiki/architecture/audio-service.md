@@ -35,6 +35,10 @@ does not replace WirePlumber policy or install PipeWire configuration.
 Its VBAN worker does capture, transport, and receive user-enabled stereo audio
 through the graph as described below.
 
+The packaged user unit permits 128 tasks. The live console graph needed 32
+threads on qinda-top; the former 16-task limit stalled Audio1 and PipeWire
+clients, including System Settings and speech playback.
+
 The exact wire contract is in the [Audio1 reference](../reference/audio1-v2.md).
 The Qt/GLib ownership decision is recorded in
 [ADR-0014](../adr/0014-confine-wireplumber-to-glib-worker.md); the audio graph

@@ -376,3 +376,4 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0341: Unify protected capture and input sessions](0341-unify-protected-capture-and-input-sessions.md) — coordinated source candidate; genuine combined/restore gates pending
 - [ADR-0342: Route native portals to their owning process](0342-route-native-portals-to-their-owning-process.md)
+- [ADR-0343: Unlock matching keyring collections with one password](0343-unlock-matching-keyring-collections-with-one-password.md)

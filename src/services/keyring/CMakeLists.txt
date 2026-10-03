@@ -46,7 +46,7 @@ foreach(unit qindaqt-keyring.service org.freedesktop.secrets.service org.qindaqt
     configure_file("data/${unit}.in" "${CMAKE_CURRENT_BINARY_DIR}/${unit}" @ONLY)
 endforeach()
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/qindaqt-keyring.service" data/qindaqt-keyring.socket
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/systemd/user" COMPONENT QindaQtKeyring)
+    DESTINATION "${KDE_INSTALL_SYSTEMDUSERUNITDIR}" COMPONENT QindaQtKeyring)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.freedesktop.secrets.service"
     "${CMAKE_CURRENT_BINARY_DIR}/org.qindaqt.Keyring1.service"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/services" COMPONENT QindaQtKeyring)

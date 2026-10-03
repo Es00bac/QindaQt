@@ -118,7 +118,28 @@ void SecretService::startPrompt(const QString &path) {
                     for (const auto &object : p.objects)
                         if (collectionForPath(object.path()) == id) p.completed.append(object);
                     ++p.next;
-                    if (p.next >= p.collections.size()) finishPrompt(path,false); else startPrompt(path);
+                    if (p.action == "unlock") {
+                        // AGENT-GUARD: a password authenticated for one
+                        // collection can be retried against other locked
+                        // collections, but each encrypted store must verify
+                        // it independently. Never reprompt while that bounded
+                        // fan-out still owns the secure password pages.
+                        unlockRelated(id,std::move(password),[this,path] {
+                            const auto resumed = prompts_.find(path);
+                            if (resumed == prompts_.end()) return;
+                            auto &prompt = resumed->second;
+                            while (prompt.next < prompt.collections.size()
+                                   && !repository_.locked(prompt.collections.at(prompt.next))) {
+                                const auto unlocked = prompt.collections.at(prompt.next++);
+                                for (const auto &object : prompt.objects)
+                                    if (collectionForPath(object.path()) == unlocked)
+                                        prompt.completed.append(object);
+                            }
+                            if (prompt.next >= prompt.collections.size()) finishPrompt(path,false);
+                            else startPrompt(path);
+                        });
+                    } else if (p.next >= p.collections.size()) finishPrompt(path,false);
+                    else startPrompt(path);
                 }
             } catch (const PersistenceError &) {
                 finishPrompt(path,true); QCoreApplication::exit(1);

@@ -9,6 +9,7 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <map>
+#include <functional>
 
 namespace qindaqt::keyring::service {
 struct Session { QString owner; SessionCrypto crypto; };
@@ -31,6 +32,9 @@ public:
     // Borrows same-thread QObject, auto-fenced on destruction. Native reveal
     // remains unavailable without this independently admitted observer.
     void observeLockPolicy(KeyringLockPolicy *);
+    void unlockRelated(const QString &authenticatedId, SecureBuffer password,
+                       std::function<void()> completed = {});
+    void cancelRelatedUnlock();
     QString collectionPath(const QString &id) const;
     QString itemPath(const QString &id, const QString &item) const;
     QString collectionForPath(const QString &path) const;
@@ -53,6 +57,7 @@ private:
     bool promptMethod(const QDBusMessage &);
     void startPrompt(const QString &path);
     void finishPrompt(const QString &path, bool dismissed);
+    void continueRelatedUnlock(quint64 generation);
     bool nativeDisclosureAllowed() const;
     QString addPrompt(Prompt prompt);
     Session &session(const QString &path, const QString &owner);
@@ -72,6 +77,10 @@ private:
     QString sessionOwner_;
     QPointer<KeyringLockPolicy> lockPolicy_;
     int pendingRekeys_ = 0;
+    SecureBuffer relatedPassword_;
+    QStringList relatedCollections_;
+    std::function<void()> relatedCompleted_;
+    quint64 relatedGeneration_ = 0;
 };
 inline QDBusObjectPath objectPath(const QString &path = "/") { return QDBusObjectPath(path); }
 inline QVariant variantPath(const QString &path = "/") { return QVariant::fromValue(objectPath(path)); }

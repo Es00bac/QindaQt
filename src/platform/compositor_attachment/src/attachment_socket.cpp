@@ -66,10 +66,13 @@ int connectPeer(const QString &runtime, const QString &name, qint64 expected,
     return -1;
   struct stat entry{};
   const auto file = QFile::encodeName(name);
+  // AGENT-GUARD: KWin creates a 0755 socket. The pinned 0700 runtime
+  // directory controls traversal; reject outside write access here, then
+  // bind the actual peer to the compositor's bus PID below.
   if (fstatat(directory.value, file.constData(), &entry, AT_SYMLINK_NOFOLLOW) !=
           0 ||
       !S_ISSOCK(entry.st_mode) || entry.st_uid != geteuid() ||
-      entry.st_nlink != 1 || (entry.st_mode & 0007) != 0)
+      entry.st_nlink != 1 || (entry.st_mode & 0022) != 0)
     return -1;
   Descriptor socketFd(
       socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0));

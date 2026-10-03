@@ -90,7 +90,10 @@ Theme discovery reads at most 16 unique absolute directories and 128 JSON
 theme documents of at most 128 KiB each. Earlier directories win a duplicate
 theme ID. A malformed discovered document, empty catalog, duplicate projector
 ID, unknown selected theme, or failed QST derivation fails the entire policy
-closed rather than publishing fallback colors.
+closed rather than publishing fallback colors. The installed
+executable-relative theme path is normalized before comparison with XDG data
+paths; `/usr/libexec/../share` must not duplicate `/usr/share` and prevent the
+portal from starting.
 
 ## Lineage, loss, and notification
 
@@ -206,12 +209,17 @@ The secret-bearing resident disables cores/dumpability before requests. Its acti
 
 The [native capture module](../reference/portal-capture.md) composes separate Screenshot/ScreenCast policy, request/session lifetime and native helper ports. The current selector routes Screenshot, ScreenCast, RemoteDesktop, InputCapture and Clipboard to the protected native broker. Five actual native GPU/PipeWire/consent/input/clipboard journeys pass with zero failures or skips in the frozen release source; the historical monitor-only slice below is not the current routing boundary. Final installed activation and physical fresh-login adoption remain release gates. The shared public pixel transport is owned by [CompositorCapture](compositor-capture.md), with no Screenshot app-private includes.
 
-## GlobalShortcuts migration candidate
+## GlobalShortcuts
 
 A separate native GlobalShortcuts v1 adaptor/helper owns
 CreateSession, BindShortcuts, ListShortcuts and activation/deactivation. It
 adapts existing session admission and uses the compositor's native Shortcuts1
-service; metadata routing is held pending tests and real compositor
-qualification. Its transient bindings disappear on actual lifetime loss. See
+service. The frontend forwards standard `handle_token` and
+`session_handle_token` options to CreateSession, and `handle_token` to
+BindShortcuts. The adaptor checks those values against the frontend-created
+request/session paths and rejects unknown options. Rejecting every nonempty
+map prevents real clients such as Gabbee from creating a shortcut session.
+The selected native backend must pass a real frontend request before live
+shortcut qualification. Transient bindings disappear on actual lifetime loss. See
 [ADR-0334](../adr/0334-native-shortcut-authority-and-consumers.md) and
 [portal foundation](portal-foundation.md).

@@ -58,7 +58,14 @@ int main(int argc,char **argv) {
         SessionDisplayBinding display(bus,qEnvironmentVariable("XDG_RUNTIME_DIR"),parser.isSet("require-session-display"));
         ProcessPromptProvider provider(helper,nullptr,&display);
         SecretService service(repository,provider,bus);
-        QObject::connect(&control,&ControlServer::collectionStateChanged,&service,&SecretService::notifyCollectionState);
+        QObject::connect(&control,&ControlServer::collectionStateChanged,&service,
+            [&service](const QString &id) {
+                service.cancelRelatedUnlock();
+                service.notifyCollectionState(id);
+            });
+        control.setUnlockObserver([&service](const QString &id, qindaqt::keyring::SecureBuffer password) {
+            service.unlockRelated(id,std::move(password));
+        });
         if (!bus.registerVirtualObject(Root,&service,QDBusConnection::SubPath)) return 2;
         const bool fixture=parser.isSet("policy-fixture");
         if(fixture && (!parser.isSet("private-bus") || !parser.isSet("storage-root") || !parser.isSet("runtime-root"))) return 2;

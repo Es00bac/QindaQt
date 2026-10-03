@@ -185,6 +185,23 @@ class SecretServiceTest(unittest.TestCase):
             pathlib.Path("/proc",str(self.daemon.pid),"mem").open("rb")
         self.assertEqual((self.runtime/"keyring"/"control").stat().st_mode & 0o777,0o600)
 
+    def test_one_authenticated_password_unlocks_matching_collections(self):
+        login = self.collection()
+        time.sleep(0.6)
+        imported = secretstorage.create_collection(self.connection,"Imported wallet","imported")
+        imported.create_item("saved",{"source":"imported"},b"preserved")
+        login.lock()
+        imported.lock()
+        self.assertTrue(login.is_locked())
+        self.assertTrue(imported.is_locked())
+        time.sleep(0.6)
+        self.assertEqual(self.control(1,old=b"synthetic-keyring-password"),b"QKR1\x00")
+        deadline = time.monotonic()+4
+        while imported.is_locked() and time.monotonic()<deadline:
+            time.sleep(0.05)
+        self.assertFalse(imported.is_locked())
+        self.assertEqual(list(imported.get_all_items())[0].get_secret(),b"preserved")
+
     def test_volatile_collection_has_no_disk_secret_and_lock_retires(self):
         collection = secretstorage.Collection(self.connection,"/org/freedesktop/secrets/collection/session")
         item = collection.create_item("volatile",{"service":"volatile"},b"session-only")

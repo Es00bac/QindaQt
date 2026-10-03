@@ -17,6 +17,9 @@ unsigned int length(const std::span<const unsigned char> bytes, std::size_t offs
 }
 }
 ControlServer::Client::~Client() { if (fd >= 0) close(fd); }
+void ControlServer::setUnlockObserver(std::function<void(const QString &, SecureBuffer)> observer) {
+    unlockObserver_ = std::move(observer);
+}
 ControlServer::ControlServer(QString directory,CollectionRepository &repository,int activatedFd,QObject *parent)
     : QObject(parent),path_(directory + "/control"),runtime_(directory),repository_(repository) {
     const auto path = path_.toUtf8();
@@ -107,7 +110,15 @@ void ControlServer::receive(quint64 id) {
     try {
         if (bytes[4] == 3) { repository_.lock(collection); Q_EMIT collectionStateChanged(collection); finish(id,true); }
         else if (!repository_.unlock(collection,password)) { Q_EMIT collectionStateChanged(collection); finish(id,false); }
-        else if (bytes[4] == 1) { Q_EMIT collectionStateChanged(collection); finish(id,!repository_.locked(collection)); }
+        else if (bytes[4] == 1) {
+            Q_EMIT collectionStateChanged(collection);
+            if (unlockObserver_ && !repository_.locked(collection)) {
+                SecureBuffer owned(password.size());
+                std::copy(password.begin(), password.end(), owned.bytes().begin());
+                unlockObserver_(collection,std::move(owned));
+            }
+            finish(id,!repository_.locked(collection));
+        }
         else {
             const bool wasLocked = true; // Authentication may publish unlocked state; cancellation retires it.
             QTimer::singleShot(550,this,[this,id,collection,idSize,oldSize,newSize,wasLocked] {

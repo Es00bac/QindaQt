@@ -3,6 +3,7 @@
 #include "collection_repository.h"
 #include <QSocketNotifier>
 #include <QObject>
+#include <functional>
 #include <map>
 namespace qindaqt::keyring::service {
 // Native/PAM seam, one bounded frame per connection. Peers must be euid,
@@ -17,6 +18,9 @@ public:
     ControlServer(QString runtimeDirectory, CollectionRepository &, int activatedFd = -1,
                   QObject *parent = nullptr);
     ~ControlServer() override;
+    // Called only after a successful authenticated unlock; the receiver owns
+    // the moved, locked-page copy and may try it against other collections.
+    void setUnlockObserver(std::function<void(const QString &, SecureBuffer)> observer);
 Q_SIGNALS:
     void collectionStateChanged(const QString &id);
 private:
@@ -38,5 +42,6 @@ private:
     std::unique_ptr<QSocketNotifier> notifier_;
     quint64 generation_ = 0;
     std::map<quint64,std::unique_ptr<Client>> clients_;
+    std::function<void(const QString &, SecureBuffer)> unlockObserver_;
 };
 }
