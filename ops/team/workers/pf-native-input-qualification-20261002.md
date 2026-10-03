@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — installed bridge real X11 startup prerequisite handed off; no lease
+- Status: available — real keyring preinstall composition handed off; no resource lease
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -130,3 +130,7 @@
 - 2026-10-02T23:37:33.571945+00:00 — Manager explicitly grants one identical installed--help replay withread-onlypublic/etc/ld.so.cache; no LD_LIBRARY_PATH or otheroverride, core0/timecap10s/noGPUcapturebus. Prior127 evidence preserved in a0cf. Actualsharing missingconsumer/frame gate unchanged; stopafterreplayreceipt.
 
 - 2026-10-02T23:39:01.738425+00:00 — One granted publiclinkercache replay EXIT134/0.30666s: upstreamforcesxcb beforeQApplication/help, genuineX11displayabsent. ExactupstreammainSHA22caa8dc confirms; first127preserved. Fourartifacts unchanged/ownPGIDgone/no timeout/core0/noGPUbus; no appstartup/sharingacceptance. Existingharness lackslegacyconsumer/frame assertions. Finalimmutablehandoff/source bindings ready; stopidle/noautomaticnextclaim or source/runtime expansion.
+
+- 2026-10-03T00:44:21.155366+00:00 — Fetched currenthub integratehead dc828314bd1ca00093e5d1ab05a8537d21d435ca advanced from requested5917base; ownreusedWT newworkerbranch exact5917. Readonly existingCLI/nativeadmission/docs/builtpaths only. User now permits parentpassworddialogs/cutover, thisworker doesnotstartprompts/providers/import/session/GPU/compiler. Nice19/idleIO; ownboard/newhandoff only, stopatconcreteexistingcomposition/prerequisite.
+
+- 2026-10-03T00:53:21.443987+00:00 — Exactmain5917 source-ready nestedproductioncompositor/directsupervisor HOSTbus route handedoff; fetched dc828 olderbranch clarified. Actualsignedimage importer/prompt/session andinstalledfork metadata bound; /usr defaultprompt absent, root temporaryROpackageprompt mount resolves preinstallpath withoutinstallation. Exactdisabledchildren/softwareenv/PIDnamespace guard/source conflicts documented; actualadmission/UI/import unrun. Ownreadonlyreceipt committed, no runtime/providers/credentials/laptop mutation, stopavailable.
