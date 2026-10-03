@@ -1,0 +1,10 @@
+{
+  "KPlugin": {
+    "Id": "qindaqt_controllers",
+    "Name": "QindaQt Controller Desktop",
+    "Description": "Controller desktop bindings with Steam and game priority",
+    "Version": "0.1.0",
+    "License": "GPL-3.0-or-later",
+    "EnabledByDefault": true
+  }
+}

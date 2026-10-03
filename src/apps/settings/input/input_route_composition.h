@@ -31,6 +31,7 @@ class InputRouteComposition final : public QObject {
     Q_PROPERTY(QObject *shortcuts READ shortcuts CONSTANT)
     Q_PROPERTY(QObject *tabletDevices READ tabletDevices CONSTANT)
     Q_PROPERTY(QObject *touch READ touch CONSTANT)
+    Q_PROPERTY(QObject *controllers READ controllers CONSTANT)
 
 public:
     explicit InputRouteComposition(QObject *parent = nullptr);
@@ -42,6 +43,7 @@ public:
     [[nodiscard]] QObject *shortcuts() const;
     [[nodiscard]] QObject *tabletDevices() const;
     [[nodiscard]] QObject *touch() const;
+    [[nodiscard]] QObject *controllers() const;
 
 private:
     class Private;

@@ -426,6 +426,7 @@ T.ApplicationWindow {
             Component.onDestruction: root.updateInputShortcutCapture(false)
             onCloseRequested: root.close()
             onDisplaySettingsRequested: root.navigation.selectRoute("display")
+            onAudioSettingsRequested: root.navigation.selectRoute("audio")
         }
     }
 

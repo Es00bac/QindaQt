@@ -28,6 +28,8 @@ target_sources(
         tablet_placement_notes.cpp
         tablet_surface.cpp
         touch_settings_model.cpp
+        controllers_model.cpp
+        qt_controller_port.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -49,10 +51,13 @@ target_sources(
             include/qindaqt/apps/settings_input/tablet_placement_model.h
             include/qindaqt/apps/settings_input/tablet_surface.h
             include/qindaqt/apps/settings_input/touch_settings_model.h
+            include/qindaqt/apps/settings_input/controllers_model.h
+            include/qindaqt/apps/settings_input/controller_port.h
 )
 target_link_libraries(
     qindaqt_settings_input
     PUBLIC QindaQt::ShortcutsClient KF6::ConfigCore QindaQt::TabletDevices QindaQt::SettingsClient QindaQt::CompositorNames Qt6::Core Qt6::DBus Qt6::Gui Qt6::Concurrent
+           QindaQt::ControllerPolicy
 )
 target_compile_features(qindaqt_settings_input PUBLIC cxx_std_20)
 set_target_properties(
@@ -105,6 +110,8 @@ qt_add_qml_module(
         qml/InputShortcutsSection.qml
         qml/InputTabletSection.qml
         qml/InputTouchSection.qml
+        qml/InputControllerSection.qml
+        qml/ControllerBindingRow.qml
         qml/ShortcutCaptureButton.qml
         qml/TabletAreaCanvas.qml
         qml/TabletAreaEditor.qml
@@ -153,6 +160,8 @@ install(
         qml/InputShortcutsSection.qml
         qml/InputTabletSection.qml
         qml/InputTouchSection.qml
+        qml/InputControllerSection.qml
+        qml/ControllerBindingRow.qml
         qml/ShortcutCaptureButton.qml
         qml/TabletAreaCanvas.qml
         qml/TabletAreaEditor.qml

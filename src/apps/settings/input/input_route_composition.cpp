@@ -19,6 +19,8 @@
 #include <qindaqt/services/tablet_devices/tablet_mapping_store.h>
 #include <qindaqt/services/tablet_devices/tablet_output_inventory.h>
 #include <qindaqt/apps/settings_input/touch_settings_model.h>
+#include <qindaqt/apps/settings_input/controller_port.h>
+#include <qindaqt/apps/settings_input/controllers_model.h>
 #include <qindaqt/services/settings_client/qt_settings_transport.h>
 
 #include <QtCore/QDir>
@@ -76,7 +78,9 @@ public:
           tabletModel(tabletPort, tabletOutputs, &tabletMappings),
           touchTransport(bus),
           touchClient(touchTransport, TouchSettingsModel::settingsKeys()),
-          touchModel(touchClient) {
+          touchModel(touchClient),
+          controllerPort(bus),
+          controllerModel(controllerPort) {
         // AGENT-CONTRACT: the ledger client starts here, not lazily: the
         // route must be able to record a choice the moment the user makes
         // one. A Settings1 owner that is not up yet leaves the store
@@ -116,6 +120,8 @@ public:
     Services::SettingsClient::QtSettingsTransport touchTransport;
     Services::SettingsClient::SettingsClient touchClient;
     TouchSettingsModel touchModel;
+    QtControllerPort controllerPort;
+    ControllersModel controllerModel;
 };
 
 InputRouteComposition::InputRouteComposition(QObject *parent)
@@ -148,5 +154,6 @@ QObject *InputRouteComposition::tabletDevices() const {
     return &d->tabletModel;
 }
 QObject *InputRouteComposition::touch() const { return &d->touchModel; }
+QObject *InputRouteComposition::controllers() const { return &d->controllerModel; }
 
 } // namespace QindaQt::Apps::SettingsInput

@@ -380,3 +380,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0344: Provide an XDG menu for KWin application permissions](0344-provide-xdg-menu-for-kwin-application-permissions.md)
 - [ADR-0345: Hold physical native power cutover until its receipts pass](0345-hold-physical-native-power-cutover-until-receipts-pass.md)
 - [ADR-0346: Consolidate unlocked keyring collections inside the resident](0346-consolidate-unlocked-keyring-collections.md) — Proposed
+- [ADR-0347: Controller desktop input yields to games](0347-controller-desktop-integration.md) — Accepted

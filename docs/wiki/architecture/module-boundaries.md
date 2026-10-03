@@ -501,6 +501,18 @@ first-owner/legacy policy, persistence, input synthesis, privileged locker FD,
 authentication, RequestLock, sleep or unlock. Consumers migrate independently;
 no consumer may include another daemon’s private attachment/idle header.
 
+## Controller desktop input
+
+`src/controllers` owns validated profile values, atomic profile persistence,
+Linux game-consumer observation, SDL3 sampling and its independent KWin plugin.
+Its policy target exposes only value types and validation to Settings. The
+runtime borrows an input sink; the compositor sink owns key/button reference
+counts and exact-owner Voice1 hold requests. Settings Input uses its
+asynchronous `ControllerPort` and authoritative Controllers1 snapshots;
+models and QML never access SDL, process descriptors, compositor internals or
+profile files. [Controller input](controller-input.md) and
+[ADR-0347](../adr/0347-controller-desktop-integration.md) define the contract.
+
 ## Semantic grouping
 
 The [semantic grouping planner](window-management-commands.md#atomic-grouping-and-addressed-focus)

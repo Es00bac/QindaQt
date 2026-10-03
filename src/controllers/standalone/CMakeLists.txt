@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Focused build over the installed ABI; never builds the desktop or KWin.
+cmake_minimum_required(VERSION 3.25)
+project(QindaQtControllerChecks LANGUAGES CXX)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_CXX_STANDARD 20)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Gui DBus Widgets Test)
+option(QINDAQT_BUILD_KWIN_PLUGIN "Build the controller compositor plugin" ON)
+if(QINDAQT_BUILD_KWIN_PLUGIN)
+    find_package(QindaQtKWin 6.6.6 EXACT REQUIRED CONFIG)
+endif()
+include(CTest)
+add_subdirectory(.. controllers)
+if(BUILD_TESTING)
+    add_subdirectory(../../../tests/controllers tests)
+endif()
