@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — exact62ac folder compatibility SOURCE ACCEPT handed off; focused gate pending
+- Status: available — exactd916 EOF operational correction ACCEPT; no runtime lease
 - Identity: qinda_icon_brand_audit
 - Base: 5917da5c054ccd8ed9fd0be5a2ac9db549a4bb1c
 - Branch: worker/pf-keyring-preinstall-admission-20261002
@@ -152,3 +152,7 @@
 - 2026-10-03T02:14:07.710268+00:00 — Claimed independent exact62acb69b931a091a9ee5161cf65dba570b5a17a4 source review, fetched qinda bare hub branch explicitly; parent exact5917. Six product/test/wiki paths read against real folder-duplicate cause. Collapse call closure/raw bounds/default strictness/verifier and mutation failures reviewed; no compiler/runtime/provider/secret reads, own board/new reply only. Preparing immutable SOURCE ACCEPT; packager focused fixtures pending.
 
 - 2026-10-03T02:14:26.817951+00:00 — Exact62ac SOURCE ACCEPT: only folderList initial/recheck collapse duplicates, all raw strings still count toward1024, every other list strict. Added encrypted completeness/call-count/raw-capacity/other-uniqueness/mutation fixture assertions inspected; unchanged verifier retained. Diffcheck0, no compile/runtime by reviewer; own immutable receipt ready, focused private gate remains packager outcome. Stop available.
+
+- 2026-10-03T02:24:14.122598+00:00 — Claimed quick exactd916 operational adapter review; unchanged05bb driver independently hashed. Root proven same-FD dup2 CLOEXEC retention caused diagnostic transport loss; earlier e430 execution acceptance missed this case. Explicit set_inheritable3 now repairs it; no production/code/provider/test/runtime changes. Preparing own correction receipt, root genuine GNOME scratch replay next.
+
+- 2026-10-03T02:24:34.496692+00:00 — ACCEPT d916 +unchanged05bb: explicit FD3 inheritable clears same-descriptor CLOEXEC while verified EOF pipe/writer closure/exec/native admission/scratch isolation remain intact. Earlier e430 execution acceptance superseded. Root two-pass GNOME trace indicates post-acquisition transport boundary; no GNOME production defect proven. Own source-only immutable receipt, diffcheck pending commit; stop available.
