@@ -74,6 +74,26 @@ class ImportTest(unittest.TestCase):
             with self.subTest(kind=kind):
                 self.storage=self.root/("native-"+kind);code,output,error=self.run_import(kind);self.assertEqual(code,0,error.decode())
                 self.assertEqual(subprocess.run([str(VERIFY),str(self.storage),kind],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode,0)
+    def test_repeated_kwallet_folders_copy_complete_entries_once_per_pass(self):
+        self.fixture.mode="kw-duplicate-folders"
+        code,output,error=self.run_import("kwallet");self.assertEqual(code,0,error.decode());self.assertIn(b"2 collections, 5 items",output)
+        self.assertEqual(subprocess.run([str(VERIFY),str(self.storage),"kwallet"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode,0)
+        self.assertEqual(self.fixture.calls.count("readEntry"),8)
+        self.assertEqual(self.fixture.calls.count("entryType"),8)
+        self.assertEqual(self.fixture.calls.count("entryList"),4*len(self.fixture.folders))
+        self.assertEqual(self.fixture.calls.count("openAsync"),self.fixture.calls.count("close"))
+    def test_kwallet_raw_folder_capacity_and_other_list_uniqueness(self):
+        for mode,kind,expected in (("kw-folder-capacity","kwallet",2),("kw-duplicate-wallets","kwallet",1),
+                ("kw-duplicate-entries","kwallet",1),("duplicate","secret",1)):
+            with self.subTest(mode=mode):
+                self.fixture.mode=mode;self.fixture.calls.clear();self.storage=self.root/mode
+                code,output,error=self.run_import(kind);self.assertNotEqual(code,0);self.assertFalse(output)
+                self.assertIn(("code "+str(expected)).encode(),error);self.assertFalse(self.storage.exists())
+                self.assertNotIn("readEntry",self.fixture.calls)
+    def test_kwallet_unique_folder_mutation_still_refuses(self):
+        self.fixture.mode="kw-folder-mutation"
+        code,output,error=self.run_import("kwallet");self.assertNotEqual(code,0);self.assertFalse(output)
+        self.assertIn(b"code 3",error);self.assertFalse(self.storage.exists())
     def test_owned_unlock_and_cancel_or_failure(self):
         self.fixture.locked=True;code,output,error=self.run_import("secret");self.assertEqual(code,0,error.decode());self.assertIn("Prompt",self.fixture.calls)
     def test_foreign_replies_and_completed_never_publish(self):
