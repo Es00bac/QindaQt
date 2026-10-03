@@ -33,6 +33,11 @@ buffers. QObject context and ticket generations fence delayed callbacks.
 
 The standard XML in `src/services/keyring/data/api.xml` declares services,
 collections, items, sessions, aliases, prompts, properties and signals.
+The virtual-object dispatcher answers the standard
+`org.freedesktop.DBus.Introspectable.Introspect` call with a complete XML node
+for the requested object. Clients can discover `org.qindaqt.Keyring1` at the
+service root and the Secret Service collection interface at collection paths;
+unknown paths still fail closed.
 Plain sessions and actual DH negotiation are supported. Encryption follows
 the [Secret Service specification](https://specifications.freedesktop.org/secret-service/latest-single/):
 RFC2409 group2 DH, a padded 128-byte shared value, HKDF-SHA256 and
