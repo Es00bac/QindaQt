@@ -7,6 +7,7 @@
 #include <window.h>
 #include <workspace.h>
 #include <QDBusMessage>
+#include <QDBusPendingCall>
 #include <QDir>
 #include <QStandardPaths>
 
