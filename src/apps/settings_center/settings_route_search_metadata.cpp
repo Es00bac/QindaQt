@@ -30,6 +30,10 @@ QStringList keywordList(const char *commaSeparated) {
 // tst_settings_route_search compares these ids with the page's list.
 QList<SettingsRouteDestination> inputDestinations() {
   return {
+      {.id = QStringLiteral("controllers"),
+       .title = QCoreApplication::translate(SearchContext, "Controllers"),
+       .keywords = keywordList(QT_TRANSLATE_NOOP(
+           "SettingsSearch", "controller, gamepad, xbox, playstation, dualsense, nintendo, gyro, dictation button"))},
       {.id = QStringLiteral("pointers"),
        .title = QCoreApplication::translate(SearchContext, "Mouse & touchpad"),
        .keywords = keywordList(QT_TRANSLATE_NOOP(

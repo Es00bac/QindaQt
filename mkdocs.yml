@@ -80,6 +80,7 @@ nav:
       - Notification service: architecture/notifications-service.md
       - Clipboard service: architecture/clipboard-service.md
       - Voice input: architecture/voice-input.md
+      - Controller desktop input: architecture/controller-input.md
       - Font preferences: architecture/font-preferences.md
       - Window containers: architecture/window-containers.md
       - Saved workspaces: architecture/workspaces.md
@@ -519,6 +520,7 @@ nav:
       - "0344: XDG menu for KWin application permissions": adr/0344-provide-xdg-menu-for-kwin-application-permissions.md
       - "0345: Hold physical native power cutover": adr/0345-hold-physical-native-power-cutover-until-receipts-pass.md
       - "0346: Consolidate unlocked keyring collections": adr/0346-consolidate-unlocked-keyring-collections.md
+      - "0347: Controller desktop input yields to games": adr/0347-controller-desktop-integration.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md
       - "ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor": adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md

@@ -7,8 +7,7 @@ import QtQuick.Layouts
 import QindaQt.Controls 1.0
 import QindaQt.Tokens 1.0
 
-// Input route page: five destinations (Mouse & touchpad, Pen & tablet,
-// Keyboard, Shortcuts, Touch) behind the Appearance tab pattern.
+// Input route destinations use the Appearance tab pattern.
 // The sections own their models; this page only hosts and navigates.
 T.Page {
     id: root
@@ -19,6 +18,7 @@ T.Page {
     // The Pen & tablet destination sends a pen display's rotation to the
     // Display route, where the screen it turns with is rotated (ADR-0285).
     signal displaySettingsRequested()
+    signal audioSettingsRequested()
 
     // Deep link from the pen-display notification: which destination to open
     // and which device to select there (qindaqt-settings --destination
@@ -43,7 +43,9 @@ T.Page {
         { id: "shortcuts", title: qsTr("Shortcuts"), icon: "preferences-desktop-keyboard-shortcuts",
           description: qsTr("Global shortcuts and custom command keys") },
         { id: "touch", title: qsTr("Touch"), icon: "input-touchpad",
-          description: qsTr("Touchscreen, hold time, keyboard and edge swipes") }
+          description: qsTr("Touchscreen, hold time, keyboard and edge swipes") },
+        { id: "controllers", title: qsTr("Controllers"), icon: "input-gaming",
+          description: qsTr("Game controller bindings, dictation, mouse, touchpad and gyro") }
     ]
 
     title: qsTr("Input")
@@ -177,7 +179,9 @@ T.Page {
                                    : root.currentDestination === "tablet"
                                      ? tabletPage
                                      : root.currentDestination === "touch"
-                                       ? touchPage : pointersPage
+                                       ? touchPage
+                                       : root.currentDestination === "controllers"
+                                         ? controllersPage : pointersPage
                 onLoaded: item.forceActiveFocus(Qt.TabFocusReason)
             }
         }
@@ -223,6 +227,14 @@ T.Page {
         id: touchPage
         InputTouchSection {
             inputSettings: root.inputSettings
+        }
+    }
+    Component {
+        id: controllersPage
+        InputControllerSection {
+            inputSettings: root.inputSettings
+            onAudioSettingsRequested: root.audioSettingsRequested()
+            onCaptureActivityChanged: active => root.shortcutCaptureActivityChanged(active)
         }
     }
 }

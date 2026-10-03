@@ -11,8 +11,14 @@ records how a desk tablet keeps the screen's up and how its areas are mapped.
 
 ## Tabs
 
+The [Controllers destination](../architecture/controller-input.md) adds family
+defaults and per-controller button bindings, hold-to-dictate, stick mouse and
+scrolling, supported touchpad and gyro controls. Steam and game consumers have
+priority under [ADR-0347](../adr/0347-controller-desktop-integration.md).
+
 | Tab | What it changes | Authority |
 | --- | --- | --- |
+| Controllers | Xbox, PlayStation, Nintendo and other controller desktop actions, keyboard chords, dictation button, stick speed/dead zone, touchpad mouse and gyro | Public Controllers1 compositor plugin; atomic user profile store |
 | Mouse & touchpad | Pointer speed, acceleration profile, natural scrolling, left-handed, scroll speed, middle-click emulation; touchpads add tap to click, tap and drag, disable while typing, and scroll method | KWin device properties over D-Bus |
 | Pen & tablet | Which screen the pen draws on; for a desk tablet its rotation (kept upright on a rotated screen), left-handed, and the part of the tablet mapped onto a part of the screen; for a pen display the screen it turns with and its calibration; pen mode, the pressure curve and tip threshold, enabling the tablet, and what the pad has | KWin device properties over D-Bus; the intent is remembered in Settings1 `input.tabletMappings` |
 | Keyboard | Key repeat, delay and rate with a test field, NumLock at login, and layouts (add, remove, reorder, variant) | `qindaqt/kwininputrc [Keyboard]` and `qindaqt/kwinxkbrc [Layout]` |

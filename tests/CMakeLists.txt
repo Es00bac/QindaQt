@@ -234,3 +234,4 @@ add_subdirectory(services/secret_portal)
 add_subdirectory(services/native_lock_service)
 
 add_subdirectory(services/shortcuts_client)
+add_subdirectory(controllers)
