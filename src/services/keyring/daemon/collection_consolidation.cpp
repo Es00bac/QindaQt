@@ -42,7 +42,12 @@ unsigned int CollectionRepository::consolidate(const QString &targetId,
         for (auto alias = aliases_.cbegin(); alias != aliases_.cend(); ++alias)
             if (alias.value() == sourceId)
                 throw std::runtime_error("Consolidation unavailable");
-        for (const auto &itemId : source->storage->search({}).ids) {
+        // A failed index build reports no IDs. Treating that as an empty
+        // collection would retire the only encrypted copy of its items.
+        const auto sourceItems = source->storage->search({});
+        if (!sourceItems.authenticated)
+            throw std::runtime_error("Consolidation unavailable");
+        for (const auto &itemId : sourceItems.ids) {
             const auto *item = source->storage->item(itemId);
             if (!item)
                 throw std::runtime_error("Consolidation unavailable");
