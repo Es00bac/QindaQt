@@ -1,10 +1,10 @@
 # Native input qualification continuation
 
-- Status: available — installed bridge real X11 startup prerequisite handed off; no lease
+- Status: available — exactoverlay91c SOURCE ACCEPT handed off; no runtime lease
 - Identity: qinda_icon_brand_audit
-- Base: e568acc86de52322bf6c76c10d90c04a5f69be46
-- Branch: worker/pf-release-contract-review-20261002
-- Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
+- Base: 5917da5c054ccd8ed9fd0be5a2ac9db549a4bb1c
+- Branch: worker/pf-keyring-preinstall-admission-20261002
+- Ownership: own stable worker board and new timestamped review replies only; root owns operational helpers and all product/runtime/import changes
 - Resource: private lease released after empty teardown; no compiler/GPU/host mutation
 
 ## Updates
@@ -130,3 +130,33 @@
 - 2026-10-02T23:37:33.571945+00:00 — Manager explicitly grants one identical installed--help replay withread-onlypublic/etc/ld.so.cache; no LD_LIBRARY_PATH or otheroverride, core0/timecap10s/noGPUcapturebus. Prior127 evidence preserved in a0cf. Actualsharing missingconsumer/frame gate unchanged; stopafterreplayreceipt.
 
 - 2026-10-02T23:39:01.738425+00:00 — One granted publiclinkercache replay EXIT134/0.30666s: upstreamforcesxcb beforeQApplication/help, genuineX11displayabsent. ExactupstreammainSHA22caa8dc confirms; first127preserved. Fourartifacts unchanged/ownPGIDgone/no timeout/core0/noGPUbus; no appstartup/sharingacceptance. Existingharness lackslegacyconsumer/frame assertions. Finalimmutablehandoff/source bindings ready; stopidle/noautomaticnextclaim or source/runtime expansion.
+
+- 2026-10-03T00:44:21.155366+00:00 — Fetched currenthub integratehead dc828314bd1ca00093e5d1ab05a8537d21d435ca advanced from requested5917base; ownreusedWT newworkerbranch exact5917. Readonly existingCLI/nativeadmission/docs/builtpaths only. User now permits parentpassworddialogs/cutover, thisworker doesnotstartprompts/providers/import/session/GPU/compiler. Nice19/idleIO; ownboard/newhandoff only, stopatconcreteexistingcomposition/prerequisite.
+
+- 2026-10-03T00:53:21.443987+00:00 — Exactmain5917 source-ready nestedproductioncompositor/directsupervisor HOSTbus route handedoff; fetched dc828 olderbranch clarified. Actualsignedimage importer/prompt/session andinstalledfork metadata bound; /usr defaultprompt absent, root temporaryROpackageprompt mount resolves preinstallpath withoutinstallation. Exactdisabledchildren/softwareenv/PIDnamespace guard/source conflicts documented; actualadmission/UI/import unrun. Ownreadonlyreceipt committed, no runtime/providers/credentials/laptop mutation, stopavailable.
+
+- 2026-10-03T01:07:46.739695+00:00 — Rootrealproductionnested importer refusedcode6 after3.028s, identitiespassed/no catalog. SourceonlyQtNativeLockTransport/fork55d producer/no-lockscreen+supervisor/harness assumptions plus sanitizedopsmetadata. No runtime/providers/prompts/secrets/build/tests/sourceedit or bypass; ownboard/newreply only, stopatexactcause/operation.
+
+- 2026-10-03T01:11:47.587953+00:00 — Exactfork55d --no-lockscreen disablesNativeLockDBusInterface creation; owner/socket stillvalid but receiptendpointabsent→Unknown/3s/code6. Rootnotified removeonlyflag (not--lockscreen), keepallrealadmission/physicalapps. Prior5d54 commandflag superseded; syntheticpolicyfixture alwaysregisters adaptor anddidnotexerciseproduction exclusion. Sourceonlyexactcause bound; no runtime/providers/prompts/secrets/build/sourceedit, stopavailable.
+
+- 2026-10-03T01:47:17.625967+00:00 — Rootproposes separateactualGNOME/KWallet acquisition with documentedownedanonymous EOFpasswordpipe for source-specificInvalidInput diagnosis. Sourceonly5917 store/password/readers/planner review, ownboard/newreply only, no productedit/build/providers/UI/secrets/runtime. Check destinationbootstrap/publication effects and real-onlyInvalidInput sites; stopat exactverdict/nextgate.
+
+- 2026-10-03T01:52:56.270234+00:00 — Source-only review found repository opening bootstraps catalog and may recover orphan files before password acquisition: diagnostics require fresh per-source scratch, never real destination. Corrected ec330 scratch safety accepted; executable bwrap preserve-fds setup rejected after manager established flag unavailable. Inside-namespace Python EOF adapter successor pending exact review. Original code1 with no catalog excludes late validItem rejection; acquisition/planner or earlier CLI error remains. No operations executed.
+
+- 2026-10-03T01:55:19.233141+00:00 — Final source ACCEPT root driver05bb16c92d68bba5909d9169275338470925925d923ddd405ab856843b0264be + adaptere43098d161020c71aa6489ac05673c001ed4fcb79e2dc57081efa1de186b735b: fresh scratch source isolation, actual namespace Python path, anonymous EOF FD3 and production transaction order reviewed. Bootstrap metadata allowed only scratch; no imported encrypted files before Cancelled4. Original code1/no catalog localises refusal before commit; real reader cause remains unobserved. No provider/runtime/secret calls/tests/source changes; stop available.
+
+- 2026-10-03T02:01:36.391055+00:00 — Root actual source isolation reports GNOME7/0.836s and KWallet1/0.080s, both no catalog/zero encrypted files. Reviewing early wire/async/parser sites and destination-pinned method-only monitor privacy; no actual bus/provider/secret/runtime calls or tests. Own board/new replies only, nice19/idleIO.
+
+- 2026-10-03T02:03:28.822460+00:00 — Source review rejects destination-only monitor because unrelated writes transfer secret request bodies; accepts only exact owner+method-call acquisition allowlist with header-only output/no returns/signals/body. KWallet1 excludes reader constructor errors (mapped7); strict reply signature/list/async signal/entry type/planner remain candidate sites, no defect proven. Ordered non-cleanup RPC trace is next root gate. Only own records/source reads; no actual bus/provider/secret/test/runtime calls. Stop available.
+
+- 2026-10-03T02:14:07.710268+00:00 — Claimed independent exact62acb69b931a091a9ee5161cf65dba570b5a17a4 source review, fetched qinda bare hub branch explicitly; parent exact5917. Six product/test/wiki paths read against real folder-duplicate cause. Collapse call closure/raw bounds/default strictness/verifier and mutation failures reviewed; no compiler/runtime/provider/secret reads, own board/new reply only. Preparing immutable SOURCE ACCEPT; packager focused fixtures pending.
+
+- 2026-10-03T02:14:26.817951+00:00 — Exact62ac SOURCE ACCEPT: only folderList initial/recheck collapse duplicates, all raw strings still count toward1024, every other list strict. Added encrypted completeness/call-count/raw-capacity/other-uniqueness/mutation fixture assertions inspected; unchanged verifier retained. Diffcheck0, no compile/runtime by reviewer; own immutable receipt ready, focused private gate remains packager outcome. Stop available.
+
+- 2026-10-03T02:24:14.122598+00:00 — Claimed quick exactd916 operational adapter review; unchanged05bb driver independently hashed. Root proven same-FD dup2 CLOEXEC retention caused diagnostic transport loss; earlier e430 execution acceptance missed this case. Explicit set_inheritable3 now repairs it; no production/code/provider/test/runtime changes. Preparing own correction receipt, root genuine GNOME scratch replay next.
+
+- 2026-10-03T02:24:34.496692+00:00 — ACCEPT d916 +unchanged05bb: explicit FD3 inheritable clears same-descriptor CLOEXEC while verified EOF pipe/writer closure/exec/native admission/scratch isolation remain intact. Earlier e430 execution acceptance superseded. Root two-pass GNOME trace indicates post-acquisition transport boundary; no GNOME production defect proven. Own source-only immutable receipt, diffcheck pending commit; stop available.
+
+- 2026-10-03T02:26:33.684932+00:00 — Claimed exactoverlay91c source review via explicitqinda barehub; newr3 recipe +accepted62 six-file patch, immutable29f/8a lineage, Manifest/deps/options/deliveryatom inspected. No builds/install/provider/credentials; actual source checks bash-n0/diffcheck0/exactpatchmatch. Preparing own immutable source verdict.
+
+- 2026-10-03T02:26:52.089167+00:00 — SOURCE ACCEPT91c: exact62 patch byte-equivalent, all6 affected originalblobs identical29f→5917, r3 recipe onlyadds acceptedpatch/comments, r2/Manifestpreviousrows immutable, dependency/options unchanged. Bash-n0/diffcheck0; no compilation/Portage/provider/credential calls. Source-only own receipt preserved; root normal signed packaging plusartifact gate next, stopavailable.
