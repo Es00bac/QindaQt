@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: working — verifying recovered laptop user bus and locked legacy keyring handover evidence; no compiler/GPU work
+- Status: available — laptop user bus restored; authenticated legacy keyring import and native session admission gate final cutover
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-03T00:19:37.908118+00:00 — Recovery700c is preserved on qinda hub; source metadata shows both nonempty legacy Secret Service collections locked, no source Unlock or secret-value calls, no destination passwords/import. Root compiler/GPU/Portage resources idle; current admitted native physical session still unavailable and existing applications are not force-closed. Available for exact signed five-package cutover only after the existing real import contract passes; no safe credential substitution or partial-collection migration is offered.
 
 - 2026-10-03T00:08:12.015881+00:00 — Previous goal turn progressed: accepted private helper signed install106files/6symlinks verified bothhosts. Current authoritative qinda source nowGNOMEowner40388 stable/UID1000,3collections:locked63+4items/unlocked0; laptop user@1000 failed signal/MainPID0/emptyCG, exact startPASS0.251s recoversmanager+bus; original compositor814278/start11255483 alive and supervisor814357/start11255516 preserved, oldshell3285705 absent. LaptopGNOMEowner3435051 stable/UID1000 haslocked9items/unlocked0; bothnativecatalogsabsent/KWalletnamesunowned. Metadataonly/no secret-values/Unlock/destination-password/import/nativePAM switch. Ownercounts are observations, not full source snapshots. Different runtime reviewer a6 isolatesupstreamforcedXcb/Xdisplayprerequisite, nohelper startup/sharing pass;Xvfbnotinstalled, no newfixture/build proposed. Root owns bounded docs/audit push/gates, no forcedappstop/login/game/icons. Same authenticated real-user import/native-session gate remains.
 
