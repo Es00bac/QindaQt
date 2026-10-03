@@ -24,7 +24,9 @@
     "persistentLoginUnlockVerified": true,
     "installedPF25Exit": 0,
     "installedPF25RuntimePackages": 573,
-    "forbiddenRuntimePackages": 0
+    "forbiddenRuntimePackages": 0,
+    "plasmaLoginEntries": 0,
+    "nativeQindaLoginEntryPresent": true
   },
   "qinda": {
     "remainingRetiredPlasma": 0,
@@ -48,7 +50,9 @@
     "persistentLoginStatus": "Normal unanswered unlock dialog timed out after 30.635 seconds; no authenticated failure claim",
     "installedPF25Exit": 0,
     "installedPF25RuntimePackages": 586,
-    "forbiddenRuntimePackages": 0
+    "forbiddenRuntimePackages": 0,
+    "plasmaLoginEntries": 0,
+    "nativeQindaLoginEntryPresent": true
   },
   "allowedSharedPlasmaCategoryLibraries": [
     "kwayland",
