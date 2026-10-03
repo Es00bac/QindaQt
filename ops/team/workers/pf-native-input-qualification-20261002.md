@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — real keyring preinstall composition handed off; no resource lease
+- Status: available — real NativeLock Unknown exact flag cause handed off; no lease
 - Identity: qinda_icon_brand_audit
 - Base: e568acc86de52322bf6c76c10d90c04a5f69be46
 - Branch: worker/pf-release-contract-review-20261002
@@ -134,3 +134,7 @@
 - 2026-10-03T00:44:21.155366+00:00 — Fetched currenthub integratehead dc828314bd1ca00093e5d1ab05a8537d21d435ca advanced from requested5917base; ownreusedWT newworkerbranch exact5917. Readonly existingCLI/nativeadmission/docs/builtpaths only. User now permits parentpassworddialogs/cutover, thisworker doesnotstartprompts/providers/import/session/GPU/compiler. Nice19/idleIO; ownboard/newhandoff only, stopatconcreteexistingcomposition/prerequisite.
 
 - 2026-10-03T00:53:21.443987+00:00 — Exactmain5917 source-ready nestedproductioncompositor/directsupervisor HOSTbus route handedoff; fetched dc828 olderbranch clarified. Actualsignedimage importer/prompt/session andinstalledfork metadata bound; /usr defaultprompt absent, root temporaryROpackageprompt mount resolves preinstallpath withoutinstallation. Exactdisabledchildren/softwareenv/PIDnamespace guard/source conflicts documented; actualadmission/UI/import unrun. Ownreadonlyreceipt committed, no runtime/providers/credentials/laptop mutation, stopavailable.
+
+- 2026-10-03T01:07:46.739695+00:00 — Rootrealproductionnested importer refusedcode6 after3.028s, identitiespassed/no catalog. SourceonlyQtNativeLockTransport/fork55d producer/no-lockscreen+supervisor/harness assumptions plus sanitizedopsmetadata. No runtime/providers/prompts/secrets/build/tests/sourceedit or bypass; ownboard/newreply only, stopatexactcause/operation.
+
+- 2026-10-03T01:11:47.587953+00:00 — Exactfork55d --no-lockscreen disablesNativeLockDBusInterface creation; owner/socket stillvalid but receiptendpointabsent→Unknown/3s/code6. Rootnotified removeonlyflag (not--lockscreen), keepallrealadmission/physicalapps. Prior5d54 commandflag superseded; syntheticpolicyfixture alwaysregisters adaptor anddidnotexerciseproduction exclusion. Sourceonlyexactcause bound; no runtime/providers/prompts/secrets/build/sourceedit, stopavailable.
