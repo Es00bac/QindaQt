@@ -56,6 +56,11 @@ The [primary KWallet public interface](https://invent.kde.org/frameworks/kwallet
 reader supports the explicitly selected `org.kde.kwalletd6` or `org.kde.kwalletd5`
 service. It enumerates existing wallets, rechecks each name immediately before
 `openAsync`, and waits for that transaction's actual-owner `walletAsyncOpened`.
+Repeated strings in KWallet `folderList` replies refer to the same API folder
+identity: each distinct folder is enumerated once per complete pass and rechecked
+as the same sorted identity set. The raw reply remains limited to1024 strings,
+including repeats; wallet names, entry keys and Secret Service paths still reject
+duplicates. This compatibility normalization does not edit the source.
 It copies folder/key/type and the complete `readEntry` bytes for Password=1,
 Stream=2 and Map=3. Serialized password/map bytes are preserved without text
 conversion. Folder/key/type are retained as encrypted item attributes; full
