@@ -23,7 +23,7 @@
   "hosts": {
     "qinda": {
       "exactBinaryTargets": [
-        "=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2",
+        "=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r3",
         "=kde-frameworks/kauth-6.27.0-r1",
         "=dev-libs/kirigami-addons-1.12.1-r1",
         "=kde-misc/kdeconnect-26.04.3-r4",
@@ -59,7 +59,7 @@
     },
     "qinda-top": {
       "exactBinaryTargets": [
-        "=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r2",
+        "=gui-wm/qindaqt-desktop-0.1.0_pre20261002-r3",
         "=kde-frameworks/kauth-6.27.0-r1",
         "=dev-libs/kirigami-addons-1.12.1-r1",
         "=kde-frameworks/kio-6.27.0-r1",
@@ -90,10 +90,10 @@
       "Actual legacy Secret Service and KWallet acquisition and sealed native import complete under docs/wiki/architecture/keyring-import.md; verify application data compatibility before switching the service name or native PAM initialization"
     ],
     "afterUnmerge": "Immediately install reviewed native signed package set through Portage; do not force-kill existing processes",
-    "legacyData": "Original stores remain intact. Nonzero legacy files exist on both hosts, no running legacy provider is confirmed, and no actual import has occurred. Retain the installed provider/PAM selection until the actual import contract is satisfied.",
-    "actualState": "Both GNOME providers are now running and nonempty persistent collections are locked (qinda67items/laptop9items). Actual import, destination passwords, native service/PAM handover and full credential compatibility remain unperformed. Laptop failed user manager/bus recovered without compositor restart.",
-    "legacyPamCaveat": "qinda retired the optional KWallet PAM auto-unlock module in interim cleanup; future automatic wallet unlock is not preserved or qualified. Existing SDDM critical authentication blocks and GNOME provider/PAM selection remain; actual import uses the legacy provider public API and ordinary unlock.",
-    "evidence": "ops/audits/legacy-keyring-current-lock-gate-20261002.json"
+    "legacyData": "Original legacy stores and private sealed native backups remain retained. Actual production full-source imports and authenticated exact retries completed on both hosts.",
+    "actualState": "Laptop3 collections/12 items and qinda3/67 sealed; both exact retries0 added/3 unchanged with identical catalog/ciphertext hashes. GNOME package unmerge and final five signed native upgrades completed; installed files/PAM/two-root PF25 independently pass. Native provider handover/client compatibility in progress; fresh physical/PAM acceptance remains unclaimed.",
+    "legacyPamCaveat": "The optional legacy KWallet PAM module was retired on qinda. Approved native SDDM PAM files are installed with critical authentication blocks preserved; fresh-login native automatic unlock remains unqualified.",
+    "evidence": "ops/audits/native-credential-installed-checkpoint-20261003.json"
   },
   "retirementOrdering": [
     "Complete source/signed-image gates",
@@ -129,5 +129,18 @@
     "replacement": "qindaqt-screenshot and native Print key",
     "authorization": "docs/plans/2026-09-28-plasma-free-qindaqt.md section3.5 and PF16 explicitly drop Spectacle; owner decisions2 and5 retain no Plasma fallback and only two shared Plasma-category libraries",
     "scope": "Both hosts; this planned replacement is included in retired-only depclean, not in ordinary application keepers"
+  },
+  "completedNativeCredentialDelivery": {
+    "utc": "2026-10-03T03:46:20+00:00",
+    "laptopCollections": 3,
+    "laptopItems": 12,
+    "qindaCollections": 3,
+    "qindaItems": 67,
+    "exactFullSourceRetries": true,
+    "catalogAndCiphertextUnchanged": true,
+    "finalFiveInstalledBoth": true,
+    "installedVerification": "QindaGentoo647b871adba07e87933668d72e76493a8c90ed1e",
+    "remainingRetiredEach": 26,
+    "freshPhysicalAcceptance": false
   }
 }

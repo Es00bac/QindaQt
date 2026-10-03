@@ -5,42 +5,28 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
-## October 2 — Native desktop release delivery in progress
+## October 3 — Native desktop installed; runtime adoption in progress
 
-Actual legacy collections are now unlocked on both hosts. Laptop production
-GNOME acquisition and validation pass an intentional scratch password-cancellation
-preflight. A real KWallet duplicate-folder enumeration refusal has a small,
-independently reviewed fix (`62acb69b`, review `39e07136`) with its focused
-regression passing; a signed Desktop-r3 replacement is being packaged from the
-existing cache. Actual sealed migration, provider handover and installed release
-completion remain pending.
+Both hosts have the final five native signed packages installed. Actual import
+sealed three collections/twelve items on the laptop and three collections/
+sixty-seven items on qinda. Complete authenticated full-source exact retries
+and unchanged catalog/ciphertext hashes verify every copied record. Original
+stores and private backups remain intact.
 
-Final production source `29f7174a` and native compositor `55d1f273` are frozen.
-The signed compositor and native Gabbee recovery service are installed through
-Portage on both machines; all 710 installed files/links pass checks on the laptop.
-The final desktop package is built, signed, fully verified and available on both
-hosts after the reviewed Keyring install-only metadata correction. Independent
-complete-image launch passes native Wayland, XWayland, container workflows and
-QindaQt decorations. Nine native application updates are installed on qinda and
-six on the laptop, with the required TrashCLI dependency installed on both.
-Installed compositor/plugin and shell qualification passes
-14 CTest rows, including 40 render cases at representative profiles. Native input, combined
-capture, remembered permissions, lock suppression, clipboard, shortcuts, and
-forward/reverse Alt-Tab have actual passing private-runtime evidence.
+Independent installed verification passes all five package/source identities,
+5,709 files/seven links per host, approved SDDM PAM hashes and preservation of
+the laptop custom configuration. Installed two-root PF25 has zero forbidden
+runtime dependencies on either host. Native compositor/Gabbee, first-party
+application deliveries and private capture/input/clipboard/profile/shortcut
+qualification remain complete; no laptop build or GPU test was needed.
 
-Scoped cleanup has removed 34 retired Plasma packages on qinda and four on the
-laptop while preserving every non-retired installed package and ordinary KDE
-application. Each host still retains 26 required retired packages. The legacy
-sharing helper's private-library package is independently accepted and installed
-on both hosts; its installed files pass verification without a Plasma runtime
-dependency. Actual credential import, final desktop/provider/PAM installation,
-activation, complete cleanup and live sharing acceptance remain.
-Native provider initialization must follow verified import; existing keyring
-files are preserved but their contents have not been copied. Existing sessions
-and applications have not been terminated. Physical power/suspend and fresh
-login qualification are not inferred from
-virtual tests. The current exact source, proof boundaries and rollback state are
-in [Handoff](HANDOFF.md).
+The native provider handover and ordinary libsecret client check are in
+progress. Twenty-six retired Plasma packages remain on each host for final
+scoped cleanup, with signed snapshots and complete 32-binary rollback graphs
+preserved. Existing apps and every non-retired package remain protected.
+Fresh physical login, native PAM automatic unlock, physical power/suspend and
+live legacy-sharing acceptance remain separate unqualified gates.
+See [Handoff](HANDOFF.md) for exact evidence and remaining work.
 
 ## October 2 — QindaQt debranded icon delivery complete
 
