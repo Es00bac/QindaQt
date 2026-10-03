@@ -1,6 +1,6 @@
 # Native input qualification continuation
 
-- Status: available — exact scratch/EOF diagnostic source review handed off; no runtime lease
+- Status: available — early reader/allowlisted monitor verdict handed off; no runtime lease
 - Identity: qinda_icon_brand_audit
 - Base: 5917da5c054ccd8ed9fd0be5a2ac9db549a4bb1c
 - Branch: worker/pf-keyring-preinstall-admission-20261002
@@ -144,3 +144,7 @@
 - 2026-10-03T01:52:56.270234+00:00 — Source-only review found repository opening bootstraps catalog and may recover orphan files before password acquisition: diagnostics require fresh per-source scratch, never real destination. Corrected ec330 scratch safety accepted; executable bwrap preserve-fds setup rejected after manager established flag unavailable. Inside-namespace Python EOF adapter successor pending exact review. Original code1 with no catalog excludes late validItem rejection; acquisition/planner or earlier CLI error remains. No operations executed.
 
 - 2026-10-03T01:55:19.233141+00:00 — Final source ACCEPT root driver05bb16c92d68bba5909d9169275338470925925d923ddd405ab856843b0264be + adaptere43098d161020c71aa6489ac05673c001ed4fcb79e2dc57081efa1de186b735b: fresh scratch source isolation, actual namespace Python path, anonymous EOF FD3 and production transaction order reviewed. Bootstrap metadata allowed only scratch; no imported encrypted files before Cancelled4. Original code1/no catalog localises refusal before commit; real reader cause remains unobserved. No provider/runtime/secret calls/tests/source changes; stop available.
+
+- 2026-10-03T02:01:36.391055+00:00 — Root actual source isolation reports GNOME7/0.836s and KWallet1/0.080s, both no catalog/zero encrypted files. Reviewing early wire/async/parser sites and destination-pinned method-only monitor privacy; no actual bus/provider/secret/runtime calls or tests. Own board/new replies only, nice19/idleIO.
+
+- 2026-10-03T02:03:28.822460+00:00 — Source review rejects destination-only monitor because unrelated writes transfer secret request bodies; accepts only exact owner+method-call acquisition allowlist with header-only output/no returns/signals/body. KWallet1 excludes reader constructor errors (mapped7); strict reply signature/list/async signal/entry type/planner remain candidate sites, no defect proven. Ordered non-cleanup RPC trace is next root gate. Only own records/source reads; no actual bus/provider/secret/test/runtime calls. Stop available.
