@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: working — integrate final actual retirement evidence and documentation; preserve current applications for fresh login
+- Status: available — installation and retired-package removal verified; deliberate fresh physical login remains pending
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-03T04:23:45+00:00 — Final installed checkpoint is integrated at 5362f9a7d. Independent final host review 356b24d confirms both hosts have zero retired Plasma packages, all other packages preserved and PF25 zero forbidden runtime dependencies. Actual login-entry checks show QindaQt present and no Plasma entries on either host. Integrated 503-document link/navigation validation passes; strict MkDocs passes in 7.63 seconds after fixing two references outside its documentation root. All accepted source and overlay work is on qinda hubs and clean delivery checkouts. Compiler/GPU/Portage leases are released; owned temporary native provider parents remain alive to preserve current clients. Fresh physical/PAM login, qinda persistent Login unlock and physical hardware journeys remain pending; no full-program completion is claimed. Available for that deliberate adoption boundary.
 
 - 2026-10-03T04:14:30+00:00 — Actual final normal scoped retirement PASSboth: laptop26/26 in59.528s, qinda26/26 in64.668s; protected1359/1541 removed0 and world/world_sets unchanged. Qinda ordinary volatile-session libsecret store/read/delete0/0/0/finalempty1 PASS; persistentLoginUnlockVerified false, unanswered normal prompt30.635s. Exact operational mode independentlySOURCEACCEPTa73f, integrated; Input review histories bytepreservede054. Packager independent laptopVDB/PF25/52rollbackretentionPASSd718; final qinda readonlycheck nowowned. Root saves actual checkpoint/docs/sourcehub; no compiler/GPU/icon/game or forced currentappclose. Fresh native physical/PAM session and hardware journeys remain pending.
 

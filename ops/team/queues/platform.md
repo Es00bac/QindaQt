@@ -10,9 +10,10 @@ world/world_sets preserved. Native ordinary libsecret passes on the laptop's
 persistent default collection and qinda's volatile session collection.
 Qinda persistent Login unlock and both fresh physical/PAM logins remain pending.
 
-Program Manager owns final checkpoint integration and the deliberate session
-adoption boundary. Packager owns only the small read-only final qinda VDB/PF25
-verification; Input's operational review `a73f7f999` is accepted and released.
+Program Manager owns the deliberate session adoption boundary. Final checkpoint
+`5362f9a7d` is integrated; Packager's actual host review `356b24d` and Input's
+operational review `a73f7f999` are accepted and released. Integrated strict
+MkDocs and the 503-document link/navigation validator pass.
 No worker holds a compiler, GPU, capture, icon or game lease. Current physical
 apps remain running. See [Handoff](../../../docs/HANDOFF.md).
 
