@@ -56,21 +56,32 @@ autostart and license text are preserved; post-install live sharing remains a
 separate native-session acceptance gate.
 
 Target-local rollback packages, source archives and safe Settings/Audio/unit/PAM
-snapshots are preserved on both machines. Existing legacy keyring/wallet files
-have nonzero sizes on both hosts; their contents were not read. A fresh metadata
-check now confirms a running GNOME Secret Service on qinda: two locked nonempty
-collections expose 67 item paths in aggregate, and a third collection is empty
-and unlocked. The failed laptop user manager was started once with no compositor
-restart: its user bus is now running, its original compositor/session remain
-alive, and its GNOME provider exposes one locked collection with nine items
-plus an empty unlocked collection. No secret values were read. KWallet is not
-running on either host. This bus repair does not qualify Alt-Tab, native session
-admission or fresh-login adoption. Actual credential import and
-application compatibility remain unqualified. Keep the existing provider and
-PAM selection until the [import contract](wiki/architecture/keyring-import.md)
-is satisfied; file preservation alone does not complete migration. Final desktop
-installation, native activation, complete retired-package cleanup and fresh
-physical login remain. See the
+snapshots are preserved on both machines. The laptop user bus was recovered
+without restarting its original compositor/session or closing applications.
+The user has now unlocked the actual legacy GNOME collections on both hosts;
+the desktop's installed GCR prompt was shown on the laptop through stock,
+Portage-installed Waypipe with software rendering. The laptop KWallet is also
+unlocked. Original provider files and service ownership remain retained.
+
+Actual laptop source-isolation uses fresh scratch storage and the documented
+anonymous destination-password pipe containing EOF. Its production GNOME reader
+completes two exact full passes and reaches Cancelled4 after acquisition, planning
+and batch validation; the scratch contains only bootstrap metadata, no encrypted
+collection files. This is a preflight, not a sealed migration. Real KWallet
+folder enumeration repeats the same folder name; strict duplicate rejection
+stopped acquisition before entries. Reviewed source `62acb69b`, independently
+accepted in `39e07136`, normalizes only KWallet folder names, retains raw list
+capacity and strict other lists, and passes the focused full import regression.
+The new immutable Desktop-r3 package is being produced incrementally from the
+retained build cache with overlay source acceptance `b2067401`.
+
+Actual credential sealing, application compatibility, native provider/PAM
+handover, final five upgrades, remaining retired-package cleanup and fresh
+physical login remain. Source values were acquired only within the production
+reader; no values or passwords are printed or exported in operation evidence.
+The actual native destination catalog is still absent on both hosts. Keep the
+existing providers and PAM selection until the
+[import contract](wiki/architecture/keyring-import.md) is satisfied. See the
 [authorized plan](plans/2026-09-28-plasma-free-qindaqt.md),
 [release gates](wiki/development/releases.md) and
 [install checkpoint](wiki/development/install-checkpoint.md).

@@ -7,6 +7,14 @@ completion. Architectural detail and long-range milestone state remain in the
 
 ## October 2 — Native desktop release delivery in progress
 
+Actual legacy collections are now unlocked on both hosts. Laptop production
+GNOME acquisition and validation pass an intentional scratch password-cancellation
+preflight. A real KWallet duplicate-folder enumeration refusal has a small,
+independently reviewed fix (`62acb69b`, review `39e07136`) with its focused
+regression passing; a signed Desktop-r3 replacement is being packaged from the
+existing cache. Actual sealed migration, provider handover and installed release
+completion remain pending.
+
 Final production source `29f7174a` and native compositor `55d1f273` are frozen.
 The signed compositor and native Gabbee recovery service are installed through
 Portage on both machines; all 710 installed files/links pass checks on the laptop.
