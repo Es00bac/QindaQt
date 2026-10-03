@@ -121,7 +121,8 @@ private Q_SLOTS:
         invoke(frontend, root, iface, "CreateSession",
                {QVariant::fromValue(QDBusObjectPath(handle + "create")),
                 QVariant::fromValue(QDBusObjectPath(session)), "example.app",
-                QVariantMap{}});
+                QVariantMap{{"handle_token", "create"},
+                            {"session_handle_token", "shortcuts"}}});
     QCOMPARE(created.type(), QDBusMessage::ReplyMessage);
     QCOMPARE(created.arguments().first().toUInt(), 0U);
     PortalShortcuts offered{
@@ -131,7 +132,8 @@ private Q_SLOTS:
         invoke(frontend, root, iface, "BindShortcuts",
                {QVariant::fromValue(QDBusObjectPath(handle + "bind")),
                 QVariant::fromValue(QDBusObjectPath(session)),
-                QVariant::fromValue(offered), "", QVariantMap{}});
+                QVariant::fromValue(offered), "",
+                QVariantMap{{"handle_token", "bind"}}});
     QCOMPARE(bound.type(), QDBusMessage::ReplyMessage);
     QCOMPARE(bound.arguments().first().toUInt(), 0U);
     QCOMPARE(registry.bindings().size(), 1);
@@ -168,7 +170,7 @@ private Q_SLOTS:
         frontend, root, iface, "CreateSession",
         {QVariant::fromValue(QDBusObjectPath(handle + "create_cancelled")),
          QVariant::fromValue(QDBusObjectPath(cancelledSession)), "example.app",
-         QVariantMap{}});
+         QVariantMap{{"session_handle_token", "shortcuts_cancelled"}}});
     QCOMPARE(cancelledCreate.arguments().first().toUInt(), 0U);
     ui.response = RequestResponse::Cancelled;
     const auto cancelledBind =

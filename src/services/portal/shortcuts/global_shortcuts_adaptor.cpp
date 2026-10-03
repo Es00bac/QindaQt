@@ -20,14 +20,18 @@ QString optionString(const QVariant &wire) {
 }
 bool requestOptions(const QVariantMap &options, const QString &request,
                     const QString &session = {}) {
-  // AGENT-CONTRACT: xdg-desktop-portal forwards the client's standard tokens
-  // to the implementation. Match them to the frontend-created paths; rejecting
-  // every nonempty map prevents all native GlobalShortcuts sessions.
-  if (options.size() != (session.isEmpty() ? 1 : 2)
-      || optionString(options.value("handle_token")) != request.section('/',-1))
+  // AGENT-CONTRACT: xdg-desktop-portal forwards the optional handle_token
+  // and required CreateSession session_handle_token. Validate supplied tokens
+  // against frontend-created paths; clients may omit handle_token entirely.
+  if (options.size() != (session.isEmpty() ? 0 : 1) +
+                            int(options.contains("handle_token")))
     return false;
-  return session.isEmpty()
-      || optionString(options.value("session_handle_token")) == session.section('/',-1);
+  if (options.contains("handle_token") &&
+      optionString(options.value("handle_token")) != request.section('/', -1))
+    return false;
+  return session.isEmpty() ||
+         optionString(options.value("session_handle_token")) ==
+             session.section('/', -1);
 }
 QVariantMap publication(const ShortcutDrafts &drafts) {
   return {{"shortcuts", QVariant::fromValue(shortcutDescriptions(drafts))}};
