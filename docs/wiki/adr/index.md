@@ -378,3 +378,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0342: Route native portals to their owning process](0342-route-native-portals-to-their-owning-process.md)
 - [ADR-0343: Unlock matching keyring collections with one password](0343-unlock-matching-keyring-collections-with-one-password.md)
 - [ADR-0344: Provide an XDG menu for KWin application permissions](0344-provide-xdg-menu-for-kwin-application-permissions.md)
+- [ADR-0345: Hold physical native power cutover until its receipts pass](0345-hold-physical-native-power-cutover-until-receipts-pass.md)

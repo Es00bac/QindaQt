@@ -60,9 +60,12 @@ only its original addressed owner/epoch on cancel. A method-reported acceptance
 is not policy authority: consumers still use the actual-owner nonce-correlated
 inhibitor receipt ([ADR-0316](../adr/0316-power-idle-state-receipt-authority.md)).
 
-The default configured service keeps native policies off. The explicit coherent
+The source default keeps native policies off. The explicit coherent
 `QINDAQT_NATIVE_POWER_EXCLUSIVE` package option configures native activation and
-supervisor composition together. NativePowerComposition now assembles real
+supervisor composition together. The r5 ON package failed its physical login
+receipt barrier; the r6 profile holds the supervisor default OFF under
+[ADR-0345](../adr/0345-hold-physical-native-power-cutover-until-receipts-pass.md).
+NativePowerComposition now assembles real
 lock/dim/display/suspend consumers with scoped display ownership; actual native
 output and installed cutover acceptance remain separate manager gates. No
 placeholder or caller-provided success can replace a real consumer. See
@@ -537,9 +540,11 @@ The supervisor now composes the current-source shared consumers and separate
 ScreenPower1 facade. The ownership, episode, Protected, source and activation
 contracts live in [Native shared idle policy](idle-policy.md) and
 [ADR-0338](../adr/0338-own-scoped-display-power-and-shared-idle-composition.md).
-The package option defaults OFF; an ON cutover configures all four native policy
-flags and retires only the supervisor-owned PowerDevil child. Focused strict and
-private-protocol gates do not constitute installed/native physical acceptance.
+The package option defaults OFF in r6; an ON cutover configures all four native
+policy flags and retires only the supervisor-owned PowerDevil child. Focused
+strict and private-protocol gates do not constitute installed/native physical
+acceptance. The de-Plasma laptop has no installed PowerDevil executable, so
+OFF is a login recovery mode rather than a claim of complete power-policy parity.
 
 Exclusive supervisor activation is additionally fenced by authenticated startup
 readiness, as specified in [ADR-0338](../adr/0338-own-scoped-display-power-and-shared-idle-composition.md).
