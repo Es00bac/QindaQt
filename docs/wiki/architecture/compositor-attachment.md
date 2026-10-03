@@ -18,6 +18,10 @@ UID, in a private owner-only runtime reached without symlinks. Retained socket
 and kernel PIDFD join current owner/session liveness; no bare UID/service or
 native lock payload admits authority. Callback captures and bus dependencies
 are same-thread; synchronous daemon calls are bounded by their 250ms timeout.
+The compositor's normal socket mode is `0755`: the owner-only `0700` runtime
+directory prevents other users from reaching it, and socket mode must deny
+group/other write access. Read/execute bits on the socket are not an attachment
+failure. A live peer with the exact bus owner/PID remains mandatory.
 
 `identity()` returns an optional session owner/compositor owner/PID/basename
 only while current admission and lifetime remain valid. `openConnection()`

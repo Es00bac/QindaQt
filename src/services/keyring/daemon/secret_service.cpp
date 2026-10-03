@@ -81,11 +81,50 @@ void SecretService::observeLockPolicy(KeyringLockPolicy *policy) {
     lockPolicy_=policy;
     if(policy) connect(policy,&KeyringLockPolicy::changed,this,[this]{
         if(!nativeDisclosureAllowed()) {
+            if (!sessionOwner_.isEmpty()) cancelRelatedUnlock();
             QStringList retired;
             for(const auto &[path,prompt]:prompts_) if(prompt.action=="reveal" || prompt.action.startsWith("portal-")) retired.append(path);
             for(const auto &path:retired) finishPrompt(path,true);
         }
         if(lockPolicy_) signal(Root,NativeInterface,"PolicyStateChanged",{lockPolicy_->status()});
+    });
+}
+void SecretService::cancelRelatedUnlock() {
+    ++relatedGeneration_;
+    relatedPassword_.clear();
+    relatedCollections_.clear();
+    auto completed = std::move(relatedCompleted_);
+    if (completed) QTimer::singleShot(0,this,std::move(completed));
+}
+void SecretService::unlockRelated(const QString &authenticatedId, SecureBuffer password,
+                                  std::function<void()> completed) {
+    cancelRelatedUnlock();
+    relatedPassword_ = std::move(password);
+    relatedCompleted_ = std::move(completed);
+    for (const auto &id : repository_.names()) {
+        const auto *collection = repository_.find(id);
+        if (id != authenticatedId && collection && collection->storage && repository_.locked(id))
+            relatedCollections_.append(id);
+    }
+    continueRelatedUnlock(relatedGeneration_);
+}
+void SecretService::continueRelatedUnlock(quint64 generation) {
+    if (generation != relatedGeneration_) return;
+    if (relatedCollections_.isEmpty() || (lockPolicy_ && !sessionOwner_.isEmpty() && !nativeDisclosureAllowed())) {
+        cancelRelatedUnlock();
+        return;
+    }
+    QTimer::singleShot(550,this,[this,generation] {
+        if (generation != relatedGeneration_) return;
+        if (lockPolicy_ && !sessionOwner_.isEmpty() && !nativeDisclosureAllowed()) {
+            cancelRelatedUnlock(); return;
+        }
+        const auto id = relatedCollections_.takeFirst();
+        try {
+            if (repository_.locked(id) && repository_.unlock(id,relatedPassword_.bytes()))
+                notifyCollectionState(id);
+        } catch (const std::exception &) { cancelRelatedUnlock(); return; }
+        continueRelatedUnlock(generation);
     });
 }
 void SecretService::notifyCollectionState(const QString &id) {

@@ -515,6 +515,7 @@ nav:
       - "0340: Native privileged compositor identities": adr/0340-use-native-privileged-compositor-identities.md
       - "0341: Unified protected capture and input": adr/0341-unify-protected-capture-and-input-sessions.md
       - "0342: Native portal ownership and routing": adr/0342-route-native-portals-to-their-owning-process.md
+      - "0343: One-password matching keyring unlock": adr/0343-unlock-matching-keyring-collections-with-one-password.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md
       - "ADR-0311: Remove Plasma runtime dependencies from the QindaQt compositor": adr/0311-remove-plasma-runtime-from-qindaqt-compositor.md

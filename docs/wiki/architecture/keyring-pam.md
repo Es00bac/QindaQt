@@ -27,6 +27,10 @@ login: open-session returns PAM_SUCCESS and leaves native prompt fallback.
 An existing unlocked collection still requires password authentication; a
 wrong password retires its decrypted state. A rejected KDF admission cannot
 authorize new disclosure and can require a later prompt/retry.
+After an authenticated `login` unlock, the daemon can asynchronously try the
+same token against other locked persistent collections. Each store verifies
+its own password, and the PAM reply still waits only for `login`. See
+[ADR-0343](../adr/0343-unlock-matching-keyring-collections-with-one-password.md).
 
 Password PRELIM_CHECK captures PAM_OLDAUTHTOK; UPDATE_AUTHTOK requires both old
 and new nonempty bounded tokens. The daemon authenticates old before deriving

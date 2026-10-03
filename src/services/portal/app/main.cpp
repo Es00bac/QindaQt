@@ -34,9 +34,12 @@ QStringList themeDirectories()
          QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
         paths.append(QDir(dataRoot).filePath(QStringLiteral("qindaqt/themes")));
     }
-    const QString besideExecutable =
+    // AGENT-GUARD: /usr/libexec/../share and /usr/share are the same root.
+    // Normalize before deduplication or an installed portal rejects its own
+    // default theme paths at startup.
+    const QString besideExecutable = QDir::cleanPath(
         QDir(QCoreApplication::applicationDirPath())
-            .absoluteFilePath(QStringLiteral("../share/qindaqt/themes"));
+            .absoluteFilePath(QStringLiteral("../share/qindaqt/themes")));
     if (!paths.contains(besideExecutable)) {
         paths.append(besideExecutable);
     }

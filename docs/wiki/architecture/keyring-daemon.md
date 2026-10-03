@@ -14,6 +14,11 @@ provider/lifecycle/prompt choice in ADR-0135 for native deployments. A
 distribution must reconcile its Secret Service activation files before
 deploying; two providers are not a supported configuration.
 
+The user service and socket install to `${KDE_INSTALL_SYSTEMDUSERUNITDIR}`.
+On multilib hosts, `${CMAKE_INSTALL_LIBDIR}/systemd/user` can resolve to
+`lib64/systemd/user`, outside systemd's user-unit search path. D-Bus activation
+then fails even though the service files are present.
+
 ## Components and ownership
 
 The repository owns encrypted collection persistence, aliases and catalog
@@ -81,6 +86,15 @@ is bounded to4MiB including metadata, and discards all items on lock.
 All KDF admission is serialized with a global minimum500ms gap. Owner-scoped
 prompts wait before collecting a password; native rekey waits between old-password
 authentication and new derivation.
+
+After a successful standard or trusted-control unlock, matching locked
+persistent collections are tried with the same token in 550ms-paced steps.
+Each encrypted store authenticates independently; nonmatching collections stay
+locked. The move-only secure token is wiped on completion, supersession or
+session loss, and explicit Secret Service locking cancels pending attempts.
+Multi-collection prompts wait for matching attempts before asking again. This
+preserves imported collection identities and item paths while giving a
+one-password login experience. See [ADR-0343](../adr/0343-unlock-matching-keyring-collections-with-one-password.md).
 
 ## Native control and session lifetime
 

@@ -2,6 +2,7 @@
 #include "global_shortcuts_adaptor.h"
 #include "shortcut_sessions_p.h"
 #include <QCryptographicHash>
+#include <QDBusVariant>
 #include <QSet>
 #include <algorithm>
 namespace QindaQt::Services::Portal {
@@ -11,6 +12,22 @@ QString componentFor(const QString &path) {
          QString::fromLatin1(
              QCryptographicHash::hash(path.toUtf8(), QCryptographicHash::Sha256)
                  .toHex());
+}
+QString optionString(const QVariant &wire) {
+  const QVariant value = wire.metaType() == QMetaType::fromType<QDBusVariant>()
+                             ? wire.value<QDBusVariant>().variant() : wire;
+  return value.metaType() == QMetaType::fromType<QString>() ? value.toString() : QString{};
+}
+bool requestOptions(const QVariantMap &options, const QString &request,
+                    const QString &session = {}) {
+  // AGENT-CONTRACT: xdg-desktop-portal forwards the client's standard tokens
+  // to the implementation. Match them to the frontend-created paths; rejecting
+  // every nonempty map prevents all native GlobalShortcuts sessions.
+  if (options.size() != (session.isEmpty() ? 1 : 2)
+      || optionString(options.value("handle_token")) != request.section('/',-1))
+    return false;
+  return session.isEmpty()
+      || optionString(options.value("session_handle_token")) == session.section('/',-1);
 }
 QVariantMap publication(const ShortcutDrafts &drafts) {
   return {{"shortcuts", QVariant::fromValue(shortcutDescriptions(drafts))}};
@@ -190,7 +207,7 @@ quint32 GlobalShortcutsAdaptor::CreateSession(const QDBusObjectPath &handle,
   const auto token = d->begin(call, handle.path(), session.path(), app);
   if (!token)
     return 2;
-  if (!options.isEmpty() || !d->ui.admitted() || !d->native.available() ||
+  if (!requestOptions(options,handle.path(),session.path()) || !d->ui.admitted() || !d->native.available() ||
       !d->sessions.create(call, handle.path(), session.path(), app)) {
     d->requests.finish(token, RequestResponse::Failed);
     return 2;
@@ -214,7 +231,7 @@ quint32 GlobalShortcutsAdaptor::BindShortcuts(const QDBusObjectPath &handle,
     return 2;
   if (!entry || !d->sessions.authenticated(call, session.path(), app) ||
       !d->sessions.requestMatches(session.path(), handle.path()) ||
-      entry->pending || !options.isEmpty() || !d->ui.admitted() ||
+      entry->pending || !requestOptions(options,handle.path()) || !d->ui.admitted() ||
       !d->native.available() || parent.size() > 2048) {
     d->requests.finish(token, RequestResponse::Failed);
     return 2;

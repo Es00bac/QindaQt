@@ -73,8 +73,11 @@ public:
       close(socketFd);
       return -1;
     }
-    QFile::setPermissions(path,
-                          QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    // Match the 0755 socket created by the production QindaQt compositor.
+    QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+                                    QFileDevice::ExeOwner | QFileDevice::ReadGroup |
+                                    QFileDevice::ExeGroup | QFileDevice::ReadOther |
+                                    QFileDevice::ExeOther);
     return socketFd;
   }
   QString path;
@@ -185,6 +188,9 @@ void AttachmentTest::pinsActualOrdinaryPeerAndTransfersCloexecDescriptor() {
   Listener socket(runtime.filePath(
       QString(QindaQt::CompositorNames::waylandSocketPrefix) + "0"));
   QVERIFY(socket.fd >= 0);
+  struct stat socketInfo{};
+  QVERIFY(::stat(QFile::encodeName(socket.path).constData(), &socketInfo) == 0);
+  QCOMPARE(socketInfo.st_mode & 0777, mode_t(0755));
   CompositorAttachment attachment(
       compositor, runtime.path(),
       [&](const QString &owner) { return owner == session.baseService(); });
@@ -335,6 +341,9 @@ void AttachmentTest::rejectsUnsafePathsAndCanonicalNameViolations() {
   QVERIFY(QFile::link(socket.path, alias));
   QVERIFY(
       !attachment.attach(session.baseService(), QFileInfo(alias).fileName()));
+  QVERIFY(::chmod(QFile::encodeName(socket.path).constData(), 0777) == 0);
+  QVERIFY(!attachment.attach(session.baseService(), name));
+  QVERIFY(::chmod(QFile::encodeName(socket.path).constData(), 0755) == 0);
   QVERIFY(QFile::setPermissions(
       runtime.path(), QFileDevice::ReadOwner | QFileDevice::WriteOwner |
                           QFileDevice::ExeOwner | QFileDevice::ReadGroup));

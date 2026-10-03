@@ -62,6 +62,7 @@ bool SecretService::serviceMethod(const QDBusMessage &m) {
                 error(m,"org.freedesktop.Secret.Error.NoSuchObject"); return true;
             }
             if (m.member() == "Lock") {
+                cancelRelatedUnlock();
                 repository_.lock(id);
                 notifyCollectionState(id);
                 completed.append(path);
