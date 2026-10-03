@@ -7,6 +7,7 @@ target_compile_features(qindaqt_controller_policy PUBLIC cxx_std_20)
 set_target_properties(qindaqt_controller_policy PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(QINDAQT_BUILD_KWIN_PLUGIN)
+    find_package(QindaQtKWin 6.6.6.1 EXACT REQUIRED CONFIG)
     find_package(SDL3 3.2 REQUIRED CONFIG)
     add_library(qindaqt_controller_runtime STATIC controller_runtime.cpp include/qindaqt/controllers/controller_runtime.h)
     target_link_libraries(qindaqt_controller_runtime PUBLIC qindaqt_controller_policy SDL3::SDL3)
