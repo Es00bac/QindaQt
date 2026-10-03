@@ -87,7 +87,11 @@ arguments, 3 cancelled.
 | `src/services/screenshot_preferences` | Settings1 preferences and file naming, shared with Settings |
 
 KWin authorizes the tool by its installed desktop entry, so a build-tree
-binary is refused; test it installed.
+binary is refused; test it installed. The QindaQt systemd profile also installs
+`x11-misc/qindaqt-xdg-menu`. Without a usable
+`/etc/xdg/menus/applications.menu`, KWin's KService lookup cannot see that
+desktop entry and denies Print-key capture even when the entry is present.
+See [ADR-0344](../adr/0344-provide-xdg-menu-for-kwin-application-permissions.md).
 
 ## Tests
 
