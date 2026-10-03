@@ -118,3 +118,13 @@ passing virtual fixtures does not claim that hardware was connected.
 
 See [Input settings](../apps/input-settings.md) and
 [voice input](voice-input.md).
+
+## Bounded repair packaging
+
+The r12 controller repair compiles only `qindaqt-settings`, its Input QML plugin,
+and the controller plugin. Its Portage recipe starts from the Manifest-pinned,
+signed r11 package image and replaces those compiled artifacts through CMake.
+Unchanged desktop programs keep their existing binary content. This is a bounded
+ABI-compatible repair over the same Qt/KWin dependencies, not a general release
+recipe: later changes outside these modules require the ordinary source build.
+The result is a complete new signed desktop package with normal Portage ownership.
