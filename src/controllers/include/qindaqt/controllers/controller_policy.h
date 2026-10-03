@@ -38,4 +38,7 @@ bool applyPatch(const QJsonObject &patch, Profile &profile, QString &reason);
 QPointF stickMotion(QPointF stick, double deadzone, double speed, double seconds);
 QPointF gyroMotion(QPointF angularVelocity, double sensitivity, double seconds);
 QString defaultFamilyId(const QString &family);
+// Serial-backed physical identity ignores transport; empty serial preserves
+// the legacy GUID identity. No runtime handles or filesystem access.
+QString controllerProfileId(const QString &guid, const QString &serial, quint16 vendor, quint16 product, const QString &family);
 } // namespace QindaQt::Controllers

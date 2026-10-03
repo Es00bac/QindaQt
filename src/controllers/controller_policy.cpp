@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "qindaqt/controllers/controller_policy.h"
 #include <QJsonArray>
+#include <QCryptographicHash>
 #include <QKeySequence>
 #include <algorithm>
 #include <cmath>
@@ -107,4 +108,11 @@ QPointF gyroMotion(QPointF v, double sensitivity, double dt) {
     return v * (sensitivity * std::min(dt, 0.05));
 }
 QString defaultFamilyId(const QString &family) { return QStringLiteral("default:") + family; }
+QString controllerProfileId(const QString &guid, const QString &serial, quint16 vendor, quint16 product, const QString &family) {
+    auto stableSerial = serial.trimmed().toLower();
+    if (family == "playstation") { stableSerial.remove(':'); stableSerial.remove('-'); }
+    const QString identity = stableSerial.isEmpty() ? guid + ':' + serial
+        : QString("hardware:%1:%2:%3").arg(vendor).arg(product).arg(stableSerial);
+    return "pad:" + QString::fromLatin1(QCryptographicHash::hash(identity.toUtf8(), QCryptographicHash::Sha256).toHex().left(32));
+}
 } // namespace QindaQt::Controllers

@@ -46,7 +46,7 @@ void ControllersModel::receive(const QJsonObject &snapshot) {
         || !snapshot.value("controllers").isArray() || snapshot.value("controllers").toArray().size() > 64) {
         m_available = false; m_error = tr("The desktop returned invalid controller settings."); Q_EMIT viewChanged(); return;
     }
-    const auto rows = snapshot.value("controllers").toArray();
+    auto rows = snapshot.value("controllers").toArray();
     QSet<QString> ids;
     for (const auto &entry : rows) {
         const auto row = entry.toObject();
@@ -58,6 +58,20 @@ void ControllersModel::receive(const QJsonObject &snapshot) {
         }
         ids.insert(id);
     }
+    const bool wasConnected = selected().value("connected").toBool();
+    bool selectedConnected = false;
+    QString connectedId;
+    for (qsizetype i = 0; i < rows.size(); ++i) {
+        auto row = rows[i].toObject();
+        const bool connected = row.value("connected").toBool();
+        if (connected && connectedId.isEmpty()) connectedId = row.value("id").toString();
+        if (row.value("id").toString() == m_selected) selectedConnected = connected;
+        row["displayName"] = row.value("name").toString() + (row.value("template").toBool() ? QString{}
+            : connected ? tr(" (connected)") : tr(" (disconnected)"));
+        rows[i] = row;
+    }
+    if (wasConnected && !selectedConnected) m_autoSelect = true;
+    if (m_autoSelect && !connectedId.isEmpty()) m_selected = connectedId;
     m_rows = rows; m_revision = revision; m_available = true; m_steam = snapshot.value("steam").toBool();
     if (!ids.contains(m_selected)) m_selected = rows.isEmpty() ? QString{} : rows[0].toObject().value("id").toString();
     if (!m_busy) m_error.clear();
@@ -116,7 +130,7 @@ QString ControllersModel::statusText() const {
 }
 void ControllersModel::refresh() { m_port.refresh(); }
 void ControllersModel::select(const QString &id) {
-    for (const auto &row : m_rows) if (row.toObject().value("id").toString() == id) { m_selected = id; Q_EMIT viewChanged(); return; }
+    for (const auto &row : m_rows) if (row.toObject().value("id").toString() == id) { m_selected = id; m_autoSelect = false; Q_EMIT viewChanged(); return; }
 }
 bool ControllersModel::submit(const QJsonObject &patch) {
     if (!m_available || m_busy || m_selected.isEmpty()) return false;

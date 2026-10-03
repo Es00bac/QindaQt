@@ -3,6 +3,7 @@
 #include <QDBusConnection>
 #include <QJsonObject>
 #include <QObject>
+#include <optional>
 
 namespace QindaQt::Apps::SettingsInput {
 // Borrowed, GUI-thread asynchronous port. Consumers own their selected row;
@@ -32,6 +33,7 @@ private:
     void mutate(const QString &method, const QVariantList &arguments);
     QDBusConnection m_bus;
     quint64 m_generation = 1;
-    bool m_refreshing = false;
+    bool m_refreshing = false, m_refreshAgain = false;
+    std::optional<QPair<bool, QString>> m_completion;
 };
 } // namespace QindaQt::Apps::SettingsInput

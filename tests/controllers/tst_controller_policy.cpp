@@ -11,6 +11,13 @@ using namespace QindaQt::Controllers;
 class ControllerPolicyTest : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void physicalIdentitySurvivesTransportChange() {
+        const auto usb = controllerProfileId("usb-guid", "0C-27-56-59-E8-33", 0x054c, 0x0ce6, "playstation");
+        QCOMPARE(usb, controllerProfileId("bt-guid", "0c:27:56:59:e8:33", 0x054c, 0x0ce6, "playstation"));
+        QVERIFY(usb != controllerProfileId("bt-guid", "0c:27:56:59:e8:34", 0x054c, 0x0ce6, "playstation"));
+        QVERIFY(controllerProfileId("usb-guid", {}, 0x054c, 0x0ce6, "playstation")
+            != controllerProfileId("bt-guid", {}, 0x054c, 0x0ce6, "playstation"));
+    }
     void defaultsAndRoundTrip() {
         const auto p = defaultProfile();
         QCOMPARE(p.bindings.value("back").action, "dictate");
