@@ -1,4 +1,4 @@
-# Plasma-free release boundary — October 3 checkpoint
+# Plasma packages retired — October 3 login checkpoint
 
 The native final five packages are now installed through mandatory-signed,
 binary-only Portage on both hosts: Desktop `0.1.0_pre20261002-r3`, native Claude,
@@ -25,9 +25,13 @@ active and unchanged; its pending packaged-default CONFIG_PROTECT candidate
 is not adopted. Installed two-root PF25 passes with zero forbidden packages:
 586 runtime packages on qinda and 573 on the laptop.
 
-The legacy GNOME package is removed, but its pinned original process was
-retained through the package file transition. Native provider handover and
-ordinary libsecret compatibility are the current live gates. The temporary
+The legacy GNOME package is removed; its pinned original process was retained
+through the package file transition and then released gracefully. The native
+provider now owns Secret Service on both hosts. Ordinary libsecret store/read/
+delete passes with a temporary persistent-default item on the laptop and a
+temporary volatile-session item on qinda. The qinda check deliberately does
+not claim that its persistent Login collection unlocked: the normal unanswered
+dialog timed out after 30 seconds. The temporary
 nested native session must use the real data home, production lock policy and
 actual supervisor/display attachment. It preserves current physical apps and
 must remain alive while its native provider is serving them. This does not
@@ -35,8 +39,12 @@ qualify a fresh physical login, native PAM automatic unlock, physical power,
 suspend or live legacy Xwayland sharing.
 
 Scoped earlier cleanup removed 34 retired Plasma packages on qinda and four
-on the laptop. Twenty-six remain on each host pending the native runtime gate
-and final guarded depclean. Signed target-local snapshots preserve every one
+on the laptop. Final guarded normal depclean removed the remaining 26 on each
+host: zero retired Plasma packages remain. Only the explicitly shared
+`kwayland` and `layer-shell-qt` libraries remain in that category. All 1,541
+other installed packages on qinda and 1,359 on the laptop were preserved;
+world and world_sets stayed byte-identical during final cleanup. Signed
+target-local snapshots preserve every one
 of those packages plus the six old provider/desktop targets; both complete
 32-binary restoration graphs pass without extras. Actual rollback must release
 native Desktop alias ownership before GNOME restoration. All non-retired
@@ -49,9 +57,12 @@ private runtime gates cover native capture/input/clipboard, shell profiles,
 shortcuts, Alt-Tab and virtual display power. Both debranded icon families are
 complete and installed; no icon or game work is assigned.
 
-Remaining: native provider/client verification, guarded removal of the last
-26 retired packages per host, integrated documentation gates, and deliberate
-fresh native physical login/adoption. Current applications are preserved.
+Remaining: retire the temporary check sessions at the deliberate fresh native
+physical login boundary, then verify PAM automatic Login unlock, physical
+Alt-Tab/dock behavior, and the physical power/suspend and live legacy-sharing
+journeys. Qinda's persistent Login unlock remains pending. Installation and
+retired-package cleanup are complete; current applications are preserved.
+Evidence: `ops/audits/native-plasma-retirement-checkpoint-20261003.json`.
 See the [plan](plans/2026-09-28-plasma-free-qindaqt.md),
 [import contract](wiki/architecture/keyring-import.md) and
 [install checkpoint](wiki/development/install-checkpoint.md).

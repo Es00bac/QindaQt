@@ -87,6 +87,17 @@ and let Portage retain all still-required retired packages. Never force their
 removal to bypass the credential or installed-runtime gate. Final package
 installation and a fresh physical login remain separate acceptance evidence.
 
+At the October 3 host checkpoint, actual complete imports and authenticated
+exact retries passed, the signed native packages were installed, and scoped
+cleanup left zero retired Plasma packages on both hosts. Native ordinary
+libsecret checks passed for a persistent-default temporary item on the laptop
+and a volatile-session item on qinda. The latter proves protocol operation,
+not persistent Login unlock; that unanswered dialog and fresh physical/PAM
+login remain pending. Keep the temporary native provider parents alive until
+the planned session boundary, then retire only those owned check sessions
+before starting the new physical session. Do not force current applications
+out to turn package evidence into a fresh-login claim.
+
 ## Build and stage
 
 The stage command configures a Release tree, builds the production install

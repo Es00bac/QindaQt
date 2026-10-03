@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "sourceDesktop": "29f7174a62175475f6ba54fa7627dc2fd4c8a21f",
   "sourceInstallPatch": "8a622b4b76d25d509ca50e8ca7fbf62d62753a4e",
-  "overlayIntegrated": "94ae0d115a4c34b48330c37e3d1903db2279ef6e",
-  "desktopBinarySHA256": "b2a82255dbdc02457a5eb4cb1732e584db8f8e6111dac8979572dcd88b642354",
+  "overlayIntegrated": "356b24dbc09b8670df564f318ac938a4ce8fc8b2",
+  "desktopBinarySHA256": "bd279969c0f70bc5cb64dcb0d9d89c7676699c8b619ca76e0fd96dc2f5123b56",
   "sourceFork": "55d1f2738723316fae4686468757aef66ce7590b",
   "binaryInstallOptions": [
     "--ignore-default-opts",
@@ -91,9 +91,9 @@
     ],
     "afterUnmerge": "Immediately install reviewed native signed package set through Portage; do not force-kill existing processes",
     "legacyData": "Original legacy stores and private sealed native backups remain retained. Actual production full-source imports and authenticated exact retries completed on both hosts.",
-    "actualState": "Laptop3 collections/12 items and qinda3/67 sealed; both exact retries0 added/3 unchanged with identical catalog/ciphertext hashes. GNOME package unmerge and final five signed native upgrades completed; installed files/PAM/two-root PF25 independently pass. Native provider handover/client compatibility in progress; fresh physical/PAM acceptance remains unclaimed.",
+    "actualState": "Complete production imports and authenticated full-source exact retries verify79items across3collections perhost; signed native five installed and reviewed. Native Secret Service active both; laptop persistent-default synthetic client checkPASS, qinda volatile-session checkPASS. Qinda persistent Login unlock and fresh physical/PAM acceptance pending. Final26retired-only depcleanPASSboth, zero retired packages remain.",
     "legacyPamCaveat": "The optional legacy KWallet PAM module was retired on qinda. Approved native SDDM PAM files are installed with critical authentication blocks preserved; fresh-login native automatic unlock remains unqualified.",
-    "evidence": "ops/audits/native-credential-installed-checkpoint-20261003.json"
+    "evidence": "ops/audits/native-plasma-retirement-checkpoint-20261003.json"
   },
   "retirementOrdering": [
     "Complete source/signed-image gates",
@@ -140,7 +140,16 @@
     "catalogAndCiphertextUnchanged": true,
     "finalFiveInstalledBoth": true,
     "installedVerification": "QindaGentoo647b871adba07e87933668d72e76493a8c90ed1e",
-    "remainingRetiredEach": 26,
+    "remainingRetiredEach": 0,
     "freshPhysicalAcceptance": false
+  },
+  "sourceLegacyReaderFix": "62acb69b931a091a9ee5161cf65dba570b5a17a4",
+  "completedFinalRetirement": {
+    "utc": "2026-10-03T04:14:30+00:00",
+    "removedEachHost": 26,
+    "remainingEachHost": 0,
+    "protectedNonRetiredRemoved": 0,
+    "worldAndWorldSetsUnchanged": true,
+    "evidence": "ops/audits/native-plasma-retirement-checkpoint-20261003.json"
   }
 }

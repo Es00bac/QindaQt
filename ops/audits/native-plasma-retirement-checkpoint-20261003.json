@@ -1,0 +1,74 @@
+{
+  "utc": "2026-10-03T04:14:30+00:00",
+  "nativePackagesInstalledBothHosts": true,
+  "actualLegacyItemsSealedAndExactRetryVerified": 79,
+  "originalStoresRetained": true,
+  "laptop": {
+    "remainingRetiredPlasma": 0,
+    "finalRetiredRemoved": 26,
+    "depcleanExit": 0,
+    "depcleanSeconds": 59.528,
+    "protectedNonRetiredPackages": 1359,
+    "protectedNonRetiredRemoved": 0,
+    "worldUnchanged": true,
+    "worldSetsUnchanged": true,
+    "ordinaryLibsecretScope": "persistent-default",
+    "ordinaryLibsecretExits": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "syntheticBytesMatch": true,
+    "temporaryItemRemoved": true,
+    "persistentLoginUnlockVerified": true,
+    "installedPF25Exit": 0,
+    "installedPF25RuntimePackages": 573,
+    "forbiddenRuntimePackages": 0
+  },
+  "qinda": {
+    "remainingRetiredPlasma": 0,
+    "finalRetiredRemoved": 26,
+    "depcleanExit": 0,
+    "depcleanSeconds": 64.668,
+    "protectedNonRetiredPackages": 1541,
+    "protectedNonRetiredRemoved": 0,
+    "worldUnchanged": true,
+    "worldSetsUnchanged": true,
+    "ordinaryLibsecretScope": "volatile-session",
+    "ordinaryLibsecretExits": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "syntheticBytesMatch": true,
+    "temporaryItemRemoved": true,
+    "persistentLoginUnlockVerified": false,
+    "persistentLoginStatus": "Normal unanswered unlock dialog timed out after 30.635 seconds; no authenticated failure claim",
+    "installedPF25Exit": 0,
+    "installedPF25RuntimePackages": 586,
+    "forbiddenRuntimePackages": 0
+  },
+  "allowedSharedPlasmaCategoryLibraries": [
+    "kwayland",
+    "layer-shell-qt"
+  ],
+  "signedRollbackBinaryCountEachHost": 32,
+  "rollbackPretendPassedBothHosts": true,
+  "actualRollbackPerformed": false,
+  "rollbackAliasOwnershipPrerequisite": "Release native Desktop alias ownership before restoring GNOME",
+  "nativeTemporaryProvidersActiveBothHosts": true,
+  "existingPhysicalApplicationsPreserved": true,
+  "freshPhysicalAndPamAcceptance": false,
+  "physicalPowerSuspendAndLegacySharingAcceptance": false,
+  "nextBoundary": "Retire only owned temporary check sessions at deliberate fresh native physical login; verify PAM, Alt-Tab/dock and physical hardware journeys",
+  "proofReceipts": {
+    "installedPackages": "647b871adba07e87933668d72e76493a8c90ed1e",
+    "completeSignedRollback": "796c876513fbdd8f8c3a7200741a3461d801e7c8",
+    "acceptedReviewHistoryClosure": "e0542335de6c94b0e903d579cfc798d627522d22",
+    "sessionQualifiedRetirementReview": "a73f7f99998802034cb378d22c59122bb02b4546",
+    "independentLaptopCleanup": "d718a4a2d68c3cf5f05ac84f3370923d55541d77",
+    "independentQindaCleanup": "356b24dbc09b8670df564f318ac938a4ce8fc8b2"
+  }
+}
