@@ -44,12 +44,16 @@ bool boolean(DBusMessageIter &iter) {
     if(dbus_message_iter_get_arg_type(&iter)!=DBUS_TYPE_BOOLEAN) invalid();
     dbus_bool_t value=0;dbus_message_iter_get_basic(&iter,&value);dbus_message_iter_next(&iter);return value!=0;
 }
-QStringList texts(DBusMessageIter &iter,int type,qsizetype maximum) {
+QStringList texts(DBusMessageIter &iter,int type,qsizetype maximum,DuplicateText duplicates) {
     auto list=child(iter,DBUS_TYPE_ARRAY);
-    QStringList result;
+    QStringList result;qsizetype observed=0;
     while(dbus_message_iter_get_arg_type(&list)!=DBUS_TYPE_INVALID) {
-        if(result.size()>=maximum) throw Failure{CollectionImportError::Capacity};
-        const auto value=text(list,type);if(result.contains(value)) invalid();result.append(value);
+        // AGENT-GUARD: Normalizing KWallet folder identities must not let repeated
+        // strings bypass the raw reply bound; all other lists remain strict.
+        if(observed++>=maximum) throw Failure{CollectionImportError::Capacity};
+        const auto value=text(list,type);
+        if(result.contains(value)) {if(duplicates==DuplicateText::Reject) invalid();continue;}
+        result.append(value);
     }
     return result;
 }
