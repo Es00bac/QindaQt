@@ -57,8 +57,15 @@ separate native-session acceptance gate.
 
 Target-local rollback packages, source archives and safe Settings/Audio/unit/PAM
 snapshots are preserved on both machines. Existing legacy keyring/wallet files
-have nonzero sizes on both hosts; their contents were not read, and neither
-host has a confirmed running legacy provider. Actual credential import and
+have nonzero sizes on both hosts; their contents were not read. A fresh metadata
+check now confirms a running GNOME Secret Service on qinda: two locked nonempty
+collections expose 67 item paths in aggregate, and a third collection is empty
+and unlocked. The failed laptop user manager was started once with no compositor
+restart: its user bus is now running, its original compositor/session remain
+alive, and its GNOME provider exposes one locked collection with nine items
+plus an empty unlocked collection. No secret values were read. KWallet is not
+running on either host. This bus repair does not qualify Alt-Tab, native session
+admission or fresh-login adoption. Actual credential import and
 application compatibility remain unqualified. Keep the existing provider and
 PAM selection until the [import contract](wiki/architecture/keyring-import.md)
 is satisfied; file preservation alone does not complete migration. Final desktop
