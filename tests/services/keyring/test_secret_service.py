@@ -122,12 +122,14 @@ class SecretServiceTest(unittest.TestCase):
         self.assertIn("org.freedesktop.Secret.Service",service_interfaces)
         self.assertIn("org.qindaqt.Keyring1",service_interfaces)
         self.assertIn("org.freedesktop.DBus.Properties",service_interfaces)
+        self.assertIn("org.freedesktop.DBus.Introspectable",service_interfaces)
 
         collection = self.collection()
         collection_xml = self.call("org.freedesktop.DBus.Introspectable",
                                    collection.collection_path,"Introspect")[0]
         collection_interfaces = {node.attrib["name"] for node in ET.fromstring(collection_xml).findall("interface")}
         self.assertIn("org.freedesktop.Secret.Collection",collection_interfaces)
+        self.assertIn("org.freedesktop.DBus.Introspectable",collection_interfaces)
         self.assertNotIn("org.qindaqt.Keyring1",collection_interfaces)
 
     def test_plain_session_and_cross_caller_close_denial(self):
