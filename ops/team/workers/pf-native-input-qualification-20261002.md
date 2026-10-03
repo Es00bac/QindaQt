@@ -1,10 +1,10 @@
 # Native input qualification continuation
 
-- Status: available — real NativeLock Unknown exact flag cause handed off; no lease
+- Status: available — exact scratch/EOF diagnostic source review handed off; no runtime lease
 - Identity: qinda_icon_brand_audit
-- Base: e568acc86de52322bf6c76c10d90c04a5f69be46
-- Branch: worker/pf-release-contract-review-20261002
-- Ownership: manager-transferred narrow protected capture/input composition, public binding/supervisor attachment, CMake/tests/docs; own native qualification tests; root owns routing/fork allowlist/package/pin/shared core
+- Base: 5917da5c054ccd8ed9fd0be5a2ac9db549a4bb1c
+- Branch: worker/pf-keyring-preinstall-admission-20261002
+- Ownership: own stable worker board and new timestamped review replies only; root owns operational helpers and all product/runtime/import changes
 - Resource: private lease released after empty teardown; no compiler/GPU/host mutation
 
 ## Updates
@@ -138,3 +138,9 @@
 - 2026-10-03T01:07:46.739695+00:00 — Rootrealproductionnested importer refusedcode6 after3.028s, identitiespassed/no catalog. SourceonlyQtNativeLockTransport/fork55d producer/no-lockscreen+supervisor/harness assumptions plus sanitizedopsmetadata. No runtime/providers/prompts/secrets/build/tests/sourceedit or bypass; ownboard/newreply only, stopatexactcause/operation.
 
 - 2026-10-03T01:11:47.587953+00:00 — Exactfork55d --no-lockscreen disablesNativeLockDBusInterface creation; owner/socket stillvalid but receiptendpointabsent→Unknown/3s/code6. Rootnotified removeonlyflag (not--lockscreen), keepallrealadmission/physicalapps. Prior5d54 commandflag superseded; syntheticpolicyfixture alwaysregisters adaptor anddidnotexerciseproduction exclusion. Sourceonlyexactcause bound; no runtime/providers/prompts/secrets/build/sourceedit, stopavailable.
+
+- 2026-10-03T01:47:17.625967+00:00 — Rootproposes separateactualGNOME/KWallet acquisition with documentedownedanonymous EOFpasswordpipe for source-specificInvalidInput diagnosis. Sourceonly5917 store/password/readers/planner review, ownboard/newreply only, no productedit/build/providers/UI/secrets/runtime. Check destinationbootstrap/publication effects and real-onlyInvalidInput sites; stopat exactverdict/nextgate.
+
+- 2026-10-03T01:52:56.270234+00:00 — Source-only review found repository opening bootstraps catalog and may recover orphan files before password acquisition: diagnostics require fresh per-source scratch, never real destination. Corrected ec330 scratch safety accepted; executable bwrap preserve-fds setup rejected after manager established flag unavailable. Inside-namespace Python EOF adapter successor pending exact review. Original code1 with no catalog excludes late validItem rejection; acquisition/planner or earlier CLI error remains. No operations executed.
+
+- 2026-10-03T01:55:19.233141+00:00 — Final source ACCEPT root driver05bb16c92d68bba5909d9169275338470925925d923ddd405ab856843b0264be + adaptere43098d161020c71aa6489ac05673c001ed4fcb79e2dc57081efa1de186b735b: fresh scratch source isolation, actual namespace Python path, anonymous EOF FD3 and production transaction order reviewed. Bootstrap metadata allowed only scratch; no imported encrypted files before Cancelled4. Original code1/no catalog localises refusal before commit; real reader cause remains unobserved. No provider/runtime/secret calls/tests/source changes; stop available.
