@@ -1,91 +1,60 @@
-# Plasma-free release boundary — 2026-10-02
+# Plasma-free release boundary — October 3 checkpoint
 
-Production desktop source is frozen at `29f7174a62175475f6ba54fa7627dc2fd4c8a21f`,
-with native compositor source `55d1f2738723316fae4686468757aef66ce7590b`
-(ABI `6.6.6.1`). The exact signed compositor `6.6.6_p1-r3` and Gabbee
-`0.1.0_p20261002` are installed through Portage on both hosts. Laptop installation
-used signed binaries, passed all 456 compositor and 254 Gabbee installed-file
-checks, and performed no source build or GPU test. Existing applications and
-running compositor processes remain alive; this is package delivery, not fresh-login
-adoption of the new compositor.
+The native final five packages are now installed through mandatory-signed,
+binary-only Portage on both hosts: Desktop `0.1.0_pre20261002-r3`, native Claude,
+Pinentry, Secret Service virtual and SDDM. The desktop uses frozen source
+`29f7174a` with reviewed install metadata correction `8a622b4b` and the bounded
+KWallet folder compatibility fix `62acb69b`. Its signed package SHA256 is
+`bd279969c0f70bc5cb64dcb0d9d89c7676699c8b619ca76e0fd96dc2f5123b56`.
+Existing signed native compositor `6.6.6_p1-r3` (source `55d1f273`, ABI `6.6.6.1`)
+and Gabbee remain installed. No laptop source build or GPU test was performed.
 
-The exact final desktop `0.1.0_pre20261002-r2` completed its 5,040-action
-production build on qinda. Reviewed install-rule correction `8a622b4b7` and
-its downstream package patch repair the Keyring QML metadata filename without
-changing any of the 3,152 compiled outputs. The signed 60,661,760-byte package
-has SHA256 `b2a82255dbdc02457a5eb4cb1732e584db8f8e6111dac8979572dcd88b642354`;
-full signature/payload and release-image gates pass. Independent complete-image
-discovery passes native Wayland, XWayland, container workflows and QindaQt
-decorations in 5.645 seconds (`2ba2eb5a`). The package is available on both hosts
-but is not installed: actual keyring import must precede the native provider
-handover. Installed-header plugin, shell and profile qualification passes 14 CTest rows, including 40
-render cases and three production-shell resolutions (`0f9a2160`). Native
-protected-portal qualification passes five actual GPU/PipeWire/input/clipboard
-journeys with 15 caller and 15 driver Qt checks, zero failures/skips; the
-independent receipt review is `419b6781`. Final native shortcut qualification
-passes eight Qt checks, and the unchanged upstream forward/reverse Alt-Tab and
-keyboard-focus gate passes five Qt checks (`6e683e92`). The virtual scoped-display
-power gate passes 13 Qt checks (`cdf9948b`); full physical power, suspend and
-fresh-login acceptance remain unclaimed.
+Actual production import has sealed three collections/twelve items on the
+laptop and three collections/sixty-seven items on qinda. One complete exact
+full-source retry on each host authenticated and compared every preserved
+record, returning zero additions and three unchanged collections. Catalog and
+encrypted-file hashes remained byte-identical. Original stores and private
+sealed backups are retained; passwords and source values never appear in
+operation evidence. Procedure reviews are `a3213a6b` and `0b1db802`.
 
-All fourteen matching native application artifacts and the required TrashCLI
-dependency have passing signed build, full-payload and source-binding receipts.
-Nine application updates are installed on qinda and six on the laptop, plus
-TrashCLI on both. The exact qinda subset has independent acceptance for nine
-package metadata/recipe matches, seven native flags and fifteen focused owned
-files (`f9eb8c5c`). Normal mandatory-signed binary-only pretends on both hosts
-select only the five remaining native upgrades, with no source build or download.
+Independent installed verification `647b871a` checks the five exact CPVs,
+source/archive/signed metadata, 5,709 regular files and seven links per host.
+All three SDDM PAM hashes match the approved native package and critical
+login blocks are preserved. The laptop custom SDDM configuration remains
+active and unchanged; its pending packaged-default CONFIG_PROTECT candidate
+is not adopted. Installed two-root PF25 passes with zero forbidden packages:
+586 runtime packages on qinda and 573 on the laptop.
 
-App-preserving scoped Portage cleanup removed 34 retired Plasma packages on
-qinda and four on the laptop. Each still has 26 retired packages protected by
-the currently installed desktop and remaining dependencies. All 1,541/1,358
-non-retired installed packages were retained; the seven ordinary KDE applications
-on qinda are explicitly selected before removing its old KDE desktop set.
-The qinda cleanup includes the optional KWallet PAM auto-unlock module; its
-availability at a future login is not preserved or qualified. Existing SDDM
-authentication blocks and the GNOME provider/PAM selection are retained. Manual
-legacy-provider unlock through its public API remains part of the import gate.
-The legacy Xwayland video-sharing helper is the only independently identified
-mandatory Plasma dependency. Its reviewed private-library adaptation `f47676f`
-is now installed through mandatory-signed binary-only Portage on both hosts.
-Independent signed-image acceptance `d3829c3` verifies seven ELF files, three
-private SONAMEs, three private QML modules, forty-four private locale catalogs,
-no development exports and no Plasma runtime dependency. All 106 installed
-files and six symlinks match on each host. Original capture logic, launcher,
-autostart and license text are preserved; post-install live sharing remains a
-separate native-session acceptance gate.
+The legacy GNOME package is removed, but its pinned original process was
+retained through the package file transition. Native provider handover and
+ordinary libsecret compatibility are the current live gates. The temporary
+nested native session must use the real data home, production lock policy and
+actual supervisor/display attachment. It preserves current physical apps and
+must remain alive while its native provider is serving them. This does not
+qualify a fresh physical login, native PAM automatic unlock, physical power,
+suspend or live legacy Xwayland sharing.
 
-Target-local rollback packages, source archives and safe Settings/Audio/unit/PAM
-snapshots are preserved on both machines. The laptop user bus was recovered
-without restarting its original compositor/session or closing applications.
-The user has now unlocked the actual legacy GNOME collections on both hosts;
-the desktop's installed GCR prompt was shown on the laptop through stock,
-Portage-installed Waypipe with software rendering. The laptop KWallet is also
-unlocked. Original provider files and service ownership remain retained.
+Scoped earlier cleanup removed 34 retired Plasma packages on qinda and four
+on the laptop. Twenty-six remain on each host pending the native runtime gate
+and final guarded depclean. Signed target-local snapshots preserve every one
+of those packages plus the six old provider/desktop targets; both complete
+32-binary restoration graphs pass without extras. Actual rollback must release
+native Desktop alias ownership before GNOME restoration. All non-retired
+packages and the seven promoted KDE applications remain protected.
 
-Actual laptop source-isolation uses fresh scratch storage and the documented
-anonymous destination-password pipe containing EOF. Its production GNOME reader
-completes two exact full passes and reaches Cancelled4 after acquisition, planning
-and batch validation; the scratch contains only bootstrap metadata, no encrypted
-collection files. This is a preflight, not a sealed migration. Real KWallet
-folder enumeration repeats the same folder name; strict duplicate rejection
-stopped acquisition before entries. Reviewed source `62acb69b`, independently
-accepted in `39e07136`, normalizes only KWallet folder names, retains raw list
-capacity and strict other lists, and passes the focused full import regression.
-The new immutable Desktop-r3 package is being produced incrementally from the
-retained build cache with overlay source acceptance `b2067401`.
+All fourteen native application artifacts and TrashCLI are delivered; nine
+application updates are installed on qinda and six on the laptop. The private
+legacy-sharing helper is installed and all 106 files/six links match. Existing
+private runtime gates cover native capture/input/clipboard, shell profiles,
+shortcuts, Alt-Tab and virtual display power. Both debranded icon families are
+complete and installed; no icon or game work is assigned.
 
-Actual credential sealing, application compatibility, native provider/PAM
-handover, final five upgrades, remaining retired-package cleanup and fresh
-physical login remain. Source values were acquired only within the production
-reader; no values or passwords are printed or exported in operation evidence.
-The actual native destination catalog is still absent on both hosts. Keep the
-existing providers and PAM selection until the
-[import contract](wiki/architecture/keyring-import.md) is satisfied. See the
-[authorized plan](plans/2026-09-28-plasma-free-qindaqt.md),
-[release gates](wiki/development/releases.md) and
+Remaining: native provider/client verification, guarded removal of the last
+26 retired packages per host, integrated documentation gates, and deliberate
+fresh native physical login/adoption. Current applications are preserved.
+See the [plan](plans/2026-09-28-plasma-free-qindaqt.md),
+[import contract](wiki/architecture/keyring-import.md) and
 [install checkpoint](wiki/development/install-checkpoint.md).
-Both icon families are already delivered; no icon or game work remains assigned.
 
 ## Previous October 1 recovery evidence
 

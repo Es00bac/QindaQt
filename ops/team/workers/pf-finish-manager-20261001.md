@@ -3,12 +3,14 @@
 - Role: Program Manager; integration, resource coordination and exact-source verification
 - Provider/model: OpenAI Codex GPT-6; model inherited from interactive session
 - Reasoning: session setting; no separate override claimed
-- Status: working — open user-authorized legacy unlock UI and automate authenticated import and final native cutover
+- Status: working — verify real native provider handover and complete guarded retired-package removal
 - Base: ab7640944d67b49f5fcbd198a96ac6c70cad193c
 - Branch: integrate/plasma-finish-20261001
 - Worktree: .cache/plasma-finish
 
 ## Updates
+
+- 2026-10-03T03:46:20+00:00 — Actual imports laptop3/12 and qinda3/67 sealed; full-source authenticated exact retries0added/3unchanged and private catalog/ciphertext equality PASSboth. Normal GNOME unmerge +five mandatory-signed binary upgrades PASSboth, originalprocesses held through transition. Independent647 verifies5709 files/7links each, approved PAM/customconfig and installed PF25zero forbidden. All26 retired packages perhost now preserved as signed artifacts with complete32binary restore graphPASS796. Root actualnativeproviderbridge starting with reviewed4bac/a939 procedure; ordinarylibsecret check/final26depclean/freshphysicaladoption stillpending. No build/GPU/game/icon work or current-appclosure.
 
 - 2026-10-03T02:53:26+00:00 — Exact62 duplicate-folder compatibility fix integrated912729; actual GNOME source acquisition/validation passed corrected inherited-EOF adapter, earlier diagnostic Unavailable was an operational FD_CLOEXEC error. Signed Desktop-r3 bd279969 cached/verified both hosts; private regression1/1 and normal five-binary pretends bothPASS. Default actual native catalogs remain absent; reviewed90fa330 operational driver now uses verifiedr3 images and named software-only Waypipe parent for qinda. Root starts real native destination prompts/import; Packager owns bounded target-local signed rollback graph, Input owns exact driver review. No laptop builds/GPU/icon/game work, no provider/PAM switch or final installation claimed.
 
