@@ -3,9 +3,13 @@
 - Role: Interactive desktop incident coordination and verified recovery.
 - Provider: Codex; exact model not independently observed.
 - Process evidence: interactive Codex PID 2633, daemon PID 2712; collaboration worker tracked separately.
-- Status: working — review and deliver permanent native keyring reattachment on qinda while retaining this desktop; Mail fixes are installed and live wallet/browser authentication awaits owner UI completion.
+- Status: paused — owner requests desktop resources for other work; preserve the open desktop and retained keyring connection, with signed r14 build and Mail authentication pending.
 
 ## Updates
+
+- 2026-10-04T14:50:52-06:00 — Owner sets the repair's qinda build limit to `-j8 -l8`, superseding the earlier instruction to retain `-j24 -l24` for this task. Read-only qinda Portage environment query confirms the explicit override is effective. Future CMake compilation is also capped at eight jobs. Recovery remains paused; no build started and no laptop compiler/test work is permitted.
+
+- 2026-10-04T14:49:33-06:00 — Owner pauses recovery to use desktop resources. Independent exact r14 recipe b6d14354 ACCEPT: 35 provenance/SDK checks passed on qinda, archive/source pins preserved. Clean qinda overlay checkout and system repository fast-forwarded to the reviewed recipe; scoped source pretend exits zero and selects only Desktop r14. No r14 build, package install, service restart, new unlock prompt or browser authentication started. Both collaborating workers are completed. Current desktop and temporary retained keyring connection stay open. Prepared source a7b302ae and approved installed r13 remain distinct from the pending r14 package.
 
 - 2026-10-04T14:29:00-06:00 — Independent exact f2f2 review ACCEPT; manager merge bae1f8fd preserves D-067 without conflicts. Own qinda integrated configure/build exits zero, affected 5/5 CTests pass with 37 Qt checks and two actual resident observer cases, zero failures/skips; strict MkDocs/510-document links pass. Dedicated source compiler/private-runtime lease released; preparing exact Desktop r14 recipe/archive for separate review and full signed Portage build on qinda. Current retained connection stays for this desktop, with no live transfer/restart or policy change; account authentication remains pending owner unlock and correct Google client identity.
 
