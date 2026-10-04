@@ -62,16 +62,22 @@ selections verify. Overlay delivery `a810eeb` advances only Office to p20261004.
 The window-scoped sign-in dialog and typed read-only credential adapter are
 installed; actual mailbox authentication remains an adoption gate.
 
-Owner-authorized Mail is still open on the retained desktop pending new-code
-adoption. A reviewed metadata-only one-request unlock helper passes 11/11
+Mail is currently not running; owner-authorized reopening will adopt the new
+code after native unlock. A reviewed metadata-only one-request helper passes 11/11
 private cases. Live selection finds all three imports in one locked Login
 collection. A normal nondismissed prompt completion leaves them locked: the
 native policy reports unavailable idle/screen observers and ScreenLocked=true,
 while the actual compositor reports unlocked/unprotected. Running keyring bytes
 match installed r13. Source shows that its later daemon restart lost the
 startup-only supervisor display attachment, so policy immediately relocks.
-The active repair restores a retained supported display attachment for this
-session and adds supervisor reattachment after daemon-owner replacement.
+Root restored this session's supported display attachment with reviewed helper
+`f5316a3a` (13/13 qinda-only private checks) in a transient non-autostart unit.
+Actual policy now reports available idle/screen observers and ScreenLocked=false,
+with protections unchanged. Retain that exact caller for the current desktop's
+lifetime; installed supervisor files cannot take over its admission live.
+One subsequent unlock ended cancelled with zero unlocked; owner prompt
+visibility/readiness remains pending. Permanent supervisor reattachment after
+daemon-owner replacement is an isolated qinda source/review outcome.
 Do not disable lock policy or restart the desktop. The owner requires all
 further builds/tests/heavy work on qinda because laptop game development is live.
 No credential values have been read, changed or spoken by the incident tools.
