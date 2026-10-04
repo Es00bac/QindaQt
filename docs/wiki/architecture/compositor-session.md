@@ -192,6 +192,18 @@ screen-lock adapter, not here
 explicit `--session` still overrides the default for isolated test probes and
 alternate session compositions; bridge-only builds retain an empty default.
 
+The optional native keyring uses a separate retained session bus connection.
+Its supervisor collaborator watches `org.qindaqt.Keyring1` for replacement and
+renews `AttachSessionWithDisplay` against each current same-UID unique owner,
+with at most thirty asynchronous attempts per owner. The replacement daemon
+revalidates the selected ordinary display and starts its screen/idle observers;
+confirmed lock policy remains unchanged and fail-closed until those observers
+are available. Logout never sends Shutdown to an unadmitted replacement.
+See [native keyring lifecycle](keyring-daemon.md) and
+[ADR-0348](../adr/0348-reattach-keyring-after-owner-replacement.md). This source
+contract applies when the repaired supervisor starts; it does not retrofit a
+supervisor already running from an older executable.
+
 The supervisor owns `org.qindaqt.Session1` at `/org/qindaqt/Session1` on the
 session bus. `CanLogout()` and `Logout()` resolve the caller's bus credential
 PID on every invocation and admit only the currently supervised shell PID; a
