@@ -1,4 +1,29 @@
-# Plasma packages retired — October 3 login checkpoint
+# October 4 desktop incident
+
+The owner's authorized SDDM restart replaced the failed laptop tty7 compositor;
+the new process reports native Lock1 unlocked and unprotected. The previous
+process reported locked/protected without a `qindaqt-lock` process. An installed
+KF6 KService diagnostic reproduced the custom permission-list value as the
+single literal `ext_session_lock_manager_v1;`, so private launcher admission
+failed while the compositor retained its protected black fallback.
+
+The isolated fork repair must decode XDG lists while preserving all native-only
+admission and launcher trust checks. Its corrected base is the installed r5
+source `dd74a6c1`, including deployed shortcut release/introspection repairs;
+hub main `55d1f273` alone would discard them. The desktop incident checkout
+preserves installed r12 source `2b5db406` before adding this incident's changes.
+Exact independent review, coherent fork/consumer packages and contained native
+greeter qualification remain next; another live-session restart is not yet done.
+
+QtKeychain 0.17.0 was installed without `keyring` on both hosts. The laptop's
+scoped Portage rebuild exits zero and installs the feature. A synthetic absent
+entry lookup loads libsecret, returns EntryNotFound and keeps insecure fallback
+disabled. Profile candidate `9ee1aa3c` enables the same tracked default; no
+credentials are migrated or deleted. Reopen password-using applications to
+adopt their newly available backend; QindaMail's actual post-restart behavior
+is still awaiting user confirmation. Speaker output is verified at 90%.
+
+## Plasma packages retired — October 3 login checkpoint
 
 The native final five packages are now installed through mandatory-signed,
 binary-only Portage on both hosts: Desktop `0.1.0_pre20261002-r3`, native Claude,

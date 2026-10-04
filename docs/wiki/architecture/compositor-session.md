@@ -77,6 +77,12 @@ container-wm names the fork only through `QindaQt::CompositorNames`
 | Native privileged identities | ScreenShot2, EIS, TabletModeManager and VirtualKeyboard use only `org.qindaqt.KWin*` interfaces and `/org/qindaqt/KWin` paths; the KDE service alias and legacy Scripting exports are removed ([ADR-0340](../adr/0340-use-native-privileged-compositor-identities.md)) |
 | Privileged clients | `X-QindaQt-KWin-DBus-Restricted-Interfaces`, `X-QindaQt-KWin-Wayland-Interfaces`; KDE keys do not grant access |
 
+Both privileged-client fields use XDG desktop-entry list decoding from the
+selected service's desktop-file path, including trailing delimiters and escaped
+separators. The private locker and capture launchers share that decoder with
+desktop-ID, executable and process-based interface lookup. Generic KService
+`QStringList` conversion does not parse custom desktop-entry string lists.
+
 The fork's compiled-in defaults are QindaQt's: the `org.qindaqt` decoration,
 the `qindaqt` switcher, electric-border maximize and tiling off, CommandAll3
 "Nothing" and the Theming v2 blur strengths. The production fork does not discover Plasma Activities, libplasma, Breeze, or

@@ -14,6 +14,17 @@ provider/lifecycle/prompt choice in ADR-0135 for native deployments. A
 distribution must reconcile its Secret Service activation files before
 deploying; two providers are not a supported configuration.
 
+## QtKeychain clients
+
+QindaMail and other QtKeychain applications can use this standard Secret
+Service provider under `XDG_CURRENT_DESKTOP=QindaQt`. Gentoo must build
+`dev-libs/qtkeychain` with `USE=keyring` to include the libsecret backend;
+without it, QtKeychain 0.17.0 can activate KWallet despite native Secret Service
+ownership. The native overlay profile enables this flag. Rebuild the package
+through Portage after syncing the profile, then restart affected applications:
+QtKeychain caches backend selection for the lifetime of each process. This
+feature change does not migrate credentials or enable plaintext fallback.
+
 The user service and socket install to `${KDE_INSTALL_SYSTEMDUSERUNITDIR}`.
 On multilib hosts, `${CMAKE_INSTALL_LIBDIR}/systemd/user` can resolve to
 `lib64/systemd/user`, outside systemd's user-unit search path. D-Bus activation
