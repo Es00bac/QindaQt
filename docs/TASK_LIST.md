@@ -5,6 +5,25 @@ not count assignments, processes, reviews, or partially implemented code as
 completion. Architectural detail and long-range milestone state remain in the
 [implementation roadmap](wiki/development/implementation-roadmap.md).
 
+## October 4 — Black lock-screen recovery and QtKeychain backend repair
+
+The owner's authorized SDDM restart restored the laptop's physical tty7 desktop.
+The previous native compositor was locked/protected without a locker process;
+its installed custom permission-list reader retained the trailing semicolon and
+rejected the packaged `ext_session_lock_manager_v1` entry. The parser repair
+must preserve the installed r5 shortcut fixes and pass independent exact review,
+coherent package builds and a private native greeter launch before adoption.
+
+QindaMail's installed QtKeychain lacked `USE=keyring`, so native Secret Service
+ownership did not prevent KWallet activation. A scoped Portage rebuild enables
+that feature on the laptop. A synthetic missing-entry lookup now loads libsecret
+and returns EntryNotFound with plaintext fallback disabled. The tracked native
+profile candidate is preserved on qinda; application restart and live QindaMail
+confirmation remain separate from this diagnostic evidence.
+
+See [Handoff](HANDOFF.md), [native session locking](wiki/architecture/native-session-lock.md)
+and [QtKeychain clients](wiki/architecture/keyring-daemon.md#qtkeychain-clients).
+
 ## October 3 — Native desktop installed; Plasma packages removed
 
 Both hosts have the final five native signed packages installed. Actual import

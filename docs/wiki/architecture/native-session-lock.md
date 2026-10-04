@@ -20,6 +20,15 @@ the compositor-created connection: peer UID or executable inode alone cannot
 authorize a self-launched client. Debug permission bypass, executable names and
 sandbox app IDs cannot grant access. Unlock revalidates the current connection.
 
+The native permission fields are XDG desktop-entry string lists. All public
+lookups and private launcher checks decode them through `readXdgListEntry` from
+the selected KService desktop-file path. A trailing semicolon terminates an
+entry; it is not part of an interface name. Generic KService `QStringList`
+conversion does not decode these custom keys and can reject the packaged locker,
+leaving the compositor's protected black fallback without a greeter. Empty,
+missing and KDE-only fields still grant no native authority; executable,
+directory, connection and transport trust checks remain required.
+
 The compositor trusts that executable to authenticate through PAM and account
 validation before `unlock_and_destroy`. PF7 supplies the executable, PAM and
 desktop permission entry. PF8 adapts idle/inhibitors, Lock1/ScreenSaver, session

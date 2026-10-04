@@ -20,6 +20,12 @@ alias. Only `X-QindaQt-KWin-Wayland-Interfaces` and
 `X-QindaQt-KWin-DBus-Restricted-Interfaces` grant privileged interfaces. EIS admits
 only the same-user owner of the native portal backend.
 
+These native desktop-entry fields retain the XDG string-list format. Public
+lookups and private lock/capture launch checks decode the selected KService
+entry with KConfig's `readXdgListEntry`; custom-key `QStringList` conversion
+cannot supply that contract. Missing, empty and legacy KDE-only fields grant
+no native interface, and list decoding never replaces launcher trust checks.
+
 `CompositorNames` records the screenshot and EIS identities for all desktop
 callers. The screenshot application and protected capture helper declare the
 native restricted interface in their desktop entries. Gabbee selects the native
