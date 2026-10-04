@@ -7,21 +7,60 @@ KF6 KService diagnostic reproduced the custom permission-list value as the
 single literal `ext_session_lock_manager_v1;`, so private launcher admission
 failed while the compositor retained its protected black fallback.
 
-The isolated fork repair must decode XDG lists while preserving all native-only
-admission and launcher trust checks. Its corrected base is the installed r5
-source `dd74a6c1`, including deployed shortcut release/introspection repairs;
-hub main `55d1f273` alone would discard them. The desktop incident checkout
-preserves installed r12 source `2b5db406` before adding this incident's changes.
-Exact independent review, coherent fork/consumer packages and contained native
-greeter qualification remain next; another live-session restart is not yet done.
+Accepted fork `24d0c6a6` decodes the selected desktop file's custom XDG lists
+while preserving native-only admission and executable, path, PID and launcher
+trust checks. It builds on installed r5 source `dd74a6c1`, preserving deployed
+shortcut release/introspection repairs. Desktop source `ab7fc8f3` preserves
+installed r12 source `2b5db406` and pins that exact fork/tree. Independent review
+and the manager rerun pass 3/3 focused CTests (32 Qt checks). Both full Portage
+builds pass; the r13 CMake cache proves it uses the staged r6 SDK. Exact overlay
+recipes `c5cf38f0` are accepted and integrated; both signed artifact checks pass.
 
-QtKeychain 0.17.0 was installed without `keyring` on both hosts. The laptop's
-scoped Portage rebuild exits zero and installs the feature. A synthetic absent
+The contained production greeter gate passes on a QPainter virtual output:
+RequestLock succeeds, the real greeter child acknowledges its lock-surface
+configuration, commits a non-null buffer and receives a frame callback. The
+repaired r6 core library is hash-pinned; cleanup leaves zero owned processes.
+One repeat against the newly installed r13 greeter also passes with its exact
+new hash. PAM authentication and physical presentation are not qualified by
+these tests. Both-host exact binary Portage installs exit zero. Installed
+CONTENTS verification passes 456 fork and 2,291 desktop files/links per host,
+with no mismatches; world/world_sets are unchanged. Independent installed
+recipe, native metadata, trusted-file and exact 6.6.6.1 ABI checks pass on both.
+
+The owner explicitly chose to keep the current desktop open after installation.
+Fresh-login adoption is deferred to the owner's next login; the current laptop
+compositor remains unlocked/unprotected. Do not restart SDDM or lock the physical
+session for this incident without new owner instruction. Lock package compiler
+and private runtime leases are released.
+
+The independent r13 review accepts the incident pair while preserving one
+bounded existing package-contract gap: Network's disk-only authenticator fails
+on five nested QML fallback paths. Flat copies and all six preferred resource
+aliases/compiled-cache symbols exist in the actual library, with the correct
+plugin registration. Static closure passes (90 ELF files, 694 dependencies,
+43 QML imports), but the full disk-fallback package contract is not claimed.
+Align the Network install destination with qmldir before closing that separate
+packaging outcome; see the exact incident reviewer handoff.
+
+QtKeychain 0.17.0 was installed without `keyring` on both hosts. Both scoped
+Portage rebuilds exit zero and install the feature. A laptop synthetic absent
 entry lookup loads libsecret, returns EntryNotFound and keeps insecure fallback
-disabled. Profile candidate `9ee1aa3c` enables the same tracked default; no
-credentials are migrated or deleted. Reopen password-using applications to
-adopt their newly available backend; QindaMail's actual post-restart behavior
-is still awaiting user confirmation. Speaker output is verified at 90%.
+disabled. Accepted profile `9ee1aa3c` is integrated and synced on both hosts,
+enabling the same tracked default; no credentials are migrated or deleted.
+
+The owner then reports Mail signed out and its sign-in button doing nothing.
+Four saved account configurations remain intact. Three imported Mail Password
+records are locked, preserve serialized QString data and lack QtKeychain's
+`user/server/type` lookup attributes; an unlocked empty Login collection does
+not make those records readable. The installed Office source is exact `700d85b7`.
+Its button always calls browser-only sign-in, including password accounts, and
+no Google OAuth client configuration is present. Two isolated Office repairs
+are active: a window-scoped credential dialog route with visible error handling,
+and typed native Secret Service compatibility without changing original records.
+They require synthetic/headless evidence and reciprocal exact review before
+integration and Portage delivery. No live credentials are read or modified.
+The owner authorized reopening Mail; it is running on the existing desktop
+without QML startup errors. Speaker output is 90%.
 
 ## Plasma packages retired — October 3 login checkpoint
 
