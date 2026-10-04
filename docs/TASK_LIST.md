@@ -44,7 +44,10 @@ A reviewed retained supported attachment now restores actual idle/screen
 observation without weakening policy. The caller remains for this desktop's
 lifetime. A subsequent unlock ended cancelled; user prompt visibility/readiness,
 Mail reopening and actual authentication remain open. Permanent supervisor
-owner-replacement reattachment proceeds on qinda, with all build/test work there.
+owner-replacement source `f2f2d392` is independently accepted and integrated as
+`bae1f8fd`. Manager 5/5 affected CTests, 37 Qt checks and two actual resident
+observer cases pass, with strict MkDocs/510-document links. Signed only-Desktop
+r14 delivery is next; all build/test work stays on qinda.
 The desktop stays open and lock policy stays enabled. Google browser sign-in needs the
 intended project's client identity; the downloaded OpenClaw-branded client is
 removed from Mail configuration. No incident tool reads or alters credentials.

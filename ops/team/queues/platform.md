@@ -44,10 +44,12 @@ f5316a3a (13/13 qinda-only private checks); actual idle/screen observation is no
 available and ScreenLocked=false, with protections unchanged. The transient
 non-autostart caller remains for this desktop's lifetime. Subsequent Unlock
 ended cancelled; owner prompt visibility/readiness and Mail reopening are open.
-Native worker owns isolated supervisor owner-replacement
-reattachment source/tests/docs at exact `eeed1f6c` on qinda. Reviewer owns a
-separately reviewed temporary retained API attachment diagnostic for root's
-current-session restoration, then exact candidate review. Workers perform no
+Native candidate f2f2d392 is independently ACCEPT and integrated as bae1f8fd,
+preserving D-067. Author/reviewer/manager affected gates each pass 5/5 CTests,
+37 Qt checks and two actual resident cases, with strict docs/510-document links.
+Root owns signed only-Desktop r14 packaging next; no worker compiler/runtime
+lease remains. The reviewed current-session attachment is already restored.
+Workers perform no
 live attach, secrets, policy change or desktop restart. Root alone owns live
 adoption; no credential values are read or mutated. All builds/tests/heavy work
 stay on qinda at the owner's request, preserving laptop game development.
