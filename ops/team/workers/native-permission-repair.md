@@ -1,13 +1,13 @@
 # Native permission repair
 
 - Identity: native-permission-repair, collaboration agent `/root/native_permission_repair`
-- Status: working — implementing native keyring owner-replacement reattachment on qinda only
+- Status: available — immutable native keyring reconnect candidate and qinda-only gates handed off for independent review
 - Outcome: retained desktop supervisor renews approved native display attachment after daemon replacement, restoring observer admission without weakening lock policy
 - Base: eeed1f6cac509990f64fd1f692a796f370206c55
 - Worktree: qinda `/home/cabewse/work_SPaC3/container-wm-keyring-reconnect-20261004`
 - Branch: `fix/keyring-owner-reconnect-20261004`
 - Ownership: session-supervisor keyring_session_lifetime h/cpp, focused tests/minimal build registration and relevant lifecycle wiki/ADR; own board/replies. All source/build/tests on qinda. No live AttachSession/Unlock/Prompt/credentials/app/service/desktop/config mutations.
-- Liveness: this collaboration agent actively implements the assigned qinda-only isolated source outcome; no worker OS PID/model claim
+- Liveness: this collaboration agent completed the assigned qinda-only source/gates; no compiler/private-runtime lease or worker OS PID/model claim
 
 ## Updates
 
@@ -77,3 +77,9 @@
 - 2026-10-04T19:31:15+00:00 — Claimed exact eeed native keyring replacement reconnect outcome. Verifying qinda bare hub/instructions before isolated remote worktree. All source, compilation and tests remain on qinda; laptop game development receives no build/GPU/test load. Retained-call lifetime and fail-closed policy preserved; no live attachment/unlock/service/desktop action.
 
 - 2026-10-04T19:45:54+00:00 — Material implementation/verification on qinda: dedicated native owner watcher, generation-fenced asynchronous 30-attempt batches and exact admitted-owner Shutdown implemented; retained display, UID/no-autostart/daemon admission preserved. Strict standalone source build0; new private-bus CTest1/1 and10Qt checks0fail/skips10.73s. Native daemon/Settings/software compositor compile0 with configured -j24-l24; broader module configure corrected ordinary /usr/libexec contract after initial mismatch. Preparing real observer recovery test. Root f6 manager-docs checkpoint noted, exact eeed base retained; D-067 paragraph untouched. No laptop tests/builds or live runtime mutations.
+
+- 2026-10-04T20:06:07+00:00 — Material final repair/gate: manager identified metadata transport failure mapped to absence; implemented tri-state current owner and bounded unavailable-owner/UID retries, never accepting or shutting down without a current same-UID pin. Actual test-owned registry pause/resume (UID and common dbus-run-session parent verified) passes with no later owner-change event: final standalone1/1,11Qt0fail/skips11.80s. Earlier actual native observer cases2/2 pass. Unchanged-eeed negative control fails correctly exit1(2pass/1fail, replacementcalls0). Broad fixture revealed unchanged default installed Night Light adds a fourth stop role; narrowly clearing it in14 general synthetic options, dedicated role tests untouched. Final production rebuild/affected normal suite and refreshed docs next. Root current-session helper/Unlock outcomes remain manager-owned; no laptop or live runtime action.
+
+- 2026-10-04T20:11:15+00:00 — Verification/handoff/status transition: qinda clean hub candidate f2f2d3927e235f585fe0ef0ab5ffec3f4ba52f42, tree2a57242202a4e41a6877db20c325c8489c4149c6, parentexacteeed. Final production builds0/-j24-l24; final affected normal5/5CTest37Qt+2Python0fail/skips84.01s; standalone11Qt0fail/skips incl actual owned-private-registry timeout recovery. Actual daemon replacement recovers enabled native observers; rejected non-native display remains fail-closed. Exact-eeed negative control expectedexit1(2pass/1fail). Final strictMkDocs0 and510-document link/nav0; diffcheck0, exact-worktree executable scan0survivors. General synthetic options14 explicitlydisable installedNightLight, dedicatedrole tests unchanged. Immutable candidate sent root and distinctreviewer; root D-067 paragraph preserved by nonoverlapping wiki hunks. No source changes afterSHA, live auth/adoption claims or laptop tests/builds. Statusavailable, leasesreleased; durable fresh-build instructions and bounded help offer posted.
+
+- 2026-10-04T20:17:56+00:00 — Read Platform queue and current exact-review incident reply, posted concrete same-branch blocking-repair or bounded integration/provenance help offer; no unrelated claim. Qinda evidence archive51507606d8a1... and self-owned records mirrored to qinda private cache. Sourcehub/clean f2f2 verified. Remains available with no compiler/private-runtime lease.

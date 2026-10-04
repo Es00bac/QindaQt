@@ -76,8 +76,13 @@ Actual policy now reports available idle/screen observers and ScreenLocked=false
 with protections unchanged. Retain that exact caller for the current desktop's
 lifetime; installed supervisor files cannot take over its admission live.
 One subsequent unlock ended cancelled with zero unlocked; owner prompt
-visibility/readiness remains pending. Permanent supervisor reattachment after
-daemon-owner replacement is an isolated qinda source/review outcome.
+visibility/readiness remains pending. Permanent supervisor candidate `f2f2d392`
+is independently accepted and integrated in `bae1f8fd`, preserving D-067.
+Manager qinda configure/build and affected 5/5 CTests, 37 Qt checks plus two real
+resident observer cases pass; strict MkDocs and 510-document links pass.
+The per-owner watcher distinguishes metadata uncertainty from confirmed absence,
+fences pending generations and Shutdown, and preserves existing admission/policy.
+Signed only-Desktop r14 packaging remains the next delivery boundary.
 Do not disable lock policy or restart the desktop. The owner requires all
 further builds/tests/heavy work on qinda because laptop game development is live.
 No credential values have been read, changed or spoken by the incident tools.
