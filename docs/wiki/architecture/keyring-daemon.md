@@ -25,6 +25,18 @@ through Portage after syncing the profile, then restart affected applications:
 QtKeychain caches backend selection for the lifetime of each process. This
 feature change does not migrate credentials or enable plaintext fallback.
 
+Preserved KWallet `Password` imports retain their original folder/key/type
+attributes and serialized `QString` value. A QtKeychain plaintext-schema lookup
+alone does not locate or decode these records. QindaOffice's October 4 Mail
+adapter (`f1f3492b`, Office decision D-067) attempts this compatibility read only
+after the primary lookup returns NotFound. It pins equal native and standard
+service owners, requires a unique exact type-1 import, uses the ordinary native
+Unlock/Prompt path, and bounds and validates the typed value before delivery.
+New writes remain in QtKeychain's primary namespace; preserved imports are
+immutable. Account removal reports a visible cleanup warning when an imported
+credential remains. Office's integrated 12 Mail CTests/246 Qt checks cover this
+client contract; they do not qualify live collection unlock or server sign-in.
+
 The user service and socket install to `${KDE_INSTALL_SYSTEMDUSERUNITDIR}`.
 On multilib hosts, `${CMAKE_INSTALL_LIBDIR}/systemd/user` can resolve to
 `lib64/systemd/user`, outside systemd's user-unit search path. D-Bus activation

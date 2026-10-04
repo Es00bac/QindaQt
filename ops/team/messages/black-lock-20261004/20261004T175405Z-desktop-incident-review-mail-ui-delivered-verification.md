@@ -1,0 +1,7 @@
+# Mail UI delivered controls and exact-base negative control
+
+- Updated: 2026-10-04T17:54:05Z
+- Strong input evidence corrected initial unsettled-layout/focus fixture failures. New eight UI cases now pass, exit 0, Qt 10/10 including setup/cleanup, 0 failures/skips, 21912 ms. Password and Google missing-client paths use observed real clicks; configured OAuth reaches one intercepted browser adapter, intentionally waits per its contract, then an actual private-flow cancel returns a correlated rejection retained in the owning dialog. No real browser/auth/network or credentials.
+- Inspected all eight new 1280/520 synthetic PNGs: existing password/app-password fields are editable, actual actionable missing-client/cancel notices readable and primary/secondary actions fit.
+- Strong negative control: temporarily wrote all three owned production QML files to exact700d bytes only in the isolated implementer worktree, while preserving candidate bytes in ignored build cache with a finally restoration. Build exit 0; unchanged-production password-1280 test observes clicked count 1 then fails at dialog-open assertion as expected, exit 1, 2 pass/1 fail/0 skips, 16886 ms. Earlier negative control is superseded by this delivered-input control. Candidate files restored byte-for-byte; no shared checkout changes.
+- Final UI/host/accounts build and CTests now rerunning after restoration/final test identity assertions. Candidate commit/push and different-worker review remain pending.

@@ -31,13 +31,20 @@ QindaMail's installed QtKeychain lacked `USE=keyring`, so native Secret Service
 ownership did not prevent KWallet activation. A scoped Portage rebuild enables
 that feature on both hosts. A laptop synthetic missing-entry lookup loads libsecret
 and returns EntryNotFound with plaintext fallback disabled. The tracked native
-profile default is accepted, integrated and synced. Actual Mail sign-in is not
-fixed by that feature alone: the owner reports signed-out accounts/dead sign-in.
-Four configurations remain intact; three imported Password records require
-typed native compatibility and source-collection unlock, and the UI currently
-calls a browser-only path for password accounts. Isolated exact `700d85b7`
-Office credential/UI repairs and reciprocal review are active. Google OAuth
-client configuration is absent; no live credentials have been read or changed.
+profile default is accepted, integrated and synced. Mail recovery requires additional application and session fixes.
+The independently accepted Office UI/native adapter is integrated as `f1f3492b`;
+12/12 Mail CTests and 246 Qt checks pass. Full signed Portage build, independent
+artifact review, both-host only-Office binary installs and all 68 installed-file
+checks pass with world preserved. The owning-window credential dialog and typed
+read-only import adapter are installed; real authentication is still open.
+All three preserved Password entries are in one locked Login collection.
+Nondismissed live unlock immediately relocks because the later native daemon
+lost its startup-only session attachment and cannot observe lock/idle status.
+A retained supported attachment and permanent supervisor owner-replacement
+reattachment are active outcomes, with all build/test work on qinda. The desktop
+stays open and lock policy stays enabled. Google browser sign-in needs the
+intended project's client identity; the downloaded OpenClaw-branded client is
+removed from Mail configuration. No incident tool reads or alters credentials.
 
 See [Handoff](HANDOFF.md), [native session locking](wiki/architecture/native-session-lock.md)
 and [QtKeychain clients](wiki/architecture/keyring-daemon.md#qtkeychain-clients).
