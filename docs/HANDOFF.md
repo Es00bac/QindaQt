@@ -49,18 +49,38 @@ disabled. Accepted profile `9ee1aa3c` is integrated and synced on both hosts,
 enabling the same tracked default; no credentials are migrated or deleted.
 
 The owner then reports Mail signed out and its sign-in button doing nothing.
-Four saved account configurations remain intact. Three imported Mail Password
-records are locked, preserve serialized QString data and lack QtKeychain's
-`user/server/type` lookup attributes; an unlocked empty Login collection does
-not make those records readable. The installed Office source is exact `700d85b7`.
-Its button always calls browser-only sign-in, including password accounts, and
-no Google OAuth client configuration is present. Two isolated Office repairs
-are active: a window-scoped credential dialog route with visible error handling,
-and typed native Secret Service compatibility without changing original records.
-They require synthetic/headless evidence and reciprocal exact review before
-integration and Portage delivery. No live credentials are read or modified.
-The owner authorized reopening Mail; it is running on the existing desktop
-without QML startup errors. Speaker output is 90%.
+Four saved account configurations remain intact. Three imported Password records
+retain serialized QString values and original attributes. Reciprocal exact
+reviews accept UI `02c5b4b2` and native adapter `a0cfae24`; manager integration
+`f1f3492b` is preserved on the Office hub main. The integrated configure/build
+exits zero and all 12 Mail CTests/246 Qt checks pass without failures/skips.
+The source archive is reproducible on both hosts. Recipe `6ac9a022` and signed
+artifact `7b5aadf1` pass independent provenance/signature/static closure review.
+Full Portage build and exact only-Office binary installs exit zero; all 68 files
+per host, accepted Mail ELF `23a8136a`, native keyring USE and unchanged world
+selections verify. Overlay delivery `a810eeb` advances only Office to p20261004.
+The window-scoped sign-in dialog and typed read-only credential adapter are
+installed; actual mailbox authentication remains an adoption gate.
+
+Owner-authorized Mail is still open on the retained desktop pending new-code
+adoption. A reviewed metadata-only one-request unlock helper passes 11/11
+private cases. Live selection finds all three imports in one locked Login
+collection. A normal nondismissed prompt completion leaves them locked: the
+native policy reports unavailable idle/screen observers and ScreenLocked=true,
+while the actual compositor reports unlocked/unprotected. Running keyring bytes
+match installed r13. Source shows that its later daemon restart lost the
+startup-only supervisor display attachment, so policy immediately relocks.
+The active repair restores a retained supported display attachment for this
+session and adds supervisor reattachment after daemon-owner replacement.
+Do not disable lock policy or restart the desktop. The owner requires all
+further builds/tests/heavy work on qinda because laptop game development is live.
+No credential values have been read, changed or spoken by the incident tools.
+
+Google browser sign-in is selected. The recent downloaded desktop-client JSON
+matches the owner's file, but its reported consent identity is OpenClaw. That
+client has been removed from per-user Mail configuration with a private backup;
+account settings and downloads remain unchanged. Proper Google project/client
+identity and actual durable browser sign-in remain pending. Speaker is 90%.
 
 ## Plasma packages retired — October 3 login checkpoint
 

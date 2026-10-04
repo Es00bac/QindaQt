@@ -30,16 +30,25 @@ No further SDDM restart or physical lock is authorized by this checkpoint.
 Real PAM and physical lock-screen behavior remain outside the contained proof.
 Other existing application/game work and source checkouts remain preserved.
 
-Mail recovery is active following the owner's signed-out/dead-button report.
-Four configurations remain intact. Three locked imported Password entries need
-typed QtKeychain/SecretService compatibility; no secret values or wallet state
-have been accessed/changed. Office deployed source is exact `700d85b7`.
-Native worker owns an isolated credential adapter/library/tests and Mail docs;
-former desktop reviewer owns the isolated window-scoped UI/dialog/tests and
-verification docs. Both require reciprocal exact review, manager integration
-and Portage delivery. No live GUI, credentials, physical GPU or PAM lease is
-held by the workers. The owner authorized manager reopening Mail; it is running
-on the retained desktop without QML startup errors.
+Mail application repair is installed; session adoption remains active.
+Office source `f1f3492b` contains reciprocal accepted UI/native candidates and
+passes manager 12/12 CTests/246 Qt checks. Exact recipe `6ac9a022`, deterministic
+archive and signed artifact `7b5aadf1` are independently accepted; full build and
+both only-Office binary installs exit zero. All 68 files per host verify with
+world unchanged. Overlay approved delivery is `a810eeb`; older releases remain.
+
+Live metadata finds three imports in one Login collection, locked. Normal
+nondismissed unlock relocks because the restarted current r13 daemon is unbound:
+idle/screen observation unavailable and policy ScreenLocked=true, while the real
+compositor is unlocked. Native worker owns isolated supervisor owner-replacement
+reattachment source/tests/docs at exact `eeed1f6c` on qinda. Reviewer owns a
+separately reviewed temporary retained API attachment diagnostic for root's
+current-session restoration, then exact candidate review. Workers perform no
+live attach, secrets, policy change or desktop restart. Root alone owns live
+adoption; no credential values are read or mutated. All builds/tests/heavy work
+stay on qinda at the owner's request, preserving laptop game development.
+Google client/project identity and actual server/browser authentication remain
+open gates; the unexpected OpenClaw client is removed from Mail configuration.
 
 ## October 3 current boundary — installed retirement complete
 
