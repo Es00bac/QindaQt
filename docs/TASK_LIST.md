@@ -40,9 +40,12 @@ read-only import adapter are installed; real authentication is still open.
 All three preserved Password entries are in one locked Login collection.
 Nondismissed live unlock immediately relocks because the later native daemon
 lost its startup-only session attachment and cannot observe lock/idle status.
-A retained supported attachment and permanent supervisor owner-replacement
-reattachment are active outcomes, with all build/test work on qinda. The desktop
-stays open and lock policy stays enabled. Google browser sign-in needs the
+A reviewed retained supported attachment now restores actual idle/screen
+observation without weakening policy. The caller remains for this desktop's
+lifetime. A subsequent unlock ended cancelled; user prompt visibility/readiness,
+Mail reopening and actual authentication remain open. Permanent supervisor
+owner-replacement reattachment proceeds on qinda, with all build/test work there.
+The desktop stays open and lock policy stays enabled. Google browser sign-in needs the
 intended project's client identity; the downloaded OpenClaw-branded client is
 removed from Mail configuration. No incident tool reads or alters credentials.
 

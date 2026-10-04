@@ -37,10 +37,14 @@ archive and signed artifact `7b5aadf1` are independently accepted; full build an
 both only-Office binary installs exit zero. All 68 files per host verify with
 world unchanged. Overlay approved delivery is `a810eeb`; older releases remain.
 
-Live metadata finds three imports in one Login collection, locked. Normal
-nondismissed unlock relocks because the restarted current r13 daemon is unbound:
-idle/screen observation unavailable and policy ScreenLocked=true, while the real
-compositor is unlocked. Native worker owns isolated supervisor owner-replacement
+Live metadata finds three imports in one Login collection, locked. Earlier
+nondismissed unlock relocked because the restarted r13 daemon lost its session
+attachment. Root restored a retained supported connection with reviewed helper
+f5316a3a (13/13 qinda-only private checks); actual idle/screen observation is now
+available and ScreenLocked=false, with protections unchanged. The transient
+non-autostart caller remains for this desktop's lifetime. Subsequent Unlock
+ended cancelled; owner prompt visibility/readiness and Mail reopening are open.
+Native worker owns isolated supervisor owner-replacement
 reattachment source/tests/docs at exact `eeed1f6c` on qinda. Reviewer owns a
 separately reviewed temporary retained API attachment diagnostic for root's
 current-session restoration, then exact candidate review. Workers perform no

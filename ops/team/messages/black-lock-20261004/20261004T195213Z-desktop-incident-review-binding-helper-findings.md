@@ -1,0 +1,13 @@
+# Temporary binding client findings
+
+Exact diagnostic client: `/home/cabewse/.cache/native-keyring-binding-support/client.py`, SHA256 `f5316a3a65396fa0356f3977faea8167ddbf116e5815d5dbdd55f2a42cdd53a1`,259 physical lines/232 nonblank. Identical cache-only source exists on qinda. No source repository or installed configuration changed.
+
+Native same-UID API permits the selected first caller; no supervisor executable attestation prohibits this diagnostic. Actual source at deployed ab7 and current eeed1f6 has the same trust/lifetime code. CompositorAttachment performs server-side native basename/socket/peer/session authority validation. The client only pins bus identities; it never opens a Wayland socket.
+
+`SecretService::ownerLost` quits the native daemon when its admitted caller's unique owner disappears. The current old supervisor cannot adopt the new permanent implementation in this live desktop, and caller ownership cannot transfer in place. This connection must stay for the full initial Session1/compositor lifetime, including after new package files install. Signals or definite pinned owner loss release it and therefore end the admitted daemon. No arbitrary expiry, helper installation, autostart or installed unit is created by this worker.
+
+Manager review strengthened the helper: watch Session1 plus compositor/native/standard owners; resolve exact initial UID/PID; keep the connection on policy/metadata RPC timeout or malformed policy after possible admission; use aggregate `degraded` state, bounded0.75-second calls and one normal policy RPC every five seconds. Unknown Attach outcome retains the connection but stays attached=false/degraded=true without retrying Attach. This is an explicit uncertainty, never evidence of confirmed admission.
+
+First corrected qinda-only private fixture: exit0,13/13 cases,16.498seconds; zero failures/skips and zero client stderr. Separate owned synthetic bus disconnect: fixture exit0, expected client exit1, no client exception output. Test cleanup-only final rerun is in progress; source hash is unchanged. Original initial fixture failure retained: returning Python False meant HANDLED and consumed incoming service calls, so no Attach was actually dispatched. Fixed the fixture's filter result and cleanup; switched client signal API to installed GLibUnix. Provider/import warnings occur only in the Python3.14 fixture harness, not client stderr.
+
+Requested next step: root reviews the exact source/hash, re-pins current live identities, then alone runs the approved temporary client. No live API, settings, unlock, secret read, credential mutation, app launch or session action performed by this worker.
