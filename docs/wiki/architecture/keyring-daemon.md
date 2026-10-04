@@ -153,9 +153,17 @@ for private/diagnostic runs. A dedicated supervisor bus connection invokes
 AttachSessionWithDisplay for its current WAYLAND_DISPLAY basename; legacy
 AttachSession remains available when there is no declared display. One unique
 owner is accepted, including an already activated
-daemon; loss of that owner exits and wipes the daemon. Logout stops its child,
-sends Shutdown only after successful attachment, and disconnects that bus
-connection. Bus loss or loss of Secret Service ownership also terminates the
+daemon; loss of that owner exits and wipes the daemon. The supervisor watches
+native keyring owner replacement on that same retained connection and starts a
+fresh bounded attachment batch for each current same-UID unique owner. The
+retained display declaration is admitted again by the replacement daemon; a
+previous acceptance does not carry display or observer authority across owners.
+A delayed reply or queued owner advertisement cannot accept an old generation.
+Logout retires the watcher and pending replies before stopping its child, sends
+Shutdown only to the still-current exact admitted unique owner, and disconnects
+that bus connection. A replacement that has not accepted attachment never
+receives Shutdown. See [ADR-0348](../adr/0348-reattach-keyring-after-owner-replacement.md).
+Bus loss or loss of Secret Service ownership also terminates the
 daemon. Source units use `PartOf=graphical-session.target`; that alone is
 insufficient because QindaQt does not activate that target. D-Bus activation
 and explicit supervisor ownership are the startup paths. Distribution
@@ -215,6 +223,14 @@ lock/search/tamper, caller isolation, cancellation/disconnect, control
 rekey/bounds/activation, catalog recovery, sole-writer arbitration, session
 attachment and dump policy. Native rendering/output selection remains a
 nested/live Wayland qualification boundary; no live bus or unit is used here.
+
+`qindaqt.session-keyring-lifetime` exercises real private-bus owner changes,
+bounded refusal/replacement admission, delayed replies, transient registry
+lookup recovery without a new owner event, and exact-owner stop races. `qindaqt.session-keyring-owner-replacement` runs the production resident,
+Settings and a software ordinary-compositor fixture with empty private storage:
+replacement restores actual native screen/idle availability and retains enabled
+policy; a non-native display remains unavailable and receives no Shutdown.
+These rows make no prompt, secret or authentication requests.
 
 ## Native Settings prompt methods
 

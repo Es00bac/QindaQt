@@ -284,3 +284,6 @@ add_test(NAME qindaqt.native-power-startup
 set_tests_properties(qindaqt.native-power-startup PROPERTIES TIMEOUT 30
     ENVIRONMENT "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     LABELS "session;power;startup;private-bus")
+
+# ADR-0348: bounded replacement admission and exact-owner shutdown.
+add_subdirectory(keyring_lifetime)
