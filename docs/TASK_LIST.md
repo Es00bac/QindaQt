@@ -10,16 +10,34 @@ completion. Architectural detail and long-range milestone state remain in the
 The owner's authorized SDDM restart restored the laptop's physical tty7 desktop.
 The previous native compositor was locked/protected without a locker process;
 its installed custom permission-list reader retained the trailing semicolon and
-rejected the packaged `ext_session_lock_manager_v1` entry. The parser repair
-must preserve the installed r5 shortcut fixes and pass independent exact review,
-coherent package builds and a private native greeter launch before adoption.
+rejected the packaged `ext_session_lock_manager_v1` entry. Accepted fork
+`24d0c6a6` preserves the installed r5 shortcut fixes; exact independent review
+and manager focused tests pass (3/3 CTests, 32 Qt checks). Full matched r6/r13
+Portage builds and signed artifact checks pass. The contained real greeter
+launch passes lock-role, buffer and frame-feedback checks without physical
+devices or PAM authentication, including one repeat with the installed r13
+greeter. Exact binary installation completes on both hosts; 2,747 installed
+files/links per host verify with zero mismatches and world selections preserved.
+The owner chose to keep the current desktop open. The repair activates at the
+next login; current physical-session/PAM qualification is deferred accordingly.
+
+Separate bounded packaging follow-up: Network's disk-only authenticator still
+rejects five nested fallback QML paths absent from the full r13 image. Its
+preferred embedded resources and plugin registration are present and static
+runtime closure passes; align the disk install destination with qmldir before
+claiming the complete fallback/package contract.
 
 QindaMail's installed QtKeychain lacked `USE=keyring`, so native Secret Service
 ownership did not prevent KWallet activation. A scoped Portage rebuild enables
-that feature on the laptop. A synthetic missing-entry lookup now loads libsecret
+that feature on both hosts. A laptop synthetic missing-entry lookup loads libsecret
 and returns EntryNotFound with plaintext fallback disabled. The tracked native
-profile candidate is preserved on qinda; application restart and live QindaMail
-confirmation remain separate from this diagnostic evidence.
+profile default is accepted, integrated and synced. Actual Mail sign-in is not
+fixed by that feature alone: the owner reports signed-out accounts/dead sign-in.
+Four configurations remain intact; three imported Password records require
+typed native compatibility and source-collection unlock, and the UI currently
+calls a browser-only path for password accounts. Isolated exact `700d85b7`
+Office credential/UI repairs and reciprocal review are active. Google OAuth
+client configuration is absent; no live credentials have been read or changed.
 
 See [Handoff](HANDOFF.md), [native session locking](wiki/architecture/native-session-lock.md)
 and [QtKeychain clients](wiki/architecture/keyring-daemon.md#qtkeychain-clients).

@@ -1,5 +1,46 @@
 # Platform delivery queue
 
+## October 4 desktop incident — installed lock repair; Mail recovery active
+
+Interactive incident manager owns this bounded recovery. The authorized laptop
+SDDM restart completed; its new native lock state is unlocked. Profile `9ee1aa3c`
+is independently accepted, integrated and synced on both hosts. The laptop's
+QtKeychain keyring-feature rebuild and native absent-entry diagnostic pass;
+qinda's matching profile-driven rebuild also passes.
+
+Fork `24d0c6a6` is independently accepted and integrated on hub main, preserving
+installed r5 shortcut fixes. Manager focused rerun passes 3/3 CTests; full r6
+Portage source build/package exits zero. Desktop r13 source `ab7fc8f3` preserves
+installed r12 source and its full build/package passes against the verified
+staged r6 SDK. Exact overlay `c5cf38f0` is independently accepted and integrated;
+both signed artifacts and independent installed provenance checks pass.
+Exact binary installation exits zero on both hosts; CONTENTS verifies 456 fork
+and 2,291 desktop files/links each, with world/world_sets unchanged. Static
+runtime closure passes; the Network disk-only fallback authenticator remains a
+bounded failed contract, not a full-suite success.
+
+Compiler and private runtime leases are released. The namespace-contained real
+greeter gate passes on software output: lock admission, direct child, configured
+lock role, committed buffer and frame callback. No physical GPU, DRM, input,
+live bus or PAM authentication lease is held. Both-host exact resolver plans
+select only matched binary r6/r13 updates. A repeat using the actual newly
+installed r13 greeter passes with zero owned survivors. Owner explicitly keeps
+the current desktop open; new-session adoption waits for the next owner login.
+No further SDDM restart or physical lock is authorized by this checkpoint.
+Real PAM and physical lock-screen behavior remain outside the contained proof.
+Other existing application/game work and source checkouts remain preserved.
+
+Mail recovery is active following the owner's signed-out/dead-button report.
+Four configurations remain intact. Three locked imported Password entries need
+typed QtKeychain/SecretService compatibility; no secret values or wallet state
+have been accessed/changed. Office deployed source is exact `700d85b7`.
+Native worker owns an isolated credential adapter/library/tests and Mail docs;
+former desktop reviewer owns the isolated window-scoped UI/dialog/tests and
+verification docs. Both require reciprocal exact review, manager integration
+and Portage delivery. No live GUI, credentials, physical GPU or PAM lease is
+held by the workers. The owner authorized manager reopening Mail; it is running
+on the retained desktop without QML startup errors.
+
 ## October 3 current boundary — installed retirement complete
 
 This checkpoint supersedes all historical active and compiler claims below.

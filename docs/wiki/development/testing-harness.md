@@ -3449,6 +3449,16 @@ package-only pass is
 insufficient if a required application does not map: topology readiness must observe the installed
 `org.qindaqt.Settings` window before interaction or capture can qualify a row.
 
+The October 4 r13 lock incident delivery has a bounded discrepancy against the
+Network disk-fallback contract: five named nested files are absent while flat
+copies remain. Independent actual-library inspection authenticates all six
+preferred embedded QRC aliases/cache symbols and the correct module/plugin
+registration; static runtime closure passes. This does not waive the disk-only
+authenticator, which fails, or qualify the full package-contract CTest. Align
+`src/apps/settings/network/CMakeLists.txt` installation with qmldir before
+claiming that separate contract complete. The contained incident gate covers
+[native session locking](../architecture/native-session-lock.md).
+
 The component also carries an install inventory for every applet module
 imported by the production panel dispatcher: Audio, Bluetooth, Clipboard,
 Global Menu, Launcher, Power, Task List, and Status Notifier. The non-nested
