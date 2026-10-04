@@ -29,6 +29,15 @@ using namespace QindaQt;
 
 namespace {
 
+SessionSupervisor::SessionProcessOptions privateSessionOptions()
+{
+    SessionSupervisor::SessionProcessOptions options;
+    // AGENT-GUARD: general process fixtures must never resolve an installed
+    // resident by default. Night Light has its own explicit lifetime fixture.
+    options.nightLightExecutable.clear();
+    return options;
+}
+
 class ChildSubreaperScope final {
 public:
     ChildSubreaperScope()
@@ -192,7 +201,7 @@ void SessionProcessSupervisorTests::supervisorDeathTerminatesATokenizedChild()
 
 void SessionProcessSupervisorTests::buildsTheExactNonSecretShellArguments()
 {
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.profileId = QStringLiteral("test-shell-role");
     options.themeId = QStringLiteral("test-theme");
     options.compositorProcessId = 42'424;
@@ -211,7 +220,7 @@ void SessionProcessSupervisorTests::buildsTheExactNonSecretShellArguments()
 
 void SessionProcessSupervisorTests::supervisorKeepsResidentHostAcrossRepeatedShellCrashes()
 {
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.profileId = QStringLiteral("test-hold-shell");
@@ -238,7 +247,7 @@ void SessionProcessSupervisorTests::supervisorKeepsResidentHostAcrossRepeatedShe
 
 void SessionProcessSupervisorTests::supervisorDoesNotRestartShellAfterHostExit()
 {
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.profileId = QStringLiteral("test-hold-shell");
@@ -264,7 +273,7 @@ void SessionProcessSupervisorTests::supervisorDoesNotRestartShellAfterHostExit()
 
 void SessionProcessSupervisorTests::supervisorRestartsShellOnceWithoutRestartingHost()
 {
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.profileId = QStringLiteral("test-hold-shell");
@@ -301,7 +310,7 @@ void SessionProcessSupervisorTests::supervisorRestartsShellOnceWithoutRestarting
 
 void SessionProcessSupervisorTests::supervisorResetsBackoffAfterStableShellRun()
 {
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.profileId = QStringLiteral("test-hold-shell");
@@ -323,7 +332,7 @@ void SessionProcessSupervisorTests::supervisorResetsBackoffAfterStableShellRun()
 
 void SessionProcessSupervisorTests::supervisorStopsDuringShellRestartDelayWithoutRespawn()
 {
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.profileId = QStringLiteral("test-hold-shell");
@@ -352,7 +361,7 @@ void SessionProcessSupervisorTests::supervisorKeepsSessionAliveWhenReplacementLa
     QVERIFY(QFile::copy(source, disposableShell));
     QVERIFY(QFile::setPermissions(disposableShell, QFile::permissions(source)));
 
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable = source;
     options.shellExecutable = disposableShell;
     options.profileId = QStringLiteral("test-hold-shell");
@@ -386,7 +395,7 @@ void SessionProcessSupervisorTests::supervisorKeepsSessionAliveWhenReplacementLa
 
 void SessionProcessSupervisorTests::supervisorRollsBackWhenTheSecondChildCannotStart()
 {
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral("/definitely/missing/qindaqt-shell");
     options.compositorProcessId = 42'424;
@@ -405,7 +414,7 @@ void SessionProcessSupervisorTests::session1AuthenticatesShellAndStopsChildrenIn
         qunsetenv("QINDAQT_TEST_SESSION1_LOGOUT");
         qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
     });
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable =
         QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
@@ -453,7 +462,7 @@ void SessionProcessSupervisorTests::session1AuthenticatesShellAndStopsChildrenIn
 void SessionProcessSupervisorTests::optionalSecretAgentRestartsOnceWithoutBlockingSession()
 {
     qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable =
         QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
@@ -485,7 +494,7 @@ void SessionProcessSupervisorTests::optionalWelcomeStartsAfterShellAndDoesNotRes
     const auto environmentGuard = qScopeGuard([] {
         qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
     });
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable =
         QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
@@ -519,7 +528,7 @@ void SessionProcessSupervisorTests::optionalWelcomeStartsAfterShellAndDoesNotRes
 void SessionProcessSupervisorTests::optionalDesktopControlsAndPolkitAgentRestartOnceWithoutBlockingSession()
 {
     qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable =
         QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
@@ -557,7 +566,7 @@ void SessionProcessSupervisorTests::optionalDesktopControlsAndPolkitAgentRestart
 
 void SessionProcessSupervisorTests::missingOptionalHelpersAreSkippedWithoutFailingTheSession()
 {
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable =
         QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
@@ -595,7 +604,7 @@ void SessionProcessSupervisorTests::session1DescriptorMatchesTheFixedSurface()
 void SessionProcessSupervisorTests::optionalChildRestartBudgetResetsForANewSession()
 {
     qunsetenv("QINDAQT_TEST_PLAIN_CHILD_MILLISECONDS");
-    SessionSupervisor::SessionProcessOptions options;
+    auto options = privateSessionOptions();
     options.notificationHostExecutable =
         QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
     options.shellExecutable = QStringLiteral(QINDAQT_SESSION_TOKEN_CHILD_HELPER);
