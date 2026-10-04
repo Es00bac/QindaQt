@@ -1,13 +1,13 @@
 # Native permission repair
 
 - Identity: native-permission-repair, collaboration agent `/root/native_permission_repair`
-- Status: available — immutable native keyring reconnect candidate and qinda-only gates handed off for independent review
-- Outcome: retained desktop supervisor renews approved native display attachment after daemon replacement, restoring observer admission without weakening lock policy
-- Base: eeed1f6cac509990f64fd1f692a796f370206c55
-- Worktree: qinda `/home/cabewse/work_SPaC3/container-wm-keyring-reconnect-20261004`
-- Branch: `fix/keyring-owner-reconnect-20261004`
-- Ownership: session-supervisor keyring_session_lifetime h/cpp, focused tests/minimal build registration and relevant lifecycle wiki/ADR; own board/replies. All source/build/tests on qinda. No live AttachSession/Unlock/Prompt/credentials/app/service/desktop/config mutations.
-- Liveness: this collaboration agent completed the assigned qinda-only source/gates; no compiler/private-runtime lease or worker OS PID/model claim
+- Status: available — independent exact r14 recipe/archive review ACCEPT posted; signed build and adoption remain manager-owned
+- Outcome: verify the new delivery pins accepted reconnect source while preserving deployed dependencies, flags, source descendants and safe install paths
+- Base: QindaGentoo b6d14354f48081c70b5ee50168d4debdc778be98 (review target), parent a810eeb0b902ab66d4d451661a330307cbb76dcf
+- Worktree: qinda `/home/cabewse/work_SPaC3/QindaGentoo-keyring-reconnect-review-20261004`
+- Branch: detached exact review; manager retains integration and delivery ownership
+- Ownership: independent read-only recipe/archive/source review plus own board/replies and ignored diagnostic cache. No source edits/build/live API/install/signing-key/speech actions.
+- Liveness: this collaboration agent completed the bounded qinda independent review; no compiler/private-runtime lease or worker OS PID/model claim
 
 ## Updates
 
@@ -83,3 +83,9 @@
 - 2026-10-04T20:11:15+00:00 — Verification/handoff/status transition: qinda clean hub candidate f2f2d3927e235f585fe0ef0ab5ffec3f4ba52f42, tree2a57242202a4e41a6877db20c325c8489c4149c6, parentexacteeed. Final production builds0/-j24-l24; final affected normal5/5CTest37Qt+2Python0fail/skips84.01s; standalone11Qt0fail/skips incl actual owned-private-registry timeout recovery. Actual daemon replacement recovers enabled native observers; rejected non-native display remains fail-closed. Exact-eeed negative control expectedexit1(2pass/1fail). Final strictMkDocs0 and510-document link/nav0; diffcheck0, exact-worktree executable scan0survivors. General synthetic options14 explicitlydisable installedNightLight, dedicatedrole tests unchanged. Immutable candidate sent root and distinctreviewer; root D-067 paragraph preserved by nonoverlapping wiki hunks. No source changes afterSHA, live auth/adoption claims or laptop tests/builds. Statusavailable, leasesreleased; durable fresh-build instructions and bounded help offer posted.
 
 - 2026-10-04T20:17:56+00:00 — Read Platform queue and current exact-review incident reply, posted concrete same-branch blocking-repair or bounded integration/provenance help offer; no unrelated claim. Qinda evidence archive51507606d8a1... and self-owned records mirrored to qinda private cache. Sourcehub/clean f2f2 verified. Remains available with no compiler/private-runtime lease.
+
+- 2026-10-04T20:36:16+00:00 — Claimed manager-authored exact QindaGentoo b6d14354f48081c70b5ee50168d4debdc778be98 independent review. Distinct worker ACCEPT of source f2f2 preserved; manager integrated a7b302aec8255738d3f6dcd0e3f0a643e05d5ae2 with D-067 retained. Will inspect qinda-only isolated recipe/Manifest/archive, accepted source/full descendants, r6 SDK dependency and unchanged flags/path safety. No production source/build/credential/key/install/live desktop action.
+
+- 2026-10-04T20:43:32+00:00 — Material verification/handoff/status transition: independently ACCEPT exact overlay b6d14354/treef020b8e9 and integrated source a7b302ae/tree0d98148c. Qinda final provenance29/29 plusSDK6/6 checks, both commands exit0; full 9,266-file source archive byte-equivalent to bare-hub tar and reproducible with system gzip-n SHA0646fc2c. All559 prior non-Manifest paths/115prior rows preserved; Manifest116rows and13original configureflags; approved delivery36atoms stillr13. Source f2f2/eeed/deployedab7 ancestors, fullproductionbytes andD067 preserved; exactr6/ABI6.6.6.1/fourcapturepaths verified. Two initial diagnostic assumptions (flagcount14vs13 and Git-internalgzip vs systemgzip compressedcontainer) corrected in cache only, originallogs retained; neither is a recipe/source finding. Clean detached tree, evidencea9736d38 mode0600. No build/test/liveAPI/install/signing-key/speech/source change. Available for bounded exact artifact/content review after manager signed build.
+
+- 2026-10-04T20:45:58+00:00 — Read the current Platform incident queue and distinct source ACCEPT receipt after packaging handoff. Root owns signed r14 build next; no unrelated queue claim. Posted concrete help offer for independent exact signed artifact/signature metadata/payload provenance review without private-key access, install or live API. Remains available with no compiler/private-runtime lease; all heavy work stays on qinda.
