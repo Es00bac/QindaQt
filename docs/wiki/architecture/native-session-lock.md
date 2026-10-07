@@ -108,6 +108,31 @@ never supplies unlock authority. The final `qindaqt-lock` service stack must not
 open a second login/logind session. Its distro/package delivery remains held.
 
 
+## Installed PAM service prerequisite
+
+The fixed PAM worker calls the named `qindaqt-lock` service for the real UID
+account. Delivery must include that root-managed service configuration as well
+as the greeter and worker executables. On Gentoo, its authentication and account
+stacks consume the distribution's `system-auth` policy. Native keyring hooks
+remain optional; their failure never supplies or withholds lock authentication.
+The locker does not change passwords or create another login/logind session.
+
+A missing named service can fall back to `/etc/pam.d/other`. Gentoo's deny-only
+fallback returns authentication denial without asking for a password. The greeter
+then has no pending response and hides its credential field; launching the
+executable, acquiring a lock role and submitting a frame do not establish prompt
+readiness. The `lock.worker-channel` private-confdir regression covers this exact
+missing-service/no-conversation failure independently of the host PAM tree.
+Its explicit synthetic service row proves a secret prompt followed by native
+worker authentication and account approval.
+
+The October 4 production software-output gate masked the fixed PAM executable
+and therefore qualified only trusted launch, the standard role and frame
+feedback. Installed acceptance must also check the named service's package
+ownership and authentication/account policy, then qualify visible focused input
+and owner-controlled authentication on the actual session. No fixture, fallback
+policy, cached credential or reported protected frame replaces that proof.
+
 ## Native prompt and scene composition
 
 The candidate `src/lock_greeter` composition root constructs a real QtQuick

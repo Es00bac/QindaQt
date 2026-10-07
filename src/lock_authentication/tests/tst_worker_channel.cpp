@@ -121,6 +121,28 @@ private Q_SLOTS:
     QCOMPARE(worker.process.readAllStandardOutput(), QByteArray());
     QCOMPARE(worker.process.readAllStandardError(), QByteArray());
   }
+  void missingServiceHasNoPrompt() {
+    QTemporaryDir configuration; QVERIFY(configuration.isValid());
+    QVERIFY(!QFile::exists(configuration.filePath("qindaqt-lock")));
+    // AGENT-NOTE: Gentoo's absent named service falls back to "other". A
+    // deny-only fallback emits no conversation, so the real greeter must not
+    // be qualified from launch/role/frame evidence alone (October 7 incident).
+    QFile fallback(configuration.filePath("other"));
+    QVERIFY(fallback.open(QIODevice::WriteOnly));
+    const QByteArray stack = "auth required pam_deny.so\naccount required pam_deny.so\n";
+    QCOMPARE(fallback.write(stack), stack.size()); fallback.close();
+    OwnedWorker worker; const int fd = worker.start(configuration.path()); QVERIFY(fd >= 0);
+    WorkerChannel channel(fd, std::chrono::seconds(3));
+    const AttemptToken token{29, 43}; QVERIFY(channel.send({WireKind::Begin, token, {}}));
+    const auto frame = channel.receive(); QVERIFY(frame);
+    QCOMPARE(frame->kind, WireKind::Result); // No Secret/Visible prompt precedes denial.
+    QCOMPARE(frame->token, token);
+    QCOMPARE(frame->payload, std::string(1, static_cast<char>('0' + int(Outcome::Denied))));
+    QVERIFY(worker.process.waitForFinished(3000)); QCOMPARE(worker.process.exitCode(), 0);
+    QVERIFY(!channel.receive());
+    QCOMPARE(worker.process.readAllStandardOutput(), QByteArray());
+    QCOMPARE(worker.process.readAllStandardError(), QByteArray());
+  }
   void workerEofAndIdentityInjection() {
     QTemporaryDir configuration; QVERIFY(configuration.isValid());
     { OwnedWorker worker; const int fd = worker.start(configuration.path()); QVERIFY(fd >= 0);
