@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — QindaQt r15 signed build and Accepted ED04 protocol implementation; Origin stopped as out of scope
+- Status: working — integrated media protocol and QindaQt agent-usage backend/popup delivery
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -18,3 +18,4 @@
 - 2026-10-07T18:04:31+00:00: Integrated exact r15 mirror e6f8787 and overlay e9f04b8 after independent b19c6d0 acceptance; Accepted ADR0350 after d283465 design review. Runtime freeze remains bef80e861. Release7/7, exact new Manifest row, fork, docs514 and strict MkDocs pass. Whole historical Manifest cmp was an invalid gate because repositories retain different historical rows; corrected exact r15 row matches. Signed build and artifact review next; no installation.
 - 2026-10-07T18:12:50+00:00: Owner explicitly confirmed QindaQt-only scope; withdrew separate Origin lane, which remains isolated/unverified and unintegrated. Platform signed build-only continues; dispatch Accepted ADR0350 protocol module at exact0d15023cc, source-only while compiler lease is held.
 - 2026-10-07T18:19:32+00:00: Verified Platform production compile and private PKGDIR correction from actual own board/logs; no r15 artifact in normal binhost cache. Files own working claim18:17 and protocol source authoring copied verbatim. Actual registries src/CMakeLists.txt/tests/CMakeLists.txt additive paths approved. Origin remains outside this session.
+- 2026-10-07T19:07:43+00:00 — Protocolf889 accepted a2e8631d4 integrated9bcbcb7ba manager3/3 pass. Signed r15 independently ACCEPTEDfba4a5e59 exactSHA256a6bff0aa,11/11 image probes; no install/publication. Usage backend/UI dispatched verifiedccc99fb3f67; prior full-hash transcription corrected; compiler Backend-owned. Proposed ADR0351 and explicit scope/freshness/denial/lifecycle gates.

@@ -1,7 +1,7 @@
 # Everyday Review Sol
 
-- Status: available — r15 and Proposed ED-04 ADR exact reviews complete
-- Candidate: aecc7c85ab6f7185f71dc4efeac9fa876ea0dd2f
+- Status: available — exact protocol and signed r15 artifact reviews complete
+- Candidate: f88974a5f90f447f0026ef6bd2d8d966a4ed93f2
 - Runtime: collaboration agent; requested GPT-6.1 Sol/high identity, no independent provider/model/process assertion
 
 ## Updates
@@ -15,3 +15,8 @@
 - 2026-10-07T17:56:35+00:00: Independent r15 archive checks match exact freeze, prefix, all 9329 blob hashes/modes, SHA256/size and both Manifest hashes; own recut byte-identical. Recipe mirror, historical Manifest/recipes and unchanged delivery metadata verified; release contract/Python7 pass. Fresh exact-pin metadata passes with process-only repo override; runtime solver remains active.
 - 2026-10-07T17:57:13+00:00: ACCEPT overlay e9f04b8 and source mirror e6f8787 as prepared recipe/archive only. Independent exact two-root resolver exit 0: 599 runtime packages/zero forbidden Plasma. Full build/signature/artifact/install remain manager gates. No source pin/config/publication/installed mutation. Moving to exact proposed ED-04 ADR next.
 - 2026-10-07T17:59:05+00:00: ACCEPT exact Proposed ED-04 ADR aecc7c85: own strict MkDocs/515-document validator/diff gate pass; source anchors and unchanged owner code checked against7d45d2c, authored four-fixture30Qt logs/harness hashes inspected, not independently rerun. Graphical Start/Retry, nonactivating observation, supported inventory/readback versus owner absence and bounded ordinary-action/credential boundaries coherent. No product/feature progress. Both bounded reviews complete; no resource lease, available after handoff.
+- 2026-10-07T18:39:53+00:00: Claimed exact protocol review and narrow owning Debug/Release/public-consumer gates. Compiler lease granted; no buses/devices or unrelated registries/providers/usage module edits. Next bounded review is exact signed r15 artifact after parent supplies receipt.
+- 2026-10-07T18:42:12+00:00: ACCEPT exact f88974a5f: independent own strict Debug and Release3/3 each62Qt, staged public-only consumer1/1, absent staged header fails compile and restoration1/1, strict docs516/diff checks pass. No bus/device/backend authority; reviewed canonical UTF8/UTF16, bounded allocation, sibling/duplicate semantics, pending lineage and atomic errors. Compiler lease released; awaiting explicit signed artifact path/hash/receipt from root.
+- 2026-10-07T18:43:15+00:00: Received exact signed r15 artifact SHA256 a6bff0aae6693664c2cdaa8441a623ff06039863d85f47ae04378c3abf538c47,60866560 bytes; reviewing signature, signed metadata/image and actual-image no-bus Network probe. Compiler lease remains released; no install/publication.
+- 2026-10-07T18:45:50+00:00: Exact artifact independent required full-container and expected-signer verification pass. Signed recipe byte-identical to accepted candidate; own safely extracted image2292fileslinks, six QML source bytes matchfreeze, PAMworker/Powerunit and r6/OFF metadata verified. Actual artifact Network stage probes and plugin/install gates pass; awaiting exact authored artifact coordination SHA for durable verdict.
+- 2026-10-07T18:48:06+00:00: ACCEPT exact r15 artifact a6bff0aae6693664c2cdaa8441a623ff06039863d85f47ae04378c3abf538c47 at60866560bytes; required full GPKG/expected signer, signed source/recipe/deps/image2292 inventory and ABI/install contract independently pass. Final actual-image Network11/11 privateHOME/XDG and both-bus-blocked probes pass. Artifact/sourcefreeze unchanged; no compile/install/publication. Both requested reviews complete; no leases, available.

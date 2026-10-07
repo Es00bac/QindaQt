@@ -138,6 +138,7 @@ nav:
       - Bluetooth2 protocol 2: reference/bluetooth2-v2.md
       - Clipboard1 version 1: reference/clipboard1-v1.md
       - Network1 version 1: reference/network1-v1.md
+      - "Removable Media Devices protocol v1": reference/removable-media-protocol-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md
@@ -527,6 +528,7 @@ nav:
       - "ADR-0348: Reattach keyring after native owner replacement": adr/0348-reattach-keyring-after-owner-replacement.md
       - "0349: Native lock authentication policy": adr/0349-package-native-lock-authentication-policy.md
       - "0350: Share removable media with file consumers": adr/0350-share-removable-media-with-file-consumers.md
+      - "0351: Bounded coding-agent usage metadata": adr/0351-collect-agent-usage-through-bounded-metadata-sources.md
       - "0347: Controller desktop input yields to games": adr/0347-controller-desktop-integration.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md
