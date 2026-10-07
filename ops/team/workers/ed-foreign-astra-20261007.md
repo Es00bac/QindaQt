@@ -9,3 +9,4 @@
 - 2026-10-07T21:09:43+00:00: Claimed isolated qinda worktree; preserved shared checkout changes; reading existing runtime and catalog contracts.
 - 2026-10-07T21:16:39+00:00: Material finding: qinda has no Waydroid; laptop is uninitialized. Kernel binder/memfd support exists; packaged image path avoids OTA bypass. Draft/proof passes 14 tests; docs 521 and strict build pass before provisioning appendix. No real foreign window proof claimed.
 - 2026-10-07T21:17:52+00:00: Verified and handed off candidate 8d50474090ba8e9c22697d31b14ca1e3286dfb0e; pure model 14/14, docs 521, strict MkDocs and diff check exit 0. Read Platform queue; offered Portage provisioning packet and readiness for manager-routed ED17/ED05 hard contracts.
+- 2026-10-07T21:20:46+00:00: Exact upstream trace finds Waydroid app_id derived from window title text despite trusted HWC producer; documenting the static identity counterexample before review. Real task/UID-to-surface bridge remains required.
