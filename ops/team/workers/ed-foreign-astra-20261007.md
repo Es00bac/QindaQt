@@ -1,5 +1,5 @@
 # ED foreign application architecture
-- Status: working — preparing actual copier safety sentinels; native reproduction queued before production edits
+- Status: working — independent hidden Wi-Fi exact source review; copier sentinel native gate remains queued
 - Outcome: verify exact Media5ec5d repairs and old/new regressions; next ED05 contract requires fresh ownership/base before edits
 - Base: 1a205444cff9264ac0b21a3968506133132db5bc
 - Branch: worker/everyday-copy-safety-20261007
@@ -32,3 +32,4 @@
 - 2026-10-07T22:50:58+00:00: Reproduced root41da destination replacements plus restart-cleanup counterexample before fix:24 cases/3 failures. Repaired explicit publication/readback and pre/post-retirement destination fences;28/28 design tests, docs526/strict/diff0. No production edits or active execution lease. Returning exact descendant for same reviewer recheck.
 - 2026-10-07T22:55:13+00:00: Reproduced second exact review's mount-loss cleanup and combined replacement receipt failures:30/2fail before repair. Current design33/33; docs526/strict/diff0. Captured source identity/placement is now independently checked and rollback never overwrites recreated names. Beginning separately authorized copy-safety test packet after fresh hub fetch; no native execution or production change before old sentinel reproduction.
 - 2026-10-07T22:56:36+00:00: Fresh authorized copy-safety worktree at1a205 after hub fetch. Added only real helper/backend regression tests and minimal private boundary registry. Cases cover preexisting file/tree sentinel, progress-time replacement/cancellation and source-vanished post-copy replacement. No tests executed or copier changed; Platform owns compiler lease. ED05 full contract021140 awaits independent recheck.
+- 2026-10-07T23:05:20+00:00: Root accepted ED05 bounded design021140 after independent33/33; cross-device production remains staged after copier safety. Claimed exact hidden Wi-Fi14b83f50 critical review in detached review worktree. Source authority/compatibility trace has no blocker; independent static boundary/all poisons0 and docs5240, strict build pending. Root owns native lease; no tests/compiler/buses executed by this worker.
