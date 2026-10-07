@@ -579,7 +579,7 @@ is refused rather than silently degrading to copy-and-delete.
 
 ### Failed-copy output observations
 
-The source repair described by Proposed
+The integrated source repair described by Accepted
 [ADR-0357](../adr/0357-preserve-failed-copy-output-without-cleanup-authority.md)
 removes automatic copy failure cleanup from both recursive traversal and the
 source postcheck. A failed exclusive create never deletes an existing entry.
@@ -613,6 +613,19 @@ Retained output consumes space and survives cancellation; there is no automatic
 cleanup, persistent recovery record, restart deletion or new undo/restore
 operation. Full cross-device Move still returns a refusal. This initial safety
 repair does not deliver the separate cross-device recovery design.
+
+### Proposed cross-volume Move recovery
+
+[ADR-0355](../adr/0355-preserve-source-bytes-during-cross-device-moves.md) and
+[File mutation recovery](../architecture/file-mutation-recovery.md) propose
+verified destination publication followed by whole-entry source retirement into
+private recovery storage on the source volume. Retained source bytes consume
+space until a separately authorized recovery lifecycle resolves them; no
+automatic deletion or restart replay is proposed. Typed receipts distinguish
+partial publication, retained source, cancellation, conflict and uncertainty,
+and restore refuses an occupied original path. This is a proposed contract:
+production cross-device Move still refuses, and home/per-volume Trash remains
+a separate boundary.
 
 ### Home Trash contract
 
