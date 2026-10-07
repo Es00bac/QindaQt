@@ -1,3 +1,15 @@
+## Full-plan completion resumed — 2026-10-07T21:15:27+00:00
+
+The owner explicitly requires the entire everyday desktop plan, Android/Windows
+integration and a working installed AI usage plugin. The earlier stop after a
+reviewed source wave did not satisfy that request. r15 installation is held;
+no installation transaction had begun. A newer plugin-containing release,
+ED04 client/exporter and consumers, and ED20 foreign-runtime architecture are
+active in isolated qinda worktrees. Astra handles the hardest architecture,
+authority and data-loss work as explicitly requested. Implementation continues
+through review, package, installed and required physical/user acceptance;
+source delivery alone is not the stopping boundary.
+
 ## October 7 reviewed source and artifact integration (2026-10-07T20:31:45+00:00)
 
 Network disk-fallback source is manager-verified: nine owning CTest rows pass.

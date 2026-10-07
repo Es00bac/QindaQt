@@ -18,6 +18,17 @@ Both belong in ordinary Applications, tasks and window containers. The
 [Android/Windows integration plan](foreign-app-integration-plan.md) adds ED-20–24,
 existing-runtime evidence, installation/identity boundaries and compatibility gates.
 
+## Current implementation instruction — October 7
+
+The owner explicitly directs completion of all ED01–24 and the installed
+AI usage plugin, continuing until no required work remains. Prior source-wave
+handoff was insufficient. Hold the older r15 installation and deliver a newer
+immutable package containing the plugin, while the remaining journeys proceed.
+Astra is now the selected model for the hardest architecture, trust/lifetime,
+authentication and destructive-storage decisions; ordinary implementation
+retains the default tier. This current instruction supersedes the audit's
+documentation-only and earlier model-escalation defaults.
+
 ## First implementation boundary — October 7
 
 The Network disk-fallback installation prerequisite is integrated and verified.
@@ -175,7 +186,9 @@ Proposed requirements:
 
 ## Model allocation and usage discipline
 
-The owner explicitly prefers **Sol 6.1 for most work and Opus over Astra**.
+The earlier planning preference was **Sol 6.1 for most work and Opus over Astra**.
+The subsequent implementation instruction explicitly selects **Astra for the hardest bits**;
+that instruction governs current dispatch.
 These are starting assignments to evaluate by **accepted outcome per unit of
 usage**, not a promise that a model will always succeed. OpenAI recommends
 lighter models/settings for bounded work and comparing the same tasks to find
