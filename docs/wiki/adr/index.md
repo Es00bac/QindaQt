@@ -396,3 +396,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0354: Join hidden personal Wi-Fi through Network1](0354-join-hidden-personal-wifi-through-network1.md) — Accepted optional metadata-only join with unchanged v1 receipts and secret authority.
 
 - [ADR-0357: Preserve failed copy output without cleanup authority](0357-preserve-failed-copy-output-without-cleanup-authority.md) — Accepted
+
+- [ADR-0355: Preserve source bytes during cross-device moves](0355-preserve-source-bytes-during-cross-device-moves.md) — Proposed

@@ -95,11 +95,13 @@ descriptor-relative traversal becomes a shared cross-application boundary, or
 multi-operation recovery needs a durable journal rather than one-level
 process-local state.
 
-## 2026-10-07 failed-copy safety proposal
+## 2026-10-07 accepted failed-copy safety repair
 
-[ADR-0357](0357-preserve-failed-copy-output-without-cleanup-authority.md) proposes
-superseding only this decision's automatic failed-copy cleanup requirement.
+Accepted [ADR-0357](0357-preserve-failed-copy-output-without-cleanup-authority.md)
+supersedes only this decision's automatic failed-copy cleanup requirement.
 Actual old-source tests showed that cleanup could delete pre-existing or replaced
-destination data. The historical decision above remains recorded; the proposed
+destination data. The historical decision above remains recorded; the integrated
 repair preserves failed output and reports bounded observations. Cross-device
 Move and source-retirement recovery are not implemented by that repair.
+
+[Proposed ADR-0355](0355-preserve-source-bytes-during-cross-device-moves.md) would supersede only cross-device Move refusal, preserving Accepted ADR-0357's failed-copy preservation invariant. It is not yet accepted or implemented; home Trash and the remaining local mutation authority stay here.

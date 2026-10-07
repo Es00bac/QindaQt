@@ -37,6 +37,7 @@ nav:
       - Repository catalog: handbook/catalog/repository.md
       - Documentation catalog: handbook/catalog/reading.md
   - Architecture:
+      - File mutation recovery: architecture/file-mutation-recovery.md
       - Native Secret portal: architecture/secret-portal.md
       - Native keyring daemon: architecture/keyring-daemon.md
       - Native keyring client: architecture/keyring-client.md
@@ -550,3 +551,4 @@ nav:
       - "0337: Native independent portal families": adr/0337-native-independent-portal-families.md
       - "0335: Native remote input portal": adr/0335-native-remote-input-portal.md
       - "0336: Native monitor batches and cursor modes": adr/0336-native-monitor-batches-and-cursor-modes.md
+      - "0355: Preserve source bytes during cross-device moves": adr/0355-preserve-source-bytes-during-cross-device-moves.md
