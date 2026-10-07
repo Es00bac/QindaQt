@@ -32,7 +32,7 @@ private:
     QDBusConnection m_bus;
     MediaOwnerLauncher &m_launcher;
     QDBusServiceWatcher m_watcher;
-    QTimer m_startupTimer;
+    QTimer m_startupTimer, m_readTimer;
     Snapshot m_snapshot, m_observed;
     QStringList m_retiredEpochs;
     QString m_owner;
