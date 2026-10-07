@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "minimal",
   "name": "Minimal",
-  "description": "Nothing on screen until you ask for it: one hidden strip holding the command palette and four glyphs. No clock, no task buttons, no workspace switcher.",
+  "description": "Nothing on screen until you ask for it: one hidden strip holding the command palette and five glyphs. No clock, no task buttons, no workspace switcher.",
   "defaultTheme": "qinda-glass-dark",
   "workflow": {
     "overview": "command-palette",
@@ -21,6 +21,7 @@
         {"id": "command", "plugin": "command-palette", "settings": {"zone": "center"}},
         {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
         {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
+        {"id": "agent-usage", "plugin": "agent-usage", "settings": {"zone": "end"}},
         {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}}
       ]
     }

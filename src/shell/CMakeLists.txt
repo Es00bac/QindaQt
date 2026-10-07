@@ -65,6 +65,7 @@ qt_add_qml_module(
         TARGET qindaqt_shell_audio_applet_runtime
         TARGET qindaqt_shell_bluetooth_applet_runtime
         TARGET qindaqt_shell_network_applet_runtime
+        TARGET qindaqt_shell_agent_usage_applet_runtime
         TARGET qindaqt_shell_clipboard_applet_runtime
         TARGET qindaqt_shell_power_applet_runtime
         TARGET qindaqt_shell_smart_lights_applet_runtime
@@ -84,6 +85,7 @@ target_link_libraries(
         QindaQt::ShellAudioAppletRuntime
         QindaQt::ShellBluetoothAppletRuntime
         QindaQt::ShellNetworkAppletRuntime
+        QindaQt::ShellAgentUsageAppletRuntime
         QindaQt::ShellClipboardAppletRuntime
         QindaQt::ShellLauncherQml
         QindaQt::ShellPowerAppletRuntime
@@ -175,6 +177,8 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
         runtime/audioappletcomposition.h
         runtime/bluetoothappletcomposition.cpp
         runtime/bluetoothappletcomposition.h
+        runtime/agentusageappletcomposition.cpp
+        runtime/agentusageappletcomposition.h
         runtime/networkappletcomposition.cpp
         runtime/networkappletcomposition.h
         runtime/clipboardappletcomposition.cpp
@@ -319,6 +323,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             TARGET qindaqt_shell_audio_applet_runtime
             TARGET qindaqt_shell_bluetooth_applet_runtime
             TARGET qindaqt_shell_network_applet_runtime
+            TARGET qindaqt_shell_agent_usage_applet_runtime
             TARGET qindaqt_shell_clipboard_applet_runtime
             TARGET qindaqt_shell_power_applet_runtime
             TARGET qindaqt_shell_smart_lights_applet_runtime
@@ -358,6 +363,7 @@ if(QINDAQT_BUILD_PRODUCTION_SHELL)
             QindaQt::ShellAudioAppletRuntime
             QindaQt::ShellBluetoothAppletRuntime
             QindaQt::ShellNetworkAppletRuntime
+            QindaQt::ShellAgentUsageAppletRuntime
             QindaQt::NetworkQtTransport
             QindaQt::ShellClipboardAppletRuntime
             QindaQt::ShellLauncherQml

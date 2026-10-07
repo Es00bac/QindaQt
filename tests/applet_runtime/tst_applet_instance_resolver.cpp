@@ -63,6 +63,7 @@ private slots:
     void globalMenuResolvesOnVerticalPanelsWithLeastAuthority();
     void desktopControlsResolveReadyInEveryStockPlacement();
     void networkAppletResolvesInStockAndVerticalPlacements();
+    void agentUsageResolvesBesideStatusAcrossAllProfiles();
 };
 
 void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
@@ -83,6 +84,7 @@ void AppletInstanceResolverTests::resolvesAuditedBuiltinsAndCapabilities()
 
     const QStringList expectedEntryPoints{
         QStringLiteral("qindaqt.applets.active-application"),
+        QStringLiteral("qindaqt.applets.agent-usage"),
         QStringLiteral("qindaqt.applets.application-tiles"),
         QStringLiteral("qindaqt.applets.audio"),
         QStringLiteral("qindaqt.applets.bluetooth"),
@@ -671,6 +673,40 @@ void AppletInstanceResolverTests::desktopControlsResolveReadyInEveryStockPlaceme
         fixture.catalog, fixture.policy, fixture.registry);
     QCOMPARE(AppletRuntime::toString(activeApplication.status),
              QStringLiteral("placement-rejected"));
+}
+
+void AppletInstanceResolverTests::agentUsageResolvesBesideStatusAcrossAllProfiles()
+{
+    Fixture fixture;
+    QString error;
+    QVERIFY2(fixture.load(&error), qPrintable(error));
+    for (const auto edge : {Profiles::Edge::Top, Profiles::Edge::Bottom,
+                            Profiles::Edge::Left, Profiles::Edge::Right}) {
+        const auto usage = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+            instance(QStringLiteral("agent-usage")), edge, fixture.catalog,
+            fixture.policy, fixture.registry);
+        QVERIFY2(usage.ready(), qPrintable(usage.diagnostic));
+        QCOMPARE(usage.entryPoint, QStringLiteral("qindaqt.applets.agent-usage"));
+        QCOMPARE(usage.grantedCapabilities, QStringList{QStringLiteral("agent-usage.read")});
+    }
+    Profiles::ProfileCatalog profiles;
+    QVERIFY2(profiles.loadDirectory(QStringLiteral(QINDAQT_SOURCE_DIR "/data/profiles"), &error),
+             qPrintable(error));
+    int hosted = 0;
+    for (const auto &profile : profiles.profiles()) {
+        int count = 0;
+        for (const auto &panel : profile.panels)
+            for (const auto &applet : panel.applets)
+                if (applet.plugin == QLatin1StringView("agent-usage")) {
+                    ++count;
+                    const auto resolved = AppletRuntime::AppletInstanceResolver::resolveBuiltin(
+                        applet, panel.edge, fixture.catalog, fixture.policy, fixture.registry);
+                    QVERIFY2(resolved.ready(), qPrintable(resolved.diagnostic));
+                }
+        QCOMPARE(count, 1);
+        ++hosted;
+    }
+    QCOMPARE(hosted, 11);
 }
 
 void AppletInstanceResolverTests::networkAppletResolvesInStockAndVerticalPlacements()

@@ -20,6 +20,7 @@
         {"id": "active-app", "plugin": "active-application", "settings": {"zone": "start"}},
         {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start"}},
         {"id": "hud", "plugin": "command-hud", "settings": {"zone": "center"}},
+        {"id": "agent-usage", "plugin": "agent-usage", "settings": {"zone": "end"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
         {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}},
         {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},

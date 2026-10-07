@@ -21,6 +21,7 @@
         {"id": "widgets", "plugin": "dashboard", "settings": {"zone": "start"}},
         {"id": "start", "plugin": "start-menu", "settings": {"zone": "center", "variant": "modern"}},
         {"id": "tasks", "plugin": "centered-task-list", "settings": {"zone": "center", "presentation": "centered", "grouping": "always"}},
+        {"id": "agent-usage", "plugin": "agent-usage", "settings": {"zone": "end"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
         {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end"}},
         {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},

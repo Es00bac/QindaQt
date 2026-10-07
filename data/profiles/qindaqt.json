@@ -43,6 +43,7 @@
         {"id": "voice", "plugin": "voice", "settings": {"zone": "center"}},
         {"id": "network", "plugin": "network", "settings": {"zone": "center"}},
         {"id": "bluetooth", "plugin": "bluetooth", "settings": {"zone": "center"}},
+        {"id": "agent-usage", "plugin": "agent-usage", "settings": {"zone": "center"}},
         {"id": "power", "plugin": "power", "settings": {"zone": "center"}},
         {"id": "smart-lights", "plugin": "smart-lights", "settings": {"zone": "center"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "center"}},

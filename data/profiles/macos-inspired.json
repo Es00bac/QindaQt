@@ -21,6 +21,7 @@
         {"id": "system-menu", "plugin": "system-menu", "settings": {"zone": "start"}},
         {"id": "menu", "plugin": "global-menu", "settings": {"zone": "start"}},
         {"id": "status-notifier", "plugin": "status-notifier", "settings": {"zone": "end"}},
+        {"id": "agent-usage", "plugin": "agent-usage", "settings": {"zone": "end"}},
         {"id": "status", "plugin": "system-status", "settings": {"zone": "end"}},
         {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
         {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},

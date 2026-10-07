@@ -21,6 +21,7 @@
         {"id": "places", "plugin": "places-menu", "settings": {"zone": "start"}},
         {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "grouping": "never"}},
         {"id": "workspaces", "plugin": "workspace-switcher", "settings": {"zone": "end"}},
+        {"id": "agent-usage", "plugin": "agent-usage", "settings": {"zone": "end"}},
         {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end"}},
         {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
         {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
