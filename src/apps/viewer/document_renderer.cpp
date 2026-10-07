@@ -116,9 +116,11 @@ RenderResult DocumentRenderer::render(const RenderRequest &request)
         return result;
     const int quarterTurns = ((request.rotation / 90) % 4 + 4) % 4;
     if (m_pdf) {
+        result.pdf = true;
         result.locked = m_pdf->isLocked();
         if (result.locked)
             return result;
+        result.textAllowed = m_pdf->okToCopy();
         result.pageCount = m_pdf->numPages();
         if (result.pageCount <= 0) {
             result.error = QStringLiteral("This PDF has no pages.");
@@ -145,6 +147,11 @@ RenderResult DocumentRenderer::render(const RenderRequest &request)
         result.image = page->renderToImage(dpi, dpi, -1, -1, -1, -1,
             static_cast<Poppler::Page::Rotation>(quarterTurns), nullptr, nullptr,
             shouldAbort, QVariant::fromValue(static_cast<void *>(&cancel)));
+        if (m_latest->load() == request.revision && !result.image.isNull()) {
+            auto text = pageText(result.page);
+            result.pageText = std::move(text.text);
+            result.textError = std::move(text.error);
+        }
     } else {
         result.pageCount = 1;
         result.pageSize = m_imageSize;

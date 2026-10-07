@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include "document_text.h"
 #include <QImage>
 #include <QMetaType>
 #include <QString>
@@ -24,6 +25,10 @@ struct RenderResult {
     quint64 revision = 0;
     QString error;
     bool locked = false;
+    bool pdf = false;
+    bool textAllowed = false;
+    QString pageText;
+    QString textError;
     int pageCount = 0;
     int page = 0;
     QSizeF pageSize;
@@ -39,12 +44,15 @@ public:
     ~DocumentRenderer();
     void clear();
     RenderResult render(const RenderRequest &request);
+    TextSearchResult find(const TextSearchRequest &request,
+        const std::shared_ptr<std::atomic<quint64>> &latestSearch);
     static QSize boundedSize(QSizeF naturalSize, double scale);
     static constexpr qint64 MaxPixels = 16 * 1024 * 1024;
     static constexpr int MaxDimension = 8192;
 
 private:
     QString load(const RenderRequest &request);
+    PageText pageText(int page);
     std::shared_ptr<std::atomic<quint64>> m_latest;
     QString m_path;
     QByteArray m_password;

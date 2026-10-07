@@ -11,7 +11,8 @@
 namespace QindaQt::Viewer {
 ViewerController::ViewerController(QObject *parent)
     : QObject(parent), m_latest(std::make_shared<std::atomic<quint64>>(0)),
-      m_renderer(std::make_shared<DocumentRenderer>(m_latest))
+      m_renderer(std::make_shared<DocumentRenderer>(m_latest)),
+      m_latestSearch(std::make_shared<std::atomic<quint64>>(0))
 {
     QImageReader::setAllocationLimit(256);
     m_worker = new QObject;
@@ -23,6 +24,7 @@ ViewerController::ViewerController(QObject *parent)
 
 ViewerController::~ViewerController()
 {
+    ++(*m_latestSearch);
     ++(*m_latest);
     QMetaObject::invokeMethod(m_worker, [renderer = m_renderer] { renderer->clear(); },
                               Qt::BlockingQueuedConnection);
@@ -44,6 +46,11 @@ QUrl ViewerController::localArgument(const QString &argument)
 
 void ViewerController::close()
 {
+    resetSearch();
+    m_pageText.clear();
+    m_textError.clear();
+    m_pdf = false;
+    m_textAllowed = false;
     ++(*m_latest);
     QMetaObject::invokeMethod(m_worker, [renderer = m_renderer] { renderer->clear(); });
     m_request = {};
@@ -89,6 +96,7 @@ void ViewerController::goToPage(int page)
 {
     if (!ready() || page < 0 || page >= m_pageCount || page == m_page)
         return;
+    resetSearch();
     m_page = page;
     m_request.page = page;
     requestRender();
@@ -119,6 +127,8 @@ void ViewerController::requestRender()
 {
     m_request.revision = ++(*m_latest);
     m_busy = true;
+    m_pageText.clear();
+    m_textError.clear();
     m_error.clear();
     emit stateChanged();
     const auto request = m_request;
@@ -140,6 +150,10 @@ void ViewerController::acceptResult(RenderResult result)
     m_busy = false;
     m_error = result.error;
     m_locked = result.locked;
+    m_pdf = result.pdf;
+    m_textAllowed = result.textAllowed;
+    m_pageText = std::move(result.pageText);
+    m_textError = std::move(result.textError);
     m_pageCount = result.pageCount;
     m_page = result.page;
     m_pageSize = result.pageSize;
