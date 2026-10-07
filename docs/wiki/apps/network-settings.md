@@ -128,7 +128,10 @@ module, linked public Network client/transport modules, and the executable's
 relative runtime paths. The relocated-package fixture withholds the installed
 Network module while the developer tree remains present and requires startup
 to fail, then restores it and proves all registered routes from only the staged
-prefix.
+prefix. The disk fallback keeps all six Network components under `qml/`,
+matching the generated `qmldir` entries and compiled resource aliases; this
+includes the access-point action helper used by the row section. Flat source
+copies do not satisfy this fallback contract.
 
 ## Verification and stopping point
 
@@ -136,7 +139,7 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.(network-(settings-model|radio-outcomes|settings-agent-gate|settings-model-adversarial|page|settings-boundary|settings-boundary-poison)|settings-(route-registry|navigation-controller|navigation-page))$'
+  -R '^qindaqt\.(network-(settings-model|radio-outcomes|settings-agent-gate|settings-model-adversarial|page|settings-boundary|settings-boundary-poison|installed-qml)|settings-(route-registry|navigation-controller|navigation-page))$'
 ```
 
 - the model row proves bounded projection, exact lineage, public capability and
@@ -159,6 +162,16 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
 - boundary and poison rows reject private service headers, Qt D-Bus outside
   the exact presence observer/model seam, callable D-Bus from that observer, a
   widened radio invokable, credential text input, or a private service dependency.
+
+The installed-QML row stages the owning module in a disposable prefix and uses
+a standalone consumer linked only to Qt. It first loads all six types through
+the normal preferred compiled module, withholds the module to reject fallback
+to the installed or developer Network, then removes `prefer` and loads every
+physical path named by `qmldir`. Withholding each of the six files in turn must
+fail the disk probe; restoration must recover disk and compiled loads. Only
+installed public dependency modules are supplied in its isolated import roots,
+and both host bus addresses are unavailable. This proves component loading,
+not hardware interaction or full-session package closure.
 
 The same selector runs in strict Debug and Release builds. Settings Center's
 route and installed-package rows additionally prove canonical startup,
