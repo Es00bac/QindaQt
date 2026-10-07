@@ -78,3 +78,5 @@
 - 2026-10-07T22:41:02+00:00 — ED08 source authoring complete; static docs524/MkDocs/Network1/Settings/editor-poison/diff gates exit0. Seven new hidden fixtures plus owning regression targets queued, uncompiled. Waiting for root serialized native lease; readonly Media lock guidance delivered without edits.
 
 - 2026-10-07T22:42:37+00:00 — ED08 source-only direct-seam audit tightened transport byte/Unicode/security admission and private adapter pre-encoding bound; authored hostile fixture assertions. Native lease still pending, no runtime claims.
+
+- 2026-10-07T22:44:21+00:00 — ED08 late selected-device managed/available recheck and private negative authored; source-only audit finished, compiler/private fixture still queued.

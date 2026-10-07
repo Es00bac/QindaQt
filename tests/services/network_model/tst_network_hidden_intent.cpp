@@ -66,6 +66,14 @@ void HiddenIntentTests::currentDeviceRadioAndDuplicate() {
     QCOMPARE(validateConnectHidden(snapshot, wrong).reasonCode,
              QStringLiteral("hidden-network-security-unsupported"));
   }
+  snapshot.devices[1].state = DeviceState::Unavailable;
+  QVERIFY(!validateConnectHidden(snapshot, intent).allowed);
+  snapshot.devices[1].state = DeviceState::Unknown;
+  QVERIFY(!validateConnectHidden(snapshot, intent).allowed);
+  snapshot.devices[1].state = DeviceState::Disconnected;
+  snapshot.capabilities.setFlag(Capability::KnownNetworkControl, false);
+  QVERIFY(!validateConnectHidden(snapshot, intent).allowed);
+  snapshot.capabilities.setFlag(Capability::KnownNetworkControl, true);
   snapshot.radios[0].softwareEnabled = false;
   QVERIFY(!validateConnectHidden(snapshot, intent).allowed);
   snapshot.radios[0].softwareEnabled = true;
