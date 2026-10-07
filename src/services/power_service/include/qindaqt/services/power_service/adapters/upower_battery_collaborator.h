@@ -24,7 +24,9 @@ namespace QindaQt::Power::Upstream {
 // typed property, unknown enum ordinal, or unreadable device makes the whole
 // domain fail closed as "upower-malformed"/"upower-unavailable". Keyboard
 // backlights are intentionally not modeled in this slice and stay empty with
-// Unsupported operation outcomes.
+// Unsupported operation outcomes. Startup asynchronously activates a dormant
+// installed service on that injected bus, with bounded calls; stop/restart and
+// owner changes discard the superseded startup result before publishing truth.
 class UpowerBatteryCollaborator final : public BatteryCollaborator
 {
     Q_OBJECT
@@ -47,6 +49,9 @@ private:
     void scheduleUnavailable(quint64 generation, const QString &reasonCode);
     [[nodiscard]] bool subscribeServiceSignals();
     void beginRefresh();
+    void resolveOwner(const std::shared_ptr<RefreshCycle> &cycle,
+                      bool allowActivation);
+    void activateService(const std::shared_ptr<RefreshCycle> &cycle);
     void readServiceProperties(const std::shared_ptr<RefreshCycle> &cycle);
     void enumerateDevices(const std::shared_ptr<RefreshCycle> &cycle);
     void readDeviceProperties(const std::shared_ptr<RefreshCycle> &cycle,

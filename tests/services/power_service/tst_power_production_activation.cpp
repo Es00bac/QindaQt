@@ -490,7 +490,12 @@ void PowerProductionActivationTests::packagedDescriptorSelectsProduction()
     QVERIFY(descriptor.open(QIODevice::ReadOnly | QIODevice::Text));
     const QString content = QString::fromUtf8(descriptor.readAll());
     descriptor.close();
-    QVERIFY(content.contains(QStringLiteral("/qindaqt-power-service --upstream=production\n")));
+    QString execLine;
+    for (const QString &line : content.split(QLatin1Char('\n'))) {
+        if (line.startsWith(QStringLiteral("Exec="))) execLine = line.trimmed();
+    }
+    // Empty optional policy arguments leave whitespace in the generated line.
+    QVERIFY(execLine.endsWith(QStringLiteral("/qindaqt-power-service --upstream=production")));
     QVERIFY(content.contains(QStringLiteral("SystemdService=qindaqt-power-service.service")));
 
     QFile unit(QStringLiteral(QINDAQT_SYSTEMD_UNIT_FILE));
