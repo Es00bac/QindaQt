@@ -14,8 +14,10 @@ set_tests_properties(qindaqt.portal-chooser-policy qindaqt.portal-chooser-reques
 set(chooser_dir "${PROJECT_SOURCE_DIR}/src/services/portal/choosers")
 qt_add_executable(qindaqt_portal_chooser_input "${chooser_dir}/main.cpp" "${chooser_dir}/chooser_dialog.cpp" "${chooser_dir}/chooser_dialog.h"
     "${chooser_dir}/choice_controls.cpp" "${chooser_dir}/choice_controls.h" "${chooser_dir}/file_filter_proxy.cpp" "${chooser_dir}/file_filter_proxy.h"
-    "${chooser_dir}/file_chooser_dialog.cpp" "${chooser_dir}/file_chooser_dialog.h" "${chooser_dir}/app_chooser_dialog.cpp" "${chooser_dir}/app_chooser_dialog.h" chooser_input.cpp)
-target_link_libraries(qindaqt_portal_chooser_input PRIVATE QindaQt::PortalChooserPolicy QindaQt::ForeignParent Qt6::Widgets Qt6::Test Wayland::Client)
+    "${chooser_dir}/file_chooser_dialog.cpp" "${chooser_dir}/file_chooser_dialog.h" "${chooser_dir}/media_presenter.cpp" "${chooser_dir}/media_presenter.h"
+    "${chooser_dir}/media_sidebar.cpp" "${chooser_dir}/media_sidebar.h" "${chooser_dir}/media_composition.cpp" "${chooser_dir}/media_composition.h"
+    "${chooser_dir}/app_chooser_dialog.cpp" "${chooser_dir}/app_chooser_dialog.h" chooser_input.cpp)
+target_link_libraries(qindaqt_portal_chooser_input PRIVATE QindaQt::PortalChooserPolicy QindaQt::ForeignParent QindaQt::RemovableMediaClient QindaQt::RemovableMediaLaunch Qt6::Widgets Qt6::Test Wayland::Client)
 qindaqt_enable_warnings(qindaqt_portal_chooser_input)
 qt_add_executable(qindaqt_portal_native_chooser_tests tst_native_choosers.cpp)
 target_link_libraries(qindaqt_portal_native_chooser_tests PRIVATE QindaQt::PortalComposition QindaQt::PortalService QindaQt::CompositorNames Qt6::Test)
@@ -28,3 +30,16 @@ add_test(NAME qindaqt.portal-native-choosers COMMAND "${Python3_EXECUTABLE}" "${
     "$<TARGET_FILE:qindaqt-portal-consent>" "$<TARGET_FILE:qindaqt-uri-relay>" "$<TARGET_FILE:qindaqt_portal_foreign_exporter>"
     "${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt.portal" "${PROJECT_SOURCE_DIR}/src/services/portal/data/qindaqt-portals.conf")
 set_tests_properties(qindaqt.portal-native-choosers PROPERTIES TIMEOUT 180 SKIP_RETURN_CODE 77 RUN_SERIAL TRUE LABELS "portal;choosers;frontend;private-wayland")
+
+qt_add_executable(qindaqt_portal_media_chooser_tests tst_media_chooser.cpp
+    "${chooser_dir}/chooser_dialog.cpp" "${chooser_dir}/choice_controls.cpp"
+    "${chooser_dir}/file_filter_proxy.cpp" "${chooser_dir}/file_chooser_dialog.cpp"
+    "${chooser_dir}/media_presenter.cpp" "${chooser_dir}/media_presenter.h"
+    "${chooser_dir}/media_sidebar.cpp" "${chooser_dir}/media_sidebar.h")
+target_include_directories(qindaqt_portal_media_chooser_tests PRIVATE "${chooser_dir}")
+target_link_libraries(qindaqt_portal_media_chooser_tests PRIVATE QindaQt::PortalChooserPolicy QindaQt::RemovableMediaClient Qt6::Widgets Qt6::Test)
+qindaqt_enable_warnings(qindaqt_portal_media_chooser_tests)
+add_test(NAME qindaqt.portal-media-chooser COMMAND qindaqt_portal_media_chooser_tests)
+set_tests_properties(qindaqt.portal-media-chooser PROPERTIES TIMEOUT 30 LABELS "portal;choosers;media"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QPA_PLATFORMTHEME=generic;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")

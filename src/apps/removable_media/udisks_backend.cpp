@@ -19,6 +19,12 @@ UDisksBackend::UDisksBackend(QDBusConnection connection, QObject *parent)
       m_watcher(Service, m_bus, QDBusServiceWatcher::WatchForOwnerChange)
 {
     registerMediaDBusTypes();
+    m_convergenceTimer.setSingleShot(true);
+    m_convergenceTimer.setInterval(5000);
+    connect(&m_convergenceTimer, &QTimer::timeout, this, [this] {
+        complete(false, QStringLiteral("Media state could not be confirmed. Refresh before trying again."), {},
+                 QindaQt::RemovableMedia::OperationStatus::Uncertain);
+    });
     m_debounce.setSingleShot(true);
     m_debounce.setInterval(150);
     connect(&m_debounce, &QTimer::timeout, this, &UDisksBackend::refresh);
@@ -56,7 +62,8 @@ void UDisksBackend::ownerChanged(const QString &owner)
     m_objects.clear();
     m_formatTypes.clear();
     m_diagnostic = QStringLiteral("The system disk service is unavailable. Refresh to try again.");
-    if (m_request) finish(false, QStringLiteral("The disk service changed during the operation. Check the media before trying again."));
+    if (m_request) finish(false, QStringLiteral("The disk service changed during the operation. Check the media before trying again."), {},
+        QindaQt::RemovableMedia::OperationStatus::Uncertain);
     Q_EMIT changed();
     if (!m_owner.isEmpty()) { refresh(); discoverFormats(); }
 }
@@ -150,9 +157,19 @@ void UDisksBackend::discoverFormats()
         });
     }
 }
-void UDisksBackend::interfacesAdded(const QDBusObjectPath &, const Interfaces &) { m_debounce.start(); }
+void UDisksBackend::interfacesAdded(const QDBusObjectPath &path, const Interfaces &interfaces)
+{
+    // AGENT-GUARD: a replacement may be announced before debounced readback.
+    // A late final Eject/PowerOff reply must not certify that replacement safe.
+    if (m_request && m_request->operation == Operation::Remove && path.path() == m_expected.drive
+        && (m_removalDisappearanceSeen || interfaces.contains(Service + QStringLiteral(".Drive"))))
+        m_removalReplacementSeen = true;
+    m_debounce.start();
+}
 void UDisksBackend::interfacesRemoved(const QDBusObjectPath &path, const QStringList &)
 {
+    if (m_request && m_request->operation == Operation::Remove && path.path() == m_expected.drive)
+        m_removalDisappearanceSeen = true;
     // Revoke before a later inventory call can observe a reused object path.
     for (qsizetype i = m_volumes.size(); i > 0; --i) {
         const auto &v = m_volumes.at(i - 1);
@@ -175,6 +192,8 @@ void UDisksBackend::propertiesChanged(const QString &interface, const QVariantMa
     bool identityChanged = false;
     for (const auto &field : identityFields)
         if (properties.contains(field) || invalidated.contains(field)) identityChanged = true;
+    if (identityChanged && m_request && m_request->operation == Operation::Remove
+        && message.path() == m_expected.drive) m_removalReplacementSeen = true;
     if (identityChanged || (properties.contains(QStringLiteral("MediaAvailable"))
         && !properties.value(QStringLiteral("MediaAvailable")).toBool())) {
         // Revoke identity immediately. Debouncing discovery is harmless;

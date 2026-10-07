@@ -43,8 +43,19 @@ Public::VolumeRow publicVolume(const Volume &v, const QString &epoch, bool busy)
     row.actions.open = !busy && !v.mountPath.isEmpty()
         ? Public::ActionAvailability{true, Public::DisabledReason::None}
         : Public::ActionAvailability{false, busy ? Public::DisabledReason::Busy : Public::DisabledReason::NotMounted};
-    // Inventory slice exports no action method. Later owner admission enables
-    // these only when the operation/readback contract is implemented.
+    const auto allowed = [](bool enabled, Public::DisabledReason reason) {
+        return Public::ActionAvailability{enabled, enabled ? Public::DisabledReason::None : reason};
+    };
+    const bool mounted = !v.mountPath.isEmpty();
+    row.actions.mount = allowed(!busy && !mounted && v.mountable && !v.encrypted,
+        busy ? Public::DisabledReason::Busy : mounted ? Public::DisabledReason::AlreadyMounted
+        : v.encrypted ? Public::DisabledReason::Locked : Public::DisabledReason::Unsupported);
+    row.actions.mountReadOnly = allowed(row.actions.mount.enabled && (v.readOnly || v.canMountReadOnly),
+        busy ? Public::DisabledReason::Busy : mounted ? Public::DisabledReason::AlreadyMounted
+        : v.encrypted ? Public::DisabledReason::Locked : Public::DisabledReason::Unsupported);
+    row.actions.unmount = allowed(!busy && mounted, busy ? Public::DisabledReason::Busy : Public::DisabledReason::NotMounted);
+    row.actions.remove = allowed(!busy, Public::DisabledReason::Busy);
+    row.actions.showDetails = allowed(!busy, Public::DisabledReason::Busy);
     return row;
 }
 }

@@ -88,3 +88,34 @@ The same gate passed nine QtTest cases without failures or skips. Source and
 disposable staged routing proofs also require native response 2 with a zero KDE
 chooser counter when no session was selected. These gates do not qualify an
 installed physical desktop or a Flatpak document-permission journey.
+
+## Removable devices
+
+The file chooser's request-local sidebar consumes the same public
+[MediaSource](../architecture/removable-media-client.md) as
+[File Manager](../apps/file-manager.md#removable-devices-and-location-lifetime).
+It shows separate attachment/partition rows with literal labels and deliberate
+open, mount read-only, unmount, safely remove, details and graphical recovery.
+Initial construction and observation perform no media action. An unmounted
+open waits for the admitted result and confirming current roots, owner, epoch
+and attachment before replacing the displayed folder.
+
+Selected device folders retain attachment provenance through descendants.
+Attachment/root/owner loss clears selection and the filename, disables acceptance
+and shows a visible choose-another-folder message. Later inventory at the same
+pathname does not revive the old selection. Deliberate navigation to a current
+device or another folder establishes fresh provenance. Known read-only media
+remain browsable for OpenFile but disable both SaveFile and SaveFiles;
+unknown read-only truth does not itself grant filesystem write authority.
+Existing URI normalization, overwrite confirmation and frontend validation
+continue to own final selection policy.
+
+Closing/cancelling the dialog, frontend/parent loss and deadline withdraw
+deferred navigation interest. A late mount reply cannot navigate the closed
+request; accepted owner work continues. Formatting, credentials, preferences
+and forced removal remain exclusively in the Removable Media app. The new
+qindaqt.portal-media-chooser source fixture gate covers Open/Save/SaveMany,
+read-only refusal, duplicate partitions, deferred open/close, replacement at a
+reused root and explicit navigation withdrawal. Existing actual-native
+frontend/foreign-parent qualification must be rerun on the integrated source;
+fixture evidence does not replace installed-session or physical-USB evidence.

@@ -19,6 +19,9 @@ public:
     bool available() const override { return m_available; }
     QString diagnostic() const override { return m_diagnostic; }
     QStringList formatTypes() const override { return m_formatTypes; }
+    bool busy() const override { return m_request.has_value(); }
+    QString pendingDriveIdentity() const override { return m_request ? m_expected.driveIdentity : QString{}; }
+    QindaQt::RemovableMedia::ProgressPhase phase() const override { return m_phase; }
     void refresh() override;
     void execute(const Request &request) override;
 private Q_SLOTS:
@@ -37,10 +40,17 @@ private:
     const Volume *find(const QString &token) const;
     void prepare(const Request &request, const Volume &expected);
     void runNext();
-    void finish(bool success, const QString &message, const QString &mountPath = {});
+    void finish(bool success, const QString &message, const QString &mountPath = {},
+                QindaQt::RemovableMedia::OperationStatus failure = QindaQt::RemovableMedia::OperationStatus::Refused);
+    void complete(bool success, const QString &message, const QString &mountPath,
+                  QindaQt::RemovableMedia::OperationStatus failure);
+    void converge(const QString &message, const QString &mountPath);
+    void confirmBeforeRemoval();
+    bool siblingsReleased() const;
+    void setPhase(QindaQt::RemovableMedia::ProgressPhase phase);
     QDBusConnection m_bus;
     QDBusServiceWatcher m_watcher;
-    QTimer m_debounce;
+    QTimer m_debounce, m_convergenceTimer;
     QString m_owner, m_diagnostic, m_resultMount;
     QStringList m_formatTypes;
     QVector<Volume> m_volumes;
@@ -51,6 +61,9 @@ private:
     quint64 m_epoch = 0, m_attachment = 0, m_inventorySerial = 0;
     quint64 m_mutationSerial = 0;
     bool m_available = false;
-    bool m_unlockedRemovalTransition = false;
+    bool m_unlockedRemovalTransition = false, m_converging = false, m_preFinalConfirmed = false;
+    bool m_removalDisappearanceSeen = false, m_removalReplacementSeen = false;
+    QindaQt::RemovableMedia::ProgressPhase m_phase = QindaQt::RemovableMedia::ProgressPhase::Idle;
+    QindaQt::RemovableMedia::RemovalMode m_removalMode = QindaQt::RemovableMedia::RemovalMode::None;
 };
 } // namespace QindaQt::Apps::RemovableMedia

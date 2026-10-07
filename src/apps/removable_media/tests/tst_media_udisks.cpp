@@ -52,13 +52,18 @@ public:
     QStringList &log;
     QVariantMap mountOptions;
     bool busy = false, delayed = false, delayedUnmount = false;
+    bool omitMountReadback = false, retainMountOnUnmount = false, authorizationCancelled = false;
     QDBusMessage pending;
 public Q_SLOTS:
     QString Mount(const QVariantMap &options) {
         log.append(QStringLiteral("mount:") + objectPath); mountOptions = options;
         if (delayed) { setDelayedReply(true); pending = message(); return {}; }
+        if (authorizationCancelled) {
+            sendErrorReply(Service + QStringLiteral(".Error.NotAuthorizedDismissed"), QStringLiteral("fixture cancel"));
+            return {};
+        }
         const QString path = QStringLiteral("/run/media/test/USB");
-        inventory.objects[QDBusObjectPath(objectPath)][Fs].insert(QStringLiteral("MountPoints"),
+        if (!omitMountReadback) inventory.objects[QDBusObjectPath(objectPath)][Fs].insert(QStringLiteral("MountPoints"),
             QVariant::fromValue(QList<QByteArray>{path.toUtf8() + '\0'}));
         return path;
     }
@@ -67,7 +72,7 @@ public Q_SLOTS:
         QVERIFY(!options.value(QStringLiteral("force")).toBool());
         if (delayedUnmount) { setDelayedReply(true); pending = message(); return; }
         if (busy) { sendErrorReply(Service + QStringLiteral(".Error.DeviceBusy"), QStringLiteral("Busy")); return; }
-        inventory.objects[QDBusObjectPath(objectPath)][Fs].insert(QStringLiteral("MountPoints"),
+        if (!retainMountOnUnmount) inventory.objects[QDBusObjectPath(objectPath)][Fs].insert(QStringLiteral("MountPoints"),
             QVariant::fromValue(QList<QByteArray>{}));
     }
 };
@@ -84,14 +89,19 @@ public Q_SLOTS:
         type = filesystem; options = values; endpoint.log.append(QStringLiteral("format"));
     }
 };
-class TestDrive final : public QObject {
+class TestDrive final : public QObject, protected QDBusContext {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.UDisks2.Drive")
 public:
     explicit TestDrive(QStringList &calls) : log(calls) {}
     QStringList &log;
+    bool delayed = false;
+    QDBusMessage pending;
 public Q_SLOTS:
-    void PowerOff(const QVariantMap &) { log.append(QStringLiteral("power-off")); }
+    void PowerOff(const QVariantMap &) {
+        log.append(QStringLiteral("power-off"));
+        if (delayed) { setDelayedReply(true); pending = message(); }
+    }
     void Eject(const QVariantMap &) { log.append(QStringLiteral("eject")); }
 };
 class TestEncrypted final : public QObject {
@@ -165,6 +175,78 @@ private Q_SLOTS:
             QVERIFY(results.constLast().at(1).toBool());
             QCOMPARE(log, QStringList({QStringLiteral("unmount:") + DataPath,
                 QStringLiteral("unmount:") + HiddenPath, QStringLiteral("power-off")}));
+        });
+    }
+    void successfulMountReplyWithoutReadbackIsUncertain() {
+        withFixture([&](UDisksBackend &backend, TestFilesystem &data, TestFilesystem &, TestFormat &,
+                        ObjectManager &, QDBusConnection &, QStringList &log) {
+            QTRY_VERIFY(backend.available()); data.omitMountReadback = true;
+            QVector<BackendCompletion> results;
+            connect(&backend, &MediaBackend::operationCompleted, this, [&](const BackendCompletion &r) { results.append(r); });
+            Request mount; mount.token = backend.volumes().constFirst().token;
+            backend.execute(mount); QTRY_COMPARE(results.size(), 1);
+            QCOMPARE(results.first().status, QindaQt::RemovableMedia::OperationStatus::Uncertain);
+            QVERIFY(backend.volumes().constFirst().mountRoots.isEmpty());
+            QCOMPARE(log.count(QStringLiteral("mount:") + DataPath), 1);
+        });
+    }
+    void successfulUnmountReplyWithRootsRemainingIsUncertain() {
+        withFixture([&](UDisksBackend &backend, TestFilesystem &data, TestFilesystem &, TestFormat &,
+                        ObjectManager &manager, QDBusConnection &, QStringList &log) {
+            mountBoth(manager); QTRY_VERIFY(backend.available()); data.retainMountOnUnmount = true;
+            QVector<BackendCompletion> results;
+            connect(&backend, &MediaBackend::operationCompleted, this, [&](const BackendCompletion &r) { results.append(r); });
+            Request unmount; unmount.token = backend.volumes().constFirst().token; unmount.operation = Operation::Unmount;
+            backend.execute(unmount); QTRY_COMPARE(results.size(), 1);
+            QCOMPARE(results.first().status, QindaQt::RemovableMedia::OperationStatus::Uncertain);
+            QVERIFY(!backend.volumes().constFirst().mountRoots.isEmpty());
+            QCOMPARE(log.count(QStringLiteral("unmount:") + DataPath), 1);
+        });
+    }
+    void hiddenSiblingReadbackPreventsPowerOffAfterSuccessfulReply() {
+        withFixture([&](UDisksBackend &backend, TestFilesystem &, TestFilesystem &hidden, TestFormat &,
+                        ObjectManager &manager, QDBusConnection &, QStringList &log) {
+            mountBoth(manager); QTRY_VERIFY(backend.available()); hidden.retainMountOnUnmount = true;
+            QVector<BackendCompletion> results;
+            connect(&backend, &MediaBackend::operationCompleted, this, [&](const BackendCompletion &r) { results.append(r); });
+            Request remove; remove.token = backend.volumes().constFirst().token; remove.operation = Operation::Remove;
+            backend.execute(remove); QTRY_COMPARE(results.size(), 1);
+            QCOMPARE(results.first().status, QindaQt::RemovableMedia::OperationStatus::Uncertain);
+            QCOMPARE(results.first().removalMode, QindaQt::RemovableMedia::RemovalMode::None);
+            QVERIFY(!log.contains(QStringLiteral("power-off")));
+        });
+    }
+    void cancelledAuthorizationHasTypedOutcome() {
+        withFixture([&](UDisksBackend &backend, TestFilesystem &data, TestFilesystem &, TestFormat &,
+                        ObjectManager &, QDBusConnection &, QStringList &) {
+            QTRY_VERIFY(backend.available()); data.authorizationCancelled = true;
+            QVector<BackendCompletion> results;
+            connect(&backend, &MediaBackend::operationCompleted, this, [&](const BackendCompletion &r) { results.append(r); });
+            Request mount; mount.token = backend.volumes().constFirst().token;
+            backend.execute(mount); QTRY_COMPARE(results.size(), 1);
+            QCOMPARE(results.first().status, QindaQt::RemovableMedia::OperationStatus::Cancelled);
+        });
+    }
+    void lateFinalReplyCannotCertifyAnnouncedReplacement() {
+        withFixture([&](UDisksBackend &backend, TestFilesystem &, TestFilesystem &, TestFormat &,
+                        ObjectManager &manager, QDBusConnection &server, QStringList &) {
+            mountBoth(manager); QTRY_VERIFY(backend.available());
+            auto *drive = qobject_cast<TestDrive *>(server.objectRegisteredAt(DrivePath)); QVERIFY(drive);
+            drive->delayed = true;
+            QVector<BackendCompletion> results;
+            connect(&backend, &MediaBackend::operationCompleted, this, [&](const BackendCompletion &r) { results.append(r); });
+            Request remove; remove.token = backend.volumes().constFirst().token; remove.operation = Operation::Remove;
+            backend.execute(remove); QTRY_VERIFY(drive->pending.type() == QDBusMessage::MethodCallMessage);
+            auto replacement = manager.objects.value(QDBusObjectPath(DrivePath));
+            replacement[Drive][QStringLiteral("Id")] = QStringLiteral("new-drive-before-debounce");
+            manager.objects[QDBusObjectPath(DrivePath)] = replacement;
+            Q_EMIT manager.InterfacesRemoved(QDBusObjectPath(DrivePath), {Drive});
+            Q_EMIT manager.InterfacesAdded(QDBusObjectPath(DrivePath), replacement);
+            QTRY_COMPARE(backend.volumes().size(), 0);
+            QVERIFY(server.send(drive->pending.createReply()));
+            QTRY_COMPARE(results.size(), 1);
+            QCOMPARE(results.first().status, QindaQt::RemovableMedia::OperationStatus::Uncertain);
+            QCOMPARE(results.first().removalMode, QindaQt::RemovableMedia::RemovalMode::None);
         });
     }
     void removedAttachmentRejectsStaleFormatAndNotificationToken() {

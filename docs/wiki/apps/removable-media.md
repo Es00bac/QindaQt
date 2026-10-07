@@ -80,11 +80,15 @@ The application separates pure inventory projection, atomic choice persistence,
 presentation policy, notification transport, UDisks transport/operations, and
 compiled QML. UDisks remains the privileged device authority. The compatibility `org.qindaqt.RemovableMedia1` endpoint retains `Activate`.
 The new [Devices exporter](../architecture/removable-media-client.md) exposes
-read-only inventory on a separate object; no mount or format method is exported
-in this slice. Attachment tokens are revoked on unplug and owner change;
+bounded inventory and closed ordinary-action admission/results on a separate
+object. No format, passphrase, force flag or preference method is exported. Attachment tokens are revoked on unplug and owner change;
 delayed results cannot open or act on replacement media.
 Every mount follow-up rechecks the attachment before read-only verification or
-rollback. Safe-removal steps retain the physical drive/media generation, even
+rollback. Successful mounts/unmounts require fresh complete mount-root facts.
+Before Eject/PowerOff, a bounded readback confirms every hidden sibling was
+unmounted and encrypted cleartext backing volume locked; an announced drive
+replacement immediately fences the final reply. Busy, cancelled and uncertain
+outcomes cannot claim safe removal. Safe-removal steps retain the physical drive/media generation, even
 when locking a decrypted volume intentionally removes its cleartext child.
 
 Private desktop harnesses pass `--no-removable-media` to the supervisor.
@@ -95,7 +99,8 @@ Hardware insertion/ejection and destructive formatting require disposable-media
 qualification; fake-bus tests do not establish that physical evidence.
 
 The [File Manager](file-manager.md) browses the resulting local directories.
-Its own per-volume Trash/sidebar roadmap remains separate from this handler.
+Its device sidebar and native chooser consume the same public owner boundary;
+per-volume Trash remains a separately owned filesystem policy.
 [ADR-0315](../adr/0315-session-owned-removable-media-through-udisks.md) records
 the process and persistence choice. The upstream contracts are the UDisks
 [Filesystem](https://storaged.org/doc/udisks2-api/latest/gdbus-org.freedesktop.UDisks2.Filesystem.html),
@@ -115,7 +120,9 @@ attachment fencing, owner-only preferences/passphrase/formatting and authoritati
 sibling-safe removal. The design is accepted. The standalone
 [public value/codec module](../reference/removable-media-protocol-v1.md) now
 owns bounded, canonical protocol data and structural checks only. It neither
-connects to UDisks nor exports the proposed Devices object. The new [read-only client/exporter slice](../architecture/removable-media-client.md)
-adds observed inventory with exact-owner fencing. Ordinary-action runtime and
-consumer sidebars remain separate gates; installed-package and physical evidence
-remain distinct from this source slice.
+connects to UDisks nor exports the proposed Devices object. The [public client/exporter](../architecture/removable-media-client.md)
+adds observed inventory, ordinary-action admission and authoritative results.
+File Manager and the native chooser consume it through constructor-injected
+public sources. The source, exact fixture execution, installed-package and
+physical journey each require their own evidence; no hardware claim follows
+from a source candidate.

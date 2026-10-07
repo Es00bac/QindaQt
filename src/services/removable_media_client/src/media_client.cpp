@@ -42,6 +42,8 @@ MediaClient::MediaClient(QDBusConnection bus, MediaOwnerLauncher &launcher,
 }
 void MediaClient::initialize()
 {
+    m_operationTimer.setSingleShot(true);
+    connect(&m_operationTimer, &QTimer::timeout, this, [this] { retireRequest(OperationStatus::Uncertain); });
     m_readTimer.setSingleShot(true);
     m_readTimer.setInterval(5000);
     connect(&m_readTimer, &QTimer::timeout, this, [this] {
@@ -67,6 +69,9 @@ MediaClient::~MediaClient()
     if (!m_owner.isEmpty())
         m_bus.disconnect(m_owner, path(), interface(), QStringLiteral("SnapshotChanged"),
                          this, SLOT(changedWire(QByteArray,QDBusMessage)));
+    if (!m_owner.isEmpty())
+        m_bus.disconnect(m_owner, path(), interface(), QStringLiteral("OperationFinished"),
+                         this, SLOT(resultWire(QByteArray,QDBusMessage)));
 }
 void MediaClient::start()
 {
@@ -110,6 +115,7 @@ void MediaClient::queryOwner()
 }
 void MediaClient::publishUnavailable(DiagnosticCode code, const QString &message)
 {
+    retireRequest(OperationStatus::Uncertain);
     Snapshot empty;
     empty.availability = Availability::Unavailable;
     empty.diagnostic = {code, message};
@@ -118,6 +124,10 @@ void MediaClient::publishUnavailable(DiagnosticCode code, const QString &message
 }
 void MediaClient::setOwner(const QString &owner)
 {
+    retireRequest(OperationStatus::Uncertain);
+    if (!m_owner.isEmpty())
+        m_bus.disconnect(m_owner, path(), interface(), QStringLiteral("OperationFinished"),
+                         this, SLOT(resultWire(QByteArray,QDBusMessage)));
     if (!m_owner.isEmpty())
         m_bus.disconnect(m_owner, path(), interface(), QStringLiteral("SnapshotChanged"),
                          this, SLOT(changedWire(QByteArray,QDBusMessage)));
@@ -139,6 +149,8 @@ void MediaClient::setOwner(const QString &owner)
     // Observing a browser must not activate the owner's remembered-mount policy.
     m_bus.connect(owner, path(), interface(), QStringLiteral("SnapshotChanged"),
                   this, SLOT(changedWire(QByteArray,QDBusMessage)));
+    m_bus.connect(owner, path(), interface(), QStringLiteral("OperationFinished"),
+                  this, SLOT(resultWire(QByteArray,QDBusMessage)));
     Q_EMIT snapshotChanged();
     requestSnapshot();
 }
@@ -206,14 +218,22 @@ void MediaClient::acceptWire(const QByteArray &wire, const QString &owner, quint
             return;
         }
         m_retiredEpochs.append(m_observed.lineage.epoch);
+        retireRequest(OperationStatus::Uncertain);
     }
     m_observed = next;
     m_snapshot = std::move(next);
+    if (m_pending && m_pending->request.action != Action::Remove) {
+        bool present = false;
+        for (const auto &row : m_snapshot.rows)
+            if (row.attachment == m_pending->request.attachment) present = true;
+        if (!present) retireRequest(OperationStatus::Gone);
+    }
     if (m_snapshot.availability == Availability::Ready) {
         m_startupTimer.stop();
         m_launchPending = false;
     }
     Q_EMIT snapshotChanged();
+    tryFinish();
 }
 void MediaClient::changedWire(const QByteArray &wire, const QDBusMessage &message)
 {
