@@ -140,7 +140,7 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.(network-(settings-model|radio-outcomes|settings-agent-gate|settings-model-adversarial|page|settings-boundary|settings-boundary-poison|installed-qml)|settings-(route-registry|navigation-controller|navigation-page))$'
+  -R '^qindaqt\.(network-(settings-model|radio-outcomes|settings-agent-gate|settings-model-adversarial|page|hidden-join|settings-boundary|settings-boundary-poison|installed-qml)|settings-(route-registry|navigation-controller|navigation-page))$'
 ```
 
 - the model row proves bounded projection, exact lineage, public capability and
@@ -160,6 +160,8 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   still beside it, and one shared x and width across rows whose digits, saved
   state and prompt lengths differ, wide and compact), stale/owner-loss fail-closed
   behavior, compact focus reveal, and keyboard cycling; and
+- the hidden-join row proves exact spaced/hostile-looking SSID metadata and
+  absent-agent refusal without a password editor;
 - boundary and poison rows reject private service headers, Qt D-Bus outside
   the exact presence observer/model seam, callable D-Bus from that observer, a
   widened radio invokable, credential text input, or a private service dependency.
@@ -218,3 +220,15 @@ a separate registered password prompt. Secret-agent presence is admission only;
 current NM owner, ListConnections membership and ALLOW_INTERACTION still govern
 GetSecrets. Password bytes never enter Network1 or Settings. The existing agent
 supports bounded credentials up to 64 UTF-8 bytes, including SAE.
+
+The owning installed SDK gates use ordinary CMake build invocation without a
+hardcoded two-job limit. They preserve caller generator/build defaults. Native
+parent verification declares its configured parallelism separately; receipts
+record each child invocation rather than inferring identical load limits.
+
+Hidden adapter fixtures publish the real NetworkManager Device.StateReason
+(uu) tuple consistently with State, and assert libnm observes the modeled
+state/reason before dispatch. They cover exact selected device, unavailable or
+unmanaged device, RSN/CCMP refusal, authoritative NetworkManager refusal and
+credential-free WPA2/WPA3 serialization. Private fixtures do not qualify a
+physical hidden-network connection.

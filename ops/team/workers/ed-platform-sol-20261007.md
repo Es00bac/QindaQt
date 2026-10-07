@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — ED08 hidden personal Wi-Fi source authored; native compiler/private-fixture lease queued
+- Status: waiting — ED08 native-verified hidden Wi-Fi candidate awaiting exact independent source review; resources released
 - Base: 47a7366ad1eb0e8250c3bb6f955341ecf9d271c6
 - Branch: worker/everyday-hidden-wifi-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -80,3 +80,13 @@
 - 2026-10-07T22:42:37+00:00 — ED08 source-only direct-seam audit tightened transport byte/Unicode/security admission and private adapter pre-encoding bound; authored hostile fixture assertions. Native lease still pending, no runtime claims.
 
 - 2026-10-07T22:44:21+00:00 — ED08 late selected-device managed/available recheck and private negative authored; source-only audit finished, compiler/private fixture still queued.
+
+- 2026-10-07T22:48:53+00:00 — Root granted sole compiler/private-bus/offscreen lease; exact7aec94e9 source, actual MAKEOPTS -j24 -l24, resource27Gi available/load0.44 observed. Starting native strict Debug32-target batch; no host network actions.
+
+- 2026-10-07T22:51:16+00:00 — ED08 actual configure exit0; first compile exit1 at334/437 due new fixture parameter shadowing. Owning test repaired; preserved first log. Root approved ordinary-default SDK child build scripts; parent24/24 unchanged. Rebuilding exact32 targets under lease.
+
+- 2026-10-07T22:52:55+00:00 — ED08 all32 strict native targets build exit0 after two preserved owned fixture compiler repairs. Starting actual owning private/SDK/QML cohort; no runtime pass claimed yet.
+
+- 2026-10-07T22:58:27+00:00 — ED08 native32 build passed; corrected owning cohort39 after preserved broad selector52 included13 unbuilt unrelated rows. Genuine positive private-NM failure isolated to hydrated device State UNKNOWN0 despite fake State30; production guard retained, requesting StateReason tuple fixture fidelity repair. Parent24/24; approved SDK children ordinary CMake defaults.
+
+- 2026-10-07T23:01:41+00:00 — ED08 final32 strict Debug targets build exit0, corrected owning CTest39/39 exit0 (30 direct Qt result blocks,254 pass/0 fail/0 skip), 7-component compiled/disk/poison QML and public SDK pass. Actual tuple fidelity fix leaves production guards unchanged. Compiler/private-bus/offscreen resources released to root; docs524/strict/hygiene pass. Exact candidate handoff follows; no physical Wi-Fi or Release qualification.

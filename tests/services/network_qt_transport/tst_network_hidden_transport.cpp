@@ -4,6 +4,7 @@
 
 #include <qindaqt/services/network_client/network_client.h>
 #include <qindaqt/services/network_protocol/network_codec.h>
+#include <qindaqt/services/network_protocol/network_limits.h>
 #include <qindaqt/services/network_qt_transport/qt_network_transport.h>
 #include <qindaqt/services/network_service/resident_network_service.h>
 

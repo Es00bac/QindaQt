@@ -1,0 +1,2 @@
+# ED08 native lease claim
+Root granted compiler/private-bus/offscreen now after Astra explicit release. Exact source7aec94e9a1a80a84cf93952f806eb47cd4947bcc. Actual portageq MAKEOPTS -j24 -l24 observed, 27Gi available, load0.44. Native strict Debug32-target batch begins in own ignored build root, production shell ON/plugin OFF/native exclusive OFF. Private HOME/XDG/offscreen/software/basic and blocked host buses. No installed or host networking actions.
