@@ -108,3 +108,13 @@ physical-session qualification remain manager-held until final delivery.
 
 PF21 ends the carve-outs, M6 replaces the shortcut library and the application
 name, or a move to KWin 6.7 or later is planned.
+
+## Current accepted fork delivery receipt
+
+The current source manifest and immutable Gentoo fork `6.6.6_p1-r6` pin
+`24d0c6a6fedc68256a20a480bc3fe8b5d871a1ae`, tree
+`3a257b8d991777247970c83ce9ae8ca265448db3`, retaining exact plugin ABI
+`6.6.6.1`. The object and tree were checked against qinda's bare fork hub;
+the historical source pins above remain decision history. This delivery fixes
+native desktop-entry permission-list decoding. It does not qualify physical
+lock authentication or the native-exclusive power receipt barrier.

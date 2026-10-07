@@ -108,11 +108,14 @@ def verify_desktop_ebuild(path: Path, version: str, release: str) -> None:
         "sys-power/upower",
         "dev-libs/libei",
         "sys-auth/polkit",
+        ">=sys-auth/qindaqt-lock-pam-1",
         "!gui-apps/qindaqt-apps",
         "-DQINDAQT_BUILD_KWIN_PLUGIN=ON",
         "-DQINDAQT_BUILD_SHELL=ON",
         "-DQINDAQT_BUILD_PRODUCTION_SHELL=ON",
-        "-DQINDAQT_NATIVE_POWER_EXCLUSIVE=ON",
+        # AGENT-GUARD: ADR-0345 holds the shipped default OFF until physical
+        # receipt qualification; resident Power1 is still required above.
+        "-DQINDAQT_NATIVE_POWER_EXCLUSIVE=OFF",
         "-DBUILD_TESTING=OFF",
     )
     for fragment in required_fragments:
