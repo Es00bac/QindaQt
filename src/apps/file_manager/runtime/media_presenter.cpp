@@ -16,6 +16,24 @@ bool within(const QString &path, const QString &root) {
     const auto clean = QDir::cleanPath(path), base = QDir::cleanPath(root);
     return clean == base || clean.startsWith(base == QStringLiteral("/") ? base : base + '/');
 }
+struct RootMatch {
+    const Media::VolumeRow *row = nullptr;
+    QString root;
+    bool ambiguous = false;
+};
+RootMatch locationAt(const Media::Snapshot &snapshot, const QString &path) {
+    RootMatch best;
+    for (const auto &row : snapshot.rows) {
+        if (row.mountState != Media::MountState::Mounted) continue;
+        for (const auto &root : row.mountRoots) {
+            if (!within(path, root)) continue;
+            if (root.size() > best.root.size()) best = {&row, root, false};
+            else if (root.size() == best.root.size() && best.row
+                && row.attachment != best.row->attachment) best.ambiguous = true;
+        }
+    }
+    return best;
+}
 const Media::VolumeRow *rowFor(const Media::Snapshot &snapshot, const Media::Attachment &attachment) {
     const auto row = std::find_if(snapshot.rows.cbegin(), snapshot.rows.cend(),
         [&](const auto &value) { return value.attachment == attachment; });
@@ -54,6 +72,10 @@ MediaPresenter::MediaPresenter(Media::MediaSource &source, FolderNavigations &na
         observeActive();
         emit changed();
     });
+    connect(&navigations, &FolderNavigations::controllerCreated, this, [this](QObject *created) {
+        observeController(qobject_cast<NavigationController *>(created));
+    });
+    for (auto *navigation : navigations.controllers()) observeController(navigation);
     observeActive();
 }
 QVariantList MediaPresenter::rows() const {
@@ -131,28 +153,40 @@ void MediaPresenter::recover() { m_source.recover(); }
 void MediaPresenter::refresh() { m_source.refresh(); }
 void MediaPresenter::openOwner() { m_source.openOwner(); }
 void MediaPresenter::observeActive() {
-    auto *navigation = qobject_cast<NavigationController *>(m_navigations.active());
+    observeController(qobject_cast<NavigationController *>(m_navigations.active()));
+}
+void MediaPresenter::observeController(NavigationController *navigation) {
     if (!navigation) return;
+    // Per-controller provenance includes never-active panes. Window actions
+    // still bind exclusively through FolderNavigations' active binder.
     connect(navigation, &NavigationController::navigationChanged, this, &MediaPresenter::navigationChanged, Qt::UniqueConnection);
     acquireLocation(*navigation);
 }
-void MediaPresenter::acquireLocation(NavigationController &navigation) {
+void MediaPresenter::acquireLocation(NavigationController &navigation, bool deliberate) {
     if (navigation.mediaLocationRevoked()) return;
     const auto snapshot = m_source.snapshot();
     if (snapshot.availability != Media::Availability::Ready) return;
-    if (std::any_of(m_locations.cbegin(), m_locations.cend(), [&](const auto &value) { return value.navigation == &navigation; })) return;
-    for (const auto &row : snapshot.rows) {
-        for (const auto &root : row.mountRoots) {
-            if (row.mountState == Media::MountState::Mounted && within(navigation.currentPath(), root)) {
-                m_locations.append(LocationInterest{&navigation, snapshot.lineage, row.attachment, root, false});
-                return;
-            }
-        }
+    const auto selected = locationAt(snapshot, navigation.currentPath());
+    if (selected.ambiguous) {
+        navigation.invalidateMediaLocation(tr("This mount location is ambiguous. Choose another folder or inspect Removable Media."));
+        return;
     }
+    if (!selected.row) return;
+    auto existing = std::find_if(m_locations.begin(), m_locations.end(),
+        [&](const auto &value) { return value.navigation == &navigation; });
+    const LocationInterest interest{&navigation, snapshot.lineage, selected.row->attachment, selected.root, false};
+    if (existing == m_locations.end()) m_locations.append(interest);
+    else if (deliberate) *existing = interest;
 }
 
 void MediaPresenter::openRow(const Media::VolumeRow &row, NavigationController &navigation) {
     if (row.preferredRoot.isEmpty() || !row.mountRoots.contains(row.preferredRoot)) return;
+    const auto selected = locationAt(m_source.snapshot(), row.preferredRoot);
+    if (!selected.row || selected.ambiguous || selected.row->attachment != row.attachment) {
+        m_notice = tr("This mount location is ambiguous. Refresh or choose another folder.");
+        emit changed();
+        return;
+    }
     auto existing = std::find_if(m_locations.begin(), m_locations.end(),
         [&](const auto &value) { return value.navigation == &navigation; });
     const auto interest = LocationInterest{&navigation, m_source.snapshot().lineage,
@@ -175,7 +209,7 @@ void MediaPresenter::navigationChanged() {
         || m_openAfter->navigation->currentPath() != m_openAfter->path
         || m_openAfter->navigation->listingGeneration() != m_openAfter->generation))
         m_openAfter.reset();
-    if (auto *navigation = qobject_cast<NavigationController *>(sender())) acquireLocation(*navigation);
+    if (auto *navigation = qobject_cast<NavigationController *>(sender())) acquireLocation(*navigation, true);
 }
 void MediaPresenter::sourceChanged() {
     const auto snapshot = m_source.snapshot();
@@ -183,9 +217,12 @@ void MediaPresenter::sourceChanged() {
     for (auto &interest : m_locations) {
         if (!interest.navigation || interest.revoked) continue;
         const auto *row = rowFor(snapshot, interest.attachment);
+        const auto selected = locationAt(snapshot, interest.navigation->currentPath());
         if (snapshot.availability != Media::Availability::Ready
             || !sameOwner(snapshot.lineage, interest.lineage) || !row
-            || row->mountState != Media::MountState::Mounted || !row->mountRoots.contains(interest.root)) {
+            || row->mountState != Media::MountState::Mounted || !row->mountRoots.contains(interest.root)
+            || selected.ambiguous || !selected.row || selected.row->attachment != interest.attachment
+            || selected.root != interest.root) {
             // AGENT-GUARD: a mount pathname can be reused. Passive refresh,
             // owner replacement and later rows must never revive old authority.
             interest.revoked = true;
@@ -194,6 +231,7 @@ void MediaPresenter::sourceChanged() {
     }
     m_reconciling = false;
     m_locations.removeIf([](const auto &interest) { return !interest.navigation; });
+    for (auto *navigation : m_navigations.controllers()) observeController(navigation);
     observeActive();
     if (snapshot.availability != Media::Availability::Ready) {
         m_inventoryNotice = snapshot.diagnostic.message; m_notice = m_inventoryNotice;

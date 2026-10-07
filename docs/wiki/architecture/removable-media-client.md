@@ -62,7 +62,11 @@ fixed installed filename.
 and the [native chooser](../reference/portal-choosers.md#removable-devices)
 borrow MediaSource. Their source is independently owned presentation and
 selection/navigation interest; neither imports private backend or preferences.
-No observed row triggers mounting. Deliberate open of an unmounted row waits
+Consumers bind location provenance to the most-specific unique mounted root.
+File Manager observes controller creation as well as active-tab changes, so a
+never-active Commander pane is covered. The chooser rechecks its captured
+selection/navigation generation and current media after nested overwrite
+confirmation and immediately before publication. No observed row triggers mounting. Deliberate open of an unmounted row waits
 for the admitted action's confirmed current root; closing/changing the target
 withdraws only deferred navigation.
 

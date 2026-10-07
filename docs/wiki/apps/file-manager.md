@@ -93,8 +93,11 @@ or losing the attachment discards that opening interest while accepted owner
 work continues. A mounted device opens through the existing NavigationController
 and ordinary file operations remain in the existing mutation coordinator.
 
-Each visited device location retains attachment provenance through descendant
-folders, including inactive tabs. Owner loss, attachment removal or loss of its
+Each device location retains attachment provenance through descendant folders,
+including controllers created for an inactive Commander pane before first focus.
+The most-specific unique mounted root determines its attachment; ambiguous
+equal roots are refused. A new nested overmount withdraws the previous listing
+rather than silently rebinding it. Owner loss, attachment removal or loss of its
 mount root withdraws the listing, advances its generation and disables folder
 actions. Passive refresh, late search results and later devices reusing the path
 cannot revive it. Deliberately choosing a current device or another folder
@@ -1765,15 +1768,15 @@ per-volume Trash and symlink-copy limitations. Proposed ED-04 through ED-07 in
 the [delivery plan](../development/everyday-desktop-plan.md) are future work,
 not a change to the implemented behavior described above.
 
-## Planned removable-device discovery
+## Removable-device delivery gates
 
 The [ED-04 delivery plan](../development/everyday-desktop-plan.md) and
 [Accepted ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md)
-separate device inventory/client delivery from File Manager sidebar consumption.
-The owner remains [Removable Media](removable-media.md); this browser and the
-[native chooser](../reference/portal-choosers.md) would consume its public client,
-with no UDisks or media-choice persistence. The design retains separate partition
-rows, attachment-bound mounted navigation, visible pending/busy/readonly truth
-and late-result fencing. Formatting and encrypted credentials stay in the
-owner's helper UI. The design is accepted; this is not implemented device discovery or
-physical insertion/eject qualification.
+retain [Removable Media](removable-media.md) as the device authority.
+The public client/exporter and the [device sidebar](#removable-devices-and-location-lifetime)
+are implemented as a source candidate. [Native chooser](../reference/portal-choosers.md#removable-devices)
+selection uses the same public boundary. No consumer stores choices or imports
+private UDisks code. Formatting and credentials remain in the owner UI.
+Exact source/fixture, native, installed-package and physical insertion/eject
+qualification each require separate evidence. Source delivery and a passing
+private fixture cannot establish installed or physical-device completion.

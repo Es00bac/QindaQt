@@ -85,6 +85,36 @@ private Q_SLOTS:
         QVERIFY(h.first->mediaLocationRevoked());
         h.first->navigateTo(h.temp.path()); QVERIFY(!h.first->mediaLocationRevoked());
     }
+    void nestedMountLossBindsMostSpecificAttachment_data() {
+        QTest::addColumn<bool>("reverse");
+        QTest::newRow("parent-first") << false;
+        QTest::newRow("child-first") << true;
+    }
+    void nestedMountLossBindsMostSpecificAttachment() {
+        QFETCH(bool, reverse);
+        Harness h; const auto child = h.temp.filePath("child"); QVERIFY(QDir().mkpath(child));
+        QFile file(QDir(child).filePath("selected.txt")); QVERIFY(file.open(QIODevice::WriteOnly)); file.close();
+        const auto parentRow = MediaFixture::volume("parent", h.temp.path());
+        const auto childRow = MediaFixture::volume("child", child);
+        h.source.value.rows = reverse ? QList<Media::VolumeRow>{childRow, parentRow} : QList<Media::VolumeRow>{parentRow, childRow};
+        h.source.publish(); h.first->navigateTo(child); QVERIFY(h.first->entryCount() > 0);
+        h.source.value.rows = {parentRow}; ++h.source.value.lineage.revision; h.source.publish();
+        QVERIFY(h.first->mediaLocationRevoked()); QCOMPARE(h.first->entryCount(), 0);
+        h.source.value.rows.append(MediaFixture::volume("replacement", child)); ++h.source.value.lineage.revision; h.source.publish();
+        h.first->refresh(); QVERIFY(h.first->mediaLocationRevoked()); QCOMPARE(h.first->entryCount(), 0);
+    }
+    void createdInactiveControllerIsFencedBeforeItsFirstActivation() {
+        Harness h; const auto root = h.temp.filePath("device"); QVERIFY(QDir().mkpath(root));
+        QFile file(QDir(root).filePath("selected.txt")); QVERIFY(file.open(QIODevice::WriteOnly)); file.close();
+        h.source.value.rows = {MediaFixture::volume("one", root)}; h.source.publish(); h.presenter.open("one");
+        auto *right = qobject_cast<NavigationController *>(h.tabs.create(root)); QVERIFY(right);
+        QVERIFY(h.tabs.active() != right); QVERIFY(right->entryCount() > 0);
+        h.source.value.rows.clear(); ++h.source.value.lineage.revision; h.source.publish();
+        QVERIFY(right->mediaLocationRevoked()); QCOMPARE(right->entryCount(), 0);
+        h.source.value.rows = {MediaFixture::volume("replacement", root)}; ++h.source.value.lineage.revision; h.source.publish();
+        right->refresh(); QVERIFY(right->mediaLocationRevoked()); QCOMPARE(right->entryCount(), 0);
+        h.tabs.setActive(right); QVERIFY(right->mediaLocationRevoked()); QCOMPARE(right->entryCount(), 0);
+    }
     void cancelledOrUncertainRemovalNeverClaimsSafeUnplug() {
         Harness h; h.source.value.rows = {MediaFixture::volume("one")}; h.source.publish();
         h.presenter.remove("one"); h.source.finish(Media::OperationStatus::Uncertain);
