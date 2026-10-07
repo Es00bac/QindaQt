@@ -23,11 +23,17 @@ existing-runtime evidence, installation/identity boundaries and compatibility ga
 The Network disk-fallback installation prerequisite is integrated and verified.
 ED-01–03 native policy, Power1 activation and keyring recovery are in frozen
 source `bef80e861680f6d7bd53a556c39e13d97ff9e742`. The prepared immutable r15
-recipe and archive have passed independent review; signed build, artifact review,
+recipe/archive and private signed artifact have passed independent review;
 installed adoption and physical-session qualification remain distinct gates.
 [Accepted ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md)
-defines the ED-04 inventory/client boundary; no device sidebar or chooser
-feature is implemented yet. ED-20–24 are still future packets.
+defines the ED-04 inventory/client boundary. Its typed protocol is integrated
+and passes three manager rows; client/exporter and consumers are next.
+ED-20–24 are still future packets.
+
+The owner additionally requested an AI coding-agent usage panel plugin with both
+limits/reset times and token/reported-cost totals. Backend and popup are assigned
+under [Proposed ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md).
+This additive outcome preserves the everyday queue.
 
 ## Completion means an outcome, not a module
 

@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: working — authorized signed full-source r15 Portage build-only
+- Status: waiting — exact private signed r15 artifact handed off for independent review
 - Base: f152d6c9ee04f99c01d4ca07c4dcb46701a42800
 - Branch: worker/everyday-platform-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -21,3 +21,5 @@
 - 2026-10-07T18:08:05+00:00: First Portage invocation stopped before compilation, exit1: dedicated PORTAGE_TMPDIR absent. Created private directory and verified installed parser accepts --package-moves=n; retry explicitly disables global package moves without altering signing/compiler settings.
 - 2026-10-07T18:12:02+00:00: Corrected private Portage invocation is compiling the full 5,065-action production graph; direct CMake cache shows KWin/plugin production ON, testing OFF, RelWithDebInfo and native-power-exclusive OFF. No failed step at observed action518; dependency resolver selected only exact r15. Signer/artifact verification remains pending actual package output.
 - 2026-10-07T18:15:03+00:00: Manager requires private PKGDIR before artifact review. Interrupted own emerge before package phase (exit130), preserving configured tree through step935/5065. Direct normal binhost inspection finds zero r15 files. Continuing installed Portage compile/install-image/package phases with only PKGDIR moved to ignored private cache; signing/job settings unchanged.
+- 2026-10-07T18:19:34+00:00: Full compile near midpoint: preserved935 plus resumed1490/4130 actions, no failed steps; private output maintained with zero normal-binhost r15 files. Direct headroom13.4GiB available/load22.74, configured24/24 unchanged; external processes untouched. Artifact/image/signature proof pending completion.
+- 2026-10-07T18:44:16+00:00: Signed private artifact build phases exit0; gpkg required signatures/full checks and actual signer verified; embedded source/recipe/dependencies, 2292-file image, ABI and copied-image Network11/11 cases pass. Artifact SHA256 a6bff0aae6693664c2cdaa8441a623ff06039863d85f47ae04378c3abf538c47. No normal-binhost r15 or installed r15; all owned resources released. Bounded handoff; no successor task.
