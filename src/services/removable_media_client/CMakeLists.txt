@@ -5,6 +5,7 @@ add_library(QindaQt::RemovableMediaClient ALIAS qindaqt_removable_media_client)
 target_sources(qindaqt_removable_media_client PRIVATE src/media_client.cpp
     PUBLIC FILE_SET HEADERS BASE_DIRS include FILES
     include/qindaqt/services/removable_media_client/media_source.h
+    include/qindaqt/services/removable_media_client/media_owner_lookup.h
     include/qindaqt/services/removable_media_client/media_client.h)
 target_link_libraries(qindaqt_removable_media_client PUBLIC
     QindaQt::RemovableMediaProtocol Qt6::Core Qt6::DBus)
