@@ -1,6 +1,6 @@
 # Agent usage applet implementer
 
-- Status: working — verifying combined usage candidate and supporting exact backend review repair
+- Status: waiting — verified usage candidate preserved; independent review and manager integration pending
 - Branch: worker/everyday-agent-usage-20261007
 - Base: ccc99fb3f67c2bdc4f7156af7c0b0f1e05478057
 - Outcome: click beside hardware status opens provider quotas, resets, token and reported cost totals
@@ -13,3 +13,5 @@
 - 2026-10-07T13:44:31-06:00 Verification: exact backend 42b4ebc1ffffcfbc0801ae501bf25ddc83f1b8eb merged at bbfbaff6593ace73351a8267b0487d36c7304d4e. Local strict native qindaqt-shell/current compact UI build exit0; private HOME/XDG/bus CTest8/8 pass and DPI2 offscreen1/1 pass. Actual six-provider normal/vertical/DPI captures self-inspected. Strict MkDocs/link gate exit0, 519 documents. Compiler released; final freeze held for manager-routed backend partial-diagnostic repair.
 
 - 2026-10-07T14:04:00-06:00 Material verification: repaired backend f9 source plus board-only61 inherited. Actual ordinary Tab-to-Refresh Arrow route and timestamped mouse-wheel route both reach Mistral/footer at compact DPI2; earlier zero-timestamp synthetic wheel failure retained in ignored logs. Final native/focused/DPI/doc batch active before exact freeze.
+
+- 2026-10-07T14:07:00-06:00 Handoff: source341cc219dcc64ce030d9c0be9c2c74ac880f9cb1 passed strict native targets, private focused8/8 (0.67s), DPI2 offscreen1/1 (1.28s), Qt controller8/QML7 passes, strict MkDocs and519-document links. Compiler released to independent reviewer. Offering exact-source repair/help while acceptance is pending; no installed session/live account claim.
