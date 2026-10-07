@@ -159,12 +159,26 @@ void UDisksBackend::discoverFormats()
 }
 void UDisksBackend::interfacesAdded(const QDBusObjectPath &path, const Interfaces &interfaces)
 {
-    // AGENT-GUARD: a replacement may be announced before debounced readback.
-    // A late final Eject/PowerOff reply must not certify that replacement safe.
-    if (m_request && m_request->operation == Operation::Remove && path.path() == m_expected.drive
-        && (m_removalDisappearanceSeen || interfaces.contains(Service + QStringLiteral(".Drive"))))
+    const QString blockName = Service + QStringLiteral(".Block");
+    const auto block = interfaces.value(blockName);
+    const auto backing = objectPath(block.value(QStringLiteral("CryptoBackingDevice")));
+    const auto backingDrive = objectPath(m_objects.value(QDBusObjectPath(backing)).value(blockName)
+        .value(QStringLiteral("Drive")));
+    if (m_request && m_request->operation == Operation::Remove
+        && (path.path() == m_expected.drive || path.path() == m_expected.path
+            || path.path() == m_expected.cryptoBackingDevice
+            || objectPath(block.value(QStringLiteral("Drive"))) == m_expected.drive
+            || backingDrive == m_expected.drive)
+        && (interfaces.contains(Service + QStringLiteral(".Drive")) || interfaces.contains(blockName)
+            || m_removalDisappearanceSeen))
         m_removalReplacementSeen = true;
-    m_debounce.start();
+    // AGENT-GUARD: adding an identity interface at an already known path can
+    // announce replacement before discovery debounce. Revoke that old token
+    // now; a final success cannot certify a new partition on the same drive.
+    if (m_objects.contains(path) && (interfaces.contains(blockName)
+        || interfaces.contains(Service + QStringLiteral(".Drive"))))
+        interfacesRemoved(path, {});
+    else m_debounce.start();
 }
 void UDisksBackend::interfacesRemoved(const QDBusObjectPath &path, const QStringList &)
 {
@@ -192,8 +206,13 @@ void UDisksBackend::propertiesChanged(const QString &interface, const QVariantMa
     bool identityChanged = false;
     for (const auto &field : identityFields)
         if (properties.contains(field) || invalidated.contains(field)) identityChanged = true;
-    if (identityChanged && m_request && m_request->operation == Operation::Remove
-        && message.path() == m_expected.drive) m_removalReplacementSeen = true;
+    if (identityChanged && m_request && m_request->operation == Operation::Remove) {
+        const auto block = m_objects.value(QDBusObjectPath(message.path())).value(Service + QStringLiteral(".Block"));
+        if (message.path() == m_expected.drive || message.path() == m_expected.path
+            || message.path() == m_expected.cryptoBackingDevice
+            || objectPath(block.value(QStringLiteral("Drive"))) == m_expected.drive)
+            m_removalReplacementSeen = true;
+    }
     if (identityChanged || (properties.contains(QStringLiteral("MediaAvailable"))
         && !properties.value(QStringLiteral("MediaAvailable")).toBool())) {
         // Revoke identity immediately. Debouncing discovery is harmless;

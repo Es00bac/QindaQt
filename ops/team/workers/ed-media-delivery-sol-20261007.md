@@ -1,7 +1,7 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — full ordinary media source packet frozen for exact review and next serialized compiler/consumer gate; readonly repair verified separately
+- Status: working — repairing announced block-attachment replacement fencing from source audit, then exact action/consumer gate; compiler idle while Astra leases
 - Branch: worker/everyday-media-delivery-20261007
 - Worktree: everyday-media-delivery-20261007
 - Outcome: consistent device rows and ordinary mount/open/remove in File Manager and native chooser through ADR-0350
@@ -23,3 +23,5 @@
 - 2026-10-07T21:55:50+00:00: Exact detached readonly repair823738ab1 strict Debug build exit0, focused CTest4/4 and 37 Qt checks (10 policy, 10 UDisks, 6 notifications, 11 inventory), zero failures/skips. Installed-only consumer1/1; withheld installed header failed as expected, restore rebuild and1/1 passed. Compiler/private-bus lease explicitly released to Astra. New action/consumer source is uncompiled and separately qualified next.
 
 - 2026-10-07T22:03:31+00:00: Complete ordinary source packet includes private typed admission/convergence, public one-shot actions and separate fixed-owner argv launcher, File Manager sidebar/per-tab revoked-location guard, chooser selection/read-only Save guard and focused public-source negatives. Static diff, strict MkDocs and link checker pass (520 documents). New production sources below500; navigator447/presentation173/main478/Main.qml460 nonblank. Runtime/native/installed/physical action qualification remains pending; no compiler while Astra leases.
+
+- 2026-10-07T22:07:31+00:00: Post-freeze audit found final removal also needs immediate selected/sibling Block replacement revocation before debounce, beyond Drive identity changes. Added owning fence and drive/block data rows; success with no final removal mode is normalized to Uncertain. No compiler or action qualification. Read ADR0064 and current cross-device/Trash/link restrictions for next reviewed storage contract.

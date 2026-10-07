@@ -227,7 +227,13 @@ private Q_SLOTS:
             QCOMPARE(results.first().status, QindaQt::RemovableMedia::OperationStatus::Cancelled);
         });
     }
+    void lateFinalReplyCannotCertifyAnnouncedReplacement_data() {
+        QTest::addColumn<bool>("replaceDrive");
+        QTest::newRow("drive-object") << true;
+        QTest::newRow("block-attachment-same-drive") << false;
+    }
     void lateFinalReplyCannotCertifyAnnouncedReplacement() {
+        QFETCH(bool, replaceDrive);
         withFixture([&](UDisksBackend &backend, TestFilesystem &, TestFilesystem &, TestFormat &,
                         ObjectManager &manager, QDBusConnection &server, QStringList &) {
             mountBoth(manager); QTRY_VERIFY(backend.available());
@@ -237,11 +243,13 @@ private Q_SLOTS:
             connect(&backend, &MediaBackend::operationCompleted, this, [&](const BackendCompletion &r) { results.append(r); });
             Request remove; remove.token = backend.volumes().constFirst().token; remove.operation = Operation::Remove;
             backend.execute(remove); QTRY_VERIFY(drive->pending.type() == QDBusMessage::MethodCallMessage);
-            auto replacement = manager.objects.value(QDBusObjectPath(DrivePath));
-            replacement[Drive][QStringLiteral("Id")] = QStringLiteral("new-drive-before-debounce");
-            manager.objects[QDBusObjectPath(DrivePath)] = replacement;
-            Q_EMIT manager.InterfacesRemoved(QDBusObjectPath(DrivePath), {Drive});
-            Q_EMIT manager.InterfacesAdded(QDBusObjectPath(DrivePath), replacement);
+            const auto replacedPath = replaceDrive ? DrivePath : DataPath;
+            auto replacement = manager.objects.value(QDBusObjectPath(replacedPath));
+            if (replaceDrive) replacement[Drive][QStringLiteral("Id")] = QStringLiteral("new-drive-before-debounce");
+            else replacement[Block][QStringLiteral("IdUUID")] = QStringLiteral("new-block-attachment-before-debounce");
+            manager.objects[QDBusObjectPath(replacedPath)] = replacement;
+            Q_EMIT manager.InterfacesRemoved(QDBusObjectPath(replacedPath), replaceDrive ? QStringList{Drive} : QStringList{Block, Fs});
+            Q_EMIT manager.InterfacesAdded(QDBusObjectPath(replacedPath), replacement);
             QTRY_COMPARE(backend.volumes().size(), 0);
             QVERIFY(server.send(drive->pending.createReply()));
             QTRY_COMPARE(results.size(), 1);
