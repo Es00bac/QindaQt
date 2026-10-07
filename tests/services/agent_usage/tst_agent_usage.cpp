@@ -51,12 +51,20 @@ private slots:
         QVERIFY(source.snapshot()[0].totalTokens==1234);QCOMPARE(source.snapshot()[0].quotaWindows.size(),1);
         QCOMPARE(spy.count(),2);now=now.addSecs(901);QCOMPARE(source.snapshot()[0].state,UsageState::Stale);
     }
+    void partialMetadata_data() {
+        QTest::addColumn<QByteArray>("mode");
+        QTest::newRow("quotas-only")<<QByteArray("unsupported");
+        QTest::newRow("totals-only")<<QByteArray("limits-unsupported");
+    }
     void partialMetadata() {
-        qputenv("QINDAQT_USAGE_FIXTURE","unsupported");
+        QFETCH(QByteArray,mode);qputenv("QINDAQT_USAGE_FIXTURE",mode);
         AgentUsageCollector source("",FIXTURE,[] {return QDateTime::currentDateTimeUtc();});source.refresh();
         QTRY_COMPARE(source.snapshot()[0].state,UsageState::Ready);
-        QCOMPARE(source.snapshot()[0].quotaWindows.size(),1);QVERIFY(!source.snapshot()[0].totalTokens);
-        QVERIFY(!source.snapshot()[0].detail.contains("private"));
+        const auto usage=source.snapshot()[0];
+        if(mode=="unsupported") {QCOMPARE(usage.quotaWindows.size(),1);QVERIFY(!usage.totalTokens);}
+        else {QCOMPARE(usage.quotaWindows.size(),0);QVERIFY(usage.totalTokens==1234);}
+        QCOMPARE(usage.detail,"Partial metadata; some account metadata unavailable");
+        QVERIFY(!usage.detail.contains("private"));
     }
     void hostileFeed() {
         QTemporaryDir dir;QFile f(dir.filePath("claude.json"));QVERIFY(f.open(QIODevice::WriteOnly));
