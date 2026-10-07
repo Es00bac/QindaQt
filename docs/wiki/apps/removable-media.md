@@ -111,4 +111,9 @@ authority and this module ownership. [Accepted ADR-0350](../adr/0350-share-remov
 defines a bounded public inventory/client and ordinary-action design for File
 Manager and the native chooser. It preserves Activate compatibility, captured
 attachment fencing, owner-only preferences/passphrase/formatting and authoritative
-sibling-safe removal. The design is accepted; public API and sidebar implementation remain separate gates.
+sibling-safe removal. The design is accepted. The standalone
+[public value/codec module](../reference/removable-media-protocol-v1.md) now
+owns bounded, canonical protocol data and structural checks only. It neither
+connects to UDisks nor exports the proposed Devices object. Public client,
+read-only owner exporter, ordinary-action runtime and consumer sidebars remain
+separate gates; the existing helper still exports only Activate.

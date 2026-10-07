@@ -137,6 +137,7 @@ nav:
       - Bluetooth2 protocol 2: reference/bluetooth2-v2.md
       - Clipboard1 version 1: reference/clipboard1-v1.md
       - Network1 version 1: reference/network1-v1.md
+      - "Removable Media Devices protocol v1": reference/removable-media-protocol-v1.md
       - Applet manifest schema v1: reference/applet-manifest-schema-v1.md
       - Profile schema v1: reference/profile-schema-v1.md
       - Theme schema v1: reference/theme-schema-v1.md
