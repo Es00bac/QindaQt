@@ -2,6 +2,7 @@
 
 # The qindaqt-kwin names (ADR-0291) are shared by the session, services,
 # Settings, shell and compositor plugin, so they come first.
+add_subdirectory(services/agent_usage)
 add_subdirectory(compositor_names)
 add_subdirectory(platform/compositor_attachment)
 add_subdirectory(platform/foreign_parent)
