@@ -8,6 +8,7 @@ tests, and the wiki page describing its contract.
 
 | Area | Responsibility | Allowed inward dependencies |
 | --- | --- | --- |
+| `src/services/removable_media_protocol` | ADR-0350 owning typed media snapshots/rows/actions/admissions/results, strict structural validation and bounded canonical little-endian codecs | Qt Core only; no connections, UDisks, filesystem/persistence, helper launch, admission policy or presentation; ids/paths never grant authority |
 | `src/apps/removable_media` | Removable-media detection, per-media user choices, notification/window presentation and fenced UDisks operations | Qt Core/DBus, public AppAppearance/Controls/Tokens; UDisks remains privileged authority, File Manager receives only mount paths (ADR-0315) |
 | `compositor` | Immutable qindaqt-kwin fork pin (fork commit, version and upstream KWin base), its verifier, and checked-in compositor IPC descriptors (ADR-0291) | Repository tooling and fork source metadata; never shell implementation or a patch series |
 | `src/window_management` | Input-independent typed window-management commands, normalized geometry and expiring admission policy | Public Qt Core values and borrowed authority/scene/executor interfaces; speech parsing and compositor platform execution stay in their owners (ADR-0301) |
