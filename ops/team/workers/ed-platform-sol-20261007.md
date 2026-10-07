@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: working — repairing future profile-preview capture DPR geometry; immutable r16 retained
+- Status: waiting — future capture source authored; focused compiler lease and exact review pending
 - Base: ef6693f985a5be43f30032a3f40f7cb0adaeb3d4
 - Branch: worker/everyday-preview-capture-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -58,3 +58,5 @@
 - 2026-10-07T21:56:51Z — Future preview logical/nativeDPR contract and boundedcapture implementation authored; normalmatrix retained plus2x/1.25/1.5odd cases, empty/axis/area/logicalmismatch/outputwrite refusal regressions. Strictdocs519/MkDocs passed; no compiler until managergrant after queuedMedia/Astra. Requested focusedtarget lease. Sourcecandidate remains unverified; r16 immutableartifact review managerowned.
 
 - 2026-10-07T22:00:11Z — Manager preallocation review expanded preciseownership to parseoptions and applicationpreflight. Sharedpurecapturegeometry now boundslogicalCLI and primaryscreenDPR before visibleQMLwindowcreation, then rechecksactualwindow/readback; added no-window oversizedCLI/nativeDPR and pureNaN/Inf/overflow/fractional boundary cases. Sourceauthoring done; focused compilerlease still queued. r16 bytes unchanged.
+
+- 2026-10-07T22:01:03Z — Intermediateec10d63dde45d56621a14bfad14bcfc63a946c21 preserved explicitqindahub, clean sourceauthoringcomplete. Transitioningwaiting for serializedfocusedcompilerlease; availableexactstaticrepair. No livecompiler claim. Nativequalification/finalcandidate remains pending.
