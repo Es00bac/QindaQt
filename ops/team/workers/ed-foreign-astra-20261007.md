@@ -1,11 +1,13 @@
 # ED foreign application architecture
-- Status: working — recording qualified copier handoff and preparing next bounded storage packet; native lease released
+- Status: working — read-only Windows fixture identity/cleanup review; Media owns native resources
 - Outcome: verify exact Media5ec5d repairs and old/new regressions; next ED05 contract requires fresh ownership/base before edits
 - Base: 1a205444cff9264ac0b21a3968506133132db5bc
 - Branch: worker/everyday-copy-safety-20261007
 - Ownership: own ADR0352/0353 pages/design proofs/records; isolated QindaTK scoped types/policy/host, tests, D-308 and public exports at base393c1ce5
 - Resources: no active compiler, bus, display, installation or physical-session lease; root schedules next gate
 ## Updates
+
+- 2026-10-07T23:45:42Z — Reviewed Platform adbb Windows inventory and current runner lifetime seams; concrete stat-then-kill and unknown-scope-as-inactive caveats delivered, no game edits/runtime. Exact bwrap fixture script review pending; source-only. Copier qualified223/receipt83760 and Android helpdf366 handed off; whole crossMove source waits integration/fresh dispatch.
 
 - 2026-10-07T23:40:13Z — Completed root-requested read-only Android help: exact stock IPlatform/parser/framework seams inspected, packaged guest ownership/HWC surface producer identified, Portage image/APK/helper prerequisites delivered to Platform. No producer code, runtime or install. Copier223 qualified handoff83760 remains pending manager integration; crossMove355 production awaits fresh dispatch.
 
