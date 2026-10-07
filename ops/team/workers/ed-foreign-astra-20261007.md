@@ -1,11 +1,15 @@
 # ED foreign application architecture
-- Status: working — source-only copier preservation repair after four actual old-source deletion reproductions
+- Status: working — recording qualified copier handoff and preparing next bounded storage packet; native lease released
 - Outcome: verify exact Media5ec5d repairs and old/new regressions; next ED05 contract requires fresh ownership/base before edits
 - Base: 1a205444cff9264ac0b21a3968506133132db5bc
 - Branch: worker/everyday-copy-safety-20261007
 - Ownership: own ADR0352/0353 pages/design proofs/records; isolated QindaTK scoped types/policy/host, tests, D-308 and public exports at base393c1ce5
 - Resources: no active compiler, bus, display, installation or physical-session lease; root schedules next gate
 ## Updates
+
+- 2026-10-07T23:37:14Z — Exact223 qualified without source repairs: strict focused7/7=73Qt, original sentinels6/6 versus old2/4, banners normal/2x3/3each, actual project7targets/567actions exit0 and registered8/8=70Qt, real app UI contract/actions exit0. All0skip; compiler/private runtime RELEASED to root/Media. Durable handoff recorded; next whole crossMove source packet requires fresh manager dispatch.
+
+- 2026-10-07T23:31:59Z — Root granted sole focused native lease after integrated batch release. Exact223 strict build and seven focused rows pass73Qt; original f5 sentinels pass6/6 versus old2/4. Shared actual banners normal/2x each3/3. Actual project FileManager build and UI gates running; no host media/session actions.
 
 - 2026-10-07T23:27:09Z — Froze initial copier preservation source packet for exact independent review: static docs525/strict/boundary/diff pass, four original actual old sentinel failures preserved, new native/QML gates pending root lease. Continuing source self-review and gate preparation; no repair execution claim.
 
