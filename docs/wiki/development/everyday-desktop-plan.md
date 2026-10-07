@@ -18,6 +18,17 @@ Both belong in ordinary Applications, tasks and window containers. The
 [Android/Windows integration plan](foreign-app-integration-plan.md) adds ED-20–24,
 existing-runtime evidence, installation/identity boundaries and compatibility gates.
 
+## First implementation boundary — October 7
+
+The Network disk-fallback installation prerequisite is integrated and verified.
+ED-01–03 native policy, Power1 activation and keyring recovery are in frozen
+source `bef80e861680f6d7bd53a556c39e13d97ff9e742`. The prepared immutable r15
+recipe and archive have passed independent review; signed build, artifact review,
+installed adoption and physical-session qualification remain distinct gates.
+[Accepted ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md)
+defines the ED-04 inventory/client boundary; no device sidebar or chooser
+feature is implemented yet. ED-20–24 are still future packets.
+
 ## Completion means an outcome, not a module
 
 For each advertised journey, record source commit, reviewed package identity,

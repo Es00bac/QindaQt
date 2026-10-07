@@ -1,3 +1,18 @@
+## October 7 reviewed source and design integration (2026-10-07T18:04:31+00:00)
+
+Network disk-fallback repair is integrated and manager-verified: nine owning
+CTest rows pass. ED-01–03 source policy and private lock/power/keyring evidence
+are accepted; exact runtime freeze is `bef80e861680f6d7bd53a556c39e13d97ff9e742`.
+The new immutable r15 recipe/archive passed independent review `b19c6d0a1`
+and is integrated; signed build-only and resulting artifact review are next.
+No new installed desktop or physical lock/suspend qualification is claimed.
+
+[ADR-0350](wiki/adr/0350-share-removable-media-with-file-consumers.md) is Accepted
+after exact design review `d283465c3`. Public protocol/client, device sidebar
+and chooser consumption remain separate implementation gates. Existing media
+owner authority and deliberate graphical recovery are preserved.
+Android/Windows ED-20–24 remain queued; no runtime adapter delivery is claimed.
+
 # October 7 — Everyday desktop implementation started
 
 The owner now explicitly authorizes implementation with Codex as orchestrator.

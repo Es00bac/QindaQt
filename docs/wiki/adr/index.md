@@ -385,4 +385,4 @@ integration retains every accepted decision in numeric order.
 - [ADR-0348: Reattach keyring after native owner replacement](0348-reattach-keyring-after-owner-replacement.md)
 - [ADR-0349: Package the native lock authentication policy](0349-package-native-lock-authentication-policy.md)
 
-- [ADR-0350: Share removable media with file consumers](0350-share-removable-media-with-file-consumers.md) — Proposed
+- [ADR-0350: Share removable media with file consumers](0350-share-removable-media-with-file-consumers.md) — Accepted
