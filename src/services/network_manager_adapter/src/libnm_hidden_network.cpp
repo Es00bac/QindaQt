@@ -29,7 +29,9 @@ void LibnmNetworkManagerPort::submitHiddenConnect(
   GCancellable *cancellable = beginAsync(operationId);
   if (device == nullptr || cancellable == nullptr ||
       !nm_client_wireless_get_enabled(m_client) ||
-      !nm_client_wireless_hardware_get_enabled(m_client)) {
+      !nm_client_wireless_hardware_get_enabled(m_client) ||
+      !nm_device_get_managed(device) ||
+      nm_device_get_state(device) <= NM_DEVICE_STATE_UNAVAILABLE) {
     completeAsync(operationId, false,
                   QStringLiteral("hidden-network-device-unavailable"));
     return;

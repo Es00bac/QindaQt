@@ -165,8 +165,9 @@ private:
     return {{QStringLiteral("Interface"), QStringLiteral("wlan0")},
             {QStringLiteral("IpInterface"), QStringLiteral("wlan0")},
             {QStringLiteral("DeviceType"), quint32(NM_DEVICE_TYPE_WIFI)},
-            {QStringLiteral("State"), quint32(NM_DEVICE_STATE_DISCONNECTED)},
-            {QStringLiteral("Managed"), true},
+            {QStringLiteral("State"), quint32(m_security == QLatin1String("hidden-unmanaged")
+                 ? NM_DEVICE_STATE_UNMANAGED : NM_DEVICE_STATE_DISCONNECTED)},
+            {QStringLiteral("Managed"), m_security != QLatin1String("hidden-unmanaged")},
             {QStringLiteral("Autoconnect"), true},
             {QStringLiteral("FirmwareMissing"), false},
             {QStringLiteral("NmPluginMissing"), false},
@@ -185,6 +186,7 @@ private:
             {QStringLiteral("WirelessCapabilities"), quint32(
                  m_security == QLatin1String("hidden-rsn")
                  || m_security == QLatin1String("hidden-refuse")
+                 || m_security == QLatin1String("hidden-unmanaged")
                      ? NM_WIFI_DEVICE_CAP_RSN | NM_WIFI_DEVICE_CAP_CIPHER_CCMP : 0)},
             {QStringLiteral("LastScan"), qint64(-1)}};
   }

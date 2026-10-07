@@ -158,6 +158,8 @@ void HiddenProfileTests::actualSelectedDeviceAndRefusal_data() {
       << QStringLiteral("hidden-rsn") << QStringLiteral("wlan0") << 1;
   QTest::newRow("unknown-device")
       << QStringLiteral("hidden-rsn") << QStringLiteral("wlan9") << 0;
+  QTest::newRow("late-unmanaged")
+      << QStringLiteral("hidden-unmanaged") << QStringLiteral("wlan0") << 0;
   QTest::newRow("no-rsn") << QStringLiteral("hidden") << QStringLiteral("wlan0")
                           << 0;
   QTest::newRow("NM-authoritative-refusal")
