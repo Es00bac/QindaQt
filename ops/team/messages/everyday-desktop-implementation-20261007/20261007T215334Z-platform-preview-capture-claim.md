@@ -1,0 +1,3 @@
+# Future preview DPR repair claim
+
+Manager assigned owning ScreenshotCapture implementation/header, public capture contract docs, focused capturetests/minimalregistration. Fresh exactbase ef6693f985a5be43f30032a3f40f7cb0adaeb3d4, branch worker/everyday-preview-capture-20261007. No r16/freeze2188 changes. Existing widths/heights set logicalQMLwindow; default screenshot normalization and matrix enforceDPR1, hidingphysicalcapture mismatch. Preserveactualnativepixels, no downsampling/layoutchanges. Sourceauthoring only while Media/Astra hold queuedcompiler; helpstringonly optionspath requested. Exactartifact11514 independentreview remains rootowned.

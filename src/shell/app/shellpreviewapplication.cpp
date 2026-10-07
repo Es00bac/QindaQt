@@ -5,6 +5,7 @@
 #include "../common/shelltokenpublisher.h"
 #include "../common/shelliconconfiguration.h"
 #include "screenshotcapture.h"
+#include "capturegeometry.h"
 
 #include "qindaqt/shell/icons/icon_runtime.h"
 
@@ -15,6 +16,7 @@
 #include <QProcessEnvironment>
 #include <QQmlContext>
 #include <QQuickWindow>
+#include <QScreen>
 #include <QTextStream>
 
 namespace QindaQt::Shell {
@@ -37,6 +39,19 @@ int ShellPreviewApplication::run()
         return 2;
     }
     const PreviewOptions &options = *result.options;
+    if (!options.listOnly) {
+        // AGENT-GUARD: Main creates a visible QML window. Reject native backing
+        // geometry before loadFromModule, not after its first rendered frame.
+        // The preview starts on the primary screen; capture rechecks actual
+        // window geometry/effective DPR in case it changes before readback.
+        const QScreen *screen = QGuiApplication::primaryScreen();
+        if (screen == nullptr
+            || !CaptureGeometry::physicalSize(QSize(options.width, options.height),
+                                              screen->devicePixelRatio())) {
+            qCritical() << "Preview native geometry exceeds the bounded image contract";
+            return 2;
+        }
+    }
 
     QString error;
     if (!loadCatalogs(options, &error)) {

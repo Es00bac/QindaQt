@@ -1,8 +1,8 @@
 # Everyday Platform Sol
 
-- Status: working — preparing reviewed immutable r16 with compiled AI usage and native delivery fixes
-- Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc; overlay aefd6c8bbd30f57731e1833fa72429793441e554
-- Branch: worker/everyday-usage-release-20261007
+- Status: working — repairing future profile-preview capture DPR geometry; immutable r16 retained
+- Base: ef6693f985a5be43f30032a3f40f7cb0adaeb3d4
+- Branch: worker/everyday-preview-capture-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
 
 ## Updates
@@ -44,3 +44,17 @@
 - 2026-10-07T21:09:17Z — Claimed fresh source/overlay release worktrees for new r16; exact runtime freeze2188d8e and overlayaefd6c8. Read current plan/release/PAM/overlay workflow; source contains compiled AgentUsage service/publisher/public headers/runtime applet and all11 profile entries. Historical r15 remains immutable. Preparing reproducible archive, additive recipe/Manifest and exact metadata/closure for independent review before any compiler.
 
 - 2026-10-07T21:18:07Z — Immutable r16 archive39,011,614 bytes/SHA2566b8eab5e, all9,431 blobs/reproducibility verified. Exact overlay439fdb837, mirrored recipe/new row and each historical base preserved. Metadata/digest/release7/ABI/fork and exact closure599/zeroPlasma, strictdocs519 pass. Coordinating exact review while Media holds short compiler lease; no compiler yet.
+
+- 2026-10-07T21:29:33Z — Manager exact recipe ACCEPT received; compiler/private package lease granted and spoken announcement delivered. Starting installed Portage buildpkgonly with private PKGDIR from the first phase, configured signing and24/24 preserved. No installation/publication; immutable runtime2188 remains pinned.
+
+- 2026-10-07T21:36:36Z — Actual full-source production build configured RelWithDebInfo with shell/plugin ON, BUILD_TESTING OFF and NativePowerExclusive OFF; observed1731/5124 actions, zero failed steps. Actual installed Portage settings24/24/gpkg/signing and privatePKGDIR recorded. Preparing package-only SDK/publisher and Network poison copies; artifact identity pending.
+
+- 2026-10-07T21:39:37Z — Full production source build has reached2515/5124 near midpoint, zero failed steps observed; signing/package phases pending. Own package-only signature/ABI/content, previewDPI1/2, SDKpublisher+headerpoison and Network11 gates prepared, isolatedsettings/buses. No installed/publication claim.
+
+- 2026-10-07T21:51:23Z — Actual full-source Portage buildpkgonly exit0/all5124; privategpkg SHA256433728dc,61,009,920bytes requiredfullsignatureverified. Image2303files, all11placements, ABI/PAM/source/recipe and packageSDKpublisher1/1+headerpoison/restored1/1, Network11/11PASS. Previewcatalog/normalPASS; actual2xEXIT4 from fixedlogicalsizecapture mismatch, explicitly bounded. Compiler/privatefixture released; no install/publication, worldunchanged. Awaiting exactartifactreview and managerinstalledpopupgate.
+
+- 2026-10-07T21:53:34Z — Manager assigned separate future previewcapture DPRrepair; claimed fresh ef6693f98 worktree. Existing width/height feed logicalQMLwindow; only defaultDPR1 matrix previously covered capture. Preserving nativegrabpixels/layout and bounded geometry errors; r16/source2188 unchanged. Compilerlease released/no new compiler until grant.
+
+- 2026-10-07T21:56:51Z — Future preview logical/nativeDPR contract and boundedcapture implementation authored; normalmatrix retained plus2x/1.25/1.5odd cases, empty/axis/area/logicalmismatch/outputwrite refusal regressions. Strictdocs519/MkDocs passed; no compiler until managergrant after queuedMedia/Astra. Requested focusedtarget lease. Sourcecandidate remains unverified; r16 immutableartifact review managerowned.
+
+- 2026-10-07T22:00:11Z — Manager preallocation review expanded preciseownership to parseoptions and applicationpreflight. Sharedpurecapturegeometry now boundslogicalCLI and primaryscreenDPR before visibleQMLwindowcreation, then rechecksactualwindow/readback; added no-window oversizedCLI/nativeDPR and pureNaN/Inf/overflow/fractional boundary cases. Sourceauthoring done; focused compilerlease still queued. r16 bytes unchanged.

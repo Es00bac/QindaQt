@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "previewoptions.h"
+#include "capturegeometry.h"
 
 #include <QCommandLineParser>
 #include <QCoreApplication>
@@ -33,11 +34,11 @@ PreviewOptionsResult parsePreviewOptions(QCoreApplication &application)
          QStringLiteral("path")},
         {QStringLiteral("list"), QStringLiteral("List validated profiles and themes, then exit.")},
         {QStringLiteral("width"),
-         QStringLiteral("Preview width in pixels."),
+         QStringLiteral("Preview window width in logical pixels."),
          QStringLiteral("pixels"),
          QStringLiteral("1280")},
         {QStringLiteral("height"),
-         QStringLiteral("Preview height in pixels."),
+         QStringLiteral("Preview window height in logical pixels."),
          QStringLiteral("pixels"),
          QStringLiteral("720")},
         {QStringLiteral("screenshot"),
@@ -50,8 +51,9 @@ PreviewOptionsResult parsePreviewOptions(QCoreApplication &application)
     bool heightIsValid = false;
     const int width = parser.value(QStringLiteral("width")).toInt(&widthIsValid);
     const int height = parser.value(QStringLiteral("height")).toInt(&heightIsValid);
-    if (!widthIsValid || !heightIsValid || width < 640 || height < 480) {
-        return {{}, QStringLiteral("Preview dimensions must be integers of at least 640x480")};
+    if (!widthIsValid || !heightIsValid || width < 640 || height < 480
+        || !CaptureGeometry::acceptsLogicalSize(QSize(width, height))) {
+        return {{}, QStringLiteral("Preview dimensions must be integers of at least 640x480 logical pixels, at most 16384 per axis and 67108864 total")};
     }
 
     PreviewOptions options;

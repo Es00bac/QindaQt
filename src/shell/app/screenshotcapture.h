@@ -14,7 +14,11 @@ class ScreenshotCapture final : public QObject {
     Q_OBJECT
 
 public:
-    explicit ScreenshotCapture(QString outputPath, QSize expectedSize, QObject *parent = nullptr);
+    // Same GUI thread as the window. A capture owns no window: it must remain
+    // alive through finished(). Size is the requested logical window geometry;
+    // successful PNG export preserves native physical pixels at the window DPR.
+    // One start per object; geometry/readback/write errors emit finished(false).
+    explicit ScreenshotCapture(QString outputPath, QSize expectedLogicalSize, QObject *parent = nullptr);
 
     void start(QQuickWindow &window);
 
@@ -26,7 +30,7 @@ private:
     void fail(const QString &message);
 
     QString m_outputPath;
-    QSize m_expectedSize;
+    QSize m_expectedLogicalSize;
     QQuickWindow *m_window = nullptr;
     QTimer m_timeout;
     bool m_captureScheduled = false;
