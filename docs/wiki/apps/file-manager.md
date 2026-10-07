@@ -1724,3 +1724,16 @@ owner-reported removable-drive friction and the explicit cross-filesystem Move,
 per-volume Trash and symlink-copy limitations. Proposed ED-04 through ED-07 in
 the [delivery plan](../development/everyday-desktop-plan.md) are future work,
 not a change to the implemented behavior described above.
+
+## Proposed removable-device discovery
+
+The [ED-04 delivery plan](../development/everyday-desktop-plan.md) and
+[Proposed ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md)
+separate device inventory/client delivery from File Manager sidebar consumption.
+The owner remains [Removable Media](removable-media.md); this browser and the
+[native chooser](../reference/portal-choosers.md) would consume its public client,
+with no UDisks or media-choice persistence. The design retains separate partition
+rows, attachment-bound mounted navigation, visible pending/busy/readonly truth
+and late-result fencing. Formatting and encrypted credentials stay in the
+owner's helper UI. This is a proposal, not implemented device discovery or
+physical insertion/eject qualification.
