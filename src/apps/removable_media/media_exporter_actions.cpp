@@ -129,6 +129,9 @@ void MediaExporter::completed(const BackendCompletion &result)
 void MediaExporter::finishPublic(Public::OperationStatus status, Public::RemovalMode mode)
 {
     if (!m_pending) return;
+    if (status == Public::OperationStatus::Applied && m_pending->request.action == Public::Action::Remove
+        && mode == Public::RemovalMode::None)
+        status = Public::OperationStatus::Uncertain;
     Public::OperationResult result;
     result.request = m_pending->request;
     result.operationId = m_pending->operationId;

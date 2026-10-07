@@ -126,6 +126,11 @@ void UDisksBackend::prepare(const Request &request, const Volume &v)
 void UDisksBackend::runNext()
 {
     if (!m_request) return;
+    if (m_request->operation == Operation::Remove && m_removalReplacementSeen) {
+        finish(false, QStringLiteral("The attachment changed during safe removal. Refresh before trying again."), {},
+               QindaQt::RemovableMedia::OperationStatus::Uncertain);
+        return;
+    }
     if (m_steps.isEmpty()) {
         const QString message = m_request->operation == Operation::Remove ? QStringLiteral("Media can now be safely removed.")
             : m_request->operation == Operation::Unmount ? QStringLiteral("Media unmounted.")

@@ -31,7 +31,7 @@ Mount and unmount success require fresh complete mount-root facts; read-only
 mounts also require known read-only truth. Safe removal covers hidden siblings
 and cleartext backing volumes, reads back every sibling's released/locked state
 before final Eject/PowerOff, and accepts only the captured drive's successful
-final callback. An announced replacement immediately fences that reply, even
+final callback. An announced drive or sibling/selected block replacement immediately fences that reply, even
 before inventory debounce. Drives with neither final method require observed
 complete unmount/lock convergence. Partial, cancelled, busy and uncertain
 outcomes carry no safe-unplug claim and never replay.
