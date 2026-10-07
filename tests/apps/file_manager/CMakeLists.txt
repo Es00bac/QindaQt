@@ -663,3 +663,5 @@ target_compile_definitions(qindaqt_file_manager_media_ui_tests PRIVATE QINDAQT_S
 set_tests_properties(qindaqt.file-manager-media-ui PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
+include(MutationRecoveryTests.cmake)

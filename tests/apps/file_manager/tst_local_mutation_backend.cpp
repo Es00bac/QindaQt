@@ -43,12 +43,12 @@ class TestLocalMutationBackend final : public QObject {
 private slots:
   void createRenameMoveAndCopyPreserveLocalData();
   void staleAndVanishedSourcesFailClosed();
-  void sourceVanishingDuringCopyRemovesPartialOutput();
+  void sourceVanishingDuringCopyRetainsOutput();
   void symlinkEscapeAndNestedSymlinkCopyAreRejected();
   void nestedDirectorySwapCannotRedirectCopy();
   void destinationParentSwapIsRejected();
   void preCancelledCopyDoesNotCreateDestination();
-  void cancellationDuringCopyRemovesPartialDestination();
+  void cancellationDuringCopyRetainsPartialDestination();
   void permissionDeniedCreateIsTyped();
 };
 
@@ -121,7 +121,7 @@ void TestLocalMutationBackend::staleAndVanishedSourcesFailClosed() {
   QCOMPARE(backend.execute(vanished, cancellation, {}).error, MutationError::Vanished);
 }
 
-void TestLocalMutationBackend::sourceVanishingDuringCopyRemovesPartialOutput() {
+void TestLocalMutationBackend::sourceVanishingDuringCopyRetainsOutput() {
   QTemporaryDir fixture;
   QVERIFY(fixture.isValid());
   LocalMutationBackend backend(fixture.filePath(QStringLiteral("Trash")));
@@ -139,7 +139,9 @@ void TestLocalMutationBackend::sourceVanishingDuringCopyRemovesPartialOutput() {
       });
   QVERIFY(removed);
   QCOMPARE(result.error, MutationError::Vanished);
-  QVERIFY(!QFileInfo::exists(destination));
+  QVERIFY(QFileInfo::exists(destination));
+  QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::RetainedCopy);
+  QCOMPARE(result.outputObservation.path, destination);
 }
 
 void TestLocalMutationBackend::symlinkEscapeAndNestedSymlinkCopyAreRejected() {
@@ -166,9 +168,11 @@ void TestLocalMutationBackend::symlinkEscapeAndNestedSymlinkCopyAreRejected() {
                       QDir(tree).filePath(QStringLiteral("link"))));
   MutationRequest copy = sourceRequest(
       MutationKind::Copy, tree, QDir(root).filePath(QStringLiteral("copy")));
-  QCOMPARE(backend.execute(copy, cancellation, {}).error,
-           MutationError::SymlinkEscape);
-  QVERIFY(!QFileInfo::exists(copy.destinationPath));
+  const auto partial = backend.execute(copy, cancellation, {});
+  QCOMPARE(partial.error, MutationError::SymlinkEscape);
+  QVERIFY(QFileInfo::exists(copy.destinationPath));
+  QCOMPARE(partial.outputObservation.disposition, MutationOutputDisposition::RetainedPartial);
+  QVERIFY(!partial.outputObservation.exclusiveCreation);
 }
 
 void TestLocalMutationBackend::nestedDirectorySwapCannotRedirectCopy() {
@@ -198,7 +202,8 @@ void TestLocalMutationBackend::nestedDirectorySwapCannotRedirectCopy() {
       });
   QVERIFY(swapped);
   QCOMPARE(result.error, MutationError::Changed);
-  QVERIFY(!QFileInfo::exists(request.destinationPath));
+  QVERIFY(QFileInfo::exists(request.destinationPath));
+  QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::RetainedPartial);
   QVERIFY(QFileInfo::exists(QDir(outside).filePath(QStringLiteral("secret"))));
 }
 
@@ -237,7 +242,7 @@ void TestLocalMutationBackend::preCancelledCopyDoesNotCreateDestination() {
   QVERIFY(!QFileInfo::exists(request.destinationPath));
 }
 
-void TestLocalMutationBackend::cancellationDuringCopyRemovesPartialDestination() {
+void TestLocalMutationBackend::cancellationDuringCopyRetainsPartialDestination() {
   QTemporaryDir fixture;
   QVERIFY(fixture.isValid());
   LocalMutationBackend backend(fixture.filePath(QStringLiteral("Trash")));
@@ -254,7 +259,10 @@ void TestLocalMutationBackend::cancellationDuringCopyRemovesPartialDestination()
       });
   QCOMPARE(result.error, MutationError::Cancelled);
   QVERIFY(callbacks > 0);
-  QVERIFY(!QFileInfo::exists(request.destinationPath));
+  QVERIFY(QFileInfo::exists(request.destinationPath));
+  QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::RetainedPartial);
+  QCOMPARE(result.outputObservation.path, request.destinationPath);
+  QVERIFY(result.outputObservation.exclusiveCreation);
 }
 
 void TestLocalMutationBackend::permissionDeniedCreateIsTyped() {

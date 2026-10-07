@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — orchestrate remaining ED01–24, review exact copier and Settings candidates, implement isolated Viewer text/find and integrate verified source/package evidence
+- Status: working — integrate independently qualified copier223, finish Viewer text/find source and ED11 review, route Windows two-app proof and Android trusted producer work
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -47,3 +47,5 @@
 - 2026-10-07T23:18:52+00:00 — Independent preview ec10 root source review accepted native allocation bounds/exact DPR readback and preserved author57Qt evidence. Hidden14b independently ACCEPT62f and lock65 ACCEPTcd3 records read. Source integration batch underway; manager integrated native gates pending, no package/physical milestone credit. Root retains qinda compiler/private-runtime lease.
 
 - 2026-10-07T23:32:35+00:00 — Actual integratedb77 strict68 targets/1114 actions and73 CTests/685Qt pass; Media public staged consumer/header-poison/restoration pass. SDK frozen4fb source3/43 rerun plainbuild passes; toolkit703/overlay24 independently archive2919/mode/recut verified and hubs/normal checkouts synchronized, preserving .obsidian. Canonical overlay hub ismaster; corrected main-only push by FFmaster too. Dirty normal desktop compositor/queue preserved. Root native resources released to Astra copier223, ED11 then signed toolkit queued; Viewer text UI/source authored uncompiled. Full plan and physical/user gates open.
+
+- 2026-10-07T23:52:31+00:00 — Independently accepted exact copier223 after prior full source review and direct actual results/XML inspection:7/73 focused,8/70 registered, original sentinel old2pass4fail to fixed6pass, normal/2x QML and real app/boundary gates. Integration resolves additive ADR/nav/test registrations preserving Media/Wi-Fi. Media lease remains active on Printing83e/test-only488 final18 and SDK; Windows private two-app proof next after exact script review, Android missing producer/image requirements recorded. Root Viewer text/find source/tests remain uncompiled. No whole milestone credit.

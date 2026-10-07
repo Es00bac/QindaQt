@@ -393,4 +393,6 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0353: Scope desktop agent context through provider-owned grants](0353-scoped-desktop-agent-context.md) — Proposed
 
-- [ADR-0354: Join hidden personal Wi-Fi through Network1](0354-join-hidden-personal-wifi-through-network1.md) — proposed optional metadata-only join with unchanged v1 receipts and secret authority.
+- [ADR-0354: Join hidden personal Wi-Fi through Network1](0354-join-hidden-personal-wifi-through-network1.md) — Accepted optional metadata-only join with unchanged v1 receipts and secret authority.
+
+- [ADR-0357: Preserve failed copy output without cleanup authority](0357-preserve-failed-copy-output-without-cleanup-authority.md) — Accepted

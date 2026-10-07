@@ -9,11 +9,14 @@ target_sources(
         mutation/home_trash.cpp
         mutation/local_mutation_backend.cpp
         mutation/mutation_controller.cpp
+    mutation/mutation_controller_results.cpp
         mutation/mutation_controller_foreign.cpp
         mutation/mutation_controller_items.cpp
         mutation/mutation_types.cpp
         mutation/safe_path_operations.cpp
         mutation/safe_tree_operations.cpp
+        mutation/safe_tree_copy.cpp
+        mutation/safe_tree_access_p.h
         model/clipboard_controller.cpp
         model/launch_intent.cpp
         model/local_directory_lister.cpp

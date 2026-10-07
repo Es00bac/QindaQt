@@ -23,6 +23,8 @@ class MutationController final : public QObject {
   Q_PROPERTY(QString failureCode READ failureCode NOTIFY stateChanged FINAL)
   Q_PROPERTY(QString failureMessage READ failureMessage NOTIFY stateChanged FINAL)
   Q_PROPERTY(QString resultText READ resultText NOTIFY stateChanged FINAL)
+  Q_PROPERTY(QString outputNotice READ outputNotice NOTIFY stateChanged FINAL)
+  Q_PROPERTY(QVariantList outputObservations READ outputObservations NOTIFY stateChanged FINAL)
   Q_PROPERTY(bool canUndo READ canUndo NOTIFY stateChanged FINAL)
   Q_PROPERTY(bool canRestore READ canRestore NOTIFY stateChanged FINAL)
 
@@ -37,6 +39,11 @@ public:
   [[nodiscard]] QString failureCode() const;
   [[nodiscard]] QString failureMessage() const;
   [[nodiscard]] QString resultText() const;
+  // GUI-thread value snapshots of the latest operation, cleared on admission
+  // of the next operation. Literal paths and per-item attempted/error facts;
+  // no open/delete/restore capability or promise of current filesystem state.
+  [[nodiscard]] QString outputNotice() const;
+  [[nodiscard]] QVariantList outputObservations() const;
   [[nodiscard]] bool canUndo() const;
   [[nodiscard]] bool canRestore() const;
 
@@ -109,6 +116,8 @@ public:
 
 signals:
   void stateChanged();
+  // Refresh observed filesystem effects, including retained failed copies
+  // and successful prefixes. This notification is not a success receipt.
   void mutationCommitted();
 
 private:
@@ -150,6 +159,8 @@ private:
   MutationError m_failure = MutationError::None;
   QString m_failureMessage;
   QString m_resultText;
+  QString m_outputNotice;
+  QVariantList m_outputObservations;
   MutationKind m_runningKind = MutationKind::CreateFolder;
   bool m_isUndo = false;
   bool m_busy = false;
