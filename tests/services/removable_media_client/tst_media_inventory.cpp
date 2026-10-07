@@ -70,6 +70,7 @@ Public::Snapshot sample(const QString &owner, const QString &epoch = QStringLite
     row.driveDisplayId = QStringLiteral("drive1");
     row.volumeDisplayId = QStringLiteral("volume1");
     row.displayName = QStringLiteral("Same label");
+    row.kind = QStringLiteral("USB storage");
     row.attachment = {QStringLiteral("attachment1"), 1};
     row.mountState = Public::MountState::Unmounted;
     value.rows.append(row);
@@ -78,6 +79,17 @@ Public::Snapshot sample(const QString &owner, const QString &epoch = QStringLite
 class InventoryTests final : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void cleanup() {
+        for (const auto &name : {QStringLiteral("old-media"), QStringLiteral("new-media"),
+             QStringLiteral("delayed-media"), QStringLiteral("started-media")}) {
+            QDBusConnection connection(name);
+            if (connection.isConnected()) {
+                connection.unregisterObject(QString::fromLatin1(Public::kObjectPath));
+                connection.unregisterService(QString::fromLatin1(Public::kServiceName));
+            }
+            QDBusConnection::disconnectFromBus(name);
+        }
+    }
     void unavailableNeverLaunches();
     void explicitStartWaitsForReadbackAndTimesOut();
     void oldOwnerUsesActivateWithoutFallback();
@@ -213,6 +225,7 @@ void InventoryTests::ownerProjectionRetainsPartitionsAndReadOnlyTruth()
     first.identity = QStringLiteral("filesystem-a");
     first.driveIdentity = QStringLiteral("same-physical-drive");
     first.label = QStringLiteral("Same label");
+    first.kind = QStringLiteral("USB storage");
     first.partitionNumber = 1;
     first.mountPath = QStringLiteral("/tmp/media-a");
     first.mountRoots = {first.mountPath, QStringLiteral("/tmp/media-a-second")};
