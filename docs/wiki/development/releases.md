@@ -26,6 +26,15 @@ Portage metadata check. Keep the applications-only package available for users
 who do not install the desktop; the full package owns the same application
 files and declares the replacement blocker.
 
+The full-desktop release contract requires `sys-auth/qindaqt-lock-pam-1` or
+newer for the fixed native lock authentication service. It also requires
+`QINDAQT_NATIVE_POWER_EXCLUSIVE=OFF` under accepted
+[ADR-0345](../adr/0345-hold-physical-native-power-cutover-until-receipts-pass.md).
+Power1, UPower and the selected power-profile provider remain required; OFF
+does not retire native service delivery or prove full idle/suspend parity.
+Re-enabling exclusive mode requires the ADR's physical receipt qualification
+and a corresponding reviewed release-contract update.
+
 ## Build and qualify
 
 Use the exact qindaqt-kwin development package the manifest pins. A fresh build root
