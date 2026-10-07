@@ -9,6 +9,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 #include <memory>
+#include <utility>
 
 namespace Public = QindaQt::RemovableMedia;
 namespace Owner = QindaQt::Apps::RemovableMedia;
@@ -40,6 +41,13 @@ public:
     int reads = 0;
     bool delay = false;
 public Q_SLOTS:
+    QString DelayedOwner() {
+        setDelayedReply(true);
+        const auto bus = connection();
+        const auto reply = message().createReply(QVariantList{bus.baseService()});
+        QTimer::singleShot(6000, this, [bus, reply] { bus.send(reply); });
+        return {};
+    }
     QByteArray GetSnapshot() {
         ++reads;
         if (delay) {
@@ -52,6 +60,33 @@ public Q_SLOTS:
     }
 Q_SIGNALS:
     void SnapshotChanged(const QByteArray &wire);
+};
+class Lookup final : public Public::MediaOwnerLookup {
+public:
+    explicit Lookup(QDBusConnection bus) : m_bus(std::move(bus)) {}
+    int reads = 0, failures = 0;
+    QString stallOwner;
+    QDBusPendingCall query() override {
+        ++reads;
+        if (failures > 0) {
+            --failures;
+            return QDBusPendingCall::fromError(QDBusError(QDBusError::Failed, QStringLiteral("fixture transient lookup")));
+        }
+        if (!stallOwner.isEmpty()) {
+            const auto owner = std::exchange(stallOwner, QString{});
+            auto call = QDBusMessage::createMethodCall(owner, QString::fromLatin1(Public::kObjectPath),
+                QString::fromLatin1(Public::kInterfaceName), QStringLiteral("DelayedOwner"));
+            call.setAutoStartService(false);
+            return m_bus.asyncCall(call, 7000);
+        }
+        auto call = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"),
+            QStringLiteral("/org/freedesktop/DBus"), QStringLiteral("org.freedesktop.DBus"), QStringLiteral("GetNameOwner"));
+        call.setArguments({QString::fromLatin1(Public::kServiceName)});
+        call.setAutoStartService(false);
+        return m_bus.asyncCall(call, 5000);
+    }
+private:
+    QDBusConnection m_bus;
 };
 class ActivationOnly final : public QObject {
     Q_OBJECT
@@ -81,7 +116,8 @@ class InventoryTests final : public QObject {
 private Q_SLOTS:
     void cleanup() {
         for (const auto &name : {QStringLiteral("old-media"), QStringLiteral("new-media"),
-             QStringLiteral("delayed-media"), QStringLiteral("started-media")}) {
+             QStringLiteral("delayed-media"), QStringLiteral("started-media"),
+             QStringLiteral("retry-media"), QStringLiteral("replacement-media")}) {
             QDBusConnection connection(name);
             if (connection.isConnected()) {
                 connection.unregisterObject(QString::fromLatin1(Public::kObjectPath));
@@ -91,6 +127,9 @@ private Q_SLOTS:
         }
     }
     void unavailableNeverLaunches();
+    void transientAndDeadlineDiscoveryRetry();
+    void recoveryDuringInitialLookupRetainsLoading();
+    void singleFlightReadAndReplacementFencesLateReply();
     void explicitStartWaitsForReadbackAndTimesOut();
     void oldOwnerUsesActivateWithoutFallback();
     void exactOwnerMalformedAndRevocation();
@@ -111,6 +150,95 @@ void InventoryTests::unavailableNeverLaunches()
     QCOMPARE(launcher.attempts, 1);
     QCOMPARE(client.snapshot().availability, Public::Availability::Unavailable);
     QVERIFY(!changed.isEmpty());
+}
+void InventoryTests::transientAndDeadlineDiscoveryRetry()
+{
+    auto server = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("retry-media"));
+    WireOwner owner;
+    owner.wire = Public::encodeSnapshot(sample(server.baseService())).payload;
+    QVERIFY(server.registerObject(QString::fromLatin1(Public::kObjectPath), &owner,
+        QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals));
+    QVERIFY(server.registerService(QString::fromLatin1(Public::kServiceName)));
+    Launcher launcher;
+    Lookup lookup(QDBusConnection::sessionBus());
+    lookup.failures = 1;
+    Public::MediaClient client(QDBusConnection::sessionBus(), launcher, lookup);
+    client.start();
+    QTRY_COMPARE(client.snapshot().availability, Public::Availability::Unavailable);
+    QCOMPARE(lookup.reads, 1);
+    for (int i = 0; i < 100; ++i) client.refresh();
+    QCOMPARE(lookup.reads, 2);
+    QTRY_COMPARE(client.snapshot().availability, Public::Availability::Ready);
+    QCOMPARE(launcher.attempts, 0);
+
+    Lookup delayedLookup(QDBusConnection::sessionBus());
+    delayedLookup.stallOwner = server.baseService();
+    Public::MediaClient delayed(QDBusConnection::sessionBus(), launcher, delayedLookup);
+    delayed.start();
+    for (int i = 0; i < 100; ++i) delayed.refresh();
+    QCOMPARE(delayedLookup.reads, 1);
+    QTRY_COMPARE_WITH_TIMEOUT(delayed.snapshot().availability, Public::Availability::Unavailable, 6500);
+    delayed.refresh();
+    QTRY_COMPARE(delayed.snapshot().availability, Public::Availability::Ready);
+    QCOMPARE(delayedLookup.reads, 2);
+    QTest::qWait(1250);
+    QCOMPARE(delayed.snapshot().availability, Public::Availability::Ready);
+    QCOMPARE(delayed.snapshot().lineage.owner, server.baseService());
+    QCOMPARE(launcher.attempts, 0);
+}
+void InventoryTests::recoveryDuringInitialLookupRetainsLoading()
+{
+    Launcher launcher;
+    launcher.allowed = true;
+    Public::MediaClient client(QDBusConnection::sessionBus(), launcher);
+    client.start();
+    client.recover();
+    client.recover();
+    QCOMPARE(launcher.attempts, 1);
+    QTest::qWait(30);
+    QCOMPARE(client.snapshot().availability, Public::Availability::Loading);
+    auto server = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("started-media"));
+    WireOwner owner;
+    owner.wire = Public::encodeSnapshot(sample(server.baseService())).payload;
+    QVERIFY(server.registerObject(QString::fromLatin1(Public::kObjectPath), &owner,
+        QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals));
+    QVERIFY(server.registerService(QString::fromLatin1(Public::kServiceName)));
+    QTRY_COMPARE(client.snapshot().availability, Public::Availability::Ready);
+    QCOMPARE(launcher.attempts, 1);
+}
+void InventoryTests::singleFlightReadAndReplacementFencesLateReply()
+{
+    auto first = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("delayed-media"));
+    WireOwner old;
+    old.delay = true;
+    old.wire = Public::encodeSnapshot(sample(first.baseService())).payload;
+    QVERIFY(first.registerObject(QString::fromLatin1(Public::kObjectPath), &old,
+        QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals));
+    QVERIFY(first.registerService(QString::fromLatin1(Public::kServiceName)));
+    Launcher launcher;
+    Public::MediaClient client(QDBusConnection::sessionBus(), launcher);
+    client.start();
+    QTRY_COMPARE(old.reads, 1);
+    for (int i = 0; i < 100; ++i) client.refresh();
+    QTest::qWait(20);
+    QCOMPARE(old.reads, 1);
+    QVERIFY(first.unregisterService(QString::fromLatin1(Public::kServiceName)));
+    auto replacement = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("replacement-media"));
+    WireOwner current;
+    auto snapshot = sample(replacement.baseService(), QStringLiteral("replacement"));
+    snapshot.rows[0].displayName = QStringLiteral("Replacement media");
+    current.wire = Public::encodeSnapshot(snapshot).payload;
+    QVERIFY(replacement.registerObject(QString::fromLatin1(Public::kObjectPath), &current,
+        QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals));
+    QVERIFY(replacement.registerService(QString::fromLatin1(Public::kServiceName)));
+    QTRY_COMPARE(client.snapshot().lineage.owner, replacement.baseService());
+    QTest::qWait(150);
+    QCOMPARE(client.snapshot().lineage.epoch, QStringLiteral("replacement"));
+    // Even a forged replacement-owner body cannot authenticate the old sender.
+    Q_EMIT old.SnapshotChanged(current.wire);
+    QTest::qWait(20);
+    QCOMPARE(client.snapshot().rows[0].displayName, QStringLiteral("Replacement media"));
+    QCOMPARE(launcher.attempts, 0);
 }
 void InventoryTests::explicitStartWaitsForReadbackAndTimesOut()
 {

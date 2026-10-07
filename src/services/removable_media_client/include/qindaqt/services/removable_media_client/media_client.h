@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 #include <qindaqt/services/removable_media_client/media_source.h>
+#include <qindaqt/services/removable_media_client/media_owner_lookup.h>
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusServiceWatcher>
 #include <QTimer>
+#include <QPointer>
+#include <QDBusPendingCallWatcher>
+#include <memory>
 
 namespace QindaQt::RemovableMedia {
 // Exact-owner, bounded asynchronous Devices-v1 transport. The registered
@@ -16,6 +20,8 @@ class MediaClient final : public MediaSource {
 public:
     MediaClient(QDBusConnection connection, MediaOwnerLauncher &launcher,
                 QObject *parent = nullptr);
+    MediaClient(QDBusConnection connection, MediaOwnerLauncher &launcher,
+                MediaOwnerLookup &lookup, QObject *parent = nullptr);
     ~MediaClient() override;
     [[nodiscard]] Snapshot snapshot() const override { return m_snapshot; }
     void start() override;
@@ -25,12 +31,18 @@ public:
 private Q_SLOTS:
     void changedWire(const QByteArray &wire, const QDBusMessage &message);
 private:
+    void initialize();
+    void queryOwner();
+    void clearReadWaiters();
     void setOwner(const QString &owner);
     void requestSnapshot();
     void publishUnavailable(DiagnosticCode code, const QString &message);
     void acceptWire(const QByteArray &wire, const QString &owner, quint64 serial);
     QDBusConnection m_bus;
     MediaOwnerLauncher &m_launcher;
+    std::unique_ptr<MediaOwnerLookup> m_ownedLookup;
+    MediaOwnerLookup *m_lookup = nullptr;
+    QPointer<QDBusPendingCallWatcher> m_lookupWatcher, m_readWatcher;
     QDBusServiceWatcher m_watcher;
     QTimer m_startupTimer, m_readTimer;
     Snapshot m_snapshot, m_observed;
