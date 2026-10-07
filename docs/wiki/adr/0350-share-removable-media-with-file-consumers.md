@@ -2,9 +2,9 @@
 
 - Status: Accepted
 - Date: 2026-10-07
-- Scope: ED-04a design; no public API or device-sidebar delivery yet
+- Scope: ED-04a design and standalone protocol; client/exporter/device-sidebar delivery remains open
 - Supersedes: ADR-0315 export-only-Activate restriction; all other decisions retained
-- Accepted by: Program Manager after exact independent review `d283465c3b81bb50f694f5aa290f6443b567a412`; product API remains a future gate
+- Accepted by: Program Manager after exact independent review `d283465c3b81bb50f694f5aa290f6443b567a412`; client/exporter runtime remains a future gate
 - Source base: `7d45d2c336e5d213c7ba10f063ab384b09f4abc8`
 
 ## Context and existing evidence
@@ -303,7 +303,9 @@ Consumers gain one discoverable inventory without moving storage authority or
 remembered choices. The additional session-bus ordinary-action surface is a
 new process contract and requires exact-owner, bounded codec and no-replay
 review. Implementations must keep public protocol/client small and owning
-private operations private. This document is Proposed, adds no feature-ledger
-progress and authorizes no product code before review. The first implementation
-packet is the observed inventory/public-client slice; sidebar delivery follows
-its accepted candidate, not a second device watcher.
+private operations private. The accepted decision now has a standalone owning
+[value/codec boundary](../reference/removable-media-protocol-v1.md); it adds no
+connection, exporter, backend action or consumer presentation. The next packet
+is the observed read-only inventory/public-client slice; sidebar delivery
+follows its accepted candidate, not a second device watcher. This protocol
+prerequisite does not complete ED-04 or establish physical qualification.

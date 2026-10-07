@@ -1,0 +1,3 @@
+# Media protocol claim
+
+2026-10-07T18:17:02+00:00: Exact0d15023cc verified clean before edits; Accepted ADR0350 read with normative module/coding/testing pages and existing Network protocol codec. Own src/services/removable_media_protocol, focused tests/services/removable_media_protocol and narrow owner docs/boundary; actual source/test registries src/CMakeLists.txt and tests/CMakeLists.txt approved by manager, one additive line each, root CMake unchanged. Only typed owning values and canonical hostile-input boundary; client/exporter/actions/sidebar absent. Source/test authoring proceeds under Platform compiler lease; compilation waits root speech/lease. Canonical worker record is this worktree ed-files-sol-20261007.md. All publication explicit qinda hub only.
