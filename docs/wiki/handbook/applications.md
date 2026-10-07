@@ -147,7 +147,9 @@ the separate `qindaqt-system-monitor` package alongside the desktop.
 
 ## Software, archives, and recovery
 
-File Manager delegates archive creation and extraction to an installed handler.
+File Manager can create ZIP archives and extract supported ZIP/tar archives
+with its built-in Compress and Extract actions. This does not establish a
+separately shipped archive-manager application.
 QindaPortage is a separately packaged graphical Portage application, installed
 on the audited laptop; it can inspect packages, preview and apply plans, and
 revert its managed configuration changes. That is not a complete system rollback.
