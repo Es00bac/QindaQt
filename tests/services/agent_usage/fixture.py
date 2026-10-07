@@ -4,6 +4,8 @@ import json, os, sys, time
 mode=os.environ.get("QINDAQT_USAGE_FIXTURE","normal")
 if mode=="timeout":
     time.sleep(10)
+elif mode=="fail":
+    sys.exit(8)
 elif mode=="overflow":
     sys.stdout.write("x"*70000);sys.stdout.flush();time.sleep(10)
 else:

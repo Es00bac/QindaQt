@@ -82,12 +82,21 @@ Reports and successful live observations become Stale after 15 minutes;
 missing reports are Unavailable and invalid/read failures are Error.
 
 Unknown keys, duplicate keys, malformed types and nonfinite values are rejected.
-Files are capped at 64KiB, quotas at 16 per report, and discovery at 32 filenames
-with at most 40 snapshot rows. Symlinks and nonregular files are rejected.
+Files are capped at 64KiB, quotas at 16 per report, and discovery at 64 inspected directory entries (including unrelated files), at
+most 31 custom provider files and at most 40 snapshot rows. Symlinks, multiply linked files, foreign ownership, group/other writable
+report directories/files and nonregular files are rejected. An explicit report-feed
+Error row reports discovery overflow/omission. Open directory descriptors and
+openat avoid pathname races; fstat validates the opened inode before reading.
 The collector opens feeds with no-follow/nonblocking semantics and reads at
 most 64KiB plus one rejection byte. Subprocess output, including discarded
 stderr, is capped at 64KiB and requests expire after five seconds. Destruction
-kills the owned process and waits at most one second. There is no process
+kills the owned process and waits at most one second. During a cold request the Codex detail says Collecting usage metadata. Later
+refreshes retain last-known fields/timestamps labelled Refreshing last-known
+metadata. A wholly failed refresh publishes those prior fields as Stale with a
+fixed last-known failure detail, without advancing observedAt. Partial fresh
+responses replace old fields; older totals are never mixed into fresh quotas. Partial
+successful quotas survive an unsupported response or process failure with an
+explicit partial detail. There is no process
 restart loop or retained raw output log.
 
 ## Optional publisher setup
@@ -114,6 +123,8 @@ paths, session identifiers, model metadata and unrelated raw fields. Normalized
 input instead rejects unknown fields. It atomically replaces one 0600 report
 using a same-directory temporary file, and creates new directories with 0700
 permissions. `--directory` is an explicit test/producer override.
+The installed publisher is a QtCore executable reusing the service parser;
+Python is used only by test fixtures. Stdin is limited to 64KiB and five seconds.
 Success is silent; rejection emits only a fixed diagnostic, never raw input.
 
 ## Qualification

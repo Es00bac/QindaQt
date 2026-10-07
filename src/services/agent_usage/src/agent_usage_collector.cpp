@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <qindaqt/services/agent_usage/agent_usage_collector.h>
 #include "parsers.h"
+#include "report_feed.h"
 #include <QProcess>
 #include <QTimer>
 #include <QFile>
@@ -23,6 +24,7 @@ public:
     qsizetype output=0;
     bool active=false,initialized=false,limitsDone=false,usageDone=false,anySuccess=false;
     ProviderUsage codex;
+    std::optional<ProviderUsage> lastKnown;
     Private(AgentUsageCollector *o,QString dir,QString prog,std::function<QDateTime()> time)
         :owner(o),directory(std::move(dir)),program(std::move(prog)),clock(std::move(time))
     {
@@ -50,8 +52,14 @@ public:
     {
         if(!active) return;
         active=false;deadline.stop();
-        codex.state=state;codex.detail=detail;
-        if(anySuccess) codex.observedAt=clock().toUTC();
+        codex.state=anySuccess&&state!=UsageState::Ready?UsageState::Ready:state;
+        codex.detail=anySuccess&&state!=UsageState::Ready?"Partial metadata; "+detail:detail;
+        if(anySuccess) {
+            codex.observedAt=clock().toUTC();lastKnown=codex;
+        } else if(lastKnown) {
+            codex=*lastKnown;codex.state=UsageState::Stale;
+            codex.detail="Last-known metadata; "+detail;
+        }
         rows[0]=codex;
         if(process.state()!=QProcess::NotRunning) process.kill();
         emit owner->snapshotChanged();
@@ -106,32 +114,14 @@ UsageSnapshot AgentUsageCollector::snapshot() const
 void AgentUsageCollector::refresh()
 {
     if(d->active||d->process.state()!=QProcess::NotRunning) return;
-    // Enumerate only normalized provider filenames; no arbitrary user files,
-    // symlink targets or directories are opened.
-    const QDir reports(d->directory);
-    if(!QFileInfo(d->directory).isSymLink()) {
-        const auto names=reports.entryList({"*.json"},QDir::Files|QDir::NoSymLinks,QDir::Name);
-        for(const auto &name:names.mid(0,32)) {
-            const auto id=name.chopped(5);
-            if(id=="codex"||!QRegularExpression("^[a-z][a-z0-9-]{0,31}$").match(id).hasMatch()) continue;
-            bool known=false;for(const auto &row:d->rows) if(row.providerId==id) known=true;
-            if(!known&&d->rows.size()<40) d->rows.append(QindaQt::Services::AgentUsage::Private::emptyProvider(id));
-        }
-    }
-    for(qsizetype i=1;i<d->rows.size();++i) {
-        auto u=QindaQt::Services::AgentUsage::Private::emptyProvider(d->rows[i].providerId);
-        const QString path=QDir(d->directory).filePath(u.providerId+".json");
-        const QFileInfo info(path);
-        if(info.exists()) {
-            if(QFileInfo(d->directory).isSymLink()||info.isSymLink()||!info.isFile()||info.size()>65536) {u.state=UsageState::Error;u.detail="Invalid usage report";}
-            else {QFile f;const int fd=::open(QFile::encodeName(path).constData(),O_RDONLY|O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC);if(fd>=0&&f.open(fd,QIODevice::ReadOnly,QFileDevice::AutoCloseHandle)) u=QindaQt::Services::AgentUsage::Private::parseReport(f.read(65537),u.providerId,d->clock().toUTC());
-                  else {if(fd>=0) ::close(fd);u.state=UsageState::Error;u.detail="Usage report unreadable";}}
-        }
-        d->rows[i]=u;
-    }
+    const auto reports=QindaQt::Services::AgentUsage::Private::readReports(d->directory,d->clock().toUTC());
+    d->rows.resize(1);d->rows+=reports;
     d->codex=QindaQt::Services::AgentUsage::Private::emptyProvider("codex");d->codex.source="codex-app-server";
     d->codex.scope="report-period";d->codex.tokenScope="unreported";d->codex.costScope="unreported";
     d->buffer.clear();d->output=0;d->initialized=false;d->limitsDone=false;d->usageDone=false;d->anySuccess=false;
+    d->codex.detail="Collecting usage metadata";
+    d->rows[0]=d->lastKnown?*d->lastKnown:d->codex;
+    if(d->lastKnown) {d->rows[0].state=UsageState::Stale;d->rows[0].detail="Refreshing last-known metadata";}
     d->active=true;d->deadline.start(5000);
     d->process.setProgram(d->program);d->process.setArguments({"app-server","--listen","stdio://"});
     d->process.start();
