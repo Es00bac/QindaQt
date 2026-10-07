@@ -54,6 +54,8 @@ ColumnLayout {
         title: qsTr("File operation failed: %1")
             .arg(root.mutationController.failureCode)
         message: root.mutationController.failureMessage
+            + (root.mutationController.outputNotice
+                ? "\n" + root.mutationController.outputNotice : "")
         actionText: qsTr("Dismiss")
         onActionTriggered: root.mutationController.clearFailure()
     }

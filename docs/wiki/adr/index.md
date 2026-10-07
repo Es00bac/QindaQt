@@ -392,3 +392,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0352: Separate foreign application identity, runtime authority and package ownership](0352-foreign-runtime-identity-and-installation.md) — Proposed
 
 - [ADR-0353: Scope desktop agent context through provider-owned grants](0353-scoped-desktop-agent-context.md) — Proposed
+
+- [ADR-0357: Preserve failed copy output without cleanup authority](0357-preserve-failed-copy-output-without-cleanup-authority.md) — Proposed

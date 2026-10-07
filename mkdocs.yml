@@ -535,6 +535,7 @@ nav:
       - "0351: Bounded coding-agent usage metadata": adr/0351-collect-agent-usage-through-bounded-metadata-sources.md
       - "0352: Foreign runtime identity and installation": adr/0352-foreign-runtime-identity-and-installation.md
       - "0353: Scoped desktop-agent context": adr/0353-scoped-desktop-agent-context.md
+      - "0357: Preserve failed copy output": adr/0357-preserve-failed-copy-output-without-cleanup-authority.md
       - "0347: Controller desktop input yields to games": adr/0347-controller-desktop-integration.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md

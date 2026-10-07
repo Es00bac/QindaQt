@@ -12,3 +12,17 @@ set_tests_properties(qindaqt.file-manager-copy-safety PROPERTIES
     LABELS "file-manager;mutation;copy-safety"
     ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
+
+qindaqt_add_file_manager_test(qindaqt_file_manager_mutation_output_tests
+    tst_mutation_output.cpp qindaqt.file-manager-mutation-output)
+set_tests_properties(qindaqt.file-manager-mutation-output PROPERTIES
+    ENVIRONMENT "DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
+
+add_test(NAME qindaqt.file-manager-mutation-output-qml
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_mutation_output.qml")
+set_tests_properties(qindaqt.file-manager-mutation-output-qml PROPERTIES
+    LABELS "file-manager;mutation;copy-safety"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")

@@ -303,20 +303,20 @@ MutationResult LocalMutationBackend::copy(
       cancellation, progress,
       maximumCopiedItems);
   const auto finalIdentity = identityForPath(request.sourcePath);
-  if (result.ok() && !finalIdentity) {
-    const bool removedPartial = removeLocalTreeNoFollow(request.destinationPath);
-    Q_UNUSED(removedPartial);
-    return failure(MutationError::Vanished,
-                   QStringLiteral("The source vanished while it was being copied"));
-  }
-  if (result.ok() && *finalIdentity != *request.expectedSource) {
-    const bool removedPartial = removeLocalTreeNoFollow(request.destinationPath);
-    Q_UNUSED(removedPartial);
-    return failure(MutationError::Changed,
-                   QStringLiteral("The source changed while it was being copied"));
-  }
-  if (result.ok()) {
-    result.outputIdentity = identityForPath(result.outputPath);
+  if (result.outputObservation.copyFinished &&
+      (!finalIdentity || *finalIdentity != *request.expectedSource)) {
+    // AGENT-GUARD: The output name is an observation, not deletion authority.
+    // A late writer can replace it after copying; preserve every candidate.
+    result.error = finalIdentity ? MutationError::Changed : MutationError::Vanished;
+    result.diagnostic = finalIdentity
+        ? QStringLiteral("The source changed while it was being copied")
+        : QStringLiteral("The source vanished while it was being copied");
+    result.outputPath.clear();
+    result.outputIdentity.reset();
+    const auto &observed = result.outputObservation;
+    result.outputObservation = observeCopyOutputNoFollow(
+        request.destinationPath, observed.writtenIdentity, observed.parentIdentity,
+        true, observed.exclusiveCreation);
   }
   return result;
 }

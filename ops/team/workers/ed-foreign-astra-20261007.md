@@ -7,6 +7,10 @@
 - Resources: no active compiler, bus, display, installation or physical-session lease; root schedules next gate
 ## Updates
 
+- 2026-10-07T23:27:09Z — Froze initial copier preservation source packet for exact independent review: static docs525/strict/boundary/diff pass, four original actual old sentinel failures preserved, new native/QML gates pending root lease. Continuing source self-review and gate preparation; no repair execution claim.
+
+- 2026-10-07T23:25:17Z — Source-only copier draft now removes both cleanup paths, records typed per-item output and plain-text failure notice; added focused replacement/controller/QML fixtures. Root reserved Proposed ADR0357 for the narrow cleanup reversal. Native gates pending root lease release; no execution claim.
+
 - 2026-10-07T23:18:17Z — Recorded exact lock65 independent ACCEPT from source plus manager old/fixed logs; hidden14b independent acceptance remains in62f133. Authoring copier safety source only; no compiler/private runtime lease.
 - 2026-10-07T21:09:43+00:00: Claimed isolated qinda worktree; preserved shared checkout changes; reading existing runtime and catalog contracts.
 - 2026-10-07T21:16:39+00:00: Material finding: qinda has no Waydroid; laptop is uninitialized. Kernel binder/memfd support exists; packaged image path avoids OTA bypass. Draft/proof passes 14 tests; docs 521 and strict build pass before provisioning appendix. No real foreign window proof claimed.

@@ -5,6 +5,17 @@
 
 namespace QindaQt::Apps::FileManager {
 
+QString mutationOutputDispositionKey(MutationOutputDisposition value) {
+  switch (value) {
+  case MutationOutputDisposition::None: return QStringLiteral("none");
+  case MutationOutputDisposition::RetainedPartial: return QStringLiteral("retained-partial");
+  case MutationOutputDisposition::RetainedCopy: return QStringLiteral("retained-copy");
+  case MutationOutputDisposition::Replaced: return QStringLiteral("replaced");
+  case MutationOutputDisposition::Unconfirmed: return QStringLiteral("unconfirmed");
+  }
+  return QStringLiteral("unconfirmed");
+}
+
 QString mutationErrorKey(MutationError error) {
   switch (error) {
   case MutationError::None:

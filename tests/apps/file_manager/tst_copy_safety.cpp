@@ -62,6 +62,8 @@ private Q_SLOTS:
         source, destination, *parent, std::make_shared<std::atomic_bool>(false),
         {}, 20'000);
     QCOMPARE(result.error, MutationError::AlreadyExists);
+    QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::None);
+    QVERIFY(!result.outputObservation.writtenIdentity);
     QCOMPARE(readBytes(sentinel), QByteArray("foreign bytes must survive"));
     QCOMPARE(readBytes(source), QByteArray("source bytes"));
   }
@@ -88,6 +90,11 @@ private Q_SLOTS:
         }, 20'000);
     QVERIFY(replaced);
     QCOMPARE(result.error, MutationError::Cancelled);
+    QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::Replaced);
+    QCOMPARE(result.outputObservation.path, destination);
+    QVERIFY(result.outputObservation.exclusiveCreation);
+    QVERIFY(!result.outputObservation.copyFinished);
+    QVERIFY(result.outputObservation.writtenIdentity != result.outputObservation.observedIdentity);
     QCOMPARE(readBytes(destination), QByteArray("foreign replacement"));
     QVERIFY(QFileInfo::exists(displaced));
     QCOMPARE(readBytes(source), QByteArray(256 * 1024, 'x'));
@@ -117,9 +124,82 @@ private Q_SLOTS:
         });
     QVERIFY(replaced);
     QCOMPARE(result.error, MutationError::Vanished);
+    QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::Replaced);
+    QVERIFY(result.outputObservation.copyFinished);
+    QVERIFY(result.outputPath.isEmpty());
+    QVERIFY(!result.outputIdentity);
     QCOMPARE(readBytes(destination), QByteArray("foreign replacement"));
     QCOMPARE(readBytes(displaced), payload);
   }
+  void destinationParentReplacementIsUnconfirmedAndPreserved() {
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const auto source = temp.filePath(QStringLiteral("source"));
+    const auto parentPath = temp.filePath(QStringLiteral("parent"));
+    const auto movedParent = temp.filePath(QStringLiteral("moved-parent"));
+    QVERIFY(QDir().mkdir(parentPath));
+    const auto destination = QDir(parentPath).filePath(QStringLiteral("copy"));
+    QVERIFY(writeBytes(source, QByteArray(256 * 1024, 'x')));
+    const auto request = copyRequest(source, destination);
+    const auto cancel = std::make_shared<std::atomic_bool>(false);
+    LocalMutationBackend backend(temp.filePath(QStringLiteral("Trash")));
+    bool replaced = false;
+    const auto result = backend.execute(request, cancel, [&](const MutationProgress &) {
+      if (replaced)
+        return;
+      QVERIFY(QDir().rename(parentPath, movedParent));
+      QVERIFY(QDir().mkdir(parentPath));
+      QVERIFY(writeBytes(destination, "foreign under replacement parent"));
+      replaced = true;
+      cancel->store(true);
+    });
+    QVERIFY(replaced);
+    QCOMPARE(result.error, MutationError::Cancelled);
+    QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::Unconfirmed);
+    QCOMPARE(readBytes(destination), QByteArray("foreign under replacement parent"));
+    QVERIFY(QFileInfo::exists(QDir(movedParent).filePath(QStringLiteral("copy"))));
+  }
+  void sourcePostcheckRetainsTheCompletedCopy() {
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const auto source = temp.filePath(QStringLiteral("source"));
+    const auto destination = temp.filePath(QStringLiteral("copy"));
+    const QByteArray payload(256 * 1024, 'x');
+    QVERIFY(writeBytes(source, payload));
+    const auto request = copyRequest(source, destination);
+    LocalMutationBackend backend(temp.filePath(QStringLiteral("Trash")));
+    bool removed = false;
+    const auto result = backend.execute(request, {}, [&](const MutationProgress &) {
+      if (!removed) {
+        QVERIFY(QFile::remove(source));
+        removed = true;
+      }
+    });
+    QVERIFY(removed);
+    QCOMPARE(result.error, MutationError::Vanished);
+    QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::RetainedCopy);
+    QVERIFY(result.outputObservation.copyFinished);
+    QCOMPARE(readBytes(destination), payload);
+    QVERIFY(result.outputPath.isEmpty());
+    QVERIFY(!result.outputIdentity);
+  }
+  void successStillCopiesFilesAndNestedFolders() {
+    QTemporaryDir temp;
+    QVERIFY(temp.isValid());
+    const auto source = temp.filePath(QStringLiteral("source"));
+    const auto destination = temp.filePath(QStringLiteral("copy"));
+    QVERIFY(QDir().mkpath(QDir(source).filePath(QStringLiteral("nested"))));
+    QVERIFY(writeBytes(QDir(source).filePath(QStringLiteral("nested/file")), "nested bytes"));
+    LocalMutationBackend backend(temp.filePath(QStringLiteral("Trash")));
+    const auto result = backend.execute(copyRequest(source, destination), {}, {});
+    QVERIFY2(result.ok(), qPrintable(result.diagnostic));
+    QCOMPARE(result.outputObservation.disposition, MutationOutputDisposition::RetainedCopy);
+    QVERIFY(!result.outputObservation.exclusiveCreation);
+    QVERIFY(result.outputObservation.copyFinished);
+    QCOMPARE(readBytes(QDir(destination).filePath(QStringLiteral("nested/file"))),
+             QByteArray("nested bytes"));
+  }
+
 };
 
 QTEST_GUILESS_MAIN(CopySafetyTests)
