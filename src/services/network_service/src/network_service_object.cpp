@@ -50,6 +50,18 @@ void NetworkServiceObject::ConnectVisibleNetwork(
                   .identifier = accessPointId});
 }
 
+void NetworkServiceObject::ConnectHiddenNetwork(
+    const quint64 epoch, const quint64 revision, const QString &deviceInterface,
+    const QString &ssid, const quint32 security) {
+  NetworkServiceRequest request;
+  request.kind = OperationKind::ConnectKnownNetwork;
+  request.initiatingEpoch = epoch;
+  request.initiatingRevision = revision;
+  request.hiddenJoin = ConnectHiddenIntent{deviceInterface, ssid,
+                                          static_cast<SecuritySuite>(security)};
+  beginOperation(request);
+}
+
 void NetworkServiceObject::DisconnectActive(const quint64 epoch,
                                             const quint64 revision,
                                             const QString &deviceInterface) {

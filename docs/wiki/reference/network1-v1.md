@@ -24,6 +24,7 @@ results are canonical N0 byte arrays (`ay`):
 | `GetSnapshot` | `() → (ay)` | canonical `Snapshot` |
 | `RequestScan` | `(t epoch, t revision, x deadlineMs) → (ay)` | canonical `OperationResult` |
 | `ConnectKnownNetwork` | `(t epoch, t revision, s knownNetworkId) → (ay)` | canonical `OperationResult` |
+| `ConnectHiddenNetwork` | `(t epoch, t revision, s deviceInterface, s ssid, u security) → (ay)` | optional canonical Connect(kind1) `OperationResult` |
 | `ConnectVisibleNetwork` | `(t epoch, t revision, s accessPointId) → (ay)` | canonical `OperationResult` |
 | `DisconnectActive` | `(t epoch, t revision, s deviceInterface) → (ay)` | canonical `OperationResult` |
 | `SetRadio` | `(t epoch, t revision, u radioKind, b enable) → (ay)` | canonical `OperationResult` |
@@ -147,6 +148,7 @@ are only 0 or 1 and decoded `wireValid` must be true.
 
 Inputs are `RequestScanIntent`, `ConnectIntent` for a known-network id,
 `ConnectVisibleIntent` for an opaque visible-access-point id,
+`ConnectHiddenIntent` for exact bounded SSID/device/personal-security metadata,
 `DisconnectIntent` for a device interface, and `SetRadioIntent` for a radio kind
 and boolean state. No input can carry a credential. The redactor recognizes
 secret-shaped keys and bounded nested maps; both client transport and resident
@@ -157,7 +159,8 @@ Admission refuses absent/not-ready snapshots, unsupported capabilities,
 invalid scan deadlines, busy/live scans, unknown networks or access points,
 already-active connections, unknown or idle devices, absent/hardware-disabled
 radios, and redundant radio state. First-use connection additionally refuses
-hidden, WEP, enterprise, and already-known networks. Those network-type
+hidden APs in the visible path, WEP, enterprise, and already-known networks.
+Hidden personal joins use the separately admitted optional method. Those network-type
 refusals are typed `Unsupported`; rejection changes no state.
 
 Operation status is `Succeeded`, `Rejected`, `Unsupported`, `Failed`,
@@ -190,3 +193,26 @@ bounded reason codes. Network1 remains unqualified for credential payloads by
 design; the separate [Network secret
 agent](../architecture/network-secret-agent.md) owns that interoperability
 claim.
+
+## Hidden personal Wi-Fi extension
+
+[ADR-0354](../adr/0354-join-hidden-personal-wifi-through-network1.md) defines the
+optional metadata-only `ConnectHiddenNetwork(t,t,s,s,u)->ay` method. Its exact SSID
+is printable valid UTF-8, 1..32 octets with spaces preserved; the selected Wi-Fi
+interface and WPA2Personal/WPA3Personal security values are explicit. Existing
+ConnectKnownNetwork operation kind 1, snapshot/result codecs, capability bits
+and existing methods remain unchanged. Old services produce a definite local
+Unsupported result; no fallback or automatic retry occurs.
+
+Admission requires current ready lineage, an available selected Wi-Fi device,
+enabled hardware/software radio, profile-control capability and no duplicate
+saved SSID/security identity. Hidden WPA2/WPA3 profiles pin RSN/CCMP; WPA3 uses
+SAE and required PMF, with no downgrade. Device RSN/CCMP admission does not
+claim SAE support: NetworkManager owns its authoritative refusal and actual
+connection state. Successful dispatch never fabricates connectivity.
+
+Settings offers only network name/device/security, with plain metadata text and
+a separate registered password prompt. Secret-agent presence is admission only;
+current NM owner, ListConnections membership and ALLOW_INTERACTION still govern
+GetSecrets. Password bytes never enter Network1 or Settings. The existing agent
+supports bounded credentials up to 64 UTF-8 bytes, including SAE.

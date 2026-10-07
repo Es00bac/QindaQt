@@ -149,6 +149,11 @@ NetworkServiceCoordinator::submit(const NetworkServiceRequest &request) {
                       QStringLiteral("operation-in-flight"))};
   }
 
+  if (request.hiddenJoin && (request.kind != OperationKind::ConnectKnownNetwork
+                             || !request.identifier.isEmpty())) {
+    return {false, 0, immediate(request, OperationStatus::Rejected,
+                               QStringLiteral("hidden-network-request-invalid"))};
+  }
   Model::IntentVerdict verdict;
   BackendOperationRequest backendRequest;
   backendRequest.kind = request.kind;
@@ -159,8 +164,13 @@ NetworkServiceCoordinator::submit(const NetworkServiceRequest &request) {
     backendRequest.scanDeadlineMilliseconds = request.scanDeadlineMilliseconds;
     break;
   case OperationKind::ConnectKnownNetwork:
-    verdict = m_model.connectKnown(ConnectIntent{request.identifier});
-    backendRequest.identifier = request.identifier;
+    if (request.hiddenJoin) {
+      verdict = m_model.connectHidden(*request.hiddenJoin);
+      backendRequest.hiddenJoin = request.hiddenJoin;
+    } else {
+      verdict = m_model.connectKnown(ConnectIntent{request.identifier});
+      backendRequest.identifier = request.identifier;
+    }
     break;
   case OperationKind::DisconnectActive:
     verdict = m_model.disconnectDevice(DisconnectIntent{request.identifier});

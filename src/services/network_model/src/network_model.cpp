@@ -74,6 +74,10 @@ NetworkModel::connectVisible(const ConnectVisibleIntent &intent) const {
   return validateConnectVisible(m_current, intent);
 }
 
+IntentVerdict NetworkModel::connectHidden(const ConnectHiddenIntent &intent) const {
+  return validateConnectHidden(m_current, intent);
+}
+
 IntentVerdict NetworkModel::disconnectDevice(
     const DisconnectIntent &intent) const {
   return validateDisconnect(m_current, intent);

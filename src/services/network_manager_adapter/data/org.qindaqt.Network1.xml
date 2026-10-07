@@ -24,6 +24,14 @@
       <arg name="accessPointId" type="s" direction="in"/>
       <arg name="payload" type="ay" direction="out"/>
     </method>
+    <method name="ConnectHiddenNetwork">
+      <arg name="epoch" type="t" direction="in"/>
+      <arg name="revision" type="t" direction="in"/>
+      <arg name="deviceInterface" type="s" direction="in"/>
+      <arg name="ssid" type="s" direction="in"/>
+      <arg name="security" type="u" direction="in"/>
+      <arg name="payload" type="ay" direction="out"/>
+    </method>
     <method name="DisconnectActive">
       <arg name="epoch" type="t" direction="in"/>
       <arg name="revision" type="t" direction="in"/>

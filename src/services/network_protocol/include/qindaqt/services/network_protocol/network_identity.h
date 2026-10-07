@@ -43,7 +43,8 @@ struct SsidIdentity {
 
 // Stable pseudonymous known-network identity: the complete lowercase SHA-256
 // digest over the raw SSID octets and security suite. This avoids transporting
-// SSID text in intents, but the unsalted digest is not confidentiality against
+// SSID text in saved-profile intents; hidden first-use intents explicitly carry
+// bounded SSID metadata (ADR-0354). The unsalted digest is not confidentiality against
 // offline guessing of low-entropy SSIDs. It never contains credentials.
 [[nodiscard]] QString knownNetworkId(QByteArrayView rawSsid,
                                      SecuritySuite security);

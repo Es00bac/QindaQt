@@ -78,3 +78,10 @@ add_test(
 )
 set_tests_properties(qindaqt.network-boundary-poison
                      PROPERTIES LABELS "service;network;pure;policy;hostile")
+
+qt_add_executable(qindaqt_network_hidden_client_tests tst_network_hidden_client.cpp)
+target_link_libraries(qindaqt_network_hidden_client_tests PRIVATE QindaQt::NetworkClient Qt6::Test)
+target_include_directories(qindaqt_network_hidden_client_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../network_protocol")
+qindaqt_enable_warnings(qindaqt_network_hidden_client_tests)
+add_test(NAME qindaqt.network-hidden-client COMMAND qindaqt_network_hidden_client_tests)
+set_tests_properties(qindaqt.network-hidden-client PROPERTIES LABELS "service;network;hidden;hostile" TIMEOUT 30)

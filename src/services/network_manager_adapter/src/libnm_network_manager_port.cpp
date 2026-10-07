@@ -223,7 +223,11 @@ void LibnmNetworkManagerPort::submit(
     submitScan(operationId, request);
     break;
   case OperationKind::ConnectKnownNetwork:
-    submitConnect(operationId, request);
+    if (request.hiddenJoin) {
+      submitHiddenConnect(operationId, request);
+    } else {
+      submitConnect(operationId, request);
+    }
     break;
   case OperationKind::DisconnectActive:
     submitDisconnect(operationId, request);

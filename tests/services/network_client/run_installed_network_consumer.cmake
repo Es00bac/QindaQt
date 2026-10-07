@@ -63,7 +63,7 @@ if(NOT configure_status EQUAL 0)
 endif()
 
 execute_process(
-    COMMAND "${QINDAQT_CMAKE}" --build "${consumer_build}" --parallel 2
+    COMMAND "${QINDAQT_CMAKE}" --build "${consumer_build}"
     RESULT_VARIABLE build_status
     OUTPUT_VARIABLE build_output
     ERROR_VARIABLE build_error

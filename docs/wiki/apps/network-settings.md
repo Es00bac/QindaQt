@@ -69,8 +69,9 @@ The route has no password, passphrase, certificate, private-key, secret-agent,
 profile-editor, or arbitrary radio-operation API. Its only radio mutation is
 typed `setRadio(kind, enabled)` through Network1. Connecting a saved network activates its
 existing profile. Connecting a visible unsaved Open, WPA2 Personal, or WPA3
-Personal network asks Network1 to create and activate a minimal profile. Hidden,
-WEP, and enterprise first-use connections remain unsupported.
+Personal network asks Network1 to create and activate a minimal profile. Hidden
+WPA2/WPA3 personal joins use explicit SSID/device/security metadata through the
+optional method. WEP and enterprise first-use connections remain unsupported.
 
 NetworkManager may separately consult `qindaqt-network-secret-agent`; Network1
 and this route never receive that exchange. The route observes only ownership
@@ -128,7 +129,7 @@ module, linked public Network client/transport modules, and the executable's
 relative runtime paths. The relocated-package fixture withholds the installed
 Network module while the developer tree remains present and requires startup
 to fail, then restores it and proves all registered routes from only the staged
-prefix. The disk fallback keeps all six Network components under `qml/`,
+prefix. The disk fallback keeps all seven Network components under `qml/`,
 matching the generated `qmldir` entries and compiled resource aliases; this
 includes the access-point action helper used by the row section. Flat source
 copies do not satisfy this fallback contract.
@@ -139,7 +140,7 @@ Focused selection:
 
 ```sh
 ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
-  -R '^qindaqt\.(network-(settings-model|radio-outcomes|settings-agent-gate|settings-model-adversarial|page|settings-boundary|settings-boundary-poison|installed-qml)|settings-(route-registry|navigation-controller|navigation-page))$'
+  -R '^qindaqt\.(network-(settings-model|radio-outcomes|settings-agent-gate|settings-model-adversarial|page|hidden-join|settings-boundary|settings-boundary-poison|installed-qml)|settings-(route-registry|navigation-controller|navigation-page))$'
 ```
 
 - the model row proves bounded projection, exact lineage, public capability and
@@ -159,15 +160,17 @@ ctest --test-dir build/dev --output-on-failure --no-tests=error --parallel 1 \
   still beside it, and one shared x and width across rows whose digits, saved
   state and prompt lengths differ, wide and compact), stale/owner-loss fail-closed
   behavior, compact focus reveal, and keyboard cycling; and
+- the hidden-join row proves exact spaced/hostile-looking SSID metadata and
+  absent-agent refusal without a password editor;
 - boundary and poison rows reject private service headers, Qt D-Bus outside
   the exact presence observer/model seam, callable D-Bus from that observer, a
   widened radio invokable, credential text input, or a private service dependency.
 
 The installed-QML row stages the owning module in a disposable prefix and uses
-a standalone consumer linked only to Qt. It first loads all six types through
+a standalone consumer linked only to Qt. It first loads all seven types through
 the normal preferred compiled module, withholds the module to reject fallback
 to the installed or developer Network, then removes `prefer` and loads every
-physical path named by `qmldir`. Withholding each of the six files in turn must
+physical path named by `qmldir`. Withholding each of the seven files in turn must
 fail the disk probe; restoration must recover disk and compiled loads. Only
 installed public dependency modules are supplied in its isolated import roots,
 and both host bus addresses are unavailable. This proves component loading,
@@ -182,7 +185,8 @@ touch host networking.
 This route still does not claim credential payload handling, arbitrary profile
 creation/editing, persistence control, a shell applet,
 physical network/radio qualification, or session-runtime integration. Its only
-profile-creation request is the fixed supported visible-network intent. The
+profile-creation requests are fixed supported visible-network and hidden-personal
+metadata intents. The
 separate process owns the bounded credential-entry claim.
 
 ## Recovery presentation
@@ -193,3 +197,38 @@ Normal AP truncation does not disable connection controls. The password-prompt
 notice is shown only when prompts are unavailable, and connection instructions
 use user-facing language. Model fixtures inject a disconnected presence bus so
 a running host credential agent cannot change their expected admission results.
+
+## Hidden personal Wi-Fi extension
+
+[ADR-0354](../adr/0354-join-hidden-personal-wifi-through-network1.md) defines the
+optional metadata-only `ConnectHiddenNetwork(t,t,s,s,u)->ay` method. Its exact SSID
+is printable valid UTF-8, 1..32 octets with spaces preserved; the selected Wi-Fi
+interface and WPA2Personal/WPA3Personal security values are explicit. Existing
+ConnectKnownNetwork operation kind 1, snapshot/result codecs, capability bits
+and existing methods remain unchanged. Old services produce a definite local
+Unsupported result; no fallback or automatic retry occurs.
+
+Admission requires current ready lineage, an available selected Wi-Fi device,
+enabled hardware/software radio, profile-control capability and no duplicate
+saved SSID/security identity. Hidden WPA2/WPA3 profiles pin RSN/CCMP; WPA3 uses
+SAE and required PMF, with no downgrade. Device RSN/CCMP admission does not
+claim SAE support: NetworkManager owns its authoritative refusal and actual
+connection state. Successful dispatch never fabricates connectivity.
+
+Settings offers only network name/device/security, with plain metadata text and
+a separate registered password prompt. Secret-agent presence is admission only;
+current NM owner, ListConnections membership and ALLOW_INTERACTION still govern
+GetSecrets. Password bytes never enter Network1 or Settings. The existing agent
+supports bounded credentials up to 64 UTF-8 bytes, including SAE.
+
+The owning installed SDK gates use ordinary CMake build invocation without a
+hardcoded two-job limit. They preserve caller generator/build defaults. Native
+parent verification declares its configured parallelism separately; receipts
+record each child invocation rather than inferring identical load limits.
+
+Hidden adapter fixtures publish the real NetworkManager Device.StateReason
+(uu) tuple consistently with State, and assert libnm observes the modeled
+state/reason before dispatch. They cover exact selected device, unavailable or
+unmanaged device, RSN/CCMP refusal, authoritative NetworkManager refusal and
+credential-free WPA2/WPA3 serialization. Private fixtures do not qualify a
+physical hidden-network connection.

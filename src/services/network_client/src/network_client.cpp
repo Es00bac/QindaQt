@@ -381,6 +381,10 @@ void NetworkClient::handleFailure(const quint64 token, const QString &owner,
         return;
     }
     if (m_request->kind == RequestKind::Operation) {
+        if (m_request->hiddenJoin && errorName == QStringLiteral("hidden-network-control-unsupported")) {
+            finishHiddenUnsupported();
+            return;
+        }
         finishOperationAsUncertain(
             message.isEmpty()
                 ? QStringLiteral("network operation transport failed: %1").arg(

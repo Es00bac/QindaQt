@@ -32,6 +32,19 @@ struct ConnectVisibleIntent {
                          const ConnectVisibleIntent &) = default;
 };
 
+// Hidden first-use metadata is exact, printable UTF-8 (1..32 octets), never
+// trimmed. Security is WPA2Personal/WPA3Personal only; unknown values refuse.
+// This optional operation reuses ConnectKnownNetwork in v1 result receipts;
+// it never carries a password or creates a new secret authority (ADR-0354).
+struct ConnectHiddenIntent {
+  QString deviceInterface;
+  QString ssid;
+  SecuritySuite security = SecuritySuite::Wpa2Personal;
+
+  friend bool operator==(const ConnectHiddenIntent &,
+                         const ConnectHiddenIntent &) = default;
+};
+
 struct DisconnectIntent {
   QString deviceInterface;
 
@@ -51,5 +64,6 @@ struct SetRadioIntent {
 Q_DECLARE_METATYPE(QindaQt::Network::RequestScanIntent)
 Q_DECLARE_METATYPE(QindaQt::Network::ConnectIntent)
 Q_DECLARE_METATYPE(QindaQt::Network::ConnectVisibleIntent)
+Q_DECLARE_METATYPE(QindaQt::Network::ConnectHiddenIntent)
 Q_DECLARE_METATYPE(QindaQt::Network::DisconnectIntent)
 Q_DECLARE_METATYPE(QindaQt::Network::SetRadioIntent)

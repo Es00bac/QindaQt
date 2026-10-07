@@ -1,0 +1,16 @@
+# ED08 intermediate source and queued native packet
+
+Exact base47a7366ad1eb0e8250c3bb6f955341ecf9d271c6; worker/everyday-hidden-wifi-20261007. Source authoring complete; native qualification unrun pending serialized lease. This is an intermediate candidate, not acceptance or installed outcome.
+
+Static direct gates: docs524 exit0; strict MkDocs exit0; Network1 boundary exit0; Settings exact metadata boundary exit0; all existing+four new editor/second-field/password/oversize poisons exit0; diff hygiene exit0. Initial prior boundary rejection and CMake quoting/hygiene attempts were source-authoring corrections, not product runtime failures. Old enum/validation/codec source exactly unchanged. Astra ADR contract-only acceptance, exact source review pending.
+
+Build plan: private .cache/ed-hidden-wifi-build, Ninja native Debug, /usr KDE layout/libexec, production shell ON (existing test graph requires ShellSurface), KWin plugin OFF, NativePowerExclusive OFF, strictwarnings ON, BUILD_TESTING ON. Observe portageq MAKEOPTS and require unchanged -j24 -l24. Build the 32 focused declared targets below, no full runtime suite or installation. Private HOME/XDG/offscreen/software/basic and blocked host buses; individual synthetic tests launch only their own private buses. Exact selector ^qindaqt\.(network-|settings-network-secret-agent-presence), ctest -j1 --output-on-failure after build; includes seven new hidden rows, existing owning Network/Settings regressions, copied seven-component QML compiled/disk/poison and publicSDK/header gates. Report actual discovered testcounts, no inferred pass.
+
+Targets:
+```
+qindaqt_network_identity_tests qindaqt_network_validation_tests qindaqt_network_codec_tests qindaqt_network_redaction_tests qindaqt_network_hidden_compatibility_tests qindaqt_network_snapshot_gate_tests qindaqt_network_scan_lease_tests qindaqt_network_intent_policy_tests qindaqt_network_model_tests qindaqt_network_hidden_intent_tests qindaqt_network_client_tests qindaqt_network_client_admission_tests qindaqt_network_adversarial_tests qindaqt_network_hidden_client_tests qindaqt_network_qt_transport_tests qindaqt_network_activation_tests qindaqt_network_hidden_transport_tests qindaqt_network_service_tests qindaqt_network_residency_tests qindaqt_network_hidden_service_tests qindaqt_fake_network_manager qindaqt_network_manager_adapter_tests qindaqt_network_manager_visible_profile_tests qindaqt_network_hidden_profile_tests qindaqt_network_settings_model_tests qindaqt_network_radio_outcomes_tests qindaqt_network_settings_agent_gate_tests qindaqt_network_settings_model_adversarial_tests qindaqt_network_page_tests qindaqt_network_secret_agent_presence_tests qindaqt_network_installed_qml_probe qindaqt_network_hidden_join_tests
+```
+
+Root requested readonly Media native-lock readiness guidance delivered: fixture waits actual object but state authority still exact nonce/owner/PID receipt; transport currently erases two accepted startup error names. No lock/broker edits made.
+
+No live networking/radio/account/credentials or installed mutation; immutable r16/preview preserved. Next: root lease/announcement, native focused repair loop, freeze exact tested source, independent review.

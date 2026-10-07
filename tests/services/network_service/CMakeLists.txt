@@ -36,3 +36,11 @@ set_tests_properties(
     qindaqt.network-residency
     PROPERTIES LABELS "service;network;dbus" TIMEOUT 30
 )
+
+qt_add_executable(qindaqt_network_hidden_service_tests tst_network_hidden_service.cpp support/fake_network_backend.h)
+target_link_libraries(qindaqt_network_hidden_service_tests PRIVATE QindaQt::NetworkService Qt6::Test)
+
+qindaqt_enable_warnings(qindaqt_network_hidden_service_tests)
+add_test(NAME qindaqt.network-hidden-service COMMAND qindaqt_network_hidden_service_tests)
+set_tests_properties(qindaqt.network-hidden-service
+    PROPERTIES LABELS "service;network;hidden;hostile" TIMEOUT 30)

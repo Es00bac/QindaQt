@@ -165,8 +165,14 @@ private:
     return {{QStringLiteral("Interface"), QStringLiteral("wlan0")},
             {QStringLiteral("IpInterface"), QStringLiteral("wlan0")},
             {QStringLiteral("DeviceType"), quint32(NM_DEVICE_TYPE_WIFI)},
-            {QStringLiteral("State"), quint32(NM_DEVICE_STATE_DISCONNECTED)},
-            {QStringLiteral("Managed"), true},
+            {QStringLiteral("State"), quint32(m_security == QLatin1String("hidden-unmanaged")
+                 ? NM_DEVICE_STATE_UNMANAGED : NM_DEVICE_STATE_DISCONNECTED)},
+            // libnm derives its public state from the real (uu) StateReason.
+            {QStringLiteral("StateReason"), QVariant::fromValue(QindaQt::Network::NetworkManager::TestSupport::DeviceStateReason{
+                 quint32(m_security == QLatin1String("hidden-unmanaged")
+                     ? NM_DEVICE_STATE_UNMANAGED : NM_DEVICE_STATE_DISCONNECTED),
+                 quint32(NM_DEVICE_STATE_REASON_NONE)})},
+            {QStringLiteral("Managed"), m_security != QLatin1String("hidden-unmanaged")},
             {QStringLiteral("Autoconnect"), true},
             {QStringLiteral("FirmwareMissing"), false},
             {QStringLiteral("NmPluginMissing"), false},
@@ -182,7 +188,11 @@ private:
             {QStringLiteral("ActiveAccessPoint"),
              QVariant::fromValue(QDBusObjectPath(QStringLiteral("/")))},
             {QStringLiteral("Mode"), quint32(NM_802_11_MODE_INFRA)},
-            {QStringLiteral("WirelessCapabilities"), quint32(0)},
+            {QStringLiteral("WirelessCapabilities"), quint32(
+                 m_security == QLatin1String("hidden-rsn")
+                 || m_security == QLatin1String("hidden-refuse")
+                 || m_security == QLatin1String("hidden-unmanaged")
+                     ? NM_WIFI_DEVICE_CAP_RSN | NM_WIFI_DEVICE_CAP_CIPHER_CCMP : 0)},
             {QStringLiteral("LastScan"), qint64(-1)}};
   }
 
@@ -256,6 +266,14 @@ private:
           message.arguments().value(0).value<QDBusArgument>();
       argument >> m_captured;
       ++m_captureCount;
+      m_device = message.arguments().value(1).value<QDBusObjectPath>().path();
+      m_specific = message.arguments().value(2).value<QDBusObjectPath>().path();
+      if (m_security == QLatin1String("hidden-refuse")) {
+        connection.send(message.createErrorReply(
+            QStringLiteral("org.freedesktop.NetworkManager.Device.UnsupportedConnection"),
+            QStringLiteral("private fake refusal must not escape")));
+        return true;
+      }
       QDBusMessage reply = message.createReply();
       reply.setArguments(
           {QVariant::fromValue(QDBusObjectPath(
@@ -274,6 +292,12 @@ private:
     if (message.member() == QLatin1String("CaptureCount")) {
       sendReply(connection, message, m_captureCount);
       return true;
+    }
+    if (message.member() == QLatin1String("CapturedDevice")) {
+      sendReply(connection, message, m_device); return true;
+    }
+    if (message.member() == QLatin1String("CapturedSpecific")) {
+      sendReply(connection, message, m_specific); return true;
     }
     if (message.member() == QLatin1String("CapturedSettings")) {
       sendReply(connection, message, QVariant::fromValue(m_captured));
@@ -297,6 +321,8 @@ private:
 
   QString m_security;
   SettingsMap m_captured;
+  QString m_device;
+  QString m_specific;
   quint32 m_captureCount = 0;
 };
 

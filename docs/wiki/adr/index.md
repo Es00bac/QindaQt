@@ -392,3 +392,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0352: Separate foreign application identity, runtime authority and package ownership](0352-foreign-runtime-identity-and-installation.md) — Proposed
 
 - [ADR-0353: Scope desktop agent context through provider-owned grants](0353-scoped-desktop-agent-context.md) — Proposed
+
+- [ADR-0354: Join hidden personal Wi-Fi through Network1](0354-join-hidden-personal-wifi-through-network1.md) — proposed optional metadata-only join with unchanged v1 receipts and secret authority.
