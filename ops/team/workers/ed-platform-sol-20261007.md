@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — backend f9 inherited verbatim in independently accepted combined5b503b51; manager integration gates pending
+- Status: waiting — agent usage source integrated and qualified; available for later package/installed gate or exact-source repair help
 - Base: ccc99fb3f67c2bdc4f7156af7c0b0f1e05478057; manager ADR/navigation inherited a9746fb40
 - Branch: worker/everyday-agent-usage-backend-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -38,3 +38,5 @@
 - 2026-10-07T19:48:16Z — Exact f9c6e76ee35c12c355fa75bd4edf0b059cd20803 strict build exit0 and focused CTest2/2 PASS10.31s, observed Qt18/Python3. Both RPC partial directions preserve valid fields with fixed safe Partial detail. Compiler released to UI; exact combined independent recheck next. No successor claimed.
 
 - 2026-10-07T20:25:15Z — Reviewer independently ACCEPTED combined5b503b51ea99cb7b8d9681044a006120874ff3c0 at receipt d3651bbd3e7134d49ac8e5d61ed18f98c87b5ac8, inheriting repaired backend f9 and board61 verbatim. Reviewer reports own strict backend2/2, public partial/schema/FD fixtures9/9 and publisher27/27 pass. Own direct Debug strict2/2 (Qt18/Python3) evidence remains unchanged. Waiting for manager full-shell/13/DPI2/stagedSDK/header-poison/live-count/docs gates; root owns compiler. Board-only update, no source/r15 change or installation claim.
+
+- 2026-10-07T20:33:45Z — Read manager integration receipt2026-10-07T203145+0000-manager-agent-usage-integration.md: accepted5b integrated/preserved c394552ed33f50f79e5d68cd640f8c163a84c512. Manager reports strict native1605-action build, integrated13/13, DPI2 1/1, staged SDK/publisher1/1, expected missing-header refusal/restored1/1, sanitized live availability and strictdocs519 pass. Own direct2/2 (Qt18/Python3) remains separately attributed. Source verification complete; waiting for later package/installed qualification or exact-source repair help. No source/r15 edits, compiler or system install.

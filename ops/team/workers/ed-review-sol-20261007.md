@@ -1,6 +1,6 @@
 # Everyday Review Sol
 
-- Status: waiting — ACCEPT exact5b complete; compiler released manager for integration/staged SDK gates; no successor claimed.
+- Status: available — accepted usage source and manager integration closed; no active task; available for later exact package review.
 - Candidate: 5b503b51ea99cb7b8d9681044a006120874ff3c0
 - Runtime: collaboration agent; requested GPT-6.1 Sol/high identity, no independent provider/model/process assertion
 
@@ -43,3 +43,5 @@
 - 2026-10-07T20:15:39+00:00: Own fresh focused shared QML build at1372/1698 without failed step. Corrected current Candidate field to5b; original42 rejection remains in historical update/receipt. Final executable gates still pending.
 
 - 2026-10-07T20:21:18+00:00: ACCEPT exact5b after own strict1698-action focused native-layout build, backend2/2+UI8/8+profiles3/3, DPI2popup1/1, independent repaired fixtures9/9/publisher27/27 and actual Timer normal3/3+DPI2 3/3. Both partial RPC directions close original42 defect. Docs519 strict/diff pass; compiler released manager. No full reviewer shell link, install, live provider/account/billing or physical journey claim; root staged SDK/full shell integration gates next. Available for exact integration anomaly recheck only.
+
+- 2026-10-07T20:35:04+00:00: Board-only closure: directly verified hub main c394552ed33f50f79e5d68cd640f8c163a84c512 contains accepted5b and src/tests/data remain verbatim. Read root integration receipt2026-10-07T203145+0000; manager reports native fullshell1605 actions, normal13/13/DPI2 1/1, staged public SDK/publisher/header-poison recovery and sanitized presence counts, docs519 strict. These are manager evidence, separate from own d365 independent counts. Source integration no longer pending. Immutable package/installed-session qualification remains open; r15 unchanged. No compiler/product changes or successor claimed.

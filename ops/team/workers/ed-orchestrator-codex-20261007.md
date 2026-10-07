@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — accepted AI usage source gates pass; final documentation, commit and hub preservation
+- Status: waiting — reviewed usage source and first delivery wave preserved on qinda; later package/installed and ED04 client gates remain
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -29,3 +29,5 @@
 - 2026-10-07T20:31:45+00:00 — Exact5b/d365 accepted source merged without conflict; full strict native shell1605 actions exit0, integrated13/13 (10.62s), DPI2 1/1, staged publisher/public header/archive1/1, missing-header rejection and restored1/1 all pass. Actual read-only Codex probe prints only state1/quota1/remaining1/reset1/token1/cost0. Own docs519/strict pass before final annotations; rerun follows. Worker acceptance updates6d7d687/cbc5df5 copied verbatim. Compiler released; immutable r15 and installed r13 unchanged.
 
 - 2026-10-07T20:33:05+00:00 — Final annotated tree passes docs519, strict MkDocs8.03s and staged/unstaged diff checks. Full native13/DPI2/staged public SDK/publisher/header-poison/live-presence gates complete. Preparing one accepted source integration commit and explicit qinda hub main preservation; active r13 and r15 immutable artifact remain unchanged.
+
+- 2026-10-07T20:36:11+00:00 — Integrated source c394552ed33f50f79e5d68cd640f8c163a84c512 preserved on hub main and clean manager branch; local detached review cache fast-forwarded, unrelated laptop showcase/untracked files preserved. Final worker closure records copied verbatim from b844207/7b21b67/5d15c87; source verification complete, later immutable package/installed qualification open. No compiler/private-runtime lease held; root ready to dispatch next bounded ED04 public-client/exporter or package outcome on fresh hub source.
