@@ -1,8 +1,8 @@
 # Everyday Platform Sol
 
-- Status: waiting — agent usage source integrated and qualified; available for later package/installed gate or exact-source repair help
-- Base: ccc99fb3f67c2bdc4f7156af7c0b0f1e05478057; manager ADR/navigation inherited a9746fb40
-- Branch: worker/everyday-agent-usage-backend-20261007
+- Status: working — preparing reviewed immutable r16 with compiled AI usage and native delivery fixes
+- Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc; overlay aefd6c8bbd30f57731e1833fa72429793441e554
+- Branch: worker/everyday-usage-release-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
 
 ## Updates
@@ -40,3 +40,7 @@
 - 2026-10-07T20:25:15Z — Reviewer independently ACCEPTED combined5b503b51ea99cb7b8d9681044a006120874ff3c0 at receipt d3651bbd3e7134d49ac8e5d61ed18f98c87b5ac8, inheriting repaired backend f9 and board61 verbatim. Reviewer reports own strict backend2/2, public partial/schema/FD fixtures9/9 and publisher27/27 pass. Own direct Debug strict2/2 (Qt18/Python3) evidence remains unchanged. Waiting for manager full-shell/13/DPI2/stagedSDK/header-poison/live-count/docs gates; root owns compiler. Board-only update, no source/r15 change or installation claim.
 
 - 2026-10-07T20:33:45Z — Read manager integration receipt2026-10-07T203145+0000-manager-agent-usage-integration.md: accepted5b integrated/preserved c394552ed33f50f79e5d68cd640f8c163a84c512. Manager reports strict native1605-action build, integrated13/13, DPI2 1/1, staged SDK/publisher1/1, expected missing-header refusal/restored1/1, sanitized live availability and strictdocs519 pass. Own direct2/2 (Qt18/Python3) remains separately attributed. Source verification complete; waiting for later package/installed qualification or exact-source repair help. No source/r15 edits, compiler or system install.
+
+- 2026-10-07T21:09:17Z — Claimed fresh source/overlay release worktrees for new r16; exact runtime freeze2188d8e and overlayaefd6c8. Read current plan/release/PAM/overlay workflow; source contains compiled AgentUsage service/publisher/public headers/runtime applet and all11 profile entries. Historical r15 remains immutable. Preparing reproducible archive, additive recipe/Manifest and exact metadata/closure for independent review before any compiler.
+
+- 2026-10-07T21:18:07Z — Immutable r16 archive39,011,614 bytes/SHA2566b8eab5e, all9,431 blobs/reproducibility verified. Exact overlay439fdb837, mirrored recipe/new row and each historical base preserved. Metadata/digest/release7/ABI/fork and exact closure599/zeroPlasma, strictdocs519 pass. Coordinating exact review while Media holds short compiler lease; no compiler yet.
