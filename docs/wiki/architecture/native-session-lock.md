@@ -393,3 +393,6 @@ Explicit cancellation fences the exact mode/request serial.
 [Critical battery policy](power-policy.md#native-critical-battery-countdown)
 uses the public SessionActions protected Suspend/Hibernate route (ADR-0331).
 Lid and idle policy remain separate prerequisites, with no PF2 completion claim.
+
+The distribution-owned policy package is defined by
+[ADR-0349](../adr/0349-package-native-lock-authentication-policy.md).

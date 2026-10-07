@@ -1,5 +1,21 @@
 # Platform delivery queue
 
+## October 7 current incident — installed PAM policy and restored battery
+
+The new owner request authorizes this bounded unlock/battery repair. Earlier
+unrelated recovery work remains at its preserved boundary. Program Manager
+owns integrated candidates and delivery.
+
+| Outcome | State | Exact evidence | Reviewer | Next gate/resource |
+| --- | --- | --- | --- | --- |
+| Native lock prompt reaches site PAM | INSTALLED policy; source regression accepted | Overlay e62153b; only-policy signed artifact 5eeb37db; locker candidate1297b81; both-host one-file CONTENTS/mode/hash and unchanged world/login stacks | Incident Policy Reviewer Codex ACCEPT source/artifact, private4-row policy matrix and lock3/3 CTests37 Qt checks | Manager strict11-target build, lock3/3 and power9/9 (133 Qt checks), strict docs/511; real physical prompt/focus/password unlock not observed; no live session lease |
+| Battery reporting after login | LIVE ready; SOURCE accepted | Installed UPower standard activation restored28% charging, enabled at graphical boot; candidate6921f4c with seven private startup behaviors | Incident Policy Reviewer Codex ACCEPT,9/9 CTests96 Qt checks; original dormant regression fails base | Manager combined power9/9 passes; source included in future desktop package; no laptop build |
+
+Worker implementations and exact review records are preserved in isolated
+qinda hub branches. Only the policy was installed; existing desktop binaries
+and active applications remain in place. Future desktop recipe dependency on
+sys-auth/qindaqt-lock-pam is required by ADR-0349.
+
 ## October 4 desktop incident — installed lock repair; Mail recovery active
 
 Interactive incident manager owns this bounded recovery. The authorized laptop
