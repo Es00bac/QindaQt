@@ -29,6 +29,14 @@ authentication and destructive-storage decisions; ordinary implementation
 retains the default tier. This current instruction supersedes the audit's
 documentation-only and earlier model-escalation defaults.
 
+## October 7 copier source acceptance and foreign-runtime queue — 2026-10-07T23:52:31+00:00
+
+Independently reviewed copier223c8a7ae preserves output after failed exclusive creation, cancellation and source/destination replacement. Exact author gates pass: focused7/7 (73Qt), actual project8/8 (70Qt), normal/2x banner, real File Manager UI and boundary poison/restoration. ADR0357 is Accepted; explicit Delete/Trash policy is unchanged. Manager integrated native rerun and future installed/physical qualification remain open.
+
+Media currently owns the compiler/private fixture lease. ED11 production83e builds and all five new Printing gates pass; existing metadata assertions were repaired only in tests4887bfa and their full18 rerun/SDK gates remain pending. This candidate awaits final exact independent acceptance. Platform prepares the two packaged Wine-app proof in disposable prefixes and a private desktop; it runs next after Media release, ahead of the signed toolkit703 artifact build. Android has no initialized guest or trusted window producer yet; the concrete Portage/guest producer helpdf366 identifies the missing boundary. Neither Android nor Windows has passed the full compatibility journey.
+
+Root isolated Viewer text/find source and fresh ED05 whole cross-volume recovery remain in progress. Installed desktopr16 and its profile/plugin are unchanged. All ED01–24 required journeys, including physical and newcomer gates, remain active; no entire milestone advances from these source slices.
+
 ## October 7 integrated source acceptance — 2026-10-07T23:32:35+00:00
 
 Source b77d254c55af228cec1e15e81f9b868f31e61c44 integrates independently reviewed ordinary removable-media actions64dc, hidden personal Wi-Fi14b (Accepted ADR0354), bounded native captureec10 and lock startup65. Manager strict Debug build68 requested targets/1114 actions exits0. Owning Media29/29 (339Qt), Network39/39 (254Qt), capture2/2 (57Qt), native-lock2/2 (28Qt), and actual remote context menu1/1 (7Qt) all pass with zero Qt failure/skip/blacklist. Public media staged SDK1/1 passes, missing-header compile correctly fails, restoration1/1 passes.

@@ -1,12 +1,12 @@
 # First-party delivery queue
 
-## October 7 exact integration and adoption state — 2026-10-07T23:32:35+00:00
+## Current integrated outcomes and next gates — 2026-10-07T23:52:31+00:00
 
-Managerb77 integrated reviewed Media64dc, hidden14b/ADR0354Accepted, captureec10 and lock65;68 targets/1114 strict actions and73 CTests/685 Qt pass. Media public installed-only stage1/1/header poison/restored1/1; SDK4fb exact3/3/43Qt pass. Toolkit703/overlay24 recipes integrated after independent archive2919-blob/mode/recut verification; signed artifact gate remains next.
+Copier source223 is independently accepted after actual evidence7/73 and project8/70 plus UI/boundary gates; ADR0357 accepted on integration, integrated-tree native rerun pending. Existing integrated Media64dc, hidden14b, captureec10 and lock65 owning73 CTests/685Qt pass; public media SDK poison/restoration and scoped SDK3/43 pass. Toolkit703/overlay24 immutable source is accepted; artifact/installed gates remain open.
 
-Current lease/queue: Astra223 copier preservation actual7/7+73Qt and production banner normal/2x pass, full affected app gates still running; Media83e ED11 source/static accepted only for native dispatch, native next after explicit release; Platform signed toolkit build-only follows. Root isolated Viewer text/find source is unreviewed/uncompiled. All candidates remain preserved in their isolated worktrees; root reviews/integrates only exact independently accepted commits.
+Media owns the compiler/private fixture lease for final ED11 exact production83e/test-only488 repair and SDK/public-header gates. Independent source review remains pending. Next: Platform two-app private Wine proof after exact runnable-script review, then signed toolkit build-only. Astra next hard ED05 source packet is routed on fresh integrated base; root Viewer text/find authoring is uncompiled and independently unreviewed. Android image/producer help is concrete but no guest or green identity is delivered.
 
-Actual laptop installed desktopr16/source2188 has saved top-bar applet placement and real Codex remaining/reset/token presence; cost absent. Claude publisher connected, first live report not observed. Current running shell unchanged; click/next-login/hardware gates open. EntireED01–24 plan stays active; no completion credit from assignments/design/candidate branches.
+Installed laptop desktopr16 has additive applet profile placement and actual Codex remaining/reset/token presence, cost absent. Claude publisher connected, first real report/popup click unobserved. Required installed, hardware, authentication, foreign-app and newcomer journeys are open. No completion credit from assignments or candidate branches.
 
 ## Full-plan delivery is active — 2026-10-07T21:15:27+00:00
 

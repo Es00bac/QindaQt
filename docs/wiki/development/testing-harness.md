@@ -2772,13 +2772,28 @@ package rows remain in the selector. S1 adds separate local-mutation, home-Trash
 worker-controller, AppShell action-catalog, production-QML contract, and source-
 boundary rows. Disposable fixture trees cover Unicode and control-character
 names, overlong rejection, permission denial, existing destinations, stale and
-vanished identities (including vanishing during copy), cancellation cleanup,
+vanished identities (including vanishing during copy), cancellation retention,
 nested/root symbolic-link escapes, an in-flight nested-directory swap,
 mode/data preservation, Trash metadata and restore round trips, unique payloads,
 orphan-payload suffix allocation, restore collision, vanished restore-parent
 typing, empty Trash, a deterministic preflight-to-commit racing writer, and a
 cross-device refusal through an injected device resolver. Controller fakes
 prove execution occurs off the GUI thread and cancellation returns typed state.
+
+The failed-copy preservation rows are qindaqt.file-manager-copy-safety,
+qindaqt.file-manager-mutation-output and
+qindaqt.file-manager-mutation-output-qml (Proposed
+[ADR-0357](../adr/0357-preserve-failed-copy-output-without-cleanup-authority.md)).
+The C++ copier rows use actual filesystem helpers/backends and sentinel bytes
+for pre-existing file/tree collisions, progress-time replacement and cancellation,
+vanished-source postcheck, replaced destination ancestry and successful nested
+copy. They preserve the immutable old-source failures separately. Controller
+rows verify request-ordered success/failure/unattempted facts and refresh on
+partial effects. The QML row loads the actual shared banner components and
+asserts literal hostile paths, accessible text and dismissal-only presentation.
+Run native rows with private XDG roots and both host bus addresses blocked;
+run the QML row offscreen/software at normal and doubled scale. These are
+temporary-tree source qualifications, not installed or physical-volume tests.
 
 `qindaqt.file-manager-mutation-ui-offscreen` constructs the production QML
 root, action menus, dialogs, and accessible progress/failure/result surfaces

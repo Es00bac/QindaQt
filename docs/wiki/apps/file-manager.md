@@ -570,12 +570,49 @@ Recursive copy is limited to 20,000 entries. It pins source and destination
 directories with descriptor-relative `openat`/`fstatat` calls, applies
 `O_NOFOLLOW` at each kernel boundary, rechecks every visited identity, and
 rejects symbolic links anywhere in the tree. It preserves permissions and
-modification time where the platform permits and removes a partial destination
-after cancellation, hostile content, change, or vanishing. Rename and move
+modification time where the platform permits. Failed copies preserve output as
+described below. Rename and move
 commit with Linux `renameat2(RENAME_NOREPLACE)`, so a destination created by
 another writer after preflight is preserved and returns `already-exists`
 atomically. They preserve the filesystem's existing metadata; cross-device move
 is refused rather than silently degrading to copy-and-delete.
+
+### Failed-copy output observations
+
+The source repair described by Proposed
+[ADR-0357](../adr/0357-preserve-failed-copy-output-without-cleanup-authority.md)
+removes automatic copy failure cleanup from both recursive traversal and the
+source postcheck. A failed exclusive create never deletes an existing entry.
+Cancellation, write failure, hostile content, source changes and destination
+replacement can leave partial output; the failure card says what was observed
+and provides the literal path without offering cleanup or recovery authority.
+
+The private worker result carries None, RetainedPartial, RetainedCopy,
+Replaced or Unconfirmed output disposition, optional written-descriptor,
+observed-path and parent identities, and separate traversal-completed and
+exclusive-creation facts. These are observations, not fresh authority.
+O_EXCL regular-file creation returns its descriptor; mkdirat followed by
+openat cannot prove the opened directory's creation atomically, so folder
+notices explicitly avoid that ownership claim. Parent/path readback can become
+stale immediately; identical metadata is not content verification or a mount
+lease. Missing or replaced ancestry gives an unconfirmed location. Nothing
+automatically deletes a displaced or uncertain copy.
+
+MutationController.outputObservations is a GUI-thread value snapshot in
+request order. Each item includes attempted, source/destination paths, typed
+error key, output disposition/path and exclusive-creation fact. Unattempted
+suffixes stay explicitly unattempted. A failure after successful batch items
+retains those facts and refreshes the listing. The legacy mutationCommitted
+notification now also requests refresh for observed partial effects; it does
+not assert overall success. The outputNotice property supplies the failure
+card's separate plain-text, accessible observation, without truncating a path
+into a different location. A later admitted request clears these transient
+values. Dismissal clears the notice; it does not mutate any output.
+
+Retained output consumes space and survives cancellation; there is no automatic
+cleanup, persistent recovery record, restart deletion or new undo/restore
+operation. Full cross-device Move still returns a refusal. This initial safety
+repair does not deliver the separate cross-device recovery design.
 
 ### Home Trash contract
 

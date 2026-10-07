@@ -83,6 +83,38 @@ struct MutationProgress final {
   QString accessibleText;
 };
 
+// AGENT-CONTRACT: These are immutable observations from one worker call,
+// never authority to open, remove, restore or reuse a filesystem entry.
+enum class MutationOutputDisposition {
+  None,
+  RetainedPartial,
+  RetainedCopy,
+  Replaced,
+  Unconfirmed,
+};
+
+struct MutationOutputObservation final {
+  MutationOutputDisposition disposition = MutationOutputDisposition::None;
+  QString path;
+  // The descriptor written by this copy. A directory's mkdir/open pair is
+  // not atomic; only an O_EXCL regular-file descriptor proves creation.
+  std::optional<FileIdentity> writtenIdentity;
+  bool exclusiveCreation = false;
+  // Traversal/write/fsync reached its end; not a content manifest, source
+  // postcheck, or a guarantee the current destination is this descriptor.
+  bool copyFinished = false;
+  std::optional<FileIdentity> observedIdentity;
+  std::optional<FileIdentity> parentIdentity;
+};
+
+struct MutationItemOutcome final {
+  bool attempted = false;
+  QString sourcePath;
+  QString destinationPath;
+  MutationError error = MutationError::None;
+  MutationOutputObservation output;
+};
+
 struct MutationResult final {
   MutationError error = MutationError::None;
   QString diagnostic;
@@ -91,6 +123,9 @@ struct MutationResult final {
   QString originalPath;
   std::optional<FileIdentity> outputIdentity;
   std::shared_ptr<MutationRequest> undoRequest;
+  MutationOutputObservation outputObservation;
+  // Controller value copies in request order, including unattempted suffix.
+  QVector<MutationItemOutcome> itemOutcomes;
 
   [[nodiscard]] bool ok() const { return error == MutationError::None; }
 };
@@ -98,6 +133,7 @@ struct MutationResult final {
 using MutationCancellation = std::shared_ptr<std::atomic_bool>;
 using MutationProgressCallback = std::function<void(const MutationProgress &)>;
 
+[[nodiscard]] QString mutationOutputDispositionKey(MutationOutputDisposition value);
 [[nodiscard]] QString mutationErrorKey(MutationError error);
 [[nodiscard]] QString boundedMutationDiagnostic(const QString &message);
 // The typed error for a failed system call's errno (ADR-0269 code uses this

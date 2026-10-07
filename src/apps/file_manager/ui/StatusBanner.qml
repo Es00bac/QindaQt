@@ -36,6 +36,7 @@ Control {
                 visible: root.title.length > 0
                 text: root.title
                 font.bold: true
+                textFormat: Text.PlainText
                 wrapMode: Text.WordWrap
                 Accessible.ignored: true
             }
@@ -43,6 +44,7 @@ Control {
                 Layout.fillWidth: true
                 visible: root.message.length > 0
                 text: root.message
+                textFormat: Text.PlainText
                 wrapMode: Text.WordWrap
                 Accessible.ignored: true
             }
