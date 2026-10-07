@@ -95,6 +95,12 @@ Private desktop harnesses pass `--no-removable-media` to the supervisor.
 `SessionProcessOptions` leaves the helper unset unless production main configures
 it. Policy, UDisks, QML and session-lifetime tests use fixture storage/private
 buses; they never format physical disks. See the [testing harness](../development/testing-harness.md).
+Candidate 64dcfa1a2b15c065c97d43e0f30e5c6bca173633 passed all 29 focused registry
+rows and 339 Qt checks, including 16 owning UDisks fixture checks for
+acknowledgement without converged roots, hidden sibling readback, cancellation
+and drive/block replacement before final removal replies. This is private
+fixture evidence with no system bus; it does not establish physical unplug or
+formatting outcomes.
 Hardware insertion/ejection and destructive formatting require disposable-media
 qualification; fake-bus tests do not establish that physical evidence.
 

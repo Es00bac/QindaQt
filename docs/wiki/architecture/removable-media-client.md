@@ -79,6 +79,16 @@ public source doubles and private/absent buses. Compiler, runtime, native
 frontend, installed-package and physical USB evidence must each name the exact
 tested candidate. Source fixtures never establish physical-media qualification.
 
+Source candidate 64dcfa1a2b15c065c97d43e0f30e5c6bca173633 passed the strict focused
+production build and all 29 selected registry rows: 339 Qt checks, zero failures,
+skips or blacklisted cases. This includes actual portal frontend/private-KWin
+native chooser mapping and lifetime checks, not only source doubles. The
+Core/DBus installed-only staged consumer passed 1/1; withholding its staged
+client header broke compilation and restoration passed 1/1. These results
+qualify that candidate's source and private fixtures. Integration rechecks,
+Portage payload/session checks and physical USB insertion/mutation/eject remain
+separate delivery gates.
+
 The isolated `tests/services/removable_media_client/standalone` entry point links the public protocol/client plus owner-only projection/controller fixtures. `qindaqt.removable-media-inventory` uses a private session bus and unavailable system bus. It covers passive zero-launch, explicit start/readback/timeout, old-owner Activate compatibility, malformed/oversized snapshots, epoch retirement, immediate owner revocation, destruction during pending read, duplicate partitions, complete roots and unknown read-only truth. Execution evidence is recorded with the exact source candidate handoff; it is private-bus verification, never physical-media qualification.
 
 The sibling `installed_consumer` CMake entry point takes `MEDIA_STAGE` and links

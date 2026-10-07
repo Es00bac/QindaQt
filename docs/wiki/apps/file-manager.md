@@ -1774,9 +1774,13 @@ The [ED-04 delivery plan](../development/everyday-desktop-plan.md) and
 [Accepted ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md)
 retain [Removable Media](removable-media.md) as the device authority.
 The public client/exporter and the [device sidebar](#removable-devices-and-location-lifetime)
-are implemented as a source candidate. [Native chooser](../reference/portal-choosers.md#removable-devices)
+are implemented in a fixture-qualified source candidate. [Native chooser](../reference/portal-choosers.md#removable-devices)
 selection uses the same public boundary. No consumer stores choices or imports
 private UDisks code. Formatting and credentials remain in the owner UI.
+Candidate 64dcfa1a2b15c065c97d43e0f30e5c6bca173633 passed the File Manager media
+and compact/desktop keyboard/fit cases as part of 29/29 focused registry rows
+and 339 Qt checks. Never-active Commander panes, reversed nested-root order,
+owner/attachment/root loss and reused paths are direct negative cases.
 Exact source/fixture, native, installed-package and physical insertion/eject
 qualification each require separate evidence. Source delivery and a passing
 private fixture cannot establish installed or physical-device completion.

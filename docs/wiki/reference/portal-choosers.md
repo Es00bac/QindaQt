@@ -128,6 +128,8 @@ request; accepted owner work continues. Formatting, credentials, preferences
 and forced removal remain exclusively in the Removable Media app. The new
 qindaqt.portal-media-chooser source fixture gate covers Open/Save/SaveMany,
 read-only refusal, duplicate partitions, deferred open/close, replacement at a
-reused root and explicit navigation withdrawal. Existing actual-native
-frontend/foreign-parent qualification must be rerun on the integrated source;
+reused root and explicit navigation withdrawal. Candidate 64dcfa1a2b15c065c97d43e0f30e5c6bca173633 passed its 12 media chooser
+Qt checks, including real overwrite-modal owner/read-only/navigation changes,
+and the actual frontend/private-KWin native chooser row passed 9 Qt checks.
+The integrated source must rerun affected native/frontend/foreign-parent gates;
 fixture evidence does not replace installed-session or physical-USB evidence.
