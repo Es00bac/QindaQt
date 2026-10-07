@@ -171,3 +171,19 @@ set_tests_properties(
     qindaqt.network-settings-boundary-poison PROPERTIES
     LABELS "settings;network;boundary;poison"
 )
+
+# Standalone dynamic consumer: no Network/QindaQt library is linked into it.
+qt_add_executable(qindaqt_network_installed_qml_probe installed_qml_probe.cpp)
+target_link_libraries(qindaqt_network_installed_qml_probe PRIVATE Qt6::Quick)
+qindaqt_enable_warnings(qindaqt_network_installed_qml_probe)
+add_dependencies(qindaqt_network_installed_qml_probe
+    qindaqt_settings_network_qmlplugin)
+add_test(NAME qindaqt.network-installed-qml
+    COMMAND "${CMAKE_COMMAND}"
+        -DBUILD_DIRECTORY=${CMAKE_BINARY_DIR}
+        -DINSTALL_QMLDIR=${QT6_INSTALL_QML}
+        -DSYSTEM_QMLDIR=${QT6_INSTALL_PREFIX}/${QT6_INSTALL_QML}
+        -DPROBE=$<TARGET_FILE:qindaqt_network_installed_qml_probe>
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_installed_qml.cmake")
+set_tests_properties(qindaqt.network-installed-qml PROPERTIES
+    LABELS "offscreen;settings;network;package;poison" TIMEOUT 60)

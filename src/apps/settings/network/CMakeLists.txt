@@ -76,12 +76,15 @@ install(
     COMPONENT SettingsAppearanceRuntime
 )
 install(
+    # AGENT-CONTRACT: qmldir and compiled resources both name qml/ paths;
+    # disk-only package consumers must resolve the same six components.
     FILES
+        qml/NetworkAccessPointActions.qml
         qml/NetworkAccessPointSection.qml
         qml/NetworkDeviceSection.qml
         qml/NetworkPage.qml
         qml/NetworkRadioSection.qml
         qml/NetworkSavedSection.qml
-    DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network"
+    DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network/qml"
     COMPONENT SettingsAppearanceRuntime
 )
