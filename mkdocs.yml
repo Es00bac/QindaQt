@@ -47,6 +47,8 @@ nav:
       - Overview: architecture/overview.md
       - Module boundaries: architecture/module-boundaries.md
       - Application window management: architecture/application-window-management.md
+      - Foreign application identity and lifecycle: architecture/foreign-applications.md
+      - Scoped desktop-agent context: architecture/desktop-agent-context.md
       - Native semantic window management: architecture/window-management-commands.md
       - QST-1 semantic design tokens: architecture/design-tokens.md
       - Qt platform appearance: architecture/qt-platform-theme.md
@@ -530,6 +532,8 @@ nav:
       - "0349: Native lock authentication policy": adr/0349-package-native-lock-authentication-policy.md
       - "0350: Share removable media with file consumers": adr/0350-share-removable-media-with-file-consumers.md
       - "0351: Bounded coding-agent usage metadata": adr/0351-collect-agent-usage-through-bounded-metadata-sources.md
+      - "0352: Foreign runtime identity and installation": adr/0352-foreign-runtime-identity-and-installation.md
+      - "0353: Scoped desktop-agent context": adr/0353-scoped-desktop-agent-context.md
       - "0347: Controller desktop input yields to games": adr/0347-controller-desktop-integration.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md

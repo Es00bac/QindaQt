@@ -1,0 +1,21 @@
+# ED foreign application architecture
+- Status: working — exact ED07 peer review then QindaTK scoped Read host production slice
+- Outcome: real provider-scoped Read SDK host with authenticated admission/privacy/revision gates; exact ED07 review first
+- Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc
+- Branch: worker/everyday-foreign-architecture-20261007
+- Ownership: ADR-0352, architecture/foreign-applications.md, own records; minimal navigation edits coordinated with manager
+- Resources: read-only runtime inspection; no compiler, privileged service or physical-session lease
+## Updates
+- 2026-10-07T21:09:43+00:00: Claimed isolated qinda worktree; preserved shared checkout changes; reading existing runtime and catalog contracts.
+- 2026-10-07T21:16:39+00:00: Material finding: qinda has no Waydroid; laptop is uninitialized. Kernel binder/memfd support exists; packaged image path avoids OTA bypass. Draft/proof passes 14 tests; docs 521 and strict build pass before provisioning appendix. No real foreign window proof claimed.
+- 2026-10-07T21:17:52+00:00: Verified and handed off candidate 8d50474090ba8e9c22697d31b14ca1e3286dfb0e; pure model 14/14, docs 521, strict MkDocs and diff check exit 0. Read Platform queue; offered Portage provisioning packet and readiness for manager-routed ED17/ED05 hard contracts.
+- 2026-10-07T21:20:46+00:00: Exact upstream trace finds Waydroid app_id derived from window title text despite trusted HWC producer; documenting the static identity counterexample before review. Real task/UID-to-surface bridge remains required.
+- 2026-10-07T21:21:31+00:00: Revised exact candidate c5cdccf319138fa3135e973fbe30590c4bd50a51 includes upstream title-provenance evidence. Source handoff finished; no live compiler/runtime work claimed. Ready for review repairs, ED17/ED05 hard contracts or accepted ED21/22 implementation.
+- 2026-10-07T21:22:29+00:00: Claimed ED17 ADR0353/architecture/desktop-agent-context.md/tests/design/desktop_agent_context_contract.py with minimal navigation; no compiler or runtime lease. QindaTK hub/checkout 393c1ce5 match; unrelated .obsidian directory preserved.
+- 2026-10-07T21:28:11+00:00: ED17 actual-source audit confirms QindaTK v1 cooperative same-UID grants, not per-task isolation. Proposed scoped extension preserves provider semantics/receipts; 17 negative design cases, docs523, strict MkDocs and diff check pass. Exact first production slice routing prepared.
+- 2026-10-07T21:28:57+00:00: ED17 candidate b394effff64d007d2a022ddaa7ca3a88424467ed handed off for exact critical review. Read Platform queue and offered ED17a toolkit scoped policy/host seam or ED05 hard contract next. No compiler/runtime lease or unattended working claim.
+- 2026-10-07T21:36:45+00:00: Claimed NEEDS_FIX repair from reviewer39456f7bd. Original candidates preserved. Adding reviewer reproductions before model fixes; no compiler, bus, display or runtime lease. Requested Astra allocation is session routing, not independent runtime attestation.
+- 2026-10-07T21:38:36+00:00: Before fixes, direct review regressions failed as expected (ED20 2 failures/17 cases; ED17 3 failures/20). Repaired current launch/parent validation and lifecycle retirement; retained exact issued proposal records and single-use admission. Focused suites now 19/19 and24/24, no runtime claim.
+- 2026-10-07T21:39:43+00:00: Repair candidate a23b8722987cb91dc0c3b300745b20233354c897 handed off. Direct reviewer reproductions2/2 now pass; design suites19/19 and24/24, docs523/strict/diff0. Original commits preserved; push used explicit qinda hub only. No resource lease.
+- 2026-10-07T21:48:44+00:00: Reactivated for exact ED07 bda4d8d9 peer review and fresh QindaTK worktree at393c1ce5; own new scoped types/policy/host, focused tests/public export/docs. Shared toolkit .obsidian preserved. No compiler/runtime lease.
+- 2026-10-07T21:51:07+00:00: Independent ED07 bda4d8d9 ACCEPT bounded presentation; installed runner7/7 at1x and2x, docs519/strict/diff0. Now implementing toolkit explicit resource-owned Read port; no broad state projection or transport attestation claim.

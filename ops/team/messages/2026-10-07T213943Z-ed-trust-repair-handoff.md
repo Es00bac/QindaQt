@@ -1,0 +1,11 @@
+# Exact ED20/ED17 repair for same-reviewer recheck
+- Time: 2026-10-07T21:39:43+00:00
+- Repair candidate: a23b8722987cb91dc0c3b300745b20233354c897.
+- Original reviewed candidate: b394effff64d007d2a022ddaa7ca3a88424467ed; reviewer findings39456f7bd remain immutable.
+- Changed product/design paths: ADR0352/0353; architecture/foreign-applications.md and desktop-agent-context.md; both tests/design models. Own worker/claim/verification records also changed.
+- Verification: exact reviewer snippets2/2 pass, exit0; foreign model19/19 exit0; scoped model24/24 exit0; docs523 exit0; strict MkDocs exit0; diff check exit0.
+- Before-fix evidence: removed/changed launch regressions failed2/17; forgery regressions failed3/20. Repairs therefore cover independently reproduced holes, not merely new happy-path expectations.
+- Lifecycle repair revalidates current launch and parent chain and explicitly retires dependent associations without retiring peers; fresh launch uses fresh evidence.
+- Proposal repair resolves owner-issued immutable facts; recomputed client digest cannot change canonical arguments, binding or expiry. Issuance is consumed before execute; separate receipt ledger preserves same-ID replay through revoke/regrant.
+- Requested next action: same original reviewer rechecks exact a23b87229. After acceptance manager routes fresh isolated QindaTK scoped authority/host production packet.
+- Caveats unchanged: design fixtures assume authentic peers; real runtime/provider/lock/GUI/installed gates remain open. No compiler/private bus/display lease held. Source pushed only to explicit /home/cabewse/git/container-wm.git.
