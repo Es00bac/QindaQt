@@ -52,11 +52,11 @@ SecuritySuite accessPointSecurity(NMAccessPoint *point) {
 
 } // namespace
 
-NMConnection *buildVisibleWifiProfile(const QByteArrayView rawSsid,
-                                      const SecuritySuite security) {
+NMConnection *buildWifiProfile(const QByteArrayView rawSsid,
+                               const SecuritySuite security, const bool hidden) {
   const SsidIdentity identity = normalizeSsid(rawSsid);
   if (!identity.valid || identity.hidden || identity.text.isEmpty()
-      || !supportedSecurity(security)) {
+      || !supportedSecurity(security) || (hidden && security == SecuritySuite::Open)) {
     return nullptr;
   }
 
@@ -72,6 +72,7 @@ NMConnection *buildVisibleWifiProfile(const QByteArrayView rawSsid,
   GBytes *ssid =
       g_bytes_new(rawSsid.data(), static_cast<gsize>(rawSsid.size()));
   g_object_set(wireless, NM_SETTING_WIRELESS_SSID, ssid,
+               NM_SETTING_WIRELESS_HIDDEN, hidden,
                NM_SETTING_WIRELESS_MODE, NM_SETTING_WIRELESS_MODE_INFRA,
                nullptr);
   g_bytes_unref(ssid);
@@ -90,9 +91,24 @@ NMConnection *buildVisibleWifiProfile(const QByteArrayView rawSsid,
                  keyManagement, NM_SETTING_WIRELESS_SECURITY_PSK_FLAGS,
                  static_cast<guint>(NM_SETTING_SECRET_FLAG_AGENT_OWNED),
                  nullptr);
+    if (hidden) {
+      nm_setting_wireless_security_add_proto(wifiSecurity, "rsn");
+      nm_setting_wireless_security_add_pairwise(wifiSecurity, "ccmp");
+      nm_setting_wireless_security_add_group(wifiSecurity, "ccmp");
+      if (security == SecuritySuite::Wpa3Personal) {
+        // AGENT-GUARD: Hidden SAE is WPA3-only; never downgrade to WPA2.
+        g_object_set(wifiSecurity, NM_SETTING_WIRELESS_SECURITY_PMF,
+                     NM_SETTING_WIRELESS_SECURITY_PMF_REQUIRED, nullptr);
+      }
+    }
     nm_connection_add_setting(profile, NM_SETTING(wifiSecurity));
   }
   return profile;
+}
+
+NMConnection *buildVisibleWifiProfile(const QByteArrayView rawSsid,
+                                      const SecuritySuite security) {
+  return buildWifiProfile(rawSsid, security, false);
 }
 
 std::pair<NMDevice *, NMAccessPoint *>

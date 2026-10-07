@@ -7,6 +7,7 @@ target_sources(
     PRIVATE
         network_secret_agent_presence.cpp
         network_settings_actions.cpp
+        network_settings_hidden.cpp
         network_settings_model.cpp
         network_settings_radios.cpp
     PUBLIC
@@ -43,6 +44,7 @@ qt_add_qml_module(
         qml/NetworkAccessPointSection.qml
         qml/NetworkDeviceSection.qml
         qml/NetworkPage.qml
+        qml/NetworkHiddenJoinSection.qml
         qml/NetworkRadioSection.qml
         qml/NetworkSavedSection.qml
 )
@@ -77,12 +79,13 @@ install(
 )
 install(
     # AGENT-CONTRACT: qmldir and compiled resources both name qml/ paths;
-    # disk-only package consumers must resolve the same six components.
+    # disk-only package consumers must resolve the same seven components.
     FILES
         qml/NetworkAccessPointActions.qml
         qml/NetworkAccessPointSection.qml
         qml/NetworkDeviceSection.qml
         qml/NetworkPage.qml
+        qml/NetworkHiddenJoinSection.qml
         qml/NetworkRadioSection.qml
         qml/NetworkSavedSection.qml
     DESTINATION "${QT6_INSTALL_QML}/QindaQt/SettingsApp/Network/qml"

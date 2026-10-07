@@ -20,6 +20,8 @@ struct NetworkServiceRequest final {
   QString identifier;
   RadioKind radioKind = RadioKind::Wifi;
   bool enable = false;
+  // Optional metadata-only first-use join; wire receipts retain Connect kind1.
+  std::optional<ConnectHiddenIntent> hiddenJoin = std::nullopt;
 };
 
 struct OperationSubmission final {

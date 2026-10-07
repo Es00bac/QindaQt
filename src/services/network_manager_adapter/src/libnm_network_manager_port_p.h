@@ -20,6 +20,10 @@ namespace QindaQt::Network::NetworkManager {
 [[nodiscard]] NMConnection *buildVisibleWifiProfile(QByteArrayView rawSsid,
                                                     SecuritySuite security);
 
+[[nodiscard]] NMConnection *buildWifiProfile(QByteArrayView rawSsid,
+                                             SecuritySuite security, bool hidden);
+[[nodiscard]] bool hiddenDeviceSecuritySupported(quint32 capabilities) noexcept;
+
 struct ScanLeaseState final {
   void begin(qint64 deadline) noexcept {
     deadlineMilliseconds = deadline;
@@ -86,6 +90,10 @@ private:
                   const Service::BackendOperationRequest &request);
   void submitConnect(quint64 operationId,
                      const Service::BackendOperationRequest &request);
+  void submitHiddenConnect(quint64 operationId,
+                           const Service::BackendOperationRequest &request);
+  static void hiddenActivationFinished(GObject *source, GAsyncResult *result,
+                                       gpointer userData);
   void submitVisibleConnect(quint64 operationId,
                             const Service::BackendOperationRequest &request);
   void submitDisconnect(quint64 operationId,

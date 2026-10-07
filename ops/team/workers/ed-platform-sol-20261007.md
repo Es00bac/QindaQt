@@ -1,8 +1,8 @@
 # Everyday Platform Sol
 
-- Status: working — preparing reviewed immutable r16 with compiled AI usage and native delivery fixes
-- Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc; overlay aefd6c8bbd30f57731e1833fa72429793441e554
-- Branch: worker/everyday-usage-release-20261007
+- Status: waiting — ED08 hidden personal Wi-Fi source authored; native compiler/private-fixture lease queued
+- Base: 47a7366ad1eb0e8250c3bb6f955341ecf9d271c6
+- Branch: worker/everyday-hidden-wifi-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
 
 ## Updates
@@ -44,3 +44,35 @@
 - 2026-10-07T21:09:17Z — Claimed fresh source/overlay release worktrees for new r16; exact runtime freeze2188d8e and overlayaefd6c8. Read current plan/release/PAM/overlay workflow; source contains compiled AgentUsage service/publisher/public headers/runtime applet and all11 profile entries. Historical r15 remains immutable. Preparing reproducible archive, additive recipe/Manifest and exact metadata/closure for independent review before any compiler.
 
 - 2026-10-07T21:18:07Z — Immutable r16 archive39,011,614 bytes/SHA2566b8eab5e, all9,431 blobs/reproducibility verified. Exact overlay439fdb837, mirrored recipe/new row and each historical base preserved. Metadata/digest/release7/ABI/fork and exact closure599/zeroPlasma, strictdocs519 pass. Coordinating exact review while Media holds short compiler lease; no compiler yet.
+
+- 2026-10-07T21:29:33Z — Manager exact recipe ACCEPT received; compiler/private package lease granted and spoken announcement delivered. Starting installed Portage buildpkgonly with private PKGDIR from the first phase, configured signing and24/24 preserved. No installation/publication; immutable runtime2188 remains pinned.
+
+- 2026-10-07T21:36:36Z — Actual full-source production build configured RelWithDebInfo with shell/plugin ON, BUILD_TESTING OFF and NativePowerExclusive OFF; observed1731/5124 actions, zero failed steps. Actual installed Portage settings24/24/gpkg/signing and privatePKGDIR recorded. Preparing package-only SDK/publisher and Network poison copies; artifact identity pending.
+
+- 2026-10-07T21:39:37Z — Full production source build has reached2515/5124 near midpoint, zero failed steps observed; signing/package phases pending. Own package-only signature/ABI/content, previewDPI1/2, SDKpublisher+headerpoison and Network11 gates prepared, isolatedsettings/buses. No installed/publication claim.
+
+- 2026-10-07T21:51:23Z — Actual full-source Portage buildpkgonly exit0/all5124; privategpkg SHA256433728dc,61,009,920bytes requiredfullsignatureverified. Image2303files, all11placements, ABI/PAM/source/recipe and packageSDKpublisher1/1+headerpoison/restored1/1, Network11/11PASS. Previewcatalog/normalPASS; actual2xEXIT4 from fixedlogicalsizecapture mismatch, explicitly bounded. Compiler/privatefixture released; no install/publication, worldunchanged. Awaiting exactartifactreview and managerinstalledpopupgate.
+
+- 2026-10-07T21:53:34Z — Manager assigned separate future previewcapture DPRrepair; claimed fresh ef6693f98 worktree. Existing width/height feed logicalQMLwindow; only defaultDPR1 matrix previously covered capture. Preserving nativegrabpixels/layout and bounded geometry errors; r16/source2188 unchanged. Compilerlease released/no new compiler until grant.
+
+- 2026-10-07T21:56:51Z — Future preview logical/nativeDPR contract and boundedcapture implementation authored; normalmatrix retained plus2x/1.25/1.5odd cases, empty/axis/area/logicalmismatch/outputwrite refusal regressions. Strictdocs519/MkDocs passed; no compiler until managergrant after queuedMedia/Astra. Requested focusedtarget lease. Sourcecandidate remains unverified; r16 immutableartifact review managerowned.
+
+- 2026-10-07T22:00:11Z — Manager preallocation review expanded preciseownership to parseoptions and applicationpreflight. Sharedpurecapturegeometry now boundslogicalCLI and primaryscreenDPR before visibleQMLwindowcreation, then rechecksactualwindow/readback; added no-window oversizedCLI/nativeDPR and pureNaN/Inf/overflow/fractional boundary cases. Sourceauthoring done; focused compilerlease still queued. r16 bytes unchanged.
+
+- 2026-10-07T22:01:03Z — Intermediateec10d63dde45d56621a14bfad14bcfc63a946c21 preserved explicitqindahub, clean sourceauthoringcomplete. Transitioningwaiting for serializedfocusedcompilerlease; availableexactstaticrepair. No livecompiler claim. Nativequalification/finalcandidate remains pending.
+
+- 2026-10-07T22:06:26Z — Manager granted compiler/privatefixture lease afterAstra release and spokenbatchannouncement. Startingexactauthoredsource focusedDebugstrict preview/capturetargets with actualconfigured24/24, isolatedXDG/offscreen/bothbusesblocked. No systeminstall/r16changes.
+
+- 2026-10-07T22:08:21Z — Firstfocusedconfigure stoppedprecompiler EXIT1 because existingdesktop_surface testregistration requiresProductionShellON for publicShellSurface alias. Corrected ownnativeconfig toON while retaining exactpreview/matrix/error targets and24/24; no registry/productworkaround. Initial/correctedcommands/logs retained.
+
+- 2026-10-07T22:12:38Z — Exactproductec10d63dde45d56621a14bfad14bcfc63a946c21 unchanged through ownDebugstrict1320actionbuildEXIT0 andCTest2/2PASS20.97s, observedQt49matrix+8errors=57PASS/0fail/0skip. Actual2x/1.25/1.5odd decodedcaptures, logical/nativeprewindowbounds and captureerrors allpass; docs519/strictMkDocsexit0. Compiler/privatefixture releasedroot/Media. Candidateawaitsrootindependentreview; immutable r16bytes retained.
+
+- 2026-10-07T22:16:17Z — Claimed freshED08 hiddenWiFiaudit at verifiedhub47a7366ad1eb0e8250c3bb6f955341ecf9d271c6. ActualcurrentUI/docs/policy/libnmprofilebuilder explicitlyrefusehiddenfirst-use joins; savedhiddenprofilesalreadyactivatable. Auditingadditivecredentialfree boundary and requestexactownershipbeforeproductedits. No compiler/network/radio/account manipulation; preview/r16 retained.
+
+- 2026-10-07T22:25:45+00:00 — ED08 material audit: retain existing Connect kind and strict old wire domains; installed libnm exposes no SAE device capability bit. Sent revised ownership/SAE admission contract; source untouched/compiler idle.
+
+- 2026-10-07T22:31:13+00:00 — ED08 approved source path authored; optional RPC reuses Connect1, strict RSN/CCMP/SAE-PMF metadata profiles and password-free Settings. Proposed ADR0354 ready; focused tests being authored, no compiler/private fixture yet.
+
+- 2026-10-07T22:38:45+00:00 — ED08 owning boundary checker extension explicitly approved: exact two metadata signatures/one literal SSID field; second/password/oversize poisons authored. Private adapter actual-dispatch fixture authored. Compiler idle awaiting serialized lease.
+
+- 2026-10-07T22:41:02+00:00 — ED08 source authoring complete; static docs524/MkDocs/Network1/Settings/editor-poison/diff gates exit0. Seven new hidden fixtures plus owning regression targets queued, uncompiled. Waiting for root serialized native lease; readonly Media lock guidance delivered without edits.

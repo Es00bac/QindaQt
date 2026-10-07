@@ -1,0 +1,5 @@
+# Approved hidden SSID boundary-test extension
+
+Manager approved exact check_boundary.cmake/check_boundary_negative.cmake ownership. Old blanket no-TextField contract rejected the reviewed SSID metadata form, as expected. Updated closed surface accepts exactly hiddenJoinAvailable/connectHiddenNetwork metadata signatures and exactly one named networkHiddenSsid TextField in owning NetworkHiddenJoinSection.qml, maximumLength32, no echoMode/hidden-sensitive input. All other editors and Password/Passphrase/privateKey prohibitions remain. Negative fixture includes second field, password name/mode and oversize poison. Native tests still unrun, compiler idle.
+
+Private fake NM source extension additionally captures selecteddevice/specificAP and deterministic capability/refusal scenarios. Actual focused fixture now covers selected wlan0 with null AP, unknowndevice/noRSN refusal and fixed NM rejection without raw error propagation. These are authored synthetic tests, not live association evidence.

@@ -50,6 +50,7 @@ class NetworkSettingsModel final : public QObject {
   Q_PROPERTY(QVariantList radios READ radios NOTIFY viewChanged)
   Q_PROPERTY(QVariantList devices READ devices NOTIFY viewChanged)
   Q_PROPERTY(QVariantList accessPoints READ accessPoints NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList hiddenNetworkDevices READ hiddenNetworkDevices NOTIFY viewChanged)
   Q_PROPERTY(QVariantList knownNetworks READ knownNetworks NOTIFY viewChanged)
 
 public:
@@ -88,12 +89,17 @@ public:
   [[nodiscard]] QVariantList radios() const;
   [[nodiscard]] QVariantList devices() const;
   [[nodiscard]] QVariantList accessPoints() const;
+  [[nodiscard]] QVariantList hiddenNetworkDevices() const;
   [[nodiscard]] QVariantList knownNetworks() const;
 
   Q_INVOKABLE bool reload();
   Q_INVOKABLE bool requestScan();
   Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId);
   Q_INVOKABLE bool connectVisibleNetwork(const QString &accessPointId);
+  Q_INVOKABLE bool hiddenJoinAvailable(const QString &deviceInterface,
+                                      const QString &ssid, quint32 security) const;
+  Q_INVOKABLE bool connectHiddenNetwork(const QString &deviceInterface,
+                                       const QString &ssid, quint32 security);
   Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface);
   Q_INVOKABLE bool setRadio(quint32 kind, bool enabled);
 
