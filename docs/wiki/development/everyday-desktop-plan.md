@@ -32,7 +32,7 @@ ED-20–24 are still future packets.
 
 The owner additionally requested an AI coding-agent usage panel plugin with both
 limits/reset times and token/reported-cost totals. Backend and popup are assigned
-under [Proposed ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md).
+under [Accepted ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md).
 This additive outcome preserves the everyday queue.
 
 ## Completion means an outcome, not a module
