@@ -2,14 +2,16 @@
 qt_add_executable(qindaqt_agent_usage_tests tst_agent_usage.cpp)
 target_link_libraries(qindaqt_agent_usage_tests PRIVATE QindaQt::AgentUsage Qt6::Test)
 target_include_directories(qindaqt_agent_usage_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/services/agent_usage/src")
-target_compile_definitions(qindaqt_agent_usage_tests PRIVATE FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/fixture.py")
+target_compile_definitions(qindaqt_agent_usage_tests PRIVATE PUBLISHER="$<TARGET_FILE:qindaqt-agent-usage-report>" FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/fixture.py")
 qindaqt_enable_warnings(qindaqt_agent_usage_tests)
 add_test(NAME qindaqt.agent-usage COMMAND qindaqt_agent_usage_tests)
 set_tests_properties(qindaqt.agent-usage PROPERTIES TIMEOUT 20 LABELS "service;agent-usage")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-add_test(NAME qindaqt.agent-usage-publisher COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_publisher.py ${PROJECT_SOURCE_DIR}/tools/qindaqt-agent-usage-report)
+add_test(NAME qindaqt.agent-usage-publisher COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_publisher.py $<TARGET_FILE:qindaqt-agent-usage-report>)
 set_tests_properties(qindaqt.agent-usage-publisher PROPERTIES TIMEOUT 20 LABELS "service;agent-usage")
 
 qt_add_executable(qindaqt_agent_usage_metadata_probe probe.cpp)
 target_link_libraries(qindaqt_agent_usage_metadata_probe PRIVATE QindaQt::AgentUsage Qt6::Core)
 qindaqt_enable_warnings(qindaqt_agent_usage_metadata_probe)
+
+add_dependencies(qindaqt_agent_usage_tests qindaqt-agent-usage-report)

@@ -6,6 +6,9 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QFile>
+#include <QProcess>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <QJsonDocument>
 #include <QJsonArray>
 using namespace QindaQt::Services::AgentUsage;
@@ -64,6 +67,56 @@ private slots:
         source.refresh();QCOMPARE(source.snapshot()[1].state,UsageState::Error);
         f.remove();QVERIFY(QFile::link("/etc/hostname",dir.filePath("claude.json")));
         QTRY_COMPARE(source.snapshot()[0].state,UsageState::Unavailable);
+        source.refresh();QCOMPARE(source.snapshot()[1].state,UsageState::Error);
+    }
+    void offlineRetainsObservation() {
+        qputenv("QINDAQT_USAGE_FIXTURE","normal");
+        auto now=QDateTime::currentDateTimeUtc();
+        AgentUsageCollector source("",FIXTURE,[&] {return now;});source.refresh();
+        QTRY_COMPARE(source.snapshot()[0].state,UsageState::Ready);
+        const auto first=source.snapshot()[0];QTest::qWait(50);
+        now=now.addSecs(60);qputenv("QINDAQT_USAGE_FIXTURE","fail");source.refresh();
+        QCOMPARE(source.snapshot()[0].observedAt,first.observedAt);
+        QCOMPARE(source.snapshot()[0].detail,"Refreshing last-known metadata");
+        QTRY_VERIFY(source.snapshot()[0].detail.startsWith("Last-known metadata"));
+        const auto stale=source.snapshot()[0];QCOMPARE(stale.state,UsageState::Stale);
+        QCOMPARE(stale.observedAt,first.observedAt);QVERIFY(stale.totalTokens==1234);
+        QCOMPARE(stale.quotaWindows.size(),1);
+    }
+    void producerRoundTrip() {
+        QTemporaryDir dir;const auto now=QDateTime::currentDateTimeUtc();
+        QJsonObject report{{"schemaVersion",1},{"providerId","kimi"},{"source","provider-report"},
+            {"observedAt",now.toString(Qt::ISODateWithMs)},{"scope","report-period"},{"tokenScope","session"},{"costScope","unreported"},{"totalTokens",77}};
+        QProcess publisher;publisher.start(PUBLISHER,{"--provider","kimi","--directory",dir.path()});
+        QVERIFY(publisher.waitForStarted(1000));publisher.write(QJsonDocument(report).toJson());publisher.closeWriteChannel();
+        QVERIFY(publisher.waitForFinished(2000));QCOMPARE(publisher.exitCode(),0);
+        AgentUsageCollector source(dir.path(),"/missing",[&] {return now;});source.refresh();
+        const auto usage=source.snapshot()[2];QCOMPARE(usage.providerId,"kimi");QCOMPARE(usage.state,UsageState::Ready);
+        QVERIFY(usage.totalTokens==77);QVERIFY(!usage.reportedCostUsd);QCOMPARE(usage.source,"provider-report");
+    }
+    void directoryBound() {
+        QTemporaryDir dir;
+        for(int i=0;i<100;++i) {QFile f(dir.filePath(QString("noise-%1").arg(i)));QVERIFY(f.open(QIODevice::WriteOnly));}
+        AgentUsageCollector source(dir.path(),"/missing",[] {return QDateTime::currentDateTimeUtc();});source.refresh();
+        const auto rows=source.snapshot();QVERIFY(rows.size()<=40);
+        bool omitted=false;for(const auto &u:rows) if(u.providerId=="report-feed"&&u.state==UsageState::Error) omitted=true;
+        QVERIFY(omitted);QCOMPARE(rows[0].detail,"Collecting usage metadata");
+    }
+    void customRowBound() {
+        QTemporaryDir dir;
+        for(int i=0;i<50;++i) {QFile f(dir.filePath(QString("provider-%1.json").arg(i)));QVERIFY(f.open(QIODevice::WriteOnly));f.write("{}");}
+        AgentUsageCollector source(dir.path(),"/missing",[] {return QDateTime::currentDateTimeUtc();});source.refresh();
+        QVERIFY(source.snapshot().size()<=40);QCOMPARE(source.snapshot().last().providerId,"report-feed");
+    }
+    void specialFiles() {
+        QTemporaryDir dir;const auto path=QFile::encodeName(dir.filePath("claude.json"));
+        QVERIFY(::mkfifo(path.constData(),0600)==0);
+        AgentUsageCollector source(dir.path(),"/missing",[] {return QDateTime::currentDateTimeUtc();});source.refresh();
+        QCOMPARE(source.snapshot()[1].state,UsageState::Error);
+        QTRY_COMPARE(source.snapshot()[0].state,UsageState::Unavailable);
+        QVERIFY(QFile::remove(QString::fromLocal8Bit(path)));
+        QFile original(dir.filePath("private"));QVERIFY(original.open(QIODevice::WriteOnly));original.write("{}");original.close();
+        QVERIFY(::link(QFile::encodeName(original.fileName()).constData(),path.constData())==0);
         source.refresh();QCOMPARE(source.snapshot()[1].state,UsageState::Error);
     }
     void processBounds_data() {

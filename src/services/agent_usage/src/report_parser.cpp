@@ -15,7 +15,7 @@ ProviderUsage emptyProvider(const QString &id)
 }
 // Qt JSON keeps the last duplicate key. Reject duplicates before projection so
 // hostile reports cannot silently change identity or scope.
-static bool uniqueKeys(const QByteArray &bytes)
+bool uniqueReportKeys(const QByteArray &bytes)
 {
     QVector<QSet<QString>> objects;
     for(qsizetype i=0;i<bytes.size();++i) {
@@ -61,7 +61,7 @@ ProviderUsage parseReport(const QByteArray &bytes,const QString &id,QDateTime no
 {
     auto u=emptyProvider(id);
     auto fail=[&] { auto invalid=emptyProvider(id);invalid.state=UsageState::Error;invalid.detail="Invalid usage report";return invalid; };
-    if (bytes.size()>65536||!uniqueKeys(bytes)) return fail();
+    if (bytes.size()>65536||!uniqueReportKeys(bytes)) return fail();
     QJsonParseError error;const auto doc=QJsonDocument::fromJson(bytes,&error);
     if(error.error!=QJsonParseError::NoError||!doc.isObject()) return fail();
     const auto o=doc.object();

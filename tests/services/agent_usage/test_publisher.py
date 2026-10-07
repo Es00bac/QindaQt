@@ -11,6 +11,20 @@ class PublisherTests(unittest.TestCase):
             self.assertNotIn("private",s);self.assertNotIn("secret",s);self.assertEqual(report["tokenScope"],"context")
             self.assertEqual(report["costScope"],"session");self.assertNotIn("totalTokens",report)
             self.assertEqual((pathlib.Path(d)/"claude.json").stat().st_mode & 0o777,0o600)
+    def test_stdin_expiry(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=subprocess.Popen([PROGRAM,"--provider","claude","--claude-statusline","--directory",d],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            try:
+                self.assertEqual(p.wait(timeout=7),1)
+                self.assertEqual(p.stderr.read(),b"Agent usage report rejected\n")
+                self.assertEqual(list(pathlib.Path(d).iterdir()),[])
+            finally:
+                p.stdin.close()
+                p.stdout.close()
+                p.stderr.close()
+                if p.poll() is None:
+                    p.kill()
+                    p.wait()
     def test_rejection(self):
         for raw in (b'{"x":1,"x":2}',b"x"*65537,b'{"context_window":{"total_input_tokens":-1}}'):
             with tempfile.TemporaryDirectory() as d:

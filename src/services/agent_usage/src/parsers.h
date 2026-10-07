@@ -3,6 +3,7 @@
 #include <qindaqt/services/agent_usage/agent_usage_types.h>
 #include <QJsonObject>
 namespace QindaQt::Services::AgentUsage::Private {
+bool uniqueReportKeys(const QByteArray &bytes);
 ProviderUsage emptyProvider(const QString &id);
 ProviderUsage parseReport(const QByteArray &bytes, const QString &id, QDateTime now);
 bool parseRateLimits(const QJsonObject &result, ProviderUsage &usage);
