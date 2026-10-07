@@ -12,6 +12,7 @@
 #include <QtDBus/QDBusConnectionInterface>
 #include <QtDBus/QDBusMessage>
 #include <QtDBus/QDBusPendingCallWatcher>
+#include <QtDBus/QDBusPendingReply>
 #include <QtDBus/QDBusReply>
 #include <QtDBus/QDBusServiceWatcher>
 
@@ -21,6 +22,7 @@ namespace QindaQt::Power::Upstream {
 namespace {
 
 constexpr char kService[] = "org.freedesktop.UPower";
+constexpr int kStartupCallTimeoutMs = 3000;
 constexpr char kRootPath[] = "/org/freedesktop/UPower";
 constexpr char kRootInterface[] = "org.freedesktop.UPower";
 constexpr char kDeviceInterface[] = "org.freedesktop.UPower.Device";
@@ -169,16 +171,77 @@ void UpowerBatteryCollaborator::beginRefresh()
     auto cycle = std::make_shared<RefreshCycle>();
     cycle->generation = m_generation;
     cycle->serial = m_nextRefresh;
-    const QDBusReply<QString> owner =
-        m_connection.interface()->serviceOwner(QString::fromLatin1(kService));
-    if (!owner.isValid() || owner.value().isEmpty()) {
-        scheduleUnavailable(m_generation, QStringLiteral("upower-unavailable"));
-        return;
-    }
-    cycle->owner = owner.value();
     m_refresh = cycle;
-    readServiceProperties(cycle);
-    enumerateDevices(cycle);
+    resolveOwner(cycle, true);
+}
+
+void UpowerBatteryCollaborator::resolveOwner(
+    const std::shared_ptr<RefreshCycle> &cycle, const bool allowActivation)
+{
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.DBus"),
+        QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("GetNameOwner"));
+    call.setArguments({QString::fromLatin1(kService)});
+    auto *watcher = new QDBusPendingCallWatcher(
+        m_connection.asyncCall(call, kStartupCallTimeoutMs), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, watcher, cycle, allowActivation] {
+                const QDBusPendingReply<QString> reply = *watcher;
+                watcher->deleteLater();
+                if (m_refresh != cycle || !runningGeneration(cycle->generation)
+                    || cycle->failed) {
+                    return;
+                }
+                if (reply.isError()) {
+                    if (allowActivation
+                        && reply.error().name()
+                            == QStringLiteral("org.freedesktop.DBus.Error.NameHasNoOwner")) {
+                        activateService(cycle);
+                    } else {
+                        failRefresh(cycle, QStringLiteral("upower-unavailable"));
+                    }
+                    return;
+                }
+                if (reply.value().isEmpty()) {
+                    failRefresh(cycle, QStringLiteral("upower-unavailable"));
+                    return;
+                }
+                cycle->owner = reply.value();
+                readServiceProperties(cycle);
+                enumerateDevices(cycle);
+            });
+}
+
+void UpowerBatteryCollaborator::activateService(
+    const std::shared_ptr<RefreshCycle> &cycle)
+{
+    QDBusMessage call = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.DBus"),
+        QStringLiteral("/org/freedesktop/DBus"),
+        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
+    call.setArguments({QString::fromLatin1(kService), quint32(0)});
+    auto *watcher = new QDBusPendingCallWatcher(
+        m_connection.asyncCall(call, kStartupCallTimeoutMs), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, watcher, cycle] {
+                const QDBusPendingReply<quint32> reply = *watcher;
+                watcher->deleteLater();
+                // AGENT-GUARD: Owner-change refreshes and stop/restart supersede
+                // activation. Its late result cannot revoke newer battery truth.
+                if (m_refresh != cycle || !runningGeneration(cycle->generation)
+                    || cycle->failed) {
+                    return;
+                }
+                if (reply.isError() || (reply.value() != 1 && reply.value() != 2)) {
+                    failRefresh(cycle, QStringLiteral("upower-unavailable"));
+                    return;
+                }
+                // AGENT-CONTRACT: Activation requests residency, never authority.
+                // Resolve the unique owner before the existing atomic read cycle;
+                // this read-only startup path must never replay a mutation.
+                resolveOwner(cycle, false);
+            });
 }
 
 bool UpowerBatteryCollaborator::acceptReplyOwner(

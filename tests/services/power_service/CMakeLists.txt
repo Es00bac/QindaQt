@@ -195,6 +195,32 @@ set_tests_properties(
 )
 
 qt_add_executable(
+    qindaqt_power_upower_startup_tests
+    tst_power_upower_startup.cpp
+    support/fake_power_collaborators.h
+    support/fake_upower_service.cpp
+    support/fake_upower_service.h
+    support/upower_activation_bus.h
+)
+target_link_libraries(
+    qindaqt_power_upower_startup_tests
+    PRIVATE QindaQt::PowerService Qt6::DBus Qt6::Test
+)
+target_compile_definitions(
+    qindaqt_power_upower_startup_tests
+    PRIVATE QINDAQT_TEST_SCRATCH_DIR="${CMAKE_CURRENT_BINARY_DIR}/scratch"
+)
+qindaqt_enable_warnings(qindaqt_power_upower_startup_tests)
+add_test(
+    NAME qindaqt.power-service-upower-startup
+    COMMAND qindaqt_power_upower_startup_tests
+)
+set_tests_properties(
+    qindaqt.power-service-upower-startup
+    PROPERTIES LABELS "service;power;dbus;activation" TIMEOUT 45 RUN_SERIAL TRUE
+)
+
+qt_add_executable(
     qindaqt_power_profiles_adapter_tests
     tst_power_profiles_adapter.cpp
     support/fake_power_collaborators.h

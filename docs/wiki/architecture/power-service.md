@@ -199,6 +199,19 @@ estimates remain unknown, signed energy rate becomes its absolute magnitude,
 and a malformed or disappearing device withdraws the complete battery domain.
 Every multi-call refresh is pinned to one resolved unique owner.
 
+A missing UPower owner at startup now triggers the standard
+`StartServiceByName` request on the injected bus, so a dormant installed daemon
+can provide battery readings after login. Initial owner resolution, activation,
+and post-activation resolution are asynchronous with a three-second timeout per
+call; a failed or timed-out activation withdraws battery truth as
+`upower-unavailable`. Activation acknowledgement is not authority: the adapter
+resolves one unique owner before reading, and owner changes or stop/restart
+invalidate the superseded refresh and all its pending replies. This read-only
+startup path does not replay controls. The private `power-service-upower-startup`
+gate exercises dormant production composition, activation failure/timeout,
+competing owner arrival, and stopped/restarted/destroyed adapter lifetimes,
+without starting or stopping host daemons.
+
 Power Profiles prefers the modern
 `org.freedesktop.UPower.PowerProfiles` name, path, and interface, then falls
 back to `net.hadess.PowerProfiles`. `ActiveProfileHolds` (legacy `Holds`) is
