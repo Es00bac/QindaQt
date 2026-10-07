@@ -50,6 +50,9 @@ public:
                                    QString *error = nullptr);
     [[nodiscard]] bool connectKnownNetwork(const QString &knownNetworkId,
                                            QString *error = nullptr);
+    // Optional v1 metadata-only method; UnknownMethod is definite local Unsupported.
+    [[nodiscard]] bool connectHiddenNetwork(const ConnectHiddenIntent &intent,
+                                            QString *error = nullptr);
     [[nodiscard]] bool connectVisibleNetwork(const QString &accessPointId,
                                              QString *error = nullptr);
     [[nodiscard]] bool disconnectDevice(const QString &deviceInterface,
@@ -95,6 +98,7 @@ private:
         quint64 epoch = 0;
         quint64 revision = 0;
         OperationKind operationKind = OperationKind::RequestScan;
+        bool hiddenJoin = false;
     };
     struct Operation final {
         OperationKind kind = OperationKind::RequestScan;
@@ -115,6 +119,7 @@ private:
     void requestSnapshotNow();
     bool beginOperation(OperationKind kind, const QVariantMap &parameters,
                         QString *error);
+    void finishHiddenUnsupported();
     void finishOperationAsUncertain(const QString &message);
     void scheduleRetry();
     void publish(ClientState state, QString error = {}, bool snapshotCurrent = false);

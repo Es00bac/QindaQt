@@ -204,6 +204,10 @@ T.Page {
                         networkSettings: root.networkSettings
                     }
 
+                    NetworkHiddenJoinSection {
+                        networkSettings: root.networkSettings
+                    }
+
                     NetworkSavedSection {
                         networkSettings: root.networkSettings
                     }

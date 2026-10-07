@@ -56,6 +56,7 @@ public:
   [[nodiscard]] IntentVerdict connectKnown(const ConnectIntent &intent) const;
   [[nodiscard]] IntentVerdict
   connectVisible(const ConnectVisibleIntent &intent) const;
+  [[nodiscard]] IntentVerdict connectHidden(const ConnectHiddenIntent &intent) const;
   [[nodiscard]] IntentVerdict disconnectDevice(const DisconnectIntent &intent) const;
   [[nodiscard]] IntentVerdict setRadio(const SetRadioIntent &intent) const;
 

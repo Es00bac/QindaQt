@@ -232,6 +232,22 @@ QString NetworkSettingsModel::actionFailureText(const QString &reason) const {
       || reason == QStringLiteral("enterprise-network-unsupported")) {
     return tr("That network type is not supported for first-time connection.");
   }
+  if (reason == QStringLiteral("hidden-network-ssid-invalid")) {
+    return tr("Enter the exact network name, using at most 32 UTF-8 bytes.");
+  }
+  if (reason == QStringLiteral("hidden-network-control-unsupported")) {
+    return tr("This network service does not support hidden network joins.");
+  }
+  if (reason == QStringLiteral("hidden-network-security-unsupported")) {
+    return tr("That Wi-Fi security choice is not supported.");
+  }
+  if (reason == QStringLiteral("hidden-network-radio-disabled")
+      || reason == QStringLiteral("hidden-network-device-unavailable")) {
+    return tr("Select an available Wi-Fi device with its radio enabled.");
+  }
+  if (reason == QStringLiteral("hidden-activation-dispatch-failed")) {
+    return tr("NetworkManager could not start the hidden network connection.");
+  }
   if (reason == QStringLiteral("active-connection-control-unsupported")) {
     return tr("Disconnecting is not permitted by the network service.");
   }

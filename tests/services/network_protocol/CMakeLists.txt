@@ -34,3 +34,10 @@ add_test(NAME qindaqt.network-protocol-redaction
          COMMAND qindaqt_network_redaction_tests)
 set_tests_properties(qindaqt.network-protocol-redaction
                      PROPERTIES LABELS "service;network;pure")
+
+qt_add_executable(qindaqt_network_hidden_compatibility_tests tst_network_hidden_compatibility.cpp)
+target_link_libraries(qindaqt_network_hidden_compatibility_tests PRIVATE QindaQt::NetworkProtocol Qt6::Test)
+
+qindaqt_enable_warnings(qindaqt_network_hidden_compatibility_tests)
+add_test(NAME qindaqt.network-hidden-compatibility COMMAND qindaqt_network_hidden_compatibility_tests)
+set_tests_properties(qindaqt.network-hidden-compatibility PROPERTIES LABELS "service;network;hidden;hostile" TIMEOUT 30)

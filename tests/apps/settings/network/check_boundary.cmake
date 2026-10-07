@@ -35,6 +35,8 @@ foreach(source IN LISTS route_cpp)
         "Q_INVOKABLE bool requestScan()"
         "Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId)"
         "Q_INVOKABLE bool connectVisibleNetwork(const QString &accessPointId)"
+        "Q_INVOKABLE bool hiddenJoinAvailable(const QString &deviceInterface, const QString &ssid, quint32 security)"
+        "Q_INVOKABLE bool connectHiddenNetwork(const QString &deviceInterface, const QString &ssid, quint32 security)"
         "Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface)"
         "Q_INVOKABLE bool setRadio(quint32 kind, bool enabled)"
     )
@@ -52,7 +54,22 @@ endforeach()
 file(GLOB_RECURSE route_qml LIST_DIRECTORIES false "${route_root}/qml/*.qml")
 foreach(source IN LISTS route_qml)
     file(READ "${source}" content)
-    if(content MATCHES "TextField|TextInput|TextEdit|TextArea|Password|Passphrase|privateKey")
+    # ADR-0354 permits one literal SSID metadata field, not a profile editor.
+    cmake_path(GET source FILENAME source_name)
+    set(has_permitted_ssid false)
+    if(source_name STREQUAL "NetworkHiddenJoinSection.qml")
+        string(REGEX REPLACE "[ \t\r\n]+" " " normalized_qml "${content}")
+        string(REGEX MATCHALL "TextField *[{]" fields "${normalized_qml}")
+        list(LENGTH fields field_count)
+        if(field_count EQUAL 1
+           AND normalized_qml MATCHES [[objectName: *"networkHiddenSsid"]]
+           AND normalized_qml MATCHES "maximumLength: *32([^0-9]|$)"
+           AND NOT content MATCHES "echoMode|ImhHiddenText|ImhSensitiveData")
+            set(has_permitted_ssid true)
+        endif()
+    endif()
+    if((content MATCHES "TextField" AND NOT has_permitted_ssid)
+       OR content MATCHES "TextInput|TextEdit|TextArea|Password|Passphrase|privateKey")
         message(FATAL_ERROR
             "Network Settings QML gained credential/profile editing in ${source}")
     endif()

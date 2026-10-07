@@ -31,6 +31,12 @@ class NetworkServiceObject final : public QObject, protected QDBusContext {
       "direction=\"in\"/><arg name=\"revision\" type=\"t\" direction=\"in\"/>"
       "<arg name=\"accessPointId\" type=\"s\" direction=\"in\"/><arg "
       "name=\"payload\" type=\"ay\" direction=\"out\"/></method>"
+      "<method name=\"ConnectHiddenNetwork\"><arg name=\"epoch\" type=\"t\" direction=\"in\"/>"
+      "<arg name=\"revision\" type=\"t\" direction=\"in\"/>"
+      "<arg name=\"deviceInterface\" type=\"s\" direction=\"in\"/>"
+      "<arg name=\"ssid\" type=\"s\" direction=\"in\"/>"
+      "<arg name=\"security\" type=\"u\" direction=\"in\"/>"
+      "<arg name=\"payload\" type=\"ay\" direction=\"out\"/></method>"
       "<method name=\"DisconnectActive\"><arg name=\"epoch\" type=\"t\" "
       "direction=\"in\"/><arg name=\"revision\" type=\"t\" direction=\"in\"/>"
       "<arg name=\"deviceInterface\" type=\"s\" direction=\"in\"/><arg "
@@ -57,6 +63,9 @@ public Q_SLOTS:
                                         const QString &knownNetworkId);
   Q_SCRIPTABLE void ConnectVisibleNetwork(quint64 epoch, quint64 revision,
                                           const QString &accessPointId);
+  Q_SCRIPTABLE void ConnectHiddenNetwork(quint64 epoch, quint64 revision,
+                                         const QString &deviceInterface,
+                                         const QString &ssid, quint32 security);
   Q_SCRIPTABLE void DisconnectActive(quint64 epoch, quint64 revision,
                                      const QString &deviceInterface);
   Q_SCRIPTABLE void SetRadio(quint64 epoch, quint64 revision, quint32 radioKind,

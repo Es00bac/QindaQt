@@ -45,5 +45,5 @@ int main(int argc, char **argv) {
     }
   }
   qInfo() << "Network components:" << count << "failures:" << failures;
-  return count == 6 && failures == 0 ? 0 : 1;
+  return count == 7 && failures == 0 ? 0 : 1;
 }

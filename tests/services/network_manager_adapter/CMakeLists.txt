@@ -133,3 +133,16 @@ set_tests_properties(
         TIMEOUT 120
         RUN_SERIAL TRUE
 )
+
+qt_add_executable(qindaqt_network_hidden_profile_tests tst_network_hidden_profile.cpp)
+target_link_libraries(qindaqt_network_hidden_profile_tests PRIVATE QindaQt::NetworkManagerAdapter PkgConfig::NetworkManagerTest Qt6::Test)
+target_include_directories(qindaqt_network_hidden_profile_tests PRIVATE "${CMAKE_SOURCE_DIR}/src/services/network_manager_adapter/src")
+target_compile_definitions(qindaqt_network_hidden_profile_tests PRIVATE QT_NO_KEYWORDS)
+qindaqt_enable_warnings(qindaqt_network_hidden_profile_tests)
+add_test(NAME qindaqt.network-hidden-profile COMMAND qindaqt_network_hidden_profile_tests)
+set_tests_properties(qindaqt.network-hidden-profile
+    PROPERTIES LABELS "service;network;hidden;hostile" TIMEOUT 30)
+
+target_compile_definitions(qindaqt_network_hidden_profile_tests PRIVATE
+    QINDAQT_FAKE_NETWORK_MANAGER_PATH="$<TARGET_FILE:qindaqt_fake_network_manager>")
+add_dependencies(qindaqt_network_hidden_profile_tests qindaqt_fake_network_manager)
