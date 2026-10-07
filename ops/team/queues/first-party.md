@@ -1,5 +1,10 @@
 # First-party delivery queue
 
+## October 7 exact integration and adoption state
+
+Manager recheck: repaired trust a23b87229 pure19+24 passed; ADR0352/0353 remain Proposed, no live authority/completion credit. ED07 bda4d8d9 accepted independently in5843286002 and integrated; registry/real-server gates remain. R16 source/overlay accepted and5124-action package built; actualartifact11514f3 signature/image handoff awaits manager adoption. Media readonly repair823738ab1 has next short lease; Astra scoped toolkit393c1ce5 and isolated preview-DPR repair source continue.
+
+
 ## Full-plan delivery is active — 2026-10-07T21:15:27+00:00
 
 The owner requires completion, including installed AI usage and ED01–24, and
