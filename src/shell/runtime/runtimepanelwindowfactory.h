@@ -114,6 +114,7 @@ public:
     // desktop controls facade, so the long positional constructor is not
     // widened for one more borrowed applet.
     void setNetworkAppletAccess(QObject *access) noexcept;
+    void setAgentUsageAppletAccess(QObject *access) noexcept;
     // The gather overview composition (the panel button half of the
     // Meta+G gesture). Set after construction for the same reason as
     // the desktop controls facade above; ShellRuntimeApplication
@@ -150,6 +151,7 @@ private:
     ObsApplet::ObsAppletController *m_obsAppletAccess = nullptr;
     QObject *m_desktopControlsAccess = nullptr;
     QObject *m_networkAppletAccess = nullptr;
+    QObject *m_agentUsageAppletAccess = nullptr;
     QObject *m_gatherOverviewAccess = nullptr;
     QObject *m_panelQuickConfig = nullptr;
     QObject *m_liveCustomization = nullptr;

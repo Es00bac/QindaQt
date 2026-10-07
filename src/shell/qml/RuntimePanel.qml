@@ -14,6 +14,7 @@ Window {
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var networkAppletAccess: null
+    property var agentUsageAppletAccess: null
     property var smartLightsAppletAccess: null
     property var voiceAppletAccess: null
     property var obsAppletAccess: null
@@ -43,6 +44,7 @@ Window {
         notificationCenterAppletAccess: root.notificationCenterAppletAccess
         audioAppletAccess: root.audioAppletAccess
         bluetoothAppletAccess: root.bluetoothAppletAccess
+        agentUsageAppletAccess: root.agentUsageAppletAccess
         networkAppletAccess: root.networkAppletAccess
         smartLightsAppletAccess: root.smartLightsAppletAccess
         voiceAppletAccess: root.voiceAppletAccess

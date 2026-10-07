@@ -30,10 +30,18 @@ defines the ED-04 inventory/client boundary. Its typed protocol is integrated
 and passes three manager rows; client/exporter and consumers are next.
 ED-20–24 are still future packets.
 
-The owner additionally requested an AI coding-agent usage panel plugin with both
-limits/reset times and token/reported-cost totals. Backend and popup are assigned
-under [Accepted ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md).
-This additive outcome preserves the everyday queue.
+The additional AI coding-agent usage panel plugin has independently accepted
+source `5b503b51ea99cb7b8d9681044a006120874ff3c0` (review `d3651bbd3`).
+It shows both remaining limits/reset times and available token/reported-cost
+figures with separate scopes. Backend, popup and stock-profile gates pass
+13/13; compact DPI2 and partial/freshness/publisher probes pass. Codex reads
+local CLI metadata; other providers use normalized reports, including the
+optional Claude statusline publisher. Manager full native shell, integrated 13/13, DPI2 1/1 and staged public
+SDK/publisher round-trip gates pass, including staged-header poison/recovery.
+A sanitized live Codex probe observes remaining/reset/token availability,
+with reported cost absent. The boundary follows [Accepted ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md).
+Active r13 and immutable r15 do not include this applet; a later package and
+installed journey remain distinct gates. The everyday queue continues unchanged.
 
 ## Completion means an outcome, not a module
 

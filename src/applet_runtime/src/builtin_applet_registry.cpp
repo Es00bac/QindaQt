@@ -31,6 +31,7 @@ BuiltinAppletRegistry BuiltinAppletRegistry::firstParty()
         QStringLiteral("qindaqt.applets.voice"),
         QStringLiteral("qindaqt.applets.obs"),
         // Network over public Network1 (ADR-0258).
+        QStringLiteral("qindaqt.applets.agent-usage"),
         QStringLiteral("qindaqt.applets.network"),
         // The gather overview (ADR-0232): the button half of
         // the gesture Meta+G and the upper-left screen corner also reach.
