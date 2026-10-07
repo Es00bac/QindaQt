@@ -27,6 +27,7 @@
         {"id": "start", "plugin": "start-menu", "settings": {"zone": "start"}},
         {"id": "quick-launch", "plugin": "quick-launch", "settings": {"zone": "start", "presentation": "luna"}},
         {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center", "presentation": "luna", "grouping": "never"}},
+        {"id": "agent-usage", "plugin": "agent-usage", "settings": {"zone": "end"}},
         {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end", "presentation": "luna", "iconSize": 16}},
         {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},
         {"id": "clock", "plugin": "clock", "settings": {"zone": "end", "presentation": "luna", "showDate": true}},

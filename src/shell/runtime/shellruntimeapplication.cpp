@@ -9,6 +9,8 @@
 #include "bluetoothappletcomposition.h"
 #include "network_applet_controller.h"
 #include "networkappletcomposition.h"
+#include "agentusageappletcomposition.h"
+#include "agent_usage_applet_controller.h"
 #include "smartlightsappletcomposition.h"
 #include "obsappletcomposition.h"
 #include "desktopcontrolscomposition.h"
@@ -590,6 +592,7 @@ bool ShellRuntimeApplication::initializeRuntime(const RuntimeOptions &options,
             m_obsApplet->access());
     m_windowFactory->setDesktopControlsAccess(m_desktopControls->access());
     m_windowFactory->setNetworkAppletAccess(m_networkApplet->access());
+    m_windowFactory->setAgentUsageAppletAccess(m_agentUsageApplet->access());
     m_windowFactory->setGatherOverviewAccess(m_gatherOverview.get());
     // The panel right-click configuration facade composes over the shared
     // Settings1 client and the Settings route launcher (both owned above).
@@ -734,6 +737,7 @@ void ShellRuntimeApplication::resetRuntime()
     m_audioApplet.reset();
     m_bluetoothApplet.reset();
     m_networkApplet.reset();
+    m_agentUsageApplet.reset();
     m_smartLightsApplet.reset();
     m_voiceApplet.reset();
     m_powerApplet.reset();

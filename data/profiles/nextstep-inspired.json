@@ -23,6 +23,7 @@
         {"id": "apps", "plugin": "application-tiles", "settings": {"zone": "center"}},
         {"id": "tasks", "plugin": "task-list", "settings": {"zone": "center"}},
         {"id": "workspaces", "plugin": "workspace-tiles", "settings": {"zone": "end"}},
+        {"id": "agent-usage", "plugin": "agent-usage", "settings": {"zone": "end"}},
         {"id": "tray", "plugin": "status-notifier", "settings": {"zone": "end"}},
         {"id": "clipboard", "plugin": "clipboard", "settings": {"zone": "end"}},
         {"id": "notifications", "plugin": "notification-center", "settings": {"zone": "end"}},

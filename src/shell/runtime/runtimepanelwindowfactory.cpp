@@ -228,6 +228,11 @@ void RuntimePanelWindowFactory::setDesktopControlsAccess(QObject *access) noexce
     m_desktopControlsAccess = access;
 }
 
+void RuntimePanelWindowFactory::setAgentUsageAppletAccess(QObject *access) noexcept
+{
+    m_agentUsageAppletAccess = access;
+}
+
 void RuntimePanelWindowFactory::setNetworkAppletAccess(QObject *access) noexcept
 {
     m_networkAppletAccess = access;
@@ -353,6 +358,9 @@ std::unique_ptr<QQuickWindow> RuntimePanelWindowFactory::createWindow(
         // it yet, and createWithInitialProperties fails hard on unknown names.
         window->setProperty("desktopControlsAccess",
                             QVariant::fromValue(m_desktopControlsAccess));
+    }
+    if (m_agentUsageAppletAccess != nullptr) {
+        window->setProperty("agentUsageAppletAccess", QVariant::fromValue(m_agentUsageAppletAccess));
     }
     if (m_networkAppletAccess != nullptr) {
         window->setProperty("networkAppletAccess",

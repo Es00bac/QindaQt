@@ -53,6 +53,7 @@ enum class Capability {
     DisplayControl,
     SettingsRead,
     // Public Network1 truth and admitted mutations (ADR-0258).
+    AgentUsageRead,
     NetworkRead,
     NetworkControl,
 };
