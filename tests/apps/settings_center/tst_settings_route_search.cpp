@@ -124,10 +124,9 @@ void SettingsRouteSearchTest::onlyInputDeclaresDestinations() {
     QVERIFY2(!destination.keywords.isEmpty(), qPrintable(destination.id));
     ids.append(destination.id);
   }
-  QCOMPARE(ids, (QStringList{QStringLiteral("controllers"), QStringLiteral("pointers"),
-                             QStringLiteral("tablet"),
+  QCOMPARE(ids, (QStringList{QStringLiteral("pointers"), QStringLiteral("tablet"),
                              QStringLiteral("keyboard"), QStringLiteral("shortcuts"),
-                             QStringLiteral("touch")}));
+                             QStringLiteral("touch"), QStringLiteral("controllers")}));
 }
 
 void SettingsRouteSearchTest::inputDestinationsMatchTheInputPage() {
@@ -215,7 +214,7 @@ void SettingsRouteSearchTest::controllerProjectsKeywordsAndDestinations() {
   const QVariantList destinations =
       input.value(QStringLiteral("destinations")).toList();
   QCOMPARE(destinations.size(), 6);
-  const QVariantMap shortcuts = destinations.at(4).toMap();
+  const QVariantMap shortcuts = destinations.at(3).toMap();
   QCOMPARE(shortcuts.value(QStringLiteral("id")).toString(),
            QStringLiteral("shortcuts"));
   QCOMPARE(shortcuts.value(QStringLiteral("title")).toString(),
