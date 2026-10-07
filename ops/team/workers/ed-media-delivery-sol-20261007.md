@@ -1,7 +1,7 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — freezing ED11 fixed-owner printer/scanner Settings source and executable focused/installed fixture packet for independent review; compiler resources idle
+- Status: working — auditing bounded ED11 CUPS/device readiness and scanner pretend dependency closure while exact Printing source awaits review/native lease; compiler resources idle
 - Branch: worker/everyday-printing-settings-20261007
 - Worktree: everyday-printing-settings-20261007
 - Outcome: discoverable Printers & scanners Settings entry with truthful missing tool, deliberate launch and retry
@@ -45,3 +45,5 @@
 - 2026-10-07T23:04:59+00:00: Fetched hub main and confirmed exact1a205444cff9264ac0b21a3968506133132db5bc, created fresh isolated printing worktree/branch. Root approved inventory paths/ADR0356. Platform confirms no Network collision; coordinated additive shared CMake. Source authoring only; no compiler, private runtime, service/device/job or Portage action.
 
 - 2026-10-07T23:25:51+00:00: Authored fixed public catalog/argv collaborators, shared compiled Printing route 24 and own-prefix preflight, preserving the prior 23 route indices. Added model/catalog and real page keyboard/compact/normal/DPI 2 fixtures plus relocated withheld-module/restoration gate; corrected affected stale route-count fixtures. Docs links 526 exit 0, strict MkDocs exit 0, new production 11 and test 6 source-shape files zero issues, diff check exit 0. Existing Main.qml 424 shape debt recorded in ADR; registry 484/main 473 stay below 500. No compiler, CTest, installed application launch, service/device/job or hardware qualification claim.
+
+- 2026-10-07T23:35:52+00:00: Root assigned bounded readonly ED11 later-gate inventory while Astra holds the native lane. Exact source 83e261591a16126683fd3219a21b11d2807a6d83 remains frozen. Inspecting only sanitized CUPS/config/device metadata counts and a stable exact simple-scan Portage pretend plan; no job, scan, service/config/world/package transaction or native test.
