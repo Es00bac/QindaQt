@@ -16,6 +16,14 @@ namespace {
 std::unique_ptr<NavigationController> navigation() {
     return std::make_unique<NavigationController>(std::make_unique<LocalDirectoryLister>(), std::make_unique<Test::FakeFileLauncher>());
 }
+QQuickItem *findVisual(QQuickItem *root, const QString &name) {
+    if (root->objectName() == name) return root;
+    // Repeater delegates belong to the visual tree, which differs from the
+    // QObject ownership tree. Assert the controls the user actually sees.
+    for (auto *child : root->childItems())
+        if (auto *found = findVisual(child, name)) return found;
+    return nullptr;
+}
 }
 class MediaUiTests final : public QObject {
     Q_OBJECT
@@ -46,18 +54,18 @@ private Q_SLOTS:
         item->setWidth(width); item->setHeight(item->implicitHeight()); window.show();
         QVERIFY(QTest::qWaitForWindowExposed(&window)); QTRY_VERIFY(item->implicitHeight() > 0);
         for (const auto &name : {"mediaOpen_one", "mediaReadOnly_one", "mediaUnmount_one", "mediaRemove_one", "mediaDetails_one"}) {
-            auto *button = section->findChild<QQuickItem *>(QString::fromLatin1(name)); QVERIFY(button);
+            auto *button = findVisual(item, QString::fromLatin1(name)); QVERIFY(button);
             QTRY_VERIFY(button->width() > 0);
             const auto left = button->mapToItem(item, QPointF(0, 0)).x();
             QVERIFY2(left >= -0.5 && left + button->width() <= width + 0.5, name);
             const auto content = button->property("contentItem").value<QObject *>();
             QVERIFY(content); QCOMPARE(content->property("textFormat").toInt(), 0);
         }
-        auto *open = section->findChild<QQuickItem *>("mediaOpen_one"); QVERIFY(open);
+        auto *open = findVisual(item, QStringLiteral("mediaOpen_one")); QVERIFY(open);
         QCOMPARE(open->property("text").toString(), QStringLiteral("<b>A long duplicate device label which must remain literal</b> · partition 1"));
         QCOMPARE(source.writes, 0); open->forceActiveFocus(Qt::TabFocusReason);
         QTest::keyClick(&window, Qt::Key_Tab);
-        auto *unmount = section->findChild<QQuickItem *>("mediaUnmount_one"); QVERIFY(unmount);
+        auto *unmount = findVisual(item, QStringLiteral("mediaUnmount_one")); QVERIFY(unmount);
         QTRY_VERIFY(unmount->hasActiveFocus());
         QTest::keyClick(&window, Qt::Key_Space); QCOMPARE(source.writes, 1);
         QCOMPARE(source.requests.back().action, QindaQt::RemovableMedia::Action::Unmount);
