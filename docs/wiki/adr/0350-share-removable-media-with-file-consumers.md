@@ -1,9 +1,10 @@
 # ADR-0350: Share removable media with file consumers
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-07
 - Scope: ED-04a design; no public API or device-sidebar delivery yet
-- Proposed supersession: ADR-0315 export-only-Activate restriction; all other decisions retained
+- Supersedes: ADR-0315 export-only-Activate restriction; all other decisions retained
+- Accepted by: Program Manager after exact independent review `d283465c3b81bb50f694f5aa290f6443b567a412`; product API remains a future gate
 - Source base: `7d45d2c336e5d213c7ba10f063ab384b09f4abc8`
 
 ## Context and existing evidence
@@ -46,7 +47,7 @@ objects; system-bus address was unavailable. This is owner-feasibility evidence,
 not proof of the proposed public client, real GUI presentation or hardware.
 Commands and exact ignored harness hashes are in the candidate handoff.
 
-## Decision proposed
+## Decision
 
 Keep the running Removable Media application as the sole session owner of
 inventory, insertion policy, saved choices, helper UI and private UDisks
@@ -85,8 +86,7 @@ Removable Media** through unchanged Activate. No terminal, automatic restart
 loop, hidden repeated launch or readiness assumption is part of recovery.
 Private fixtures inject a recording launcher and never start the host helper.
 
-This proposal supersedes only ADR-0315's **export only Activate** restriction
-if accepted. Its UDisks, insertion, persistence and formatting decisions remain.
+This decision supersedes only ADR-0315's **export only Activate** restriction. Its UDisks, insertion, persistence and formatting decisions remain.
 No formatting, passphrase, repair, partition editing or privileged command API
 is added. Existing session-polkit authorization continues to apply to ordinary
 owner-issued device operations; this same-user desktop API does not claim
@@ -108,8 +108,8 @@ constructor-visible. Public values are copied immutable snapshots. QObject
 client/transport/exporter are same GUI thread, dependencies outlive borrowers,
 pending callbacks use object-context lifetime fences, and destruction withdraws
 publication without emitting a late result. Client destruction does not cancel
-an already accepted privileged operation. Proposed module-boundary rows need
-manager approval before editing that registry or implementing these targets.
+an already accepted privileged operation. The manager approved this boundary after exact independent design review; add
+the module-boundary registry rows with the first implementing targets.
 
 ### Bounded inventory and identities
 

@@ -1,7 +1,7 @@
 # Everyday Review Sol
 
-- Status: waiting — Network candidate ACCEPT; awaiting exact overlay and ED-04 ADR candidates
-- Candidate: a77e7ed79f37fcc7670f37b04cf889562fa70a27
+- Status: available — r15 and Proposed ED-04 ADR exact reviews complete
+- Candidate: aecc7c85ab6f7185f71dc4efeac9fa876ea0dd2f
 - Runtime: collaboration agent; requested GPT-6.1 Sol/high identity, no independent provider/model/process assertion
 
 ## Updates
@@ -11,3 +11,7 @@
 - 2026-10-07T17:33:15+00:00: Claimed exact Network source review; own clean build and offscreen/static gates authorized with Portage limits. Private runtime remains assigned to Platform.
 - 2026-10-07T17:34:49+00:00: Exact production diff is restricted to owning Network install list/destination. Strict documentation gates pass (514 documents). Candidate independent strict Debug build and fresh exact-base source configure are active; unchanged route-search source comparison alone is not claimed as baseline runtime proof.
 - 2026-10-07T17:36:39+00:00: ACCEPT exact Network a77e7ed79: independent strict Debug targeted build, Network 8/8 CTests (42 Qt checks), registry/navigation 2/2, strict MkDocs/docs 514 pass. Fresh exact-base f152d6c9 build reproduces identical five route-search failures (23 versus 22 routes; 6 versus 5 destinations), proven pre-existing. Compiler lease released; no private bus/live service/installed actions. Offered exact overlay and proposed ED-04 ADR review next.
+- 2026-10-07T17:54:43+00:00: Claimed exact frozen-source r15 recipe/archive/metadata review and subsequent proposed ED-04 ADR review. No compiler, installed mutation, publication or live service boundary is authorized.
+- 2026-10-07T17:56:35+00:00: Independent r15 archive checks match exact freeze, prefix, all 9329 blob hashes/modes, SHA256/size and both Manifest hashes; own recut byte-identical. Recipe mirror, historical Manifest/recipes and unchanged delivery metadata verified; release contract/Python7 pass. Fresh exact-pin metadata passes with process-only repo override; runtime solver remains active.
+- 2026-10-07T17:57:13+00:00: ACCEPT overlay e9f04b8 and source mirror e6f8787 as prepared recipe/archive only. Independent exact two-root resolver exit 0: 599 runtime packages/zero forbidden Plasma. Full build/signature/artifact/install remain manager gates. No source pin/config/publication/installed mutation. Moving to exact proposed ED-04 ADR next.
+- 2026-10-07T17:59:05+00:00: ACCEPT exact Proposed ED-04 ADR aecc7c85: own strict MkDocs/515-document validator/diff gate pass; source anchors and unchanged owner code checked against7d45d2c, authored four-fixture30Qt logs/harness hashes inspected, not independently rerun. Graphical Start/Retry, nonactivating observation, supported inventory/readback versus owner absence and bounded ordinary-action/credential boundaries coherent. No product/feature progress. Both bounded reviews complete; no resource lease, available after handoff.
