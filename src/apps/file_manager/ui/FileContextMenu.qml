@@ -44,6 +44,8 @@ Menu {
     // ADR-0269: the right-click set applies to local folders only.
     readonly property bool localFolder: !root.applicationsPlace
         && root.navigationController.remoteActive !== true && root.fileActions !== null
+    readonly property bool remoteFolder: !root.applicationsPlace
+        && root.navigationController.remoteActive === true
     readonly property bool inTrash: root.fileActions !== null && root.fileActions.inTrash === true
     readonly property bool itemActions: !root.isBackground && root.localFolder && !root.inTrash
 
@@ -347,9 +349,15 @@ Menu {
     MenuItem {
         objectName: "contextTrashAction"
         visible: !root.isBackground && !root.applicationsPlace && !root.inTrash
-        enabled: !root.isBackground && root.actionEnabled("file.trash")
-        text: qsTr("Move to Trash")
-        onTriggered: root.appCoordinator.activateAction("file.trash")
+        // AGENT-GUARD: ED-07 has no admitted remote Trash backend. Keep its
+        // reason discoverable and refuse even stale/programmatic activation.
+        enabled: !root.isBackground && !root.remoteFolder && root.actionEnabled("file.trash")
+        text: root.remoteFolder ? qsTr("Trash unavailable for remote locations")
+                                : qsTr("Move to Trash")
+        onTriggered: {
+            if (enabled)
+                root.appCoordinator.activateAction("file.trash")
+        }
     }
     ContextActionItem {
         objectName: "contextDeleteAction"; contextMenu: root; actionId: "file.delete"

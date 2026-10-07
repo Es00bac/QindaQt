@@ -120,6 +120,16 @@ toolbar for remote locations that support creation, and disables while their
 creation operation is pending.
 Tooltips and accessible labels explain every icon action.
 
+The shared context menu also exposes the admitted remote Open, Rename, Copy
+To, Move To and background New Folder actions through the existing AppShell
+catalog and coordinator. Busy or unavailable actions use that same admission
+state. Remote Trash has no admitted backend: its disabled row explains
+"Trash unavailable for remote locations", and refuses stale/programmatic
+activation instead of dispatching the local Trash operation. Local Trash keeps
+its existing admitted behavior. This ED-07 presentation slice adds no new
+remote mutation engine or authority.
+
+
 The places sidebar offers fixed places (Home, File System, Trash, Recents,
 Applications, Network) and the user's bookmarks. `Ctrl+D` bookmarks the current folder; each bookmark row
 has an icon button to remove it. Places retain both recognizable icons and labels;
