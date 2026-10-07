@@ -1,9 +1,12 @@
 # Platform delivery queue
 
-## October 7 exact integration and adoption state
+## October 7 exact integration and adoption state — 2026-10-07T23:32:35+00:00
 
-Actual laptop r16/source2188 signed Portage install exit0,2299objects+4symlinks/world/profile/catalog verified. Current session unchanged; popup/login/physical gates open. Readonly823 integrated4/4(37Qt); ED07 registry1/1; scopedSDK4fb root3/3 and boundary review complete, toolkitintegration next. Previewec10/7e27 native2/2(57Qt) awaits manageracceptance for futureversion. Media ordinary2f831 now holds full native/private lease, Astra old/newrecheck next; HiddenWiFi fresh47a atsourceauthoring, ADR0354 reserved, no live radio. HardED05 ADR0355 reserved next, no storage edits. AllED01–24 remain active.
+Managerb77 integrated reviewed Media64dc, hidden14b/ADR0354Accepted, captureec10 and lock65;68 targets/1114 strict actions and73 CTests/685 Qt pass. Media public installed-only stage1/1/header poison/restored1/1; SDK4fb exact3/3/43Qt pass. Toolkit703/overlay24 recipes integrated after independent archive2919-blob/mode/recut verification; signed artifact gate remains next.
 
+Current lease/queue: Astra223 copier preservation actual7/7+73Qt and production banner normal/2x pass, full affected app gates still running; Media83e ED11 source/static accepted only for native dispatch, native next after explicit release; Platform signed toolkit build-only follows. Root isolated Viewer text/find source is unreviewed/uncompiled. All candidates remain preserved in their isolated worktrees; root reviews/integrates only exact independently accepted commits.
+
+Actual laptop installed desktopr16/source2188 has saved top-bar applet placement and real Codex remaining/reset/token presence; cost absent. Claude publisher connected, first live report not observed. Current running shell unchanged; click/next-login/hardware gates open. EntireED01–24 plan stays active; no completion credit from assignments/design/candidate branches.
 
 ## Full-plan delivery is active — 2026-10-07T21:15:27+00:00
 
