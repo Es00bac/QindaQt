@@ -2,7 +2,7 @@
 
 ## October 7 exact integration and adoption state
 
-Manager recheck: repaired trust a23b87229 pure19+24 passed; ADR0352/0353 remain Proposed, no live authority/completion credit. ED07 bda4d8d9 accepted independently in5843286002 and integrated; registry/real-server gates remain. R16 source/overlay accepted and5124-action package built; actualartifact11514f3 signature/image handoff awaits manager adoption. Media readonly repair823738ab1 has next short lease; Astra scoped toolkit393c1ce5 and isolated preview-DPR repair source continue.
+R16 artifact11514f3 independently accepted by root: SHA256433728dc, required signatures/fullimage/copy runtime/publisher/Portage pretend pass. Authorized laptop adoption/profile placement next; popup and physical gates separate. Preview ec10d63 focused compiler lease active, next Media ce338 action/consumer gates; Astra SDK4fb7 passes3CTest/43Qt+publicSDK, root review next. Media readonly823738 native4/37 + consumer/header poison pass, root integration next. ADR0352/0353 remain Proposed; ED07 registry/real-server qualification open.
 
 
 ## Full-plan delivery is active — 2026-10-07T21:15:27+00:00

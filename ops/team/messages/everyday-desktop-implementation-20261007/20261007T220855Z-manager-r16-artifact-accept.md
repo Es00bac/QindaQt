@@ -1,0 +1,11 @@
+# Independent exact r16 artifact acceptance
+
+- Reviewer: root Program Manager, independent of Platform author.
+- ACCEPT exact gpkg 61,009,920 bytes SHA256433728dcda98a8b3d55c88d3ff3aaf38cd60328f812f1d45828de5f227a28b33; source2188d8e0e339ce4b56acb841a4b570f58a3002cc and independently accepted recipe f9d4cf81a/overlay439fdb837.
+- Laptop installed Portage gpkg API verified complete payload plus required trusted signatures, no ignore-signature override. Independent signed Manifest GPG exit0: signing subkey F7DA5CF3CF5B561FB219E4BBE015A86983EBD777, primary D1D453A84F0C34DCE86E5B23A8EDE14F4FDA54D2. Metadata recipe byte-equal reviewed source; fork r6/PAM>=1/powerOFF preserved.
+- Fresh safe extraction 2,303 files: three public usage headers/static archive, ELF publisher, full shell/preview executables, compiled popup/controller module markers, manifest agent-usage.read and all11 stock profiles. Package-prefix release checker exit0.
+- Actual package shell and preview catalog commands exit0 with private XDG and blocked both buses; normal MacOS preview PNG exit0. Actual ELF publisher private report round-trip,0600/0700 modes and invalid-input unchanged report pass.
+- Bounded preexisting caveat: actual scale2 preview CLI exits4 (physical2560x1440 versus logical1280x720), no PNG/popup-open claim. Normal/DPI2 compiled popup source gates already pass; separate capture repair ec10d63 is queued for later immutable release, not a mutation of r16.
+- Actual laptop Portage binary pretend exit0: exactly one desktop r13-to-r16 upgrade, zero download/dependency changes. Private PKGDIR index refreshed with installed emaint; signatures retained. Current saved MacOS user profile shadows stock and needs one additive applet placement after package install.
+- Ignored independent evidence: laptop .cache/everyday-r16-adoption-20261007/{verified-artifact.json,gpg-verify.log,runtime-verification.json,portage-pretend.log}; exact artifact remains preserved privately on qinda. Historical r15 remains held.
+- Next: authorized actual Portage-only laptop adoption, verify VDB/CONTENTS/world/profile and separately qualify actual popup. No session restart or installed/hardware completion claim in this acceptance.

@@ -1,3 +1,14 @@
+## October 7 accepted AI usage binary — 2026-10-07T22:08:55+00:00
+
+The exact signed r16 artifact is independently accepted: source2188d8e0,
+SHA256433728dc,61,009,920bytes. Required-signature/payload/recipe/image,
+actual package catalogs, normal preview and ELF report publisher pass. Portage
+resolves one binary r13-to-r16 upgrade; actual adoption is next. The scale2
+preview CLI has a bounded preexisting geometry failure under separate repair;
+no actual popup/physical qualification is inferred. Preserve the saved user
+profile by adding the applet beside hardware controls after installation.
+All ED01–24 work and physical/user gates remain active; r15 stays held.
+
 ## Full-plan completion resumed — 2026-10-07T21:15:27+00:00
 
 The owner explicitly requires the entire everyday desktop plan, Android/Windows
