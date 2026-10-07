@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — agent usage backend42b4ebc1f handed off for independent review; compiler released to UI
+- Status: working — repairing exact42b4 partial-result detail after independent review
 - Base: ccc99fb3f67c2bdc4f7156af7c0b0f1e05478057; manager ADR/navigation inherited a9746fb40
 - Branch: worker/everyday-agent-usage-backend-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -32,3 +32,5 @@
 - 2026-10-07T19:20:46Z — Debug strict build exit0 with observed MAKEOPTS -j24 -l24; CTest2/2, Qt12 cases and Python2 pass. Compiler released to UI. Actual Codex sanitized probe Ready, one quota window, one token metric, zero costs. Documentation and exact source receipt next.
 
 - 2026-10-07T19:39:08Z — Frozen backend42b4ebc1ffffcfbc0801ae501bf25ddc83f1b8eb, QtCore publisher/parser reuse, bounded descriptor-relative feeds and offline stale retention. Debug strict CTest2/2 (Qt17/Python3) pass; final actual sanitized Codex Ready/1quota/1token/0cost, strict MkDocs/docs518 pass. Compiler released to UI; exact independent review next. Stable persona record retained here; temporary task-specific duplicate record retired. No successor claimed.
+
+- 2026-10-07T19:43:34Z — Reopened same owner/worktree for reviewer partial-result detail finding. Successful quotas/totals were already preserved; adding explicit fixed partial detail and both-direction assertions. No compiler claim until reviewer release.
