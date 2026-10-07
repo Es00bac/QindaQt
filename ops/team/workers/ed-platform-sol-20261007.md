@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — future capture source authored; focused compiler lease and exact review pending
+- Status: waiting — verified future capture candidate independent review; r16 adoption manager-owned
 - Base: ef6693f985a5be43f30032a3f40f7cb0adaeb3d4
 - Branch: worker/everyday-preview-capture-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -60,3 +60,9 @@
 - 2026-10-07T22:00:11Z — Manager preallocation review expanded preciseownership to parseoptions and applicationpreflight. Sharedpurecapturegeometry now boundslogicalCLI and primaryscreenDPR before visibleQMLwindowcreation, then rechecksactualwindow/readback; added no-window oversizedCLI/nativeDPR and pureNaN/Inf/overflow/fractional boundary cases. Sourceauthoring done; focused compilerlease still queued. r16 bytes unchanged.
 
 - 2026-10-07T22:01:03Z — Intermediateec10d63dde45d56621a14bfad14bcfc63a946c21 preserved explicitqindahub, clean sourceauthoringcomplete. Transitioningwaiting for serializedfocusedcompilerlease; availableexactstaticrepair. No livecompiler claim. Nativequalification/finalcandidate remains pending.
+
+- 2026-10-07T22:06:26Z — Manager granted compiler/privatefixture lease afterAstra release and spokenbatchannouncement. Startingexactauthoredsource focusedDebugstrict preview/capturetargets with actualconfigured24/24, isolatedXDG/offscreen/bothbusesblocked. No systeminstall/r16changes.
+
+- 2026-10-07T22:08:21Z — Firstfocusedconfigure stoppedprecompiler EXIT1 because existingdesktop_surface testregistration requiresProductionShellON for publicShellSurface alias. Corrected ownnativeconfig toON while retaining exactpreview/matrix/error targets and24/24; no registry/productworkaround. Initial/correctedcommands/logs retained.
+
+- 2026-10-07T22:12:38Z — Exactproductec10d63dde45d56621a14bfad14bcfc63a946c21 unchanged through ownDebugstrict1320actionbuildEXIT0 andCTest2/2PASS20.97s, observedQt49matrix+8errors=57PASS/0fail/0skip. Actual2x/1.25/1.5odd decodedcaptures, logical/nativeprewindowbounds and captureerrors allpass; docs519/strictMkDocsexit0. Compiler/privatefixture releasedroot/Media. Candidateawaitsrootindependentreview; immutable r16bytes retained.
