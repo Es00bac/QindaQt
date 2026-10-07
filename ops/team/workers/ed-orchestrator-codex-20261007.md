@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — complete all ED01–24; deliver reviewed r16 installed usage popup alongside media and Astra trust contracts
+- Status: working — finish ED01–24; independently adopt r16 and integrate reviewed source while media, scoped SDK and preview repair progress
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -34,3 +34,4 @@
 
 - 2026-10-07T21:06:14+00:00 — Owner explicitly directed full plan completion and functional installed AI usage. Prior stopping at first source wave was insufficient. Hold r15 installation (no package transaction had started); dispatch fresh immutable plugin-containing release, ED04 public client/exporter/consumers, and remaining scope closure lanes with exact source ownership and review. Native/physical gate claims remain separate; no Origin work.
 - 2026-10-07T21:25:43+00:00 — Exact independent r16 recipe/source accepted: archive9,431 blobs and release7/7; preserve history. Media released compiler/private-bus; signed Portage build announced. Artifact/install/physical gates remain open.
+- 2026-10-07T21:53:23+00:00 — Exact old/fixed trust recheck19+24 passed; integrated Proposed contracts and independently accepted ED07 normal/2x7. Full r16 build5124 completed; signature/image review and laptop adoption next. Media short native repair lease active, scoped toolkit and capture repair source active.
