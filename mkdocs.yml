@@ -527,6 +527,7 @@ nav:
       - "ADR-0348: Reattach keyring after native owner replacement": adr/0348-reattach-keyring-after-owner-replacement.md
       - "0349: Native lock authentication policy": adr/0349-package-native-lock-authentication-policy.md
       - "0350: Share removable media with file consumers": adr/0350-share-removable-media-with-file-consumers.md
+      - "0351: Bounded coding-agent usage metadata": adr/0351-collect-agent-usage-through-bounded-metadata-sources.md
       - "0347: Controller desktop input yields to games": adr/0347-controller-desktop-integration.md
       - "ADR-0303: Resolve window application identity through the neutral catalog": adr/0303-resolve-window-identity-through-application-catalog.md
       - "ADR-0309: Build QindaQt without Plasma Activities": adr/0309-build-qindaqt-without-plasma-activities.md
