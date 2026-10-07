@@ -107,4 +107,8 @@ The [October 7 audit](../development/everyday-desktop-audit.md) distinguishes
 this installed helper from File Manager device discovery and the still-unverified
 physical insertion/eject journey. Proposed ED-04 in the
 [delivery plan](../development/everyday-desktop-plan.md) must preserve UDisks
-authority and this module ownership; the proposal does not add a public API yet.
+authority and this module ownership. [Proposed ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md)
+defines a bounded public inventory/client and ordinary-action design for File
+Manager and the native chooser. It preserves Activate compatibility, captured
+attachment fencing, owner-only preferences/passphrase/formatting and authoritative
+sibling-safe removal. It adds no public API or sidebar feature before review.
