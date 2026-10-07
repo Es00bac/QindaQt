@@ -34,6 +34,18 @@ polkit interaction or destructive formatting qualification. Exact commands,
 counts and any unavailable rows accompany the candidate handoff; merely naming
 a fixture is not a passing execution claim.
 
+The October 7 feasibility run compiled these unchanged owning sources in an
+ignored standalone Debug harness with configured Portage limits and strict
+warnings. Policy, UDisks and notification fixtures plus two disposable
+notification-discovery cases passed four CTest rows: 30 Qt checks including
+init/cleanup, zero failures/skips. The additional cases observed that missing
+notifications request the existing owner window without mounting, and dismissal
+keeps inventory and explicit window activation while rejecting the dismissed
+id's late mount action. Private buses used only fixture UDisks/notification
+objects; system-bus address was unavailable. This is owner-feasibility evidence,
+not proof of the proposed public client, real GUI presentation or hardware.
+Commands and exact ignored harness hashes are in the candidate handoff.
+
 ## Decision proposed
 
 Keep the running Removable Media application as the sole session owner of
@@ -52,7 +64,26 @@ continue to work with old and new owners. An old owner lacking the Devices
 object produces explicit unsupported inventory in new consumers; consumers
 still browse ordinary local directories and may offer the existing helper's
 Activate action. There is no second watcher, compatibility mount utility or
-fallback UDisks consumer.
+fallback UDisks consumer. The public client observes the owner without bus
+activation: opening a browser/chooser must not start the insertion owner and
+thereby run remembered mounts. The supervisor still owns the optional child;
+explicit user launcher activation remains separate from observation.
+
+Missing-owner recovery is graphical: the device section shows **Media support
+unavailable** with a deliberate **Start media support** action. The public
+client receives a constructor-injected `MediaOwnerLauncher` port whose closed
+request is the existing `org.qindaqt.RemovableMedia.desktop` owner entry,
+resolved through the public application-launch boundary. Consumers cannot
+substitute a command or spawn mount tools. One explicit attempt may launch the
+ordinary owning helper and its existing singleton policy; only observed owner
+and valid inventory readback change the section to ready. A returned process
+id or launcher success is not inventory readiness. Missing descriptor, launch
+failure or bounded startup timeout remains visible with **Try again** and an
+ordinary application-launcher route to Removable Media. If the owner exists,
+Try again only rereads its inventory; unsupported old owners offer **Open
+Removable Media** through unchanged Activate. No terminal, automatic restart
+loop, hidden repeated launch or readiness assumption is part of recovery.
+Private fixtures inject a recording launcher and never start the host helper.
 
 This proposal supersedes only ADR-0315's **export only Activate** restriction
 if accepted. Its UDisks, insertion, persistence and formatting decisions remain.
@@ -119,6 +150,11 @@ immediately before debounce. Reused device/object/mount paths cannot resurrect
 it. The owner epoch also advances when its underlying UDisks authority changes.
 Provider loss clears rows and disables actions immediately; no stale ready
 inventory is retained. Malformed publication does not resurrect previous rows.
+The owner must extend its private typed projection for complete mount roots,
+unknown read-only facts and operation phases/results at the point those facts
+are observed; the public adapter must not infer them from human status strings
+or optimistic helper selection. Local helper and public exporter consume that
+same owner truth instead of creating another operation policy.
 
 ### Wire and asynchronous operations
 
@@ -230,6 +266,8 @@ per-volume Trash and chooser save eligibility remain separate authorities.
    oversized snapshots, unavailable UDisks and destruction during pending reads.
    Export no RequestAction until action admission/result gates exist. An old
    Activate-only owner must remain usable and report inventory unsupported.
+   A recording launcher proves zero passive launches, one user Start attempt,
+   observed-owner/readback readiness, launch refusal/timeout and visible Retry.
 2. Review a separate owner/client ordinary-action slice: one-in-flight global
    admission, duplicate-id suppression, fresh mounted/read-only readback,
    stale generations, busy hidden sibling, authorization cancel, encrypted
