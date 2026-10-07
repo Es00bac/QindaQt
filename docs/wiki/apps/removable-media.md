@@ -78,9 +78,10 @@ must set `QINDAQT_BUILD_REMOVABLE_MEDIA=OFF` while this package owns the compone
 
 The application separates pure inventory projection, atomic choice persistence,
 presentation policy, notification transport, UDisks transport/operations, and
-compiled QML. UDisks remains the privileged device authority. The public
-`org.qindaqt.RemovableMedia1` session endpoint exports only `Activate`, not mount
-or format methods. Attachment tokens are revoked on unplug and owner change;
+compiled QML. UDisks remains the privileged device authority. The compatibility `org.qindaqt.RemovableMedia1` endpoint retains `Activate`.
+The new [Devices exporter](../architecture/removable-media-client.md) exposes
+read-only inventory on a separate object; no mount or format method is exported
+in this slice. Attachment tokens are revoked on unplug and owner change;
 delayed results cannot open or act on replacement media.
 Every mount follow-up rechecks the attachment before read-only verification or
 rollback. Safe-removal steps retain the physical drive/media generation, even
@@ -114,6 +115,7 @@ attachment fencing, owner-only preferences/passphrase/formatting and authoritati
 sibling-safe removal. The design is accepted. The standalone
 [public value/codec module](../reference/removable-media-protocol-v1.md) now
 owns bounded, canonical protocol data and structural checks only. It neither
-connects to UDisks nor exports the proposed Devices object. Public client,
-read-only owner exporter, ordinary-action runtime and consumer sidebars remain
-separate gates; the existing helper still exports only Activate.
+connects to UDisks nor exports the proposed Devices object. The new [read-only client/exporter slice](../architecture/removable-media-client.md)
+adds observed inventory with exact-owner fencing. Ordinary-action runtime and
+consumer sidebars remain separate gates; installed-package and physical evidence
+remain distinct from this source slice.
