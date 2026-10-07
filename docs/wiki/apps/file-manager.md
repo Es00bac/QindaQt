@@ -69,6 +69,49 @@ retains all navigation and filesystem policy; AppShell owns only the standard
 menu, shortcut dispatch, focus reporting, and close-decision protocol (see
 [Module boundaries](../architecture/module-boundaries.md)).
 
+## Removable devices and location lifetime
+
+The Devices section observes the session's existing Removable Media owner
+through [MediaSource](../architecture/removable-media-client.md) and
+[ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md).
+It retains separate rows for partitions and duplicate labels after insertion
+notifications are dismissed. Rows show current mount/read-only/locked/progress
+state with accessible disabled reasons. Open, mount read-only, unmount, safely
+remove and details use only the closed public owner boundary. The compact
+sidebar keeps every section in one keyboard-revealing scroll column and renders
+external labels as plain text.
+
+Starting or refreshing File Manager only observes. A missing owner offers
+Start Removable Media, retry and its graphical window; an old incompatible
+owner stays visibly unavailable. There is no consumer mount utility, preference
+store, automatic owner activation or observation-triggered device action.
+
+Open of an unmounted device waits for confirmed current roots and matching
+owner/epoch/attachment. Deferred opening belongs to the initiating tab and
+listing generation. Changing tabs, navigating elsewhere, closing the presenter
+or losing the attachment discards that opening interest while accepted owner
+work continues. A mounted device opens through the existing NavigationController
+and ordinary file operations remain in the existing mutation coordinator.
+
+Each device location retains attachment provenance through descendant folders,
+including controllers created for an inactive Commander pane before first focus.
+The most-specific unique mounted root determines its attachment; ambiguous
+equal roots are refused. A new nested overmount withdraws the previous listing
+rather than silently rebinding it. Owner loss, attachment removal or loss of its
+mount root withdraws the listing, advances its generation and disables folder
+actions. Passive refresh, late search results and later devices reusing the path
+cannot revive it. Deliberately choosing a current device or another folder
+establishes new location provenance. Safe to unplug appears only for the
+matching successful removal with a final owner-confirmed removal mode.
+Formatting, unlocking and remembered choices remain in the owner window.
+
+NavigationController's existing presentation/getters/zoom methods are extracted
+into navigation_presentation.cpp; navigation_media.cpp owns revocation. This
+keeps the edited controller below 500 nonblank lines without creating a new
+window-wide controller. Public-source tests cover duplicate partitions,
+deferred read-only open, tab/navigation withdrawal, inactive-tab loss, reused
+roots and uncertain removal. Package/native/physical-media gates remain distinct.
+
 ## First-party global-menu export
 
 File Manager opts its deterministic AppShell action catalog into
@@ -1735,15 +1778,19 @@ per-volume Trash and symlink-copy limitations. Proposed ED-04 through ED-07 in
 the [delivery plan](../development/everyday-desktop-plan.md) are future work,
 not a change to the implemented behavior described above.
 
-## Planned removable-device discovery
+## Removable-device delivery gates
 
 The [ED-04 delivery plan](../development/everyday-desktop-plan.md) and
 [Accepted ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md)
-separate device inventory/client delivery from File Manager sidebar consumption.
-The owner remains [Removable Media](removable-media.md); this browser and the
-[native chooser](../reference/portal-choosers.md) would consume its public client,
-with no UDisks or media-choice persistence. The design retains separate partition
-rows, attachment-bound mounted navigation, visible pending/busy/readonly truth
-and late-result fencing. Formatting and encrypted credentials stay in the
-owner's helper UI. The design is accepted; this is not implemented device discovery or
-physical insertion/eject qualification.
+retain [Removable Media](removable-media.md) as the device authority.
+The public client/exporter and the [device sidebar](#removable-devices-and-location-lifetime)
+are implemented in a fixture-qualified source candidate. [Native chooser](../reference/portal-choosers.md#removable-devices)
+selection uses the same public boundary. No consumer stores choices or imports
+private UDisks code. Formatting and credentials remain in the owner UI.
+Candidate 64dcfa1a2b15c065c97d43e0f30e5c6bca173633 passed the File Manager media
+and compact/desktop keyboard/fit cases as part of 29/29 focused registry rows
+and 339 Qt checks. Never-active Commander panes, reversed nested-root order,
+owner/attachment/root loss and reused paths are direct negative cases.
+Exact source/fixture, native, installed-package and physical insertion/eject
+qualification each require separate evidence. Source delivery and a passing
+private fixture cannot establish installed or physical-device completion.

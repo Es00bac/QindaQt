@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — finish ED01–24; independently adopt r16 and integrate reviewed source while media, scoped SDK and preview repair progress
+- Status: working — orchestrate remaining ED01–24; implement isolated native-lock startup retry repair and Viewer text/find; independently review accepted candidates and installed usage
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -39,3 +39,7 @@
 - 2026-10-07T22:08:55+00:00 — Independently ACCEPTED exact r16 signed artifact on laptop:2,303-file fresh extraction, package catalogs/normalPNG/publisher and release checker pass; Portage pretend one binary upgrade. Saved user MacOS profile shadows stock; additive placement follows actual installation. Preview focused lease active; Astra43 tests/sourceSDK passed and next reviews Media destructive admission.
 
 - 2026-10-07T22:24:07+00:00 — Actual laptop r16 Portage install exit0;2299objects+4symlinks/world/profile/installcatalog verified. Reviewed readonly823 merged and integrated4/4(37Qt), ED07 registry1/1, scopedSDK3/3 pass. Root resourcelease released to Media2f831 ordinary gate; Astra exact old/new recheck waits. Preview57Qt pass awaits exactacceptance; HiddenWiFi authoring active; no fullED completion claim.
+
+- 2026-10-07T22:40:39+00:00 — Installed public SDK probe Ready on laptop: quota1/remaining1/reset1/token1/cost0, sanitized presence only. Claude statusline connected to Portage ELF; real Claude update remains unobserved. Created exact1a205444c isolated lock-startup and Viewer-text worktrees, no Viewer production edits yet. Media keeps compiler/private fixture lease; Astra independent old/new review queued, ED05 contract-only draft authorized.
+
+- 2026-10-07T23:08:50+00:00 — Root independently reviewed SDK4fb/source plus actual3/3 and integrated QindaTK hub/checkout4fb, preserving .obsidian. Installed laptop usage Ready confirms quota/reset/token presence without costs; Claude connected. Lock65 actual strict private-native old11pass2fail, repaired13pass0fail and2/2 registry, logs uploaded. Media64 exact independent old/fixed ACCEPT23Qt; hidden14b own39/254Qt awaiting Astra7 rerun. Root announced qinda integration batch, short first sublease Astra hidden7/old-copier sentinel. ED05 model021 independently33/33 accepted as bounded contract; Viewer private text source authoring; ED11 source and toolkit release metadata dispatched. Full plan/physical gates open.

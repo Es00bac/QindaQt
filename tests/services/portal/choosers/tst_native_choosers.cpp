@@ -5,6 +5,8 @@
 #include <qindaqt/services/portal/chooser_types.h>
 #include <qindaqt/services/portal/session_binding.h>
 #include <qindaqt/platform/compositor_attachment/compositor_attachment.h>
+#include <qindaqt/services/session_lock_state/qt_native_lock_transport.h>
+#include <qindaqt/services/session_lock_state/native_lock_state_monitor.h>
 #include <qindaqt/compositor_names/compositor_names.h>
 #include <QDBusConnectionInterface>
 #include <QDBusPendingCallWatcher>
@@ -53,6 +55,41 @@ private Q_SLOTS:
         QVERIFY(bus.registerService(QStringLiteral("org.freedesktop.impl.portal.PermissionStore")));
         backend = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), QStringLiteral("chooser-backend")));
         selected = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(qEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"), QStringLiteral("chooser-supervisor")));
+        // AGENT-GUARD: compositor name/socket publication precedes native
+        // lock object publication. Introspection is readiness only; unlocked
+        // truth still requires the nonce receipt and empty method reply from
+        // this exact independently attached owner/PID.
+        using namespace QindaQt::Platform::Compositor;
+        const auto nativeOwner = bus.interface()->serviceOwner(QString(QindaQt::CompositorNames::service)).value();
+        const auto nativePid = qEnvironmentVariableIntValue("QINDAQT_PORTAL_TEST_COMPOSITOR_PID");
+        QVERIFY(nativePid > 1);
+        CompositorAttachment readyAttachment(*backend, qEnvironmentVariable("XDG_RUNTIME_DIR"),
+            [control = selected->baseService()](const QString &owner) { return owner == control; });
+        QVERIFY(readyAttachment.attach(selected->baseService(), QStringLiteral("qindaqt-7"),
+            PeerExpectation{nativeOwner, static_cast<quint64>(nativePid)}));
+        const auto lockInterfaceReady = [&] {
+            if (!readyAttachment.live()) return false;
+            auto query = QDBusMessage::createMethodCall(nativeOwner,
+                QString(QindaQt::CompositorNames::nativeLockPath),
+                QStringLiteral("org.freedesktop.DBus.Introspectable"), QStringLiteral("Introspect"));
+            query.setAutoStartService(false);
+            const auto reply = backend->call(query, QDBus::Block, 250);
+            return reply.type() == QDBusMessage::ReplyMessage && reply.signature() == QStringLiteral("s")
+                && reply.arguments().first().toString().contains(QString(QindaQt::CompositorNames::nativeLockInterface))
+                && reply.arguments().first().toString().contains(QStringLiteral("RequestStateWithReceipt"))
+                && reply.arguments().first().toString().contains(QStringLiteral("stateReceipt"));
+        };
+        QTRY_VERIFY_WITH_TIMEOUT(lockInterfaceReady(), 5000);
+        QindaQt::Services::SessionLockState::QtNativeLockTransport readyTransport(*backend);
+        QindaQt::Services::SessionLockState::NativeLockStateMonitor readyLock(readyTransport,
+            [&readyAttachment](const QString &owner, quint64 pid) {
+                const auto identity = readyAttachment.identity();
+                return identity && identity->compositorOwner == owner && identity->compositorPid == pid;
+            });
+        QVERIFY(readyLock.start());
+        QTRY_VERIFY_WITH_TIMEOUT(readyLock.contentMayBeShown(), 5000);
+        readyLock.stop();
+        readyAttachment.revoke();
         resident = std::make_unique<ResidentPortalService>(appearance, *backend);
         composition = std::make_unique<PortalFoundationComposition>(resident->backendHost(), *backend, qEnvironmentVariable("XDG_RUNTIME_DIR"),
             qEnvironmentVariable("QINDAQT_PORTAL_TEST_HELPER"), qEnvironmentVariable("QINDAQT_PORTAL_TEST_RELAY"),

@@ -651,3 +651,15 @@ set_tests_properties(qindaqt.file-manager-toolkit-palette PROPERTIES
     LABELS "file-manager;offscreen;appearance"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion;QT_FATAL_WARNINGS=1"
     ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")
+
+# ADR-0350 public-source device navigation and lifetime negatives.
+qindaqt_add_file_manager_test(qindaqt_file_manager_media_tests
+    tst_media_presenter.cpp qindaqt.file-manager-media)
+
+qindaqt_add_file_manager_test(qindaqt_file_manager_media_ui_tests
+    tst_media_ui.cpp qindaqt.file-manager-media-ui)
+target_link_libraries(qindaqt_file_manager_media_ui_tests PRIVATE Qt6::Quick)
+target_compile_definitions(qindaqt_file_manager_media_ui_tests PRIVATE QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+set_tests_properties(qindaqt.file-manager-media-ui PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:;DBUS_SESSION_BUS_ADDRESS=unset:")

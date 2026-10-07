@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "file_chooser_dialog.h"
 #include "app_chooser_dialog.h"
+#include "media_composition.h"
 #include <qindaqt/platform/foreign_parent/foreign_parent.h>
 #include <QApplication>
 #include <QElapsedTimer>
@@ -32,10 +33,12 @@ int main(int argc, char **argv) {
     const auto frame = initialFrame(); if (!frame) return 2;
     QApplication app(argc, argv);
     using namespace QindaQt::Services::Portal;
+    ChooserMediaComposition media;
     std::unique_ptr<ChooserDialog> dialog; QString parentWindow;
     if (frame->value("type") == QJsonValue("file")) {
         const auto request = fileChooserFromFrame(*frame); if (!request) return 2;
-        parentWindow = request->question.parentWindow; dialog = std::make_unique<FileChooserDialog>(*request);
+        parentWindow = request->question.parentWindow; media = composeChooserMedia();
+        dialog = std::make_unique<FileChooserDialog>(*request, media.source.get());
     } else {
         const auto request = appChooserFromFrame(*frame); if (!request) return 2;
         parentWindow = request->question.parentWindow; dialog = std::make_unique<AppChooserDialog>(*request);

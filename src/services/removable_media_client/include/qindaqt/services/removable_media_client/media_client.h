@@ -28,13 +28,27 @@ public:
     void refresh() override;
     void recover() override;
     void openOwner() override;
+    [[nodiscard]] bool ownerObserved() const override { return !m_owner.isEmpty(); }
+    [[nodiscard]] bool actionPending() const override { return m_pending.has_value(); }
+    [[nodiscard]] QString requestAction(const Attachment &attachment, Action action) override;
 private Q_SLOTS:
     void changedWire(const QByteArray &wire, const QDBusMessage &message);
+    void resultWire(const QByteArray &wire, const QDBusMessage &message);
 private:
     void initialize();
     void queryOwner();
     void clearReadWaiters();
     void setOwner(const QString &owner);
+    void retireRequest(OperationStatus status);
+    void tryFinish();
+    struct RequestState {
+        ActionRequest request;
+        QString operationId;
+        std::optional<OperationResult> result;
+        bool awaitingReadback = false;
+    };
+    std::optional<RequestState> m_pending;
+    QTimer m_operationTimer;
     void requestSnapshot();
     void publishUnavailable(DiagnosticCode code, const QString &message);
     void acceptWire(const QByteArray &wire, const QString &owner, quint64 serial);
@@ -42,7 +56,7 @@ private:
     MediaOwnerLauncher &m_launcher;
     std::unique_ptr<MediaOwnerLookup> m_ownedLookup;
     MediaOwnerLookup *m_lookup = nullptr;
-    QPointer<QDBusPendingCallWatcher> m_lookupWatcher, m_readWatcher;
+    QPointer<QDBusPendingCallWatcher> m_lookupWatcher, m_readWatcher, m_admissionWatcher;
     QDBusServiceWatcher m_watcher;
     QTimer m_startupTimer, m_readTimer;
     Snapshot m_snapshot, m_observed;

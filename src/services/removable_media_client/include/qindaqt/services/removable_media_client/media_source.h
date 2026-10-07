@@ -17,8 +17,15 @@ public:
     virtual void refresh() = 0;
     virtual void recover() = 0;
     virtual void openOwner() = 0;
+    [[nodiscard]] virtual bool ownerObserved() const { return !snapshot().lineage.owner.isEmpty(); }
+    // Deliberate closed action; returns a new correlation id or empty refusal.
+    // No accepted action is cancelled or replayed by client destruction/refresh.
+    [[nodiscard]] virtual bool actionPending() const { return false; }
+    [[nodiscard]] virtual QString requestAction(const Attachment &, Action) { return {}; }
 Q_SIGNALS:
     void snapshotChanged();
+    void admissionReceived(const ActionAdmission &admission);
+    void operationFinished(const OperationResult &result);
 };
 
 // Closed launch port: implementations resolve only the installed
@@ -31,3 +38,6 @@ public:
     [[nodiscard]] virtual bool startOwner() = 0;
 };
 } // namespace QindaQt::RemovableMedia
+
+Q_DECLARE_METATYPE(QindaQt::RemovableMedia::ActionAdmission)
+Q_DECLARE_METATYPE(QindaQt::RemovableMedia::OperationResult)

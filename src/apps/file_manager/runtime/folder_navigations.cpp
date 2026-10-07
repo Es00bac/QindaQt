@@ -30,6 +30,7 @@ QObject *FolderNavigations::create(const QString &path) {
   // to; the tab's lifetime is release()'s to end.
   QQmlEngine::setObjectOwnership(navigation, QQmlEngine::CppOwnership);
   navigation->navigateTo(path);
+  emit controllerCreated(navigation);
   return navigation;
 }
 
@@ -53,6 +54,11 @@ void FolderNavigations::setActive(QObject *navigation) {
 }
 
 QObject *FolderNavigations::active() const { return m_active.data(); }
+QList<NavigationController *> FolderNavigations::controllers() const {
+  auto all = findChildren<NavigationController *>(QString{}, Qt::FindDirectChildrenOnly);
+  all.prepend(&m_first);
+  return all;
+}
 
 void FolderNavigations::bind(NavigationController *navigation) {
   // Destroying the old context drops every connection the binder made.

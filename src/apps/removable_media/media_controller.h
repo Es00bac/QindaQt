@@ -43,6 +43,9 @@ public:
                                   const QString &typedDevice);
     Q_INVOKABLE void unlock(const QString &token, const QString &passphrase);
     void notificationAction(const QString &token, const QString &action);
+    // Private exporter enters the same global slot as helper/remembered work.
+    // No preference, open-after, format or secret can enter this closed port.
+    [[nodiscard]] bool requestOrdinary(const QString &token, Operation operation);
 Q_SIGNALS:
     void changed();
     void windowRequested(const QString &token);

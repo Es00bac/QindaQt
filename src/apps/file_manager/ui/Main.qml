@@ -39,6 +39,7 @@ ApplicationWindow {
     // ADR-0271: makes the controllers of every tab after the first
     // (runtime/folder_navigations.h); without it the window has one tab.
     property var navigationFactory: null
+    property var mediaPresenter: null
     // ADR-0271: Finder, Explorer or Commander -- the user's pick, else the
     // desktop layout's.
     readonly property string fileManagerStyle: root.preferencesController.fileManagerStyle || "finder"
@@ -353,6 +354,7 @@ ApplicationWindow {
                     appCoordinator: root.coordinator
                     mutationController: root.mutationController
                     clipboardController: root.clipboardController
+                    mediaPresenter: root.mediaPresenter
                     showFolderTree: root.fileManagerStyle === "explorer"
                     columnListing: root.columnListing
                 }
