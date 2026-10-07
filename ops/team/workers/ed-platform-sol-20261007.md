@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: waiting — immutable r15 handed off for exact recipe review before build-only lease
+- Status: working — authorized signed full-source r15 Portage build-only
 - Base: f152d6c9ee04f99c01d4ca07c4dcb46701a42800
 - Branch: worker/everyday-platform-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -17,3 +17,7 @@
 - 2026-10-07T17:42:47+00:00: Offered manager exact declared Network target names after read-only log showed unknown-target stop. Own focused acceptance remains complete and resources released; archive waits manager combined-source gate.
 - 2026-10-07T17:47:36+00:00: Manager source freeze bef80e861680f6d7bd53a556c39e13d97ff9e742; r15 cut twice identically, 9329 tracked blobs verified, additive Manifest rows only. No publication/installation; exact recipe review next.
 - 2026-10-07T17:49:46+00:00: Handed off overlay e9f04b8/mirror e6f8787 with exact bef80e861 source archive, 9,329 blobs, digest/metadata599/zero Plasma and passing private17-row proof. Preserved qinda hub branches; read queue/peer verdicts; executable successor is signed build-only after exact recipe review/lease.
+- 2026-10-07T18:07:00+00:00: Root granted sole compiler/private-build lease after independent exact recipe ACCEPT b19c6d0a1. Rechecked accepted own overlay HEAD and archive SHA256; full installed Portage buildpkgonly starts with unchanged signing/job settings and process-only repository/DISTDIR/temp overrides. No install or publication.
+- 2026-10-07T18:08:05+00:00: First Portage invocation stopped before compilation, exit1: dedicated PORTAGE_TMPDIR absent. Created private directory and verified installed parser accepts --package-moves=n; retry explicitly disables global package moves without altering signing/compiler settings.
+- 2026-10-07T18:12:02+00:00: Corrected private Portage invocation is compiling the full 5,065-action production graph; direct CMake cache shows KWin/plugin production ON, testing OFF, RelWithDebInfo and native-power-exclusive OFF. No failed step at observed action518; dependency resolver selected only exact r15. Signer/artifact verification remains pending actual package output.
+- 2026-10-07T18:15:03+00:00: Manager requires private PKGDIR before artifact review. Interrupted own emerge before package phase (exit130), preserving configured tree through step935/5065. Direct normal binhost inspection finds zero r15 files. Continuing installed Portage compile/install-image/package phases with only PKGDIR moved to ignored private cache; signing/job settings unchanged.
