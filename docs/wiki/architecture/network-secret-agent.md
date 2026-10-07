@@ -171,3 +171,26 @@ harness](../development/testing-harness.md).
 This boundary does not claim VPN secrets, certificate selection, profile
 creation/editing, an agent-owned secret store, physical networking, systemd or
 D-Bus activation policy, or autostart outside the QindaQt session supervisor.
+
+## Hidden personal Wi-Fi extension
+
+[ADR-0354](../adr/0354-join-hidden-personal-wifi-through-network1.md) defines the
+optional metadata-only `ConnectHiddenNetwork(t,t,s,s,u)->ay` method. Its exact SSID
+is printable valid UTF-8, 1..32 octets with spaces preserved; the selected Wi-Fi
+interface and WPA2Personal/WPA3Personal security values are explicit. Existing
+ConnectKnownNetwork operation kind 1, snapshot/result codecs, capability bits
+and existing methods remain unchanged. Old services produce a definite local
+Unsupported result; no fallback or automatic retry occurs.
+
+Admission requires current ready lineage, an available selected Wi-Fi device,
+enabled hardware/software radio, profile-control capability and no duplicate
+saved SSID/security identity. Hidden WPA2/WPA3 profiles pin RSN/CCMP; WPA3 uses
+SAE and required PMF, with no downgrade. Device RSN/CCMP admission does not
+claim SAE support: NetworkManager owns its authoritative refusal and actual
+connection state. Successful dispatch never fabricates connectivity.
+
+Settings offers only network name/device/security, with plain metadata text and
+a separate registered password prompt. Secret-agent presence is admission only;
+current NM owner, ListConnections membership and ALLOW_INTERACTION still govern
+GetSecrets. Password bytes never enter Network1 or Settings. The existing agent
+supports bounded credentials up to 64 UTF-8 bytes, including SAE.

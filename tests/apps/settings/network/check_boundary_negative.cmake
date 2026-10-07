@@ -45,11 +45,15 @@ function(expect_permitted_surface)
         "  Q_INVOKABLE bool requestScan();\n"
         "  Q_INVOKABLE bool connectKnownNetwork(const QString &knownNetworkId);\n"
         "  Q_INVOKABLE bool connectVisibleNetwork(const QString &accessPointId);\n"
+        "  Q_INVOKABLE bool hiddenJoinAvailable(const QString &deviceInterface, const QString &ssid, quint32 security);\n"
+        "  Q_INVOKABLE bool connectHiddenNetwork(const QString &deviceInterface, const QString &ssid, quint32 security);\n"
         "  Q_INVOKABLE bool disconnectDevice(const QString &deviceInterface);\n"
         "  Q_INVOKABLE bool setRadio(quint32 kind, bool enabled);\n"
         "};\n")
     file(WRITE "${poison_root}/src/apps/settings/network/qml/Allowed.qml"
         "import QindaQt.Controls 1.0\nButton { text: \"Permitted\" }\n")
+    file(WRITE "${poison_root}/src/apps/settings/network/qml/NetworkHiddenJoinSection.qml"
+        "T.TextField { objectName: \"networkHiddenSsid\"; maximumLength: 32 }\n")
     execute_process(
         COMMAND "${CMAKE_COMMAND}" "-DSOURCE_ROOT=${poison_root}"
                 -P "${CHECK_SCRIPT}"
@@ -116,5 +120,26 @@ expect_rejection(
     "domain target reversed"
 )
 
+
+expect_rejection(
+    "src/apps/settings/network/qml/NetworkHiddenJoinSection.qml"
+    "T.TextField { objectName: \"networkHiddenSsid\"; maximumLength: 32 }\nT.TextField { objectName: \"secondSsid\"; maximumLength: 32 }"
+    "gained credential/profile editing"
+)
+expect_rejection(
+    "src/apps/settings/network/qml/NetworkHiddenJoinSection.qml"
+    "T.TextField { objectName: \"networkHiddenSsid\"; maximumLength: 32; echoMode: T.TextInput.Password }"
+    "gained credential/profile editing"
+)
+expect_rejection(
+    "src/apps/settings/network/qml/NetworkHiddenJoinSection.qml"
+    "T.TextField { objectName: \"networkPassword\"; maximumLength: 32 }"
+    "gained credential/profile editing"
+)
+expect_rejection(
+    "src/apps/settings/network/qml/NetworkHiddenJoinSection.qml"
+    "T.TextField { objectName: \"networkHiddenSsid\"; maximumLength: 64 }"
+    "gained credential/profile editing"
+)
 file(REMOVE_RECURSE "${poison_root}")
 message(STATUS "Network Settings boundary rejected all injected poisons")

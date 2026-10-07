@@ -187,3 +187,19 @@ add_test(NAME qindaqt.network-installed-qml
         -P "${CMAKE_CURRENT_SOURCE_DIR}/check_installed_qml.cmake")
 set_tests_properties(qindaqt.network-installed-qml PROPERTIES
     LABELS "offscreen;settings;network;package;poison" TIMEOUT 60)
+
+qt_add_executable(qindaqt_network_hidden_join_tests tst_network_hidden_join.cpp network_settings_test_support.h stub_network_settings_model.h)
+target_link_libraries(qindaqt_network_hidden_join_tests PRIVATE qindaqt_settings_network qindaqt_settings_appearance
+    QindaQt::TokensQml qindaqt_themes Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+target_include_directories(qindaqt_network_hidden_join_tests PRIVATE "${PROJECT_SOURCE_DIR}")
+qindaqt_enable_warnings(qindaqt_network_hidden_join_tests)
+add_test(NAME qindaqt.network-hidden-join COMMAND qindaqt_network_hidden_join_tests)
+set_tests_properties(qindaqt.network-hidden-join PROPERTIES LABELS "service;network;hidden;hostile" TIMEOUT 30)
+
+target_compile_definitions(qindaqt_network_hidden_join_tests PRIVATE
+    QINDAQT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    QINDAQT_QML_IMPORT_PATH="${CMAKE_BINARY_DIR}/qml")
+add_dependencies(qindaqt_network_hidden_join_tests qindaqt_tokens_qmlplugin
+    qindaqt_controls_qmlplugin qindaqt_settings_network_qmlplugin)
+set_tests_properties(qindaqt.network-hidden-join PROPERTIES ENVIRONMENT
+    "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1")

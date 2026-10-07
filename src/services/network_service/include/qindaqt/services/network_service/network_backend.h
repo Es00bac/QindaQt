@@ -3,6 +3,8 @@
 #pragma once
 
 #include <qindaqt/services/network_protocol/network_types.h>
+#include <qindaqt/services/network_protocol/network_intent.h>
+#include <optional>
 
 #include <QtCore/QObject>
 
@@ -32,6 +34,8 @@ struct BackendOperationRequest final {
   QString identifier;
   RadioKind radioKind = RadioKind::Wifi;
   bool enable = false;
+  // Optional metadata-only first-use join; wire receipts retain Connect kind1.
+  std::optional<ConnectHiddenIntent> hiddenJoin = std::nullopt;
 
   friend bool operator==(const BackendOperationRequest &,
                          const BackendOperationRequest &) = default;

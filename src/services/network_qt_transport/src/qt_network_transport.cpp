@@ -3,6 +3,7 @@
 #include <qindaqt/services/network_qt_transport/qt_network_transport.h>
 
 #include <qindaqt/services/network_protocol/network_limits.h>
+#include <qindaqt/services/network_protocol/network_identity.h>
 #include <qindaqt/services/network_protocol/network_redaction.h>
 
 #include <QtCore/QMetaType>
@@ -17,6 +18,24 @@
 
 namespace QindaQt::Network::Client {
 namespace {
+
+bool hiddenParametersValid(const QVariantMap &parameters) {
+  const QString device = parameters.value(QStringLiteral("deviceInterface")).toString();
+  const QString ssid = parameters.value(QStringLiteral("ssid")).toString();
+  const quint32 security = parameters.value(QStringLiteral("security")).toUInt();
+  QString normalized;
+  if (!normalizeInterfaceName(device, &normalized) || device != normalized
+      || ssid.isEmpty() || ssid.size() > kMaxSsidRawBytes
+      || !isPresentationSafeText(ssid)
+      || (security != quint32(SecuritySuite::Wpa2Personal)
+          && security != quint32(SecuritySuite::Wpa3Personal))) {
+    return false;
+  }
+  const QByteArray bytes = ssid.toUtf8();
+  const SsidIdentity identity = normalizeSsid(bytes);
+  return bytes.size() <= kMaxSsidRawBytes && identity.valid
+         && !identity.hidden && identity.text == ssid;
+}
 
 QString normalizedError(const QDBusError &error) {
   switch (error.type()) {
@@ -307,6 +326,20 @@ void QtNetworkTransport::requestOperation(const quint64 token,
     arguments.append(parameters.value(QStringLiteral("deadlineMs")));
     break;
   case OperationKind::ConnectKnownNetwork:
+    if (hasOnlyKeys(parameters, {u"deviceInterface", u"ssid", u"security"})
+        && parameters.value(QStringLiteral("deviceInterface")).metaType().id() == QMetaType::QString
+        && parameters.value(QStringLiteral("ssid")).metaType().id() == QMetaType::QString
+        && parameters.value(QStringLiteral("security")).metaType().id() == QMetaType::UInt) {
+      if (!hiddenParametersValid(parameters)) {
+        fail(token, owner, QStringLiteral("operation-parameters-invalid"));
+        return;
+      }
+      method = QStringLiteral("ConnectHiddenNetwork");
+      arguments.append(parameters.value(QStringLiteral("deviceInterface")));
+      arguments.append(parameters.value(QStringLiteral("ssid")));
+      arguments.append(parameters.value(QStringLiteral("security")));
+      break;
+    }
     if (!hasOnlyKeys(parameters, {u"knownNetworkId"}) ||
         parameters.value(QStringLiteral("knownNetworkId")).metaType().id() !=
             QMetaType::QString) {
@@ -359,11 +392,15 @@ void QtNetworkTransport::requestOperation(const quint64 token,
   auto *watcher =
       new QDBusPendingCallWatcher(d->connection.asyncCall(call), this);
   connect(watcher, &QDBusPendingCallWatcher::finished, this,
-          [this, watcher, token, owner](QDBusPendingCallWatcher *) {
+          [this, watcher, token, owner,
+           hiddenJoin = method == QStringLiteral("ConnectHiddenNetwork")](QDBusPendingCallWatcher *) {
             const QDBusPendingReply<QByteArray> reply = *watcher;
             watcher->deleteLater();
             if (reply.isError()) {
-              fail(token, owner, normalizedError(reply.error()));
+              // No fallback: an old service cannot have executed this method.
+              fail(token, owner, hiddenJoin && reply.error().type() == QDBusError::UnknownMethod
+                   ? QStringLiteral("hidden-network-control-unsupported")
+                   : normalizedError(reply.error()));
               return;
             }
             Q_EMIT operationReceived(token, owner, reply.value());

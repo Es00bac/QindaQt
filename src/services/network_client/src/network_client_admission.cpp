@@ -45,6 +45,7 @@ bool NetworkClient::beginOperation(const OperationKind kind,
     m_operation = Operation{kind, lineage->epoch, lineage->revision};
     m_request = Request{token, m_owner, RequestKind::Operation, lineage->epoch,
                         lineage->revision, kind};
+    m_request->hiddenJoin = parameters.contains(QStringLiteral("ssid"));
     m_timeout.start(m_timing.requestTimeoutMilliseconds);
     Q_EMIT operationInFlightChanged();
     notifyOperationAdmissionChanged();
@@ -65,6 +66,37 @@ bool NetworkClient::connectVisibleNetwork(const QString &accessPointId,
     parameters.insert(QStringLiteral("accessPointId"), accessPointId);
     return beginOperation(OperationKind::ConnectVisibleNetwork, parameters,
                           error);
+}
+
+bool NetworkClient::connectHiddenNetwork(const ConnectHiddenIntent &intent,
+                                         QString *error) {
+    const Model::IntentVerdict verdict = m_model.connectHidden(intent);
+    if (!verdict.allowed) {
+        setError(error, verdict.reasonCode);
+        return false;
+    }
+    return beginOperation(OperationKind::ConnectKnownNetwork,
+                          {{QStringLiteral("deviceInterface"), intent.deviceInterface},
+                           {QStringLiteral("ssid"), intent.ssid},
+                           {QStringLiteral("security"), quint32(intent.security)}}, error);
+}
+
+void NetworkClient::finishHiddenUnsupported() {
+    // AGENT-CONTRACT: A definite UnknownMethod proves no new method ran.
+    // This is a local refusal carrying initiating lineage, not remote success.
+    const OperationResult result{
+        OperationKind::ConnectKnownNetwork, OperationStatus::Unsupported,
+        m_request->epoch, m_request->revision,
+        QStringLiteral("hidden-network-control-unsupported"), {}};
+    m_timeout.stop();
+    m_request.reset();
+    m_operation.reset();
+    // A Changed hint may have arrived during the optional call. Preserve the
+    // existing completion/refetch admission fence even after definite refusal.
+    refresh();
+    Q_EMIT operationInFlightChanged();
+    Q_EMIT operationFinished(result);
+    notifyOperationAdmissionChanged();
 }
 
 void NetworkClient::notifyOperationAdmissionChanged() {

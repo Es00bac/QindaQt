@@ -150,6 +150,61 @@ validateConnectVisible(const std::optional<Snapshot> &snapshot,
   return allow(kind);
 }
 
+IntentVerdict validateConnectHidden(const std::optional<Snapshot> &snapshot,
+                                    const ConnectHiddenIntent &intent) {
+  constexpr OperationKind kind = OperationKind::ConnectKnownNetwork;
+  if (!isReady(snapshot)) {
+    return refuse(kind, QStringLiteral("service-not-ready"));
+  }
+  if (!hasCapability(*snapshot, Capability::KnownNetworkControl)) {
+    return refuse(kind, QStringLiteral("hidden-network-control-unsupported"));
+  }
+  QString interfaceName;
+  if (!normalizeInterfaceName(intent.deviceInterface, &interfaceName)
+      || interfaceName != intent.deviceInterface) {
+    return refuse(kind, QStringLiteral("device-interface-invalid"));
+  }
+  // AGENT-GUARD: Bound before encoding; normalization must round-trip exactly.
+  // SSID spaces are significant and must never be trimmed or rich-text parsed.
+  if (intent.ssid.isEmpty() || intent.ssid.size() > kMaxSsidRawBytes
+      || !isPresentationSafeText(intent.ssid)) {
+    return refuse(kind, QStringLiteral("hidden-network-ssid-invalid"));
+  }
+  const QByteArray ssid = intent.ssid.toUtf8();
+  const SsidIdentity identity = normalizeSsid(ssid);
+  if (ssid.size() > kMaxSsidRawBytes || !identity.valid || identity.hidden
+      || identity.text != intent.ssid) {
+    return refuse(kind, QStringLiteral("hidden-network-ssid-invalid"));
+  }
+  if (intent.security != SecuritySuite::Wpa2Personal
+      && intent.security != SecuritySuite::Wpa3Personal) {
+    return refuse(kind, QStringLiteral("hidden-network-security-unsupported"));
+  }
+  const auto device = std::find_if(
+      snapshot->devices.cbegin(), snapshot->devices.cend(),
+      [&intent](const Device &row) {
+        return row.interfaceName == intent.deviceInterface;
+      });
+  if (device == snapshot->devices.cend() || device->kind != DeviceKind::Wifi) {
+    return refuse(kind, QStringLiteral("hidden-network-device-unavailable"));
+  }
+  if (device->state == DeviceState::Unavailable
+      || device->state == DeviceState::Unknown) {
+    return refuse(kind, QStringLiteral("hidden-network-device-unavailable"));
+  }
+  const Radio *radio = findRadio(*snapshot, RadioKind::Wifi);
+  if (radio == nullptr || !radio->present || !radio->hardwareEnabled
+      || !radio->softwareEnabled) {
+    return refuse(kind, QStringLiteral("hidden-network-radio-disabled"));
+  }
+  const QString id = knownNetworkId(ssid, intent.security);
+  if (std::any_of(snapshot->knownNetworks.cbegin(), snapshot->knownNetworks.cend(),
+                  [&id](const KnownNetwork &row) { return row.id == id; })) {
+    return refuse(kind, QStringLiteral("network-already-known"));
+  }
+  return allow(kind);
+}
+
 IntentVerdict validateDisconnect(const std::optional<Snapshot> &snapshot,
                                  const DisconnectIntent &intent) {
   if (!isReady(snapshot)) {

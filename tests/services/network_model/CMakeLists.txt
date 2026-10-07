@@ -42,3 +42,11 @@ qindaqt_enable_warnings(qindaqt_network_model_tests)
 add_test(NAME qindaqt.network-model-state COMMAND qindaqt_network_model_tests)
 set_tests_properties(qindaqt.network-model-state
                      PROPERTIES LABELS "service;network;pure")
+
+qt_add_executable(qindaqt_network_hidden_intent_tests tst_network_hidden_intent.cpp)
+target_link_libraries(qindaqt_network_hidden_intent_tests PRIVATE QindaQt::NetworkModel Qt6::Test)
+target_include_directories(qindaqt_network_hidden_intent_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../network_protocol")
+qindaqt_enable_warnings(qindaqt_network_hidden_intent_tests)
+add_test(NAME qindaqt.network-hidden-intent COMMAND qindaqt_network_hidden_intent_tests)
+set_tests_properties(qindaqt.network-hidden-intent
+    PROPERTIES LABELS "service;network;hidden;hostile" TIMEOUT 30)

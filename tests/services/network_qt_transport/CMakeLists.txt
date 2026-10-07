@@ -47,3 +47,10 @@ set_tests_properties(
     qindaqt.network-activation
     PROPERTIES LABELS "service;network;dbus;activation" TIMEOUT 60 RUN_SERIAL TRUE
 )
+
+qt_add_executable(qindaqt_network_hidden_transport_tests tst_network_hidden_transport.cpp ../network_service/support/fake_network_backend.h)
+target_link_libraries(qindaqt_network_hidden_transport_tests PRIVATE QindaQt::NetworkQtTransport QindaQt::NetworkClient QindaQt::NetworkService Qt6::DBus Qt6::Test)
+
+qindaqt_enable_warnings(qindaqt_network_hidden_transport_tests)
+add_test(NAME qindaqt.network-hidden-transport COMMAND qindaqt_network_hidden_transport_tests)
+set_tests_properties(qindaqt.network-hidden-transport PROPERTIES LABELS "service;network;hidden;hostile" TIMEOUT 30)

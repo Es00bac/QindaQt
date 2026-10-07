@@ -55,6 +55,7 @@ class StubNetworkSettingsModel final : public QObject {
   Q_PROPERTY(QVariantList radios MEMBER radios NOTIFY viewChanged)
   Q_PROPERTY(QVariantList devices MEMBER devices NOTIFY viewChanged)
   Q_PROPERTY(QVariantList accessPoints MEMBER accessPoints NOTIFY viewChanged)
+  Q_PROPERTY(QVariantList hiddenNetworkDevices MEMBER hiddenNetworkDevices NOTIFY viewChanged)
   Q_PROPERTY(QVariantList knownNetworks MEMBER knownNetworks NOTIFY viewChanged)
 
 public:
@@ -82,6 +83,10 @@ public:
   QVariantList devices;
   QVariantList accessPoints;
   QVariantList knownNetworks;
+  QVariantList hiddenNetworkDevices{QVariantMap{{QStringLiteral("interfaceName"), QStringLiteral("wlan0")}}};
+  QString hiddenSsid;
+  QString hiddenDevice;
+  quint32 hiddenSecurity = 99;
   int reloadCount = 0;
   int scanCount = 0;
   QString connectedNetwork;
@@ -165,6 +170,12 @@ public:
   Q_INVOKABLE bool connectVisibleNetwork(const QString &id) {
     connectedAccessPoint = id;
     return true;
+  }
+  Q_INVOKABLE bool hiddenJoinAvailable(const QString &, const QString &ssid, quint32) const {
+    return ready && !busy && secretAgentRegistered && !ssid.isEmpty();
+  }
+  Q_INVOKABLE bool connectHiddenNetwork(const QString &device, const QString &ssid, quint32 security) {
+    hiddenDevice = device; hiddenSsid = ssid; hiddenSecurity = security; return true;
   }
   Q_INVOKABLE bool setRadio(quint32 kind, bool enabled) {
     ++radioSetCount;
