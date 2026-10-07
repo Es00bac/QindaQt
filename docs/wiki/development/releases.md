@@ -35,6 +35,26 @@ does not retire native service delivery or prove full idle/suspend parity.
 Re-enabling exclusive mode requires the ADR's physical receipt qualification
 and a corresponding reviewed release-contract update.
 
+
+### October 7 prepared AI usage delivery: r16
+
+Desktop revision 0.1.0_pre20261002-r16 freezes source
+2188d8e0e339ce4b56acb841a4b570f58a3002cc, including the independently
+accepted AI coding-agent usage applet, QtCore report publisher, public SDK and
+all eleven stock-profile placements. It retains ED-01–03 repairs, the Network
+disk-fallback installation contract, exact fork r6 ABI 6.6.6.1, lock-PAM >=1 and
+accepted native power exclusivity OFF. The publisher uses existing QtCore;
+it introduces no Python runtime dependency.
+
+Its reproducible QindaQt-COMMIT/ archive contains 9,431 verified tracked blobs,
+39,011,614 bytes, SHA256
+6b8eab5eebb2859cadf4c5be0b45486c64d967e473072ca799dfa60d6cfbbe94.
+Mirrored recipes and the new Manifest row preserve every historical recipe and
+distfile record. Immutable r15 is held unchanged and does not contain this
+applet. Source/recipe review, private signed full-source artifact review and
+Portage-installed session adoption are separate gates. Preparation does not
+claim an installed plugin or completion of the remaining ED-01–24 journeys.
+
 ## Build and qualify
 
 Use the exact qindaqt-kwin development package the manifest pins. A fresh build root
