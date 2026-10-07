@@ -99,9 +99,11 @@ QVector<Volume> projectVolumes(const ManagedObjects &objects)
         volume.cryptoBackingDevice = backingPath;
         volume.device = bytePath(block.value(QStringLiteral("PreferredDevice")));
         if (volume.device.isEmpty()) volume.device = bytePath(block.value(QStringLiteral("Device")));
+        volume.partitionNumber = interfaces.value(Partition).value(QStringLiteral("Number")).toUInt();
         volume.size = block.value(QStringLiteral("Size")).toULongLong();
         volume.optical = optical;
         volume.readOnly = block.value(QStringLiteral("ReadOnly")).toBool() || optical;
+        volume.readOnlyKnown = volume.readOnly;
         volume.encrypted = encrypted;
         volume.mountable = interfaces.contains(Filesystem);
         volume.canMountReadOnly = volume.mountable
@@ -111,7 +113,8 @@ QVector<Volume> projectVolumes(const ManagedObjects &objects)
         volume.canFormat = !volume.readOnly && !encrypted && !unlocked && !configurationPresent(block.value(QStringLiteral("Configuration")));
         const auto mounts = qdbus_cast<QList<QByteArray>>(interfaces.value(Filesystem)
                                                            .value(QStringLiteral("MountPoints")));
-        if (!mounts.isEmpty()) volume.mountPath = bytePath(QVariant::fromValue(mounts.constFirst()));
+        for (const auto &mount : mounts) volume.mountRoots.append(bytePath(QVariant::fromValue(mount)));
+        if (!volume.mountRoots.isEmpty()) volume.mountPath = volume.mountRoots.constFirst();
         QString driveName = (drive.value(QStringLiteral("Vendor")).toString() + QLatin1Char(' ')
                              + drive.value(QStringLiteral("Model")).toString()).trimmed();
         volume.label = block.value(QStringLiteral("IdLabel")).toString();

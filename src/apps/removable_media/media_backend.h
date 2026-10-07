@@ -14,6 +14,7 @@ class MediaBackend : public QObject {
 public:
     using QObject::QObject;
     [[nodiscard]] virtual QVector<Volume> volumes() const = 0;
+    [[nodiscard]] virtual quint64 authorityGeneration() const { return 0; }
     [[nodiscard]] virtual bool available() const = 0;
     [[nodiscard]] virtual QString diagnostic() const = 0;
     [[nodiscard]] virtual QStringList formatTypes() const = 0;

@@ -1,3 +1,17 @@
+## October 7 installed AI usage and integrated device inventory — 2026-10-07T22:24:07+00:00
+
+Laptop Portage installed signed r16/source2188d8e0 successfully:2299objects and
+4symlinks match VDB, world intent is unchanged. The existing saved MacOS top
+bar now includes agent-usage after Power with all prior layout semantics
+preserved. Installed catalog validation passes; current shell was not restarted,
+so next login loads the new binary and profile. Actual popup and physical
+journeys remain separate gates. Non-Codex metrics require provider reports.
+
+Readonly device client/exporter823738 is independently accepted and integrated;
+manager strict build and4/4(37Qt) pass. ED07 actual registry1/1 passes. Ordinary
+mount/eject/File Manager/chooser2f831 gate and Astra old/new recheck remain open.
+Full ED01–24 delivery continues; no entire milestone is closed by these slices.
+
 ## October 7 accepted AI usage binary — 2026-10-07T22:08:55+00:00
 
 The exact signed r16 artifact is independently accepted: source2188d8e0,

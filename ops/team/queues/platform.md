@@ -2,7 +2,7 @@
 
 ## October 7 exact integration and adoption state
 
-R16 artifact11514f3 independently accepted by root: SHA256433728dc, required signatures/fullimage/copy runtime/publisher/Portage pretend pass. Authorized laptop adoption/profile placement next; popup and physical gates separate. Preview ec10d63 focused compiler lease active, next Media ce338 action/consumer gates; Astra SDK4fb7 passes3CTest/43Qt+publicSDK, root review next. Media readonly823738 native4/37 + consumer/header poison pass, root integration next. ADR0352/0353 remain Proposed; ED07 registry/real-server qualification open.
+Actual laptop r16/source2188 signed Portage install exit0,2299objects+4symlinks/world/profile/catalog verified. Current session unchanged; popup/login/physical gates open. Readonly823 integrated4/4(37Qt); ED07 registry1/1; scopedSDK4fb root3/3 and boundary review complete, toolkitintegration next. Previewec10/7e27 native2/2(57Qt) awaits manageracceptance for futureversion. Media ordinary2f831 now holds full native/private lease, Astra old/newrecheck next; HiddenWiFi fresh47a atsourceauthoring, ADR0354 reserved, no live radio. HardED05 ADR0355 reserved next, no storage edits. AllED01–24 remain active.
 
 
 ## Full-plan delivery is active — 2026-10-07T21:15:27+00:00
