@@ -801,3 +801,13 @@ The fork server and native client/service boundaries are defined by
 [Native session locking](native-session-lock.md) and
 [ADR-0294](../adr/0294-native-session-lock-authority.md). Candidate server proof
 does not replace released greeter/PAM/session-service readiness.
+
+## Current accepted fork delivery receipt
+
+The current source manifest and immutable Gentoo fork `6.6.6_p1-r6` pin
+`24d0c6a6fedc68256a20a480bc3fe8b5d871a1ae`, tree
+`3a257b8d991777247970c83ce9ae8ca265448db3`, retaining exact plugin ABI
+`6.6.6.1`. The object and tree were checked against qinda's bare fork hub;
+the historical source pins above remain decision history. This delivery fixes
+native desktop-entry permission-list decoding. It does not qualify physical
+lock authentication or the native-exclusive power receipt barrier.
