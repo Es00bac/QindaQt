@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "screenshotcapture.h"
+#include "capturegeometry.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -10,11 +11,10 @@
 #include <utility>
 
 namespace QindaQt::Shell {
-
-ScreenshotCapture::ScreenshotCapture(QString outputPath, QSize expectedSize, QObject *parent)
+ScreenshotCapture::ScreenshotCapture(QString outputPath, QSize expectedLogicalSize, QObject *parent)
     : QObject(parent)
     , m_outputPath(std::move(outputPath))
-    , m_expectedSize(expectedSize)
+    , m_expectedLogicalSize(expectedLogicalSize)
 {
     m_timeout.setSingleShot(true);
     m_timeout.setInterval(10'000);
@@ -25,6 +25,17 @@ ScreenshotCapture::ScreenshotCapture(QString outputPath, QSize expectedSize, QOb
 
 void ScreenshotCapture::start(QQuickWindow &window)
 {
+    if (m_window != nullptr || m_finished) {
+        return;
+    }
+    if (!CaptureGeometry::physicalSize(m_expectedLogicalSize, window.effectiveDevicePixelRatio())) {
+        fail(QStringLiteral("Capture geometry exceeds the bounded native image contract"));
+        return;
+    }
+    if (window.size() != m_expectedLogicalSize) {
+        fail(QStringLiteral("Preview logical window size changed before capture"));
+        return;
+    }
     m_window = &window;
     connect(&window, &QQuickWindow::frameSwapped, this, [this] {
         if (m_captureScheduled || m_finished) {
@@ -43,17 +54,27 @@ void ScreenshotCapture::capture()
         return;
     }
 
+    const auto expectedPhysicalSize =
+        CaptureGeometry::physicalSize(m_expectedLogicalSize, m_window->effectiveDevicePixelRatio());
+    if (!expectedPhysicalSize) {
+        fail(QStringLiteral("Capture geometry exceeds the bounded native image contract"));
+        return;
+    }
+    if (m_window->size() != m_expectedLogicalSize) {
+        fail(QStringLiteral("Preview logical window size changed before capture"));
+        return;
+    }
     const QImage image = m_window->grabWindow();
     if (image.isNull()) {
         fail(QStringLiteral("Qt Quick returned an empty screenshot"));
         return;
     }
-    if (image.size() != m_expectedSize) {
+    if (image.size() != *expectedPhysicalSize) {
         fail(QStringLiteral("Rendered image is %1x%2; expected %3x%4 pixels")
                  .arg(image.width())
                  .arg(image.height())
-                 .arg(m_expectedSize.width())
-                 .arg(m_expectedSize.height()));
+                 .arg(expectedPhysicalSize->width())
+                 .arg(expectedPhysicalSize->height()));
         return;
     }
 

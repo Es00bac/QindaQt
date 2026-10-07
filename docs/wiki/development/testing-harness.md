@@ -168,9 +168,29 @@ compositor component currently replays the declared positions, rotations,
 per-output scales, or hotplug actions. Catalog validation is therefore not
 evidence that those topologies were applied.
 
-The shell preview currently renders deterministic PNGs with its `--screenshot`
-option. Its CTest matrix decodes captures at 1920x1080, 1920x1200, and
-2560x1440 and verifies their exact dimensions. Input record/replay, topology
+The shell preview renders deterministic PNGs with its `--screenshot` option.
+`--width` and `--height` specify the **logical window size**, which is also the
+layout coordinate space. Capture exports the native physical pixels returned by
+[Qt Quick's window grab](https://doc.qt.io/qt-6/qquickwindow.html#grabWindow);
+the expected physical size is the logical size multiplied by the window's
+[effective device pixel ratio](https://doc.qt.io/qt-6/qquickwindow.html#effectiveDevicePixelRatio),
+using Qt's nearest-integer size rounding. Capture never changes the layout or
+downsamples the result. For example, a 1280x720 logical window exports 2560x1440
+pixels at DPR 2, and 1600x900 at DPR 1.25. A changed logical window size,
+unexpected physical grab size, empty image or write failure refuses export.
+Both logical CLI geometry and physical native geometry are bounded to 16,384
+pixels on either axis and 67,108,864 pixels in total. Invalid or excessive CLI
+dimensions are rejected during option parsing. The primary screen DPR is checked
+before the visible QML window is instantiated, so excessive scaled geometry
+cannot trigger its first backing-store/render allocation. Capture then rechecks
+the actual window's effective DPR and size before readback. Invalid/nonfinite
+geometry refuses creation/export; no saved image masks a mismatch.
+
+The default software capture environment uses DPR 1 unless explicitly supplied.
+The existing resolution/profile matrix decodes 1920x1080, 1920x1200 and
+2560x1440 captures. Focused scale rows additionally decode DPR 2 and fractional
+DPR captures, including odd logical dimensions; direct capture error rows cover
+logical mismatch, readback bounds and failed output writes. Input record/replay, topology
 dump, panel geometry inspection, frame timing, and individual shell-service
 restart remain required harness capabilities as their components land.
 
