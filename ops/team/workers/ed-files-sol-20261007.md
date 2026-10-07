@@ -1,13 +1,13 @@
 # Everyday Files Sol
 
-- Status: working — repair Network installed QML disk fallback
-- Assignment: ED-02/03 prerequisite
-- Base: f152d6c9ee04f99c01d4ca07c4dcb46701a42800
-- Branch: worker/everyday-files-20261007
+- Status: working — ED-04a public removable-media design ADR-0350
+- Assignment: Proposed design and disposable feasibility evidence only
+- Base: 7d45d2c336e5d213c7ba10f063ab384b09f4abc8
+- Branch: worker/everyday-media-design-20261007
+- Canonical active worktree: everyday-media-design-20261007; original everyday-files-20261007 retained available for review repairs
 - Runtime: active collaboration worker; provider/model identity not independently measured
 
 ## Updates
 
-- 2026-10-07T17:18:14+00:00: Claimed minimal module install repair and focused package verification. Owning install path verified; five flat files omit the sixth helper and disagree with nested qmldir paths.
-- 2026-10-07T17:25:35+00:00: Original r13 archive authenticator reproduces all five missing nested fallbacks. New standalone Qt probe passes six compiled types, rejects withheld module, and fails six disk paths before repair. Minimal install fix now preserves qml/ and includes Actions helper.
-- 2026-10-07T17:31:21+00:00: Verified Network 8/8, unchanged original package authenticator 9/9 artifacts plus sixth helper, Settings route-registry/navigation-controller pass. Broadened route-search row fails five stale assertions (10/11 total); outside owned paths. Strict MkDocs and links pass 514 documents. Released compiler/private fixture leases; candidate ready for independent review.
+- 2026-10-07T17:34:55+00:00: Claimed design-only ADR-0350 after reading first-party queue and exact dispatch. Own ADR, relevant media/File Manager docs and authorized additive nav/index only. No physical media/live bus/device/prefs or product changes. Network implementation a77e7ed79 is in independent review; handoff coordination9ae6d622 preserved locally.
+- 2026-10-07T17:41:19+00:00: Proposed ADR draft defines public values/client separate from UDisks, compatible Devices object, attachment/owner fencing, authoritative ordinary actions and separate File Manager/chooser consumption packets. Added authorized ADR index/nav entries; no architecture registry edit or product code. Source anchors show completion currently precedes separate inventory refresh.
