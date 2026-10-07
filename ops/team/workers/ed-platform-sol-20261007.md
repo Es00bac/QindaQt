@@ -1,6 +1,6 @@
 # Everyday Platform Sol
 
-- Status: working — verifying frozen r15 recipe and exact reproducible archive
+- Status: waiting — immutable r15 handed off for exact recipe review before build-only lease
 - Base: f152d6c9ee04f99c01d4ca07c4dcb46701a42800
 - Branch: worker/everyday-platform-20261007
 - Runtime: collaboration agent; no independent provider/process assertion
@@ -16,3 +16,4 @@
 - 2026-10-07T17:35:02+00:00: Own strict Debug build exit0 with configured -j24 -l24; lock3/3 (37 Qt), Power1 9/9 (96 Qt), supervisor/keyring5/5 (37 Qt, 2 Python) all pass with zero failures/skips. Compiler/private fixture lease released; exact source pin/archive still pending.
 - 2026-10-07T17:42:47+00:00: Offered manager exact declared Network target names after read-only log showed unknown-target stop. Own focused acceptance remains complete and resources released; archive waits manager combined-source gate.
 - 2026-10-07T17:47:36+00:00: Manager source freeze bef80e861680f6d7bd53a556c39e13d97ff9e742; r15 cut twice identically, 9329 tracked blobs verified, additive Manifest rows only. No publication/installation; exact recipe review next.
+- 2026-10-07T17:49:46+00:00: Handed off overlay e9f04b8/mirror e6f8787 with exact bef80e861 source archive, 9,329 blobs, digest/metadata599/zero Plasma and passing private17-row proof. Preserved qinda hub branches; read queue/peer verdicts; executable successor is signed build-only after exact recipe review/lease.
