@@ -15,6 +15,9 @@ else:
         if method not in ("initialize","initialized","account/rateLimits/read","account/usage/read"):
             sys.exit(9)
         if method=="initialized": continue
+        if (method=="account/rateLimits/read" and mode=="limits-unsupported") or (method=="account/usage/read" and mode=="unsupported"):
+            print(json.dumps({"id":value["id"],"error":{"code":-32601,"message":"private-do-not-copy"}}),flush=True)
+            continue
         if method=="initialize": result={}
         elif method=="account/rateLimits/read":
             result={"rateLimitsByLimitId":{"codex":{"primary":{"usedPercent":25,"resetsAt":2000000000}}}}
