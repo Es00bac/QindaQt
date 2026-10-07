@@ -31,6 +31,7 @@ private:
     QComboBox *m_filters;
     ChoiceControls *m_choices;
     QString m_currentFolder;
+    quint64 m_selectionGeneration = 0;
     ChooserMediaPresenter *m_media = nullptr;
     QLabel *m_mediaRestriction = nullptr;
     QPushButton *m_accept = nullptr;

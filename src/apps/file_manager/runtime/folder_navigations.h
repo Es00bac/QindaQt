@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QObject>
+#include <QList>
 #include <QPointer>
 #include <QString>
 
@@ -55,9 +56,13 @@ public:
   Q_INVOKABLE void setActive(QObject *navigation);
 
   [[nodiscard]] QObject *active() const;
+  // Borrowed GUI-thread controllers, including never-active panes. Lifetime
+  // observers must use QPointer; they do not become window action binders.
+  [[nodiscard]] QList<NavigationController *> controllers() const;
 
 signals:
   void activeChanged();
+  void controllerCreated(QObject *navigation);
 
 private:
   void bind(NavigationController *navigation);

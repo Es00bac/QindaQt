@@ -1,7 +1,7 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — repairing announced block-attachment replacement fencing from source audit, then exact action/consumer gate; compiler idle while Astra leases
+- Status: working — independent ordinary review repairs authored with direct old-source negative fixtures; awaiting next exact compiler/consumer lease after root readonly recheck
 - Branch: worker/everyday-media-delivery-20261007
 - Worktree: everyday-media-delivery-20261007
 - Outcome: consistent device rows and ordinary mount/open/remove in File Manager and native chooser through ADR-0350
@@ -25,3 +25,5 @@
 - 2026-10-07T22:03:31+00:00: Complete ordinary source packet includes private typed admission/convergence, public one-shot actions and separate fixed-owner argv launcher, File Manager sidebar/per-tab revoked-location guard, chooser selection/read-only Save guard and focused public-source negatives. Static diff, strict MkDocs and link checker pass (520 documents). New production sources below500; navigator447/presentation173/main478/Main.qml460 nonblank. Runtime/native/installed/physical action qualification remains pending; no compiler while Astra leases.
 
 - 2026-10-07T22:07:31+00:00: Post-freeze audit found final removal also needs immediate selected/sibling Block replacement revocation before debounce, beyond Drive identity changes. Added owning fence and drive/block data rows; success with no final removal mode is normalized to Uncertain. No compiler or action qualification. Read ADR0064 and current cross-device/Trash/link restrictions for next reviewed storage contract.
+
+- 2026-10-07T22:16:46+00:00: Astra exactce338 source review found overwrite-modal acceptance revocation, first-prefix nested-root association and never-active Commander pane provenance. Authored post-modal/final selection-generation guards, most-specific unique-root matching with overmount revocation, and FolderNavigations creation/all-controller observation seam. Added real modal owner/RO/navigation cases, reversed-order nested-root losses and never-active pane loss; stale future-tense File Manager docs corrected. Runtime remains unrun; compiler idle.

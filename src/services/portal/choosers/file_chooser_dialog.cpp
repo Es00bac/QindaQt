@@ -36,6 +36,7 @@ FileChooserDialog::FileChooserDialog(FileChooserRequest request, QindaQt::Remova
         browse->addWidget(new ChooserMediaSidebar(*m_media, this));
         connect(m_media, &ChooserMediaPresenter::navigateRequested, this, [this](const QString &root) { m_name->clear(); navigate(root); });
         connect(m_media, &ChooserMediaPresenter::locationInvalidated, this, [this] {
+            ++m_selectionGeneration;
             m_view->selectionModel()->clearSelection(); m_name->clear(); m_view->setEnabled(false); updateMediaRestriction();
         });
         connect(m_media, &ChooserMediaPresenter::changed, this, &FileChooserDialog::updateMediaRestriction);
@@ -47,6 +48,7 @@ FileChooserDialog::FileChooserDialog(FileChooserRequest request, QindaQt::Remova
     m_name->setObjectName(QStringLiteral("portalFilename")); m_name->setAccessibleName(tr("File name"));
     layout->addWidget(new QLabel(tr("File name"), this)); layout->addWidget(m_name);
     m_name->setVisible(!m_request.directory); m_name->setText(m_request.currentName);
+    connect(m_name, &QLineEdit::textChanged, this, [this] { ++m_selectionGeneration; });
     m_filters->setObjectName(QStringLiteral("portalFilter")); m_filters->setAccessibleName(tr("File type"));
     for (const auto &filter : m_request.filters) m_filters->addItem(filter.label);
     m_filters->setCurrentIndex(m_request.currentFilter); m_filters->setVisible(!m_request.filters.isEmpty());
@@ -64,6 +66,7 @@ FileChooserDialog::FileChooserDialog(FileChooserRequest request, QindaQt::Remova
         if (info.isDir()) navigate(info.filePath()); else if (!m_request.directory) { m_name->setText(info.fileName()); accept(); }
     });
     connect(m_view->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this] {
+        ++m_selectionGeneration;
         m_name->clear();
         const auto selected = m_view->selectionModel()->selectedRows();
         if (selected.size() == 1) { const auto info = m_files->fileInfo(m_proxy->mapToSource(selected.first())); if (info.isFile()) m_name->setText(info.fileName()); }
@@ -80,6 +83,7 @@ FileChooserDialog::FileChooserDialog(FileChooserRequest request, QindaQt::Remova
 void FileChooserDialog::navigate(const QString &folder) {
     const QFileInfo info(folder); const auto canonical = info.canonicalFilePath();
     if (!info.isDir() || canonical.isEmpty()) return;
+    ++m_selectionGeneration;
     m_currentFolder = canonical; m_folder->setText(canonical);
     m_view->selectionModel()->clearSelection();
     m_view->setRootIndex(m_proxy->mapFromSource(m_files->setRootPath(canonical)));
@@ -123,6 +127,8 @@ QStringList FileChooserDialog::saveMany(const QString &folder) const {
 }
 void FileChooserDialog::accept() {
     if (m_media && !m_media->canAccept()) return;
+    const auto generation = m_selectionGeneration;
+    const auto currentSelection = [this, generation] { return generation == m_selectionGeneration && (!m_media || m_media->canAccept()); };
     auto paths = selections();
     if (paths.isEmpty() || paths.size() > 128 || (!m_request.multiple && paths.size() != 1)) return;
     if (m_request.mode == FileChooserMode::SaveMany) {
@@ -140,6 +146,10 @@ void FileChooserDialog::accept() {
                 if (!info.isFile()) return;
                 if (QMessageBox::question(this, tr("Replace existing file?"), tr("A file with this name already exists. Replace it?"),
                     QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes) return;
+                // AGENT-GUARD: the overwrite prompt spins a nested event loop.
+                // Owner/attachment/read-only changes and explicit navigation
+                // can revoke the captured selection while it is open.
+                if (!currentSelection()) return;
                 normalized = info.canonicalFilePath();
             } else {
                 const QFileInfo parent(info.absolutePath()); if (!parent.isDir()) return;
@@ -150,5 +160,5 @@ void FileChooserDialog::accept() {
         uris.append(QUrl::fromLocalFile(normalized).toString(QUrl::FullyEncoded));
     }
     const QJsonObject result{{"uris", uris}, {"choices", m_choices->values()}, {"filter", m_filters->currentIndex()}};
-    if (fileChooserResults(m_request, result)) succeed(result);
+    if (currentSelection() && fileChooserResults(m_request, result)) succeed(result);
 }

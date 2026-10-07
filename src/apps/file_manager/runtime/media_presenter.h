@@ -54,7 +54,8 @@ private:
     void request(const QString &, QindaQt::RemovableMedia::Action, bool openAfter);
     void openRow(const QindaQt::RemovableMedia::VolumeRow &, NavigationController &);
     void observeActive();
-    void acquireLocation(NavigationController &);
+    void observeController(NavigationController *);
+    void acquireLocation(NavigationController &, bool deliberate = false);
     void sourceChanged();
     void navigationChanged();
     void finished(const QindaQt::RemovableMedia::OperationResult &);

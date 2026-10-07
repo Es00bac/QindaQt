@@ -11,6 +11,24 @@ bool within(const QString &path, const QString &root) {
     const auto clean = QDir::cleanPath(path), base = QDir::cleanPath(root);
     return clean == base || clean.startsWith(base == QStringLiteral("/") ? base : base + '/');
 }
+struct RootMatch {
+    const Media::VolumeRow *row = nullptr;
+    QString root;
+    bool ambiguous = false;
+};
+RootMatch locationAt(const Media::Snapshot &snapshot, const QString &path) {
+    RootMatch best;
+    for (const auto &row : snapshot.rows) {
+        if (row.mountState != Media::MountState::Mounted) continue;
+        for (const auto &root : row.mountRoots) {
+            if (!within(path, root)) continue;
+            if (root.size() > best.root.size()) best = {&row, root, false};
+            else if (root.size() == best.root.size() && best.row
+                && row.attachment != best.row->attachment) best.ambiguous = true;
+        }
+    }
+    return best;
+}
 const Media::VolumeRow *rowFor(const Media::Snapshot &s, const Media::Attachment &attachment) {
     const auto row = std::find_if(s.rows.cbegin(), s.rows.cend(),
         [&](const auto &v) { return v.attachment == attachment; });
@@ -39,12 +57,14 @@ void ChooserMediaPresenter::setLocation(const QString &path, bool deliberate) {
     m_path = path; m_location.reset(); m_readOnlySave = false;
     const auto current = m_source.snapshot();
     if (current.availability == Media::Availability::Ready) {
-        for (const auto &row : current.rows) for (const auto &root : row.mountRoots) {
-            if (row.mountState == Media::MountState::Mounted && within(path, root)) {
-                m_location = Interest{current.lineage, row.attachment, root};
-                m_readOnlySave = m_saving && row.readOnly == Media::ReadOnlyState::ReadOnly;
-                emit changed(); return;
-            }
+        const auto selected = locationAt(current, path);
+        if (selected.ambiguous) {
+            m_revoked = true;
+            m_notice = tr("This mount location is ambiguous. Choose another folder or inspect Removable Media.");
+            emit locationInvalidated();
+        } else if (selected.row) {
+            m_location = Interest{current.lineage, selected.row->attachment, selected.root};
+            m_readOnlySave = m_saving && selected.row->readOnly == Media::ReadOnlyState::ReadOnly;
         }
     }
     emit changed();
@@ -71,7 +91,13 @@ void ChooserMediaPresenter::request(const QString &handle, Media::Action action,
     emit changed();
 }
 void ChooserMediaPresenter::openRow(const Media::VolumeRow &row) {
-    if (!row.preferredRoot.isEmpty() && row.mountRoots.contains(row.preferredRoot)) emit navigateRequested(row.preferredRoot);
+    if (row.preferredRoot.isEmpty() || !row.mountRoots.contains(row.preferredRoot)) return;
+    const auto selected = locationAt(m_source.snapshot(), row.preferredRoot);
+    if (!selected.row || selected.ambiguous || selected.row->attachment != row.attachment) {
+        m_notice = tr("This mount location is ambiguous. Refresh or choose another folder.");
+        emit changed(); return;
+    }
+    emit navigateRequested(row.preferredRoot);
 }
 void ChooserMediaPresenter::recover() { if (!m_closed) m_source.recover(); }
 void ChooserMediaPresenter::openOwner() { if (!m_closed) m_source.openOwner(); }
@@ -81,8 +107,11 @@ void ChooserMediaPresenter::sourceChanged() {
     const auto current = m_source.snapshot();
     if (m_location && !m_revoked) {
         const auto *row = rowFor(current, m_location->attachment);
+        const auto selected = locationAt(current, m_path);
         if (current.availability != Media::Availability::Ready || !sameOwner(current.lineage, m_location->lineage)
-            || !row || row->mountState != Media::MountState::Mounted || !row->mountRoots.contains(m_location->root)) {
+            || !row || row->mountState != Media::MountState::Mounted || !row->mountRoots.contains(m_location->root)
+            || selected.ambiguous || !selected.row || selected.row->attachment != m_location->attachment
+            || selected.root != m_location->root) {
             m_revoked = true; m_readOnlySave = false; m_openAfter.reset(); emit locationInvalidated();
         } else m_readOnlySave = m_saving && row->readOnly == Media::ReadOnlyState::ReadOnly;
     } else if (!m_location && !m_revoked && !m_path.isEmpty()) {

@@ -100,7 +100,9 @@ Initial construction and observation perform no media action. An unmounted
 open waits for the admitted result and confirming current roots, owner, epoch
 and attachment before replacing the displayed folder.
 
-Selected device folders retain attachment provenance through descendants.
+Selected device folders retain attachment provenance through descendants using
+the most-specific unique mounted root. Nested overmount and ambiguous equal
+roots cannot silently preserve an old selection.
 Attachment/root/owner loss clears selection and the filename, disables acceptance
 and shows a visible choose-another-folder message. Later inventory at the same
 pathname does not revive the old selection. Deliberate navigation to a current
@@ -108,7 +110,9 @@ device or another folder establishes fresh provenance. Known read-only media
 remain browsable for OpenFile but disable both SaveFile and SaveFiles;
 unknown read-only truth does not itself grant filesystem write authority.
 Existing URI normalization, overwrite confirmation and frontend validation
-continue to own final selection policy.
+continue to own final selection policy. Overwrite confirmation runs a nested
+event loop: acceptance rechecks current media and the captured
+selection/navigation generation after that prompt and before publication.
 
 Closing/cancelling the dialog, frontend/parent loss and deadline withdraw
 deferred navigation interest. A late mount reply cannot navigate the closed
