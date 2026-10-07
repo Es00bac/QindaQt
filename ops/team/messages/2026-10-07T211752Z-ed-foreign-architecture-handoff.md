@@ -1,0 +1,13 @@
+# ED-20 proposed boundary exact candidate handoff
+- Time: 2026-10-07T21:17:52+00:00
+- Candidate: 8d50474090ba8e9c22697d31b14ca1e3286dfb0e
+- Base: 2188d8e0e339ce4b56acb841a4b570f58a3002cc
+- Branch: worker/everyday-foreign-architecture-20261007, preserved in qinda hub
+- Paths: docs/wiki/adr/0352-foreign-runtime-identity-and-installation.md; docs/wiki/architecture/foreign-applications.md; docs/wiki/adr/index.md; mkdocs.yml; tests/design/foreign_application_contract.py; own worker and timestamped claim/finding records.
+- Verification: python3 tests/design/foreign_application_contract.py exit 0 (14 tests); python3 tools/validate-docs exit 0 (521 documents); mkdocs build --strict exit 0; git diff --check exit 0.
+- Model proof is pure and assumes already-authenticated fixture evidence. It does not establish real transport identity, windows or application usability.
+- Actual runtime evidence: qinda has no Waydroid; laptop Waydroid 1.6.3 is uninitialized. Both kernels enable binder/binderfs/memfd; no binder node provisioned in inspected paths. qinda Wine/GE records own notepad/wordpad fixtures.
+- Proposed contracts: authenticated producer plus exact session/runtime/window incarnation; no trust in titles/class/desktop keys/argv; separate registration and window identity; no peer-app/shared-runtime force kill; Portage recipe-owned guest payloads and private materialization receipts; no untracked downloader adoption.
+- Bounded caveats: runtime task-to-surface producer must be implemented/qualified; image licenses and payload hashes must be verified during Portage packaging; both two-app window proofs still open; independent design review still open; ED21-24 production and installed acceptance still open.
+- Requested next action: different worker reviews exact candidate. Manager routes Portage image/runtime provisioning and later private Windows nested-display lease. Do not mark ED20 complete from this source candidate.
+- Continuation/help: Platform queue read. Precise fixed image metadata, existing guru runtime atom, license/inventory prerequisites and packaged preinstalled-image path are available for Platform owner; worker remains available for manager-routed hardest ED17/ED05 design and accepted ED21/22 boundary implementation.
