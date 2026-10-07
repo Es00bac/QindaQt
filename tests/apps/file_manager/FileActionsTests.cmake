@@ -35,3 +35,12 @@ set_tests_properties(qindaqt.file-manager-file-actions-ui PROPERTIES
 qt_add_resources(qindaqt_file_manager_file_actions_ui_tests file_manager_file_actions_ui_artwork
     PREFIX /qindaqt/file-manager
     FILES "${PROJECT_SOURCE_DIR}/data/artwork/empty-folder.png")
+
+# ED-07: use the actual shared menu, catalog admission and pointer dispatch.
+add_test(NAME qindaqt.file-manager-remote-context-qml
+    COMMAND $<TARGET_FILE:Qt6::qmltestrunner>
+        -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tst_remote_context.qml")
+set_tests_properties(qindaqt.file-manager-remote-context-qml PROPERTIES
+    LABELS "file-manager;remote"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FATAL_WARNINGS=1;QT_QPA_PLATFORMTHEME=generic;QT_QUICK_CONTROLS_STYLE=Fusion;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent;DBUS_SYSTEM_BUS_ADDRESS=unix:path=/nonexistent"
+    ENVIRONMENT_MODIFICATION "DISPLAY=unset:;WAYLAND_DISPLAY=unset:")
