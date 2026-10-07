@@ -16,4 +16,9 @@ All decoded publications are validated atomically. Malformed data clears ready r
 
 This inventory slice has no RequestAction export. It does not deliver File Manager or chooser device presentation, ordinary operation admission, or physical USB qualification. Ordinary actions must next retain owner-wide serialization, exact attachment admission, duplicate suppression, no replay and authoritative convergence before consumer navigation or Safe to unplug. Credentials, formatting and saved choices remain exclusively in the owner UI.
 
-The isolated `tests/services/removable_media_client/standalone` entry point links the public protocol/client plus owner-only projection/controller fixtures. `qindaqt.removable-media-inventory` uses a private session bus and unavailable system bus. It covers passive zero-launch, explicit start/readback/timeout, old-owner Activate compatibility, malformed/oversized snapshots, epoch retirement, immediate owner revocation, destruction during pending read, duplicate partitions, complete roots and unknown read-only truth. Authored fixtures are not passing evidence until their exact candidate's handoff reports execution.
+The isolated `tests/services/removable_media_client/standalone` entry point links the public protocol/client plus owner-only projection/controller fixtures. `qindaqt.removable-media-inventory` uses a private session bus and unavailable system bus. It covers passive zero-launch, explicit start/readback/timeout, old-owner Activate compatibility, malformed/oversized snapshots, epoch retirement, immediate owner revocation, destruction during pending read, duplicate partitions, complete roots and unknown read-only truth. Execution evidence is recorded with the exact source candidate handoff; it is private-bus verification, never physical-media qualification.
+
+The sibling `installed_consumer` CMake entry point takes `MEDIA_STAGE` and links
+only the staged client/protocol headers and archives plus Qt Core/DBus. A
+withheld staged client header must fail compilation, and a consumer with both
+buses absent must publish unavailable without requesting a helper launch.
