@@ -387,4 +387,4 @@ integration retains every accepted decision in numeric order.
 
 - [ADR-0350: Share removable media with file consumers](0350-share-removable-media-with-file-consumers.md) — Accepted
 
-- [ADR-0351: Collect agent usage through bounded metadata sources](0351-collect-agent-usage-through-bounded-metadata-sources.md) — Proposed
+- [ADR-0351: Collect agent usage through bounded metadata sources](0351-collect-agent-usage-through-bounded-metadata-sources.md) — Accepted

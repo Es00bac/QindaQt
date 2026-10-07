@@ -1,8 +1,8 @@
 # ADR-0351: Collect agent usage through bounded metadata sources
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-07
-- Deciders: QindaQt owner; independent candidate review pending
+- Deciders: QindaQt owner; independent exact design review a531732e0
 
 ## Context
 
@@ -60,6 +60,11 @@ Signed r15 stays frozen; the plugin belongs to a later immutable recipe.
 
 ## Evidence
 
-Exact implementation/review receipts will be added before acceptance. Primary
+Exact design a9746fb40131e6fc9f609412eeba87b5d0e48988 is independently
+ACCEPTED in reviewer a531732e0fa207e3c974583cd8ffb1c792f98730. This
+accepts the boundary, not implemented provider or popup coverage; exact source
+review and integrated gates remain required. Claude reported cost is an estimate
+from the agent and may differ from billing; supported partial quota responses
+must survive unavailable account totals. Primary
 contracts are Codex's [app-server account methods](https://learn.chatgpt.com/docs/app-server)
 and Claude's [statusline fields](https://code.claude.com/docs/en/statusline).

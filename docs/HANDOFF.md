@@ -15,7 +15,7 @@ device sidebar and chooser are next. Android/Windows ED-20–24 remain queued.
 
 Additional AI usage plugin Backend/UI Sol worktrees are assigned at verified
 ccc99fb3f67c2bdc4f7156af7c0b0f1e05478057.
-[Proposed ADR-0351](wiki/adr/0351-collect-agent-usage-through-bounded-metadata-sources.md)
+[Accepted ADR-0351](wiki/adr/0351-collect-agent-usage-through-bounded-metadata-sources.md)
 defines collection/report separation. Both quotas/reset times and token/reported
 costs are requested. Source/review/installed visibility remain distinct;
 dispatch adds no completion credit.

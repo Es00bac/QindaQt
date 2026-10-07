@@ -1,7 +1,7 @@
 # Everyday Review Sol
 
-- Status: available — exact protocol and signed r15 artifact reviews complete
-- Candidate: f88974a5f90f447f0026ef6bd2d8d966a4ed93f2
+- Status: waiting — agent-usage design ACCEPT; awaiting frozen backend/UI candidates
+- Candidate: a9746fb40131e6fc9f609412eeba87b5d0e48988
 - Runtime: collaboration agent; requested GPT-6.1 Sol/high identity, no independent provider/model/process assertion
 
 ## Updates
@@ -20,3 +20,5 @@
 - 2026-10-07T18:43:15+00:00: Received exact signed r15 artifact SHA256 a6bff0aae6693664c2cdaa8441a623ff06039863d85f47ae04378c3abf538c47,60866560 bytes; reviewing signature, signed metadata/image and actual-image no-bus Network probe. Compiler lease remains released; no install/publication.
 - 2026-10-07T18:45:50+00:00: Exact artifact independent required full-container and expected-signer verification pass. Signed recipe byte-identical to accepted candidate; own safely extracted image2292fileslinks, six QML source bytes matchfreeze, PAMworker/Powerunit and r6/OFF metadata verified. Actual artifact Network stage probes and plugin/install gates pass; awaiting exact authored artifact coordination SHA for durable verdict.
 - 2026-10-07T18:48:06+00:00: ACCEPT exact r15 artifact a6bff0aae6693664c2cdaa8441a623ff06039863d85f47ae04378c3abf538c47 at60866560bytes; required full GPKG/expected signer, signed source/recipe/deps/image2292 inventory and ABI/install contract independently pass. Final actual-image Network11/11 privateHOME/XDG and both-bus-blocked probes pass. Artifact/sourcefreeze unchanged; no compile/install/publication. Both requested reviews complete; no leases, available.
+- 2026-10-07T19:12:15+00:00: Claimed exact agent-usage ADR/dispatch review in new isolated qinda worktree. Official metadata contracts, current applet policy and bounded report/collector privacy reviewed before frozen backend/UI candidates. No mutable source compile or installed action.
+- 2026-10-07T19:16:15+00:00: ACCEPT exact a9746fb4 ADR0351/design scope after official Codex/Claude metadata-source verification and existing applet permission review. Independent strict docs517/diff gates pass. No mutable source build or API execution. Flagged partial unsupported metrics, Claude quota/reset support and provider-reported estimated-cost labels; exact backend/UI candidates remain separate gates.
