@@ -7,14 +7,20 @@ class QTreeView;
 class QLineEdit;
 class QComboBox;
 class ChoiceControls;
+class ChooserMediaPresenter;
+class QLabel;
+class QPushButton;
+namespace QindaQt::RemovableMedia { class MediaSource; }
 class FileChooserDialog final : public ChooserDialog {
     Q_OBJECT
 public:
-    explicit FileChooserDialog(QindaQt::Services::Portal::FileChooserRequest);
+    explicit FileChooserDialog(QindaQt::Services::Portal::FileChooserRequest,
+        QindaQt::RemovableMedia::MediaSource *mediaSource = nullptr);
 public Q_SLOTS:
     void accept() override;
 private:
     void navigate(const QString &);
+    void updateMediaRestriction();
     QStringList selections() const;
     QStringList saveMany(const QString &) const;
     QindaQt::Services::Portal::FileChooserRequest m_request;
@@ -25,4 +31,7 @@ private:
     QComboBox *m_filters;
     ChoiceControls *m_choices;
     QString m_currentFolder;
+    ChooserMediaPresenter *m_media = nullptr;
+    QLabel *m_mediaRestriction = nullptr;
+    QPushButton *m_accept = nullptr;
 };

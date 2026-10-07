@@ -28,6 +28,7 @@
 #include "runtime/mutation_ui_action_probe.h"
 #include "runtime/finder_integration.h"
 #include "runtime/navigation_composition.h"
+#include "runtime/media_composition.h"
 #include "runtime/file_manager_ui_contract_probe.h"
 #include "mutation/karchive_codec.h"
 #include "mutation/local_mutation_backend.h"
@@ -422,6 +423,7 @@ int main(int argc, char **argv) {
       *controller, *applications,
       {*appCoordinator, *mutationController, *clipboardController, *searchController,
        *previews.previews, *previews.gallery, QDir(trashRoot).filePath(QStringLiteral("files"))});
+  const auto media = QindaQt::Apps::FileManager::composeMedia(uniqueApplicationDataRoots(), *navigations);
   const QindaQt::Apps::FileManager::FileActionsComposition fileActions =
       QindaQt::Apps::FileManager::composeFileActions(uniqueApplicationDataRoots(), *applications);
 
@@ -455,6 +457,7 @@ int main(int argc, char **argv) {
        {QStringLiteral("coordinator"),
         QVariant::fromValue(static_cast<QObject *>(appCoordinator.get()))}});
   fileActions.insertInto(initialProperties);
+  initialProperties.insert(QStringLiteral("mediaPresenter"), QVariant::fromValue(static_cast<QObject *>(media.presenter.get())));
   initialProperties.insert(QStringLiteral("entryFacts"),
                            QVariant::fromValue(static_cast<QObject *>(entryFacts.get())));
   initialProperties.insert(QStringLiteral("columnListing"),

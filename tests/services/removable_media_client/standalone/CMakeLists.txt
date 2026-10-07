@@ -18,9 +18,11 @@ qt_add_library(qindaqt_removable_media_core STATIC
     "${QINDAQT_ROOT}/src/apps/removable_media/media_preferences.cpp"
     "${QINDAQT_ROOT}/src/apps/removable_media/media_controller.cpp"
     "${QINDAQT_ROOT}/src/apps/removable_media/media_exporter.cpp"
+    "${QINDAQT_ROOT}/src/apps/removable_media/media_exporter_actions.cpp"
     "${QINDAQT_ROOT}/src/apps/removable_media/media_public_projection.cpp"
     "${QINDAQT_ROOT}/src/apps/removable_media/udisks_backend.cpp"
     "${QINDAQT_ROOT}/src/apps/removable_media/udisks_operations.cpp"
+    "${QINDAQT_ROOT}/src/apps/removable_media/udisks_convergence.cpp"
     "${QINDAQT_ROOT}/src/apps/removable_media/media_notifications.cpp")
 target_include_directories(qindaqt_removable_media_core PUBLIC "${QINDAQT_ROOT}/src/apps/removable_media")
 target_link_libraries(qindaqt_removable_media_core PUBLIC QindaQt::RemovableMediaProtocol Qt6::Core Qt6::DBus)

@@ -12,9 +12,68 @@ A missing owner reports **Media support unavailable**. A deliberate `recover` re
 
 All decoded publications are validated atomically. Malformed data clears ready rows. Same-epoch revision regression and reuse of a retired epoch are refused; the client keeps bounded epoch history separately from unavailable presentation. Raw broker/service errors and private identities are never shown.
 
-## Current slice and next boundary
+## Ordinary actions and graphical launch
 
-This inventory slice has no RequestAction export. It does not deliver File Manager or chooser device presentation, ordinary operation admission, or physical USB qualification. Ordinary actions must next retain owner-wide serialization, exact attachment admission, duplicate suppression, no replay and authoritative convergence before consumer navigation or Safe to unplug. Credentials, formatting and saved choices remain exclusively in the owner UI.
+The owning exporter adds only the closed Devices-v1 RequestAction and
+OperationFinished boundary. A caller sends the current owner/epoch/revision
+and exact attachment, receives typed admission, and correlates a terminal result
+to that admitted operation. Admission rechecks current private inventory and
+owner-wide serialization across insertion choices, owner UI and consumers.
+A 64-entry, five-minute monotonic caller/epoch/request cache retains accepted
+work and terminal results; duplicate identical requests return that admission
+without dispatching again. Changed payloads under the same request id are
+invalid. Exhaustion returns Busy rather than evicting pending work. Formatting,
+passphrases, preferences, force flags and arbitrary UDisks paths never cross
+this interface.
+
+The private UDisks adapter confirms the captured attachment before dispatch.
+Mount and unmount success require fresh complete mount-root facts; read-only
+mounts also require known read-only truth. Safe removal covers hidden siblings
+and cleartext backing volumes, reads back every sibling's released/locked state
+before final Eject/PowerOff, and accepts only the captured drive's successful
+final callback. An announced replacement immediately fences that reply, even
+before inventory debounce. Drives with neither final method require observed
+complete unmount/lock convergence. Partial, cancelled, busy and uncertain
+outcomes carry no safe-unplug claim and never replay.
+
+The client admits one local request at a time, uses its observed unique owner
+without D-Bus autostart, and bounds admission/readback to five seconds and
+accepted completion to two minutes. It buffers one early terminal result until
+the admission authenticates its operation id. Applied mount/unmount remains
+pending until a current validated snapshot reaches the confirming revision
+with matching attachment and mount/read-only state. Owner/epoch loss, revoked
+attachment, malformed reply, contradictory readback and deadline withdraw
+interest with a typed failure. Refresh and destruction neither cancel accepted
+owner work nor replay it.
+
+The optional QindaQt::RemovableMediaLaunch target is separate from the Qt
+Core/DBus-only client. DesktopMediaOwnerLauncher owns injected XDG data roots,
+resolves only org.qindaqt.RemovableMedia.desktop through public
+ApplicationCatalog scanning and launch planning, and passes the validated
+literal argv to a same-thread injected MediaArgvStarter. Its default uses
+QProcess. Construction is inert. Missing/deleted/unsupported/terminal-only/
+D-Bus-only entries return failure with no fallback; only deliberate startOwner
+may submit a process. ApplicationCatalog's suffix-free id is derived from that
+fixed installed filename.
+
+## File consumers and qualification
+
+[File Manager](../apps/file-manager.md#removable-devices-and-location-lifetime)
+and the [native chooser](../reference/portal-choosers.md#removable-devices)
+borrow MediaSource. Their source is independently owned presentation and
+selection/navigation interest; neither imports private backend or preferences.
+No observed row triggers mounting. Deliberate open of an unmounted row waits
+for the admitted action's confirmed current root; closing/changing the target
+withdraws only deferred navigation.
+
+The standalone entry point now includes qindaqt.removable-media-actions and
+expanded owning UDisks failures beside inventory/policy/notifications.
+Focused consumers are qindaqt.file-manager-media, qindaqt.file-manager-media-ui and
+qindaqt.portal-media-chooser; owner launch has
+qindaqt.removable-media-owner-launcher. They use temporary filesystem fixtures,
+public source doubles and private/absent buses. Compiler, runtime, native
+frontend, installed-package and physical USB evidence must each name the exact
+tested candidate. Source fixtures never establish physical-media qualification.
 
 The isolated `tests/services/removable_media_client/standalone` entry point links the public protocol/client plus owner-only projection/controller fixtures. `qindaqt.removable-media-inventory` uses a private session bus and unavailable system bus. It covers passive zero-launch, explicit start/readback/timeout, old-owner Activate compatibility, malformed/oversized snapshots, epoch retirement, immediate owner revocation, destruction during pending read, duplicate partitions, complete roots and unknown read-only truth. Execution evidence is recorded with the exact source candidate handoff; it is private-bus verification, never physical-media qualification.
 

@@ -1,12 +1,12 @@
 # Everyday removable-media delivery worker
 
 - Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
-- Status: working — authoring ordinary media actions, File Manager device navigation provenance and native chooser selection guards; compiler/private-bus lease released to Astra after exact readonly verification
+- Status: working — full ordinary media source packet frozen for exact review and next serialized compiler/consumer gate; readonly repair verified separately
 - Branch: worker/everyday-media-delivery-20261007
 - Worktree: everyday-media-delivery-20261007
 - Outcome: consistent device rows and ordinary mount/open/remove in File Manager and native chooser through ADR-0350
 - Ownership: removable_media_client; owning removable_media adapter; File Manager/chooser media presenters; focused tests and primary docs
-- Next gate: exact readonly repair 823738ab1 independent review after r16; complete ordinary consumer source packet before serialized build gate
+- Next gate: exact action/client/File Manager/chooser compile, focused failures, installed SDK and actual native chooser regression; await manager lease after Astra
 
 ## Updates
 
@@ -21,3 +21,5 @@
 - 2026-10-07T21:47:18+00:00: Authored ordinary public action transport/admission and private authoritative UDisks convergence, bounded duplicate handling and negative fixtures. Connecting public MediaSource to File Manager tabs and chooser without private owner imports; navigator presentation extraction keeps the edited source below its existing size violation. No compiler, action-test, native or physical-device claim.
 
 - 2026-10-07T21:55:50+00:00: Exact detached readonly repair823738ab1 strict Debug build exit0, focused CTest4/4 and 37 Qt checks (10 policy, 10 UDisks, 6 notifications, 11 inventory), zero failures/skips. Installed-only consumer1/1; withheld installed header failed as expected, restore rebuild and1/1 passed. Compiler/private-bus lease explicitly released to Astra. New action/consumer source is uncompiled and separately qualified next.
+
+- 2026-10-07T22:03:31+00:00: Complete ordinary source packet includes private typed admission/convergence, public one-shot actions and separate fixed-owner argv launcher, File Manager sidebar/per-tab revoked-location guard, chooser selection/read-only Save guard and focused public-source negatives. Static diff, strict MkDocs and link checker pass (520 documents). New production sources below500; navigator447/presentation173/main478/Main.qml460 nonblank. Runtime/native/installed/physical action qualification remains pending; no compiler while Astra leases.

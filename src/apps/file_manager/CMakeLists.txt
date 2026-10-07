@@ -81,6 +81,7 @@ target_sources(
         runtime/file_manager1_service.cpp
         runtime/finder_integration.cpp
         runtime/folder_navigations.cpp
+        runtime/media_presenter.cpp
         runtime/layout_style_hint.cpp
         runtime/process_reveal_windows.cpp
         model/bookmarks_store.cpp
@@ -98,6 +99,8 @@ target_sources(
         model/applications_place.cpp
         model/applications_place_order.cpp
         model/navigation_controller.cpp
+        model/navigation_media.cpp
+        model/navigation_presentation.cpp
         model/workspace_chooser_client.cpp
         model/navigation_history.cpp
         model/navigation_status.h
@@ -158,6 +161,7 @@ target_sources(
         runtime/file_manager1_service.h
         runtime/finder_integration.h
         runtime/folder_navigations.h
+        runtime/media_presenter.h
         runtime/layout_style_hint.h
         runtime/process_reveal_windows.h
         model/bookmarks_store.h
@@ -241,6 +245,7 @@ target_link_libraries(
         QindaQt::AppShell
         QindaQt::AppShellMenuExport
         QindaQt::ApplicationCatalog
+        QindaQt::RemovableMediaClient
         Qt6::Core
         Qt6::Gui
         Qt6::Quick
@@ -272,6 +277,8 @@ qt_add_executable(qindaqt-file-manager
     main.cpp
     runtime/file_actions_composition.cpp
     runtime/file_actions_composition.h
+    runtime/media_composition.cpp
+    runtime/media_composition.h
     runtime/navigation_composition.cpp
     runtime/navigation_composition.h
     runtime/mutation_ui_action_probe.cpp
@@ -300,6 +307,7 @@ qt_add_qml_module(
         ui/Breadcrumb.qml
         ui/LocationBar.qml
         ui/PlacesSidebar.qml
+        ui/MediaDeviceSection.qml
         ui/EntrySelection.qml
         ui/SelectionBand.qml
         # ADR-0270: the four QindaTK views and what they share.
@@ -401,6 +409,7 @@ target_link_libraries(
     qindaqt-file-manager
     PRIVATE
         qindaqt_file_manager_support
+        QindaQt::RemovableMediaLaunch
         QindaQt::AppShell
         QindaQt::FontDiscovery
         Qt6::Core

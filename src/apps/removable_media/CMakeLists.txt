@@ -2,10 +2,10 @@
 qt_add_library(qindaqt_removable_media_core STATIC)
 target_sources(qindaqt_removable_media_core PRIVATE
     media_backend.h media_types.cpp media_types.h
-    media_public_projection.cpp media_public_projection.h media_exporter.cpp media_exporter.h
+    media_public_projection.cpp media_public_projection.h media_exporter.cpp media_exporter.h media_exporter_actions.cpp
     media_preferences.cpp media_preferences.h
     media_controller.cpp media_controller.h
-    udisks_backend.cpp udisks_backend.h udisks_operations.cpp
+    udisks_backend.cpp udisks_backend.h udisks_operations.cpp udisks_convergence.cpp
     media_notifications.cpp media_notifications.h)
 target_include_directories(qindaqt_removable_media_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(qindaqt_removable_media_core PUBLIC QindaQt::RemovableMediaProtocol Qt6::Core Qt6::DBus)
