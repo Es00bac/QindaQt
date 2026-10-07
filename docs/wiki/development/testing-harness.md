@@ -4428,8 +4428,13 @@ without replay, and a second daemon with colliding owner/PID identities. Its
 composed monitor uses only RequestStateWithReceipt; properties and change
 payloads cannot establish Protected. The compositor fixture separately proves
 real caller-targeted admission and state receipts. Adjacent public
-attachment/idle rows remain required. These source gates do not claim
-production activation, real host lock/sleep, PAM or mixed-output qualification.
+attachment/idle rows remain required. The real private-bus
+`qindaqt.native-lock-qt-transport` row also starts with the compositor name
+present and native object absent, then proves recovery only after a genuine
+nonce receipt. It checks the five-retry startup limit, no retry for access
+denial, and revocation before delayed object publication. These source gates
+do not claim production activation, real host lock/sleep, PAM or mixed-output
+qualification.
 
 
 ### Native Secret portal and synthetic legacy import
