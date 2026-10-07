@@ -1,0 +1,6 @@
+# Native chooser readiness source freeze
+
+- Original5ec5d native gate failed1/1 exit8 with seven behavior failures (two init/cleanup Qt passes) before any helper spawn, including unchanged AppChooser. Original .cache/media-ordinary-native-chooser.log retained.
+- Direct private diagnostic: actual NativeLock interface plus RequestStateWithReceipt(s) void/stateReceipt(sbb), Locked=false Protected=false observed; same helper/test binaries then OpenFile single/multiple/folder3 Qt checks passed and three helpers mapped. Logs .cache/media-native-lock-introspection.log and .cache/media-native-lock-diagnostic.log retained.
+- Root-approved correction changes only owning native chooser fixture/CMake and docs: independently bind exact compositor owner/PID, wait bounded actual interface publication, then use public NativeLockStateMonitor for nonce/authenticated sbb plus empty method reply before portal composition/Attach. Introspection is readiness only and never grants unlocked authority. Production transport error-name classification remains root-owned; no policy fallback added.
+- Existing SDK stage1/1 passed, withheld header caused expected compile failure, restoration1/1 passed. Final exact full29 actual rows (prior28 plus native) and SDK gates next under current lease. No installed-desktop/USB qualification.

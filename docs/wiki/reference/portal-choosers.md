@@ -89,6 +89,14 @@ disposable staged routing proofs also require native response 2 with a zero KDE
 chooser counter when no session was selected. These gates do not qualify an
 installed physical desktop or a Flatpak document-permission journey.
 
+The private native fixture waits for the native lock interface to be published
+and then obtains the normal nonce-authenticated unlocked receipt before
+constructing and attaching its ordinary portal composition. An independently
+attached exact compositor owner/PID admits that observation; introspection and
+properties do not grant unlocked truth. This fixture readiness fence preserves
+the production content/identity/FD/result checks. Production startup retry
+classification in the lock transport is separately owned.
+
 ## Removable devices
 
 The file chooser's request-local sidebar consumes the same public
