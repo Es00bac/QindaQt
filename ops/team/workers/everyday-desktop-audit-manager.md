@@ -2,7 +2,7 @@
 
 - Role: Program Manager; documentation-only everyday-desktop audit
 - Provider: OpenAI Codex; no inferred model identity
-- Status: working — audit source and installed evidence; write proposed delivery plan
+- Status: available — documentation audit accepted; no coding outcome claimed
 - Base: f298b680375fd6d759b877803e8a88d71346d5d8
 - Branch: audit/everyday-desktop-20261007
 - Worktree: container-wm-everyday-audit-20261007 on qinda
@@ -16,3 +16,4 @@
 - 2026-10-07T16:56:50+00:00: Added owner-requested Android green/Windows blue native-feeling application integration, ED-20–24. Verified existing runtime package records, upstream Waydroid support and QindaLutris ownership; no runtime launched or changed. Moving to documentation validation/review.
 - 2026-10-07T16:58:13+00:00: Strict MkDocs exits 0; tools/validate-docs validates 514 Markdown documents/navigation. Source and feature ledger untouched. Candidate being preserved for exact independent Sol 6.1 review.
 - 2026-10-07T17:02:04+00:00: Integrated storage/access audit receipts after reviewing exact candidates. Corrected archive claims to built-in KArchive ZIP/tar operations, independently confirmed by reviewer. Final model policy remains Sol 6.1 default and Opus first for hard work.
+- 2026-10-07T17:05:06+00:00: Independent Sol reviewer accepted f9328db00563b5f300df7ea984e6286ed3760ed8 after archive correction; receipt59b384b preserved. Reviewer strict MkDocs/link checks514 and whitespace pass. Source-only plan ready for future dispatch; integrating documentation and rerunning final gates.

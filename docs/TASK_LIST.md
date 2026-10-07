@@ -12,6 +12,11 @@ The [Android/Windows plan](wiki/development/foreign-app-integration-plan.md) add
 resizable integrated Android apps marked green and Wine/Proton apps marked blue,
 with normal Applications/dock/container behavior.
 
+Independent Sol review accepts documentation candidate `f9328db0` after the
+archive-description correction; exact receipt `59b384bd` records passing strict
+MkDocs and 514-document links/navigation. This acceptance qualifies the plan,
+not the proposed features.
+
 First delivery priorities are the existing lock/power/keyring incident gates,
 then integrated USB discovery/eject and safe cross-device file operations.
 Reuse existing Removable Media, QindaPortage, terminal and QindaTK agent support.
