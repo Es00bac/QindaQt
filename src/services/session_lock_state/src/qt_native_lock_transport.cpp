@@ -267,8 +267,18 @@ void QtNativeLockTransport::requestState(quint64 generation, quint64 serial,
             const auto it = m_stateReceipts.find(nonce);
             if (it != m_stateReceipts.end()) {
               const auto reply = watcher->reply();
-              if (reply.type() != QDBusMessage::ReplyMessage ||
-                  !reply.signature().isEmpty() || !reply.arguments().isEmpty()) {
+              // AGENT-GUARD: only these two missing-interface errors may
+              // reach the monitor's bounded startup retry. A reply alone never
+              // supplies lock state; all other failures remain Unknown.
+              const auto error = reply.type() == QDBusMessage::ErrorMessage
+                                     ? reply.errorName() : QString{};
+              const bool startup =
+                  error == QStringLiteral("org.freedesktop.DBus.Error.UnknownObject") ||
+                  error == QStringLiteral("org.freedesktop.DBus.Error.UnknownInterface");
+              if (startup) {
+                failState(nonce, error);
+              } else if (reply.type() != QDBusMessage::ReplyMessage ||
+                         !reply.signature().isEmpty() || !reply.arguments().isEmpty()) {
                 failState(nonce, QStringLiteral("native-lock-state-request-failed"));
               } else {
                 it->replyReady = true;

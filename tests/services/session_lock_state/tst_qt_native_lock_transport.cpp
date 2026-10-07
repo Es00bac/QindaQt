@@ -27,6 +27,7 @@ public:
   QDBusConnection bus = QDBusConnection::sessionBus();
   QDBusConnection attacker = bus;
   QString stateMode = QStringLiteral("valid");
+  int stateRequests = 0;
   bool locked() const { return m_locked; }
   bool protectedPresentation() const { return m_protected; }
   void set(bool locked, bool protectedPresentation) {
@@ -42,6 +43,16 @@ public:
   bool m_locked = false, m_protected = false;
 public Q_SLOTS:
   void RequestStateWithReceipt(const QString &nonce) {
+    ++stateRequests;
+    if (stateMode == QStringLiteral("unknown-interface") ||
+        stateMode == QStringLiteral("denied")) {
+      sendErrorReply(
+          stateMode == QStringLiteral("unknown-interface")
+              ? QStringLiteral("org.freedesktop.DBus.Error.UnknownInterface")
+              : QStringLiteral("org.freedesktop.DBus.Error.AccessDenied"),
+          QStringLiteral("Fixture refuses state request."));
+      return;
+    }
     if (stateMode == QStringLiteral("missing"))
       return;
     QString receiptNonce = nonce;
@@ -115,6 +126,96 @@ private Q_SLOTS:
     QVERIFY(!monitor.contentMayBeShown());
     monitor.refresh();
     QTRY_COMPARE(monitor.state(), LockState::Unknown);
+    monitor.stop();
+  }
+  void lateNativeObjectRecoversOnlyWithReceipt() {
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    auto server = bus.connect("native-late-server-"),
+         client = bus.connect("native-late-client-");
+    QVERIFY(server.registerService(service()));
+    NativeBackend backend;
+    backend.bus = server;
+    QtNativeLockTransport transport(client);
+    QSignalSpy failed(&transport, &NativeLockTransport::failed);
+    NativeLockStateMonitor monitor(
+        transport, [&](const QString &owner, quint64 pid) {
+          return owner == server.baseService() &&
+                 pid == quint64(QCoreApplication::applicationPid());
+        });
+    QVERIFY(monitor.start());
+    QTRY_VERIFY(!failed.isEmpty());
+    QCOMPARE(failed.first().at(3).toString(),
+             QStringLiteral("org.freedesktop.DBus.Error.UnknownObject"));
+    QCOMPARE(monitor.state(), LockState::Unknown);
+    QVERIFY(!monitor.contentMayBeShown());
+    QVERIFY(server.registerObject(path(), &backend,
+                                   QDBusConnection::ExportAllProperties |
+                                       QDBusConnection::ExportAllSignals |
+                                       QDBusConnection::ExportAllSlots));
+    // Registration is not authority. Only the later nonce-correlated receipt
+    // and its matching void completion may publish Unlocked.
+    QTRY_COMPARE_WITH_TIMEOUT(monitor.state(), LockState::Unlocked, 3000);
+    QCOMPARE(backend.stateRequests, 1);
+    monitor.stop();
+  }
+  void startupRetriesAreBoundedAndAllowlisted_data() {
+    QTest::addColumn<QString>("mode");
+    QTest::addColumn<int>("requests");
+    QTest::newRow("startup-interface") << QStringLiteral("unknown-interface") << 6;
+    QTest::newRow("access-denied") << QStringLiteral("denied") << 1;
+  }
+  void startupRetriesAreBoundedAndAllowlisted() {
+    QFETCH(QString, mode);
+    QFETCH(int, requests);
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    auto server = bus.connect("native-refusal-server-"),
+         client = bus.connect("native-refusal-client-");
+    NativeBackend backend;
+    backend.stateMode = mode;
+    QVERIFY(expose(server, backend));
+    QtNativeLockTransport transport(client);
+    NativeLockStateMonitor monitor(
+        transport, [&](const QString &owner, quint64 pid) {
+          return owner == server.baseService() &&
+                 pid == quint64(QCoreApplication::applicationPid());
+        });
+    QVERIFY(monitor.start());
+    QTRY_COMPARE_WITH_TIMEOUT(backend.stateRequests, requests, 4000);
+    QTest::qWait(2100);
+    QCOMPARE(backend.stateRequests, requests);
+    QCOMPARE(monitor.state(), LockState::Unknown);
+    QVERIFY(!monitor.contentMayBeShown());
+    monitor.stop();
+  }
+  void startupRetryCannotOutliveAdmission() {
+    PrivateBus bus;
+    QVERIFY(bus.start());
+    auto server = bus.connect("native-revoked-server-"),
+         client = bus.connect("native-revoked-client-");
+    QVERIFY(server.registerService(service()));
+    NativeBackend backend;
+    backend.bus = server;
+    bool live = true;
+    QtNativeLockTransport transport(client);
+    QSignalSpy failed(&transport, &NativeLockTransport::failed);
+    NativeLockStateMonitor monitor(
+        transport, [&](const QString &owner, quint64 pid) {
+          return live && owner == server.baseService() &&
+                 pid == quint64(QCoreApplication::applicationPid());
+        });
+    QVERIFY(monitor.start());
+    QTRY_VERIFY(!failed.isEmpty());
+    live = false;
+    QVERIFY(server.registerObject(path(), &backend,
+                                   QDBusConnection::ExportAllProperties |
+                                       QDBusConnection::ExportAllSignals |
+                                       QDBusConnection::ExportAllSlots));
+    QTest::qWait(300);
+    QCOMPARE(backend.stateRequests, 0);
+    QCOMPARE(monitor.state(), LockState::Unknown);
+    QVERIFY(!monitor.contentMayBeShown());
     monitor.stop();
   }
   void stateReceiptFaults_data() {
