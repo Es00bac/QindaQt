@@ -60,6 +60,7 @@ Item {
             border.color: Tokens.outline.divider
         }
         contentItem: ScrollView {
+            objectName: "agentUsageScroll"
             implicitHeight: Math.min(content.implicitHeight, 520,
                                      Math.max(120, summary.Screen.height - 48))
             clip: true
