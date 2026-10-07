@@ -7,6 +7,7 @@ import QindaQt.Shell.ClipboardApplet 1.0 as ClipboardAppletModule
 import QindaQt.Shell.GlobalMenu 1.0 as GlobalMenuModule
 import QindaQt.Shell.Launcher 1.0 as LauncherModule
 import QindaQt.Shell.NetworkApplet 1.0 as NetworkAppletModule
+import QindaQt.Shell.AgentUsageApplet 1.0 as AgentUsageAppletModule
 import QindaQt.Shell.PowerApplet 1.0 as PowerAppletModule
 import QindaQt.Shell.SmartLightsApplet 1.0 as SmartLightsAppletModule
 import QindaQt.Shell.VoiceApplet 1.0 as VoiceAppletModule
@@ -27,6 +28,7 @@ Item {
     property var audioAppletAccess: null
     property var bluetoothAppletAccess: null
     property var networkAppletAccess: null
+    property var agentUsageAppletAccess: null
     property var clipboardAppletAccess: null
     property var powerAppletAccess: null
     property var smartLightsAppletAccess: null
@@ -63,6 +65,8 @@ Item {
         ready && entryPoint === "qindaqt.applets.audio"
     readonly property bool bluetoothReady:
         ready && entryPoint === "qindaqt.applets.bluetooth"
+    readonly property bool agentUsageReady:
+        ready && entryPoint === "qindaqt.applets.agent-usage"
     readonly property bool networkReady:
         ready && entryPoint === "qindaqt.applets.network"
     readonly property bool powerReady:
@@ -100,7 +104,7 @@ Item {
     readonly property bool desktopControlReady: desktopControlComponent !== null
     readonly property bool hasLiveContent:
         clockReady || notificationCenterReady || audioReady || bluetoothReady
-        || networkReady || powerReady || smartLightsReady || voiceReady || clipboardReady
+        || agentUsageReady || networkReady || powerReady || smartLightsReady || voiceReady || clipboardReady
         || launcherReady || globalMenuReady
         || taskListReady || statusNotifierReady || desktopControlReady
         || startMenuReady
@@ -132,6 +136,7 @@ Item {
             : root.notificationCenterReady ? notificationsComponent
             : root.audioReady ? audioComponent
             : root.bluetoothReady ? bluetoothComponent
+            : root.agentUsageReady ? agentUsageComponent
             : root.networkReady ? networkComponent
             : root.powerReady ? powerComponent
             : root.smartLightsReady ? smartLightsComponent
@@ -255,6 +260,16 @@ Item {
             anchors.fill: parent
             visible: root.bluetoothReady
             access: root.bluetoothAppletAccess
+            theme: root.theme
+            vertical: root.vertical
+        }
+    }
+
+    Component {
+        id: agentUsageComponent
+        AgentUsageAppletModule.AgentUsageApplet {
+            anchors.fill: parent
+            access: root.agentUsageAppletAccess
             theme: root.theme
             vertical: root.vertical
         }

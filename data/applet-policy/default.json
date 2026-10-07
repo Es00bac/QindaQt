@@ -165,6 +165,13 @@
       "capability": "smart-lights.control",
       "decision": "deny",
       "reason": "Sending datagrams to household devices stays with the audited applet; a third-party package may not actuate the user's lighting."
+    },
+    {
+      "trust": "third-party",
+      "packageId": "*",
+      "capability": "agent-usage.read",
+      "decision": "deny",
+      "reason": "Provider usage and account quota metadata stay with the audited agent usage applet; third-party packages have no usage read authority."
     }
   ]
 }

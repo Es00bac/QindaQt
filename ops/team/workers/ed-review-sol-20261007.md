@@ -1,7 +1,7 @@
 # Everyday Review Sol
 
-- Status: waiting — agent-usage design ACCEPT; awaiting frozen backend/UI candidates
-- Candidate: a9746fb40131e6fc9f609412eeba87b5d0e48988
+- Status: waiting — ACCEPT exact5b complete; compiler released manager for integration/staged SDK gates; no successor claimed.
+- Candidate: 5b503b51ea99cb7b8d9681044a006120874ff3c0
 - Runtime: collaboration agent; requested GPT-6.1 Sol/high identity, no independent provider/model/process assertion
 
 ## Updates
@@ -22,3 +22,24 @@
 - 2026-10-07T18:48:06+00:00: ACCEPT exact r15 artifact a6bff0aae6693664c2cdaa8441a623ff06039863d85f47ae04378c3abf538c47 at60866560bytes; required full GPKG/expected signer, signed source/recipe/deps/image2292 inventory and ABI/install contract independently pass. Final actual-image Network11/11 privateHOME/XDG and both-bus-blocked probes pass. Artifact/sourcefreeze unchanged; no compile/install/publication. Both requested reviews complete; no leases, available.
 - 2026-10-07T19:12:15+00:00: Claimed exact agent-usage ADR/dispatch review in new isolated qinda worktree. Official metadata contracts, current applet policy and bounded report/collector privacy reviewed before frozen backend/UI candidates. No mutable source compile or installed action.
 - 2026-10-07T19:16:15+00:00: ACCEPT exact a9746fb4 ADR0351/design scope after official Codex/Claude metadata-source verification and existing applet permission review. Independent strict docs517/diff gates pass. No mutable source build or API execution. Flagged partial unsupported metrics, Claude quota/reset support and provider-reported estimated-cost labels; exact backend/UI candidates remain separate gates.
+- 2026-10-07T19:39:33+00:00: Claimed frozen backend static review; compiler lease remains UI. Exact file/process/publisher/partial-expiry checks precede own gates after lease and frozen combined UI. No mutable UI build, account payload or installed action.
+
+- 2026-10-07T19:42:57+00:00: Exact42 static FD/discovery/publisher review complete; independent docs518/strict MkDocs pass. Unsupported-second-RPC partial-detail mismatch sent owner/root; compiler held by UI, no candidate compile performed.
+
+- 2026-10-07T19:43:26+00:00: Parent granted compiler lease and announced batch; own fresh strict backend Debug gates start with unchanged Portage -j24 -l24.
+
+- 2026-10-07T19:47:52+00:00: Own strict Debug2/2 (Qt17/Python3), independent publisher27/27 assertions pass. Independent source probe7pass/1fail reproduces unsupported-RPC partial-detail mismatch. Owner froze f9 repair; no repaired compile/ACCEPT yet. Compiler explicitly released Platform then UI.
+
+- 2026-10-07T19:48:07+00:00: Preserved exact42 rejection512efbd6b; moved to exact230 combined candidate containing f9 repair for static review only.
+
+- 2026-10-07T19:50:54+00:00: Own combined docs519/strict MkDocs/diff pass; policy, source-lifetime, PlainText/scopes/freshness and production import/property closure inspected. Parent/owner notified timer-event and compact2x keyboard scroll probes for final review. No compile during owner lease.
+
+- 2026-10-07T20:04:12+00:00: Resumed on manager instruction. Final source freeze/explicit UI compiler handoff pending; preparing actual Timer-event/no-collection and repaired both-RPC-direction/normal+DPI2/publisher gates. Original rejection and static checkpoint preserved; no executable acceptance claimed.
+
+- 2026-10-07T20:07:27+00:00: Moved exact final5b503b51ea99cb7b8d9681044a006120874ff3c0; owner lease explicitly released. Parent batch announcement requested before compile. Preserved prior claims/verdicts.
+
+- 2026-10-07T20:13:04+00:00: Final5b ancestry/source identity and corrected help wording verified. Own strict native-layout configure passes; focused shared QML closure at653/1698 without failure, unchanged24/24 and observed12GiB headroom. Final docs519/strict MkDocs/diff pass. Ignored harness deferred-add_subdirectory configure failure corrected to deferred include; no product edit. Executable recheck pending ongoing build.
+
+- 2026-10-07T20:15:39+00:00: Own fresh focused shared QML build at1372/1698 without failed step. Corrected current Candidate field to5b; original42 rejection remains in historical update/receipt. Final executable gates still pending.
+
+- 2026-10-07T20:21:18+00:00: ACCEPT exact5b after own strict1698-action focused native-layout build, backend2/2+UI8/8+profiles3/3, DPI2popup1/1, independent repaired fixtures9/9/publisher27/27 and actual Timer normal3/3+DPI2 3/3. Both partial RPC directions close original42 defect. Docs519 strict/diff pass; compiler released manager. No full reviewer shell link, install, live provider/account/billing or physical journey claim; root staged SDK/full shell integration gates next. Available for exact integration anomaly recheck only.

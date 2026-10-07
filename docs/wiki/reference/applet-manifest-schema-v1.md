@@ -46,6 +46,14 @@ trust, user consent, host isolation, and service availability before exposing a
 capability. Layout profiles may instantiate an applet but cannot expand its
 authority.
 
+The Agent Usage manifest requests only `agent-usage.read`. The
+audited builtin controller receives the public usage source; a denied grant
+constructs no collector and exposes no rows or refresh. The shipped policy
+explicitly denies this capability to third-party packages. Profile placement
+never authorizes a provider read. Collection is deliberate on popup open or
+Refresh; there is no shell-startup agent launch. See
+[ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md).
+
 ## Catalog behavior
 
 The built-in catalog lives in `data/applets`. It currently describes

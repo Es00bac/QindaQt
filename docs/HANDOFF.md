@@ -1,4 +1,4 @@
-## October 7 reviewed source and artifact integration (2026-10-07T19:07:43+00:00)
+## October 7 reviewed source and artifact integration (2026-10-07T20:31:45+00:00)
 
 Network disk-fallback source is manager-verified: nine owning CTest rows pass.
 ED-01–03 source and immutable r15 recipe are reviewed. The private signed r15
@@ -13,12 +13,18 @@ Typed protocol f88974a5f passed independent Debug/Release review a2e8631d4 and
 is integrated at9bcbcb7ba; manager3/3 focused rows pass. Public client/exporter,
 device sidebar and chooser are next. Android/Windows ED-20–24 remain queued.
 
-Additional AI usage plugin Backend/UI Sol worktrees are assigned at verified
-ccc99fb3f67c2bdc4f7156af7c0b0f1e05478057.
-[Accepted ADR-0351](wiki/adr/0351-collect-agent-usage-through-bounded-metadata-sources.md)
-defines collection/report separation. Both quotas/reset times and token/reported
-costs are requested. Source/review/installed visibility remain distinct;
-dispatch adds no completion credit.
+AI usage plugin source `5b503b51ea99cb7b8d9681044a006120874ff3c0` is independently
+ACCEPTED by `d3651bbd3e7134d49ac8e5d61ed18f98c87b5ac8`: backend, popup and
+stock-profile gates pass 13/13; compact DPI2 and partial/freshness/publisher
+probes pass. [Accepted ADR-0351](wiki/adr/0351-collect-agent-usage-through-bounded-metadata-sources.md)
+defines collection/report separation. Both quotas/reset times and available
+token/reported-cost figures retain their own scope and observation time.
+Codex reads local CLI metadata; other providers use normalized reports, with an
+optional Claude statusline publisher. Manager full native shell, integrated 13/13, DPI2 1/1 and staged public
+SDK/publisher round-trip gates pass; staged-header poison and recovery pass.
+A sanitized live Codex probe observes remaining/reset/token availability,
+with reported cost absent. Active desktop remains r13; a later immutable package is required
+for this applet and the new media boundary. Existing r15 remains frozen.
 
 # October 7 — Everyday desktop implementation started
 

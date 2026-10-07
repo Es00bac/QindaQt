@@ -40,9 +40,10 @@ void ManifestCatalogTest::loadsRepresentativeFirstPartySet()
     ManifestCatalog catalog;
     QString error;
     QVERIFY2(catalog.loadDirectory(firstPartyDirectory(), &error), qPrintable(error));
-    QCOMPARE(catalog.manifests().size(), 34);
+    QCOMPARE(catalog.manifests().size(), 35);
 
     const QSet<QString> expected{
+        QStringLiteral("agent-usage"),
         QStringLiteral("launcher"),
         QStringLiteral("task-list"),
         // ADR-0224: presentations of launcher and task-list under their own
@@ -139,6 +140,13 @@ void ManifestCatalogTest::exposesCapabilityDeclarations()
     QVERIFY(power->capabilities
             == QVector<Capability>({Capability::PowerRead,
                                     Capability::PowerControl}));
+    const AppletManifest *usage = catalog.findById(QStringLiteral("agent-usage"));
+    QVERIFY(usage != nullptr);
+    QCOMPARE(usage->entryPoint.value, QStringLiteral("qindaqt.applets.agent-usage"));
+    QVERIFY(usage->capabilities.contains(Capability::AgentUsageRead));
+    QCOMPARE(toString(Capability::AgentUsageRead), QStringLiteral("agent-usage.read"));
+    QCOMPARE(capabilityFromString(QStringLiteral("agent-usage.read")),
+             std::optional<Capability>{Capability::AgentUsageRead});
     const AppletManifest *network = catalog.findById(QStringLiteral("network"));
     QVERIFY(network != nullptr);
     QCOMPARE(network->entryPoint.value, QStringLiteral("qindaqt.applets.network"));

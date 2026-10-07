@@ -359,6 +359,33 @@ or a relocated package stage; no row contacts the host session bus, PipeWire,
 WirePlumber, display server, or hardware. The exact matrix and non-claims are
 detailed in [Audio applet](../shell/audio-applet.md).
 
+The AI agent usage service and production applet slice are selected with:
+
+```sh
+ctest --test-dir build/dev \
+  -R '^qindaqt\.agent-usage(-publisher|-applet(-offscreen|-boundary)?)?$' \
+  --output-on-failure --no-tests=error
+```
+
+Service rows use bounded report files and a fake stdio metadata process. The
+publisher row verifies allowlisted output and private atomic report replacement.
+Applet rows use an injected source, shipped grant policy, compiled offscreen
+QML and collection-boundary checks. Repeat the offscreen row with
+`QT_SCALE_FACTOR=2` for compact keyboard and mouse-wheel reachability; retain
+private HOME/XDG directories and blocked display/session/system bus endpoints.
+Manifest/catalog, stock-profile resolver and icon coverage rows accompany
+integration because the applet is added to each of the eleven stock profiles.
+
+The public service install boundary is checked separately by compiling a QtCore
+consumer against only staged headers and the staged archive, publishing a
+normalized fixture with the staged executable, and refreshing the consumer.
+Removing a required staged header must break the consumer build; restoring it
+must recover. A deliberately invoked live Codex metadata probe reports only
+available metric counts, never payloads or account details. These checks do
+not establish provider billing accuracy, physical interaction or installed
+desktop adoption. See [AI agent usage applet](../shell/agent-usage-applet.md)
+and [Agent usage reports](../reference/agent-usage-reports.md).
+
 The shared production-shell install closure is selected with:
 
 ```sh

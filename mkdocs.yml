@@ -94,6 +94,7 @@ nav:
       - Audio applet: shell/audio-applet.md
       - Bluetooth applet: shell/bluetooth-applet.md
       - Network applet: shell/network-applet.md
+      - AI agent usage applet: shell/agent-usage-applet.md
       - Clipboard applet: shell/clipboard-applet.md
       - Panel popup placement: shell/panel-popup-placement.md
       - Production panel surfaces: shell/panel-surfaces.md
@@ -113,6 +114,7 @@ nav:
       - Shell iconography: shell/iconography.md
       - QindaQt icon theme: shell/icon-theme.md
   - Reference:
+      - Agent usage reports: reference/agent-usage-reports.md
       - Compositor control 1.1: reference/compositor-control-v1.md
       - Notification presentation 1: reference/notification-presentation-v1.md
       - Settings1 protocol 1: reference/settings1-v1.md

@@ -2,6 +2,7 @@
 
 # The qindaqt-kwin names (ADR-0291) are shared by the session, services,
 # Settings, shell and compositor plugin, so they come first.
+add_subdirectory(services/agent_usage)
 add_subdirectory(compositor_names)
 add_subdirectory(platform/compositor_attachment)
 add_subdirectory(platform/foreign_parent)
@@ -233,6 +234,7 @@ endif()
 if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/bluetooth_applet)
     add_subdirectory(shell/network_applet)
+    add_subdirectory(shell/agent_usage_applet)
     add_subdirectory(shell/smart_lights_applet)
     add_subdirectory(shell/voice_applet)
     add_subdirectory(shell/obs_applet)

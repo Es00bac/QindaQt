@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "agent-usage",
+  "name": "AI agent usage",
+  "description": "Shows local provider usage reports, remaining limits and resets when reported, token totals and reported cost. Unknown facts remain unknown.",
+  "apiVersion": "1.0",
+  "entryPoint": {
+    "kind": "builtin",
+    "value": "qindaqt.applets.agent-usage"
+  },
+  "placements": {
+    "zones": [
+      "panel-start",
+      "panel-center",
+      "panel-end"
+    ],
+    "orientations": [
+      "horizontal",
+      "vertical"
+    ]
+  },
+  "sizing": {
+    "mainAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    },
+    "crossAxis": {
+      "minimum": 24,
+      "preferred": 32,
+      "maximum": 72,
+      "stretch": false
+    }
+  },
+  "capabilities": [
+    "agent-usage.read"
+  ],
+  "settingsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

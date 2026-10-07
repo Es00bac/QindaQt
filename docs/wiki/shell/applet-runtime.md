@@ -60,7 +60,7 @@ The manifest catalog describes clock, notification center, audio, Bluetooth,
 network, power, launcher, task list, global menu, status tray, clipboard, status
 notifier, start menu, desktop icons, and the thirteen desktop-control
 packages. The compiled first-party
-registry contains thirty audited entry points. The production QML
+registry contains the audited entry points described below. The production QML
 dispatcher renders the twenty-nine panel-hosted entry points, and the desktop
 surface hosts the desktop-icons entry (see its bullet below):
 
@@ -99,6 +99,13 @@ surface hosts the desktop-icons entry (see its bullet below):
   BlueZ, or audio authority. Bluetooth B0 currently reports the deterministic
   empty backend, so production truth remains unavailable until the platform
   adapter lands; and
+- `qindaqt.applets.agent-usage` composes the bounded public agent-usage
+  source with a separate quota/token/reported-cost projection and compiled
+  popup. Only the audited builtin receives `agent-usage.read`; denial
+  constructs no collector. Popup open or explicit Refresh performs collection;
+  startup never reads reports or starts an agent. Provider observation time,
+  source, stale/error state and distinct token/cost scopes remain visible
+  ([ADR-0351](../adr/0351-collect-agent-usage-through-bounded-metadata-sources.md)); and
 - `qindaqt.applets.network` renders the current wired, Wi-Fi, or mobile
   connection from public Network1 truth, a Wi-Fi switch, visible networks, and
   Rescan. Its shell-private controller consumes only the public

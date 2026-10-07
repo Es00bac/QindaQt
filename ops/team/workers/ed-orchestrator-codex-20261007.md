@@ -2,7 +2,7 @@
 
 - Role: Program Manager for ED-01–24 implementation
 - Provider: OpenAI Codex; exact runtime model/effort not exposed to this session
-- Status: working — integrated media protocol and QindaQt agent-usage backend/popup delivery
+- Status: working — accepted AI usage source gates pass; final documentation, commit and hub preservation
 - Worktree: /home/cabewse/work_SPaC3/container-wm.worktrees/everyday-manager-20261007
 - Branch: integrate/everyday-manager-20261007
 
@@ -20,3 +20,12 @@
 - 2026-10-07T18:19:32+00:00: Verified Platform production compile and private PKGDIR correction from actual own board/logs; no r15 artifact in normal binhost cache. Files own working claim18:17 and protocol source authoring copied verbatim. Actual registries src/CMakeLists.txt/tests/CMakeLists.txt additive paths approved. Origin remains outside this session.
 - 2026-10-07T19:07:43+00:00 — Protocolf889 accepted a2e8631d4 integrated9bcbcb7ba manager3/3 pass. Signed r15 independently ACCEPTEDfba4a5e59 exactSHA256a6bff0aa,11/11 image probes; no install/publication. Usage backend/UI dispatched verifiedccc99fb3f67; prior full-hash transcription corrected; compiler Backend-owned. Proposed ADR0351 and explicit scope/freshness/denial/lifecycle gates.
 - 2026-10-07T19:19:15+00:00 — Usage design exacta974 independently ACCEPTEDa531732e0; quotas must survive unsupported totals, reported costs are provider estimates, scopes remain separate. UI source and all11 profile placements preserved4bae53be8/eef324745, docs pass; Backend focused compiler lease active. Normative module/capability/runtime documentation prepared for source integration.
+- 2026-10-07T19:55:40+00:00 — ActualCodexprobe Ready with quota/token metrics and no reportedcost; fullnativeUI8/8 normal andDPI2 previouslypass, rootnormal/DPIvisual inspected. Reviewer42 NeedsFixpartialdetail repairedexactf9 andown2/2 Qt18/Python3 pass; combinedUI230 plus compactscroll harness finalizing. Root stagedpublicheader/CLIroundtrip probe prepared inignoredcache; no compilation untilreviewlease released, no install/publication.
+
+- 2026-10-07T20:04:02+00:00 — UI reports real Tab/ArrowDown and wheel footer reachability PASS at DPI2; wheel synthetic timestamps repaired without changing production scrolling. UI final gates own compiler lease, reviewer reactivated for exact final source. Root staged SDK/producer test ready; dirty original checkouts and immutable r15 freeze preserved.
+
+- 2026-10-07T20:21:13+00:00 — Frozen UI/backend5b503b51ea99cb7b8d9681044a006120874ff3c0 independently passes backend2/2, UI8/8, profiles3/3, DPI2 1/1, partial/schema/FD9/9, publisher27/27 and actual Timer normal/DPI2 probes. Reviewer released compiler; exact ACCEPT receipt pending preservation. Root announced manager source/staged integration batch; will merge only accepted exact candidate, then native13/DPI2/SDK/header-poison/live-presence/docs gates.
+
+- 2026-10-07T20:31:45+00:00 — Exact5b/d365 accepted source merged without conflict; full strict native shell1605 actions exit0, integrated13/13 (10.62s), DPI2 1/1, staged publisher/public header/archive1/1, missing-header rejection and restored1/1 all pass. Actual read-only Codex probe prints only state1/quota1/remaining1/reset1/token1/cost0. Own docs519/strict pass before final annotations; rerun follows. Worker acceptance updates6d7d687/cbc5df5 copied verbatim. Compiler released; immutable r15 and installed r13 unchanged.
+
+- 2026-10-07T20:33:05+00:00 — Final annotated tree passes docs519, strict MkDocs8.03s and staged/unstaged diff checks. Full native13/DPI2/staged public SDK/publisher/header-poison/live-presence gates complete. Preparing one accepted source integration commit and explicit qinda hub main preservation; active r13 and r15 immutable artifact remain unchanged.

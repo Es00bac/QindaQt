@@ -201,6 +201,7 @@ endif()
 if(QINDAQT_BUILD_SHELL)
     add_subdirectory(shell/bluetooth_applet)
     add_subdirectory(shell/network_applet)
+    add_subdirectory(shell/agent_usage_applet)
     add_subdirectory(shell/smart_lights_applet)
     # AGENT-GUARD: the applet target only exists inside QINDAQT_BUILD_SHELL
     # (src/CMakeLists.txt). Registered outside this block, the row breaks a
@@ -236,3 +237,5 @@ add_subdirectory(services/native_lock_service)
 
 add_subdirectory(services/shortcuts_client)
 add_subdirectory(controllers)
+
+add_subdirectory(services/agent_usage)
