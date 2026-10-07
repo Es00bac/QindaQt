@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+cmake_minimum_required(VERSION 3.25)
+project(QindaQtMediaProtocolHarness LANGUAGES CXX)
+include(GNUInstallDirs)
+include(CTest)
+option(QINDAQT_ENABLE_STRICT_WARNINGS "Treat warnings as errors" ON)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../../../cmake/QindaQtCompiler.cmake)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Test)
+qt_standard_project_setup()
+add_subdirectory(../../../../src/services/removable_media_protocol protocol)
+add_subdirectory(.. tests)

@@ -386,3 +386,5 @@ integration retains every accepted decision in numeric order.
 - [ADR-0349: Package the native lock authentication policy](0349-package-native-lock-authentication-policy.md)
 
 - [ADR-0350: Share removable media with file consumers](0350-share-removable-media-with-file-consumers.md) — Accepted
+
+- [ADR-0351: Collect agent usage through bounded metadata sources](0351-collect-agent-usage-through-bounded-metadata-sources.md) — Proposed
