@@ -23,6 +23,7 @@ public:
     QByteArray buffer;
     qsizetype output=0;
     bool active=false,initialized=false,limitsDone=false,usageDone=false,anySuccess=false;
+    bool limitsSuccess=false,usageSuccess=false;
     ProviderUsage codex;
     std::optional<ProviderUsage> lastKnown;
     Private(AgentUsageCollector *o,QString dir,QString prog,std::function<QDateTime()> time)
@@ -89,9 +90,10 @@ public:
                     (id==1?QindaQt::Services::AgentUsage::Private::parseRateLimits(o.value("result").toObject(),candidate):
                            QindaQt::Services::AgentUsage::Private::parseCodexUsage(o.value("result").toObject(),candidate));
                 if(ok) {codex=candidate;anySuccess=true;}
-                if(id==1) limitsDone=true;else usageDone=true;
+                if(id==1) {limitsDone=true;limitsSuccess=ok;} else {usageDone=true;usageSuccess=ok;}
                 if(limitsDone&&usageDone)
-                    finish(anySuccess?"Available reported metadata; unknown metrics absent":"Usage metadata unavailable",
+                    finish(anySuccess?(limitsSuccess&&usageSuccess?"Available reported metadata; unknown metrics absent":
+                                      "Partial metadata; some account metadata unavailable"):"Usage metadata unavailable",
                            anySuccess?UsageState::Ready:UsageState::Unavailable);
             }
         }
@@ -118,6 +120,7 @@ void AgentUsageCollector::refresh()
     d->rows.resize(1);d->rows+=reports;
     d->codex=QindaQt::Services::AgentUsage::Private::emptyProvider("codex");d->codex.source="codex-app-server";
     d->codex.scope="report-period";d->codex.tokenScope="unreported";d->codex.costScope="unreported";
+    d->limitsSuccess=false;d->usageSuccess=false;
     d->buffer.clear();d->output=0;d->initialized=false;d->limitsDone=false;d->usageDone=false;d->anySuccess=false;
     d->codex.detail="Collecting usage metadata";
     d->rows[0]=d->lastKnown?*d->lastKnown:d->codex;
