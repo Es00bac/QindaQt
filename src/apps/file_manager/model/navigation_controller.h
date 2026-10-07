@@ -100,7 +100,7 @@ class NavigationController final : public QObject {
 public:
   // Window-local presentation only; never persisted. All folder action
   // bindings use this so hidden folder selections cannot receive shortcuts.
-  [[nodiscard]] bool folderViewActive() const { return m_folderViewActive; }
+  [[nodiscard]] bool folderViewActive() const { return m_folderViewActive && !m_mediaLocationRevoked; }
   void setFolderViewActive(bool active) {
     if (m_folderViewActive == active) return;
     m_folderViewActive = active;
@@ -133,6 +133,10 @@ public:
   Q_INVOKABLE void goForward();
   Q_INVOKABLE void goUp();
   Q_INVOKABLE void refresh();
+  // Owner/attachment loss withdraws this local listing without re-resolving
+  // its pathname. Only deliberate navigation can establish fresh provenance.
+  void invalidateMediaLocation(const QString &message);
+  [[nodiscard]] bool mediaLocationRevoked() const { return m_mediaLocationRevoked; }
   // Publishes an externally produced result set (recursive search) as the
   // visible listing of the current folder. Guest entries flow through the
   // same hidden/name-filter/sort projection as listed entries; activate()
@@ -285,6 +289,7 @@ signals:
 
 private:
   void reload(bool resetFilter = false);
+  void clearMediaRevocation();
   // Re-derives the visible listing from m_listedEntries under the active
   // filter/order and republishes statusMessage. Callers emit entriesChanged
   // (and presentationChanged for user-facing setting changes) afterwards.
@@ -346,6 +351,7 @@ private:
   QString m_nameFilter;
   bool m_guestActive = false;
   bool m_folderViewActive = true;
+  bool m_mediaLocationRevoked = false;
   QString m_guestStatusText;
   int m_iconSizeIndex = 4;
 };

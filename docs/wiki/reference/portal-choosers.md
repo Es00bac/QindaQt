@@ -88,3 +88,48 @@ The same gate passed nine QtTest cases without failures or skips. Source and
 disposable staged routing proofs also require native response 2 with a zero KDE
 chooser counter when no session was selected. These gates do not qualify an
 installed physical desktop or a Flatpak document-permission journey.
+
+The private native fixture waits for the native lock interface to be published
+and then obtains the normal nonce-authenticated unlocked receipt before
+constructing and attaching its ordinary portal composition. An independently
+attached exact compositor owner/PID admits that observation; introspection and
+properties do not grant unlocked truth. This fixture readiness fence preserves
+the production content/identity/FD/result checks. Production startup retry
+classification in the lock transport is separately owned.
+
+## Removable devices
+
+The file chooser's request-local sidebar consumes the same public
+[MediaSource](../architecture/removable-media-client.md) as
+[File Manager](../apps/file-manager.md#removable-devices-and-location-lifetime).
+It shows separate attachment/partition rows with literal labels and deliberate
+open, mount read-only, unmount, safely remove, details and graphical recovery.
+Initial construction and observation perform no media action. An unmounted
+open waits for the admitted result and confirming current roots, owner, epoch
+and attachment before replacing the displayed folder.
+
+Selected device folders retain attachment provenance through descendants using
+the most-specific unique mounted root. Nested overmount and ambiguous equal
+roots cannot silently preserve an old selection.
+Attachment/root/owner loss clears selection and the filename, disables acceptance
+and shows a visible choose-another-folder message. Later inventory at the same
+pathname does not revive the old selection. Deliberate navigation to a current
+device or another folder establishes fresh provenance. Known read-only media
+remain browsable for OpenFile but disable both SaveFile and SaveFiles;
+unknown read-only truth does not itself grant filesystem write authority.
+Existing URI normalization, overwrite confirmation and frontend validation
+continue to own final selection policy. Overwrite confirmation runs a nested
+event loop: acceptance rechecks current media and the captured
+selection/navigation generation after that prompt and before publication.
+
+Closing/cancelling the dialog, frontend/parent loss and deadline withdraw
+deferred navigation interest. A late mount reply cannot navigate the closed
+request; accepted owner work continues. Formatting, credentials, preferences
+and forced removal remain exclusively in the Removable Media app. The new
+qindaqt.portal-media-chooser source fixture gate covers Open/Save/SaveMany,
+read-only refusal, duplicate partitions, deferred open/close, replacement at a
+reused root and explicit navigation withdrawal. Candidate 64dcfa1a2b15c065c97d43e0f30e5c6bca173633 passed its 12 media chooser
+Qt checks, including real overwrite-modal owner/read-only/navigation changes,
+and the actual frontend/private-KWin native chooser row passed 9 Qt checks.
+The integrated source must rerun affected native/frontend/foreign-parent gates;
+fixture evidence does not replace installed-session or physical-USB evidence.

@@ -1,0 +1,9 @@
+# Exact independent SDK and bounded move-contract acceptance
+
+2026-10-07T23:13:18+00:00
+
+Root is a different worker from the requested Astra implementation author. Exact QindaTK4fb7ae7a3f08140b9cb5085eba22cf5901e2f4ab reviewed types/policy/host/SDK exports/docs and actual private3/3 registry (43Qt including retained legacy compatibility) PASS. Public-header/archive consumer and poisoned-private/broad boundary evidence inspected. The same-provider-ID callback hypothesis was withdrawn because provider IDs are immutable nonvirtual constructor UUIDs; no defect or fake repair counted. Integrated exact4fb on toolkit hub main and clean tracked qinda checkout, preserving untracked .obsidian. Installed toolkit delivery and real authenticated desktop/session/provider/consent/wire composition remain pending; ED17 is not complete.
+
+Exact ED05 design02114070c0171b4d708a44a1605bba2201e6c8ee independently reviewed and executed33/33 exit0. Root directly reproduced old destination-before/after-publication false completion, lost-mount cleanup and wrong-source plus destination replacement receipt errors; author supplied direct pre-fix failures and repaired descendants. Current model rejects/labels them and preserves candidates. ACCEPT this bounded Proposed contract/pure model for phased production work; it is not executable filesystem/durability/installed evidence. Existing copier safety first, then staged verified cross-device move/retained-source/recovery and explicitly separate permanent release. No wholeED05 or feature milestone completion.
+
+Media exact64dcfa1a2b15c065c97d43e0f30e5c6bca173633 source independently ACCEPTED f97f905 after identical old/fixed regressions, full author29/29 and339Qt, sourceSDK positive/poison/restored. Root reviewed048c867 documentation-only six-path descendant and preserved author current2bdb500ad board verbatim to resolve the sole board merge conflict. Manager affected integration gates are next.

@@ -22,6 +22,7 @@ Control {
     // fixture tests may leave them null (drops then refuse politely).
     property var mutationController: null
     property var clipboardController: null
+    property var mediaPresenter: null
     // ADR-0271: the Explorer style's folder tree under the places, read
     // through ColumnListing.
     property bool showFolderTree: false
@@ -156,6 +157,12 @@ Control {
                             }
                         }
                     }
+                }
+
+                MediaDeviceSection {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 8
+                    presenter: root.mediaPresenter
                 }
 
                 Label {

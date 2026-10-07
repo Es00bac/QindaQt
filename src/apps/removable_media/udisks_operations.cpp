@@ -23,16 +23,20 @@ void UDisksBackend::execute(const Request &request)
     m_expected = *v;
     m_resultMount.clear();
     m_unlockedRemovalTransition = false;
+    m_converging = m_preFinalConfirmed = false;
+    m_removalDisappearanceSeen = m_removalReplacementSeen = false;
+    m_removalMode = QindaQt::RemovableMedia::RemovalMode::None;
+    setPhase(QindaQt::RemovableMedia::ProgressPhase::Confirming);
     const auto serial = ++m_mutationSerial;
     // AGENT-GUARD: confirmation captures an attachment, not /dev/sdX. Read
     // current UDisks state immediately before admission, and never replay
     // requests after owner loss, unplug or an uncertain result.
     fetch([this, serial](bool success) {
         if (!m_request || serial != m_mutationSerial) return;
-        if (!success) { finish(false, QStringLiteral("Could not confirm the current media. Refresh before trying again.")); return; }
+        if (!success) { finish(false, QStringLiteral("Could not confirm the current media. Refresh before trying again."), {}, QindaQt::RemovableMedia::OperationStatus::Uncertain); return; }
         const auto *current = find(m_request->token);
         if (!current || current->identity != m_expected.identity) {
-            finish(false, QStringLiteral("The media changed before the operation could start."));
+            finish(false, QStringLiteral("The media changed before the operation could start."), {}, QindaQt::RemovableMedia::OperationStatus::Gone);
             return;
         }
         m_expected = *current;
@@ -122,6 +126,11 @@ void UDisksBackend::prepare(const Request &request, const Volume &v)
 void UDisksBackend::runNext()
 {
     if (!m_request) return;
+    if (m_request->operation == Operation::Remove && m_removalReplacementSeen) {
+        finish(false, QStringLiteral("The attachment changed during safe removal. Refresh before trying again."), {},
+               QindaQt::RemovableMedia::OperationStatus::Uncertain);
+        return;
+    }
     if (m_steps.isEmpty()) {
         const QString message = m_request->operation == Operation::Remove ? QStringLiteral("Media can now be safely removed.")
             : m_request->operation == Operation::Unmount ? QStringLiteral("Media unmounted.")
@@ -137,8 +146,20 @@ void UDisksBackend::runNext()
     const bool stillPresent = m_request->operation == Operation::Remove
         ? sameDrive && (find(m_request->token) != nullptr || m_unlockedRemovalTransition)
         : find(m_request->token) != nullptr;
-    if (!stillPresent) { finish(false, QStringLiteral("The media was removed during the operation.")); return; }
+    if (!stillPresent) { finish(false, QStringLiteral("The media was removed during the operation."), {}, QindaQt::RemovableMedia::OperationStatus::Gone); return; }
+    const Step &next = m_steps.head();
+    if (m_request->operation == Operation::Remove && !m_preFinalConfirmed
+        && (next.method == QStringLiteral("Eject") || next.method == QStringLiteral("PowerOff"))) {
+        confirmBeforeRemoval();
+        return;
+    }
     const Step step = m_steps.dequeue();
+    setPhase(step.method == QStringLiteral("Mount") ? QindaQt::RemovableMedia::ProgressPhase::Mounting
+        : step.method == QStringLiteral("Unmount") ? QindaQt::RemovableMedia::ProgressPhase::Unmounting
+        : step.method == QStringLiteral("Lock") ? QindaQt::RemovableMedia::ProgressPhase::Locking
+        : step.method == QStringLiteral("Eject") ? QindaQt::RemovableMedia::ProgressPhase::Ejecting
+        : step.method == QStringLiteral("PowerOff") ? QindaQt::RemovableMedia::ProgressPhase::PoweringOff
+        : QindaQt::RemovableMedia::ProgressPhase::Confirming);
     const auto serial = m_mutationSerial;
     call(step, [this, serial, method = step.method, path = step.path](const QDBusMessage &reply) {
         if (!m_request || serial != m_mutationSerial) return;
@@ -148,8 +169,25 @@ void UDisksBackend::runNext()
             else if (reply.errorName().contains(QStringLiteral("NotAuthorized"))) message = QStringLiteral("The operation was not authorized or authentication was cancelled.");
             else if (m_request->operation == Operation::Unlock) message = QStringLiteral("Could not unlock this volume. Check the passphrase and try again.");
             else message = QStringLiteral("The disk service could not complete the operation: ") + reply.errorMessage().left(700);
-            finish(false, message);
+            const auto name = reply.errorName();
+            const auto failure = name.endsWith(QStringLiteral("DeviceBusy")) ? QindaQt::RemovableMedia::OperationStatus::Busy
+                : name.contains(QStringLiteral("Dismissed")) || name.contains(QStringLiteral("Cancelled"))
+                    ? QindaQt::RemovableMedia::OperationStatus::Cancelled
+                : name.contains(QStringLiteral("NoReply")) || name.contains(QStringLiteral("Timeout"))
+                    || name.contains(QStringLiteral("Disconnected")) ? QindaQt::RemovableMedia::OperationStatus::Uncertain
+                : QindaQt::RemovableMedia::OperationStatus::Refused;
+            finish(false, message, {}, failure);
             return;
+        }
+        if (method == QStringLiteral("Eject") || method == QStringLiteral("PowerOff")) {
+            const auto repliedDrive = m_objects.value(QDBusObjectPath(m_expected.drive)).value(Drive);
+            if (m_removalReplacementSeen || (!repliedDrive.isEmpty() && physicalMediaIdentity(m_expected.drive, repliedDrive) != m_expected.driveIdentity)) {
+                finish(false, QStringLiteral("The drive changed before safe removal was confirmed."), {},
+                       QindaQt::RemovableMedia::OperationStatus::Uncertain);
+                return;
+            }
+            m_removalMode = method == QStringLiteral("Eject") ? QindaQt::RemovableMedia::RemovalMode::Ejected
+                : QindaQt::RemovableMedia::RemovalMode::PoweredOff;
         }
         if (method == QStringLiteral("Mount")) {
             const auto *current = find(m_request->token);
@@ -186,16 +224,38 @@ void UDisksBackend::runNext()
         runNext();
     });
 }
-void UDisksBackend::finish(bool success, const QString &message, const QString &mountPath)
+void UDisksBackend::finish(bool success, const QString &message, const QString &mountPath,
+                            QindaQt::RemovableMedia::OperationStatus failure)
+{
+    if (!m_request) return;
+    if (success && (m_request->operation == Operation::Mount || m_request->operation == Operation::MountReadOnly
+        || m_request->operation == Operation::Unmount
+        || (m_request->operation == Operation::Remove && m_removalMode == QindaQt::RemovableMedia::RemovalMode::None))) {
+        converge(message, mountPath);
+        return;
+    }
+    complete(success, message, mountPath, failure);
+}
+void UDisksBackend::complete(bool success, const QString &message, const QString &mountPath,
+                            QindaQt::RemovableMedia::OperationStatus failure)
 {
     if (!m_request) return;
     const QString token = m_request->token;
+    const auto operation = m_request->operation;
+    const BackendCompletion result{token, operation,
+        success ? QindaQt::RemovableMedia::OperationStatus::Applied : failure,
+        success ? m_removalMode : QindaQt::RemovableMedia::RemovalMode::None, message, mountPath};
     m_request.reset();
     ++m_mutationSerial;
     m_steps.clear();
-    // Mutation completion is never replayed. Inventory readback is independent
-    // and may discover a new UUID after formatting or a decrypted child.
+    m_convergenceTimer.stop();
+    m_converging = false;
+    m_phase = QindaQt::RemovableMedia::ProgressPhase::Idle;
+    // AGENT-CONTRACT: typed completion follows authoritative readback/final
+    // UDisks success; the public exporter must never infer it from a UI string.
+    Q_EMIT operationCompleted(result);
     Q_EMIT finished(token, success, message, mountPath);
+    Q_EMIT changed();
     refresh();
 }
 } // namespace QindaQt::Apps::RemovableMedia

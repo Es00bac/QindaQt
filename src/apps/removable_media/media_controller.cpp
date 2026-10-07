@@ -36,7 +36,7 @@ QVariantMap MediaController::formatTarget() const
 }
 QStringList MediaController::formatTypes() const { return m_backend.formatTypes(); }
 bool MediaController::available() const { return m_backend.available(); }
-bool MediaController::busy() const { return !m_pendingToken.isEmpty(); }
+bool MediaController::busy() const { return !m_pendingToken.isEmpty() || m_backend.busy(); }
 QString MediaController::status() const
 {
     return available() ? m_status : m_backend.diagnostic();
@@ -209,6 +209,16 @@ void MediaController::unlock(const QString &token, const QString &passphrase)
     request.operation = Operation::Unlock;
     request.passphrase = passphrase;
     submit(request);
+}
+bool MediaController::requestOrdinary(const QString &token, Operation operation)
+{
+    if (busy() || !available() || !find(token) || operation == Operation::Format
+        || operation == Operation::Unlock) return false;
+    Request request;
+    request.token = token;
+    request.operation = operation;
+    submit(request);
+    return true;
 }
 void MediaController::notificationAction(const QString &token, const QString &action)
 {
