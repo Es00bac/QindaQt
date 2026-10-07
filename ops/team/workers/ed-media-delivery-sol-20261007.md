@@ -1,0 +1,29 @@
+# Everyday removable-media delivery worker
+
+- Identity: everyday_media_delivery (Codex collaboration worker; no model/provider override observed)
+- Status: working — independent ordinary review repairs authored with direct old-source negative fixtures; awaiting next exact compiler/consumer lease after root readonly recheck
+- Branch: worker/everyday-media-delivery-20261007
+- Worktree: everyday-media-delivery-20261007
+- Outcome: consistent device rows and ordinary mount/open/remove in File Manager and native chooser through ADR-0350
+- Ownership: removable_media_client; owning removable_media adapter; File Manager/chooser media presenters; focused tests and primary docs
+- Next gate: exact action/client/File Manager/chooser compile, focused failures, installed SDK and actual native chooser regression; await manager lease after Astra
+
+## Updates
+
+- 2026-10-07T21:08:57+00:00: Created isolated worktree at assigned exact base. Read repository instructions, wiki entry point, Accepted ADR-0350 and complete protocol reference. No source/test/hardware completion claim; no device or preference mutations.
+
+- 2026-10-07T21:15:19+00:00: Authored public exact-owner inventory client and private exporter, complete mount-root/read-only facts and private-bus fixtures. Static diff check passed; no compilation, CTest or physical-device claim. Requesting serialized compiler/private-bus lease for readonly source gate.
+
+- 2026-10-07T21:21:39+00:00: Runtime32617cf42f707bf682cbc7979e8cc7e0cd46bbfb strict Debug build exit0; private-bus CTest4/4 (34 Qt checks zero failures/skips), staged public SDK consumer1/1 and withheld-header negative build passed. Initial fixture metadata/overload and real disconnected-session path repaired, failure logs retained. Docs520/strict pass. Released compiler/private-bus lease to Platform, continuing ordinary-action source rather than stopping at inventory handoff.
+
+- 2026-10-07T21:34:54+00:00: Independent readonly review found lookup retry, startup Loading race and unbounded repeated pending-read allocation. Preserved owned unfinished action delta in Git; authored single-flight lookup/read repair, explicit observational lookup collaborator and direct retry/deadline/race/replacement-late fixtures. Static diff check passes; no compile/test claim for repair while Platform holds r16 lease.
+
+- 2026-10-07T21:47:18+00:00: Authored ordinary public action transport/admission and private authoritative UDisks convergence, bounded duplicate handling and negative fixtures. Connecting public MediaSource to File Manager tabs and chooser without private owner imports; navigator presentation extraction keeps the edited source below its existing size violation. No compiler, action-test, native or physical-device claim.
+
+- 2026-10-07T21:55:50+00:00: Exact detached readonly repair823738ab1 strict Debug build exit0, focused CTest4/4 and 37 Qt checks (10 policy, 10 UDisks, 6 notifications, 11 inventory), zero failures/skips. Installed-only consumer1/1; withheld installed header failed as expected, restore rebuild and1/1 passed. Compiler/private-bus lease explicitly released to Astra. New action/consumer source is uncompiled and separately qualified next.
+
+- 2026-10-07T22:03:31+00:00: Complete ordinary source packet includes private typed admission/convergence, public one-shot actions and separate fixed-owner argv launcher, File Manager sidebar/per-tab revoked-location guard, chooser selection/read-only Save guard and focused public-source negatives. Static diff, strict MkDocs and link checker pass (520 documents). New production sources below500; navigator447/presentation173/main478/Main.qml460 nonblank. Runtime/native/installed/physical action qualification remains pending; no compiler while Astra leases.
+
+- 2026-10-07T22:07:31+00:00: Post-freeze audit found final removal also needs immediate selected/sibling Block replacement revocation before debounce, beyond Drive identity changes. Added owning fence and drive/block data rows; success with no final removal mode is normalized to Uncertain. No compiler or action qualification. Read ADR0064 and current cross-device/Trash/link restrictions for next reviewed storage contract.
+
+- 2026-10-07T22:16:46+00:00: Astra exactce338 source review found overwrite-modal acceptance revocation, first-prefix nested-root association and never-active Commander pane provenance. Authored post-modal/final selection-generation guards, most-specific unique-root matching with overmount revocation, and FolderNavigations creation/all-controller observation seam. Added real modal owner/RO/navigation cases, reversed-order nested-root losses and never-active pane loss; stale future-tense File Manager docs corrected. Runtime remains unrun; compiler idle.

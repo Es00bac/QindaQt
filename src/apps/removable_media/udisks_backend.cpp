@@ -107,7 +107,10 @@ void UDisksBackend::publish(const ManagedObjects &objects)
         if (v.token.isEmpty()) v.token = QString::number(m_epoch) + QLatin1Char('-') + QString::number(++m_attachment);
         if (!v.mountPath.isEmpty()) {
             QStorageInfo storage(v.mountPath);
-            if (storage.isValid() && storage.isReady()) v.readOnly = v.readOnly || storage.isReadOnly();
+            if (storage.isValid() && storage.isReady()) {
+                v.readOnly = v.readOnly || storage.isReadOnly();
+                v.readOnlyKnown = true;
+            }
         }
     }
     m_objects = objects;

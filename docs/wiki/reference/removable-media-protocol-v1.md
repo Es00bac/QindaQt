@@ -2,9 +2,10 @@
 
 This page specifies the standalone `QindaQt::RemovableMediaProtocol` value and
 canonical codec boundary from [ADR-0350](../adr/0350-share-removable-media-with-file-consumers.md).
-The codec is implemented separately from the still-pending public client and
-owner Devices exporter. No installed service currently exports this new wire,
-and no File Manager/chooser device UI is delivered by this module.
+The codec is implemented separately from the
+[public client and owner Devices exporter](../architecture/removable-media-client.md).
+No installed service currently exports this new wire, and no File Manager/chooser
+device UI is delivered by this module.
 [Removable Media](../apps/removable-media.md) still owns private device policy,
 persistence, credentials and UDisks operations.
 

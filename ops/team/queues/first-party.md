@@ -2,7 +2,7 @@
 
 ## October 7 exact integration and adoption state
 
-Manager recheck: repaired trust a23b87229 pure19+24 passed; ADR0352/0353 remain Proposed, no live authority/completion credit. ED07 bda4d8d9 accepted independently in5843286002 and integrated; registry/real-server gates remain. R16 source/overlay accepted and5124-action package built; actualartifact11514f3 signature/image handoff awaits manager adoption. Media readonly repair823738ab1 has next short lease; Astra scoped toolkit393c1ce5 and isolated preview-DPR repair source continue.
+Actual laptop r16/source2188 signed Portage install exit0,2299objects+4symlinks/world/profile/catalog verified. Current session unchanged; popup/login/physical gates open. Readonly823 integrated4/4(37Qt); ED07 registry1/1; scopedSDK4fb root3/3 and boundary review complete, toolkitintegration next. Previewec10/7e27 native2/2(57Qt) awaits manageracceptance for futureversion. Media ordinary2f831 now holds full native/private lease, Astra old/newrecheck next; HiddenWiFi fresh47a atsourceauthoring, ADR0354 reserved, no live radio. HardED05 ADR0355 reserved next, no storage edits. AllED01–24 remain active.
 
 
 ## Full-plan delivery is active — 2026-10-07T21:15:27+00:00

@@ -239,3 +239,7 @@ add_subdirectory(services/shortcuts_client)
 add_subdirectory(controllers)
 
 add_subdirectory(services/agent_usage)
+
+if(TARGET qindaqt_removable_media_core)
+    add_subdirectory(services/removable_media_client)
+endif()
