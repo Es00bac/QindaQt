@@ -11,8 +11,10 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QScreen>
 #include <QtTest>
 #include <memory>
+#include <utility>
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_AgentUsageAppletPlugin)
 Q_IMPORT_QML_PLUGIN(QindaQt_Shell_IconsPlugin)
 using namespace QindaQt;
@@ -43,6 +45,12 @@ struct Harness {
         ProviderUsage absent; absent.providerId=QStringLiteral("kimi");
         absent.displayName=QStringLiteral("Kimi"); absent.detail=QStringLiteral("No local report configured");
         source.values = {fresh,stale,absent};
+        for (const auto &entry : {std::pair{QStringLiteral("glm"),QStringLiteral("GLM")},
+                                  std::pair{QStringLiteral("deepseek"),QStringLiteral("DeepSeek")},
+                                  std::pair{QStringLiteral("mistral"),QStringLiteral("Mistral")}}) {
+            ProviderUsage missing; missing.providerId=entry.first; missing.displayName=entry.second;
+            source.values.append(missing);
+        }
         source.refresh();
         engine.addImportPath(QStringLiteral(QINDAQT_DESKTOP_CONTROLS_QML_IMPORT_PATH));
         if (!Tests::DesktopControls::publishTokens(engine)) {
@@ -50,7 +58,7 @@ struct Harness {
         }
         if (!Tests::installResolvedIconFixture(engine,
                 QStringLiteral(QINDAQT_APPLET_ICON_FIXTURE_ROOT),
-                {QStringLiteral("utilities-system-monitor")}, error)) return false;
+                {QStringLiteral("applications-development")}, error)) return false;
         QQmlComponent component(&engine);
         component.loadFromModule(QStringLiteral("QindaQt.Shell.AgentUsageApplet"),
                                  QStringLiteral("AgentUsageApplet"));
@@ -108,6 +116,7 @@ private slots:
         QTest::keyClick(QGuiApplication::focusWindow(),Qt::Key_Space);
         QTRY_VERIFY(h.popup()->property("opened").toBool());
         QCOMPARE(h.source.refreshes,before);
+        QVERIFY(!h.root->findChild<QObject *>(QStringLiteral("agentUsageFreshnessTimer"))->property("running").toBool());
         auto *refresh=findVisual(h.content(),QStringLiteral("agentUsageRefresh"));
         QVERIFY(refresh); QVERIFY(!refresh->isEnabled());
         auto *diagnostic=findVisual(h.content(),QStringLiteral("agentUsageDiagnostic"));
@@ -132,11 +141,14 @@ private slots:
         QVERIFY(accessible); QCOMPARE(accessible->role(),QAccessible::Button);
         QCOMPARE(accessible->text(QAccessible::Name),QStringLiteral("AI agent usage"));
         QVERIFY(accessible->text(QAccessible::Description).contains("reset"));
+        auto *icon=summary->findChild<QQuickItem *>(QStringLiteral("agentUsageIcon"));
+        QVERIFY(Tests::hasResolvedProviderSource(icon, QStringLiteral("applications-development")));
         const int before=h.source.refreshes;
         summary->forceActiveFocus();
         QTest::keyClick(QGuiApplication::focusWindow(),Qt::Key_Space);
         QTRY_VERIFY(h.popup()->property("opened").toBool());
         QTRY_COMPARE(h.source.refreshes,before+1);
+        QVERIFY(h.root->findChild<QObject *>(QStringLiteral("agentUsageFreshnessTimer"))->property("running").toBool());
         QVERIFY(h.content()); QVERIFY(h.content()->window()!=&h.window);
         auto *refresh=findVisual(h.content(),QStringLiteral("agentUsageRefresh"));
         QVERIFY(refresh); refresh->forceActiveFocus();
@@ -149,6 +161,8 @@ private slots:
                 QCOMPARE(item->property("textFormat").toInt(),0); // QQuickText::PlainText
         }
         QVERIFY(h.popup()->property("width").toReal()>0);
+        QVERIFY(h.popup()->property("width").toReal() <= h.window.screen()->geometry().width());
+        QVERIFY(h.popup()->property("height").toReal() <= h.window.screen()->geometry().height());
         const QString evidence=qEnvironmentVariable("QINDAQT_USAGE_EVIDENCE_DIR");
         if (!evidence.isEmpty()) {
             QVERIFY(QDir().mkpath(evidence));
@@ -160,7 +174,13 @@ private slots:
         }
         QTest::keyClick(QGuiApplication::focusWindow(),Qt::Key_Escape);
         QTRY_VERIFY(!h.popup()->property("opened").toBool());
+        // Native panels reject keyboard activation. Qt reports no active
+        // focus item while a host window is inactive. Reactivate only this
+        // offscreen harness host before checking the restored focus target.
+        h.window.requestActivate();
+        QTRY_COMPARE(h.window.activeFocusItem(),summary);
         QTRY_VERIFY(summary->hasActiveFocus());
+        QVERIFY(!h.root->findChild<QObject *>(QStringLiteral("agentUsageFreshnessTimer"))->property("running").toBool());
         QTest::mouseClick(&h.window,Qt::LeftButton,Qt::NoModifier,
                          summary->mapToScene(QPointF(summary->width()/2,summary->height()/2)).toPoint());
         QTRY_VERIFY(h.popup()->property("opened").toBool());

@@ -14,6 +14,7 @@ private slots:
     void projectionPreservesUnknownAndIndependentScope() {
         const auto rows = providerRows({fixtureProvider()});
         const auto row = rows.front().toMap();
+        QVERIFY(row.value("metricsAvailable").toBool());
         QVERIFY(row.value("tokens").toString().contains("Total tokens: 0"));
         QVERIFY(row.value("tokens").toString().contains("input: Not reported"));
         QCOMPARE(row.value("tokenScope").toString(), QStringLiteral("Tokens: context"));
@@ -26,6 +27,7 @@ private slots:
         unknown.totalTokens.reset(); unknown.reportedCostUsd.reset();
         unknown.quotaWindows = {{QStringLiteral("weekly"), {}, {}}};
         const auto missing = providerRows({unknown}).front().toMap();
+        QVERIFY(!missing.value("metricsAvailable").toBool());
         QVERIFY(missing.value("tokens").toString().contains("Total tokens: Not reported"));
         QVERIFY(missing.value("cost").toString().contains("not reported"));
         QVERIFY(missing.value("quotas").toStringList().front().contains("reset not reported"));
@@ -43,9 +45,18 @@ private slots:
     void denialNeverReadsOrRefreshes() {
         FixtureSource source; source.values = {fixtureProvider()};
         AgentUsageAppletController controller(&source, false);
-        controller.refresh();
+        controller.refresh(); controller.checkFreshness();
         QCOMPARE(source.snapshots, 0); QCOMPARE(source.refreshes, 0);
         QVERIFY(controller.rows().isEmpty()); QVERIFY(controller.diagnostic().contains("denied"));
+    }
+    void freshnessProjectionDoesNotCollect() {
+        FixtureSource source; auto provider=fixtureProvider();
+        provider.state=UsageState::Ready; source.values={provider}; source.projectFreshness=true;
+        AgentUsageAppletController controller(&source,true);
+        QCOMPARE(controller.rows().front().toMap().value("state").toString(),QStringLiteral("Current"));
+        source.clock=source.clock.addSecs(16*60); controller.checkFreshness();
+        QCOMPARE(controller.rows().front().toMap().value("state").toString(),QStringLiteral("Stale"));
+        QCOMPARE(source.refreshes,0);
     }
     void publicationAndSourceLifetime() {
         auto source = std::make_unique<FixtureSource>();

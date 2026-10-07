@@ -20,7 +20,10 @@ All report labels render as plain text, including markup-like provider metadata.
 “not reported.” Total, input and output token counts remain separate. Cost is
 explicitly **reported cost in USD**, never inferred from token pricing.
 
-Unavailable providers remain visible as setup opportunities. Stale reports
+Quota windows lead each row, followed by compact token and cost blocks with
+independent scopes. Observation time and provenance remain muted but readable.
+Unavailable providers remain visible as concise setup opportunities; rows with
+no metrics say “Usage not reported” without repeating every unknown field. Stale reports
 remain marked stale with their original observation time; they do not become
 current merely because the popup reopened. No provider value is treated as zero
 when absent, and there is no cross-provider aggregate that mixes incompatible
@@ -52,7 +55,9 @@ specifies which counters are available and their scope. Unsupported subscription
   into every panel instance. The manifest admits horizontal and vertical panels.
 
 Construction does not read reports or invoke providers. Opening the popup or
-pressing Refresh explicitly refreshes local facts. Denied policy constructs no
+pressing Refresh explicitly refreshes usage facts. While open, a 60-second
+presentation check reprojects the source snapshot's freshness without reading
+reports or invoking provider processes; the check stops when closed or denied. Denied policy constructs no
 collector, snapshots no source and disables Refresh. Presentation performs no
 direct network requests, login, application setting rewrite or service startup;
 the Codex CLI retains ownership of its account metadata transport.

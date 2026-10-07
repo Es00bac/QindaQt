@@ -19,11 +19,15 @@ QString AgentUsageAppletController::diagnostic() const
 {
     if (!m_granted) return QStringLiteral("Agent usage read access is denied by policy.");
     if (!m_source) return QStringLiteral("Agent usage source is unavailable.");
-    return QStringLiteral("Local reports only. Missing limits, tokens and cost remain unknown.");
+    return QStringLiteral("Usage comes from provider metadata or local reports. Missing facts remain unknown.");
 }
 void AgentUsageAppletController::refresh()
 {
     if (m_granted && m_source) m_source->refresh();
+}
+void AgentUsageAppletController::checkFreshness()
+{
+    if (m_granted && m_source) publish();
 }
 void AgentUsageAppletController::publish()
 {
