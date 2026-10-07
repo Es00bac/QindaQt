@@ -218,6 +218,9 @@ void HiddenProfileTests::actualSelectedDeviceAndRefusal() {
     QVERIFY(!result.reasonCode.contains(QStringLiteral("private")));
     QVERIFY(!result.diagnostic.contains(QStringLiteral("private")));
   }
+  QCOMPARE(
+      QDBusReply<quint32>(control.call(QStringLiteral("CaptureCount"))).value(),
+      quint32(captures));
   port.stop();
 }
 QTEST_GUILESS_MAIN(HiddenProfileTests)
