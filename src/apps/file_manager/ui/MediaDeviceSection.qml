@@ -48,12 +48,12 @@ ColumnLayout {
         ColumnLayout {
             required property var modelData
             Layout.fillWidth: true
-        Layout.minimumWidth: 0
+            Layout.minimumWidth: 0
             spacing: 2
             Button {
                 objectName: "mediaOpen_" + modelData.handle
                 Layout.fillWidth: true
-        Layout.minimumWidth: 0
+                Layout.minimumWidth: 0
                 enabled: modelData.openEnabled
                 text: modelData.name
                 Accessible.name: qsTr("Open device %1").arg(modelData.name)
@@ -65,7 +65,7 @@ ColumnLayout {
             }
             Label {
                 Layout.fillWidth: true
-        Layout.minimumWidth: 0
+                Layout.minimumWidth: 0
                 text: modelData.kind + " · " + modelData.status
                 textFormat: Text.PlainText
                 wrapMode: Text.Wrap
@@ -73,11 +73,11 @@ ColumnLayout {
             // Two short rows also fit the compact 148px window sidebar.
             RowLayout {
                 Layout.fillWidth: true
-        Layout.minimumWidth: 0
+                Layout.minimumWidth: 0
                 ToolButton {
                     objectName: "mediaReadOnly_" + modelData.handle
                     Layout.fillWidth: true
-        Layout.minimumWidth: 0
+                    Layout.minimumWidth: 0
                     text: qsTr("Read-only")
                     enabled: modelData.readOnlyEnabled
                     Accessible.name: qsTr("Mount %1 read-only").arg(modelData.name)
@@ -90,7 +90,7 @@ ColumnLayout {
                 ToolButton {
                     objectName: "mediaUnmount_" + modelData.handle
                     Layout.fillWidth: true
-        Layout.minimumWidth: 0
+                    Layout.minimumWidth: 0
                     text: qsTr("Unmount")
                     enabled: modelData.unmountEnabled
                     Accessible.name: qsTr("Unmount %1").arg(modelData.name)
@@ -103,11 +103,11 @@ ColumnLayout {
             }
             RowLayout {
                 Layout.fillWidth: true
-        Layout.minimumWidth: 0
+                Layout.minimumWidth: 0
                 ToolButton {
                     objectName: "mediaRemove_" + modelData.handle
                     Layout.fillWidth: true
-        Layout.minimumWidth: 0
+                    Layout.minimumWidth: 0
                     text: qsTr("Eject")
                     enabled: modelData.removeEnabled
                     Accessible.name: qsTr("Safely remove %1").arg(modelData.name)
@@ -120,7 +120,7 @@ ColumnLayout {
                 ToolButton {
                     objectName: "mediaDetails_" + modelData.handle
                     Layout.fillWidth: true
-        Layout.minimumWidth: 0
+                    Layout.minimumWidth: 0
                     text: qsTr("Details")
                     enabled: modelData.detailsEnabled
                     Accessible.name: qsTr("Details for %1").arg(modelData.name)
