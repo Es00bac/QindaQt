@@ -6,8 +6,16 @@ class FixtureSource final : public AgentUsageSource {
 public:
     mutable int snapshots = 0;
     int refreshes = 0;
+    bool projectFreshness = false;
+    QDateTime clock = QDateTime::fromString(QStringLiteral("2026-10-07T12:00:00Z"), Qt::ISODate);
     UsageSnapshot values;
-    UsageSnapshot snapshot() const override { ++snapshots; return values; }
+    UsageSnapshot snapshot() const override {
+        ++snapshots; auto result=values;
+        if (projectFreshness) for (auto &row : result)
+            if (row.state==UsageState::Ready && row.observedAt.msecsTo(clock)>900000)
+                row.state=UsageState::Stale;
+        return result;
+    }
     void refresh() override { ++refreshes; emit snapshotChanged(); }
 };
 inline ProviderUsage fixtureProvider()

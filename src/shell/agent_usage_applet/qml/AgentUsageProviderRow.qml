@@ -21,13 +21,14 @@ ColumnLayout {
     Label {
         textFormat: Text.PlainText
         Layout.fillWidth: true
-        text: root.row.scope + "\n" + root.row.tokenScope + "\n" + root.row.tokens
-              + "\n" + root.row.costScope + "\n" + root.row.cost
-        color: Tokens.fg.default
+        visible: !root.row.metricsAvailable
+        text: qsTr("Usage not reported") + (root.row.detail !== ""
+              && root.row.detail !== "No usage report" ? "\n" + root.row.detail : "")
+        color: Tokens.fg.muted
         wrapMode: Text.Wrap
     }
     Repeater {
-        model: root.row.quotas
+        model: root.row.metricsAvailable ? root.row.quotas : []
         Label {
             textFormat: Text.PlainText
             required property string modelData
@@ -40,8 +41,26 @@ ColumnLayout {
     Label {
         textFormat: Text.PlainText
         Layout.fillWidth: true
+        visible: root.row.metricsAvailable
+        text: root.row.tokenScope + " · " + root.row.tokens
+        color: Tokens.fg.default
+        wrapMode: Text.Wrap
+    }
+    Label {
+        textFormat: Text.PlainText
+        Layout.fillWidth: true
+        visible: root.row.metricsAvailable
+        text: root.row.costScope + " · " + root.row.cost
+        color: Tokens.fg.default
+        wrapMode: Text.Wrap
+    }
+    Label {
+        textFormat: Text.PlainText
+        Layout.fillWidth: true
+        visible: root.row.hasObservation
         text: root.row.observed + (root.row.source !== "" ? " · " + root.row.source : "")
-              + (root.row.detail !== "" ? "\n" + root.row.detail : "")
+              + (root.row.scope !== "Scope not reported" ? " · " + root.row.scope : "")
+              + (root.row.metricsAvailable && root.row.detail !== "" ? "\n" + root.row.detail : "")
         color: Tokens.fg.muted
         wrapMode: Text.Wrap
     }

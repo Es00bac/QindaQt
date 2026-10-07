@@ -1,4 +1,5 @@
 application-x-executable
+applications-development
 applications-other
 audio-volume-high
 audio-volume-low

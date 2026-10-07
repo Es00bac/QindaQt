@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 import QindaQt.Controls 1.0 as C
@@ -25,7 +26,8 @@ Item {
         onClicked: details.open()
         Accessible.onPressAction: details.open()
         contentItem: ShellIcons.Icon {
-            name: "utilities-system-monitor"
+            objectName: "agentUsageIcon"
+            name: "applications-development"
             size: Math.min(20, root.height - 8)
             color: Tokens.fg.default
             symbolic: true
@@ -34,21 +36,32 @@ Item {
         }
         background: Item {}
     }
+    // AGENT-GUARD: freshness is a source snapshot projection only. Polling
+    // must never refresh provider processes or reports (ADR-0351).
+    Timer {
+        objectName: "agentUsageFreshnessTimer"
+        interval: 60000
+        repeat: true
+        running: details.opened && root.access !== null && root.access.readGranted
+        onTriggered: root.access.checkFreshness()
+    }
     C.PanelPopup {
         id: details
         objectName: "agentUsageAppletPopup"
         anchorItem: summary
         vertical: root.vertical
-        width: 430
+        width: Math.min(430, Math.max(240, summary.Screen.width - 24))
         padding: 12
         onOpened: { if (root.access !== null) root.access.refresh() }
+        onClosed: summary.forceActiveFocus(Qt.PopupFocusReason)
         background: Rectangle {
             radius: root.theme.cornerRadius ?? 10
             color: Tokens.bg.raised
             border.color: Tokens.outline.divider
         }
         contentItem: ScrollView {
-            implicitHeight: Math.min(content.implicitHeight, 520)
+            implicitHeight: Math.min(content.implicitHeight, 520,
+                                     Math.max(120, summary.Screen.height - 48))
             clip: true
             Shortcut {
                 sequence: "Escape"
@@ -75,7 +88,7 @@ Item {
                         text: qsTr("Refresh")
                         emphasized: false
                         available: root.access !== null && root.access.readGranted
-                        accessibleDescription: qsTr("Refresh local usage reports")
+                        accessibleDescription: qsTr("Refresh agent usage")
                         onClicked: root.access.refresh()
                     }
                 }
@@ -99,7 +112,7 @@ Item {
                     textFormat: Text.PlainText
                     objectName: "agentUsageSetup"
                     Layout.fillWidth: true
-                    text: qsTr("To add provider reports or subscription limits, follow the Agent usage applet guide in the QindaQt wiki. Reports are local; configure account access in your provider tool.")
+                    text: qsTr("Provider setup: qindaqt-agent-usage-report.\nGuide: QindaQt wiki → AI agent usage applet.")
                     color: Tokens.fg.muted
                     wrapMode: Text.Wrap
                 }

@@ -18,6 +18,8 @@ public:
     bool readGranted() const { return m_granted; }
     QString diagnostic() const;
     Q_INVOKABLE void refresh();
+    // Re-project source-owned observation freshness only; never collect.
+    Q_INVOKABLE void checkFreshness();
 signals:
     void changed();
 private:

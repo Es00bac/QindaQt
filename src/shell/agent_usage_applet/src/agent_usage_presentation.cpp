@@ -24,8 +24,12 @@ QVariantList providerRows(const UsageSnapshot &snapshot)
 {
     QVariantList result;
     for (const auto &provider : snapshot) {
+        bool metricsAvailable = provider.inputTokens || provider.outputTokens
+            || provider.totalTokens || provider.reportedCostUsd;
         QStringList quotas;
         for (const auto &quota : provider.quotaWindows) {
+            metricsAvailable = metricsAvailable || quota.usedPercent.has_value()
+                || quota.resetAt.has_value();
             QString text = quota.label + QStringLiteral(": ");
             text += quota.usedPercent ? QStringLiteral("%1% remaining").arg(
                         QLocale().toString(qMax(0.0, 100.0 - *quota.usedPercent), 'f', 1))
@@ -44,6 +48,8 @@ QVariantList providerRows(const UsageSnapshot &snapshot)
             : QStringLiteral("No observation yet");
         result.append(QVariantMap{
             {QStringLiteral("id"), provider.providerId},
+            {QStringLiteral("metricsAvailable"), metricsAvailable},
+            {QStringLiteral("hasObservation"), provider.observedAt.isValid()},
             {QStringLiteral("name"), provider.displayName},
             {QStringLiteral("state"), stateLabel(provider.state)},
             {QStringLiteral("detail"), provider.detail},
