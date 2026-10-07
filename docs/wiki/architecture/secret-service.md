@@ -1,4 +1,4 @@
-> Historical deployed gnome-keyring integration is recorded below. Native source now owns its own provider, prompt and PAM boundary; see [native daemon](keyring-daemon.md), [native PAM](keyring-pam.md) and [client](keyring-client.md). ADR-0296 supersedes the provider choice for native deployments. Packaging/live replacement is a separate manager-owned gate; these source tests do not change the running provider.
+> Historical GNOME integration is recorded below. Native provider/prompt/PAM packages are installed on both audited hosts and the GNOME provider was removed on October 3. See the [native daemon](keyring-daemon.md), [native PAM](keyring-pam.md), [client](keyring-client.md) and [October 7 audit](../development/everyday-desktop-audit.md) for current acceptance limits. ADR-0296 supersedes this provider choice; the historical PAM instructions below do not apply to native deployments.
 
 # Secret Service provider
 

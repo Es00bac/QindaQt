@@ -23,18 +23,25 @@ page in the [documentation catalog](catalog/reading.md).
 
 ## Passwords and keys
 
-Applications keep passwords, tokens, and certificates in the `login` keyring,
-which login unlocks with your login password. Nothing in the session reads
-collection contents; the keyring starts on demand the first time an
-application asks for it. Browsers and Electron applications that would
-otherwise fall back to a plaintext-equivalent store are launched with
-`--password-store=gnome-libsecret`; Firefox and Thunderbird keep using their
-own encrypted password databases. If an application ever asks to unlock the
-keyring, a `gcr-prompter` dialog appears on the desktop; a cancelled dialog
-fails that application's operation only. Distribution images must ship the
-`pam_gnome_keyring.so` PAM lines described in the
-[Secret Service provider](../architecture/secret-service.md#login-unlock)
-architecture page, and `qindaqt-keyring-check` reports any gap.
+Native deployments use QindaQt's own Secret Service provider, prompt and PAM
+bridge. **Settings → Passwords & Keys** exposes collection management through
+that service; password entry belongs to the native authentication prompt.
+The former GNOME provider was removed from both audited hosts on October 3.
+See the [native daemon](../architecture/keyring-daemon.md),
+[native PAM bridge](../architecture/keyring-pam.md) and
+[Passwords & Keys](../apps/keyring-settings.md).
+
+Automatic login unlock is an intended packaged workflow, but physical fresh-login
+acceptance remains open. The October incidents also exposed lost session
+attachment and credential-prompt readiness gaps; source acceptance and installed
+app authentication are tracked separately in the
+[everyday audit](../development/everyday-desktop-audit.md). Do not treat successful
+keyring migration as proof that a real application can authenticate.
+
+The historical [GNOME integration](../architecture/secret-service.md) remains
+reference for older deployments. It is not an instruction to reinstall its PAM
+stack on a native deployment. Applications with their own password databases
+continue to own those databases.
 
 ## What persists
 
@@ -46,8 +53,8 @@ architecture page, and `qindaqt-keyring-check` reports any gap.
 | Container model snapshots | Versioned model serialization; complete session/app relaunch is a separate feature. |
 | Clipboard content | Volatile bounded history; history policy is default off. |
 | Text editor documents | Explicit local UTF-8 file saves with atomic replacement and external-change checks. |
-| Editor restore state | Optional paths-only inventory; no dirty text or crash-recovery content journal. |
-| Terminal profiles | Confirmed Settings1 preferences; PTY/session lifecycle remains application-owned. |
+| Editor restore state | Optional paths-only reopening plus a separate owner-private crash-recovery content journal, bounded to 4 MiB per document and 32 journals; explicit Restore/Discard. |
+| Terminal profiles | QQ_Term application-local profile/settings storage; PTY/session lifecycle remains application-owned. |
 | Display recovery | Injected journal and transaction authority with documented lineage and recovery validation. |
 | Color assignment | Confirmed preference intent, distinct from actual compositor color application. |
 

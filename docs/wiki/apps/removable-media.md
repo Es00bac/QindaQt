@@ -100,3 +100,11 @@ the process and persistence choice. The upstream contracts are the UDisks
 [Filesystem](https://storaged.org/doc/udisks2-api/latest/gdbus-org.freedesktop.UDisks2.Filesystem.html),
 [Block](https://storaged.org/doc/udisks2-api/latest/gdbus-org.freedesktop.UDisks2.Block.html),
 and [Drive](https://storaged.org/doc/udisks2-api/latest/gdbus-org.freedesktop.UDisks2.Drive.html) interfaces.
+
+## Everyday workflow follow-up
+
+The [October 7 audit](../development/everyday-desktop-audit.md) distinguishes
+this installed helper from File Manager device discovery and the still-unverified
+physical insertion/eject journey. Proposed ED-04 in the
+[delivery plan](../development/everyday-desktop-plan.md) must preserve UDisks
+authority and this module ownership; the proposal does not add a public API yet.

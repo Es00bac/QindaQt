@@ -1,3 +1,24 @@
+# October 7 — Everyday desktop audit and proposed usability queue
+
+The owner requested **audit, review and documentation only**, with coding by
+later workers. The [everyday audit](wiki/development/everyday-desktop-audit.md)
+separates current capabilities, confirmed limits, user reports and qualification
+gaps. Its [delivery plan](wiki/development/everyday-desktop-plan.md) defines
+ED-01–24, bounded dispatch/acceptance rules and model allocation: **Sol 6.1 by
+default, Sonnet as a parallel option, Opus before Astra for difficult work**.
+Luna handles narrowly specified work; Astra/Fable are exceptional escalation.
+No product code, installed state or feature-ledger progress changes in this pass.
+The [Android/Windows plan](wiki/development/foreign-app-integration-plan.md) adds
+resizable integrated Android apps marked green and Wine/Proton apps marked blue,
+with normal Applications/dock/container behavior.
+
+First delivery priorities are the existing lock/power/keyring incident gates,
+then integrated USB discovery/eject and safe cross-device file operations.
+Reuse existing Removable Media, QindaPortage, terminal and QindaTK agent support.
+Future assignments remain unclaimed and require a fresh exact hub base, isolated
+worktree, path ownership and independent review. The two Claude reset windows
+are separate owner-reported accounts; no automatic launches are scheduled.
+
 # October 7 incident
 
 The fixed native worker names `qindaqt-lock`, but both installed Gentoo
