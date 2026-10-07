@@ -333,6 +333,7 @@ void SettingsCommandPaletteTest::filteredRowsKeepCrossSectionRelevanceOrder() {
                         QStringLiteral("route:login-screen"),
                         QStringLiteral("route:power"),
                         QStringLiteral("route:streaming"),
+                        QStringLiteral("route:portal-permissions"),
                         QStringLiteral("destination:input/touch")}));
 }
 
