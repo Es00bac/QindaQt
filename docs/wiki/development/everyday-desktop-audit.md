@@ -1,5 +1,10 @@
 # Everyday desktop audit — 7 October 2026
 
+> Implementation was separately authorized on October 7 after this audit.
+> The repository task list (`docs/TASK_LIST.md`) and [delivery queues](../contributing/flow-team-workflow.md#durable-queue-contract)
+> record current dispatch and evidence. The proposals below remain the planning
+> baseline; assignments alone do not establish delivered behavior.
+
 QindaQt's next improvement should be completing everyday journeys: return to
 an unlocked desktop, use a USB drive, join a network, install an application,
 recover a document, and let an agent help with a clearly chosen task. Much of
