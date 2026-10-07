@@ -1,17 +1,24 @@
-## October 7 reviewed source and design integration (2026-10-07T18:04:31+00:00)
+## October 7 reviewed source and artifact integration (2026-10-07T19:07:43+00:00)
 
-Network disk-fallback repair is integrated and manager-verified: nine owning
-CTest rows pass. ED-01–03 source policy and private lock/power/keyring evidence
-are accepted; exact runtime freeze is `bef80e861680f6d7bd53a556c39e13d97ff9e742`.
-The new immutable r15 recipe/archive passed independent review `b19c6d0a1`
-and is integrated; signed build-only and resulting artifact review are next.
-No new installed desktop or physical lock/suspend qualification is claimed.
+Network disk-fallback source is manager-verified: nine owning CTest rows pass.
+ED-01–03 source and immutable r15 recipe are reviewed. The private signed r15
+artifact is independently ACCEPTED (fba4a5e59): 60,866,560 bytes, SHA256
+a6bff0aae6693664c2cdaa8441a623ff06039863d85f47ae04378c3abf538c47.
+Required signatures, ABI/dependencies and 11/11 package-image Network probes
+pass. Runtime freeze remains bef80e861680f6d7bd53a556c39e13d97ff9e742.
+Installed desktop remains r13; publication/physical-session gates stay open.
 
-[ADR-0350](wiki/adr/0350-share-removable-media-with-file-consumers.md) is Accepted
-after exact design review `d283465c3`. Public protocol/client, device sidebar
-and chooser consumption remain separate implementation gates. Existing media
-owner authority and deliberate graphical recovery are preserved.
-Android/Windows ED-20–24 remain queued; no runtime adapter delivery is claimed.
+[ADR-0350](wiki/adr/0350-share-removable-media-with-file-consumers.md) is Accepted.
+Typed protocol f88974a5f passed independent Debug/Release review a2e8631d4 and
+is integrated at9bcbcb7ba; manager3/3 focused rows pass. Public client/exporter,
+device sidebar and chooser are next. Android/Windows ED-20–24 remain queued.
+
+Additional AI usage plugin Backend/UI Sol worktrees are assigned at verified
+ccc99fb3f67c2bdc4f7156af7c0b0f1e05478057.
+[Proposed ADR-0351](wiki/adr/0351-collect-agent-usage-through-bounded-metadata-sources.md)
+defines collection/report separation. Both quotas/reset times and token/reported
+costs are requested. Source/review/installed visibility remain distinct;
+dispatch adds no completion credit.
 
 # October 7 — Everyday desktop implementation started
 
