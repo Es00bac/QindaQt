@@ -1,5 +1,16 @@
 # Shell delivery queue
 
+## October 7 everyday-desktop planning boundary
+
+Documentation-only audit; no coding assignment or product progress. See
+[proposed packets](../../../docs/wiki/development/everyday-desktop-plan.md) and
+[source-backed findings](../../../docs/wiki/development/everyday-desktop-audit.md).
+
+| Outcome | Evidence state | Owner | Base / worktree | Reviewer / candidate | Next gate | Collision / help | Observed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ED-09, ED-14, ED-17–20, ED-23–24 | PROPOSED; existing capabilities and gaps audited | unclaimed | Audit base f298b6803; future code worktree none; refresh exact hub base at dispatch | none / none | Select one bounded packet, assign owner/reviewer, then its documented fixture and installed journey | Shared protocol/packaging/Settings registry and hardware require coordination; help: reproduce before changing existing capabilities | 2026-10-07 |
+
+
 - Workgroup manager: Codex Program Manager (OpenAI Codex `gpt-5.6-sol`, reasoning high)
 - Last observation: 2026-09-06T22:15:50-06:00
 

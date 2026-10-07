@@ -1716,3 +1716,11 @@ carries its confirmed icon id, invalidating Qt Quick's image cache when the
 family changes; QIcon remains the only provider resolution authority. Folder
 listings and view delegates stay intact. See
 [ADR-0280](../adr/0280-independent-installed-icon-theme-choice.md).
+
+## Everyday usability follow-up
+
+The [October 7 audit](../development/everyday-desktop-audit.md) records the
+owner-reported removable-drive friction and the explicit cross-filesystem Move,
+per-volume Trash and symlink-copy limitations. Proposed ED-04 through ED-07 in
+the [delivery plan](../development/everyday-desktop-plan.md) are future work,
+not a change to the implemented behavior described above.

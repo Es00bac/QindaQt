@@ -47,6 +47,7 @@ ship with QindaQt.
 | What services and integrations exist? | [Platform services](platform.md) |
 | What is saved, protected, or recovered after failure? | [Privacy and persistence](privacy.md) |
 | How do I build, run, and diagnose it? | [Development and operation](development.md) |
+| What needs improvement for everyday use? | [October 7 usability audit](../development/everyday-desktop-audit.md) |
 | How are quality and progress established? | [Quality and contribution](quality.md) |
 | What is every tracked feature's exact status? | [Feature catalog](catalog/features.md) |
 | What are all the preferences? | [Settings catalog](catalog/settings.md) |

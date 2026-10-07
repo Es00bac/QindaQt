@@ -22,6 +22,11 @@ below remain the source-of-truth links for repository browsers and MkDocs.
 
 ## Start here
 
+- [Everyday desktop audit](development/everyday-desktop-audit.md) records the
+  October 7 usability gaps, existing capabilities and verification limits; its
+  [delivery plan](development/everyday-desktop-plan.md) proposes bounded work
+  and model allocation. This is documentation-only planning, not feature delivery.
+
 - [QindaQt handbook](handbook/index.md) organizes project philosophy, desktop
   features, applications, architecture, configuration, and development, with
   complete feature, package, source, and documentation catalogs.

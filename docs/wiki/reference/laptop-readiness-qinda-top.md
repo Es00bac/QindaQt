@@ -1,5 +1,10 @@
 # Laptop readiness: `qinda-top` (Checkpoint L, O8)
 
+> Historical September 18 checkpoint: its PowerDevil/KScreenLocker policies
+> describe the former deployment. They do not establish current native
+> lock/sleep/battery behavior. Use the [October 7 audit](../development/everyday-desktop-audit.md)
+> and its incident receipts for the current boundary.
+
 Findings and verification for Checkpoint L rows 3, 4, 5, and 11 (TEAM.md §3),
 gathered by read-only `ssh qinda-top` probes and `qinda-top`'s own installed
 system KWin 6.6.6 / PowerDevil / UPower / systemd — never by installing a

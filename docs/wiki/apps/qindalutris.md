@@ -291,3 +291,12 @@ never invokes Portage. It does not run games through a shell:
 every launch is one program and an argument vector, planned the same
 bounded way the shell launcher plans desktop entries. And it never turns a
 missing game source into an error — an empty machine is a normal machine.
+
+## Desktop-wide Windows application follow-up
+
+The [Android/Windows integration plan](../development/foreign-app-integration-plan.md)
+proposes normal Applications entries, blue Windows identification and a reviewed
+public runner boundary for non-game applications. It reuses the existing
+prefix/pinned-runner work; it does not change current runner or installation
+behavior. Portage ownership and guest-app lifecycle require explicit design
+before implementation.

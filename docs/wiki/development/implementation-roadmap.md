@@ -11,102 +11,38 @@ removed through normal scoped Portage cleanup. Fresh physical login/PAM
 adoption and physical hardware journeys remain open; this does not advance
 their qualification state. See `docs/HANDOFF.md`.
 
-## Current buildable state
+## Current implementation and qualification boundary
 
-The repository currently builds and tests:
+The [October 7 everyday audit](everyday-desktop-audit.md) is the current
+cross-module usability assessment. Its [delivery plan](everyday-desktop-plan.md)
+adds proposed work without advancing milestone or feature-ledger progress.
+The module owner pages and installed handoff take precedence over historical
+foundation checklists when deciding what still needs implementation.
 
-- a Qt Core container domain model with recursive splits, pages, activation,
-  detachment normalization, validation, and schema-versioned JSON persistence;
-- validated profile schema v1 with ten built-in workflow families;
-- validated theme schema v1 with light, dusk, dark, high-contrast, and Qinda
-  macOS themes;
-- QST-1 immutable semantic-token derivation, total caller-owned accessibility
-  transforms across loader-valid schema-v1 colors, exact six-theme WCAG pair
-  gates, clean installed-C++ consumption, and a read-only GUI-thread QML
-  singleton;
-- a Qt Quick shell preview showing panels, applets, and the shared-title-bar
-  window-container concept at arbitrary preview dimensions;
-- an exact KWin 6.6.6 source/ABI pin, the `qindaqt-wm` launcher, a
-  release-matched plugin, and an atomic versioned container-control bridge;
-- deterministic live KWin integration covering three mapped Wayland windows,
-  rootless XWayland, output/input inventories, page activation, detach,
-  singleton unwrapping, release, and exact frame restoration;
-- dynamic plugin-unload recovery for four live clients grouped in two
-  containers;
-- the Hybrid interaction value layers: revisioned multi-container topology,
-  recursive constraint solving, full independent-window restore state,
-  consuming pointer/keyboard gesture semantics, shared-chrome render/hit plans,
-  and a loadable QindaQt KDecoration3 plugin;
-- the production Hybrid collaborator graph inside KWin: atomic full-state scene
-  transactions, rollback-safe group reflow, semantic gesture translation,
-  dock preview, member-anchored scene-image chrome with compositor-side ordinary
-  input routing, atomic group-context adoption and its outer-title menu, native
-  member detach/focus policy, transient following, group placement/actions,
-  scene-restart synchronization, unload release, and read-only runtime
-  diagnostics;
-- Shell/customization foundations: atomic profile-panel expansion,
-  collision-free logical geometry and work areas; exclusive, revisioned
-  panel/applet editing with manifest-aware preflight, preview, rollback, and
-  undo/redo; and pure window-aware visibility/reservation policy;
-- a production `qindaqt-shell` process that turns solved panels into real
-  LayerShellQt surfaces, with fail-closed replacement and live nested-KWin
-  work-area proof at 1080p, WUXGA, and 1440p;
-- production applet resolution through validated manifests, placement and host
-  policy, a compiled implementation registry, and least-authority grants, plus
-  live built-in locale-aware clock and capability-empty notification-center
-  entries;
-- registered bounded Launcher and Task List source models; a compiled Audio
-  applet over the public AudioClient seam; production compiled Power and
-  Bluetooth applets over their public client seams; and the source/static Global Menu G0 model, authenticated
-  ownership/export, Qt Widgets adapter, facade, and responsive offscreen QML;
-- a wired presentation-independent customization editor with shared pointer and
-  keyboard intents, preview/commit/cancel, coordinator-lease fencing,
-  undo/redo dirty truth, atomic user-profile persistence, and accessibility
-  identities;
-- a bounded, revisioned notification model, freedesktop Notifications 1.3
-  D-Bus adapter, installable resident ownership/expiry host, authenticated
-  private presentation server/client, descriptor-only token handoff, and
-  essential host/shell session supervision, plus bounded production popups and
-  an active/recent center with logical-DPI clamping, serialized operations,
-  authoritative failure recovery, bounded busy/error presentation, a dedicated
-  entry in every stock profile, and a shell-owned `Meta+N` action registered
-  through KF6 GlobalAccel without applet notification authority, plus injected
-  Settings1-persisted Do Not Disturb with immediate low/normal popup suppression,
-  an explicit critical bypass, Active/Recent retention, and no replay on
-  disable, plus a compositor-PID/unique-owner-authenticated KScreenLocker
-  monitor that clears and denies every notification projection unless the
-  session is conclusively unlocked;
-- isolated development-session planning and declarative single-, multi-output,
-  mixed-DPI, rotation, and hotplug scenarios, with honest reporting of the
-  subset the current virtual backend actually applies;
-- an integrated contained virtual-desktop S0+S1+S2+S3 harness boundary with an
-  authenticated private bubblewrap stage, exact production package and
-  topology contracts, bounded eight-role resource accounting, durable failure
-  evidence, identity-safe teardown, exact `Meta+N` interaction confined to the
-  private nested seat, WUXGA/1440p/150% and light/dusk/dark coverage, and a real
-  dual-output authority transfer with capture on `WL-1`; and
-- strict compiler warnings, unit tests, source-shape checks, and this wiki.
+The current native tree includes:
 
-The repository now boots a real compositor and has completed its Compositor
-MVP qualification. Hybrid interaction has process-local live pointer grouping,
-native-decoration detach, keyboard parity, complete page/tree operations,
-readable public state, runtime decoration proof, member focus/transient policy,
-close/ungroup policy, lifecycle synchronization, and grouped plugin-unload
-restoration. Final qualification passed every gate recorded in the
-[testing harness](testing-harness.md), so Hybrid interaction is complete. This
-is not yet a daily-use desktop session: panel windows, the clock, and the
-bounded notification presentation/entry path are implemented, and the complete
-installed Notification Live shortcut, focus, Do Not Disturb, service/shell
-replacement, authenticated private-lock, scale, and teardown matrix is
-qualified. Alternative lockers and multi-seat support remain unqualified.
-Audio has a bounded service/runtime slice and the source tree now contains
-registered Launcher, Task List, Audio applet, Power applet, Bluetooth applet, Global Menu G0,
-Clipboard C0, and customization-editor foundations. These are deliberately
-not all live panel features: their owning pages identify the remaining
-production adapters, transports, hosts, and installed interaction gates.
-The clipboard applet remains absent. The StatusNotifier foundation is
-integrated; its production watcher/menu/icon transports, applet hosting, and
-installed interaction remain later work.
+- window containers and ordinary window behavior, a native compositor fork,
+  shell panels, launcher, tasks, notifications, tray, clipboard and menus;
+- resident Settings, Audio, Network, Bluetooth, Display, Power and clipboard
+  boundaries with graphical Settings consumers;
+- native lock authentication, keyring, credential prompts, power policy and
+  portal implementations, with explicit per-family tests and installed limits;
+- File Manager local/network operations, separate Removable Media, Text Editor
+  crash recovery/printing, Viewer, Welcome and shared application controls;
+- separately packaged QQ_Term, QindaTK and Office applications, including
+  existing semantic agent interfaces in the owning sibling repositories; and
+- private nested compositor, package, unit, accessibility-metadata and
+  lifecycle evidence described in the [testing harness](testing-harness.md).
+
+This inventory is not complete installed acceptance. The October 7 incidents
+leave physical unlock and fresh-login keyring proof open; accepted Power1 and
+keyring reattachment source still need delivery. Physical sleep, radios,
+docking, assistive technology and third-party application journeys retain
+their own qualification gates. File Manager device integration and several
+cross-filesystem operations, basic PDF tools, advanced network setup and a
+joined agent-context experience have specific remaining work. Consult the
+owning pages and audit before creating a task; do not rebuild existing modules
+because an older milestone summary still calls them future work.
 
 ## Milestones
 
@@ -120,13 +56,14 @@ First-party experience milestone.
 
 | Milestone | Outcome | State |
 | --- | --- | --- |
-| Foundation | Domain invariants, schemas, preview, scenario harness, documentation policy | Complete |
-| Compositor MVP | Tracked KWin base, nested Wayland session, XWayland, output/input adapters, atomic container protocol | Complete |
-| Hybrid interaction | Pointer and keyboard docking, paint-only shared outer decoration, native member drag, split/page reorganization, focus/transient policy, restore | Complete |
-| Shell and customization | Real panels/docks, window-aware hiding/layers, global menu, direct drag-from-settings editing, notifications | In progress (production panels and installed Notification Live are qualified; notifications route through the exact-owner ordered public compositor-output authority, and S3 executes the WUXGA/fractional/theme matrix plus exact `WL-1` dual-output transfer; the Power and Bluetooth applets have production manifest/registry/host/QML/package composition over public clients while their upstream platform adapters remain bounded nonclaims; Global Menu G0 executes in focused tests; Launcher, Task List, Status Notifier tray, Audio applet, and the customization-editor domain are wired source slices; remaining production transports/hosts, clipboard applet, reveal UI, complete whole-shell accessibility, and physical qualification remain) |
-| Platform services | Audio, power, brightness, Bluetooth, network, clipboard, display/color/font settings, portals and policy | In progress (Audio1, Display D0-D6 including authenticated resident process composition, resident Power PB-1 plus its production shell consumer, Bluetooth B0, resident Network N1 with confined NetworkManager transport, the public-client-only Network Settings N2 route, the pure Display Color C0 boundary, and the standard Settings v1 Portal P0 appearance backend execute; Clipboard C0 is WIRED and Font F1 (live fontconfig discovery, Settings1 persistence composition, and the guarded pre-`QGuiApplication` first-party bootstrap) is wired; Network credential/profile/radio mutation, secret-agent integration, persistence, session-runtime proof, and hardware qualification, production BlueZ/hardware, live color discovery and application, the Settings font route, clipboard capture/service/UI, Display nested convergence and hardware/resource qualification, production Power upstream adapters and hardware qualification, host portal selection/toolkit reaction, and every non-Settings portal family remain) |
-| First-party experience | Settings center and core applications with accessibility and consistent theming | In progress (September 8 app material/window checkpoint passes 121 focused tests and four observed-scale native application rows; QST-1 and reusable QindaQt.Controls are independently qualified; Notifications, Appearance, Display, and Network are live installed Settings routes; typed responsive Settings Center S1 navigation, Text Editor S1, bounded local File Manager S0, single-session Terminal S0, and the narrow installed QindaQt.AppShell 1.0 action/lifecycle/portal/focus/accessibility boundary are executable; private S3 executes cross-app WUXGA, fractional-DPI, light/dusk/dark, and dual-output input/capture rows; remaining service routes, later File Manager and Terminal capabilities, app migrations, complete app keyboard/screen-reader coverage, and physical qualification remain) |
-| Release qualification | Hardware matrix, performance/memory gates, migrations, packaging, recovery and upgrade paths | In progress: installed Gentoo functional checkpoint; broader qualification pending |
+| Foundation | Domain invariants, schemas, preview, scenario harness and documentation policy | Complete at its recorded boundary |
+| Compositor MVP | Tracked compositor base, nested Wayland/XWayland and atomic container protocol | Complete at its recorded boundary; physical matrix remains a release gate |
+| Hybrid interaction | Grouping, pages/splits, ordinary windows, focus, restore and recovery | Complete at its recorded boundary; whole-session physical acceptance is separate |
+| Shell and customization | Panels/docks, menus, launcher, tasks, notifications, tray, clipboard and editing | Implemented slices with remaining whole-shell accessibility, hardware and newcomer-workflow qualification; see owning pages and everyday audit |
+| Platform services | Audio, network, Bluetooth, display, power, keyring, locking, portals and policy | Native installed checkpoint exists; current incident delivery and physical/end-to-end acceptance remain open |
+| First-party experience | Consistent graphical applications, settings and terminal integration | Current applications substantially exceed the original S0 slices; file/device, PDF, administration and agent-coverage gaps are planned in the everyday audit |
+| Release qualification | Hardware, application compatibility, migrations, packaging, recovery and upgrade paths | In progress; installed Gentoo checkpoint does not establish wider beta readiness |
+
 
 Each milestone lands behind stable module boundaries rather than accumulating
 inside one shell process. A feature is complete only with its failure behavior,

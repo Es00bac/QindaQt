@@ -72,7 +72,9 @@ atomically, and warns you if a file changes on disk underneath you — a
 conflict never silently overwrites your work. Find and replace covers plain
 text and regular expressions, with Replace All undoable as one step. If you
 close with files open, the editor offers to remember *which* files to reopen
-next time (never unsaved contents).
+next time. Separately, a bounded crash-recovery journal can offer to restore
+unsaved text after a crash; it does not silently overwrite the saved file. See
+[Text Editor recovery](../apps/text-editor.md#crash-recovery-autosave).
 
 Line numbers, automatic syntax highlighting, and `Ctrl+G` to jump to a line
 help with scripts and configuration files. Tab and Shift+Tab indent selected
@@ -83,11 +85,15 @@ word-wrap switch and text zoom (`Ctrl++`, `Ctrl+-`, and `Ctrl+0` to reset).
 
 Browse folders with a path bar and back/forward history, open files with
 their proper applications, and organize with rename, copy, move, and the
-Trash. It works on local files; remote filesystems are not part of the
-current version. Use `Ctrl+L` to type a path, `Ctrl+H` to show hidden files,
+Trash. It browses local folders and supported SMB/SFTP network locations, with
+actions determined by the location. Remote Trash is not supported. Use `Ctrl+L` to type a path, `Ctrl+H` to show hidden files,
 and `Ctrl+D` to bookmark a folder. List and grid views share your selection;
 Ctrl-click picks individual files and Shift-click selects a range. Click a
 column heading to sort. Copy, move, and Trash work on the selected files together.
+
+The separately installed **Removable Media** application handles mounting and
+safe removal. A drive list with mount/eject inside File Manager is still a
+planned integration; see [Removable media](../apps/removable-media.md).
 
 When a browser, an editor, or a download manager offers **Show in folder**,
 File Manager opens that folder with the file selected. In **Applications**,
@@ -139,12 +145,16 @@ it, rather than one view at a time. Drag a panel's header to rearrange it or
 tear it off; select a process to terminate, pause or reprioritise it. Install
 the separate `qindaqt-system-monitor` package alongside the desktop.
 
-## Not included (yet)
+## Software, archives, and recovery
 
-An archive manager and a software center appear in the project's long-term
-plans. They are not shipped applications today — use ordinary Linux
-applications for those needs. The honest per-feature
-ledger is the [feature catalog](catalog/features.md).
+File Manager delegates archive creation and extraction to an installed handler.
+QindaPortage is a separately packaged graphical Portage application, installed
+on the audited laptop; it can inspect packages, preview and apply plans, and
+revert its managed configuration changes. That is not a complete system rollback.
+A general graphical backup/restore journey and the complete newcomer update
+experience still need qualification. See the
+[everyday audit](../development/everyday-desktop-audit.md) for those limits.
+The per-feature ledger remains the [feature catalog](catalog/features.md).
 
 Each application's full contract — limits, shortcuts, recovery behavior — is
 documented on its own page: [Welcome](../apps/welcome.md), [Settings

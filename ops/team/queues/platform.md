@@ -1,5 +1,16 @@
 # Platform delivery queue
 
+## October 7 everyday-desktop planning boundary
+
+Documentation-only audit; no coding assignment or product progress. See
+[proposed packets](../../../docs/wiki/development/everyday-desktop-plan.md) and
+[source-backed findings](../../../docs/wiki/development/everyday-desktop-audit.md).
+
+| Outcome | Evidence state | Owner | Base / worktree | Reviewer / candidate | Next gate | Collision / help | Observed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ED-01–03, ED-08–09, ED-11–15, ED-20–24; coordinate ED-04/17 | PROPOSED; existing capabilities and gaps audited | unclaimed | Audit base f298b6803; future code worktree none; refresh exact hub base at dispatch | none / none | Select one bounded packet, assign owner/reviewer, then its documented fixture and installed journey | Shared protocol/packaging/Settings registry and hardware require coordination; help: reproduce before changing existing capabilities | 2026-10-07 |
+
+
 ## October 7 current incident — installed PAM policy and restored battery
 
 The new owner request authorizes this bounded unlock/battery repair. Earlier
