@@ -1,5 +1,17 @@
 # Shell delivery queue
 
+## October 7 authorized implementation wave
+
+Owner authorization supersedes the earlier documentation-only dispatch boundary.
+The audit findings remain historical provenance; current candidates are below.
+
+| Outcome | Evidence state | Owner | Base / worktree | Reviewer / candidate | Next gate | Collision / help | Observed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ED-01–03 coherent reliability delivery | DISPATCHED; no new completion | Everyday Platform Sol | f152d6c9e desktop / e62153b overlay; qinda everyday-platform-20261007 worktrees | Everyday Review Sol / none | Review prepared r14; prepare new immutable recipe requiring lock PAM and accepted power/keyring repairs | Full package compiler waits source/recipe review; manager owns delivery metadata and installation | 2026-10-07T17:15:48+00:00 |
+| Network QML disk fallback delivery prerequisite | DISPATCHED; known package-contract failure | Everyday Files Sol | f152d6c9e; qinda container-wm.worktrees/everyday-files-20261007 | Everyday Review Sol / none | Reproduce five-path mismatch, repair owning install rule, pass staged fallback contract | Files owns Network install/tests; no active network changes; no private-runtime lease | 2026-10-07T17:15:48+00:00 |
+| ED-04 consistent device inventory design | READY successor, unclaimed | unclaimed | Refresh accepted hub boundary at next claim | none / none | Public Removable Media/File Manager/chooser ADR, reviewed before code | UDisks remains Removable Media-owned | 2026-10-07T17:15:48+00:00 |
+
+
 ## October 7 everyday-desktop planning boundary
 
 Documentation-only audit; no coding assignment or product progress. See
